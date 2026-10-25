@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -190,9 +191,15 @@ void main() {
       return toGlobal(tester, Offset(root.left - 30, root.center.dy));
     }
 
-    /// A point on the drawn line from [from] to [to], away from its label.
-    Offset onLine(WidgetTester tester, String from, String to) =>
-        toGlobal(tester, cubicPoint(relationCurve(sceneRect(tester, from), sceneRect(tester, to)), 0.3));
+    /// A point on the drawn line from [from] to [to], away from its label;
+    /// [others] are the nodes the line has to take into account.
+    Offset onLine(WidgetTester tester, String from, String to, {List<String> others = const []}) => toGlobal(
+      tester,
+      cubicPoint(
+        relationCurve(sceneRect(tester, from), sceneRect(tester, to), [for (final id in others) sceneRect(tester, id)]),
+        0.3,
+      ),
+    );
 
     Future<WorkspaceController> open(WidgetTester tester) async {
       final container = await openFirstSet(tester);
@@ -236,7 +243,7 @@ void main() {
 
       controller.selectCard(null);
       await tester.pumpAndSettle();
-      await tester.tapAt(onLine(tester, 'c3', 'c4'));
+      await tester.tapAt(onLine(tester, 'c3', 'c4', others: ['c6']));
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, id);
       await focusMap(tester);
@@ -273,6 +280,41 @@ void main() {
       await settleHud(tester);
     });
 
+    testWidgets('a line between stacked nodes and its label stay inside the scene and the fitted view', (tester) async {
+      final controller = await open(tester);
+      const label = 'a rather long relationship label';
+      controller.selectCard(null);
+      final middle = await controller.addTopic('A much wider topic in between');
+      controller.selectCard(null);
+      final last = await controller.addTopic('Last');
+      controller.selectCards(['c4', last.id]);
+      await controller.addRelation();
+      await controller.finishMarkEditing(label);
+      await tester.pumpAndSettle();
+      bool inside(Rect outer, Rect inner) =>
+          inner.left >= outer.left &&
+          inner.top >= outer.top &&
+          inner.right <= outer.right &&
+          inner.bottom <= outer.bottom;
+      final text = find.text(label);
+      // The canvas: the nearest stack holding both the label and the nodes.
+      final around = find.ancestor(of: text, matching: find.byType(Stack)).evaluate().toSet();
+      final canvas = find
+          .ancestor(of: find.byKey(const ValueKey('c4')), matching: find.byType(Stack))
+          .evaluate()
+          .firstWhere(around.contains);
+      final scene = tester.getRect(find.byElementPredicate((e) => e == canvas));
+      final rect = tester.getRect(text);
+      expect(inside(scene, rect), isTrue, reason: 'not clipped: $rect in $scene');
+      expect(rect.left, greaterThan(tester.getRect(find.byKey(ValueKey(middle.id))).right), reason: 'past the column');
+
+      await focusMap(tester);
+      await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      final view = viewerBox(tester).localToGlobal(Offset.zero) & viewerBox(tester).size;
+      expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it: ${tester.getRect(text)} in $view');
+      await settleHud(tester);
+    });
+
     testWidgets('a summary is added from the menu, edited in place and removed from its bracket menu', (tester) async {
       final controller = await open(tester);
       final width = tester.getRect(find.byKey(const ValueKey('c3'))).right;
@@ -288,6 +330,12 @@ void main() {
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
       final label = tester.getRect(find.text('Two ideas'));
       expect(label.left, greaterThan(width), reason: 'right of the covered nodes');
+      final text = tester.renderObject<RenderParagraph>(find.text('Two ideas'));
+      expect(
+        text.size.width,
+        greaterThan(text.getMaxIntrinsicWidth(double.infinity)),
+        reason: 'room for glyphs a fraction wider than measured, so the label never wraps',
+      );
 
       // Double click edits the label; Esc keeps the old text.
       await doubleTap(tester, find.text('Two ideas'));
@@ -350,8 +398,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.content.relations, isEmpty);
 
-      // The toolbar's trash removes a selected mark too.
-      await tester.tap(find.text('Summary'));
+      // The toolbar's trash removes a selected mark too. The label ends at the
+      // window's right edge: tap its start.
+      await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
       await tester.pump(kDoubleTapTimeout);
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, controller.content.summaries.single.id);
@@ -397,6 +446,31 @@ void main() {
     expect(cubicPoint(c, 1), c.$4);
     final same = relationCurve(a, a);
     expect(same.$1, a.center);
+  });
+
+  test('relation curves between stacked leaves run outside the column', () {
+    const a = Rect.fromLTWH(0, 0, 100, 40), b = Rect.fromLTWH(10, 400, 120, 40);
+    const between = Rect.fromLTWH(0, 200, 160, 40), parent = Rect.fromLTWH(-200, 200, 100, 40);
+    final c = relationCurve(a, b, const [a, b, between, parent]);
+    expect(c.$1, const Offset(100, 20));
+    expect(c.$4, const Offset(130, 420));
+    final middle = cubicPoint(c, 0.5);
+    expect(middle.dx, greaterThanOrEqualTo(160 + 120 * 0.75), reason: 'apex clears the widest node in between');
+    expect(relationGoesAround(c), isTrue);
+    for (var t = 0.1; t < 1; t += 0.1) {
+      expect(cubicPoint(c, t).dx, greaterThanOrEqualTo(100), reason: 'never crosses the column at $t');
+    }
+    expect(relationCurve(b, a).$4, const Offset(100, 20));
+    final near = relationCurve(a, const Rect.fromLTWH(0, 50, 100, 40));
+    expect(cubicPoint(near, 0.5).dx, greaterThan(100 + 30), reason: 'a minimum bow for neighbours');
+
+    // A node with children to its right keeps the plain curve.
+    const child = Rect.fromLTWH(160, 0, 80, 40);
+    final plain = relationCurve(a, b, const [child]);
+    expect(plain.$1.dy, 40, reason: 'leaves the facing (bottom) border');
+    expect(plain.$4.dy, 400, reason: 'enters the facing (top) border');
+    expect(relationGoesAround(plain), isFalse);
+    expect(relationGoesAround(relationCurve(a, const Rect.fromLTWH(300, 0, 100, 40))), isFalse);
   });
 
   test('summary and relation commands have shortcuts', () {

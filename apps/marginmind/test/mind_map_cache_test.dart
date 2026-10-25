@@ -210,6 +210,24 @@ void main() {
     environment(direction: TextDirection.rtl);
     expect(cache.measurementCount, count + 4);
   });
+  test('the inherited text style is measured with and invalidates measurements', () {
+    // Rendered titles inherit the ambient style (on macOS: the system font and
+    // letter spacing); measuring without it made titles wrap as drawn.
+    final cache = MindMapRenderCache();
+    final content = fixture(3);
+    final plain = update(cache, content);
+    final count = cache.measurementCount;
+    final spaced = cache.update(
+      content: content,
+      rootTitle: 'Root',
+      localizations: english,
+      theme: theme,
+      baseStyle: const TextStyle(letterSpacing: 2),
+    );
+    expect(cache.measurementCount, count + 4);
+    expect(spaced.rects['c0']!.width, greaterThan(plain.rects['c0']!.width));
+  });
+
   test('same text shares measurements only when style and width match', () {
     final cache = MindMapRenderCache();
     final content = fixture(4).copyWith(
