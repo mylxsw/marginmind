@@ -513,7 +513,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       }
       final label = _cache._markLabels[r.id] ?? '';
       if (label.isEmpty && r.id != _markField?.id) continue;
-      final size = _cache._measure(label, MMTypography.footnote, 200).size;
+      // Relation labels are laid out on one line, without a width limit.
+      final size = _cache._measure(label, MMTypography.footnote, double.infinity).size;
       final box = Size(math.max(size.width, MMSpacing.xxxl) + MMSpacing.xs * 2, size.height + MMSpacing.xxs * 2);
       final middle = cubicPoint(curve, 0.5);
       final right = relationGoesAround(curve) ? middle.dx + MMSpacing.xs + box.width : middle.dx + box.width / 2;
