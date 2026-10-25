@@ -4,8 +4,10 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
+import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import 'notices.dart';
 
 /// Study set sidebar: back to the library, search, then mind maps,
 /// documents and learning tools. Search filters every section at once.
@@ -23,6 +25,9 @@ class WorkspaceSidebar extends ConsumerWidget {
     final provider = workspaceProvider(studySetId);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
+    final content = ref.watch(contentProvider(studySetId)).value;
+    final studySet = ref.watch(studySetProvider(studySetId));
+    final documents = content?.documents ?? const [];
     final query = state.sidebarQuery.trim().toLowerCase();
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
 
@@ -32,28 +37,24 @@ class WorkspaceSidebar extends ConsumerWidget {
           icon: MMIcons.mindMap,
           label: l.mainMap,
           selected: true,
-          trailing: const MMCount(0),
-          onTap: () {},
+          trailing: MMCount(content?.cardCount ?? 0),
+          onTap: () => controller.setLayout(MMSplitMode.secondary),
         ),
     ];
     final docs = [
-      for (final d in state.documents)
+      for (final d in documents)
         if (matches(d.title))
           MMSidebarItem(
             icon: MMIcons.document,
             label: d.title,
+            trailing: MMCount(d.pageCount),
             selected: d.id == state.activeDocumentId,
             onTap: () => controller.openDocument(d.id),
           ),
     ];
     final learn = [
       if (matches(l.review))
-        MMSidebarItem(
-          icon: MMIcons.review,
-          label: l.review,
-          trailing: (state.studySet?.dueCount ?? 0) > 0 ? MMBadge('${state.studySet!.dueCount}') : null,
-          onTap: () => MMHud.show(context, l.comingSoon),
-        ),
+        MMSidebarItem(icon: MMIcons.review, label: l.review, onTap: () => MMHud.show(context, l.comingSoon)),
       if (matches(l.tags))
         MMSidebarItem(icon: MMIcons.tag, label: l.tags, onTap: () => MMHud.show(context, l.comingSoon)),
     ];
@@ -89,12 +90,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      state.studySet?.title ?? '',
-                      style: t.headline,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(studySet?.title ?? '', style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
                   Icon(MMIcons.library, size: 13, color: c.icon),
                 ],
@@ -109,8 +105,8 @@ class WorkspaceSidebar extends ConsumerWidget {
         children: [
           MMIconButton(
             icon: MMIcons.add,
-            tooltip: l.importDocument,
-            onPressed: () => MMHud.show(context, l.comingSoon),
+            tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
+            onPressed: () => pickAndImportDocuments(context, ref, studySetId),
           ),
         ],
       ),

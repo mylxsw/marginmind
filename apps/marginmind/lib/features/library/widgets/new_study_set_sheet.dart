@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -5,6 +6,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../workspace/widgets/notices.dart';
+import '../../workspace/workspace_controller.dart';
 import '../library_controller.dart';
 
 Future<void> showNewStudySetSheet(BuildContext context, WidgetRef ref) {
@@ -47,15 +50,39 @@ class _NewStudySetSheetState extends ConsumerState<NewStudySetSheet> {
     if (!_canCreate) return;
     setState(() => _busy = true);
     final l = context.l10n;
+    var files = const <XFile>[];
+    if (_importAfter) {
+      try {
+        files = await openFiles(
+          acceptedTypeGroups: [
+            XTypeGroup(label: l.pdfFiles, extensions: const ['pdf'], uniformTypeIdentifiers: const ['com.adobe.pdf']),
+          ],
+        );
+      } catch (_) {
+        // No picker available: create the set anyway; import works later.
+      }
+    }
     final created = await ref
         .read(studySetRepositoryProvider)
         .create(NewStudySet(title: _name.text, colorIndex: _color.index, folderId: _folderId));
-    ref.read(libraryViewProvider.notifier)
+    final library = ref.read(libraryViewProvider.notifier)
       ..setFilter(LibraryFilter.all)
       ..select(created.id);
     if (!mounted) return;
-    Navigator.of(context).pop();
-    MMHud.show(context, l.createdHud(created.title));
+    // The sheet is gone after pop(); keep using the app's container.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final navigator = Navigator.of(context);
+    final hudContext = navigator.context;
+    navigator.pop();
+    if (files.isEmpty) {
+      if (hudContext.mounted) MMHud.show(hudContext, l.createdHud(created.title));
+      return;
+    }
+    final notice = await container.read(workspaceProvider(created.id).notifier).importDocuments([
+      for (final f in files) (path: f.path, name: f.name),
+    ]);
+    await library.open(created.id);
+    if (hudContext.mounted) showNotice(hudContext, notice, rootTitle: created.title);
   }
 
   @override

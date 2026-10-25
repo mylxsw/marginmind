@@ -1,0 +1,19 @@
+name: mm_data
+description: MarginMind persistence — study set packages on disk implementing the mm_core ports.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  crypto: ^3.0.6
+  meta: ^1.16.0
+  mm_core:
+    path: ../mm_core
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.26.0

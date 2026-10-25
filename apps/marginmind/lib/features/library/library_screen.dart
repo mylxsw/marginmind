@@ -11,6 +11,7 @@ import '../../app/providers.dart';
 import '../../settings/settings_sheet.dart';
 import '../../shared/l10n.dart';
 import 'library_controller.dart';
+import 'sample_study_set.dart';
 import 'widgets/continue_card.dart';
 import 'widgets/new_study_set_sheet.dart';
 import 'widgets/study_set_card.dart';
@@ -192,25 +193,26 @@ class _LibrarySidebar extends ConsumerWidget {
             item(MMIcons.review, l.libraryDue, LibraryFilter.due, trailing: due > 0 ? MMBadge('$due') : null),
           ],
         ),
-        MMSidebarSection(
-          title: l.libraryFolders,
-          children: [
-            for (final f in folders)
-              item(
-                MMIcons.folder,
-                f.name,
-                FolderFilter(f.id),
-                trailing: MMCount(sets.where((s) => s.folderId == f.id).length),
-              ),
-            if (hasUnfiled)
-              item(
-                MMIcons.folder,
-                l.libraryUnfiled,
-                const FolderFilter(null),
-                trailing: MMCount(sets.where((s) => s.folderId == null).length),
-              ),
-          ],
-        ),
+        if (folders.isNotEmpty || hasUnfiled)
+          MMSidebarSection(
+            title: l.libraryFolders,
+            children: [
+              for (final f in folders)
+                item(
+                  MMIcons.folder,
+                  f.name,
+                  FolderFilter(f.id),
+                  trailing: MMCount(sets.where((s) => s.folderId == f.id).length),
+                ),
+              if (hasUnfiled)
+                item(
+                  MMIcons.folder,
+                  l.libraryUnfiled,
+                  const FolderFilter(null),
+                  trailing: MMCount(sets.where((s) => s.folderId == null).length),
+                ),
+            ],
+          ),
         const SizedBox(height: 12),
         MMSidebarItem(
           icon: MMIcons.trash,
@@ -276,7 +278,17 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
             variant: MMButtonVariant.primary,
             onPressed: () => showNewStudySetSheet(context, ref),
           ),
-          MMButton(label: l.openSample, onPressed: () => MMHud.show(context, l.comingSoon)),
+          MMButton(
+            label: l.openSample,
+            onPressed: () async {
+              try {
+                final id = await createSampleStudySet(ref, l);
+                await controller.open(id);
+              } catch (error) {
+                if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);
+              }
+            },
+          ),
         ],
       );
     }

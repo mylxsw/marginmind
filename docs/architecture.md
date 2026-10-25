@@ -7,9 +7,12 @@
 ## 包与依赖
 
 ```
-apps/marginmind ──► mm_design   (令牌、主题、组件)
-        │      ──► mm_platform (窗口、快捷键、系统外观)
-        └──────► mm_core      (实体、端口、查询；纯 Dart)
+apps/marginmind ──► mm_design    (令牌、主题、组件)
+        │      ──► mm_platform  (窗口、快捷键、系统外观)
+        │      ──► mm_pdf ─────┐ (PDF 渲染、选字、高亮叠加)
+        │      ──► mm_data ────┤ (学习集文件包)
+        │      ──► mm_layout   │ (脑图树布局；纯 Dart)
+        └──────► mm_core ◄─────┘ (实体、编辑操作、端口、查询；纯 Dart)
 ```
 
 | 包 | 职责 | 可以依赖 |
@@ -17,9 +20,14 @@ apps/marginmind ──► mm_design   (令牌、主题、组件)
 | `mm_core` | 实体（`StudySet`、`Folder`）、仓库端口（`StudySetRepository`）、纯查询（`LibraryQuery`）。`testing.dart` 提供内存实现和示例数据。 | 仅 Dart 标准库与 `meta` |
 | `mm_design` | 设计令牌、`MMTheme`、所有可复用组件。不含业务概念，不含文案。 | Flutter、`cupertino_icons` |
 | `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`window_manager`、`macos_window_utils` |
+| `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
+| `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
+| `mm_layout` | `TreeLayout`：向右生长的树，父节点在子树块中垂直居中。输入节点尺寸，输出矩形和连线。 | 仅 `meta` |
 | `apps/marginmind` | 组合根：Riverpod providers、路由、菜单与快捷键、功能界面、多语言。 | 以上全部 |
 
-规划中的包（见设计稿 04）：`mm_data`（drift/SQLite 实现仓库端口）、`mm_pdf`（`PdfEngine` 的 pdfrx 实现）、`mm_layout`（脑图布局算法，纯 Dart）。
+### 数据模型（`mm_core/content`）
+
+`StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（页码 + PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note）、`MapNode`（卡片在脑图中的位置：父节点 + 排序）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`removeFromMap`、`deleteAnnotation`…），仓库的 `update(id, change)` 负责原子地应用并保存。这让撤销 / 重做只需保存快照或逆操作，也让测试不依赖界面。
 
 ## 应用内的分层
 
@@ -63,3 +71,7 @@ Flutter 自己绘制每个像素，“像 Mac”不会自动发生。目前交�
 | 字体 | 不打包字体；macOS 上使用系统字体（SF Pro + 苹方），原文用宋体 |
 
 尚未完成：侧栏使用真正的 `NSVisualEffectView`（目前用 Flutter 的 `BackdropFilter` 模拟）、右键原生菜单、多窗口。
+
+## 存储位置
+
+macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Containers/io.github.mylxsw.marginmind/Data/Library/Application Support/io.github.mylxsw.marginmind/Library/sets/<id>.mmset/`。

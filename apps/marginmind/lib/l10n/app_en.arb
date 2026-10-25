@@ -250,5 +250,66 @@
   "galleryShowHud": "Show HUD",
   "galleryShowSheet": "Show Sheet",
   "galleryHudMessage": "Excerpted to “Patterns of forgetting”",
-  "back": "Back"
+  "back": "Back",
+  "importPdf": "Import PDF…",
+  "importedHud": "{count, plural, =1{Imported 1 document} other{Imported {count} documents}}",
+  "@importedHud": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importFailed": "Couldn’t open “{name}” as a PDF",
+  "@importFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfFiles": "PDF documents",
+  "excerptAction": "Excerpt to Map",
+  "highlightAction": "Highlight",
+  "copyAction": "Copy",
+  "addToMapAction": "Add to Map",
+  "deleteHighlight": "Delete Highlight",
+  "excerptedHud": "Excerpted to “{target}”",
+  "@excerptedHud": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "highlightedHud": "Highlighted",
+  "copiedHud": "Copied",
+  "removedHud": "Removed from the map; the highlight stays in the source",
+  "highlightDeletedHud": "Highlight deleted",
+  "rename": "Rename…",
+  "renameTitle": "Rename",
+  "editNote": "Edit Note",
+  "save": "Save",
+  "newTopicName": "New Topic",
+  "newNoteText": "New note",
+  "untitledExcerpt": "Untitled excerpt",
+  "revealSource": "Reveal in Source",
+  "menuMap": "Map",
+  "documentPages": "{count} pages",
+  "@documentPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sampleSetTitle": "Sample: Forgetting & Spaced Repetition",
+  "sampleTopic1": "How we forget",
+  "sampleTopic2": "Spaced repetition",
+  "sampleTopic3": "Active recall",
+  "readerHintHighlight": "Drag across text to excerpt it",
+  "readerHintSelect": "Select text, then choose an action",
+  "outlineEmpty": "Nothing in the outline yet",
+  "sampleDocTitle": "Sample chapter: The forgetting curve",
+  "somethingWentWrong": "Something went wrong. Please try again."
 }

@@ -56,6 +56,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('New Study Set'), findsWidgets);
     await tester.enterText(find.byType(TextField).last, '认知心理学');
+    await tester.tap(find.text('Import PDFs after creating…'));
     await tester.pump();
     await tester.tap(find.text('Create'));
     await tester.pumpAndSettle();
