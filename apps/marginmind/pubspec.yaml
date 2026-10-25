@@ -1,7 +1,7 @@
 name: marginmind
 description: "MarginMind — read, excerpt and map what you learn."
 publish_to: none
-version: 0.3.0+3
+version: 0.4.0+4
 resolution: workspace
 
 environment:
