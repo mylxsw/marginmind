@@ -47,46 +47,31 @@ class _MapPaneState extends ConsumerState<MapPane> {
     setState(() {});
   }
 
-  bool get _showsMap => ref.read(workspaceProvider(widget.studySetId)).mapView == MapViewMode.map;
+  /// Every card is edited in place, on the map and in the outline.
+  void rename(String cardId) => ref.read(workspaceProvider(widget.studySetId).notifier).beginEditing(cardId);
 
-  /// Topics on the map are edited in place; other cards (and the outline)
-  /// still ask in a sheet.
-  Future<void> rename(String cardId) async {
-    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
-    final card = controller.content.card(cardId);
-    if (card == null) return;
-    if (card.kind == CardKind.topic && _showsMap) {
-      controller.beginEditing(cardId);
-      return;
-    }
-    await renameCard(card);
-  }
+  /// A new topic opens for editing in place; Esc removes it again.
+  Future<void> addTopic({bool asChild = false}) => ref
+      .read(workspaceProvider(widget.studySetId).notifier)
+      .addTopicAndEdit(context.l10n.newTopicName, asChild: asChild);
 
-  /// A new topic: on the map it opens for editing in place (Esc removes
-  /// it again); in the outline its name is asked for in a sheet.
-  Future<void> addTopic({bool asChild = false}) async {
+  /// A new note under the selection, open for editing like a new topic.
+  Future<void> addNote() =>
+      ref.read(workspaceProvider(widget.studySetId).notifier).addNoteAndEdit(context.l10n.newNoteText);
+
+  void _command(MindMapCommand command) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
-    if (_showsMap) {
-      await controller.addTopicAndEdit(l.newTopicName, asChild: asChild);
-      return;
+    switch (command) {
+      case MindMapCommand.siblingAfter || MindMapCommand.siblingBefore:
+        controller.addTopicAndEdit(l.newTopicName, siblingBefore: command == MindMapCommand.siblingBefore);
+      case MindMapCommand.parent:
+        controller.addTopicAndEdit(l.newTopicName, asParent: true);
+      case MindMapCommand.promote:
+        controller.promoteSelected();
+      default:
+        break;
     }
-    final card = await controller.addTopic(l.newTopicName, asChild: asChild);
-    if (mounted) await renameCard(card);
-  }
-
-  /// Asks for a new title; used right after creating a card too, before the
-  /// content stream has delivered it.
-  Future<void> renameCard(Card card) async {
-    final l = context.l10n;
-    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
-    final cardId = card.id;
-    final title = await showRenameSheet(
-      context,
-      title: card.kind == CardKind.note ? l.editNote : l.renameTitle,
-      initial: card.title,
-    );
-    if (title != null) await controller.rename(cardId, title);
   }
 
   void _showNodeMenu(String? cardId, Offset position, Future<void> Function() remove) {
@@ -96,11 +81,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final card = cardId == null ? null : content.card(cardId);
     final node = cardId == null ? null : content.node(cardId);
     final hasChildren = content.childrenOf(cardId).isNotEmpty;
-
-    Future<void> addNote() async {
-      final created = await controller.addNote(l.newNoteText);
-      if (mounted) await renameCard(created);
-    }
 
     showMMMenu(
       context,
@@ -176,21 +156,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onNavigate: controller.selectNeighbor,
                     onShift: controller.shiftSelected,
                     onAddChild: () => addTopic(asChild: true),
-                    onCommand: (command) {
-                      switch (command) {
-                        case MindMapCommand.siblingAfter || MindMapCommand.siblingBefore:
-                          controller.addTopicAndEdit(
-                            l.newTopicName,
-                            siblingBefore: command == MindMapCommand.siblingBefore,
-                          );
-                        case MindMapCommand.parent:
-                          controller.addTopicAndEdit(l.newTopicName, asParent: true);
-                        case MindMapCommand.promote:
-                          controller.promoteSelected();
-                        default:
-                          break;
-                      }
-                    },
+                    onCommand: _command,
                     editingCardId: state.editingCardId,
                     onEditDone: controller.finishEditing,
                     onEditCancel: controller.cancelEditing,
@@ -200,9 +166,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     content: content,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
+                    focusNode: _focus,
                     onSelect: controller.selectCard,
                     onReveal: controller.revealCard,
                     onRename: rename,
+                    onDelete: remove,
+                    onAddChild: () => addTopic(asChild: true),
+                    onShift: controller.shiftSelected,
+                    onCommand: _command,
+                    editingCardId: state.editingCardId,
+                    onEditDone: controller.finishEditing,
+                    onEditCancel: controller.cancelEditing,
                   ),
           ),
           if (content.cards.isEmpty && state.mapView == MapViewMode.map)
@@ -268,14 +242,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             child: MMToolbarGroup(
               children: [
                 MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
-                MMToolbarButton(
-                  icon: MMIcons.addNote,
-                  tooltip: l.addNote,
-                  onPressed: () async {
-                    final card = await controller.addNote(l.newNoteText);
-                    if (mounted) await renameCard(card);
-                  },
-                ),
+                MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
                 MMToolbarButton(
                   icon: MMIcons.trash,
                   tooltip: l.removeFromMap,

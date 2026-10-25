@@ -237,14 +237,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final map = <AppCommand>[
       AppCommand(
         l.addTopic,
-        editable
-            ? () => workspaceState?.mapView == MapViewMode.map
-                  ? workspace.addTopicAndEdit(l.newTopicName)
-                  : workspace.addTopic(l.newTopicName)
-            : null,
+        editable ? () => workspace.addTopicAndEdit(l.newTopicName) : null,
         shortcut: AppShortcuts.addTopic,
       ),
-      AppCommand(l.addNote, editable ? () => workspace.addNote(l.newNoteText) : null, shortcut: AppShortcuts.addNote),
+      AppCommand(
+        l.addNote,
+        editable ? () => workspace.addNoteAndEdit(l.newNoteText) : null,
+        shortcut: AppShortcuts.addNote,
+      ),
       AppCommand(
         l.revealSource,
         workspace != null && selected != null && workspace.content.card(selected)?.annotationId != null

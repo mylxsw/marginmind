@@ -127,7 +127,7 @@ class WorkspaceState {
   final String? flashCardId;
   final String? flashAnnotationId;
 
-  /// Topic whose title is being edited in place on the map.
+  /// Card whose title (a note's text) is being edited in place.
   final String? editingCardId;
   final PendingAction? pending;
   final RevealRequest? reveal;
@@ -629,13 +629,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   _EditSession? _editing;
 
-  /// A topic is being created for editing; no other edit may start yet.
+  /// A card is being created for editing; no other edit may start yet.
   bool _creating = false;
 
-  /// Starts editing a topic's title in place. Nothing is written until
-  /// [finishEditing], so the whole edit is one undo step.
+  /// Starts editing a card's title (a note's text) in place. Nothing is
+  /// written until [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
-    if (_editing != null || _creating || content.card(cardId)?.kind != CardKind.topic) return;
+    if (_editing != null || _creating || content.card(cardId) == null) return;
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId);
   }
@@ -643,46 +643,53 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Adds a topic (see [addTopic]) and starts editing it. Creation and the
   /// typed title commit as one undo step; cancelling leaves no node and no
   /// history.
-  Future<Card?> addTopicAndEdit(
-    String title, {
-    bool asChild = false,
-    bool? siblingBefore,
-    bool asParent = false,
-  }) async {
+  Future<Card?> addTopicAndEdit(String title, {bool asChild = false, bool? siblingBefore, bool asParent = false}) {
+    if ((siblingBefore != null || asParent) && state.selectedCardId == null) return Future.value();
+    return _createAndEdit((previous) async {
+      if (siblingBefore != null || asParent) {
+        Card? created;
+        await _update((c) {
+          final (next, added) = asParent
+              ? _editor.insertParent(c, previous, title: title)
+              : _editor.insertSibling(c, previous, title: title, before: siblingBefore!);
+          created = added;
+          return next;
+        });
+        if (created != null) state = state.copyWith(selectedCardId: created!.id);
+        return created;
+      }
+      final card = await addTopic(title, asChild: asChild);
+      // A child added beneath a folded node must be visible for editing.
+      final parent = content.node(card.id)?.parentId;
+      if (parent != null) {
+        await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
+      }
+      return card;
+    });
+  }
+
+  /// Adds a note under the selection (see [addNote]) and starts editing its
+  /// text, as one undo step like [addTopicAndEdit].
+  Future<Card?> addNoteAndEdit(String text) => _createAndEdit((_) => addNote(text));
+
+  /// Runs [create] (given the selection before it) in a transaction and opens
+  /// the created card for editing. A null card aborts the transaction.
+  Future<Card?> _createAndEdit(Future<Card?> Function(String? previous) create) async {
     if (_editing != null || _creating) return null;
-    if ((siblingBefore != null || asParent) && state.selectedCardId == null) return null;
     _creating = true;
     final previous = state.selectedCardId;
-    final Card card;
+    final Card? card;
     try {
       await beginTransaction();
       try {
-        if (siblingBefore != null || asParent) {
-          Card? created;
-          await _update((c) {
-            final (next, added) = asParent
-                ? _editor.insertParent(c, previous, title: title)
-                : _editor.insertSibling(c, previous, title: title, before: siblingBefore!);
-            created = added;
-            return next;
-          });
-          if (created == null) {
-            await abortTransaction();
-            return null;
-          }
-          card = created!;
-          state = state.copyWith(selectedCardId: card.id);
-        } else {
-          card = await addTopic(title, asChild: asChild);
-          // A child added beneath a folded node must be visible for editing.
-          final parent = content.node(card.id)?.parentId;
-          if (parent != null) {
-            await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
-          }
-        }
+        card = await create(previous);
       } catch (_) {
         await abortTransaction();
         rethrow;
+      }
+      if (card == null) {
+        await abortTransaction();
+        return null;
       }
     } finally {
       _creating = false;
@@ -692,8 +699,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return card;
   }
 
-  /// Enter or clicking elsewhere. An empty title keeps the old one, or
-  /// drops a node created for this edit.
+  /// Enter or clicking elsewhere. An empty title keeps the old one (an
+  /// excerpt's is cleared), or drops a node created for this edit.
   Future<void> finishEditing(String text) async {
     final session = _editing;
     if (session == null) return;
@@ -708,7 +715,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         } finally {
           await commitTransaction();
         }
-      } else if (title.isNotEmpty && title != content.card(session.cardId)?.title) {
+      } else if (content.card(session.cardId) case final card?
+          when (title.isNotEmpty || card.kind == CardKind.excerpt) && title != card.title) {
+        // An excerpt's title is optional: clearing it shows the quote again.
         await rename(session.cardId, title);
       }
     } finally {
