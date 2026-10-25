@@ -93,7 +93,9 @@ class MMPdfView extends StatefulWidget {
 
   /// Selection appeared (non-null) or was cleared (null).
   final ValueChanged<bool>? onSelectionChanged;
-  final ValueChanged<String>? onHighlightTap;
+
+  /// Highlight bounds are in viewport coordinates, matching selection bounds.
+  final void Function(String id, Rect viewportRect)? onHighlightTap;
   final VoidCallback? onViewportChanged;
 
   @override
@@ -204,7 +206,23 @@ class _MMPdfViewState extends State<MMPdfView> {
                   rect: rect.inflate(1),
                   child: PdfOverlayInteractionRegion(
                     onTap: (_) {
-                      widget.onHighlightTap?.call(h.id);
+                      // Cancel a pending text-selection commit from this click.
+                      _selectionEpoch++;
+                      final bounds = h.rects
+                          .map(
+                            (r) => _controller.calcRectForRectInsidePage(
+                              pageNumber: h.page,
+                              rect: PdfRect(r.left, r.top, r.right, r.bottom),
+                            ),
+                          )
+                          .reduce((a, b) => a.expandToInclude(b));
+                      widget.onHighlightTap?.call(
+                        h.id,
+                        Rect.fromPoints(
+                          _controller.documentToLocal(bounds.topLeft),
+                          _controller.documentToLocal(bounds.bottomRight),
+                        ),
+                      );
                       return true;
                     },
                     child: IgnorePointer(

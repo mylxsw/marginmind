@@ -76,7 +76,7 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand { excerpt, highlight, copy, note }
+enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight }
 
 class ReaderSelectionIntent extends Intent {
   const ReaderSelectionIntent(this.command);
@@ -199,16 +199,32 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     }
 
     final selectionOpen = workspaceState?.pending is PendingSelection && !_textFocused;
+    final highlightOpen = workspaceState?.pending is PendingHighlight && !_textFocused;
+    final highlightCard = switch (workspaceState?.pending) {
+      PendingHighlight(:final annotationId) => workspace?.content.cardForAnnotation(annotationId),
+      _ => null,
+    };
     edit.addAll([
       for (final entry in {
-        ReaderSelectionCommand.excerpt: l.excerptAction,
+        ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
         ReaderSelectionCommand.copy: l.copyAction,
         ReaderSelectionCommand.note: l.excerptWithNote,
+        ReaderSelectionCommand.locateCard: l.locateCard,
+        ReaderSelectionCommand.deleteHighlight: l.deleteHighlight,
       }.entries)
         AppCommand(
           entry.value,
-          selectionOpen ? () => invokeSelection(entry.key) : null,
+          (selectionOpen &&
+                      entry.key != ReaderSelectionCommand.locateCard &&
+                      entry.key != ReaderSelectionCommand.deleteHighlight) ||
+                  (highlightOpen &&
+                      (entry.key == ReaderSelectionCommand.copy ||
+                          entry.key == ReaderSelectionCommand.deleteHighlight ||
+                          (entry.key == ReaderSelectionCommand.excerpt && highlightCard == null) ||
+                          (entry.key == ReaderSelectionCommand.locateCard && highlightCard != null)))
+              ? () => invokeSelection(entry.key)
+              : null,
           shortcut: readerSelectionShortcuts.entries
               .where((e) => e.value.command == entry.key)
               .map((e) => e.key as SingleActivator)

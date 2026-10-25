@@ -98,9 +98,6 @@ void main() {
     await tester.pumpAndSettle();
     final provider = workspaceProvider('demo-1');
     final controller = container.read(provider.notifier);
-    // The existing selection bar needs a full-width reader (replaced in B4).
-    controller.setLayout(MMSplitMode.primary);
-    await tester.pumpAndSettle();
     expect(container.read(provider).tool, AnnotationTool.select);
     await controller.onSelectionCommitted('c1', selection);
     await tester.pumpAndSettle();

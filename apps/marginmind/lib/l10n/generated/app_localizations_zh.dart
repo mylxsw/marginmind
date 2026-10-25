@@ -734,6 +734,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get locateCard => '定位卡片';
+
+  @override
   String get excerptWithNote => '摘录并添加笔记';
 
   @override
