@@ -6,15 +6,71 @@ import 'study_set_content.dart';
 /// Every change to a study set's content, as pure functions. The UI calls
 /// these through the repository; tests call them directly.
 class StudySetEditor {
-  StudySetEditor({required this.newId, required this.now});
+  StudySetEditor({required this.newId, required this.now, this.mapId = MindMap.defaultId});
+
+  final String mapId;
 
   final String Function() newId;
   final DateTime Function() now;
 
+  (StudySetContent, MindMap) addMap(StudySetContent c, {required String title}) {
+    final map = MindMap(id: newId(), title: title.trim());
+    return (c.copyWith(maps: [...c.maps, map]), map);
+  }
+
+  StudySetContent renameMap(StudySetContent c, String id, String title) =>
+      c.copyWith(maps: [for (final m in c.maps) m.id == id ? m.copyWith(title: title.trim()) : m]);
+
+  /// The compatibility main map remains available to existing callers.
+  StudySetContent removeMap(StudySetContent c, String id) {
+    if (id == MindMap.defaultId) return c;
+    return c.copyWith(
+      maps: [
+        for (final m in c.maps)
+          if (m.id != id) m,
+      ],
+      nodes: [
+        for (final n in c.nodes)
+          if (n.mapId != id) n,
+      ],
+    );
+  }
+
+  /// Places shared content once per map; parent ids are local to that map.
+  StudySetContent placeCard(StudySetContent c, String cardId, {String? parentId}) {
+    if (c.map(mapId) == null || c.card(cardId) == null || c.node(cardId, mapId: mapId) != null) return c;
+    if (parentId != null && c.node(parentId, mapId: mapId) == null) return c;
+    return c.copyWith(
+      nodes: [
+        for (final n in c.nodes) n.mapId == mapId && n.cardId == parentId ? n.copyWith(collapsed: false) : n,
+        MapNode(mapId: mapId, cardId: cardId, parentId: parentId, order: _nextOrder(c, parentId)),
+      ],
+    );
+  }
+
+  /// Image bytes are imported through the repository before this pure edit.
+  (StudySetContent, Card) createImage(
+    StudySetContent c, {
+    required String imageFileName,
+    required String annotationId,
+    String title = '',
+    String? parentId,
+  }) {
+    final card = Card(
+      id: newId(),
+      kind: CardKind.image,
+      title: title.trim(),
+      annotationId: annotationId,
+      imageFileName: imageFileName,
+      createdAt: now(),
+    );
+    return (_place(c, card, parentId), card);
+  }
+
   /// Inserts a portable forest in one immutable edit. Missing source documents
   /// become notes containing the quote instead of dangling excerpt references.
   (StudySetContent, List<String>) paste(StudySetContent c, List<OutlineEntry> entries, {String? parentId}) {
-    if (parentId != null && c.node(parentId) == null) return (c, const []);
+    if (parentId != null && c.node(parentId, mapId: mapId) == null) return (c, const []);
     final cards = [...c.cards];
     final nodes = [...c.nodes];
     final annotations = [...c.annotations];
@@ -29,7 +85,18 @@ class StudySetEditor {
       String? annotationId;
       var kind = entry.kind;
       var title = entry.title;
-      if (kind == CardKind.excerpt) {
+      String? imageFileName;
+      if (kind == CardKind.image) {
+        // A cut leaves its source annotation and image file in the package.
+        final retainedSource = source != null && c.annotation(source.id)?.documentId == source.documentId;
+        if (entry.imageFileName != null &&
+            (retainedSource || c.cards.any((c) => c.imageFileName == entry.imageFileName))) {
+          imageFileName = entry.imageFileName;
+        } else {
+          kind = CardKind.note;
+        }
+      }
+      if (kind == CardKind.excerpt || kind == CardKind.image) {
         final existing = source == null ? null : c.annotation(source.id);
         // Cutting leaves the source highlight in place. Reattach it once;
         // an already attached highlight is copied independently instead.
@@ -43,8 +110,7 @@ class StudySetEditor {
             Annotation(
               id: annotationId,
               documentId: source.documentId,
-              page: source.page,
-              rects: source.rects,
+              pages: source.pages,
               quote: source.quote,
               colorIndex: source.colorIndex,
               createdAt: now(),
@@ -52,12 +118,23 @@ class StudySetEditor {
           );
         } else {
           kind = CardKind.note;
+          imageFileName = null;
           title = [if (title.isNotEmpty) title, if (source != null) source.quote].join('\n');
         }
       }
-      cards.add(Card(id: id, kind: kind, title: title, annotationId: annotationId, createdAt: now()));
+      cards.add(
+        Card(
+          id: id,
+          kind: kind,
+          title: title,
+          annotationId: annotationId,
+          imageFileName: imageFileName,
+          createdAt: now(),
+        ),
+      );
       nodes.add(
         MapNode(
+          mapId: mapId,
           cardId: id,
           parentId: parents.lastOrNull ?? parentId,
           order: entry.depth == 0 ? order++ : nodes.length.toDouble(),
@@ -73,7 +150,10 @@ class StudySetEditor {
       c.copyWith(
         cards: cards,
         annotations: annotations,
-        nodes: [for (final node in nodes) node.cardId == parentId ? node.copyWith(collapsed: false) : node],
+        nodes: [
+          for (final node in nodes)
+            node.mapId == mapId && node.cardId == parentId ? node.copyWith(collapsed: false) : node,
+        ],
       ),
       roots,
     );
@@ -82,16 +162,16 @@ class StudySetEditor {
   /// Where a new excerpt goes when [selectedCardId] is selected: under a
   /// selected topic, next to a selected excerpt/note (its parent), else the
   /// root. Returns a card id or null for the root.
-  static String? excerptTarget(StudySetContent c, String? selectedCardId) {
+  static String? excerptTarget(StudySetContent c, String? selectedCardId, {String mapId = MindMap.defaultId}) {
     if (selectedCardId == null) return null;
     final card = c.card(selectedCardId);
-    final node = c.node(selectedCardId);
+    final node = c.node(selectedCardId, mapId: mapId);
     if (card == null || node == null) return null;
     return card.kind == CardKind.topic ? card.id : node.parentId;
   }
 
   double _nextOrder(StudySetContent c, String? parentId) {
-    final siblings = c.childrenOf(parentId);
+    final siblings = c.childrenOf(parentId, mapId: mapId);
     return siblings.isEmpty ? 1 : siblings.last.order + 1;
   }
 
@@ -114,8 +194,9 @@ class StudySetEditor {
   (StudySetContent, Annotation) highlight(
     StudySetContent c, {
     required String documentId,
-    required int page,
-    required List<PageRect> rects,
+    int? page,
+    List<PageRect>? rects,
+    List<AnnotationPage>? pages,
     required String quote,
     required int colorIndex,
   }) {
@@ -124,6 +205,7 @@ class StudySetEditor {
       documentId: documentId,
       page: page,
       rects: rects,
+      pages: pages,
       quote: quote.trim(),
       colorIndex: colorIndex,
       createdAt: now(),
@@ -135,8 +217,9 @@ class StudySetEditor {
   (StudySetContent, Card) createExcerpt(
     StudySetContent c, {
     required String documentId,
-    required int page,
-    required List<PageRect> rects,
+    int? page,
+    List<PageRect>? rects,
+    List<AnnotationPage>? pages,
     required String quote,
     required int colorIndex,
     String? parentId,
@@ -146,6 +229,7 @@ class StudySetEditor {
       documentId: documentId,
       page: page,
       rects: rects,
+      pages: pages,
       quote: quote,
       colorIndex: colorIndex,
     );
@@ -155,7 +239,7 @@ class StudySetEditor {
   /// Turns an existing highlight into an excerpt card on the map.
   (StudySetContent, Card) attachCard(StudySetContent c, String annotationId, {String? parentId}) {
     final existing = c.cardForAnnotation(annotationId);
-    if (existing != null) return (c, existing);
+    if (existing != null) return (placeCard(c, existing.id, parentId: parentId), existing);
     final card = Card(id: newId(), kind: CardKind.excerpt, annotationId: annotationId, createdAt: now());
     return (_place(c, card, parentId), card);
   }
@@ -172,9 +256,9 @@ class StudySetEditor {
     bool before = false,
   }) {
     if (cardId == null) return addTopic(c, title: title);
-    final node = c.node(cardId);
+    final node = c.node(cardId, mapId: mapId);
     if (node == null) return (c, null);
-    final siblings = c.childrenOf(node.parentId);
+    final siblings = c.childrenOf(node.parentId, mapId: mapId);
     final index = siblings.indexWhere((n) => n.cardId == cardId) + (before ? 0 : 1);
     final (next, card) = addTopic(c, title: title, parentId: node.parentId);
     return (move(next, card.id, node.parentId, index: index), card);
@@ -183,26 +267,26 @@ class StudySetEditor {
   /// Lifts a node after its parent, keeping its subtree intact.
   /// Root children and the virtual root cannot be lifted further.
   StudySetContent promote(StudySetContent c, String? cardId) {
-    final node = cardId == null ? null : c.node(cardId);
-    final parent = node?.parentId == null ? null : c.node(node!.parentId!);
+    final node = cardId == null ? null : c.node(cardId, mapId: mapId);
+    final parent = node?.parentId == null ? null : c.node(node!.parentId!, mapId: mapId);
     if (parent == null) return c;
-    final index = c.childrenOf(parent.parentId).indexWhere((n) => n.cardId == parent.cardId) + 1;
+    final index = c.childrenOf(parent.parentId, mapId: mapId).indexWhere((n) => n.cardId == parent.cardId) + 1;
     return move(c, cardId!, parent.parentId, index: index);
   }
 
   /// Wraps a node in a new topic at its existing sibling position.
   /// The virtual root and missing nodes cannot acquire a parent.
   (StudySetContent, Card?) insertParent(StudySetContent c, String? cardId, {required String title}) {
-    final node = cardId == null ? null : c.node(cardId);
+    final node = cardId == null ? null : c.node(cardId, mapId: mapId);
     if (node == null) return (c, null);
     final (next, parent) = addTopic(c, title: title, parentId: node.parentId);
     return (
       next.copyWith(
         nodes: [
           for (final n in next.nodes)
-            if (n.cardId == parent.id)
+            if (n.mapId == mapId && n.cardId == parent.id)
               n.copyWith(order: node.order)
-            else if (n.cardId == cardId)
+            else if (n.mapId == mapId && n.cardId == cardId)
               n.copyWith(parentId: parent.id, order: 1)
             else
               n,
@@ -216,17 +300,17 @@ class StudySetEditor {
   StudySetContent removeMany(StudySetContent c, Iterable<String> cardIds) {
     final kill = <String>{};
     for (final id in cardIds.toSet()) {
-      if (c.node(id) != null) kill.addAll(_subtree(c, id));
+      if (c.node(id, mapId: mapId) != null) kill.addAll(_subtree(c, id));
     }
     if (kill.isEmpty) return c;
     return c.copyWith(
       cards: [
         for (final card in c.cards)
-          if (!kill.contains(card.id)) card,
+          if (!kill.contains(card.id) || c.nodes.any((n) => n.mapId != mapId && n.cardId == card.id)) card,
       ],
       nodes: [
         for (final node in c.nodes)
-          if (!kill.contains(node.cardId)) node,
+          if (node.mapId != mapId || !kill.contains(node.cardId)) node,
       ],
     );
   }
@@ -236,11 +320,11 @@ class StudySetEditor {
   /// Index refers to destination siblings after removing the selection.
   /// Invalid destinations reject the entire operation, never a partial move.
   StudySetContent moveMany(StudySetContent c, Iterable<String> cardIds, String? parentId, {int? index}) {
-    if (parentId != null && c.node(parentId) == null) return c;
+    if (parentId != null && c.node(parentId, mapId: mapId) == null) return c;
     final selected = cardIds.toSet();
     final roots = <MapNode>[];
     void walk(String? parent) {
-      for (final node in c.childrenOf(parent)) {
+      for (final node in c.childrenOf(parent, mapId: mapId)) {
         if (selected.contains(node.cardId)) {
           roots.add(node);
         } else {
@@ -253,16 +337,16 @@ class StudySetEditor {
     if (roots.isEmpty) return c;
     if (parentId != null && roots.any((n) => _subtree(c, n.cardId).contains(parentId))) return c;
     final ids = roots.map((n) => n.cardId).toSet();
-    final siblings = c.childrenOf(parentId).where((n) => !ids.contains(n.cardId)).toList();
+    final siblings = c.childrenOf(parentId, mapId: mapId).where((n) => !ids.contains(n.cardId)).toList();
     siblings.insertAll((index ?? siblings.length).clamp(0, siblings.length), roots);
     // Renumber the destination together to avoid equal fractional orders.
     final orders = {for (var i = 0; i < siblings.length; i++) siblings[i].cardId: (i + 1).toDouble()};
     return c.copyWith(
       nodes: [
         for (final n in c.nodes)
-          if (orders.containsKey(n.cardId))
+          if (n.mapId == mapId && orders.containsKey(n.cardId))
             n.copyWith(parentId: parentId, toRoot: parentId == null, order: orders[n.cardId])
-          else if (n.cardId == parentId && n.collapsed)
+          else if (n.mapId == mapId && n.cardId == parentId && n.collapsed)
             n.copyWith(collapsed: false)
           else
             n,
@@ -276,7 +360,8 @@ class StudySetEditor {
     final selected = cardIds.toSet();
     final annotations = {
       for (final card in c.cards)
-        if (selected.contains(card.id) && c.node(card.id) != null && card.annotationId != null) card.annotationId!,
+        if (selected.contains(card.id) && c.node(card.id, mapId: mapId) != null && card.annotationId != null)
+          card.annotationId!,
     };
     if (!c.annotations.any((a) => annotations.contains(a.id) && a.colorIndex != colorIndex)) return c;
     return c.copyWith(
@@ -295,10 +380,14 @@ class StudySetEditor {
   /// Adds [card] as the last child of [parentId], expanding the parent so
   /// the new card is visible.
   StudySetContent _place(StudySetContent c, Card card, String? parentId) {
-    final node = MapNode(cardId: card.id, parentId: parentId, order: _nextOrder(c, parentId));
+    final node = MapNode(mapId: mapId, cardId: card.id, parentId: parentId, order: _nextOrder(c, parentId));
     return c.copyWith(
       cards: [...c.cards, card],
-      nodes: [for (final n in c.nodes) n.cardId == parentId && n.collapsed ? n.copyWith(collapsed: false) : n, node],
+      nodes: [
+        for (final n in c.nodes)
+          n.mapId == mapId && n.cardId == parentId && n.collapsed ? n.copyWith(collapsed: false) : n,
+        node,
+      ],
     );
   }
 
@@ -313,10 +402,11 @@ class StudySetEditor {
   /// the new siblings (end when null). Refuses to move a node under itself
   /// or its own descendants.
   StudySetContent move(StudySetContent c, String cardId, String? newParentId, {int? index}) {
-    if (c.node(cardId) == null) return c;
+    if (c.node(cardId, mapId: mapId) == null) return c;
+    if (newParentId != null && c.node(newParentId, mapId: mapId) == null) return c;
     if (newParentId != null && _subtree(c, cardId).contains(newParentId)) return c;
     final siblings = [
-      for (final n in c.childrenOf(newParentId))
+      for (final n in c.childrenOf(newParentId, mapId: mapId))
         if (n.cardId != cardId) n,
     ];
     final i = (index ?? siblings.length).clamp(0, siblings.length);
@@ -333,24 +423,27 @@ class StudySetEditor {
     return c.copyWith(
       nodes: [
         for (final n in c.nodes)
-          n.cardId == cardId ? n.copyWith(parentId: newParentId, toRoot: newParentId == null, order: order) : n,
+          n.mapId == mapId && n.cardId == cardId
+              ? n.copyWith(parentId: newParentId, toRoot: newParentId == null, order: order)
+              : n,
       ],
     );
   }
 
   /// Moves a node one place up (-1) or down (+1) among its siblings.
   StudySetContent shift(StudySetContent c, String cardId, int delta) {
-    final node = c.node(cardId);
+    final node = c.node(cardId, mapId: mapId);
     if (node == null) return c;
-    final siblings = c.childrenOf(node.parentId);
+    final siblings = c.childrenOf(node.parentId, mapId: mapId);
     final i = siblings.indexWhere((n) => n.cardId == cardId);
     final target = i + delta;
     if (target < 0 || target >= siblings.length) return c;
     return move(c, cardId, node.parentId, index: target);
   }
 
-  StudySetContent setCollapsed(StudySetContent c, String cardId, {required bool collapsed}) =>
-      c.copyWith(nodes: [for (final n in c.nodes) n.cardId == cardId ? n.copyWith(collapsed: collapsed) : n]);
+  StudySetContent setCollapsed(StudySetContent c, String cardId, {required bool collapsed}) => c.copyWith(
+    nodes: [for (final n in c.nodes) n.mapId == mapId && n.cardId == cardId ? n.copyWith(collapsed: collapsed) : n],
+  );
 
   /// Records a review of [cardId] rated [rating].
   StudySetContent rate(StudySetContent c, String cardId, Rating rating) {
@@ -402,19 +495,24 @@ class StudySetEditor {
     return c.copyWith(
       cards: [
         for (final card in c.cards)
-          if (!kill.contains(card.id)) card,
+          if (!kill.contains(card.id) || c.nodes.any((n) => n.mapId != mapId && n.cardId == card.id)) card,
       ],
       nodes: [
         for (final n in c.nodes)
-          if (!kill.contains(n.cardId)) n,
+          if (n.mapId != mapId || !kill.contains(n.cardId)) n,
       ],
     );
   }
 
   /// Deletes a highlight and, if it has one, its card subtree.
   StudySetContent deleteAnnotation(StudySetContent c, String annotationId) {
-    final card = c.cardForAnnotation(annotationId);
-    final without = card == null ? c : removeFromMap(c, card.id);
+    final cards = c.cards.where((card) => card.annotationId == annotationId);
+    var without = c;
+    for (final card in cards) {
+      for (final map in c.maps) {
+        without = StudySetEditor(newId: newId, now: now, mapId: map.id).removeFromMap(without, card.id);
+      }
+    }
     return without.copyWith(
       annotations: [
         for (final a in without.annotations)
@@ -429,7 +527,7 @@ class StudySetEditor {
     while (frontier.isNotEmpty) {
       final next = <String>[];
       for (final id in frontier) {
-        for (final child in c.childrenOf(id)) {
+        for (final child in c.childrenOf(id, mapId: mapId)) {
           if (result.add(child.cardId)) next.add(child.cardId);
         }
       }

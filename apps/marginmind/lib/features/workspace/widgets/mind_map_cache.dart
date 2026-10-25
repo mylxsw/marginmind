@@ -181,6 +181,7 @@ class _NodeSpec {
       case CardKind.note:
         final s = cache._measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44).size;
         return _NodeSpec._(_Kind.note, card.title, null, null, null, Size(s.width + 48, s.height + 16));
+      case CardKind.image:
       case CardKind.excerpt:
         final quote = a?.quote ?? '';
         final lines = math.min(4, cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines);

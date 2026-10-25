@@ -5,11 +5,19 @@ import 'study_set_content.dart';
 
 /// A portable, preorder forest. Depth is relative to the copied roots.
 class OutlineEntry {
-  const OutlineEntry(this.depth, this.title, {this.kind = CardKind.topic, this.annotation, this.collapsed = false});
+  const OutlineEntry(
+    this.depth,
+    this.title, {
+    this.kind = CardKind.topic,
+    this.annotation,
+    this.imageFileName,
+    this.collapsed = false,
+  });
   final int depth;
   final String title;
   final CardKind kind;
   final Annotation? annotation;
+  final String? imageFileName;
   final bool collapsed;
 }
 
@@ -18,12 +26,16 @@ abstract final class MapClipboard {
   static const maxEntries = 10000;
 
   /// Includes collapsed descendants, and copies overlapping selections once.
-  static List<OutlineEntry> copy(StudySetContent content, Iterable<String> selected) {
+  static List<OutlineEntry> copy(
+    StudySetContent content,
+    Iterable<String> selected, {
+    String mapId = MindMap.defaultId,
+  }) {
     final ids = selected.toSet();
     final result = <OutlineEntry>[];
     final seen = <String>{};
     void walk(String? parent, int? depth) {
-      for (final node in content.childrenOf(parent)) {
+      for (final node in content.childrenOf(parent, mapId: mapId)) {
         if (!seen.add(node.cardId)) continue;
         final card = content.card(node.cardId);
         if (card == null) continue;
@@ -34,6 +46,7 @@ abstract final class MapClipboard {
               level,
               card.title,
               kind: card.kind,
+              imageFileName: card.imageFileName,
               annotation: content.annotation(card.annotationId ?? ''),
               collapsed: node.collapsed,
             ),
@@ -92,7 +105,7 @@ abstract final class MapClipboard {
 
   static String encode(List<OutlineEntry> entries) => jsonEncode({
     'format': format,
-    'version': 1,
+    'version': 2,
     'nodes': [
       for (final e in entries)
         {
@@ -100,6 +113,7 @@ abstract final class MapClipboard {
           'title': e.title,
           'kind': e.kind.name,
           'collapsed': e.collapsed,
+          if (e.imageFileName != null) 'imageFileName': e.imageFileName,
           if (e.annotation != null) 'annotation': e.annotation!.toJson(),
         },
     ],
@@ -109,7 +123,7 @@ abstract final class MapClipboard {
   static List<OutlineEntry>? decode(String data) {
     try {
       final json = jsonDecode(data) as Map;
-      if (json['format'] != format || json['version'] != 1) return null;
+      if (json['format'] != format || (json['version'] != 1 && json['version'] != 2)) return null;
       final nodes = json['nodes'] as List;
       if (nodes.length > maxEntries) return null;
       final result = <OutlineEntry>[];
@@ -123,6 +137,7 @@ abstract final class MapClipboard {
             depth,
             e['title'] as String,
             kind: CardKind.values.byName(e['kind'] as String),
+            imageFileName: e['imageFileName'] as String?,
             collapsed: e['collapsed'] as bool,
             annotation: e['annotation'] == null ? null : Annotation.fromJson((e['annotation'] as Map).cast()),
           ),

@@ -6,11 +6,16 @@ import 'study_set_content.dart';
 /// [source] labels where an excerpt comes from (e.g. "Book · p. 3"); the
 /// app passes a localized one.
 class MapExporter {
-  MapExporter(this.content, {required this.rootTitle, String Function(Document doc, int page)? source})
-    : _source = source ?? ((doc, page) => '${doc.title}, p. $page');
+  MapExporter(
+    this.content, {
+    required this.rootTitle,
+    this.mapId = MindMap.defaultId,
+    String Function(Document doc, int page)? source,
+  }) : _source = source ?? ((doc, page) => '${doc.title}, p. $page');
 
   final StudySetContent content;
   final String rootTitle;
+  final String mapId;
   final String Function(Document doc, int page) _source;
 
   /// Nested Markdown list under a level-1 heading. Topics are bold,
@@ -18,7 +23,7 @@ class MapExporter {
   String markdown() {
     final out = StringBuffer('# ${_oneLine(rootTitle)}\n\n');
     void walk(String? parentId, int depth) {
-      for (final n in content.childrenOf(parentId)) {
+      for (final n in content.childrenOf(parentId, mapId: mapId)) {
         final card = content.card(n.cardId);
         if (card == null) continue;
         out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
@@ -34,6 +39,8 @@ class MapExporter {
     switch (card.kind) {
       case CardKind.topic:
         return '**${_oneLine(card.title)}**';
+      case CardKind.image:
+        return '![${_oneLine(card.title)}](${card.imageFileName ?? ""})';
       case CardKind.note:
         return _oneLine(card.title);
       case CardKind.excerpt:
@@ -56,12 +63,12 @@ class MapExporter {
       ..writeln('  <body>')
       ..writeln('    <outline text="${_xml(rootTitle)}">');
     void walk(String? parentId, int depth) {
-      for (final n in content.childrenOf(parentId)) {
+      for (final n in content.childrenOf(parentId, mapId: mapId)) {
         final card = content.card(n.cardId);
         if (card == null) continue;
         final indent = '  ' * (depth + 3);
         final attrs = _opmlAttributes(card);
-        final children = content.childrenOf(card.id);
+        final children = content.childrenOf(card.id, mapId: mapId);
         if (children.isEmpty) {
           out.writeln('$indent<outline $attrs/>');
         } else {

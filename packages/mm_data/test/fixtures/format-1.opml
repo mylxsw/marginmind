@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>旧学习集</title></head>
+  <body>
+    <outline text="旧学习集">
+      <outline text="主题">
+        <outline text="摘录" _note="记忆 &amp; 学习&#10;认知, p. 3"/>
+      </outline>
+      <outline text="笔记"/>
+    </outline>
+  </body>
+</opml>

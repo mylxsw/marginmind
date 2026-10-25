@@ -13,6 +13,7 @@ class StudySetContent {
     this.annotations = const [],
     this.cards = const [],
     this.nodes = const [],
+    this.maps = const [MindMap.main],
     this.reviews = const [],
   });
 
@@ -22,6 +23,8 @@ class StudySetContent {
   final List<Annotation> annotations;
   final List<Card> cards;
   final List<MapNode> nodes;
+  final List<MindMap> maps;
+  MindMap? map(String id) => maps.where((m) => m.id == id).firstOrNull;
 
   /// Review history per card. Entries of deleted cards are kept (and
   /// ignored) so undoing a delete brings the card back with its schedule.
@@ -30,14 +33,16 @@ class StudySetContent {
   Document? document(String id) => documents.where((d) => d.id == id).firstOrNull;
   Annotation? annotation(String id) => annotations.where((a) => a.id == id).firstOrNull;
   Card? card(String id) => cards.where((c) => c.id == id).firstOrNull;
-  MapNode? node(String cardId) => nodes.where((n) => n.cardId == cardId).firstOrNull;
+  MapNode? node(String cardId, {String mapId = MindMap.defaultId}) =>
+      nodes.where((n) => n.mapId == mapId && n.cardId == cardId).firstOrNull;
 
   /// The excerpt card made from [annotationId], if any.
   Card? cardForAnnotation(String annotationId) => cards.where((c) => c.annotationId == annotationId).firstOrNull;
 
   /// Children of [parentId] (null = root) in display order.
-  List<MapNode> childrenOf(String? parentId) =>
-      nodes.where((n) => n.parentId == parentId).toList()..sort((a, b) => a.order.compareTo(b.order));
+  List<MapNode> childrenOf(String? parentId, {String mapId = MindMap.defaultId}) =>
+      nodes.where((n) => n.mapId == mapId && n.parentId == parentId).toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
 
   List<Annotation> annotationsOn(String documentId) => annotations.where((a) => a.documentId == documentId).toList();
 
@@ -58,11 +63,12 @@ class StudySetContent {
   /// Cards that can be reviewed: excerpts and non-empty notes on the map.
   Iterable<Card> get reviewableCards => cards.where(
     (c) =>
-        node(c.id) != null &&
+        nodes.any((n) => n.cardId == c.id) &&
         switch (c.kind) {
           CardKind.excerpt => annotation(c.annotationId ?? '') != null,
           CardKind.note => c.title.trim().isNotEmpty,
           CardKind.topic => false,
+          CardKind.image => c.imageFileName != null,
         },
   );
 
@@ -88,28 +94,28 @@ class StudySetContent {
   int dueCount(DateTime now) => reviewQueue(now).length;
 
   /// Titles of the topics/cards above [cardId], root first.
-  List<String> pathOf(String cardId) {
+  List<String> pathOf(String cardId, {String mapId = MindMap.defaultId}) {
     final titles = <String>[];
-    var parent = node(cardId)?.parentId;
+    var parent = node(cardId, mapId: mapId)?.parentId;
     final seen = <String>{};
     while (parent != null && seen.add(parent)) {
       final card = this.card(parent);
       if (card == null) break;
       titles.insert(0, card.title);
-      parent = node(parent)?.parentId;
+      parent = node(parent, mapId: mapId)?.parentId;
     }
     return titles;
   }
 
   /// Cards whose title or quote contains [query]
   /// (case-insensitive), in map order.
-  List<Card> search(String query) {
+  List<Card> search(String query, {String mapId = MindMap.defaultId}) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
     bool hit(String? s) => s != null && s.toLowerCase().contains(q);
     final result = <Card>[];
     void walk(String? parentId) {
-      for (final n in childrenOf(parentId)) {
+      for (final n in childrenOf(parentId, mapId: mapId)) {
         final c = card(n.cardId);
         if (c == null) continue;
         final a = c.annotationId == null ? null : annotation(c.annotationId!);
@@ -127,6 +133,7 @@ class StudySetContent {
     List<Annotation>? annotations,
     List<Card>? cards,
     List<MapNode>? nodes,
+    List<MindMap>? maps,
     List<ReviewState>? reviews,
   }) {
     return StudySetContent(
@@ -134,6 +141,7 @@ class StudySetContent {
       annotations: annotations ?? this.annotations,
       cards: cards ?? this.cards,
       nodes: nodes ?? this.nodes,
+      maps: maps ?? this.maps,
       reviews: reviews ?? this.reviews,
     );
   }
@@ -142,6 +150,7 @@ class StudySetContent {
     'documents': [for (final d in documents) d.toJson()],
     'annotations': [for (final a in annotations) a.toJson()],
     'cards': [for (final c in cards) c.toJson()],
+    'maps': [for (final m in maps) m.toJson()],
     'nodes': [for (final n in nodes) n.toJson()],
     'reviews': [for (final r in reviews) r.toJson()],
   };
@@ -155,6 +164,7 @@ class StudySetContent {
       annotations: list('annotations', Annotation.fromJson),
       cards: list('cards', Card.fromJson),
       nodes: list('nodes', MapNode.fromJson),
+      maps: j['maps'] == null ? const [MindMap.main] : list('maps', MindMap.fromJson),
       reviews: list('reviews', ReviewState.fromJson),
     );
   }

@@ -39,5 +39,8 @@ class InMemoryStudySetContentRepository implements StudySetContentRepository {
   Future<String> importFile(String studySetId, String sourcePath) async => sourcePath;
 
   @override
+  Future<String> importImage(String studySetId, String sourcePath) async => sourcePath;
+
+  @override
   String resolveFile(String studySetId, String fileName) => fileName;
 }
