@@ -279,7 +279,7 @@ a{color:#0066CC}a:hover{color:#004C99}
         </div>
       </div>
     </div>
-    <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">连线：1.5px，separator 强度的灰，转角半径 10 的圆角折线；层级间距 28，同级间距 14。单击选中；双击、F2、空格或直接打字进入原地编辑；拖到另一个节点上改变父级。</p>
+    <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">连线：1.5px，line 色，三次贝塞尔曲线；层级间距 56，同级间距 14。单击选中；双击、F2、空格或直接打字进入原地编辑；拖到另一个节点上改变父级。</p>
   </section>
 
   <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
@@ -349,7 +349,7 @@ a{color:#0066CC}a:hover{color:#004C99}
             <span style="display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 16px; background: rgba(255,255,255,0.78); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08); font: 500 12px/1 -apple-system, BlinkMacSystemFont, sans-serif">‹　24 / 164　›</span>
           </div>
         </div>
-        <p style="margin: 0; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">都用控件玻璃。工具条出现在选区上方 8pt，上方放不下就翻到下方，并与视口四边保持 8pt；跟随选区移动。Esc、点击别处、翻页或滚动时关闭；打开时 E 摘录、H 高亮、⌘C 拷贝，Tab 和方向键在按钮间移动焦点。提示胶囊不抢焦点、不可点击；删除类操作改用系统的“撤销”（⌘Z），不在提示里放按钮。</p>
+        <p style="margin: 0; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">都用控件玻璃。工具条出现在选区上方 8pt，上方放不下就翻到下方，并与视口四边保持 8pt。Esc、点击别处、翻页或滚动时关闭；打开时 E 摘录、H 高亮、⌘C 拷贝，Tab 和方向键在按钮间移动焦点。提示胶囊不抢焦点、不可点击；删除类操作改用系统的“撤销”（⌘Z），不在提示里放按钮。</p>
       </div>
     </div>
   </section>
@@ -457,7 +457,7 @@ class Component extends DCLogic {
         { name: '编辑', items: '撤销 / 重做 · 剪切 / 拷贝 / 粘贴 · 拷贝并附出处 ⌥⌘C · 全选 · 查找 ⌘F · 拼写与语法 · 开始听写 · 表情与符号' },
         { name: '显示', items: '只看原文 ⌘1 · 分栏 ⌘2 · 只看脑图 ⌘3 · 脑图 / 大纲 · 显示侧栏 ⌃⌘S · 实际大小 / 放大 / 缩小 · 进入全屏幕' },
         { name: '标注', items: '工具切换 · 摘录到脑图 ⌘E · 同步开关 · 高亮颜色 · 定位原文 ⌘L · 上一处 / 下一处标注 · 删除高亮' },
-        { name: '脑图', items: '重命名 空格 · 在后面 / 前面添加同级 ↩ / ⇧↩ · 添加子主题 ⇥ · 提升一级 ⇧⇥ · 插入父节点 ⌘↩ · 折叠或展开 ⌘/ · 上移 / 下移 ⌘↑ / ⌘↓ · 适应窗口 ⌘0 · 居中到当前节点 · 从脑图移除 ⌫' },
+        { name: '脑图', items: '添加主题 ⇧⌘N · 添加笔记 ⌥⌘N · 定位原文 ⌘L · 在后面 / 前面添加同级 ↩ / ⇧↩ · 添加子主题 ⇥ · 提升一级 ⇧⇥ · 插入父节点 ⌘↩ · 重命名 空格 · 从脑图移除 ⌫ · 折叠或展开 ⌘/ · 上移 / 下移 ⌘↑ / ⌘↓ · 适应窗口 ⌘0 · 居中到当前节点' },
         { name: '窗口', items: '系统标准项：最小化 ⌘M · 缩放 · 平铺 · 移到显示器 · 合并所有窗口 · 学习集窗口列表' },
         { name: '帮助', items: '系统帮助搜索框（自动可搜索所有菜单项）· MarginMind 使用手册 · 快捷键一览' }
       ],
@@ -492,7 +492,6 @@ class Component extends DCLogic {
         { key: 'V  H  R  P  T', action: '选择 / 高亮 / 框选 / 手写 / 文本（无修饰键，仅原文区聚焦时）' },
         { key: '⌘1  ⌘2  ⌘3', action: '只看原文 / 分栏 / 只看脑图' },
         { key: '⌃⌘S', action: '显示或隐藏侧栏（系统约定）' },
-        { key: '⌘E', action: '把当前选区摘录到脑图' },
         { key: '⌘L', action: '定位原文' },
         { key: '空格  F2', action: '编辑选中节点；直接打字则替换标题' },
         { key: '↩  ⇧↩', action: '编辑时确认；否则在后面 / 前面添加同级节点' },
