@@ -74,6 +74,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         } else {
           switch (command) {
             case ReaderSelectionCommand.copy:
+              if (annotation.quote.isEmpty) return;
               await Clipboard.setData(ClipboardData(text: annotation.quote));
               if (mounted) MMHud.show(context, context.l10n.copiedHud);
               controller.dismissPending();
@@ -139,6 +140,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     };
     final isHighlight = widget.pending is PendingHighlight;
     final hasCard = annotation != null && content?.cardForAnnotation(annotation.id) != null;
+    // An area excerpt has no text to copy.
+    final isArea = annotation != null && annotation.quote.isEmpty;
     return TapRegion(
       onTapOutside: (_) {
         if (!_busy) _dismiss();
@@ -177,11 +180,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                           : ReaderSelectionCommand.highlight,
                     ),
                   ),
-                  MMToolbarButton(
-                    icon: MMIcons.copy,
-                    tooltip: l.copyAction,
-                    onPressed: () => _run(ReaderSelectionCommand.copy),
-                  ),
+                  if (!isArea)
+                    MMToolbarButton(
+                      icon: MMIcons.copy,
+                      tooltip: l.copyAction,
+                      onPressed: () => _run(ReaderSelectionCommand.copy),
+                    ),
                   MMToolbarButton(
                     icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
                     tooltip: isHighlight ? l.deleteHighlight : l.addNote,

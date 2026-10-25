@@ -40,7 +40,10 @@ class MapExporter {
       case CardKind.topic:
         return '**${_oneLine(card.title)}**';
       case CardKind.image:
-        return '![${_oneLine(card.title)}](${card.imageFileName ?? ""})';
+        final a = content.annotation(card.annotationId ?? '');
+        final doc = a == null ? null : content.document(a.documentId);
+        final src = doc == null ? '' : ' *(${_source(doc, a!.page)})*';
+        return '![${_oneLine(card.title)}](${card.imageFileName ?? ""})$src';
       case CardKind.note:
         return _oneLine(card.title);
       case CardKind.excerpt:
@@ -88,6 +91,13 @@ class MapExporter {
   }
 
   String _opmlAttributes(Card card) {
+    if (card.kind == CardKind.image) {
+      // An untitled image is named by its package file; the source is a note.
+      final a = content.annotation(card.annotationId ?? '');
+      final doc = a == null ? null : content.document(a.documentId);
+      final text = card.title.trim().isNotEmpty ? card.title : (card.imageFileName ?? '');
+      return 'text="${_xml(text)}"${doc == null ? '' : ' _note="${_xml(_source(doc, a!.page))}"'}';
+    }
     if (card.kind != CardKind.excerpt) return 'text="${_xml(card.title)}"';
     final a = content.annotation(card.annotationId ?? '');
     final doc = a == null ? null : content.document(a.documentId);

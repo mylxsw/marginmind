@@ -17,6 +17,9 @@ abstract interface class StudySetContentRepository {
   /// Imports PNG/JPEG bytes as a content-addressed image in the package.
   Future<String> importImage(String studySetId, String sourcePath);
 
+  /// Imports encoded PNG/JPEG [bytes], such as an area captured from a page.
+  Future<String> importImageBytes(String studySetId, List<int> bytes);
+
   /// Absolute path of a stored document file.
   String resolveFile(String studySetId, String fileName);
 }

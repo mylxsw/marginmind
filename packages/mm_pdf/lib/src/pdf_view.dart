@@ -1,4 +1,10 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:mm_core/mm_core.dart' show AnnotationPage, PageRect;
 import 'package:pdfrx/pdfrx.dart';
 
@@ -12,6 +18,7 @@ class MMPdfHighlight {
     required this.color,
     this.underline,
     this.emphasized = false,
+    this.framed = false,
   });
 
   final String id;
@@ -26,6 +33,22 @@ class MMPdfHighlight {
 
   /// Linked-highlight flash or selection ring.
   final bool emphasized;
+
+  /// An area excerpt: outlined in [underline] (or [color]) instead of
+  /// covering the figure with a fill.
+  final bool framed;
+}
+
+/// A rectangle dragged with the area tool, clamped to the page it started on.
+@immutable
+class MMPdfArea {
+  const MMPdfArea({required this.page, required this.rect, required this.viewportRect});
+
+  final int page;
+  final PageRect rect;
+
+  /// Bounds in the PDF viewport coordinates.
+  final Rect viewportRect;
 }
 
 /// Text the user selected, with page geometry in reading order.
@@ -71,6 +94,12 @@ class MMPdfViewController {
 
   Future<void> zoomOut() async => _state?._controller.zoomDown();
 
+  /// Renders [rect] of [page] as PNG bytes at [scale] pixels per point
+  /// (longest side capped at [maxPixels]); null if the view is not ready or
+  /// the page cannot be rendered.
+  Future<Uint8List?> captureArea(int page, PageRect rect, {double scale = 3, int maxPixels = 3000}) async =>
+      _state?._capture(page, rect, scale, maxPixels);
+
   bool get isReady => _state?._ready ?? false;
 }
 
@@ -90,6 +119,8 @@ class MMPdfView extends StatefulWidget {
     this.onSelectionChanged,
     this.onHighlightTap,
     this.onViewportChanged,
+    this.areaSelecting = false,
+    this.onAreaSelected,
   });
 
   final String filePath;
@@ -113,6 +144,11 @@ class MMPdfView extends StatefulWidget {
   final void Function(String id, Rect viewportRect)? onHighlightTap;
   final VoidCallback? onViewportChanged;
 
+  /// Dragging draws a rectangle instead of selecting text; scrolling and
+  /// zooming keep working.
+  final bool areaSelecting;
+  final ValueChanged<MMPdfArea>? onAreaSelected;
+
   @override
   State<MMPdfView> createState() => _MMPdfViewState();
 }
@@ -124,6 +160,9 @@ class _MMPdfViewState extends State<MMPdfView> {
   int _selectionEpoch = 0;
   int _pageCount = 0;
   (int, List<PageRect>)? _pendingReveal;
+
+  /// Area drag, in document coordinates: (page index, start, current end).
+  (int, Offset, Offset)? _area;
 
   @override
   void initState() {
@@ -139,10 +178,22 @@ class _MMPdfViewState extends State<MMPdfView> {
       oldWidget.controller._state = null;
       widget.controller._state = this;
     }
+    if (!widget.areaSelecting && _area != null) _area = null;
   }
 
   void _viewportChanged() {
     _selectionEpoch++;
+    // The area rectangle is anchored to the document while it scrolls; the
+    // viewer may adjust its transform during layout, so repaint after it.
+    if (_area != null) {
+      if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
+      } else {
+        setState(() {});
+      }
+    }
     widget.onViewportChanged?.call();
   }
 
@@ -169,12 +220,88 @@ class _MMPdfViewState extends State<MMPdfView> {
     await _controller.goToRectInsidePage(pageNumber: page, rect: PdfRect(l, t, r, b), anchor: PdfPageAnchor.center);
   }
 
+  /// Rendered pixels of [rect] on [pageNumber], encoded as PNG.
+  Future<Uint8List?> _capture(int pageNumber, PageRect rect, double scale, int maxPixels) async {
+    if (!_ready || pageNumber < 1 || pageNumber > _controller.document.pages.length) return null;
+    final page = _controller.document.pages[pageNumber - 1];
+    final area = PdfRect(rect.left, rect.top, rect.right, rect.bottom).toRect(page: page);
+    if (area.isEmpty) return null;
+    final s = math.min(scale, maxPixels / math.max(area.width, area.height));
+    final target = Rect.fromLTRB(area.left * s, area.top * s, area.right * s, area.bottom * s);
+    final pdfImage = await page.render(
+      x: target.left.round(),
+      y: target.top.round(),
+      width: math.max(1, target.width.round()),
+      height: math.max(1, target.height.round()),
+      fullWidth: page.width * s,
+      fullHeight: page.height * s,
+      backgroundColor: 0xffffffff,
+    );
+    if (pdfImage == null) return null;
+    ui.Image? image;
+    try {
+      image = await pdfImage.createImage();
+      final png = await image.toByteData(format: ui.ImageByteFormat.png);
+      return png?.buffer.asUint8List();
+    } finally {
+      image?.dispose();
+      pdfImage.dispose();
+    }
+  }
+
+  void _areaStart(DragStartDetails d) {
+    if (!_ready) return;
+    final point = _controller.localToDocument(d.localPosition);
+    final index = _controller.layout.pageLayouts.indexWhere((r) => r.contains(point));
+    setState(() => _area = index < 0 ? null : (index, point, point));
+  }
+
+  void _areaUpdate(DragUpdateDetails d) {
+    final area = _area;
+    if (area == null) return;
+    final bounds = _controller.layout.pageLayouts[area.$1];
+    final point = _controller.localToDocument(d.localPosition);
+    final clamped = Offset(point.dx.clamp(bounds.left, bounds.right), point.dy.clamp(bounds.top, bounds.bottom));
+    setState(() => _area = (area.$1, area.$2, clamped));
+  }
+
+  void _areaEnd() {
+    final area = _area;
+    if (area == null) return;
+    setState(() => _area = null);
+    final viewport = _areaViewportRect(area);
+    // A click or a sliver is not an area.
+    if (viewport.width < 6 || viewport.height < 6) return;
+    final pageRect = _controller.layout.pageLayouts[area.$1];
+    final page = _controller.document.pages[area.$1];
+    final r = Rect.fromPoints(
+      area.$2,
+      area.$3,
+    ).shift(-pageRect.topLeft).toPdfRect(page: page, scaledPageSize: pageRect.size);
+    widget.onAreaSelected?.call(
+      MMPdfArea(
+        page: page.pageNumber,
+        rect: PageRect(
+          math.min(r.left, r.right),
+          math.max(r.top, r.bottom),
+          math.max(r.left, r.right),
+          math.min(r.top, r.bottom),
+        ),
+        viewportRect: viewport,
+      ),
+    );
+  }
+
+  Rect _areaViewportRect((int, Offset, Offset) area) =>
+      Rect.fromPoints(_controller.documentToLocal(area.$2), _controller.documentToLocal(area.$3));
+
   Future<void> _clearSelection() async {
     _selectionEpoch++;
     if (_controller.isReady) await _controller.textSelectionDelegate.clearTextSelection();
   }
 
   Future<void> _commitSelection() async {
+    if (widget.areaSelecting) return;
     final epoch = ++_selectionEpoch;
     // pdfrx settles the selection a frame after the pointer is released.
     await Future<void>.delayed(const Duration(milliseconds: 120));
@@ -257,10 +384,12 @@ class _MMPdfViewState extends State<MMPdfView> {
                     child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: h.color,
+                          color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
                           borderRadius: BorderRadius.circular(2),
                           border: h.emphasized
                               ? Border.all(color: widget.emphasisColor, width: 2)
+                              : h.framed
+                              ? Border.all(color: h.underline ?? h.color, width: 2)
                               : (h.underline == null
                                     ? null
                                     : Border(bottom: BorderSide(color: h.underline!, width: 2))),
@@ -276,6 +405,51 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   @override
   Widget build(BuildContext context) {
+    final area = _area;
+    return Stack(
+      children: [
+        Positioned.fill(child: _viewer()),
+        if (widget.areaSelecting)
+          Positioned.fill(
+            // Translucent: wheel and trackpad scrolling still reach the
+            // viewer, while this recognizer wins pointer drags first.
+            child: MouseRegion(
+              cursor: SystemMouseCursors.precise,
+              opaque: false,
+              hitTestBehavior: HitTestBehavior.translucent,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                dragStartBehavior: DragStartBehavior.down,
+                supportedDevices: const {
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                  PointerDeviceKind.touch,
+                },
+                onPanStart: _areaStart,
+                onPanUpdate: _areaUpdate,
+                onPanEnd: (_) => _areaEnd(),
+                onPanCancel: () => setState(() => _area = null),
+              ),
+            ),
+          ),
+        if (area != null)
+          Positioned.fromRect(
+            rect: _areaViewportRect(area),
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: widget.emphasisColor.withValues(alpha: 0.12),
+                  border: Border.all(color: widget.emphasisColor, width: 1.5),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _viewer() {
     return Listener(
       onPointerUp: (_) => _commitSelection(),
       child: PdfViewer.file(
@@ -288,6 +462,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
           textSelectionParams: PdfTextSelectionParams(
+            enabled: !widget.areaSelecting,
             showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;

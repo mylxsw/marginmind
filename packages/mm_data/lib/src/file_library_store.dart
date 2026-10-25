@@ -209,7 +209,13 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   Future<String> importImage(String studySetId, String sourcePath) async {
     await _ensureLoaded();
     _require(studySetId);
-    final bytes = await File(sourcePath).readAsBytes();
+    return importImageBytes(studySetId, await File(sourcePath).readAsBytes());
+  }
+
+  @override
+  Future<String> importImageBytes(String studySetId, List<int> bytes) async {
+    await _ensureLoaded();
+    _require(studySetId);
     final String extension;
     if (bytes.length >= 8 && _sameBytes(bytes.take(8).toList(), [137, 80, 78, 71, 13, 10, 26, 10])) {
       extension = 'png';

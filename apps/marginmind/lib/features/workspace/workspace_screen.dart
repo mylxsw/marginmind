@@ -6,6 +6,7 @@ import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
 import '../../app/providers.dart';
+import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
 import '../../shared/pdf_drop.dart';
 import 'workspace_controller.dart';
@@ -51,56 +52,59 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final page = doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);
 
-    return MMWindowScaffold(
-      sidebarVisible: state.sidebarVisible,
-      onDragStart: WindowChrome.onDragStart,
-      onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
-      showsWindowButtons: WindowChrome.showsWindowButtons,
-      sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
-      toolbar: MMToolbar(
-        title: doc?.title ?? setTitle,
-        subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(page!)}',
-        leading: state.sidebarVisible
-            ? null
-            : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),
-        actions: [
-          _AnnotationTools(state: state, controller: controller),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                icon: MMIcons.layoutReader,
-                tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-                selected: state.layout == MMSplitMode.primary,
-                onPressed: () => controller.setLayout(MMSplitMode.primary),
-              ),
-              MMToolbarButton(
-                icon: MMIcons.layoutSplit,
-                tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                selected: state.layout == MMSplitMode.split,
-                onPressed: () => controller.setLayout(MMSplitMode.split),
-              ),
-              MMToolbarButton(
-                icon: MMIcons.layoutMap,
-                tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-                selected: state.layout == MMSplitMode.secondary,
-                onPressed: () => controller.setLayout(MMSplitMode.secondary),
-              ),
-            ],
+    return CardImageScope(
+      resolve: controller.imagePath,
+      child: MMWindowScaffold(
+        sidebarVisible: state.sidebarVisible,
+        onDragStart: WindowChrome.onDragStart,
+        onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
+        showsWindowButtons: WindowChrome.showsWindowButtons,
+        sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
+        toolbar: MMToolbar(
+          title: doc?.title ?? setTitle,
+          subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(page!)}',
+          leading: state.sidebarVisible
+              ? null
+              : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),
+          actions: [
+            _AnnotationTools(state: state, controller: controller),
+            MMToolbarGroup(
+              children: [
+                MMToolbarButton(
+                  icon: MMIcons.layoutReader,
+                  tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+                  selected: state.layout == MMSplitMode.primary,
+                  onPressed: () => controller.setLayout(MMSplitMode.primary),
+                ),
+                MMToolbarButton(
+                  icon: MMIcons.layoutSplit,
+                  tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                  selected: state.layout == MMSplitMode.split,
+                  onPressed: () => controller.setLayout(MMSplitMode.split),
+                ),
+                MMToolbarButton(
+                  icon: MMIcons.layoutMap,
+                  tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+                  selected: state.layout == MMSplitMode.secondary,
+                  onPressed: () => controller.setLayout(MMSplitMode.secondary),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: PdfDropTarget(
+          label: l.dropToImport,
+          onDrop: (files) async {
+            final notice = await controller.importDocuments(files);
+            if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+          },
+          child: MMSplitView(
+            mode: state.layout,
+            fraction: state.splitFraction,
+            onFractionChanged: controller.setSplitFraction,
+            primary: ReaderPane(studySetId: widget.studySetId),
+            secondary: MapPane(studySetId: widget.studySetId),
           ),
-        ],
-      ),
-      body: PdfDropTarget(
-        label: l.dropToImport,
-        onDrop: (files) async {
-          final notice = await controller.importDocuments(files);
-          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-        },
-        child: MMSplitView(
-          mode: state.layout,
-          fraction: state.splitFraction,
-          onFractionChanged: controller.setSplitFraction,
-          primary: ReaderPane(studySetId: widget.studySetId),
-          secondary: MapPane(studySetId: widget.studySetId),
         ),
       ),
     );
@@ -118,7 +122,11 @@ class _AnnotationTools extends StatelessWidget {
     final l = context.l10n;
     MMToolbarButton tool(IconData icon, String label, AnnotationTool value) => MMToolbarButton(
       icon: icon,
-      tooltip: value == AnnotationTool.highlight ? AppShortcuts.tip(label, AppShortcuts.toggleAnnotationTool) : label,
+      tooltip: switch (value) {
+        AnnotationTool.highlight => AppShortcuts.tip(label, AppShortcuts.toggleAnnotationTool),
+        AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
+        AnnotationTool.select => label,
+      },
       selected: state.tool == value,
       onPressed: () => controller.setTool(value),
     );
@@ -126,6 +134,7 @@ class _AnnotationTools extends StatelessWidget {
       children: [
         tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
         tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
+        tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
         const MMToolbarDivider(),
         for (final color in MMAnnotationColor.values)
           _ColorDot(

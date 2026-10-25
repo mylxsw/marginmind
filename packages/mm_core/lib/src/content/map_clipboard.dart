@@ -11,6 +11,7 @@ class OutlineEntry {
     this.kind = CardKind.topic,
     this.annotation,
     this.imageFileName,
+    this.imagePath,
     this.collapsed = false,
   });
   final int depth;
@@ -18,6 +19,10 @@ class OutlineEntry {
   final CardKind kind;
   final Annotation? annotation;
   final String? imageFileName;
+
+  /// Where the source package keeps the image, so another study set can
+  /// import the file on paste.
+  final String? imagePath;
   final bool collapsed;
 }
 
@@ -26,10 +31,12 @@ abstract final class MapClipboard {
   static const maxEntries = 10000;
 
   /// Includes collapsed descendants, and copies overlapping selections once.
+  /// [resolveImage] gives the absolute path of a package image.
   static List<OutlineEntry> copy(
     StudySetContent content,
     Iterable<String> selected, {
     String mapId = MindMap.defaultId,
+    String Function(String fileName)? resolveImage,
   }) {
     final ids = selected.toSet();
     final result = <OutlineEntry>[];
@@ -47,6 +54,7 @@ abstract final class MapClipboard {
               card.title,
               kind: card.kind,
               imageFileName: card.imageFileName,
+              imagePath: card.imageFileName == null ? null : resolveImage?.call(card.imageFileName!),
               annotation: content.annotation(card.annotationId ?? ''),
               collapsed: node.collapsed,
             ),
@@ -62,7 +70,12 @@ abstract final class MapClipboard {
 
   static String toText(List<OutlineEntry> entries) => entries
       .map((e) {
-        final title = e.title.isEmpty ? (e.annotation?.quote ?? '') : e.title;
+        // An untitled image keeps its line (and so the outline's shape).
+        final title = e.title.isNotEmpty
+            ? e.title
+            : e.kind == CardKind.image && e.imageFileName != null
+            ? '![](${e.imageFileName})'
+            : (e.annotation?.quote ?? '');
         return '${'\t' * e.depth}${title.replaceAll(RegExp(r'[\r\n]+'), ' ')}';
       })
       .join('\n');
@@ -114,6 +127,7 @@ abstract final class MapClipboard {
           'kind': e.kind.name,
           'collapsed': e.collapsed,
           if (e.imageFileName != null) 'imageFileName': e.imageFileName,
+          if (e.imagePath != null) 'imagePath': e.imagePath,
           if (e.annotation != null) 'annotation': e.annotation!.toJson(),
         },
     ],
@@ -138,6 +152,7 @@ abstract final class MapClipboard {
             e['title'] as String,
             kind: CardKind.values.byName(e['kind'] as String),
             imageFileName: e['imageFileName'] as String?,
+            imagePath: e['imagePath'] as String?,
             collapsed: e['collapsed'] as bool,
             annotation: e['annotation'] == null ? null : Annotation.fromJson((e['annotation'] as Map).cast()),
           ),

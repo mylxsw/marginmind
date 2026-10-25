@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:pdfrx/pdfrx.dart';
 
@@ -74,8 +75,31 @@ class _Page implements PdfPage {
   Future<List<PdfLink>> loadLinks({bool compact = false, bool enableAutoLinkDetection = true}) async => [];
   @override
   dynamic noSuchMethod(Invocation invocation) {
-    if (invocation.memberName == #render) return Future<PdfImage?>.value(null);
+    if (invocation.memberName == #render) return TestPdfRender._render(invocation.namedArguments);
     return super.noSuchMethod(invocation);
+  }
+}
+
+/// Page rendering in the test backend: empty for the viewer's tiles, real
+/// (blank) pixels for area captures when [produceImages] is set.
+abstract final class TestPdfRender {
+  static bool produceImages = false;
+
+  /// Arguments of each produced render.
+  static final renders = <Map<String, Object?>>[];
+
+  static Future<PdfImage?> _render(Map<Symbol, dynamic> args) {
+    if (!produceImages) return Future.value(null);
+    final width = args[#width] as int;
+    final height = args[#height] as int;
+    renders.add({
+      'x': args[#x],
+      'y': args[#y],
+      'width': width,
+      'height': height,
+      if (renders.isEmpty && args[#fullWidth] == 1200.0) 'fullWidth': args[#fullWidth],
+    });
+    return Future.value(PdfImage.createFromBgraData(Uint8List(width * height * 4), width: width, height: height));
   }
 }
 

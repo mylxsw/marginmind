@@ -46,6 +46,7 @@ abstract final class AppShortcuts {
   static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
 
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
+  static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
 
   /// "Tooltip (⌘1)".
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
@@ -219,12 +220,17 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
     final selectionOpen = workspaceState?.pending is PendingSelection && !_textFocused;
     final highlightOpen = workspaceState?.pending is PendingHighlight && !_textFocused;
+    // An area has no text to copy.
+    final highlightText = switch (workspaceState?.pending) {
+      PendingHighlight(:final annotationId) => workspace?.content.annotation(annotationId)?.quote.isNotEmpty ?? false,
+      _ => false,
+    };
     // One native key equivalent per operation. Dispatch to the focused field,
     // map, or PDF selection so menu shortcuts cannot shadow each other.
     for (final command in [MindMapCommand.copy, MindMapCommand.cut, MindMapCommand.paste]) {
       final mapClipboard = editable && _mapFocused && !_textFocused;
       final hasNodes = workspaceState?.selectedCardIds.isNotEmpty ?? false;
-      final readerCopy = command == MindMapCommand.copy && (selectionOpen || highlightOpen);
+      final readerCopy = command == MindMapCommand.copy && (selectionOpen || (highlightOpen && highlightText));
       final enabled = _textFocused || (mapClipboard && (command == MindMapCommand.paste || hasNodes)) || readerCopy;
       edit.add(
         AppCommand(
@@ -301,7 +307,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(
         l.revealSource,
-        workspace != null && selected != null && workspace.content.card(selected)?.annotationId != null
+        workspace != null &&
+                selected != null &&
+                workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
             ? () => workspace.revealCard(selected)
             : null,
         shortcut: AppShortcuts.revealSource,
@@ -373,6 +381,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ],
       if (inWorkspace) ...[
         AppCommand(l.toggleAnnotationTool, workspace!.toggleTool, shortcut: AppShortcuts.toggleAnnotationTool),
+        AppCommand(l.toggleAreaTool, workspace.toggleAreaTool, shortcut: AppShortcuts.toggleAreaTool),
         AppCommand(
           l.layoutReader,
           () => ref.read(workspaceProvider(workspaceId).notifier).setLayout(MMSplitMode.primary),

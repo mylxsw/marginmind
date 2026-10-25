@@ -128,9 +128,10 @@ void main() {
     final foreign = e.paste(StudySetContent.empty, entries).$1;
     expect(foreign.cards.single.kind, CardKind.note);
     expect(foreign.cards.single.title, 'Figure');
+    // The file is still in the package: the image stays, without a source.
     final noSource = e.paste(c.copyWith(documents: []), entries).$1;
-    expect(noSource.cards.last.kind, CardKind.note);
-    expect(noSource.cards.last.imageFileName, isNull);
+    expect(noSource.cards.last.kind, CardKind.image);
+    expect(noSource.cards.last.annotationId, isNull);
     final legacy = jsonDecode(payload) as Map;
     legacy['version'] = 1;
     legacy['nodes'][0]['kind'] = 'excerpt';

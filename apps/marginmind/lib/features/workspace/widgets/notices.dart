@@ -17,6 +17,7 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
   final text = switch (notice) {
     ExcerptedNotice(:final targetTitle) => l.excerptedHud(targetTitle ?? rootTitle),
     HighlightedNotice() => l.highlightedHud,
+    AreaFailedNotice() => l.somethingWentWrong,
     RemovedNotice() => l.removedHud,
     HighlightDeletedNotice() => l.highlightDeletedHud,
     UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
@@ -24,7 +25,7 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     ImportedNotice(:final count, :final failed) =>
       failed.isNotEmpty ? l.importFailed(failed.first) : l.importedHud(count),
   };
-  MMHud.show(context, text);
+  MMHud.show(context, text, icon: notice is AreaFailedNotice ? MMIcons.close : MMIcons.success);
 }
 
 /// Opens the system file picker for PDFs and imports the chosen files.

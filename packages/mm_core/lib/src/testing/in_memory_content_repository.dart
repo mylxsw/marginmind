@@ -41,6 +41,16 @@ class InMemoryStudySetContentRepository implements StudySetContentRepository {
   @override
   Future<String> importImage(String studySetId, String sourcePath) async => sourcePath;
 
+  /// Bytes imported with [importImageBytes], by returned file name.
+  final images = <String, List<int>>{};
+
+  @override
+  Future<String> importImageBytes(String studySetId, List<int> bytes) async {
+    final name = 'images/${Object.hashAll(bytes).toUnsigned(32).toRadixString(16)}.png';
+    images[name] = List.unmodifiable(bytes);
+    return name;
+  }
+
   @override
   String resolveFile(String studySetId, String fileName) => fileName;
 }

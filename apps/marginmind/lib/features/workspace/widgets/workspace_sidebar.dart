@@ -76,7 +76,9 @@ class WorkspaceSidebar extends ConsumerWidget {
           },
           label: card.title.isNotEmpty ? card.title : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
           selected: card.id == state.selectedCardId,
-          onTap: () => card.kind == CardKind.excerpt ? controller.revealCard(card.id) : controller.selectCard(card.id),
+          onTap: () => content!.annotation(card.annotationId ?? '') != null
+              ? controller.revealCard(card.id)
+              : controller.selectCard(card.id),
         ),
     ];
     final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty;

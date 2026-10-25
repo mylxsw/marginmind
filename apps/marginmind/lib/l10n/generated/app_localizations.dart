@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Toggle Highlighter'**
   String get toggleAnnotationTool;
 
+  /// No description provided for @toggleAreaTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Area Select'**
+  String get toggleAreaTool;
+
   /// No description provided for @toolSelect.
   ///
   /// In en, this message translates to:
@@ -1004,6 +1010,12 @@ abstract class AppLocalizations {
   /// **'Untitled excerpt'**
   String get untitledExcerpt;
 
+  /// No description provided for @imageExcerpt.
+  ///
+  /// In en, this message translates to:
+  /// **'Image excerpt'**
+  String get imageExcerpt;
+
   /// No description provided for @revealSource.
   ///
   /// In en, this message translates to:
@@ -1315,6 +1327,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recall this note'**
   String get reviewPromptNote;
+
+  /// No description provided for @reviewPromptImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall this image'**
+  String get reviewPromptImage;
 
   /// No description provided for @reviewQuestionTip.
   ///
