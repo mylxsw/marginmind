@@ -336,10 +336,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (_centered || !widget.loaded || !viewport.hasBoundedHeight || !viewport.hasBoundedWidth) return;
     _centered = true;
     final w = viewport.maxWidth, h = viewport.maxHeight;
-    final scale = math.min(1.0, math.min((w - 24) / result.width, (h - 24) / result.height)).clamp(0.6, 1.0);
+    final scene = _sceneSize(result);
+    final scale = math.min(1.0, math.min((w - 24) / scene.width, (h - 24) / scene.height)).clamp(0.6, 1.0);
     final root = result.rects[rootNodeId]!;
-    final fitsWidth = result.width * scale <= w;
-    final dx = fitsWidth ? (w - result.width * scale) / 2 : w * 0.04 - (root.left - 24) * scale;
+    final fitsWidth = scene.width * scale <= w;
+    final dx = fitsWidth ? (w - scene.width * scale) / 2 : w * 0.04 - (root.left - 24) * scale;
     final dy = h / 2 - root.centerY * scale;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -432,16 +433,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       case MindMapCommand.fit:
         final layout = _layout;
         if (layout == null || _viewport.isEmpty) return;
+        final scene = _sceneSize(layout);
         final scale = math
             .min(
-              (_viewport.width - MMSpacing.xl * 2) / layout.width,
-              (_viewport.height - MMSpacing.xl * 2) / layout.height,
+              (_viewport.width - MMSpacing.xl * 2) / scene.width,
+              (_viewport.height - MMSpacing.xl * 2) / scene.height,
             )
             .clamp(mapMinScale, 1.0);
         widget.transformation.value = Matrix4.identity()
           ..translateByDouble(
-            (_viewport.width - layout.width * scale) / 2,
-            (_viewport.height - layout.height * scale) / 2,
+            (_viewport.width - scene.width * scale) / 2,
+            (_viewport.height - scene.height * scale) / 2,
             0,
             1,
           )
@@ -478,11 +480,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       if (_rect(e.value.bracket).inflate(MMSpacing.xs).contains(scene)) return e.key;
     }
     final rects = _drawnRects();
+    final others = _obstacles(rects, layout);
     final slop = MMSpacing.s / math.max(mapScale(widget.transformation.value), 0.5);
     for (final r in _cache._relations.reversed) {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
-      final curve = relationCurve(a, b);
+      final curve = relationCurve(a, b, others);
       var previous = curve.$1;
       for (var i = 1; i <= 24; i++) {
         final point = cubicPoint(curve, i / 24);
@@ -493,11 +496,43 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     return null;
   }
 
+  /// The scene: the tree plus any relation line or label reaching past it,
+  /// so they are neither clipped nor left out when fitting the map.
+  Size _sceneSize(TreeLayoutResult layout) {
+    var width = layout.width, height = layout.height;
+    if (_cache._relations.isEmpty) return Size(width, height);
+    final others = _obstacles({for (final e in layout.rects.entries) e.key: _rect(e.value)}, layout);
+    for (final r in _cache._relations) {
+      final from = layout.rects[r.fromId], to = layout.rects[r.toId];
+      if (from == null || to == null) continue;
+      final curve = relationCurve(_rect(from), _rect(to), others);
+      for (var i = 0; i <= 8; i++) {
+        final p = cubicPoint(curve, i / 8);
+        width = math.max(width, p.dx + MMSpacing.l);
+        height = math.max(height, p.dy + MMSpacing.l);
+      }
+      final label = _cache._markLabels[r.id] ?? '';
+      if (label.isEmpty && r.id != _markField?.id) continue;
+      final size = _cache._measure(label, MMTypography.footnote, 200).size;
+      final middle = cubicPoint(curve, 0.5);
+      width = math.max(width, middle.dx + math.max(size.width, MMSpacing.xxxl) / 2 + MMSpacing.xs + MMSpacing.l);
+      height = math.max(height, middle.dy + size.height / 2 + MMSpacing.xxs + MMSpacing.l);
+    }
+    return Size(width, height);
+  }
+
+  /// What a relation line between stacked nodes goes around: the nodes and
+  /// the summary labels.
+  List<Rect> _obstacles(Map<String, Rect> rects, TreeLayoutResult layout) => [
+    ...rects.values,
+    for (final s in layout.summaries.values) _rect(s.label),
+  ];
+
   /// The middle of a relation's line as drawn now, where its label sits.
-  Offset? _relationMiddle(MapRelation r) {
+  Offset? _relationMiddle(MapRelation r, List<Rect> others) {
     final from = _layout?.rects[r.fromId], to = _layout?.rects[r.toId];
     if (from == null || to == null) return null;
-    return cubicPoint(relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to)), 0.5);
+    return cubicPoint(relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to), others), 0.5);
   }
 
   /// A label of a relation (at the middle of its line) or summary.
@@ -622,10 +657,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final m = widget.transformation.value;
     final scale = mapScale(m);
     final current = Offset(m.storage[12], m.storage[13]);
+    final scene = _sceneSize(layout);
     final next = clampAutoScroll(
       current,
       velocity * dt,
-      Rect.fromLTWH(current.dx, current.dy, layout.width * scale, layout.height * scale),
+      Rect.fromLTWH(current.dx, current.dy, scene.width * scale, scene.height * scale),
       box.size,
       margin: _autoScrollEdge,
     );
@@ -730,6 +766,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
     _keepRootInPlace(result);
+    final sceneSize = _sceneSize(result);
     if ((layoutChanged || viewportChanged) && _centered) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId);
@@ -918,8 +955,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     ? null
                     : (event) => setState(() => _hover = event.localPosition),
                 child: SizedBox(
-                  width: math.max(result.width, 600),
-                  height: math.max(result.height, 400),
+                  width: math.max(sceneSize.width, 600),
+                  height: math.max(sceneSize.height, 400),
                   child: AnimatedBuilder(
                     animation: _motion,
                     builder: (context, _) => Stack(
@@ -972,7 +1009,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                             Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
                         for (final r in _cache._relations)
                           if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
-                            if (_relationMiddle(r) case final middle?)
+                            if (_relationMiddle(r, _obstacles(_drawnRects(), result)) case final middle?)
                               Positioned(
                                 left: middle.dx,
                                 top: middle.dy,
@@ -1327,15 +1364,24 @@ class _FoldButton extends StatelessWidget {
 
 /// Where a relation between [a] and [b] runs: from the border of [a] facing
 /// [b] to the border of [b] facing [a], bowed to one side so it stands out
-/// from the tree's connectors. Nodes stacked in one column are joined around
-/// their right side instead, so the line and its label clear the nodes in
-/// between. Start, two control points, end.
+/// from the tree's connectors. Start, two control points, end.
+///
+/// Two nodes stacked in one column with nothing to their right (leaves) are
+/// joined around their right side instead, past everything in [others]
+/// (nodes, summary labels) between them, so the line and its label do not
+/// run under the nodes in between.
 @visibleForTesting
-(Offset, Offset, Offset, Offset) relationCurve(Rect a, Rect b) {
+(Offset, Offset, Offset, Offset) relationCurve(Rect a, Rect b, [Iterable<Rect> others = const []]) {
   final stacked = a.left < b.right && b.left < a.right && (a.bottom <= b.top || b.bottom <= a.top);
-  if (stacked) {
+  bool beside(Rect n, Rect o) => o.left >= n.right && o.top < n.bottom && o.bottom > n.top;
+  if (stacked && !others.any((o) => beside(a, o) || beside(b, o))) {
+    final top = math.min(a.top, b.top), bottom = math.max(a.bottom, b.bottom), left = math.min(a.left, b.left);
+    var right = math.max(a.right, b.right);
+    for (final o in others) {
+      if (o.left >= left && o.top < bottom && o.bottom > top) right = math.max(right, o.right);
+    }
     final start = Offset(a.right, a.center.dy), end = Offset(b.right, b.center.dy);
-    final x = math.max(a.right, b.right) + ((end.dy - start.dy).abs() * 0.3).clamp(48.0, 120.0);
+    final x = right + ((end.dy - start.dy).abs() * 0.3).clamp(48.0, 120.0);
     return (start, Offset(x, start.dy), Offset(x, end.dy), end);
   }
 
@@ -1408,11 +1454,12 @@ class _MarksPainter extends CustomPainter {
       final selected = e.key == selectedId;
       canvas.drawPath(_bracketPath(_rect(e.value.bracket)), stroke(selected ? accent : bracket, selected ? 2 : 1.5));
     }
+    final others = [...rects.values, for (final s in summaries.values) _rect(s.label)];
     for (final r in relations) {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
       final selected = r.id == selectedId;
-      final c = relationCurve(a, b);
+      final c = relationCurve(a, b, others);
       final paint = stroke(selected ? accent : line, selected ? 2 : 1.5);
       final path = Path()
         ..moveTo(c.$1.dx, c.$1.dy)
@@ -1422,7 +1469,7 @@ class _MarksPainter extends CustomPainter {
     }
     final from = connectFrom == null ? null : rects[connectFrom];
     if (from != null && pointer != null && !from.contains(pointer!)) {
-      final c = relationCurve(from, Rect.fromCenter(center: pointer!, width: 0, height: 0));
+      final c = relationCurve(from, Rect.fromCenter(center: pointer!, width: 0, height: 0), others);
       final paint = stroke(accent, 1.5);
       final path = Path()
         ..moveTo(c.$1.dx, c.$1.dy)
