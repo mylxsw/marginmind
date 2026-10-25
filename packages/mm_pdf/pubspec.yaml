@@ -1,0 +1,21 @@
+name: mm_pdf
+description: MarginMind PDF layer — rendering, text selection and highlight overlays (pdfrx / PDFium behind a small API).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mm_core:
+    path: ../mm_core
+  pdfrx: ^2.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

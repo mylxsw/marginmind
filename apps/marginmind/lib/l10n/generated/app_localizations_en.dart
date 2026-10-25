@@ -444,4 +444,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get back => 'Back';
+
+  @override
+  String get importPdf => 'Import PDF…';
+
+  @override
+  String importedHud(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count documents',
+      one: 'Imported 1 document',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importFailed(String name) {
+    return 'Couldn’t open “$name” as a PDF';
+  }
+
+  @override
+  String get pdfFiles => 'PDF documents';
+
+  @override
+  String get excerptAction => 'Excerpt to Map';
+
+  @override
+  String get highlightAction => 'Highlight';
+
+  @override
+  String get copyAction => 'Copy';
+
+  @override
+  String get addToMapAction => 'Add to Map';
+
+  @override
+  String get deleteHighlight => 'Delete Highlight';
+
+  @override
+  String excerptedHud(String target) {
+    return 'Excerpted to “$target”';
+  }
+
+  @override
+  String get highlightedHud => 'Highlighted';
+
+  @override
+  String get copiedHud => 'Copied';
+
+  @override
+  String get removedHud => 'Removed from the map; the highlight stays in the source';
+
+  @override
+  String get highlightDeletedHud => 'Highlight deleted';
+
+  @override
+  String get rename => 'Rename…';
+
+  @override
+  String get renameTitle => 'Rename';
+
+  @override
+  String get editNote => 'Edit Note';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get newTopicName => 'New Topic';
+
+  @override
+  String get newNoteText => 'New note';
+
+  @override
+  String get untitledExcerpt => 'Untitled excerpt';
+
+  @override
+  String get revealSource => 'Reveal in Source';
+
+  @override
+  String get menuMap => 'Map';
+
+  @override
+  String documentPages(int count) {
+    return '$count pages';
+  }
+
+  @override
+  String get sampleSetTitle => 'Sample: Forgetting & Spaced Repetition';
+
+  @override
+  String get sampleTopic1 => 'How we forget';
+
+  @override
+  String get sampleTopic2 => 'Spaced repetition';
+
+  @override
+  String get sampleTopic3 => 'Active recall';
+
+  @override
+  String get readerHintHighlight => 'Drag across text to excerpt it';
+
+  @override
+  String get readerHintSelect => 'Select text, then choose an action';
+
+  @override
+  String get outlineEmpty => 'Nothing in the outline yet';
+
+  @override
+  String get sampleDocTitle => 'Sample chapter: The forgetting curve';
+
+  @override
+  String get somethingWentWrong => 'Something went wrong. Please try again.';
 }

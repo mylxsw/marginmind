@@ -433,4 +433,111 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get back => '返回';
+
+  @override
+  String get importPdf => '导入 PDF…';
+
+  @override
+  String importedHud(int count) {
+    return '已导入 $count 份文档';
+  }
+
+  @override
+  String importFailed(String name) {
+    return '无法以 PDF 打开「$name」';
+  }
+
+  @override
+  String get pdfFiles => 'PDF 文档';
+
+  @override
+  String get excerptAction => '摘录到脑图';
+
+  @override
+  String get highlightAction => '高亮';
+
+  @override
+  String get copyAction => '拷贝';
+
+  @override
+  String get addToMapAction => '加入脑图';
+
+  @override
+  String get deleteHighlight => '删除高亮';
+
+  @override
+  String excerptedHud(String target) {
+    return '已摘录到「$target」';
+  }
+
+  @override
+  String get highlightedHud => '已高亮';
+
+  @override
+  String get copiedHud => '已拷贝';
+
+  @override
+  String get removedHud => '已从脑图移除，原文高亮保留';
+
+  @override
+  String get highlightDeletedHud => '已删除高亮';
+
+  @override
+  String get rename => '重命名…';
+
+  @override
+  String get renameTitle => '重命名';
+
+  @override
+  String get editNote => '编辑笔记';
+
+  @override
+  String get save => '保存';
+
+  @override
+  String get newTopicName => '新主题';
+
+  @override
+  String get newNoteText => '新笔记';
+
+  @override
+  String get untitledExcerpt => '未命名摘录';
+
+  @override
+  String get revealSource => '定位原文';
+
+  @override
+  String get menuMap => '脑图';
+
+  @override
+  String documentPages(int count) {
+    return '$count 页';
+  }
+
+  @override
+  String get sampleSetTitle => '示例：遗忘曲线与间隔重复';
+
+  @override
+  String get sampleTopic1 => '遗忘的规律';
+
+  @override
+  String get sampleTopic2 => '对策一：间隔重复';
+
+  @override
+  String get sampleTopic3 => '对策二：主动提取';
+
+  @override
+  String get readerHintHighlight => '拖选文字即可摘录';
+
+  @override
+  String get readerHintSelect => '选中文字后选择操作';
+
+  @override
+  String get outlineEmpty => '大纲里还没有内容';
+
+  @override
+  String get sampleDocTitle => '示例章节：遗忘曲线与间隔重复';
+
+  @override
+  String get somethingWentWrong => '出了点问题，请重试';
 }

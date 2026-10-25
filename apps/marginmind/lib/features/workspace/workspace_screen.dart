@@ -5,6 +5,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
+import '../../app/providers.dart';
 import '../../shared/l10n.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
@@ -43,8 +44,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final l = context.l10n;
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
-    final doc = state.activeDocument;
-    final setTitle = state.studySet?.title ?? '';
+    final content = ref.watch(contentProvider(widget.studySetId)).value;
+    final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
+    final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
+    final page = doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);
 
     return MMWindowScaffold(
       sidebarVisible: state.sidebarVisible,
@@ -54,7 +57,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
       toolbar: MMToolbar(
         title: doc?.title ?? setTitle,
-        subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(doc.currentPage)}',
+        subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(page!)}',
         leading: state.sidebarVisible
             ? null
             : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),

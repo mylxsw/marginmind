@@ -13,13 +13,22 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  file_selector: ^1.1.0
   flutter_riverpod: ^3.4.3
   intl: any
+  path: ^1.9.0
+  path_provider: ^2.1.6
   shared_preferences: ^2.5.6
   mm_core:
     path: ../../packages/mm_core
+  mm_data:
+    path: ../../packages/mm_data
   mm_design:
     path: ../../packages/mm_design
+  mm_layout:
+    path: ../../packages/mm_layout
+  mm_pdf:
+    path: ../../packages/mm_pdf
   mm_platform:
     path: ../../packages/mm_platform
 
@@ -32,6 +41,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/sample/
 
 flutter_launcher_icons:
   image_path: assets/icon/app_icon.png

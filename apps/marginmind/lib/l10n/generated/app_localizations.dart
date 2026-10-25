@@ -871,6 +871,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get back;
+
+  /// No description provided for @importPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Import PDF…'**
+  String get importPdf;
+
+  /// No description provided for @importedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Imported 1 document} other{Imported {count} documents}}'**
+  String importedHud(int count);
+
+  /// No description provided for @importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open “{name}” as a PDF'**
+  String importFailed(String name);
+
+  /// No description provided for @pdfFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF documents'**
+  String get pdfFiles;
+
+  /// No description provided for @excerptAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpt to Map'**
+  String get excerptAction;
+
+  /// No description provided for @highlightAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get highlightAction;
+
+  /// No description provided for @copyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copyAction;
+
+  /// No description provided for @addToMapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Map'**
+  String get addToMapAction;
+
+  /// No description provided for @deleteHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Highlight'**
+  String get deleteHighlight;
+
+  /// No description provided for @excerptedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpted to “{target}”'**
+  String excerptedHud(String target);
+
+  /// No description provided for @highlightedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted'**
+  String get highlightedHud;
+
+  /// No description provided for @copiedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copiedHud;
+
+  /// No description provided for @removedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the map; the highlight stays in the source'**
+  String get removedHud;
+
+  /// No description provided for @highlightDeletedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight deleted'**
+  String get highlightDeletedHud;
+
+  /// No description provided for @rename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename…'**
+  String get rename;
+
+  /// No description provided for @renameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameTitle;
+
+  /// No description provided for @editNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Note'**
+  String get editNote;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @newTopicName.
+  ///
+  /// In en, this message translates to:
+  /// **'New Topic'**
+  String get newTopicName;
+
+  /// No description provided for @newNoteText.
+  ///
+  /// In en, this message translates to:
+  /// **'New note'**
+  String get newNoteText;
+
+  /// No description provided for @untitledExcerpt.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled excerpt'**
+  String get untitledExcerpt;
+
+  /// No description provided for @revealSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal in Source'**
+  String get revealSource;
+
+  /// No description provided for @menuMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get menuMap;
+
+  /// No description provided for @documentPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pages'**
+  String documentPages(int count);
+
+  /// No description provided for @sampleSetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample: Forgetting & Spaced Repetition'**
+  String get sampleSetTitle;
+
+  /// No description provided for @sampleTopic1.
+  ///
+  /// In en, this message translates to:
+  /// **'How we forget'**
+  String get sampleTopic1;
+
+  /// No description provided for @sampleTopic2.
+  ///
+  /// In en, this message translates to:
+  /// **'Spaced repetition'**
+  String get sampleTopic2;
+
+  /// No description provided for @sampleTopic3.
+  ///
+  /// In en, this message translates to:
+  /// **'Active recall'**
+  String get sampleTopic3;
+
+  /// No description provided for @readerHintHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag across text to excerpt it'**
+  String get readerHintHighlight;
+
+  /// No description provided for @readerHintSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select text, then choose an action'**
+  String get readerHintSelect;
+
+  /// No description provided for @outlineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the outline yet'**
+  String get outlineEmpty;
+
+  /// No description provided for @sampleDocTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample chapter: The forgetting curve'**
+  String get sampleDocTitle;
+
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get somethingWentWrong;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

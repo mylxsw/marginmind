@@ -6,6 +6,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../features/library/library_controller.dart';
 import '../features/library/widgets/new_study_set_sheet.dart';
+import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
 import '../shared/l10n.dart';
@@ -34,6 +35,10 @@ abstract final class AppShortcuts {
   static SingleActivator get view1 => primaryShortcut(LogicalKeyboardKey.digit1);
   static SingleActivator get view2 => primaryShortcut(LogicalKeyboardKey.digit2);
   static SingleActivator get view3 => primaryShortcut(LogicalKeyboardKey.digit3);
+  static SingleActivator get importDocument => primaryShortcut(LogicalKeyboardKey.keyO);
+  static SingleActivator get addTopic => primaryShortcut(LogicalKeyboardKey.keyN, shift: true);
+  static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
+  static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
   static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true);
 
   /// "Tooltip (⌘1)".
@@ -64,6 +69,33 @@ class AppMenus extends ConsumerWidget {
         inLibrary ? () => showNewStudySetSheet(context, ref) : null,
         shortcut: AppShortcuts.newStudySet,
       ),
+      AppCommand(
+        l.importDocument,
+        inWorkspace ? () => pickAndImportDocuments(context, ref, workspaceId) : null,
+        shortcut: AppShortcuts.importDocument,
+      ),
+    ];
+    final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
+    final selected = inWorkspace ? ref.watch(workspaceProvider(workspaceId)).selectedCardId : null;
+    final map = <AppCommand>[
+      AppCommand(
+        l.addTopic,
+        workspace == null ? null : () => workspace.addTopic(l.newTopicName),
+        shortcut: AppShortcuts.addTopic,
+      ),
+      AppCommand(
+        l.addNote,
+        workspace == null ? null : () => workspace.addNote(l.newNoteText),
+        shortcut: AppShortcuts.addNote,
+      ),
+      AppCommand(
+        l.revealSource,
+        workspace != null && selected != null && workspace.content.card(selected)?.annotationId != null
+            ? () => workspace.revealCard(selected)
+            : null,
+        shortcut: AppShortcuts.revealSource,
+      ),
+      AppCommand(l.removeFromMap, workspace != null && selected != null ? workspace.removeSelected : null),
     ];
     final view = <AppCommand>[
       if (inLibrary) ...[
@@ -156,7 +188,7 @@ class AppMenus extends ConsumerWidget {
 
     return CallbackShortcuts(
       bindings: {
-        for (final c in [settings, ...file, ...view, ...help])
+        for (final c in [settings, ...file, ...view, ...map, ...help])
           if (c.shortcut != null && c.onInvoke != null) c.shortcut!: c.onInvoke!,
       },
       child: Focus(autofocus: true, child: child),

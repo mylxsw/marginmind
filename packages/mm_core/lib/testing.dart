@@ -3,4 +3,5 @@
 library;
 
 export 'src/testing/demo_library.dart';
+export 'src/testing/in_memory_content_repository.dart';
 export 'src/testing/in_memory_study_set_repository.dart';

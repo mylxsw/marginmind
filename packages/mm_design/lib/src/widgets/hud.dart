@@ -62,27 +62,31 @@ class MMHudState extends State<MMHudHost> {
           right: 0,
           bottom: 22,
           child: IgnorePointer(
-            child: Center(
-              child: AnimatedOpacity(
-                duration: MMAppearance.duration(context, MMMotion.standard),
-                opacity: _visible ? 1 : 0,
-                child: _message == null
-                    ? const SizedBox.shrink()
-                    : Semantics(
-                        liveRegion: true,
-                        child: MMGlass(
-                          borderRadius: BorderRadius.circular(20),
-                          padding: const EdgeInsets.fromLTRB(12, 9, 16, 9),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(_icon, size: 15, color: c.label),
-                              const SizedBox(width: 8),
-                              Text(_message!, style: context.mmText.headline.copyWith(fontWeight: FontWeight.w500)),
-                            ],
+            // Above the Navigator there is no Material: give text a style.
+            child: Material(
+              type: MaterialType.transparency,
+              child: Center(
+                child: AnimatedOpacity(
+                  duration: MMAppearance.duration(context, MMMotion.standard),
+                  opacity: _visible ? 1 : 0,
+                  child: _message == null
+                      ? const SizedBox.shrink()
+                      : Semantics(
+                          liveRegion: true,
+                          child: MMGlass(
+                            borderRadius: BorderRadius.circular(20),
+                            padding: const EdgeInsets.fromLTRB(12, 9, 16, 9),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_icon, size: 15, color: c.label),
+                                const SizedBox(width: 8),
+                                Text(_message!, style: context.mmText.headline.copyWith(fontWeight: FontWeight.w500)),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                ),
               ),
             ),
           ),
