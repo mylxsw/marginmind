@@ -311,5 +311,134 @@
   "readerHintSelect": "Select text, then choose an action",
   "outlineEmpty": "Nothing in the outline yet",
   "sampleDocTitle": "Sample chapter: The forgetting curve",
-  "somethingWentWrong": "Something went wrong. Please try again."
+  "somethingWentWrong": "Something went wrong. Please try again.",
+  "addChildTopic": "Add Child Topic",
+  "backToStudySet": "Back to Study Set",
+  "collapseNode": "Collapse",
+  "expandNode": "Expand",
+  "delete": "Delete",
+  "deleteEllipsis": "Delete…",
+  "deleteStudySetTitle": "Delete “{title}”?",
+  "@deleteStudySetTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteStudySetMessage": "Its documents, highlights, cards and review history will be deleted. This can’t be undone.",
+  "deletedHud": "Deleted “{title}”",
+  "@deletedHud": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "documentRemovedHud": "Document removed",
+  "dropToCreateSet": "Drop to create a study set",
+  "dropToImport": "Drop to import into this study set",
+  "dropOnlyPdf": "Only PDF files can be imported",
+  "exportMarkdown": "Export Map as Markdown…",
+  "exportOpml": "Export Map as OPML…",
+  "exportedHud": "Exported",
+  "menuEdit": "Edit",
+  "moveUp": "Move Up",
+  "moveDown": "Move Down",
+  "rateAgain": "Again",
+  "rateHard": "Hard",
+  "rateGood": "Good",
+  "rateEasy": "Easy",
+  "undo": "Undo",
+  "redo": "Redo",
+  "undoneHud": "Undone",
+  "redoneHud": "Redone",
+  "remove": "Remove",
+  "removeDocumentEllipsis": "Remove from Study Set…",
+  "removeDocumentTitle": "Remove “{title}”?",
+  "@removeDocumentTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "removeDocumentMessage": "{count, plural, =0{The document will be removed from this study set.} =1{Its highlight and excerpt card will be removed too. You can undo this with ⌘Z.} other{Its {count} highlights and their excerpt cards will be removed too. You can undo this with ⌘Z.}}",
+  "@removeDocumentMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "renameEllipsis": "Rename…",
+  "renameDocument": "Rename Document",
+  "renameStudySet": "Rename Study Set",
+  "reviewCount": "{count, plural, =1{Review 1 Card} other{Review {count} Cards}}",
+  "@reviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewTitle": "Review",
+  "reviewRemaining": "{count, plural, =1{1 left} other{{count} left}}",
+  "@reviewRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewProgress": "Review progress",
+  "reviewPromptExcerpt": "Recall this excerpt",
+  "reviewPromptNote": "Recall this note",
+  "reviewQuestionTip": "Tip: rename an excerpt to a question and it becomes the prompt here.",
+  "reviewDoneTitle": "All done for now",
+  "reviewDoneMessage": "{count, plural, =1{You reviewed 1 card. Come back when more are due.} other{You reviewed {count} cards. Come back when more are due.}}",
+  "@reviewDoneMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewNothingDueTitle": "Nothing to review",
+  "reviewNothingDueMessage": "Excerpts and notes in the mind map show up here when they’re due.",
+  "showAnswer": "Show Answer",
+  "startReview": "Start Review",
+  "sectionCards": "Cards",
+  "intervalMinutes": "{count} min",
+  "@intervalMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "intervalHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@intervalHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "intervalDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@intervalDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "intervalMonths": "{count, plural, =1{1 month} other{{count} months}}",
+  "@intervalMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

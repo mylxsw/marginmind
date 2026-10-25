@@ -1,0 +1,48 @@
+name: Release
+
+# Push a tag like v0.3.0 to build a macOS DMG and attach it to a draft
+# GitHub release. Run manually to get the DMG as a workflow artifact only.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build macos --release
+        working-directory: apps/marginmind
+      - name: Package DMG
+        working-directory: apps/marginmind
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed -E 's/version: ([^+]+).*/\1/')
+          APP=build/macos/Build/Products/Release/MarginMind.app
+          # No Developer ID yet: sign ad hoc so the bundle is consistent.
+          codesign --force --deep --sign - "$APP"
+          mkdir -p dist/dmg
+          cp -R "$APP" dist/dmg/
+          ln -s /Applications dist/dmg/Applications
+          hdiutil create -volname "MarginMind $VERSION" -srcfolder dist/dmg -ov -format UDZO "dist/MarginMind-$VERSION.dmg"
+          echo "DMG=apps/marginmind/dist/MarginMind-$VERSION.dmg" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MarginMind-macOS
+          path: ${{ env.DMG }}
+      - name: Draft GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$DMG" --draft --title "MarginMind $GITHUB_REF_NAME" --generate-notes

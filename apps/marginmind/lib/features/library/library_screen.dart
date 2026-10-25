@@ -10,6 +10,8 @@ import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../settings/settings_sheet.dart';
 import '../../shared/l10n.dart';
+import '../../shared/pdf_drop.dart';
+import '../workspace/widgets/notices.dart';
 import 'library_controller.dart';
 import 'sample_study_set.dart';
 import 'widgets/continue_card.dart';
@@ -133,7 +135,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ],
       ),
-      body: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+      body: PdfDropTarget(
+        label: l.dropToCreateSet,
+        onDrop: (files) async {
+          final notice = await controller.createFromFiles(files);
+          if (context.mounted) showNotice(context, notice, rootTitle: '');
+        },
+        child: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+      ),
     );
   }
 }
@@ -149,7 +158,6 @@ class _LibrarySidebar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final controller = ref.read(libraryViewProvider.notifier);
-    final c = context.mmColors;
     final starred = sets.where((s) => s.starred).length;
     final due = sets.fold<int>(0, (n, s) => n + s.dueCount);
     final hasUnfiled = sets.any((s) => s.folderId == null);
@@ -170,11 +178,6 @@ class _LibrarySidebar extends ConsumerWidget {
       ),
       footer: Row(
         children: [
-          MMIconButton(
-            icon: MMIcons.newFolder,
-            tooltip: l.newFolder,
-            onPressed: () => MMHud.show(context, l.comingSoon),
-          ),
           const Spacer(),
           MMIconButton(
             icon: MMIcons.settings,
@@ -213,13 +216,6 @@ class _LibrarySidebar extends ConsumerWidget {
                 ),
             ],
           ),
-        const SizedBox(height: 12),
-        MMSidebarItem(
-          icon: MMIcons.trash,
-          label: l.libraryRecentlyDeleted,
-          iconColor: c.icon,
-          onTap: () => MMHud.show(context, l.comingSoon),
-        ),
       ],
     );
   }
@@ -306,6 +302,46 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
 
     void open(String id) => controller.open(id);
 
+    Future<void> confirmDelete(StudySet s) async {
+      final ok = await showConfirmSheet(
+        context,
+        title: l.deleteStudySetTitle(s.title),
+        message: l.deleteStudySetMessage,
+        confirmLabel: l.delete,
+      );
+      if (!ok) return;
+      await controller.delete(s.id);
+      if (context.mounted) MMHud.show(context, l.deletedHud(s.title), icon: MMIcons.trash);
+    }
+
+    void showMenu(String id, Offset position) {
+      final s = sets.where((x) => x.id == id).firstOrNull;
+      if (s == null) return;
+      _focus.requestFocus();
+      controller.select(id);
+      final repo = ref.read(studySetRepositoryProvider);
+      showMMMenu(
+        context,
+        position: position,
+        entries: [
+          MMMenuItem(l.open, () => open(id)),
+          if (s.dueCount > 0)
+            MMMenuItem(l.reviewCount(s.dueCount), () async {
+              await repo.markOpened(id);
+              ref.read(navigationProvider.notifier).startReview(id);
+            }),
+          const MMMenuDivider(),
+          MMMenuItem(l.renameEllipsis, () async {
+            final title = await showRenameSheet(context, title: l.renameStudySet, initial: s.title);
+            if (title != null && title.isNotEmpty) await repo.rename(id, title);
+          }),
+          MMMenuItem(s.starred ? l.unstar : l.star, () => repo.setStarred(id, starred: !s.starred)),
+          const MMMenuDivider(),
+          MMMenuItem(l.deleteEllipsis, () => confirmDelete(s), destructive: true),
+        ],
+      );
+    }
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.enter): () {
@@ -315,6 +351,10 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
           if (view.selectedId != null) open(view.selectedId!);
         },
         const SingleActivator(LogicalKeyboardKey.escape): () => controller.select(null),
+        const SingleActivator(LogicalKeyboardKey.backspace, meta: true): () {
+          final s = sets.where((x) => x.id == view.selectedId).firstOrNull;
+          if (s != null) confirmDelete(s);
+        },
       },
       child: Focus(
         focusNode: _focus,
@@ -363,14 +403,17 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                         ),
                         delegate: SliverChildBuilderDelegate(childCount: visible.length, (context, i) {
                           final s = visible[i];
-                          return StudySetCard(
-                            set: s,
-                            now: now,
-                            selected: s.id == view.selectedId,
-                            onSelect: () => select(s.id),
-                            onOpen: () => open(s.id),
-                            onToggleStar: () =>
-                                ref.read(studySetRepositoryProvider).setStarred(s.id, starred: !s.starred),
+                          return GestureDetector(
+                            onSecondaryTapUp: (d) => showMenu(s.id, d.globalPosition),
+                            child: StudySetCard(
+                              set: s,
+                              now: now,
+                              selected: s.id == view.selectedId,
+                              onSelect: () => select(s.id),
+                              onOpen: () => open(s.id),
+                              onToggleStar: () =>
+                                  ref.read(studySetRepositoryProvider).setStarred(s.id, starred: !s.starred),
+                            ),
                           );
                         }),
                       ),
@@ -388,6 +431,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                           onSort: controller.setSort,
                           onSelect: select,
                           onOpen: open,
+                          onContextMenu: showMenu,
                         ),
                       ),
                     ),

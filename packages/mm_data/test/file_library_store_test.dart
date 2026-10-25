@@ -43,8 +43,10 @@ void main() {
     expect(sets.single.documentCount, 1);
     expect(sets.single.cardCount, 1);
     expect(sets.single.lastPosition!.page, 12);
+    expect(sets.single.dueCount, 1, reason: 'the new excerpt is due');
     final content = await reopened.load(set.id);
     expect(content.annotations.single.quote, '遗忘曲线');
+    expect(content.documents.single.lastReadAt, DateTime(2026, 10, 25));
     await reopened.dispose();
   });
 
@@ -71,5 +73,27 @@ void main() {
     final store = FileLibraryStore(dir);
     expect(() => store.load('nope'), throwsStateError);
     await store.dispose();
+  });
+
+  test('renames, recolors and deletes a study set with its files', () async {
+    final store = FileLibraryStore(dir);
+    final set = await store.create(const NewStudySet(title: 'A', colorIndex: 0));
+    await store.rename(set.id, ' B ');
+    await store.setColor(set.id, 3);
+    var sets = await store.watchAll().first;
+    expect(sets.single.title, 'B');
+    expect(sets.single.colorIndex, 3);
+
+    final package = Directory(p.join(dir.path, 'sets', '${set.id}.mmset'));
+    expect(package.existsSync(), isTrue);
+    await store.delete(set.id);
+    expect(package.existsSync(), isFalse);
+    sets = await store.watchAll().first;
+    expect(sets, isEmpty);
+    await store.dispose();
+
+    final reopened = FileLibraryStore(dir);
+    expect(await reopened.watchAll().first, isEmpty);
+    await reopened.dispose();
   });
 }

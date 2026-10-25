@@ -15,4 +15,11 @@ abstract interface class StudySetRepository {
 
   /// Records that the study set was just opened (drives "Recent").
   Future<void> markOpened(String id);
+
+  Future<void> rename(String id, String title);
+
+  Future<void> setColor(String id, int colorIndex);
+
+  /// Deletes the study set with all its content and files.
+  Future<void> delete(String id);
 }

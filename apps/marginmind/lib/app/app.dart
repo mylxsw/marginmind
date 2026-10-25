@@ -6,6 +6,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../features/gallery/gallery_screen.dart';
 import '../features/library/library_screen.dart';
+import '../features/review/review_screen.dart';
 import '../features/workspace/workspace_screen.dart';
 import '../settings/app_settings.dart';
 import '../settings/system_appearance.dart';
@@ -54,6 +55,7 @@ class AppShell extends ConsumerWidget {
     final screen = switch (route) {
       LibraryRoute() => const LibraryScreen(),
       WorkspaceRoute(:final studySetId) => WorkspaceScreen(key: ValueKey(studySetId), studySetId: studySetId),
+      ReviewRoute(:final studySetId) => ReviewScreen(key: ValueKey('review-$studySetId'), studySetId: studySetId),
       GalleryRoute() => const GalleryScreen(),
     };
     return AppMenus(

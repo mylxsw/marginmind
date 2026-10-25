@@ -3,6 +3,8 @@ import 'package:mm_core/mm_core.dart';
 
 import '../../app/navigation.dart';
 import '../../app/providers.dart';
+import '../../shared/pdf_drop.dart';
+import '../workspace/workspace_controller.dart';
 
 enum LibraryViewMode { grid, list }
 
@@ -58,6 +60,24 @@ class LibraryViewController extends Notifier<LibraryViewState> {
   void select(String? id) => state = id == null ? state.copyWith(clearSelection: true) : state.copyWith(selectedId: id);
 
   void toggleSidebar() => state = state.copyWith(sidebarVisible: !state.sidebarVisible);
+
+  /// Files dropped on the library: a new study set named after the first
+  /// file, with all of them imported, then opened.
+  Future<ImportedNotice> createFromFiles(List<DroppedFile> files) async {
+    final repo = ref.read(studySetRepositoryProvider);
+    final count = ref.read(studySetsProvider).value?.length ?? 0;
+    final title = files.first.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
+    final created = await repo.create(NewStudySet(title: title, colorIndex: count % 6));
+    final notice = await ref.read(workspaceProvider(created.id).notifier).importDocuments(files);
+    setFilter(LibraryFilter.all);
+    await open(created.id);
+    return notice;
+  }
+
+  Future<void> delete(String id) async {
+    if (state.selectedId == id) select(null);
+    await ref.read(studySetRepositoryProvider).delete(id);
+  }
 
   /// Records the open and switches to the study set's workspace.
   Future<void> open(String id) async {

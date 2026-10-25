@@ -16,8 +16,11 @@ class StudySetList extends StatelessWidget {
     required this.onSort,
     required this.onSelect,
     required this.onOpen,
+    this.onContextMenu,
   });
 
+  /// Right click on a row (study set id, global pointer position).
+  final void Function(String id, Offset position)? onContextMenu;
   final List<StudySet> sets;
   final List<Folder> folders;
   final LibrarySort sort;
@@ -85,6 +88,7 @@ class StudySetList extends StatelessWidget {
             selected: sets[i].id == selectedId,
             onSelect: () => onSelect(sets[i].id),
             onOpen: () => onOpen(sets[i].id),
+            onContextMenu: onContextMenu == null ? null : (position) => onContextMenu!(sets[i].id, position),
             builder: (fg) {
               final secondary = t.body.copyWith(
                 color: fg ?? c.secondaryLabel,
@@ -136,8 +140,11 @@ class _Row extends StatelessWidget {
     required this.selected,
     required this.onSelect,
     required this.onOpen,
+    required this.onContextMenu,
     required this.builder,
   });
+
+  final ValueChanged<Offset>? onContextMenu;
 
   final StudySet set;
   final bool striped;
@@ -151,6 +158,18 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    return GestureDetector(
+      onSecondaryTapUp: onContextMenu == null
+          ? null
+          : (d) {
+              onSelect();
+              onContextMenu!(d.globalPosition);
+            },
+      child: _interactive(context, c),
+    );
+  }
+
+  Widget _interactive(BuildContext context, MMColors c) {
     return MMInteractive(
       onTapDown: onSelect,
       onDoubleTap: onOpen,

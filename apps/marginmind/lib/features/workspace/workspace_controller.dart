@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/painting.dart' show AxisDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -9,7 +10,7 @@ import '../../app/providers.dart';
 
 enum MapViewMode { map, outline }
 
-enum AnnotationTool { select, highlight, area, pen, text }
+enum AnnotationTool { select, highlight }
 
 /// Something the source pane is waiting on the user to decide.
 sealed class PendingAction {
@@ -65,6 +66,16 @@ class HighlightDeletedNotice extends WorkspaceNotice {
   const HighlightDeletedNotice();
 }
 
+class UndoneNotice extends WorkspaceNotice {
+  const UndoneNotice({required this.redo});
+
+  final bool redo;
+}
+
+class DocumentRemovedNotice extends WorkspaceNotice {
+  const DocumentRemovedNotice();
+}
+
 class ImportedNotice extends WorkspaceNotice {
   const ImportedNotice(this.count, this.failed);
 
@@ -90,6 +101,8 @@ class WorkspaceState {
     this.pending,
     this.reveal,
     this.currentPages = const {},
+    this.canUndo = false,
+    this.canRedo = false,
   });
 
   final bool sidebarVisible;
@@ -115,6 +128,9 @@ class WorkspaceState {
   /// Page currently shown per document (persisted as `lastPage`, debounced).
   final Map<String, int> currentPages;
 
+  final bool canUndo;
+  final bool canRedo;
+
   WorkspaceState copyWith({
     bool? sidebarVisible,
     MMSplitMode? layout,
@@ -136,6 +152,8 @@ class WorkspaceState {
     bool clearPending = false,
     RevealRequest? reveal,
     Map<String, int>? currentPages,
+    bool? canUndo,
+    bool? canRedo,
   }) {
     return WorkspaceState(
       sidebarVisible: sidebarVisible ?? this.sidebarVisible,
@@ -154,6 +172,8 @@ class WorkspaceState {
       pending: clearPending ? null : (pending ?? this.pending),
       reveal: reveal ?? this.reveal,
       currentPages: currentPages ?? this.currentPages,
+      canUndo: canUndo ?? this.canUndo,
+      canRedo: canRedo ?? this.canRedo,
     );
   }
 }
@@ -177,19 +197,72 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     ref.listen(contentProvider(studySetId), (_, next) {
       final c = next.value;
-      if (c != null) state = _withTabs(state, c);
+      if (c == null) return;
+      _latest = c;
+      state = _withTabs(state, c);
     });
     final initial = ref.read(contentProvider(studySetId)).value;
     return initial == null ? const WorkspaceState() : _withTabs(const WorkspaceState(), initial);
   }
 
-  StudySetContent get content => ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;
+  /// The newest content seen, from either the stream or our own writes
+  /// (the stream delivers a write a moment after it completes).
+  StudySetContent? _latest;
+
+  StudySetContent get content => _latest ?? ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;
 
   StudySetEditor get _editor => ref.read(editorProvider);
 
   StudySetContentRepository get _repo => ref.read(contentRepositoryProvider);
 
-  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change) => _repo.update(studySetId, change);
+  /// Content before each undoable edit, newest last; redo holds what undo
+  /// replaced.
+  final List<StudySetContent> _undo = [];
+  final List<StudySetContent> _redo = [];
+  static const _historyLimit = 100;
+
+  /// Applies an edit. Undoable edits are recorded for ⌘Z unless they did
+  /// not change anything.
+  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) async {
+    StudySetContent? before;
+    final next = await _repo.update(studySetId, (c) {
+      before = c;
+      return change(c);
+    });
+    _latest = next;
+    if (ref.mounted) state = _withTabs(state, next);
+    if (undoable && before != null && !identical(before, next)) {
+      _undo.add(before!);
+      if (_undo.length > _historyLimit) _undo.removeAt(0);
+      _redo.clear();
+      _syncHistory();
+    }
+    return next;
+  }
+
+  void _syncHistory() {
+    if (!ref.mounted) return;
+    state = state.copyWith(canUndo: _undo.isNotEmpty, canRedo: _redo.isNotEmpty);
+  }
+
+  Future<UndoneNotice?> undo() => _travel(_undo, _redo, redo: false);
+
+  Future<UndoneNotice?> redo() => _travel(_redo, _undo, redo: true);
+
+  Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) async {
+    if (from.isEmpty) return null;
+    final snapshot = from.removeLast();
+    StudySetContent? current;
+    _latest = await _repo.update(studySetId, (c) {
+      current = c;
+      return StudySetEditor.restore(snapshot, c);
+    });
+    if (ref.mounted) state = _withTabs(state, _latest!);
+    to.add(current!);
+    state = state.copyWith(clearPending: true);
+    _syncHistory();
+    return UndoneNotice(redo: redo);
+  }
 
   /// Opens the last-read document on first load, drops tabs (and the
   /// selection) whose target no longer exists.
@@ -271,7 +344,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           final (next, doc) = _editor.addDocument(c, title: title, fileName: stored, pageCount: info.pageCount);
           lastId = doc.id;
           return next;
-        });
+        }, undoable: false);
         count++;
       } catch (_) {
         failed.add(f.name);
@@ -283,12 +356,30 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   String filePath(Document doc) => _repo.resolveFile(studySetId, doc.fileName);
 
+  Future<void> renameDocument(String documentId, String title) {
+    if (title.trim().isEmpty) return Future.value();
+    return _update((c) => _editor.renameDocument(c, documentId, title));
+  }
+
+  /// Removes a document with its highlights and excerpt cards (undoable;
+  /// the file stays in the package until the study set is deleted).
+  Future<DocumentRemovedNotice> removeDocument(String documentId) async {
+    await _update((c) => _editor.removeDocument(c, documentId));
+    return const DocumentRemovedNotice();
+  }
+
+  /// The main map as Markdown or OPML. [source] labels excerpt sources.
+  String export({required bool opml, required String rootTitle, required String Function(Document, int) source}) {
+    final exporter = MapExporter(content, rootTitle: rootTitle, source: source);
+    return opml ? exporter.opml() : exporter.markdown();
+  }
+
   void recordPage(String documentId, int page) {
     if (state.currentPages[documentId] == page) return;
     state = state.copyWith(currentPages: {...state.currentPages, documentId: page});
     _pageTimer?.cancel();
     _pageTimer = Timer(const Duration(milliseconds: 800), () {
-      _update((c) => _editor.setLastPage(c, documentId, page));
+      _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
     });
   }
 
@@ -397,10 +488,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     _flash(annotationId: annotation.id, cardId: cardId);
   }
 
-  /// Adds a topic under the selected topic, or at the root.
-  Future<Card> addTopic(String title) async {
+  /// Adds a topic under the selected topic, or at the root. With
+  /// [asChild] it goes under the selected node of any kind (Tab).
+  Future<Card> addTopic(String title, {bool asChild = false}) async {
     final selected = state.selectedCardId == null ? null : content.card(state.selectedCardId!);
-    final parent = selected?.kind == CardKind.topic ? selected!.id : null;
+    final parent = asChild || selected?.kind == CardKind.topic ? selected?.id : null;
     late Card card;
     await _update((c) {
       final (next, created) = _editor.addTopic(c, title: title, parentId: parent);
@@ -425,6 +517,56 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
+
+  /// Drag and drop: [cardId] becomes a child of [parentId] (null = root) at
+  /// [index], or the last child.
+  Future<void> moveCard(String cardId, String? parentId, {int? index}) async {
+    await _update((c) => _editor.move(c, cardId, parentId, index: index));
+    state = state.copyWith(selectedCardId: cardId);
+  }
+
+  /// ⌘↑ / ⌘↓: move the selected node among its siblings.
+  Future<void> shiftSelected(int delta) async {
+    final id = state.selectedCardId;
+    if (id != null) await _update((c) => _editor.shift(c, id, delta));
+  }
+
+  Future<void> toggleCollapsed(String cardId) {
+    final node = content.node(cardId);
+    if (node == null || content.childrenOf(cardId).isEmpty) return Future.value();
+    return _update((c) => _editor.setCollapsed(c, cardId, collapsed: !node.collapsed));
+  }
+
+  /// Arrow keys: parent (left), first child (right, expanding if needed),
+  /// previous / next sibling (up / down). The root is "null".
+  void selectNeighbor(AxisDirection direction) {
+    final c = content;
+    final id = state.selectedCardId;
+    final node = id == null ? null : c.node(id);
+    if (id != null && node == null) return;
+    String? target;
+    var found = false;
+    switch (direction) {
+      case AxisDirection.left:
+        if (id == null) return;
+        target = node!.parentId;
+        found = true;
+      case AxisDirection.right:
+        final children = c.childrenOf(id);
+        if (children.isEmpty) return;
+        if (node?.collapsed ?? false) toggleCollapsed(id!);
+        target = children.first.cardId;
+        found = true;
+      case AxisDirection.up || AxisDirection.down:
+        if (node == null) return;
+        final siblings = c.childrenOf(node.parentId);
+        final i = siblings.indexWhere((n) => n.cardId == id) + (direction == AxisDirection.up ? -1 : 1);
+        if (i < 0 || i >= siblings.length) return;
+        target = siblings[i].cardId;
+        found = true;
+    }
+    if (found) selectCard(target);
+  }
 
   Future<RemovedNotice?> removeSelected() async {
     final id = state.selectedCardId;

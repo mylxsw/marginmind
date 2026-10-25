@@ -30,4 +30,13 @@ extension AppLocalizationsX on AppLocalizations {
     if (d.inDays < 30) return relativeWeeks(d.inDays ~/ 7);
     return relativeMonths(d.inDays ~/ 30);
   }
+
+  /// Time until the next review: "10 min", "3 days", "2 mo".
+  String reviewInterval(Duration d) {
+    if (d.inMinutes < 60) return intervalMinutes(d.inMinutes);
+    if (d.inHours < 24) return intervalHours(d.inHours);
+    final days = (d.inMinutes / (24 * 60)).round();
+    if (days < 30) return intervalDays(days);
+    return intervalMonths((days / 30).round());
+  }
 }

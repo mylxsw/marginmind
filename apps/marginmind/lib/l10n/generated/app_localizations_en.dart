@@ -557,4 +557,206 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get somethingWentWrong => 'Something went wrong. Please try again.';
+
+  @override
+  String get addChildTopic => 'Add Child Topic';
+
+  @override
+  String get backToStudySet => 'Back to Study Set';
+
+  @override
+  String get collapseNode => 'Collapse';
+
+  @override
+  String get expandNode => 'Expand';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get deleteEllipsis => 'Delete…';
+
+  @override
+  String deleteStudySetTitle(String title) {
+    return 'Delete “$title”?';
+  }
+
+  @override
+  String get deleteStudySetMessage =>
+      'Its documents, highlights, cards and review history will be deleted. This can’t be undone.';
+
+  @override
+  String deletedHud(String title) {
+    return 'Deleted “$title”';
+  }
+
+  @override
+  String get documentRemovedHud => 'Document removed';
+
+  @override
+  String get dropToCreateSet => 'Drop to create a study set';
+
+  @override
+  String get dropToImport => 'Drop to import into this study set';
+
+  @override
+  String get dropOnlyPdf => 'Only PDF files can be imported';
+
+  @override
+  String get exportMarkdown => 'Export Map as Markdown…';
+
+  @override
+  String get exportOpml => 'Export Map as OPML…';
+
+  @override
+  String get exportedHud => 'Exported';
+
+  @override
+  String get menuEdit => 'Edit';
+
+  @override
+  String get moveUp => 'Move Up';
+
+  @override
+  String get moveDown => 'Move Down';
+
+  @override
+  String get rateAgain => 'Again';
+
+  @override
+  String get rateHard => 'Hard';
+
+  @override
+  String get rateGood => 'Good';
+
+  @override
+  String get rateEasy => 'Easy';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get redo => 'Redo';
+
+  @override
+  String get undoneHud => 'Undone';
+
+  @override
+  String get redoneHud => 'Redone';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get removeDocumentEllipsis => 'Remove from Study Set…';
+
+  @override
+  String removeDocumentTitle(String title) {
+    return 'Remove “$title”?';
+  }
+
+  @override
+  String removeDocumentMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Its $count highlights and their excerpt cards will be removed too. You can undo this with ⌘Z.',
+      one: 'Its highlight and excerpt card will be removed too. You can undo this with ⌘Z.',
+      zero: 'The document will be removed from this study set.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get renameEllipsis => 'Rename…';
+
+  @override
+  String get renameDocument => 'Rename Document';
+
+  @override
+  String get renameStudySet => 'Rename Study Set';
+
+  @override
+  String reviewCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Review $count Cards',
+      one: 'Review 1 Card',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewTitle => 'Review';
+
+  @override
+  String reviewRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count left', one: '1 left');
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewProgress => 'Review progress';
+
+  @override
+  String get reviewPromptExcerpt => 'Recall this excerpt';
+
+  @override
+  String get reviewPromptNote => 'Recall this note';
+
+  @override
+  String get reviewQuestionTip => 'Tip: rename an excerpt to a question and it becomes the prompt here.';
+
+  @override
+  String get reviewDoneTitle => 'All done for now';
+
+  @override
+  String reviewDoneMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You reviewed $count cards. Come back when more are due.',
+      one: 'You reviewed 1 card. Come back when more are due.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewNothingDueTitle => 'Nothing to review';
+
+  @override
+  String get reviewNothingDueMessage => 'Excerpts and notes in the mind map show up here when they’re due.';
+
+  @override
+  String get showAnswer => 'Show Answer';
+
+  @override
+  String get startReview => 'Start Review';
+
+  @override
+  String get sectionCards => 'Cards';
+
+  @override
+  String intervalMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String intervalHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count hours', one: '1 hour');
+    return '$_temp0';
+  }
+
+  @override
+  String intervalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count days', one: '1 day');
+    return '$_temp0';
+  }
+
+  @override
+  String intervalMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count months', one: '1 month');
+    return '$_temp0';
+  }
 }

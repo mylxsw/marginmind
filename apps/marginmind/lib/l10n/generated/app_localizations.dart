@@ -1069,6 +1069,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again.'**
   String get somethingWentWrong;
+
+  /// No description provided for @addChildTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Child Topic'**
+  String get addChildTopic;
+
+  /// No description provided for @backToStudySet.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Study Set'**
+  String get backToStudySet;
+
+  /// No description provided for @collapseNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get collapseNode;
+
+  /// No description provided for @expandNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get expandNode;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @deleteEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete…'**
+  String get deleteEllipsis;
+
+  /// No description provided for @deleteStudySetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{title}”?'**
+  String deleteStudySetTitle(String title);
+
+  /// No description provided for @deleteStudySetMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Its documents, highlights, cards and review history will be deleted. This can’t be undone.'**
+  String get deleteStudySetMessage;
+
+  /// No description provided for @deletedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted “{title}”'**
+  String deletedHud(String title);
+
+  /// No description provided for @documentRemovedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Document removed'**
+  String get documentRemovedHud;
+
+  /// No description provided for @dropToCreateSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop to create a study set'**
+  String get dropToCreateSet;
+
+  /// No description provided for @dropToImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop to import into this study set'**
+  String get dropToImport;
+
+  /// No description provided for @dropOnlyPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Only PDF files can be imported'**
+  String get dropOnlyPdf;
+
+  /// No description provided for @exportMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Map as Markdown…'**
+  String get exportMarkdown;
+
+  /// No description provided for @exportOpml.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Map as OPML…'**
+  String get exportOpml;
+
+  /// No description provided for @exportedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported'**
+  String get exportedHud;
+
+  /// No description provided for @menuEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get menuEdit;
+
+  /// No description provided for @moveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Up'**
+  String get moveUp;
+
+  /// No description provided for @moveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Down'**
+  String get moveDown;
+
+  /// No description provided for @rateAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get rateAgain;
+
+  /// No description provided for @rateHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard'**
+  String get rateHard;
+
+  /// No description provided for @rateGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get rateGood;
+
+  /// No description provided for @rateEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get rateEasy;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @redo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get redo;
+
+  /// No description provided for @undoneHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Undone'**
+  String get undoneHud;
+
+  /// No description provided for @redoneHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Redone'**
+  String get redoneHud;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @removeDocumentEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Study Set…'**
+  String get removeDocumentEllipsis;
+
+  /// No description provided for @removeDocumentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove “{title}”?'**
+  String removeDocumentTitle(String title);
+
+  /// No description provided for @removeDocumentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{The document will be removed from this study set.} =1{Its highlight and excerpt card will be removed too. You can undo this with ⌘Z.} other{Its {count} highlights and their excerpt cards will be removed too. You can undo this with ⌘Z.}}'**
+  String removeDocumentMessage(int count);
+
+  /// No description provided for @renameEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename…'**
+  String get renameEllipsis;
+
+  /// No description provided for @renameDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Document'**
+  String get renameDocument;
+
+  /// No description provided for @renameStudySet.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Study Set'**
+  String get renameStudySet;
+
+  /// No description provided for @reviewCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Review 1 Card} other{Review {count} Cards}}'**
+  String reviewCount(int count);
+
+  /// No description provided for @reviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get reviewTitle;
+
+  /// No description provided for @reviewRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 left} other{{count} left}}'**
+  String reviewRemaining(int count);
+
+  /// No description provided for @reviewProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Review progress'**
+  String get reviewProgress;
+
+  /// No description provided for @reviewPromptExcerpt.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall this excerpt'**
+  String get reviewPromptExcerpt;
+
+  /// No description provided for @reviewPromptNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall this note'**
+  String get reviewPromptNote;
+
+  /// No description provided for @reviewQuestionTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: rename an excerpt to a question and it becomes the prompt here.'**
+  String get reviewQuestionTip;
+
+  /// No description provided for @reviewDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All done for now'**
+  String get reviewDoneTitle;
+
+  /// No description provided for @reviewDoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You reviewed 1 card. Come back when more are due.} other{You reviewed {count} cards. Come back when more are due.}}'**
+  String reviewDoneMessage(int count);
+
+  /// No description provided for @reviewNothingDueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to review'**
+  String get reviewNothingDueTitle;
+
+  /// No description provided for @reviewNothingDueMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpts and notes in the mind map show up here when they’re due.'**
+  String get reviewNothingDueMessage;
+
+  /// No description provided for @showAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Answer'**
+  String get showAnswer;
+
+  /// No description provided for @startReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Review'**
+  String get startReview;
+
+  /// No description provided for @sectionCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get sectionCards;
+
+  /// No description provided for @intervalMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String intervalMinutes(int count);
+
+  /// No description provided for @intervalHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String intervalHours(int count);
+
+  /// No description provided for @intervalDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String intervalDays(int count);
+
+  /// No description provided for @intervalMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String intervalMonths(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
