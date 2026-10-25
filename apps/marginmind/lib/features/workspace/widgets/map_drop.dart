@@ -98,9 +98,11 @@ class MapDrop {
 
   /// Where the preview is drawn: the target itself for [MapDropZone.child]
   /// (a ring), otherwise a line of [thickness] centered in the [gap] above
-  /// or below it, so "after A" and "before B" show the same line.
-  Rect previewRect(Map<String, Rect> rects, {required double gap, required double thickness}) {
-    final r = rects[targetId]!;
+  /// or below it, so "after A" and "before B" show the same line. Null if
+  /// the target is no longer drawn.
+  Rect? previewRect(Map<String, Rect> rects, {required double gap, required double thickness}) {
+    final r = rects[targetId];
+    if (r == null) return null;
     return switch (zone) {
       MapDropZone.child => r,
       MapDropZone.before => Rect.fromLTWH(r.left, r.top - gap / 2 - thickness / 2, r.width, thickness),

@@ -28,13 +28,18 @@ class _Harness {
   final moves = <String>[];
   String? selection;
   Set<String> selected = {};
+  late StudySetContent content;
+  late StateSetter rebuild;
 
-  Future<void> pump(StudySetContent content, {Size size = const Size(700, 500)}) async {
+  Future<void> pump(StudySetContent initial, {Size size = const Size(700, 500)}) async {
+    content = initial;
     addTearDown(transform.dispose);
     addTearDown(focus.dispose);
     await tester.pumpWidget(
       StatefulBuilder(
-        builder: (context, setState) => MaterialApp(
+        builder: (context, setState) {
+          rebuild = setState;
+          return MaterialApp(
           theme: MMTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -68,6 +73,8 @@ class _Harness {
             ),
           ),
         ),
+      );
+        },
       ),
     );
     await tester.pumpAndSettle();
@@ -227,5 +234,34 @@ void main() {
     final after = ty();
     await tester.pump(const Duration(milliseconds: 200));
     expect(ty(), after);
+  });
+
+  testWidgets('a dragged node removed mid-drag ends the drag without a move', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    final gesture = await h.grab('t3');
+    await h.moveTo(gesture, h.node('t1').center);
+    expect(h.preview, findsOneWidget);
+    final editor = StudySetEditor(newId: () => 'x', now: () => _now);
+    // Undo, a fold or another window removes the target: no preview, no crash.
+    h.rebuild(() => h.content = editor.removeMany(h.content, {'t1'}));
+    await tester.pump();
+    await tester.pump();
+    expect(h.preview, findsNothing);
+    await h.moveTo(gesture, h.node('t2').center);
+    expect(h.preview, findsOneWidget);
+    // Then the node being dragged.
+    h.rebuild(() => h.content = editor.removeMany(h.content, {'t3'}));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, isEmpty);
+    expect(h.preview, findsNothing);
+    // The canvas is usable again: the next drag moves as usual.
+    final next = await h.grab('t0');
+    await h.moveTo(next, h.node('t2').center);
+    await next.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, ['t0:t2:null']);
   });
 }

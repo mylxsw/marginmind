@@ -9,7 +9,9 @@ final _now = DateTime(2026);
 ///      ├ b
 ///      └ c
 StudySetContent _content() => StudySetContent(
-  cards: [for (final id in ['a', 'a1', 'b', 'c']) Card(id: id, kind: CardKind.topic, title: id, createdAt: _now)],
+  cards: [
+    for (final id in ['a', 'a1', 'b', 'c']) Card(id: id, kind: CardKind.topic, title: id, createdAt: _now),
+  ],
   nodes: const [
     MapNode(cardId: 'a', parentId: null, order: 0),
     MapNode(cardId: 'b', parentId: null, order: 1),
@@ -26,24 +28,30 @@ const _rects = {
   'a1': Rect.fromLTWH(300, 0, 100, 40),
 };
 
-MapDrop? _at(Offset point, {Set<String> moving = const {'c'}}) => MapDrop.resolve(
-  point: point,
-  rects: _rects,
-  content: _content(),
-  moving: moving,
-  rootId: 'root',
-  gap: 14,
-);
+MapDrop? _at(Offset point, {Set<String> moving = const {'c'}}) =>
+    MapDrop.resolve(point: point, rects: _rects, content: _content(), moving: moving, rootId: 'root', gap: 14);
 
 void main() {
   group('MapDrop.resolve', () {
     test('top, middle and bottom of a node insert before, as child and after', () {
-      expect(_at(const Offset(150, 56)), const MapDrop(targetId: 'b', zone: MapDropZone.before, parentId: null, index: 1));
-      expect(_at(const Offset(150, 74)), const MapDrop(targetId: 'b', zone: MapDropZone.child, parentId: 'b', index: null));
-      expect(_at(const Offset(150, 92)), const MapDrop(targetId: 'b', zone: MapDropZone.after, parentId: null, index: 2));
+      expect(
+        _at(const Offset(150, 56)),
+        const MapDrop(targetId: 'b', zone: MapDropZone.before, parentId: null, index: 1),
+      );
+      expect(
+        _at(const Offset(150, 74)),
+        const MapDrop(targetId: 'b', zone: MapDropZone.child, parentId: 'b', index: null),
+      );
+      expect(
+        _at(const Offset(150, 92)),
+        const MapDrop(targetId: 'b', zone: MapDropZone.after, parentId: null, index: 2),
+      );
       // Indexes skip the moving node: moving `a` puts "before b" at 0.
       expect(_at(const Offset(150, 56), moving: {'a'})!.index, 0);
-      expect(_at(const Offset(310, 2), moving: {'b'}), const MapDrop(targetId: 'a1', zone: MapDropZone.before, parentId: 'a', index: 0));
+      expect(
+        _at(const Offset(310, 2), moving: {'b'}),
+        const MapDrop(targetId: 'a1', zone: MapDropZone.before, parentId: 'a', index: 0),
+      );
     });
 
     test('the gap between siblings belongs to the nearer node', () {
@@ -57,7 +65,10 @@ void main() {
     });
 
     test('the root only takes children; empty space, moving nodes and descendants take nothing', () {
-      expect(_at(const Offset(10, 62)), const MapDrop(targetId: 'root', zone: MapDropZone.child, parentId: null, index: null));
+      expect(
+        _at(const Offset(10, 62)),
+        const MapDrop(targetId: 'root', zone: MapDropZone.child, parentId: null, index: null),
+      );
       expect(_at(const Offset(110, 70)), isNull);
       expect(_at(const Offset(150, 300)), isNull);
       expect(_at(const Offset(150, 120)), isNull);
@@ -77,10 +88,11 @@ void main() {
     const after = MapDrop(targetId: 'a', zone: MapDropZone.after, parentId: null, index: 1);
     const before = MapDrop(targetId: 'b', zone: MapDropZone.before, parentId: null, index: 1);
     const child = MapDrop(targetId: 'b', zone: MapDropZone.child, parentId: 'b', index: null);
-    final line = after.previewRect(_rects, gap: 14, thickness: 3);
+    final line = after.previewRect(_rects, gap: 14, thickness: 3)!;
     expect(line, const Rect.fromLTWH(140, 45.5, 100, 3));
+    expect(child.previewRect(const {}, gap: 14, thickness: 3), isNull);
     // "After a" and "before b" are the same slot and the same line.
-    expect(before.previewRect(_rects, gap: 14, thickness: 3).center.dy, line.center.dy);
+    expect(before.previewRect(_rects, gap: 14, thickness: 3)!.center.dy, line.center.dy);
     expect(child.previewRect(_rects, gap: 14, thickness: 3), _rects['b']);
   });
 
@@ -108,9 +120,15 @@ void main() {
         const Offset(-640, 0),
       );
       // Already past the limit: left alone rather than pulled back.
-      expect(clamp(const Offset(-700, 0), const Offset(-30, 0), const Rect.fromLTWH(-700, 0, 1000, 200)), const Offset(-700, 0));
+      expect(
+        clamp(const Offset(-700, 0), const Offset(-30, 0), const Rect.fromLTWH(-700, 0, 1000, 200)),
+        const Offset(-700, 0),
+      );
       // Left side at 20: room for 20 more toward the left, nothing upward.
-      expect(clamp(const Offset(20, 50), const Offset(30, 30), const Rect.fromLTWH(20, 50, 1000, 200)), const Offset(40, 50));
+      expect(
+        clamp(const Offset(20, 50), const Offset(30, 30), const Rect.fromLTWH(20, 50, 1000, 200)),
+        const Offset(40, 50),
+      );
       expect(clamp(const Offset(5, 5), Offset.zero, const Rect.fromLTWH(5, 5, 10, 10)), const Offset(5, 5));
       expect(clamp(Offset.zero, const Offset(0, -30), const Rect.fromLTWH(0, 0, 100, 1000)), const Offset(0, -30));
     });

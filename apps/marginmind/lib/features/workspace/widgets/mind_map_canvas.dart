@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -110,8 +111,7 @@ class MindMapCanvas extends StatefulWidget {
   State<MindMapCanvas> createState() => _MindMapCanvasState();
 }
 
-class _MindMapCanvasState extends State<MindMapCanvas>
-    with TickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
+class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
   final _tapModifiers = <String, bool>{};
   Offset? _boxStart;
@@ -257,6 +257,13 @@ class _MindMapCanvasState extends State<MindMapCanvas>
     super.didUpdateWidget(oldWidget);
     syncField();
     typed = null;
+    // The tree can change under a drag (undo, another window); the drop
+    // must follow what is drawn.
+    if (_dragging != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateDrop();
+      });
+    }
     if (_boxStart == null &&
         (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
@@ -376,12 +383,7 @@ class _MindMapCanvasState extends State<MindMapCanvas>
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final scrolling =
-        autoScrollVelocity(
-          box.globalToLocal(global),
-          box.size,
-          edge: _autoScrollEdge,
-          maxSpeed: _autoScrollSpeed,
-        ) !=
+        autoScrollVelocity(box.globalToLocal(global), box.size, edge: _autoScrollEdge, maxSpeed: _autoScrollSpeed) !=
         Offset.zero;
     if (scrolling && !_autoScroll.isActive) {
       _lastScrollTick = Duration.zero;
@@ -442,7 +444,9 @@ class _MindMapCanvasState extends State<MindMapCanvas>
   }
 
   /// Drops on the target last shown, whatever is under the pointer now.
-  void _endDrag(String grabbed) {
+  /// Without [grabbed] the drag is only cleared.
+  void _endDrag(String? grabbed) {
+    if (_dragging == null) return;
     final drop = _drop;
     _autoScroll.stop();
     _dragPointer = null;
@@ -450,7 +454,17 @@ class _MindMapCanvasState extends State<MindMapCanvas>
       _dragging = null;
       _drop = null;
     });
-    if (drop != null) widget.onMove(grabbed, drop.parentId, drop.index);
+    if (drop != null && grabbed != null) widget.onMove(grabbed, drop.parentId, drop.index);
+  }
+
+  /// The pointer is released before the drag ends. If the dragged node was
+  /// removed or folded away meanwhile, its `Draggable` never reports the
+  /// end, so clear what is left once this event has been handled.
+  void _afterPointerUp() {
+    if (_dragging == null) return;
+    scheduleMicrotask(() {
+      if (mounted) _endDrag(null);
+    });
   }
 
   Widget _draggable(String id, _NodeSpec spec, Widget child) {
@@ -643,16 +657,22 @@ class _MindMapCanvasState extends State<MindMapCanvas>
                 if (e.key != rootNodeId && box.overlaps(_drawn(e.key, e.value))) e.key,
             });
           },
-          onPointerUp: (_) => setState(() {
-            _boxStart = null;
-            _boxEnd = null;
-          }),
+          onPointerUp: (_) {
+            _afterPointerUp();
+            setState(() {
+              _boxStart = null;
+              _boxEnd = null;
+            });
+          },
           // Runs before the drag ends, so a cancelled drag drops nothing.
-          onPointerCancel: (_) => setState(() {
-            _boxStart = null;
-            _boxEnd = null;
-            _drop = null;
-          }),
+          onPointerCancel: (_) {
+            _afterPointerUp();
+            setState(() {
+              _boxStart = null;
+              _boxEnd = null;
+              _drop = null;
+            });
+          },
           child: InteractiveViewer(
             panEnabled: _boxStart == null,
             transformationController: widget.transformation,
@@ -705,7 +725,7 @@ class _MindMapCanvasState extends State<MindMapCanvas>
                           ),
                         ),
                       if (_drop case final drop?)
-                        if (drop.previewRect(_drawnRects(), gap: _siblingGap, thickness: 3) case final rect)
+                        if (drop.previewRect(_drawnRects(), gap: _siblingGap, thickness: 3) case final rect?)
                           Positioned.fromRect(
                             rect: rect,
                             child: IgnorePointer(
