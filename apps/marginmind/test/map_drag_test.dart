@@ -40,39 +40,39 @@ class _Harness {
         builder: (context, setState) {
           rebuild = setState;
           return MaterialApp(
-          theme: MMTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.topLeft,
-              child: SizedBox.fromSize(
-                size: size,
-                child: MindMapCanvas(
-                  content: content,
-                  rootTitle: 'Root',
-                  selectedCardId: selection,
-                  selectedCardIds: selected,
-                  flashCardId: null,
-                  transformation: transform,
-                  focusNode: focus,
-                  onSelect: (id) => setState(() {
-                    selection = id;
-                    selected = {?id};
-                  }),
-                  onReveal: (_) {},
-                  onRename: (_) {},
-                  onDelete: () {},
-                  onMove: (id, parent, index) => moves.add('$id:$parent:$index'),
-                  onToggleCollapsed: (_) {},
-                  onNavigate: (_) {},
-                  onAddChild: () {},
-                  onShift: (_) {},
+            theme: MMTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox.fromSize(
+                  size: size,
+                  child: MindMapCanvas(
+                    content: content,
+                    rootTitle: 'Root',
+                    selectedCardId: selection,
+                    selectedCardIds: selected,
+                    flashCardId: null,
+                    transformation: transform,
+                    focusNode: focus,
+                    onSelect: (id) => setState(() {
+                      selection = id;
+                      selected = {?id};
+                    }),
+                    onReveal: (_) {},
+                    onRename: (_) {},
+                    onDelete: () {},
+                    onMove: (id, parent, index) => moves.add('$id:$parent:$index'),
+                    onToggleCollapsed: (_) {},
+                    onNavigate: (_) {},
+                    onAddChild: () {},
+                    onShift: (_) {},
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
         },
       ),
     );
@@ -141,6 +141,15 @@ void main() {
     // The root takes children anywhere on it.
     await dropAt((r) => Offset(r.center.dx, r.top + 2), '__root__');
     expect(h.moves.removeLast(), 't0:null:null');
+
+    // A drag that starts on the very move that reaches the target still
+    // previews and drops there (Draggable's first update reports the press).
+    final quick = await tester.startGesture(h.node('t0').center);
+    await h.moveTo(quick, h.node('t3').center);
+    expect(tester.getRect(h.preview), h.node('t3'));
+    await quick.up();
+    await tester.pumpAndSettle();
+    expect(h.moves.removeLast(), 't0:t3:null');
 
     // Onto itself or empty canvas: no preview, no move.
     expect(await dropAt((r) => r.center, 't0'), isNull);

@@ -360,7 +360,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Widget build(BuildContext context) => LayoutBuilder(builder: _build);
 
   /// Nodes being dragged (the selection when the grabbed node is in it),
-  /// the pointer in global coordinates, and where they would land.
+  /// the pointer in global coordinates, and where they would land. The
+  /// pointer comes from the canvas listener: `Draggable` reports its first
+  /// update at the press position, not where the pointer is.
   Set<String>? _dragging;
   Offset? _dragPointer;
   MapDrop? _drop;
@@ -377,11 +379,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     setState(() => _dragging = {...moving});
   }
 
-  void _updateDrag(Offset global) {
-    _dragPointer = global;
+  void _updateDrag() {
+    final global = _dragPointer;
     _updateDrop();
     final box = context.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
+    if (global == null || box == null || !box.hasSize) return;
     final scrolling =
         autoScrollVelocity(box.globalToLocal(global), box.size, edge: _autoScrollEdge, maxSpeed: _autoScrollSpeed) !=
         Offset.zero;
@@ -449,7 +451,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (_dragging == null) return;
     final drop = _drop;
     _autoScroll.stop();
-    _dragPointer = null;
     setState(() {
       _dragging = null;
       _drop = null;
@@ -475,7 +476,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       data: id,
       dragAnchorStrategy: pointerDragAnchorStrategy,
       onDragStarted: () => _startDrag(id),
-      onDragUpdate: (d) => _updateDrag(d.globalPosition),
+      onDragUpdate: (_) => _updateDrag(),
       onDragEnd: (_) => _endDrag(id),
       feedback: Transform.translate(
         offset: const Offset(-12, -12),
@@ -648,6 +649,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             });
           },
           onPointerMove: (event) {
+            _dragPointer = event.position;
             if (_boxStart == null) return;
             setState(() => _boxEnd = widget.transformation.toScene(event.localPosition));
             final box = Rect.fromPoints(_boxStart!, _boxEnd!);
