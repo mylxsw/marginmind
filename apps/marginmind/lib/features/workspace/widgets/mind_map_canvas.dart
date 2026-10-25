@@ -1327,9 +1327,18 @@ class _FoldButton extends StatelessWidget {
 
 /// Where a relation between [a] and [b] runs: from the border of [a] facing
 /// [b] to the border of [b] facing [a], bowed to one side so it stands out
-/// from the tree's connectors. Start, two control points, end.
+/// from the tree's connectors. Nodes stacked in one column are joined around
+/// their right side instead, so the line and its label clear the nodes in
+/// between. Start, two control points, end.
 @visibleForTesting
 (Offset, Offset, Offset, Offset) relationCurve(Rect a, Rect b) {
+  final stacked = a.left < b.right && b.left < a.right && (a.bottom <= b.top || b.bottom <= a.top);
+  if (stacked) {
+    final start = Offset(a.right, a.center.dy), end = Offset(b.right, b.center.dy);
+    final x = math.max(a.right, b.right) + ((end.dy - start.dy).abs() * 0.3).clamp(48.0, 120.0);
+    return (start, Offset(x, start.dy), Offset(x, end.dy), end);
+  }
+
   Offset border(Rect r, Offset toward) {
     final d = toward - r.center;
     if (d == Offset.zero) return r.center;

@@ -168,11 +168,16 @@ class MindMapRenderCache {
   }
 
   /// A summary label's box; an empty one takes no room unless it is being
-  /// typed into.
+  /// typed into. Like a topic, the box leaves a little room past the measured
+  /// text: rendered glyphs can come out a fraction wider, and a box without
+  /// slack wraps the last character onto a hidden second line.
   Size _summaryLabelSize(String text, {required bool editing}) {
     if (text.isEmpty && !editing) return Size.zero;
     final s = _measure(text, MMTypography.headline, _summaryLabelWidth).size;
-    return Size(math.max(s.width, editing ? MMSpacing.xxxl : 0) + MMSpacing.m * 2, s.height + MMSpacing.s * 2);
+    return Size(
+      math.max(s.width, editing ? MMSpacing.xxxl : 0) + MMSpacing.xs + MMSpacing.m * 2,
+      s.height + MMSpacing.s * 2,
+    );
   }
 
   ({Size size, int lines}) _measure(String text, TextStyle style, double width) {

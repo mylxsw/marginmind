@@ -288,6 +288,12 @@ void main() {
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
       final label = tester.getRect(find.text('Two ideas'));
       expect(label.left, greaterThan(width), reason: 'right of the covered nodes');
+      final text = tester.renderObject<RenderParagraph>(find.text('Two ideas'));
+      expect(
+        text.size.width,
+        greaterThan(text.getMaxIntrinsicWidth(double.infinity)),
+        reason: 'room for glyphs a fraction wider than measured, so the label never wraps',
+      );
 
       // Double click edits the label; Esc keeps the old text.
       await doubleTap(tester, find.text('Two ideas'));
@@ -397,6 +403,21 @@ void main() {
     expect(cubicPoint(c, 1), c.$4);
     final same = relationCurve(a, a);
     expect(same.$1, a.center);
+  });
+
+  test('relation curves between stacked nodes run outside the column', () {
+    const a = Rect.fromLTWH(0, 0, 100, 40), b = Rect.fromLTWH(10, 400, 120, 40);
+    final c = relationCurve(a, b);
+    expect(c.$1, const Offset(100, 20));
+    expect(c.$4, const Offset(130, 420));
+    final middle = cubicPoint(c, 0.5);
+    expect(middle.dx, greaterThan(130 + 40), reason: 'label clears the column');
+    for (var t = 0.1; t < 1; t += 0.1) {
+      expect(cubicPoint(c, t).dx, greaterThanOrEqualTo(100), reason: 'never crosses the column at $t');
+    }
+    expect(relationCurve(b, a).$4, const Offset(100, 20));
+    final near = relationCurve(a, const Rect.fromLTWH(0, 50, 100, 40));
+    expect(cubicPoint(near, 0.5).dx, greaterThan(100 + 30), reason: 'a minimum bow for neighbours');
   });
 
   test('summary and relation commands have shortcuts', () {
