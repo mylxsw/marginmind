@@ -738,4 +738,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noteText => '笔记';
+
+  @override
+  String get addSiblingAfter => '在后面添加同级节点';
+
+  @override
+  String get addSiblingBefore => '在前面添加同级节点';
+
+  @override
+  String get promoteNode => '提升一级';
+
+  @override
+  String get insertParentNode => '插入父节点';
+
+  @override
+  String get toggleNodeFold => '折叠或展开';
+
+  @override
+  String get fitMap => '适应窗口';
+
+  @override
+  String get centerCurrentNode => '居中到当前节点';
 }

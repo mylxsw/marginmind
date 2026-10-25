@@ -775,4 +775,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteText => 'Note';
+
+  @override
+  String get addSiblingAfter => 'Add Sibling After';
+
+  @override
+  String get addSiblingBefore => 'Add Sibling Before';
+
+  @override
+  String get promoteNode => 'Promote Node';
+
+  @override
+  String get insertParentNode => 'Insert Parent';
+
+  @override
+  String get toggleNodeFold => 'Toggle Collapse';
+
+  @override
+  String get fitMap => 'Fit Map to Window';
+
+  @override
+  String get centerCurrentNode => 'Center on Current Node';
 }

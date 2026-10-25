@@ -1405,6 +1405,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note'**
   String get noteText;
+
+  /// No description provided for @addSiblingAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Sibling After'**
+  String get addSiblingAfter;
+
+  /// No description provided for @addSiblingBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Sibling Before'**
+  String get addSiblingBefore;
+
+  /// No description provided for @promoteNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote Node'**
+  String get promoteNode;
+
+  /// No description provided for @insertParentNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Parent'**
+  String get insertParentNode;
+
+  /// No description provided for @toggleNodeFold.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Collapse'**
+  String get toggleNodeFold;
+
+  /// No description provided for @fitMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Map to Window'**
+  String get fitMap;
+
+  /// No description provided for @centerCurrentNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Center on Current Node'**
+  String get centerCurrentNode;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

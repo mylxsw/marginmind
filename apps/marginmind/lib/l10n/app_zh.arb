@@ -225,5 +225,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addSiblingAfter": "在后面添加同级节点",
+  "addSiblingBefore": "在前面添加同级节点",
+  "promoteNode": "提升一级",
+  "insertParentNode": "插入父节点",
+  "toggleNodeFold": "折叠或展开",
+  "fitMap": "适应窗口",
+  "centerCurrentNode": "居中到当前节点"
 }

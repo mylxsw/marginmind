@@ -451,5 +451,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addSiblingAfter": "Add Sibling After",
+  "addSiblingBefore": "Add Sibling Before",
+  "promoteNode": "Promote Node",
+  "insertParentNode": "Insert Parent",
+  "toggleNodeFold": "Toggle Collapse",
+  "fitMap": "Fit Map to Window",
+  "centerCurrentNode": "Center on Current Node"
 }
