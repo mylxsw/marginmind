@@ -31,6 +31,10 @@ abstract final class MMSizes {
   static const double toolbarHeight = 56;
   static const double toolbarGroupHeight = 36;
   static const Size toolbarButton = Size(34, 30);
+
+  /// Color dot in a floating toolbar: hit area width and dot diameter.
+  static const double floatingToolbarColor = 26;
+  static const double floatingToolbarDot = 14;
   static const double sidebarWidth = 236;
   static const double sidebarMinWidth = 200;
   static const double sidebarMaxWidth = 320;

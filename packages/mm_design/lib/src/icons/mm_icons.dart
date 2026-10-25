@@ -42,6 +42,7 @@ abstract final class MMIcons {
   static const IconData review = CupertinoIcons.square_stack; // rectangle.on.rectangle
   static const IconData tag = CupertinoIcons.tag;
   static const IconData addTopic = CupertinoIcons.plus_rectangle; // plus.rectangle
+  static const IconData copy = CupertinoIcons.doc_on_doc; // doc.on.doc
   static const IconData addNote = CupertinoIcons.square_pencil; // square.and.pencil
   static const IconData zoomIn = CupertinoIcons.plus;
   static const IconData zoomOut = CupertinoIcons.minus;
