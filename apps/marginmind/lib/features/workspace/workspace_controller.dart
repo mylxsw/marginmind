@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/providers.dart';
 import '../../settings/app_settings.dart';
@@ -99,6 +100,7 @@ class WorkspaceState {
     this.activeDocumentId,
     this.sidebarQuery = '',
     this.selectedCardId,
+    this.selectedCardIds = const {},
     this.flashCardId,
     this.flashAnnotationId,
     this.editingCardId,
@@ -124,6 +126,7 @@ class WorkspaceState {
 
   /// Selected map node; null means the root.
   final String? selectedCardId;
+  final Set<String> selectedCardIds;
   final String? flashCardId;
   final String? flashAnnotationId;
 
@@ -151,6 +154,7 @@ class WorkspaceState {
     bool clearActive = false,
     String? sidebarQuery,
     String? selectedCardId,
+    Set<String>? selectedCardIds,
     bool selectRoot = false,
     String? flashCardId,
     String? flashAnnotationId,
@@ -175,6 +179,14 @@ class WorkspaceState {
       openDocumentIds: openDocumentIds ?? this.openDocumentIds,
       activeDocumentId: clearActive ? null : (activeDocumentId ?? this.activeDocumentId),
       sidebarQuery: sidebarQuery ?? this.sidebarQuery,
+      selectedCardIds: Set.unmodifiable(
+        selectedCardIds ??
+            (selectRoot
+                ? <String>{}
+                : selectedCardId != null
+                ? {selectedCardId}
+                : this.selectedCardIds),
+      ),
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
@@ -352,11 +364,15 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
     active ??= open.lastOrNull;
     final selectionGone = s.selectedCardId != null && c.card(s.selectedCardId!) == null;
+    final selectedIds = s.selectedCardIds.where((id) => c.node(id) != null).toSet();
+    final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
     return s.copyWith(
       openDocumentIds: open,
       activeDocumentId: active,
       clearActive: active == null,
-      selectRoot: selectionGone,
+      selectRoot: selectedId == null,
+      selectedCardId: selectedId,
+      selectedCardIds: selectedIds,
     );
   }
 
@@ -575,6 +591,57 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   // ---- map --------------------------------------------------------------------
+
+  /// Modifier-click toggles membership; normal navigation selects just one.
+  void toggleCardSelection(String cardId) {
+    final ids = {...state.selectedCardIds};
+    if (!ids.remove(cardId)) ids.add(cardId);
+    selectCards(ids);
+  }
+
+  void selectCards(Iterable<String> cardIds) {
+    final ids = cardIds.where((id) => content.node(id) != null).toSet();
+    state = state.copyWith(selectedCardIds: ids, selectedCardId: ids.lastOrNull, selectRoot: ids.isEmpty);
+  }
+
+  bool _clipboardBusy = false;
+
+  /// Cut removes exactly the copied selection, only after a successful write.
+  Future<void> copySelection({bool cut = false}) async {
+    if (_editing != null || _creating || _clipboardBusy) return;
+    final ids = state.selectedCardIds.toList();
+    final entries = MapClipboard.copy(content, ids);
+    if (entries.isEmpty) return;
+    _clipboardBusy = true;
+    try {
+      await MMMapClipboard.write(text: MapClipboard.toText(entries), internal: MapClipboard.encode(entries));
+      if (cut && ref.mounted && _editing == null && !_creating) await removeCards(ids);
+    } finally {
+      _clipboardBusy = false;
+    }
+  }
+
+  Future<void> pasteSelection() async {
+    if (_editing != null || _creating || _clipboardBusy) return;
+    final parent = state.selectedCardId;
+    _clipboardBusy = true;
+    try {
+      final data = await MMMapClipboard.read();
+      if (!ref.mounted || _editing != null || _creating) return;
+      final entries =
+          (data.internal == null ? null : MapClipboard.decode(data.internal!)) ?? MapClipboard.fromText(data.text);
+      if (entries.isEmpty) return;
+      var roots = <String>[];
+      await _update((c) {
+        final (next, ids) = _editor.paste(c, entries, parentId: parent);
+        roots = ids;
+        return next;
+      });
+      if (ref.mounted && roots.isNotEmpty) selectCards(roots);
+    } finally {
+      _clipboardBusy = false;
+    }
+  }
 
   void selectCard(String? cardId) {
     state = cardId == null ? state.copyWith(selectRoot: true) : state.copyWith(selectedCardId: cardId);
@@ -831,8 +898,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final id = state.selectedCardId;
     if (id == null) return null;
     final parent = content.node(id)?.parentId;
-    await _update((c) => _editor.removeFromMap(c, id));
-    state = parent == null ? state.copyWith(selectRoot: true) : state.copyWith(selectedCardId: parent);
+    await removeCards(state.selectedCardIds.isEmpty ? [id] : state.selectedCardIds);
+    selectCard(parent != null && content.node(parent) != null ? parent : null);
     return const RemovedNotice();
   }
 

@@ -762,4 +762,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get centerCurrentNode => '居中到当前节点';
+
+  @override
+  String get cutNodes => '剪切';
+
+  @override
+  String get pasteNodes => '粘贴';
 }

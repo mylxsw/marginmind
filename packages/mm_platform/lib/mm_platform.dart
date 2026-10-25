@@ -6,3 +6,5 @@ library;
 export 'src/desktop_window.dart';
 export 'src/shortcuts.dart';
 export 'src/system_appearance.dart';
+
+export 'src/map_clipboard.dart';

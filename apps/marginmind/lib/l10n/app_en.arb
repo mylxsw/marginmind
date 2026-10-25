@@ -459,5 +459,7 @@
   "insertParentNode": "Insert Parent",
   "toggleNodeFold": "Toggle Collapse",
   "fitMap": "Fit Map to Window",
-  "centerCurrentNode": "Center on Current Node"
+  "centerCurrentNode": "Center on Current Node",
+  "cutNodes": "Cut",
+  "pasteNodes": "Paste"
 }

@@ -233,5 +233,7 @@
   "insertParentNode": "插入父节点",
   "toggleNodeFold": "折叠或展开",
   "fitMap": "适应窗口",
-  "centerCurrentNode": "居中到当前节点"
+  "centerCurrentNode": "居中到当前节点",
+  "cutNodes": "剪切",
+  "pasteNodes": "粘贴"
 }

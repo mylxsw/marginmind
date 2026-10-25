@@ -799,4 +799,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get centerCurrentNode => 'Center on Current Node';
+
+  @override
+  String get cutNodes => 'Cut';
+
+  @override
+  String get pasteNodes => 'Paste';
 }

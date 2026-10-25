@@ -1,4 +1,5 @@
 import 'models.dart';
+import 'map_clipboard.dart';
 import 'review.dart';
 import 'study_set_content.dart';
 
@@ -9,6 +10,67 @@ class StudySetEditor {
 
   final String Function() newId;
   final DateTime Function() now;
+
+  /// Inserts a portable forest in one immutable edit. Missing source documents
+  /// become notes containing the quote instead of dangling excerpt references.
+  (StudySetContent, List<String>) paste(StudySetContent c, List<OutlineEntry> entries, {String? parentId}) {
+    if (parentId != null && c.node(parentId) == null) return (c, const []);
+    final cards = [...c.cards];
+    final nodes = [...c.nodes];
+    final annotations = [...c.annotations];
+    final parents = <String>[];
+    final roots = <String>[];
+    var order = _nextOrder(c, parentId);
+    for (final entry in entries) {
+      if (entry.depth < 0 || entry.depth > parents.length) throw const FormatException('Invalid outline depth');
+      parents.length = entry.depth;
+      final id = newId();
+      final source = entry.annotation;
+      String? annotationId;
+      var kind = entry.kind;
+      var title = entry.title;
+      if (kind == CardKind.excerpt) {
+        if (source != null && c.document(source.documentId) != null) {
+          annotationId = newId();
+          annotations.add(
+            Annotation(
+              id: annotationId,
+              documentId: source.documentId,
+              page: source.page,
+              rects: source.rects,
+              quote: source.quote,
+              colorIndex: source.colorIndex,
+              createdAt: now(),
+            ),
+          );
+        } else {
+          kind = CardKind.note;
+          title = [if (title.isNotEmpty) title, if (source != null) source.quote].join('\n');
+        }
+      }
+      cards.add(Card(id: id, kind: kind, title: title, annotationId: annotationId, createdAt: now()));
+      nodes.add(
+        MapNode(
+          cardId: id,
+          parentId: parents.lastOrNull ?? parentId,
+          order: entry.depth == 0 ? order++ : nodes.length.toDouble(),
+          collapsed: entry.collapsed,
+        ),
+      );
+      if (entry.depth == 0) roots.add(id);
+      parents.add(id);
+    }
+    if (entries.isEmpty) return (c, roots);
+    // Pasted children must be visible, even if their target was folded.
+    return (
+      c.copyWith(
+        cards: cards,
+        annotations: annotations,
+        nodes: [for (final node in nodes) node.cardId == parentId ? node.copyWith(collapsed: false) : node],
+      ),
+      roots,
+    );
+  }
 
   /// Where a new excerpt goes when [selectedCardId] is selected: under a
   /// selected topic, next to a selected excerpt/note (its parent), else the

@@ -26,6 +26,8 @@ class OutlineView extends StatefulWidget {
     required this.onAddChild,
     required this.onShift,
     this.onCommand,
+    this.selectedCardIds = const {},
+    this.onToggleSelection,
     this.editingCardId,
     this.onEditDone,
     this.onEditCancel,
@@ -34,6 +36,8 @@ class OutlineView extends StatefulWidget {
   final StudySetContent content;
   final String rootTitle;
   final String? selectedCardId;
+  final Set<String> selectedCardIds;
+  final ValueChanged<String>? onToggleSelection;
   final FocusNode focusNode;
   final ValueChanged<String?> onSelect;
   final ValueChanged<String> onReveal;
@@ -62,6 +66,7 @@ class OutlineView extends StatefulWidget {
 }
 
 class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineView> {
+  bool _tapAdditive = false;
   final _rowKeys = <String?, GlobalKey>{};
   final _scroll = ScrollController();
   static const _padding = EdgeInsets.fromLTRB(16, 76, 16, 72);
@@ -142,6 +147,8 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         if (selected != null) widget.onDelete();
       case MindMapCommand.up || MindMapCommand.down:
         if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
+      case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
+        widget.onCommand?.call(command);
       case MindMapCommand.siblingAfter ||
           MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
@@ -211,7 +218,11 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
 
   void _tap(String? id) {
     widget.focusNode.requestFocus();
-    widget.onSelect(id);
+    if (id != null && _tapAdditive && widget.onToggleSelection != null) {
+      widget.onToggleSelection!(id);
+    } else {
+      widget.onSelect(id);
+    }
   }
 
   @override
@@ -249,7 +260,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
             meta: annotation == null ? null : l.pageNumber(annotation.page),
             dot: isExcerpt ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
             bold: bold,
-            selected: card.id == widget.selectedCardId,
+            selected: widget.selectedCardIds.contains(card.id) || card.id == widget.selectedCardId,
             onTap: () => _tap(card.id),
             onDoubleTap: () => isExcerpt ? widget.onReveal(card.id) : widget.onRename(card.id),
             editor: f?.id == card.id
@@ -283,23 +294,29 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       child: Focus(
         focusNode: widget.focusNode,
         onKeyEvent: _onKey,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: widget.focusNode.requestFocus,
-          // Every row is built, so any of them can be scrolled to.
-          child: SingleChildScrollView(
-            controller: _scroll,
-            padding: _padding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...rows,
-                if (rows.length == 1)
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(l.outlineEmpty, textAlign: TextAlign.center, style: t.footnote),
-                  ),
-              ],
+        child: Listener(
+          onPointerDown: (_) {
+            final keyboard = HardwareKeyboard.instance;
+            _tapAdditive = keyboard.isShiftPressed || keyboard.isMetaPressed || keyboard.isControlPressed;
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: widget.focusNode.requestFocus,
+            // Every row is built, so any of them can be scrolled to.
+            child: SingleChildScrollView(
+              controller: _scroll,
+              padding: _padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...rows,
+                  if (rows.length == 1)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(l.outlineEmpty, textAlign: TextAlign.center, style: t.footnote),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

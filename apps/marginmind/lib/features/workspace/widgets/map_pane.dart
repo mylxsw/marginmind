@@ -59,10 +59,25 @@ class _MapPaneState extends ConsumerState<MapPane> {
   Future<void> addNote() =>
       ref.read(workspaceProvider(widget.studySetId).notifier).addNoteAndEdit(context.l10n.newNoteText);
 
+  Future<void> _clipboard(MindMapCommand command) async {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    try {
+      if (command == MindMapCommand.paste) {
+        await controller.pasteSelection();
+      } else {
+        await controller.copySelection(cut: command == MindMapCommand.cut);
+      }
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);
+    }
+  }
+
   void _command(MindMapCommand command) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     switch (command) {
+      case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
+        _clipboard(command);
       case MindMapCommand.siblingAfter || MindMapCommand.siblingBefore:
         controller.addTopicAndEdit(l.newTopicName, siblingBefore: command == MindMapCommand.siblingBefore);
       case MindMapCommand.parent:
@@ -104,6 +119,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
           MMMenuItem(l.moveUp, () => controller.shiftSelected(-1), shortcut: '⌘↑'),
           MMMenuItem(l.moveDown, () => controller.shiftSelected(1), shortcut: '⌘↓'),
+          if (ref
+              .read(workspaceProvider(widget.studySetId))
+              .selectedCardIds
+              .any((id) => content.card(id)?.kind == CardKind.excerpt)) ...[
+            const MMMenuDivider(),
+            for (final color in MMAnnotationColor.values)
+              MMMenuItem(
+                l.colorName(color),
+                () => controller.recolorCards(ref.read(workspaceProvider(widget.studySetId)).selectedCardIds, color),
+              ),
+          ],
           const MMMenuDivider(),
           MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫'),
         ],
@@ -143,6 +169,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     content: content,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
+                    selectedCardIds: state.selectedCardIds,
+                    onToggleSelection: controller.toggleCardSelection,
                     flashCardId: state.flashCardId,
                     transformation: _transform,
                     focusNode: _focus,
@@ -151,7 +179,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onReveal: controller.revealCard,
                     onRename: rename,
                     onDelete: remove,
-                    onMove: (id, parent, index) => controller.moveCard(id, parent, index: index),
+                    onSelectMany: controller.selectCards,
+                    onMove: (id, parent, index) => controller.moveCards(
+                      state.selectedCardIds.contains(id) ? state.selectedCardIds : [id],
+                      parent,
+                      index: index,
+                    ),
                     onToggleCollapsed: controller.toggleCollapsed,
                     onNavigate: controller.selectNeighbor,
                     onShift: controller.shiftSelected,
@@ -166,6 +199,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     content: content,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
+                    selectedCardIds: state.selectedCardIds,
+                    onToggleSelection: controller.toggleCardSelection,
                     focusNode: _focus,
                     onSelect: controller.selectCard,
                     onReveal: controller.revealCard,

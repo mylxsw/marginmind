@@ -52,7 +52,23 @@ abstract final class AppShortcuts {
 }
 
 /// Shared by the native menu and the focused canvas.
-enum MindMapCommand { siblingAfter, siblingBefore, child, promote, parent, edit, delete, fold, up, down, fit, center }
+enum MindMapCommand {
+  siblingAfter,
+  siblingBefore,
+  child,
+  promote,
+  parent,
+  edit,
+  delete,
+  fold,
+  up,
+  down,
+  fit,
+  center,
+  copy,
+  cut,
+  paste,
+}
 
 class MindMapIntent extends Intent {
   const MindMapIntent(this.command);
@@ -60,6 +76,9 @@ class MindMapIntent extends Intent {
 }
 
 Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
+  primaryShortcut(LogicalKeyboardKey.keyC): MindMapCommand.copy,
+  primaryShortcut(LogicalKeyboardKey.keyX): MindMapCommand.cut,
+  primaryShortcut(LogicalKeyboardKey.keyV): MindMapCommand.paste,
   const SingleActivator(LogicalKeyboardKey.enter): MindMapCommand.siblingAfter,
   const SingleActivator(LogicalKeyboardKey.enter, shift: true): MindMapCommand.siblingBefore,
   const SingleActivator(LogicalKeyboardKey.tab): MindMapCommand.child,
@@ -200,6 +219,42 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
     final selectionOpen = workspaceState?.pending is PendingSelection && !_textFocused;
     final highlightOpen = workspaceState?.pending is PendingHighlight && !_textFocused;
+    // One native key equivalent per operation. Dispatch to the focused field,
+    // map, or PDF selection so menu shortcuts cannot shadow each other.
+    for (final command in [MindMapCommand.copy, MindMapCommand.cut, MindMapCommand.paste]) {
+      final mapClipboard = editable && _mapFocused && !_textFocused;
+      final hasNodes = workspaceState?.selectedCardIds.isNotEmpty ?? false;
+      final readerCopy = command == MindMapCommand.copy && (selectionOpen || highlightOpen);
+      final enabled = _textFocused || (mapClipboard && (command == MindMapCommand.paste || hasNodes)) || readerCopy;
+      edit.add(
+        AppCommand(
+          switch (command) {
+            MindMapCommand.copy => l.copyAction,
+            MindMapCommand.cut => l.cutNodes,
+            _ => l.pasteNodes,
+          },
+          enabled
+              ? () {
+                  final focus = FocusManager.instance.primaryFocus?.context;
+                  if (focus == null) return;
+                  if (_textFocused) {
+                    final Intent intent = switch (command) {
+                      MindMapCommand.copy => CopySelectionTextIntent.copy,
+                      MindMapCommand.cut => const CopySelectionTextIntent.cut(SelectionChangedCause.keyboard),
+                      _ => const PasteTextIntent(SelectionChangedCause.keyboard),
+                    };
+                    Actions.maybeInvoke(focus, intent);
+                  } else if (mapClipboard) {
+                    Actions.maybeInvoke(focus, MindMapIntent(command));
+                  } else {
+                    invokeSelection(ReaderSelectionCommand.copy);
+                  }
+                }
+              : null,
+          shortcut: mindMapShortcuts.entries.firstWhere((e) => e.value == command).key,
+        ),
+      );
+    }
     final highlightCard = switch (workspaceState?.pending) {
       PendingHighlight(:final annotationId) => workspace?.content.cardForAnnotation(annotationId),
       _ => null,
@@ -208,7 +263,6 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       for (final entry in {
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
-        ReaderSelectionCommand.copy: l.copyAction,
         ReaderSelectionCommand.note: l.excerptWithNote,
         ReaderSelectionCommand.locateCard: l.locateCard,
         ReaderSelectionCommand.deleteHighlight: l.deleteHighlight,
@@ -286,6 +340,19 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
+    map.addAll([
+      for (final color in MMAnnotationColor.values)
+        AppCommand(
+          l.colorName(color),
+          editable &&
+                  _mapFocused &&
+                  !_textFocused &&
+                  (workspaceState?.selectedCardIds.any((id) => workspace.content.card(id)?.annotationId != null) ??
+                      false)
+              ? () => workspace.recolorCards(workspaceState!.selectedCardIds, color)
+              : null,
+        ),
+    ]);
     final view = <AppCommand>[
       if (inLibrary) ...[
         AppCommand(

@@ -2,6 +2,7 @@ import Cocoa
 import FlutterMacOS
 
 class MainFlutterWindow: NSWindow {
+  private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
 
   override func awakeFromNib() {
@@ -12,6 +13,33 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
+
+    let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    mapClipboard = clipboard
+    clipboard.setMethodCallHandler { call, result in
+      let pasteboard = NSPasteboard.general
+      let type = NSPasteboard.PasteboardType("io.github.mylxsw.marginmind.nodes")
+      switch call.method {
+      case "write":
+        guard let values = call.arguments as? [String: String],
+          let text = values["text"], let data = values["internal"] else {
+          result(FlutterError(code: "invalid_arguments", message: nil, details: nil))
+          return
+        }
+        let item = NSPasteboardItem()
+        item.setString(text, forType: .string)
+        item.setString(data, forType: type)
+        pasteboard.clearContents()
+        if pasteboard.writeObjects([item]) { result(nil) }
+        else { result(FlutterError(code: "clipboard_write", message: nil, details: nil)) }
+      case "read":
+        var values = ["text": pasteboard.string(forType: .string) ?? ""]
+        if let data = pasteboard.string(forType: type) { values["internal"] = data }
+        result(values)
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
 
     super.awakeFromNib()
   }
