@@ -46,9 +46,32 @@ class _MapPaneState extends ConsumerState<MapPane> {
     setState(() {});
   }
 
+  bool get _showsMap => ref.read(workspaceProvider(widget.studySetId)).mapView == MapViewMode.map;
+
+  /// Topics on the map are edited in place; other cards (and the outline)
+  /// still ask in a sheet.
   Future<void> rename(String cardId) async {
-    final card = ref.read(workspaceProvider(widget.studySetId).notifier).content.card(cardId);
-    if (card != null) await renameCard(card);
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final card = controller.content.card(cardId);
+    if (card == null) return;
+    if (card.kind == CardKind.topic && _showsMap) {
+      controller.beginEditing(cardId);
+      return;
+    }
+    await renameCard(card);
+  }
+
+  /// A new topic: on the map it opens for editing in place (Esc removes
+  /// it again); in the outline its name is asked for in a sheet.
+  Future<void> addTopic({bool asChild = false}) async {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    if (_showsMap) {
+      await controller.addTopicAndEdit(l.newTopicName, asChild: asChild);
+      return;
+    }
+    final card = await controller.addTopic(l.newTopicName, asChild: asChild);
+    if (mounted) await renameCard(card);
   }
 
   /// Asks for a new title; used right after creating a card too, before the
@@ -73,11 +96,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final node = cardId == null ? null : content.node(cardId);
     final hasChildren = content.childrenOf(cardId).isNotEmpty;
 
-    Future<void> addTopic({bool asChild = false}) async {
-      final created = await controller.addTopic(l.newTopicName, asChild: asChild);
-      if (mounted) await renameCard(created);
-    }
-
     Future<void> addNote() async {
       final created = await controller.addNote(l.newNoteText);
       if (mounted) await renameCard(created);
@@ -88,7 +106,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       position: position,
       entries: [
         if (card != null) ...[
-          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => renameCard(card), shortcut: '↩'),
+          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: '↩'),
           if (card.kind == CardKind.excerpt)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
           const MMMenuDivider(),
@@ -99,7 +117,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
           MMMenuItem((node?.collapsed ?? false) ? l.expandNode : l.collapseNode, () {
             controller.toggleCollapsed(card.id);
-          }, shortcut: '␣'),
+          }),
         ],
         if (card != null) ...[
           const MMMenuDivider(),
@@ -121,7 +139,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
     final loadedContent = ref.watch(contentProvider(widget.studySetId)).value;
-    final content = loadedContent ?? StudySetContent.empty;
+    // The controller's copy includes its own writes before the stream
+    // delivers them, so a node created for editing is there at once.
+    final content = loadedContent == null ? StudySetContent.empty : controller.content;
     final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId);
     final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
@@ -154,10 +174,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onToggleCollapsed: controller.toggleCollapsed,
                     onNavigate: controller.selectNeighbor,
                     onShift: controller.shiftSelected,
-                    onAddChild: () async {
-                      final card = await controller.addTopic(l.newTopicName, asChild: true);
-                      if (mounted) await renameCard(card);
-                    },
+                    onAddChild: () => addTopic(asChild: true),
+                    editingCardId: state.editingCardId,
+                    onEditDone: controller.finishEditing,
+                    onEditCancel: controller.cancelEditing,
                     onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
                   )
                 : OutlineView(
@@ -231,14 +251,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             top: 10,
             child: MMToolbarGroup(
               children: [
-                MMToolbarButton(
-                  icon: MMIcons.addTopic,
-                  tooltip: l.addTopic,
-                  onPressed: () async {
-                    final card = await controller.addTopic(l.newTopicName);
-                    if (mounted) await renameCard(card);
-                  },
-                ),
+                MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
                 MMToolbarButton(
                   icon: MMIcons.addNote,
                   tooltip: l.addNote,

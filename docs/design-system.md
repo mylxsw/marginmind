@@ -32,6 +32,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
 | `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮。 |
 | `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。 |
+| `MMInlineTextField` | 原地编辑用的无边框文本框，随所在位置换行；Enter 提交、Esc 取消，输入法组合期间这两个键交给输入法。 |
 | `showMMSheet` / `MMSheet` | 从工具栏下方落下的表单面板，Esc 取消。 |
 | `MMHudHost` / `MMHud.show` | 窗口底部的提示胶囊。 |
 | `MMFloatingToolbar` / `MMFloatingToolbarColor` / `MMFloatingToolbarLayout` | 选区旁的横向玻璃工具条：图标按钮（`MMToolbarButton`）+ 颜色点，每项都有提示文字，Tab / 方向键移动焦点。定位用纯函数 `placeFloatingToolbar`：优先放在选区上方，空间不够放下方，左右超出时向内收，始终完整可见；锚点变化时跟随。 |

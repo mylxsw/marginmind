@@ -13,6 +13,7 @@ class MindMapRenderCache {
   TextScaler _textScaler = TextScaler.noScaling;
   Locale? _locale;
   TextDirection _direction = TextDirection.ltr;
+  (String, String)? _draft;
   TreeLayoutResult? _layout;
   List<(String, String?, double, double)> _geometry = [];
   Map<String, _NodeSpec> _specs = {};
@@ -34,12 +35,17 @@ class MindMapRenderCache {
     TextScaler textScaler = TextScaler.noScaling,
     Locale locale = const Locale('en'),
     TextDirection textDirection = TextDirection.ltr,
+
+    /// The title being typed into a node (card id, text): measured in place
+    /// of the stored title so the layout follows the text field.
+    (String, String)? draft,
   }) {
     final environmentChanged =
         _theme != theme || _textScaler != textScaler || _locale != locale || _direction != textDirection;
     if (!environmentChanged &&
         identical(_content, content) &&
         _title == rootTitle &&
+        _draft == draft &&
         identical(_localizations, localizations)) {
       return _layout!;
     }
@@ -50,6 +56,7 @@ class MindMapRenderCache {
     _direction = textDirection;
     _content = content;
     _title = rootTitle;
+    _draft = draft;
     _localizations = localizations;
 
     // Index once: childrenOf/card/annotation each scan the content lists.
@@ -89,7 +96,7 @@ class MindMapRenderCache {
                 card.id,
                 id,
                 _NodeSpec.forCard(
-                  card,
+                  draft?.$1 == card.id ? card.copyWith(title: draft!.$2) : card,
                   annotations[card.annotationId],
                   documents[annotations[card.annotationId]?.documentId],
                   localizations,

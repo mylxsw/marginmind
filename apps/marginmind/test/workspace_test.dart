@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
@@ -60,14 +61,14 @@ void main() {
     expect(find.text('No matches'), findsOneWidget);
   });
 
-  testWidgets('adding a topic asks for its name and saves it', (tester) async {
+  testWidgets('adding a topic opens it for naming in place and saves it', (tester) async {
     final content = InMemoryStudySetContentRepository({'demo-1': demoContent()});
     await openFirstSet(tester, content: content);
     await tester.tap(find.byIcon(MMIcons.addTopic));
     await tester.pumpAndSettle();
-    expect(find.text('Rename'), findsOneWidget);
-    await tester.enterText(find.byType(TextField).last, '提取练习');
-    await tester.tap(find.text('Save'));
+    expect(find.byType(MMSheet), findsNothing);
+    await tester.enterText(find.byType(MMInlineTextField), '提取练习');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.text('提取练习'), findsOneWidget);
     final saved = await content.load('demo-1');
