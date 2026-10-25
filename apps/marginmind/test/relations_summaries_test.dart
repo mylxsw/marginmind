@@ -280,9 +280,7 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('a line between stacked nodes and its label stay inside the scene and the fitted view', (
-      tester,
-    ) async {
+    testWidgets('a line between stacked nodes and its label stay inside the scene and the fitted view', (tester) async {
       final controller = await open(tester);
       const label = 'a rather long relationship label';
       controller.selectCard(null);
@@ -293,17 +291,27 @@ void main() {
       await controller.addRelation();
       await controller.finishMarkEditing(label);
       await tester.pumpAndSettle();
+      bool inside(Rect outer, Rect inner) =>
+          inner.left >= outer.left &&
+          inner.top >= outer.top &&
+          inner.right <= outer.right &&
+          inner.bottom <= outer.bottom;
       final text = find.text(label);
-      final scene = tester.getRect(find.ancestor(of: text, matching: find.byType(Stack)).first);
+      // The canvas: the nearest stack holding both the label and the nodes.
+      final around = find.ancestor(of: text, matching: find.byType(Stack)).evaluate().toSet();
+      final canvas = find
+          .ancestor(of: find.byKey(const ValueKey('c4')), matching: find.byType(Stack))
+          .evaluate()
+          .firstWhere(around.contains);
+      final scene = tester.getRect(find.byElementPredicate((e) => e == canvas));
       final rect = tester.getRect(text);
-      expect(scene.contains(rect.topLeft) && scene.contains(rect.bottomRight), isTrue, reason: 'not clipped');
+      expect(inside(scene, rect), isTrue, reason: 'not clipped');
       expect(rect.left, greaterThan(tester.getRect(find.byKey(ValueKey(middle.id))).right), reason: 'past the column');
 
       await focusMap(tester);
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
       final view = viewerBox(tester).localToGlobal(Offset.zero) & viewerBox(tester).size;
-      final fitted = tester.getRect(text);
-      expect(view.contains(fitted.topLeft) && view.contains(fitted.bottomRight), isTrue, reason: 'fit shows it');
+      expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it');
       await settleHud(tester);
     });
 
@@ -390,8 +398,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.content.relations, isEmpty);
 
-      // The toolbar's trash removes a selected mark too.
-      await tester.tap(find.text('Summary'));
+      // The toolbar's trash removes a selected mark too. The label ends at the
+      // window's right edge: tap its start.
+      await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
       await tester.pump(kDoubleTapTimeout);
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, controller.content.summaries.single.id);
