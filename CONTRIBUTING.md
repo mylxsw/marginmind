@@ -8,6 +8,8 @@
 
 仓库是 [Dart pub workspace](https://dart.dev/tools/pub/workspaces)：在根目录执行一次 `flutter pub get` 即可解析所有包。
 
+项目背景、当前进度和开发计划：[docs/project-plan.md](docs/project-plan.md)。
+
 ## 约定
 
 - **分层与依赖**：见 [docs/architecture.md](docs/architecture.md)。`mm_core` 不能引入 Flutter；功能代码不能直接使用第三方 UI 或平台插件，只能通过 `mm_design` / `mm_platform`。
@@ -22,6 +24,8 @@
 flutter analyze
 dart format --set-exit-if-changed apps packages
 (cd packages/mm_core && dart test)
+(cd packages/mm_data && dart test)
+(cd packages/mm_layout && dart test)
 (cd packages/mm_design && flutter test)
 (cd packages/mm_platform && flutter test)
 (cd apps/marginmind && flutter test)
