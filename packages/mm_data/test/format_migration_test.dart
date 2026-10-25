@@ -70,7 +70,9 @@ void main() {
     final obstruction = Directory('${file.path}.tmp');
     await obstruction.create();
     final store = FileLibraryStore(root);
-    await expectLater(store.load('legacy'), throwsA(isA<FileSystemException>()));
+    expect(await store.watchAll().first, isEmpty);
+    expect(store.packageLoadErrors[file.parent.path], isA<FileSystemException>());
+    await expectLater(store.load('legacy'), throwsStateError);
     expect(await file.readAsBytes(), original);
     expect(await File('${file.path}.format-1.bak').readAsBytes(), original);
     await store.dispose();
@@ -81,20 +83,62 @@ void main() {
     await retry.dispose();
   });
 
-  test('backup failure and conflicting backup never overwrite source', () async {
+  test('backup conflict or write failure skips only that package and records the error', () async {
+    final healthy = File('${root.path}/sets/healthy.mmset/studyset.json');
+    await healthy.parent.create(recursive: true);
+    final healthyJson = jsonDecode(utf8.decode(original)) as Map;
+    healthyJson['id'] = 'healthy';
+    await healthy.writeAsString(jsonEncode(healthyJson));
     final backup = File('${file.path}.format-1.bak');
     await backup.writeAsString('different original');
+    final obstruction = Directory('${backup.path}.tmp');
+
+    for (final conflict in [true, false]) {
+      if (!conflict) {
+        await backup.delete();
+        await obstruction.create();
+      }
+      final store = FileLibraryStore(root);
+      final sets = await store.watchAll().first;
+      expect(sets.map((s) => s.id), contains('healthy'));
+      expect(sets.map((s) => s.id), isNot(contains('legacy')));
+      expect((await store.load('healthy')).cards.length, 3);
+      await expectLater(store.load('legacy'), throwsStateError);
+      expect(store.isLoaded, isTrue);
+      expect(store.packageLoadErrors.keys, [file.parent.path]);
+      expect(store.packageLoadErrors[file.parent.path], isA<FileSystemException>());
+      expect(() => store.packageLoadErrors.clear(), throwsUnsupportedError);
+      expect(await file.readAsBytes(), original);
+      if (conflict) {
+        expect(await backup.readAsString(), 'different original');
+      } else {
+        expect(await backup.exists(), isFalse);
+      }
+      final created = await store.create(const NewStudySet(title: 'Still usable', colorIndex: 0));
+      expect((await store.load(created.id)).cards, isEmpty);
+      await store.rename('healthy', 'Still editable');
+      expect((await store.watchAll().first).firstWhere((s) => s.id == 'healthy').title, 'Still editable');
+      await store.dispose();
+    }
+  });
+
+  test('root IO failure can be retried on the same store after repair', () async {
+    final sets = Directory('${root.path}/sets');
+    final saved = await sets.rename('${root.path}/saved-sets');
+    final obstruction = File(sets.path);
+    await obstruction.writeAsString('not a directory');
     final store = FileLibraryStore(root);
     await expectLater(store.watchAll().first, throwsA(isA<FileSystemException>()));
-    expect(await file.readAsBytes(), original);
-    expect(await backup.readAsString(), 'different original');
+    expect(store.isLoaded, isFalse);
+    await expectLater(store.load('legacy'), throwsA(isA<FileSystemException>()));
+    await obstruction.delete();
+    await saved.rename(sets.path);
+    expect((await store.load('legacy')).cards.length, 3);
+    expect(store.isLoaded, isTrue);
+    expect(store.packageLoadErrors, isEmpty);
+    final created = await store.create(const NewStudySet(title: 'Recovered', colorIndex: 0));
+    expect((await store.watchAll().first).map((s) => s.id), containsAll(['legacy', created.id]));
     await store.dispose();
-    await backup.delete();
-    await Directory('${backup.path}.tmp').create();
-    final retry = FileLibraryStore(root);
-    await expectLater(retry.load('legacy'), throwsA(isA<FileSystemException>()));
-    expect(await file.readAsBytes(), original);
-    await retry.dispose();
   });
 
   test('unknown and missing versions are left untouched', () async {

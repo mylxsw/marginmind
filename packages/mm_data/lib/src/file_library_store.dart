@@ -33,6 +33,11 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   List<Folder> _folders = [];
   bool _loaded = false;
   Future<void>? _loading;
+  final Map<String, Object> _packageLoadErrors = {};
+
+  /// Failures from the last library scan, keyed by package path. Failed
+  /// packages are skipped; callers may surface these diagnostics separately.
+  Map<String, Object> get packageLoadErrors => Map.unmodifiable(_packageLoadErrors);
   final _libraryChanges = StreamController<void>.broadcast();
   final _contentChanges = StreamController<String>.broadcast();
   final Map<String, Future<void>> _writeQueue = {};
@@ -41,13 +46,20 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   File get _libraryFile => File(p.join(root.path, 'library.json'));
   String _packagePath(String id) => p.join(_setsDir.path, '$id.mmset');
 
-  Future<void> _ensureLoaded() => _loading ??= _load();
+  Future<void> _ensureLoaded() => _loading ??= _load().catchError((Object error, StackTrace stack) {
+    // Root/library failures must not poison subsequent operations forever.
+    _loading = null;
+    Error.throwWithStackTrace(error, stack);
+  });
 
   Future<void> _load() async {
+    final sets = <String, _SetRecord>{};
+    var folders = <Folder>[];
+    _packageLoadErrors.clear();
     await _setsDir.create(recursive: true);
     if (await _libraryFile.exists()) {
       final json = jsonDecode(await _libraryFile.readAsString()) as Map<String, Object?>;
-      _folders = [
+      folders = [
         for (final f in (json['folders'] as List?) ?? const [])
           Folder(id: (f as Map)['id'] as String, name: f['name'] as String),
       ];
@@ -55,8 +67,8 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
     await for (final entry in _setsDir.list()) {
       if (entry is! Directory || !entry.path.endsWith('.mmset')) continue;
       final file = File(p.join(entry.path, 'studyset.json'));
-      if (!await file.exists()) continue;
       try {
+        if (!await file.exists()) continue;
         final original = await file.readAsBytes();
         final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
         final migrated = migrateStudySet(json);
@@ -71,12 +83,19 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
           }
           await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
         }
-        _sets[record.id] = record;
-      } on FormatException {
-        // A damaged package is skipped rather than taking the library down.
-        continue;
+        sets[record.id] = record;
+      } on FormatException catch (error) {
+        _packageLoadErrors[entry.path] = error;
+      } on FileSystemException catch (error) {
+        // Backup conflicts and package IO failures affect only this package.
+        // Do not repair or overwrite its source/backup on the error path.
+        _packageLoadErrors[entry.path] = error;
       }
     }
+    _sets
+      ..clear()
+      ..addAll(sets);
+    _folders = folders;
     _loaded = true;
   }
 
