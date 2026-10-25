@@ -17,6 +17,7 @@ class MindMapRenderCache {
   String? _mapId;
   AppLocalizations? _localizations;
   ThemeData? _theme;
+  TextStyle _baseStyle = const TextStyle();
   TextScaler _textScaler = TextScaler.noScaling;
   Locale? _locale;
   TextDirection _direction = TextDirection.ltr;
@@ -46,6 +47,10 @@ class MindMapRenderCache {
     required String rootTitle,
     required AppLocalizations localizations,
     required ThemeData theme,
+
+    /// The ambient text style the node texts inherit (font family, letter
+    /// spacing): measured with it so a measured title fits as rendered.
+    TextStyle baseStyle = const TextStyle(),
     TextScaler textScaler = TextScaler.noScaling,
     Locale locale = const Locale('en'),
     TextDirection textDirection = TextDirection.ltr,
@@ -58,7 +63,11 @@ class MindMapRenderCache {
     (String, String)? markDraft,
   }) {
     final environmentChanged =
-        _theme != theme || _textScaler != textScaler || _locale != locale || _direction != textDirection;
+        _theme != theme ||
+        _baseStyle != baseStyle ||
+        _textScaler != textScaler ||
+        _locale != locale ||
+        _direction != textDirection;
     if (!environmentChanged &&
         identical(_content, content) &&
         _title == rootTitle &&
@@ -70,6 +79,7 @@ class MindMapRenderCache {
     }
     if (environmentChanged) _measurements.clear();
     _theme = theme;
+    _baseStyle = baseStyle;
     _textScaler = textScaler;
     _locale = locale;
     _direction = textDirection;
@@ -188,7 +198,7 @@ class MindMapRenderCache {
       return cached;
     }
     final painter = TextPainter(
-      text: TextSpan(text: text.isEmpty ? ' ' : text, style: style),
+      text: TextSpan(text: text.isEmpty ? ' ' : text, style: _baseStyle.merge(style)),
       textDirection: _direction,
       textScaler: _textScaler,
       locale: _locale,

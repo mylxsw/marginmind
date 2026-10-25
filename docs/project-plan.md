@@ -109,6 +109,7 @@ apps/marginmind  →  mm_design / mm_platform / mm_pdf / mm_data / mm_layout  �
 - 自动化拖拽太快（移动事件太少）时，Flutter 的 `Draggable` 不会触发；真机手动验证不受影响。
 - 桌面自动化注入的修饰键（⌘、⇧）Flutter 收不到，带修饰键的快捷键和 ⌘ 点击只能靠组件测试或人工验证；菜单命令可以用自动化点菜单项验证。
 - 脑图画布在布局时会调整 `TransformationController`（保持根节点位置），监听它的组件不能直接 `setState`，要推迟到帧结束（见缩放比例标签）。
+- 用 `TextPainter` 预先测量文字时，要合并 `DefaultTextStyle`：macOS 的 Material 字体排印给默认样式加了系统字体和 `letterSpacing`，`Text` 会继承而裸的令牌样式没有，测出来偏窄，真机上英文标题会折行、最后一个字被挤掉（v0.5 验收时修复，见 `MindMapRenderCache`）。测试字体等宽，测不出这类差异。
 
 ## 4. 开发计划
 

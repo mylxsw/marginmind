@@ -755,6 +755,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       rootTitle: widget.rootTitle,
       localizations: l,
       theme: Theme.of(context),
+      baseStyle: DefaultTextStyle.of(context).style,
       textScaler: MediaQuery.textScalerOf(context),
       locale: Localizations.localeOf(context),
       textDirection: Directionality.of(context),
