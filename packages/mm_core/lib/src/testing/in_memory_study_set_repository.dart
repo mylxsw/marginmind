@@ -73,6 +73,18 @@ class InMemoryStudySetRepository implements StudySetRepository {
     _update(id, (s) => s.copyWith(lastOpenedAt: _clock()));
   }
 
+  @override
+  Future<void> rename(String id, String title) async => _update(id, (s) => s.copyWith(title: title.trim()));
+
+  @override
+  Future<void> setColor(String id, int colorIndex) async => _update(id, (s) => s.copyWith(colorIndex: colorIndex));
+
+  @override
+  Future<void> delete(String id) async {
+    _sets.removeWhere((s) => s.id == id);
+    _changes.add(null);
+  }
+
   void _update(String id, StudySet Function(StudySet) change) {
     final i = _sets.indexWhere((s) => s.id == id);
     if (i < 0) throw StateError('Unknown study set: $id');

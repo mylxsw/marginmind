@@ -107,20 +107,21 @@ class _NewStudySetSheetState extends ConsumerState<NewStudySetSheet> {
               onSubmitted: (_) => _create(),
             ),
           ),
-          MMFormRow(
-            label: l.sheetLocation,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: MMSegmentedControl<String?>(
-                value: _folderId,
-                onChanged: (v) => setState(() => _folderId = v),
-                segments: [
-                  for (final f in folders) MMSegment(value: f.id, label: f.name),
-                  MMSegment(value: null, label: l.libraryUnfiled),
-                ],
+          if (folders.isNotEmpty)
+            MMFormRow(
+              label: l.sheetLocation,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: MMSegmentedControl<String?>(
+                  value: _folderId,
+                  onChanged: (v) => setState(() => _folderId = v),
+                  segments: [
+                    for (final f in folders) MMSegment(value: f.id, label: f.name),
+                    MMSegment(value: null, label: l.libraryUnfiled),
+                  ],
+                ),
               ),
             ),
-          ),
           MMFormRow(
             label: l.sheetColor,
             child: MMColorPicker(selected: _color, onChanged: (v) => setState(() => _color = v), labelOf: l.colorName),

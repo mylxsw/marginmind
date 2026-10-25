@@ -540,4 +540,188 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get somethingWentWrong => '出了点问题，请重试';
+
+  @override
+  String get addChildTopic => '添加子主题';
+
+  @override
+  String get backToStudySet => '返回学习集';
+
+  @override
+  String get collapseNode => '折叠';
+
+  @override
+  String get expandNode => '展开';
+
+  @override
+  String get delete => '删除';
+
+  @override
+  String get deleteEllipsis => '删除…';
+
+  @override
+  String deleteStudySetTitle(String title) {
+    return '删除“$title”？';
+  }
+
+  @override
+  String get deleteStudySetMessage => '其中的文档、高亮、卡片和复习记录都会被删除，且无法撤销。';
+
+  @override
+  String deletedHud(String title) {
+    return '已删除“$title”';
+  }
+
+  @override
+  String get documentRemovedHud => '已移除文档';
+
+  @override
+  String get dropToCreateSet => '松开即可新建学习集';
+
+  @override
+  String get dropToImport => '松开即可导入到当前学习集';
+
+  @override
+  String get dropOnlyPdf => '目前只能导入 PDF 文件';
+
+  @override
+  String get exportMarkdown => '将脑图导出为 Markdown…';
+
+  @override
+  String get exportOpml => '将脑图导出为 OPML…';
+
+  @override
+  String get exportedHud => '已导出';
+
+  @override
+  String get menuEdit => '编辑';
+
+  @override
+  String get moveUp => '上移';
+
+  @override
+  String get moveDown => '下移';
+
+  @override
+  String get rateAgain => '重来';
+
+  @override
+  String get rateHard => '困难';
+
+  @override
+  String get rateGood => '良好';
+
+  @override
+  String get rateEasy => '简单';
+
+  @override
+  String get undo => '撤销';
+
+  @override
+  String get redo => '重做';
+
+  @override
+  String get undoneHud => '已撤销';
+
+  @override
+  String get redoneHud => '已重做';
+
+  @override
+  String get remove => '移除';
+
+  @override
+  String get removeDocumentEllipsis => '从学习集中移除…';
+
+  @override
+  String removeDocumentTitle(String title) {
+    return '移除“$title”？';
+  }
+
+  @override
+  String removeDocumentMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '它的 $count 处高亮及对应摘录卡片也会一并移除，可用 ⌘Z 撤销。',
+      zero: '该文档将从学习集中移除。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get renameEllipsis => '重命名…';
+
+  @override
+  String get renameDocument => '重命名文档';
+
+  @override
+  String get renameStudySet => '重命名学习集';
+
+  @override
+  String reviewCount(int count) {
+    return '复习 $count 张卡片';
+  }
+
+  @override
+  String get reviewTitle => '复习';
+
+  @override
+  String reviewRemaining(int count) {
+    return '剩余 $count 张';
+  }
+
+  @override
+  String get reviewProgress => '复习进度';
+
+  @override
+  String get reviewPromptExcerpt => '回想这段摘录的内容';
+
+  @override
+  String get reviewPromptNote => '回想这条笔记的内容';
+
+  @override
+  String get reviewQuestionTip => '提示：把摘录卡片重命名为一个问题，复习时它就会作为题面。';
+
+  @override
+  String get reviewDoneTitle => '本轮复习完成';
+
+  @override
+  String reviewDoneMessage(int count) {
+    return '共复习了 $count 张卡片。等有卡片到期时再来吧。';
+  }
+
+  @override
+  String get reviewNothingDueTitle => '暂无需要复习的卡片';
+
+  @override
+  String get reviewNothingDueMessage => '脑图中的摘录和笔记到期后会出现在这里。';
+
+  @override
+  String get showAnswer => '显示答案';
+
+  @override
+  String get startReview => '开始复习';
+
+  @override
+  String get sectionCards => '卡片';
+
+  @override
+  String intervalMinutes(int count) {
+    return '$count 分钟';
+  }
+
+  @override
+  String intervalHours(int count) {
+    return '$count 小时';
+  }
+
+  @override
+  String intervalDays(int count) {
+    return '$count 天';
+  }
+
+  @override
+  String intervalMonths(int count) {
+    return '$count 个月';
+  }
 }

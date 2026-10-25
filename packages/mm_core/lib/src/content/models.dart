@@ -57,6 +57,7 @@ class Document {
     pageCount: pageCount,
     importedAt: importedAt,
     lastPage: lastPage ?? this.lastPage,
+    lastReadAt: lastReadAt ?? this.lastReadAt,
   );
 
   Map<String, Object?> toJson() => {
@@ -66,6 +67,7 @@ class Document {
     'pageCount': pageCount,
     'lastPage': lastPage,
     'importedAt': importedAt.toIso8601String(),
+    if (lastReadAt != null) 'lastReadAt': lastReadAt!.toIso8601String(),
   };
 
   factory Document.fromJson(Map<String, Object?> j) => Document(
@@ -75,6 +77,7 @@ class Document {
     pageCount: j['pageCount'] as int,
     lastPage: (j['lastPage'] as int?) ?? 1,
     importedAt: DateTime.parse(j['importedAt'] as String),
+    lastReadAt: j['lastReadAt'] == null ? null : DateTime.parse(j['lastReadAt'] as String),
   );
 }
 
@@ -175,7 +178,7 @@ class Card {
 /// child of the root (the study set itself).
 @immutable
 class MapNode {
-  const MapNode({required this.cardId, this.parentId, required this.order});
+  const MapNode({required this.cardId, this.parentId, required this.order, this.collapsed = false});
 
   final String cardId;
   final String? parentId;
@@ -183,11 +186,27 @@ class MapNode {
   /// Sibling order; fractional so inserts never renumber siblings.
   final double order;
 
-  MapNode copyWith({String? parentId, bool toRoot = false, double? order}) =>
-      MapNode(cardId: cardId, parentId: toRoot ? null : (parentId ?? this.parentId), order: order ?? this.order);
+  /// Children are hidden in the map view.
+  final bool collapsed;
 
-  Map<String, Object?> toJson() => {'cardId': cardId, if (parentId != null) 'parentId': parentId, 'order': order};
+  MapNode copyWith({String? parentId, bool toRoot = false, double? order, bool? collapsed}) => MapNode(
+    cardId: cardId,
+    parentId: toRoot ? null : (parentId ?? this.parentId),
+    order: order ?? this.order,
+    collapsed: collapsed ?? this.collapsed,
+  );
 
-  factory MapNode.fromJson(Map<String, Object?> j) =>
-      MapNode(cardId: j['cardId'] as String, parentId: j['parentId'] as String?, order: _d(j['order']));
+  Map<String, Object?> toJson() => {
+    'cardId': cardId,
+    if (parentId != null) 'parentId': parentId,
+    'order': order,
+    if (collapsed) 'collapsed': true,
+  };
+
+  factory MapNode.fromJson(Map<String, Object?> j) => MapNode(
+    cardId: j['cardId'] as String,
+    parentId: j['parentId'] as String?,
+    order: _d(j['order']),
+    collapsed: (j['collapsed'] as bool?) ?? false,
+  );
 }

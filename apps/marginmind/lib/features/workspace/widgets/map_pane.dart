@@ -35,7 +35,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
   void _zoom(double factor) {
     final size = context.size ?? const Size(800, 600);
     final center = Offset(size.width / 2, size.height / 2);
-    final current = _transform.value.getMaxScaleOnAxis();
+    final current = mapScale(_transform.value);
     final target = (current * factor).clamp(0.3, 2.5);
     final f = target / current;
     _transform.value = Matrix4.identity()
@@ -65,6 +65,53 @@ class _MapPaneState extends ConsumerState<MapPane> {
     if (title != null) await controller.rename(cardId, title);
   }
 
+  void _showNodeMenu(String? cardId, Offset position, Future<void> Function() remove) {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final content = controller.content;
+    final card = cardId == null ? null : content.card(cardId);
+    final node = cardId == null ? null : content.node(cardId);
+    final hasChildren = content.childrenOf(cardId).isNotEmpty;
+
+    Future<void> addTopic({bool asChild = false}) async {
+      final created = await controller.addTopic(l.newTopicName, asChild: asChild);
+      if (mounted) await renameCard(created);
+    }
+
+    Future<void> addNote() async {
+      final created = await controller.addNote(l.newNoteText);
+      if (mounted) await renameCard(created);
+    }
+
+    showMMMenu(
+      context,
+      position: position,
+      entries: [
+        if (card != null) ...[
+          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => renameCard(card), shortcut: '↩'),
+          if (card.kind == CardKind.excerpt)
+            MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
+          const MMMenuDivider(),
+        ],
+        MMMenuItem(l.addChildTopic, () => addTopic(asChild: true), shortcut: '⇥'),
+        MMMenuItem(l.addNote, addNote),
+        if (card != null && hasChildren) ...[
+          const MMMenuDivider(),
+          MMMenuItem((node?.collapsed ?? false) ? l.expandNode : l.collapseNode, () {
+            controller.toggleCollapsed(card.id);
+          }, shortcut: '␣'),
+        ],
+        if (card != null) ...[
+          const MMMenuDivider(),
+          MMMenuItem(l.moveUp, () => controller.shiftSelected(-1), shortcut: '⌘↑'),
+          MMMenuItem(l.moveDown, () => controller.shiftSelected(1), shortcut: '⌘↓'),
+          const MMMenuDivider(),
+          MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫'),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -78,7 +125,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId);
     final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
-    final scale = _transform.value.getMaxScaleOnAxis();
+    final scale = mapScale(_transform.value);
 
     Future<void> remove() async {
       final notice = await controller.removeSelected();
@@ -103,6 +150,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onReveal: controller.revealCard,
                     onRename: rename,
                     onDelete: remove,
+                    onMove: (id, parent, index) => controller.moveCard(id, parent, index: index),
+                    onToggleCollapsed: controller.toggleCollapsed,
+                    onNavigate: controller.selectNeighbor,
+                    onShift: controller.shiftSelected,
+                    onAddChild: () async {
+                      final card = await controller.addTopic(l.newTopicName, asChild: true);
+                      if (mounted) await renameCard(card);
+                    },
+                    onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
                   )
                 : OutlineView(
                     content: content,

@@ -21,6 +21,7 @@ export 'src/widgets/empty_state.dart';
 export 'src/widgets/form_row.dart';
 export 'src/widgets/glass.dart';
 export 'src/widgets/hud.dart';
+export 'src/widgets/menu.dart';
 export 'src/widgets/progress_bar.dart';
 export 'src/widgets/search_field.dart';
 export 'src/widgets/segmented_control.dart';

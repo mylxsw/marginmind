@@ -7,8 +7,10 @@ import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
+import '../../shared/pdf_drop.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
+import 'widgets/notices.dart';
 import 'widgets/reader_pane.dart';
 import 'widgets/workspace_sidebar.dart';
 
@@ -85,23 +87,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               ),
             ],
           ),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                icon: MMIcons.ai,
-                tooltip: l.aiAssistant,
-                onPressed: () => MMHud.show(context, l.comingSoon),
-              ),
-            ],
-          ),
         ],
       ),
-      body: MMSplitView(
-        mode: state.layout,
-        fraction: state.splitFraction,
-        onFractionChanged: controller.setSplitFraction,
-        primary: ReaderPane(studySetId: widget.studySetId),
-        secondary: MapPane(studySetId: widget.studySetId),
+      body: PdfDropTarget(
+        label: l.dropToImport,
+        onDrop: (files) async {
+          final notice = await controller.importDocuments(files);
+          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+        },
+        child: MMSplitView(
+          mode: state.layout,
+          fraction: state.splitFraction,
+          onFractionChanged: controller.setSplitFraction,
+          primary: ReaderPane(studySetId: widget.studySetId),
+          secondary: MapPane(studySetId: widget.studySetId),
+        ),
       ),
     );
   }
@@ -126,9 +126,6 @@ class _AnnotationTools extends StatelessWidget {
       children: [
         tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
         tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
-        tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-        tool(MMIcons.pen, l.toolPen, AnnotationTool.pen),
-        tool(MMIcons.text, l.toolText, AnnotationTool.text),
         const MMToolbarDivider(),
         for (final color in MMAnnotationColor.values)
           _ColorDot(

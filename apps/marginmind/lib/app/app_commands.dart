@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +41,9 @@ abstract final class AppShortcuts {
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
   static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
   static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true);
+  static SingleActivator get undo => primaryShortcut(LogicalKeyboardKey.keyZ);
+  static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
+  static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
 
   /// "Tooltip (⌘1)".
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
@@ -76,7 +80,44 @@ class AppMenus extends ConsumerWidget {
       ),
     ];
     final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
-    final selected = inWorkspace ? ref.watch(workspaceProvider(workspaceId)).selectedCardId : null;
+    final workspaceState = inWorkspace ? ref.watch(workspaceProvider(workspaceId)) : null;
+    final selected = workspaceState?.selectedCardId;
+    file.addAll([
+      AppCommand(
+        l.exportMarkdown,
+        inWorkspace ? () => exportMap(context, ref, workspaceId, ExportFormat.markdown) : null,
+      ),
+      AppCommand(l.exportOpml, inWorkspace ? () => exportMap(context, ref, workspaceId, ExportFormat.opml) : null),
+    ]);
+    Future<void> undoOrRedo({required bool redo}) async {
+      // A focused text field keeps ⌘Z for its own text.
+      final focus = FocusManager.instance.primaryFocus?.context;
+      if (focus != null && focus.findAncestorWidgetOfExactType<EditableText>() != null) {
+        final intent = redo
+            ? const RedoTextIntent(SelectionChangedCause.keyboard)
+            : const UndoTextIntent(SelectionChangedCause.keyboard);
+        Actions.maybeInvoke(focus, intent);
+        return;
+      }
+      final notice = redo ? await workspace?.redo() : await workspace?.undo();
+      if (context.mounted) showNotice(context, notice, rootTitle: '');
+    }
+
+    final edit = [
+      AppCommand(
+        l.undo,
+        workspaceState?.canUndo ?? false ? () => undoOrRedo(redo: false) : null,
+        shortcut: AppShortcuts.undo,
+      ),
+      AppCommand(
+        l.redo,
+        workspaceState?.canRedo ?? false ? () => undoOrRedo(redo: true) : null,
+        shortcut: AppShortcuts.redo,
+      ),
+    ];
+    final study = [
+      AppCommand(l.startReview, inWorkspace ? () => nav.startReview(workspaceId) : null, shortcut: AppShortcuts.review),
+    ];
     final map = <AppCommand>[
       AppCommand(
         l.addTopic,
@@ -143,7 +184,8 @@ class AppMenus extends ConsumerWidget {
         shortcut: AppShortcuts.find,
       ),
     ];
-    final help = [AppCommand(l.componentGallery, nav.showGallery, shortcut: AppShortcuts.gallery)];
+    // The component gallery is a developer tool.
+    final help = [if (kDebugMode) AppCommand(l.componentGallery, nav.showGallery, shortcut: AppShortcuts.gallery)];
 
     if (DesktopWindow.isMacOS) {
       return PlatformMenuBar(
@@ -164,12 +206,26 @@ class AppMenus extends ConsumerWidget {
               _provided(PlatformProvidedMenuItemType.quit),
             ],
           ),
-          PlatformMenu(label: l.menuFile, menus: [for (final c in file) _item(c)]),
+          PlatformMenu(
+            label: l.menuFile,
+            menus: [
+              PlatformMenuItemGroup(members: [for (final c in file.take(3)) _item(c)]),
+              PlatformMenuItemGroup(members: [for (final c in file.skip(3)) _item(c)]),
+            ],
+          ),
+          PlatformMenu(label: l.menuEdit, menus: [for (final c in edit) _item(c)]),
           PlatformMenu(
             label: l.menuView,
             menus: [
               PlatformMenuItemGroup(members: [for (final c in view) _item(c)]),
               _provided(PlatformProvidedMenuItemType.toggleFullScreen),
+            ],
+          ),
+          PlatformMenu(
+            label: l.menuMap,
+            menus: [
+              PlatformMenuItemGroup(members: [for (final c in map) _item(c)]),
+              PlatformMenuItemGroup(members: [for (final c in study) _item(c)]),
             ],
           ),
           PlatformMenu(
@@ -188,7 +244,7 @@ class AppMenus extends ConsumerWidget {
 
     return CallbackShortcuts(
       bindings: {
-        for (final c in [settings, ...file, ...view, ...map, ...help])
+        for (final c in [settings, ...file, ...edit, ...view, ...map, ...study, ...help])
           if (c.shortcut != null && c.onInvoke != null) c.shortcut!: c.onInvoke!,
       },
       child: Focus(autofocus: true, child: child),

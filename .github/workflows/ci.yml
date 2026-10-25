@@ -25,6 +25,10 @@ jobs:
       - run: flutter analyze
       - run: dart test
         working-directory: packages/mm_core
+      - run: dart test
+        working-directory: packages/mm_layout
+      - run: dart test
+        working-directory: packages/mm_data
       - run: flutter test
         working-directory: packages/mm_design
       - run: flutter test

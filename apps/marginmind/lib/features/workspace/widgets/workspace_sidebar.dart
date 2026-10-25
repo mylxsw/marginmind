@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/app_commands.dart';
@@ -50,15 +51,35 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: MMCount(d.pageCount),
             selected: d.id == state.activeDocumentId,
             onTap: () => controller.openDocument(d.id),
+            onContextMenu: (position) => _documentMenu(context, ref, d, position),
           ),
     ];
+    final now = ref.watch(clockProvider)();
+    final due = content?.dueCount(now) ?? 0;
     final learn = [
       if (matches(l.review))
-        MMSidebarItem(icon: MMIcons.review, label: l.review, onTap: () => MMHud.show(context, l.comingSoon)),
-      if (matches(l.tags))
-        MMSidebarItem(icon: MMIcons.tag, label: l.tags, onTap: () => MMHud.show(context, l.comingSoon)),
+        MMSidebarItem(
+          icon: MMIcons.review,
+          label: l.review,
+          trailing: due > 0 ? MMBadge('$due', prominent: true) : null,
+          onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId),
+        ),
     ];
-    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty;
+    final hits = content == null ? const <Card>[] : content.search(query).take(50).toList();
+    final cards = [
+      for (final card in hits)
+        MMSidebarItem(
+          icon: switch (card.kind) {
+            CardKind.topic => MMIcons.addTopic,
+            CardKind.excerpt => MMIcons.highlight,
+            CardKind.note => MMIcons.addNote,
+          },
+          label: card.title.isNotEmpty ? card.title : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
+          selected: card.id == state.selectedCardId,
+          onTap: () => card.kind == CardKind.excerpt ? controller.revealCard(card.id) : controller.selectCard(card.id),
+        ),
+    ];
+    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -116,9 +137,39 @@ class WorkspaceSidebar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: t.footnote),
           ),
+        if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
         if (maps.isNotEmpty) MMSidebarSection(title: l.sectionMaps, children: maps),
         if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
+      ],
+    );
+  }
+
+  void _documentMenu(BuildContext context, WidgetRef ref, Document doc, Offset position) {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(studySetId).notifier);
+    showMMMenu(
+      context,
+      position: position,
+      entries: [
+        MMMenuItem(l.open, () => controller.openDocument(doc.id)),
+        MMMenuItem(l.renameEllipsis, () async {
+          final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
+          if (title != null) await controller.renameDocument(doc.id, title);
+        }),
+        const MMMenuDivider(),
+        MMMenuItem(l.removeDocumentEllipsis, () async {
+          final excerpts = controller.content.annotationsOn(doc.id).length;
+          final ok = await showConfirmSheet(
+            context,
+            title: l.removeDocumentTitle(doc.title),
+            message: l.removeDocumentMessage(excerpts),
+            confirmLabel: l.remove,
+          );
+          if (!ok) return;
+          final notice = await controller.removeDocument(doc.id);
+          if (context.mounted) showNotice(context, notice, rootTitle: '');
+        }, destructive: true),
       ],
     );
   }

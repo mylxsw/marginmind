@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -179,5 +180,37 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 900));
       expect((await repo.load('demo-1')).document('c1')!.lastPage, 42);
     });
+  });
+
+  testWidgets('dragging a node onto a topic makes it a child', (tester) async {
+    final container = await openFirstSet(tester);
+    final from = tester.getCenter(find.text('这条先陡后平的曲线，被称为遗忘曲线。'));
+    final to = tester.getCenter(find.text('对策一：间隔重复'));
+    final gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 50));
+    for (var i = 1; i <= 10; i++) {
+      await gesture.moveTo(Offset.lerp(from, to, i / 10)!);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+    final c = container.read(contentProvider('demo-1')).value!;
+    final card = c.cards.firstWhere((x) => x.kind == CardKind.excerpt);
+    expect(c.card(c.node(card.id)!.parentId!)!.title, '对策一：间隔重复');
+    await settleHud(tester);
+  });
+
+  testWidgets('folding a topic hides its children and keeps the root in place', (tester) async {
+    final container = await openFirstSet(tester);
+    final root = find.text('认知科学入门').last;
+    final before = tester.getTopLeft(root);
+    await tester.tap(find.byTooltip('Collapse').first);
+    await tester.pumpAndSettle();
+    expect(find.text('这条先陡后平的曲线，被称为遗忘曲线。'), findsNothing);
+    expect(find.text('1'), findsWidgets); // hidden-children badge
+    expect(tester.getTopLeft(root), before);
+    final c = container.read(contentProvider('demo-1')).value!;
+    expect(c.nodes.where((n) => n.collapsed), hasLength(1));
+    await settleHud(tester);
   });
 }

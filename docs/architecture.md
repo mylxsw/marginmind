@@ -27,7 +27,11 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 
 ### 数据模型（`mm_core/content`）
 
-`StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（页码 + PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note）、`MapNode`（卡片在脑图中的位置：父节点 + 排序）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`removeFromMap`、`deleteAnnotation`…），仓库的 `update(id, change)` 负责原子地应用并保存。这让撤销 / 重做只需保存快照或逆操作，也让测试不依赖界面。
+`StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（页码 + PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note）、`MapNode`（卡片在脑图中的位置：父节点 + 排序 + 是否折叠）、`ReviewState`（每张卡片的复习排期）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`move`、`setCollapsed`、`rate`、`removeDocument`…），仓库的 `update(id, change)` 负责原子地应用并保存，这也让测试不依赖界面。
+
+- **撤销 / 重做**：工作区控制器在每次可撤销的编辑前保存内容快照（最多 100 步）。撤销时用 `StudySetEditor.restore` 回到快照，但保留当前的复习记录和阅读页码——这两者不属于“编辑”。
+- **复习**：`ReviewScheduler` 是简化的 SM-2（重来 10 分钟后再出现；良好 1 天 → 3 天 → 间隔 × 难度系数）。`reviewQueue(now)` 给出到期卡片（最逾期在前）和最多 20 张新卡片；资料库的待复习数也由它计算。
+- **导出**：`MapExporter` 把主脑图转成 Markdown（嵌套列表）或 OPML 2.0（摘录原文放在 `_note`）。
 
 ## 应用内的分层
 
@@ -37,14 +41,16 @@ lib/
 ├─ app/
 │  ├─ app.dart               MaterialApp（主题、语言）、AppShell（按路由选择界面）
 │  ├─ app_commands.dart      命令：一处定义，生成 macOS 菜单栏或其他平台的快捷键
-│  ├─ navigation.dart        路由（资料库 / 学习集 / 组件库）与焦点请求
+│  ├─ navigation.dart        路由（资料库 / 学习集 / 复习 / 组件库）与焦点请求
 │  └─ providers.dart         外层服务：偏好存储、仓库、时钟、系统外观
 ├─ settings/                 外观与语言设置（持久化）、系统外观
 ├─ features/
 │  ├─ library/               资料库：控制器 + 界面 + 组件
 │  ├─ workspace/             学习集工作区：控制器 + 侧栏 / 原文 / 脑图面板
+│  ├─ review/                复习：会话控制器 + 翻卡界面
 │  └─ gallery/               组件库（开发用）
-├─ shared/l10n.dart          多语言辅助（颜色名、相对时间）
+├─ shared/l10n.dart          多语言辅助（颜色名、相对时间、复习间隔）
+├─ shared/pdf_drop.dart      从 Finder 拖入 PDF 的放置区域
 └─ l10n/                     ARB 源文件与生成的本地化代码
 ```
 

@@ -1,7 +1,7 @@
 name: marginmind
 description: "MarginMind — read, excerpt and map what you learn."
 publish_to: none
-version: 0.1.0+1
+version: 0.3.0+3
 resolution: workspace
 
 environment:
@@ -31,6 +31,7 @@ dependencies:
     path: ../../packages/mm_pdf
   mm_platform:
     path: ../../packages/mm_platform
+  desktop_drop: ^0.8.4
 
 dev_dependencies:
   flutter_test:

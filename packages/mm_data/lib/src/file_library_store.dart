@@ -73,7 +73,7 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   @override
   Stream<List<Folder>> watchFolders() => _watch(_libraryChanges.stream, () => List.unmodifiable(_folders));
 
-  List<StudySet> _summaries() => [for (final r in _sets.values) r.summary()];
+  List<StudySet> _summaries() => [for (final r in _sets.values) r.summary(_clock())];
 
   @override
   Future<StudySet> create(NewStudySet input) async {
@@ -93,7 +93,7 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
     await Directory(p.join(_packagePath(record.id), 'documents')).create(recursive: true);
     await _persist(record.id);
     _libraryChanges.add(null);
-    return record.summary();
+    return record.summary(now);
   }
 
   @override
@@ -101,6 +101,25 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
 
   @override
   Future<void> markOpened(String id) => _updateMeta(id, (r) => r.copyWith(lastOpenedAt: _clock()));
+
+  @override
+  Future<void> rename(String id, String title) => _updateMeta(id, (r) => r.copyWith(title: title.trim()));
+
+  @override
+  Future<void> setColor(String id, int colorIndex) => _updateMeta(id, (r) => r.copyWith(colorIndex: colorIndex));
+
+  @override
+  Future<void> delete(String id) async {
+    await _ensureLoaded();
+    _require(id);
+    _sets.remove(id);
+    _libraryChanges.add(null);
+    _contentChanges.add(id);
+    // Let a pending write finish first so it cannot recreate the folder.
+    await (_writeQueue.remove(id) ?? Future<void>.value());
+    final dir = Directory(_packagePath(id));
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
 
   Future<void> _updateMeta(String id, _SetRecord Function(_SetRecord) change) async {
     await _ensureLoaded();
@@ -224,10 +243,16 @@ class _SetRecord {
   final DateTime lastOpenedAt;
   final StudySetContent content;
 
-  _SetRecord copyWith({bool? starred, DateTime? lastOpenedAt, StudySetContent? content}) => _SetRecord(
+  _SetRecord copyWith({
+    String? title,
+    int? colorIndex,
+    bool? starred,
+    DateTime? lastOpenedAt,
+    StudySetContent? content,
+  }) => _SetRecord(
     id: id,
-    title: title,
-    colorIndex: colorIndex,
+    title: title ?? this.title,
+    colorIndex: colorIndex ?? this.colorIndex,
     folderId: folderId,
     starred: starred ?? this.starred,
     createdAt: createdAt,
@@ -235,7 +260,7 @@ class _SetRecord {
     content: content ?? this.content,
   );
 
-  StudySet summary() {
+  StudySet summary(DateTime now) {
     final last = content.lastRead;
     final totalPages = content.documents.fold<int>(0, (s, d) => s + d.pageCount);
     final readPages = content.documents.fold<int>(0, (s, d) => s + d.lastPage);
@@ -247,6 +272,7 @@ class _SetRecord {
       starred: starred,
       documentCount: content.documents.length,
       cardCount: content.cardCount,
+      dueCount: content.dueCount(now),
       readPages: content.documents.isEmpty ? 0 : readPages,
       totalPages: totalPages,
       lastPosition: last == null ? null : ReadingPosition(documentTitle: last.title, page: last.lastPage),

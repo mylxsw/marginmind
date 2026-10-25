@@ -125,6 +125,7 @@ class MMSidebarItem extends StatelessWidget {
     this.selected = false,
     this.onTap,
     this.onDoubleTap,
+    this.onContextMenu,
     this.iconColor,
   });
 
@@ -134,12 +135,15 @@ class MMSidebarItem extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
+
+  /// Right click, with the pointer position in global coordinates.
+  final ValueChanged<Offset>? onContextMenu;
   final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    return MMInteractive(
+    final item = MMInteractive(
       onTap: onTap,
       onDoubleTap: onDoubleTap,
       selected: selected,
@@ -165,6 +169,8 @@ class MMSidebarItem extends StatelessWidget {
         ),
       ),
     );
+    if (onContextMenu == null) return item;
+    return GestureDetector(onSecondaryTapUp: (d) => onContextMenu!(d.globalPosition), child: item);
   }
 }
 

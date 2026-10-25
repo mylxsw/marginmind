@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
+import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 
@@ -15,6 +19,8 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     HighlightedNotice() => l.highlightedHud,
     RemovedNotice() => l.removedHud,
     HighlightDeletedNotice() => l.highlightDeletedHud,
+    UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
+    DocumentRemovedNotice() => l.documentRemovedHud,
     ImportedNotice(:final count, :final failed) =>
       failed.isNotEmpty ? l.importFailed(failed.first) : l.importedHud(count),
   };
@@ -34,6 +40,63 @@ Future<void> pickAndImportDocuments(BuildContext context, WidgetRef ref, String 
     for (final f in files) (path: f.path, name: f.name),
   ]);
   if (context.mounted) showNotice(context, notice, rootTitle: '');
+}
+
+/// Formats [ExportFormat] the main map can be saved as.
+enum ExportFormat { markdown, opml }
+
+/// Asks where to save, then writes the main map as Markdown or OPML.
+Future<void> exportMap(BuildContext context, WidgetRef ref, String studySetId, ExportFormat format) async {
+  final l = context.l10n;
+  final controller = ref.read(workspaceProvider(studySetId).notifier);
+  final title = ref.read(studySetProvider(studySetId))?.title ?? l.appName;
+  final opml = format == ExportFormat.opml;
+  final ext = opml ? 'opml' : 'md';
+  final text = controller.export(
+    opml: opml,
+    rootTitle: title,
+    source: (doc, page) => '${doc.title} · ${l.pageNumber(page)}',
+  );
+  final location = await getSaveLocation(
+    suggestedName: '${title.replaceAll(RegExp(r'[/:\\]'), '-')}.$ext',
+    acceptedTypeGroups: [
+      XTypeGroup(label: opml ? 'OPML' : 'Markdown', extensions: [ext]),
+    ],
+  );
+  if (location == null) return;
+  try {
+    await File(location.path).writeAsString(text, encoding: utf8);
+    if (context.mounted) MMHud.show(context, l.exportedHud);
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);
+  }
+}
+
+/// Two-button confirmation sheet; resolves to true when confirmed.
+Future<bool> showConfirmSheet(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+}) async {
+  final l = context.l10n;
+  final ok = await showMMSheet<bool>(
+    context: context,
+    builder: (context) => MMSheet(
+      title: title,
+      actions: [
+        MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop(false)),
+        MMButton(
+          label: confirmLabel,
+          variant: MMButtonVariant.primary,
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+      child: Text(message, style: context.mmText.body),
+    ),
+  );
+  return ok ?? false;
 }
 
 /// Single-field sheet used to rename topics, excerpts and notes.

@@ -11,7 +11,14 @@
 
 MarginMind 把 PDF 阅读、标注摘录和思维导图放进同一个工作区：在原文里划线，摘录就变成脑图上的卡片；点卡片，一步回到原文的出处。一个“学习集”可以包含多份文档，共同构建一张（或多张）脑图。
 
-> **状态：早期开发（v0.2，可用 Demo）。** 已经可以导入 PDF、划线摘录、在脑图里整理、从卡片回到原文，数据保存在本机。撤销、复习、导出等还在路上，见下方路线图。
+> **状态：v0.3 MVP。** 读 → 摘 → 图 → 复习的完整闭环已经可用：导入 PDF、划线摘录、在脑图里整理、从卡片回到原文、间隔重复复习、导出脑图，数据保存在本机。仍处于早期阶段，欢迎试用和反馈。
+
+## 安装
+
+1. 在 [Releases](https://github.com/mylxsw/marginmind/releases) 下载最新的 `MarginMind-x.y.z.dmg`，把 MarginMind 拖进“应用程序”。
+2. 目前还没有 Apple 开发者签名，第一次打开时 macOS 会拦截：在 Finder 里**右键 MarginMind → 打开**；如果仍被拦截，到“系统设置 › 隐私与安全性”里点“仍要打开”。也可以在终端执行 `xattr -dr com.apple.quarantine /Applications/MarginMind.app`。
+
+需要 macOS 12 或更高版本（Apple 芯片和 Intel 均可）。数据存放在 `~/Library/Containers/io.github.mylxsw.marginmind/Data/Library/Application Support/Library/`，每个学习集是一个独立的 `.mmset` 文件夹。
 
 ## 设计原则
 
@@ -39,14 +46,28 @@ marginmind/
 
 依赖方向只允许向内：`apps → mm_design / mm_platform / mm_pdf / mm_data / mm_layout → mm_core`，`mm_core` 不依赖任何包。详见 [docs/architecture.md](docs/architecture.md)。
 
-## 可以做什么（v0.2）
+## 可以做什么（v0.3）
 
-1. **资料库**：新建学习集（可在创建时直接选择 PDF），或一键打开示例学习集。
-2. **导入 PDF**（⌘O 或侧栏 +）：文件被复制进学习集包，原文件移动或删除都不受影响。
+1. **资料库**：新建学习集、一键打开示例学习集；把 PDF 从 Finder 拖进窗口直接新建学习集；右键可打开、复习、重命名、收藏、删除（⌘⌫）。
+2. **导入 PDF**（⌘O、侧栏 +，或直接拖进学习集窗口）：文件被复制进学习集包，原文件移动或删除都不受影响。侧栏里右键文档可以重命名或移除。
 3. **划线即摘录**：高亮工具下拖选文字，松开鼠标就生成高亮，同时在脑图上生成卡片（挂在当前选中的主题下）。关闭“摘录同步到脑图”则只高亮；选择工具下选中文字会弹出操作条（摘录 / 高亮 / 拷贝 / 换色）。
 4. **原文 ↔ 卡片**：点原文中的高亮，脑图里对应卡片闪烁；点卡片右上角箭头（或 ⌘L），切到对应文档、跳页并闪烁原句。
-5. **整理脑图**：添加主题（⇧⌘N）、添加笔记（⌥⌘N）、双击或回车重命名、Delete 移除（原文高亮保留）；平移缩放；大纲视图。
-6. **一切自动保存**：退出再打开，学习集、高亮、脑图、每份文档读到的页码都在；资料库的“继续学习”显示真实进度。
+5. **整理脑图**：拖动节点改变层级和顺序（拖到节点中部成为子节点，拖到上下边缘插在前后）；折叠/展开分支；右键菜单；方向键在节点间移动，Tab 添加子主题，回车重命名，空格折叠，⌘↑/⌘↓ 调整顺序，Delete 移除；大纲视图。
+6. **撤销 / 重做**（⌘Z / ⇧⌘Z）：脑图、摘录、高亮、文档的每一步编辑都能撤销。
+7. **复习**（⌘R 或侧栏“复习”）：脑图里的摘录和笔记自动成为复习卡片，按简化 SM-2 间隔重复排期。先回想、再翻面（空格），用 1–4 评分（重来 / 困难 / 良好 / 简单）；把摘录重命名成一个问题，它就成为题面。资料库显示每个学习集待复习的数量。
+8. **搜索**（⌘F）：侧栏搜索同时匹配文档和卡片内容，点结果直接定位。
+9. **导出**：文件 › 将脑图导出为 Markdown / OPML（可导入 MarginNote、XMind、幕布等）。
+10. **一切自动保存**：退出再打开，学习集、高亮、脑图、复习进度、每份文档读到的页码都在。
+
+### 快捷键
+
+| 操作 | 快捷键 | 操作 | 快捷键 |
+| --- | --- | --- | --- |
+| 新建学习集 | ⌘N | 导入 PDF | ⌘O |
+| 撤销 / 重做 | ⌘Z / ⇧⌘Z | 搜索 | ⌘F |
+| 添加主题 / 子主题 | ⇧⌘N / Tab | 添加笔记 | ⌥⌘N |
+| 定位原文 | ⌘L | 开始复习 | ⌘R |
+| 原文 / 分栏 / 脑图 | ⌘1 / ⌘2 / ⌘3 | 显示资料库 | ⇧⌘L |
 
 ## 已完成（v0.1 基础设施）
 
@@ -70,12 +91,16 @@ cd apps/marginmind && flutter run -d macos
 flutter analyze                          # 静态检查（根目录）
 dart format --set-exit-if-changed apps packages
 (cd packages/mm_core && dart test)
+(cd packages/mm_data && dart test)
+(cd packages/mm_layout && dart test)
 (cd packages/mm_design && flutter test)
 (cd packages/mm_platform && flutter test)
 (cd apps/marginmind && flutter test)
 (cd apps/marginmind && flutter gen-l10n)  # 修改 lib/l10n/*.arb 之后
 ./tool/icons.sh                          # 重新生成应用图标（需要 Python + Pillow）
 ```
+
+发布：推送形如 `v0.3.0` 的标签后，`Release` 工作流会构建 DMG 并创建草稿 Release（版本号取自 `apps/marginmind/pubspec.yaml`）。
 
 更多见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
@@ -86,11 +111,14 @@ dart format --set-exit-if-changed apps packages
 - [x] 学习集文件包（`.mmset`，JSON + PDF 副本）
 - [x] PDF 渲染与文本层、划线 → 摘录 → 卡片、原文 ↔ 卡片双向定位
 - [x] 脑图布局与画布、大纲视图
-- [ ] 撤销/重做（编辑操作已是纯函数，接入命令历史即可）
-- [ ] 拖拽调整脑图结构、折叠、卡片间关联
-- [ ] 复习（FSRS）、导出（Markdown / OPML）
+- [x] 撤销/重做、拖拽调整脑图结构、折叠
+- [x] 间隔重复复习、导出（Markdown / OPML）、集合内搜索
+- [x] 拖入 PDF 导入、学习集与文档管理、DMG 发布流程
+- [ ] 跨页选择、框选（图片/公式）摘录、手写批注
+- [ ] 卡片间关联、多张脑图、标签
+- [ ] FSRS 排期、复习统计
 - [ ] 数据量变大后迁移到 SQLite（drift），同一套端口
-- [ ] 拖入 PDF 导入、多窗口
+- [ ] 多窗口、iCloud 同步、Developer ID 签名与公证
 
 ## 许可证
 
