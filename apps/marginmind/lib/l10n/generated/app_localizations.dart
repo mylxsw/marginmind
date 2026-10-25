@@ -1453,6 +1453,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Center on Current Node'**
   String get centerCurrentNode;
+
+  /// No description provided for @cutNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut'**
+  String get cutNodes;
+
+  /// No description provided for @pasteNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get pasteNodes;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

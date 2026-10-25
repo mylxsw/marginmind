@@ -41,6 +41,9 @@ class MindMapCanvas extends StatefulWidget {
     required this.onAddChild,
     required this.onShift,
     this.onCommand,
+    this.selectedCardIds = const {},
+    this.onToggleSelection,
+    this.onSelectMany,
     this.editingCardId,
     this.onEditDone,
     this.onEditCancel,
@@ -55,6 +58,9 @@ class MindMapCanvas extends StatefulWidget {
   final StudySetContent content;
   final String rootTitle;
   final String? selectedCardId;
+  final Set<String> selectedCardIds;
+  final ValueChanged<String>? onToggleSelection;
+  final ValueChanged<Set<String>>? onSelectMany;
   final String? flashCardId;
   final TransformationController transformation;
   final ValueChanged<String?> onSelect;
@@ -99,6 +105,24 @@ class MindMapCanvas extends StatefulWidget {
 class _MindMapCanvasState extends State<MindMapCanvas>
     with SingleTickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
+  final _tapModifiers = <String, bool>{};
+  Offset? _boxStart;
+  Offset? _boxEnd;
+  Set<String> _boxInitial = {};
+
+  bool get _additive =>
+      HardwareKeyboard.instance.isShiftPressed ||
+      HardwareKeyboard.instance.isMetaPressed ||
+      HardwareKeyboard.instance.isControlPressed;
+
+  void _select(String? id, {required bool additive}) {
+    if (id != null && additive && widget.onToggleSelection != null) {
+      widget.onToggleSelection!(id);
+    } else {
+      widget.onSelect(id);
+    }
+  }
+
   TreeLayoutResult? _layout;
   final _cache = MindMapRenderCache();
 
@@ -224,7 +248,8 @@ class _MindMapCanvasState extends State<MindMapCanvas>
     super.didUpdateWidget(oldWidget);
     syncField();
     typed = null;
-    if (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId) {
+    if (_boxStart == null &&
+        (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
           ? widget.flashCardId!
           : widget.selectedCardId ?? rootNodeId;
@@ -305,6 +330,8 @@ class _MindMapCanvasState extends State<MindMapCanvas>
             _viewport.height / 2 - rect.centerY * scale,
             0,
           );
+      case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
+        widget.onCommand?.call(command);
       case MindMapCommand.siblingAfter ||
           MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
@@ -318,12 +345,13 @@ class _MindMapCanvasState extends State<MindMapCanvas>
 
   /// A node can't be dropped onto itself or its own descendants.
   bool _canDrop(String dragged, String target) {
-    if (dragged == target) return false;
+    final moving = widget.selectedCardIds.contains(dragged) ? widget.selectedCardIds : {dragged};
+    if (moving.contains(target)) return false;
     if (target == rootNodeId) return true;
     String? id = target;
     final seen = <String>{};
     while (id != null && seen.add(id)) {
-      if (id == dragged) return false;
+      if (moving.contains(id)) return false;
       id = widget.content.node(id)?.parentId;
     }
     return true;
@@ -337,7 +365,8 @@ class _MindMapCanvasState extends State<MindMapCanvas>
     final parent = widget.content.node(target)?.parentId;
     final siblings = [
       for (final n in widget.content.childrenOf(parent))
-        if (n.cardId != dragged) n.cardId,
+        if (!(widget.selectedCardIds.contains(dragged) ? widget.selectedCardIds : {dragged}).contains(n.cardId))
+          n.cardId,
     ];
     final i = siblings.indexOf(target);
     widget.onMove(dragged, parent, zone == _Zone.before ? i : i + 1);
@@ -349,7 +378,9 @@ class _MindMapCanvasState extends State<MindMapCanvas>
     return Draggable<String>(
       data: id,
       dragAnchorStrategy: pointerDragAnchorStrategy,
-      onDragStarted: () => widget.onSelect(id),
+      onDragStarted: () {
+        if (!widget.selectedCardIds.contains(id)) widget.onSelect(id);
+      },
       feedback: Transform.translate(
         offset: const Offset(-12, -12),
         child: Opacity(
@@ -393,6 +424,7 @@ class _MindMapCanvasState extends State<MindMapCanvas>
       textDirection: Directionality.of(context),
     );
     final specs = _cache._specs;
+    _tapModifiers.removeWhere((id, _) => !specs.containsKey(id));
     final collapsed = _cache._collapsed;
     final expandable = _cache._expandable;
     if (field != null) trackField(shown: specs.containsKey(field.id));
@@ -423,11 +455,12 @@ class _MindMapCanvasState extends State<MindMapCanvas>
                 specs[e.key]!,
                 _NodeView(
                   spec: specs[e.key]!,
-                  selected: e.key == (widget.selectedCardId ?? rootNodeId),
+                  selected: widget.selectedCardIds.contains(e.key) || e.key == (widget.selectedCardId ?? rootNodeId),
                   flashing: e.key == widget.flashCardId,
+                  onPressStart: () => _tapModifiers[e.key] = _additive,
                   onTap: () {
                     widget.focusNode.requestFocus();
-                    widget.onSelect(e.key == rootNodeId ? null : e.key);
+                    _select(e.key == rootNodeId ? null : e.key, additive: _tapModifiers.remove(e.key) ?? false);
                   },
                   onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
                   onSecondaryTapUp: widget.onContextMenu == null
@@ -435,7 +468,7 @@ class _MindMapCanvasState extends State<MindMapCanvas>
                       : (position) {
                           widget.focusNode.requestFocus();
                           final id = e.key == rootNodeId ? null : e.key;
-                          widget.onSelect(id);
+                          if (id == null || !widget.selectedCardIds.contains(id)) widget.onSelect(id);
                           widget.onContextMenu!(id, position);
                         },
                   onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
@@ -501,43 +534,93 @@ class _MindMapCanvasState extends State<MindMapCanvas>
           }
           return KeyEventResult.handled;
         },
-        child: InteractiveViewer(
-          transformationController: widget.transformation,
-          constrained: false,
-          minScale: 0.3,
-          maxScale: 2.5,
-          boundaryMargin: const EdgeInsets.all(600),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              widget.focusNode.requestFocus();
-              widget.onSelect(null);
-            },
-            child: SizedBox(
-              width: math.max(result.width, 600),
-              height: math.max(result.height, 400),
-              child: AnimatedBuilder(
-                animation: _motion,
-                builder: (context, _) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          key: const ValueKey('mind-map-edges'),
-                          painter: _EdgesPainter(result, c.line, _motion.isAnimating ? _from : const {}, _motion.value),
+        child: Listener(
+          onPointerDown: (event) {
+            if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
+            final scene = widget.transformation.toScene(event.localPosition);
+            if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) return;
+            widget.focusNode.requestFocus();
+            setState(() {
+              _boxStart = scene;
+              _boxEnd = scene;
+              _boxInitial = _additive ? {...widget.selectedCardIds} : {};
+            });
+          },
+          onPointerMove: (event) {
+            if (_boxStart == null) return;
+            setState(() => _boxEnd = widget.transformation.toScene(event.localPosition));
+            final box = Rect.fromPoints(_boxStart!, _boxEnd!);
+            widget.onSelectMany!({
+              ..._boxInitial,
+              for (final e in result.rects.entries)
+                if (e.key != rootNodeId && box.overlaps(_drawn(e.key, e.value))) e.key,
+            });
+          },
+          onPointerUp: (_) => setState(() {
+            _boxStart = null;
+            _boxEnd = null;
+          }),
+          onPointerCancel: (_) => setState(() {
+            _boxStart = null;
+            _boxEnd = null;
+          }),
+          child: InteractiveViewer(
+            panEnabled: _boxStart == null,
+            transformationController: widget.transformation,
+            constrained: false,
+            minScale: 0.3,
+            maxScale: 2.5,
+            boundaryMargin: const EdgeInsets.all(600),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                widget.focusNode.requestFocus();
+                widget.onSelect(null);
+              },
+              child: SizedBox(
+                width: math.max(result.width, 600),
+                height: math.max(result.height, 400),
+                child: AnimatedBuilder(
+                  animation: _motion,
+                  builder: (context, _) => Stack(
+                    children: [
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            key: const ValueKey('mind-map-edges'),
+                            painter: _EdgesPainter(
+                              result,
+                              c.line,
+                              _motion.isAnimating ? _from : const {},
+                              _motion.value,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    for (final e in result.rects.entries)
-                      if (e.key == field?.id)
-                        _fieldNode(e.key, specs[e.key]!, e.value)
-                      else
-                        Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
-                    for (final id in expandable)
-                      if (result.rects[id] case final r?)
-                        if (_shown(id, r) case final shown)
-                          Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
-                  ],
+                      for (final e in result.rects.entries)
+                        if (e.key == field?.id)
+                          _fieldNode(e.key, specs[e.key]!, e.value)
+                        else
+                          Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
+                      if (_boxStart != null && _boxEnd != null)
+                        Positioned.fromRect(
+                          rect: Rect.fromPoints(_boxStart!, _boxEnd!),
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              key: const ValueKey('map-selection-box'),
+                              decoration: BoxDecoration(
+                                color: c.accentTint,
+                                border: Border.all(color: c.accent),
+                              ),
+                            ),
+                          ),
+                        ),
+                      for (final id in expandable)
+                        if (result.rects[id] case final r?)
+                          if (_shown(id, r) case final shown)
+                            Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -559,6 +642,7 @@ class _NodeView extends StatelessWidget {
     required this.onReveal,
     required this.revealLabel,
     this.editor,
+    this.onPressStart,
   });
 
   /// Replaces the title (a note's text) while it is edited in place; the
@@ -569,6 +653,7 @@ class _NodeView extends StatelessWidget {
   final bool selected;
   final bool flashing;
   final VoidCallback onTap;
+  final VoidCallback? onPressStart;
   final VoidCallback? onDoubleTap;
   final VoidCallback? onReveal;
   final String revealLabel;
@@ -657,9 +742,12 @@ class _NodeView extends StatelessWidget {
     };
 
     if (editor != null) return _decorated(c, bg, radius, shadow, ring, body, padding);
-    return GestureDetector(
-      onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
-      child: _interactive(context, c, bg, radius, shadow, ring, body, padding),
+    return Listener(
+      onPointerDown: (_) => onPressStart?.call(),
+      child: GestureDetector(
+        onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
+        child: _interactive(context, c, bg, radius, shadow, ring, body, padding),
+      ),
     );
   }
 
