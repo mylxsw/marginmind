@@ -70,6 +70,7 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
       case CardKind.note:
         final s = measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 186).size;
         return Size(s.width + 48, s.height + 16);
+      case CardKind.image:
       case CardKind.excerpt:
         final quote = content.annotation(card.annotationId ?? '')?.quote ?? '';
         final lines = math.min(4, measure(quote, MMTypography.readingExcerpt, 174).lines);

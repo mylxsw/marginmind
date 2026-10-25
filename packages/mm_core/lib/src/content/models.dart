@@ -81,26 +81,49 @@ class Document {
   );
 }
 
-/// A highlight on a document page. Keeps both geometry (to draw it) and
-/// the quoted text (to show it, and to re-find it if the file changes).
+/// Rectangles belonging to one 1-based PDF page.
+@immutable
+class AnnotationPage {
+  const AnnotationPage({required this.page, required this.rects});
+  final int page;
+  final List<PageRect> rects;
+  Map<String, Object?> toJson() => {
+    'page': page,
+    'rects': [for (final r in rects) r.toJson()],
+  };
+  factory AnnotationPage.fromJson(Map<String, Object?> j) => AnnotationPage(
+    page: j['page'] as int,
+    rects: [for (final r in j['rects'] as List) PageRect.fromJson((r as Map).cast())],
+  );
+}
+
+/// A highlight spanning one or more pages, in reading order.
 @immutable
 class Annotation {
   const Annotation({
     required this.id,
     required this.documentId,
-    required this.page,
-    required this.rects,
+    int? page,
+    List<PageRect>? rects,
+    List<AnnotationPage>? pages,
     required this.quote,
     required this.colorIndex,
     required this.createdAt,
-  });
+  }) : assert(pages != null || (page != null && rects != null)),
+       _pages = pages,
+       _page = page,
+       _rects = rects;
 
   final String id;
   final String documentId;
+  final List<AnnotationPage>? _pages;
+  final int? _page;
+  final List<PageRect>? _rects;
+  List<AnnotationPage> get pages => _pages ?? [AnnotationPage(page: _page!, rects: _rects!)];
 
-  /// 1-based page number.
-  final int page;
-  final List<PageRect> rects;
+  /// First-page compatibility accessors for the existing reader.
+  int get page => pages.first.page;
+  List<PageRect> get rects => pages.first.rects;
   final String quote;
   final int colorIndex;
   final DateTime createdAt;
@@ -108,41 +131,45 @@ class Annotation {
   Annotation copyWith({int? colorIndex}) => Annotation(
     id: id,
     documentId: documentId,
-    page: page,
-    rects: rects,
+    pages: pages,
     quote: quote,
     colorIndex: colorIndex ?? this.colorIndex,
     createdAt: createdAt,
   );
-
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
-    'page': page,
-    'rects': [for (final r in rects) r.toJson()],
+    'pages': [for (final p in pages) p.toJson()],
     'quote': quote,
     'colorIndex': colorIndex,
     'createdAt': createdAt.toIso8601String(),
   };
-
   factory Annotation.fromJson(Map<String, Object?> j) => Annotation(
     id: j['id'] as String,
     documentId: j['documentId'] as String,
-    page: j['page'] as int,
-    rects: [for (final r in j['rects'] as List) PageRect.fromJson((r as Map).cast())],
+    pages: j['pages'] == null
+        ? [AnnotationPage.fromJson(j)]
+        : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
     quote: j['quote'] as String,
     colorIndex: j['colorIndex'] as int,
     createdAt: DateTime.parse(j['createdAt'] as String),
   );
 }
 
-enum CardKind { topic, excerpt, note }
+enum CardKind { topic, excerpt, note, image }
 
 /// A node's content. Its place in the mind map is stored separately in
 /// [MapNode], so one card could appear in several maps later.
 @immutable
 class Card {
-  const Card({required this.id, required this.kind, this.title = '', this.annotationId, required this.createdAt});
+  const Card({
+    required this.id,
+    required this.kind,
+    this.title = '',
+    this.annotationId,
+    this.imageFileName,
+    required this.createdAt,
+  });
 
   final String id;
   final CardKind kind;
@@ -152,16 +179,26 @@ class Card {
 
   /// Set for excerpts.
   final String? annotationId;
+
+  /// Content-addressed image path relative to the package.
+  final String? imageFileName;
   final DateTime createdAt;
 
-  Card copyWith({String? title}) =>
-      Card(id: id, kind: kind, title: title ?? this.title, annotationId: annotationId, createdAt: createdAt);
+  Card copyWith({String? title}) => Card(
+    id: id,
+    kind: kind,
+    title: title ?? this.title,
+    annotationId: annotationId,
+    imageFileName: imageFileName,
+    createdAt: createdAt,
+  );
 
   Map<String, Object?> toJson() => {
     'id': id,
     'kind': kind.name,
     'title': title,
     if (annotationId != null) 'annotationId': annotationId,
+    if (imageFileName != null) 'imageFileName': imageFileName,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -170,17 +207,38 @@ class Card {
     kind: CardKind.values.byName(j['kind'] as String),
     title: (j['title'] as String?) ?? '',
     annotationId: j['annotationId'] as String?,
+    imageFileName: j['imageFileName'] as String?,
     createdAt: DateTime.parse(j['createdAt'] as String),
   );
+}
+
+/// A named map. The stable default id keeps format 1 placements unchanged.
+@immutable
+class MindMap {
+  const MindMap({required this.id, required this.title});
+  static const defaultId = 'main';
+  static const main = MindMap(id: defaultId, title: '');
+  final String id;
+  final String title;
+  MindMap copyWith({String? title}) => MindMap(id: id, title: title ?? this.title);
+  Map<String, Object?> toJson() => {'id': id, 'title': title};
+  factory MindMap.fromJson(Map<String, Object?> j) => MindMap(id: j['id'] as String, title: j['title'] as String);
 }
 
 /// Placement of a card in the main mind map. `parentId == null` means a
 /// child of the root (the study set itself).
 @immutable
 class MapNode {
-  const MapNode({required this.cardId, this.parentId, required this.order, this.collapsed = false});
+  const MapNode({
+    required this.cardId,
+    this.mapId = MindMap.defaultId,
+    this.parentId,
+    required this.order,
+    this.collapsed = false,
+  });
 
   final String cardId;
+  final String mapId;
   final String? parentId;
 
   /// Sibling order; fractional so inserts never renumber siblings.
@@ -191,6 +249,7 @@ class MapNode {
 
   MapNode copyWith({String? parentId, bool toRoot = false, double? order, bool? collapsed}) => MapNode(
     cardId: cardId,
+    mapId: mapId,
     parentId: toRoot ? null : (parentId ?? this.parentId),
     order: order ?? this.order,
     collapsed: collapsed ?? this.collapsed,
@@ -198,6 +257,7 @@ class MapNode {
 
   Map<String, Object?> toJson() => {
     'cardId': cardId,
+    'mapId': mapId,
     if (parentId != null) 'parentId': parentId,
     'order': order,
     if (collapsed) 'collapsed': true,
@@ -205,6 +265,7 @@ class MapNode {
 
   factory MapNode.fromJson(Map<String, Object?> j) => MapNode(
     cardId: j['cardId'] as String,
+    mapId: (j['mapId'] as String?) ?? MindMap.defaultId,
     parentId: j['parentId'] as String?,
     order: _d(j['order']),
     collapsed: (j['collapsed'] as bool?) ?? false,

@@ -6,6 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:path/path.dart' as p;
 
+import 'format_migration.dart';
+
 /// Stores the library on disk:
 ///
 /// ```
@@ -55,7 +57,20 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
       final file = File(p.join(entry.path, 'studyset.json'));
       if (!await file.exists()) continue;
       try {
-        final record = _SetRecord.fromJson(jsonDecode(await file.readAsString()) as Map<String, Object?>);
+        final original = await file.readAsBytes();
+        final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
+        final migrated = migrateStudySet(json);
+        // Decode before touching disk so invalid input cannot replace the source.
+        final record = _SetRecord.fromJson(migrated);
+        if (json['format'] == 1) {
+          final backup = File('${file.path}.format-1.bak');
+          if (!await backup.exists()) {
+            await _atomicWrite(backup, original);
+          } else if (!_sameBytes(await backup.readAsBytes(), original)) {
+            throw FileSystemException('Migration backup differs from source', backup.path);
+          }
+          await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
+        }
         _sets[record.id] = record;
       } on FormatException {
         // A damaged package is skipped rather than taking the library down.
@@ -172,6 +187,46 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   }
 
   @override
+  Future<String> importImage(String studySetId, String sourcePath) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    final bytes = await File(sourcePath).readAsBytes();
+    final String extension;
+    if (bytes.length >= 8 && _sameBytes(bytes.take(8).toList(), [137, 80, 78, 71, 13, 10, 26, 10])) {
+      extension = 'png';
+    } else if (bytes.length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255) {
+      extension = 'jpg';
+    } else {
+      throw const FormatException('Expected PNG or JPEG image');
+    }
+    final name = 'images/${sha256.convert(bytes)}.$extension';
+    final target = File(p.join(_packagePath(studySetId), name));
+    // Use the same per-set queue as JSON writes, including concurrent imports.
+    final previous = _writeQueue[studySetId] ?? Future<void>.value();
+    final next = previous.then((_) async {
+      if (!await target.exists()) await _atomicWrite(target, bytes);
+    });
+    _writeQueue[studySetId] = next;
+    await next;
+    return name;
+  }
+
+  static bool _sameBytes(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  static Future<void> _atomicWrite(File file, List<int> bytes) async {
+    await file.parent.create(recursive: true);
+    final tmp = File('${file.path}.tmp');
+    await tmp.writeAsBytes(bytes, flush: true);
+    await tmp.rename(file.path);
+  }
+
+  @override
   String resolveFile(String studySetId, String fileName) => p.join(_packagePath(studySetId), fileName);
 
   // ---- internals -----------------------------------------------------------
@@ -183,10 +238,14 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
     late final StreamController<T> out;
     out = StreamController<T>(
       onListen: () async {
-        await _ensureLoaded();
-        if (out.isClosed) return;
-        out.add(snapshot());
-        sub = changes.listen((_) => out.add(snapshot()));
+        try {
+          await _ensureLoaded();
+          if (out.isClosed) return;
+          out.add(snapshot());
+          sub = changes.listen((_) => out.add(snapshot()));
+        } catch (error, stack) {
+          if (!out.isClosed) out.addError(error, stack);
+        }
       },
       onCancel: () => sub?.cancel(),
     );
@@ -202,9 +261,7 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
       final dir = Directory(_packagePath(id));
       await dir.create(recursive: true);
       final file = File(p.join(dir.path, 'studyset.json'));
-      final tmp = File('${file.path}.tmp');
-      await tmp.writeAsString(const JsonEncoder.withIndent('  ').convert(record.toJson()), flush: true);
-      await tmp.rename(file.path);
+      await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())));
     });
     _writeQueue[id] = next;
     return next;
@@ -282,7 +339,7 @@ class _SetRecord {
   }
 
   Map<String, Object?> toJson() => {
-    'format': 1,
+    'format': 2,
     'id': id,
     'title': title,
     'colorIndex': colorIndex,

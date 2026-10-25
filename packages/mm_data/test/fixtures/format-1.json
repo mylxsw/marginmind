@@ -1,0 +1,126 @@
+{
+  "format": 1,
+  "id": "legacy",
+  "title": "旧学习集",
+  "colorIndex": 2,
+  "folderId": "folder",
+  "starred": true,
+  "createdAt": "2026-10-20T08:00:00.000Z",
+  "lastOpenedAt": "2026-10-20T08:00:00.000Z",
+  "content": {
+    "documents": [
+      {
+        "id": "doc",
+        "title": "认知",
+        "fileName": "documents/original.pdf",
+        "pageCount": 120,
+        "lastPage": 42,
+        "importedAt": "2026-10-20T08:00:00.000Z",
+        "lastReadAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a",
+        "documentId": "doc",
+        "page": 3,
+        "rects": [
+          {
+            "l": 1.0,
+            "t": 10.0,
+            "r": 20.0,
+            "b": 2.0
+          },
+          {
+            "l": 2.0,
+            "t": 20.0,
+            "r": 30.0,
+            "b": 12.0
+          }
+        ],
+        "quote": "记忆 & 学习",
+        "colorIndex": 2,
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "id": "unattached",
+        "documentId": "doc",
+        "page": 5,
+        "rects": [
+          {
+            "l": 1.0,
+            "t": 10.0,
+            "r": 20.0,
+            "b": 2.0
+          },
+          {
+            "l": 2.0,
+            "t": 20.0,
+            "r": 30.0,
+            "b": 12.0
+          }
+        ],
+        "quote": "记忆 & 学习",
+        "colorIndex": 2,
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "cards": [
+      {
+        "id": "topic",
+        "kind": "topic",
+        "title": "主题",
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "id": "excerpt",
+        "kind": "excerpt",
+        "title": "摘录",
+        "createdAt": "2026-10-20T08:00:00.000Z",
+        "annotationId": "a"
+      },
+      {
+        "id": "note",
+        "kind": "note",
+        "title": "笔记",
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "nodes": [
+      {
+        "cardId": "topic",
+        "order": 1.0,
+        "collapsed": true
+      },
+      {
+        "cardId": "excerpt",
+        "parentId": "topic",
+        "order": 0.5
+      },
+      {
+        "cardId": "note",
+        "order": 2.0
+      }
+    ],
+    "reviews": [
+      {
+        "cardId": "excerpt",
+        "due": "2026-10-20T08:00:00.000Z",
+        "interval": 3.0,
+        "ease": 2.5,
+        "reps": 2,
+        "lapses": 1,
+        "last": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "cardId": "deleted-card",
+        "due": "2026-10-20T08:00:00.000Z",
+        "interval": 3.0,
+        "ease": 2.5,
+        "reps": 2,
+        "lapses": 1,
+        "last": "2026-10-20T08:00:00.000Z"
+      }
+    ]
+  }
+}

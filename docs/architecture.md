@@ -20,14 +20,23 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 | `mm_core` | 实体（`StudySet`、`Folder`）、仓库端口（`StudySetRepository`）、纯查询（`LibraryQuery`）。`testing.dart` 提供内存实现和示例数据。 | 仅 Dart 标准库与 `meta` |
 | `mm_design` | 设计令牌、`MMTheme`、所有可复用组件。不含业务概念，不含文案。 | Flutter、`cupertino_icons` |
 | `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`window_manager`、`macos_window_utils` |
-| `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
+| `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/` + `images/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
 | `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
 | `mm_layout` | `TreeLayout`：向右生长的树，父节点在子树块中垂直居中。输入节点尺寸，输出矩形和连线。 | 仅 `meta` |
 | `apps/marginmind` | 组合根：Riverpod providers、路由、菜单与快捷键、功能界面、多语言。 | 以上全部 |
 
 ### 数据模型（`mm_core/content`）
 
-`StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（页码 + PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note）、`MapNode`（卡片在脑图中的位置：父节点 + 排序 + 是否折叠）、`ReviewState`（每张卡片的复习排期）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`move`、`setCollapsed`、`rate`、`removeDocument`…），仓库的 `update(id, change)` 负责原子地应用并保存，这也让测试不依赖界面。
+`StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（多页 PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note / image）、`MindMap`（独立脑图）、`MapNode`（卡片在指定脑图中的位置：mapId + 父节点 + 排序 + 是否折叠）、`ReviewState`（每张卡片的复习排期）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`move`、`setCollapsed`、`rate`、`removeDocument`…），仓库的 `update(id, change)` 负责原子地应用并保存，这也让测试不依赖界面。
+
+### format 2 文件包与兼容接口
+
+- `Annotation.pages` 是按阅读顺序排列的 `AnnotationPage(page, rects)` 列表，页码从 1 开始，矩形继续使用 PDF 坐标。一条高亮仍有同一个 ID、文档、引文和颜色。旧构造参数 `page/rects` 以及首页面的读取属性保留，便于 C-01 接入；写盘只保存 `pages`，复制和改色保留全部页面。
+- 图片卡片用 `CardKind.image`，`imageFileName` 引用包内资源，`annotationId` 定位原文区域。`StudySetContentRepository.importImage` 接受 PNG/JPEG 文件，通过内容签名确定扩展名、SHA-256 字节摘要去重，原子写入 `images/<hash>.png|jpg`。同一学习集内多个卡片复用同一路径；不自动回收图片，以免破坏撤销快照。`StudySetEditor.createImage` 只处理引用，不执行文件 IO。
+- `StudySetContent.maps` 保存 `MindMap(id, title)`；旧数据进入稳定 ID `main` 的默认图（空标题代表沿用学习集标题）。节点以 `(mapId, cardId)` 唯一，`parentId` 引用同图内的卡片；同一卡片可在不同图中有不同父级、排序和折叠状态。`node`、`childrenOf`、`pathOf`、`search`、剪贴板和导出接受 `mapId`，默认仍是 `main`。
+- `StudySetEditor(mapId: ...)` 的结构编辑只作用于该图，`placeCard` 可复用已有卡片。卡片标题、高亮颜色及复习排期属于共享内容。移除子树时，仍被其他图引用的卡片保留；删除原文高亮则移除各图中的对应子树。删除额外脑图保留卡片及复习记录，默认图暂不允许删除，待 C-03 接入活动脑图生命周期。复习按卡片去重。
+- 加载文件包时只接受 `format: 1` 或 `2`，未知/缺失版本不载入也不改写。唯一的 1→2 迁移先转换并解析数据，再把原始字节备份为 `studyset.json.format-1.bak`，最后写同目录临时文件、flush、rename 替换 `studyset.json`。文档资源不移动；复习记录、阅读位置、节点结构和 ID 保持不变。已存在且与源文件相同的备份允许重试，不同则中止，绝不覆盖备份；IO 失败向调用者报错。再次打开 format 2 不重复迁移。原子替换沿用单进程文件包约定，不支持多个进程同时编辑同一包。
+- 内部剪贴板写 version 2，继续读取 version 1；携带多页位置和图片引用。同包剪切后可通过保留的高亮复用图片；目标包没有对应高亮或图片引用时降为文字笔记，跨学习集图片文件复制由后续 C-02 处理。本任务仅准备模型和接口，不新增界面入口；C-01/C-02/C-03 分别接入跨页显示、图片呈现和脑图切换。
 
 - **撤销 / 重做**：控制器的独立编辑自动记录一步快照（最多 100 步）；跨多次写入的原地编辑用 `await beginTransaction()` 开始，`await commitTransaction()` 提交，`await abortTransaction()` 放弃。嵌套事务加入外层事务，最外层提交只记一步；放弃取消整个事务且保留原有重做记录。空事务及内容未变化的编辑不记历史。事务期间禁用控制器级撤销 / 重做，文字框负责自身撤销。写入和事务边界按调用顺序串行执行。撤销、重做和放弃均用 `StudySetEditor.restore` 保留当前复习记录和阅读页码。
 - **脑图编辑基础 API**：`insertSibling`（`before` 指定前后）、`promote`、`insertParent`、`removeMany`、`moveMany`、`recolorMany` 均为 `StudySetEditor` 纯函数。虚拟根节点以 `null` 表示；在根上加兄弟节点会添加根的子节点，提升和插入父节点则不操作。批量移动按脑图先序排列、合并选中的父子树，目标落在任一选中子树内或不存在时整批拒绝；`index` 指移除所选节点后的目标兄弟列表位置。批量改色只作用于选中摘录关联的高亮（格式 1 的主题和笔记不存颜色），不隐式修改后代。控制器的 `removeCards` / `moveCards` / `recolorCards` 各只记一步历史。

@@ -71,7 +71,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         MMSidebarItem(
           icon: switch (card.kind) {
             CardKind.topic => MMIcons.addTopic,
-            CardKind.excerpt => MMIcons.highlight,
+            CardKind.excerpt || CardKind.image => MMIcons.highlight,
             CardKind.note => MMIcons.addNote,
           },
           label: card.title.isNotEmpty ? card.title : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
