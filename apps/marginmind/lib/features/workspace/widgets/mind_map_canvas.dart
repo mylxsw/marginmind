@@ -102,7 +102,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   Map<String, Rect> _from = const {};
 
   _NodeField? _field;
-  late final _fieldFocus = FocusNode(debugLabel: 'MindMapNodeField')..addListener(_onFieldFocus);
 
   /// Text typed on a selected topic; it replaces the title in the field the
   /// caller opens next.
@@ -123,8 +122,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
       final text = field.controller.text;
       if (done != null) Future.microtask(() => done(text));
     }
-    field?.controller.dispose();
-    _fieldFocus.dispose();
+    field?.dispose();
     _motion.dispose();
     super.dispose();
   }
@@ -133,7 +131,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   void _syncField() {
     final id = widget.editingCardId;
     if (id == _field?.id) return;
-    _field?.controller.dispose();
+    // Each field gets its own focus node: one that is already focused would
+    // not open a text input connection for the next field.
+    final old = _field;
+    if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
     _field = null;
     final typed = _typed;
     _typed = null;
@@ -146,22 +147,27 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
     controller.addListener(() {
       if (mounted) setState(() {});
     });
-    _field = _NodeField(id, controller);
+    final field = _NodeField(id, controller, FocusNode(debugLabel: 'MindMapNodeField'));
+    field.focus.addListener(() => _onFieldFocus(field));
+    _field = field;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _field?.id != id) return;
-      _fieldFocus.requestFocus();
+      if (!mounted || _field != field) return;
+      field.focus.requestFocus();
       _ensureVisible(id);
     });
   }
 
-  /// Focus left the field (a click elsewhere, another pane): confirm.
-  void _onFieldFocus() {
-    if (!_fieldFocus.hasFocus) _endField(commit: true, refocus: false);
+  /// Focus left the field (a click elsewhere, another pane): confirm. Not
+  /// when the app goes to the background; focus comes back on return.
+  void _onFieldFocus(_NodeField field) {
+    if (field.focus.hasFocus) return;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    _endField(field, commit: true, refocus: false);
   }
 
-  void _endField({required bool commit, required bool refocus}) {
-    final field = _field;
-    if (field == null || field.ended) return;
+  void _endField(_NodeField? field, {required bool commit, required bool refocus}) {
+    if (field == null || field != _field || field.ended) return;
     field.ended = true;
     if (refocus) widget.focusNode.requestFocus();
     if (commit) {
@@ -228,12 +234,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
         revealLabel: '',
         editor: MMInlineTextField(
           controller: field.controller,
-          focusNode: _fieldFocus,
+          focusNode: field.focus,
           style: context.mmText.headline,
           semanticLabel: spec.title,
-          onSubmitted: () => _endField(commit: true, refocus: true),
-          onCancel: () => _endField(commit: false, refocus: true),
-          onTapOutside: () => _endField(commit: true, refocus: false),
+          onSubmitted: () => _endField(field, commit: true, refocus: true),
+          onCancel: () => _endField(field, commit: false, refocus: true),
+          onTapOutside: () => _endField(field, commit: true, refocus: false),
         ),
       ),
     );
@@ -391,7 +397,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
       field.seen = true;
     } else if (field != null && field.seen && !field.ended) {
       // The node went away (deleted, folded away) while it was being edited.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _endField(commit: false, refocus: false));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _endField(field, commit: false, refocus: false));
     }
     _animateTo(result, _layout);
     _layout = result;
@@ -715,15 +721,21 @@ Rect _lerpRect(Rect? from, Rect to, double t) => from == null || t >= 1 ? to : R
 /// clears [MindMapCanvas.editingCardId], so the saved title replaces it
 /// without a flash of the old one.
 class _NodeField {
-  _NodeField(this.id, this.controller);
+  _NodeField(this.id, this.controller, this.focus);
 
   final String id;
   final TextEditingController controller;
+  final FocusNode focus;
   bool ended = false;
 
   /// The node has been on the map; until then the content may lag behind
   /// the write that created it.
   bool seen = false;
+
+  void dispose() {
+    controller.dispose();
+    focus.dispose();
+  }
 }
 
 class _EdgesPainter extends CustomPainter {

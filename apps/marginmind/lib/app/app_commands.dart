@@ -67,6 +67,12 @@ class AppMenus extends ConsumerWidget {
     final workspaceId = route is WorkspaceRoute ? route.studySetId : null;
     final inWorkspace = workspaceId != null;
 
+    final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
+    final workspaceState = inWorkspace ? ref.watch(workspaceProvider(workspaceId)) : null;
+    final selected = workspaceState?.selectedCardId;
+    // While a title is typed in place, commands that change the content
+    // wait: they would land in the edit's undo step and be lost on Esc.
+    final editable = workspace != null && workspaceState?.editingCardId == null;
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -77,13 +83,10 @@ class AppMenus extends ConsumerWidget {
       ),
       AppCommand(
         l.importDocument,
-        inWorkspace ? () => pickAndImportDocuments(context, ref, workspaceId) : null,
+        editable ? () => pickAndImportDocuments(context, ref, workspaceId!) : null,
         shortcut: AppShortcuts.importDocument,
       ),
     ];
-    final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
-    final workspaceState = inWorkspace ? ref.watch(workspaceProvider(workspaceId)) : null;
-    final selected = workspaceState?.selectedCardId;
     file.addAll([
       AppCommand(
         l.exportMarkdown,
@@ -123,14 +126,10 @@ class AppMenus extends ConsumerWidget {
     final map = <AppCommand>[
       AppCommand(
         l.addTopic,
-        workspace == null ? null : () => workspace.addTopic(l.newTopicName),
+        editable ? () => workspace.addTopic(l.newTopicName) : null,
         shortcut: AppShortcuts.addTopic,
       ),
-      AppCommand(
-        l.addNote,
-        workspace == null ? null : () => workspace.addNote(l.newNoteText),
-        shortcut: AppShortcuts.addNote,
-      ),
+      AppCommand(l.addNote, editable ? () => workspace.addNote(l.newNoteText) : null, shortcut: AppShortcuts.addNote),
       AppCommand(
         l.revealSource,
         workspace != null && selected != null && workspace.content.card(selected)?.annotationId != null
@@ -138,7 +137,7 @@ class AppMenus extends ConsumerWidget {
             : null,
         shortcut: AppShortcuts.revealSource,
       ),
-      AppCommand(l.removeFromMap, workspace != null && selected != null ? workspace.removeSelected : null),
+      AppCommand(l.removeFromMap, editable && selected != null ? workspace.removeSelected : null),
     ];
     final view = <AppCommand>[
       if (inLibrary) ...[

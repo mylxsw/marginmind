@@ -59,6 +59,8 @@ void main() {
     await tester.pump();
     expect(tester.getSize(find.byType(TextField)).height, greaterThan(30));
     expect(find.bySemanticsLabel('Topic'), findsOneWidget);
+    // Nothing leaks in from the Material input theme (e.g. letter spacing).
+    expect(tester.widget<EditableText>(find.byType(EditableText)).style.letterSpacing, isNull);
   });
 
   testWidgets('while an input method composes, Enter and Esc belong to it', (tester) async {

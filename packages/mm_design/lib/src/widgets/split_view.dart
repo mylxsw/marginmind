@@ -63,14 +63,21 @@ class MMSplitView extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // A hidden pane stays mounted but cannot keep keyboard focus.
                 Offstage(
                   offstage: !showP,
-                  child: SizedBox(width: showP ? pw : 0, child: primary),
+                  child: ExcludeFocus(
+                    excluding: !showP,
+                    child: SizedBox(width: showP ? pw : 0, child: primary),
+                  ),
                 ),
                 if (split) SizedBox(width: 1, child: ColoredBox(color: c.separator)),
                 Offstage(
                   offstage: !showS,
-                  child: SizedBox(width: showS ? (split ? w - pw - 1 : w) : 0, child: secondary),
+                  child: ExcludeFocus(
+                    excluding: !showS,
+                    child: SizedBox(width: showS ? (split ? w - pw - 1 : w) : 0, child: secondary),
+                  ),
                 ),
               ],
             ),

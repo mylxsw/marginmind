@@ -43,6 +43,8 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).editingCardId, 'c3');
       expect(_text(tester).selection, const TextSelection(baseOffset: 0, extentOffset: 5));
       final width = tester.getSize(_field).width;
+      // The field lays out exactly like the measured title: no early wrap.
+      expect(tester.getSize(_field).height, lessThan(20));
 
       tester.testTextInput.enterText('遗忘的规律与记忆巩固');
       await tester.pump();
@@ -167,6 +169,43 @@ void main() {
     expect(_field, findsNothing);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
+    await settleHud(tester);
+  });
+
+  testWidgets('review fixes: switching fields, menu commands, hidden map', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    // Straight from one field to a new one: typing reaches the new field.
+    await doubleTap(tester, find.text('对策一：间隔重复'));
+    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await tester.pumpAndSettle();
+    expect(_text(tester).text, 'New Topic');
+    tester.testTextInput.enterText('第二个');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(controller.content.cards.where((c) => c.title == '第二个'), hasLength(1));
+
+    // Commands that change content wait while a title is typed.
+    final cards = controller.content.cards.length;
+    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await tester.pumpAndSettle();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(controller.content.cards.length, cards);
+
+    // Hiding the map confirms the edit instead of keeping an unseen field.
+    await doubleTap(tester, find.text('第二个'));
+    tester.testTextInput.enterText('藏起来');
+    await tester.tap(find.byIcon(MMIcons.layoutReader));
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull);
+    expect(controller.content.cards.where((c) => c.title == '藏起来'), hasLength(1));
     await settleHud(tester);
   });
 
@@ -341,6 +380,18 @@ void main() {
       expect(controller.content.card('c3')!.title, '遗忘的规律');
     });
 
+    test('a second creation while the first is still writing is ignored', () async {
+      final first = controller.addTopicAndEdit('A');
+      final second = controller.addTopicAndEdit('B');
+      controller.beginEditing('c3');
+      expect(await second, isNull);
+      final card = (await first)!;
+      expect(state().editingCardId, card.id);
+      await controller.finishEditing('A');
+      expect(state().canUndo, isTrue);
+      expect(controller.content.cards.where((c) => c.title == 'B'), isEmpty);
+    });
+
     test('a node that fails to be created leaves no transaction open', () async {
       repo.failNext = true;
       await expectLater(controller.addTopicAndEdit('New'), throwsStateError);
@@ -448,6 +499,18 @@ void main() {
       await pump(tester, content: content, editing: 'c3', log: log, show: false);
       await tester.pumpAndSettle();
       expect(log, ['done:kept']);
+    });
+
+    testWidgets('switching to another app keeps the edit open', (tester) async {
+      final log = <String>[];
+      await pump(tester, content: fixture(4), editing: 'c0', log: log);
+      await tester.pumpAndSettle();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(log, isEmpty);
+      expect(_field, findsOneWidget);
     });
 
     testWidgets('with reduced motion the layout changes at once', (tester) async {

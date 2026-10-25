@@ -24,6 +24,9 @@ class MMInlineTextField extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
+
+  /// Used as is: nothing is inherited from the Material input theme, so the
+  /// text lays out exactly like a [TextPainter] measuring this style.
   final TextStyle style;
   final VoidCallback onSubmitted;
   final VoidCallback onCancel;
@@ -64,7 +67,7 @@ class MMInlineTextField extends StatelessWidget {
           child: TextField(
             controller: controller,
             focusNode: focusNode,
-            style: style,
+            style: const TextStyle(inherit: false, textBaseline: TextBaseline.alphabetic).merge(style),
             maxLines: null,
             cursorWidth: 1.5,
             cursorColor: c.accent,

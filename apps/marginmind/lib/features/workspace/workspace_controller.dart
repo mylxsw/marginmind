@@ -603,10 +603,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   _EditSession? _editing;
 
+  /// A topic is being created for editing; no other edit may start yet.
+  bool _creating = false;
+
   /// Starts editing a topic's title in place. Nothing is written until
   /// [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
-    if (_editing != null || content.card(cardId)?.kind != CardKind.topic) return;
+    if (_editing != null || _creating || content.card(cardId)?.kind != CardKind.topic) return;
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId);
   }
@@ -615,15 +618,20 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// typed title commit as one undo step; cancelling leaves no node and no
   /// history.
   Future<Card?> addTopicAndEdit(String title, {bool asChild = false}) async {
-    if (_editing != null) return null;
+    if (_editing != null || _creating) return null;
+    _creating = true;
     final previous = state.selectedCardId;
-    await beginTransaction();
     final Card card;
     try {
-      card = await addTopic(title, asChild: asChild);
-    } catch (_) {
-      await abortTransaction();
-      rethrow;
+      await beginTransaction();
+      try {
+        card = await addTopic(title, asChild: asChild);
+      } catch (_) {
+        await abortTransaction();
+        rethrow;
+      }
+    } finally {
+      _creating = false;
     }
     _editing = _EditSession(card.id, created: true, previousSelection: previous);
     state = state.copyWith(editingCardId: card.id);
