@@ -197,7 +197,7 @@ void main() {
         .map((c) => c.decoration)
         .whereType<BoxDecoration>()
         .firstWhere((d) => d.shape == BoxShape.circle);
-    expect(dot.boxShadow?.last.color, MMColors.light.accent);
+    expect(dot.boxShadow?.first.color, MMColors.light.accent);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pumpAndSettle();
@@ -235,7 +235,24 @@ void main() {
         .where((d) => d.shape == BoxShape.circle && d.boxShadow != null)
         .toList();
     expect(rings, hasLength(1));
-    expect(rings.single.boxShadow!.last.color, MMAnnotationColor.purple.color);
+    expect(rings.single.boxShadow!.first.color, MMAnnotationColor.purple.color);
+  });
+
+  testWidgets('a glass gap separates the selected dot from its ring', (tester) async {
+    await tester.pumpWidget(harness(toolbar(selected: MMAnnotationColor.purple)));
+    await tester.pumpAndSettle();
+    final dot = find.descendant(
+      of: find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.selected),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+      ),
+    );
+    final (gap, ring) = await dotRingColors(tester, dot);
+    expect(gap, sameColor(MMColors.light.glassOpaque));
+    expect(ring, sameColor(MMAnnotationColor.purple.color));
   });
 
   group('MMFloatingToolbarLayout', () {
