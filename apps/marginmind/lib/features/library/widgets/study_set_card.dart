@@ -45,6 +45,7 @@ class StudySetCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(MMRadii.cover + 5),
             ),
             child: Stack(
+              fit: StackFit.passthrough,
               children: [
                 AnimatedSlide(
                   duration: MMAppearance.duration(context, MMMotion.standard),

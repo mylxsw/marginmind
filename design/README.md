@@ -24,3 +24,4 @@
 1. 深色主题次级文字由 `#A1A1A6` 提亮为 `#AEAEB2`，以满足选中行上的 4.5:1 对比度。
 2. 资料库与学习集暂时在同一窗口内切换（设计为独立窗口），原因见 `docs/architecture.md`。
 3. 图标使用 Flutter 自带的 Cupertino 图标近似 SF Symbols。
+4. 表单标签列由 76 加宽到 96，避免英文标签（如 “Appearance”）换行。

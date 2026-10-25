@@ -4,7 +4,7 @@ import '../theme/mm_theme.dart';
 
 /// macOS form row: right-aligned label column, control on the right.
 class MMFormRow extends StatelessWidget {
-  const MMFormRow({super.key, required this.label, required this.child, this.labelWidth = 76});
+  const MMFormRow({super.key, required this.label, required this.child, this.labelWidth = 96});
 
   final String label;
   final Widget child;
@@ -18,7 +18,14 @@ class MMFormRow extends StatelessWidget {
         children: [
           SizedBox(
             width: labelWidth,
-            child: Text(label, textAlign: TextAlign.right, style: context.mmText.body),
+            child: Text(
+              label,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: context.mmText.body,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

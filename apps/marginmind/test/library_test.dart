@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/features/library/widgets/study_set_cover.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
@@ -11,6 +13,9 @@ void main() {
     expect(find.text('Continue Learning'), findsOneWidget);
     expect(find.text('产品设计方法论'), findsWidgets);
     expect(find.textContaining('6 study sets'), findsOneWidget);
+    // Grid covers fill their cell (regression: covers collapsed to 0 width).
+    final covers = find.byType(StudySetCover);
+    expect(tester.getSize(covers.last).width, greaterThan(150));
     expect(tester.takeException(), isNull);
   });
 
@@ -57,6 +62,15 @@ void main() {
     expect(find.text('Created “认知心理学”'), findsOneWidget);
     expect(find.text('认知心理学'), findsWidgets);
     await settleHud(tester);
+  });
+
+  testWidgets('clicking a study set selects it and Return opens it', (tester) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('交互设计原则笔记'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('Mind Maps'), findsOneWidget);
   });
 
   testWidgets('first run shows the drop zone', (tester) async {

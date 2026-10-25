@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:macos_window_utils/macos/ns_window_button_type.dart';
@@ -28,7 +30,9 @@ abstract final class DesktopWindow {
   /// their native title bar for now.
   static bool get drawsWindowButtonsInContent => isMacOS;
 
-  /// Call once before `runApp`.
+  /// Call once before `runApp`. Never blocks app start: every native step
+  /// has a timeout, and showing the window waits for the first frame, so it
+  /// is scheduled rather than awaited.
   static Future<void> initialize({
     required String title,
     required Size minimumSize,

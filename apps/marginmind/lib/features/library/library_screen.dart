@@ -223,7 +223,7 @@ class _LibrarySidebar extends ConsumerWidget {
   }
 }
 
-class _LibraryBody extends ConsumerWidget {
+class _LibraryBody extends ConsumerStatefulWidget {
   const _LibraryBody({
     required this.sets,
     required this.visible,
@@ -239,7 +239,27 @@ class _LibraryBody extends ConsumerWidget {
   final DateTime now;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_LibraryBody> createState() => _LibraryBodyState();
+}
+
+class _LibraryBodyState extends ConsumerState<_LibraryBody> {
+  /// Clicking an item also takes keyboard focus, so ↩ / ⌘↓ / Esc act on the
+  /// selection like in Finder.
+  final _focus = FocusNode(debugLabel: 'LibraryBody');
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sets = widget.sets;
+    final visible = widget.visible;
+    final folders = widget.folders;
+    final view = widget.view;
+    final now = widget.now;
     final l = context.l10n;
     final t = context.mmText;
     final controller = ref.read(libraryViewProvider.notifier);
@@ -285,72 +305,84 @@ class _LibraryBody extends ConsumerWidget {
         const SingleActivator(LogicalKeyboardKey.escape): () => controller.select(null),
       },
       child: Focus(
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => controller.select(null),
-          child: CustomScrollView(
-            slivers: [
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              if (showContinue) ...[
-                _heading(l.libraryContinue, t),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 420,
-                      mainAxisExtent: 88,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+        focusNode: _focus,
+        autofocus: true,
+        child: Builder(
+          builder: (_) {
+            void select(String? id) {
+              _focus.requestFocus();
+              controller.select(id);
+            }
+
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => select(null),
+              child: CustomScrollView(
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  if (showContinue) ...[
+                    _heading(l.libraryContinue, t),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 420,
+                          mainAxisExtent: 88,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        delegate: SliverChildListDelegate([
+                          for (final s in recent) ContinueCard(set: s, onOpen: () => open(s.id)),
+                        ]),
+                      ),
                     ),
-                    delegate: SliverChildListDelegate([
-                      for (final s in recent) ContinueCard(set: s, onOpen: () => open(s.id)),
-                    ]),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                _heading(l.libraryAllHeading, t),
-              ],
-              if (view.viewMode == LibraryViewMode.grid)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(23, 0, 23, 48),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 230,
-                      mainAxisExtent: 206,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 18,
+                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                    _heading(l.libraryAllHeading, t),
+                  ],
+                  if (view.viewMode == LibraryViewMode.grid)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(23, 0, 23, 48),
+                      sliver: SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 230,
+                          mainAxisExtent: 206,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 18,
+                        ),
+                        delegate: SliverChildBuilderDelegate(childCount: visible.length, (context, i) {
+                          final s = visible[i];
+                          return StudySetCard(
+                            set: s,
+                            now: now,
+                            selected: s.id == view.selectedId,
+                            onSelect: () => select(s.id),
+                            onOpen: () => open(s.id),
+                            onToggleStar: () =>
+                                ref.read(studySetRepositoryProvider).setStarred(s.id, starred: !s.starred),
+                          );
+                        }),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 48),
+                      sliver: SliverToBoxAdapter(
+                        child: StudySetList(
+                          sets: visible,
+                          folders: folders,
+                          sort: view.query.sort,
+                          selectedId: view.selectedId,
+                          now: now,
+                          onSort: controller.setSort,
+                          onSelect: select,
+                          onOpen: open,
+                        ),
+                      ),
                     ),
-                    delegate: SliverChildBuilderDelegate(childCount: visible.length, (context, i) {
-                      final s = visible[i];
-                      return StudySetCard(
-                        set: s,
-                        now: now,
-                        selected: s.id == view.selectedId,
-                        onSelect: () => controller.select(s.id),
-                        onOpen: () => open(s.id),
-                        onToggleStar: () => ref.read(studySetRepositoryProvider).setStarred(s.id, starred: !s.starred),
-                      );
-                    }),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 48),
-                  sliver: SliverToBoxAdapter(
-                    child: StudySetList(
-                      sets: visible,
-                      folders: folders,
-                      sort: view.query.sort,
-                      selectedId: view.selectedId,
-                      now: now,
-                      onSort: controller.setSort,
-                      onSelect: controller.select,
-                      onOpen: open,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
