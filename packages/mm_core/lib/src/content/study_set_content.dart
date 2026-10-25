@@ -15,6 +15,8 @@ class StudySetContent {
     this.nodes = const [],
     this.maps = const [MindMap.main],
     this.reviews = const [],
+    this.relations = const [],
+    this.summaries = const [],
   });
 
   static const empty = StudySetContent();
@@ -29,6 +31,33 @@ class StudySetContent {
   /// Review history per card. Entries of deleted cards are kept (and
   /// ignored) so undoing a delete brings the card back with its schedule.
   final List<ReviewState> reviews;
+
+  /// Lines between cards and summaries of sibling ranges, per map.
+  final List<MapRelation> relations;
+  final List<MapSummary> summaries;
+
+  /// Relations of [mapId] whose two cards are both placed in that map.
+  List<MapRelation> relationsOf(String mapId) => [
+    for (final r in relations)
+      if (r.mapId == mapId && node(r.fromId, mapId: mapId) != null && node(r.toId, mapId: mapId) != null) r,
+  ];
+
+  /// Summaries of [mapId] whose range is intact, each with the children it
+  /// covers in display order.
+  List<(MapSummary, List<String>)> summariesOf(String mapId) => [
+    for (final s in summaries)
+      if (s.mapId == mapId)
+        if (summaryRange(s) case final range?) (s, range),
+  ];
+
+  /// The children [s] covers, or null when either end is no longer a child
+  /// of its parent.
+  List<String>? summaryRange(MapSummary s) {
+    final siblings = [for (final n in childrenOf(s.parentId, mapId: s.mapId)) n.cardId];
+    final a = siblings.indexOf(s.fromId), b = siblings.indexOf(s.toId);
+    if (a < 0 || b < 0) return null;
+    return siblings.sublist(a < b ? a : b, (a < b ? b : a) + 1);
+  }
 
   Document? document(String id) => documents.where((d) => d.id == id).firstOrNull;
   Annotation? annotation(String id) => annotations.where((a) => a.id == id).firstOrNull;
@@ -149,6 +178,8 @@ class StudySetContent {
     List<MapNode>? nodes,
     List<MindMap>? maps,
     List<ReviewState>? reviews,
+    List<MapRelation>? relations,
+    List<MapSummary>? summaries,
   }) {
     return StudySetContent(
       documents: documents ?? this.documents,
@@ -157,6 +188,8 @@ class StudySetContent {
       nodes: nodes ?? this.nodes,
       maps: maps ?? this.maps,
       reviews: reviews ?? this.reviews,
+      relations: relations ?? this.relations,
+      summaries: summaries ?? this.summaries,
     );
   }
 
@@ -167,6 +200,8 @@ class StudySetContent {
     'maps': [for (final m in maps) m.toJson()],
     'nodes': [for (final n in nodes) n.toJson()],
     'reviews': [for (final r in reviews) r.toJson()],
+    'relations': [for (final r in relations) r.toJson()],
+    'summaries': [for (final s in summaries) s.toJson()],
   };
 
   factory StudySetContent.fromJson(Map<String, Object?> j) {
@@ -180,6 +215,8 @@ class StudySetContent {
       nodes: list('nodes', MapNode.fromJson),
       maps: j['maps'] == null ? const [MindMap.main] : list('maps', MindMap.fromJson),
       reviews: list('reviews', ReviewState.fromJson),
+      relations: list('relations', MapRelation.fromJson),
+      summaries: list('summaries', MapSummary.fromJson),
     );
   }
 }

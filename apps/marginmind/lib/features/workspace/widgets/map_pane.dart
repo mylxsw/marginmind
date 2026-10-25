@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
@@ -84,6 +85,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
         controller.addTopicAndEdit(l.newTopicName, asParent: true);
       case MindMapCommand.promote:
         controller.promoteSelected();
+      case MindMapCommand.relation:
+        controller.addRelation();
+      case MindMapCommand.summary:
+        controller.addSummaryAndEdit(l.newSummaryLabel);
       default:
         break;
     }
@@ -133,6 +138,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
           ],
           const MMMenuDivider(),
+          MMMenuItem(
+            l.addRelation,
+            () => _command(MindMapCommand.relation),
+            shortcut: describeShortcut(_shortcutOf(MindMapCommand.relation)),
+          ),
+          MMMenuItem(
+            l.addSummary,
+            () => _command(MindMapCommand.summary),
+            shortcut: describeShortcut(_shortcutOf(MindMapCommand.summary)),
+          ),
+          const MMMenuDivider(),
           for (final map in content.maps)
             if (map.id != mapId && content.node(card.id, mapId: map.id) == null)
               MMMenuItem(
@@ -141,6 +157,30 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
           MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫'),
         ],
+      ],
+    );
+  }
+
+  static SingleActivator _shortcutOf(MindMapCommand command) =>
+      mindMapShortcuts.entries.firstWhere((e) => e.value == command).key;
+
+  /// Right click on a relation line or summary.
+  void _showMarkMenu(String markId, Offset position) {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final isRelation = controller.content.relations.any((r) => r.id == markId);
+    showMMMenu(
+      context,
+      position: position,
+      entries: [
+        MMMenuItem(l.editMarkLabel, () => controller.beginMarkEditing(markId), shortcut: 'F2'),
+        const MMMenuDivider(),
+        MMMenuItem(
+          isRelation ? l.deleteRelation : l.deleteSummary,
+          controller.removeSelectedMark,
+          destructive: true,
+          shortcut: '⌫',
+        ),
       ],
     );
   }
@@ -205,6 +245,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onEditDone: controller.finishEditing,
                     onEditCancel: controller.cancelEditing,
                     onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
+                    selectedMarkId: state.selectedMarkId,
+                    editingMarkId: state.editingMarkId,
+                    connectingFromId: state.connectingFromId,
+                    onSelectMark: controller.selectMark,
+                    onEditMark: controller.beginMarkEditing,
+                    onDeleteMark: controller.removeSelectedMark,
+                    onMarkEditDone: controller.finishMarkEditing,
+                    onMarkEditCancel: controller.cancelMarkEditing,
+                    onConnect: controller.connectTo,
+                    onCancelConnect: controller.cancelConnecting,
+                    onMarkContextMenu: _showMarkMenu,
                   )
                 : OutlineView(
                     key: ValueKey(state.activeMapId),
@@ -302,7 +353,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 MMToolbarButton(
                   icon: MMIcons.trash,
                   tooltip: l.removeFromMap,
-                  onPressed: state.selectedCardId == null ? null : remove,
+                  onPressed: state.selectedMarkId != null
+                      ? controller.removeSelectedMark
+                      : state.selectedCardId == null
+                      ? null
+                      : remove,
                 ),
               ],
             ),

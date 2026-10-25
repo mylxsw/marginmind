@@ -76,6 +76,8 @@ Future<void> exportMap(BuildContext context, WidgetRef ref, String studySetId, E
     opml: opml,
     rootTitle: title,
     source: (doc, page) => '${doc.title} · ${l.pageNumber(page)}',
+    summary: (label) => label.isEmpty ? l.newSummaryLabel : l.exportSummary(label),
+    relationsTitle: l.exportRelations,
   );
   final location = await getSaveLocation(
     suggestedName: '${title.replaceAll(RegExp(r'[/:\\]'), '-')}.$ext',

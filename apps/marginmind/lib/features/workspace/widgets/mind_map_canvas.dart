@@ -66,6 +66,17 @@ class MindMapCanvas extends StatefulWidget {
     this.onEditCancel,
     this.onContextMenu,
     this.loaded = true,
+    this.selectedMarkId,
+    this.editingMarkId,
+    this.connectingFromId,
+    this.onSelectMark,
+    this.onEditMark,
+    this.onDeleteMark,
+    this.onMarkEditDone,
+    this.onMarkEditCancel,
+    this.onConnect,
+    this.onCancelConnect,
+    this.onMarkContextMenu,
   });
 
   /// False until the content has been read from disk; the first fit waits
@@ -116,6 +127,25 @@ class MindMapCanvas extends StatefulWidget {
   /// Right click on a node (card id, or null for the root).
   final void Function(String? cardId, Offset globalPosition)? onContextMenu;
 
+  /// Selected relation or summary, and the one whose label is a text field.
+  final String? selectedMarkId;
+  final String? editingMarkId;
+
+  /// A relation being drawn from this card: the next node clicked ends it,
+  /// a dashed line follows the pointer until then.
+  final String? connectingFromId;
+
+  final ValueChanged<String>? onSelectMark;
+
+  /// Double click on a label, F2, Space or Enter on a selected mark.
+  final ValueChanged<String>? onEditMark;
+  final VoidCallback? onDeleteMark;
+  final ValueChanged<String>? onMarkEditDone;
+  final VoidCallback? onMarkEditCancel;
+  final ValueChanged<String>? onConnect;
+  final VoidCallback? onCancelConnect;
+  final void Function(String markId, Offset globalPosition)? onMarkContextMenu;
+
   @override
   State<MindMapCanvas> createState() => _MindMapCanvasState();
 }
@@ -161,10 +191,60 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   @override
   void fieldOpened(String id) => _ensureVisible(id);
 
+  /// The label of a relation or summary open for editing.
+  CardField? _markField;
+
+  /// Pointer position in the scene while a relation is being drawn.
+  Offset? _hover;
+
+  String _storedLabel(String id) =>
+      widget.content.relations.where((r) => r.id == id).firstOrNull?.label ??
+      widget.content.summaries.where((s) => s.id == id).firstOrNull?.label ??
+      '';
+
+  /// Opens or closes the label field to match [MindMapCanvas.editingMarkId].
+  void _syncMarkField() {
+    final id = widget.editingMarkId;
+    if (id == _markField?.id) return;
+    final old = _markField;
+    if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    _markField = null;
+    if (id == null) return;
+    final text = _storedLabel(id);
+    final controller = TextEditingController(text: text)
+      ..selection = TextSelection(baseOffset: 0, extentOffset: text.length);
+    controller.addListener(() {
+      if (mounted) setState(() {});
+    });
+    final next = CardField(id, controller, FocusNode(debugLabel: 'MarkField'));
+    next.focus.addListener(() {
+      if (next.focus.hasFocus) return;
+      final lifecycle = WidgetsBinding.instance.lifecycleState;
+      if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+      _endMarkField(next, commit: true, refocus: false);
+    });
+    _markField = next;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _markField == next) next.focus.requestFocus();
+    });
+  }
+
+  void _endMarkField(CardField f, {required bool commit, required bool refocus}) {
+    if (f != _markField || f.ended) return;
+    f.ended = true;
+    if (refocus) widget.focusNode.requestFocus();
+    if (commit) {
+      widget.onMarkEditDone?.call(f.controller.text);
+    } else {
+      widget.onMarkEditCancel?.call();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     syncField();
+    _syncMarkField();
     _motion.addListener(() {
       if (field == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -176,6 +256,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   @override
   void dispose() {
     disposeField();
+    final mark = _markField;
+    if (mark != null && !mark.ended) {
+      final done = widget.onMarkEditDone;
+      final text = mark.controller.text;
+      if (done != null) Future.microtask(() => done(text));
+    }
+    mark?.dispose();
     _autoScroll.dispose();
     _motion.dispose();
     super.dispose();
@@ -266,6 +353,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
     syncField();
+    _syncMarkField();
+    if (widget.connectingFromId == null) _hover = null;
     typed = null;
     // The tree can change under a drag (undo, another window); the drop
     // must follow what is drawn.
@@ -317,6 +406,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   void _command(MindMapCommand command) {
     final selected = widget.selectedCardId;
+    if (widget.selectedMarkId case final mark?) {
+      switch (command) {
+        case MindMapCommand.delete:
+          widget.onDeleteMark?.call();
+          return;
+        case MindMapCommand.edit || MindMapCommand.siblingAfter:
+          widget.onEditMark?.call(mark);
+          return;
+        default:
+          break;
+      }
+    }
     switch (command) {
       case MindMapCommand.child:
         widget.onAddChild();
@@ -361,9 +462,86 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       case MindMapCommand.siblingAfter ||
           MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
-          MindMapCommand.promote:
+          MindMapCommand.promote ||
+          MindMapCommand.relation ||
+          MindMapCommand.summary:
         if (selected != null) widget.onCommand?.call(command);
     }
+  }
+
+  /// The relation line or summary bracket at [scene], if any. Labels are
+  /// widgets and take their own clicks.
+  String? _markAt(Offset scene) {
+    final layout = _layout;
+    if (layout == null) return null;
+    for (final e in layout.summaries.entries) {
+      if (_rect(e.value.bracket).inflate(MMSpacing.xs).contains(scene)) return e.key;
+    }
+    final rects = _drawnRects();
+    final slop = MMSpacing.s / math.max(mapScale(widget.transformation.value), 0.5);
+    for (final r in _cache._relations.reversed) {
+      final a = rects[r.fromId], b = rects[r.toId];
+      if (a == null || b == null) continue;
+      final curve = relationCurve(a, b);
+      var previous = curve.$1;
+      for (var i = 1; i <= 24; i++) {
+        final point = cubicPoint(curve, i / 24);
+        if (_distanceToSegment(scene, previous, point) <= slop) return r.id;
+        previous = point;
+      }
+    }
+    return null;
+  }
+
+  /// The middle of a relation's line as drawn now, where its label sits.
+  Offset? _relationMiddle(MapRelation r) {
+    final from = _layout?.rects[r.fromId], to = _layout?.rects[r.toId];
+    if (from == null || to == null) return null;
+    return cubicPoint(relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to)), 0.5);
+  }
+
+  /// A label of a relation (at the middle of its line) or summary.
+  Widget _markLabel(String id, {required bool summary}) {
+    final t = context.mmText;
+    final f = _markField?.id == id ? _markField : null;
+    final style = summary ? t.headline : t.footnote;
+    Widget? editor;
+    if (f != null) {
+      final width = _cache._measure(f.controller.text, summary ? MMTypography.headline : MMTypography.footnote, 200);
+      editor = SizedBox(
+        width: math.max(width.size.width, MMSpacing.xxxl) + MMSpacing.xs,
+        child: MMInlineTextField(
+          controller: f.controller,
+          focusNode: f.focus,
+          style: style,
+          maxLines: summary ? null : 1,
+          semanticLabel: summary ? context.l10n.addSummary : context.l10n.addRelation,
+          onSubmitted: () => _endMarkField(f, commit: true, refocus: true),
+          onCancel: () => _endMarkField(f, commit: false, refocus: true),
+          onTapOutside: () => _endMarkField(f, commit: true, refocus: false),
+        ),
+      );
+    }
+    return _MarkLabel(
+      key: ValueKey('mark-label-$id'),
+      text: _cache._markLabels[id] ?? '',
+      style: style,
+      summary: summary,
+      selected: id == widget.selectedMarkId,
+      editor: editor,
+      onTap: () {
+        widget.focusNode.requestFocus();
+        widget.onSelectMark?.call(id);
+      },
+      onDoubleTap: widget.onEditMark == null ? null : () => widget.onEditMark!(id),
+      onSecondaryTapUp: widget.onMarkContextMenu == null
+          ? null
+          : (position) {
+              widget.focusNode.requestFocus();
+              widget.onSelectMark?.call(id);
+              widget.onMarkContextMenu!(id, position);
+            },
+    );
   }
 
   @override
@@ -530,6 +708,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final field = this.field;
     final result = _cache.update(
       draft: field == null ? null : (field.id, field.controller.text),
+      markDraft: _markField == null ? null : (_markField!.id, _markField!.controller.text),
       content: widget.content,
       mapId: widget.mapId,
       rootTitle: widget.rootTitle,
@@ -574,7 +753,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   onPressStart: () => _tapModifiers[e.key] = _additive,
                   onTap: () {
                     widget.focusNode.requestFocus();
-                    _select(e.key == rootNodeId ? null : e.key, additive: _tapModifiers.remove(e.key) ?? false);
+                    final additive = _tapModifiers.remove(e.key) ?? false;
+                    if (widget.connectingFromId != null) {
+                      if (e.key == rootNodeId) {
+                        widget.onCancelConnect?.call();
+                      } else {
+                        widget.onConnect?.call(e.key);
+                      }
+                      return;
+                    }
+                    _select(e.key == rootNodeId ? null : e.key, additive: additive);
                   },
                   onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
                   onSecondaryTapUp: widget.onContextMenu == null
@@ -609,7 +797,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       actions: <Type, Action<Intent>>{
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
-            if (field == null) _command(intent.command);
+            if (field == null && _markField == null) _command(intent.command);
             return null;
           },
         ),
@@ -618,7 +806,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         focusNode: widget.focusNode,
         onKeyEvent: (_, event) {
           // Keys the text field leaves alone must not act on the map.
-          if (event is! KeyDownEvent || field != null) return KeyEventResult.ignored;
+          if (event is! KeyDownEvent || field != null || _markField != null) return KeyEventResult.ignored;
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
           for (final entry in mindMapShortcuts.entries) {
@@ -628,7 +816,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             }
           }
           if (key == LogicalKeyboardKey.escape) {
-            widget.onSelect(null);
+            if (widget.connectingFromId != null) {
+              widget.onCancelConnect?.call();
+            } else {
+              widget.onSelect(null);
+            }
             return KeyEventResult.handled;
           }
           final meta = HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed;
@@ -657,6 +849,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
             final scene = widget.transformation.toScene(event.localPosition);
             if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) return;
+            if (_markAt(scene) != null) return;
             widget.focusNode.requestFocus();
             setState(() {
               _boxStart = scene;
@@ -700,69 +893,129 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             boundaryMargin: const EdgeInsets.all(600),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
-              onTap: () {
+              onTapUp: (details) {
                 widget.focusNode.requestFocus();
-                widget.onSelect(null);
+                final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
+                if (mark != null) {
+                  widget.onSelectMark!(mark);
+                } else if (widget.connectingFromId != null) {
+                  widget.onCancelConnect?.call();
+                } else {
+                  widget.onSelect(null);
+                }
               },
-              child: SizedBox(
-                width: math.max(result.width, 600),
-                height: math.max(result.height, 400),
-                child: AnimatedBuilder(
-                  animation: _motion,
-                  builder: (context, _) => Stack(
-                    children: [
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: CustomPaint(
-                            key: const ValueKey('mind-map-edges'),
-                            painter: _EdgesPainter(
-                              result,
-                              c.line,
-                              _motion.isAnimating ? _from : const {},
-                              _motion.value,
-                            ),
-                          ),
-                        ),
-                      ),
-                      for (final e in result.rects.entries)
-                        if (e.key == field?.id)
-                          _fieldNode(e.key, specs[e.key]!, e.value)
-                        else
-                          Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
-                      if (_boxStart != null && _boxEnd != null)
-                        Positioned.fromRect(
-                          rect: Rect.fromPoints(_boxStart!, _boxEnd!),
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              key: const ValueKey('map-selection-box'),
-                              decoration: BoxDecoration(
-                                color: c.accentTint,
-                                border: Border.all(color: c.accent),
+              onSecondaryTapUp: widget.onMarkContextMenu == null
+                  ? null
+                  : (details) {
+                      final mark = _markAt(details.localPosition);
+                      if (mark == null) return;
+                      widget.focusNode.requestFocus();
+                      widget.onSelectMark?.call(mark);
+                      widget.onMarkContextMenu!(mark, details.globalPosition);
+                    },
+              child: MouseRegion(
+                onHover: widget.connectingFromId == null
+                    ? null
+                    : (event) => setState(() => _hover = event.localPosition),
+                child: SizedBox(
+                  width: math.max(result.width, 600),
+                  height: math.max(result.height, 400),
+                  child: AnimatedBuilder(
+                    animation: _motion,
+                    builder: (context, _) => Stack(
+                      children: [
+                        Positioned.fill(
+                          child: RepaintBoundary(
+                            child: CustomPaint(
+                              key: const ValueKey('mind-map-edges'),
+                              painter: _EdgesPainter(
+                                result,
+                                c.line,
+                                _motion.isAnimating ? _from : const {},
+                                _motion.value,
                               ),
                             ),
                           ),
                         ),
-                      if (_drop case final drop?)
-                        if (drop.previewRect(_drawnRects(), gap: _siblingGap, thickness: 3) case final rect?)
+                        if (result.summaries.isNotEmpty ||
+                            _cache._relations.isNotEmpty ||
+                            widget.connectingFromId != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                key: const ValueKey('mind-map-marks'),
+                                painter: _MarksPainter(
+                                  rects: _drawnRects(),
+                                  relations: _cache._relations,
+                                  summaries: result.summaries,
+                                  selectedId: widget.selectedMarkId,
+                                  line: c.secondaryLabel,
+                                  bracket: c.line,
+                                  accent: c.accent,
+                                  connectFrom: widget.connectingFromId,
+                                  pointer: _hover,
+                                ),
+                              ),
+                            ),
+                          ),
+                        for (final e in result.rects.entries)
+                          if (e.key == field?.id)
+                            _fieldNode(e.key, specs[e.key]!, e.value)
+                          else
+                            Positioned.fromRect(
+                              key: ValueKey(e.key),
+                              rect: _drawn(e.key, e.value),
+                              child: nodes[e.key]!,
+                            ),
+                        for (final e in result.summaries.entries)
+                          if (e.value.label.width > 0)
+                            Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
+                        for (final r in _cache._relations)
+                          if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
+                            if (_relationMiddle(r) case final middle?)
+                              Positioned(
+                                left: middle.dx,
+                                top: middle.dy,
+                                child: FractionalTranslation(
+                                  translation: const Offset(-0.5, -0.5),
+                                  child: _markLabel(r.id, summary: false),
+                                ),
+                              ),
+                        if (_boxStart != null && _boxEnd != null)
                           Positioned.fromRect(
-                            rect: rect,
+                            rect: Rect.fromPoints(_boxStart!, _boxEnd!),
                             child: IgnorePointer(
                               child: DecoratedBox(
-                                key: const ValueKey('map-drop-preview'),
-                                decoration: drop.zone == MapDropZone.child
-                                    ? BoxDecoration(
-                                        borderRadius: BorderRadius.circular(MMRadii.card),
-                                        border: Border.all(color: c.accent, width: 2),
-                                      )
-                                    : BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                                key: const ValueKey('map-selection-box'),
+                                decoration: BoxDecoration(
+                                  color: c.accentTint,
+                                  border: Border.all(color: c.accent),
+                                ),
                               ),
                             ),
                           ),
-                      for (final id in expandable)
-                        if (result.rects[id] case final r?)
-                          if (_shown(id, r) case final shown)
-                            Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
-                    ],
+                        if (_drop case final drop?)
+                          if (drop.previewRect(_drawnRects(), gap: _siblingGap, thickness: 3) case final rect?)
+                            Positioned.fromRect(
+                              rect: rect,
+                              child: IgnorePointer(
+                                child: DecoratedBox(
+                                  key: const ValueKey('map-drop-preview'),
+                                  decoration: drop.zone == MapDropZone.child
+                                      ? BoxDecoration(
+                                          borderRadius: BorderRadius.circular(MMRadii.card),
+                                          border: Border.all(color: c.accent, width: 2),
+                                        )
+                                      : BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                                ),
+                              ),
+                            ),
+                        for (final id in expandable)
+                          if (result.rects[id] case final r?)
+                            if (_shown(id, r) case final shown)
+                              Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1067,6 +1320,207 @@ class _FoldButton extends StatelessWidget {
                 )
               : Icon(MMIcons.zoomOut, size: 10, color: c.secondaryLabel),
         ),
+      ),
+    );
+  }
+}
+
+/// Where a relation between [a] and [b] runs: from the border of [a] facing
+/// [b] to the border of [b] facing [a], bowed to one side so it stands out
+/// from the tree's connectors. Start, two control points, end.
+@visibleForTesting
+(Offset, Offset, Offset, Offset) relationCurve(Rect a, Rect b) {
+  Offset border(Rect r, Offset toward) {
+    final d = toward - r.center;
+    if (d == Offset.zero) return r.center;
+    final scale = math.min(
+      d.dx == 0 ? double.infinity : (r.width / 2) / d.dx.abs(),
+      d.dy == 0 ? double.infinity : (r.height / 2) / d.dy.abs(),
+    );
+    return r.center + d * math.min(scale, 1);
+  }
+
+  final start = border(a, b.center), end = border(b, a.center);
+  final d = end - start;
+  final length = d.distance;
+  final normal = length == 0 ? Offset.zero : Offset(-d.dy, d.dx) / length * math.min(64, length * 0.25);
+  return (start, start + d * 0.25 + normal, start + d * 0.75 + normal, end);
+}
+
+@visibleForTesting
+Offset cubicPoint((Offset, Offset, Offset, Offset) c, double t) {
+  final u = 1 - t;
+  return c.$1 * (u * u * u) + c.$2 * (3 * u * u * t) + c.$3 * (3 * u * t * t) + c.$4 * (t * t * t);
+}
+
+double _distanceToSegment(Offset p, Offset a, Offset b) {
+  final ab = b - a;
+  final length2 = ab.dx * ab.dx + ab.dy * ab.dy;
+  if (length2 == 0) return (p - a).distance;
+  final t = (((p.dx - a.dx) * ab.dx + (p.dy - a.dy) * ab.dy) / length2).clamp(0.0, 1.0);
+  return (p - (a + ab * t)).distance;
+}
+
+/// Relation lines (dashed, with an arrow at the target), summary brackets
+/// and, while a relation is being drawn, a line to the pointer.
+class _MarksPainter extends CustomPainter {
+  _MarksPainter({
+    required this.rects,
+    required this.relations,
+    required this.summaries,
+    required this.selectedId,
+    required this.line,
+    required this.bracket,
+    required this.accent,
+    this.connectFrom,
+    this.pointer,
+  });
+
+  final Map<String, Rect> rects;
+  final List<MapRelation> relations;
+  final Map<String, SummaryPlacement> summaries;
+  final String? selectedId;
+  final Color line;
+  final Color bracket;
+  final Color accent;
+  final String? connectFrom;
+  final Offset? pointer;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint stroke(Color color, double width) => Paint()
+      ..color = color
+      ..strokeWidth = width
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    for (final e in summaries.entries) {
+      final selected = e.key == selectedId;
+      canvas.drawPath(_bracketPath(_rect(e.value.bracket)), stroke(selected ? accent : bracket, selected ? 2 : 1.5));
+    }
+    for (final r in relations) {
+      final a = rects[r.fromId], b = rects[r.toId];
+      if (a == null || b == null) continue;
+      final selected = r.id == selectedId;
+      final c = relationCurve(a, b);
+      final paint = stroke(selected ? accent : line, selected ? 2 : 1.5);
+      final path = Path()
+        ..moveTo(c.$1.dx, c.$1.dy)
+        ..cubicTo(c.$2.dx, c.$2.dy, c.$3.dx, c.$3.dy, c.$4.dx, c.$4.dy);
+      _dashed(canvas, path, paint);
+      _arrow(canvas, c.$3, c.$4, paint);
+    }
+    final from = connectFrom == null ? null : rects[connectFrom];
+    if (from != null && pointer != null && !from.contains(pointer!)) {
+      final c = relationCurve(from, Rect.fromCenter(center: pointer!, width: 0, height: 0));
+      final paint = stroke(accent, 1.5);
+      final path = Path()
+        ..moveTo(c.$1.dx, c.$1.dy)
+        ..cubicTo(c.$2.dx, c.$2.dy, c.$3.dx, c.$3.dy, c.$4.dx, c.$4.dy);
+      _dashed(canvas, path, paint);
+      _arrow(canvas, c.$3, c.$4, paint);
+    }
+  }
+
+  /// A right curly brace filling [r]: ends at the left, point at the right.
+  static Path _bracketPath(Rect r) {
+    final m = r.left + r.width / 2, cy = r.center.dy;
+    final k = math.min(r.width / 2, r.height / 4);
+    return Path()
+      ..moveTo(r.left, r.top)
+      ..quadraticBezierTo(m, r.top, m, r.top + k)
+      ..lineTo(m, cy - k)
+      ..quadraticBezierTo(m, cy, r.right, cy)
+      ..quadraticBezierTo(m, cy, m, cy + k)
+      ..lineTo(m, r.bottom - k)
+      ..quadraticBezierTo(m, r.bottom, r.left, r.bottom);
+  }
+
+  static void _dashed(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      for (var d = 0.0; d < metric.length; d += 9) {
+        canvas.drawPath(metric.extractPath(d, math.min(d + 5, metric.length)), paint);
+      }
+    }
+  }
+
+  static void _arrow(Canvas canvas, Offset control, Offset tip, Paint paint) {
+    final d = tip - control;
+    if (d.distance == 0) return;
+    final angle = d.direction;
+    const spread = 0.45, length = 8.0;
+    canvas.drawPath(
+      Path()
+        ..moveTo(tip.dx - length * math.cos(angle - spread), tip.dy - length * math.sin(angle - spread))
+        ..lineTo(tip.dx, tip.dy)
+        ..lineTo(tip.dx - length * math.cos(angle + spread), tip.dy - length * math.sin(angle + spread)),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MarksPainter old) =>
+      !mapEquals(old.rects, rects) ||
+      !identical(old.relations, relations) ||
+      !identical(old.summaries, summaries) ||
+      old.selectedId != selectedId ||
+      old.line != line ||
+      old.bracket != bracket ||
+      old.accent != accent ||
+      old.connectFrom != connectFrom ||
+      old.pointer != pointer;
+}
+
+/// The label of a summary (filled like a topic) or of a relation (on the
+/// canvas color, covering the line beneath it).
+class _MarkLabel extends StatelessWidget {
+  const _MarkLabel({
+    super.key,
+    required this.text,
+    required this.style,
+    required this.summary,
+    required this.selected,
+    required this.onTap,
+    this.onDoubleTap,
+    this.onSecondaryTapUp,
+    this.editor,
+  });
+
+  final String text;
+  final TextStyle style;
+  final bool summary;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback? onDoubleTap;
+  final ValueChanged<Offset>? onSecondaryTapUp;
+  final Widget? editor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    Widget box(Widget child) => DecoratedBox(
+      decoration: BoxDecoration(
+        color: summary ? Color.alphaBlend(c.fill, c.canvas) : c.canvas,
+        borderRadius: BorderRadius.circular(summary ? MMRadii.card : MMRadii.excerpt),
+        boxShadow: [if (selected) BoxShadow(color: c.accent, spreadRadius: 2)],
+      ),
+      child: Padding(
+        padding: summary
+            ? const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s)
+            : const EdgeInsets.symmetric(horizontal: MMSpacing.xs, vertical: MMSpacing.xxs),
+        child: child,
+      ),
+    );
+    if (editor != null) return box(Center(widthFactor: 1, heightFactor: 1, child: editor));
+    return GestureDetector(
+      onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
+      child: MMInteractive(
+        onTap: onTap,
+        onDoubleTap: onDoubleTap,
+        selected: selected,
+        semanticLabel: text,
+        builder: (context, _) => box(Text(text, style: style)),
       ),
     );
   }

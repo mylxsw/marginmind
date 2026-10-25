@@ -3,6 +3,9 @@ part of 'mind_map_canvas.dart';
 /// Vertical space between sibling nodes; drops split it between them.
 const _siblingGap = 14.0;
 
+/// Widest summary label before it wraps.
+const _summaryLabelWidth = 200.0;
+
 /// Per-canvas cache. Immutable content makes unchanged UI rebuilds O(1).
 /// Geometry is compared separately so metadata and equal-size text edits
 /// can refresh node views without relaying out or repainting the edges.
@@ -18,8 +21,14 @@ class MindMapRenderCache {
   Locale? _locale;
   TextDirection _direction = TextDirection.ltr;
   (String, String)? _draft;
+  (String, String)? _markDraft;
   TreeLayoutResult? _layout;
   List<(String, String?, double, double)> _geometry = [];
+  List<(String, String, String, String, double, double)> _summaryGeometry = [];
+
+  /// Relations of the map, and the label shown for each summary and relation.
+  List<MapRelation> _relations = const [];
+  Map<String, String> _markLabels = const {};
   Map<String, _NodeSpec> _specs = {};
   Map<String, int> _collapsed = {};
   Set<String> _expandable = {};
@@ -44,6 +53,9 @@ class MindMapRenderCache {
     /// The title being typed into a node (card id, text): measured in place
     /// of the stored title so the layout follows the text field.
     (String, String)? draft,
+
+    /// Likewise for the label of a relation or summary (id, text).
+    (String, String)? markDraft,
   }) {
     final environmentChanged =
         _theme != theme || _textScaler != textScaler || _locale != locale || _direction != textDirection;
@@ -52,6 +64,7 @@ class MindMapRenderCache {
         _title == rootTitle &&
         _mapId == mapId &&
         _draft == draft &&
+        _markDraft == markDraft &&
         identical(_localizations, localizations)) {
       return _layout!;
     }
@@ -64,6 +77,7 @@ class MindMapRenderCache {
     _title = rootTitle;
     _mapId = mapId;
     _draft = draft;
+    _markDraft = markDraft;
     _localizations = localizations;
 
     // Index once: childrenOf/card/annotation each scan the content lists.
@@ -117,12 +131,48 @@ class MindMapRenderCache {
     }
 
     final tree = build(rootNodeId, null, _NodeSpec.root(rootTitle.isEmpty ? localizations.appName : rootTitle, this));
-    if (_layout == null || !listEquals(_geometry, geometry)) {
-      _layout = const TreeLayout(levelGap: 56, siblingGap: _siblingGap, padding: 72).layout(tree);
+    String label(String id, String stored) => markDraft?.$1 == id ? markDraft!.$2 : stored;
+    _relations = content.relationsOf(mapId);
+    final mapSummaries = content.summariesOf(mapId);
+    _markLabels = {
+      for (final r in _relations) r.id: label(r.id, r.label),
+      for (final (s, _) in mapSummaries) s.id: label(s.id, s.label),
+    };
+    final summaries = [
+      for (final (s, _) in mapSummaries)
+        if (_summaryLabelSize(_markLabels[s.id]!, editing: markDraft?.$1 == s.id) case final size)
+          LayoutSummary(
+            id: s.id,
+            parentId: s.parentId ?? rootNodeId,
+            fromId: s.fromId,
+            toId: s.toId,
+            width: size.width,
+            height: size.height,
+          ),
+    ];
+    final summaryGeometry = [for (final s in summaries) (s.id, s.parentId, s.fromId, s.toId, s.width, s.height)];
+    if (_layout == null || !listEquals(_geometry, geometry) || !listEquals(_summaryGeometry, summaryGeometry)) {
+      _layout = const TreeLayout(
+        levelGap: 56,
+        siblingGap: _siblingGap,
+        padding: 72,
+        summaryGap: MMSpacing.m,
+        bracketWidth: MMSpacing.m,
+        labelGap: MMSpacing.s,
+      ).layout(tree, summaries: summaries);
       layoutCount++;
       _geometry = geometry;
+      _summaryGeometry = summaryGeometry;
     }
     return _layout!;
+  }
+
+  /// A summary label's box; an empty one takes no room unless it is being
+  /// typed into.
+  Size _summaryLabelSize(String text, {required bool editing}) {
+    if (text.isEmpty && !editing) return Size.zero;
+    final s = _measure(text, MMTypography.headline, _summaryLabelWidth).size;
+    return Size(math.max(s.width, editing ? MMSpacing.xxxl : 0) + MMSpacing.m * 2, s.height + MMSpacing.s * 2);
   }
 
   ({Size size, int lines}) _measure(String text, TextStyle style, double width) {

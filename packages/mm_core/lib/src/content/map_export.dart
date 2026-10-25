@@ -1,22 +1,33 @@
+import 'dart:convert';
+
 import 'models.dart';
 import 'study_set_content.dart';
 
-/// Turns the main mind map into portable text formats.
+/// Turns a mind map into portable text formats.
 ///
-/// [source] labels where an excerpt comes from (e.g. "Book · p. 3"); the
-/// app passes a localized one.
+/// [source] labels where an excerpt comes from (e.g. "Book · p. 3");
+/// [summary] names a summary line and [relationsTitle] heads the list of
+/// relations in Markdown. The app passes localized ones.
 class MapExporter {
   MapExporter(
     this.content, {
     required this.rootTitle,
     this.mapId = MindMap.defaultId,
     String Function(Document doc, int page)? source,
-  }) : _source = source ?? ((doc, page) => '${doc.title}, p. $page');
+    String Function(String label)? summary,
+    this.relationsTitle = 'Relationships',
+  }) : _source = source ?? ((doc, page) => '${doc.title}, p. $page'),
+       _summary = summary ?? ((label) => label.isEmpty ? 'Summary' : 'Summary: $label');
 
   final StudySetContent content;
   final String rootTitle;
   final String mapId;
+  final String relationsTitle;
   final String Function(Document doc, int page) _source;
+  final String Function(String label) _summary;
+
+  late final _summaries = content.summariesOf(mapId);
+  late final _relations = content.relationsOf(mapId);
 
   /// Nested Markdown list under a level-1 heading. Topics are bold,
   /// excerpts are quoted with their source, notes are plain text.
@@ -28,11 +39,33 @@ class MapExporter {
         if (card == null) continue;
         out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
         walk(card.id, depth + 1);
+        // A summary follows the last sibling it covers.
+        for (final (summary, range) in _summaries) {
+          if (summary.parentId == parentId && range.last == card.id) {
+            out.writeln('${'  ' * depth}- *${_oneLine(_summary(summary.label))}*');
+          }
+        }
       }
     }
 
     walk(null, 0);
+    if (_relations.isNotEmpty) {
+      out.writeln('\n## ${_oneLine(relationsTitle)}\n');
+      for (final r in _relations) {
+        final label = r.label.isEmpty ? '' : ' — ${_oneLine(r.label)}';
+        out.writeln('- ${_name(r.fromId)} → ${_name(r.toId)}$label');
+      }
+    }
     return out.toString();
+  }
+
+  /// How a card is referred to in a relation: its title, else its quote or
+  /// image file.
+  String _name(String cardId) {
+    final card = content.card(cardId);
+    if (card == null) return '';
+    if (card.title.trim().isNotEmpty) return _oneLine(card.title);
+    return _oneLine(content.annotation(card.annotationId ?? '')?.quote ?? card.imageFileName ?? '');
   }
 
   String _markdownLine(Card card) {
@@ -57,20 +90,24 @@ class MapExporter {
   }
 
   /// OPML 2.0 outline (opens in most outliners and mind-map apps). Excerpt
-  /// quotes go into the `_note` attribute.
+  /// quotes go into the `_note` attribute. Relations and summaries use
+  /// custom attributes other apps ignore: cards they refer to carry
+  /// `_mmId`, a relation's source carries `_mmRelations` (JSON
+  /// `[{"to", "label"}]`) and a parent carries `_mmSummaries` (JSON
+  /// `[{"from", "to", "label"}]`) for summaries of its children.
   String opml() {
     final out = StringBuffer()
       ..writeln('<?xml version="1.0" encoding="UTF-8"?>')
       ..writeln('<opml version="2.0">')
       ..writeln('  <head><title>${_xml(rootTitle)}</title></head>')
       ..writeln('  <body>')
-      ..writeln('    <outline text="${_xml(rootTitle)}">');
+      ..writeln('    <outline text="${_xml(rootTitle)}"${_marks(null)}>');
     void walk(String? parentId, int depth) {
       for (final n in content.childrenOf(parentId, mapId: mapId)) {
         final card = content.card(n.cardId);
         if (card == null) continue;
         final indent = '  ' * (depth + 3);
-        final attrs = _opmlAttributes(card);
+        final attrs = '${_opmlAttributes(card)}${_marks(card.id)}';
         final children = content.childrenOf(card.id, mapId: mapId);
         if (children.isEmpty) {
           out.writeln('$indent<outline $attrs/>');
@@ -88,6 +125,28 @@ class MapExporter {
       ..writeln('  </body>')
       ..writeln('</opml>');
     return out.toString();
+  }
+
+  late final _referenced = {
+    for (final r in _relations) ...[r.fromId, r.toId],
+    for (final (s, _) in _summaries) ...[s.fromId, s.toId],
+  };
+
+  /// Custom attributes for relations and summaries ([cardId] null = root).
+  String _marks(String? cardId) {
+    final relations = [
+      for (final r in _relations)
+        if (r.fromId == cardId) {'to': r.toId, if (r.label.isNotEmpty) 'label': r.label},
+    ];
+    final summaries = [
+      for (final (s, _) in _summaries)
+        if (s.parentId == cardId) {'from': s.fromId, 'to': s.toId, if (s.label.isNotEmpty) 'label': s.label},
+    ];
+    return [
+      if (cardId != null && _referenced.contains(cardId)) ' _mmId="${_xml(cardId)}"',
+      if (relations.isNotEmpty) ' _mmRelations="${_xml(jsonEncode(relations))}"',
+      if (summaries.isNotEmpty) ' _mmSummaries="${_xml(jsonEncode(summaries))}"',
+    ].join();
   }
 
   String _opmlAttributes(Card card) {

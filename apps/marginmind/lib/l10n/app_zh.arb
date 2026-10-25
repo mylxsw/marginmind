@@ -249,5 +249,14 @@
   "sectionTags": "标签",
   "addTag": "添加标签",
   "removeTag": "删除标签",
-  "allTags": "全部标签"
+  "allTags": "全部标签",
+  "addRelation": "添加关联线",
+  "addSummary": "添加概要",
+  "newSummaryLabel": "概要",
+  "editMarkLabel": "编辑标签",
+  "deleteRelation": "删除关联线",
+  "deleteSummary": "删除概要",
+  "exportSummary": "概要：{label}",
+  "@exportSummary": {"placeholders": {"label": {"type": "String"}}},
+  "exportRelations": "关联"
 }

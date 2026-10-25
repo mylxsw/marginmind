@@ -846,4 +846,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allTags => 'All Tags';
+
+  @override
+  String get addRelation => 'Add Relationship';
+
+  @override
+  String get addSummary => 'Add Summary';
+
+  @override
+  String get newSummaryLabel => 'Summary';
+
+  @override
+  String get editMarkLabel => 'Edit Label';
+
+  @override
+  String get deleteRelation => 'Delete Relationship';
+
+  @override
+  String get deleteSummary => 'Delete Summary';
+
+  @override
+  String exportSummary(String label) {
+    return 'Summary: $label';
+  }
+
+  @override
+  String get exportRelations => 'Relationships';
 }

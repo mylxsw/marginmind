@@ -809,4 +809,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get allTags => '全部标签';
+
+  @override
+  String get addRelation => '添加关联线';
+
+  @override
+  String get addSummary => '添加概要';
+
+  @override
+  String get newSummaryLabel => '概要';
+
+  @override
+  String get editMarkLabel => '编辑标签';
+
+  @override
+  String get deleteRelation => '删除关联线';
+
+  @override
+  String get deleteSummary => '删除概要';
+
+  @override
+  String exportSummary(String label) {
+    return '概要：$label';
+  }
+
+  @override
+  String get exportRelations => '关联';
 }
