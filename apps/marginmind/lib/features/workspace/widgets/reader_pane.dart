@@ -184,19 +184,20 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     };
     return [
       for (final a in content.annotationsOn(documentId))
-        () {
-          final color = MMAnnotationColor.fromIndex(a.colorIndex);
-          final hasCard = content.cardForAnnotation(a.id) != null;
-          final strong = a.id == selectedAnnotation;
-          return MMPdfHighlight(
-            id: a.id,
-            page: a.page,
-            rects: a.rects,
-            color: color.color.withValues(alpha: strong ? 0.5 : 0.32),
-            underline: hasCard ? color.underline : null,
-            emphasized: a.id == state.flashAnnotationId || a.id == pendingAnnotation,
-          );
-        }(),
+        for (final page in a.pages)
+          () {
+            final color = MMAnnotationColor.fromIndex(a.colorIndex);
+            final hasCard = content.cardForAnnotation(a.id) != null;
+            final strong = a.id == selectedAnnotation;
+            return MMPdfHighlight(
+              id: a.id,
+              page: page.page,
+              rects: page.rects,
+              color: color.color.withValues(alpha: strong ? 0.5 : 0.32),
+              underline: hasCard ? color.underline : null,
+              emphasized: a.id == state.flashAnnotationId || a.id == pendingAnnotation,
+            );
+          }(),
     ];
   }
 }

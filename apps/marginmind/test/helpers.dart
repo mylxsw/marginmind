@@ -35,6 +35,7 @@ StudySetContent demoContent() {
 /// Overrides that make the app run in memory with fixed time.
 Future<List<Override>> testOverrides({
   Map<String, Object> prefs = const {},
+  bool renderPdf = false,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
 }) async {
@@ -43,7 +44,7 @@ Future<List<Override>> testOverrides({
   return [
     sharedPreferencesProvider.overrideWithValue(instance),
     clockProvider.overrideWithValue(() => testNow),
-    pdfRenderingEnabledProvider.overrideWithValue(false),
+    pdfRenderingEnabledProvider.overrideWithValue(renderPdf),
     studySetRepositoryProvider.overrideWithValue(
       InMemoryStudySetRepository(
         sets: sets ?? DemoLibrary.studySets(testNow),
@@ -61,13 +62,14 @@ Future<List<Override>> testOverrides({
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   Map<String, Object> prefs = const {},
+  bool renderPdf = false,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
 }) async {
   tester.view.physicalSize = const Size(1280, 820);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final overrides = await testOverrides(prefs: prefs, sets: sets, content: content);
+  final overrides = await testOverrides(prefs: prefs, sets: sets, content: content, renderPdf: renderPdf);
   await tester.pumpWidget(ProviderScope(overrides: overrides, child: const MarginMindApp()));
   await tester.pumpAndSettle();
   return ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mm_core/mm_core.dart' show PageRect;
+import 'package:mm_core/mm_core.dart' show AnnotationPage, PageRect;
 import 'package:pdfrx/pdfrx.dart';
 
 /// A highlight to draw on a page.
@@ -28,13 +28,28 @@ class MMPdfHighlight {
   final bool emphasized;
 }
 
-/// Text the user selected, on one page.
+/// Text the user selected, with page geometry in reading order.
 @immutable
 class MMPdfSelection {
-  const MMPdfSelection({required this.page, required this.rects, required this.text, this.viewportRect});
+  const MMPdfSelection({
+    int? page,
+    List<PageRect>? rects,
+    List<AnnotationPage>? pages,
+    required this.text,
+    this.viewportRect,
+  }) : assert(pages != null || (page != null && rects != null)),
+       _pages = pages,
+       _page = page,
+       _rects = rects;
 
-  final int page;
-  final List<PageRect> rects;
+  final List<AnnotationPage>? _pages;
+  final int? _page;
+  final List<PageRect>? _rects;
+  List<AnnotationPage> get pages => _pages ?? [AnnotationPage(page: _page!, rects: _rects!)];
+
+  /// The first page is the navigation target for the entire excerpt.
+  int get page => pages.first.page;
+  List<PageRect> get rects => pages.first.rects;
   final String text;
 
   /// Bounding rect in the PDF viewport coordinates.
@@ -168,28 +183,42 @@ class _MMPdfViewState extends State<MMPdfView> {
     if (selection == null || !selection.hasSelectedText) return;
     final ranges = await selection.getSelectedTextRanges();
     if (!mounted || epoch != _selectionEpoch || ranges.isEmpty) return;
-    // One annotation per page: keep the page where the selection starts.
-    final first = ranges.first.pageNumber;
-    final onPage = ranges.where((r) => r.pageNumber == first).toList();
-    final rects = <PageRect>[
-      for (final range in onPage)
-        for (final f in range.enumerateFragmentBoundingRects())
-          PageRect(f.bounds.left, f.bounds.top, f.bounds.right, f.bounds.bottom),
-    ];
-    final text = onPage.map((r) => r.text).join();
-    if (text.trim().isEmpty || rects.isEmpty) return;
-    final bounds = rects
-        .map(
-          (r) =>
-              _controller.calcRectForRectInsidePage(pageNumber: first, rect: PdfRect(r.left, r.top, r.right, r.bottom)),
-        )
-        .reduce((a, b) => a.expandToInclude(b));
+    final pageNumbers = ranges.map((r) => r.pageNumber).toSet().toList()..sort();
+    final pages = <AnnotationPage>[];
+    final texts = <String>[];
+    Rect? bounds;
+    for (final page in pageNumbers) {
+      final onPage = ranges.where((r) => r.pageNumber == page);
+      final rects = <PageRect>[
+        for (final range in onPage)
+          for (final f in range.enumerateFragmentBoundingRects())
+            PageRect(f.bounds.left, f.bounds.top, f.bounds.right, f.bounds.bottom),
+      ];
+      if (rects.isEmpty) continue;
+      pages.add(AnnotationPage(page: page, rects: List.unmodifiable(rects)));
+      texts.add(onPage.map((r) => r.text).join());
+      for (final r in rects) {
+        final rect = _controller.calcRectForRectInsidePage(
+          pageNumber: page,
+          rect: PdfRect(r.left, r.top, r.right, r.bottom),
+        );
+        bounds = bounds?.expandToInclude(rect) ?? rect;
+      }
+    }
+    final text = texts.join('\n');
+    if (text.trim().isEmpty || bounds == null) return;
     final viewportRect = Rect.fromPoints(
       _controller.documentToLocal(bounds.topLeft),
       _controller.documentToLocal(bounds.bottomRight),
     );
+    // A selection may start above the viewport after dragging across pages.
+    final visible = viewportRect.intersect(Offset.zero & context.size!);
     widget.onSelectionCommitted?.call(
-      MMPdfSelection(page: first, rects: rects, text: text, viewportRect: viewportRect),
+      MMPdfSelection(
+        pages: List.unmodifiable(pages),
+        text: text,
+        viewportRect: visible.isEmpty ? viewportRect : visible,
+      ),
     );
   }
 
