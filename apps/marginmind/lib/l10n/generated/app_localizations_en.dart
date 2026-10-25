@@ -771,5 +771,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get excerptWithNote => 'Excerpt with Note';
+
+  @override
   String get noteText => 'Note';
 }

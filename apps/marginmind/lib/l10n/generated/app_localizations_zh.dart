@@ -734,5 +734,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get excerptWithNote => '摘录并添加笔记';
+
+  @override
   String get noteText => '笔记';
 }

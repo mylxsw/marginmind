@@ -1394,6 +1394,12 @@ abstract class AppLocalizations {
   /// **'Excerpt in {color}'**
   String excerptInColor(String color);
 
+  /// No description provided for @excerptWithNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpt with Note'**
+  String get excerptWithNote;
+
   /// No description provided for @noteText.
   ///
   /// In en, this message translates to:

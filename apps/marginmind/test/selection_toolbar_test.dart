@@ -1,5 +1,4 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -151,7 +150,6 @@ void main() {
     });
   }
   testWidgets('native menu invokes actions and disables selection keys in a text field', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
@@ -168,9 +166,25 @@ void main() {
 
     PlatformMenuItem command(String label) =>
         flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus)
-            .firstWhere((item) => item.label == label);
+            .singleWhere((item) => item.label == label);
     final l = tester.element(find.byType(SelectionToolbar)).l10n;
-    command(l.addNote).onSelected!();
+    // Moving between toolbar controls must not rebuild/serialize the menu bar.
+    final menu = tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar));
+    final controls = FocusManager.instance.rootScope.descendants
+        .where(
+          (node) => node.canRequestFocus && node.context?.findAncestorWidgetOfExactType<SelectionToolbar>() != null,
+        )
+        .toList();
+    expect(controls.length, greaterThan(1));
+    for (final node in controls.take(2)) {
+      node.requestFocus();
+      await tester.pumpAndSettle();
+      expect(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)), same(menu));
+    }
+    final noteShortcut = command(l.addNote).shortcut! as SingleActivator;
+    expect(noteShortcut.trigger, AppShortcuts.addNote.trigger);
+    expect(noteShortcut.alt, isTrue);
+    command(l.excerptWithNote).onSelected!();
     await tester.pumpAndSettle();
     expect(command(l.excerptAction).onSelected, isNull);
     expect(command(l.highlightAction).onSelected, isNull);
@@ -183,8 +197,7 @@ void main() {
     expect(controller.content.annotations.length, 2);
     expect(find.byType(SelectionToolbar), findsNothing);
     await settleHud(tester);
-    debugDefaultTargetPlatformOverride = null;
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('clipboard failure keeps selection and retry succeeds', (tester) async {
     final container = await pumpApp(tester);

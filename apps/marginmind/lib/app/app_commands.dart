@@ -77,13 +77,23 @@ class AppMenus extends ConsumerStatefulWidget {
 }
 
 class _AppMenusState extends ConsumerState<AppMenus> {
+  late bool _textFocused;
+
+  bool get _isTextFocused =>
+      FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+
   @override
   void initState() {
     super.initState();
+    _textFocused = _isTextFocused;
     FocusManager.instance.addListener(_focusChanged);
   }
 
-  void _focusChanged() => setState(() {});
+  void _focusChanged() {
+    final textFocused = _isTextFocused;
+    if (textFocused == _textFocused) return;
+    setState(() => _textFocused = textFocused);
+  }
 
   @override
   void dispose() {
@@ -155,14 +165,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (focus != null) Actions.maybeInvoke(focus, ReaderSelectionIntent(command));
     }
 
-    final focusedText = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>();
-    final selectionOpen = workspaceState?.pending is PendingSelection && focusedText == null;
+    final selectionOpen = workspaceState?.pending is PendingSelection && !_textFocused;
     edit.addAll([
       for (final entry in {
         ReaderSelectionCommand.excerpt: l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
         ReaderSelectionCommand.copy: l.copyAction,
-        ReaderSelectionCommand.note: l.addNote,
+        ReaderSelectionCommand.note: l.excerptWithNote,
       }.entries)
         AppCommand(
           entry.value,
