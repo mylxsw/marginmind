@@ -14,7 +14,7 @@ body{margin:0;-webkit-font-smoothing:antialiased}
 a{color:#0066CC}a:hover{color:#004C99}
 </style>
 </helmet>
-<div style="width: 1440px; min-height: 4200px; box-sizing: border-box; padding: 88px 88px 120px; display: flex; flex-direction: column; gap: 88px; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif">
+<div style="width: 1440px; min-height: 5400px; box-sizing: border-box; padding: 88px 88px 120px; display: flex; flex-direction: column; gap: 88px; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif">
 
   <header style="display: flex; flex-direction: column; gap: 10px">
     <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">MarginMind · UI 规范 v0.2</span>
@@ -202,7 +202,7 @@ a{color:#0066CC}a:hover{color:#004C99}
           <span style="padding: 8px 14px; border-radius: 12px; background: rgba(120,120,128,0.12); font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">对策一：间隔重复</span>
         </div>
         <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">主题</span>
-        <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">fill 底，headline，无边框无阴影。最大宽 200。</span>
+        <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">fill 底，headline，无边框无阴影。最大宽 224。</span>
       </div>
       <div style="display: flex; flex-direction: column; gap: 14px; padding: 24px; border-radius: 20px; background: #FFFFFF">
         <div style="position: relative; height: 150px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FBFBFD">
@@ -241,7 +241,45 @@ a{color:#0066CC}a:hover{color:#004C99}
         </div>
       </sc-for>
     </div>
-    <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">连线：1.5px，separator 强度的灰，转角半径 10 的圆角折线；层级间距 28，同级间距 14。节点的单击、双击、拖放行为与“无边记”一致：单击选中，双击编辑，拖到另一个节点上改变父级。</p>
+    <div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">原地编辑</span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+          <sc-for list="{{edits}}" as="e" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <div style="height: 96px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #FBFBFD">
+                <span style="display: flex; align-items: center; padding: 8px 14px; border-radius: 12px; background: rgba(120,120,128,0.12); box-shadow: 0 0 0 3px #007AFF; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; white-space: nowrap"><span style="{{e.text}}">{{e.title}}</span><sc-if value="{{e.caret}}" hint-placeholder-val="{{false}}"><span style="width: 1.5px; height: 16px; margin-left: 1px; background: #007AFF"></span></sc-if></span>
+              </div>
+              <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{e.name}}</span>
+              <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">{{e.spec}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 18px; padding: 28px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">多选</span>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div style="height: 96px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; padding-left: 18px; border-radius: 14px; background: #FBFBFD">
+              <span style="padding: 6px 12px; border-radius: 12px; background: rgba(120,120,128,0.12); box-shadow: 0 0 0 3px #007AFF; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">遗忘曲线</span>
+              <span style="padding: 6px 12px; border-radius: 12px; background: rgba(120,120,128,0.12); box-shadow: 0 0 0 3px #007AFF; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">间隔重复</span>
+            </div>
+            <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">⇧ / ⌘ 点击</span>
+            <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">每个选中节点都用同样的 3px 强调色环，不区分主次。</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div style="position: relative; height: 96px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 10px; padding-left: 18px; border-radius: 14px; background: #FBFBFD">
+              <span style="padding: 6px 12px; border-radius: 12px; background: rgba(120,120,128,0.12); box-shadow: 0 0 0 3px #007AFF; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">遗忘曲线</span>
+              <span style="padding: 6px 12px; border-radius: 12px; background: rgba(120,120,128,0.12); font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">间隔重复</span>
+              <span style="position: absolute; left: 6px; top: 8px; width: 170px; height: 40px; box-sizing: border-box; border: 1px solid #007AFF; border-radius: 3px; background: rgba(0,122,255,0.12)"></span>
+            </div>
+            <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">拖出选框</span>
+            <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">1px accent 描边 + accent.tint 填充，圆角 3。碰到选框的节点即时加环。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">连线：1.5px，separator 强度的灰，转角半径 10 的圆角折线；层级间距 28，同级间距 14。单击选中；双击、F2、空格或直接打字进入原地编辑；拖到另一个节点上改变父级。</p>
   </section>
 
   <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
@@ -270,17 +308,36 @@ a{color:#0066CC}a:hover{color:#004C99}
       </div>
       <div style="display: flex; flex-direction: column; gap: 22px; padding: 28px; border-radius: 20px; background: #EDEDF0">
         <div style="display: flex; flex-direction: column; gap: 10px">
-          <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">选区操作条</span>
-          <span style="align-self: flex-start; display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 14px; border-radius: 20px; background: rgba(255,255,255,0.78); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08); font: 400 13px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">
-            <span style="font-family: 'Songti SC', 'Noto Serif SC', serif; color: #636366">“遗忘并不完全是坏事。”</span>
-            <span style="width: 1px; height: 18px; margin: 0 6px; background: rgba(0,0,0,0.09)"></span>
-            <span style="width: 24px; display: flex; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FFCC00; box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px #FFCC00"></span></span>
-            <span style="width: 24px; display: flex; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #34C759"></span></span>
-            <span style="width: 24px; display: flex; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #007AFF"></span></span>
-            <span style="width: 1px; height: 18px; margin: 0 6px; background: rgba(0,0,0,0.09)"></span>
-            <span style="height: 30px; padding: 0 14px; display: flex; align-items: center; border-radius: 15px; font-weight: 600; background: #0A66D0; color: #FFFFFF">摘录到脑图</span>
-            <span style="height: 30px; padding: 0 12px; display: flex; align-items: center">拷贝</span>
+          <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">选区工具条</span>
+          <span style="align-self: flex-start; display: flex; align-items: center; padding: 3px; border-radius: 18px; background: rgba(255,255,255,0.78); box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08)">
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FFCC00"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #34C759"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #007AFF"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FF2D55"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FF9500"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #AF52DE"></span></span>
+            <span style="width: 1px; height: 18px; margin: 0 4px; background: rgba(0,0,0,0.09)"></span>
+            <span title="高亮" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L11 15.8l-3-3Z"></path><path d="M8 12.8c-2.2 0-3.5 1.6-3.5 3.6 0 1.5-.8 2.6-2 3.1 1 .9 2.5 1.5 4 1.5 2.9 0 4.5-2.2 4.5-5.2"></path></svg></span>
+            <span title="拷贝" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path></svg></span>
+            <span title="添加笔记" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path><path d="M17.5 3.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg></span>
           </span>
+          <span style="font: 400 12px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #636366">颜色点 = 用该色摘录到脑图，新卡片闪烁联动；之后依次是仅高亮、拷贝、摘录并添加笔记。</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">高亮工具条</span>
+          <span style="align-self: flex-start; display: flex; align-items: center; padding: 3px; border-radius: 18px; background: rgba(255,255,255,0.78); box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08)">
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FFCC00; box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px #FFCC00"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #34C759"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #007AFF"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FF2D55"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #FF9500"></span></span>
+            <span style="width: 26px; height: 30px; display: flex; align-items: center; justify-content: center"><span style="width: 14px; height: 14px; border-radius: 7px; background: #AF52DE"></span></span>
+            <span style="width: 1px; height: 18px; margin: 0 4px; background: rgba(0,0,0,0.09)"></span>
+            <span title="加入脑图 / 定位卡片" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg></span>
+            <span title="拷贝" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"></path></svg></span>
+            <span title="删除高亮" style="width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 15px; color: #1D1D1F"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path><path d="M9 7V4h6v3"></path></svg></span>
+          </span>
+          <span style="font: 400 12px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #636366">点击已有高亮时出现。当前颜色带同色环，点其他色点即换色；脑图按钮在已有卡片时改为定位卡片。</span>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 28px">
           <div style="display: flex; flex-direction: column; gap: 10px">
@@ -292,7 +349,7 @@ a{color:#0066CC}a:hover{color:#004C99}
             <span style="display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 16px; background: rgba(255,255,255,0.78); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08); font: 500 12px/1 -apple-system, BlinkMacSystemFont, sans-serif">‹　24 / 164　›</span>
           </div>
         </div>
-        <p style="margin: 0; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">都用控件玻璃。操作条出现在选区下方 8pt，空间不够就翻到上方，按 Esc 关闭。提示胶囊不抢焦点、不可点击；删除类操作改用系统的“撤销”（⌘Z），不在提示里放按钮。</p>
+        <p style="margin: 0; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">都用控件玻璃。工具条出现在选区上方 8pt，上方放不下就翻到下方，并与视口四边保持 8pt；跟随选区移动。Esc、点击别处、翻页或滚动时关闭；打开时 E 摘录、H 高亮、⌘C 拷贝，Tab 和方向键在按钮间移动焦点。提示胶囊不抢焦点、不可点击；删除类操作改用系统的“撤销”（⌘Z），不在提示里放按钮。</p>
       </div>
     </div>
   </section>
@@ -369,7 +426,7 @@ a{color:#0066CC}a:hover{color:#004C99}
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4200}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":5400}}'>
 class Component extends DCLogic {
   renderVals() {
     const sys = "-apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif";
@@ -400,7 +457,7 @@ class Component extends DCLogic {
         { name: '编辑', items: '撤销 / 重做 · 剪切 / 拷贝 / 粘贴 · 拷贝并附出处 ⌥⌘C · 全选 · 查找 ⌘F · 拼写与语法 · 开始听写 · 表情与符号' },
         { name: '显示', items: '只看原文 ⌘1 · 分栏 ⌘2 · 只看脑图 ⌘3 · 脑图 / 大纲 · 显示侧栏 ⌃⌘S · 实际大小 / 放大 / 缩小 · 进入全屏幕' },
         { name: '标注', items: '工具切换 · 摘录到脑图 ⌘E · 同步开关 · 高亮颜色 · 定位原文 ⌘L · 上一处 / 下一处标注 · 删除高亮' },
-        { name: '脑图', items: '添加子节点 ⇥ · 添加同级 ↩ · 添加主题 ⇧⌘N · 折叠 / 展开 ⌘. · 全部折叠 ⌥⌘. · 从脑图移除 ⌘⌫ · 新建脑图' },
+        { name: '脑图', items: '重命名 空格 · 在后面 / 前面添加同级 ↩ / ⇧↩ · 添加子主题 ⇥ · 提升一级 ⇧⇥ · 插入父节点 ⌘↩ · 折叠或展开 ⌘/ · 上移 / 下移 ⌘↑ / ⌘↓ · 适应窗口 ⌘0 · 居中到当前节点 · 从脑图移除 ⌫' },
         { name: '窗口', items: '系统标准项：最小化 ⌘M · 缩放 · 平铺 · 移到显示器 · 合并所有窗口 · 学习集窗口列表' },
         { name: '帮助', items: '系统帮助搜索框（自动可搜索所有菜单项）· MarginMind 使用手册 · 快捷键一览' }
       ],
@@ -410,6 +467,11 @@ class Component extends DCLogic {
         { name: '按下', style: btn('rgba(0,0,0,0.09)', '#1D1D1F', 1) },
         { name: '选中', style: btn('rgba(0,122,255,0.12)', '#007AFF', 1) },
         { name: '停用', style: btn('transparent', '#1D1D1F', 0.3) }
+      ],
+      edits: [
+        { name: '编辑中', spec: '保留选中环；标题全选（accent 28%），1.5px accent 光标。', title: '对策一：间隔重复', text: 'background: rgba(0,122,255,0.28); border-radius: 2px;', caret: false },
+        { name: '直接打字', spec: '输入替换原标题，光标在末尾。中文输入法选字时 Enter 只上屏。', title: '复习', text: '', caret: true },
+        { name: '随文字增长', spec: '节点立即变宽，相邻节点和连线 200ms 平滑让位；节点最宽 224，超出后换行。', title: '对策一：间隔重复与主动回忆', text: '', caret: true }
       ],
       states: [
         { name: '默认', spec: '0.5px 描边 + 两层柔和阴影。', card: card(''), folded: false },
@@ -421,7 +483,7 @@ class Component extends DCLogic {
       marks: [
         { name: '未标注', spec: '文字可选，指针为 I 形。', style: '' },
         { name: '悬停（高亮工具）', spec: 'fill.quaternary 底色，提示点击即可高亮。', style: 'background: rgba(0,0,0,0.045); border-radius: 3px; padding: 3px 0;' },
-        { name: '选中，等待操作', spec: '系统选区色，同时出现操作条。', style: 'background: rgba(0,122,255,0.18); box-shadow: inset 0 -2px 0 #007AFF; border-radius: 3px; padding: 3px 0;' },
+        { name: '选中，等待操作', spec: '系统选区色，同时出现选区工具条。', style: 'background: rgba(0,122,255,0.18); box-shadow: inset 0 -2px 0 #007AFF; border-radius: 3px; padding: 3px 0;' },
         { name: '仅高亮', spec: '标注色 32%，没有卡片。', style: 'background: rgba(255,204,0,0.32); border-radius: 3px; padding: 3px 0;' },
         { name: '已摘录', spec: '底色 + 2px 同色下划线，脑图里有对应卡片。', style: 'background: rgba(255,204,0,0.32); box-shadow: inset 0 -2px 0 rgba(255,204,0,0.9); border-radius: 3px; padding: 3px 0;' },
         { name: '联动中', spec: '外侧 2.5px 强调色环，1600ms。', style: 'background: rgba(255,204,0,0.32); box-shadow: 0 0 0 2.5px #007AFF; border-radius: 3px; padding: 3px 0;' }
@@ -432,16 +494,21 @@ class Component extends DCLogic {
         { key: '⌃⌘S', action: '显示或隐藏侧栏（系统约定）' },
         { key: '⌘E', action: '把当前选区摘录到脑图' },
         { key: '⌘L', action: '定位原文' },
-        { key: '⇥  ↩', action: '添加子节点 / 添加同级节点' },
-        { key: '⌘.', action: '折叠或展开选中节点' },
-        { key: '⌘⌫', action: '从脑图移除（保留高亮）' },
+        { key: '空格  F2', action: '编辑选中节点；直接打字则替换标题' },
+        { key: '↩  ⇧↩', action: '编辑时确认；否则在后面 / 前面添加同级节点' },
+        { key: '⇥  ⇧⇥  ⌘↩', action: '添加子节点 / 提升一级 / 插入父节点' },
+        { key: '⌘/', action: '折叠或展开选中节点' },
+        { key: '⌫', action: '从脑图移除（保留高亮）' },
+        { key: 'E  H  ⌘C', action: '工具条打开时：摘录 / 高亮 / 拷贝' },
         { key: '⌘Z  ⇧⌘Z', action: '撤销 / 重做，覆盖所有编辑' },
-        { key: '空格', action: '快速查看选中卡片的全文与出处' }
+        { key: 'Esc', action: '取消编辑并恢复原文字；关闭工具条' }
       ],
       rules: [
         { when: '高亮工具下点击或拖选文字', cmd: 'CreateExcerpt', then: '生成高亮；同步开启时同时生成卡片，挂到当前目标节点下，卡片联动。' },
-        { when: '选择工具下选中文字', cmd: '—', then: '出现选区操作条；右键出现原生菜单。' },
-        { when: '点击已摘录的高亮', cmd: '—', then: '选中对应卡片并联动；只看原文时用提示胶囊告知。' },
+        { when: '选择工具下选中文字', cmd: '—', then: '出现选区工具条；右键出现原生菜单。' },
+        { when: '点击已有高亮', cmd: '—', then: '出现高亮工具条：换色、加入脑图或定位卡片、拷贝、删除。' },
+        { when: '双击、F2、空格或直接打字', cmd: 'Rename', then: '主题原地变成文本框，宽度随文字增长，相邻节点让位；一次编辑算一步撤销。' },
+        { when: '新建节点后直接按 Esc', cmd: '—', then: '节点不保留，撤销记录里也没有这一步。' },
         { when: '点击卡片', cmd: '—', then: '选中卡片，原文对应句联动，不切换布局。' },
         { when: '点击定位按钮 / ⌘L', cmd: 'RevealAnchor', then: '打开文档并跳页；只看脑图时自动切到分栏。' },
         { when: '选中主题或根节点', cmd: '—', then: '它成为“新摘录”的目标，脑图左上角副标题同步更新。' },
