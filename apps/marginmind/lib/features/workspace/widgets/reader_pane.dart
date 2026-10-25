@@ -197,7 +197,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         for (final page in a.pages)
           () {
             final color = MMAnnotationColor.fromIndex(a.colorIndex);
-            final card = content.cardForAnnotation(a.id);
+            final sharedCard = content.cardForAnnotation(a.id);
+            final card = sharedCard != null && content.node(sharedCard.id, mapId: state.activeMapId) != null
+                ? sharedCard
+                : null;
             final strong = a.id == selectedAnnotation;
             return MMPdfHighlight(
               id: a.id,

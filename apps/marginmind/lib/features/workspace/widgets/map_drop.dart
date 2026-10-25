@@ -48,6 +48,7 @@ class MapDrop {
     required Offset point,
     required Map<String, Rect> rects,
     required StudySetContent content,
+    String mapId = MindMap.defaultId,
     required Set<String> moving,
     required String rootId,
     double gap = 0,
@@ -64,7 +65,7 @@ class MapDrop {
         hit = e.key;
       }
     }
-    if (hit == null || !_accepts(hit, content, moving, rootId)) return null;
+    if (hit == null || !_accepts(hit, content, moving, rootId, mapId)) return null;
     if (hit == rootId) return MapDrop(targetId: hit, zone: MapDropZone.child, parentId: null, index: null);
     final r = rects[hit]!;
     final y = (point.dy - r.top) / r.height;
@@ -74,9 +75,9 @@ class MapDrop {
         ? MapDropZone.after
         : MapDropZone.child;
     if (zone == MapDropZone.child) return MapDrop(targetId: hit, zone: zone, parentId: hit, index: null);
-    final parent = content.node(hit)?.parentId;
+    final parent = content.node(hit, mapId: mapId)?.parentId;
     final siblings = [
-      for (final n in content.childrenOf(parent))
+      for (final n in content.childrenOf(parent, mapId: mapId))
         if (!moving.contains(n.cardId)) n.cardId,
     ];
     final i = siblings.indexOf(hit);
@@ -84,14 +85,14 @@ class MapDrop {
   }
 
   /// A node can't be dropped onto itself or its own descendants.
-  static bool _accepts(String target, StudySetContent content, Set<String> moving, String rootId) {
+  static bool _accepts(String target, StudySetContent content, Set<String> moving, String rootId, String mapId) {
     if (moving.contains(target)) return false;
     if (target == rootId) return true;
     String? id = target;
     final seen = <String>{};
     while (id != null && seen.add(id)) {
       if (moving.contains(id)) return false;
-      id = content.node(id)?.parentId;
+      id = content.node(id, mapId: mapId)?.parentId;
     }
     return true;
   }

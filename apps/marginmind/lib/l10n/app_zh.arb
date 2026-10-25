@@ -238,5 +238,11 @@
   "fitMap": "适应窗口",
   "centerCurrentNode": "居中到当前节点",
   "cutNodes": "剪切",
-  "pasteNodes": "粘贴"
+  "pasteNodes": "粘贴",
+  "newMap": "新建脑图…",
+  "newMapName": "未命名脑图",
+  "renameMap": "重命名脑图…",
+  "deleteMap": "删除脑图",
+  "addToNamedMap": "加入“{title}”",
+  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}}
 }

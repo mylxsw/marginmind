@@ -16,6 +16,7 @@ class OutlineView extends StatefulWidget {
   const OutlineView({
     super.key,
     required this.content,
+    this.mapId = MindMap.defaultId,
     required this.rootTitle,
     required this.selectedCardId,
     required this.focusNode,
@@ -34,6 +35,7 @@ class OutlineView extends StatefulWidget {
   });
 
   final StudySetContent content;
+  final String mapId;
   final String rootTitle;
   final String? selectedCardId;
   final Set<String> selectedCardIds;
@@ -171,9 +173,9 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         target = _order[i];
       case AxisDirection.left:
         if (selected == null) return;
-        target = widget.content.node(selected)?.parentId;
+        target = widget.content.node(selected, mapId: widget.mapId)?.parentId;
       case AxisDirection.right:
-        final children = widget.content.childrenOf(selected);
+        final children = widget.content.childrenOf(selected, mapId: widget.mapId);
         if (children.isEmpty) return;
         target = children.first.cardId;
     }
@@ -244,7 +246,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
     ];
 
     void walk(String? parentId, int depth) {
-      for (final node in content.childrenOf(parentId)) {
+      for (final node in content.childrenOf(parentId, mapId: widget.mapId)) {
         final card = content.card(node.cardId);
         if (card == null) continue;
         final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);

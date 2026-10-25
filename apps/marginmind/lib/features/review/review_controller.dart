@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 
 import '../../app/providers.dart';
+import '../../app/navigation.dart';
 
 class ReviewSessionState {
   const ReviewSessionState({
@@ -57,9 +58,12 @@ class ReviewSession extends Notifier<ReviewSessionState> {
   ReviewSession(this.studySetId);
 
   final String studySetId;
+  String? mapId;
 
   @override
   ReviewSessionState build() {
+    final route = ref.read(navigationProvider);
+    mapId = route is ReviewRoute && route.studySetId == studySetId ? route.mapId : null;
     ref.listen(contentProvider(studySetId), (_, next) {
       final c = next.value;
       if (c != null && !state.started) state = _start(c);
@@ -70,7 +74,7 @@ class ReviewSession extends Notifier<ReviewSessionState> {
 
   ReviewSessionState _start(StudySetContent c) {
     final now = ref.read(clockProvider)();
-    return ReviewSessionState(started: true, queue: [for (final card in c.reviewQueue(now)) card.id]);
+    return ReviewSessionState(started: true, queue: [for (final card in c.reviewQueue(now, mapId: mapId)) card.id]);
   }
 
   StudySetContent get content => ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;

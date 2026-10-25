@@ -96,6 +96,7 @@ class ImportedNotice extends WorkspaceNotice {
 
 class WorkspaceState {
   const WorkspaceState({
+    this.activeMapId = MindMap.defaultId,
     this.sidebarVisible = true,
     this.layout = MMSplitMode.split,
     this.splitFraction = 0.5,
@@ -118,6 +119,7 @@ class WorkspaceState {
     this.canRedo = false,
   });
 
+  final String activeMapId;
   final bool sidebarVisible;
   final MMSplitMode layout;
   final double splitFraction;
@@ -149,6 +151,7 @@ class WorkspaceState {
   final bool canRedo;
 
   WorkspaceState copyWith({
+    String? activeMapId,
     bool? sidebarVisible,
     MMSplitMode? layout,
     double? splitFraction,
@@ -176,6 +179,7 @@ class WorkspaceState {
     bool? canRedo,
   }) {
     return WorkspaceState(
+      activeMapId: activeMapId ?? this.activeMapId,
       sidebarVisible: sidebarVisible ?? this.sidebarVisible,
       layout: layout ?? this.layout,
       splitFraction: splitFraction ?? this.splitFraction,
@@ -244,7 +248,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   StudySetContent get content => _latest ?? ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;
 
-  StudySetEditor get _editor => ref.read(editorProvider);
+  StudySetEditor get _editor {
+    final editor = ref.read(editorProvider);
+    return StudySetEditor(newId: editor.newId, now: editor.now, mapId: state.activeMapId);
+  }
 
   StudySetContentRepository get _repo => ref.read(contentRepositoryProvider);
 
@@ -342,7 +349,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
       _enqueue(() async {
-        if (_transactionDepth > 0 || from.isEmpty) return null;
+        if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
         final snapshot = from.last;
         StudySetContent? current;
         _latest = await _repo.update(studySetId, (c) {
@@ -370,10 +377,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       active = first.id;
     }
     active ??= open.lastOrNull;
-    final selectionGone = s.selectedCardId != null && c.card(s.selectedCardId!) == null;
-    final selectedIds = s.selectedCardIds.where((id) => c.node(id) != null).toSet();
+    final mapId = c.map(s.activeMapId) != null ? s.activeMapId : (c.maps.firstOrNull?.id ?? MindMap.defaultId);
+    final selectionGone = s.selectedCardId != null && c.node(s.selectedCardId!, mapId: mapId) == null;
+    final selectedIds = s.selectedCardIds.where((id) => c.node(id, mapId: mapId) != null).toSet();
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
     return s.copyWith(
+      activeMapId: mapId,
       openDocumentIds: open,
       activeDocumentId: active,
       clearActive: active == null,
@@ -381,6 +390,48 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       selectedCardId: selectedId,
       selectedCardIds: selectedIds,
     );
+  }
+
+  /// Switch only after queued writes; inline editors must finish first.
+  Future<void> selectMap(String id) async {
+    if (_creating || _editing != null || _clipboardBusy) return;
+    await _enqueue(() async {
+      if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
+      state = state.copyWith(
+        activeMapId: id,
+        selectRoot: true,
+        clearEditing: true,
+        clearPending: true,
+        clearFlash: true,
+      );
+    });
+  }
+
+  Future<void> addMap(String title) async {
+    if (title.trim().isEmpty || _editing != null || _creating || _clipboardBusy) return;
+    String? id;
+    await _update((c) {
+      final (next, map) = _editor.addMap(c, title: title);
+      id = map.id;
+      return next;
+    });
+    if (ref.mounted && id != null) await selectMap(id!);
+  }
+
+  Future<void> renameMap(String id, String title) async {
+    if (title.trim().isEmpty || _editing != null || _creating || _clipboardBusy) return;
+    await _update((c) => _editor.renameMap(c, id, title));
+  }
+
+  Future<void> removeMap(String id) async {
+    if (_editing != null || _creating || _clipboardBusy) return;
+    await _update((c) => _editor.removeMap(c, id));
+  }
+
+  Future<void> placeCardInMap(String cardId, String mapId) async {
+    if (_editing != null || _creating || _clipboardBusy) return;
+    final editor = _editor;
+    await _update((c) => StudySetEditor(newId: editor.newId, now: editor.now, mapId: mapId).placeCard(c, cardId));
   }
 
   // ---- panels ---------------------------------------------------------------
@@ -478,9 +529,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return const DocumentRemovedNotice();
   }
 
-  /// The main map as Markdown or OPML. [source] labels excerpt sources.
+  /// The active map as Markdown or OPML. [source] labels excerpt sources.
   String export({required bool opml, required String rootTitle, required String Function(Document, int) source}) {
-    final exporter = MapExporter(content, rootTitle: rootTitle, source: source);
+    final exporter = MapExporter(
+      content,
+      mapId: state.activeMapId,
+      rootTitle: content.map(state.activeMapId)?.title.isNotEmpty == true
+          ? content.map(state.activeMapId)!.title
+          : rootTitle,
+      source: source,
+    );
     return opml ? exporter.opml() : exporter.markdown();
   }
 
@@ -496,7 +554,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- excerpts and highlights ------------------------------------------------
 
   /// Where a new excerpt goes, and that node's title (null = root).
-  String? get excerptTargetId => StudySetEditor.excerptTarget(content, state.selectedCardId);
+  String? get excerptTargetId => StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId);
 
   /// The mouse was released over selected text.
   Future<WorkspaceNotice?> onSelectionCommitted(String documentId, MMPdfSelection selection) async {
@@ -583,7 +641,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<void> locateHighlightCard(String annotationId) async {
     final card = content.cardForAnnotation(annotationId);
-    if (card == null) return;
+    if (card == null || content.node(card.id, mapId: state.activeMapId) == null) return;
     await _update((c) => _expandAncestors(c, card.id), undoable: false);
     state = state.copyWith(
       selectedCardId: card.id,
@@ -595,10 +653,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   StudySetContent _expandAncestors(StudySetContent c, String cardId) {
-    var parent = c.node(cardId)?.parentId;
+    var parent = c.node(cardId, mapId: state.activeMapId)?.parentId;
     final seen = <String>{};
     while (parent != null && seen.add(parent)) {
-      final node = c.node(parent);
+      final node = c.node(parent, mapId: state.activeMapId);
       if (node == null) break;
       if (node.collapsed) c = _editor.setCollapsed(c, parent, collapsed: false);
       parent = node.parentId;
@@ -645,7 +703,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void selectCards(Iterable<String> cardIds) {
-    final ids = cardIds.where((id) => content.node(id) != null).toSet();
+    final ids = cardIds.where((id) => content.node(id, mapId: state.activeMapId) != null).toSet();
     state = state.copyWith(selectedCardIds: ids, selectedCardId: ids.lastOrNull, selectRoot: ids.isEmpty);
   }
 
@@ -655,7 +713,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> copySelection({bool cut = false}) async {
     if (_editing != null || _creating || _clipboardBusy) return;
     final ids = state.selectedCardIds.toList();
-    final entries = MapClipboard.copy(content, ids, resolveImage: imagePath);
+    final entries = MapClipboard.copy(content, ids, mapId: state.activeMapId, resolveImage: imagePath);
     if (entries.isEmpty) return;
     _clipboardBusy = true;
     try {
@@ -798,7 +856,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       }
       final card = await addTopic(title, asChild: asChild);
       // A child added beneath a folded node must be visible for editing.
-      final parent = content.node(card.id)?.parentId;
+      final parent = content.node(card.id, mapId: state.activeMapId)?.parentId;
       if (parent != null) {
         await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
       }
@@ -927,8 +985,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> toggleCollapsed(String cardId) {
-    final node = content.node(cardId);
-    if (node == null || content.childrenOf(cardId).isEmpty) return Future.value();
+    final node = content.node(cardId, mapId: state.activeMapId);
+    if (node == null || content.childrenOf(cardId, mapId: state.activeMapId).isEmpty) return Future.value();
     return _update((c) => _editor.setCollapsed(c, cardId, collapsed: !node.collapsed));
   }
 
@@ -937,7 +995,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void selectNeighbor(AxisDirection direction) {
     final c = content;
     final id = state.selectedCardId;
-    final node = id == null ? null : c.node(id);
+    final node = id == null ? null : c.node(id, mapId: state.activeMapId);
     if (id != null && node == null) return;
     String? target;
     var found = false;
@@ -947,14 +1005,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         target = node!.parentId;
         found = true;
       case AxisDirection.right:
-        final children = c.childrenOf(id);
+        final children = c.childrenOf(id, mapId: state.activeMapId);
         if (children.isEmpty) return;
         if (node?.collapsed ?? false) toggleCollapsed(id!);
         target = children.first.cardId;
         found = true;
       case AxisDirection.up || AxisDirection.down:
         if (node == null) return;
-        final siblings = c.childrenOf(node.parentId);
+        final siblings = c.childrenOf(node.parentId, mapId: state.activeMapId);
         final i = siblings.indexWhere((n) => n.cardId == id) + (direction == AxisDirection.up ? -1 : 1);
         if (i < 0 || i >= siblings.length) return;
         target = siblings[i].cardId;
@@ -966,9 +1024,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<RemovedNotice?> removeSelected() async {
     final id = state.selectedCardId;
     if (id == null) return null;
-    final parent = content.node(id)?.parentId;
+    final parent = content.node(id, mapId: state.activeMapId)?.parentId;
     await removeCards(state.selectedCardIds.isEmpty ? [id] : state.selectedCardIds);
-    selectCard(parent != null && content.node(parent) != null ? parent : null);
+    selectCard(parent != null && content.node(parent, mapId: state.activeMapId) != null ? parent : null);
     return const RemovedNotice();
   }
 

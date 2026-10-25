@@ -79,7 +79,15 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               if (mounted) MMHud.show(context, context.l10n.copiedHud);
               controller.dismissPending();
             case ReaderSelectionCommand.excerpt:
-              if (controller.content.cardForAnnotation(annotationId) != null) return;
+              final existing = controller.content.cardForAnnotation(annotationId);
+              if (existing != null &&
+                  controller.content.node(
+                        existing.id,
+                        mapId: ref.read(workspaceProvider(widget.studySetId)).activeMapId,
+                      ) !=
+                      null) {
+                return;
+              }
               notice = await controller.addHighlightToMap(annotationId);
             case ReaderSelectionCommand.locateCard:
               await controller.locateHighlightCard(annotationId);
@@ -139,7 +147,10 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
       _ => null,
     };
     final isHighlight = widget.pending is PendingHighlight;
-    final hasCard = annotation != null && content?.cardForAnnotation(annotation.id) != null;
+    final existingCard = annotation == null ? null : content?.cardForAnnotation(annotation.id);
+    final hasCard =
+        existingCard != null &&
+        content!.node(existingCard.id, mapId: ref.watch(workspaceProvider(widget.studySetId)).activeMapId) != null;
     // An area excerpt has no text to copy.
     final isArea = annotation != null && annotation.quote.isEmpty;
     return TapRegion(

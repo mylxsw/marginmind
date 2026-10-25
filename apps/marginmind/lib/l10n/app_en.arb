@@ -464,5 +464,11 @@
   "fitMap": "Fit Map to Window",
   "centerCurrentNode": "Center on Current Node",
   "cutNodes": "Cut",
-  "pasteNodes": "Paste"
+  "pasteNodes": "Paste",
+  "newMap": "New Mind Map…",
+  "newMapName": "Untitled Map",
+  "renameMap": "Rename Mind Map…",
+  "deleteMap": "Delete Mind Map",
+  "addToNamedMap": "Add to “{title}”",
+  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}}
 }

@@ -33,6 +33,43 @@ MapDrop? _at(Offset point, {Set<String> moving = const {'c'}}) =>
 
 void main() {
   group('MapDrop.resolve', () {
+    test('cycle detection and sibling insertion use the selected map', () {
+      final content = _content().copyWith(
+        nodes: const [
+          MapNode(cardId: 'a', parentId: null, order: 0),
+          MapNode(cardId: 'b', parentId: 'a', order: 0),
+          MapNode(mapId: 'second', cardId: 'a', parentId: 'b', order: 0),
+          MapNode(mapId: 'second', cardId: 'b', parentId: null, order: 0),
+          MapNode(mapId: 'second', cardId: 'c', parentId: null, order: 1),
+        ],
+      );
+      expect(
+        MapDrop.resolve(point: const Offset(150, 74), rects: _rects, content: content, moving: {'a'}, rootId: 'root'),
+        isNull,
+      );
+      expect(
+        MapDrop.resolve(
+          point: const Offset(150, 74),
+          rects: _rects,
+          content: content,
+          mapId: 'second',
+          moving: {'a'},
+          rootId: 'root',
+        )!.parentId,
+        'b',
+      );
+      expect(
+        MapDrop.resolve(
+          point: const Offset(150, 56),
+          rects: _rects,
+          content: content,
+          mapId: 'second',
+          moving: {'c'},
+          rootId: 'root',
+        )!.index,
+        0,
+      );
+    });
     test('top, middle and bottom of a node insert before, as child and after', () {
       expect(
         _at(const Offset(150, 56)),

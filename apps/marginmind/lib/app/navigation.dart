@@ -19,7 +19,9 @@ class WorkspaceRoute extends AppRoute {
 
 /// Full-window review session for one study set.
 class ReviewRoute extends AppRoute {
-  const ReviewRoute(this.studySetId);
+  const ReviewRoute(this.studySetId, {this.mapId});
+
+  final String? mapId;
 
   final String studySetId;
 }
@@ -38,7 +40,7 @@ class AppNavigation extends Notifier<AppRoute> {
 
   void openStudySet(String id) => state = WorkspaceRoute(id);
 
-  void startReview(String id) => state = ReviewRoute(id);
+  void startReview(String id, {String? mapId}) => state = ReviewRoute(id, mapId: mapId);
 
   void showGallery() {
     if (state is! GalleryRoute) state = GalleryRoute(returnTo: state);

@@ -814,4 +814,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pasteNodes => 'Paste';
+
+  @override
+  String get newMap => 'New Mind Map…';
+
+  @override
+  String get newMapName => 'Untitled Map';
+
+  @override
+  String get renameMap => 'Rename Mind Map…';
+
+  @override
+  String get deleteMap => 'Delete Mind Map';
+
+  @override
+  String addToNamedMap(String title) {
+    return 'Add to “$title”';
+  }
 }

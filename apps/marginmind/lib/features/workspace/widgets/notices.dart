@@ -43,14 +43,33 @@ Future<void> pickAndImportDocuments(BuildContext context, WidgetRef ref, String 
   if (context.mounted) showNotice(context, notice, rootTitle: '');
 }
 
-/// Formats [ExportFormat] the main map can be saved as.
+Future<void> showNewMapSheet(BuildContext context, WidgetRef ref, String studySetId) async {
+  final controller = ref.read(workspaceProvider(studySetId).notifier);
+  final title = await showRenameSheet(context, title: context.l10n.newMap, initial: context.l10n.newMapName);
+  if (title != null && context.mounted) await controller.addMap(title);
+}
+
+Future<void> showMapRenameSheet(BuildContext context, WidgetRef ref, String studySetId, String mapId) async {
+  final controller = ref.read(workspaceProvider(studySetId).notifier);
+  final map = controller.content.map(mapId);
+  if (map == null) return;
+  final title = await showRenameSheet(
+    context,
+    title: context.l10n.renameMap,
+    initial: map.title.isEmpty ? context.l10n.mainMap : map.title,
+  );
+  if (title != null && context.mounted) await controller.renameMap(mapId, title);
+}
+
+/// Formats [ExportFormat] the active map can be saved as.
 enum ExportFormat { markdown, opml }
 
-/// Asks where to save, then writes the main map as Markdown or OPML.
+/// Asks where to save, then writes the active map as Markdown or OPML.
 Future<void> exportMap(BuildContext context, WidgetRef ref, String studySetId, ExportFormat format) async {
   final l = context.l10n;
   final controller = ref.read(workspaceProvider(studySetId).notifier);
-  final title = ref.read(studySetProvider(studySetId))?.title ?? l.appName;
+  final mapTitle = controller.content.map(ref.read(workspaceProvider(studySetId)).activeMapId)?.title ?? '';
+  final title = mapTitle.isEmpty ? (ref.read(studySetProvider(studySetId))?.title ?? l.appName) : mapTitle;
   final opml = format == ExportFormat.opml;
   final ext = opml ? 'opml' : 'md';
   final text = controller.export(

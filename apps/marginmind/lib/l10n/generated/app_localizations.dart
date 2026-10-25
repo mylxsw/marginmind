@@ -1483,6 +1483,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste'**
   String get pasteNodes;
+
+  /// No description provided for @newMap.
+  ///
+  /// In en, this message translates to:
+  /// **'New Mind Map…'**
+  String get newMap;
+
+  /// No description provided for @newMapName.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Map'**
+  String get newMapName;
+
+  /// No description provided for @renameMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Mind Map…'**
+  String get renameMap;
+
+  /// No description provided for @deleteMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Mind Map'**
+  String get deleteMap;
+
+  /// No description provided for @addToNamedMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to “{title}”'**
+  String addToNamedMap(String title);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

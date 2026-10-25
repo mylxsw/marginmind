@@ -33,14 +33,19 @@ class WorkspaceSidebar extends ConsumerWidget {
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
 
     final maps = [
-      if (matches(l.mainMap))
-        MMSidebarItem(
-          icon: MMIcons.mindMap,
-          label: l.mainMap,
-          selected: true,
-          trailing: MMCount(content?.cardCount ?? 0),
-          onTap: () => controller.setLayout(MMSplitMode.secondary),
-        ),
+      for (final map in content?.maps ?? const <MindMap>[])
+        if (matches(map.title.isEmpty ? l.mainMap : map.title))
+          MMSidebarItem(
+            key: ValueKey('sidebar-map-${map.id}'),
+            icon: MMIcons.mindMap,
+            label: map.title.isEmpty ? l.mainMap : map.title,
+            selected: map.id == state.activeMapId,
+            onTap: () async {
+              await controller.selectMap(map.id);
+              controller.setLayout(MMSplitMode.secondary);
+            },
+            onContextMenu: (position) => _mapMenu(context, ref, map, position),
+          ),
     ];
     final docs = [
       for (final d in documents)
@@ -55,17 +60,17 @@ class WorkspaceSidebar extends ConsumerWidget {
           ),
     ];
     final now = ref.watch(clockProvider)();
-    final due = content?.dueCount(now) ?? 0;
+    final due = content?.dueCount(now, mapId: state.activeMapId) ?? 0;
     final learn = [
       if (matches(l.review))
         MMSidebarItem(
           icon: MMIcons.review,
           label: l.review,
           trailing: due > 0 ? MMBadge('$due', prominent: true) : null,
-          onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId),
+          onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId, mapId: state.activeMapId),
         ),
     ];
-    final hits = content == null ? const <Card>[] : content.search(query).take(50).toList();
+    final hits = content == null ? const <Card>[] : content.search(query, mapId: state.activeMapId).take(50).toList();
     final cards = [
       for (final card in hits)
         MMSidebarItem(
@@ -140,9 +145,33 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: t.footnote),
           ),
         if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
-        if (maps.isNotEmpty) MMSidebarSection(title: l.sectionMaps, children: maps),
+        if (maps.isNotEmpty)
+          MMSidebarSection(
+            title: l.sectionMaps,
+            trailing: MMIconButton(
+              icon: MMIcons.add,
+              tooltip: l.newMap,
+              onPressed: () => showNewMapSheet(context, ref, studySetId),
+            ),
+            children: maps,
+          ),
         if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
+      ],
+    );
+  }
+
+  void _mapMenu(BuildContext context, WidgetRef ref, MindMap map, Offset position) {
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(studySetId).notifier);
+    showMMMenu(
+      context,
+      position: position,
+      entries: [
+        MMMenuItem(l.newMap, () => showNewMapSheet(context, ref, studySetId)),
+        MMMenuItem(l.renameMap, () => showMapRenameSheet(context, ref, studySetId, map.id)),
+        if (controller.content.maps.length > 1)
+          MMMenuItem(l.deleteMap, () => controller.removeMap(map.id), destructive: true),
       ],
     );
   }

@@ -21,9 +21,9 @@ class StudySetEditor {
   StudySetContent renameMap(StudySetContent c, String id, String title) =>
       c.copyWith(maps: [for (final m in c.maps) m.id == id ? m.copyWith(title: title.trim()) : m]);
 
-  /// The compatibility main map remains available to existing callers.
+  /// Keep at least one map; shared cards and schedules survive map deletion.
   StudySetContent removeMap(StudySetContent c, String id) {
-    if (id == MindMap.defaultId) return c;
+    if (c.maps.length <= 1 || c.map(id) == null) return c;
     return c.copyWith(
       maps: [
         for (final m in c.maps)

@@ -4,7 +4,7 @@ import 'models.dart';
 import 'review.dart';
 
 /// Everything inside one study set: documents, highlights, cards and the
-/// main mind map. Immutable; edits produce a new value (see
+/// mind maps. Immutable; edits produce a new value (see
 /// [StudySetEditor]), which makes persistence and undo straightforward.
 @immutable
 class StudySetContent {
@@ -74,11 +74,12 @@ class StudySetContent {
 
   /// What a review session at [now] covers: due cards (most overdue first),
   /// then up to [ReviewScheduler.newPerSession] new cards in creation order.
-  List<Card> reviewQueue(DateTime now) {
+  List<Card> reviewQueue(DateTime now, {String? mapId}) {
     final byId = {for (final r in reviews) r.cardId: r};
     final due = <Card>[];
     final fresh = <Card>[];
     for (final c in reviewableCards) {
+      if (mapId != null && node(c.id, mapId: mapId) == null) continue;
       final r = byId[c.id];
       if (r == null) {
         fresh.add(c);
@@ -91,7 +92,7 @@ class StudySetContent {
     return [...due, ...fresh.take(ReviewScheduler.newPerSession)];
   }
 
-  int dueCount(DateTime now) => reviewQueue(now).length;
+  int dueCount(DateTime now, {String? mapId}) => reviewQueue(now, mapId: mapId).length;
 
   /// Titles of the topics/cards above [cardId], root first.
   List<String> pathOf(String cardId, {String mapId = MindMap.defaultId}) {

@@ -777,4 +777,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pasteNodes => '粘贴';
+
+  @override
+  String get newMap => '新建脑图…';
+
+  @override
+  String get newMapName => '未命名脑图';
+
+  @override
+  String get renameMap => '重命名脑图…';
+
+  @override
+  String get deleteMap => '删除脑图';
+
+  @override
+  String addToNamedMap(String title) {
+    return '加入“$title”';
+  }
 }
