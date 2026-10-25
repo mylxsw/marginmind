@@ -39,7 +39,7 @@
     }
   },
   "libraryNoDocumentsYet": "No documents yet",
-  "libraryCardMeta": "{documents} docs · {cards} cards",
+  "libraryCardMeta": "{documents, plural, =1{1 doc} other{{documents} docs}} · {cards, plural, =1{1 card} other{{cards} cards}}",
   "@libraryCardMeta": {
     "placeholders": {
       "documents": {

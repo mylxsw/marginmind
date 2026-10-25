@@ -83,7 +83,9 @@ abstract final class ReviewScheduler {
       case Rating.again:
         return next(0, ease - 0.2, 0, reps > 0 ? lapses + 1 : lapses, delay: relearnDelay);
       case Rating.hard:
-        return next(math.max(1, interval * 1.2), ease - 0.15, reps + 1, lapses);
+        // A new card rated "hard" comes back later today, before "good".
+        final days = reps == 0 ? 0.5 : math.max(1.0, interval * 1.2);
+        return next(days, ease - 0.15, reps + 1, lapses);
       case Rating.good:
         final days = switch (reps) {
           0 => 1.0,

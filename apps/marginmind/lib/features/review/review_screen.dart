@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,18 +115,25 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             child: MMProgressBar(value: done, semanticLabel: l.reviewProgress),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(28, 32, 28, 32),
-              child: Center(
+            child: LayoutBuilder(
+              // Centered vertically (slightly above the middle) while it
+              // fits; scrolls when the answer is long.
+              builder: (context, box) => SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(28, 32, 28, 32),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: _ReviewCard(
-                    key: ValueKey('${session.index}-$id'),
-                    card: card,
-                    content: content,
-                    rootTitle: setTitle,
-                    revealed: session.revealed,
-                    onRevealSource: () => _revealSource(card.id),
+                  constraints: BoxConstraints(minHeight: math.max(0, box.maxHeight - 64) * 0.85),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: _ReviewCard(
+                        key: ValueKey('${session.index}-$id'),
+                        card: card,
+                        content: content,
+                        rootTitle: setTitle,
+                        revealed: session.revealed,
+                        onRevealSource: () => _revealSource(card.id),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -234,15 +243,18 @@ class _ReviewCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  if (doc != null)
-                    Expanded(
-                      child: Text(
-                        '${doc.title} · ${l.pageNumber(annotation.page)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.footnote,
-                      ),
-                    ),
+                  // The source is already under the prompt unless the
+                  // card has its own question.
+                  Expanded(
+                    child: doc == null || !hasQuestion
+                        ? const SizedBox.shrink()
+                        : Text(
+                            '${doc.title} · ${l.pageNumber(annotation.page)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.footnote,
+                          ),
+                  ),
                   MMButton(
                     label: l.revealSource,
                     icon: MMIcons.revealSource,

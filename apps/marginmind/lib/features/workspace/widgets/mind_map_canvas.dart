@@ -11,6 +11,10 @@ import '../../../shared/l10n.dart';
 /// Id used for the root node (the study set itself) in layout and widgets.
 const rootNodeId = '__root__';
 
+/// Zoom of a map transform. Pan/zoom only scale x and y, so
+/// `getMaxScaleOnAxis` (which also counts z, always 1) would be wrong.
+double mapScale(Matrix4 m) => m.storage[0];
+
 /// The mind map: measured nodes laid out by mm_layout, curved connectors,
 /// pan and zoom. Selection and actions are reported to the caller.
 class MindMapCanvas extends StatefulWidget {
@@ -72,6 +76,10 @@ class MindMapCanvas extends StatefulWidget {
 class _MindMapCanvasState extends State<MindMapCanvas> {
   bool _centered = false;
   TreeLayoutResult? _layout;
+
+  /// Where the root was in the last layout. When the tree changes shape
+  /// (fold, move, add) the view is shifted so the root stays put on screen.
+  Offset? _rootAnchor;
   Size _viewport = Size.zero;
 
   /// First time the map is shown: scale down (to 60% at most) so the whole
@@ -102,12 +110,24 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
     }
   }
 
+  void _keepRootInPlace(TreeLayoutResult result) {
+    final root = result.rects[rootNodeId]!;
+    final anchor = Offset(root.left, root.top);
+    final previous = _rootAnchor;
+    _rootAnchor = anchor;
+    if (!_centered || previous == null || previous == anchor) return;
+    final m = widget.transformation.value;
+    final scale = mapScale(m);
+    final delta = (previous - anchor) * scale;
+    widget.transformation.value = m.clone()..setTranslationRaw(m.storage[12] + delta.dx, m.storage[13] + delta.dy, 0);
+  }
+
   /// Pans (keeping the zoom) so a newly created or linked node is on screen.
   void _ensureVisible(String id) {
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final m = widget.transformation.value;
-    final scale = m.getMaxScaleOnAxis();
+    final scale = mapScale(m);
     final tx = m.storage[12], ty = m.storage[13];
     final left = rect.left * scale + tx, right = rect.right * scale + tx;
     final top = rect.top * scale + ty, bottom = rect.bottom * scale + ty;
@@ -153,7 +173,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
 
   Widget _draggable(String id, _NodeSpec spec, Widget child) {
     if (id == rootNodeId) return child;
-    final scale = widget.transformation.value.getMaxScaleOnAxis();
+    final scale = mapScale(widget.transformation.value);
     return Draggable<String>(
       data: id,
       dragAnchorStrategy: pointerDragAnchorStrategy,
@@ -221,6 +241,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
     _layout = result;
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
+    _keepRootInPlace(result);
 
     return Focus(
       focusNode: widget.focusNode,

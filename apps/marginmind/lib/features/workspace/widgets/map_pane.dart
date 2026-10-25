@@ -35,7 +35,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
   void _zoom(double factor) {
     final size = context.size ?? const Size(800, 600);
     final center = Offset(size.width / 2, size.height / 2);
-    final current = _transform.value.getMaxScaleOnAxis();
+    final current = mapScale(_transform.value);
     final target = (current * factor).clamp(0.3, 2.5);
     final f = target / current;
     _transform.value = Matrix4.identity()
@@ -125,7 +125,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId);
     final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
-    final scale = _transform.value.getMaxScaleOnAxis();
+    final scale = mapScale(_transform.value);
 
     Future<void> remove() async {
       final notice = await controller.removeSelected();

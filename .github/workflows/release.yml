@@ -30,7 +30,12 @@ jobs:
           VERSION=$(grep '^version:' pubspec.yaml | sed -E 's/version: ([^+]+).*/\1/')
           APP=build/macos/Build/Products/Release/MarginMind.app
           # No Developer ID yet: sign ad hoc so the bundle is consistent.
+          # Sign nested code first, then the app with its entitlements —
+          # re-signing without them would drop the sandbox (and the app
+          # would look for its data outside its container).
           codesign --force --deep --sign - "$APP"
+          codesign --force --sign - --entitlements macos/Runner/Release.entitlements "$APP"
+          codesign -d --entitlements - "$APP" | grep -q com.apple.security.app-sandbox
           mkdir -p dist/dmg
           cp -R "$APP" dist/dmg/
           ln -s /Applications dist/dmg/Applications

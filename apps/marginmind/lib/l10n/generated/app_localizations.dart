@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryCardMeta.
   ///
   /// In en, this message translates to:
-  /// **'{documents} docs · {cards} cards'**
+  /// **'{documents, plural, =1{1 doc} other{{documents} docs}} · {cards, plural, =1{1 card} other{{cards} cards}}'**
   String libraryCardMeta(int documents, int cards);
 
   /// No description provided for @dueBadge.

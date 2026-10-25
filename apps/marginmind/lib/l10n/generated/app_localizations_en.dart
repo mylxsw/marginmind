@@ -70,7 +70,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String libraryCardMeta(int documents, int cards) {
-    return '$documents docs · $cards cards';
+    String _temp0 = intl.Intl.pluralLogic(documents, locale: localeName, other: '$documents docs', one: '1 doc');
+    String _temp1 = intl.Intl.pluralLogic(cards, locale: localeName, other: '$cards cards', one: '1 card');
+    return '$_temp0 · $_temp1';
   }
 
   @override
