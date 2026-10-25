@@ -17,6 +17,60 @@ void main() {
     expect(MapClipboard.fromText('\n  \n'), isEmpty);
     expect(MapClipboard.fromText('A\n- \n  B').map((e) => (e.depth, e.title)), [(0, 'A'), (1, 'B')]);
   });
+  test('Notes bullets preserve whitespace after the marker and round trip', () {
+    for (final text in [
+      '* Alpha\n* \tBeta\n* \t\tGamma\n* Delta',
+      '* Alpha\n    * Beta\n        * Gamma\n* Delta',
+      '* Alpha\n*   Beta\n*     Gamma\n* Delta',
+      '1. Alpha\n2. \tBeta\n3. \t\tGamma\n4. Delta',
+    ]) {
+      final entries = MapClipboard.fromText(text);
+      expect(entries.map((e) => (e.depth, e.title)), [(0, 'Alpha'), (1, 'Beta'), (2, 'Gamma'), (0, 'Delta')]);
+      expect(
+        MapClipboard.fromText(MapClipboard.toText(entries)).map((e) => (e.depth, e.title)),
+        entries.map((e) => (e.depth, e.title)),
+      );
+    }
+  });
+  test('cut reuses an unattached highlight; copying keeps independent highlights', () {
+    final (c1, doc) = editor.addDocument(StudySetContent.empty, title: 'PDF', fileName: 'a.pdf', pageCount: 2);
+    final (original, excerpt) = editor.createExcerpt(
+      c1,
+      documentId: doc.id,
+      page: 1,
+      rects: const [PageRect(0, 2, 2, 0)],
+      quote: 'Quote',
+      colorIndex: 2,
+    );
+    final entries = MapClipboard.decode(MapClipboard.encode(MapClipboard.copy(original, [excerpt.id])))!;
+    expect(entries.single.annotation!.id, excerpt.annotationId);
+    final cut = editor.removeMany(original, [excerpt.id]);
+    final (restored, roots) = editor.paste(cut, entries);
+    expect(restored.annotations, hasLength(1));
+    expect(restored.cards, hasLength(1));
+    expect(restored.card(roots.single)!.annotationId, excerpt.annotationId);
+    expect(restored.cardForAnnotation(excerpt.annotationId!)!.id, roots.single);
+    // A duplicated clipboard entry must not bind two cards to the same highlight.
+    final (repeated, _) = editor.paste(cut, [...entries, ...entries]);
+    expect(repeated.annotations, hasLength(2));
+    expect(repeated.cards.map((c) => c.annotationId).toSet(), hasLength(2));
+    final (copied, copiedRoots) = editor.paste(original, entries);
+    expect(copied.annotations, hasLength(2));
+    final copyId = copiedRoots.single;
+    final copyAnnotationId = copied.card(copyId)!.annotationId!;
+    expect(copyAnnotationId, isNot(excerpt.annotationId));
+    final recolored = editor.recolorMany(copied, [copyId], 3);
+    expect(recolored.annotation(excerpt.annotationId!)!.colorIndex, 2);
+    expect(recolored.annotation(copyAnnotationId)!.colorIndex, 3);
+    final deleted = editor.deleteAnnotation(recolored, copyAnnotationId);
+    expect(deleted.annotations.single.id, excerpt.annotationId);
+    expect(deleted.card(excerpt.id), isNotNull);
+    expect(deleted.card(copyId), isNull);
+    // A missing original highlight still gets a fresh, valid highlight.
+    final (missing, _) = editor.paste(c1, entries);
+    expect(missing.annotations, hasLength(1));
+    expect(missing.annotations.single.id, isNot(excerpt.annotationId));
+  });
   test('forest copy deduplicates selected descendants and includes folded children', () {
     final (c1, a) = editor.addTopic(StudySetContent.empty, title: 'A');
     final (c2, b) = editor.addTopic(c1, title: 'B', parentId: a.id);

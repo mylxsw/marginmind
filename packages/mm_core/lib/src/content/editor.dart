@@ -30,7 +30,14 @@ class StudySetEditor {
       var kind = entry.kind;
       var title = entry.title;
       if (kind == CardKind.excerpt) {
-        if (source != null && c.document(source.documentId) != null) {
+        final existing = source == null ? null : c.annotation(source.id);
+        // Cutting leaves the source highlight in place. Reattach it once;
+        // an already attached highlight is copied independently instead.
+        if (existing != null &&
+            c.document(existing.documentId) != null &&
+            !cards.any((card) => card.annotationId == existing.id)) {
+          annotationId = existing.id;
+        } else if (source != null && c.document(source.documentId) != null) {
           annotationId = newId();
           annotations.add(
             Annotation(

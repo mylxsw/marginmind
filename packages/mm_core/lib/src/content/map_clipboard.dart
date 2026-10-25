@@ -67,7 +67,18 @@ abstract final class MapClipboard {
         columns += line[offset] == '\t' ? 4 - columns % 4 : 1;
         offset++;
       }
-      final title = line.substring(offset).replaceFirst(RegExp(r'^(?:[-+*•◦▪]|\d+[.)])\s+'), '').trimRight();
+      // Notes can wrap tab-indented text as "* \tChild". Consume the
+      // marker's one separator, then count the remaining whitespace as
+      // indentation too (without counting the marker's visual width).
+      final marker = RegExp(r'^(?:[-+*•◦▪]|\d+[.)])[ \t]').firstMatch(line.substring(offset));
+      if (marker != null) {
+        offset += marker.end;
+        while (offset < line.length && (line[offset] == ' ' || line[offset] == '\t')) {
+          columns += line[offset] == '\t' ? 4 - columns % 4 : 1;
+          offset++;
+        }
+      }
+      final title = line.substring(offset).trimRight();
       if (title.isEmpty) continue;
       while (indents.isNotEmpty && columns <= indents.last) {
         indents.removeLast();
