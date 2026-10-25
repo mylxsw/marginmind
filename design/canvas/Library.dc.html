@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MarginMind 资料库</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.mm-ib:hover{background-color:var(--hover) !important}
+.mm-row:hover{background-color:var(--hover)}
+.lib-card .lib-cover{transition:transform 200ms cubic-bezier(.2,0,0,1),box-shadow 200ms}
+.lib-card:hover .lib-cover{transform:translateY(-3px)}
+.lib-star{opacity:0;transition:opacity 150ms}
+.lib-card:hover .lib-star{opacity:1}
+.lib-star[data-on="true"]{opacity:1}
+.lib-cont{transition:background-color 150ms}
+.lib-cont:hover{background-color:var(--hover)}
+.lib-tr:hover{background-color:var(--hover) !important}
+.lib-search::placeholder{color:var(--ph)}
+.lib-field::placeholder{color:var(--ph)}
+@media (max-width:860px){.mm-side{display:none !important}}
+</style>
+</helmet>
+<div style="{{st.desk}}">
+<div style="{{st.window}}">
+
+  <sc-if value="{{sidebarOpen}}" hint-placeholder-val="{{true}}">
+  <nav class="mm-side" aria-label="资料库" style="{{st.side}}">
+    <div style="display: flex; align-items: center; height: 28px; padding: 0 4px 0 6px; gap: 8px">
+      <span style="display: flex; gap: 8px" aria-hidden="true">
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #28C840; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+      </span>
+      <span style="flex: 1"></span>
+      <button type="button" class="mm-ib" aria-label="隐藏侧栏" title="隐藏侧栏（⌃⌘S）" onClick="{{toggleSidebar}}" style="{{st.sideBtn}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><path d="M9.5 4.5v15"></path><path d="M5.5 8.5h1.5M5.5 11h1.5"></path></svg>
+      </button>
+    </div>
+
+    <div style="{{st.sectionHead}}">资料库</div>
+    <div style="display: flex; flex-direction: column; gap: 1px">
+      <button type="button" class="mm-row" onClick="{{filters.all}}" style="{{st.nav.all}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"></rect></svg></span>
+        <span style="flex: 1; min-width: 0">全部学习集</span><span style="{{st.count}}">{{counts.all}}</span>
+      </button>
+      <button type="button" class="mm-row" onClick="{{filters.recent}}" style="{{st.nav.recent}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg></span>
+        <span style="flex: 1; min-width: 0">最近打开</span>
+      </button>
+      <button type="button" class="mm-row" onClick="{{filters.starred}}" style="{{st.nav.starred}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg></span>
+        <span style="flex: 1; min-width: 0">已收藏</span><span style="{{st.count}}">{{counts.starred}}</span>
+      </button>
+      <button type="button" class="mm-row" onClick="{{filters.due}}" style="{{st.nav.due}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="13" height="13" rx="2.5"></rect><path d="M8 4h10.5A2.5 2.5 0 0 1 21 6.5V17"></path></svg></span>
+        <span style="flex: 1; min-width: 0">待复习</span><span style="{{st.badge}}">{{counts.due}}</span>
+      </button>
+    </div>
+
+    <div style="{{st.sectionHead}}">文件夹</div>
+    <div style="display: flex; flex-direction: column; gap: 1px">
+      <sc-for list="{{folderNav}}" as="f" hint-placeholder-count="4">
+        <button type="button" class="mm-row" onClick="{{f.pick}}" style="{{f.style}}">
+          <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6a2 2 0 0 1 1.4.6L12 7h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"></path></svg></span>
+          <span style="flex: 1; min-width: 0">{{f.name}}</span><span style="{{st.count}}">{{f.count}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="flex: 1"></div>
+    <button type="button" class="mm-row" onClick="{{notYet}}" style="{{st.nav.trash}}">
+      <span style="{{st.rowIconGray}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2"></path><path d="M6 7l1 12a2 2 0 0 0 2 1.8h6A2 2 0 0 0 17 19l1-12"></path></svg></span>
+      <span style="flex: 1; min-width: 0">最近删除</span>
+    </button>
+    <div style="display: flex; align-items: center; gap: 2px; padding: 4px 2px 0">
+      <button type="button" class="mm-ib" aria-label="新建文件夹" title="新建文件夹（⇧⌘N）" onClick="{{notYet}}" style="{{st.sideBtn}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.6a2 2 0 0 1 1.4.6L12 7h6.5A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"></path><path d="M12 10.5v6M9 13.5h6"></path></svg>
+      </button>
+      <span style="flex: 1"></span>
+      <button type="button" class="mm-ib" aria-label="切换浅色与深色外观" title="外观" onClick="{{toggleTheme}}" style="{{st.sideBtn}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg>
+      </button>
+    </div>
+  </nav>
+  </sc-if>
+
+  <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; position: relative">
+    <header style="{{st.toolbar}}">
+      <sc-if value="{{sidebarClosed}}" hint-placeholder-val="{{false}}">
+        <span style="display: flex; align-items: center; gap: 8px; padding-left: 6px; flex: none">
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57"></span>
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E"></span>
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #28C840"></span>
+          <button type="button" class="mm-ib" aria-label="显示侧栏" onClick="{{toggleSidebar}}" style="{{st.sideBtn}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><path d="M9.5 4.5v15"></path></svg>
+          </button>
+        </span>
+      </sc-if>
+      <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0; padding-left: 4px">
+        <span style="{{st.winTitle}}">{{title}}</span>
+        <span style="{{st.winSub}}">{{subtitle}}</span>
+      </div>
+      <div style="flex: 1 1 16px"></div>
+
+      <div style="{{st.capsule}}" role="group" aria-label="显示方式">
+        <button type="button" aria-label="图标" title="图标（⌘1）" onClick="{{views.grid}}" style="{{st.viewBtn.grid}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"></rect></svg>
+        </button>
+        <button type="button" aria-label="列表" title="列表（⌘2）" onClick="{{views.list}}" style="{{st.viewBtn.list}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 6.5h12M8.5 12h12M8.5 17.5h12"></path><circle cx="4.5" cy="6.5" r="0.8" fill="currentColor"></circle><circle cx="4.5" cy="12" r="0.8" fill="currentColor"></circle><circle cx="4.5" cy="17.5" r="0.8" fill="currentColor"></circle></svg>
+        </button>
+      </div>
+
+      <div style="{{st.capsule}}">
+        <button type="button" onClick="{{cycleSort}}" title="排序方式" style="{{st.sortBtn}}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4"></path></svg>
+          <span>{{sortLabel}}</span>
+        </button>
+      </div>
+
+      <label style="{{st.searchBox}}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <input class="lib-search" type="search" aria-label="搜索学习集" placeholder="搜索" value="{{q}}" onChange="{{onSearch}}" style="{{st.searchInput}}">
+      </label>
+
+      <div style="{{st.capsule}}">
+        <button type="button" aria-label="新建学习集" title="新建学习集（⌘N）" onClick="{{openSheet}}" style="{{st.capBtn}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <div style="{{st.content}}">
+
+      <sc-if value="{{showFirstRun}}" hint-placeholder-val="{{false}}">
+        <div style="{{st.empty}}">
+          <div style="{{st.dropZone}}">
+            <span style="{{st.emptyIcon}}">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"></path><path d="M10 4h4.5A1.5 1.5 0 0 1 16 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"></path><path d="m16 6 3.6-.9a1 1 0 0 1 1.2.7l2 8"></path></svg>
+            </span>
+            <span style="{{st.emptyTitle}}">开始你的第一个学习集</span>
+            <span style="{{st.emptyText}}">把一本或几本 PDF 拖到这里，MarginMind 会为它们建一个学习集。之后的划线、卡片和脑图都放在里面。</span>
+            <div style="display: flex; gap: 10px; margin-top: 8px">
+              <button type="button" onClick="{{openSheet}}" style="{{st.primaryBtn}}">新建学习集</button>
+              <a href="Main.dc.html" style="{{st.secondaryBtn}}">打开示例学习集</a>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showNoResult}}" hint-placeholder-val="{{false}}">
+        <div style="{{st.empty}}">
+          <span style="{{st.emptyTitle}}">没有符合条件的学习集</span>
+          <span style="{{st.emptyText}}">{{noResultHint}}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showContinue}}" hint-placeholder-val="{{true}}">
+        <section aria-label="继续学习" style="display: flex; flex-direction: column; gap: 12px">
+          <h2 style="{{st.h2}}">继续学习</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px">
+            <sc-for list="{{continueList}}" as="c" hint-placeholder-count="3">
+              <a href="Main.dc.html" class="lib-cont" style="{{st.contCard}}">
+                <span style="{{c.miniCover}}"><span style="{{c.miniPage}}"></span></span>
+                <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1">
+                  <span style="{{st.contTitle}}">{{c.name}}</span>
+                  <span style="{{st.contMeta}}">{{c.last}}</span>
+                  <span style="display: flex; align-items: center; gap: 8px; margin-top: 6px">
+                    <span style="{{st.track}}"><span style="{{c.bar}}"></span></span>
+                    <span style="{{st.contMeta}}">{{c.pct}}</span>
+                  </span>
+                </span>
+                <sc-if value="{{c.hasDue}}" hint-placeholder-val="{{true}}"><span style="{{st.dueChip}}">{{c.dueText}}</span></sc-if>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showGrid}}" hint-placeholder-val="{{true}}">
+        <section aria-label="学习集" style="display: flex; flex-direction: column; gap: 14px">
+          <sc-if value="{{showContinue}}" hint-placeholder-val="{{true}}"><h2 style="{{st.h2}}">全部</h2></sc-if>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(188px, 1fr)); gap: 28px 20px">
+            <sc-for list="{{items}}" as="s" hint-placeholder-count="6">
+              <div class="lib-card" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0">
+                <a href="Main.dc.html" class="lib-cover" aria-label="打开 {{s.name}}" style="{{s.coverStyle}}">
+                  <sc-for list="{{s.pages}}" as="pg" hint-placeholder-count="2"><span style="{{pg}}"></span></sc-for>
+                  <sc-if value="{{s.hasDue}}" hint-placeholder-val="{{false}}"><span style="{{st.coverDue}}">{{s.dueText}}</span></sc-if>
+                </a>
+                <button type="button" class="lib-star" data-on="{{s.starOn}}" aria-label="{{s.starAria}}" aria-pressed="{{s.starOn}}" onClick="{{s.toggleStar}}" style="{{s.starStyle}}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="{{s.starFill}}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg>
+                </button>
+                <span style="{{st.cardTitle}}">{{s.name}}</span>
+                <span style="{{st.cardMeta}}">{{s.meta}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showList}}" hint-placeholder-val="{{false}}">
+        <div role="table" aria-label="学习集列表" style="display: flex; flex-direction: column">
+          <div role="row" style="{{st.thead}}">
+            <button type="button" onClick="{{sorts.name}}" style="{{st.th.name}}">名称{{arrows.name}}</button>
+            <span style="{{st.thPlain}}">文件夹</span>
+            <span style="{{st.thPlain}}">文档</span>
+            <button type="button" onClick="{{sorts.cards}}" style="{{st.th.cards}}">卡片{{arrows.cards}}</button>
+            <span style="{{st.thPlain}}">待复习</span>
+            <button type="button" onClick="{{sorts.recent}}" style="{{st.th.recent}}">最近打开{{arrows.recent}}</button>
+          </div>
+          <sc-for list="{{items}}" as="r" hint-placeholder-count="6">
+            <a href="Main.dc.html" role="row" class="lib-tr" style="{{r.rowStyle}}">
+              <span style="display: flex; align-items: center; gap: 10px; min-width: 0"><span style="{{r.swatch}}"></span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span><sc-if value="{{r.starOnBool}}" hint-placeholder-val="{{false}}"><span style="color: #FFCC00; font-size: 11px">★</span></sc-if></span>
+              <span style="{{st.td2}}">{{r.folderName}}</span>
+              <span style="{{st.td2num}}">{{r.docs}}</span>
+              <span style="{{st.td2num}}">{{r.cards}}</span>
+              <span style="{{st.td2num}}">{{r.dueCell}}</span>
+              <span style="{{st.td2}}">{{r.opened}}</span>
+            </a>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{false}}">
+      <div style="{{st.scrim}}"></div>
+      <div role="dialog" aria-modal="true" aria-label="新建学习集" style="{{st.sheet}}">
+        <span style="{{st.sheetTitle}}">新建学习集</span>
+        <div style="display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 14px 12px; align-items: center">
+          <label for="lib-name" style="{{st.formLabel}}">名称</label>
+          <input id="lib-name" class="lib-field" type="text" placeholder="例如：认知心理学" value="{{draft.name}}" onChange="{{setName}}" style="{{st.field}}">
+          <span style="{{st.formLabel}}">位置</span>
+          <div style="{{st.formSeg}}" role="group" aria-label="文件夹">
+            <sc-for list="{{draftFolders}}" as="df" hint-placeholder-count="4">
+              <button type="button" onClick="{{df.pick}}" style="{{df.style}}">{{df.name}}</button>
+            </sc-for>
+          </div>
+          <span style="{{st.formLabel}}">颜色</span>
+          <div style="display: flex; gap: 4px" role="group" aria-label="封面颜色">
+            <sc-for list="{{draftColors}}" as="dc" hint-placeholder-count="6">
+              <button type="button" aria-label="{{dc.label}}" onClick="{{dc.pick}}" style="{{st.colorBtn}}"><span style="{{dc.dot}}"></span></button>
+            </sc-for>
+          </div>
+          <span></span>
+          <label style="{{st.check}}"><input type="checkbox" checked="{{draft.importNow}}" onChange="{{toggleImport}}" style="{{st.checkbox}}"><span>创建后立即导入 PDF…</span></label>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px">
+          <button type="button" onClick="{{closeSheet}}" style="{{st.secondaryBtn}}">取消</button>
+          <button type="button" onClick="{{create}}" disabled="{{createDisabled}}" style="{{st.createBtn}}">创建</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{toast.show}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="{{st.toast}}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>
+      <span>{{toast.text}}</span>
+    </div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"外观"},"firstRun":{"editor":"boolean","default":false,"section":"状态"},"$preview":{"width":1440,"height":900}}'>
+const COLORS = [
+  { name: '黄', hex: '#FFCC00' }, { name: '绿', hex: '#34C759' }, { name: '蓝', hex: '#007AFF' },
+  { name: '粉', hex: '#FF2D55' }, { name: '橙', hex: '#FF9500' }, { name: '紫', hex: '#AF52DE' }
+];
+
+const FOLDERS = [
+  { id: 'f1', name: '认知科学' }, { id: 'f2', name: '产品与设计' }, { id: 'f3', name: '投资理财' }, { id: 'none', name: '未分类' }
+];
+
+const SEED = [
+  { id: 's1', name: '认知科学入门', folder: 'f1', docs: 2, cards: 6, due: 5, opened: '刚刚', rank: 1, progress: 15, color: 2, starred: true, last: '学习的底层逻辑 · 第 24 页' },
+  { id: 's2', name: '注意力与专注', folder: 'f1', docs: 3, cards: 42, due: 8, opened: '昨天', rank: 2, progress: 62, color: 5, starred: false, last: '深度工作的条件 · 第 88 页' },
+  { id: 's3', name: '产品设计方法论', folder: 'f2', docs: 4, cards: 128, due: 0, opened: '3 天前', rank: 3, progress: 80, color: 4, starred: true, last: '用户访谈指南 · 第 12 页' },
+  { id: 's4', name: '交互设计原则笔记', folder: 'f2', docs: 1, cards: 57, due: 10, opened: '上周', rank: 4, progress: 45, color: 3, starred: false, last: '交互设计原则 · 第 140 页' },
+  { id: 's5', name: '指数基金投资课', folder: 'f3', docs: 2, cards: 33, due: 0, opened: '2 周前', rank: 5, progress: 30, color: 1, starred: false, last: '资产配置基础 · 第 51 页' },
+  { id: 's6', name: '论文文献综述', folder: 'none', docs: 12, cards: 214, due: 0, opened: '上个月', rank: 6, progress: 20, color: 0, starred: false, last: '综述草稿 · 第 3 页' }
+];
+
+const THEMES = {
+  light: {
+    desk: '#C8CDD5', win: '#FFFFFF', side: 'rgba(242,242,246,0.86)', content: '#FFFFFF', raised: '#FFFFFF',
+    label: '#1D1D1F', label2: '#636366', icon: '#6E6E73', sep: 'rgba(0,0,0,0.09)', fill: 'rgba(120,120,128,0.12)',
+    fill2: 'rgba(120,120,128,0.08)', selRow: 'rgba(0,0,0,0.075)', hover: 'rgba(0,0,0,0.045)', stripe: 'rgba(0,0,0,0.025)',
+    accent: '#007AFF', accentFill: '#0A66D0', accentTint: 'rgba(0,122,255,0.12)',
+    glass: 'rgba(255,255,255,0.78)', glassShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08)',
+    sideShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.9), 0 0 0 0.5px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06)',
+    winShadow: '0 0 0 0.5px rgba(0,0,0,0.22), 0 28px 70px rgba(0,0,0,0.28)', coverA: 0.18, sheetShadow: '0 0 0 0.5px rgba(0,0,0,0.12), 0 24px 60px rgba(0,0,0,0.25)'
+  },
+  dark: {
+    desk: '#2B2F36', win: '#1E1E1F', side: 'rgba(44,44,47,0.86)', content: '#1E1E1F', raised: '#2C2C2E',
+    label: '#F5F5F7', label2: '#A1A1A6', icon: '#A1A1A6', sep: 'rgba(255,255,255,0.09)', fill: 'rgba(118,118,128,0.24)',
+    fill2: 'rgba(118,118,128,0.14)', selRow: 'rgba(255,255,255,0.1)', hover: 'rgba(255,255,255,0.06)', stripe: 'rgba(255,255,255,0.03)',
+    accent: '#0A84FF', accentFill: '#0A66D0', accentTint: 'rgba(10,132,255,0.2)',
+    glass: 'rgba(50,50,53,0.78)', glassShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.14), 0 0 0 0.5px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)',
+    sideShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.12), 0 0 0 0.5px rgba(0,0,0,0.5), 0 6px 24px rgba(0,0,0,0.25)',
+    winShadow: '0 0 0 0.5px rgba(0,0,0,0.7), 0 28px 70px rgba(0,0,0,0.5)', coverA: 0.24, sheetShadow: '0 0 0 0.5px rgba(0,0,0,0.6), 0 24px 60px rgba(0,0,0,0.55)'
+  }
+};
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      theme: null, sidebar: true, filter: 'all', view: 'grid', sort: 'recent', q: '',
+      sets: SEED.slice(), sheet: false, draft: { name: '', folder: 'f1', color: 2, importNow: true }, toast: null
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._t); }
+
+  say(text) {
+    clearTimeout(this._t);
+    this.setState({ toast: text });
+    this._t = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+
+  create() {
+    const s = this.state;
+    const name = s.draft.name.trim();
+    if (!name) return;
+    const minRank = Math.min.apply(null, s.sets.map(x => x.rank).concat([1]));
+    const item = { id: 'n' + Date.now(), name: name, folder: s.draft.folder, docs: 0, cards: 0, due: 0, opened: '刚刚', rank: minRank - 1, progress: 0, color: s.draft.color, starred: false, last: '尚未导入文档' };
+    this.setState({ sets: [item].concat(s.sets), sheet: false, filter: 'all', q: '', draft: { name: '', folder: 'f1', color: 2, importNow: true } });
+    this.say(s.draft.importNow ? '已创建「' + name + '」，接下来选择要导入的 PDF' : '已创建「' + name + '」');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const themeName = s.theme || this.props.theme || 'light';
+    const t = THEMES[themeName] || THEMES.light;
+    const firstRun = !!this.props.firstRun;
+    const sys = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif';
+    const glass = 'background: ' + t.glass + '; -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); box-shadow: ' + t.glassShadow + ';';
+    const capBtn = (on) => 'width: 34px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 15px; cursor: pointer; padding: 0; transition: background-color 120ms; background: ' + (on ? t.accentTint : 'transparent') + '; color: ' + (on ? t.accent : t.label) + ';';
+    const navItem = (on) => 'width: 100%; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 0; border-radius: 8px; cursor: pointer; text-align: left; box-sizing: border-box; font: 400 13px/16px ' + sys + '; background: ' + (on ? t.selRow : 'transparent') + '; color: ' + t.label + ';';
+    const folderName = (id) => (FOLDERS.find(f => f.id === id) || FOLDERS[3]).name;
+
+    const sets = firstRun ? [] : s.sets;
+    const q = s.q.trim();
+    let items = sets.filter(x => {
+      if (s.filter === 'recent' && x.rank > Math.min.apply(null, sets.map(y => y.rank)) + 3) return false;
+      if (s.filter === 'starred' && !x.starred) return false;
+      if (s.filter === 'due' && !x.due) return false;
+      if (FOLDERS.some(f => f.id === s.filter) && x.folder !== s.filter) return false;
+      if (q && x.name.indexOf(q) < 0) return false;
+      return true;
+    });
+    const sorters = {
+      recent: (a, b) => a.rank - b.rank,
+      name: (a, b) => a.name.localeCompare(b.name, 'zh'),
+      cards: (a, b) => b.cards - a.cards
+    };
+    items = items.slice().sort(sorters[s.sort]);
+
+    const titles = { all: '全部学习集', recent: '最近打开', starred: '已收藏', due: '待复习' };
+    const title = titles[s.filter] || folderName(s.filter);
+    const dueTotal = sets.reduce((n, x) => n + x.due, 0);
+    const sortLabels = { recent: '最近打开', name: '名称', cards: '卡片数量' };
+
+    const cover = (x) => {
+      const c = COLORS[x.color].hex;
+      const n = Math.max(1, Math.min(3, x.docs));
+      const rot = [[-7, -22], [5, 18], [0, 0]];
+      const pages = [];
+      for (let i = 0; i < n; i++) {
+        const r = n === 1 ? [0, 0] : rot[3 - n + i];
+        pages.push('position: absolute; left: 50%; top: 22px; width: 82px; height: 106px; margin-left: ' + (-41 + r[1]) + 'px; padding: 16px 12px; box-sizing: border-box; border-radius: 3px; background-color: #FFFFFF; background-image: repeating-linear-gradient(to bottom, transparent 0 7px, rgba(0,0,0,0.09) 7px 8px); background-clip: content-box; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.14); transform: rotate(' + r[0] + 'deg);' + (x.docs === 0 ? ' opacity: 0.45;' : ''));
+      }
+      return { pages: pages, style: 'position: relative; display: block; width: 100%; height: 150px; border-radius: 14px; overflow: hidden; cursor: default; background: ' + rgba(c, t.coverA) + '; box-shadow: inset 0 0 0 0.5px ' + rgba(c, 0.35) + ';' };
+    };
+
+    const st = {
+      desk: '--hover: ' + t.hover + '; --ph: ' + t.label2 + '; width: 100%; height: 100vh; min-height: 640px; box-sizing: border-box; padding: 20px; display: flex; background: ' + t.desk + '; font-family: ' + sys + '; font-size: 13px; color: ' + t.label + ';',
+      window: 'flex: 1 1 auto; min-width: 0; display: flex; position: relative; overflow: hidden; border-radius: 24px; background: ' + t.win + '; box-shadow: ' + t.winShadow + ';',
+      side: 'position: relative; z-index: 2; width: 220px; flex: none; margin: 8px 0 8px 8px; display: flex; flex-direction: column; gap: 2px; padding: 12px 10px 10px; box-sizing: border-box; border-radius: 16px; overflow-y: auto; background: ' + t.side + '; -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: ' + t.sideShadow + ';',
+      sideBtn: 'width: 28px; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; cursor: pointer; padding: 0; background: transparent; color: ' + t.icon + ';',
+      sectionHead: 'padding: 16px 8px 4px; font: 600 11px/14px ' + sys + '; color: ' + t.label2 + ';',
+      rowIcon: 'width: 18px; display: flex; justify-content: center; flex: none; color: ' + t.accent + ';',
+      rowIconGray: 'width: 18px; display: flex; justify-content: center; flex: none; color: ' + t.icon + ';',
+      count: 'font: 400 12px/16px ' + sys + '; color: ' + t.label2 + '; font-variant-numeric: tabular-nums;',
+      badge: 'min-width: 20px; height: 18px; padding: 0 6px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; font: 600 11px/1 ' + sys + '; font-variant-numeric: tabular-nums; background: ' + t.fill + '; color: ' + t.label + ';',
+      nav: { all: navItem(s.filter === 'all'), recent: navItem(s.filter === 'recent'), starred: navItem(s.filter === 'starred'), due: navItem(s.filter === 'due'), trash: navItem(false) },
+
+      toolbar: 'flex: none; height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 20px; box-sizing: border-box;',
+      winTitle: 'font: 600 15px/18px ' + sys + '; color: ' + t.label + '; white-space: nowrap;',
+      winSub: 'font: 400 11px/14px ' + sys + '; color: ' + t.label2 + '; white-space: nowrap;',
+      capsule: 'display: flex; align-items: center; padding: 3px; border-radius: 18px; flex: none; ' + glass,
+      capBtn: capBtn(false),
+      viewBtn: { grid: capBtn(s.view === 'grid'), list: capBtn(s.view === 'list') },
+      sortBtn: 'height: 30px; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 10px; border: 0; border-radius: 15px; cursor: pointer; background: transparent; color: ' + t.label + '; font: 500 12px/1 ' + sys + '; white-space: nowrap;',
+      searchBox: 'flex: 0 1 200px; min-width: 120px; height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 12px; box-sizing: border-box; border-radius: 18px; color: ' + t.label2 + '; ' + glass,
+      searchInput: 'flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 0; font: 400 13px/16px ' + sys + '; color: ' + t.label + ';',
+
+      content: 'flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 32px; padding: 12px 28px 48px; box-sizing: border-box; background: ' + t.content + ';',
+      h2: 'margin: 0; font: 700 17px/22px ' + sys + '; color: ' + t.label + ';',
+      contCard: 'display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 16px; background: ' + t.fill2 + '; color: ' + t.label + '; min-width: 0;',
+      contTitle: 'font: 600 13px/17px ' + sys + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      contMeta: 'font: 400 11px/14px ' + sys + '; color: ' + t.label2 + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      track: 'flex: 1; height: 4px; border-radius: 2px; overflow: hidden; background: ' + t.fill + ';',
+      dueChip: 'flex: none; align-self: flex-start; height: 20px; padding: 0 8px; display: flex; align-items: center; border-radius: 10px; font: 600 11px/1 ' + sys + '; background: ' + t.accentTint + '; color: ' + t.accent + ';',
+      cardTitle: 'max-width: 100%; font: 600 13px/17px ' + sys + '; color: ' + t.label + '; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;',
+      cardMeta: 'font: 400 11px/14px ' + sys + '; color: ' + t.label2 + '; text-align: center; white-space: nowrap;',
+      coverDue: 'position: absolute; left: 8px; bottom: 8px; height: 20px; padding: 0 8px; display: flex; align-items: center; border-radius: 10px; font: 600 11px/1 ' + sys + '; color: ' + t.label + '; ' + glass,
+
+      thead: 'display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) 70px 70px 70px minmax(0, 1fr); gap: 12px; align-items: center; height: 28px; padding: 0 12px; border-bottom: 0.5px solid ' + t.sep + ';',
+      th: {
+        name: 'border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; font: ' + (s.sort === 'name' ? 600 : 500) + ' 11px/14px ' + sys + '; color: ' + (s.sort === 'name' ? t.label : t.label2) + ';',
+        cards: 'border: 0; padding: 0; background: transparent; cursor: pointer; text-align: right; font: ' + (s.sort === 'cards' ? 600 : 500) + ' 11px/14px ' + sys + '; color: ' + (s.sort === 'cards' ? t.label : t.label2) + ';',
+        recent: 'border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; font: ' + (s.sort === 'recent' ? 600 : 500) + ' 11px/14px ' + sys + '; color: ' + (s.sort === 'recent' ? t.label : t.label2) + ';'
+      },
+      thPlain: 'font: 500 11px/14px ' + sys + '; color: ' + t.label2 + ';',
+      td2: 'font: 400 13px/16px ' + sys + '; color: ' + t.label2 + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      td2num: 'font: 400 13px/16px ' + sys + '; color: ' + t.label2 + '; text-align: right; font-variant-numeric: tabular-nums;',
+
+      empty: 'flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; text-align: center;',
+      dropZone: 'width: min(560px, 100%); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 40px; box-sizing: border-box; border-radius: 24px; border: 1.5px dashed ' + t.fill + '; background: ' + t.fill2 + ';',
+      emptyIcon: 'width: 72px; height: 72px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; background: ' + t.accentTint + '; color: ' + t.accent + ';',
+      emptyTitle: 'font: 700 20px/26px ' + sys + '; color: ' + t.label + ';',
+      emptyText: 'max-width: 400px; font: 400 13px/20px ' + sys + '; color: ' + t.label2 + ';',
+      primaryBtn: 'height: 30px; padding: 0 16px; display: flex; align-items: center; border: 0; border-radius: 15px; cursor: pointer; font: 600 13px/1 ' + sys + '; background: ' + t.accentFill + '; color: #FFFFFF;',
+      secondaryBtn: 'height: 30px; padding: 0 16px; display: flex; align-items: center; border: 0; border-radius: 15px; cursor: pointer; font: 500 13px/1 ' + sys + '; background: ' + t.fill + '; color: ' + t.label + ';',
+
+      scrim: 'position: absolute; inset: 0; z-index: 10; background: rgba(0,0,0,0.12);',
+      sheet: 'position: absolute; z-index: 11; left: 50%; top: 64px; width: 460px; max-width: calc(100% - 32px); transform: translateX(-50%); display: flex; flex-direction: column; gap: 18px; padding: 22px 22px 18px; box-sizing: border-box; border-radius: 22px; background: ' + t.raised + '; box-shadow: ' + t.sheetShadow + ';',
+      sheetTitle: 'font: 700 15px/20px ' + sys + '; color: ' + t.label + ';',
+      formLabel: 'font: 400 13px/16px ' + sys + '; color: ' + t.label + '; text-align: right;',
+      field: 'height: 28px; padding: 0 10px; box-sizing: border-box; border: 0; border-radius: 8px; outline: 0; font: 400 13px/16px ' + sys + '; color: ' + t.label + '; background: ' + t.fill2 + '; box-shadow: 0 0 0 3px ' + t.accentTint + ', inset 0 0 0 1px ' + t.accent + ';',
+      formSeg: 'display: flex; flex-wrap: wrap; gap: 0; padding: 2px; border-radius: 14px; background: ' + t.fill2 + '; justify-self: start;',
+      colorBtn: 'width: 26px; height: 26px; padding: 0; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;',
+      check: 'display: flex; align-items: center; gap: 8px; font: 400 13px/16px ' + sys + '; color: ' + t.label + ';',
+      checkbox: 'width: 14px; height: 14px; margin: 0; accent-color: ' + t.accent + ';',
+      createBtn: 'height: 30px; padding: 0 18px; display: flex; align-items: center; border: 0; border-radius: 15px; cursor: pointer; font: 600 13px/1 ' + sys + '; background: ' + t.accentFill + '; color: #FFFFFF; opacity: ' + (s.draft.name.trim() ? 1 : 0.4) + ';',
+
+      toast: 'position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 30; pointer-events: none; display: flex; align-items: center; gap: 8px; padding: 9px 16px 9px 12px; border-radius: 20px; font: 500 13px/18px ' + sys + '; white-space: nowrap; color: ' + t.label + '; ' + glass
+    };
+
+    const segItem = (on) => 'height: 24px; padding: 0 12px; border: 0; border-radius: 12px; cursor: pointer; font: ' + (on ? 600 : 500) + ' 12px/1 ' + sys + '; color: ' + t.label + '; background: ' + (on ? t.raised : 'transparent') + '; box-shadow: ' + (on ? '0 0 0 0.5px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.14)' : 'none') + ';';
+    const filtersCountable = !firstRun;
+    const showGridBase = !firstRun && items.length > 0;
+    const showContinue = showGridBase && s.view === 'grid' && s.filter === 'all' && !q;
+
+    return {
+      st: st,
+      sidebarOpen: s.sidebar,
+      sidebarClosed: !s.sidebar,
+      title: title,
+      subtitle: firstRun ? '还没有学习集' : items.length + ' 个学习集' + (dueTotal ? ' · ' + dueTotal + ' 张卡片待复习' : ''),
+      sortLabel: '按' + sortLabels[s.sort],
+      q: s.q,
+      counts: {
+        all: String(sets.length),
+        starred: String(sets.filter(x => x.starred).length),
+        due: String(dueTotal)
+      },
+      folderNav: FOLDERS.map(f => ({
+        name: f.name, count: String(sets.filter(x => x.folder === f.id).length),
+        style: navItem(s.filter === f.id), pick: () => this.setState({ filter: f.id })
+      })),
+      filters: {
+        all: () => this.setState({ filter: 'all' }), recent: () => this.setState({ filter: 'recent' }),
+        starred: () => this.setState({ filter: 'starred' }), due: () => this.setState({ filter: 'due' })
+      },
+      views: { grid: () => this.setState({ view: 'grid' }), list: () => this.setState({ view: 'list' }) },
+      cycleSort: () => this.setState({ sort: s.sort === 'recent' ? 'name' : s.sort === 'name' ? 'cards' : 'recent' }),
+      sorts: { name: () => this.setState({ sort: 'name' }), cards: () => this.setState({ sort: 'cards' }), recent: () => this.setState({ sort: 'recent' }) },
+      arrows: { name: s.sort === 'name' ? ' ⌃' : '', cards: s.sort === 'cards' ? ' ⌄' : '', recent: s.sort === 'recent' ? ' ⌄' : '' },
+      onSearch: (e) => this.setState({ q: e && e.target ? e.target.value : '' }),
+
+      showFirstRun: firstRun,
+      showNoResult: filtersCountable && items.length === 0,
+      noResultHint: q ? '没有名称包含“' + q + '”的学习集。' : '这个分类下还没有学习集，可以把学习集拖进侧栏的文件夹里。',
+      showContinue: showContinue,
+      showGrid: showGridBase && s.view === 'grid',
+      showList: showGridBase && s.view === 'list',
+
+      continueList: sets.slice().sort(sorters.recent).slice(0, 3).map(x => {
+        const c = COLORS[x.color].hex;
+        return {
+          name: x.name, last: '上次读到：' + x.last, pct: x.progress + '%', hasDue: x.due > 0, dueText: x.due + ' 张待复习',
+          miniCover: 'width: 52px; height: 64px; flex: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: ' + rgba(c, t.coverA) + ';',
+          miniPage: 'width: 30px; height: 40px; border-radius: 2px; padding: 7px 5px; box-sizing: border-box; background-color: #FFFFFF; background-image: repeating-linear-gradient(to bottom, transparent 0 4px, rgba(0,0,0,0.1) 4px 5px); background-clip: content-box; box-shadow: 0 1px 3px rgba(0,0,0,0.15);',
+          bar: 'display: block; height: 100%; width: ' + x.progress + '%; border-radius: 2px; background: ' + t.accent + ';'
+        };
+      }),
+
+      items: items.map((x, i) => {
+        const cv = cover(x);
+        return {
+          name: x.name,
+          meta: x.docs + ' 份文档 · ' + x.cards + ' 张卡片 · ' + x.opened,
+          coverStyle: cv.style, pages: cv.pages,
+          hasDue: x.due > 0, dueText: x.due + ' 张待复习',
+          starOn: x.starred ? 'true' : 'false',
+          starOnBool: x.starred,
+          starAria: x.starred ? '取消收藏' : '收藏',
+          starFill: x.starred ? '#FFCC00' : 'none',
+          starStyle: 'position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: ' + (x.starred ? '#C79A00' : t.label) + '; ' + glass,
+          toggleStar: () => this.setState({ sets: s.sets.map(y => y.id === x.id ? Object.assign({}, y, { starred: !y.starred }) : y) }),
+          folderName: folderName(x.folder),
+          docs: String(x.docs), cards: String(x.cards), dueCell: x.due ? String(x.due) : '—', opened: x.opened,
+          swatch: 'width: 10px; height: 10px; flex: none; border-radius: 3px; background: ' + COLORS[x.color].hex + ';',
+          rowStyle: 'display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) 70px 70px 70px minmax(0, 1fr); gap: 12px; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; font: 400 13px/16px ' + sys + '; color: ' + t.label + '; background: ' + (i % 2 ? t.stripe : 'transparent') + ';'
+        };
+      }),
+
+      sheetOpen: s.sheet,
+      openSheet: () => this.setState({ sheet: true }),
+      closeSheet: () => this.setState({ sheet: false }),
+      draft: { name: s.draft.name, importNow: s.draft.importNow },
+      setName: (e) => this.setState({ draft: Object.assign({}, s.draft, { name: e && e.target ? e.target.value : '' }) }),
+      toggleImport: () => this.setState({ draft: Object.assign({}, s.draft, { importNow: !s.draft.importNow }) }),
+      draftFolders: FOLDERS.map(f => ({ name: f.name, style: segItem(s.draft.folder === f.id), pick: () => this.setState({ draft: Object.assign({}, s.draft, { folder: f.id }) }) })),
+      draftColors: COLORS.map((c, i) => ({
+        label: c.name + '色',
+        dot: 'width: 16px; height: 16px; border-radius: 8px; background: ' + c.hex + '; box-shadow: ' + (s.draft.color === i ? '0 0 0 2px ' + t.raised + ', 0 0 0 3.5px ' + c.hex : 'inset 0 0 0 0.5px rgba(0,0,0,0.12)') + ';',
+        pick: () => this.setState({ draft: Object.assign({}, s.draft, { color: i }) })
+      })),
+      createDisabled: !s.draft.name.trim(),
+      create: () => this.create(),
+
+      toggleSidebar: () => this.setState({ sidebar: !s.sidebar }),
+      toggleTheme: () => this.setState({ theme: themeName === 'dark' ? 'light' : 'dark' }),
+      notYet: () => this.say('原型中暂未实现'),
+      toast: { show: !!s.toast, text: s.toast || '' }
+    };
+  }
+}
+</script>
+</body>
+</html>

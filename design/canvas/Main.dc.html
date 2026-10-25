@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>MarginMind 工作区</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:inherit}a:hover{color:inherit}
+.mm-ib:hover{background-color:var(--hover) !important}
+.mm-row:hover{background-color:var(--hover)}
+.mm-sent:hover{background-color:var(--hover)}
+.mm-card{transition:box-shadow 200ms cubic-bezier(.2,0,0,1),transform 120ms}
+.mm-card:active{transform:scale(.985)}
+.mm-search::placeholder{color:var(--ph)}
+.tc{position:relative;display:flex;flex-direction:column;justify-content:center;padding-left:28px}
+.tc::before{content:"";position:absolute;left:0;top:50%;width:28px;border-top:1.5px solid var(--line)}
+.ti{position:relative;display:flex;align-items:center;padding:7px 0 7px 28px}
+.ti::before{content:"";position:absolute;left:0;top:50%;width:28px;border-top:1.5px solid var(--line)}
+.ti::after{content:"";position:absolute;left:0;top:0;bottom:0;border-left:1.5px solid var(--line)}
+.ti:first-child::before{top:50%;height:50%;box-sizing:border-box;border-top:1.5px solid var(--line);border-left:1.5px solid var(--line);border-top-left-radius:10px}
+.ti:first-child::after{display:none}
+.ti:last-child::before{top:0;height:calc(50% + 0.75px);box-sizing:border-box;border-top:0;border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);border-bottom-left-radius:10px}
+.ti:last-child::after{display:none}
+.ti:first-child:last-child::before{top:50%;height:0;border:0;border-top:1.5px solid var(--line);border-radius:0}
+@media (max-width:860px){.mm-side{display:none !important}}
+</style>
+</helmet>
+<div style="{{st.desk}}">
+<div style="{{st.window}}">
+
+  <sc-if value="{{sidebarOpen}}" hint-placeholder-val="{{true}}">
+  <nav class="mm-side" aria-label="学习集" style="{{st.side}}">
+    <div style="display: flex; align-items: center; height: 28px; padding: 0 4px 0 6px; gap: 8px">
+      <span style="display: flex; gap: 8px" aria-hidden="true">
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+        <span style="width: 12px; height: 12px; border-radius: 6px; background: #28C840; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15)"></span>
+      </span>
+      <span style="flex: 1"></span>
+      <button type="button" class="mm-ib" aria-label="隐藏侧栏" title="隐藏侧栏（⌃⌘S）" onClick="{{toggleSidebar}}" style="{{st.sideBtn}}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><path d="M9.5 4.5v15"></path><path d="M5.5 8.5h1.5M5.5 11h1.5"></path></svg>
+      </button>
+    </div>
+
+    <a href="Library.dc.html" class="mm-row" title="显示资料库（⇧⌘L）" style="{{st.setSwitch}}">
+      <span style="{{st.setIcon}}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"></path><path d="M10 4h4.5A1.5 1.5 0 0 1 16 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"></path><path d="m16 6 3.6-.9a1 1 0 0 1 1.2.7l2 8"></path></svg>
+      </span>
+      <span style="{{st.setTitle}}">认知科学入门</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"></rect></svg>
+    </a>
+
+    <label style="{{st.search}}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+      <input class="mm-search" type="search" aria-label="在学习集中搜索" placeholder="搜索" style="{{st.searchInput}}">
+    </label>
+
+    <div style="{{st.sectionHead}}">脑图</div>
+    <div style="display: flex; flex-direction: column; gap: 1px">
+      <button type="button" class="mm-row" onClick="{{noop}}" style="{{st.itemOn}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="2.2"></circle><circle cx="19" cy="5.5" r="2.2"></circle><circle cx="19" cy="18.5" r="2.2"></circle><path d="M7.2 12H11c1.5 0 2-1 2-2.5V8c0-1.5.6-2.5 2-2.5h1.8M11 12c1.5 0 2 1 2 2.5V16c0 1.5.6 2.5 2 2.5h1.8"></path></svg></span>
+        <span style="flex: 1; min-width: 0">主脑图</span>
+        <span style="{{st.count}}">{{nodeCount}}</span>
+      </button>
+      <button type="button" class="mm-row" onClick="{{notYet}}" style="{{st.itemOff}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="2.2"></circle><circle cx="19" cy="5.5" r="2.2"></circle><circle cx="19" cy="18.5" r="2.2"></circle><path d="M7.2 12H11c1.5 0 2-1 2-2.5V8c0-1.5.6-2.5 2-2.5h1.8M11 12c1.5 0 2 1 2 2.5V16c0 1.5.6 2.5 2 2.5h1.8"></path></svg></span>
+        <span style="flex: 1; min-width: 0">复习计划</span>
+      </button>
+    </div>
+
+    <div style="{{st.sectionHead}}">文档</div>
+    <div style="display: flex; flex-direction: column; gap: 1px">
+      <sc-for list="{{docs}}" as="d" hint-placeholder-count="2">
+        <button type="button" class="mm-row" onClick="{{d.open}}" style="{{d.style}}">
+          <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h7.5l4.5 4.5V19a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M13.5 3v4.5H18"></path></svg></span>
+          <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{d.title}}</span>
+          <span style="{{st.count}}">{{d.marks}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="{{st.sectionHead}}">学习</div>
+    <div style="display: flex; flex-direction: column; gap: 1px">
+      <button type="button" class="mm-row" onClick="{{notYet}}" style="{{st.itemOff}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="13" height="13" rx="2.5"></rect><path d="M8 4h10.5A2.5 2.5 0 0 1 21 6.5V17"></path></svg></span>
+        <span style="flex: 1; min-width: 0">复习</span>
+        <span style="{{st.badge}}">{{cardCount}}</span>
+      </button>
+      <button type="button" class="mm-row" onClick="{{notYet}}" style="{{st.itemOff}}">
+        <span style="{{st.rowIcon}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 12.2V5a1.5 1.5 0 0 1 1.5-1.5h7.2a1.5 1.5 0 0 1 1.06.44l7.3 7.3a1.5 1.5 0 0 1 0 2.12l-7.2 7.2a1.5 1.5 0 0 1-2.12 0l-7.3-7.3a1.5 1.5 0 0 1-.44-1.06z"></path><circle cx="8" cy="8" r="1.2"></circle></svg></span>
+        <span style="flex: 1; min-width: 0">标签</span>
+      </button>
+    </div>
+
+    <div style="flex: 1"></div>
+    <div style="display: flex; align-items: center; gap: 2px; padding: 0 2px">
+      <button type="button" class="mm-ib" aria-label="导入文档" title="导入文档（⌘O）" onClick="{{notYet}}" style="{{st.sideBtn}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </button>
+      <span style="flex: 1"></span>
+      <button type="button" class="mm-ib" aria-label="切换浅色与深色外观" title="外观" onClick="{{toggleTheme}}" style="{{st.sideBtn}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"></path></svg>
+      </button>
+    </div>
+  </nav>
+  </sc-if>
+
+  <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column">
+    <header style="{{st.toolbar}}">
+      <sc-if value="{{sidebarClosed}}" hint-placeholder-val="{{false}}">
+        <span style="display: flex; align-items: center; gap: 8px; padding-left: 6px; flex: none">
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57"></span>
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E"></span>
+          <span style="width: 12px; height: 12px; border-radius: 6px; background: #28C840"></span>
+          <button type="button" class="mm-ib" aria-label="显示侧栏" title="显示侧栏（⌃⌘S）" onClick="{{toggleSidebar}}" style="{{st.sideBtn}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><path d="M9.5 4.5v15"></path></svg>
+          </button>
+        </span>
+      </sc-if>
+
+      <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 0 1 auto; padding-left: 4px">
+        <span style="{{st.winTitle}}">{{doc.title}}</span>
+        <span style="{{st.winSub}}">认知科学入门 · 第 {{doc.page}} 页</span>
+      </div>
+
+      <div style="flex: 1 1 16px"></div>
+
+      <div style="{{st.capsule}}" role="group" aria-label="标注工具">
+        <button type="button" aria-label="选择" title="选择（V）" onClick="{{tools.select}}" style="{{st.tool.select}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 18.5 12l-5.6 1.2L16 19.5l-2.2 1-3-6.3L6 18z"></path></svg>
+        </button>
+        <button type="button" aria-label="高亮" title="高亮（H）" onClick="{{tools.highlight}}" style="{{st.tool.highlight}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 11-6 6v3h9l3-3"></path><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path></svg>
+        </button>
+        <button type="button" aria-label="框选" title="框选（R）" onClick="{{tools.rect}}" style="{{st.tool.rect}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"></path></svg>
+        </button>
+        <button type="button" aria-label="手写" title="手写（P）" onClick="{{tools.pen}}" style="{{st.tool.pen}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path><path d="M14 6l3 3"></path></svg>
+        </button>
+        <button type="button" aria-label="文本" title="文本（T）" onClick="{{tools.text}}" style="{{st.tool.text}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M8.5 9h7M12 9v6.5"></path></svg>
+        </button>
+        <span style="{{st.capSep}}"></span>
+        <sc-for list="{{swatches}}" as="sw" hint-placeholder-count="6">
+          <button type="button" aria-label="{{sw.label}}" title="{{sw.label}}" onClick="{{sw.pick}}" style="{{sw.style}}"><span style="{{sw.dot}}"></span></button>
+        </sc-for>
+        <span style="{{st.capSep}}"></span>
+        <button type="button" aria-label="摘录同步到脑图" aria-pressed="{{autoPressed}}" title="{{autoTitle}}" onClick="{{toggleAuto}}" style="{{st.autoBtn}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="6" rx="1.5"></rect><rect x="13" y="14" width="8" height="6" rx="1.5"></rect><path d="M7 10v4.5a2.5 2.5 0 0 0 2.5 2.5H13"></path></svg>
+        </button>
+      </div>
+
+      <div style="{{st.capsule}}" role="group" aria-label="布局">
+        <button type="button" aria-label="只看原文" title="只看原文（⌘1）" onClick="{{layouts.reader}}" style="{{st.layoutBtn.reader}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h7.5l4.5 4.5V19a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M8.5 12h7M8.5 15.5h5"></path></svg>
+        </button>
+        <button type="button" aria-label="分栏" title="分栏（⌘2）" onClick="{{layouts.split}}" style="{{st.layoutBtn.split}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="3"></rect><path d="M12 4.5v15"></path></svg>
+        </button>
+        <button type="button" aria-label="只看脑图" title="只看脑图（⌘3）" onClick="{{layouts.map}}" style="{{st.layoutBtn.map}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="2.2"></circle><circle cx="19" cy="5.5" r="2.2"></circle><circle cx="19" cy="18.5" r="2.2"></circle><path d="M7.2 12H11c1.5 0 2-1 2-2.5V8c0-1.5.6-2.5 2-2.5h1.8M11 12c1.5 0 2 1 2 2.5V16c0 1.5.6 2.5 2 2.5h1.8"></path></svg>
+        </button>
+      </div>
+
+      <div style="{{st.capsule}}">
+        <button type="button" aria-label="搜索" title="搜索（⌘F）" onClick="{{notYet}}" style="{{st.capBtn}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        </button>
+        <button type="button" aria-label="AI 助手" title="AI 助手" onClick="{{notYet}}" style="{{st.capBtn}}">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3.5l1.7 4.6 4.6 1.7-4.6 1.7L11 16.1l-1.7-4.6-4.6-1.7 4.6-1.7z"></path><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <div style="flex: 1 1 auto; min-height: 0; display: flex">
+      <section aria-label="原文" style="{{st.readerPane}}">
+        <div role="tablist" style="{{st.tabbar}}">
+          <sc-for list="{{tabs}}" as="tb" hint-placeholder-count="2">
+            <div style="{{tb.style}}">
+              <button type="button" class="mm-ib" aria-label="关闭标签页" onClick="{{tb.close}}" style="{{st.tabClose}}">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              </button>
+              <button type="button" role="tab" aria-selected="{{tb.active}}" onClick="{{tb.open}}" style="{{st.tabLabel}}">{{tb.title}}</button>
+              <span style="width: 18px; flex: none"></span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="{{st.readerScroll}}">
+          <article style="{{st.sheet}}">
+            <div style="{{st.runningHead}}"><span>{{doc.title}}</span><span>{{doc.page}}</span></div>
+            <h1 style="{{st.chapter}}">{{doc.chapter}}</h1>
+            <sc-for list="{{paras}}" as="p" hint-placeholder-count="4">
+              <p style="{{st.para}}"><sc-for list="{{p.sents}}" as="x" hint-placeholder-count="3"><a href="#" class="mm-sent" onClick="{{x.click}}" style="{{x.style}}">{{x.text}}</a></sc-for></p>
+            </sc-for>
+          </article>
+        </div>
+
+        <sc-if value="{{bar.show}}" hint-placeholder-val="{{false}}">
+          <div role="toolbar" aria-label="选区操作" style="{{st.bar}}">
+            <span style="{{st.barQuote}}">{{bar.quote}}</span>
+            <span style="{{st.capSep}}"></span>
+            <sc-for list="{{bar.colors}}" as="bc" hint-placeholder-count="6">
+              <button type="button" aria-label="{{bc.label}}" title="{{bc.label}}" onClick="{{bc.pick}}" style="{{bc.style}}"><span style="{{bc.dot}}"></span></button>
+            </sc-for>
+            <span style="{{st.capSep}}"></span>
+            <sc-if value="{{bar.canAdd}}" hint-placeholder-val="{{true}}">
+              <button type="button" onClick="{{bar.add}}" style="{{st.primaryBtn}}">{{bar.addLabel}}</button>
+            </sc-if>
+            <button type="button" class="mm-ib" onClick="{{bar.copy}}" style="{{st.textBtn}}">拷贝</button>
+            <sc-if value="{{bar.hasHl}}" hint-placeholder-val="{{false}}">
+              <button type="button" class="mm-ib" onClick="{{bar.remove}}" style="{{st.textBtn}}">删除高亮</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <div style="{{st.pagePill}}">
+          <button type="button" class="mm-ib" aria-label="上一页" onClick="{{notYet}}" style="{{st.pillBtn}}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+          </button>
+          <span style="font-variant-numeric: tabular-nums; padding: 0 4px">{{doc.pager}}</span>
+          <button type="button" class="mm-ib" aria-label="下一页" onClick="{{notYet}}" style="{{st.pillBtn}}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+          </button>
+        </div>
+      </section>
+
+      <div style="{{st.divider}}"></div>
+
+      <section aria-label="脑图" style="{{st.mapPane}}">
+        <sc-if value="{{isMapView}}" hint-placeholder-val="{{true}}">
+          <div style="{{st.mapScroll}}">
+            <div style="padding: 84px 80px 80px 48px; display: flex; align-items: center; min-width: max-content; min-height: 100%; box-sizing: border-box">
+              <div style="display: flex; align-items: center">
+                <div style="position: relative; flex: none; display: flex">
+                  <button type="button" class="mm-card" onClick="{{tree.select}}" style="{{tree.cardStyle}}">
+                    <span style="{{tree.titleStyle}}">{{tree.title}}</span>
+                  </button>
+                  <sc-if value="{{tree.hasKids}}" hint-placeholder-val="{{true}}">
+                    <button type="button" aria-label="{{tree.foldAria}}" onClick="{{tree.toggle}}" style="{{tree.foldStyle}}">{{tree.foldLabel}}</button>
+                  </sc-if>
+                </div>
+                <sc-if value="{{tree.showKids}}" hint-placeholder-val="{{true}}">
+                <div class="tc">
+                  <sc-for list="{{tree.kids}}" as="n1" hint-placeholder-count="3">
+                  <div class="ti">
+                    <div style="position: relative; flex: none; display: flex">
+                      <button type="button" class="mm-card" onClick="{{n1.select}}" style="{{n1.cardStyle}}">
+                        <span style="display: flex; align-items: center; gap: 7px; min-width: 0">
+                          <sc-if value="{{n1.hasChip}}" hint-placeholder-val="{{false}}"><span style="{{n1.chipStyle}}"></span></sc-if>
+                          <sc-if value="{{n1.isNote}}" hint-placeholder-val="{{false}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; opacity: 0.6"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg></sc-if>
+                          <span style="{{n1.titleStyle}}">{{n1.title}}</span>
+                        </span>
+                        <sc-if value="{{n1.hasText}}" hint-placeholder-val="{{false}}"><span style="{{n1.textStyle}}">{{n1.text}}</span></sc-if>
+                        <sc-if value="{{n1.hasSource}}" hint-placeholder-val="{{false}}"><span style="{{n1.metaStyle}}">{{n1.meta}}</span></sc-if>
+                      </button>
+                      <sc-if value="{{n1.hasSource}}" hint-placeholder-val="{{false}}">
+                        <button type="button" class="mm-ib" aria-label="定位原文" title="定位原文（⌘L）" onClick="{{n1.jump}}" style="{{n1.jumpStyle}}">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg>
+                        </button>
+                      </sc-if>
+                      <sc-if value="{{n1.hasKids}}" hint-placeholder-val="{{false}}">
+                        <button type="button" aria-label="{{n1.foldAria}}" onClick="{{n1.toggle}}" style="{{n1.foldStyle}}">{{n1.foldLabel}}</button>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{n1.showKids}}" hint-placeholder-val="{{false}}">
+                    <div class="tc">
+                      <sc-for list="{{n1.kids}}" as="n2" hint-placeholder-count="2">
+                      <div class="ti">
+                        <div style="position: relative; flex: none; display: flex">
+                          <button type="button" class="mm-card" onClick="{{n2.select}}" style="{{n2.cardStyle}}">
+                            <span style="display: flex; align-items: center; gap: 7px; min-width: 0">
+                              <sc-if value="{{n2.hasChip}}" hint-placeholder-val="{{true}}"><span style="{{n2.chipStyle}}"></span></sc-if>
+                              <sc-if value="{{n2.isNote}}" hint-placeholder-val="{{false}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; opacity: 0.6"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg></sc-if>
+                              <span style="{{n2.titleStyle}}">{{n2.title}}</span>
+                            </span>
+                            <sc-if value="{{n2.hasText}}" hint-placeholder-val="{{true}}"><span style="{{n2.textStyle}}">{{n2.text}}</span></sc-if>
+                            <sc-if value="{{n2.hasSource}}" hint-placeholder-val="{{true}}"><span style="{{n2.metaStyle}}">{{n2.meta}}</span></sc-if>
+                          </button>
+                          <sc-if value="{{n2.hasSource}}" hint-placeholder-val="{{true}}">
+                            <button type="button" class="mm-ib" aria-label="定位原文" title="定位原文（⌘L）" onClick="{{n2.jump}}" style="{{n2.jumpStyle}}">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg>
+                            </button>
+                          </sc-if>
+                          <sc-if value="{{n2.hasKids}}" hint-placeholder-val="{{false}}">
+                            <button type="button" aria-label="{{n2.foldAria}}" onClick="{{n2.toggle}}" style="{{n2.foldStyle}}">{{n2.foldLabel}}</button>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{n2.showKids}}" hint-placeholder-val="{{false}}">
+                        <div class="tc">
+                          <sc-for list="{{n2.kids}}" as="n3" hint-placeholder-count="1">
+                          <div class="ti">
+                            <div style="position: relative; flex: none; display: flex">
+                              <button type="button" class="mm-card" onClick="{{n3.select}}" style="{{n3.cardStyle}}">
+                                <span style="display: flex; align-items: center; gap: 7px; min-width: 0">
+                                  <sc-if value="{{n3.hasChip}}" hint-placeholder-val="{{false}}"><span style="{{n3.chipStyle}}"></span></sc-if>
+                                  <sc-if value="{{n3.isNote}}" hint-placeholder-val="{{true}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; opacity: 0.6"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg></sc-if>
+                                  <span style="{{n3.titleStyle}}">{{n3.title}}</span>
+                                </span>
+                                <sc-if value="{{n3.hasText}}" hint-placeholder-val="{{false}}"><span style="{{n3.textStyle}}">{{n3.text}}</span></sc-if>
+                                <sc-if value="{{n3.hasSource}}" hint-placeholder-val="{{false}}"><span style="{{n3.metaStyle}}">{{n3.meta}}</span></sc-if>
+                              </button>
+                              <sc-if value="{{n3.hasSource}}" hint-placeholder-val="{{false}}">
+                                <button type="button" class="mm-ib" aria-label="定位原文" title="定位原文（⌘L）" onClick="{{n3.jump}}" style="{{n3.jumpStyle}}">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg>
+                                </button>
+                              </sc-if>
+                            </div>
+                          </div>
+                          </sc-for>
+                        </div>
+                        </sc-if>
+                      </div>
+                      </sc-for>
+                    </div>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isOutlineView}}" hint-placeholder-val="{{false}}">
+          <div style="{{st.outlineScroll}}">
+            <div role="tree" aria-label="大纲" style="display: flex; flex-direction: column; gap: 1px; max-width: 760px">
+              <sc-for list="{{outline}}" as="r" hint-placeholder-count="8">
+                <div style="{{r.rowStyle}}">
+                  <span style="{{r.indent}}"></span>
+                  <sc-if value="{{r.hasKids}}" hint-placeholder-val="{{true}}">
+                    <button type="button" aria-label="{{r.foldAria}}" onClick="{{r.toggle}}" style="{{r.discStyle}}">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l10 7-10 7z"></path></svg>
+                    </button>
+                  </sc-if>
+                  <sc-if value="{{r.noKids}}" hint-placeholder-val="{{false}}"><span style="width: 18px; flex: none"></span></sc-if>
+                  <button type="button" role="treeitem" aria-selected="{{r.ariaSel}}" onClick="{{r.select}}" style="{{r.mainStyle}}">
+                    <span style="{{r.chipStyle}}"></span>
+                    <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1">
+                      <span style="{{r.labelStyle}}">{{r.label}}</span>
+                      <sc-if value="{{r.hasSub}}" hint-placeholder-val="{{false}}"><span style="{{r.subStyle}}">{{r.sub}}</span></sc-if>
+                    </span>
+                    <span style="{{r.metaStyle}}">{{r.meta}}</span>
+                  </button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="{{st.mapBarLeft}}">
+          <button type="button" class="mm-ib" onClick="{{notYet}}" style="{{st.popup}}">
+            <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 0">
+              <span style="font-weight: 600">主脑图</span>
+              <span style="{{st.popupSub}}">新摘录 → {{targetTitle}}</span>
+            </span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 9 5-5 5 5"></path><path d="m7 15 5 5 5-5"></path></svg>
+          </button>
+          <span style="{{st.capSep}}"></span>
+          <div style="{{st.seg}}" role="group" aria-label="视图">
+            <button type="button" onClick="{{views.map}}" style="{{st.viewBtn.map}}">脑图</button>
+            <button type="button" onClick="{{views.outline}}" style="{{st.viewBtn.outline}}">大纲</button>
+          </div>
+        </div>
+
+        <div style="{{st.mapBarRight}}">
+          <button type="button" aria-label="添加主题" title="添加主题（⌘⇧N）" onClick="{{addTopic}}" style="{{st.capBtn}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="8" width="12" height="8" rx="2.5"></rect><path d="M19 9v6M16 12h6"></path></svg>
+          </button>
+          <button type="button" aria-label="添加笔记" title="添加笔记（Tab）" onClick="{{addNote}}" style="{{st.capBtn}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V11"></path><path d="M18.5 3.5a2.1 2.1 0 0 1 3 3L13 15l-4 1 1-4Z"></path></svg>
+          </button>
+          <button type="button" aria-label="从脑图移除" title="从脑图移除（⌘⌫）" onClick="{{removeNode}}" style="{{st.capBtn}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2"></path><path d="M6 7l1 12a2 2 0 0 0 2 1.8h6A2 2 0 0 0 17 19l1-12"></path></svg>
+          </button>
+        </div>
+
+        <div style="{{st.zoom}}">
+          <button type="button" class="mm-ib" aria-label="缩小" onClick="{{notYet}}" style="{{st.pillBtn}}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+          </button>
+          <span style="font-variant-numeric: tabular-nums; min-width: 40px; text-align: center">100%</span>
+          <button type="button" class="mm-ib" aria-label="放大" onClick="{{notYet}}" style="{{st.pillBtn}}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <sc-if value="{{toast.show}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="{{st.toast}}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>
+      <span>{{toast.text}}</span>
+    </div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light","section":"外观"},"$preview":{"width":1440,"height":900}}'>
+const PALETTE = [
+  { name: '黄', hex: '#FFCC00' }, { name: '绿', hex: '#34C759' }, { name: '蓝', hex: '#007AFF' },
+  { name: '粉', hex: '#FF2D55' }, { name: '橙', hex: '#FF9500' }, { name: '紫', hex: '#AF52DE' }
+];
+
+const THEMES = {
+  light: {
+    desk: '#C8CDD5', win: '#FFFFFF', side: 'rgba(242,242,246,0.86)', readerBg: '#EDEDF0', canvas: '#FBFBFD',
+    raised: '#FFFFFF', label: '#1D1D1F', label2: '#636366', icon: '#6E6E73', sep: 'rgba(0,0,0,0.09)',
+    fill: 'rgba(120,120,128,0.12)', fill2: 'rgba(120,120,128,0.08)', selRow: 'rgba(0,0,0,0.075)', hover: 'rgba(0,0,0,0.045)',
+    accent: '#007AFF', accentFill: '#0A66D0', accentTint: 'rgba(0,122,255,0.12)', onAccent: '#FFFFFF',
+    glass: 'rgba(255,255,255,0.78)', glassShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08)',
+    sideShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.9), 0 0 0 0.5px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06)',
+    line: 'rgba(60,60,67,0.24)', excerpt: '#3A3A3C', cardShadow: '0 0 0 0.5px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05)',
+    rootBg: '#1D1D1F', rootText: '#FFFFFF', winShadow: '0 0 0 0.5px rgba(0,0,0,0.22), 0 28px 70px rgba(0,0,0,0.28)', pageShadow: '0 0 0 0.5px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.08)'
+  },
+  dark: {
+    desk: '#2B2F36', win: '#1E1E1F', side: 'rgba(44,44,47,0.86)', readerBg: '#262628', canvas: '#1C1C1E',
+    raised: '#2C2C2E', label: '#F5F5F7', label2: '#A1A1A6', icon: '#A1A1A6', sep: 'rgba(255,255,255,0.09)',
+    fill: 'rgba(118,118,128,0.24)', fill2: 'rgba(118,118,128,0.14)', selRow: 'rgba(255,255,255,0.1)', hover: 'rgba(255,255,255,0.06)',
+    accent: '#0A84FF', accentFill: '#0A66D0', accentTint: 'rgba(10,132,255,0.2)', onAccent: '#FFFFFF',
+    glass: 'rgba(50,50,53,0.78)', glassShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.14), 0 0 0 0.5px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)',
+    sideShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.12), 0 0 0 0.5px rgba(0,0,0,0.5), 0 6px 24px rgba(0,0,0,0.25)',
+    line: 'rgba(235,235,245,0.22)', excerpt: '#D1D1D6', cardShadow: '0 0 0 0.5px rgba(255,255,255,0.07), 0 2px 10px rgba(0,0,0,0.35)',
+    rootBg: '#F5F5F7', rootText: '#1D1D1F', winShadow: '0 0 0 0.5px rgba(0,0,0,0.7), 0 28px 70px rgba(0,0,0,0.5)', pageShadow: '0 0 0 0.5px rgba(0,0,0,0.4), 0 2px 12px rgba(0,0,0,0.35)'
+  }
+};
+
+const DOCS = {
+  d1: { title: '学习的底层逻辑', chapter: '第二章　遗忘曲线与间隔重复', page: 24, pages: 164,
+        paras: [['a1', 'a2', 'a3'], ['a4', 'a5', 'a6'], ['a7', 'a8'], ['a9', 'a10', 'a11'], ['a12', 'a13']] },
+  d2: { title: '论文：检索练习效应', chapter: '二、实验设计与结果', page: 3, pages: 12,
+        paras: [['b1', 'b2'], ['b3', 'b4', 'b5']] }
+};
+
+const SENTS = {
+  a1: { doc: 'd1', text: '人在学习新知识之后，记忆并不是匀速流失的。' },
+  a2: { doc: 'd1', text: '最初的几个小时里遗忘得最快，之后速度逐渐放缓。' },
+  a3: { doc: 'd1', text: '这条先陡后平的曲线，被称为遗忘曲线。' },
+  a4: { doc: 'd1', text: '遗忘并不完全是坏事。' },
+  a5: { doc: 'd1', text: '大脑会主动筛掉很少被再次调用的信息，把有限的资源留给更常用的内容。' },
+  a6: { doc: 'd1', text: '问题在于，我们无法直接告诉大脑哪些内容是重要的。' },
+  a7: { doc: 'd1', text: '间隔重复利用的正是这一机制：在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更晚。' },
+  a8: { doc: 'd1', text: '因此，复习间隔可以逐步拉长，从一天、三天，到一周、一个月。' },
+  a9: { doc: 'd1', text: '比重复阅读更有效的，是主动提取。' },
+  a10: { doc: 'd1', text: '合上书本，试着用自己的话复述刚才读过的内容。' },
+  a11: { doc: 'd1', text: '这种费力的回忆本身，就在强化记忆。' },
+  a12: { doc: 'd1', text: '把间隔与提取结合起来，就得到一套可以执行的方法：' },
+  a13: { doc: 'd1', text: '先理解，再摘录关键句；把摘录整理成结构；最后定期对结构中的每个节点进行自测。' },
+  b1: { doc: 'd2', text: '实验招募了两组学生，学习同一段说明性文字。' },
+  b2: { doc: 'd2', text: '第一组把材料反复阅读四遍；第二组只读一遍，随后做三次不看原文的回忆练习。' },
+  b3: { doc: 'd2', text: '一周之后的测验中，回忆组的成绩明显更好。' },
+  b4: { doc: 'd2', text: '但在学习刚结束时，反复阅读组对自己的掌握程度更有信心。' },
+  b5: { doc: 'd2', text: '流畅地读完一遍带来的熟悉感，并不等于真正记住了。' }
+};
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      theme: null, tool: 'highlight', color: 0, autoAdd: true, layout: 'split', view: 'map', sidebar: true,
+      doc: 'd1', openDocs: ['d1', 'd2'], selected: 't1', collapsed: {}, pending: null,
+      flashSid: null, mapFlash: null, toast: null,
+      highlights: {
+        a3: { color: 0, card: 'c1' }, a5: { color: 1, card: 'c2' }, a7: { color: 2, card: 'c3' },
+        a11: { color: 3, card: 'c4' }, b5: { color: 4, card: 'c5' }, a9: { color: 0, card: null }
+      },
+      nodes: [
+        { id: 'root', parent: null, kind: 'root', title: '记忆与学习方法' },
+        { id: 't1', parent: 'root', kind: 'topic', title: '遗忘的规律' },
+        { id: 't2', parent: 'root', kind: 'topic', title: '对策一：间隔重复' },
+        { id: 't3', parent: 'root', kind: 'topic', title: '对策二：主动提取' },
+        { id: 'c1', parent: 't1', kind: 'excerpt', title: '遗忘曲线', sid: 'a3', color: 0 },
+        { id: 'c2', parent: 't1', kind: 'excerpt', title: '遗忘是一种筛选', sid: 'a5', color: 1 },
+        { id: 'c3', parent: 't2', kind: 'excerpt', title: '在快忘的时候复习', sid: 'a7', color: 2 },
+        { id: 'n1', parent: 'c3', kind: 'note', title: '复习时机取决于遗忘程度，而不是固定日程' },
+        { id: 'c4', parent: 't3', kind: 'excerpt', title: '费力的回忆', sid: 'a11', color: 3 },
+        { id: 'c5', parent: 't3', kind: 'excerpt', title: '熟悉感不可靠', sid: 'b5', color: 4 },
+        { id: 'n2', parent: 't3', kind: 'note', title: '自测：先遮住摘录，回忆一遍再看' }
+      ]
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._toastT); clearTimeout(this._flashT); }
+
+  find(nodes, id) { return nodes.find(n => n.id === id); }
+
+  depth(nodes, id) {
+    let d = 0, n = this.find(nodes, id);
+    while (n && n.parent) { d++; n = this.find(nodes, n.parent); }
+    return d;
+  }
+
+  targetFor(s) {
+    let n = this.find(s.nodes, s.selected) || s.nodes[0];
+    if (n.kind === 'excerpt' || n.kind === 'note') n = this.find(s.nodes, n.parent) || s.nodes[0];
+    if (this.depth(s.nodes, n.id) > 1) n = s.nodes[0];
+    return n;
+  }
+
+  say(text) {
+    clearTimeout(this._toastT);
+    this.setState({ toast: text });
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+
+  flash(sid, card) {
+    clearTimeout(this._flashT);
+    this.setState({ flashSid: sid || null, mapFlash: card || null });
+    this._flashT = setTimeout(() => this.setState({ flashSid: null, mapFlash: null }), 1600);
+  }
+
+  subtree(nodes, id) {
+    const kill = new Set([id]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      nodes.forEach(n => { if (!kill.has(n.id) && kill.has(n.parent)) { kill.add(n.id); grew = true; } });
+    }
+    return kill;
+  }
+
+  excerpt(sid, color) {
+    const s = this.state;
+    const target = this.targetFor(s);
+    const id = 'c' + Date.now();
+    const collapsed = Object.assign({}, s.collapsed);
+    delete collapsed[target.id];
+    this.setState({
+      highlights: Object.assign({}, s.highlights, { [sid]: { color: color, card: id } }),
+      nodes: s.nodes.concat([{ id: id, parent: target.id, kind: 'excerpt', title: '', sid: sid, color: color }]),
+      selected: id, pending: null, collapsed: collapsed, view: 'map'
+    });
+    this.flash(null, id);
+    this.say('已摘录到「' + target.title + '」');
+  }
+
+  addToMap(sid) {
+    const s = this.state;
+    const h = s.highlights[sid];
+    const target = this.targetFor(s);
+    const id = 'c' + Date.now();
+    this.setState({
+      highlights: Object.assign({}, s.highlights, { [sid]: { color: h.color, card: id } }),
+      nodes: s.nodes.concat([{ id: id, parent: target.id, kind: 'excerpt', title: '', sid: sid, color: h.color }]),
+      selected: id, pending: null
+    });
+    this.flash(null, id);
+    this.say('已加入「' + target.title + '」');
+  }
+
+  highlightOnly(sid, color) {
+    this.setState({ highlights: Object.assign({}, this.state.highlights, { [sid]: { color: color, card: null } }), pending: null });
+    this.say('已高亮，未加入脑图');
+  }
+
+  recolor(sid, color) {
+    const s = this.state;
+    const h = s.highlights[sid];
+    this.setState({
+      highlights: Object.assign({}, s.highlights, { [sid]: { color: color, card: h.card } }),
+      nodes: s.nodes.map(n => n.id === h.card ? Object.assign({}, n, { color: color }) : n),
+      pending: null
+    });
+  }
+
+  removeHighlight(sid) {
+    const s = this.state;
+    const h = s.highlights[sid];
+    const hl = Object.assign({}, s.highlights);
+    delete hl[sid];
+    let nodes = s.nodes;
+    let selected = s.selected;
+    if (h && h.card) {
+      const kill = this.subtree(nodes, h.card);
+      nodes = nodes.filter(n => !kill.has(n.id));
+      if (kill.has(selected)) selected = 'root';
+    }
+    this.setState({ highlights: hl, nodes: nodes, selected: selected, pending: null });
+    this.say(h && h.card ? '已删除高亮及对应卡片' : '已删除高亮');
+  }
+
+  clickSentence(sid) {
+    const s = this.state;
+    const h = s.highlights[sid];
+    if (h && h.card) {
+      this.setState({ selected: h.card, pending: null, view: 'map' });
+      this.flash(sid, h.card);
+      if (s.layout === 'reader') this.say('已选中对应卡片，切到分栏即可看到');
+      return;
+    }
+    if (!h && s.tool === 'highlight') {
+      if (s.autoAdd) this.excerpt(sid, s.color); else this.highlightOnly(sid, s.color);
+      return;
+    }
+    if (!h && s.tool !== 'select') { this.say('框选、手写、文本在原型中仅作示意'); return; }
+    this.setState({ pending: s.pending === sid ? null : sid });
+  }
+
+  selectNode(id, jump) {
+    const s = this.state;
+    const n = this.find(s.nodes, id);
+    if (!n) return;
+    const next = { selected: id, pending: null };
+    if (n.sid) {
+      const doc = SENTS[n.sid].doc;
+      next.doc = doc;
+      if (s.openDocs.indexOf(doc) < 0) next.openDocs = s.openDocs.concat([doc]);
+      if (jump && s.layout === 'map') next.layout = 'split';
+    }
+    this.setState(next);
+    if (n.sid) this.flash(n.sid, null);
+  }
+
+  addTopic() {
+    const s = this.state;
+    const id = 't' + Date.now();
+    const count = s.nodes.filter(n => n.kind === 'topic').length + 1;
+    this.setState({ nodes: s.nodes.concat([{ id: id, parent: 'root', kind: 'topic', title: '新主题 ' + count }]), selected: id, view: 'map' });
+    this.flash(null, id);
+  }
+
+  addNote() {
+    const s = this.state;
+    let parent = this.find(s.nodes, s.selected) || s.nodes[0];
+    if (this.depth(s.nodes, parent.id) >= 3) parent = this.find(s.nodes, parent.parent);
+    const id = 'n' + Date.now();
+    const collapsed = Object.assign({}, s.collapsed);
+    delete collapsed[parent.id];
+    this.setState({ nodes: s.nodes.concat([{ id: id, parent: parent.id, kind: 'note', title: '写下你自己的理解' }]), selected: id, collapsed: collapsed });
+    this.flash(null, id);
+  }
+
+  removeNode() {
+    const s = this.state;
+    if (!s.selected || s.selected === 'root') { this.say('根节点不能移除'); return; }
+    const kill = this.subtree(s.nodes, s.selected);
+    const hl = {};
+    Object.keys(s.highlights).forEach(k => {
+      const h = s.highlights[k];
+      hl[k] = h.card && kill.has(h.card) ? { color: h.color, card: null } : h;
+    });
+    const parent = this.find(s.nodes, s.selected).parent;
+    this.setState({ nodes: s.nodes.filter(n => !kill.has(n.id)), highlights: hl, selected: parent });
+    this.say('已从脑图移除，原文高亮保留');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const themeName = s.theme || this.props.theme || 'light';
+    const t = THEMES[themeName] || THEMES.light;
+    const target = this.targetFor(s);
+    const sys = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif';
+    const serif = '"Songti SC", "Noto Serif SC", "STSong", serif';
+    const glass = 'background: ' + t.glass + '; -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); box-shadow: ' + t.glassShadow + ';';
+
+    const capBtn = (on) => 'width: 34px; height: 30px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 15px; cursor: pointer; padding: 0; transition: background-color 120ms, color 120ms; background: ' + (on ? t.accentTint : 'transparent') + '; color: ' + (on ? t.accent : t.label) + ';';
+    const segBtn = (on) => 'height: 24px; min-width: 44px; padding: 0 12px; border: 0; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font: ' + (on ? 600 : 500) + ' 12px/1 ' + sys + '; transition: background-color 200ms; background: ' + (on ? t.raised : 'transparent') + '; color: ' + t.label + '; box-shadow: ' + (on ? '0 0 0 0.5px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.14)' : 'none') + ';';
+    const item = (on) => 'width: 100%; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 0; border-radius: 8px; cursor: pointer; text-align: left; box-sizing: border-box; font: 400 13px/16px ' + sys + '; background: ' + (on ? t.selRow : 'transparent') + '; color: ' + t.label + ';';
+
+    const st = {
+      desk: '--hover: ' + t.hover + '; --line: ' + t.line + '; --ph: ' + t.label2 + '; width: 100%; height: 100vh; min-height: 640px; box-sizing: border-box; padding: 20px; display: flex; background: ' + t.desk + '; font-family: ' + sys + '; font-size: 13px; color: ' + t.label + ';',
+      window: 'flex: 1 1 auto; min-width: 0; display: flex; position: relative; overflow: hidden; border-radius: 24px; background: ' + t.win + '; box-shadow: ' + t.winShadow + ';',
+
+      side: 'position: relative; z-index: 2; width: 236px; flex: none; margin: 8px 0 8px 8px; display: flex; flex-direction: column; gap: 2px; padding: 12px 10px 10px; box-sizing: border-box; border-radius: 16px; overflow-y: auto; background: ' + t.side + '; -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: ' + t.sideShadow + ';',
+      sideBtn: 'width: 28px; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; cursor: pointer; padding: 0; background: transparent; color: ' + t.icon + ';',
+      setSwitch: 'margin-top: 14px; text-decoration: none; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; cursor: pointer; text-align: left; background: transparent; color: ' + t.icon + '; font-family: ' + sys + ';',
+      setIcon: 'width: 22px; height: 22px; flex: none; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: ' + t.accent + '; color: #FFFFFF;',
+      setTitle: 'flex: 1; min-width: 0; font: 600 13px/16px ' + sys + '; color: ' + t.label + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      search: 'margin: 6px 0 4px; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 8px; box-sizing: border-box; background: ' + t.fill2 + '; color: ' + t.label2 + ';',
+      searchInput: 'flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 0; font: 400 13px/16px ' + sys + '; color: ' + t.label + ';',
+      sectionHead: 'padding: 14px 8px 4px; font: 600 11px/14px ' + sys + '; color: ' + t.label2 + ';',
+      rowIcon: 'width: 18px; display: flex; justify-content: center; flex: none; color: ' + t.accent + ';',
+      itemOn: item(true),
+      itemOff: item(false),
+      count: 'font: 400 12px/16px ' + sys + '; color: ' + t.label2 + '; font-variant-numeric: tabular-nums;',
+      badge: 'min-width: 20px; height: 18px; padding: 0 6px; box-sizing: border-box; border-radius: 9px; display: flex; align-items: center; justify-content: center; font: 600 11px/1 ' + sys + '; font-variant-numeric: tabular-nums; background: ' + t.fill + '; color: ' + t.label + ';',
+
+      toolbar: 'flex: none; height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 16px; box-sizing: border-box;',
+      winTitle: 'font: 600 15px/18px ' + sys + '; color: ' + t.label + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
+      winSub: 'font: 400 11px/14px ' + sys + '; color: ' + t.label2 + '; white-space: nowrap;',
+      capsule: 'display: flex; align-items: center; gap: 0; padding: 3px; border-radius: 18px; flex: none; ' + glass,
+      capSep: 'width: 1px; height: 18px; margin: 0 4px; flex: none; background: ' + t.sep + ';',
+      capBtn: capBtn(false),
+      tool: { select: capBtn(s.tool === 'select'), highlight: capBtn(s.tool === 'highlight'), rect: capBtn(s.tool === 'rect'), pen: capBtn(s.tool === 'pen'), text: capBtn(s.tool === 'text') },
+      autoBtn: capBtn(s.autoAdd),
+      layoutBtn: { reader: capBtn(s.layout === 'reader'), split: capBtn(s.layout === 'split'), map: capBtn(s.layout === 'map') },
+      seg: 'display: flex; align-items: center; gap: 0; padding: 2px; border-radius: 14px; flex: none; background: ' + t.fill2 + ';',
+      viewBtn: { map: segBtn(s.view === 'map'), outline: segBtn(s.view === 'outline') },
+
+      readerPane: 'flex: 1 1 0; min-width: 0; flex-direction: column; position: relative; background: ' + t.readerBg + '; border-top-left-radius: ' + (s.sidebar ? '0' : '0') + '; display: ' + (s.layout === 'map' ? 'none' : 'flex') + ';',
+      tabbar: 'flex: none; display: flex; gap: 4px; padding: 8px 12px 0; box-sizing: border-box; overflow-x: auto;',
+      tabLabel: 'flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;',
+      tabClose: 'width: 18px; height: 18px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; cursor: pointer; padding: 0; background: transparent; color: ' + t.label2 + ';',
+      readerScroll: 'flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 28px;',
+      sheet: 'max-width: 620px; margin: 20px auto 96px; padding: 52px 60px 60px; box-sizing: border-box; border-radius: 3px; background: #FFFFFF; box-shadow: ' + t.pageShadow + ';',
+      runningHead: 'display: flex; justify-content: space-between; font: 400 11px/14px ' + serif + '; color: #6E6E73; padding-bottom: 10px; border-bottom: 0.5px solid #D2D2D7;',
+      chapter: 'margin: 28px 0 22px; font: 600 25px/36px ' + serif + '; color: #1D1D1F; text-wrap: balance;',
+      para: 'margin: 0 0 12px; text-indent: 2em; font: 400 16.5px/32px ' + serif + '; color: #1D1D1F; text-wrap: pretty;',
+      pagePill: 'position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 16px; font: 500 12px/1 ' + sys + '; color: ' + t.label + '; ' + glass,
+      pillBtn: 'width: 26px; height: 26px; flex: none; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 13px; cursor: pointer; padding: 0; background: transparent; color: ' + t.label + ';',
+      bar: 'position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 5; max-width: calc(100% - 32px); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 4px 4px 4px 14px; border-radius: 20px; ' + glass,
+      barQuote: 'max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 400 13px/18px ' + serif + '; color: ' + t.label2 + ';',
+      primaryBtn: 'height: 30px; padding: 0 14px; margin-left: 2px; border: 0; border-radius: 15px; cursor: pointer; font: 600 13px/1 ' + sys + '; background: ' + t.accentFill + '; color: ' + t.onAccent + ';',
+      textBtn: 'height: 30px; padding: 0 12px; border: 0; border-radius: 15px; cursor: pointer; font: 500 13px/1 ' + sys + '; background: transparent; color: ' + t.label + ';',
+
+      divider: 'flex: none; width: 1px; background: ' + t.sep + '; display: ' + (s.layout === 'split' ? 'block' : 'none') + ';',
+
+      mapPane: 'flex: 1 1 0; min-width: 0; flex-direction: column; position: relative; background: ' + t.canvas + '; display: ' + (s.layout === 'reader' ? 'none' : 'flex') + ';',
+      mapScroll: 'flex: 1 1 auto; min-height: 0; overflow: auto;',
+      outlineScroll: 'flex: 1 1 auto; min-height: 0; overflow: auto; padding: 76px 16px 72px; box-sizing: border-box;',
+      mapBarLeft: 'position: absolute; left: 12px; top: 10px; z-index: 3; display: flex; align-items: center; gap: 2px; padding: 3px 4px 3px 3px; border-radius: 20px; ' + glass,
+      mapBarRight: 'position: absolute; right: 12px; top: 10px; z-index: 3; display: flex; align-items: center; gap: 0; padding: 3px; border-radius: 18px; ' + glass,
+      popup: 'height: 34px; display: flex; align-items: center; gap: 10px; padding: 0 10px 0 12px; border: 0; border-radius: 17px; cursor: pointer; background: transparent; color: ' + t.label + '; font: 500 13px/16px ' + sys + '; text-align: left;',
+      popupSub: 'font: 400 11px/13px ' + sys + '; color: ' + t.label2 + '; white-space: nowrap;',
+      zoom: 'position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 16px; font: 500 12px/1 ' + sys + '; color: ' + t.label + '; ' + glass,
+      toast: 'position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 30; pointer-events: none; display: flex; align-items: center; gap: 8px; padding: 9px 16px 9px 12px; border-radius: 20px; font: 500 13px/18px ' + sys + '; white-space: nowrap; color: ' + t.label + '; ' + glass
+    };
+
+    const swatchFor = (i, selected, pick) => ({
+      label: PALETTE[i].name + '色',
+      pick: pick,
+      style: 'width: 24px; height: 30px; padding: 0; border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; background: transparent;',
+      dot: 'width: 14px; height: 14px; border-radius: 7px; box-sizing: border-box; background: ' + PALETTE[i].hex + '; box-shadow: ' + (selected ? '0 0 0 2px ' + t.win + ', 0 0 0 3.5px ' + PALETTE[i].hex : 'inset 0 0 0 0.5px rgba(0,0,0,0.12)') + ';'
+    });
+
+    const sentStyle = (sid) => {
+      const h = s.highlights[sid];
+      let css = 'color: inherit; text-decoration: none; cursor: text; border-radius: 3px; padding: 3px 0; transition: background-color 160ms, box-shadow 160ms; -webkit-box-decoration-break: clone; box-decoration-break: clone;';
+      if (h) {
+        const c = PALETTE[h.color].hex;
+        const strong = h.card && h.card === s.selected;
+        css += ' cursor: pointer; background-color: ' + rgba(c, strong ? 0.5 : 0.32) + ';';
+        if (h.card) css += ' box-shadow: inset 0 -2px 0 ' + rgba(c, 0.9) + ';';
+      }
+      if (s.pending === sid) css += ' background-color: rgba(0,122,255,0.18); box-shadow: inset 0 -2px 0 #007AFF;';
+      if (s.flashSid === sid) css += ' box-shadow: 0 0 0 2.5px ' + t.accent + ';';
+      return css;
+    };
+
+    const doc = DOCS[s.doc];
+    const short = (text, n) => text.length > n ? text.slice(0, n) + '…' : text;
+
+    const nodeView = (n, depth, kidCount, open) => {
+      const sel = s.selected === n.id, fl = s.mapFlash === n.id;
+      const ring = fl ? ', 0 0 0 3px ' + t.accent + ', 0 0 0 9px ' + t.accentTint : sel ? ', 0 0 0 3px ' + t.accent : '';
+      const base = 'appearance: none; margin: 0; border: 0; text-align: left; cursor: default; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; font-family: ' + sys + ';';
+      const v = {
+        id: n.id, title: n.title, text: '', meta: '', hasText: false, hasSource: false, hasChip: false, isNote: n.kind === 'note',
+        chipStyle: '', textStyle: '', metaStyle: '', jumpStyle: '',
+        hasKids: kidCount > 0 && depth < 3,
+        foldLabel: open ? '' : String(kidCount),
+        foldAria: open ? '折叠子节点' : '展开 ' + kidCount + ' 个子节点',
+        select: () => this.selectNode(n.id, false),
+        jump: () => this.selectNode(n.id, true),
+        toggle: () => this.setState({ collapsed: Object.assign({}, s.collapsed, { [n.id]: !s.collapsed[n.id] }) }),
+        foldStyle: 'position: absolute; right: -9px; top: 50%; margin-top: -9px; z-index: 2; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border: 0; border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; font: 600 10px/1 ' + sys + '; background: ' + (open ? t.raised : t.accentFill) + '; color: ' + (open ? t.label2 : '#FFFFFF') + '; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.12); opacity: ' + (open ? 0.9 : 1) + ';'
+      };
+      if (n.kind === 'root') {
+        v.cardStyle = base + ' padding: 11px 18px; border-radius: 14px; background: ' + t.rootBg + '; color: ' + t.rootText + '; box-shadow: 0 2px 8px rgba(0,0,0,0.12)' + ring + ';';
+        v.titleStyle = 'font: 600 15px/20px ' + sys + '; white-space: nowrap;';
+      } else if (n.kind === 'topic') {
+        v.cardStyle = base + ' max-width: 200px; padding: 8px 14px; border-radius: 12px; background: ' + t.fill + '; color: ' + t.label + '; box-shadow: none' + ring + ';';
+        v.titleStyle = 'font: 600 13px/18px ' + sys + ';';
+      } else if (n.kind === 'excerpt') {
+        const c = PALETTE[n.color].hex;
+        const src = SENTS[n.sid];
+        v.hasChip = true; v.hasText = true; v.hasSource = true;
+        v.title = n.title || '未命名摘录';
+        v.text = src.text;
+        v.meta = DOCS[src.doc].title + ' · 第 ' + DOCS[src.doc].page + ' 页';
+        v.cardStyle = base + ' width: 240px; padding: 11px 38px 11px 12px; border-radius: 12px; background: ' + t.raised + '; color: ' + t.label + '; box-shadow: ' + t.cardShadow + ring + ';';
+        v.chipStyle = 'width: 9px; height: 9px; flex: none; border-radius: 5px; background: ' + c + ';';
+        v.titleStyle = 'font: 600 13px/17px ' + sys + '; color: ' + (n.title ? t.label : t.label2) + ';';
+        v.textStyle = 'font: 400 13px/20px ' + serif + '; color: ' + t.excerpt + '; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; padding: 6px 8px; border-radius: 6px; background: ' + rgba(c, themeName === 'dark' ? 0.16 : 0.14) + ';';
+        v.metaStyle = 'font: 400 11px/14px ' + sys + '; color: ' + t.label2 + ';';
+        v.jumpStyle = 'position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: ' + t.fill2 + '; color: ' + t.label2 + ';';
+      } else {
+        v.cardStyle = base + ' max-width: 230px; padding: 8px 12px; border-radius: 12px; background: ' + t.fill2 + '; color: ' + t.label + '; box-shadow: none' + ring + ';';
+        v.titleStyle = 'font: 400 13px/19px ' + sys + ';';
+      }
+      if (v.cardStyle.indexOf('box-shadow: none, ') >= 0) v.cardStyle = v.cardStyle.replace('box-shadow: none, ', 'box-shadow: ');
+      return v;
+    };
+
+    const build = (n, depth) => {
+      const kids = s.nodes.filter(x => x.parent === n.id);
+      const open = depth < 3 && kids.length > 0 && !s.collapsed[n.id];
+      const v = nodeView(n, depth, kids.length, open);
+      v.showKids = open;
+      v.kids = open ? kids.map(k => build(k, depth + 1)) : [];
+      return v;
+    };
+    const rootNode = this.find(s.nodes, 'root');
+    const tree = build(rootNode, 0);
+
+    const outline = [];
+    const walk = (n, depth) => {
+      const sel = s.selected === n.id;
+      const isEx = n.kind === 'excerpt';
+      const src = isEx ? SENTS[n.sid] : null;
+      const kids = s.nodes.filter(x => x.parent === n.id);
+      const open = !s.collapsed[n.id];
+      const fg = sel ? '#FFFFFF' : t.label;
+      outline.push({
+        label: isEx ? (n.title || short(src.text, 30)) : n.title,
+        sub: isEx && n.title ? src.text : '',
+        hasSub: !!(isEx && n.title),
+        meta: isEx ? '第 ' + DOCS[src.doc].page + ' 页' : '',
+        hasKids: kids.length > 0, noKids: kids.length === 0,
+        foldAria: open ? '折叠' : '展开',
+        ariaSel: sel ? 'true' : 'false',
+        toggle: () => this.setState({ collapsed: Object.assign({}, s.collapsed, { [n.id]: !s.collapsed[n.id] }) }),
+        select: () => this.selectNode(n.id, false),
+        rowStyle: 'display: flex; align-items: flex-start; gap: 2px; padding: 4px 8px; border-radius: 8px; background: ' + (sel ? t.accentFill : 'transparent') + '; color: ' + fg + ';',
+        indent: 'width: ' + depth * 20 + 'px; flex: none;',
+        discStyle: 'width: 18px; height: 22px; flex: none; padding: 0; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: ' + (sel ? '#FFFFFF' : t.label2) + '; transform: rotate(' + (open ? 90 : 0) + 'deg); transition: transform 200ms;',
+        mainStyle: 'flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; padding: 2px 0; border: 0; background: transparent; cursor: default; text-align: left; color: inherit; font-family: ' + sys + ';',
+        chipStyle: 'width: 8px; height: 8px; flex: none; margin-top: 6px; border-radius: 4px; background: ' + (isEx ? PALETTE[n.color].hex : 'transparent') + '; box-shadow: ' + (isEx ? 'none' : 'inset 0 0 0 1px ' + (sel ? '#FFFFFF' : t.label2)) + ';',
+        labelStyle: 'font: ' + (n.kind === 'root' || n.kind === 'topic' ? 600 : 400) + ' 13px/20px ' + sys + ';',
+        subStyle: 'font: 400 13px/20px ' + serif + '; color: ' + (sel ? 'rgba(255,255,255,0.85)' : t.excerpt) + ';',
+        metaStyle: 'font: 400 11px/20px ' + sys + '; color: ' + (sel ? 'rgba(255,255,255,0.85)' : t.label2) + '; white-space: nowrap;'
+      });
+      if (open) kids.forEach(k => walk(k, depth + 1));
+    };
+    walk(rootNode, 0);
+
+    const p = s.pending;
+    const ph = p ? s.highlights[p] : null;
+    const bar = {
+      show: !!p,
+      quote: p ? '“' + short(SENTS[p].text, 14) + '”' : '',
+      colors: PALETTE.map((c, i) => swatchFor(i, (ph ? ph.color : s.color) === i, () => (ph ? this.recolor(p, i) : this.highlightOnly(p, i)))),
+      canAdd: !ph || !ph.card,
+      addLabel: ph ? '加入脑图' : '摘录到脑图',
+      add: () => (ph ? this.addToMap(p) : this.excerpt(p, s.color)),
+      hasHl: !!ph,
+      remove: () => this.removeHighlight(p),
+      copy: () => { this.setState({ pending: null }); this.say('已拷贝原文与出处'); }
+    };
+
+    return {
+      st: st,
+      sidebarOpen: s.sidebar,
+      sidebarClosed: !s.sidebar,
+      autoPressed: s.autoAdd ? 'true' : 'false',
+      autoTitle: s.autoAdd ? '摘录同步到脑图：开' : '摘录同步到脑图：关',
+      nodeCount: String(s.nodes.length),
+      cardCount: String(s.nodes.filter(n => n.kind === 'excerpt').length),
+      targetTitle: '「' + target.title + '」',
+      isMapView: s.view === 'map',
+      isOutlineView: s.view === 'outline',
+      tree: tree,
+      outline: outline,
+      bar: bar,
+      toast: { show: !!s.toast, text: s.toast || '' },
+      doc: { title: doc.title, chapter: doc.chapter, page: String(doc.page), pager: doc.page + ' / ' + doc.pages },
+      paras: doc.paras.map(ids => ({ sents: ids.map(sid => ({ sid: sid, text: SENTS[sid].text, style: sentStyle(sid), click: (e) => { if (e && e.preventDefault) e.preventDefault(); this.clickSentence(sid); } })) })),
+      docs: ['d1', 'd2'].map(id => ({
+        title: DOCS[id].title,
+        marks: String(Object.keys(s.highlights).filter(k => SENTS[k].doc === id).length),
+        style: item(s.doc === id),
+        open: () => this.setState({ doc: id, pending: null, openDocs: s.openDocs.indexOf(id) < 0 ? s.openDocs.concat([id]) : s.openDocs, layout: s.layout === 'map' ? 'split' : s.layout })
+      })),
+      tabs: s.openDocs.map(id => ({
+        title: DOCS[id].title,
+        active: s.doc === id ? 'true' : 'false',
+        style: 'flex: 1 1 0; min-width: 120px; max-width: 240px; height: 28px; display: flex; align-items: center; gap: 4px; padding: 0 5px; box-sizing: border-box; border-radius: 14px; font: ' + (s.doc === id ? 600 : 400) + ' 12px/1 ' + sys + '; color: ' + (s.doc === id ? t.label : t.label2) + '; background: ' + (s.doc === id ? t.raised : t.fill2) + '; box-shadow: ' + (s.doc === id ? '0 0 0 0.5px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)' : 'none') + ';',
+        open: () => this.setState({ doc: id, pending: null }),
+        close: () => {
+          if (s.openDocs.length < 2) { this.say('至少保留一个打开的文档'); return; }
+          const rest = s.openDocs.filter(x => x !== id);
+          this.setState({ openDocs: rest, doc: s.doc === id ? rest[0] : s.doc, pending: null });
+        }
+      })),
+      swatches: PALETTE.map((c, i) => swatchFor(i, s.color === i, () => this.setState({ color: i, tool: 'highlight' }))),
+      tools: {
+        select: () => this.setState({ tool: 'select' }),
+        highlight: () => this.setState({ tool: 'highlight', pending: null }),
+        rect: () => this.setState({ tool: 'rect', pending: null }),
+        pen: () => this.setState({ tool: 'pen', pending: null }),
+        text: () => this.setState({ tool: 'text', pending: null })
+      },
+      layouts: {
+        reader: () => this.setState({ layout: 'reader' }),
+        split: () => this.setState({ layout: 'split' }),
+        map: () => this.setState({ layout: 'map', pending: null })
+      },
+      views: {
+        map: () => this.setState({ view: 'map' }),
+        outline: () => this.setState({ view: 'outline' })
+      },
+      toggleSidebar: () => this.setState({ sidebar: !s.sidebar }),
+      toggleAuto: () => { this.setState({ autoAdd: !s.autoAdd }); this.say(s.autoAdd ? '摘录同步已关闭：高亮不再生成卡片' : '摘录同步已开启：高亮会生成卡片'); },
+      toggleTheme: () => this.setState({ theme: themeName === 'dark' ? 'light' : 'dark' }),
+      addTopic: () => this.addTopic(),
+      addNote: () => this.addNote(),
+      removeNode: () => this.removeNode(),
+      notYet: () => this.say('原型中暂未实现'),
+      noop: () => {}
+    };
+  }
+}
+</script>
+</body>
+</html>

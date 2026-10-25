@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>架构 · 数据模型与核心链路</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3E5BD6}a:hover{color:#2B44AE}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1640px; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif">
+
+<svg width="111" height="8" viewBox="0 0 111 8" preserveAspectRatio="none" style="position: absolute; left: 320px; top: 296px; width: 111px; height: 8px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 0 4 L 107 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="111" height="8" viewBox="0 0 111 8" preserveAspectRatio="none" style="position: absolute; left: 688px; top: 296px; width: 111px; height: 8px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 0 4 L 107 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="8" height="219" viewBox="0 0 8 219" preserveAspectRatio="none" style="position: absolute; left: 188px; top: 370px; width: 8px; height: 219px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 215" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+<svg width="111" height="8" viewBox="0 0 111 8" preserveAspectRatio="none" style="position: absolute; left: 320px; top: 656px; width: 111px; height: 8px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 0 4 L 107 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+<svg width="111" height="8" viewBox="0 0 111 8" preserveAspectRatio="none" style="position: absolute; left: 688px; top: 656px; width: 111px; height: 8px; overflow: visible; fill: none; stroke: #3E5BD6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#3E5BD6" stroke="none" style="stroke: none; fill: #3E5BD6; fill: context-stroke"/></marker></defs><path d="M 0 4 L 107 4" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+<svg width="8" height="149" viewBox="0 0 8 149" preserveAspectRatio="none" style="position: absolute; left: 924px; top: 410px; width: 8px; height: 149px; overflow: visible; fill: none; stroke: #3E5BD6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-6" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#3E5BD6" stroke="none" style="stroke: none; fill: #3E5BD6; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 145" marker-end="url(#dc-arrow-head-filled-6)"></path></svg>
+<svg width="79" height="8" viewBox="0 0 79 8" preserveAspectRatio="none" style="position: absolute; left: 1056px; top: 656px; width: 79px; height: 8px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-7" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 0 4 L 75 4" marker-end="url(#dc-arrow-head-filled-7)"></path></svg>
+<svg width="8" height="130" viewBox="0 0 8 130" preserveAspectRatio="none" style="position: absolute; left: 924px; top: 760px; width: 8px; height: 130px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="M 4 0 L 4 130"></path></svg>
+<svg width="207" height="8" viewBox="0 0 207 8" preserveAspectRatio="none" style="position: absolute; left: 928px; top: 886px; width: 207px; height: 8px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-8" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 0 4 L 203 4" marker-end="url(#dc-arrow-head-filled-8)"></path></svg>
+
+<div style="position: absolute; left: 64px; top: 64px; font: 600 32px/40px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">数据模型与核心链路</div>
+<div style="position: absolute; left: 64px; top: 112px; width: 1100px; font: 400 15px/24px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">一个学习集 = 一个 SQLite 数据库。蓝色连线是“原文 ↔ 脑图”的双向关联链：Annotation → Card ← MapNode。所有表都带 updatedAt 和 deletedAt。</div>
+
+<div style="position: absolute; left: 64px; top: 230px; width: 256px; height: 140px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">StudySet 学习集</b><br>id<br>title<br>createdAt · updatedAt</span></div>
+<div style="position: absolute; left: 432px; top: 200px; width: 256px; height: 200px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">Document 文档</b><br>id · studySetId<br>title<br>fileHash（去重）<br>relPath（包内路径）<br>pageCount · lastPage<br>updatedAt</span></div>
+<div style="position: absolute; left: 800px; top: 190px; width: 256px; height: 220px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1.5px solid #3E5BD6; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">Annotation 标注</b><br>id · documentId<br>page<br>rects[]（PDF 坐标）<br>quote（原文）<br>prefix · suffix（上下文）<br>colorIndex 0–5<br>kind: text | area | ink</span></div>
+
+<div style="position: absolute; left: 64px; top: 590px; width: 256px; height: 140px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">MindMap 脑图</b><br>id · studySetId<br>title<br>rootNodeId</span></div>
+<div style="position: absolute; left: 432px; top: 570px; width: 256px; height: 180px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1.5px solid #3E5BD6; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">MapNode 节点位置</b><br>id · mapId<br>cardId<br>parentId（自引用）<br>sortKey（分数索引）<br>collapsed</span></div>
+<div style="position: absolute; left: 800px; top: 560px; width: 256px; height: 200px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1.5px solid #3E5BD6; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">Card 卡片</b><br>id · studySetId<br>annotationId?（空 = 无出处）<br>kind: excerpt | topic | note<br>title<br>body（Markdown 笔记）<br>colorIndex · updatedAt</span></div>
+<div style="position: absolute; left: 1136px; top: 590px; width: 240px; height: 140px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">CardLink 关联</b><br>id<br>fromCardId · toCardId<br>label</span></div>
+<div style="position: absolute; left: 1136px; top: 820px; width: 240px; height: 140px; box-sizing: border-box; padding: 16px; display: flex; align-items: flex-start; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861"><span><b style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1C1D21">ReviewState 复习</b><br>cardId<br>due<br>stability · difficulty</span></div>
+
+<div style="position: absolute; left: 352px; top: 272px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : N</div>
+<div style="position: absolute; left: 720px; top: 272px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : N</div>
+<div style="position: absolute; left: 204px; top: 472px; width: 48px; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : N</div>
+<div style="position: absolute; left: 352px; top: 632px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : N</div>
+<div style="position: absolute; left: 720px; top: 632px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #3E5BD6">N : 1</div>
+<div style="position: absolute; left: 940px; top: 477px; width: 72px; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #3E5BD6">1 : 0..1</div>
+<div style="position: absolute; left: 1072px; top: 632px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : N</div>
+<div style="position: absolute; left: 1008px; top: 862px; width: 48px; text-align: center; font: 500 13px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #555861">1 : 1</div>
+
+<div style="position: absolute; left: 64px; top: 1000px; font: 600 22px/30px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">核心链路</div>
+
+<div style="position: absolute; left: 64px; top: 1048px; width: 1312px; display: flex; flex-direction: column; gap: 12px">
+  <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #2F4BB8">正向：划线 → 卡片 → 脑图</span>
+  <div style="display: flex; align-items: stretch; gap: 8px">
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">ReaderView</b><br>用 PdfEngine 的文本层把手势换算成选区：页码 + 字符矩形 + 原文</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">SelectionController</b><br>组装 CreateExcerpt（选区、颜色、目标节点），交给 StudySetService</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">CreateExcerpt</b><br>同一事务写入 Annotation + Card + MapNode，并把逆命令压入 UndoStack</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">drift 查询流</b><br>WatchAnnotations 和 WatchMapTree 同时收到变化</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">两侧重绘</b><br>原文画出高亮；mm_layout 增量重算，画布只重绘受影响的子树</span>
+  </div>
+</div>
+
+<div style="position: absolute; left: 64px; top: 1200px; width: 1312px; display: flex; flex-direction: column; gap: 12px">
+  <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #2F4BB8">反向：卡片 → 原文</span>
+  <div style="display: flex; align-items: stretch; gap: 8px">
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">MapController</b><br>点击定位按钮，发出 RevealAnchor(annotationId)</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">AnchorResolver</b><br>优先用 page + rects；文件变了就用 quote 和前后文模糊匹配重新定位</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">WorkspaceController</b><br>需要时打开文档标签；只看脑图时切到分栏</span>
+    <span style="flex: none; align-self: center; color: #9A9DA5; font: 400 18px/1 Inter, sans-serif">›</span>
+    <span style="flex: 1 1 0; padding: 14px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42"><b style="color: #1C1D21">ReaderController</b><br>跳页、滚动到目标并联动描边 1600ms（motion.flash）</span>
+  </div>
+</div>
+
+<div style="position: absolute; left: 64px; top: 1352px; font: 600 22px/30px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">关键设计决定</div>
+<div style="position: absolute; left: 64px; top: 1400px; width: 1312px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">卡片和位置分开存</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">Card 存内容，MapNode 存它在哪张脑图的什么位置。一张卡片可以出现在多张脑图里，移除位置不删内容。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">锚点存两份</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">坐标用来画高亮，原文和前后文用来在文件替换、OCR 重做之后重新找到位置。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">顺序用分数索引</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">sortKey 是可无限插入的字符串。插入、拖拽只改一行，不用给兄弟节点重新编号。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">学习集是一个文件夹包</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">名称.mmset/ 里有 db.sqlite、documents/（按哈希存原文件）和 cache/（可删除）。整体拷走就是完整备份。</span>
+  </div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

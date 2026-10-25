@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-25T08:00:00Z" },
+  "title": "MarginMind 设计稿",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Library.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "00 资料库 · 启动页（可交互）", "expand": "fill", "is_interactive": true },
+    "Main.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "01 工作区原型 · macOS（可交互）", "expand": "fill", "is_interactive": true },
+    "Foundations.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 4300, "title": "02 UI 规范 · 基础（Apple HIG）" },
+    "Components.dc.html": { "x": 4560, "y": 0, "w": 1440, "h": 4700, "title": "03 UI 规范 · 组件（Apple HIG）" },
+    "Architecture.dc.html": { "x": 6080, "y": 0, "w": 1440, "h": 1640, "title": "04 架构 · 分层与模块" },
+    "DataModel.dc.html": { "x": 7600, "y": 0, "w": 1440, "h": 1640, "title": "05 架构 · 数据模型与核心链路" }
+  },
+  "order": ["Main.dc.html", "Library.dc.html", "Foundations.dc.html", "Components.dc.html", "Architecture.dc.html", "DataModel.dc.html"],
+  "notes": {
+    "canvasTitle": { "x": 0, "y": -300, "text": "MarginMind 设计稿 v0.2 · macOS 本地单机版", "kind": "title1", "maxW": 9040 }
+  },
+  "designSystems": []
+}

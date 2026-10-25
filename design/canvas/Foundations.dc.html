@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>UI 规范 · 基础</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&amp;display=swap">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:#0066CC}a:hover{color:#004C99}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 4300px; box-sizing: border-box; padding: 88px 88px 120px; display: flex; flex-direction: column; gap: 88px; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif">
+
+  <header style="display: flex; flex-direction: column; gap: 36px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">MarginMind · UI 规范 v0.2 · 遵循 Apple Human Interface Guidelines（macOS 26）</span>
+      <h1 style="margin: 0; font: 700 48px/56px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.02em">基础</h1>
+      <p style="margin: 0; max-width: 800px; font: 400 17px/27px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">它首先是一个 Mac 应用，然后才是一个学习工具。凡是系统已经定义的东西，比如颜色、字体、材质、图标、菜单和快捷键，一律用系统的，只在“原文 ↔ 卡片”这件 MarginMind 独有的事上做自己的设计。</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 12px/16px -apple-system, BlinkMacSystemFont, sans-serif; color: #0066CC">原则 1</span>
+        <h3 style="margin: 0; font: 600 19px/25px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">界面退后，内容在前</h3>
+        <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">玻璃材质只给浮在内容之上的控件，比如侧栏、工具栏胶囊和浮动控件。页面和卡片永远是实心的。</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 12px/16px -apple-system, BlinkMacSystemFont, sans-serif; color: #0066CC">原则 2</span>
+        <h3 style="margin: 0; font: 600 19px/25px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">原文是锚点</h3>
+        <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">每张摘录卡片一步回到出处，每处高亮一步找到卡片。任何编辑都不能让两者断开。</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 12px/16px -apple-system, BlinkMacSystemFont, sans-serif; color: #0066CC">原则 3</span>
+        <h3 style="margin: 0; font: 600 19px/25px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">书里的话用宋体</h3>
+        <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">原文和摘录用 <span style="font-family: 'Songti SC', 'Noto Serif SC', serif">宋体</span>，界面、主题和笔记用系统字体。不看颜色也能分清“作者说的”和“我想的”。</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: 20px; background: #FFFFFF">
+        <span style="font: 600 12px/16px -apple-system, BlinkMacSystemFont, sans-serif; color: #0066CC">原则 4</span>
+        <h3 style="margin: 0; font: 600 19px/25px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">遵守平台惯例</h3>
+        <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">所有命令都进菜单栏，右键用原生菜单，跟随系统的外观、强调色、“降低透明度”和“减少动态效果”。</p>
+      </div>
+    </div>
+  </header>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">01</span>
+      <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">语义色</h2>
+      <span style="font: 400 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">优先映射到 NSColor 语义色；只有系统没有的才自定义。</span>
+    </div>
+    <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+      <div style="display: grid; grid-template-columns: 200px 230px 190px 190px minmax(0, 1fr); gap: 20px; padding: 14px 28px; font: 600 12px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73; border-bottom: 0.5px solid #D2D2D7">
+        <span>令牌</span><span>对应系统颜色</span><span>浅色</span><span>深色</span><span>用途</span>
+      </div>
+      <sc-for list="{{colors}}" as="c" hint-placeholder-count="13">
+        <div style="display: grid; grid-template-columns: 200px 230px 190px 190px minmax(0, 1fr); gap: 20px; align-items: center; padding: 11px 28px; border-bottom: 0.5px solid #E8E8ED">
+          <span style="font: 500 13px/18px 'SF Mono', ui-monospace, Menlo, monospace">{{c.token}}</span>
+          <span style="font: 400 13px/18px 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">{{c.ns}}</span>
+          <span style="display: flex; align-items: center; gap: 10px"><span style="{{c.lightSw}}"></span><span style="font: 400 12px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #424245">{{c.light}}</span></span>
+          <span style="display: flex; align-items: center; gap: 10px"><span style="{{c.darkSw}}"></span><span style="font: 400 12px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #424245">{{c.dark}}</span></span>
+          <span style="font: 400 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1D1D1F">{{c.use}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+      <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245"><b style="color: #1D1D1F">强调色跟随系统。</b>用户在“系统设置 › 外观”里选了紫色，选中环、开关、侧栏图标就都是紫色。表里的蓝色只是默认值。</p>
+      <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245"><b style="color: #1D1D1F">次级文字比系统深一档。</b>系统的 secondaryLabel 是半透明黑，在灰底上对比度不到 4.5:1，所以这里固定为 #636366 / #A1A1A6。</p>
+      <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245"><b style="color: #1D1D1F">PDF 页面永远是白纸。</b>深色模式只改变界面，不反色原文，和“预览”一致。夜间阅读另做“页面外观”选项。</p>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">02</span>
+      <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">材质 · Liquid Glass</h2>
+      <span style="font: 400 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">两层结构：内容层（实心）与控件层（玻璃）。</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 640px minmax(0, 1fr); gap: 24px">
+      <div style="position: relative; height: 360px; border-radius: 20px; overflow: hidden; background: #EDEDF0">
+        <div style="position: absolute; left: 150px; top: 36px; width: 340px; height: 360px; padding: 32px 36px; box-sizing: border-box; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.08); font: 400 15px/30px 'Songti SC', 'Noto Serif SC', serif; color: #1D1D1F; text-indent: 2em">间隔重复利用的正是这一机制：<span style="background: rgba(0,122,255,0.32); box-shadow: inset 0 -2px 0 rgba(0,122,255,0.9); border-radius: 3px; padding: 3px 0">在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更晚。</span>因此，复习间隔可以逐步拉长。</div>
+        <div style="position: absolute; left: 16px; top: 16px; bottom: 16px; width: 120px; padding: 14px 12px; box-sizing: border-box; border-radius: 16px; background: rgba(242,242,246,0.86); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.9), 0 0 0 0.5px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06); font: 600 11px/14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #636366">侧栏材质</div>
+        <div style="position: absolute; left: 250px; top: 270px; height: 36px; padding: 0 16px; display: flex; align-items: center; gap: 14px; border-radius: 18px; background: rgba(255,255,255,0.78); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08); font: 500 13px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1D1D1F">浮动玻璃控件 · 透出下面的原文</div>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{materials}}" as="m" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="display: flex; justify-content: space-between; gap: 16px"><span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{m.name}}</span><span style="font: 400 12px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">{{m.token}}</span></span>
+            <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">{{m.spec}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">03</span>
+      <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">标注色板</h2>
+      <span style="font: 400 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">直接使用系统色，深浅模式自动适配。</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{palette}}" as="p" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 20px; background: #FFFFFF">
+          <span style="{{p.big}}"></span>
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{p.name}}</span>
+            <span style="font: 400 12px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">{{p.hex}}</span>
+          </div>
+          <span style="font: 400 12px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">{{p.ns}}</span>
+          <span style="font: 400 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">建议语义：{{p.use}}</span>
+          <span style="font: 400 14px/26px 'Songti SC', 'Noto Serif SC', serif"><span style="{{p.hl}}">仅高亮</span>　<span style="{{p.hlCard}}">已摘录</span></span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">数据库只存 colorIndex（0–5）。高亮底色 32%，已摘录再加 2px 同色下划线；卡片里的摘录块用 14%。菜单和读屏里显示颜色名，不只靠色相区分。</p>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: baseline; gap: 14px">
+      <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">04</span>
+      <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">字体</h2>
+      <span style="font: 400 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">系统字体（SF Pro + 苹方），macOS 文本样式；阅读用宋体（Songti SC）；数值用 SF Mono。</span>
+    </div>
+    <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+      <div style="display: grid; grid-template-columns: 180px 150px 110px minmax(0, 1fr); gap: 20px; padding: 14px 28px; font: 600 12px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73; border-bottom: 0.5px solid #D2D2D7">
+        <span>系统文本样式</span><span>字号 / 行高</span><span>字重</span><span>示例与用途</span>
+      </div>
+      <sc-for list="{{type}}" as="ty" hint-placeholder-count="10">
+        <div style="display: grid; grid-template-columns: 180px 150px 110px minmax(0, 1fr); gap: 20px; align-items: center; padding: 14px 28px; border-bottom: 0.5px solid #E8E8ED">
+          <span style="font: 500 13px/18px 'SF Mono', ui-monospace, Menlo, monospace">{{ty.token}}</span>
+          <span style="font: 400 13px/18px 'SF Mono', ui-monospace, Menlo, monospace; color: #424245">{{ty.size}}</span>
+          <span style="font: 400 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">{{ty.weight}}</span>
+          <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+            <span style="{{ty.sample}}">{{ty.text}}</span>
+            <span style="font: 400 12px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">{{ty.use}}</span>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; align-items: baseline; gap: 14px">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">05</span>
+        <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">同心圆角</h2>
+      </div>
+      <div style="position: relative; height: 300px; border-radius: 20px; background: #FFFFFF">
+        <div style="position: absolute; left: 32px; top: 32px; width: 480px; height: 236px; border-radius: 24px; background: #E8E8ED; box-shadow: inset 0 0 0 1px #C7C7CC"></div>
+        <div style="position: absolute; left: 40px; top: 40px; width: 150px; height: 220px; border-radius: 16px; background: #F5F5F7; box-shadow: inset 0 0 0 1px #C7C7CC"></div>
+        <div style="position: absolute; left: 48px; top: 48px; width: 134px; height: 28px; border-radius: 8px; background: #DCDCE1"></div>
+        <div style="position: absolute; left: 290px; top: 48px; width: 208px; height: 36px; border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)"></div>
+        <div style="position: absolute; left: 293px; top: 51px; width: 34px; height: 30px; border-radius: 15px; background: rgba(0,122,255,0.16)"></div>
+        <div style="position: absolute; left: 230px; top: 120px; width: 240px; height: 120px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06)"></div>
+        <div style="position: absolute; left: 242px; top: 150px; width: 216px; height: 64px; border-radius: 6px; background: rgba(255,204,0,0.18)"></div>
+        <span style="position: absolute; left: 196px; top: 270px; font: 400 12px/16px 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">窗口 24 · 侧栏 16（= 24 − 8 内缩）· 行 8 · 胶囊 18 / 15 · 卡片 12 / 内块 6</span>
+      </div>
+      <p style="margin: 0; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">规则：内层圆角 = 外层圆角 − 内缩距离。胶囊控件一律半高圆角。只有 PDF 页面保持 3px 小圆角，像一张纸。</p>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{sizes}}" as="sz" hint-placeholder-count="8">
+          <div style="display: grid; grid-template-columns: 170px 110px minmax(0, 1fr); gap: 16px; align-items: center; padding: 11px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{sz.name}}</span>
+            <span style="font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #424245">{{sz.value}}</span>
+            <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">{{sz.note}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; align-items: baseline; gap: 14px">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">06</span>
+        <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">动效</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{motion}}" as="mo" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 150px 190px minmax(0, 1fr); gap: 16px; align-items: center; padding: 13px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="font: 500 13px/18px 'SF Mono', ui-monospace, Menlo, monospace">{{mo.token}}</span>
+            <span style="font: 400 13px/18px 'SF Mono', ui-monospace, Menlo, monospace; color: #424245">{{mo.value}}</span>
+            <span style="font: 400 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1D1D1F">{{mo.use}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 0; padding: 14px 24px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">开启“减少动态效果”：弹簧改为 150ms 淡入淡出，联动只保留选中环。开启“降低透明度”：所有玻璃退回为不透明 fill。</p>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 16px">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">07</span>
+        <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">图标 · SF Symbols</h2>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{symbols}}" as="sy" hint-placeholder-count="12">
+          <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; align-items: center; padding: 9px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="font: 400 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{sy.what}}</span>
+            <span style="font: 400 13px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #0066CC">{{sy.name}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 0; padding: 14px 24px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">原型里的图标是近似画法。实现时用 SF Symbols：工具栏 Regular 15pt、侧栏强调色着色、菜单不带图标。SF Symbols 只授权用于 Apple 平台，Windows 版需另配一套图标。</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; align-items: baseline; gap: 14px">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">08</span>
+        <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">窗口布局</h2>
+      </div>
+      <div style="display: flex; height: 330px; padding: 8px; box-sizing: border-box; gap: 0; border-radius: 24px; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.12); font: 500 12px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">
+        <div style="width: 130px; flex: none; display: flex; flex-direction: column; gap: 6px; padding: 12px; box-sizing: border-box; border-radius: 16px; background: #F2F2F6; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.07)">
+          <span style="display: flex; gap: 5px"><span style="width: 9px; height: 9px; border-radius: 5px; background: #FF5F57"></span><span style="width: 9px; height: 9px; border-radius: 5px; background: #FEBC2E"></span><span style="width: 9px; height: 9px; border-radius: 5px; background: #28C840"></span></span>
+          <span style="margin-top: 8px">侧栏</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">宽 236<br>内缩 8</span>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
+          <div style="flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px"><span>工具栏（标题 + 玻璃胶囊）</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">高 56</span></div>
+          <div style="flex: 1; display: flex; min-height: 0">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #EDEDF0"><span>原文</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 420<br>页面最大 620</span></div>
+            <div style="width: 1px; background: #D2D2D7"></div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #FBFBFD"><span>脑图 / 大纲</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 360<br>浮动控件距边 12</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{breakpoints}}" as="bp" hint-placeholder-count="4">
+          <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; padding: 12px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="font: 500 13px/20px 'SF Mono', ui-monospace, Menlo, monospace">{{bp.range}}</span>
+            <span style="font: 400 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1D1D1F">{{bp.rule}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; align-items: baseline; gap: 14px">
+        <span style="font: 600 15px/20px -apple-system, BlinkMacSystemFont, sans-serif; color: #6E6E73">09</span>
+        <h2 style="margin: 0; font: 700 30px/36px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif; letter-spacing: -0.01em">用 Flutter 做出原生感</h2>
+      </div>
+      <p style="margin: 0; font: 400 15px/24px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">Flutter 自己画每一个像素，“像 Mac”不会自动发生。窗口、菜单、模糊、右键和滚动这几处必须交给系统，否则一眼就能看出来是跨平台应用。</p>
+      <div style="display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; background: #FFFFFF">
+        <sc-for list="{{native}}" as="nv" hint-placeholder-count="7">
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 24px; border-bottom: 0.5px solid #E8E8ED">
+            <span style="display: flex; justify-content: space-between; gap: 16px"><span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">{{nv.what}}</span><span style="font: 400 12px/20px 'SF Mono', ui-monospace, Menlo, monospace; color: #0066CC; text-align: right">{{nv.how}}</span></span>
+            <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #424245">{{nv.why}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":4300}}'>
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const sw = (v) => 'width: 26px; height: 26px; flex: none; border-radius: 7px; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.15); background: ' + v + ';';
+    const colorRows = [
+      ['label', 'labelColor', '#1D1D1F', '#F5F5F7', '主要文字、图标按钮'],
+      ['label.secondary', 'secondaryLabelColor*', '#636366', '#A1A1A6', '副标题、计数、出处'],
+      ['separator', 'separatorColor', 'rgba(0,0,0,.09)', 'rgba(255,255,255,.09)', '分栏线、表格分隔'],
+      ['fill', 'tertiarySystemFill', 'rgba(120,120,128,.12)', 'rgba(118,118,128,.24)', '主题节点、徽标底'],
+      ['fill.quaternary', 'quaternarySystemFill', 'rgba(120,120,128,.08)', 'rgba(118,118,128,.14)', '搜索框、笔记节点、非当前标签'],
+      ['bg.window', 'windowBackgroundColor', '#FFFFFF', '#1E1E1F', '窗口与工具栏底'],
+      ['bg.reader', '自定义', '#EDEDF0', '#262628', '原文区背景（页面之外）'],
+      ['bg.canvas', '自定义', '#FBFBFD', '#1C1C1E', '脑图画布'],
+      ['bg.card', 'controlBackgroundColor', '#FFFFFF', '#2C2C2E', '摘录卡片、分段控件选中项'],
+      ['page', '固定', '#FFFFFF', '#FFFFFF', 'PDF 页面，不随外观变化'],
+      ['accent', 'controlAccentColor', '#007AFF', '#0A84FF', '选中环、侧栏图标、开启状态'],
+      ['accent.fill', 'selectedContentBackgroundColor', '#0A66D0', '#0A66D0', '承载白字的选中背景（大纲选中行、主按钮）'],
+      ['accent.tint', 'accent 12% / 20%', 'rgba(0,122,255,.12)', 'rgba(10,132,255,.20)', '工具按钮的选中底、联动光晕']
+    ];
+    const palette = [
+      ['黄', '#FFCC00', 'systemYellow', '要点'], ['绿', '#34C759', 'systemGreen', '概念、定义'], ['蓝', '#007AFF', 'systemBlue', '例子、证据'],
+      ['粉', '#FF2D55', 'systemPink', '疑问'], ['橙', '#FF9500', 'systemOrange', '反驳、待查'], ['紫', '#AF52DE', 'systemPurple', '金句']
+    ];
+    const sys = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif";
+    const display = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif";
+    const serif = "'Songti SC', 'Noto Serif SC', serif";
+    const mono = "'SF Mono', ui-monospace, Menlo, monospace";
+    const type = [
+      ['largeTitle', '26 / 32', 'Regular', display, 26, 32, 400, '认知科学入门', '空状态、欢迎页'],
+      ['title3', '15 / 20', 'Semibold', sys, 15, 20, 600, '学习的底层逻辑', '窗口标题（工具栏左侧）、根节点'],
+      ['headline', '13 / 16', 'Semibold', sys, 13, 16, 600, '对策一：间隔重复', '主题节点、卡片标题、学习集名'],
+      ['body', '13 / 16', 'Regular', sys, 13, 16, 400, '复习时机取决于遗忘程度，而不是固定日程', '侧栏行、笔记节点、菜单、大纲'],
+      ['callout', '12 / 15', 'Medium', sys, 12, 15, 500, '脑图　大纲', '分段控件、标签页、页码胶囊'],
+      ['subheadline', '11 / 14', 'Semibold', sys, 11, 14, 600, '文档', '侧栏分组标题'],
+      ['footnote', '11 / 14', 'Regular', sys, 11, 14, 400, '学习的底层逻辑 · 第 24 页', '卡片出处、窗口副标题'],
+      ['reading.body', '16.5 / 32', 'Regular', serif, 16.5, 32, 400, '人在学习新知识之后，记忆并不是匀速流失的。', '重排模式正文，首行缩进 2em'],
+      ['reading.excerpt', '13 / 20', 'Regular', serif, 13, 20, 400, '这条先陡后平的曲线，被称为遗忘曲线。', '卡片里的摘录块，最多 4 行'],
+      ['mono', '12 / 16', 'Regular', mono, 12, 16, 400, 'colorIndex 2 · page 24', '调试、快捷键显示']
+    ];
+    return {
+      colors: colorRows.map(r => ({ token: r[0], ns: r[1], light: r[2], dark: r[3], use: r[4], lightSw: sw(r[2]), darkSw: sw(r[3]) })),
+      materials: [
+        { name: '控件玻璃', token: 'glass.regular', spec: '浅 rgba(255,255,255,.78) / 深 rgba(50,50,53,.78)，模糊 24、饱和 180%，顶部 0.5px 高光 + 0.5px 描边 + 0 4 16 阴影。用于工具栏胶囊、脑图浮动控件、页码、操作条、提示。' },
+        { name: '侧栏玻璃', token: 'glass.sidebar', spec: '浅 rgba(242,242,246,.86) / 深 rgba(44,44,47,.86)，模糊 30。悬浮在窗口内，四周内缩 8，红绿灯在其中。' },
+        { name: '实心内容', token: 'surface.*', spec: '页面、卡片、画布、原文区一律不透明。卡片用 0.5px 描边 + 两层柔和阴影表达层级，不用粗边框。' },
+        { name: '不叠玻璃', token: '规则', spec: '玻璃之上不再放玻璃；弹出菜单、右键菜单交给系统原生 NSMenu。' },
+        { name: '降低透明度', token: 'a11y', spec: '系统开启后：控件玻璃 → bg.window 实色，侧栏 → #F2F2F6 / #2C2C2F 实色，阴影保留。' }
+      ],
+      palette: palette.map(p => ({
+        name: p[0], hex: p[1], ns: p[2], use: p[3],
+        big: 'height: 56px; border-radius: 12px; background: ' + p[1] + ';',
+        hl: 'background: ' + rgba(p[1], 0.32) + '; border-radius: 3px; padding: 3px 0;',
+        hlCard: 'background: ' + rgba(p[1], 0.32) + '; box-shadow: inset 0 -2px 0 ' + rgba(p[1], 0.9) + '; border-radius: 3px; padding: 3px 0;'
+      })),
+      type: type.map(r => ({ token: r[0], size: r[1], weight: r[2], text: r[7], use: r[8], sample: 'font-family: ' + r[3] + '; font-size: ' + r[4] + 'px; line-height: ' + r[5] + 'px; font-weight: ' + r[6] + '; color: #1D1D1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' })),
+      sizes: [
+        { name: '窗口', value: '最小 960×600', note: '圆角由系统决定，设计稿按 24 画' },
+        { name: '工具栏', value: '高 56', note: '统一标题栏样式（unified），无分隔线' },
+        { name: '工具栏胶囊', value: '高 36 · 按钮 34×30', note: '同组按钮共用一个胶囊，组间距 10' },
+        { name: '侧栏行', value: '高 28', note: '图标 16，图标与文字间距 8，选中为灰色圆角底' },
+        { name: '搜索框', value: '高 28 · 圆角 8', note: '放在侧栏顶部，⌘F 聚焦' },
+        { name: '分段控件', value: '高 28 · 段 24', note: '选中段为白色浮起，非强调色' },
+        { name: '摘录卡片', value: '宽 240 · 圆角 12', note: '内边距 11 / 12，右侧为定位按钮留 38' },
+        { name: '间距', value: '4 / 8 / 12 / 16 / 20', note: '窗口内容边距 12–20；脑图层级间距 28' }
+      ],
+      motion: [
+        { token: 'spring.default', value: 'response .35 · damping .85', use: '布局切换、侧栏收起、节点插入' },
+        { token: 'ease.quick', value: '150ms easeOut', use: '悬停、按下、颜色变化' },
+        { token: 'ease.standard', value: '200ms easeInOut', use: '折叠展开、选中环、分段控件滑块' },
+        { token: 'flash', value: '1600ms', use: '原文 ↔ 卡片联动：选中环 + 光晕后淡出' },
+        { token: 'hud', value: '2400ms', use: '提示胶囊停留时长' },
+        { token: 'scroll', value: '系统弹性滚动', use: '触控板惯性与回弹，滚动条为悬浮样式' }
+      ],
+      symbols: [
+        { what: '选择', name: 'cursorarrow' }, { what: '高亮', name: 'highlighter' },
+        { what: '框选', name: 'rectangle.dashed' }, { what: '手写', name: 'pencil.tip' },
+        { what: '文本', name: 'character.textbox' }, { what: '同步到脑图', name: 'arrow.triangle.branch' },
+        { what: '分栏', name: 'rectangle.split.2x1' }, { what: '脑图', name: 'point.3.connected.trianglepath.dotted' },
+        { what: '侧栏', name: 'sidebar.left' }, { what: '学习集', name: 'books.vertical.fill' },
+        { what: '定位原文', name: 'arrow.up.right' }, { what: '外观', name: 'circle.lefthalf.filled' }
+      ],
+      breakpoints: [
+        { range: '窗口 ≥ 1280', rule: '侧栏 + 原文 + 脑图三栏，默认布局' },
+        { range: '960 – 1279', rule: '侧栏自动收起（系统行为），⌃⌘S 临时呼出' },
+        { range: '全屏', rule: '工具栏随指针移到顶部时出现，原文与脑图各占半屏' },
+        { range: '台前调度 / 分屏', rule: '窗口窄于 960 时只保留一个面板，用 ⌘1 / ⌘3 切换' }
+      ],
+      native: [
+        { what: '窗口与红绿灯', how: 'macos_window_utils', why: '全尺寸内容视图 + 透明标题栏，保留系统真正的红绿灯和窗口拖拽、缩放行为。' },
+        { what: '侧栏与玻璃', how: 'NSVisualEffectView', why: '用系统材质做真实模糊，自动响应“降低透明度”。Flutter 的 BackdropFilter 只能模拟，成本更高。' },
+        { what: '菜单栏', how: 'PlatformMenuBar', why: 'Flutter 自带，生成真正的 macOS 菜单，快捷键、帮助搜索都能用。' },
+        { what: '右键菜单', how: 'NSMenu（插件）', why: '右键用原生菜单，不用 Flutter 画的浮层，这是最容易暴露跨平台身份的地方。' },
+        { what: '字体', how: '.AppleSystemUIFont', why: 'macOS 上 Flutter 默认就用系统字体，自动包含 SF Pro 与苹方，不要打包第三方字体。' },
+        { what: '外观与强调色', how: '平台通道', why: '读取系统的深浅色、强调色、减少动态效果、降低透明度，并在变化时实时刷新主题。' },
+        { what: '基础控件', how: 'macos_ui（参考）', why: '可借用其中的开关、分段控件等实现；Liquid Glass 新样式需要在 mm_design 里自己实现。' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

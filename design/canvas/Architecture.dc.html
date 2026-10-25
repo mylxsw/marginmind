@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>架构 · 分层与模块</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Noto+Sans+SC:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#3E5BD6}a:hover{color:#2B44AE}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1640px; background: #F5F5F7; color: #1D1D1F; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', sans-serif">
+
+<div style="position: absolute; left: 64px; top: 176px; width: 936px; height: 200px; border-radius: 16px; background: #E9EDFA"></div>
+<div style="position: absolute; left: 64px; top: 424px; width: 936px; height: 168px; border-radius: 16px; background: #EFEDF7; border: 1.5px dashed #9AA6D6; box-sizing: border-box"></div>
+<div style="position: absolute; left: 64px; top: 640px; width: 936px; height: 168px; border-radius: 16px; background: #ECEAE4"></div>
+<div style="position: absolute; left: 64px; top: 856px; width: 936px; height: 200px; border-radius: 16px; background: #ECEAE4"></div>
+
+<svg width="8" height="119" viewBox="0 0 8 119" preserveAspectRatio="none" style="position: absolute; left: 532px; top: 352px; width: 8px; height: 119px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 115" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="8" height="119" viewBox="0 0 8 119" preserveAspectRatio="none" style="position: absolute; left: 532px; top: 568px; width: 8px; height: 119px; overflow: visible; fill: none; stroke: #6B6E76; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#6B6E76" stroke="none" style="stroke: none; fill: #6B6E76; fill: context-stroke"/></marker></defs><path d="M 4 0 L 4 115" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="8" height="127" viewBox="0 0 8 127" preserveAspectRatio="none" style="position: absolute; left: 532px; top: 785px; width: 8px; height: 127px; overflow: visible; fill: none; stroke: #3E5BD6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#3E5BD6" stroke="none" style="stroke: none; fill: #3E5BD6; fill: context-stroke"/></marker></defs><path d="M 4 127 L 4 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+
+<div style="position: absolute; left: 64px; top: 64px; font: 600 32px/40px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">架构 · 分层与模块</div>
+<div style="position: absolute; left: 64px; top: 112px; width: 920px; font: 400 15px/24px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">本地单机版也分“前端 / 后端”：前端是 Flutter 界面，后端是同进程内的本地核心引擎，两者只通过用例 API（命令与查询）对话。</div>
+
+<div style="position: absolute; left: 88px; top: 194px; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #2F4BB8">表现层 Presentation · 前端</div>
+<div style="position: absolute; left: 88px; top: 442px; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #4A3FA0">应用层 Application · 前后端边界</div>
+<div style="position: absolute; left: 88px; top: 658px; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42">领域层 Domain · 纯 Dart，不依赖 Flutter</div>
+<div style="position: absolute; left: 88px; top: 874px; font: 600 13px/18px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42">基础设施层 Infrastructure · 本地后端</div>
+
+<div style="position: absolute; left: 96px; top: 232px; width: 272px; height: 120px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #C9D2F2; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">mm_features</b><br>工作区 · 阅读器 · 脑图画布 · 大纲 · 复习。只有 Widget 和它们的 Controller。</span></div>
+<div style="position: absolute; left: 400px; top: 232px; width: 272px; height: 120px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #C9D2F2; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">Controllers（Riverpod）</b><br>ReaderController · MapController · SelectionController。持有 UI 状态，订阅查询。</span></div>
+<div style="position: absolute; left: 704px; top: 232px; width: 272px; height: 120px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #C9D2F2; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">mm_design</b><br>设计令牌、主题（墨 / 纸）、基础组件。即 02、03 两张规范画板。</span></div>
+
+<div style="position: absolute; left: 96px; top: 472px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #CFC8EA; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">Commands 写</b><br>CreateExcerpt · MoveNode · RemoveNode · DeleteAnnotation</span></div>
+<div style="position: absolute; left: 400px; top: 472px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #CFC8EA; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">StudySetService（门面）</b><br>前端唯一能调用的入口：execute(command) / watch(query)</span></div>
+<div style="position: absolute; left: 704px; top: 472px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #CFC8EA; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">Queries 读 · UndoStack</b><br>WatchMapTree · WatchAnnotations；命令历史支持撤销 / 重做</span></div>
+
+<div style="position: absolute; left: 96px; top: 688px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">实体 Entities</b><br>StudySet · Document · Annotation · Card · MindMap · MapNode</span></div>
+<div style="position: absolute; left: 400px; top: 688px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">端口 Ports（接口）</b><br>Repositories · PdfEngine · FileStore · Clock · IdGen</span></div>
+<div style="position: absolute; left: 704px; top: 688px; width: 272px; height: 96px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">领域服务</b><br>AnchorResolver · TreeOps · ReviewScheduler（FSRS）· mm_layout</span></div>
+
+<div style="position: absolute; left: 96px; top: 912px; width: 272px; height: 112px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">mm_data · drift / SQLite</b><br>表与迁移、仓库实现、FTS5 全文索引、响应式查询流</span></div>
+<div style="position: absolute; left: 400px; top: 912px; width: 272px; height: 112px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">mm_pdf · PdfEngine 实现</b><br>pdfrx（PDFium）：页面渲染、文本层与字符坐标、渲染缓存</span></div>
+<div style="position: absolute; left: 704px; top: 912px; width: 272px; height: 112px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; background: #FFFFFF; border: 1px solid #D6D2C8; border-radius: 10px; font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861"><span><b style="font-size: 15px; color: #1C1D21">mm_platform · macOS 适配</b><br>窗口与材质、菜单栏、原生右键菜单、系统外观；学习集包目录与 Isolate</span></div>
+
+<div style="position: absolute; left: 548px; top: 404px; width: 40px; font: 500 13px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">调用</div>
+<div style="position: absolute; left: 548px; top: 620px; width: 40px; font: 500 13px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">依赖</div>
+<div style="position: absolute; left: 548px; top: 832px; width: 140px; font: 500 13px/16px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #2F4BB8">实现接口（依赖倒置）</div>
+
+<div style="position: absolute; left: 1064px; top: 176px; width: 312px; display: flex; flex-direction: column; gap: 12px">
+  <span style="font: 600 15px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">六条架构约定</span>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">1　单向数据流</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">UI 只发命令，不直接改状态；变化从数据库流回界面。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">2　SQLite 是唯一事实来源</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">内存里不保存第二份业务数据。drift 的响应式查询负责推送，原文和脑图两个面板自然同步。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">3　所有写操作都是命令</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">每个命令在一个事务里执行，并给出逆命令，撤销 / 重做自然成立。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">4　第三方库藏在接口后面</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">pdfrx、drift 都只出现在基础设施层。将来在 Apple 平台换 PDFKit，只需新写一个 PdfEngine。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">5　耗时任务进 Isolate</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">文本抽取、全文索引、缩略图、布局计算都不占 UI 线程，保证滚动和拖拽 60fps 以上。</span>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DFD8">
+    <span style="font: 600 14px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">6　不做同步，但不堵死同步</span>
+    <span style="font: 400 13px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #555861">ID 用 UUID v7，每行带 updatedAt 和软删除标记。成本很低，以后加同步不用改表结构。</span>
+  </div>
+</div>
+
+<div style="position: absolute; left: 64px; top: 1120px; font: 600 22px/30px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">包结构（Dart workspace / melos）</div>
+<pre style="position: absolute; left: 64px; top: 1168px; width: 640px; height: 400px; box-sizing: border-box; margin: 0; padding: 24px 28px; border-radius: 12px; background: #1C1D21; color: #D9D6CF; font: 400 13px/22px 'SF Mono', ui-monospace, Menlo, monospace; white-space: pre">marginmind/
+├─ apps/
+│  └─ desktop/         窗口、菜单、快捷键、组合根
+├─ packages/
+│  ├─ mm_design/       令牌与基础组件
+│  ├─ mm_features/     工作区 · 阅读器 · 脑图 · 大纲
+│  ├─ mm_core/         实体 · 端口 · 命令 · 查询
+│  ├─ mm_layout/       脑图布局算法（纯 Dart）
+│  ├─ mm_data/         drift 表、迁移、仓库实现
+│  ├─ mm_pdf/          PdfEngine 的 pdfrx 实现
+│  └─ mm_platform/     macOS 窗口、菜单、材质、外观
+└─ tools/              代码生成、迁移校验
+
+前端 = desktop + mm_features + mm_design
+后端 = mm_core + mm_layout + mm_data + mm_pdf
+平台 = mm_platform（只被 desktop 引用）</pre>
+
+<div style="position: absolute; left: 768px; top: 1120px; font: 600 22px/30px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif">依赖规则</div>
+<div style="position: absolute; left: 768px; top: 1168px; width: 608px; display: flex; flex-direction: column; gap: 14px; font: 400 14px/22px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #3A3C42">
+  <span><b style="color: #1C1D21">mm_core 零依赖。</b>只用 Dart 标准库，可在命令行里直接跑全部用例测试。</span>
+  <span><b style="color: #1C1D21">前端不认识 drift 和 pdfrx。</b>mm_features 只能 import mm_core、mm_design、mm_layout，以及 PdfEngine 接口提供的页面图像。</span>
+  <span><b style="color: #1C1D21">后端不认识 Widget。</b>mm_data、mm_pdf 只实现 mm_core 定义的端口。</span>
+  <span><b style="color: #1C1D21">只在组合根里装配。</b>apps/desktop 是唯一同时知道所有包的地方，用 ProviderScope 的 overrides 把实现注入接口。</span>
+  <span><b style="color: #1C1D21">用工具强制规则。</b>在 analysis_options 里加 import 规则检查，越层 import 直接报错，不靠自觉。</span>
+  <span><b style="color: #1C1D21">边界可以搬家。</b>以后要把后端放进后台 Isolate，或者换成远程服务，只需替换 StudySetService 的实现，前端不改。</span>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
