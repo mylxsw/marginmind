@@ -187,6 +187,19 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('color picker draws a card-colored gap inside the selection ring', (tester) async {
+    await tester.pumpWidget(
+      harness(MMColorPicker(selected: MMAnnotationColor.green, onChanged: (_) {}, labelOf: (c) => c.name)),
+    );
+    await tester.pumpAndSettle();
+    final dot = find.byWidgetPredicate(
+      (w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).boxShadow != null,
+    );
+    final (gap, ring) = await dotRingColors(tester, dot);
+    expect(gap, sameColor(MMColors.light.card));
+    expect(ring, sameColor(MMAnnotationColor.green.color));
+  });
+
   testWidgets('reduce transparency removes the blur', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

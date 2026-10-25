@@ -8,7 +8,7 @@
     "Library.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "00 资料库 · 启动页（可交互）", "expand": "fill", "is_interactive": true },
     "Main.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "01 工作区原型 · macOS（可交互）", "expand": "fill", "is_interactive": true },
     "Foundations.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 4300, "title": "02 UI 规范 · 基础（Apple HIG）" },
-    "Components.dc.html": { "x": 4560, "y": 0, "w": 1440, "h": 4700, "title": "03 UI 规范 · 组件（Apple HIG）" },
+    "Components.dc.html": { "x": 4560, "y": 0, "w": 1440, "h": 5400, "title": "03 UI 规范 · 组件（Apple HIG）" },
     "Architecture.dc.html": { "x": 6080, "y": 0, "w": 1440, "h": 1640, "title": "04 架构 · 分层与模块" },
     "DataModel.dc.html": { "x": 7600, "y": 0, "w": 1440, "h": 1640, "title": "05 架构 · 数据模型与核心链路" }
   },

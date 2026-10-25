@@ -45,7 +45,7 @@ class MMColorPicker extends StatelessWidget {
                   color: color.color,
                   shape: BoxShape.circle,
                   boxShadow: color == selected || s.focused
-                      ? [BoxShadow(color: ring, spreadRadius: 2), BoxShadow(color: color.color, spreadRadius: 3.5)]
+                      ? [BoxShadow(color: color.color, spreadRadius: 3.5), BoxShadow(color: ring, spreadRadius: 2)]
                       : null,
                 ),
               ),

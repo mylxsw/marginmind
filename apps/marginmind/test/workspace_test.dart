@@ -22,6 +22,21 @@ Future<ProviderContainer> openFirstSet(WidgetTester tester, {InMemoryStudySetCon
 }
 
 void main() {
+  testWidgets('the selected highlight color has a gap inside its ring', (tester) async {
+    await openFirstSet(tester);
+    final dot = find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration! as BoxDecoration).shape == BoxShape.circle &&
+          (w.decoration! as BoxDecoration).boxShadow != null,
+    );
+    expect(dot, findsOneWidget);
+    final (gap, ring) = await dotRingColors(tester, dot);
+    expect(gap, sameColor(MMColors.light.windowBackground));
+    expect(ring, sameColor(MMAnnotationColor.yellow.color));
+  });
+
   testWidgets('opening a study set shows its documents and mind map', (tester) async {
     await openFirstSet(tester);
     expect(find.text('Mind Maps'), findsOneWidget);

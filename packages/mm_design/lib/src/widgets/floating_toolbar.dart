@@ -81,8 +81,9 @@ class MMFloatingToolbarColor extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: selected || s.focused
                 ? [
-                    BoxShadow(color: c.glassOpaque, spreadRadius: 2),
+                    // Painted in order: the outer ring first, then the gap over it.
                     BoxShadow(color: s.focused ? c.accent : color.color, spreadRadius: 3.5),
+                    BoxShadow(color: c.glassOpaque, spreadRadius: 2),
                   ]
                 : null,
           ),
