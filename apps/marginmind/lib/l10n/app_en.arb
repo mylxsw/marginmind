@@ -1,0 +1,254 @@
+{
+  "@@locale": "en",
+  "appName": "MarginMind",
+  "libraryTitleAll": "All Study Sets",
+  "libraryRecent": "Recent",
+  "libraryStarred": "Starred",
+  "libraryDue": "Due for Review",
+  "librarySection": "Library",
+  "libraryFolders": "Folders",
+  "libraryUnfiled": "Unfiled",
+  "libraryRecentlyDeleted": "Recently Deleted",
+  "librarySetCount": "{count, plural, =0{No study sets} =1{1 study set} other{{count} study sets}}",
+  "@librarySetCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryDueCount": "{count, plural, =1{1 card due} other{{count} cards due}}",
+  "@libraryDueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryContinue": "Continue Learning",
+  "libraryAllHeading": "All",
+  "libraryLastPosition": "Last read: {document} · p. {page}",
+  "@libraryLastPosition": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryNoDocumentsYet": "No documents yet",
+  "libraryCardMeta": "{documents} docs · {cards} cards",
+  "@libraryCardMeta": {
+    "placeholders": {
+      "documents": {
+        "type": "int"
+      },
+      "cards": {
+        "type": "int"
+      }
+    }
+  },
+  "dueBadge": "{count} due",
+  "@dueBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeJustNow": "Just now",
+  "relativeMinutes": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@relativeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeHours": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@relativeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeYesterday": "Yesterday",
+  "relativeDays": "{count} days ago",
+  "@relativeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeWeeks": "{count, plural, =1{Last week} other{{count} weeks ago}}",
+  "@relativeWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeMonths": "{count, plural, =1{Last month} other{{count} months ago}}",
+  "@relativeMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAsIcons": "Icons",
+  "viewAsList": "List",
+  "sortRecent": "Recent",
+  "sortTitle": "Name",
+  "sortCards": "Card count",
+  "sortBy": "By {field}",
+  "@sortBy": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "sortTooltip": "Sort order",
+  "search": "Search",
+  "searchLibrary": "Search study sets",
+  "newStudySet": "New Study Set",
+  "newFolder": "New Folder",
+  "firstRunTitle": "Start your first study set",
+  "firstRunMessage": "Drop one or more PDFs here and MarginMind will create a study set for them. Your highlights, cards and mind maps all live inside it.",
+  "openSample": "Open Sample Study Set",
+  "noResultTitle": "No matching study sets",
+  "noResultSearch": "No study set name contains “{query}”.",
+  "@noResultSearch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "noResultFilter": "Nothing here yet. Drag study sets onto a folder in the sidebar.",
+  "columnName": "Name",
+  "columnFolder": "Folder",
+  "columnDocuments": "Docs",
+  "columnCards": "Cards",
+  "columnDue": "Due",
+  "columnLastOpened": "Last Opened",
+  "star": "Star",
+  "unstar": "Remove Star",
+  "open": "Open",
+  "sheetName": "Name",
+  "sheetNamePlaceholder": "e.g. Cognitive Psychology",
+  "sheetLocation": "Location",
+  "sheetColor": "Color",
+  "sheetImportAfterCreate": "Import PDFs after creating…",
+  "cancel": "Cancel",
+  "create": "Create",
+  "done": "Done",
+  "createdHud": "Created “{name}”",
+  "@createdHud": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "colorYellow": "Yellow",
+  "colorGreen": "Green",
+  "colorBlue": "Blue",
+  "colorPink": "Pink",
+  "colorOrange": "Orange",
+  "colorPurple": "Purple",
+  "showLibrary": "Show Library",
+  "hideSidebar": "Hide Sidebar",
+  "showSidebar": "Show Sidebar",
+  "searchInSet": "Search",
+  "sectionMaps": "Mind Maps",
+  "sectionDocuments": "Documents",
+  "sectionLearn": "Learn",
+  "mainMap": "Main Map",
+  "review": "Review",
+  "tags": "Tags",
+  "importDocument": "Import Document…",
+  "noSidebarMatches": "No matches",
+  "toolSelect": "Select",
+  "toolHighlight": "Highlight",
+  "toolArea": "Area Select",
+  "toolPen": "Pen",
+  "toolText": "Text",
+  "syncToMapOn": "Sync excerpts to map: On",
+  "syncToMapOff": "Sync excerpts to map: Off",
+  "layoutReader": "Source Only",
+  "layoutSplit": "Split",
+  "layoutMap": "Map Only",
+  "aiAssistant": "AI Assistant",
+  "pageNumber": "Page {page}",
+  "@pageNumber": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "pageOf": "{page} / {total}",
+  "@pageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerEmptyTitle": "Open a document to start reading",
+  "readerEmptyMessage": "Pick a document in the sidebar, or import a PDF into this study set.",
+  "readerPlaceholder": "PDF rendering arrives with the mm_pdf package. This page marks where it will appear.",
+  "mapEmptyTitle": "Your excerpts will appear here",
+  "mapEmptyMessage": "Highlight a sentence in the source and it becomes a card under the selected topic.",
+  "mapView": "Map",
+  "outlineView": "Outline",
+  "newExcerptTarget": "New excerpts → {topic}",
+  "@newExcerptTarget": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "addTopic": "Add Topic",
+  "addNote": "Add Note",
+  "removeFromMap": "Remove from Map",
+  "zoomIn": "Zoom In",
+  "zoomOut": "Zoom Out",
+  "previousPage": "Previous Page",
+  "nextPage": "Next Page",
+  "closeTab": "Close Tab",
+  "comingSoon": "Coming soon",
+  "settings": "Settings…",
+  "settingsTitle": "Settings",
+  "appearance": "Appearance",
+  "appearanceSystem": "System",
+  "appearanceLight": "Light",
+  "appearanceDark": "Dark",
+  "language": "Language",
+  "languageSystem": "System",
+  "menuFile": "File",
+  "menuView": "View",
+  "menuWindow": "Window",
+  "menuHelp": "Help",
+  "componentGallery": "Component Gallery",
+  "galleryTitle": "Component Gallery",
+  "gallerySubtitle": "mm_design · tokens and components",
+  "galleryColors": "Colors",
+  "galleryTypography": "Typography",
+  "galleryControls": "Controls",
+  "galleryFeedback": "Feedback",
+  "galleryShowHud": "Show HUD",
+  "galleryShowSheet": "Show Sheet",
+  "galleryHudMessage": "Excerpted to “Patterns of forgetting”",
+  "back": "Back"
+}

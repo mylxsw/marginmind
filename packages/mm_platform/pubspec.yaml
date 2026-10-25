@@ -1,0 +1,20 @@
+name: mm_platform
+description: MarginMind platform integration — native window chrome, menus and system appearance.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  window_manager: ^0.5.1
+  macos_window_utils: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

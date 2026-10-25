@@ -1,0 +1,15 @@
+name: marginmind_workspace
+description: Workspace root for the MarginMind monorepo.
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+workspace:
+  - apps/marginmind
+  - packages/mm_core
+  - packages/mm_design
+  - packages/mm_platform
+
+dev_dependencies:
+  lints: ^6.0.0
