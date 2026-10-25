@@ -47,8 +47,10 @@ void main() {
 
     test('stays above a selection near the bottom edge', () {
       const anchor = Rect.fromLTWH(300, 570, 200, 22);
+      // No room below (592 + gap + 36 > 592): must not be pushed off the bottom.
+      expect(anchor.bottom + gap + size.height, greaterThan(600 - margin));
       final p = place(anchor);
-      expect(p.side, MMFloatingSide.above);
+      expect(p, const MMFloatingPlacement(Offset(290, 570 - gap - 36), MMFloatingSide.above));
       expectVisible(p, anchor);
     });
 
@@ -159,20 +161,18 @@ void main() {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(harness(toolbar()));
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('Copy'), findsOneWidget);
-    expect(find.bySemanticsLabel('green'), findsOneWidget);
+    final labels = [for (final c in MMAnnotationColor.values) c.name, 'Copy', 'Add Note'];
+    expect(find.byType(MMInteractive), findsNWidgets(labels.length));
 
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     addTearDown(mouse.removePointer);
     await mouse.addPointer(location: Offset.zero);
-    for (final (finder, text) in [
-      (find.byIcon(MMIcons.copy), 'Copy'),
-      (find.byIcon(MMIcons.addNote), 'Add Note'),
-      (find.bySemanticsLabel('pink'), 'pink'),
-    ]) {
-      await mouse.moveTo(tester.getCenter(finder));
+    for (final label in labels) {
+      final item = find.bySemanticsLabel(label);
+      expect(item, findsOneWidget, reason: label);
+      await mouse.moveTo(tester.getCenter(item));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.text(text), findsOneWidget, reason: text);
+      expect(find.text(label), findsOneWidget, reason: label);
       await mouse.moveTo(Offset.zero);
       await tester.pumpAndSettle(const Duration(seconds: 1));
     }

@@ -1,3 +1,5 @@
+import 'dart:math' show max;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -299,8 +301,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
               final area = Offset.zero & constraints.biggest;
               void drag(DragUpdateDetails d) {
                 final moved = _selection.shift(d.delta);
-                final dx = moved.left.clamp(area.left, area.right - moved.width) - moved.left;
-                final dy = moved.top.clamp(area.top, area.bottom - moved.height) - moved.top;
+                final dx = moved.left.clamp(area.left, max(area.left, area.right - moved.width)) - moved.left;
+                final dy = moved.top.clamp(area.top, max(area.top, area.bottom - moved.height)) - moved.top;
                 setState(() => _selection = moved.shift(Offset(dx, dy)));
               }
 
