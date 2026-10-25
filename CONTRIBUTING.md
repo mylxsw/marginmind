@@ -32,3 +32,23 @@ dart format --set-exit-if-changed apps packages
 ```
 
 CI（`.github/workflows/ci.yml`）会在 Linux 上执行同样的检查，并在 macOS 上构建应用。
+
+## 覆盖率
+
+在仓库根目录运行：
+
+```bash
+python3 -m unittest discover -s tool/tests
+python3 tool/coverage.py
+# 已有各包报告时，只重新汇总：
+python3 tool/coverage.py --report-only
+```
+
+脚本对现有六个测试套件逐包启用 `--coverage`；纯 Dart 包再用
+`coverage:format_coverage` 转为 LCOV。报告按仓库相对路径与行号合并，
+同一源码被多个套件执行时只计一次。包含报告中的项目 `lib/` 源码（含生成代码），
+不计 SDK、第三方依赖或测试代码。`mm_pdf` 暂无独立测试套件，不在当前六个
+套件的门禁范围内；报告未包含的文件也不在该行覆盖率口径内。
+
+输出为 `coverage/lcov.info` 和 `coverage/summary.md`，CI 同时上传附件并写入
+Job Summary。汇总行覆盖率低于 **80%**、缺少报告、空报告或测试失败都会失败。

@@ -29,7 +29,8 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 
 `StudySetContent` 是一个学习集的全部内容，不可变：`Document`（文件、页数、读到的页）、`Annotation`（页码 + PDF 坐标矩形 + 原文 + 颜色索引）、`Card`（topic / excerpt / note）、`MapNode`（卡片在脑图中的位置：父节点 + 排序 + 是否折叠）、`ReviewState`（每张卡片的复习排期）。所有修改都是 `StudySetEditor` 上的纯函数（`createExcerpt`、`attachCard`、`addTopic`、`move`、`setCollapsed`、`rate`、`removeDocument`…），仓库的 `update(id, change)` 负责原子地应用并保存，这也让测试不依赖界面。
 
-- **撤销 / 重做**：工作区控制器在每次可撤销的编辑前保存内容快照（最多 100 步）。撤销时用 `StudySetEditor.restore` 回到快照，但保留当前的复习记录和阅读页码——这两者不属于“编辑”。
+- **撤销 / 重做**：控制器的独立编辑自动记录一步快照（最多 100 步）；跨多次写入的原地编辑用 `await beginTransaction()` 开始，`await commitTransaction()` 提交，`await abortTransaction()` 放弃。嵌套事务加入外层事务，最外层提交只记一步；放弃取消整个事务且保留原有重做记录。空事务及内容未变化的编辑不记历史。事务期间禁用控制器级撤销 / 重做，文字框负责自身撤销。写入和事务边界按调用顺序串行执行。撤销、重做和放弃均用 `StudySetEditor.restore` 保留当前复习记录和阅读页码。
+- **脑图编辑基础 API**：`insertSibling`（`before` 指定前后）、`promote`、`insertParent`、`removeMany`、`moveMany`、`recolorMany` 均为 `StudySetEditor` 纯函数。虚拟根节点以 `null` 表示；在根上加兄弟节点会添加根的子节点，提升和插入父节点则不操作。批量移动按脑图先序排列、合并选中的父子树，目标落在任一选中子树内或不存在时整批拒绝；`index` 指移除所选节点后的目标兄弟列表位置。批量改色只作用于选中摘录关联的高亮（格式 1 的主题和笔记不存颜色），不隐式修改后代。控制器的 `removeCards` / `moveCards` / `recolorCards` 各只记一步历史。
 - **复习**：`ReviewScheduler` 是简化的 SM-2（重来 10 分钟后再出现；良好 1 天 → 3 天 → 间隔 × 难度系数）。`reviewQueue(now)` 给出到期卡片（最逾期在前）和最多 20 张新卡片；资料库的待复习数也由它计算。
 - **导出**：`MapExporter` 把主脑图转成 Markdown（嵌套列表）或 OPML 2.0（摘录原文放在 `_note`）。
 

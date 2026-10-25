@@ -15,4 +15,5 @@ workspace:
   - packages/mm_layout
 
 dev_dependencies:
+  coverage: ^1.15.1
   lints: ^6.0.0
