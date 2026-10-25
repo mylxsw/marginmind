@@ -107,6 +107,7 @@ class WorkspaceState {
     this.openDocumentIds = const [],
     this.activeDocumentId,
     this.sidebarQuery = '',
+    this.tagFilter,
     this.selectedCardId,
     this.selectedCardIds = const {},
     this.flashCardId,
@@ -132,6 +133,7 @@ class WorkspaceState {
   final List<String> openDocumentIds;
   final String? activeDocumentId;
   final String sidebarQuery;
+  final String? tagFilter;
 
   /// Selected map node; null means the root.
   final String? selectedCardId;
@@ -163,6 +165,8 @@ class WorkspaceState {
     String? activeDocumentId,
     bool clearActive = false,
     String? sidebarQuery,
+    String? tagFilter,
+    bool clearTagFilter = false,
     String? selectedCardId,
     Set<String>? selectedCardIds,
     bool selectRoot = false,
@@ -190,6 +194,7 @@ class WorkspaceState {
       openDocumentIds: openDocumentIds ?? this.openDocumentIds,
       activeDocumentId: clearActive ? null : (activeDocumentId ?? this.activeDocumentId),
       sidebarQuery: sidebarQuery ?? this.sidebarQuery,
+      tagFilter: clearTagFilter ? null : (tagFilter ?? this.tagFilter),
       selectedCardIds: Set.unmodifiable(
         selectedCardIds ??
             (selectRoot
@@ -813,6 +818,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     state = state.copyWith(selectedCardId: card.id);
     return card;
+  }
+
+  void filterTag(String? tag) => state = state.copyWith(tagFilter: tag, clearTagFilter: tag == null);
+
+  Future<void> setTags(String cardId, Iterable<String> tags) {
+    final values = tags.toList();
+    return _update((c) => _editor.setTags(c, cardId, values));
   }
 
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));

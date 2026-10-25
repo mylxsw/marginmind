@@ -168,6 +168,7 @@ class Card {
     this.title = '',
     this.annotationId,
     this.imageFileName,
+    this.tags = const [],
     required this.createdAt,
   });
 
@@ -184,10 +185,13 @@ class Card {
   final String? imageFileName;
   final DateTime createdAt;
 
-  Card copyWith({String? title}) => Card(
+  final List<String> tags;
+
+  Card copyWith({String? title, List<String>? tags}) => Card(
     id: id,
     kind: kind,
     title: title ?? this.title,
+    tags: tags == null ? this.tags : List.unmodifiable(tags),
     annotationId: annotationId,
     imageFileName: imageFileName,
     createdAt: createdAt,
@@ -199,6 +203,7 @@ class Card {
     'title': title,
     if (annotationId != null) 'annotationId': annotationId,
     if (imageFileName != null) 'imageFileName': imageFileName,
+    if (tags.isNotEmpty) 'tags': tags,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -208,6 +213,7 @@ class Card {
     title: (j['title'] as String?) ?? '',
     annotationId: j['annotationId'] as String?,
     imageFileName: j['imageFileName'] as String?,
+    tags: List.unmodifiable(((j['tags'] as List?) ?? const []).cast<String>()),
     createdAt: DateTime.parse(j['createdAt'] as String),
   );
 }

@@ -304,6 +304,10 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     final map = <AppCommand>[
+      AppCommand(
+        l.cardTags,
+        editable && selected != null ? () => showCardTagsSheet(context, ref, workspaceId!, selected) : null,
+      ),
       if (workspace != null)
         for (final map in workspace.content.maps) ...[
           AppCommand(map.title.isEmpty ? l.mainMap : map.title, editable ? () => workspace.selectMap(map.id) : null),

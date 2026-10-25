@@ -794,4 +794,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String addToNamedMap(String title) {
     return '加入“$title”';
   }
+
+  @override
+  String get cardTags => '标签…';
+
+  @override
+  String get sectionTags => '标签';
+
+  @override
+  String get addTag => '添加标签';
+
+  @override
+  String get removeTag => '删除标签';
+
+  @override
+  String get allTags => '全部标签';
 }

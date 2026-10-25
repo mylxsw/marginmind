@@ -831,4 +831,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String addToNamedMap(String title) {
     return 'Add to “$title”';
   }
+
+  @override
+  String get cardTags => 'Tags…';
+
+  @override
+  String get sectionTags => 'Tags';
+
+  @override
+  String get addTag => 'Add Tag';
+
+  @override
+  String get removeTag => 'Remove Tag';
+
+  @override
+  String get allTags => 'All Tags';
 }

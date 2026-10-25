@@ -1513,6 +1513,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add to “{title}”'**
   String addToNamedMap(String title);
+
+  /// No description provided for @cardTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags…'**
+  String get cardTags;
+
+  /// No description provided for @sectionTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get sectionTags;
+
+  /// No description provided for @addTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Tag'**
+  String get addTag;
+
+  /// No description provided for @removeTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Tag'**
+  String get removeTag;
+
+  /// No description provided for @allTags.
+  ///
+  /// In en, this message translates to:
+  /// **'All Tags'**
+  String get allTags;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -22,6 +22,74 @@ Future<ProviderContainer> openFirstSet(WidgetTester tester, {InMemoryStudySetCon
 }
 
 void main() {
+  testWidgets('tag sheet adds, deduplicates, removes, cancels and supports undo', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    controller.selectCard('c3');
+    await tester.pumpAndSettle();
+    Future<void> openTags() async {
+      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tags…'));
+      await tester.pumpAndSettle();
+    }
+
+    await openTags();
+    await tester.enterText(find.descendant(of: find.byType(MMSheet), matching: find.byType(TextField)), ' Science ');
+    await tester.tap(find.byTooltip('Add Tag'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.descendant(of: find.byType(MMSheet), matching: find.byType(TextField)), 'science');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(MMButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(controller.content.card('c3')!.tags, ['Science']);
+    await openTags();
+    await tester.tap(find.byTooltip('Remove Tag'));
+    await tester.tap(find.widgetWithText(MMButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(controller.content.card('c3')!.tags, ['Science']);
+    await openTags();
+    await tester.tap(find.byTooltip('Remove Tag'));
+    await tester.tap(find.widgetWithText(MMButton, 'Save'));
+    await tester.pumpAndSettle();
+    expect(controller.content.card('c3')!.tags, isEmpty);
+    await controller.undo();
+    await tester.pumpAndSettle();
+    expect(controller.content.card('c3')!.tags, ['Science']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sidebar tags filter cards and combine with search', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await controller.setTags('c3', ['Science']);
+    await controller.setTags('c4', ['Practice']);
+    await tester.pumpAndSettle();
+    final sidebar = find.byType(MMSidebar);
+    Finder inSidebar(String text) => find.descendant(of: sidebar, matching: find.text(text));
+    await tester.tap(find.byKey(const ValueKey('sidebar-tag-Science')));
+    await tester.pumpAndSettle();
+    expect(inSidebar('遗忘的规律'), findsOneWidget);
+    expect(inSidebar('对策一：间隔重复'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'science');
+    await tester.pumpAndSettle();
+    expect(inSidebar('遗忘的规律'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'zzz');
+    await tester.pumpAndSettle();
+    expect(inSidebar('遗忘的规律'), findsNothing);
+    expect(inSidebar('No matches'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.tap(inSidebar('All Tags'));
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).tagFilter, isNull);
+    await tester.enterText(find.byType(TextField).first, 'practice');
+    await tester.pumpAndSettle();
+    expect(inSidebar('对策一：间隔重复'), findsOneWidget);
+    expect(inSidebar('遗忘的规律'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the selected highlight color has a gap inside its ring', (tester) async {
     await openFirstSet(tester);
     final dot = find.byWidgetPredicate(
