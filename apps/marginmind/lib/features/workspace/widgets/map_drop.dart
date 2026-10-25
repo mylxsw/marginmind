@@ -114,7 +114,6 @@ class MapDrop {
 /// linearly to [maxSpeed]; at or beyond the side it is [maxSpeed]. Panning
 /// toward a side reveals content on that side, so a positive value moves
 /// the content right / down.
-@visibleForTesting
 Offset autoScrollVelocity(Offset pointer, Size viewport, {required double edge, required double maxSpeed}) {
   double axis(double v, double extent) {
     if (extent <= edge * 2) return 0;
@@ -130,7 +129,6 @@ Offset autoScrollVelocity(Offset pointer, Size viewport, {required double edge, 
 /// pans the [content] (on screen, in viewport coordinates) further than
 /// [margin] inside the viewport: scrolling stops once the far side of the
 /// map is visible. A translation already past that limit is left alone.
-@visibleForTesting
 Offset clampAutoScroll(Offset current, Offset step, Rect content, Size viewport, {required double margin}) {
   double axis(double t, double d, double start, double end, double extent) {
     if (d > 0) return math.min(t + d, math.max(t, t + margin - start));
