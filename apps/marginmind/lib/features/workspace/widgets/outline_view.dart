@@ -157,7 +157,12 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
           MindMapCommand.promote:
         if (selected != null) widget.onCommand?.call(command);
       // The outline always shows the whole tree and has no viewport to fit.
-      case MindMapCommand.fold || MindMapCommand.fit || MindMapCommand.center:
+      // Relations and summaries are drawn on the map only.
+      case MindMapCommand.fold ||
+          MindMapCommand.fit ||
+          MindMapCommand.center ||
+          MindMapCommand.relation ||
+          MindMapCommand.summary:
         break;
     }
   }

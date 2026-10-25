@@ -1543,6 +1543,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All Tags'**
   String get allTags;
+
+  /// No description provided for @addRelation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Relationship'**
+  String get addRelation;
+
+  /// No description provided for @addSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Summary'**
+  String get addSummary;
+
+  /// No description provided for @newSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get newSummaryLabel;
+
+  /// No description provided for @editMarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Label'**
+  String get editMarkLabel;
+
+  /// No description provided for @deleteRelation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Relationship'**
+  String get deleteRelation;
+
+  /// No description provided for @deleteSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Summary'**
+  String get deleteSummary;
+
+  /// No description provided for @exportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary: {label}'**
+  String exportSummary(String label);
+
+  /// No description provided for @exportRelations.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationships'**
+  String get exportRelations;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

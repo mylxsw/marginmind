@@ -13,13 +13,21 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 import 'workspace_test.dart' show openFirstSet;
 
-Future<void> key(WidgetTester tester, LogicalKeyboardKey key, {bool primary = false, bool shift = false}) async {
+Future<void> key(
+  WidgetTester tester,
+  LogicalKeyboardKey key, {
+  bool primary = false,
+  bool shift = false,
+  bool alt = false,
+}) async {
   final modifier = defaultTargetPlatform == TargetPlatform.macOS
       ? LogicalKeyboardKey.metaLeft
       : LogicalKeyboardKey.controlLeft;
   if (primary) await tester.sendKeyDownEvent(modifier);
   if (shift) await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+  if (alt) await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
   await tester.sendKeyEvent(key);
+  if (alt) await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
   if (shift) await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
   if (primary) await tester.sendKeyUpEvent(modifier);
   await tester.pumpAndSettle();

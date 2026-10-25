@@ -277,3 +277,90 @@ class MapNode {
     collapsed: (j['collapsed'] as bool?) ?? false,
   );
 }
+
+/// A labeled line between two cards of one map, drawn from [fromId] to
+/// [toId]. It belongs to the map, not to either card.
+@immutable
+class MapRelation {
+  const MapRelation({
+    required this.id,
+    this.mapId = MindMap.defaultId,
+    required this.fromId,
+    required this.toId,
+    this.label = '',
+  });
+
+  final String id;
+  final String mapId;
+  final String fromId;
+  final String toId;
+  final String label;
+
+  MapRelation copyWith({String? label}) =>
+      MapRelation(id: id, mapId: mapId, fromId: fromId, toId: toId, label: label ?? this.label);
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'mapId': mapId,
+    'fromId': fromId,
+    'toId': toId,
+    if (label.isNotEmpty) 'label': label,
+  };
+
+  factory MapRelation.fromJson(Map<String, Object?> j) => MapRelation(
+    id: j['id'] as String,
+    mapId: (j['mapId'] as String?) ?? MindMap.defaultId,
+    fromId: j['fromId'] as String,
+    toId: j['toId'] as String,
+    label: (j['label'] as String?) ?? '',
+  );
+}
+
+/// A label summing up consecutive children of [parentId] (null = root),
+/// from [fromId] to [toId] inclusive. The range follows the siblings'
+/// current order, so reordering inside it keeps the summary.
+@immutable
+class MapSummary {
+  const MapSummary({
+    required this.id,
+    this.mapId = MindMap.defaultId,
+    this.parentId,
+    required this.fromId,
+    required this.toId,
+    this.label = '',
+  });
+
+  final String id;
+  final String mapId;
+  final String? parentId;
+  final String fromId;
+  final String toId;
+  final String label;
+
+  MapSummary copyWith({String? label, String? fromId, String? toId}) => MapSummary(
+    id: id,
+    mapId: mapId,
+    parentId: parentId,
+    fromId: fromId ?? this.fromId,
+    toId: toId ?? this.toId,
+    label: label ?? this.label,
+  );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'mapId': mapId,
+    if (parentId != null) 'parentId': parentId,
+    'fromId': fromId,
+    'toId': toId,
+    if (label.isNotEmpty) 'label': label,
+  };
+
+  factory MapSummary.fromJson(Map<String, Object?> j) => MapSummary(
+    id: j['id'] as String,
+    mapId: (j['mapId'] as String?) ?? MindMap.defaultId,
+    parentId: j['parentId'] as String?,
+    fromId: j['fromId'] as String,
+    toId: j['toId'] as String,
+    label: (j['label'] as String?) ?? '',
+  );
+}

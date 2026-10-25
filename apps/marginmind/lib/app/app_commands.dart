@@ -69,6 +69,8 @@ enum MindMapCommand {
   copy,
   cut,
   paste,
+  relation,
+  summary,
 }
 
 class MindMapIntent extends Intent {
@@ -93,6 +95,8 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   primaryShortcut(LogicalKeyboardKey.arrowUp): MindMapCommand.up,
   primaryShortcut(LogicalKeyboardKey.arrowDown): MindMapCommand.down,
   primaryShortcut(LogicalKeyboardKey.digit0): MindMapCommand.fit,
+  primaryShortcut(LogicalKeyboardKey.keyR, alt: true): MindMapCommand.relation,
+  primaryShortcut(LogicalKeyboardKey.bracketRight): MindMapCommand.summary,
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
@@ -165,7 +169,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
-    final editable = workspace != null && workspaceState?.editingCardId == null;
+    final editable =
+        workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -359,11 +364,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.down: l.moveDown,
       MindMapCommand.fit: l.fitMap,
       MindMapCommand.center: l.centerCurrentNode,
+      MindMapCommand.relation: l.addRelation,
+      MindMapCommand.summary: l.addSummary,
     };
     // Dispatch through the focused canvas so menu and keyboard run the same action.
     // The outline always shows the whole tree: folding, fitting and
     // centering only apply to the map.
-    const mapOnly = {MindMapCommand.fold, MindMapCommand.fit, MindMapCommand.center};
+    // Relations and summaries are drawn on the map only.
+    const mapOnly = {
+      MindMapCommand.fold,
+      MindMapCommand.fit,
+      MindMapCommand.center,
+      MindMapCommand.relation,
+      MindMapCommand.summary,
+    };
     final inOutline = workspaceState?.mapView == MapViewMode.outline;
     for (final entry in mapLabels.entries) {
       map.add(

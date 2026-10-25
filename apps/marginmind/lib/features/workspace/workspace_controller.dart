@@ -113,6 +113,9 @@ class WorkspaceState {
     this.flashCardId,
     this.flashAnnotationId,
     this.editingCardId,
+    this.selectedMarkId,
+    this.editingMarkId,
+    this.connectingFromId,
     this.pending,
     this.reveal,
     this.currentPages = const {},
@@ -143,6 +146,16 @@ class WorkspaceState {
 
   /// Card whose title (a note's text) is being edited in place.
   final String? editingCardId;
+
+  /// Selected relation or summary of the active map. Selecting a node
+  /// clears it; selecting it clears the node selection.
+  final String? selectedMarkId;
+
+  /// Relation or summary whose label is being edited in place.
+  final String? editingMarkId;
+
+  /// A relation is being drawn from this card; the next node clicked ends it.
+  final String? connectingFromId;
   final PendingAction? pending;
   final RevealRequest? reveal;
 
@@ -175,6 +188,12 @@ class WorkspaceState {
     bool clearFlash = false,
     String? editingCardId,
     bool clearEditing = false,
+    String? selectedMarkId,
+    bool clearMark = false,
+    String? editingMarkId,
+    bool clearMarkEditing = false,
+    String? connectingFromId,
+    bool clearConnecting = false,
     PendingAction? pending,
     bool clearPending = false,
     RevealRequest? reveal,
@@ -207,6 +226,13 @@ class WorkspaceState {
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
       editingCardId: clearEditing ? null : (editingCardId ?? this.editingCardId),
+      // Any change of the node selection deselects the mark.
+      selectedMarkId: clearMark
+          ? null
+          : selectedMarkId ??
+                (selectedCardId != null || selectedCardIds != null || selectRoot ? null : this.selectedMarkId),
+      editingMarkId: clearMarkEditing ? null : (editingMarkId ?? this.editingMarkId),
+      connectingFromId: clearConnecting ? null : (connectingFromId ?? this.connectingFromId),
       pending: clearPending ? null : (pending ?? this.pending),
       reveal: reveal ?? this.reveal,
       currentPages: currentPages ?? this.currentPages,
@@ -386,7 +412,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final selectionGone = s.selectedCardId != null && c.node(s.selectedCardId!, mapId: mapId) == null;
     final selectedIds = s.selectedCardIds.where((id) => c.node(id, mapId: mapId) != null).toSet();
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
+    final mark = s.selectedMarkId != null && _markExists(c, mapId, s.selectedMarkId!) ? s.selectedMarkId : null;
+    final connecting = s.connectingFromId != null && c.node(s.connectingFromId!, mapId: mapId) != null;
     return s.copyWith(
+      selectedMarkId: mark,
+      clearMark: mark == null,
+      clearConnecting: !connecting,
       activeMapId: mapId,
       openDocumentIds: open,
       activeDocumentId: active,
@@ -397,14 +428,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     );
   }
 
+  static bool _markExists(StudySetContent c, String mapId, String id) =>
+      c.relationsOf(mapId).any((r) => r.id == id) || c.summariesOf(mapId).any((s) => s.$1.id == id);
+
   /// Switch only after queued writes; inline editors must finish first.
   Future<void> selectMap(String id) async {
-    if (_creating || _editing != null || _clipboardBusy) return;
+    if (_creating || _editing != null || _markEditing != null || _clipboardBusy) return;
     await _enqueue(() async {
       if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
       state = state.copyWith(
         activeMapId: id,
         selectRoot: true,
+        clearConnecting: true,
         clearEditing: true,
         clearPending: true,
         clearFlash: true,
@@ -534,8 +569,15 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return const DocumentRemovedNotice();
   }
 
-  /// The active map as Markdown or OPML. [source] labels excerpt sources.
-  String export({required bool opml, required String rootTitle, required String Function(Document, int) source}) {
+  /// The active map as Markdown or OPML. [source] labels excerpt sources,
+  /// [summary] summary lines and [relationsTitle] the list of relations.
+  String export({
+    required bool opml,
+    required String rootTitle,
+    required String Function(Document, int) source,
+    String Function(String label)? summary,
+    String relationsTitle = 'Relationships',
+  }) {
     final exporter = MapExporter(
       content,
       mapId: state.activeMapId,
@@ -543,6 +585,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           ? content.map(state.activeMapId)!.title
           : rootTitle,
       source: source,
+      summary: summary,
+      relationsTitle: relationsTitle,
     );
     return opml ? exporter.opml() : exporter.markdown();
   }
@@ -839,7 +883,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Starts editing a card's title (a note's text) in place. Nothing is
   /// written until [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
-    if (_editing != null || _creating || content.card(cardId) == null) return;
+    if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId, layout: _layoutShowingMap);
   }
@@ -883,7 +927,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Runs [create] (given the selection before it) in a transaction and opens
   /// the created card for editing. A null card aborts the transaction.
   Future<Card?> _createAndEdit(Future<Card?> Function(String? previous) create) async {
-    if (_editing != null || _creating) return null;
+    if (_editing != null || _markEditing != null || _creating) return null;
     _creating = true;
     final previous = state.selectedCardId;
     final Card? card;
@@ -1042,6 +1086,141 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return const RemovedNotice();
   }
 
+  // ---- relations and summaries ------------------------------------------------
+
+  _MarkEditSession? _markEditing;
+
+  /// Selects a relation or summary (null deselects it, keeping no node).
+  void selectMark(String? id) {
+    if (id == null) {
+      state = state.copyWith(clearMark: true, clearConnecting: true);
+      return;
+    }
+    if (!_markExists(content, state.activeMapId, id)) return;
+    state = state.copyWith(selectRoot: true, selectedMarkId: id, clearConnecting: true);
+  }
+
+  /// With two nodes selected, relates the first to the second. With one, a
+  /// line starts there and ends at the next node clicked ([connectTo]).
+  Future<void> addRelation() async {
+    if (_editing != null || _markEditing != null || _creating || _clipboardBusy) return;
+    final ids = state.selectedCardIds.isEmpty
+        ? [?state.selectedCardId]
+        : [...state.selectedCardIds.where((id) => id != state.selectedCardId), ?state.selectedCardId];
+    if (ids.length == 2) return _relate(ids.first, ids.last);
+    if (ids.length == 1) state = state.copyWith(connectingFromId: ids.single);
+  }
+
+  Future<void> connectTo(String cardId) async {
+    final from = state.connectingFromId;
+    if (from == null) return;
+    state = state.copyWith(clearConnecting: true);
+    if (from == cardId) return;
+    await _relate(from, cardId);
+  }
+
+  void cancelConnecting() => state = state.copyWith(clearConnecting: true);
+
+  /// Draws the line and opens its label for typing; the label is optional.
+  Future<void> _relate(String fromId, String toId) async {
+    MapRelation? created;
+    await _update((c) {
+      final (next, relation) = _editor.addRelation(c, fromId, toId);
+      created = relation;
+      return next;
+    });
+    if (created == null || !ref.mounted) return;
+    state = state.copyWith(selectRoot: true, selectedMarkId: created!.id);
+    beginMarkEditing(created!.id);
+  }
+
+  /// Sums up the selected siblings and opens the label for typing. Creation
+  /// and label are one undo step; Esc or an empty label leaves nothing.
+  Future<void> addSummaryAndEdit(String label) async {
+    if (_editing != null || _markEditing != null || _creating || _clipboardBusy) return;
+    final ids = state.selectedCardIds.isEmpty ? [?state.selectedCardId] : state.selectedCardIds.toList();
+    if (ids.isEmpty) return;
+    _creating = true;
+    MapSummary? created;
+    try {
+      await beginTransaction();
+      try {
+        await _update((c) {
+          final (next, summary) = _editor.addSummary(c, ids, label: label);
+          created = summary;
+          return next;
+        });
+      } catch (_) {
+        await abortTransaction();
+        rethrow;
+      }
+      if (created == null) {
+        await abortTransaction();
+        return;
+      }
+    } finally {
+      _creating = false;
+    }
+    if (!ref.mounted) return;
+    _markEditing = _MarkEditSession(created!.id, created: true);
+    state = state.copyWith(selectRoot: true, selectedMarkId: created!.id, editingMarkId: created!.id);
+  }
+
+  void beginMarkEditing(String id) {
+    if (_editing != null || _markEditing != null || _creating || !_markExists(content, state.activeMapId, id)) return;
+    _markEditing = _MarkEditSession(id, created: false);
+    state = state.copyWith(selectRoot: true, selectedMarkId: id, editingMarkId: id, layout: _layoutShowingMap);
+  }
+
+  /// Enter or clicking elsewhere. An empty label clears it, or drops a
+  /// summary created for this edit.
+  Future<void> finishMarkEditing(String text) async {
+    final session = _markEditing;
+    if (session == null) return;
+    _markEditing = null;
+    final label = text.trim();
+    try {
+      if (session.created && label.isEmpty) {
+        await abortTransaction();
+      } else {
+        try {
+          await _update((c) => _relabel(c, session.id, label));
+        } finally {
+          if (session.created) await commitTransaction();
+        }
+      }
+    } finally {
+      if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+    }
+  }
+
+  /// Esc: keeps the old label, or drops a summary created for this edit.
+  Future<void> cancelMarkEditing() async {
+    final session = _markEditing;
+    if (session == null) return;
+    _markEditing = null;
+    try {
+      if (session.created) await abortTransaction();
+    } finally {
+      if (ref.mounted) state = state.copyWith(clearMarkEditing: true);
+    }
+  }
+
+  StudySetContent _relabel(StudySetContent c, String id, String label) {
+    final relation = c.relations.where((r) => r.id == id).firstOrNull;
+    if (relation != null) return relation.label == label ? c : _editor.relabelRelation(c, id, label);
+    final summary = c.summaries.where((s) => s.id == id).firstOrNull;
+    return summary == null || summary.label == label ? c : _editor.relabelSummary(c, id, label);
+  }
+
+  /// Deletes the selected relation or summary (one undo step).
+  Future<void> removeSelectedMark() async {
+    final id = state.selectedMarkId;
+    if (id == null || _markEditing != null) return;
+    await _update((c) => _editor.removeSummary(_editor.removeRelation(c, id), id));
+    if (ref.mounted) state = state.copyWith(clearMark: true);
+  }
+
   void _flash({String? cardId, String? annotationId}) {
     _flashTimer?.cancel();
     state = state.copyWith(flashCardId: cardId, flashAnnotationId: annotationId);
@@ -1059,6 +1238,15 @@ class _EditSession {
   /// The card was added for this edit inside an open transaction.
   final bool created;
   final String? previousSelection;
+}
+
+class _MarkEditSession {
+  const _MarkEditSession(this.id, {required this.created});
+
+  final String id;
+
+  /// The summary was added for this edit inside an open transaction.
+  final bool created;
 }
 
 final workspaceProvider = NotifierProvider.family<WorkspaceController, WorkspaceState, String>(WorkspaceController.new);

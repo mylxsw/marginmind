@@ -475,5 +475,14 @@
   "sectionTags": "Tags",
   "addTag": "Add Tag",
   "removeTag": "Remove Tag",
-  "allTags": "All Tags"
+  "allTags": "All Tags",
+  "addRelation": "Add Relationship",
+  "addSummary": "Add Summary",
+  "newSummaryLabel": "Summary",
+  "editMarkLabel": "Edit Label",
+  "deleteRelation": "Delete Relationship",
+  "deleteSummary": "Delete Summary",
+  "exportSummary": "Summary: {label}",
+  "@exportSummary": {"placeholders": {"label": {"type": "String"}}},
+  "exportRelations": "Relationships"
 }

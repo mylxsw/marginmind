@@ -74,7 +74,7 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
         final migrated = migrateStudySet(json);
         // Decode before touching disk so invalid input cannot replace the source.
         final record = _SetRecord.fromJson(migrated);
-        if (json['format'] != 3) {
+        if (json['format'] != currentStudySetFormat) {
           final backup = File('${file.path}.format-${json['format']}.bak');
           if (!await backup.exists()) {
             await _atomicWrite(backup, original);
@@ -364,7 +364,7 @@ class _SetRecord {
   }
 
   Map<String, Object?> toJson() => {
-    'format': 3,
+    'format': currentStudySetFormat,
     'id': id,
     'title': title,
     'colorIndex': colorIndex,
