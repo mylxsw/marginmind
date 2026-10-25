@@ -74,7 +74,7 @@ void main() {
     testWidgets('F2 and Space open the field; Esc restores the title', (tester) async {
       final container = await openFirstSet(tester);
       final state = container.read(workspaceProvider('demo-1').notifier);
-      for (final key in [LogicalKeyboardKey.f2, LogicalKeyboardKey.space, LogicalKeyboardKey.enter]) {
+      for (final key in [LogicalKeyboardKey.f2, LogicalKeyboardKey.space]) {
         await _select(tester, '对策一：间隔重复');
         await tester.sendKeyEvent(key);
         await tester.pumpAndSettle();
@@ -155,7 +155,7 @@ void main() {
     await tester.pumpAndSettle();
     final note = await controller.addNote('笔记');
     await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pumpAndSettle();
     expect(find.byType(MMSheet), findsOneWidget);
     await tester.tap(find.text('Cancel'));
@@ -378,6 +378,21 @@ void main() {
       await controller.cancelEditing();
       expect(state().canUndo, isFalse);
       expect(controller.content.card('c3')!.title, '遗忘的规律');
+    });
+
+    test('structural creation handles root, missing selection and write failures without a transaction leak', () async {
+      controller.selectCard(null);
+      expect(await controller.addTopicAndEdit('New', siblingBefore: false), isNull);
+      expect(await controller.addTopicAndEdit('New', asParent: true), isNull);
+      await controller.promoteSelected();
+      controller.selectCard('missing');
+      expect(await controller.addTopicAndEdit('New', siblingBefore: true), isNull);
+      controller.selectCard('c3');
+      repo.failNext = true;
+      await expectLater(controller.addTopicAndEdit('New', asParent: true), throwsStateError);
+      expect(state().editingCardId, isNull);
+      await controller.rename('c3', 'still undoable');
+      expect(state().canUndo, isTrue);
     });
 
     test('a second creation while the first is still writing is ignored', () async {

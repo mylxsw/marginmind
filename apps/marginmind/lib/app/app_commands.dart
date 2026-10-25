@@ -51,6 +51,30 @@ abstract final class AppShortcuts {
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
 }
 
+/// Shared by the native menu and the focused canvas.
+enum MindMapCommand { siblingAfter, siblingBefore, child, promote, parent, edit, delete, fold, up, down, fit, center }
+
+class MindMapIntent extends Intent {
+  const MindMapIntent(this.command);
+  final MindMapCommand command;
+}
+
+Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.enter): MindMapCommand.siblingAfter,
+  const SingleActivator(LogicalKeyboardKey.enter, shift: true): MindMapCommand.siblingBefore,
+  const SingleActivator(LogicalKeyboardKey.tab): MindMapCommand.child,
+  const SingleActivator(LogicalKeyboardKey.tab, shift: true): MindMapCommand.promote,
+  primaryShortcut(LogicalKeyboardKey.enter): MindMapCommand.parent,
+  const SingleActivator(LogicalKeyboardKey.space): MindMapCommand.edit,
+  const SingleActivator(LogicalKeyboardKey.f2): MindMapCommand.edit,
+  const SingleActivator(LogicalKeyboardKey.backspace): MindMapCommand.delete,
+  const SingleActivator(LogicalKeyboardKey.delete): MindMapCommand.delete,
+  primaryShortcut(LogicalKeyboardKey.slash): MindMapCommand.fold,
+  primaryShortcut(LogicalKeyboardKey.arrowUp): MindMapCommand.up,
+  primaryShortcut(LogicalKeyboardKey.arrowDown): MindMapCommand.down,
+  primaryShortcut(LogicalKeyboardKey.digit0): MindMapCommand.fit,
+};
+
 /// Selection commands share their intents between menus and the floating toolbar.
 enum ReaderSelectionCommand { excerpt, highlight, copy, note }
 
@@ -78,6 +102,7 @@ class AppMenus extends ConsumerStatefulWidget {
 
 class _AppMenusState extends ConsumerState<AppMenus> {
   late bool _textFocused;
+  bool _mapFocused = false;
 
   bool get _isTextFocused =>
       FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -91,8 +116,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
   void _focusChanged() {
     final textFocused = _isTextFocused;
-    if (textFocused == _textFocused) return;
-    setState(() => _textFocused = textFocused);
+    final focus = FocusManager.instance.primaryFocus?.context;
+    final mapFocused = focus != null && Actions.maybeFind<MindMapIntent>(focus) != null;
+    if (textFocused == _textFocused && mapFocused == _mapFocused) return;
+    setState(() {
+      _textFocused = textFocused;
+      _mapFocused = mapFocused;
+    });
   }
 
   @override
@@ -191,7 +221,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final map = <AppCommand>[
       AppCommand(
         l.addTopic,
-        editable ? () => workspace.addTopic(l.newTopicName) : null,
+        editable
+            ? () => workspaceState?.mapView == MapViewMode.map
+                  ? workspace.addTopicAndEdit(l.newTopicName)
+                  : workspace.addTopic(l.newTopicName)
+            : null,
         shortcut: AppShortcuts.addTopic,
       ),
       AppCommand(l.addNote, editable ? () => workspace.addNote(l.newNoteText) : null, shortcut: AppShortcuts.addNote),
@@ -202,8 +236,36 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             : null,
         shortcut: AppShortcuts.revealSource,
       ),
-      AppCommand(l.removeFromMap, editable && selected != null ? workspace.removeSelected : null),
     ];
+    final mapLabels = {
+      MindMapCommand.siblingAfter: l.addSiblingAfter,
+      MindMapCommand.siblingBefore: l.addSiblingBefore,
+      MindMapCommand.child: l.addChildTopic,
+      MindMapCommand.promote: l.promoteNode,
+      MindMapCommand.parent: l.insertParentNode,
+      MindMapCommand.edit: l.renameTitle,
+      MindMapCommand.delete: l.removeFromMap,
+      MindMapCommand.fold: l.toggleNodeFold,
+      MindMapCommand.up: l.moveUp,
+      MindMapCommand.down: l.moveDown,
+      MindMapCommand.fit: l.fitMap,
+      MindMapCommand.center: l.centerCurrentNode,
+    };
+    // Dispatch through the focused canvas so menu and keyboard run the same action.
+    for (final entry in mapLabels.entries) {
+      map.add(
+        AppCommand(
+          entry.value,
+          editable && _mapFocused && !_textFocused
+              ? () {
+                  final focus = FocusManager.instance.primaryFocus?.context;
+                  if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
+                }
+              : null,
+          shortcut: mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
+        ),
+      );
+    }
     final view = <AppCommand>[
       if (inLibrary) ...[
         AppCommand(

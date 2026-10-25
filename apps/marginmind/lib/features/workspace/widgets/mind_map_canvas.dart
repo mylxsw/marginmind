@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_layout/mm_layout.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../app/app_commands.dart';
 
 part 'mind_map_cache.dart';
 
@@ -38,6 +39,7 @@ class MindMapCanvas extends StatefulWidget {
     required this.onNavigate,
     required this.onAddChild,
     required this.onShift,
+    this.onCommand,
     this.editingCardId,
     this.onEditDone,
     this.onEditCancel,
@@ -57,7 +59,7 @@ class MindMapCanvas extends StatefulWidget {
   final ValueChanged<String?> onSelect;
   final ValueChanged<String> onReveal;
 
-  /// Double-click, Enter, F2, Space or typing on a selected node. The caller
+  /// Double-click, F2, Space or typing on a selected node. The caller
   /// answers by setting [editingCardId] for topics edited in place.
   final ValueChanged<String> onRename;
   final VoidCallback onDelete;
@@ -74,6 +76,8 @@ class MindMapCanvas extends StatefulWidget {
 
   /// ⌘↑ / ⌘↓.
   final ValueChanged<int> onShift;
+
+  final ValueChanged<MindMapCommand>? onCommand;
 
   /// Topic whose title is shown as a text field.
   final String? editingCardId;
@@ -111,6 +115,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   void initState() {
     super.initState();
     _syncField();
+    _motion.addListener(() {
+      if (_field == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _field != null) _ensureVisible(_field!.id);
+      });
+    });
   }
 
   @override
@@ -274,8 +284,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
     super.didUpdateWidget(oldWidget);
     _syncField();
     _typed = null;
-    final id = widget.flashCardId;
-    if (id != null && id != oldWidget.flashCardId) {
+    if (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId) {
+      final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
+          ? widget.flashCardId!
+          : widget.selectedCardId ?? rootNodeId;
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(id));
     }
   }
@@ -299,16 +311,66 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
     final m = widget.transformation.value;
     final scale = mapScale(m);
     final tx = m.storage[12], ty = m.storage[13];
-    final left = rect.left * scale + tx, right = rect.right * scale + tx;
-    final top = rect.top * scale + ty, bottom = rect.bottom * scale + ty;
-    const margin = 32.0;
+    final shown = _shown(id, rect);
+    final left = shown.left * scale + tx, right = shown.right * scale + tx;
+    final top = shown.top * scale + ty, bottom = shown.bottom * scale + ty;
+    const margin = MMSpacing.xxxl;
     var dx = 0.0, dy = 0.0;
     if (right > _viewport.width - margin) dx = _viewport.width - margin - right;
     if (left + dx < margin) dx = margin - left;
     if (bottom > _viewport.height - margin) dy = _viewport.height - margin - bottom;
-    if (top + dy < margin + 48) dy = margin + 48 - top;
+    if (top + dy < margin + MMSpacing.xxxl + MMSpacing.l) dy = margin + MMSpacing.xxxl + MMSpacing.l - top;
     if (dx == 0 && dy == 0) return;
     widget.transformation.value = m.clone()..setTranslationRaw(tx + dx, ty + dy, 0);
+  }
+
+  void _command(MindMapCommand command) {
+    final selected = widget.selectedCardId;
+    switch (command) {
+      case MindMapCommand.child:
+        widget.onAddChild();
+      case MindMapCommand.edit:
+        if (selected != null) widget.onRename(selected);
+      case MindMapCommand.delete:
+        if (selected != null) widget.onDelete();
+      case MindMapCommand.fold:
+        if (selected != null) widget.onToggleCollapsed(selected);
+      case MindMapCommand.up || MindMapCommand.down:
+        if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
+      case MindMapCommand.fit:
+        final layout = _layout;
+        if (layout == null || _viewport.isEmpty) return;
+        final scale = math
+            .min(
+              (_viewport.width - MMSpacing.xl * 2) / layout.width,
+              (_viewport.height - MMSpacing.xl * 2) / layout.height,
+            )
+            .clamp(0.01, 1.0);
+        widget.transformation.value = Matrix4.identity()
+          ..translateByDouble(
+            (_viewport.width - layout.width * scale) / 2,
+            (_viewport.height - layout.height * scale) / 2,
+            0,
+            1,
+          )
+          ..scaleByDouble(scale, scale, 1, 1);
+      case MindMapCommand.center:
+        final rect = _layout?.rects[selected ?? rootNodeId];
+        if (rect == null || _viewport.isEmpty) return;
+        final m = widget.transformation.value;
+        final scale = mapScale(m);
+        widget.transformation.value = m.clone()
+          ..setTranslationRaw(
+            _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
+            _viewport.height / 2 - rect.centerY * scale,
+            0,
+          );
+      case MindMapCommand.siblingAfter ||
+          MindMapCommand.siblingBefore ||
+          MindMapCommand.parent ||
+          MindMapCommand.promote:
+        if (selected != null) widget.onCommand?.call(command);
+    }
   }
 
   @override
@@ -399,11 +461,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
       // The node went away (deleted, folded away) while it was being edited.
       WidgetsBinding.instance.addPostFrameCallback((_) => _endField(field, commit: false, refocus: false));
     }
+    final layoutChanged = !identical(result, _layout);
     _animateTo(result, _layout);
     _layout = result;
+    final viewportChanged = _viewport != Size(viewport.maxWidth, viewport.maxHeight);
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
     _keepRootInPlace(result);
+    if ((layoutChanged || viewportChanged) && _centered) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId);
+      });
+    }
 
     // Built once per frame of content; the animation only moves them.
     final nodes = {
@@ -450,88 +519,91 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
         ),
     };
 
-    return Focus(
-      focusNode: widget.focusNode,
-      onKeyEvent: (_, event) {
-        // Keys the text field leaves alone must not act on the map.
-        if (event is! KeyDownEvent || _field != null) return KeyEventResult.ignored;
-        final key = event.logicalKey;
-        final selected = widget.selectedCardId;
-        if (key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.backspace) {
-          widget.onDelete();
-          return KeyEventResult.handled;
-        }
-        if ((key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.f2 || key == LogicalKeyboardKey.space) &&
-            selected != null) {
-          widget.onRename(selected);
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.escape) {
-          widget.onSelect(null);
-          return KeyEventResult.handled;
-        }
-        if (key == LogicalKeyboardKey.tab) {
-          widget.onAddChild();
-          return KeyEventResult.handled;
-        }
-        final meta = HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed;
-        final direction = switch (key) {
-          LogicalKeyboardKey.arrowLeft => AxisDirection.left,
-          LogicalKeyboardKey.arrowRight => AxisDirection.right,
-          LogicalKeyboardKey.arrowUp => AxisDirection.up,
-          LogicalKeyboardKey.arrowDown => AxisDirection.down,
-          _ => null,
-        };
-        if (direction == null) {
-          if (!_isTopic(selected) || !_isTyping(event)) return KeyEventResult.ignored;
-          _typed = event.character;
-          widget.onRename(selected!);
-          return KeyEventResult.handled;
-        }
-        if (meta && (direction == AxisDirection.up || direction == AxisDirection.down)) {
-          widget.onShift(direction == AxisDirection.up ? -1 : 1);
-        } else {
-          widget.onNavigate(direction);
-        }
-        return KeyEventResult.handled;
-      },
-      child: InteractiveViewer(
-        transformationController: widget.transformation,
-        constrained: false,
-        minScale: 0.3,
-        maxScale: 2.5,
-        boundaryMargin: const EdgeInsets.all(600),
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () {
-            widget.focusNode.requestFocus();
-            widget.onSelect(null);
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        MindMapIntent: CallbackAction<MindMapIntent>(
+          onInvoke: (intent) {
+            if (_field == null) _command(intent.command);
+            return null;
           },
-          child: SizedBox(
-            width: math.max(result.width, 600),
-            height: math.max(result.height, 400),
-            child: AnimatedBuilder(
-              animation: _motion,
-              builder: (context, _) => Stack(
-                children: [
-                  Positioned.fill(
-                    child: RepaintBoundary(
-                      child: CustomPaint(
-                        key: const ValueKey('mind-map-edges'),
-                        painter: _EdgesPainter(result, c.line, _motion.isAnimating ? _from : const {}, _motion.value),
+        ),
+      },
+      child: Focus(
+        focusNode: widget.focusNode,
+        onKeyEvent: (_, event) {
+          // Keys the text field leaves alone must not act on the map.
+          if (event is! KeyDownEvent || _field != null) return KeyEventResult.ignored;
+          final key = event.logicalKey;
+          final selected = widget.selectedCardId;
+          for (final entry in mindMapShortcuts.entries) {
+            if (entry.key.accepts(event, HardwareKeyboard.instance)) {
+              _command(entry.value);
+              return KeyEventResult.handled;
+            }
+          }
+          if (key == LogicalKeyboardKey.escape) {
+            widget.onSelect(null);
+            return KeyEventResult.handled;
+          }
+          final meta = HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed;
+          final direction = switch (key) {
+            LogicalKeyboardKey.arrowLeft => AxisDirection.left,
+            LogicalKeyboardKey.arrowRight => AxisDirection.right,
+            LogicalKeyboardKey.arrowUp => AxisDirection.up,
+            LogicalKeyboardKey.arrowDown => AxisDirection.down,
+            _ => null,
+          };
+          if (direction == null) {
+            if (!_isTopic(selected) || !_isTyping(event)) return KeyEventResult.ignored;
+            _typed = event.character;
+            widget.onRename(selected!);
+            return KeyEventResult.handled;
+          }
+          if (meta && (direction == AxisDirection.up || direction == AxisDirection.down)) {
+            widget.onShift(direction == AxisDirection.up ? -1 : 1);
+          } else {
+            widget.onNavigate(direction);
+          }
+          return KeyEventResult.handled;
+        },
+        child: InteractiveViewer(
+          transformationController: widget.transformation,
+          constrained: false,
+          minScale: 0.3,
+          maxScale: 2.5,
+          boundaryMargin: const EdgeInsets.all(600),
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              widget.focusNode.requestFocus();
+              widget.onSelect(null);
+            },
+            child: SizedBox(
+              width: math.max(result.width, 600),
+              height: math.max(result.height, 400),
+              child: AnimatedBuilder(
+                animation: _motion,
+                builder: (context, _) => Stack(
+                  children: [
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          key: const ValueKey('mind-map-edges'),
+                          painter: _EdgesPainter(result, c.line, _motion.isAnimating ? _from : const {}, _motion.value),
+                        ),
                       ),
                     ),
-                  ),
-                  for (final e in result.rects.entries)
-                    if (e.key == field?.id)
-                      _fieldNode(e.key, specs[e.key]!, e.value)
-                    else
-                      Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
-                  for (final id in expandable)
-                    if (result.rects[id] case final r?)
-                      if (_shown(id, r) case final shown)
-                        Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
-                ],
+                    for (final e in result.rects.entries)
+                      if (e.key == field?.id)
+                        _fieldNode(e.key, specs[e.key]!, e.value)
+                      else
+                        Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
+                    for (final id in expandable)
+                      if (result.rects[id] case final r?)
+                        if (_shown(id, r) case final shown)
+                          Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                  ],
+                ),
               ),
             ),
           ),

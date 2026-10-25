@@ -4,6 +4,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
@@ -106,7 +107,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       position: position,
       entries: [
         if (card != null) ...[
-          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: '↩'),
+          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: 'F2'),
           if (card.kind == CardKind.excerpt)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
           const MMMenuDivider(),
@@ -175,6 +176,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onNavigate: controller.selectNeighbor,
                     onShift: controller.shiftSelected,
                     onAddChild: () => addTopic(asChild: true),
+                    onCommand: (command) {
+                      switch (command) {
+                        case MindMapCommand.siblingAfter || MindMapCommand.siblingBefore:
+                          controller.addTopicAndEdit(
+                            l.newTopicName,
+                            siblingBefore: command == MindMapCommand.siblingBefore,
+                          );
+                        case MindMapCommand.parent:
+                          controller.addTopicAndEdit(l.newTopicName, asParent: true);
+                        case MindMapCommand.promote:
+                          controller.promoteSelected();
+                        default:
+                          break;
+                      }
+                    },
                     editingCardId: state.editingCardId,
                     onEditDone: controller.finishEditing,
                     onEditCancel: controller.cancelEditing,

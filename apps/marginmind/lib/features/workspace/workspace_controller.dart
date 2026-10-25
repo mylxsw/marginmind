@@ -617,15 +617,43 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Adds a topic (see [addTopic]) and starts editing it. Creation and the
   /// typed title commit as one undo step; cancelling leaves no node and no
   /// history.
-  Future<Card?> addTopicAndEdit(String title, {bool asChild = false}) async {
+  Future<Card?> addTopicAndEdit(
+    String title, {
+    bool asChild = false,
+    bool? siblingBefore,
+    bool asParent = false,
+  }) async {
     if (_editing != null || _creating) return null;
+    if ((siblingBefore != null || asParent) && state.selectedCardId == null) return null;
     _creating = true;
     final previous = state.selectedCardId;
     final Card card;
     try {
       await beginTransaction();
       try {
-        card = await addTopic(title, asChild: asChild);
+        if (siblingBefore != null || asParent) {
+          Card? created;
+          await _update((c) {
+            final (next, added) = asParent
+                ? _editor.insertParent(c, previous, title: title)
+                : _editor.insertSibling(c, previous, title: title, before: siblingBefore!);
+            created = added;
+            return next;
+          });
+          if (created == null) {
+            await abortTransaction();
+            return null;
+          }
+          card = created!;
+          state = state.copyWith(selectedCardId: card.id);
+        } else {
+          card = await addTopic(title, asChild: asChild);
+          // A child added beneath a folded node must be visible for editing.
+          final parent = content.node(card.id)?.parentId;
+          if (parent != null) {
+            await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
+          }
+        }
       } catch (_) {
         await abortTransaction();
         rethrow;
@@ -715,6 +743,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> shiftSelected(int delta) async {
     final id = state.selectedCardId;
     if (id != null) await _update((c) => _editor.shift(c, id, delta));
+  }
+
+  Future<void> promoteSelected() async {
+    if (_editing != null || _creating) return;
+    final id = state.selectedCardId;
+    if (id != null) await _update((c) => _editor.promote(c, id));
   }
 
   Future<void> toggleCollapsed(String cardId) {
