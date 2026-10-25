@@ -303,7 +303,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
 
   Future<void> setTool(AnnotationTool tool) {
-    state = state.copyWith(tool: tool, clearPending: true);
+    if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
     return ref.read(settingsProvider.notifier).setAnnotationTool(tool);
   }
 

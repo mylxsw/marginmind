@@ -65,6 +65,33 @@ void main() {
     expect(container.read(workspaceProvider('demo-1')).syncToMap, isFalse);
   });
 
+  test('choosing a color in highlight mode preserves the pending highlight', () async {
+    final container = ProviderContainer(overrides: await testOverrides());
+    addTearDown(container.dispose);
+    final provider = workspaceProvider('demo-1');
+    container.listen(provider, (_, _) {});
+    await container.read(contentProvider('demo-1').future);
+    final controller = container.read(provider.notifier);
+    await controller.setTool(AnnotationTool.highlight);
+    controller.toggleSyncToMap();
+    await controller.onSelectionCommitted('c1', selection);
+    final annotationId = controller.content.annotations.last.id;
+    controller.tapHighlight(annotationId);
+    final pending = container.read(provider).pending;
+    expect(pending, isA<PendingHighlight>());
+    expect((pending as PendingHighlight).annotationId, annotationId);
+
+    await controller.setColor(MMAnnotationColor.blue);
+
+    expect(container.read(provider).pending, same(pending));
+    expect(container.read(provider).color, MMAnnotationColor.blue);
+    expect(container.read(provider).tool, AnnotationTool.highlight);
+    expect(container.read(sharedPreferencesProvider).getString('settings.annotationTool'), 'highlight');
+    // Switching to a different tool must still dismiss the pending action.
+    await controller.setTool(AnnotationTool.select);
+    expect(container.read(provider).pending, isNull);
+  });
+
   testWidgets('shortcut and toolbar choose the same tool and selection behavior', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
