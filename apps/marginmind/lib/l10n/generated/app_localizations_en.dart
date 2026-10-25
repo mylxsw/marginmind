@@ -282,6 +282,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noSidebarMatches => 'No matches';
 
   @override
+  String get toggleAnnotationTool => 'Toggle Highlighter';
+
+  @override
   String get toolSelect => 'Select';
 
   @override

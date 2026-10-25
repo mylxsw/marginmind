@@ -116,6 +116,7 @@ void main() {
     const selection = MMPdfSelection(page: 30, rects: [PageRect(1, 20, 50, 10)], text: '主动提取');
 
     test('highlight tool + sync excerpts under the selected topic', () async {
+      await controller.setTool(AnnotationTool.highlight);
       final topic = controller.content.cards.firstWhere((c) => c.title == '对策一：间隔重复');
       controller.selectCard(topic.id);
       final notice = await controller.onSelectionCommitted('c1', selection);
@@ -128,6 +129,7 @@ void main() {
     });
 
     test('sync off only highlights; select tool asks first', () async {
+      await controller.setTool(AnnotationTool.highlight);
       controller.toggleSyncToMap();
       expect(await controller.onSelectionCommitted('c1', selection), isA<HighlightedNotice>());
       var c = await repo.load('demo-1');

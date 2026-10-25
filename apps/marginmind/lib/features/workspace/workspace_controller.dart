@@ -7,10 +7,11 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
+import '../../settings/app_settings.dart';
+
+export '../../settings/app_settings.dart' show AnnotationTool;
 
 enum MapViewMode { map, outline }
-
-enum AnnotationTool { select, highlight }
 
 /// Something the source pane is waiting on the user to decide.
 sealed class PendingAction {
@@ -89,7 +90,7 @@ class WorkspaceState {
     this.layout = MMSplitMode.split,
     this.splitFraction = 0.5,
     this.mapView = MapViewMode.map,
-    this.tool = AnnotationTool.highlight,
+    this.tool = AnnotationTool.select,
     this.color = MMAnnotationColor.yellow,
     this.syncToMap = true,
     this.openDocumentIds = const [],
@@ -201,8 +202,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _latest = c;
       state = _withTabs(state, c);
     });
+    ref.listen(settingsProvider.select((s) => s.annotationTool), (_, tool) {
+      if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
+    });
+    final initialState = WorkspaceState(tool: ref.read(settingsProvider).annotationTool);
     final initial = ref.read(contentProvider(studySetId)).value;
-    return initial == null ? const WorkspaceState() : _withTabs(const WorkspaceState(), initial);
+    return initial == null ? initialState : _withTabs(initialState, initial);
   }
 
   /// The newest content seen, from either the stream or our own writes
@@ -297,9 +302,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
 
-  void setTool(AnnotationTool tool) => state = state.copyWith(tool: tool, clearPending: true);
+  Future<void> setTool(AnnotationTool tool) {
+    if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
+    return ref.read(settingsProvider.notifier).setAnnotationTool(tool);
+  }
 
-  void setColor(MMAnnotationColor color) => state = state.copyWith(color: color, tool: AnnotationTool.highlight);
+  Future<void> toggleTool() =>
+      setTool(state.tool == AnnotationTool.select ? AnnotationTool.highlight : AnnotationTool.select);
+
+  Future<void> setColor(MMAnnotationColor color) {
+    state = state.copyWith(color: color);
+    return setTool(AnnotationTool.highlight);
+  }
 
   void toggleSyncToMap() => state = state.copyWith(syncToMap: !state.syncToMap);
 

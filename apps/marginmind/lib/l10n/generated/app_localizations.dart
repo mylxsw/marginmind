@@ -554,6 +554,12 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get noSidebarMatches;
 
+  /// No description provided for @toggleAnnotationTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Highlighter'**
+  String get toggleAnnotationTool;
+
   /// No description provided for @toolSelect.
   ///
   /// In en, this message translates to:

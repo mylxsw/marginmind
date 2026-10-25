@@ -45,6 +45,8 @@ abstract final class AppShortcuts {
   static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
   static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
 
+  static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
+
   /// "Tooltip (⌘1)".
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
 }
@@ -157,6 +159,7 @@ class AppMenus extends ConsumerWidget {
         ),
       ],
       if (inWorkspace) ...[
+        AppCommand(l.toggleAnnotationTool, workspace!.toggleTool, shortcut: AppShortcuts.toggleAnnotationTool),
         AppCommand(
           l.layoutReader,
           () => ref.read(workspaceProvider(workspaceId).notifier).setLayout(MMSplitMode.primary),

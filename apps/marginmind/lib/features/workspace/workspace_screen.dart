@@ -118,7 +118,7 @@ class _AnnotationTools extends StatelessWidget {
     final l = context.l10n;
     MMToolbarButton tool(IconData icon, String label, AnnotationTool value) => MMToolbarButton(
       icon: icon,
-      tooltip: label,
+      tooltip: value == AnnotationTool.highlight ? AppShortcuts.tip(label, AppShortcuts.toggleAnnotationTool) : label,
       selected: state.tool == value,
       onPressed: () => controller.setTool(value),
     );
