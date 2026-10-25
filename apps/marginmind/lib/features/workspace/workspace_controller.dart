@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/painting.dart' show AxisDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -221,48 +222,107 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   final List<StudySetContent> _redo = [];
   static const _historyLimit = 100;
 
-  /// Applies an edit. Undoable edits are recorded for ⌘Z unless they did
-  /// not change anything.
-  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) async {
-    StudySetContent? before;
-    final next = await _repo.update(studySetId, (c) {
-      before = c;
-      return change(c);
-    });
-    _latest = next;
-    if (ref.mounted) state = _withTabs(state, next);
-    if (undoable && before != null && !identical(before, next)) {
-      _undo.add(before!);
-      if (_undo.length > _historyLimit) _undo.removeAt(0);
-      _redo.clear();
-      _syncHistory();
-    }
-    return next;
+  Future<void> _pendingEdits = Future.value();
+  StudySetContent? _transactionBefore;
+  int _transactionDepth = 0;
+
+  /// Serializes writes and transaction boundaries, including callers that
+  /// enqueue commit immediately after an edit without awaiting that edit.
+  Future<T> _enqueue<T>(Future<T> Function() action) {
+    final result = _pendingEdits.then((_) => action());
+    _pendingEdits = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return result;
   }
+
+  /// Nested begins join the outer transaction; only the outer commit records
+  /// history. Await this before editing. Repeated commit/abort are harmless.
+  Future<void> beginTransaction() => _enqueue(() async {
+    _transactionDepth++;
+    _syncHistory();
+  });
+
+  Future<void> commitTransaction() => _enqueue(() async {
+    if (_transactionDepth == 0) return;
+    if (--_transactionDepth != 0) return;
+    final before = _transactionBefore;
+    _transactionBefore = null;
+    if (before != null && !_sameEdits(before, content)) _record(before);
+    _syncHistory();
+  });
+
+  /// Cancels the whole transaction, including nested scopes. Uses the same
+  /// restore policy as undo so reading position and reviews are preserved.
+  Future<void> abortTransaction() => _enqueue(() async {
+    if (_transactionDepth == 0) return;
+    final before = _transactionBefore;
+    if (before != null) {
+      final next = await _repo.update(studySetId, (c) => StudySetEditor.restore(before, c));
+      _latest = next;
+      if (ref.mounted) state = _withTabs(state, next).copyWith(clearPending: true);
+    }
+    _transactionBefore = null;
+    _transactionDepth = 0;
+    _syncHistory();
+  });
+
+  static bool _sameEdits(StudySetContent before, StudySetContent after) =>
+      identical(before, after) ||
+      jsonEncode(StudySetEditor.restore(before, after).toJson()) == jsonEncode(after.toJson());
+
+  void _record(StudySetContent before) {
+    _undo.add(before);
+    if (_undo.length > _historyLimit) _undo.removeAt(0);
+    _redo.clear();
+  }
+
+  /// Standalone edits are implicit single-step transactions.
+  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) =>
+      _enqueue(() async {
+        StudySetContent? before;
+        final next = await _repo.update(studySetId, (c) {
+          before = c;
+          return change(c);
+        });
+        _latest = next;
+        if (ref.mounted) state = _withTabs(state, next);
+        if (undoable && before != null && !_sameEdits(before!, next)) {
+          if (_transactionDepth > 0) {
+            _transactionBefore ??= before;
+          } else {
+            _record(before!);
+          }
+          _syncHistory();
+        }
+        return next;
+      });
 
   void _syncHistory() {
     if (!ref.mounted) return;
-    state = state.copyWith(canUndo: _undo.isNotEmpty, canRedo: _redo.isNotEmpty);
+    state = state.copyWith(
+      canUndo: _transactionDepth == 0 && _undo.isNotEmpty,
+      canRedo: _transactionDepth == 0 && _redo.isNotEmpty,
+    );
   }
 
   Future<UndoneNotice?> undo() => _travel(_undo, _redo, redo: false);
 
   Future<UndoneNotice?> redo() => _travel(_redo, _undo, redo: true);
 
-  Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) async {
-    if (from.isEmpty) return null;
-    final snapshot = from.removeLast();
-    StudySetContent? current;
-    _latest = await _repo.update(studySetId, (c) {
-      current = c;
-      return StudySetEditor.restore(snapshot, c);
-    });
-    if (ref.mounted) state = _withTabs(state, _latest!);
-    to.add(current!);
-    state = state.copyWith(clearPending: true);
-    _syncHistory();
-    return UndoneNotice(redo: redo);
-  }
+  Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
+      _enqueue(() async {
+        if (_transactionDepth > 0 || from.isEmpty) return null;
+        final snapshot = from.last;
+        StudySetContent? current;
+        _latest = await _repo.update(studySetId, (c) {
+          current = c;
+          return StudySetEditor.restore(snapshot, c);
+        });
+        from.removeLast();
+        to.add(current!);
+        if (ref.mounted) state = _withTabs(state, _latest!).copyWith(clearPending: true);
+        _syncHistory();
+        return UndoneNotice(redo: redo);
+      });
 
   /// Opens the last-read document on first load, drops tabs (and the
   /// selection) whose target no longer exists.
@@ -517,6 +577,21 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
+
+  Future<void> removeCards(Iterable<String> cardIds) {
+    final ids = cardIds.toList();
+    return _update((c) => _editor.removeMany(c, ids));
+  }
+
+  Future<void> moveCards(Iterable<String> cardIds, String? parentId, {int? index}) {
+    final ids = cardIds.toList();
+    return _update((c) => _editor.moveMany(c, ids, parentId, index: index));
+  }
+
+  Future<void> recolorCards(Iterable<String> cardIds, MMAnnotationColor color) {
+    final ids = cardIds.toList();
+    return _update((c) => _editor.recolorMany(c, ids, color.index));
+  }
 
   /// Drag and drop: [cardId] becomes a child of [parentId] (null = root) at
   /// [index], or the last child.

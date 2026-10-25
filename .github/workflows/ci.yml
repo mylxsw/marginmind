@@ -23,18 +23,14 @@ jobs:
       - run: flutter pub get
       - run: dart format --set-exit-if-changed apps packages
       - run: flutter analyze
-      - run: dart test
-        working-directory: packages/mm_core
-      - run: dart test
-        working-directory: packages/mm_layout
-      - run: dart test
-        working-directory: packages/mm_data
-      - run: flutter test
-        working-directory: packages/mm_design
-      - run: flutter test
-        working-directory: packages/mm_platform
-      - run: flutter test
-        working-directory: apps/marginmind
+      - run: python3 -m unittest discover -s tool/tests
+      - run: python3 tool/coverage.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: warn
 
   macos:
     name: Build macOS app

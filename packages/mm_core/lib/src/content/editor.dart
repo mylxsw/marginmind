@@ -94,6 +94,127 @@ class StudySetEditor {
   (StudySetContent, Card) addTopic(StudySetContent c, {required String title, String? parentId}) =>
       _addCard(c, CardKind.topic, title, parentId);
 
+  /// Adds a sibling before/after a node. The virtual root has no siblings;
+  /// null adds a child of the root instead. Missing nodes are a no-op.
+  (StudySetContent, Card?) insertSibling(
+    StudySetContent c,
+    String? cardId, {
+    required String title,
+    bool before = false,
+  }) {
+    if (cardId == null) return addTopic(c, title: title);
+    final node = c.node(cardId);
+    if (node == null) return (c, null);
+    final siblings = c.childrenOf(node.parentId);
+    final index = siblings.indexWhere((n) => n.cardId == cardId) + (before ? 0 : 1);
+    final (next, card) = addTopic(c, title: title, parentId: node.parentId);
+    return (move(next, card.id, node.parentId, index: index), card);
+  }
+
+  /// Lifts a node after its parent, keeping its subtree intact.
+  /// Root children and the virtual root cannot be lifted further.
+  StudySetContent promote(StudySetContent c, String? cardId) {
+    final node = cardId == null ? null : c.node(cardId);
+    final parent = node?.parentId == null ? null : c.node(node!.parentId!);
+    if (parent == null) return c;
+    final index = c.childrenOf(parent.parentId).indexWhere((n) => n.cardId == parent.cardId) + 1;
+    return move(c, cardId!, parent.parentId, index: index);
+  }
+
+  /// Wraps a node in a new topic at its existing sibling position.
+  /// The virtual root and missing nodes cannot acquire a parent.
+  (StudySetContent, Card?) insertParent(StudySetContent c, String? cardId, {required String title}) {
+    final node = cardId == null ? null : c.node(cardId);
+    if (node == null) return (c, null);
+    final (next, parent) = addTopic(c, title: title, parentId: node.parentId);
+    return (
+      next.copyWith(
+        nodes: [
+          for (final n in next.nodes)
+            if (n.cardId == parent.id)
+              n.copyWith(order: node.order)
+            else if (n.cardId == cardId)
+              n.copyWith(parentId: parent.id, order: 1)
+            else
+              n,
+        ],
+      ),
+      parent,
+    );
+  }
+
+  /// Removes selected subtrees once; highlights and review history survive.
+  StudySetContent removeMany(StudySetContent c, Iterable<String> cardIds) {
+    final kill = <String>{};
+    for (final id in cardIds.toSet()) {
+      if (c.node(id) != null) kill.addAll(_subtree(c, id));
+    }
+    if (kill.isEmpty) return c;
+    return c.copyWith(
+      cards: [
+        for (final card in c.cards)
+          if (!kill.contains(card.id)) card,
+      ],
+      nodes: [
+        for (final node in c.nodes)
+          if (!kill.contains(node.cardId)) node,
+      ],
+    );
+  }
+
+  /// Moves selection roots as one block, in map preorder (independent of
+  /// click order). Selected descendants travel with their selected ancestor.
+  /// Index refers to destination siblings after removing the selection.
+  /// Invalid destinations reject the entire operation, never a partial move.
+  StudySetContent moveMany(StudySetContent c, Iterable<String> cardIds, String? parentId, {int? index}) {
+    if (parentId != null && c.node(parentId) == null) return c;
+    final selected = cardIds.toSet();
+    final roots = <MapNode>[];
+    void walk(String? parent) {
+      for (final node in c.childrenOf(parent)) {
+        if (selected.contains(node.cardId)) {
+          roots.add(node);
+        } else {
+          walk(node.cardId);
+        }
+      }
+    }
+
+    walk(null);
+    if (roots.isEmpty) return c;
+    if (parentId != null && roots.any((n) => _subtree(c, n.cardId).contains(parentId))) return c;
+    final ids = roots.map((n) => n.cardId).toSet();
+    final siblings = c.childrenOf(parentId).where((n) => !ids.contains(n.cardId)).toList();
+    siblings.insertAll((index ?? siblings.length).clamp(0, siblings.length), roots);
+    // Renumber the destination together to avoid equal fractional orders.
+    final orders = {for (var i = 0; i < siblings.length; i++) siblings[i].cardId: (i + 1).toDouble()};
+    return c.copyWith(
+      nodes: [
+        for (final n in c.nodes)
+          if (orders.containsKey(n.cardId))
+            n.copyWith(parentId: parentId, toRoot: parentId == null, order: orders[n.cardId])
+          else if (n.cardId == parentId && n.collapsed)
+            n.copyWith(collapsed: false)
+          else
+            n,
+      ],
+    );
+  }
+
+  /// Colors selected excerpt highlights. Topics/notes have no stored color
+  /// in format 1 and are ignored; descendants are not implicitly selected.
+  StudySetContent recolorMany(StudySetContent c, Iterable<String> cardIds, int colorIndex) {
+    final selected = cardIds.toSet();
+    final annotations = {
+      for (final card in c.cards)
+        if (selected.contains(card.id) && c.node(card.id) != null && card.annotationId != null) card.annotationId!,
+    };
+    if (!c.annotations.any((a) => annotations.contains(a.id) && a.colorIndex != colorIndex)) return c;
+    return c.copyWith(
+      annotations: [for (final a in c.annotations) annotations.contains(a.id) ? a.copyWith(colorIndex: colorIndex) : a],
+    );
+  }
+
   (StudySetContent, Card) addNote(StudySetContent c, {required String text, String? parentId}) =>
       _addCard(c, CardKind.note, text, parentId);
 
