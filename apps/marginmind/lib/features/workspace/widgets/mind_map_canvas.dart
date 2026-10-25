@@ -514,9 +514,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       final label = _cache._markLabels[r.id] ?? '';
       if (label.isEmpty && r.id != _markField?.id) continue;
       final size = _cache._measure(label, MMTypography.footnote, 200).size;
+      final box = Size(math.max(size.width, MMSpacing.xxxl) + MMSpacing.xs * 2, size.height + MMSpacing.xxs * 2);
       final middle = cubicPoint(curve, 0.5);
-      width = math.max(width, middle.dx + math.max(size.width, MMSpacing.xxxl) / 2 + MMSpacing.xs + MMSpacing.l);
-      height = math.max(height, middle.dy + size.height / 2 + MMSpacing.xxs + MMSpacing.l);
+      final right = relationGoesAround(curve) ? middle.dx + MMSpacing.xs + box.width : middle.dx + box.width / 2;
+      width = math.max(width, right + MMSpacing.l);
+      height = math.max(height, middle.dy + box.height / 2 + MMSpacing.l);
     }
     return Size(width, height);
   }
@@ -528,11 +530,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final s in layout.summaries.values) _rect(s.label),
   ];
 
-  /// The middle of a relation's line as drawn now, where its label sits.
-  Offset? _relationMiddle(MapRelation r, List<Rect> others) {
+  /// The middle of a relation's line as drawn now, where its label sits, and
+  /// whether the label goes beside it (lines around a column) or on it.
+  (Offset, bool)? _relationMiddle(MapRelation r, List<Rect> others) {
     final from = _layout?.rects[r.fromId], to = _layout?.rects[r.toId];
     if (from == null || to == null) return null;
-    return cubicPoint(relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to), others), 0.5);
+    final curve = relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to), others);
+    return (cubicPoint(curve, 0.5), relationGoesAround(curve));
   }
 
   /// A label of a relation (at the middle of its line) or summary.
@@ -1009,12 +1013,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                             Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
                         for (final r in _cache._relations)
                           if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
-                            if (_relationMiddle(r, _obstacles(_drawnRects(), result)) case final middle?)
+                            if (_relationMiddle(r, _obstacles(_drawnRects(), result)) case (final middle, final beside))
                               Positioned(
-                                left: middle.dx,
+                                left: middle.dx + (beside ? MMSpacing.xs : 0),
                                 top: middle.dy,
                                 child: FractionalTranslation(
-                                  translation: const Offset(-0.5, -0.5),
+                                  translation: Offset(beside ? 0 : -0.5, -0.5),
                                   child: _markLabel(r.id, summary: false),
                                 ),
                               ),
@@ -1381,7 +1385,10 @@ class _FoldButton extends StatelessWidget {
       if (o.left >= left && o.top < bottom && o.bottom > top) right = math.max(right, o.right);
     }
     final start = Offset(a.right, a.center.dy), end = Offset(b.right, b.center.dy);
-    final x = right + ((end.dy - start.dy).abs() * 0.3).clamp(48.0, 120.0);
+    // The curve's apex sits three quarters of the way to the control points:
+    // put it a full bow's three quarters past [right].
+    final bow = ((end.dy - start.dy).abs() * 0.3).clamp(48.0, 120.0);
+    final x = right + bow + (right - math.min(a.right, b.right)) / 3;
     return (start, Offset(x, start.dy), Offset(x, end.dy), end);
   }
 
@@ -1401,6 +1408,11 @@ class _FoldButton extends StatelessWidget {
   final normal = length == 0 ? Offset.zero : Offset(-d.dy, d.dx) / length * math.min(64, length * 0.25);
   return (start, start + d * 0.25 + normal, start + d * 0.75 + normal, end);
 }
+
+/// Whether [c] is the curve [relationCurve] runs around the right of a
+/// column. Its label then sits beside the apex instead of on it.
+bool relationGoesAround((Offset, Offset, Offset, Offset) c) =>
+    c.$2.dx == c.$3.dx && c.$2.dy == c.$1.dy && c.$3.dy == c.$4.dy && c.$2.dx > math.max(c.$1.dx, c.$4.dx);
 
 @visibleForTesting
 Offset cubicPoint((Offset, Offset, Offset, Offset) c, double t) {

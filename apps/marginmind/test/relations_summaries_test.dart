@@ -446,7 +446,8 @@ void main() {
     expect(c.$1, const Offset(100, 20));
     expect(c.$4, const Offset(130, 420));
     final middle = cubicPoint(c, 0.5);
-    expect(middle.dx, greaterThan(160 + 40), reason: 'label clears the widest node in between');
+    expect(middle.dx, greaterThanOrEqualTo(160 + 120 * 0.75), reason: 'apex clears the widest node in between');
+    expect(relationGoesAround(c), isTrue);
     for (var t = 0.1; t < 1; t += 0.1) {
       expect(cubicPoint(c, t).dx, greaterThanOrEqualTo(100), reason: 'never crosses the column at $t');
     }
@@ -459,6 +460,8 @@ void main() {
     final plain = relationCurve(a, b, const [child]);
     expect(plain.$1.dy, 40, reason: 'leaves the facing (bottom) border');
     expect(plain.$4.dy, 400, reason: 'enters the facing (top) border');
+    expect(relationGoesAround(plain), isFalse);
+    expect(relationGoesAround(relationCurve(a, const Rect.fromLTWH(300, 0, 100, 40))), isFalse);
   });
 
   test('summary and relation commands have shortcuts', () {
