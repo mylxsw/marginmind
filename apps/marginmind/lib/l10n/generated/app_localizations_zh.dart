@@ -270,6 +270,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noSidebarMatches => '没有匹配的条目';
 
   @override
+  String get toggleAnnotationTool => '切换高亮笔';
+
+  @override
   String get toolSelect => '选择';
 
   @override
