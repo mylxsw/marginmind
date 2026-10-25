@@ -51,15 +51,58 @@ abstract final class AppShortcuts {
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
 }
 
+/// Selection commands share their intents between menus and the floating toolbar.
+enum ReaderSelectionCommand { excerpt, highlight, copy, note }
+
+class ReaderSelectionIntent extends Intent {
+  const ReaderSelectionIntent(this.command);
+  final ReaderSelectionCommand command;
+}
+
+Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.keyE): const ReaderSelectionIntent(ReaderSelectionCommand.excerpt),
+  const SingleActivator(LogicalKeyboardKey.keyH): const ReaderSelectionIntent(ReaderSelectionCommand.highlight),
+  primaryShortcut(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.copy),
+};
+
 /// Installs the menu bar (macOS) or equivalent shortcuts (elsewhere) for
 /// the current route.
-class AppMenus extends ConsumerWidget {
+class AppMenus extends ConsumerStatefulWidget {
   const AppMenus({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppMenus> createState() => _AppMenusState();
+}
+
+class _AppMenusState extends ConsumerState<AppMenus> {
+  late bool _textFocused;
+
+  bool get _isTextFocused =>
+      FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _textFocused = _isTextFocused;
+    FocusManager.instance.addListener(_focusChanged);
+  }
+
+  void _focusChanged() {
+    final textFocused = _isTextFocused;
+    if (textFocused == _textFocused) return;
+    setState(() => _textFocused = textFocused);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_focusChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final route = ref.watch(navigationProvider);
     final nav = ref.read(navigationProvider.notifier);
@@ -117,6 +160,28 @@ class AppMenus extends ConsumerWidget {
         shortcut: AppShortcuts.redo,
       ),
     ];
+    void invokeSelection(ReaderSelectionCommand command) {
+      final focus = FocusManager.instance.primaryFocus?.context;
+      if (focus != null) Actions.maybeInvoke(focus, ReaderSelectionIntent(command));
+    }
+
+    final selectionOpen = workspaceState?.pending is PendingSelection && !_textFocused;
+    edit.addAll([
+      for (final entry in {
+        ReaderSelectionCommand.excerpt: l.excerptAction,
+        ReaderSelectionCommand.highlight: l.highlightAction,
+        ReaderSelectionCommand.copy: l.copyAction,
+        ReaderSelectionCommand.note: l.excerptWithNote,
+      }.entries)
+        AppCommand(
+          entry.value,
+          selectionOpen ? () => invokeSelection(entry.key) : null,
+          shortcut: readerSelectionShortcuts.entries
+              .where((e) => e.value.command == entry.key)
+              .map((e) => e.key as SingleActivator)
+              .firstOrNull,
+        ),
+    ]);
     final study = [
       AppCommand(l.startReview, inWorkspace ? () => nav.startReview(workspaceId) : null, shortcut: AppShortcuts.review),
     ];
@@ -241,7 +306,7 @@ class AppMenus extends ConsumerWidget {
           ),
           PlatformMenu(label: l.menuHelp, menus: [for (final c in help) _item(c)]),
         ],
-        child: child,
+        child: widget.child,
       );
     }
 
@@ -250,7 +315,7 @@ class AppMenus extends ConsumerWidget {
         for (final c in [settings, ...file, ...edit, ...view, ...map, ...study, ...help])
           if (c.shortcut != null && c.onInvoke != null) c.shortcut!: c.onInvoke!,
       },
-      child: Focus(autofocus: true, child: child),
+      child: Focus(autofocus: true, child: widget.child),
     );
   }
 

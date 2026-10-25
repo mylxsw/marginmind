@@ -14,6 +14,7 @@ PACKAGES = {
     'packages/mm_data': 'dart',
     'packages/mm_design': 'flutter',
     'packages/mm_platform': 'flutter',
+    'packages/mm_pdf': 'flutter',
     'apps/marginmind': 'flutter',
 }
 

@@ -215,5 +215,15 @@
   "intervalMinutes": "{count} 分钟",
   "intervalHours": "{count} 小时",
   "intervalDays": "{count} 天",
-  "intervalMonths": "{count} 个月"
+  "intervalMonths": "{count} 个月",
+  "excerptInColor": "用{color}摘录",
+  "excerptWithNote": "摘录并添加笔记",
+  "noteText": "笔记",
+  "@excerptInColor": {
+    "placeholders": {
+      "color": {
+        "type": "String"
+      }
+    }
+  }
 }

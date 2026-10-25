@@ -31,11 +31,14 @@ class MMPdfHighlight {
 /// Text the user selected, on one page.
 @immutable
 class MMPdfSelection {
-  const MMPdfSelection({required this.page, required this.rects, required this.text});
+  const MMPdfSelection({required this.page, required this.rects, required this.text, this.viewportRect});
 
   final int page;
   final List<PageRect> rects;
   final String text;
+
+  /// Bounding rect in the PDF viewport coordinates.
+  final Rect? viewportRect;
 }
 
 /// Commands from outside (e.g. "reveal this excerpt") into an [MMPdfView].
@@ -71,6 +74,7 @@ class MMPdfView extends StatefulWidget {
     this.onSelectionCommitted,
     this.onSelectionChanged,
     this.onHighlightTap,
+    this.onViewportChanged,
   });
 
   final String filePath;
@@ -90,6 +94,7 @@ class MMPdfView extends StatefulWidget {
   /// Selection appeared (non-null) or was cleared (null).
   final ValueChanged<bool>? onSelectionChanged;
   final ValueChanged<String>? onHighlightTap;
+  final VoidCallback? onViewportChanged;
 
   @override
   State<MMPdfView> createState() => _MMPdfViewState();
@@ -99,6 +104,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
   PdfTextSelection? _selection;
   bool _ready = false;
+  int _selectionEpoch = 0;
   int _pageCount = 0;
   (int, List<PageRect>)? _pendingReveal;
 
@@ -106,6 +112,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   void initState() {
     super.initState();
     widget.controller._state = this;
+    _controller.addListener(_viewportChanged);
   }
 
   @override
@@ -117,8 +124,14 @@ class _MMPdfViewState extends State<MMPdfView> {
     }
   }
 
+  void _viewportChanged() {
+    _selectionEpoch++;
+    widget.onViewportChanged?.call();
+  }
+
   @override
   void dispose() {
+    _controller.removeListener(_viewportChanged);
     if (widget.controller._state == this) widget.controller._state = null;
     super.dispose();
   }
@@ -140,17 +153,19 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   Future<void> _clearSelection() async {
-    await _controller.textSelectionDelegate.clearTextSelection();
+    _selectionEpoch++;
+    if (_controller.isReady) await _controller.textSelectionDelegate.clearTextSelection();
   }
 
   Future<void> _commitSelection() async {
+    final epoch = ++_selectionEpoch;
     // pdfrx settles the selection a frame after the pointer is released.
     await Future<void>.delayed(const Duration(milliseconds: 120));
-    if (!mounted) return;
+    if (!mounted || epoch != _selectionEpoch) return;
     final selection = _controller.isReady ? _controller.textSelectionDelegate : _selection;
     if (selection == null || !selection.hasSelectedText) return;
     final ranges = await selection.getSelectedTextRanges();
-    if (ranges.isEmpty) return;
+    if (!mounted || epoch != _selectionEpoch || ranges.isEmpty) return;
     // One annotation per page: keep the page where the selection starts.
     final first = ranges.first.pageNumber;
     final onPage = ranges.where((r) => r.pageNumber == first).toList();
@@ -161,7 +176,19 @@ class _MMPdfViewState extends State<MMPdfView> {
     ];
     final text = onPage.map((r) => r.text).join();
     if (text.trim().isEmpty || rects.isEmpty) return;
-    widget.onSelectionCommitted?.call(MMPdfSelection(page: first, rects: rects, text: text));
+    final bounds = rects
+        .map(
+          (r) =>
+              _controller.calcRectForRectInsidePage(pageNumber: first, rect: PdfRect(r.left, r.top, r.right, r.bottom)),
+        )
+        .reduce((a, b) => a.expandToInclude(b));
+    final viewportRect = Rect.fromPoints(
+      _controller.documentToLocal(bounds.topLeft),
+      _controller.documentToLocal(bounds.bottomRight),
+    );
+    widget.onSelectionCommitted?.call(
+      MMPdfSelection(page: first, rects: rects, text: text, viewportRect: viewportRect),
+    );
   }
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
@@ -214,6 +241,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
           textSelectionParams: PdfTextSelectionParams(
+            showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;
               widget.onSelectionChanged?.call(selection.hasSelectedText);
