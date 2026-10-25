@@ -1,14 +1,15 @@
 import 'package:mm_core/mm_core.dart';
 
-/// The only package version upgrade. Keeps metadata and unknown fields intact.
+/// Package version upgrades. Keeps metadata and unknown fields intact.
 /// Missing/future versions are never interpreted as writable current data.
 Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
-  if (json['format'] == 2) return json;
+  if (json['format'] == 3) return json;
+  if (json['format'] == 2) return {...json, 'format': 3};
   if (json['format'] != 1) throw FormatException('Unsupported study set format: ${json['format']}');
   final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
   return {
     ...json,
-    'format': 2,
+    'format': 3,
     'content': {
       ...content,
       'maps': [MindMap.main.toJson()],

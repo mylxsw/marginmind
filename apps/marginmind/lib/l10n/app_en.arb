@@ -470,5 +470,10 @@
   "renameMap": "Rename Mind Map…",
   "deleteMap": "Delete Mind Map",
   "addToNamedMap": "Add to “{title}”",
-  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}}
+  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}},
+  "cardTags": "Tags…",
+  "sectionTags": "Tags",
+  "addTag": "Add Tag",
+  "removeTag": "Remove Tag",
+  "allTags": "All Tags"
 }

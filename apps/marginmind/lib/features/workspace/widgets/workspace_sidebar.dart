@@ -70,7 +70,27 @@ class WorkspaceSidebar extends ConsumerWidget {
           onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId, mapId: state.activeMapId),
         ),
     ];
-    final hits = content == null ? const <Card>[] : content.search(query, mapId: state.activeMapId).take(50).toList();
+    final tagNames = content?.tags(mapId: state.activeMapId) ?? const <String>[];
+    // A deleted tag must not leave the results trapped behind a stale filter.
+    final tagFilter = tagNames.any((tag) => tag.toLowerCase() == state.tagFilter?.toLowerCase())
+        ? state.tagFilter
+        : null;
+    final tags = [
+      if (tagFilter != null)
+        MMSidebarItem(icon: MMIcons.tag, label: l.allTags, onTap: () => controller.filterTag(null)),
+      for (final tag in tagNames)
+        if (matches(tag) || tag == tagFilter)
+          MMSidebarItem(
+            key: ValueKey('sidebar-tag-$tag'),
+            icon: MMIcons.tag,
+            label: tag,
+            selected: tag.toLowerCase() == tagFilter?.toLowerCase(),
+            onTap: () => controller.filterTag(tag.toLowerCase() == tagFilter?.toLowerCase() ? null : tag),
+          ),
+    ];
+    final hits = content == null
+        ? const <Card>[]
+        : content.search(query, mapId: state.activeMapId, tag: tagFilter).toList();
     final cards = [
       for (final card in hits)
         MMSidebarItem(
@@ -86,7 +106,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               : controller.selectCard(card.id),
         ),
     ];
-    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty;
+    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -144,7 +164,15 @@ class WorkspaceSidebar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: t.footnote),
           ),
-        if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
+        if (tags.isNotEmpty) MMSidebarSection(title: l.sectionTags, children: tags),
+        if (cards.isNotEmpty || tagFilter != null)
+          MMSidebarSection(
+            title: l.sectionCards,
+            children: [
+              if (cards.isEmpty) Text(l.noSidebarMatches, style: t.footnote),
+              ...cards,
+            ],
+          ),
         if (maps.isNotEmpty)
           MMSidebarSection(
             title: l.sectionMaps,

@@ -13,7 +13,9 @@ class OutlineEntry {
     this.imageFileName,
     this.imagePath,
     this.collapsed = false,
+    this.tags = const [],
   });
+  final List<String> tags;
   final int depth;
   final String title;
   final CardKind kind;
@@ -53,6 +55,7 @@ abstract final class MapClipboard {
               level,
               card.title,
               kind: card.kind,
+              tags: card.tags,
               imageFileName: card.imageFileName,
               imagePath: card.imageFileName == null ? null : resolveImage?.call(card.imageFileName!),
               annotation: content.annotation(card.annotationId ?? ''),
@@ -126,6 +129,7 @@ abstract final class MapClipboard {
           'title': e.title,
           'kind': e.kind.name,
           'collapsed': e.collapsed,
+          if (e.tags.isNotEmpty) 'tags': e.tags,
           if (e.imageFileName != null) 'imageFileName': e.imageFileName,
           if (e.imagePath != null) 'imagePath': e.imagePath,
           if (e.annotation != null) 'annotation': e.annotation!.toJson(),
@@ -151,6 +155,7 @@ abstract final class MapClipboard {
             depth,
             e['title'] as String,
             kind: CardKind.values.byName(e['kind'] as String),
+            tags: List.unmodifiable(((e['tags'] as List?) ?? const []).cast<String>()),
             imageFileName: e['imageFileName'] as String?,
             imagePath: e['imagePath'] as String?,
             collapsed: e['collapsed'] as bool,

@@ -108,11 +108,23 @@ class StudySetContent {
     return titles;
   }
 
-  /// Cards whose title or quote contains [query]
-  /// (case-insensitive), in map order.
-  List<Card> search(String query, {String mapId = MindMap.defaultId}) {
+  List<String> tags({String mapId = MindMap.defaultId}) {
+    final names = <String, String>{};
+    for (final c in cards) {
+      if (node(c.id, mapId: mapId) == null) continue;
+      for (final tag in c.tags) {
+        names.putIfAbsent(tag.toLowerCase(), () => tag);
+      }
+    }
+    return names.values.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
+  /// Cards whose title, quote or tags contain [query] (case-insensitive),
+  /// in map order. [tag] is an exact, case-insensitive filter; an empty
+  /// query with a tag returns every card carrying that tag.
+  List<Card> search(String query, {String mapId = MindMap.defaultId, String? tag}) {
     final q = query.trim().toLowerCase();
-    if (q.isEmpty) return const [];
+    if (q.isEmpty && tag == null) return const [];
     bool hit(String? s) => s != null && s.toLowerCase().contains(q);
     final result = <Card>[];
     void walk(String? parentId) {
@@ -120,7 +132,8 @@ class StudySetContent {
         final c = card(n.cardId);
         if (c == null) continue;
         final a = c.annotationId == null ? null : annotation(c.annotationId!);
-        if (hit(c.title) || hit(a?.quote)) result.add(c);
+        final tagged = tag == null || c.tags.any((t) => t.toLowerCase() == tag.toLowerCase());
+        if (tagged && (q.isEmpty || hit(c.title) || hit(a?.quote) || c.tags.any(hit))) result.add(c);
         walk(c.id);
       }
     }

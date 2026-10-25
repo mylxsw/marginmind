@@ -26,7 +26,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('legacy');
     final after = jsonDecode(await file.readAsString()) as Map;
-    expect(after['format'], 2);
+    expect(after['format'], 3);
     for (final key in old.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], old[key]);
     }
@@ -79,7 +79,7 @@ void main() {
     await obstruction.delete();
     final retry = FileLibraryStore(root);
     expect((await retry.load('legacy')).cards.length, 3);
-    expect(jsonDecode(await file.readAsString())['format'], 2);
+    expect(jsonDecode(await file.readAsString())['format'], 3);
     await retry.dispose();
   });
 
@@ -141,8 +141,64 @@ void main() {
     await store.dispose();
   });
 
+  test('format 2 upgrades atomically with original backup and preserves tags after reopen', () async {
+    final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
+    // Use the v1 migration to obtain valid multi-map/multi-page content.
+    final seed = FileLibraryStore(root);
+    final content = await seed.load('legacy');
+    await seed.dispose();
+    json['format'] = 2;
+    json['content'] = content.toJson();
+    final source = utf8.encode(jsonEncode(json));
+    await file.writeAsBytes(source);
+    final store = FileLibraryStore(root);
+    expect((await store.load('legacy')).toJson(), content.toJson());
+    expect(jsonDecode(await file.readAsString())['format'], 3);
+    expect(await File('${file.path}.format-2.bak').readAsBytes(), source);
+    final editor = StudySetEditor(newId: () => 'unused', now: () => DateTime.utc(2026));
+    await store.update('legacy', (c) => editor.setTags(c, 'note', ['知识', 'Review']));
+    await store.dispose();
+    final reopened = FileLibraryStore(root);
+    expect((await reopened.load('legacy')).card('note')!.tags, ['知识', 'Review']);
+    expect(await File('${file.path}.format-2.bak').readAsBytes(), source);
+    await reopened.dispose();
+  });
+
+  test('format 2 migration keeps source on interruption and refuses a conflicting backup', () async {
+    final seed = FileLibraryStore(root);
+    final content = await seed.load('legacy');
+    await seed.dispose();
+    final json = jsonDecode(await file.readAsString()) as Map<String, Object?>;
+    final editor = StudySetEditor(newId: () => 'other', now: () => DateTime.utc(2026));
+    final (mapped, _) = editor.addMap(content, title: 'Other');
+    json['format'] = 2;
+    json['content'] = mapped.toJson();
+    final source = utf8.encode(jsonEncode(json));
+    await file.writeAsBytes(source);
+    final obstruction = Directory('${file.path}.tmp');
+    await obstruction.create();
+    final interrupted = FileLibraryStore(root);
+    expect(await interrupted.watchAll().first, isEmpty);
+    expect(await file.readAsBytes(), source);
+    final backup = File('${file.path}.format-2.bak');
+    expect(await backup.readAsBytes(), source);
+    await interrupted.dispose();
+    await obstruction.delete();
+    await backup.writeAsString('conflict');
+    final conflict = FileLibraryStore(root);
+    expect(await conflict.watchAll().first, isEmpty);
+    expect(await file.readAsBytes(), source);
+    expect(await backup.readAsString(), 'conflict');
+    await conflict.dispose();
+    await backup.writeAsBytes(source);
+    final retry = FileLibraryStore(root);
+    expect((await retry.load('legacy')).toJson(), mapped.toJson());
+    expect(jsonDecode(await file.readAsString())['format'], 3);
+    await retry.dispose();
+  });
+
   test('unknown and missing versions are left untouched', () async {
-    for (final version in [null, 0, 3]) {
+    for (final version in [null, 0, 4]) {
       final json = jsonDecode(utf8.decode(original)) as Map;
       json['format'] = version;
       final text = jsonEncode(json);

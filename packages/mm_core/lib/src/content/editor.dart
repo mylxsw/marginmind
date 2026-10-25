@@ -13,6 +13,25 @@ class StudySetEditor {
   final String Function() newId;
   final DateTime Function() now;
 
+  /// Tags belong to shared card content, independently of map placements.
+  StudySetContent setTags(StudySetContent c, String cardId, Iterable<String> tags) {
+    final card = c.card(cardId);
+    if (card == null) return c;
+    final normalized = <String>[];
+    final seen = <String>{};
+    for (final value in tags) {
+      final tag = value.trim();
+      if (tag.isNotEmpty && seen.add(tag.toLowerCase())) normalized.add(tag);
+    }
+    if (normalized.length == card.tags.length &&
+        Iterable.generate(normalized.length).every((i) => normalized[i] == card.tags[i])) {
+      return c;
+    }
+    return c.copyWith(
+      cards: [for (final value in c.cards) value.id == cardId ? value.copyWith(tags: normalized) : value],
+    );
+  }
+
   (StudySetContent, MindMap) addMap(StudySetContent c, {required String title}) {
     final map = MindMap(id: newId(), title: title.trim());
     return (c.copyWith(maps: [...c.maps, map]), map);
@@ -160,6 +179,7 @@ class StudySetEditor {
           title: title,
           annotationId: annotationId,
           imageFileName: imageFileName,
+          tags: List.unmodifiable(entry.tags),
           createdAt: now(),
         ),
       );

@@ -170,3 +170,98 @@ class _RenameSheetState extends State<_RenameSheet> {
     );
   }
 }
+
+Future<void> showCardTagsSheet(BuildContext context, WidgetRef ref, String studySetId, String cardId) async {
+  final controller = ref.read(workspaceProvider(studySetId).notifier);
+  final card = controller.content.card(cardId);
+  if (card == null) return;
+  final tags = await showMMSheet<List<String>>(
+    context: context,
+    builder: (_) => _CardTagsSheet(tags: card.tags),
+  );
+  if (tags != null && context.mounted) await controller.setTags(cardId, tags);
+}
+
+class _CardTagsSheet extends StatefulWidget {
+  const _CardTagsSheet({required this.tags});
+  final List<String> tags;
+  @override
+  State<_CardTagsSheet> createState() => _CardTagsSheetState();
+}
+
+class _CardTagsSheetState extends State<_CardTagsSheet> {
+  late final _tags = [...widget.tags];
+  final _input = TextEditingController();
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  void _add() {
+    final tag = _input.text.trim();
+    if (tag.isEmpty) return;
+    setState(() {
+      if (!_tags.any((t) => t.toLowerCase() == tag.toLowerCase())) _tags.add(tag);
+      _input.clear();
+    });
+  }
+
+  void _save() {
+    _add();
+    Navigator.of(context).pop(_tags);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return MMSheet(
+      title: l.sectionTags,
+      actions: [
+        MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
+        MMButton(label: l.save, variant: MMButtonVariant.primary, onPressed: _save),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height / 3),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final tag in _tags)
+                    Row(
+                      children: [
+                        Expanded(child: Text(tag, style: context.mmText.body)),
+                        MMIconButton(
+                          icon: MMIcons.close,
+                          tooltip: l.removeTag,
+                          onPressed: () => setState(() => _tags.remove(tag)),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: MMTextField(
+                  controller: _input,
+                  placeholder: l.addTag,
+                  semanticLabel: l.addTag,
+                  autofocus: true,
+                  onSubmitted: (_) => _add(),
+                ),
+              ),
+              MMIconButton(icon: MMIcons.add, tooltip: l.addTag, onPressed: _add),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

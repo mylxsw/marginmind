@@ -244,5 +244,10 @@
   "renameMap": "重命名脑图…",
   "deleteMap": "删除脑图",
   "addToNamedMap": "加入“{title}”",
-  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}}
+  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}},
+  "cardTags": "标签…",
+  "sectionTags": "标签",
+  "addTag": "添加标签",
+  "removeTag": "删除标签",
+  "allTags": "全部标签"
 }
