@@ -38,6 +38,9 @@ class MindMapCanvas extends StatefulWidget {
     required this.onNavigate,
     required this.onAddChild,
     required this.onShift,
+    this.editingCardId,
+    this.onEditDone,
+    this.onEditCancel,
     this.onContextMenu,
     this.loaded = true,
   });
@@ -53,6 +56,9 @@ class MindMapCanvas extends StatefulWidget {
   final TransformationController transformation;
   final ValueChanged<String?> onSelect;
   final ValueChanged<String> onReveal;
+
+  /// Double-click, Enter, F2, Space or typing on a selected node. The caller
+  /// answers by setting [editingCardId] for topics edited in place.
   final ValueChanged<String> onRename;
   final VoidCallback onDelete;
   final FocusNode focusNode;
@@ -69,6 +75,15 @@ class MindMapCanvas extends StatefulWidget {
   /// ⌘↑ / ⌘↓.
   final ValueChanged<int> onShift;
 
+  /// Topic whose title is shown as a text field.
+  final String? editingCardId;
+
+  /// Enter or clicking elsewhere, with the typed text.
+  final ValueChanged<String>? onEditDone;
+
+  /// Esc.
+  final VoidCallback? onEditCancel;
+
   /// Right click on a node (card id, or null for the root).
   final void Function(String? cardId, Offset globalPosition)? onContextMenu;
 
@@ -76,10 +91,159 @@ class MindMapCanvas extends StatefulWidget {
   State<MindMapCanvas> createState() => _MindMapCanvasState();
 }
 
-class _MindMapCanvasState extends State<MindMapCanvas> {
+class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProviderStateMixin {
   bool _centered = false;
   TreeLayoutResult? _layout;
   final _cache = MindMapRenderCache();
+
+  /// Moves nodes from where they were drawn to a new layout, so neighbors
+  /// make way smoothly while a title grows.
+  late final _motion = AnimationController(vsync: this, duration: MMMotion.standard, value: 1);
+  Map<String, Rect> _from = const {};
+
+  _NodeField? _field;
+
+  /// Text typed on a selected topic; it replaces the title in the field the
+  /// caller opens next.
+  String? _typed;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncField();
+  }
+
+  @override
+  void dispose() {
+    final field = _field;
+    if (field != null && !field.ended) {
+      // Closing the map confirms the edit, like clicking elsewhere.
+      final done = widget.onEditDone;
+      final text = field.controller.text;
+      if (done != null) Future.microtask(() => done(text));
+    }
+    field?.dispose();
+    _motion.dispose();
+    super.dispose();
+  }
+
+  /// Opens or closes the text field to match [MindMapCanvas.editingCardId].
+  void _syncField() {
+    final id = widget.editingCardId;
+    if (id == _field?.id) return;
+    // Each field gets its own focus node: one that is already focused would
+    // not open a text input connection for the next field.
+    final old = _field;
+    if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    _field = null;
+    final typed = _typed;
+    _typed = null;
+    if (id == null) return;
+    final text = typed ?? widget.content.card(id)?.title ?? '';
+    final controller = TextEditingController(text: text)
+      ..selection = typed == null
+          ? TextSelection(baseOffset: 0, extentOffset: text.length)
+          : TextSelection.collapsed(offset: text.length);
+    controller.addListener(() {
+      if (mounted) setState(() {});
+    });
+    final field = _NodeField(id, controller, FocusNode(debugLabel: 'MindMapNodeField'));
+    field.focus.addListener(() => _onFieldFocus(field));
+    _field = field;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _field != field) return;
+      field.focus.requestFocus();
+      _ensureVisible(id);
+    });
+  }
+
+  /// Focus left the field (a click elsewhere, another pane): confirm. Not
+  /// when the app goes to the background; focus comes back on return.
+  void _onFieldFocus(_NodeField field) {
+    if (field.focus.hasFocus) return;
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    _endField(field, commit: true, refocus: false);
+  }
+
+  void _endField(_NodeField? field, {required bool commit, required bool refocus}) {
+    if (field == null || field != _field || field.ended) return;
+    field.ended = true;
+    if (refocus) widget.focusNode.requestFocus();
+    if (commit) {
+      widget.onEditDone?.call(field.controller.text);
+    } else {
+      widget.onEditCancel?.call();
+    }
+  }
+
+  /// Printable text without ⌘ / Ctrl / ⌥; excludes the private-use range
+  /// macOS reports for function and arrow keys.
+  static bool _isTyping(KeyEvent event) {
+    final character = event.character;
+    if (character == null || character.isEmpty) return false;
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isMetaPressed || keyboard.isControlPressed || keyboard.isAltPressed) return false;
+    return character.runes.every((r) => r >= 0x20 && r != 0x7f && (r < 0xf700 || r > 0xf8ff));
+  }
+
+  bool _isTopic(String? id) => id != null && _cache._specs[id]?.kind == _Kind.topic;
+
+  /// Records where every node is drawn now when the layout changes, so
+  /// the next frames can move them to the new layout. Offsets are kept
+  /// relative to the root, which [_keepRootInPlace] holds still.
+  void _animateTo(TreeLayoutResult next, TreeLayoutResult? previous) {
+    if (previous == null || identical(previous, next)) return;
+    if (!_centered || MMAppearance.reduceMotionOf(context)) {
+      _from = const {};
+      return;
+    }
+    final shift = _rect(next.rects[rootNodeId]!).topLeft - _rect(previous.rects[rootNodeId]!).topLeft;
+    _from = {
+      for (final e in next.rects.entries)
+        if (previous.rects[e.key] case final old?) e.key: _drawn(e.key, old).shift(shift),
+    };
+    _motion.forward(from: 0);
+  }
+
+  /// Where [id] is drawn in the current frame, on its way to [target].
+  Rect _drawn(String id, LayoutRect target) =>
+      _lerpRect(_from[id], _rect(target), MMMotion.layoutCurve.transform(_motion.value));
+
+  /// Like [_drawn], but the node being edited takes its new size at once
+  /// (the text must fit as it is typed) while it moves with the others.
+  Rect _shown(String id, LayoutRect target) {
+    final drawn = _drawn(id, target);
+    if (id != _field?.id) return drawn;
+    return Rect.fromLTWH(drawn.left, drawn.center.dy - target.height / 2, target.width, target.height);
+  }
+
+  Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target) {
+    final field = _field!;
+    return Positioned.fromRect(
+      key: ValueKey(id),
+      rect: _shown(id, target),
+      child: _NodeView(
+        spec: spec,
+        selected: true,
+        flashing: false,
+        onTap: () {},
+        onDoubleTap: null,
+        onSecondaryTapUp: null,
+        onReveal: null,
+        revealLabel: '',
+        editor: MMInlineTextField(
+          controller: field.controller,
+          focusNode: field.focus,
+          style: context.mmText.headline,
+          semanticLabel: spec.title,
+          onSubmitted: () => _endField(field, commit: true, refocus: true),
+          onCancel: () => _endField(field, commit: false, refocus: true),
+          onTapOutside: () => _endField(field, commit: true, refocus: false),
+        ),
+      ),
+    );
+  }
 
   /// Where the root was in the last layout. When the tree changes shape
   /// (fold, move, add) the view is shifted so the root stays put on screen.
@@ -108,6 +272,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   @override
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _syncField();
+    _typed = null;
     final id = widget.flashCardId;
     if (id != null && id != oldWidget.flashCardId) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(id));
@@ -213,7 +379,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
     final c = context.mmColors;
+    final field = _field;
     final result = _cache.update(
+      draft: field == null ? null : (field.id, field.controller.text),
       content: widget.content,
       rootTitle: widget.rootTitle,
       localizations: l,
@@ -225,22 +393,77 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
     final specs = _cache._specs;
     final collapsed = _cache._collapsed;
     final expandable = _cache._expandable;
+    if (field != null && specs.containsKey(field.id)) {
+      field.seen = true;
+    } else if (field != null && field.seen && !field.ended) {
+      // The node went away (deleted, folded away) while it was being edited.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _endField(field, commit: false, refocus: false));
+    }
+    _animateTo(result, _layout);
     _layout = result;
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
     _keepRootInPlace(result);
 
+    // Built once per frame of content; the animation only moves them.
+    final nodes = {
+      for (final e in result.rects.entries)
+        if (e.key != field?.id)
+          e.key: RepaintBoundary(
+            child: _DropZone(
+              id: e.key,
+              canAccept: (dragged) => _canDrop(dragged, e.key),
+              onDrop: (dragged, zone) => _drop(dragged, e.key, zone),
+              child: _draggable(
+                e.key,
+                specs[e.key]!,
+                _NodeView(
+                  spec: specs[e.key]!,
+                  selected: e.key == (widget.selectedCardId ?? rootNodeId),
+                  flashing: e.key == widget.flashCardId,
+                  onTap: () {
+                    widget.focusNode.requestFocus();
+                    widget.onSelect(e.key == rootNodeId ? null : e.key);
+                  },
+                  onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
+                  onSecondaryTapUp: widget.onContextMenu == null
+                      ? null
+                      : (position) {
+                          widget.focusNode.requestFocus();
+                          final id = e.key == rootNodeId ? null : e.key;
+                          widget.onSelect(id);
+                          widget.onContextMenu!(id, position);
+                        },
+                  onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
+                  revealLabel: l.revealSource,
+                ),
+              ),
+            ),
+          ),
+    };
+    final foldButtons = {
+      for (final id in expandable)
+        id: _FoldButton(
+          hiddenCount: collapsed[id],
+          tooltip: collapsed.containsKey(id) ? l.expandNode : l.collapseNode,
+          onPressed: () => widget.onToggleCollapsed(id),
+        ),
+    };
+
     return Focus(
       focusNode: widget.focusNode,
       onKeyEvent: (_, event) {
-        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        // Keys the text field leaves alone must not act on the map.
+        if (event is! KeyDownEvent || _field != null) return KeyEventResult.ignored;
         final key = event.logicalKey;
+        final selected = widget.selectedCardId;
         if (key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.backspace) {
           widget.onDelete();
           return KeyEventResult.handled;
         }
-        if (key == LogicalKeyboardKey.enter && widget.selectedCardId != null) {
-          widget.onRename(widget.selectedCardId!);
+        if ((key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.f2 || key == LogicalKeyboardKey.space) &&
+            selected != null) {
+          widget.onRename(selected);
           return KeyEventResult.handled;
         }
         if (key == LogicalKeyboardKey.escape) {
@@ -251,10 +474,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
           widget.onAddChild();
           return KeyEventResult.handled;
         }
-        if (key == LogicalKeyboardKey.space && widget.selectedCardId != null) {
-          widget.onToggleCollapsed(widget.selectedCardId!);
-          return KeyEventResult.handled;
-        }
         final meta = HardwareKeyboard.instance.isMetaPressed || HardwareKeyboard.instance.isControlPressed;
         final direction = switch (key) {
           LogicalKeyboardKey.arrowLeft => AxisDirection.left,
@@ -263,7 +482,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
           LogicalKeyboardKey.arrowDown => AxisDirection.down,
           _ => null,
         };
-        if (direction == null) return KeyEventResult.ignored;
+        if (direction == null) {
+          if (!_isTopic(selected) || !_isTyping(event)) return KeyEventResult.ignored;
+          _typed = event.character;
+          widget.onRename(selected!);
+          return KeyEventResult.handled;
+        }
         if (meta && (direction == AxisDirection.up || direction == AxisDirection.down)) {
           widget.onShift(direction == AxisDirection.up ? -1 : 1);
         } else {
@@ -286,64 +510,29 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
           child: SizedBox(
             width: math.max(result.width, 600),
             height: math.max(result.height, 400),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: RepaintBoundary(
-                    child: CustomPaint(key: const ValueKey('mind-map-edges'), painter: _EdgesPainter(result, c.line)),
-                  ),
-                ),
-                for (final e in result.rects.entries)
-                  Positioned(
-                    key: ValueKey(e.key),
-                    left: e.value.left,
-                    top: e.value.top,
-                    width: e.value.width,
-                    height: e.value.height,
+            child: AnimatedBuilder(
+              animation: _motion,
+              builder: (context, _) => Stack(
+                children: [
+                  Positioned.fill(
                     child: RepaintBoundary(
-                      child: _DropZone(
-                        id: e.key,
-                        canAccept: (dragged) => _canDrop(dragged, e.key),
-                        onDrop: (dragged, zone) => _drop(dragged, e.key, zone),
-                        child: _draggable(
-                          e.key,
-                          specs[e.key]!,
-                          _NodeView(
-                            spec: specs[e.key]!,
-                            selected: e.key == (widget.selectedCardId ?? rootNodeId),
-                            flashing: e.key == widget.flashCardId,
-                            onTap: () {
-                              widget.focusNode.requestFocus();
-                              widget.onSelect(e.key == rootNodeId ? null : e.key);
-                            },
-                            onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
-                            onSecondaryTapUp: widget.onContextMenu == null
-                                ? null
-                                : (position) {
-                                    widget.focusNode.requestFocus();
-                                    final id = e.key == rootNodeId ? null : e.key;
-                                    widget.onSelect(id);
-                                    widget.onContextMenu!(id, position);
-                                  },
-                            onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
-                            revealLabel: l.revealSource,
-                          ),
-                        ),
+                      child: CustomPaint(
+                        key: const ValueKey('mind-map-edges'),
+                        painter: _EdgesPainter(result, c.line, _motion.isAnimating ? _from : const {}, _motion.value),
                       ),
                     ),
                   ),
-                for (final id in expandable)
-                  if (result.rects[id] case final r?)
-                    Positioned(
-                      left: r.right + 3,
-                      top: r.centerY - 9,
-                      child: _FoldButton(
-                        hiddenCount: collapsed[id],
-                        tooltip: collapsed.containsKey(id) ? l.expandNode : l.collapseNode,
-                        onPressed: () => widget.onToggleCollapsed(id),
-                      ),
-                    ),
-              ],
+                  for (final e in result.rects.entries)
+                    if (e.key == field?.id)
+                      _fieldNode(e.key, specs[e.key]!, e.value)
+                    else
+                      Positioned.fromRect(key: ValueKey(e.key), rect: _drawn(e.key, e.value), child: nodes[e.key]!),
+                  for (final id in expandable)
+                    if (result.rects[id] case final r?)
+                      if (_shown(id, r) case final shown)
+                        Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                ],
+              ),
             ),
           ),
         ),
@@ -362,8 +551,12 @@ class _NodeView extends StatelessWidget {
     required this.onSecondaryTapUp,
     required this.onReveal,
     required this.revealLabel,
+    this.editor,
   });
 
+  /// Replaces the title while it is edited in place; the node then takes
+  /// no gestures of its own.
+  final Widget? editor;
   final ValueChanged<Offset>? onSecondaryTapUp;
   final _NodeSpec spec;
   final bool selected;
@@ -401,7 +594,7 @@ class _NodeView extends StatelessWidget {
           style: t.title3.copyWith(color: c.onRootNode),
         ),
       ),
-      _Kind.topic => Center(child: Text(spec.title, style: t.headline)),
+      _Kind.topic => editor == null ? Center(child: Text(spec.title, style: t.headline)) : Center(child: editor),
       _Kind.note => Row(
         children: [
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
@@ -454,6 +647,7 @@ class _NodeView extends StatelessWidget {
       _Kind.note => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     };
 
+    if (editor != null) return _decorated(c, bg, radius, shadow, ring, body, padding);
     return GestureDetector(
       onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
       child: _interactive(context, c, bg, radius, shadow, ring, body, padding),
@@ -475,42 +669,84 @@ class _NodeView extends StatelessWidget {
       onDoubleTap: onDoubleTap,
       selected: selected,
       semanticLabel: spec.title,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.standard,
-        padding: padding,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(radius),
-          boxShadow: [...shadow, ...ring],
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(child: body),
-            if (onReveal != null)
-              Positioned(
-                top: -3,
-                right: -30,
-                child: MMIconButton(
-                  icon: MMIcons.revealSource,
-                  tooltip: revealLabel,
-                  size: 22,
-                  iconSize: 11,
-                  onPressed: onReveal,
-                ),
+      builder: (context, s) => _decorated(c, bg, radius, shadow, ring, body, padding),
+    );
+  }
+
+  Widget _decorated(
+    MMColors c,
+    Color bg,
+    double radius,
+    List<BoxShadow> shadow,
+    List<BoxShadow> ring,
+    Widget body,
+    EdgeInsets padding,
+  ) {
+    return AnimatedContainer(
+      duration: MMMotion.standard,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [...shadow, ...ring],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(child: body),
+          if (onReveal != null)
+            Positioned(
+              top: -3,
+              right: -30,
+              child: MMIconButton(
+                icon: MMIcons.revealSource,
+                tooltip: revealLabel,
+                size: 22,
+                iconSize: 11,
+                onPressed: onReveal,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 }
 
+Rect _rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
+
+Rect _lerpRect(Rect? from, Rect to, double t) => from == null || t >= 1 ? to : Rect.lerp(from, to, t)!;
+
+/// A node title open for editing. [ended] is set as soon as the edit is
+/// confirmed or cancelled; the field stays on screen until the caller
+/// clears [MindMapCanvas.editingCardId], so the saved title replaces it
+/// without a flash of the old one.
+class _NodeField {
+  _NodeField(this.id, this.controller, this.focus);
+
+  final String id;
+  final TextEditingController controller;
+  final FocusNode focus;
+  bool ended = false;
+
+  /// The node has been on the map; until then the content may lag behind
+  /// the write that created it.
+  bool seen = false;
+
+  void dispose() {
+    controller.dispose();
+    focus.dispose();
+  }
+}
+
 class _EdgesPainter extends CustomPainter {
-  _EdgesPainter(this.layout, this.color);
+  _EdgesPainter(this.layout, this.color, this.from, this.t);
 
   final TreeLayoutResult layout;
   final Color color;
+
+  /// Where nodes started moving from; [t] is the progress toward [layout].
+  final Map<String, Rect> from;
+  final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -520,10 +756,10 @@ class _EdgesPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     for (final e in layout.edges) {
-      final a = layout.rects[e.parentId]!;
-      final b = layout.rects[e.childId]!;
-      final start = Offset(a.right, a.centerY);
-      final end = Offset(b.left, b.centerY);
+      final a = _at(e.parentId);
+      final b = _at(e.childId);
+      final start = Offset(a.right, a.center.dy);
+      final end = Offset(b.left, b.center.dy);
       final midX = (start.dx + end.dx) / 2;
       final path = Path()
         ..moveTo(start.dx, start.dy)
@@ -532,8 +768,11 @@ class _EdgesPainter extends CustomPainter {
     }
   }
 
+  Rect _at(String id) => _lerpRect(from[id], _rect(layout.rects[id]!), MMMotion.layoutCurve.transform(t));
+
   @override
-  bool shouldRepaint(_EdgesPainter old) => old.layout != layout || old.color != color;
+  bool shouldRepaint(_EdgesPainter old) =>
+      old.layout != layout || old.color != color || !identical(old.from, from) || old.t != t;
 }
 
 enum _Zone { before, child, after }

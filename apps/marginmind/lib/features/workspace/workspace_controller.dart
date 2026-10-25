@@ -100,6 +100,7 @@ class WorkspaceState {
     this.selectedCardId,
     this.flashCardId,
     this.flashAnnotationId,
+    this.editingCardId,
     this.pending,
     this.reveal,
     this.currentPages = const {},
@@ -124,6 +125,9 @@ class WorkspaceState {
   final String? selectedCardId;
   final String? flashCardId;
   final String? flashAnnotationId;
+
+  /// Topic whose title is being edited in place on the map.
+  final String? editingCardId;
   final PendingAction? pending;
   final RevealRequest? reveal;
 
@@ -150,6 +154,8 @@ class WorkspaceState {
     String? flashCardId,
     String? flashAnnotationId,
     bool clearFlash = false,
+    String? editingCardId,
+    bool clearEditing = false,
     PendingAction? pending,
     bool clearPending = false,
     RevealRequest? reveal,
@@ -171,6 +177,7 @@ class WorkspaceState {
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
+      editingCardId: clearEditing ? null : (editingCardId ?? this.editingCardId),
       pending: clearPending ? null : (pending ?? this.pending),
       reveal: reveal ?? this.reveal,
       currentPages: currentPages ?? this.currentPages,
@@ -592,6 +599,96 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
 
+  // ---- in-place editing -------------------------------------------------------
+
+  _EditSession? _editing;
+
+  /// A topic is being created for editing; no other edit may start yet.
+  bool _creating = false;
+
+  /// Starts editing a topic's title in place. Nothing is written until
+  /// [finishEditing], so the whole edit is one undo step.
+  void beginEditing(String cardId) {
+    if (_editing != null || _creating || content.card(cardId)?.kind != CardKind.topic) return;
+    _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
+    state = state.copyWith(selectedCardId: cardId, editingCardId: cardId);
+  }
+
+  /// Adds a topic (see [addTopic]) and starts editing it. Creation and the
+  /// typed title commit as one undo step; cancelling leaves no node and no
+  /// history.
+  Future<Card?> addTopicAndEdit(String title, {bool asChild = false}) async {
+    if (_editing != null || _creating) return null;
+    _creating = true;
+    final previous = state.selectedCardId;
+    final Card card;
+    try {
+      await beginTransaction();
+      try {
+        card = await addTopic(title, asChild: asChild);
+      } catch (_) {
+        await abortTransaction();
+        rethrow;
+      }
+    } finally {
+      _creating = false;
+    }
+    _editing = _EditSession(card.id, created: true, previousSelection: previous);
+    state = state.copyWith(editingCardId: card.id);
+    return card;
+  }
+
+  /// Enter or clicking elsewhere. An empty title keeps the old one, or
+  /// drops a node created for this edit.
+  Future<void> finishEditing(String text) async {
+    final session = _editing;
+    if (session == null) return;
+    _editing = null;
+    final title = text.trim();
+    try {
+      if (session.created && title.isEmpty) {
+        await _dropCreated(session);
+      } else if (session.created) {
+        try {
+          if (title != content.card(session.cardId)?.title) await rename(session.cardId, title);
+        } finally {
+          await commitTransaction();
+        }
+      } else if (title.isNotEmpty && title != content.card(session.cardId)?.title) {
+        await rename(session.cardId, title);
+      }
+    } finally {
+      _closeEditor();
+    }
+  }
+
+  /// Esc: keeps the old title, or drops a node created for this edit.
+  Future<void> cancelEditing() async {
+    final session = _editing;
+    if (session == null) return;
+    _editing = null;
+    try {
+      if (session.created) await _dropCreated(session);
+    } finally {
+      _closeEditor();
+    }
+  }
+
+  /// The field stays open until the edit is saved, so the new title
+  /// replaces it without showing the old one in between.
+  void _closeEditor() {
+    if (_editing == null && ref.mounted) state = state.copyWith(clearEditing: true);
+  }
+
+  Future<void> _dropCreated(_EditSession session) async {
+    await abortTransaction();
+    final previous = session.previousSelection;
+    if (!ref.mounted) return;
+    state = previous != null && content.card(previous) != null
+        ? state.copyWith(selectedCardId: previous)
+        : state.copyWith(selectRoot: true);
+  }
+
   Future<void> removeCards(Iterable<String> cardIds) {
     final ids = cardIds.toList();
     return _update((c) => _editor.removeMany(c, ids));
@@ -673,6 +770,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       if (ref.mounted) state = state.copyWith(clearFlash: true);
     });
   }
+}
+
+class _EditSession {
+  const _EditSession(this.cardId, {required this.created, required this.previousSelection});
+
+  final String cardId;
+
+  /// The card was added for this edit inside an open transaction.
+  final bool created;
+  final String? previousSelection;
 }
 
 final workspaceProvider = NotifierProvider.family<WorkspaceController, WorkspaceState, String>(WorkspaceController.new);
