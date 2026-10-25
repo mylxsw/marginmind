@@ -31,12 +31,12 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 
 ### format 2 文件包与兼容接口
 
-- `Annotation.pages` 是按阅读顺序排列的 `AnnotationPage(page, rects)` 列表，页码从 1 开始，矩形继续使用 PDF 坐标。一条高亮仍有同一个 ID、文档、引文和颜色。旧构造参数 `page/rects` 以及首页面的读取属性保留，便于 C-01 接入；写盘只保存 `pages`，复制和改色保留全部页面。
+- `Annotation.pages` 是按阅读顺序排列的 `AnnotationPage(page, rects)` 列表，页码从 1 开始，矩形继续使用 PDF 坐标。一条高亮仍有同一个 ID、文档、引文和颜色。旧构造参数 `page/rects` 以及首页面的读取属性保留，用于定位到摘录的起始页；写盘只保存 `pages`，复制和改色保留全部页面。
 - 图片卡片用 `CardKind.image`，`imageFileName` 引用包内资源，`annotationId` 定位原文区域。`StudySetContentRepository.importImage` 接受 PNG/JPEG 文件，通过内容签名确定扩展名、SHA-256 字节摘要去重，原子写入 `images/<hash>.png|jpg`。同一学习集内多个卡片复用同一路径；不自动回收图片，以免破坏撤销快照。`StudySetEditor.createImage` 只处理引用，不执行文件 IO。
 - `StudySetContent.maps` 保存 `MindMap(id, title)`；旧数据进入稳定 ID `main` 的默认图（空标题代表沿用学习集标题）。节点以 `(mapId, cardId)` 唯一，`parentId` 引用同图内的卡片；同一卡片可在不同图中有不同父级、排序和折叠状态。`node`、`childrenOf`、`pathOf`、`search`、剪贴板和导出接受 `mapId`，默认仍是 `main`。
 - `StudySetEditor(mapId: ...)` 的结构编辑只作用于该图，`placeCard` 可复用已有卡片。卡片标题、高亮颜色及复习排期属于共享内容。移除子树时，仍被其他图引用的卡片保留；删除原文高亮则移除各图中的对应子树。删除额外脑图保留卡片及复习记录，默认图暂不允许删除，待 C-03 接入活动脑图生命周期。复习按卡片去重。
 - 加载文件包时只接受 `format: 1` 或 `2`，未知/缺失版本不载入也不改写。唯一的 1→2 迁移先转换并解析数据，再把原始字节备份为 `studyset.json.format-1.bak`，最后写同目录临时文件、flush、rename 替换 `studyset.json`。文档资源不移动；复习记录、阅读位置、节点结构和 ID 保持不变。已存在且与源文件相同的备份允许重试，不同则中止，绝不覆盖备份；单包的格式或 IO 失败只跳过该包，并通过只读 `packageLoadErrors` 按包路径记录原因，其余学习集仍可读写；修复失败包后重新打开资料库可重试迁移。根目录或资料库级初始化失败会向调用者报错，但不缓存失败的 future，同一实例后续操作可重试。再次打开 format 2 不重复迁移。原子替换沿用单进程文件包约定，不支持多个进程同时编辑同一包。
-- 内部剪贴板写 version 2，继续读取 version 1；携带多页位置和图片引用。同包剪切后可通过保留的高亮复用图片；目标包没有对应高亮或图片引用时降为文字笔记，跨学习集图片文件复制由后续 C-02 处理。本任务仅准备模型和接口，不新增界面入口；C-01/C-02/C-03 分别接入跨页显示、图片呈现和脑图切换。
+- 内部剪贴板写 version 2，继续读取 version 1；携带多页位置和图片引用。同包剪切后可通过保留的高亮复用图片；目标包没有对应高亮或图片引用时降为文字笔记，跨学习集图片文件复制由后续 C-02 处理。阅读器将选区按页保存，分页绘制同一 ID 的高亮；跨页引文按阅读顺序以换行连接，回到原文定位到起始页。图片呈现和脑图切换由 C-02/C-03 接入。
 
 - **撤销 / 重做**：控制器的独立编辑自动记录一步快照（最多 100 步）；跨多次写入的原地编辑用 `await beginTransaction()` 开始，`await commitTransaction()` 提交，`await abortTransaction()` 放弃。嵌套事务加入外层事务，最外层提交只记一步；放弃取消整个事务且保留原有重做记录。空事务及内容未变化的编辑不记历史。事务期间禁用控制器级撤销 / 重做，文字框负责自身撤销。写入和事务边界按调用顺序串行执行。撤销、重做和放弃均用 `StudySetEditor.restore` 保留当前复习记录和阅读页码。
 - **脑图编辑基础 API**：`insertSibling`（`before` 指定前后）、`promote`、`insertParent`、`removeMany`、`moveMany`、`recolorMany` 均为 `StudySetEditor` 纯函数。虚拟根节点以 `null` 表示；在根上加兄弟节点会添加根的子节点，提升和插入父节点则不操作。批量移动按脑图先序排列、合并选中的父子树，目标落在任一选中子树内或不存在时整批拒绝；`index` 指移除所选节点后的目标兄弟列表位置。批量改色只作用于选中摘录关联的高亮（格式 1 的主题和笔记不存颜色），不隐式修改后代。控制器的 `removeCards` / `moveCards` / `recolorCards` 各只记一步历史。

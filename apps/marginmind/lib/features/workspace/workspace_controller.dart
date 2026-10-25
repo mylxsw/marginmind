@@ -504,8 +504,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       final (next, created) = _editor.createExcerpt(
         c,
         documentId: documentId,
-        page: s.page,
-        rects: s.rects,
+        pages: s.pages,
         quote: s.text,
         colorIndex: color.index,
         parentId: parent,
@@ -520,9 +519,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<HighlightedNotice> highlight(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
     await _update(
-      (c) => _editor
-          .highlight(c, documentId: documentId, page: s.page, rects: s.rects, quote: s.text, colorIndex: color.index)
-          .$1,
+      (c) => _editor.highlight(c, documentId: documentId, pages: s.pages, quote: s.text, colorIndex: color.index).$1,
     );
     state = state.copyWith(clearPending: true);
     return const HighlightedNotice();
