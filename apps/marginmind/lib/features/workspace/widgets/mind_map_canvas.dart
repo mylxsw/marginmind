@@ -9,6 +9,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_layout/mm_layout.dart';
 
+import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
 import '../../../app/app_commands.dart';
 import 'card_field.dart';
@@ -215,6 +216,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final (style, kind, maxLines) = switch (spec.kind) {
       _Kind.note => (t.body.copyWith(height: 19 / 13), CardKind.note, null),
       _Kind.excerpt => (t.headline.copyWith(height: 17 / 13), CardKind.excerpt, 1),
+      _Kind.image => (t.headline.copyWith(height: 17 / 13), CardKind.image, 1),
       _ => (t.headline, CardKind.topic, null),
     };
     return Positioned.fromRect(
@@ -579,7 +581,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                           if (id == null || !widget.selectedCardIds.contains(id)) widget.onSelect(id);
                           widget.onContextMenu!(id, position);
                         },
-                  onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
+                  onReveal:
+                      specs[e.key]!.kind == _Kind.excerpt ||
+                          (specs[e.key]!.kind == _Kind.image && specs[e.key]!.meta != null)
+                      ? () => widget.onReveal(e.key)
+                      : null,
                   revealLabel: l.revealSource,
                 ),
               ),
@@ -806,7 +812,7 @@ class _NodeView extends StatelessWidget {
         [const BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(0, 2))],
       ),
       _Kind.topic => (Color.alphaBlend(c.fill, c.canvas), 12.0, const <BoxShadow>[]),
-      _Kind.excerpt => (c.card, 12.0, c.cardShadow),
+      _Kind.excerpt || _Kind.image => (c.card, 12.0, c.cardShadow),
       _Kind.note => (Color.alphaBlend(c.quaternaryFill, c.canvas), 12.0, const <BoxShadow>[]),
     };
 
@@ -829,7 +835,7 @@ class _NodeView extends StatelessWidget {
           ),
         ],
       ),
-      _Kind.excerpt => Column(
+      _Kind.excerpt || _Kind.image => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -853,14 +859,23 @@ class _NodeView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: spec.color!.cardTint,
-              borderRadius: BorderRadius.circular(MMRadii.excerpt),
+          if (spec.kind == _Kind.image)
+            SizedBox(
+              height: spec.imageHeight,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(MMRadii.excerpt),
+                child: ColoredBox(color: spec.color!.cardTint, child: CardImage(spec.image ?? '')),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: spec.color!.cardTint,
+                borderRadius: BorderRadius.circular(MMRadii.excerpt),
+              ),
+              child: Text(spec.quote ?? '', maxLines: 4, overflow: TextOverflow.ellipsis, style: t.readingExcerpt),
             ),
-            child: Text(spec.quote ?? '', maxLines: 4, overflow: TextOverflow.ellipsis, style: t.readingExcerpt),
-          ),
           const SizedBox(height: 6),
           Text(spec.meta ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: t.footnote),
         ],
@@ -870,7 +885,7 @@ class _NodeView extends StatelessWidget {
     final padding = switch (spec.kind) {
       _Kind.root => const EdgeInsets.symmetric(horizontal: 18),
       _Kind.topic => const EdgeInsets.symmetric(horizontal: 14),
-      _Kind.excerpt => const EdgeInsets.fromLTRB(12, 11, 38, 11),
+      _Kind.excerpt || _Kind.image => const EdgeInsets.fromLTRB(12, 11, 38, 11),
       _Kind.note => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     };
 
@@ -914,20 +929,22 @@ class _NodeView extends StatelessWidget {
   ) {
     return AnimatedContainer(
       duration: MMMotion.standard,
-      padding: padding,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [...shadow, ...ring],
       ),
+      // The reveal button sits in the right padding, inside the node's box
+      // so it receives clicks.
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
-          Positioned.fill(child: body),
+          Positioned.fill(
+            child: Padding(padding: padding, child: body),
+          ),
           if (onReveal != null)
             Positioned(
-              top: -3,
-              right: -30,
+              top: padding.top - 3,
+              right: padding.right - 30,
               child: MMIconButton(
                 icon: MMIcons.revealSource,
                 tooltip: revealLabel,

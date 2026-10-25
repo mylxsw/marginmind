@@ -103,7 +103,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       entries: [
         if (card != null) ...[
           MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: 'F2'),
-          if (card.kind == CardKind.excerpt)
+          if (content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
           const MMMenuDivider(),
         ],
@@ -122,7 +122,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           if (ref
               .read(workspaceProvider(widget.studySetId))
               .selectedCardIds
-              .any((id) => content.card(id)?.kind == CardKind.excerpt)) ...[
+              .any((id) => content.annotation(content.card(id)?.annotationId ?? '') != null)) ...[
             const MMMenuDivider(),
             for (final color in MMAnnotationColor.values)
               MMMenuItem(

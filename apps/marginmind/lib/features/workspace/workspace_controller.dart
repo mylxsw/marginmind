@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/painting.dart' show AxisDirection, Rect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,6 +62,11 @@ class ExcerptedNotice extends WorkspaceNotice {
 
 class HighlightedNotice extends WorkspaceNotice {
   const HighlightedNotice();
+}
+
+/// The dragged area could not be rendered or stored.
+class AreaFailedNotice extends WorkspaceNotice {
+  const AreaFailedNotice();
 }
 
 class RemovedNotice extends WorkspaceNotice {
@@ -392,11 +399,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> toggleTool() =>
-      setTool(state.tool == AnnotationTool.select ? AnnotationTool.highlight : AnnotationTool.select);
+      setTool(state.tool == AnnotationTool.highlight ? AnnotationTool.select : AnnotationTool.highlight);
 
+  Future<void> toggleAreaTool() =>
+      setTool(state.tool == AnnotationTool.area ? AnnotationTool.select : AnnotationTool.area);
+
+  /// Picking a color arms the highlighter; the area tool keeps going and
+  /// frames new areas in that color.
   Future<void> setColor(MMAnnotationColor color) {
     state = state.copyWith(color: color);
-    return setTool(AnnotationTool.highlight);
+    return state.tool == AnnotationTool.area ? Future.value() : setTool(AnnotationTool.highlight);
   }
 
   void toggleSyncToMap() => state = state.copyWith(syncToMap: !state.syncToMap);
@@ -525,6 +537,42 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return const HighlightedNotice();
   }
 
+  /// An area dragged with the area tool becomes an image excerpt at once.
+  /// [capture] renders the area as PNG; the image is stored in the package
+  /// before the (undoable) card is added.
+  Future<WorkspaceNotice> excerptArea(String documentId, MMPdfArea area, Future<Uint8List?> Function() capture) async {
+    final String imageFileName;
+    try {
+      final png = await capture();
+      if (png == null) return const AreaFailedNotice();
+      imageFileName = await _repo.importImageBytes(studySetId, png);
+    } catch (_) {
+      return const AreaFailedNotice();
+    }
+    if (!ref.mounted || content.document(documentId) == null) return const AreaFailedNotice();
+    final parent = excerptTargetId;
+    late Card card;
+    await _update((c) {
+      final (next, created) = _editor.createAreaExcerpt(
+        c,
+        documentId: documentId,
+        page: area.page,
+        rect: area.rect,
+        imageFileName: imageFileName,
+        colorIndex: state.color.index,
+        parentId: parent,
+      );
+      card = created;
+      return next;
+    });
+    state = state.copyWith(clearPending: true);
+    _flash(cardId: card.id);
+    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
+  }
+
+  /// Absolute path of an image stored in this study set.
+  String imagePath(String imageFileName) => _repo.resolveFile(studySetId, imageFileName);
+
   void dismissPending() => state = state.copyWith(clearPending: true);
 
   /// A highlight on the page was clicked.
@@ -607,7 +655,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> copySelection({bool cut = false}) async {
     if (_editing != null || _creating || _clipboardBusy) return;
     final ids = state.selectedCardIds.toList();
-    final entries = MapClipboard.copy(content, ids);
+    final entries = MapClipboard.copy(content, ids, resolveImage: imagePath);
     if (entries.isEmpty) return;
     _clipboardBusy = true;
     try {
@@ -628,9 +676,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       final entries =
           (data.internal == null ? null : MapClipboard.decode(data.internal!)) ?? MapClipboard.fromText(data.text);
       if (entries.isEmpty) return;
+      final images = await _importClipboardImages(entries);
+      if (!ref.mounted || _editing != null || _creating) return;
       var roots = <String>[];
       await _update((c) {
-        final (next, ids) = _editor.paste(c, entries, parentId: parent);
+        final (next, ids) = _editor.paste(c, entries, parentId: parent, images: images);
         roots = ids;
         return next;
       });
@@ -639,6 +689,26 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _clipboardBusy = false;
     }
   }
+
+  /// Copies images of another study set into this package. Only paths that
+  /// end in the entry's own content-addressed name are read; unreadable or
+  /// invalid files leave the entry to become a note.
+  Future<Map<String, String>> _importClipboardImages(List<OutlineEntry> entries) async {
+    final images = <String, String>{};
+    for (final e in entries) {
+      final name = e.imageFileName;
+      final path = e.imagePath;
+      if (e.kind != CardKind.image || name == null || path == null || images.containsKey(name)) continue;
+      if (!_imageName.hasMatch(name) || !path.replaceAll(r'\', '/').endsWith('/$name')) continue;
+      if (!await File(path).exists()) continue;
+      try {
+        images[name] = await _repo.importImage(studySetId, path);
+      } catch (_) {}
+    }
+    return images;
+  }
+
+  static final _imageName = RegExp(r'^images/[0-9a-f]{64}\.(png|jpg)$');
 
   void selectCard(String? cardId) {
     state = cardId == null ? state.copyWith(selectRoot: true) : state.copyWith(selectedCardId: cardId);
@@ -784,8 +854,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           await commitTransaction();
         }
       } else if (content.card(session.cardId) case final card?
-          when (title.isNotEmpty || card.kind == CardKind.excerpt) && title != card.title) {
-        // An excerpt's title is optional: clearing it shows the quote again.
+          when (title.isNotEmpty || card.kind == CardKind.excerpt || card.kind == CardKind.image) &&
+              title != card.title) {
+        // An excerpt's title is optional: clearing it shows the quote (or
+        // the image's default label) again.
         await rename(session.cardId, title);
       }
     } finally {

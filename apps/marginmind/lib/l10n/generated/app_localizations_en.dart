@@ -285,6 +285,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toggleAnnotationTool => 'Toggle Highlighter';
 
   @override
+  String get toggleAreaTool => 'Toggle Area Select';
+
+  @override
   String get toolSelect => 'Select';
 
   @override
@@ -526,6 +529,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get untitledExcerpt => 'Untitled excerpt';
 
   @override
+  String get imageExcerpt => 'Image excerpt';
+
+  @override
   String get revealSource => 'Reveal in Source';
 
   @override
@@ -709,6 +715,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewPromptNote => 'Recall this note';
+
+  @override
+  String get reviewPromptImage => 'Recall this image';
 
   @override
   String get reviewQuestionTip => 'Tip: rename an excerpt to a question and it becomes the prompt here.';

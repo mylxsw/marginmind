@@ -145,11 +145,11 @@ class MindMapRenderCache {
   }
 }
 
-enum _Kind { root, topic, excerpt, note }
+enum _Kind { root, topic, excerpt, note, image }
 
 /// What a node shows, and its measured size (layout needs sizes up front).
 class _NodeSpec {
-  _NodeSpec._(this.kind, this.title, this.quote, this.meta, this.color, this.size);
+  _NodeSpec._(this.kind, this.title, this.quote, this.meta, this.color, this.size, {this.image, this.imageHeight = 0});
 
   final _Kind kind;
   final String title;
@@ -158,8 +158,14 @@ class _NodeSpec {
   final MMAnnotationColor? color;
   final Size size;
 
+  /// Image cards: package file name and the picture's height, from the
+  /// area's aspect ratio (layout needs it before the file is decoded).
+  final String? image;
+  final double imageHeight;
+
   static const excerptWidth = 240.0;
   static const _excerptTextWidth = excerptWidth - 12 - 38 - 16;
+  static const imageWidth = excerptWidth - 12 - 38;
 
   factory _NodeSpec.root(String title, MindMapRenderCache cache) {
     final w = cache._measure(title, MMTypography.title3, 360).size.width;
@@ -182,6 +188,20 @@ class _NodeSpec {
         final s = cache._measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44).size;
         return _NodeSpec._(_Kind.note, card.title, null, null, null, Size(s.width + 48, s.height + 16));
       case CardKind.image:
+        final r = a?.rects.firstOrNull;
+        final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
+        final imageHeight = (imageWidth * aspect).clamp(36.0, 200.0).roundToDouble();
+        final height = 11 + cache._textScaler.scale(17) + 6 + imageHeight + 6 + cache._textScaler.scale(14) + 11 + 2;
+        return _NodeSpec._(
+          _Kind.image,
+          card.title.isEmpty ? l.imageExcerpt : card.title,
+          null,
+          doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}',
+          MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
+          Size(excerptWidth, height.toDouble()),
+          image: card.imageFileName,
+          imageHeight: imageHeight,
+        );
       case CardKind.excerpt:
         final quote = a?.quote ?? '';
         final lines = math.min(4, cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines);

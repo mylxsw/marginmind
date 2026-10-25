@@ -273,6 +273,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get toggleAnnotationTool => '切换高亮笔';
 
   @override
+  String get toggleAreaTool => '切换框选';
+
+  @override
   String get toolSelect => '选择';
 
   @override
@@ -507,6 +510,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get untitledExcerpt => '未命名摘录';
 
   @override
+  String get imageExcerpt => '图片摘录';
+
+  @override
   String get revealSource => '定位原文';
 
   @override
@@ -681,6 +687,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reviewPromptNote => '回想这条笔记的内容';
+
+  @override
+  String get reviewPromptImage => '回想这张图的内容';
 
   @override
   String get reviewQuestionTip => '提示：把摘录卡片重命名为一个问题，复习时它就会作为题面。';

@@ -67,9 +67,38 @@ class StudySetEditor {
     return (_place(c, card, parentId), card);
   }
 
+  /// An area of one page as a framed annotation plus its image card, in one
+  /// step. The captured image is imported through the repository first.
+  (StudySetContent, Card) createAreaExcerpt(
+    StudySetContent c, {
+    required String documentId,
+    required int page,
+    required PageRect rect,
+    required String imageFileName,
+    required int colorIndex,
+    String? parentId,
+  }) {
+    final (withArea, a) = highlight(
+      c,
+      documentId: documentId,
+      page: page,
+      rects: [rect],
+      quote: '',
+      colorIndex: colorIndex,
+    );
+    return createImage(withArea, imageFileName: imageFileName, annotationId: a.id, parentId: parentId);
+  }
+
   /// Inserts a portable forest in one immutable edit. Missing source documents
   /// become notes containing the quote instead of dangling excerpt references.
-  (StudySetContent, List<String>) paste(StudySetContent c, List<OutlineEntry> entries, {String? parentId}) {
+  /// [images] maps clipboard image names to files already imported into this
+  /// package; such images stay images even without their source document.
+  (StudySetContent, List<String>) paste(
+    StudySetContent c,
+    List<OutlineEntry> entries, {
+    String? parentId,
+    Map<String, String> images = const {},
+  }) {
     if (parentId != null && c.node(parentId, mapId: mapId) == null) return (c, const []);
     final cards = [...c.cards];
     final nodes = [...c.nodes];
@@ -87,11 +116,14 @@ class StudySetEditor {
       var title = entry.title;
       String? imageFileName;
       if (kind == CardKind.image) {
-        // A cut leaves its source annotation and image file in the package.
-        final retainedSource = source != null && c.annotation(source.id)?.documentId == source.documentId;
-        if (entry.imageFileName != null &&
-            (retainedSource || c.cards.any((c) => c.imageFileName == entry.imageFileName))) {
-          imageFileName = entry.imageFileName;
+        // Document ids are unique per package: a present source document
+        // means the image file (never collected) is in this package too.
+        final samePackage = source != null && c.document(source.documentId) != null;
+        final name = entry.imageFileName;
+        if (name != null && (samePackage || c.cards.any((c) => c.imageFileName == name))) {
+          imageFileName = name;
+        } else if (images[name] case final imported?) {
+          imageFileName = imported;
         } else {
           kind = CardKind.note;
         }
@@ -116,9 +148,8 @@ class StudySetEditor {
               createdAt: now(),
             ),
           );
-        } else {
+        } else if (kind == CardKind.excerpt) {
           kind = CardKind.note;
-          imageFileName = null;
           title = [if (title.isNotEmpty) title, if (source != null) source.quote].join('\n');
         }
       }
@@ -303,16 +334,7 @@ class StudySetEditor {
       if (c.node(id, mapId: mapId) != null) kill.addAll(_subtree(c, id));
     }
     if (kill.isEmpty) return c;
-    return c.copyWith(
-      cards: [
-        for (final card in c.cards)
-          if (!kill.contains(card.id) || c.nodes.any((n) => n.mapId != mapId && n.cardId == card.id)) card,
-      ],
-      nodes: [
-        for (final node in c.nodes)
-          if (node.mapId != mapId || !kill.contains(node.cardId)) node,
-      ],
-    );
+    return _removeNodes(c, kill);
   }
 
   /// Moves selection roots as one block, in map preorder (independent of
@@ -490,17 +512,34 @@ class StudySetEditor {
 
   /// Removes the card and its descendants from the map. Excerpt cards are
   /// deleted but their highlights stay in the source (as plain highlights).
-  StudySetContent removeFromMap(StudySetContent c, String cardId) {
-    final kill = _subtree(c, cardId);
+  StudySetContent removeFromMap(StudySetContent c, String cardId) => _removeNodes(c, _subtree(c, cardId));
+
+  /// Removes [kill] from this map. Cards placed in other maps survive. An
+  /// image card's area only frames that image, so it goes with the card.
+  StudySetContent _removeNodes(StudySetContent c, Set<String> kill) {
+    final removed = {
+      for (final card in c.cards)
+        if (kill.contains(card.id) && !c.nodes.any((n) => n.mapId != mapId && n.cardId == card.id)) card.id: card,
+    };
+    final areas = {
+      for (final card in removed.values)
+        if (card.kind == CardKind.image && card.annotationId != null) card.annotationId!,
+    };
     return c.copyWith(
       cards: [
         for (final card in c.cards)
-          if (!kill.contains(card.id) || c.nodes.any((n) => n.mapId != mapId && n.cardId == card.id)) card,
+          if (!removed.containsKey(card.id)) card,
       ],
       nodes: [
         for (final n in c.nodes)
           if (n.mapId != mapId || !kill.contains(n.cardId)) n,
       ],
+      annotations: areas.isEmpty
+          ? null
+          : [
+              for (final a in c.annotations)
+                if (!areas.contains(a.id)) a,
+            ],
     );
   }
 

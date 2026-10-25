@@ -111,6 +111,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                   backgroundColor: c.readerBackground,
                                   emphasisColor: c.accent,
                                   highlights: _highlights(content, doc.id, state),
+                                  areaSelecting: state.tool == AnnotationTool.area,
+                                  onAreaSelected: (area) async {
+                                    dismissSelection();
+                                    final notice = await controller.excerptArea(
+                                      doc.id,
+                                      area,
+                                      () => _pdf.captureArea(area.page, area.rect),
+                                    );
+                                    if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                  },
                                   onViewportChanged: dismissSelection,
                                   onPageChanged: (page, _) {
                                     dismissSelection();
@@ -187,15 +197,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         for (final page in a.pages)
           () {
             final color = MMAnnotationColor.fromIndex(a.colorIndex);
-            final hasCard = content.cardForAnnotation(a.id) != null;
+            final card = content.cardForAnnotation(a.id);
             final strong = a.id == selectedAnnotation;
             return MMPdfHighlight(
               id: a.id,
               page: page.page,
               rects: page.rects,
               color: color.color.withValues(alpha: strong ? 0.5 : 0.32),
-              underline: hasCard ? color.underline : null,
+              underline: card != null ? color.underline : null,
               emphasized: a.id == state.flashAnnotationId || a.id == pendingAnnotation,
+              framed: card?.kind == CardKind.image,
             );
           }(),
     ];

@@ -169,6 +169,9 @@ void main() {
     expect(paths[0], startsWith('images/'));
     expect(paths[0], endsWith('.png'));
     expect(await File(store.resolveFile('legacy', paths[0])).readAsBytes(), png);
+    // Captured areas arrive as bytes and share the same content address.
+    expect(await store.importImageBytes('legacy', png), paths[0]);
+    await expectLater(store.importImageBytes('legacy', [1, 2, 3]), throwsFormatException);
     await source.writeAsBytes([255, 216, 255, 1]);
     final jpeg = await store.importImage('legacy', source.path);
     expect(jpeg, endsWith('.jpg'));

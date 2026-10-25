@@ -9,7 +9,7 @@ enum AppearancePreference { system, light, dark }
 
 enum LanguagePreference { system, zh, en }
 
-enum AnnotationTool { select, highlight }
+enum AnnotationTool { select, highlight, area }
 
 class AppSettings {
   const AppSettings({

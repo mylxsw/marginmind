@@ -249,20 +249,26 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         if (card == null) continue;
         final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
         final isExcerpt = card.kind == CardKind.excerpt;
+        final isImage = card.kind == CardKind.image;
         final bold = card.kind == CardKind.topic;
         order.add(card.id);
         rows.add(
           _OutlineRow(
             key: _keyFor(card.id),
             depth: depth,
-            label: isExcerpt ? (card.title.isEmpty ? (annotation?.quote ?? '') : card.title) : card.title,
+            label: isExcerpt
+                ? (card.title.isEmpty ? (annotation?.quote ?? '') : card.title)
+                : isImage && card.title.isEmpty && f?.id != card.id
+                ? l.imageExcerpt
+                : card.title,
             sub: isExcerpt && (card.title.isNotEmpty || f?.id == card.id) ? annotation?.quote : null,
             meta: annotation == null ? null : l.pageNumber(annotation.page),
-            dot: isExcerpt ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
+            dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
             bold: bold,
             selected: widget.selectedCardIds.contains(card.id) || card.id == widget.selectedCardId,
             onTap: () => _tap(card.id),
-            onDoubleTap: () => isExcerpt ? widget.onReveal(card.id) : widget.onRename(card.id),
+            onDoubleTap: () =>
+                isExcerpt || (isImage && annotation != null) ? widget.onReveal(card.id) : widget.onRename(card.id),
             editor: f?.id == card.id
                 ? fieldEditor(
                     f!,

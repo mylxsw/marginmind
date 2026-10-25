@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../app/app.dart';
 import '../../app/navigation.dart';
 import '../../app/providers.dart';
+import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
 import '../workspace/workspace_controller.dart';
 import 'review_controller.dart';
@@ -168,7 +169,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
               : '$setTitle · ${l.reviewRemaining(session.remaining)}',
           leading: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.backToStudySet, onPressed: _back),
         ),
-        body: ColoredBox(color: context.mmColors.windowBackground, child: body),
+        body: CardImageScope(
+          resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),
+          child: ColoredBox(color: context.mmColors.windowBackground, child: body),
+        ),
       ),
     );
   }
@@ -199,12 +203,21 @@ class _ReviewCard extends StatelessWidget {
     final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
     final doc = annotation == null ? null : content.document(annotation.documentId);
     final color = MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0);
-    final isExcerpt = card.kind == CardKind.excerpt;
+    final isImage = card.kind == CardKind.image && card.imageFileName != null;
+    // Image cards answer like excerpts: their picture replaces the quote.
+    final isExcerpt = card.kind == CardKind.excerpt || isImage;
     final hasQuestion = isExcerpt && card.title.trim().isNotEmpty;
 
     final prompt = hasQuestion
         ? Text(card.title, style: t.title2)
-        : Text(isExcerpt ? l.reviewPromptExcerpt : l.reviewPromptNote, style: t.title3);
+        : Text(
+            isImage
+                ? l.reviewPromptImage
+                : isExcerpt
+                ? l.reviewPromptExcerpt
+                : l.reviewPromptNote,
+            style: t.title3,
+          );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
@@ -230,16 +243,25 @@ class _ReviewCard extends StatelessWidget {
             const SizedBox(height: 20),
             Container(height: 0.5, color: c.separator),
             const SizedBox(height: 20),
-            if (isExcerpt && annotation != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: color.cardTint,
+            if (isImage)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 360),
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
-                  border: Border(left: BorderSide(color: color.color, width: 3)),
+                  child: CardImage(card.imageFileName!, semanticLabel: card.title.isEmpty ? null : card.title),
                 ),
-                child: SelectableText(annotation.quote, style: t.readingExcerpt.copyWith(fontSize: 16, height: 1.6)),
               ),
+            if (isExcerpt && annotation != null) ...[
+              if (!isImage)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: color.cardTint,
+                    borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
+                    border: Border(left: BorderSide(color: color.color, width: 3)),
+                  ),
+                  child: SelectableText(annotation.quote, style: t.readingExcerpt.copyWith(fontSize: 16, height: 1.6)),
+                ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -263,7 +285,7 @@ class _ReviewCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ] else
+            ] else if (!isImage)
               SelectableText(card.title, style: t.body.copyWith(fontSize: 16, height: 1.6)),
           ],
         ],
