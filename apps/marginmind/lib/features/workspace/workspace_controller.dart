@@ -637,8 +637,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void beginEditing(String cardId) {
     if (_editing != null || _creating || content.card(cardId) == null) return;
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
-    state = state.copyWith(selectedCardId: cardId, editingCardId: cardId);
+    state = state.copyWith(selectedCardId: cardId, editingCardId: cardId, layout: _layoutShowingMap);
   }
+
+  /// A field opens in the map pane: with the reader alone on screen the
+  /// pane comes back, so the edit can take focus and be finished.
+  MMSplitMode? get _layoutShowingMap => state.layout == MMSplitMode.primary ? MMSplitMode.split : null;
 
   /// Adds a topic (see [addTopic]) and starts editing it. Creation and the
   /// typed title commit as one undo step; cancelling leaves no node and no
@@ -695,7 +699,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _creating = false;
     }
     _editing = _EditSession(card.id, created: true, previousSelection: previous);
-    state = state.copyWith(editingCardId: card.id);
+    state = state.copyWith(editingCardId: card.id, layout: _layoutShowingMap);
     return card;
   }
 

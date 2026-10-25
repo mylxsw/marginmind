@@ -379,6 +379,60 @@ void main() {
       await settleHud(tester);
     });
 
+    testWidgets('with the map pane hidden, a new card brings it back to edit', (tester) async {
+      final container = await openFirstSet(tester);
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      for (final view in MapViewMode.values) {
+        controller.setMapView(view);
+        controller.setLayout(MMSplitMode.primary);
+        await tester.pumpAndSettle();
+        await key(tester, LogicalKeyboardKey.keyN, primary: true, alt: true);
+        final state = container.read(workspaceProvider('demo-1'));
+        expect(state.layout, MMSplitMode.split, reason: '$view');
+        expect(_field.hitTestable(), findsOneWidget, reason: '$view');
+        // The field has the keyboard: Esc reaches it and leaves nothing behind.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull, reason: '$view');
+        expect(controller.content.cards.where((c) => c.kind == CardKind.note), isEmpty, reason: '$view');
+      }
+      // Editing an existing card does the same.
+      controller.setLayout(MMSplitMode.primary);
+      await tester.pumpAndSettle();
+      controller.beginEditing('c3');
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull);
+      await settleHud(tester);
+    });
+
+    testWidgets('menu bar: map-only commands are off in the outline', (tester) async {
+      final container = await openOutline(tester);
+      Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
+        for (final item in items) {
+          yield item;
+          if (item is PlatformMenu) yield* flatten(item.menus);
+          if (item is PlatformMenuItemGroup) yield* flatten(item.members);
+        }
+      }
+
+      PlatformMenuItem command(String label) =>
+          flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus)
+              .singleWhere((item) => item.label == label);
+      expect(command('Add Child Topic').onSelected, isNotNull);
+      expect(command('Fit Map to Window').onSelected, isNull);
+      expect(command('Center on Current Node').onSelected, isNull);
+      container.read(workspaceProvider('demo-1').notifier).setMapView(MapViewMode.map);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('遗忘的规律'));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(command('Center on Current Node').onSelected, isNotNull);
+      await settleHud(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
     testWidgets('switching to the outline hands it the keyboard', (tester) async {
       final container = await openFirstSet(tester);
       await tester.tap(find.text('Outline'));
@@ -408,8 +462,14 @@ void main() {
       }
       final view = tester.getRect(find.byType(OutlineView));
       final row = tester.getRect(find.text('Row 39'));
-      expect(row.bottom, lessThanOrEqualTo(view.bottom));
-      expect(row.top, greaterThanOrEqualTo(view.top));
+      // Clear of the floating controls at the bottom (the list's padding).
+      expect(row.bottom, lessThanOrEqualTo(view.bottom - 72));
+      expect(row.top, greaterThanOrEqualTo(view.top + 76));
+      // Up one row at a time: each selected row stays clear of the top controls.
+      for (var i = 0; i < 30; i++) {
+        await key(tester, LogicalKeyboardKey.arrowUp);
+      }
+      expect(tester.getRect(find.text('Row 9')).top, greaterThanOrEqualTo(view.top + 76));
       // Back to the top: the first row comes out from under the controls.
       await key(tester, LogicalKeyboardKey.escape);
       expect(tester.getRect(find.text('遗忘的规律')).top, greaterThan(view.top + 60));

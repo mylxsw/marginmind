@@ -268,11 +268,15 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.center: l.centerCurrentNode,
     };
     // Dispatch through the focused canvas so menu and keyboard run the same action.
+    // The outline always shows the whole tree: folding, fitting and
+    // centering only apply to the map.
+    const mapOnly = {MindMapCommand.fold, MindMapCommand.fit, MindMapCommand.center};
+    final inOutline = workspaceState?.mapView == MapViewMode.outline;
     for (final entry in mapLabels.entries) {
       map.add(
         AppCommand(
           entry.value,
-          editable && _mapFocused && !_textFocused
+          editable && _mapFocused && !_textFocused && !(inOutline && mapOnly.contains(entry.key))
               ? () {
                   final focus = FocusManager.instance.primaryFocus?.context;
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
