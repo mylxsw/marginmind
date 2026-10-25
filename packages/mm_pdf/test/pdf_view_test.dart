@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 void main() {
@@ -69,6 +70,51 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
     expect(controller.isReady, isFalse);
+  });
+  testWidgets('highlight tap reports union bounds after zoom and scroll', (tester) async {
+    final controller = MMPdfViewController();
+    String? tapped;
+    Rect? anchor;
+    const rects = [PageRect(30, 700, 90, 680), PageRect(30, 670, 110, 650)];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(
+          filePath: 'highlight-test.pdf',
+          controller: controller,
+          highlights: const [MMPdfHighlight(id: 'highlight', page: 1, rects: rects, color: Colors.yellow)],
+          onHighlightTap: (id, bounds) {
+            tapped = id;
+            anchor = bounds;
+          },
+        ),
+      ),
+    );
+    for (var i = 0; i < 100 && !controller.isReady; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(controller.isReady, isTrue);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    for (final zoomed in [false, true]) {
+      if (zoomed) {
+        pdf.value = pdf.value.clone()
+          ..scaleByDouble(1.2, 1.2, 1, 1)
+          ..translateByDouble(0, -20, 0, 1);
+        await tester.pumpAndSettle();
+      }
+      final bounds = rects
+          .map((r) => pdf.calcRectForRectInsidePage(pageNumber: 1, rect: PdfRect(r.left, r.top, r.right, r.bottom)))
+          .reduce((a, b) => a.expandToInclude(b));
+      final first = pdf.calcRectForRectInsidePage(pageNumber: 1, rect: const PdfRect(30, 700, 90, 680));
+      final view = tester.getTopLeft(find.byType(MMPdfView));
+      await tester.tapAt(view + pdf.documentToLocal(first.center));
+      await tester.pumpAndSettle(const Duration(milliseconds: 350));
+      expect(tapped, 'highlight');
+      expect(anchor, Rect.fromPoints(pdf.documentToLocal(bounds.topLeft), pdf.documentToLocal(bounds.bottomRight)));
+      tapped = null;
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 }
 

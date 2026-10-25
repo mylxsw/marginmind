@@ -1394,6 +1394,12 @@ abstract class AppLocalizations {
   /// **'Excerpt in {color}'**
   String excerptInColor(String color);
 
+  /// No description provided for @locateCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate Card'**
+  String get locateCard;
+
   /// No description provided for @excerptWithNote.
   ///
   /// In en, this message translates to:

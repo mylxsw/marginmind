@@ -5,11 +5,12 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
+import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
-/// Selection actions live in one place so pointer, menu and keyboard agree.
+/// All reader text actions share their floating UI, focus and command handling.
 class SelectionToolbar extends ConsumerStatefulWidget {
   const SelectionToolbar({
     super.key,
@@ -20,7 +21,7 @@ class SelectionToolbar extends ConsumerStatefulWidget {
   });
 
   final String studySetId;
-  final PendingSelection pending;
+  final PendingAction pending;
   final MMPdfViewController pdf;
   final String rootTitle;
 
@@ -61,6 +62,42 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     final rootTitle = widget.rootTitle;
     // Capture the target before opening a sheet or clearing the selection.
     try {
+      if (pending case PendingHighlight(:final annotationId)) {
+        final annotation = controller.content.annotation(annotationId);
+        if (annotation == null) {
+          _dismiss();
+          return;
+        }
+        WorkspaceNotice? notice;
+        if (color != null) {
+          await controller.recolor(annotationId, color);
+        } else {
+          switch (command) {
+            case ReaderSelectionCommand.copy:
+              await Clipboard.setData(ClipboardData(text: annotation.quote));
+              if (mounted) MMHud.show(context, context.l10n.copiedHud);
+              controller.dismissPending();
+            case ReaderSelectionCommand.excerpt:
+              if (controller.content.cardForAnnotation(annotationId) != null) return;
+              notice = await controller.addHighlightToMap(annotationId);
+            case ReaderSelectionCommand.locateCard:
+              await controller.locateHighlightCard(annotationId);
+            case ReaderSelectionCommand.deleteHighlight:
+              notice = await controller.deleteHighlight(annotationId);
+            case ReaderSelectionCommand.highlight:
+            case ReaderSelectionCommand.note:
+              return;
+          }
+        }
+        if (mounted) showNotice(context, notice, rootTitle: rootTitle);
+        await pdf.clearSelection();
+        return;
+      }
+      if (pending is! PendingSelection ||
+          command == ReaderSelectionCommand.locateCard ||
+          command == ReaderSelectionCommand.deleteHighlight) {
+        return;
+      }
       String? note;
       if (command == ReaderSelectionCommand.note) {
         // The toolbar must stay mounted while its sheet is open, but cannot
@@ -95,6 +132,13 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final content = ref.watch(contentProvider(widget.studySetId)).value;
+    final annotation = switch (widget.pending) {
+      PendingHighlight(:final annotationId) => content?.annotation(annotationId),
+      _ => null,
+    };
+    final isHighlight = widget.pending is PendingHighlight;
+    final hasCard = annotation != null && content?.cardForAnnotation(annotation.id) != null;
     return TapRegion(
       onTapOutside: (_) {
         if (!_busy) _dismiss();
@@ -119,14 +163,19 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                   for (final color in MMAnnotationColor.values)
                     MMFloatingToolbarColor(
                       color: color,
-                      tooltip: l.excerptInColor(l.colorName(color)),
+                      tooltip: isHighlight ? l.colorName(color) : l.excerptInColor(l.colorName(color)),
+                      selected: isHighlight && annotation?.colorIndex == color.index,
                       onPressed: () => _run(ReaderSelectionCommand.excerpt, color),
                     ),
                   const MMToolbarDivider(),
                   MMToolbarButton(
-                    icon: MMIcons.highlight,
-                    tooltip: l.highlightAction,
-                    onPressed: () => _run(ReaderSelectionCommand.highlight),
+                    icon: isHighlight ? MMIcons.mindMap : MMIcons.highlight,
+                    tooltip: isHighlight ? (hasCard ? l.locateCard : l.addToMapAction) : l.highlightAction,
+                    onPressed: () => _run(
+                      isHighlight
+                          ? (hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
+                          : ReaderSelectionCommand.highlight,
+                    ),
                   ),
                   MMToolbarButton(
                     icon: MMIcons.copy,
@@ -134,9 +183,10 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     onPressed: () => _run(ReaderSelectionCommand.copy),
                   ),
                   MMToolbarButton(
-                    icon: MMIcons.addNote,
-                    tooltip: l.addNote,
-                    onPressed: () => _run(ReaderSelectionCommand.note),
+                    icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
+                    tooltip: isHighlight ? l.deleteHighlight : l.addNote,
+                    onPressed: () =>
+                        _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
                 ],
               ),

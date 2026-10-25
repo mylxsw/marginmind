@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/painting.dart' show AxisDirection;
+import 'package:flutter/painting.dart' show AxisDirection, Rect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -27,11 +27,12 @@ class PendingSelection extends PendingAction {
   final MMPdfSelection selection;
 }
 
-/// A plain highlight (no card) was clicked: add to map, recolor or delete.
+/// A clicked highlight: recolor, add to map / locate card, copy or delete.
 class PendingHighlight extends PendingAction {
-  const PendingHighlight(this.annotationId);
+  const PendingHighlight(this.annotationId, [this.viewportRect = Rect.zero]);
 
   final String annotationId;
+  final Rect viewportRect;
 }
 
 /// Ask the source pane to scroll to a highlight.
@@ -514,14 +515,34 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   void dismissPending() => state = state.copyWith(clearPending: true);
 
   /// A highlight on the page was clicked.
-  void tapHighlight(String annotationId) {
+  void tapHighlight(String annotationId, [Rect viewportRect = Rect.zero]) {
+    if (content.annotation(annotationId) == null) return;
+    state = state.copyWith(pending: PendingHighlight(annotationId, viewportRect));
+  }
+
+  Future<void> locateHighlightCard(String annotationId) async {
     final card = content.cardForAnnotation(annotationId);
-    if (card != null) {
-      state = state.copyWith(selectedCardId: card.id, clearPending: true, mapView: MapViewMode.map);
-      _flash(cardId: card.id);
-    } else {
-      state = state.copyWith(pending: PendingHighlight(annotationId));
+    if (card == null) return;
+    await _update((c) => _expandAncestors(c, card.id), undoable: false);
+    state = state.copyWith(
+      selectedCardId: card.id,
+      clearPending: true,
+      mapView: MapViewMode.map,
+      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+    );
+    _flash(cardId: card.id);
+  }
+
+  StudySetContent _expandAncestors(StudySetContent c, String cardId) {
+    var parent = c.node(cardId)?.parentId;
+    final seen = <String>{};
+    while (parent != null && seen.add(parent)) {
+      final node = c.node(parent);
+      if (node == null) break;
+      if (node.collapsed) c = _editor.setCollapsed(c, parent, collapsed: false);
+      parent = node.parentId;
     }
+    return c;
   }
 
   Future<ExcerptedNotice> addHighlightToMap(String annotationId) async {
@@ -530,9 +551,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _update((c) {
       final (next, created) = _editor.attachCard(c, annotationId, parentId: parent);
       card = created;
-      return next;
+      return _expandAncestors(next, card.id);
     });
-    state = state.copyWith(clearPending: true, selectedCardId: card.id);
+    state = state.copyWith(
+      mapView: MapViewMode.map,
+      clearPending: true,
+      selectedCardId: card.id,
+      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+    );
     _flash(cardId: card.id);
     return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
   }

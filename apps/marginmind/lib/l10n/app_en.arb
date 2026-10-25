@@ -443,6 +443,7 @@
     }
   },
   "excerptInColor": "Excerpt in {color}",
+  "locateCard": "Locate Card",
   "excerptWithNote": "Excerpt with Note",
   "noteText": "Note",
   "@excerptInColor": {

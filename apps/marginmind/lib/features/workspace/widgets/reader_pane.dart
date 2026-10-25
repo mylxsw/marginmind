@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -12,7 +11,7 @@ import 'notices.dart';
 import 'selection_toolbar.dart';
 
 /// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
-/// selection action bar and the floating page pill.
+/// text action toolbar and the floating page pill.
 class ReaderPane extends ConsumerStatefulWidget {
   const ReaderPane({super.key, required this.studySetId});
 
@@ -44,7 +43,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     });
 
     void dismissSelection() {
-      if (ref.read(provider).pending is PendingSelection) {
+      if (ref.read(provider).pending != null) {
         controller.dismissPending();
         _pdf.clearSelection();
       }
@@ -118,9 +117,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                     controller.recordPage(doc.id, page);
                                   },
                                   onSelectionChanged: (selected) {
-                                    if (!selected) dismissSelection();
+                                    if (!selected && ref.read(provider).pending is PendingSelection) dismissSelection();
                                   },
-                                  onHighlightTap: controller.tapHighlight,
+                                  onHighlightTap: (id, bounds) {
+                                    _pdf.clearSelection();
+                                    controller.tapHighlight(id, bounds);
+                                  },
                                   onSelectionCommitted: (selection) async {
                                     final notice = await controller.onSelectionCommitted(doc.id, selection);
                                     if (notice != null) {
@@ -130,29 +132,17 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                   },
                                 ),
                         ),
-                        if (state.pending case final PendingSelection pending)
+                        if (state.pending case final PendingAction pending)
                           Positioned.fill(
                             child: MMFloatingToolbarLayout(
-                              anchor: pending.selection.viewportRect ?? Rect.zero,
+                              anchor: switch (pending) {
+                                PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
+                                PendingHighlight(:final viewportRect) => viewportRect,
+                              },
                               child: SelectionToolbar(
                                 key: ObjectKey(pending),
                                 studySetId: widget.studySetId,
                                 pending: pending,
-                                pdf: _pdf,
-                                rootTitle: rootTitle,
-                              ),
-                            ),
-                          ),
-                        if (state.pending is PendingHighlight)
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 60,
-                            child: Center(
-                              child: _ActionBar(
-                                studySetId: widget.studySetId,
-                                pending: state.pending!,
-                                content: content,
                                 pdf: _pdf,
                                 rootTitle: rootTitle,
                               ),
@@ -208,126 +198,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           );
         }(),
     ];
-  }
-}
-
-/// Glass bar for a pending selection or a clicked plain highlight.
-class _ActionBar extends ConsumerWidget {
-  const _ActionBar({
-    required this.studySetId,
-    required this.pending,
-    required this.content,
-    required this.pdf,
-    required this.rootTitle,
-  });
-
-  final String studySetId;
-  final PendingAction pending;
-  final StudySetContent content;
-  final MMPdfViewController pdf;
-  final String rootTitle;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    final t = context.mmText;
-    final controller = ref.read(workspaceProvider(studySetId).notifier);
-    final state = ref.watch(workspaceProvider(studySetId));
-
-    Future<void> run(Future<WorkspaceNotice?> action) async {
-      final notice = await action;
-      await pdf.clearSelection();
-      if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-    }
-
-    final (String quote, MMAnnotationColor current, List<Widget> actions) = switch (pending) {
-      PendingSelection(:final documentId, :final selection) => (
-        selection.text,
-        state.color,
-        [
-          MMButton(
-            label: l.excerptAction,
-            variant: MMButtonVariant.primary,
-            onPressed: () => run(controller.excerpt(documentId, selection, state.color)),
-          ),
-          MMButton(
-            label: l.highlightAction,
-            variant: MMButtonVariant.plain,
-            onPressed: () => run(controller.highlight(documentId, selection, state.color)),
-          ),
-          MMButton(
-            label: l.copyAction,
-            variant: MMButtonVariant.plain,
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: selection.text));
-              controller.dismissPending();
-              await pdf.clearSelection();
-              if (context.mounted) MMHud.show(context, l.copiedHud);
-            },
-          ),
-        ],
-      ),
-      PendingHighlight(:final annotationId) => (
-        content.annotation(annotationId)?.quote ?? '',
-        MMAnnotationColor.fromIndex(content.annotation(annotationId)?.colorIndex ?? 0),
-        [
-          MMButton(
-            label: l.addToMapAction,
-            variant: MMButtonVariant.primary,
-            onPressed: () => run(controller.addHighlightToMap(annotationId)),
-          ),
-          MMButton(
-            label: l.deleteHighlight,
-            variant: MMButtonVariant.plain,
-            onPressed: () => run(controller.deleteHighlight(annotationId)),
-          ),
-        ],
-      ),
-    };
-
-    void pickColor(MMAnnotationColor color) {
-      switch (pending) {
-        case PendingSelection(:final documentId, :final selection):
-          run(controller.highlight(documentId, selection, color));
-        case PendingHighlight(:final annotationId):
-          controller.recolor(annotationId, color);
-      }
-    }
-
-    return CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): controller.dismissPending},
-      child: MMGlass(
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.fromLTRB(14, 4, 4, 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 180),
-              child: Text(
-                '“${quote.trim()}”',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: t.readingExcerpt.copyWith(color: c.secondaryLabel),
-              ),
-            ),
-            const MMToolbarDivider(),
-            MMColorPicker(selected: current, onChanged: pickColor, labelOf: l.colorName, dotSize: 14),
-            const MMToolbarDivider(),
-            for (final a in actions) Padding(padding: const EdgeInsets.only(left: 2), child: a),
-            MMIconButton(
-              icon: MMIcons.close,
-              tooltip: l.cancel,
-              onPressed: () async {
-                controller.dismissPending();
-                await pdf.clearSelection();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

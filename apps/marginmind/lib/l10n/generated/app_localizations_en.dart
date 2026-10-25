@@ -771,6 +771,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get locateCard => 'Locate Card';
+
+  @override
   String get excerptWithNote => 'Excerpt with Note';
 
   @override
