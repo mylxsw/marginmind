@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart';
@@ -7,6 +8,8 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_layout/mm_layout.dart';
 
 import '../../../shared/l10n.dart';
+
+part 'mind_map_cache.dart';
 
 /// Id used for the root node (the study set itself) in layout and widgets.
 const rootNodeId = '__root__';
@@ -76,6 +79,7 @@ class MindMapCanvas extends StatefulWidget {
 class _MindMapCanvasState extends State<MindMapCanvas> {
   bool _centered = false;
   TreeLayoutResult? _layout;
+  final _cache = MindMapRenderCache();
 
   /// Where the root was in the last layout. When the tree changes shape
   /// (fold, move, add) the view is shifted so the root stays put on screen.
@@ -209,35 +213,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
     final c = context.mmColors;
-    final specs = <String, _NodeSpec>{};
-
-    final collapsed = <String, int>{};
-    final expandable = <String>{};
-
-    LayoutNode build(String id, _NodeSpec spec) {
-      specs[id] = spec;
-      var children = widget.content.childrenOf(id == rootNodeId ? null : id);
-      if (id != rootNodeId && children.isNotEmpty) {
-        expandable.add(id);
-        if (widget.content.node(id)?.collapsed ?? false) {
-          collapsed[id] = children.length;
-          children = const [];
-        }
-      }
-      return LayoutNode(
-        id: id,
-        width: spec.size.width,
-        height: spec.size.height,
-        children: [
-          for (final n in children)
-            if (widget.content.card(n.cardId) case final card?)
-              build(card.id, _NodeSpec.forCard(card, widget.content, l)),
-        ],
-      );
-    }
-
-    final tree = build(rootNodeId, _NodeSpec.root(widget.rootTitle.isEmpty ? l.appName : widget.rootTitle));
-    final result = const TreeLayout(levelGap: 56, siblingGap: 14, padding: 72).layout(tree);
+    final result = _cache.update(
+      content: widget.content,
+      rootTitle: widget.rootTitle,
+      localizations: l,
+      theme: Theme.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.localeOf(context),
+      textDirection: Directionality.of(context),
+    );
+    final specs = _cache._specs;
+    final collapsed = _cache._collapsed;
+    final expandable = _cache._expandable;
     _layout = result;
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
@@ -301,39 +288,46 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
             height: math.max(result.height, 400),
             child: Stack(
               children: [
-                Positioned.fill(child: CustomPaint(painter: _EdgesPainter(result, c.line))),
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: CustomPaint(key: const ValueKey('mind-map-edges'), painter: _EdgesPainter(result, c.line)),
+                  ),
+                ),
                 for (final e in result.rects.entries)
                   Positioned(
+                    key: ValueKey(e.key),
                     left: e.value.left,
                     top: e.value.top,
                     width: e.value.width,
                     height: e.value.height,
-                    child: _DropZone(
-                      id: e.key,
-                      canAccept: (dragged) => _canDrop(dragged, e.key),
-                      onDrop: (dragged, zone) => _drop(dragged, e.key, zone),
-                      child: _draggable(
-                        e.key,
-                        specs[e.key]!,
-                        _NodeView(
-                          spec: specs[e.key]!,
-                          selected: e.key == (widget.selectedCardId ?? rootNodeId),
-                          flashing: e.key == widget.flashCardId,
-                          onTap: () {
-                            widget.focusNode.requestFocus();
-                            widget.onSelect(e.key == rootNodeId ? null : e.key);
-                          },
-                          onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
-                          onSecondaryTapUp: widget.onContextMenu == null
-                              ? null
-                              : (position) {
-                                  widget.focusNode.requestFocus();
-                                  final id = e.key == rootNodeId ? null : e.key;
-                                  widget.onSelect(id);
-                                  widget.onContextMenu!(id, position);
-                                },
-                          onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
-                          revealLabel: l.revealSource,
+                    child: RepaintBoundary(
+                      child: _DropZone(
+                        id: e.key,
+                        canAccept: (dragged) => _canDrop(dragged, e.key),
+                        onDrop: (dragged, zone) => _drop(dragged, e.key, zone),
+                        child: _draggable(
+                          e.key,
+                          specs[e.key]!,
+                          _NodeView(
+                            spec: specs[e.key]!,
+                            selected: e.key == (widget.selectedCardId ?? rootNodeId),
+                            flashing: e.key == widget.flashCardId,
+                            onTap: () {
+                              widget.focusNode.requestFocus();
+                              widget.onSelect(e.key == rootNodeId ? null : e.key);
+                            },
+                            onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
+                            onSecondaryTapUp: widget.onContextMenu == null
+                                ? null
+                                : (position) {
+                                    widget.focusNode.requestFocus();
+                                    final id = e.key == rootNodeId ? null : e.key;
+                                    widget.onSelect(id);
+                                    widget.onContextMenu!(id, position);
+                                  },
+                            onReveal: specs[e.key]!.kind == _Kind.excerpt ? () => widget.onReveal(e.key) : null,
+                            revealLabel: l.revealSource,
+                          ),
                         ),
                       ),
                     ),
@@ -355,69 +349,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
         ),
       ),
     );
-  }
-}
-
-enum _Kind { root, topic, excerpt, note }
-
-/// What a node shows, and its measured size (layout needs sizes up front).
-class _NodeSpec {
-  _NodeSpec._(this.kind, this.title, this.quote, this.meta, this.color, this.size);
-
-  final _Kind kind;
-  final String title;
-  final String? quote;
-  final String? meta;
-  final MMAnnotationColor? color;
-  final Size size;
-
-  static const excerptWidth = 240.0;
-  static const _excerptTextWidth = excerptWidth - 12 - 38 - 16;
-
-  factory _NodeSpec.root(String title) {
-    final w = _measure(title, MMTypography.title3, 360).width;
-    return _NodeSpec._(_Kind.root, title, null, null, null, Size(w + 40, 42));
-  }
-
-  factory _NodeSpec.forCard(Card card, StudySetContent content, AppLocalizations l) {
-    switch (card.kind) {
-      case CardKind.topic:
-        final s = _measure(card.title, MMTypography.headline, 220 - 28);
-        return _NodeSpec._(_Kind.topic, card.title, null, null, null, Size(s.width + 32, s.height + 18));
-      case CardKind.note:
-        final s = _measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44);
-        return _NodeSpec._(_Kind.note, card.title, null, null, null, Size(s.width + 48, s.height + 16));
-      case CardKind.excerpt:
-        final a = content.annotation(card.annotationId ?? '');
-        final doc = a == null ? null : content.document(a.documentId);
-        final quote = a?.quote ?? '';
-        final lines = math.min(4, _lines(quote, MMTypography.readingExcerpt, _excerptTextWidth));
-        final height = 11 + 17 + 6 + (lines * 20 + 12) + 6 + 14 + 11 + 2;
-        return _NodeSpec._(
-          _Kind.excerpt,
-          card.title.isEmpty ? l.untitledExcerpt : card.title,
-          quote,
-          doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}',
-          MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
-          Size(excerptWidth, height.toDouble()),
-        );
-    }
-  }
-
-  static Size _measure(String text, TextStyle style, double maxWidth) {
-    final p = TextPainter(
-      text: TextSpan(text: text.isEmpty ? ' ' : text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
-    return Size(p.width.ceilToDouble(), p.height.ceilToDouble());
-  }
-
-  static int _lines(String text, TextStyle style, double width) {
-    final p = TextPainter(
-      text: TextSpan(text: text.isEmpty ? ' ' : text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: width);
-    return math.max(1, p.computeLineMetrics().length);
   }
 }
 
