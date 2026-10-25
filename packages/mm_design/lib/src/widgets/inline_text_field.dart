@@ -9,7 +9,7 @@ import '../theme/mm_theme.dart';
 /// Enter submits and Esc cancels, except while an input method is
 /// composing (pinyin not yet committed): then both keys belong to the
 /// input method, to pick a candidate or drop the composition. Tab does not
-/// move focus out of the field.
+/// move focus out of the field. With [multiline], ⇧Enter starts a new line.
 class MMInlineTextField extends StatelessWidget {
   const MMInlineTextField({
     super.key,
@@ -20,6 +20,8 @@ class MMInlineTextField extends StatelessWidget {
     required this.onCancel,
     this.onTapOutside,
     this.semanticLabel,
+    this.multiline = false,
+    this.maxLines,
   });
 
   final TextEditingController controller;
@@ -35,6 +37,13 @@ class MMInlineTextField extends StatelessWidget {
   final VoidCallback? onTapOutside;
   final String? semanticLabel;
 
+  /// ⇧Enter inserts a line break instead of submitting.
+  final bool multiline;
+
+  /// Null wraps onto as many lines as the text needs; 1 keeps one line
+  /// that scrolls.
+  final int? maxLines;
+
   /// Whether the input method is composing text that is not committed yet.
   static bool isComposing(TextEditingValue value) => value.composing.isValid && !value.composing.isCollapsed;
 
@@ -42,6 +51,10 @@ class MMInlineTextField extends StatelessWidget {
     if (event is KeyUpEvent || isComposing(controller.value)) return KeyEventResult.ignored;
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
+      if (multiline && HardwareKeyboard.instance.isShiftPressed) {
+        _insertLineBreak();
+        return KeyEventResult.handled;
+      }
       onSubmitted();
       return KeyEventResult.handled;
     }
@@ -50,6 +63,15 @@ class MMInlineTextField extends StatelessWidget {
       return KeyEventResult.handled;
     }
     return key == LogicalKeyboardKey.tab ? KeyEventResult.handled : KeyEventResult.ignored;
+  }
+
+  void _insertLineBreak() {
+    final value = controller.value;
+    final selection = value.selection.isValid ? value.selection : TextSelection.collapsed(offset: value.text.length);
+    controller.value = TextEditingValue(
+      text: value.text.replaceRange(selection.start, selection.end, '\n'),
+      selection: TextSelection.collapsed(offset: selection.start + 1),
+    );
   }
 
   @override
@@ -68,7 +90,7 @@ class MMInlineTextField extends StatelessWidget {
             controller: controller,
             focusNode: focusNode,
             style: const TextStyle(inherit: false, textBaseline: TextBaseline.alphabetic).merge(style),
-            maxLines: null,
+            maxLines: maxLines,
             cursorWidth: 1.5,
             cursorColor: c.accent,
             onTapOutside: onTapOutside == null ? null : (_) => onTapOutside!(),

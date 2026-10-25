@@ -9,6 +9,7 @@ import 'package:mm_layout/mm_layout.dart';
 
 import '../../../shared/l10n.dart';
 import '../../../app/app_commands.dart';
+import 'card_field.dart';
 
 part 'mind_map_cache.dart';
 
@@ -60,7 +61,7 @@ class MindMapCanvas extends StatefulWidget {
   final ValueChanged<String> onReveal;
 
   /// Double-click, F2, Space or typing on a selected node. The caller
-  /// answers by setting [editingCardId] for topics edited in place.
+  /// answers by setting [editingCardId].
   final ValueChanged<String> onRename;
   final VoidCallback onDelete;
   final FocusNode focusNode;
@@ -79,7 +80,7 @@ class MindMapCanvas extends StatefulWidget {
 
   final ValueChanged<MindMapCommand>? onCommand;
 
-  /// Topic whose title is shown as a text field.
+  /// Card whose title (a note's text) is shown as a text field.
   final String? editingCardId;
 
   /// Enter or clicking elsewhere, with the typed text.
@@ -95,7 +96,8 @@ class MindMapCanvas extends StatefulWidget {
   State<MindMapCanvas> createState() => _MindMapCanvasState();
 }
 
-class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProviderStateMixin {
+class _MindMapCanvasState extends State<MindMapCanvas>
+    with SingleTickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
   TreeLayoutResult? _layout;
   final _cache = MindMapRenderCache();
@@ -105,99 +107,39 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   late final _motion = AnimationController(vsync: this, duration: MMMotion.standard, value: 1);
   Map<String, Rect> _from = const {};
 
-  _NodeField? _field;
-
-  /// Text typed on a selected topic; it replaces the title in the field the
-  /// caller opens next.
-  String? _typed;
+  @override
+  String? get editingCardId => widget.editingCardId;
+  @override
+  StudySetContent get fieldContent => widget.content;
+  @override
+  FocusNode get hostFocus => widget.focusNode;
+  @override
+  ValueChanged<String>? get onFieldDone => widget.onEditDone;
+  @override
+  VoidCallback? get onFieldCancel => widget.onEditCancel;
+  @override
+  void fieldOpened(String id) => _ensureVisible(id);
 
   @override
   void initState() {
     super.initState();
-    _syncField();
+    syncField();
     _motion.addListener(() {
-      if (_field == null) return;
+      if (field == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _field != null) _ensureVisible(_field!.id);
+        if (mounted && field != null) _ensureVisible(field!.id);
       });
     });
   }
 
   @override
   void dispose() {
-    final field = _field;
-    if (field != null && !field.ended) {
-      // Closing the map confirms the edit, like clicking elsewhere.
-      final done = widget.onEditDone;
-      final text = field.controller.text;
-      if (done != null) Future.microtask(() => done(text));
-    }
-    field?.dispose();
+    disposeField();
     _motion.dispose();
     super.dispose();
   }
 
-  /// Opens or closes the text field to match [MindMapCanvas.editingCardId].
-  void _syncField() {
-    final id = widget.editingCardId;
-    if (id == _field?.id) return;
-    // Each field gets its own focus node: one that is already focused would
-    // not open a text input connection for the next field.
-    final old = _field;
-    if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
-    _field = null;
-    final typed = _typed;
-    _typed = null;
-    if (id == null) return;
-    final text = typed ?? widget.content.card(id)?.title ?? '';
-    final controller = TextEditingController(text: text)
-      ..selection = typed == null
-          ? TextSelection(baseOffset: 0, extentOffset: text.length)
-          : TextSelection.collapsed(offset: text.length);
-    controller.addListener(() {
-      if (mounted) setState(() {});
-    });
-    final field = _NodeField(id, controller, FocusNode(debugLabel: 'MindMapNodeField'));
-    field.focus.addListener(() => _onFieldFocus(field));
-    _field = field;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _field != field) return;
-      field.focus.requestFocus();
-      _ensureVisible(id);
-    });
-  }
-
-  /// Focus left the field (a click elsewhere, another pane): confirm. Not
-  /// when the app goes to the background; focus comes back on return.
-  void _onFieldFocus(_NodeField field) {
-    if (field.focus.hasFocus) return;
-    final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
-    _endField(field, commit: true, refocus: false);
-  }
-
-  void _endField(_NodeField? field, {required bool commit, required bool refocus}) {
-    if (field == null || field != _field || field.ended) return;
-    field.ended = true;
-    if (refocus) widget.focusNode.requestFocus();
-    if (commit) {
-      widget.onEditDone?.call(field.controller.text);
-    } else {
-      widget.onEditCancel?.call();
-    }
-  }
-
-  /// Printable text without ⌘ / Ctrl / ⌥; excludes the private-use range
-  /// macOS reports for function and arrow keys.
-  static bool _isTyping(KeyEvent event) {
-    final character = event.character;
-    if (character == null || character.isEmpty) return false;
-    final keyboard = HardwareKeyboard.instance;
-    if (keyboard.isMetaPressed || keyboard.isControlPressed || keyboard.isAltPressed) return false;
-    return character.runes.every((r) => r >= 0x20 && r != 0x7f && (r < 0xf700 || r > 0xf8ff));
-  }
-
-  bool _isTopic(String? id) => id != null && _cache._specs[id]?.kind == _Kind.topic;
+  bool _isCard(String? id) => id != null && id != rootNodeId && _cache._specs.containsKey(id);
 
   /// Records where every node is drawn now when the layout changes, so
   /// the next frames can move them to the new layout. Offsets are kept
@@ -224,12 +166,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   /// (the text must fit as it is typed) while it moves with the others.
   Rect _shown(String id, LayoutRect target) {
     final drawn = _drawn(id, target);
-    if (id != _field?.id) return drawn;
+    if (id != field?.id) return drawn;
     return Rect.fromLTWH(drawn.left, drawn.center.dy - target.height / 2, target.width, target.height);
   }
 
   Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target) {
-    final field = _field!;
+    final f = field!;
+    final t = context.mmText;
+    final (style, kind, maxLines) = switch (spec.kind) {
+      _Kind.note => (t.body.copyWith(height: 19 / 13), CardKind.note, null),
+      _Kind.excerpt => (t.headline.copyWith(height: 17 / 13), CardKind.excerpt, 1),
+      _ => (t.headline, CardKind.topic, null),
+    };
     return Positioned.fromRect(
       key: ValueKey(id),
       rect: _shown(id, target),
@@ -242,15 +190,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
         onSecondaryTapUp: null,
         onReveal: null,
         revealLabel: '',
-        editor: MMInlineTextField(
-          controller: field.controller,
-          focusNode: field.focus,
-          style: context.mmText.headline,
-          semanticLabel: spec.title,
-          onSubmitted: () => _endField(field, commit: true, refocus: true),
-          onCancel: () => _endField(field, commit: false, refocus: true),
-          onTapOutside: () => _endField(field, commit: true, refocus: false),
-        ),
+        editor: fieldEditor(f, style: style, kind: kind, label: spec.title, maxLines: maxLines),
       ),
     );
   }
@@ -282,8 +222,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   @override
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncField();
-    _typed = null;
+    syncField();
+    typed = null;
     if (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
           ? widget.flashCardId!
@@ -441,7 +381,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
     final c = context.mmColors;
-    final field = _field;
+    final field = this.field;
     final result = _cache.update(
       draft: field == null ? null : (field.id, field.controller.text),
       content: widget.content,
@@ -455,12 +395,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
     final specs = _cache._specs;
     final collapsed = _cache._collapsed;
     final expandable = _cache._expandable;
-    if (field != null && specs.containsKey(field.id)) {
-      field.seen = true;
-    } else if (field != null && field.seen && !field.ended) {
-      // The node went away (deleted, folded away) while it was being edited.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _endField(field, commit: false, refocus: false));
-    }
+    if (field != null) trackField(shown: specs.containsKey(field.id));
     final layoutChanged = !identical(result, _layout);
     _animateTo(result, _layout);
     _layout = result;
@@ -523,7 +458,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
       actions: <Type, Action<Intent>>{
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
-            if (_field == null) _command(intent.command);
+            if (field == null) _command(intent.command);
             return null;
           },
         ),
@@ -532,7 +467,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
         focusNode: widget.focusNode,
         onKeyEvent: (_, event) {
           // Keys the text field leaves alone must not act on the map.
-          if (event is! KeyDownEvent || _field != null) return KeyEventResult.ignored;
+          if (event is! KeyDownEvent || field != null) return KeyEventResult.ignored;
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
           for (final entry in mindMapShortcuts.entries) {
@@ -554,8 +489,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with SingleTickerProvider
             _ => null,
           };
           if (direction == null) {
-            if (!_isTopic(selected) || !_isTyping(event)) return KeyEventResult.ignored;
-            _typed = event.character;
+            if (!_isCard(selected) || !isTypingKey(event)) return KeyEventResult.ignored;
+            typed = event.character;
             widget.onRename(selected!);
             return KeyEventResult.handled;
           }
@@ -626,8 +561,8 @@ class _NodeView extends StatelessWidget {
     this.editor,
   });
 
-  /// Replaces the title while it is edited in place; the node then takes
-  /// no gestures of its own.
+  /// Replaces the title (a note's text) while it is edited in place; the
+  /// node then takes no gestures of its own.
   final Widget? editor;
   final ValueChanged<Offset>? onSecondaryTapUp;
   final _NodeSpec spec;
@@ -672,7 +607,7 @@ class _NodeView extends StatelessWidget {
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
           const SizedBox(width: 7),
           Expanded(
-            child: Text(spec.title, style: t.body.copyWith(height: 19 / 13)),
+            child: editor ?? Text(spec.title, style: t.body.copyWith(height: 19 / 13)),
           ),
         ],
       ),
@@ -688,12 +623,14 @@ class _NodeView extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Expanded(
-                child: Text(
-                  spec.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.headline.copyWith(height: 17 / 13),
-                ),
+                child:
+                    editor ??
+                    Text(
+                      spec.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.headline.copyWith(height: 17 / 13),
+                    ),
               ),
             ],
           ),
@@ -787,28 +724,6 @@ class _NodeView extends StatelessWidget {
 Rect _rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
 
 Rect _lerpRect(Rect? from, Rect to, double t) => from == null || t >= 1 ? to : Rect.lerp(from, to, t)!;
-
-/// A node title open for editing. [ended] is set as soon as the edit is
-/// confirmed or cancelled; the field stays on screen until the caller
-/// clears [MindMapCanvas.editingCardId], so the saved title replaces it
-/// without a flash of the old one.
-class _NodeField {
-  _NodeField(this.id, this.controller, this.focus);
-
-  final String id;
-  final TextEditingController controller;
-  final FocusNode focus;
-  bool ended = false;
-
-  /// The node has been on the map; until then the content may lag behind
-  /// the write that created it.
-  bool seen = false;
-
-  void dispose() {
-    controller.dispose();
-    focus.dispose();
-  }
-}
 
 class _EdgesPainter extends CustomPainter {
   _EdgesPainter(this.layout, this.color, this.from, this.t);

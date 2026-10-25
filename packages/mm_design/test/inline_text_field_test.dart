@@ -20,7 +20,7 @@ void main() {
     focus.dispose();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool multiline = false, int? maxLines}) async {
     await tester.pumpWidget(
       harness(
         Column(
@@ -36,6 +36,8 @@ void main() {
                 onSubmitted: () => calls.add('submit'),
                 onCancel: () => calls.add('cancel'),
                 onTapOutside: () => calls.add('outside'),
+                multiline: multiline,
+                maxLines: maxLines,
               ),
             ),
             const SizedBox(width: 200, height: 100),
@@ -92,5 +94,37 @@ void main() {
     await tester.tapAt(tester.getBottomLeft(find.byType(Column)) + const Offset(10, -10));
     await tester.pump();
     expect(calls, ['outside']);
+  });
+
+  Future<void> shiftEnter(WidgetTester tester) async {
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+  }
+
+  testWidgets('multiline: ⇧Enter replaces the selection with a line break; Enter still submits', (tester) async {
+    await pump(tester, multiline: true);
+    controller.selection = const TextSelection(baseOffset: 1, extentOffset: 3);
+    await shiftEnter(tester);
+    expect(controller.text, 'T\nic');
+    expect(controller.selection, const TextSelection.collapsed(offset: 2));
+    controller.selection = const TextSelection.collapsed(offset: -1);
+    await shiftEnter(tester);
+    expect(controller.text, 'T\nic\n');
+    expect(calls, isEmpty);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(calls, ['submit']);
+  });
+
+  testWidgets('single-line fields submit on ⇧Enter and keep one line', (tester) async {
+    await pump(tester, maxLines: 1);
+    final height = tester.getSize(find.byType(TextField)).height;
+    await shiftEnter(tester);
+    expect(calls, ['submit']);
+    expect(controller.text, 'Topic');
+    await tester.enterText(find.byType(TextField), '长标题不会换行 long title that would wrap onto more lines');
+    await tester.pump();
+    expect(tester.getSize(find.byType(TextField)).height, height);
   });
 }

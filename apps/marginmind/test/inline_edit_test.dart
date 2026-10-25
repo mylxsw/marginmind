@@ -128,24 +128,10 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).selectedCardId, 'c3');
       await settleHud(tester);
     });
-
-    testWidgets('notes and excerpts still open the sheet', (tester) async {
-      final container = await openFirstSet(tester);
-      final controller = container.read(workspaceProvider('demo-1').notifier);
-      await tester.tap(find.byIcon(MMIcons.addNote));
-      await tester.pumpAndSettle();
-      expect(find.byType(MMSheet), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      controller.beginEditing(controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt).id);
-      expect(container.read(workspaceProvider('demo-1')).editingCardId, isNull);
-      await settleHud(tester);
-    });
   });
 
-  testWidgets('the context menu edits in place; the outline still uses the sheet', (tester) async {
-    final container = await openFirstSet(tester);
-    final controller = container.read(workspaceProvider('demo-1').notifier);
+  testWidgets('the context menu edits in place', (tester) async {
+    await openFirstSet(tester);
     await tester.tap(find.text('对策一：间隔重复'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename'));
@@ -153,22 +139,7 @@ void main() {
     expect(_field, findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
-    final note = await controller.addNote('笔记');
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await tester.pumpAndSettle();
-    expect(find.byType(MMSheet), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-    expect(controller.content.card(note.id)!.title, '笔记');
-    await tester.tap(find.text('Outline'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(MMIcons.addTopic));
-    await tester.pumpAndSettle();
-    expect(find.byType(MMSheet), findsOneWidget);
     expect(_field, findsNothing);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
     await settleHud(tester);
   });
 
@@ -361,7 +332,7 @@ void main() {
     });
     tearDown(() => container.dispose());
 
-    test('only topics open; one edit at a time; blank or unchanged text writes nothing', () async {
+    test('only existing cards open; one edit at a time; blank or unchanged text writes nothing', () async {
       controller.beginEditing('c5');
       controller.beginEditing('missing');
       expect(state().editingCardId, isNull);
