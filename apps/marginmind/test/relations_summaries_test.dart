@@ -305,13 +305,13 @@ void main() {
           .firstWhere(around.contains);
       final scene = tester.getRect(find.byElementPredicate((e) => e == canvas));
       final rect = tester.getRect(text);
-      expect(inside(scene, rect), isTrue, reason: 'not clipped');
+      expect(inside(scene, rect), isTrue, reason: 'not clipped: $rect in $scene');
       expect(rect.left, greaterThan(tester.getRect(find.byKey(ValueKey(middle.id))).right), reason: 'past the column');
 
       await focusMap(tester);
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
       final view = viewerBox(tester).localToGlobal(Offset.zero) & viewerBox(tester).size;
-      expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it');
+      expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it: ${tester.getRect(text)} in $view');
       await settleHud(tester);
     });
 
