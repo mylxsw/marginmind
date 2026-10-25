@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -227,6 +228,34 @@ void main() {
     visible(tester, find.byKey(const ValueKey(rootNodeId)));
     visible(tester, find.byKey(ValueKey(id)));
     expect(tester.takeException(), isNull);
+    await settleHud(tester);
+  });
+  testWidgets('zoom label follows fit and gestures; zooming out after fit keeps going out', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    controller.selectCard('c4');
+    await focusMap(tester);
+    for (var i = 0; i < 12; i++) {
+      await key(tester, LogicalKeyboardKey.tab);
+      tester.testTextInput.enterText('Deep topic $i');
+      await tester.pump();
+      await key(tester, LogicalKeyboardKey.enter);
+    }
+    final transform = canvas(tester).transformation;
+    String label() => '${(mapScale(transform.value) * 100).round()}%';
+    await key(tester, LogicalKeyboardKey.digit0, primary: true);
+    final fitted = mapScale(transform.value);
+    expect(fitted, lessThan(0.3));
+    expect(fitted, greaterThanOrEqualTo(mapMinScale));
+    expect(find.text(label()), findsOneWidget);
+    await tester.tap(find.byTooltip('Zoom Out'));
+    await tester.pumpAndSettle();
+    expect(mapScale(transform.value), closeTo(math.max(fitted / 1.25, mapMinScale), 1e-9));
+    expect(find.text(label()), findsOneWidget);
+    // A pan or pinch changes the transform without rebuilding the pane.
+    transform.value = Matrix4.identity()..scaleByDouble(1.5, 1.5, 1, 1);
+    await tester.pump();
+    expect(find.text('150%'), findsOneWidget);
     await settleHud(tester);
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -37,14 +38,13 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final size = context.size ?? const Size(800, 600);
     final center = Offset(size.width / 2, size.height / 2);
     final current = mapScale(_transform.value);
-    final target = (current * factor).clamp(0.3, 2.5);
+    final target = (current * factor).clamp(mapMinScale, mapMaxScale);
     final f = target / current;
     _transform.value = Matrix4.identity()
       ..translateByDouble(center.dx, center.dy, 0, 1)
       ..scaleByDouble(f, f, 1, 1)
       ..translateByDouble(-center.dx, -center.dy, 0, 1)
       ..multiply(_transform.value);
-    setState(() {});
   }
 
   /// Every card is edited in place, on the map and in the outline.
@@ -152,7 +152,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId);
     final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
-    final scale = mapScale(_transform.value);
 
     Future<void> remove() async {
       final notice = await controller.removeSelected();
@@ -306,7 +305,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     ),
                     SizedBox(
                       width: 44,
-                      child: Text('${(scale * 100).round()}%', textAlign: TextAlign.center, style: t.callout),
+                      child: _ZoomLabel(transform: _transform, style: t.callout),
                     ),
                     MMIconButton(
                       icon: MMIcons.zoomIn,
@@ -324,4 +323,58 @@ class _MapPaneState extends ConsumerState<MapPane> {
       ),
     );
   }
+}
+
+/// The current zoom. Gestures, "fit" and view following change the
+/// transform without rebuilding the pane, and the canvas may adjust it while
+/// laying out, so the label rebuilds itself — after the frame if needed.
+class _ZoomLabel extends StatefulWidget {
+  const _ZoomLabel({required this.transform, required this.style});
+
+  final TransformationController transform;
+  final TextStyle style;
+
+  @override
+  State<_ZoomLabel> createState() => _ZoomLabelState();
+}
+
+class _ZoomLabelState extends State<_ZoomLabel> {
+  bool _scheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.transform.addListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(_ZoomLabel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transform == widget.transform) return;
+    oldWidget.transform.removeListener(_changed);
+    widget.transform.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    widget.transform.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    if (SchedulerBinding.instance.schedulerPhase != SchedulerPhase.persistentCallbacks) {
+      setState(() {});
+      return;
+    }
+    if (_scheduled) return;
+    _scheduled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Text('${(mapScale(widget.transform.value) * 100).round()}%', textAlign: TextAlign.center, style: widget.style);
 }

@@ -23,6 +23,12 @@ const rootNodeId = '__root__';
 /// `getMaxScaleOnAxis` (which also counts z, always 1) would be wrong.
 double mapScale(Matrix4 m) => m.storage[0];
 
+/// Zoom limits shared by gestures, the zoom buttons and "fit": fitting a
+/// large map may go far below 100%, and zooming out from there must not
+/// jump back in.
+const mapMinScale = 0.05;
+const mapMaxScale = 2.5;
+
 /// While dragging a node, the canvas pans when the pointer is within this
 /// distance of its sides (or outside them), up to [_autoScrollSpeed]
 /// logical pixels per second.
@@ -326,7 +332,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               (_viewport.width - MMSpacing.xl * 2) / layout.width,
               (_viewport.height - MMSpacing.xl * 2) / layout.height,
             )
-            .clamp(0.01, 1.0);
+            .clamp(mapMinScale, 1.0);
         widget.transformation.value = Matrix4.identity()
           ..translateByDouble(
             (_viewport.width - layout.width * scale) / 2,
@@ -679,8 +685,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             panEnabled: _boxStart == null,
             transformationController: widget.transformation,
             constrained: false,
-            minScale: 0.3,
-            maxScale: 2.5,
+            minScale: mapMinScale,
+            maxScale: mapMaxScale,
             boundaryMargin: const EdgeInsets.all(600),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
