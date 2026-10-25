@@ -1,3 +1,5 @@
+import 'dart:math' show max;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -22,6 +24,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   String _segment = 'map';
   bool _toolOn = true;
   MMAnnotationColor _color = MMAnnotationColor.yellow;
+  Rect _selection = const Rect.fromLTWH(200, 96, 180, 22);
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +262,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
         alignment: Alignment.centerLeft,
         child: MMColorPicker(selected: _color, onChanged: (v) => setState(() => _color = v), labelOf: l.colorName),
       ),
+      _title(context, 'MMFloatingToolbar'),
+      _floatingToolbar(context),
       _title(context, 'MMSidebarItem · MMBadge · MMCount'),
       SizedBox(
         width: 236,
@@ -278,6 +283,74 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       _title(context, 'MMProgressBar'),
       const SizedBox(width: 280, child: MMProgressBar(value: 0.62)),
     ];
+  }
+
+  /// A draggable "selection" on a page; the toolbar follows it and flips or
+  /// shifts at the edges.
+  Widget _floatingToolbar(BuildContext context) {
+    final l = context.l10n;
+    final c = context.mmColors;
+    return SizedBox(
+      height: 220,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(MMRadii.card),
+        child: ColoredBox(
+          color: c.readerBackground,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final area = Offset.zero & constraints.biggest;
+              void drag(DragUpdateDetails d) {
+                final moved = _selection.shift(d.delta);
+                final dx = moved.left.clamp(area.left, max(area.left, area.right - moved.width)) - moved.left;
+                final dy = moved.top.clamp(area.top, max(area.top, area.bottom - moved.height)) - moved.top;
+                setState(() => _selection = moved.shift(Offset(dx, dy)));
+              }
+
+              return Stack(
+                children: [
+                  Positioned.fromRect(
+                    rect: _selection,
+                    child: GestureDetector(
+                      key: const ValueKey('gallery-selection'),
+                      onPanUpdate: drag,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.move,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _color.highlight,
+                            borderRadius: BorderRadius.circular(MMRadii.page),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: MMFloatingToolbarLayout(
+                      anchor: _selection,
+                      child: MMFloatingToolbar(
+                        children: [
+                          for (final color in MMAnnotationColor.values)
+                            MMFloatingToolbarColor(
+                              color: color,
+                              tooltip: l.colorName(color),
+                              selected: color == _color,
+                              onPressed: () => setState(() => _color = color),
+                            ),
+                          const MMToolbarDivider(),
+                          MMToolbarButton(icon: MMIcons.highlight, tooltip: l.highlightAction, onPressed: () {}),
+                          MMToolbarButton(icon: MMIcons.copy, tooltip: l.copyAction, onPressed: () {}),
+                          MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: () {}),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   List<Widget> _feedback(BuildContext context) {

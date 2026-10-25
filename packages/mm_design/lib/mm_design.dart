@@ -7,6 +7,7 @@
 library;
 
 export 'src/foundation/appearance.dart';
+export 'src/foundation/floating_placement.dart';
 export 'src/foundation/interactive.dart';
 export 'src/icons/mm_icons.dart';
 export 'src/theme/mm_theme.dart';
@@ -18,6 +19,7 @@ export 'src/tokens/typography.dart';
 export 'src/widgets/buttons.dart';
 export 'src/widgets/color_picker.dart';
 export 'src/widgets/empty_state.dart';
+export 'src/widgets/floating_toolbar.dart';
 export 'src/widgets/form_row.dart';
 export 'src/widgets/glass.dart';
 export 'src/widgets/hud.dart';
