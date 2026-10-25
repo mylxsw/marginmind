@@ -100,17 +100,22 @@ Future<bool> showConfirmSheet(
 }
 
 /// Single-field sheet used to rename topics, excerpts and notes.
-Future<String?> showRenameSheet(BuildContext context, {required String title, required String initial}) =>
-    showMMSheet<String>(
-      context: context,
-      builder: (_) => _RenameSheet(title: title, initial: initial),
-    );
+Future<String?> showRenameSheet(
+  BuildContext context, {
+  required String title,
+  required String initial,
+  String? fieldLabel,
+}) => showMMSheet<String>(
+  context: context,
+  builder: (_) => _RenameSheet(title: title, initial: initial, fieldLabel: fieldLabel),
+);
 
 class _RenameSheet extends StatefulWidget {
-  const _RenameSheet({required this.title, required this.initial});
+  const _RenameSheet({required this.title, required this.initial, this.fieldLabel});
 
   final String title;
   final String initial;
+  final String? fieldLabel;
 
   @override
   State<_RenameSheet> createState() => _RenameSheetState();
@@ -139,7 +144,7 @@ class _RenameSheetState extends State<_RenameSheet> {
         MMButton(label: l.save, variant: MMButtonVariant.primary, onPressed: _save),
       ],
       child: MMFormRow(
-        label: l.sheetName,
+        label: widget.fieldLabel ?? l.sheetName,
         child: MMTextField(controller: _controller, autofocus: true, onSubmitted: (_) => _save()),
       ),
     );

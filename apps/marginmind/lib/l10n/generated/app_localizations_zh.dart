@@ -727,4 +727,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String intervalMonths(int count) {
     return '$count 个月';
   }
+
+  @override
+  String excerptInColor(String color) {
+    return '用$color摘录';
+  }
+
+  @override
+  String get noteText => '笔记';
 }

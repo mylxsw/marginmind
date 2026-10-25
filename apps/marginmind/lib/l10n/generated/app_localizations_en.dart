@@ -764,4 +764,12 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count months', one: '1 month');
     return '$_temp0';
   }
+
+  @override
+  String excerptInColor(String color) {
+    return 'Excerpt in $color';
+  }
+
+  @override
+  String get noteText => 'Note';
 }

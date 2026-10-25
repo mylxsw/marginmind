@@ -1,0 +1,253 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/app_commands.dart';
+import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
+import 'package:mm_pdf/mm_pdf.dart';
+
+import 'helpers.dart';
+
+import 'package:marginmind/shared/l10n.dart';
+
+const selection = MMPdfSelection(
+  page: 1,
+  rects: [PageRect(10, 100, 200, 88)],
+  text: 'A selected passage',
+  viewportRect: Rect.fromLTWH(120, 200, 180, 20),
+);
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  String? clipboard;
+  setUp(() {
+    clipboard = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String;
+        if (call.method == 'Clipboard.getData') return {'text': clipboard};
+        return null;
+      },
+    );
+  });
+  tearDown(
+    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    ),
+  );
+  for (final color in MMAnnotationColor.values) {
+    testWidgets('color ${color.name} excerpts and flashes', (tester) async {
+      final container = await pumpApp(tester);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      final before = controller.content;
+      await controller.onSelectionCommitted('c1', selection);
+      await tester.pumpAndSettle();
+      expect(controller.content.annotations.length, before.annotations.length);
+      expect(
+        tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout)).anchor,
+        selection.viewportRect,
+      );
+      await tester.tap(find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == color));
+      await tester.pumpAndSettle();
+      final annotation = controller.content.annotations.last;
+      final card = controller.content.cardForAnnotation(annotation.id)!;
+      expect(annotation.colorIndex, color.index);
+      expect(annotation.quote, selection.text);
+      expect(container.read(workspaceProvider('demo-1')).flashCardId, card.id);
+      expect(find.byType(SelectionToolbar), findsNothing);
+      await controller.undo();
+      expect(controller.content.annotations.length, before.annotations.length);
+      expect(controller.content.cards.length, before.cards.length);
+      await settleHud(tester);
+    });
+  }
+  for (final command in [
+    ReaderSelectionCommand.excerpt,
+    ReaderSelectionCommand.highlight,
+    ReaderSelectionCommand.copy,
+  ]) {
+    for (final keyboard in [false, true]) {
+      if (command == ReaderSelectionCommand.excerpt && !keyboard) continue;
+      testWidgets('$command keyboard=$keyboard', (tester) async {
+        final container = await pumpApp(tester);
+        container.read(navigationProvider.notifier).openStudySet('demo-1');
+        await tester.pumpAndSettle();
+        final controller = container.read(workspaceProvider('demo-1').notifier);
+        final before = controller.content;
+        await controller.onSelectionCommitted('c1', selection);
+        await tester.pumpAndSettle();
+        if (keyboard) {
+          final shortcut =
+              readerSelectionShortcuts.entries.firstWhere((e) => e.value.command == command).key as SingleActivator;
+          final modifier = shortcut.meta ? LogicalKeyboardKey.metaLeft : LogicalKeyboardKey.controlLeft;
+          if (shortcut.meta || shortcut.control) await tester.sendKeyDownEvent(modifier);
+          await tester.sendKeyEvent(shortcut.trigger);
+          if (shortcut.meta || shortcut.control) await tester.sendKeyUpEvent(modifier);
+        } else {
+          await tester.tap(
+            find.descendant(
+              of: find.byType(SelectionToolbar),
+              matching: find.byIcon(command == ReaderSelectionCommand.copy ? MMIcons.copy : MMIcons.highlight),
+            ),
+          );
+        }
+        await tester.pumpAndSettle();
+        expect(find.byType(SelectionToolbar), findsNothing);
+        expect(container.read(workspaceProvider('demo-1')).pending, isNull);
+        expect(
+          controller.content.annotations.length,
+          before.annotations.length + (command == ReaderSelectionCommand.copy ? 0 : 1),
+        );
+        expect(
+          controller.content.cards.length,
+          before.cards.length + (command == ReaderSelectionCommand.excerpt ? 1 : 0),
+        );
+        if (command == ReaderSelectionCommand.copy) {
+          expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, selection.text);
+        }
+        await settleHud(tester);
+      });
+    }
+  }
+  for (final outcome in ['save', 'cancel', 'empty']) {
+    testWidgets('note $outcome preserves quote and atomic undo', (tester) async {
+      final container = await pumpApp(tester);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      final before = controller.content;
+      await controller.onSelectionCommitted('c1', selection);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.addNote)));
+      await tester.pumpAndSettle();
+      if (outcome == 'save') {
+        await tester.enterText(
+          find.descendant(of: find.byType(MMSheet), matching: find.byType(EditableText)),
+          'My own words',
+        );
+      }
+      await tester.tap(find.text(outcome == 'cancel' ? 'Cancel' : 'Save'));
+      await tester.pumpAndSettle();
+      if (outcome == 'save') {
+        expect(controller.content.annotations.last.quote, selection.text);
+        expect(controller.content.cards.last.title, 'My own words');
+        expect(controller.content.cards.last.kind, CardKind.note);
+        final excerpt = controller.content.cardForAnnotation(controller.content.annotations.last.id)!;
+        expect(controller.content.node(controller.content.cards.last.id)!.parentId, excerpt.id);
+        await controller.undo();
+      }
+      expect(controller.content.cards.length, before.cards.length);
+      expect(controller.content.annotations.length, before.annotations.length);
+      await settleHud(tester);
+    });
+  }
+  testWidgets('native menu invokes actions and disables selection keys in a text field', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    final container = await pumpApp(tester);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await controller.onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
+      for (final item in items) {
+        yield item;
+        if (item is PlatformMenu) yield* flatten(item.menus);
+        if (item is PlatformMenuItemGroup) yield* flatten(item.members);
+      }
+    }
+
+    PlatformMenuItem command(String label) =>
+        flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus)
+            .firstWhere((item) => item.label == label);
+    final l = tester.element(find.byType(SelectionToolbar)).l10n;
+    command(l.addNote).onSelected!();
+    await tester.pumpAndSettle();
+    expect(command(l.excerptAction).onSelected, isNull);
+    expect(command(l.highlightAction).onSelected, isNull);
+    await tester.enterText(find.descendant(of: find.byType(MMSheet), matching: find.byType(EditableText)), 'EH');
+    expect(controller.content.annotations.length, 1);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    command(l.excerptAction).onSelected!();
+    await tester.pumpAndSettle();
+    expect(controller.content.annotations.length, 2);
+    expect(find.byType(SelectionToolbar), findsNothing);
+    await settleHud(tester);
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('clipboard failure keeps selection and retry succeeds', (tester) async {
+    final container = await pumpApp(tester);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await controller.onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    var fail = true;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData' && fail) throw PlatformException(code: 'unavailable');
+        return null;
+      },
+    );
+    final copy = find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.copy));
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
+    fail = false;
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(find.byType(SelectionToolbar), findsNothing);
+    await settleHud(tester);
+  });
+
+  for (final dismiss in ['escape', 'outside', 'scroll', 'pan', 'next', 'previous', 'document']) {
+    testWidgets('dismiss by $dismiss makes no edits', (tester) async {
+      final container = await pumpApp(tester);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      final before = controller.content;
+      controller.recordPage('c1', 5);
+      await controller.onSelectionCommitted('c1', selection);
+      await tester.pumpAndSettle();
+      final point = tester.getCenter(find.byKey(const ValueKey('pdf-placeholder-c1')));
+      switch (dismiss) {
+        case 'escape':
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        case 'outside':
+          await tester.tapAt(point);
+        case 'scroll':
+          await tester.sendEventToBinding(PointerScrollEvent(position: point, scrollDelta: const Offset(0, 30)));
+        case 'pan':
+          await tester.sendEventToBinding(PointerPanZoomStartEvent(position: point));
+        case 'next':
+          await tester.tap(find.byTooltip('Next Page'));
+        case 'previous':
+          await tester.tap(find.byTooltip('Previous Page'));
+        case 'document':
+          controller.openDocument('c2');
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(SelectionToolbar), findsNothing);
+      expect(container.read(workspaceProvider('demo-1')).pending, isNull);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+      await tester.pumpAndSettle();
+      expect(controller.content.annotations.length, before.annotations.length);
+      expect(controller.content.cards.length, before.cards.length);
+      await settleHud(tester);
+    });
+  }
+}

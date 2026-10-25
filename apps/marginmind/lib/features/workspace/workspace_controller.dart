@@ -473,7 +473,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return null;
   }
 
-  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
+  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color, {String? note}) async {
     final parent = excerptTargetId;
     late Card card;
     await _update((c) {
@@ -487,7 +487,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         parentId: parent,
       );
       card = created;
-      return next;
+      return note == null ? next : _editor.addNote(next, text: note, parentId: card.id).$1;
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);

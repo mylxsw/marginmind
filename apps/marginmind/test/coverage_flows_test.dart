@@ -25,9 +25,9 @@ void main() {
       expect(find.text('MMTypography'), findsOneWidget);
       await tester.tap(find.text(l.galleryControls));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip(l.toolHighlight));
+      await tester.tap(find.byTooltip(l.toolHighlight).first);
       await tester.pumpAndSettle();
-      final tool = tester.widget<MMToolbarButton>(find.widgetWithIcon(MMToolbarButton, MMIcons.highlight));
+      final tool = tester.widget<MMToolbarButton>(find.widgetWithIcon(MMToolbarButton, MMIcons.highlight).first);
       expect(tool.selected, isFalse);
       await tester.tap(find.text(l.outlineView));
       await tester.pumpAndSettle();

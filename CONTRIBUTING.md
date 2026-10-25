@@ -28,6 +28,7 @@ dart format --set-exit-if-changed apps packages
 (cd packages/mm_layout && dart test)
 (cd packages/mm_design && flutter test)
 (cd packages/mm_platform && flutter test)
+(cd packages/mm_pdf && flutter test)
 (cd apps/marginmind && flutter test)
 ```
 
@@ -44,11 +45,11 @@ python3 tool/coverage.py
 python3 tool/coverage.py --report-only
 ```
 
-脚本对现有六个测试套件逐包启用 `--coverage`；纯 Dart 包再用
+脚本对七个测试套件逐包启用 `--coverage`；纯 Dart 包再用
 `coverage:format_coverage` 转为 LCOV。报告按仓库相对路径与行号合并，
 同一源码被多个套件执行时只计一次。包含报告中的项目 `lib/` 源码（含生成代码），
-不计 SDK、第三方依赖或测试代码。`mm_pdf` 暂无独立测试套件，不在当前六个
-套件的门禁范围内；报告未包含的文件也不在该行覆盖率口径内。
+不计 SDK、第三方依赖或测试代码。`mm_pdf` 使用可控的测试后端验证真实 PDF 视图与选区回调，
+无需原生 PDFium。报告未包含的文件不在该行覆盖率口径内。
 
 输出为 `coverage/lcov.info` 和 `coverage/summary.md`，CI 同时上传附件并写入
 Job Summary。汇总行覆盖率低于 **80%**、缺少报告、空报告或测试失败都会失败。

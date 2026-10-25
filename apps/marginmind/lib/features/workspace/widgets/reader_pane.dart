@@ -9,6 +9,7 @@ import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
+import 'selection_toolbar.dart';
 
 /// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
 /// selection action bar and the floating page pill.
@@ -41,6 +42,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       // loading, the view queues the reveal until it is ready.
       WidgetsBinding.instance.addPostFrameCallback((_) => _pdf.reveal(reveal.page, reveal.rects));
     });
+
+    void dismissSelection() {
+      if (ref.read(provider).pending is PendingSelection) {
+        controller.dismissPending();
+        _pdf.clearSelection();
+      }
+    }
 
     final openDocs = [for (final id in state.openDocumentIds) ?content.document(id)];
 
@@ -88,59 +96,89 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       ),
                     ],
                   )
-                : Stack(
-                    children: [
-                      Positioned.fill(
-                        child: !ref.watch(pdfRenderingEnabledProvider)
-                            ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
-                            : MMPdfView(
-                                key: ValueKey(doc.id),
-                                filePath: controller.filePath(doc),
-                                controller: _pdf,
-                                initialPage: doc.lastPage,
-                                backgroundColor: c.readerBackground,
-                                emphasisColor: c.accent,
-                                highlights: _highlights(content, doc.id, state),
-                                onPageChanged: (page, _) => controller.recordPage(doc.id, page),
-                                onHighlightTap: controller.tapHighlight,
-                                onSelectionCommitted: (selection) async {
-                                  final notice = await controller.onSelectionCommitted(doc.id, selection);
-                                  if (notice != null) {
-                                    await _pdf.clearSelection();
-                                    if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                                  }
-                                },
+                : Listener(
+                    onPointerSignal: (_) => dismissSelection(),
+                    onPointerPanZoomStart: (_) => dismissSelection(),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: !ref.watch(pdfRenderingEnabledProvider)
+                              ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
+                              : MMPdfView(
+                                  key: ValueKey(doc.id),
+                                  filePath: controller.filePath(doc),
+                                  controller: _pdf,
+                                  initialPage: doc.lastPage,
+                                  backgroundColor: c.readerBackground,
+                                  emphasisColor: c.accent,
+                                  highlights: _highlights(content, doc.id, state),
+                                  onViewportChanged: dismissSelection,
+                                  onPageChanged: (page, _) {
+                                    dismissSelection();
+                                    controller.recordPage(doc.id, page);
+                                  },
+                                  onSelectionChanged: (selected) {
+                                    if (!selected) dismissSelection();
+                                  },
+                                  onHighlightTap: controller.tapHighlight,
+                                  onSelectionCommitted: (selection) async {
+                                    final notice = await controller.onSelectionCommitted(doc.id, selection);
+                                    if (notice != null) {
+                                      await _pdf.clearSelection();
+                                      if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                    }
+                                  },
+                                ),
+                        ),
+                        if (state.pending case final PendingSelection pending)
+                          Positioned.fill(
+                            child: MMFloatingToolbarLayout(
+                              anchor: pending.selection.viewportRect ?? Rect.zero,
+                              child: SelectionToolbar(
+                                key: ObjectKey(pending),
+                                studySetId: widget.studySetId,
+                                pending: pending,
+                                pdf: _pdf,
+                                rootTitle: rootTitle,
                               ),
-                      ),
-                      if (state.pending != null)
+                            ),
+                          ),
+                        if (state.pending is PendingHighlight)
+                          Positioned(
+                            left: 16,
+                            right: 16,
+                            bottom: 60,
+                            child: Center(
+                              child: _ActionBar(
+                                studySetId: widget.studySetId,
+                                pending: state.pending!,
+                                content: content,
+                                pdf: _pdf,
+                                rootTitle: rootTitle,
+                              ),
+                            ),
+                          ),
                         Positioned(
-                          left: 16,
-                          right: 16,
-                          bottom: 60,
+                          left: 0,
+                          right: 0,
+                          bottom: 16,
                           child: Center(
-                            child: _ActionBar(
-                              studySetId: widget.studySetId,
-                              pending: state.pending!,
-                              content: content,
-                              pdf: _pdf,
-                              rootTitle: rootTitle,
+                            child: _PagePill(
+                              page: state.currentPages[doc.id] ?? doc.lastPage,
+                              pageCount: doc.pageCount,
+                              onPrevious: () {
+                                dismissSelection();
+                                _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) - 1);
+                              },
+                              onNext: () {
+                                dismissSelection();
+                                _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) + 1);
+                              },
                             ),
                           ),
                         ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 16,
-                        child: Center(
-                          child: _PagePill(
-                            page: state.currentPages[doc.id] ?? doc.lastPage,
-                            pageCount: doc.pageCount,
-                            onPrevious: () => _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) - 1),
-                            onNext: () => _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) + 1),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ),
         ],

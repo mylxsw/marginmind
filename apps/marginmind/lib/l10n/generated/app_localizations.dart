@@ -1387,6 +1387,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 month} other{{count} months}}'**
   String intervalMonths(int count);
+
+  /// No description provided for @excerptInColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpt in {color}'**
+  String excerptInColor(String color);
+
+  /// No description provided for @noteText.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteText;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

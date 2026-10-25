@@ -441,5 +441,14 @@
         "type": "int"
       }
     }
+  },
+  "excerptInColor": "Excerpt in {color}",
+  "noteText": "Note",
+  "@excerptInColor": {
+    "placeholders": {
+      "color": {
+        "type": "String"
+      }
+    }
   }
 }
