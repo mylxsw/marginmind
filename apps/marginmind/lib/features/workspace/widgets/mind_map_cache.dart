@@ -1,5 +1,8 @@
 part of 'mind_map_canvas.dart';
 
+/// Vertical space between sibling nodes; drops split it between them.
+const _siblingGap = 14.0;
+
 /// Per-canvas cache. Immutable content makes unchanged UI rebuilds O(1).
 /// Geometry is compared separately so metadata and equal-size text edits
 /// can refresh node views without relaying out or repainting the edges.
@@ -110,7 +113,7 @@ class MindMapRenderCache {
 
     final tree = build(rootNodeId, null, _NodeSpec.root(rootTitle.isEmpty ? localizations.appName : rootTitle, this));
     if (_layout == null || !listEquals(_geometry, geometry)) {
-      _layout = const TreeLayout(levelGap: 56, siblingGap: 14, padding: 72).layout(tree);
+      _layout = const TreeLayout(levelGap: 56, siblingGap: _siblingGap, padding: 72).layout(tree);
       layoutCount++;
       _geometry = geometry;
     }
