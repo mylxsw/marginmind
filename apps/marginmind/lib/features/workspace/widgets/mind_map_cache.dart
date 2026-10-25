@@ -11,6 +11,7 @@ class MindMapRenderCache {
   final _measurements = <(String, TextStyle, double), ({Size size, int lines})>{};
   StudySetContent? _content;
   String? _title;
+  String? _mapId;
   AppLocalizations? _localizations;
   ThemeData? _theme;
   TextScaler _textScaler = TextScaler.noScaling;
@@ -32,6 +33,7 @@ class MindMapRenderCache {
 
   TreeLayoutResult update({
     required StudySetContent content,
+    String mapId = MindMap.defaultId,
     required String rootTitle,
     required AppLocalizations localizations,
     required ThemeData theme,
@@ -48,6 +50,7 @@ class MindMapRenderCache {
     if (!environmentChanged &&
         identical(_content, content) &&
         _title == rootTitle &&
+        _mapId == mapId &&
         _draft == draft &&
         identical(_localizations, localizations)) {
       return _layout!;
@@ -59,6 +62,7 @@ class MindMapRenderCache {
     _direction = textDirection;
     _content = content;
     _title = rootTitle;
+    _mapId = mapId;
     _draft = draft;
     _localizations = localizations;
 
@@ -68,6 +72,7 @@ class MindMapRenderCache {
     final documents = {for (final d in content.documents) d.id: d};
     final children = <String?, List<MapNode>>{};
     for (final node in content.nodes) {
+      if (node.mapId != mapId) continue;
       children.putIfAbsent(node.parentId, () => []).add(node);
     }
     for (final siblings in children.values) {

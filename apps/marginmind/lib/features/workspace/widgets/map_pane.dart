@@ -93,9 +93,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     final content = controller.content;
+    final mapId = ref.read(workspaceProvider(widget.studySetId)).activeMapId;
     final card = cardId == null ? null : content.card(cardId);
-    final node = cardId == null ? null : content.node(cardId);
-    final hasChildren = content.childrenOf(cardId).isNotEmpty;
+    final node = cardId == null ? null : content.node(cardId, mapId: mapId);
+    final hasChildren = content.childrenOf(cardId, mapId: mapId).isNotEmpty;
 
     showMMMenu(
       context,
@@ -131,6 +132,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
           ],
           const MMMenuDivider(),
+          for (final map in content.maps)
+            if (map.id != mapId && content.node(card.id, mapId: map.id) == null)
+              MMMenuItem(
+                l.addToNamedMap(map.title.isEmpty ? l.mainMap : map.title),
+                () => controller.placeCardInMap(card.id, map.id),
+              ),
           MMMenuItem(l.removeFromMap, remove, destructive: true, shortcut: '⌫'),
         ],
       ],
@@ -149,8 +156,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
     // The controller's copy includes its own writes before the stream
     // delivers them, so a node created for editing is there at once.
     final content = loadedContent == null ? StudySetContent.empty : controller.content;
-    final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
-    final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId);
+    final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
+    final mapTitle = content.map(state.activeMapId)?.title ?? '';
+    final rootTitle = mapTitle.isEmpty ? setTitle : mapTitle;
+    final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId);
     final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
 
     Future<void> remove() async {
@@ -165,7 +174,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
           Positioned.fill(
             child: state.mapView == MapViewMode.map
                 ? MindMapCanvas(
+                    key: ValueKey(state.activeMapId),
                     content: content,
+                    mapId: state.activeMapId,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
                     selectedCardIds: state.selectedCardIds,
@@ -195,7 +206,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
                   )
                 : OutlineView(
+                    key: ValueKey(state.activeMapId),
                     content: content,
+                    mapId: state.activeMapId,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
                     selectedCardIds: state.selectedCardIds,
@@ -213,7 +226,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onEditCancel: controller.cancelEditing,
                   ),
           ),
-          if (content.cards.isEmpty && state.mapView == MapViewMode.map)
+          if (content.nodes.every((n) => n.mapId != state.activeMapId) && state.mapView == MapViewMode.map)
             Positioned(
               left: 0,
               right: 0,
@@ -244,7 +257,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l.mainMap, style: t.headline),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: MMSizes.sidebarWidth),
+                          child: Text(
+                            mapTitle.isEmpty ? l.mainMap : mapTitle,
+                            style: t.headline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 200),
                           child: Text(

@@ -261,10 +261,15 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
-    final highlightCard = switch (workspaceState?.pending) {
+    final sharedHighlightCard = switch (workspaceState?.pending) {
       PendingHighlight(:final annotationId) => workspace?.content.cardForAnnotation(annotationId),
       _ => null,
     };
+    final highlightCard =
+        sharedHighlightCard != null &&
+            workspace!.content.node(sharedHighlightCard.id, mapId: workspaceState!.activeMapId) != null
+        ? sharedHighlightCard
+        : null;
     edit.addAll([
       for (final entry in {
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
@@ -292,9 +297,31 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
     ]);
     final study = [
-      AppCommand(l.startReview, inWorkspace ? () => nav.startReview(workspaceId) : null, shortcut: AppShortcuts.review),
+      AppCommand(
+        l.startReview,
+        inWorkspace ? () => nav.startReview(workspaceId, mapId: workspaceState!.activeMapId) : null,
+        shortcut: AppShortcuts.review,
+      ),
     ];
     final map = <AppCommand>[
+      if (workspace != null)
+        for (final map in workspace.content.maps) ...[
+          AppCommand(map.title.isEmpty ? l.mainMap : map.title, editable ? () => workspace.selectMap(map.id) : null),
+          if (selected != null && workspace.content.node(selected, mapId: map.id) == null)
+            AppCommand(
+              l.addToNamedMap(map.title.isEmpty ? l.mainMap : map.title),
+              editable ? () => workspace.placeCardInMap(selected, map.id) : null,
+            ),
+        ],
+      AppCommand(l.newMap, editable ? () => showNewMapSheet(context, ref, workspaceId!) : null),
+      AppCommand(
+        l.renameMap,
+        editable ? () => showMapRenameSheet(context, ref, workspaceId!, workspaceState!.activeMapId) : null,
+      ),
+      AppCommand(
+        l.deleteMap,
+        editable && workspace.content.maps.length > 1 ? () => workspace.removeMap(workspaceState!.activeMapId) : null,
+      ),
       AppCommand(
         l.addTopic,
         editable ? () => workspace.addTopicAndEdit(l.newTopicName) : null,

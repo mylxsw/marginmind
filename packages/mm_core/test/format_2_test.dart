@@ -77,7 +77,7 @@ void main() {
     expect(c.card(note.id), isNull);
     expect(c.card(topic.id), isNotNull);
     expect(c.node(topic.id, mapId: map.id), isNotNull);
-    expect(e.removeMap(c, MindMap.defaultId), same(c));
+    expect(e.removeMap(c, MindMap.defaultId).maps.single.id, map.id);
     c = e.removeMap(c, map.id);
     expect(c.maps, [MindMap.main]);
     expect(c.nodes, isEmpty);

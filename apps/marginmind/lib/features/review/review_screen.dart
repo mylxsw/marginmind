@@ -130,7 +130,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                         key: ValueKey('${session.index}-$id'),
                         card: card,
                         content: content,
-                        rootTitle: setTitle,
+                        rootTitle: content.map(controller.mapId ?? '')?.title.isNotEmpty == true
+                            ? content.map(controller.mapId!)!.title
+                            : setTitle,
+                        mapId: controller.mapId,
                         revealed: session.revealed,
                         onRevealSource: () => _revealSource(card.id),
                       ),
@@ -184,6 +187,7 @@ class _ReviewCard extends StatelessWidget {
     required this.card,
     required this.content,
     required this.rootTitle,
+    this.mapId,
     required this.revealed,
     required this.onRevealSource,
   });
@@ -191,6 +195,7 @@ class _ReviewCard extends StatelessWidget {
   final Card card;
   final StudySetContent content;
   final String rootTitle;
+  final String? mapId;
   final bool revealed;
   final VoidCallback onRevealSource;
 
@@ -199,7 +204,10 @@ class _ReviewCard extends StatelessWidget {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
-    final path = [rootTitle, ...content.pathOf(card.id)].where((s) => s.trim().isNotEmpty).join('  ›  ');
+    final path = [
+      rootTitle,
+      ...content.pathOf(card.id, mapId: mapId ?? MindMap.defaultId),
+    ].where((s) => s.trim().isNotEmpty).join('  ›  ');
     final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
     final doc = annotation == null ? null : content.document(annotation.documentId);
     final color = MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0);

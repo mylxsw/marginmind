@@ -42,6 +42,7 @@ class MindMapCanvas extends StatefulWidget {
   const MindMapCanvas({
     super.key,
     required this.content,
+    this.mapId = MindMap.defaultId,
     required this.rootTitle,
     required this.selectedCardId,
     required this.flashCardId,
@@ -72,6 +73,7 @@ class MindMapCanvas extends StatefulWidget {
   final bool loaded;
 
   final StudySetContent content;
+  final String mapId;
   final String rootTitle;
   final String? selectedCardId;
   final Set<String> selectedCardIds;
@@ -417,6 +419,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           point: widget.transformation.toScene(local),
           rects: _drawnRects(),
           content: widget.content,
+          mapId: widget.mapId,
           moving: moving,
           rootId: rootNodeId,
           gap: _siblingGap,
@@ -528,6 +531,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final result = _cache.update(
       draft: field == null ? null : (field.id, field.controller.text),
       content: widget.content,
+      mapId: widget.mapId,
       rootTitle: widget.rootTitle,
       localizations: l,
       theme: Theme.of(context),
