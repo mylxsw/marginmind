@@ -743,6 +743,75 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
   }
 
+  final _nodeWidgets = <String, ({Object signature, Widget child})>{};
+
+  Widget _nodeWidget(String id, _NodeSpec spec, AppLocalizations l) {
+    final signature = (
+      spec.kind,
+      spec.title,
+      spec.quote,
+      spec.meta,
+      spec.color,
+      spec.size,
+      spec.image,
+      spec.imageHeight,
+      widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+      id == widget.flashCardId,
+      _dragging?.contains(id) ?? false,
+      widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
+      mapScale(widget.transformation.value),
+      widget.onContextMenu != null,
+      l.revealSource,
+    );
+    final cached = _nodeWidgets[id];
+    if (cached != null && cached.signature == signature) return cached.child;
+    // Callbacks read the current widget, so retaining an unchanged node never
+    // retains a stale selection, command handler or connection target.
+    final child = RepaintBoundary(
+      child: Opacity(
+        opacity: _dragging?.contains(id) ?? false ? 0.35 : 1,
+        child: _draggable(
+          id,
+          spec,
+          _NodeView(
+            spec: spec,
+            selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+            flashing: id == widget.flashCardId,
+            onPressStart: () => _tapModifiers[id] = _additive,
+            onTap: () {
+              widget.focusNode.requestFocus();
+              final additive = _tapModifiers.remove(id) ?? false;
+              if (widget.connectingFromId != null) {
+                if (id == rootNodeId) {
+                  widget.onCancelConnect?.call();
+                } else {
+                  widget.onConnect?.call(id);
+                }
+                return;
+              }
+              _select(id == rootNodeId ? null : id, additive: additive);
+            },
+            onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
+            onSecondaryTapUp: widget.onContextMenu == null
+                ? null
+                : (position) {
+                    widget.focusNode.requestFocus();
+                    final selected = id == rootNodeId ? null : id;
+                    if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
+                    widget.onContextMenu!(selected, position);
+                  },
+            onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
+                ? () => widget.onReveal(id)
+                : null,
+            revealLabel: l.revealSource,
+          ),
+        ),
+      ),
+    );
+    _nodeWidgets[id] = (signature: signature, child: child);
+    return child;
+  }
+
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
     final c = context.mmColors;
@@ -780,52 +849,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     }
 
     // Built once per frame of content; the animation only moves them.
+    _nodeWidgets.removeWhere((id, _) => !specs.containsKey(id));
     final nodes = {
-      for (final e in result.rects.entries)
-        if (e.key != field?.id)
-          e.key: RepaintBoundary(
-            child: Opacity(
-              opacity: _dragging?.contains(e.key) ?? false ? 0.35 : 1,
-              child: _draggable(
-                e.key,
-                specs[e.key]!,
-                _NodeView(
-                  spec: specs[e.key]!,
-                  selected: widget.selectedCardIds.contains(e.key) || e.key == (widget.selectedCardId ?? rootNodeId),
-                  flashing: e.key == widget.flashCardId,
-                  onPressStart: () => _tapModifiers[e.key] = _additive,
-                  onTap: () {
-                    widget.focusNode.requestFocus();
-                    final additive = _tapModifiers.remove(e.key) ?? false;
-                    if (widget.connectingFromId != null) {
-                      if (e.key == rootNodeId) {
-                        widget.onCancelConnect?.call();
-                      } else {
-                        widget.onConnect?.call(e.key);
-                      }
-                      return;
-                    }
-                    _select(e.key == rootNodeId ? null : e.key, additive: additive);
-                  },
-                  onDoubleTap: e.key == rootNodeId ? null : () => widget.onRename(e.key),
-                  onSecondaryTapUp: widget.onContextMenu == null
-                      ? null
-                      : (position) {
-                          widget.focusNode.requestFocus();
-                          final id = e.key == rootNodeId ? null : e.key;
-                          if (id == null || !widget.selectedCardIds.contains(id)) widget.onSelect(id);
-                          widget.onContextMenu!(id, position);
-                        },
-                  onReveal:
-                      specs[e.key]!.kind == _Kind.excerpt ||
-                          (specs[e.key]!.kind == _Kind.image && specs[e.key]!.meta != null)
-                      ? () => widget.onReveal(e.key)
-                      : null,
-                  revealLabel: l.revealSource,
-                ),
-              ),
-            ),
-          ),
+      for (final id in result.rects.keys)
+        if (id != field?.id) id: _nodeWidget(id, specs[id]!, l),
     };
     final foldButtons = {
       for (final id in expandable)
@@ -965,100 +992,105 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   height: math.max(sceneSize.height, 400),
                   child: AnimatedBuilder(
                     animation: _motion,
-                    builder: (context, _) => Stack(
-                      children: [
-                        Positioned.fill(
-                          child: RepaintBoundary(
-                            child: CustomPaint(
-                              key: const ValueKey('mind-map-edges'),
-                              painter: _EdgesPainter(
-                                result,
-                                c.line,
-                                _motion.isAnimating ? _from : const {},
-                                _motion.value,
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (result.summaries.isNotEmpty ||
-                            _cache._relations.isNotEmpty ||
-                            widget.connectingFromId != null)
+                    builder: (context, _) {
+                      // All relation labels share the same frame geometry.
+                      late final rects = _drawnRects();
+                      late final obstacles = _obstacles(rects, result);
+                      return Stack(
+                        children: [
                           Positioned.fill(
-                            child: IgnorePointer(
+                            child: RepaintBoundary(
                               child: CustomPaint(
-                                key: const ValueKey('mind-map-marks'),
-                                painter: _MarksPainter(
-                                  rects: _drawnRects(),
-                                  relations: _cache._relations,
-                                  summaries: result.summaries,
-                                  selectedId: widget.selectedMarkId,
-                                  line: c.secondaryLabel,
-                                  bracket: c.line,
-                                  accent: c.accent,
-                                  connectFrom: widget.connectingFromId,
-                                  pointer: _hover,
+                                key: const ValueKey('mind-map-edges'),
+                                painter: _EdgesPainter(
+                                  result,
+                                  c.line,
+                                  _motion.isAnimating ? _from : const {},
+                                  _motion.value,
                                 ),
                               ),
                             ),
                           ),
-                        for (final e in result.rects.entries)
-                          if (e.key == field?.id)
-                            _fieldNode(e.key, specs[e.key]!, e.value)
-                          else
-                            Positioned.fromRect(
-                              key: ValueKey(e.key),
-                              rect: _drawn(e.key, e.value),
-                              child: nodes[e.key]!,
-                            ),
-                        for (final e in result.summaries.entries)
-                          if (e.value.label.width > 0)
-                            Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
-                        for (final r in _cache._relations)
-                          if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
-                            if (_relationMiddle(r, _obstacles(_drawnRects(), result)) case (final middle, final beside))
-                              Positioned(
-                                left: middle.dx + (beside ? MMSpacing.xs : 0),
-                                top: middle.dy,
-                                child: FractionalTranslation(
-                                  translation: Offset(beside ? 0 : -0.5, -0.5),
-                                  child: _markLabel(r.id, summary: false),
-                                ),
-                              ),
-                        if (_boxStart != null && _boxEnd != null)
-                          Positioned.fromRect(
-                            rect: Rect.fromPoints(_boxStart!, _boxEnd!),
-                            child: IgnorePointer(
-                              child: DecoratedBox(
-                                key: const ValueKey('map-selection-box'),
-                                decoration: BoxDecoration(
-                                  color: c.accentTint,
-                                  border: Border.all(color: c.accent),
+                          if (result.summaries.isNotEmpty ||
+                              _cache._relations.isNotEmpty ||
+                              widget.connectingFromId != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  key: const ValueKey('mind-map-marks'),
+                                  painter: _MarksPainter(
+                                    rects: rects,
+                                    relations: _cache._relations,
+                                    summaries: result.summaries,
+                                    selectedId: widget.selectedMarkId,
+                                    line: c.secondaryLabel,
+                                    bracket: c.line,
+                                    accent: c.accent,
+                                    connectFrom: widget.connectingFromId,
+                                    pointer: _hover,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (_drop case final drop?)
-                          if (drop.previewRect(_drawnRects(), gap: _siblingGap, thickness: 3) case final rect?)
+                          for (final e in result.rects.entries)
+                            if (e.key == field?.id)
+                              _fieldNode(e.key, specs[e.key]!, e.value)
+                            else
+                              Positioned.fromRect(
+                                key: ValueKey(e.key),
+                                rect: _drawn(e.key, e.value),
+                                child: nodes[e.key]!,
+                              ),
+                          for (final e in result.summaries.entries)
+                            if (e.value.label.width > 0)
+                              Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
+                          for (final r in _cache._relations)
+                            if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
+                              if (_relationMiddle(r, obstacles) case (final middle, final beside))
+                                Positioned(
+                                  left: middle.dx + (beside ? MMSpacing.xs : 0),
+                                  top: middle.dy,
+                                  child: FractionalTranslation(
+                                    translation: Offset(beside ? 0 : -0.5, -0.5),
+                                    child: _markLabel(r.id, summary: false),
+                                  ),
+                                ),
+                          if (_boxStart != null && _boxEnd != null)
                             Positioned.fromRect(
-                              rect: rect,
+                              rect: Rect.fromPoints(_boxStart!, _boxEnd!),
                               child: IgnorePointer(
                                 child: DecoratedBox(
-                                  key: const ValueKey('map-drop-preview'),
-                                  decoration: drop.zone == MapDropZone.child
-                                      ? BoxDecoration(
-                                          borderRadius: BorderRadius.circular(MMRadii.card),
-                                          border: Border.all(color: c.accent, width: 2),
-                                        )
-                                      : BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                                  key: const ValueKey('map-selection-box'),
+                                  decoration: BoxDecoration(
+                                    color: c.accentTint,
+                                    border: Border.all(color: c.accent),
+                                  ),
                                 ),
                               ),
                             ),
-                        for (final id in expandable)
-                          if (result.rects[id] case final r?)
-                            if (_shown(id, r) case final shown)
-                              Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
-                      ],
-                    ),
+                          if (_drop case final drop?)
+                            if (drop.previewRect(rects, gap: _siblingGap, thickness: 3) case final rect?)
+                              Positioned.fromRect(
+                                rect: rect,
+                                child: IgnorePointer(
+                                  child: DecoratedBox(
+                                    key: const ValueKey('map-drop-preview'),
+                                    decoration: drop.zone == MapDropZone.child
+                                        ? BoxDecoration(
+                                            borderRadius: BorderRadius.circular(MMRadii.card),
+                                            border: Border.all(color: c.accent, width: 2),
+                                          )
+                                        : BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(2)),
+                                  ),
+                                ),
+                              ),
+                          for (final id in expandable)
+                            if (result.rects[id] case final r?)
+                              if (_shown(id, r) case final shown)
+                                Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),

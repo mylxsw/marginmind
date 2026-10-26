@@ -47,7 +47,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final l = context.l10n;
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
-    final content = ref.watch(contentProvider(widget.studySetId)).value;
+    final content = state.content;
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
     final page = doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);

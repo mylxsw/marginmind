@@ -31,7 +31,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final provider = workspaceProvider(widget.studySetId);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
-    final content = ref.watch(contentProvider(widget.studySetId)).value ?? StudySetContent.empty;
+    final content = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.content)) ?? StudySetContent.empty;
     final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
     final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
 

@@ -5,7 +5,6 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
-import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -141,7 +140,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final content = ref.watch(contentProvider(widget.studySetId)).value;
+    final content = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.content));
     final annotation = switch (widget.pending) {
       PendingHighlight(:final annotationId) => content?.annotation(annotationId),
       _ => null,

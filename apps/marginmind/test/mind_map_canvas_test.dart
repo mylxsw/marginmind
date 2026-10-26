@@ -57,10 +57,14 @@ void main() {
     await tester.pumpAndSettle();
     CustomPainter edges() => tester.widget<CustomPaint>(find.byKey(const ValueKey('mind-map-edges'))).painter!;
     final original = edges();
+    Widget nodeChild(String id) => tester.widget<Positioned>(find.byKey(ValueKey(id))).child;
+    final unchanged = nodeChild('c2');
+
     await tester.tap(find.text('Node 0 中文'));
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
     expect(selection, 'c0');
+    expect(nodeChild('c2'), same(unchanged), reason: 'Selecting another node must retain unchanged node subtrees');
     expect(edges().shouldRepaint(original), isFalse);
     rebuild(() => flash = 'c1');
     await tester.pumpAndSettle();
@@ -92,6 +96,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(edges().shouldRepaint(original), isTrue);
     final edited = edges();
+    final stable = nodeChild('c2');
+    rebuild(
+      () => content = content.copyWith(
+        cards: [
+          content.cards.first.copyWith(title: 'Another title'),
+          ...content.cards.skip(1),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(nodeChild('c2'), same(stable), reason: 'Typing into one node must not rebuild every other node');
+
     rebuild(() => dark = true);
     await tester.pumpAndSettle();
     expect(edges().shouldRepaint(edited), isTrue);

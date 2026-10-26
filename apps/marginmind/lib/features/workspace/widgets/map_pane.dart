@@ -193,7 +193,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final provider = workspaceProvider(widget.studySetId);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
-    final loadedContent = ref.watch(contentProvider(widget.studySetId)).value;
+    final loadedContent = state.content;
     // The controller's copy includes its own writes before the stream
     // delivers them, so a node created for editing is there at once.
     final content = loadedContent == null ? StudySetContent.empty : controller.content;

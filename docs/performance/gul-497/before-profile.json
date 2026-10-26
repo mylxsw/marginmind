@@ -1,0 +1,168 @@
+{
+  "label": "before",
+  "mode": "Profile",
+  "scenarios": {
+    "50/warmup": {
+      "frames": 3,
+      "build_p95_ms": 0.783,
+      "raster_p95_ms": 11.502,
+      "over_16_67_ms": 0
+    },
+    "50/setup": {
+      "frames": 1,
+      "build_p95_ms": 1.805,
+      "raster_p95_ms": 15.236,
+      "over_16_67_ms": 0
+    },
+    "50/pan": {
+      "frames": 90,
+      "build_p95_ms": 0.916,
+      "raster_p95_ms": 1.725,
+      "over_16_67_ms": 0
+    },
+    "50/zoom": {
+      "frames": 90,
+      "build_p95_ms": 0.889,
+      "raster_p95_ms": 2.527,
+      "over_16_67_ms": 0
+    },
+    "50/mouse-box-select": {
+      "frames": 90,
+      "build_p95_ms": 3.429,
+      "raster_p95_ms": 1.517,
+      "over_16_67_ms": 0
+    },
+    "50/mouse-wheel-zoom": {
+      "frames": 83,
+      "build_p95_ms": 1.002,
+      "raster_p95_ms": 2.625,
+      "over_16_67_ms": 0
+    },
+    "50/trackpad-pan-zoom": {
+      "frames": 96,
+      "build_p95_ms": 0.955,
+      "raster_p95_ms": 2.449,
+      "over_16_67_ms": 1
+    },
+    "50/typing": {
+      "frames": 81,
+      "build_p95_ms": 2.766,
+      "raster_p95_ms": 1.831,
+      "over_16_67_ms": 0
+    },
+    "50/selection": {
+      "frames": 111,
+      "build_p95_ms": 2.129,
+      "raster_p95_ms": 1.605,
+      "over_16_67_ms": 0
+    },
+    "50/multi-select": {
+      "frames": 110,
+      "build_p95_ms": 2.063,
+      "raster_p95_ms": 1.471,
+      "over_16_67_ms": 0
+    },
+    "50/collapse": {
+      "frames": 83,
+      "build_p95_ms": 1.971,
+      "raster_p95_ms": 1.474,
+      "over_16_67_ms": 0
+    },
+    "50/add-delete": {
+      "frames": 33,
+      "build_p95_ms": 1.81,
+      "raster_p95_ms": 2.112,
+      "over_16_67_ms": 0
+    },
+    "50/drag": {
+      "frames": 89,
+      "build_p95_ms": 0.699,
+      "raster_p95_ms": 1.647,
+      "over_16_67_ms": 0
+    },
+    "50/delayed-stream": {
+      "frames": 42,
+      "build_p95_ms": 1.877,
+      "raster_p95_ms": 1.617,
+      "over_16_67_ms": 0
+    },
+    "500/setup": {
+      "frames": 11,
+      "build_p95_ms": 72.752,
+      "raster_p95_ms": 8.016,
+      "over_16_67_ms": 1
+    },
+    "500/pan": {
+      "frames": 89,
+      "build_p95_ms": 4.704,
+      "raster_p95_ms": 2.06,
+      "over_16_67_ms": 0
+    },
+    "500/zoom": {
+      "frames": 95,
+      "build_p95_ms": 4.667,
+      "raster_p95_ms": 2.96,
+      "over_16_67_ms": 0
+    },
+    "500/mouse-box-select": {
+      "frames": 93,
+      "build_p95_ms": 24.828,
+      "raster_p95_ms": 2.221,
+      "over_16_67_ms": 29
+    },
+    "500/mouse-wheel-zoom": {
+      "frames": 89,
+      "build_p95_ms": 4.553,
+      "raster_p95_ms": 2.839,
+      "over_16_67_ms": 1
+    },
+    "500/trackpad-pan-zoom": {
+      "frames": 103,
+      "build_p95_ms": 4.558,
+      "raster_p95_ms": 2.43,
+      "over_16_67_ms": 0
+    },
+    "500/typing": {
+      "frames": 89,
+      "build_p95_ms": 20.147,
+      "raster_p95_ms": 2.453,
+      "over_16_67_ms": 23
+    },
+    "500/selection": {
+      "frames": 131,
+      "build_p95_ms": 18.107,
+      "raster_p95_ms": 2.39,
+      "over_16_67_ms": 17
+    },
+    "500/multi-select": {
+      "frames": 128,
+      "build_p95_ms": 17.636,
+      "raster_p95_ms": 2.042,
+      "over_16_67_ms": 19
+    },
+    "500/collapse": {
+      "frames": 79,
+      "build_p95_ms": 17.762,
+      "raster_p95_ms": 2.156,
+      "over_16_67_ms": 4
+    },
+    "500/add-delete": {
+      "frames": 33,
+      "build_p95_ms": 17.155,
+      "raster_p95_ms": 2.381,
+      "over_16_67_ms": 2
+    },
+    "500/drag": {
+      "frames": 89,
+      "build_p95_ms": 0.305,
+      "raster_p95_ms": 3.759,
+      "over_16_67_ms": 0
+    },
+    "500/delayed-stream": {
+      "frames": 40,
+      "build_p95_ms": 19.12,
+      "raster_p95_ms": 2.385,
+      "over_16_67_ms": 3
+    }
+  }
+}
