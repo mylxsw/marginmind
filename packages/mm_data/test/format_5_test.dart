@@ -18,12 +18,12 @@ void main() {
   });
   tearDown(() => root.delete(recursive: true));
 
-  test('format 4 package migrates once to 5 with a byte-exact backup', () async {
+  test('format 4 package migrates once to current format with a byte-exact backup', () async {
     final before = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
     final store = FileLibraryStore(root);
     final c = await store.load('current');
     final after = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-    expect(after['format'], 5);
+    expect(after['format'], 6);
     for (final key in before.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], before[key]);
     }
@@ -49,7 +49,7 @@ void main() {
     await file.writeAsBytes(await File('test/fixtures/format-3.json').readAsBytes());
     final store = FileLibraryStore(root);
     final c = await store.load('current');
-    expect(jsonDecode(await file.readAsString())['format'], 5);
+    expect(jsonDecode(await file.readAsString())['format'], 6);
     expect(c.bookmarks, isEmpty);
     expect(await File('${file.path}.format-3.bak').exists(), isTrue);
     await store.dispose();
@@ -69,7 +69,7 @@ void main() {
     final reopened = FileLibraryStore(root);
     final read = await reopened.load('current');
     expect(read.bookmarkAt(doc.id, 7)?.title, '第一章');
-    expect(jsonDecode(await file.readAsString())['format'], 5);
+    expect(jsonDecode(await file.readAsString())['format'], 6);
     await reopened.update('current', (c) => editor.removeDocument(c, doc.id));
     expect((await reopened.load('current')).bookmarks, isEmpty);
     await reopened.dispose();
@@ -87,7 +87,7 @@ void main() {
 
   test('a newer format is not opened', () async {
     final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
-    json['format'] = 6;
+    json['format'] = 7;
     final text = jsonEncode(json);
     await file.writeAsString(text);
     final store = FileLibraryStore(root);

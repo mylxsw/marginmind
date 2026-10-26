@@ -209,6 +209,7 @@ class Card {
     this.annotationId,
     this.imageFileName,
     this.tags = const [],
+    this.suspended = false,
     required this.createdAt,
   });
 
@@ -227,11 +228,15 @@ class Card {
 
   final List<String> tags;
 
-  Card copyWith({String? title, List<String>? tags}) => Card(
+  /// Shared across maps; queue filtering is implemented by the review feature.
+  final bool suspended;
+
+  Card copyWith({String? title, List<String>? tags, bool? suspended}) => Card(
     id: id,
     kind: kind,
     title: title ?? this.title,
     tags: tags == null ? this.tags : List.unmodifiable(tags),
+    suspended: suspended ?? this.suspended,
     annotationId: annotationId,
     imageFileName: imageFileName,
     createdAt: createdAt,
@@ -244,6 +249,7 @@ class Card {
     if (annotationId != null) 'annotationId': annotationId,
     if (imageFileName != null) 'imageFileName': imageFileName,
     if (tags.isNotEmpty) 'tags': tags,
+    if (suspended) 'suspended': true,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -254,6 +260,7 @@ class Card {
     annotationId: j['annotationId'] as String?,
     imageFileName: j['imageFileName'] as String?,
     tags: List.unmodifiable(((j['tags'] as List?) ?? const []).cast<String>()),
+    suspended: (j['suspended'] as bool?) ?? false,
     createdAt: DateTime.parse(j['createdAt'] as String),
   );
 }

@@ -53,6 +53,85 @@ class ReviewState {
   );
 }
 
+/// Persisted FSRS phase. Scheduling policy is supplied by the scheduler.
+enum MemoryPhase { learning, review, relearning }
+
+/// Optional FSRS state, separate from the legacy schedule. Absence means the
+/// card has not been initialized by FSRS; migration never guesses these values.
+@immutable
+class MemoryState {
+  const MemoryState({
+    required this.cardId,
+    required this.stability,
+    required this.difficulty,
+    required this.phase,
+    this.learningStep = 0,
+  });
+
+  final String cardId;
+
+  /// Stability in days.
+  final double stability;
+  final double difficulty;
+  final MemoryPhase phase;
+  final int learningStep;
+
+  Map<String, Object?> toJson() => {
+    'cardId': cardId,
+    'stability': stability,
+    'difficulty': difficulty,
+    'phase': phase.name,
+    'learningStep': learningStep,
+  };
+
+  factory MemoryState.fromJson(Map<String, Object?> j) => MemoryState(
+    cardId: j['cardId'] as String,
+    stability: (j['stability'] as num).toDouble(),
+    difficulty: (j['difficulty'] as num).toDouble(),
+    phase: MemoryPhase.values.byName(j['phase'] as String),
+    learningStep: j['learningStep'] as int,
+  );
+}
+
+/// One actual rating (previews never append entries). Intervals use the same
+/// days/zero-for-relearning convention as ReviewState.intervalDays.
+@immutable
+class ReviewLog {
+  const ReviewLog({
+    required this.id,
+    required this.cardId,
+    required this.reviewedAt,
+    required this.rating,
+    required this.intervalBefore,
+    required this.intervalAfter,
+  });
+
+  final String id;
+  final String cardId;
+  final DateTime reviewedAt;
+  final Rating rating;
+  final double intervalBefore;
+  final double intervalAfter;
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'cardId': cardId,
+    'reviewedAt': reviewedAt.toIso8601String(),
+    'rating': rating.name,
+    'intervalBefore': intervalBefore,
+    'intervalAfter': intervalAfter,
+  };
+
+  factory ReviewLog.fromJson(Map<String, Object?> j) => ReviewLog(
+    id: j['id'] as String,
+    cardId: j['cardId'] as String,
+    reviewedAt: DateTime.parse(j['reviewedAt'] as String),
+    rating: Rating.values.byName(j['rating'] as String),
+    intervalBefore: (j['intervalBefore'] as num).toDouble(),
+    intervalAfter: (j['intervalAfter'] as num).toDouble(),
+  );
+}
+
 /// A simplified SM-2 scheduler. "Again" brings the card back in ten minutes
 /// (so it returns in the same session); the other ratings grow the interval.
 abstract final class ReviewScheduler {
