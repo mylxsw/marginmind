@@ -20,7 +20,6 @@ class ContinueCard extends StatelessWidget {
     final position = set.lastPosition;
     return MMInteractive(
       onTap: onOpen,
-      semanticLabel: set.title,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
         padding: const EdgeInsets.all(12),

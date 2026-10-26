@@ -37,7 +37,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMHudHost` / `MMHud.show` | 窗口底部的提示胶囊。 |
 | `MMFloatingToolbar` / `MMFloatingToolbarColor` / `MMFloatingToolbarLayout` | 选区旁的横向玻璃工具条：图标按钮（`MMToolbarButton`）+ 颜色点，每项都有提示文字，Tab / 方向键移动焦点。定位用纯函数 `placeFloatingToolbar`：优先放在选区上方，空间不够放下方，左右超出时向内收，始终完整可见；锚点变化时跟随。 |
 | `MMGlass` | 玻璃材质（模糊 + 半透明 + 描边 + 外阴影），“降低透明度”时自动变为不透明。 |
-| `MMEmptyState` / `MMProgressBar` | 空状态（可作为拖放区）与细进度条。 |
+| `MMEmptyState` / `MMProgressBar` | 空状态（图标、可选的标题与说明、操作按钮）与细进度条。 |
 | `MMInteractive` | 所有可点击组件共用的悬停 / 按下 / 键盘焦点 / 语义处理（光标保持箭头）。 |
 | `MMAppearance` | 向组件提供“降低透明度”“减少动态效果”。 |
 | `MMIcons` | 图标词表（Cupertino 图标，注释里标了对应的 SF Symbol）。 |

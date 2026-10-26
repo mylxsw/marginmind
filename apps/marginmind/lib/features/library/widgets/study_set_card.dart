@@ -34,7 +34,6 @@ class StudySetCard extends StatelessWidget {
       onTapDown: onSelect,
       onDoubleTap: onOpen,
       selected: selected,
-      semanticLabel: set.title,
       builder: (context, s) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

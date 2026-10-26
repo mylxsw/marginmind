@@ -140,12 +140,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newFolder => '新建文件夹';
 
   @override
-  String get firstRunTitle => '开始你的第一个学习集';
-
-  @override
-  String get firstRunMessage => '把一本或几本 PDF 拖到这里，MarginMind 会为它们建一个学习集。之后的划线、卡片和脑图都放在里面。';
-
-  @override
   String get openSample => '打开示例学习集';
 
   @override
@@ -193,15 +187,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sheetNamePlaceholder => '例如：认知心理学';
 
   @override
-  String get sheetLocation => '位置';
-
-  @override
-  String get sheetColor => '颜色';
-
-  @override
-  String get sheetImportAfterCreate => '创建后立即导入 PDF…';
-
-  @override
   String get cancel => '取消';
 
   @override
@@ -209,11 +194,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get done => '完成';
-
-  @override
-  String createdHud(String name) {
-    return '已创建「$name」';
-  }
 
   @override
   String get colorYellow => '黄色';

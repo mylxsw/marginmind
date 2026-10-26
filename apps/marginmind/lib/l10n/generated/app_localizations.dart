@@ -302,18 +302,6 @@ abstract class AppLocalizations {
   /// **'New Folder'**
   String get newFolder;
 
-  /// No description provided for @firstRunTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Start your first study set'**
-  String get firstRunTitle;
-
-  /// No description provided for @firstRunMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Drop one or more PDFs here and MarginMind will create a study set for them. Your highlights, cards and mind maps all live inside it.'**
-  String get firstRunMessage;
-
   /// No description provided for @openSample.
   ///
   /// In en, this message translates to:
@@ -404,24 +392,6 @@ abstract class AppLocalizations {
   /// **'e.g. Cognitive Psychology'**
   String get sheetNamePlaceholder;
 
-  /// No description provided for @sheetLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get sheetLocation;
-
-  /// No description provided for @sheetColor.
-  ///
-  /// In en, this message translates to:
-  /// **'Color'**
-  String get sheetColor;
-
-  /// No description provided for @sheetImportAfterCreate.
-  ///
-  /// In en, this message translates to:
-  /// **'Import PDFs after creating…'**
-  String get sheetImportAfterCreate;
-
   /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
@@ -439,12 +409,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get done;
-
-  /// No description provided for @createdHud.
-  ///
-  /// In en, this message translates to:
-  /// **'Created “{name}”'**
-  String createdHud(String name);
 
   /// No description provided for @colorYellow.
   ///

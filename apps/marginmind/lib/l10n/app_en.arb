@@ -118,8 +118,6 @@
   "searchLibrary": "Search study sets",
   "newStudySet": "New Study Set",
   "newFolder": "New Folder",
-  "firstRunTitle": "Start your first study set",
-  "firstRunMessage": "Drop one or more PDFs here and MarginMind will create a study set for them. Your highlights, cards and mind maps all live inside it.",
   "openSample": "Open Sample Study Set",
   "noResultTitle": "No matching study sets",
   "noResultSearch": "No study set name contains “{query}”.",
@@ -142,20 +140,9 @@
   "open": "Open",
   "sheetName": "Name",
   "sheetNamePlaceholder": "e.g. Cognitive Psychology",
-  "sheetLocation": "Location",
-  "sheetColor": "Color",
-  "sheetImportAfterCreate": "Import PDFs after creating…",
   "cancel": "Cancel",
   "create": "Create",
   "done": "Done",
-  "createdHud": "Created “{name}”",
-  "@createdHud": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "colorYellow": "Yellow",
   "colorGreen": "Green",
   "colorBlue": "Blue",

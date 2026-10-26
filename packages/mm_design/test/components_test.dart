@@ -46,7 +46,7 @@ void main() {
                 const MMToolbarSearchField(placeholder: 'Search'),
               ],
             ),
-            body: const MMEmptyState(title: 'Empty', message: 'Nothing here', dropZone: true),
+            body: const MMEmptyState(title: 'Empty', message: 'Nothing here'),
           ),
         ),
       );

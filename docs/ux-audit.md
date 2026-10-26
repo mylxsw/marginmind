@@ -37,10 +37,10 @@ P0 一览：
 
 | 编号 | 现状 | 期望（参照） | 优先级 |
 | --- | --- | --- | --- |
-| U-L1 | “新建学习集”先要起名（名称为空时“创建”不可用），创建后才弹出打开面板选 PDF。用户手里通常先有文档，却要先想一个名字。[截图](ux-audit/02-new-set-sheet.jpg) | 预览、MarginNote：先选 PDF，立即生成学习集，名称默认取文档标题，之后再改（拖入 PDF 已经是这样）。 | P2 |
-| U-L2 | 空状态是一个带边框的卡片，里面有标题、两行说明文字和两个按钮；页头副标题又写一遍“No study sets”。[截图](ux-audit/01-library-empty.jpg) | 按界面规则去掉说明文字和重复副标题：只留图标和两个按钮，“可以拖入 PDF”由拖拽悬停态表达。 | P2 |
-| U-L3 | 侧栏行的无障碍名称重复：VoiceOver 读到的是“All Study Sets / All Study Sets / 0”。原因是 `MMSidebarItem` 给 `MMInteractive` 传了 `semanticLabel`，子节点的 `Text` 又贡献了一遍（`packages/mm_design/lib/src/widgets/sidebar.dart:150`），`MMButton` 也是同样写法（“新建学习集”按钮同样读两遍）。 | 原生侧栏每行只读一次名称和数量。 | P1 |
-| U-L4 | 侧栏计数不一致：“全部”“已收藏”显示 0，“最近打开”“待复习”不显示数字。[截图](ux-audit/01-library-empty.jpg) | 访达、邮件：只有非零且有意义的数量才显示。 | P2 |
+| U-L1 | **已修复（PR #30）**。“新建学习集”先要起名（名称为空时“创建”不可用），创建后才弹出打开面板选 PDF。用户手里通常先有文档，却要先想一个名字。[截图](ux-audit/02-new-set-sheet.jpg) | 预览、MarginNote：先选 PDF，立即生成学习集，名称默认取文档标题，之后再改（拖入 PDF 已经是这样）。 | P2 |
+| U-L2 | **已修复（PR #30）**。空状态是一个带边框的卡片，里面有标题、两行说明文字和两个按钮；页头副标题又写一遍“No study sets”。[截图](ux-audit/01-library-empty.jpg) | 按界面规则去掉说明文字和重复副标题：只留图标和两个按钮，“可以拖入 PDF”由拖拽悬停态表达。 | P2 |
+| U-L3 | **已修复（PR #30）**。侧栏行的无障碍名称重复：VoiceOver 读到的是“All Study Sets / All Study Sets / 0”。原因是 `MMSidebarItem` 给 `MMInteractive` 传了 `semanticLabel`，子节点的 `Text` 又贡献了一遍（`packages/mm_design/lib/src/widgets/sidebar.dart:150`），`MMButton` 也是同样写法（“新建学习集”按钮同样读两遍）。 | 原生侧栏每行只读一次名称和数量。 | P1 |
+| U-L4 | **已修复（PR #30）**。侧栏计数不一致：“全部”“已收藏”显示 0，“最近打开”“待复习”不显示数字。[截图](ux-audit/01-library-empty.jpg) | 访达、邮件：只有非零且有意义的数量才显示。 | P2 |
 
 ### 2. 读
 
@@ -107,7 +107,7 @@ P0 一览：
 | 编号 | 现状 | 期望（参照） | 优先级 |
 | --- | --- | --- | --- |
 | U-G1 | 用自动化把窗口缩小到约 960×600 时应用崩溃（SIGSEGV），之后同样的操作重复 6 次没有复现。崩溃在 Flutter 的 Impeller 渲染线程：`impeller::Canvas::SetupRenderPass()`（canvas.cc:1615）空指针，调用链 `RenderToTarget` ← `EmbedderExternalViewEmbedder::SubmitFlutterView` ← `Rasterizer::DrawToSurfaces`。数据没有丢失。[截图](ux-audit/16-crash-dialog.jpg) | 不崩溃。先写一个反复调整窗口大小的脚本稳定复现，再查 Flutter 上游是否有已知问题和修复版本，最后决定升级引擎还是规避。 | P0 |
-| U-G2 | Release 版的设置里有开发用的“组件库”按钮，点了会进入组件演示页。菜单里的同一入口已经用 `kDebugMode` 隐藏，设置页没有（`apps/marginmind/lib/settings/settings_sheet.dart:25`）。[截图](ux-audit/14-settings-gallery.jpg) | 和菜单一致，只在调试构建里出现。 | P1 |
+| U-G2 | **已修复（PR #30）**。Release 版的设置里有开发用的“组件库”按钮，点了会进入组件演示页。菜单里的同一入口已经用 `kDebugMode` 隐藏，设置页没有（`apps/marginmind/lib/settings/settings_sheet.dart:25`）。[截图](ux-audit/14-settings-gallery.jpg) | 和菜单一致，只在调试构建里出现。 | P1 |
 
 ## 分批修复
 

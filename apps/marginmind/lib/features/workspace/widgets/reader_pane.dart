@@ -511,7 +511,6 @@ class _Tab extends StatelessWidget {
     return MMInteractive(
       onTap: onOpen,
       selected: active,
-      semanticLabel: title,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
         height: 28,

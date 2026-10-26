@@ -381,7 +381,6 @@ class _OutlineRow extends StatelessWidget {
       onTapDown: editing ? null : onTap,
       onDoubleTap: editing ? null : onDoubleTap,
       selected: selected,
-      semanticLabel: editing ? null : label,
       canRequestFocus: false,
       builder: (context, s) => Container(
         padding: EdgeInsets.fromLTRB(8 + depth * 20.0, 5, 8, 5),

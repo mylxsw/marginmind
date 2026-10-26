@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/pdf_picker.dart';
 import '../workspace_controller.dart';
 
 /// Shows a controller outcome as a HUD, in the current language.
@@ -30,16 +31,9 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
 
 /// Opens the system file picker for PDFs and imports the chosen files.
 Future<void> pickAndImportDocuments(BuildContext context, WidgetRef ref, String studySetId) async {
-  final l = context.l10n;
-  final files = await openFiles(
-    acceptedTypeGroups: [
-      XTypeGroup(label: l.pdfFiles, extensions: const ['pdf'], uniformTypeIdentifiers: const ['com.adobe.pdf']),
-    ],
-  );
+  final files = await ref.read(pdfPickerProvider)(context.l10n.pdfFiles);
   if (files.isEmpty || !context.mounted) return;
-  final notice = await ref.read(workspaceProvider(studySetId).notifier).importDocuments([
-    for (final f in files) (path: f.path, name: f.name),
-  ]);
+  final notice = await ref.read(workspaceProvider(studySetId).notifier).importDocuments(files);
   if (context.mounted) showNotice(context, notice, rootTitle: '');
 }
 

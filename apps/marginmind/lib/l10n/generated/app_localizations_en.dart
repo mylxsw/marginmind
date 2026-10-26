@@ -151,13 +151,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newFolder => 'New Folder';
 
   @override
-  String get firstRunTitle => 'Start your first study set';
-
-  @override
-  String get firstRunMessage =>
-      'Drop one or more PDFs here and MarginMind will create a study set for them. Your highlights, cards and mind maps all live inside it.';
-
-  @override
   String get openSample => 'Open Sample Study Set';
 
   @override
@@ -205,15 +198,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sheetNamePlaceholder => 'e.g. Cognitive Psychology';
 
   @override
-  String get sheetLocation => 'Location';
-
-  @override
-  String get sheetColor => 'Color';
-
-  @override
-  String get sheetImportAfterCreate => 'Import PDFs after creating…';
-
-  @override
   String get cancel => 'Cancel';
 
   @override
@@ -221,11 +205,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get done => 'Done';
-
-  @override
-  String createdHud(String name) {
-    return 'Created “$name”';
-  }
 
   @override
   String get colorYellow => 'Yellow';
