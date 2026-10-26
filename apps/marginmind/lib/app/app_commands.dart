@@ -112,6 +112,21 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   primaryShortcut(LogicalKeyboardKey.bracketRight): MindMapCommand.summary,
 };
 
+/// Reader zoom commands resolve through the focused reader.
+enum ReaderZoomCommand { zoomIn, zoomOut, actualSize, fitWidth, fitPage }
+
+class ReaderZoomIntent extends Intent {
+  const ReaderZoomIntent(this.command);
+  final ReaderZoomCommand command;
+}
+
+Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
+  primaryShortcut(LogicalKeyboardKey.equal): const ReaderZoomIntent(ReaderZoomCommand.zoomIn),
+  primaryShortcut(LogicalKeyboardKey.equal, shift: true): const ReaderZoomIntent(ReaderZoomCommand.zoomIn),
+  primaryShortcut(LogicalKeyboardKey.minus): const ReaderZoomIntent(ReaderZoomCommand.zoomOut),
+  primaryShortcut(LogicalKeyboardKey.digit0): const ReaderZoomIntent(ReaderZoomCommand.actualSize),
+};
+
 /// Selection commands share their intents between menus and the floating toolbar.
 enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight }
 
@@ -195,7 +210,28 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final inWorkspace = workspaceId != null;
 
     final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
-    final workspaceState = inWorkspace ? ref.watch(workspaceProvider(workspaceId)) : null;
+    if (inWorkspace) {
+      ref.watch(
+        workspaceProvider(workspaceId).select(
+          (s) => (
+            s.selectedCardId,
+            s.selectedCardIds,
+            s.editingCardId,
+            s.editingMarkId,
+            s.canUndo,
+            s.canRedo,
+            s.pending,
+            s.activeMapId,
+            s.mapView,
+            s.activeDocumentId,
+            s.readerPanelVisible,
+            s.findVisible,
+          ),
+        ),
+      );
+      ref.watch(workspaceContentProvider(workspaceId));
+    }
+    final workspaceState = inWorkspace ? ref.read(workspaceProvider(workspaceId)) : null;
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
@@ -210,9 +246,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final canRead = hasDocument && (!_textFocused || _readerFocused);
     final findsInDocument = hasDocument && _readerFocused;
     final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
+    final bookmarkContent = workspace?.content;
+    final bookmarkPage = workspace?.activePage ?? 0;
     final bookmarked =
         hasDocument &&
-        workspace.content.bookmarkAt(workspaceState.activeDocumentId!, workspace.activePage ?? 0) != null;
+        ref.watch(
+          readingPagesProvider(workspaceId!).select(
+            (pages) =>
+                bookmarkContent!.bookmarkAt(
+                  workspaceState.activeDocumentId!,
+                  pages[workspaceState.activeDocumentId] ?? bookmarkPage,
+                ) !=
+                null,
+          ),
+        );
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -431,7 +478,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
                 }
               : null,
-          shortcut: mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
+          shortcut: entry.key == MindMapCommand.fit && !_mapFocused
+              ? null
+              : mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
         ),
       );
     }
@@ -448,7 +497,31 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               : null,
         ),
     ]);
+    final readerZoomLabels = {
+      ReaderZoomCommand.zoomIn: l.zoomIn,
+      ReaderZoomCommand.zoomOut: l.zoomOut,
+      ReaderZoomCommand.actualSize: l.pdfActualSize,
+      ReaderZoomCommand.fitWidth: l.pdfFitWidth,
+      ReaderZoomCommand.fitPage: l.pdfFitPage,
+    };
     final view = <AppCommand>[
+      if (inWorkspace)
+        for (final entry in readerZoomLabels.entries)
+          AppCommand(
+            entry.value,
+            _readerFocused && !_textFocused && workspaceState?.activeDocumentId != null
+                ? () {
+                    final focus = FocusManager.instance.primaryFocus?.context;
+                    if (focus != null) Actions.maybeInvoke(focus, ReaderZoomIntent(entry.key));
+                  }
+                : null,
+            shortcut: entry.key == ReaderZoomCommand.actualSize && !_readerFocused
+                ? null
+                : readerZoomShortcuts.entries
+                      .where((e) => e.value.command == entry.key)
+                      .map((e) => e.key as SingleActivator)
+                      .firstOrNull,
+          ),
       if (inLibrary) ...[
         AppCommand(
           l.viewAsIcons,

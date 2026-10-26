@@ -21,4 +21,19 @@ abstract final class MMPdfEngine {
       await doc.dispose();
     }
   }
+
+  /// The text of 1-based [page] of [path], or null when the file or page
+  /// cannot be read.
+  static Future<String?> pageText(String path, int page) async {
+    PdfDocument? doc;
+    try {
+      doc = await PdfDocument.openFile(path);
+      if (page < 1 || page > doc.pages.length) return null;
+      return (await doc.pages[page - 1].loadText())?.fullText;
+    } catch (_) {
+      return null;
+    } finally {
+      await doc?.dispose();
+    }
+  }
 }

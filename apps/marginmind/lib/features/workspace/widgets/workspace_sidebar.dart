@@ -24,10 +24,13 @@ class WorkspaceSidebar extends ConsumerWidget {
     final t = context.mmText;
     final c = context.mmColors;
     final provider = workspaceProvider(studySetId);
-    final state = ref.watch(provider);
+    ref.watch(
+      provider.select((s) => (s.sidebarQuery, s.activeMapId, s.activeDocumentId, s.tagFilter, s.selectedCardId)),
+    );
+    final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
-    final content = state.content;
-    final studySet = ref.watch(studySetProvider(studySetId));
+    final content = ref.watch(workspaceContentProvider(studySetId));
+    final studyTitle = ref.watch(studySetProvider(studySetId).select((s) => s?.title));
     final documents = content?.documents ?? const [];
     final query = state.sidebarQuery.trim().toLowerCase();
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
@@ -138,7 +141,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(studySet?.title ?? '', style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    child: Text(studyTitle ?? '', style: t.headline, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ),
                   Icon(MMIcons.library, size: 13, color: c.icon),
                 ],

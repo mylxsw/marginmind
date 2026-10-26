@@ -65,7 +65,7 @@ void main() {
     expect(controller.currentPage, 1);
     expect(controller.outline, isEmpty);
     expect(find.byType(MMPdfThumbnail), findsNWidgets(3));
-    expect(find.byType(PdfPageView), findsNWidgets(3));
+    expect(find.byType(PdfPageView), findsNothing, reason: 'thumbnails use the shared PNG cache');
   });
 
   viewTest('reads the outline into pages and children', (tester) async {

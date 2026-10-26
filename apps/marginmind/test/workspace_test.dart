@@ -262,7 +262,7 @@ void main() {
 
     test('page changes are saved after a pause', () async {
       controller.recordPage('c1', 42);
-      expect(container.read(workspaceProvider('demo-1')).currentPages['c1'], 42);
+      expect(container.read(readingPagesProvider('demo-1'))['c1'], 42);
       await Future<void>.delayed(const Duration(milliseconds: 900));
       expect((await repo.load('demo-1')).document('c1')!.lastPage, 42);
     });

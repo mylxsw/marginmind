@@ -45,12 +45,16 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     });
 
     final l = context.l10n;
-    final state = ref.watch(provider);
+    ref.watch(
+      provider.select(
+        (s) => (s.sidebarVisible, s.layout, s.splitFraction, s.tool, s.color, s.syncToMap, s.activeDocumentId),
+      ),
+    );
+    final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
-    final content = state.content;
+    final content = ref.watch(workspaceContentProvider(widget.studySetId));
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
-    final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
-    final page = doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);
+    final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
     return CardImageScope(
       resolve: controller.imagePath,
@@ -60,37 +64,44 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
         showsWindowButtons: WindowChrome.showsWindowButtons,
         sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
-        toolbar: MMToolbar(
-          title: doc?.title ?? setTitle,
-          subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(page!)}',
-          leading: state.sidebarVisible
-              ? null
-              : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),
-          actions: [
-            _AnnotationTools(state: state, controller: controller),
-            MMToolbarGroup(
-              children: [
-                MMToolbarButton(
-                  icon: MMIcons.layoutReader,
-                  tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-                  selected: state.layout == MMSplitMode.primary,
-                  onPressed: () => controller.setLayout(MMSplitMode.primary),
-                ),
-                MMToolbarButton(
-                  icon: MMIcons.layoutSplit,
-                  tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                  selected: state.layout == MMSplitMode.split,
-                  onPressed: () => controller.setLayout(MMSplitMode.split),
-                ),
-                MMToolbarButton(
-                  icon: MMIcons.layoutMap,
-                  tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-                  selected: state.layout == MMSplitMode.secondary,
-                  onPressed: () => controller.setLayout(MMSplitMode.secondary),
+        toolbar: Consumer(
+          builder: (context, ref, _) {
+            final page = doc == null
+                ? null
+                : (ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage);
+            return MMToolbar(
+              title: doc?.title ?? setTitle,
+              subtitle: doc == null ? null : '$setTitle · ${l.pageNumber(page!)}',
+              leading: state.sidebarVisible
+                  ? null
+                  : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),
+              actions: [
+                _AnnotationTools(state: state, controller: controller),
+                MMToolbarGroup(
+                  children: [
+                    MMToolbarButton(
+                      icon: MMIcons.layoutReader,
+                      tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+                      selected: state.layout == MMSplitMode.primary,
+                      onPressed: () => controller.setLayout(MMSplitMode.primary),
+                    ),
+                    MMToolbarButton(
+                      icon: MMIcons.layoutSplit,
+                      tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                      selected: state.layout == MMSplitMode.split,
+                      onPressed: () => controller.setLayout(MMSplitMode.split),
+                    ),
+                    MMToolbarButton(
+                      icon: MMIcons.layoutMap,
+                      tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+                      selected: state.layout == MMSplitMode.secondary,
+                      onPressed: () => controller.setLayout(MMSplitMode.secondary),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+            );
+          },
         ),
         body: PdfDropTarget(
           label: l.dropToImport,

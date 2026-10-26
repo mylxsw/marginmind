@@ -663,30 +663,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reviewProgress => '复习进度';
 
   @override
-  String get reviewPromptExcerpt => '回想这段摘录的内容';
-
-  @override
-  String get reviewPromptNote => '回想这条笔记的内容';
-
-  @override
-  String get reviewPromptImage => '回想这张图的内容';
-
-  @override
-  String get reviewQuestionTip => '提示：把摘录卡片重命名为一个问题，复习时它就会作为题面。';
-
-  @override
   String get reviewDoneTitle => '本轮复习完成';
 
   @override
   String reviewDoneMessage(int count) {
-    return '共复习了 $count 张卡片。等有卡片到期时再来吧。';
+    return '已复习 $count 张卡片';
   }
 
   @override
   String get reviewNothingDueTitle => '暂无需要复习的卡片';
-
-  @override
-  String get reviewNothingDueMessage => '脑图中的摘录和笔记到期后会出现在这里。';
 
   @override
   String get showAnswer => '显示答案';
@@ -889,4 +874,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get collapseSection => '折叠';
+
+  @override
+  String get pdfActualSize => '实际大小';
+
+  @override
+  String get pdfFitWidth => '适合宽度';
+
+  @override
+  String get pdfFitPage => '适合页面';
 }

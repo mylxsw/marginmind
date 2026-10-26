@@ -198,14 +198,9 @@
   "reviewTitle": "复习",
   "reviewRemaining": "剩余 {count} 张",
   "reviewProgress": "复习进度",
-  "reviewPromptExcerpt": "回想这段摘录的内容",
-  "reviewPromptNote": "回想这条笔记的内容",
-  "reviewPromptImage": "回想这张图的内容",
-  "reviewQuestionTip": "提示：把摘录卡片重命名为一个问题，复习时它就会作为题面。",
   "reviewDoneTitle": "本轮复习完成",
-  "reviewDoneMessage": "共复习了 {count} 张卡片。等有卡片到期时再来吧。",
+  "reviewDoneMessage": "已复习 {count} 张卡片",
   "reviewNothingDueTitle": "暂无需要复习的卡片",
-  "reviewNothingDueMessage": "脑图中的摘录和笔记到期后会出现在这里。",
   "showAnswer": "显示答案",
   "startReview": "开始复习",
   "sectionCards": "卡片",
@@ -276,5 +271,9 @@
   "noBookmarks": "没有书签",
   "noAnnotations": "没有标注",
   "expandSection": "展开",
-  "collapseSection": "折叠"
+  "collapseSection": "折叠",
+  "pdfFiles": "PDF 文档",
+  "pdfActualSize": "实际大小",
+  "pdfFitWidth": "适合宽度",
+  "pdfFitPage": "适合页面"
 }

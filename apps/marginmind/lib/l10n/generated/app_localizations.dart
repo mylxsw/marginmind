@@ -1280,30 +1280,6 @@ abstract class AppLocalizations {
   /// **'Review progress'**
   String get reviewProgress;
 
-  /// No description provided for @reviewPromptExcerpt.
-  ///
-  /// In en, this message translates to:
-  /// **'Recall this excerpt'**
-  String get reviewPromptExcerpt;
-
-  /// No description provided for @reviewPromptNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Recall this note'**
-  String get reviewPromptNote;
-
-  /// No description provided for @reviewPromptImage.
-  ///
-  /// In en, this message translates to:
-  /// **'Recall this image'**
-  String get reviewPromptImage;
-
-  /// No description provided for @reviewQuestionTip.
-  ///
-  /// In en, this message translates to:
-  /// **'Tip: rename an excerpt to a question and it becomes the prompt here.'**
-  String get reviewQuestionTip;
-
   /// No description provided for @reviewDoneTitle.
   ///
   /// In en, this message translates to:
@@ -1313,7 +1289,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewDoneMessage.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{You reviewed 1 card. Come back when more are due.} other{You reviewed {count} cards. Come back when more are due.}}'**
+  /// **'{count, plural, =1{1 card reviewed} other{{count} cards reviewed}}'**
   String reviewDoneMessage(int count);
 
   /// No description provided for @reviewNothingDueTitle.
@@ -1321,12 +1297,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing to review'**
   String get reviewNothingDueTitle;
-
-  /// No description provided for @reviewNothingDueMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Excerpts and notes in the mind map show up here when they’re due.'**
-  String get reviewNothingDueMessage;
 
   /// No description provided for @showAnswer.
   ///
@@ -1699,6 +1669,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collapse'**
   String get collapseSection;
+
+  /// No description provided for @pdfActualSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Size'**
+  String get pdfActualSize;
+
+  /// No description provided for @pdfFitWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Width'**
+  String get pdfFitWidth;
+
+  /// No description provided for @pdfFitPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Page'**
+  String get pdfFitPage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
