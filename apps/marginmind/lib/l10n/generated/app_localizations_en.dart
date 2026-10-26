@@ -940,4 +940,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfFitPage => 'Fit Page';
+
+  @override
+  String get statistics => 'Statistics';
+
+  @override
+  String get statsReviewed => 'Reviews';
+
+  @override
+  String get statsRetention => 'Retained';
+
+  @override
+  String get statsUpcoming => 'Next 30 Days';
 }

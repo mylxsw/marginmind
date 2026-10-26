@@ -355,6 +355,7 @@ class _SetRecord {
       documentCount: content.documents.length,
       cardCount: content.cardCount,
       dueCount: content.dueCount(now),
+      reviewLogCount: content.reviewLogs.length,
       readPages: content.documents.isEmpty ? 0 : readPages,
       totalPages: totalPages,
       lastPosition: last == null ? null : ReadingPosition(documentTitle: last.title, page: last.lastPage),

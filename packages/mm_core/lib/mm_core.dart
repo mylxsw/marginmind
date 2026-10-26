@@ -12,6 +12,7 @@ export 'src/content/map_clipboard.dart';
 export 'src/content/models.dart';
 export 'src/content/review.dart';
 export 'src/content/review_face.dart';
+export 'src/content/review_stats.dart';
 export 'src/content/study_set_content.dart';
 export 'src/content/study_set_content_repository.dart';
 export 'src/ids.dart';

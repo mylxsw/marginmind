@@ -46,6 +46,7 @@ abstract final class MMIcons {
   static const IconData appearance = CupertinoIcons.circle_lefthalf_fill; // circle.lefthalf.filled
   static const IconData settings = CupertinoIcons.gear;
   static const IconData review = CupertinoIcons.square_stack; // rectangle.on.rectangle
+  static const IconData statistics = CupertinoIcons.chart_bar; // chart.bar
   static const IconData tag = CupertinoIcons.tag;
   static const IconData addTopic = CupertinoIcons.plus_rectangle; // plus.rectangle
   static const IconData copy = CupertinoIcons.doc_on_doc; // doc.on.doc

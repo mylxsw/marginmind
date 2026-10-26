@@ -399,6 +399,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               .firstOrNull,
         ),
     ]);
+    final hasLogs = ref.watch(
+      studySetsProvider.select(
+        (s) => s.value?.any((x) => x.reviewLogCount > 0 && (workspaceId == null || x.id == workspaceId)) ?? false,
+      ),
+    );
     final now = ref.read(clockProvider)();
     final reviewMapId = workspaceState?.activeMapId;
     final tagFilter = workspaceState?.tagFilter;
@@ -426,6 +431,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             ? () => workspace.setSuspended(selectedCard.id, suspended: !selectedCard.suspended)
             : null,
       ),
+      AppCommand(l.statistics, hasLogs && (inLibrary || inWorkspace) ? () => nav.showStats(workspaceId) : null),
     ];
     final map = <AppCommand>[
       AppCommand(

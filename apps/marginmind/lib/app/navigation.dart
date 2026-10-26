@@ -30,6 +30,13 @@ class ReviewRoute extends AppRoute {
   final String studySetId;
 }
 
+/// Review statistics of one study set, or of the whole library when null.
+class StatsRoute extends AppRoute {
+  const StatsRoute(this.studySetId);
+
+  final String? studySetId;
+}
+
 class GalleryRoute extends AppRoute {
   const GalleryRoute({this.returnTo = const LibraryRoute()});
 
@@ -47,13 +54,19 @@ class AppNavigation extends Notifier<AppRoute> {
   void startReview(String id, {String? mapId, String? branchId, String? tag}) =>
       state = ReviewRoute(id, mapId: mapId, branchId: branchId, tag: tag);
 
+  void showStats([String? studySetId]) => state = StatsRoute(studySetId);
+
   void showGallery() {
     if (state is! GalleryRoute) state = GalleryRoute(returnTo: state);
   }
 
   void back() {
     final current = state;
-    state = current is GalleryRoute ? current.returnTo : const LibraryRoute();
+    state = switch (current) {
+      GalleryRoute() => current.returnTo,
+      StatsRoute(:final studySetId?) => WorkspaceRoute(studySetId),
+      _ => const LibraryRoute(),
+    };
   }
 }
 

@@ -15,6 +15,7 @@ class StudySet {
     this.documentCount = 0,
     this.cardCount = 0,
     this.dueCount = 0,
+    this.reviewLogCount = 0,
     this.readPages = 0,
     this.totalPages = 0,
     this.lastPosition,
@@ -33,6 +34,9 @@ class StudySet {
 
   /// Cards whose review is due now.
   final int dueCount;
+
+  /// Ratings recorded in the review log; statistics need at least one.
+  final int reviewLogCount;
   final int readPages;
   final int totalPages;
 
@@ -53,6 +57,7 @@ class StudySet {
     int? documentCount,
     int? cardCount,
     int? dueCount,
+    int? reviewLogCount,
     int? readPages,
     int? totalPages,
     ReadingPosition? lastPosition,
@@ -67,6 +72,7 @@ class StudySet {
       documentCount: documentCount ?? this.documentCount,
       cardCount: cardCount ?? this.cardCount,
       dueCount: dueCount ?? this.dueCount,
+      reviewLogCount: reviewLogCount ?? this.reviewLogCount,
       readPages: readPages ?? this.readPages,
       totalPages: totalPages ?? this.totalPages,
       lastPosition: lastPosition ?? this.lastPosition,

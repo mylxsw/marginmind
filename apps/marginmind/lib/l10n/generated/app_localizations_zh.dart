@@ -904,4 +904,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfFitPage => '适合页面';
+
+  @override
+  String get statistics => '统计';
+
+  @override
+  String get statsReviewed => '复习量';
+
+  @override
+  String get statsRetention => '记住率';
+
+  @override
+  String get statsUpcoming => '未来 30 天';
 }

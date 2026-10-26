@@ -282,5 +282,9 @@
   "pdfFiles": "PDF 文档",
   "pdfActualSize": "实际大小",
   "pdfFitWidth": "适合宽度",
-  "pdfFitPage": "适合页面"
+  "pdfFitPage": "适合页面",
+  "statistics": "统计",
+  "statsReviewed": "复习量",
+  "statsRetention": "记住率",
+  "statsUpcoming": "未来 30 天"
 }

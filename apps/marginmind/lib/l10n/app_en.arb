@@ -502,5 +502,9 @@
   "pdfFiles": "PDF documents",
   "pdfActualSize": "Actual Size",
   "pdfFitWidth": "Fit Width",
-  "pdfFitPage": "Fit Page"
+  "pdfFitPage": "Fit Page",
+  "statistics": "Statistics",
+  "statsReviewed": "Reviews",
+  "statsRetention": "Retained",
+  "statsUpcoming": "Next 30 Days"
 }
