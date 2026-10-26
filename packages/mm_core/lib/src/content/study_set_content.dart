@@ -17,6 +17,7 @@ class StudySetContent {
     this.reviews = const [],
     this.relations = const [],
     this.summaries = const [],
+    this.bookmarks = const [],
   });
 
   static const empty = StudySetContent();
@@ -35,6 +36,19 @@ class StudySetContent {
   /// Lines between cards and summaries of sibling ranges, per map.
   final List<MapRelation> relations;
   final List<MapSummary> summaries;
+
+  /// The reader's page bookmarks, across documents.
+  final List<Bookmark> bookmarks;
+
+  /// Bookmarks of [documentId] in page order.
+  List<Bookmark> bookmarksOn(String documentId) =>
+      bookmarks.where((b) => b.documentId == documentId).toList()..sort((a, b) {
+        final byPage = a.page.compareTo(b.page);
+        return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
+      });
+
+  Bookmark? bookmarkAt(String documentId, int page) =>
+      bookmarks.where((b) => b.documentId == documentId && b.page == page).firstOrNull;
 
   /// Relations of [mapId] whose two cards are both placed in that map.
   List<MapRelation> relationsOf(String mapId) => [
@@ -180,6 +194,7 @@ class StudySetContent {
     List<ReviewState>? reviews,
     List<MapRelation>? relations,
     List<MapSummary>? summaries,
+    List<Bookmark>? bookmarks,
   }) {
     return StudySetContent(
       documents: documents ?? this.documents,
@@ -190,6 +205,7 @@ class StudySetContent {
       reviews: reviews ?? this.reviews,
       relations: relations ?? this.relations,
       summaries: summaries ?? this.summaries,
+      bookmarks: bookmarks ?? this.bookmarks,
     );
   }
 
@@ -202,6 +218,7 @@ class StudySetContent {
     'reviews': [for (final r in reviews) r.toJson()],
     'relations': [for (final r in relations) r.toJson()],
     'summaries': [for (final s in summaries) s.toJson()],
+    'bookmarks': [for (final b in bookmarks) b.toJson()],
   };
 
   factory StudySetContent.fromJson(Map<String, Object?> j) {
@@ -217,6 +234,7 @@ class StudySetContent {
       reviews: list('reviews', ReviewState.fromJson),
       relations: list('relations', MapRelation.fromJson),
       summaries: list('summaries', MapSummary.fromJson),
+      bookmarks: list('bookmarks', Bookmark.fromJson),
     );
   }
 }

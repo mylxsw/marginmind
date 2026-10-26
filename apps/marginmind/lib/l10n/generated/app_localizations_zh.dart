@@ -835,4 +835,78 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exportRelations => '关联';
+
+  @override
+  String get readerThumbnails => '缩略图';
+
+  @override
+  String get readerOutline => '目录';
+
+  @override
+  String get readerBookmarks => '书签';
+
+  @override
+  String get readerAnnotations => '标注';
+
+  @override
+  String get showReaderSidebar => '显示页面侧栏';
+
+  @override
+  String get hideReaderSidebar => '隐藏页面侧栏';
+
+  @override
+  String get addBookmark => '添加书签';
+
+  @override
+  String get removeBookmark => '取消书签';
+
+  @override
+  String get renameBookmark => '重命名书签…';
+
+  @override
+  String get deleteBookmark => '删除书签';
+
+  @override
+  String get findInDocument => '在文档中查找';
+
+  @override
+  String get findNext => '查找下一个';
+
+  @override
+  String get findPrevious => '查找上一个';
+
+  @override
+  String get noResults => '无结果';
+
+  @override
+  String matchOf(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get pageNumberField => '页码';
+
+  @override
+  String get goBack => '返回上一个位置';
+
+  @override
+  String get firstPage => '首页';
+
+  @override
+  String get lastPage => '末页';
+
+  @override
+  String get menuGo => '前往';
+
+  @override
+  String get noBookmarks => '没有书签';
+
+  @override
+  String get noAnnotations => '没有标注';
+
+  @override
+  String get expandSection => '展开';
+
+  @override
+  String get collapseSection => '折叠';
 }

@@ -47,7 +47,7 @@ class _Document extends PdfDocument {
   @override
   bool isIdenticalDocumentHandle(Object? other) => identical(this, other);
   @override
-  Future<List<PdfOutlineNode>> loadOutline() async => [];
+  Future<List<PdfOutlineNode>> loadOutline() async => TestPdfOutline.nodes;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -78,6 +78,11 @@ class _Page implements PdfPage {
     if (invocation.memberName == #render) return TestPdfRender._render(invocation.namedArguments);
     return super.noSuchMethod(invocation);
   }
+}
+
+/// The table of contents the test backend's document reports.
+abstract final class TestPdfOutline {
+  static List<PdfOutlineNode> nodes = [];
 }
 
 /// Page rendering in the test backend: empty for the viewer's tiles, real

@@ -97,3 +97,4 @@ Flutter 自己绘制每个像素，“像 Mac”不会自动发生。目前交�
 ## 存储位置
 
 macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Containers/io.github.mylxsw.marginmind/Data/Library/Application Support/io.github.mylxsw.marginmind/Library/sets/<id>.mmset/`。
+- **页面侧栏与文内搜索（GUL-496）**：`MMPdfViewController` 是 `ChangeNotifier`，向外报告页码、页数、目录（`MMPdfOutlineItem`，纯函数 `activeOutlineItem` 求当前章节）和搜索状态（`PdfTextSearcher`，命中处由页面绘制回调高亮）；跳转通过 `jumpToPage` / `jumpToRect` 记入 `PageHistory`，`goBack`（⌘[）依此返回，滚动不记录。控制器由 `readerPdfProvider(studySetId)` 持有，菜单、侧栏和查找条都不需要拥有 PDF 视图。缩略图用 `MMPdfThumbnail`（pdfrx `PdfPageView`）按需渲染。书签是 `Bookmark`（`StudySetContent.bookmarks`，空标题表示未命名，界面显示页码），编辑是 `StudySetEditor.toggleBookmark / renameBookmark / removeBookmark`，随撤销快照；删除文档同时删除它的书签。文件包格式升到 5（迁移只补 `bookmarks: []`）。⌘F 是否查找 PDF 由 `AppMenus` 按焦点是否在原文面板（`ReaderNavIntent` 的 `Actions` 祖先）决定。

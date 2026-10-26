@@ -81,6 +81,46 @@ class Document {
   );
 }
 
+/// A reader's own bookmark on one page of a document. An empty [title]
+/// means "unnamed": the UI shows the page number instead.
+@immutable
+class Bookmark {
+  const Bookmark({
+    required this.id,
+    required this.documentId,
+    required this.page,
+    required this.createdAt,
+    this.title = '',
+  });
+
+  final String id;
+  final String documentId;
+
+  /// 1-based page.
+  final int page;
+  final DateTime createdAt;
+  final String title;
+
+  Bookmark copyWith({String? title}) =>
+      Bookmark(id: id, documentId: documentId, page: page, createdAt: createdAt, title: title ?? this.title);
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'documentId': documentId,
+    'page': page,
+    'createdAt': createdAt.toIso8601String(),
+    if (title.isNotEmpty) 'title': title,
+  };
+
+  factory Bookmark.fromJson(Map<String, Object?> j) => Bookmark(
+    id: j['id'] as String,
+    documentId: j['documentId'] as String,
+    page: j['page'] as int,
+    createdAt: DateTime.parse(j['createdAt'] as String),
+    title: (j['title'] as String?) ?? '',
+  );
+}
+
 /// Rectangles belonging to one 1-based PDF page.
 @immutable
 class AnnotationPage {

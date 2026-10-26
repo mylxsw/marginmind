@@ -31,6 +31,12 @@ abstract final class MMIcons {
   static const IconData mindMap = CupertinoIcons.arrow_branch;
   static const IconData revealSource = CupertinoIcons.arrow_up_right; // arrow.up.right
   static const IconData popUp = CupertinoIcons.chevron_up_chevron_down; // chevron.up.chevron.down
+  static const IconData thumbnails = CupertinoIcons.rectangle_grid_1x2; // rectangle.grid.1x2
+  static const IconData outline = CupertinoIcons.list_bullet_indent; // list.bullet.indent
+  static const IconData bookmark = CupertinoIcons.bookmark; // bookmark
+  static const IconData bookmarkFill = CupertinoIcons.bookmark_fill; // bookmark.fill
+  static const IconData annotations = CupertinoIcons.text_quote; // text.quote
+  static const IconData chevronUp = CupertinoIcons.chevron_up;
   static const IconData chevronDown = CupertinoIcons.chevron_down;
   static const IconData chevronLeft = CupertinoIcons.chevron_left;
   static const IconData chevronRight = CupertinoIcons.chevron_right;

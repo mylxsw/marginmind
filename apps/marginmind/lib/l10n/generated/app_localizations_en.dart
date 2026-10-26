@@ -872,4 +872,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportRelations => 'Relationships';
+
+  @override
+  String get readerThumbnails => 'Thumbnails';
+
+  @override
+  String get readerOutline => 'Table of Contents';
+
+  @override
+  String get readerBookmarks => 'Bookmarks';
+
+  @override
+  String get readerAnnotations => 'Annotations';
+
+  @override
+  String get showReaderSidebar => 'Show Page Sidebar';
+
+  @override
+  String get hideReaderSidebar => 'Hide Page Sidebar';
+
+  @override
+  String get addBookmark => 'Add Bookmark';
+
+  @override
+  String get removeBookmark => 'Remove Bookmark';
+
+  @override
+  String get renameBookmark => 'Rename Bookmark…';
+
+  @override
+  String get deleteBookmark => 'Delete Bookmark';
+
+  @override
+  String get findInDocument => 'Find in Document';
+
+  @override
+  String get findNext => 'Find Next';
+
+  @override
+  String get findPrevious => 'Find Previous';
+
+  @override
+  String get noResults => 'No Results';
+
+  @override
+  String matchOf(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String get pageNumberField => 'Page Number';
+
+  @override
+  String get goBack => 'Back';
+
+  @override
+  String get firstPage => 'First Page';
+
+  @override
+  String get lastPage => 'Last Page';
+
+  @override
+  String get menuGo => 'Go';
+
+  @override
+  String get noBookmarks => 'No Bookmarks';
+
+  @override
+  String get noAnnotations => 'No Annotations';
+
+  @override
+  String get expandSection => 'Expand';
+
+  @override
+  String get collapseSection => 'Collapse';
 }

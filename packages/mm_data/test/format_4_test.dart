@@ -23,7 +23,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('current');
     final after = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-    expect(after['format'], 4);
+    expect(after['format'], 5);
     for (final key in before.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], before[key]);
     }
@@ -62,7 +62,7 @@ void main() {
     final read = await reopened.load('current');
     expect(read.relationsOf(MindMap.defaultId).single.label, 'why');
     expect(read.summariesOf(MindMap.defaultId).single.$2, cards);
-    expect(jsonDecode(await file.readAsString())['format'], 4);
+    expect(jsonDecode(await file.readAsString())['format'], 5);
     await reopened.dispose();
   });
 
