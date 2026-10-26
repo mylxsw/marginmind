@@ -957,9 +957,14 @@ class _MMPdfViewState extends State<MMPdfView> {
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
           margin: 16,
-          // pdfrx already provides adjacent-page prefetch, zoom previews and
-          // a 100 MiB image budget. Keep its defaults: a lower preview scale
-          // increased tile memory in the macOS benchmark without a latency win.
+          // pdfrx otherwise downsamples a fixed 200-DPI preview with bilinear
+          // filtering, softening text on 1x displays. Keep at least two
+          // samples per logical pixel for low-DPI text; above the bounded preview size pdfrx
+          // still supplies its native-resolution visible-page tiles.
+          getPageRenderingScale: (context, page, controller, estimatedScale) => math.min(
+            controller.currentZoom * math.max(2.0, MediaQuery.devicePixelRatioOf(context)),
+            math.min(estimatedScale, 2000 / math.max(page.width, page.height)),
+          ),
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
           pagePaintCallbacks: [_paintMatches],

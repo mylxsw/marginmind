@@ -1,0 +1,26 @@
+{"event": "start", "pid": 18863, "cycles": 250, "sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "delay_seconds": 0.02}
+{"event": "cycle", "completed_cycles": 1, "resizes": 5}
+{"event": "cycle", "completed_cycles": 2, "resizes": 10}
+{"event": "cycle", "completed_cycles": 3, "resizes": 15}
+{"event": "cycle", "completed_cycles": 4, "resizes": 20}
+{"event": "cycle", "completed_cycles": 5, "resizes": 25}
+{"event": "cycle", "completed_cycles": 6, "resizes": 30}
+{"event": "cycle", "completed_cycles": 7, "resizes": 35}
+{"event": "cycle", "completed_cycles": 8, "resizes": 40}
+{"event": "cycle", "completed_cycles": 9, "resizes": 45}
+{"event": "cycle", "completed_cycles": 10, "resizes": 50}
+{"event": "cycle", "completed_cycles": 11, "resizes": 55}
+{"event": "cycle", "completed_cycles": 12, "resizes": 60}
+{"event": "cycle", "completed_cycles": 13, "resizes": 65}
+{"event": "cycle", "completed_cycles": 14, "resizes": 70}
+{"event": "cycle", "completed_cycles": 15, "resizes": 75}
+{"event": "cycle", "completed_cycles": 16, "resizes": 80}
+{"event": "cycle", "completed_cycles": 17, "resizes": 85}
+{"event": "cycle", "completed_cycles": 18, "resizes": 90}
+{"event": "cycle", "completed_cycles": 19, "resizes": 95}
+{"event": "cycle", "completed_cycles": 20, "resizes": 100}
+{"event": "cycle", "completed_cycles": 21, "resizes": 105}
+{"event": "cycle", "completed_cycles": 22, "resizes": 110}
+{"event": "cycle", "completed_cycles": 23, "resizes": 115}
+{"event": "cycle", "completed_cycles": 24, "resizes": 120}
+{"event": "failed", "completed_cycles": 24, "error": "Command '['osascript', '-e', 'tell application \"System Events\"\\n      set targetProcess to first process whose unix id is 18863\\n      tell targetProcess\\n        set size of window 1 to {1280, 820}\\ndelay 0.02\\nrepeat 25 times\\nif size of window 1 is {1280, 820} then exit repeat\\ndelay 0.01\\nend repeat\\nif size of window 1 is not {1280, 820} then error \"Window size rejected\"\\nset size of window 1 to {1279, 819}\\ndelay 0.02\\nrepeat 25 times\\nif size of window 1 is {1279, 819} then exit repeat\\ndelay 0.01\\nend repeat\\nif size of window 1 is not {1279, 819} then error \"Window size rejected\"\\nset size of window 1 to {1280, 820}\\ndelay 0.02\\nrepeat 25 times\\nif size of window 1 is {1280, 820} then exit repeat\\ndelay 0.01\\nend repeat\\nif size of window 1 is not {1280, 820} then error \"Window size rejected\"\\nset size of window 1 to {960, 640}\\ndelay 0.02\\nrepeat 25 times\\nif size of window 1 is {960, 640} then exit repeat\\ndelay 0.01\\nend repeat\\nif size of window 1 is not {960, 640} then error \"Window size rejected\"\\nset size of window 1 to {1280, 820}\\ndelay 0.02\\nrepeat 25 times\\nif size of window 1 is {1280, 820} then exit repeat\\ndelay 0.01\\nend repeat\\nif size of window 1 is not {1280, 820} then error \"Window size rejected\"\\n      end tell\\n    end tell']' returned non-zero exit status 1.", "stderr": "944:966: execution error: Window size rejected (-2700)\n"}

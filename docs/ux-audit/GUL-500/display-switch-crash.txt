@@ -1,0 +1,15 @@
+Additional observation; not a controlled Release stress-test result.
+Capture: 2026-10-26 12:12:12.4147 +0800
+Process: pre-existing MarginMind Debug instance, PID 34520
+During system display-mode switching on the shared Mac mini.
+EXC_BAD_ACCESS / SIGSEGV / KERN_INVALID_ADDRESS at 0x0
+Faulting raster thread (top frames):
+impeller::Canvas::SetupRenderPass()
+impeller::Canvas::Canvas(...)
+impeller::RenderToTarget(...)
+flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(...)
+flutter::Rasterizer::DrawToSurfaceUnsafe(...)
+flutter::Rasterizer::DrawToSurfacesUnsafe(...)
+flutter::Rasterizer::DrawToSurfaces(...)
+Original report: MarginMind-2026-10-26-121622.ips
+Paths and other process metadata intentionally omitted.
