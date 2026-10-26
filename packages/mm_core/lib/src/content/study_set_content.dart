@@ -144,6 +144,15 @@ class StudySetContent {
     return [...due, ...fresh.take(ReviewScheduler.newPerSession)];
   }
 
+  /// Due times of scheduled, reviewable, not suspended cards.
+  Iterable<DateTime> get scheduledDues sync* {
+    final byId = {for (final r in reviews) r.cardId: r};
+    for (final c in reviewableCards) {
+      final r = byId[c.id];
+      if (r != null && !c.suspended) yield r.due;
+    }
+  }
+
   int dueCount(DateTime now, {String? mapId}) => reviewQueue(now, mapId: mapId).length;
 
   /// Titles of the topics/cards above [cardId], root first.

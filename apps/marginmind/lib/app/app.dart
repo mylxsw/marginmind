@@ -9,6 +9,7 @@ import '../features/library/library_screen.dart';
 import '../features/review/review_screen.dart';
 import '../features/workspace/widgets/reader_pane.dart';
 import '../features/workspace/workspace_controller.dart';
+import '../features/review/stats_screen.dart';
 import '../features/workspace/workspace_screen.dart';
 import '../settings/app_settings.dart';
 import '../settings/system_appearance.dart';
@@ -69,6 +70,7 @@ class AppShell extends ConsumerWidget {
       LibraryRoute() => const LibraryScreen(),
       WorkspaceRoute(:final studySetId) => WorkspaceScreen(key: ValueKey(studySetId), studySetId: studySetId),
       ReviewRoute(:final studySetId) => ReviewScreen(key: ValueKey('review-$studySetId'), studySetId: studySetId),
+      StatsRoute(:final studySetId) => StatsScreen(key: ValueKey('stats-$studySetId'), studySetId: studySetId),
       GalleryRoute() => const GalleryScreen(),
     };
     return AppMenus(

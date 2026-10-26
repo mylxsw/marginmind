@@ -163,6 +163,7 @@ class _LibrarySidebar extends ConsumerWidget {
     final controller = ref.read(libraryViewProvider.notifier);
     final starred = sets.where((s) => s.starred).length;
     final due = sets.fold<int>(0, (n, s) => n + s.dueCount);
+    final hasLogs = sets.any((s) => s.reviewLogCount > 0);
     final hasUnfiled = sets.any((s) => s.folderId == null);
 
     MMSidebarItem item(IconData icon, String label, LibraryFilter f, {Widget? trailing}) => MMSidebarItem(
@@ -202,6 +203,18 @@ class _LibrarySidebar extends ConsumerWidget {
             item(MMIcons.review, l.libraryDue, LibraryFilter.due, trailing: due > 0 ? MMBadge('$due') : null),
           ],
         ),
+        if (hasLogs)
+          MMSidebarSection(
+            title: l.sectionLearn,
+            children: [
+              MMSidebarItem(
+                key: const ValueKey('library-statistics'),
+                icon: MMIcons.statistics,
+                label: l.statistics,
+                onTap: () => ref.read(navigationProvider.notifier).showStats(),
+              ),
+            ],
+          ),
         if (folders.isNotEmpty || hasUnfiled)
           MMSidebarSection(
             title: l.libraryFolders,

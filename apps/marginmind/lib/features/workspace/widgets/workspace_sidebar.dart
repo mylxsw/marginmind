@@ -72,6 +72,13 @@ class WorkspaceSidebar extends ConsumerWidget {
           trailing: due > 0 ? MMBadge('$due', prominent: true) : null,
           onTap: () => ref.read(navigationProvider.notifier).startReview(studySetId, mapId: state.activeMapId),
         ),
+      if (content != null && content.reviewLogs.isNotEmpty && matches(l.statistics))
+        MMSidebarItem(
+          key: const ValueKey('sidebar-statistics'),
+          icon: MMIcons.statistics,
+          label: l.statistics,
+          onTap: () => ref.read(navigationProvider.notifier).showStats(studySetId),
+        ),
     ];
     final tagNames = content?.tags(mapId: state.activeMapId) ?? const <String>[];
     // A deleted tag must not leave the results trapped behind a stale filter.

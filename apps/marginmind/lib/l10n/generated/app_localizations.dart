@@ -1699,6 +1699,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fit Page'**
   String get pdfFitPage;
+
+  /// No description provided for @statistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get statistics;
+
+  /// No description provided for @statsReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get statsReviewed;
+
+  /// No description provided for @statsRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Retained'**
+  String get statsRetention;
+
+  /// No description provided for @statsUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Next 30 Days'**
+  String get statsUpcoming;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

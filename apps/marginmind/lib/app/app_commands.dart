@@ -397,12 +397,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               .firstOrNull,
         ),
     ]);
+    final hasLogs = ref.watch(
+      studySetsProvider.select(
+        (s) => s.value?.any((x) => x.reviewLogCount > 0 && (workspaceId == null || x.id == workspaceId)) ?? false,
+      ),
+    );
     final study = [
       AppCommand(
         l.startReview,
         inWorkspace ? () => nav.startReview(workspaceId, mapId: workspaceState!.activeMapId) : null,
         shortcut: AppShortcuts.review,
       ),
+      AppCommand(l.statistics, hasLogs && (inLibrary || inWorkspace) ? () => nav.showStats(workspaceId) : null),
     ];
     final map = <AppCommand>[
       AppCommand(
