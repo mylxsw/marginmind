@@ -148,6 +148,44 @@ void main() {
     });
   });
 
+  testWidgets('a consumed location is not replayed after outline or map switches', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    MindMapCanvas canvas() => tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
+    final fitted = canvas().transformation.value.clone();
+    final annotation = controller.content.annotations.single.id;
+    final card = controller.content.cardForAnnotation(annotation)!;
+
+    // Also exercise a new request while the canvas is absent.
+    controller.setMapView(MapViewMode.outline);
+    await tester.pumpAndSettle();
+    await controller.locateHighlightCard(annotation);
+    await tester.pumpAndSettle();
+    expect(mapScale(canvas().transformation.value), greaterThanOrEqualTo(mapLocateScale));
+    final viewport = tester.getRect(find.byType(MindMapCanvas));
+    expect((tester.getRect(find.byKey(ValueKey(card.id))).center - viewport.center).distance, lessThan(1));
+    await settleHud(tester);
+
+    // A user can pan, zoom and select another node after locating.
+    canvas().transformation.value = Matrix4.identity()..scaleByDouble(1.5, 1.5, 1, 1);
+    controller.selectCard('c3');
+    await tester.pumpAndSettle();
+    controller.setMapView(MapViewMode.outline);
+    await tester.pumpAndSettle();
+    controller.setMapView(MapViewMode.map);
+    await tester.pumpAndSettle();
+    expect(canvas().locateCardTick, 0);
+    expect(canvas().transformation.value.storage, orderedEquals(fitted.storage));
+
+    await controller.addMap('Other map');
+    await tester.pumpAndSettle();
+    await controller.selectMap(MindMap.defaultId);
+    await tester.pumpAndSettle();
+    expect(canvas().locateCardTick, 0);
+    expect(canvas().transformation.value.storage, orderedEquals(fitted.storage));
+    await settleHud(tester);
+  });
+
   testWidgets('sidebar creates renames switches deletes and undoes maps', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);

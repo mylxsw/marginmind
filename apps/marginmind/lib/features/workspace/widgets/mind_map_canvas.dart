@@ -71,6 +71,7 @@ class MindMapCanvas extends StatefulWidget {
     required this.selectedCardId,
     required this.flashCardId,
     this.locateCardTick = 0,
+    this.onLocated,
     required this.transformation,
     required this.onSelect,
     required this.onReveal,
@@ -124,6 +125,9 @@ class MindMapCanvas extends StatefulWidget {
 
   /// Changes for each explicit location, including repeated requests for one card.
   final int locateCardTick;
+
+  /// Acknowledges a request only after its viewport change has been applied.
+  final ValueChanged<int>? onLocated;
   final TransformationController transformation;
   final ValueChanged<String?> onSelect;
   final ValueChanged<String> onReveal;
@@ -185,6 +189,7 @@ class MindMapCanvas extends StatefulWidget {
 
 class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
+  int _handledLocateTick = 0;
   final _tapModifiers = <String, bool>{};
   Offset? _boxStart;
   Offset? _boxEnd;
@@ -393,7 +398,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       widget.transformation.value = Matrix4.identity()
         ..translateByDouble(dx, dy, 0, 1)
         ..scaleByDouble(scale, scale, 1, 1);
-      if (widget.locateCardTick > 0 && widget.selectedCardId != null) _locate(widget.selectedCardId!);
+      if (widget.locateCardTick > 0 && widget.selectedCardId != null) {
+        _locate(widget.selectedCardId!, widget.locateCardTick);
+      }
     });
   }
 
@@ -411,9 +418,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         if (mounted) _updateDrop();
       });
     }
-    if (widget.locateCardTick != oldWidget.locateCardTick && widget.selectedCardId != null) {
+    if (widget.locateCardTick > 0 &&
+        widget.locateCardTick != oldWidget.locateCardTick &&
+        widget.selectedCardId != null) {
       final id = widget.selectedCardId!;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _locate(id));
+      final tick = widget.locateCardTick;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _locate(id, tick));
     } else if (_boxStart == null &&
         (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
@@ -436,7 +446,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   }
 
   /// Centers an explicitly located card at a readable scale.
-  void _locate(String id) {
+  void _locate(String id, int tick) {
+    if (tick <= _handledLocateTick) return;
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final scale = math.max(mapLocateScale, mapScale(widget.transformation.value));
@@ -448,6 +459,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         1,
       )
       ..scaleByDouble(scale, scale, 1, 1);
+    _handledLocateTick = tick;
+    widget.onLocated?.call(tick);
   }
 
   /// Pans (keeping the zoom) so a newly created or linked node is on screen:

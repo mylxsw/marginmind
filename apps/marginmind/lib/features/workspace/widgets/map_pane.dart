@@ -26,6 +26,8 @@ class MapPane extends ConsumerStatefulWidget {
 
 class _MapPaneState extends ConsumerState<MapPane> {
   final _transform = TransformationController();
+  // Survives canvas remounts when switching outline/map or active map.
+  int _handledLocateTick = 0;
   final _focus = FocusNode(debugLabel: 'MindMap');
 
   @override
@@ -234,7 +236,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     flashCardId: state.flashCardId,
-                    locateCardTick: state.locateCardTick,
+                    locateCardTick: state.locateCardTick > _handledLocateTick ? state.locateCardTick : 0,
+                    onLocated: (tick) {
+                      if (tick > _handledLocateTick) _handledLocateTick = tick;
+                    },
                     transformation: _transform,
                     focusNode: _focus,
                     loaded: loadedContent != null,
