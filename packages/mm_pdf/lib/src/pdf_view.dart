@@ -123,7 +123,11 @@ class MMPdfViewController extends ChangeNotifier {
   Future<void> jumpToPage(int page, {bool alignTop = true}) async {
     if (!isReady || _pageCount == 0) return;
     final target = page.clamp(1, _pageCount);
-    if (target == _page) return;
+    if (target == _page) {
+      // Already on the page, perhaps only partly in view: bring its top in.
+      if (alignTop) await goToPage(target, alignTop: true);
+      return;
+    }
     _history.record(_page);
     await goToPage(target, alignTop: alignTop);
     _notify();
