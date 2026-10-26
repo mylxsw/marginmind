@@ -244,13 +244,7 @@
   "renameMap": "重命名脑图…",
   "deleteMap": "删除脑图",
   "addToNamedMap": "加入“{title}”",
-  "@addToNamedMap": {
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
-  },
+  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}},
   "cardTags": "标签…",
   "sectionTags": "标签",
   "addTag": "添加标签",
@@ -263,13 +257,7 @@
   "deleteRelation": "删除关联线",
   "deleteSummary": "删除概要",
   "exportSummary": "概要：{label}",
-  "@exportSummary": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
+  "@exportSummary": {"placeholders": {"label": {"type": "String"}}},
   "exportRelations": "关联",
   "readerThumbnails": "缩略图",
   "readerOutline": "目录",
@@ -295,6 +283,7 @@
   "noAnnotations": "没有标注",
   "expandSection": "展开",
   "collapseSection": "折叠",
+  "pdfFiles": "PDF 文档",
   "pdfActualSize": "实际大小",
   "pdfFitWidth": "适合宽度",
   "pdfFitPage": "适合页面"

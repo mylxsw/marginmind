@@ -56,10 +56,14 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(item(l.fitMap).onSelected, isNull);
+      expect(item(l.fitMap).shortcut, isNull);
+      expect(item(l.pdfActualSize).shortcut, isNotNull);
       await tester.tap(find.byType(MindMapCanvas));
       await tester.pumpAndSettle();
       expect(item(l.pdfActualSize).onSelected, isNull);
       expect(item(l.fitMap).onSelected, isNotNull);
+      expect(item(l.pdfActualSize).shortcut, isNull);
+      expect(item(l.fitMap).shortcut, isNotNull);
     }
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant({TargetPlatform.macOS, TargetPlatform.linux}));

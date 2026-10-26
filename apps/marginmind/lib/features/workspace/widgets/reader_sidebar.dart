@@ -31,7 +31,7 @@ class ReaderSidebar extends ConsumerWidget {
     final provider = workspaceProvider(studySetId);
     final controller = ref.read(provider.notifier);
     final mode = ref.watch(provider.select((s) => s.readerPanelMode));
-    final content = ref.watch(contentProvider(studySetId)).value ?? StudySetContent.empty;
+    final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
       width: readerSidebarWidth,

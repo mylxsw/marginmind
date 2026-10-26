@@ -1592,7 +1592,6 @@ abstract class AppLocalizations {
   /// **'Relationships'**
   String get exportRelations;
 
-<<<<<<< HEAD
   /// No description provided for @readerThumbnails.
   ///
   /// In en, this message translates to:
@@ -1736,7 +1735,7 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collapse'**
   String get collapseSection;
-=======
+
   /// No description provided for @pdfActualSize.
   ///
   /// In en, this message translates to:
@@ -1754,7 +1753,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fit Page'**
   String get pdfFitPage;
->>>>>>> acd45be (GUL-495: 优化 PDF 高亮复用与缩放，补充真机性能基准)
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -54,11 +54,27 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
-    final state = ref.watch(provider);
+    ref.watch(
+      provider.select(
+        (s) => (
+          s.activeDocumentId,
+          s.openDocumentIds,
+          s.tool,
+          s.pending,
+          s.selectedCardId,
+          s.activeMapId,
+          s.flashAnnotationId,
+          s.readerPanelVisible,
+          s.findVisible,
+          s.findFocusTick,
+        ),
+      ),
+    );
+    final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
-    final content = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.content)) ?? StudySetContent.empty;
+    final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
     final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
-    final rootTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
+    final rootTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
     ref.listen(provider.select((s) => s.reveal), (_, reveal) {
       if (reveal == null) return;
@@ -85,7 +101,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
     return Actions(
       actions: {
-        ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(onInvoke: (intent) { _zoom(intent.command); return null; }),
+        ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(
+          onInvoke: (intent) {
+            _zoom(intent.command);
+            return null;
+          },
+        ),
         ReaderNavIntent: CallbackAction<ReaderNavIntent>(
           onInvoke: (intent) {
             dismissSelection();
@@ -275,20 +296,27 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                               right: 0,
                               bottom: 16,
                               child: Center(
-                                child: _PagePill(
-                                  page: state.currentPages[doc.id] ?? doc.lastPage,
-                                  pageCount: doc.pageCount,
-                                  onJump: (page) {
-                                    dismissSelection();
-                                    _pdf.jumpToPage(page);
-                                  },
-                                  onPrevious: () {
-                                    dismissSelection();
-                                    _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) - 1);
-                                  },
-                                  onNext: () {
-                                    dismissSelection();
-                                    _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) + 1);
+                                child: Consumer(
+                                  builder: (context, ref, _) {
+                                    final page =
+                                        ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ??
+                                        doc.lastPage;
+                                    return _PagePill(
+                                      page: page,
+                                      pageCount: doc.pageCount,
+                                      onJump: (page) {
+                                        dismissSelection();
+                                        _pdf.jumpToPage(page);
+                                      },
+                                      onPrevious: () {
+                                        dismissSelection();
+                                        _pdf.goToPage((page) - 1);
+                                      },
+                                      onNext: () {
+                                        dismissSelection();
+                                        _pdf.goToPage((page) + 1);
+                                      },
+                                    );
                                   },
                                 ),
                               ),

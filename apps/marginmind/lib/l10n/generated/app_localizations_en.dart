@@ -874,7 +874,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportRelations => 'Relationships';
 
   @override
-<<<<<<< HEAD
   String get readerThumbnails => 'Thumbnails';
 
   @override
@@ -947,7 +946,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collapseSection => 'Collapse';
-=======
+
+  @override
   String get pdfActualSize => 'Actual Size';
 
   @override
@@ -955,5 +955,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfFitPage => 'Fit Page';
->>>>>>> acd45be (GUL-495: 优化 PDF 高亮复用与缩放，补充真机性能基准)
 }

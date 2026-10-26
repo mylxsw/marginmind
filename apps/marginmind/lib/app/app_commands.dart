@@ -210,7 +210,28 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final inWorkspace = workspaceId != null;
 
     final workspace = inWorkspace ? ref.read(workspaceProvider(workspaceId).notifier) : null;
-    final workspaceState = inWorkspace ? ref.watch(workspaceProvider(workspaceId)) : null;
+    if (inWorkspace) {
+      ref.watch(
+        workspaceProvider(workspaceId).select(
+          (s) => (
+            s.selectedCardId,
+            s.selectedCardIds,
+            s.editingCardId,
+            s.editingMarkId,
+            s.canUndo,
+            s.canRedo,
+            s.pending,
+            s.activeMapId,
+            s.mapView,
+            s.activeDocumentId,
+            s.readerPanelVisible,
+            s.findVisible,
+          ),
+        ),
+      );
+      ref.watch(workspaceContentProvider(workspaceId));
+    }
+    final workspaceState = inWorkspace ? ref.read(workspaceProvider(workspaceId)) : null;
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
@@ -446,7 +467,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
                 }
               : null,
-          shortcut: mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
+          shortcut: entry.key == MindMapCommand.fit && !_mapFocused
+              ? null
+              : mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
         ),
       );
     }
@@ -481,10 +504,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                     if (focus != null) Actions.maybeInvoke(focus, ReaderZoomIntent(entry.key));
                   }
                 : null,
-            shortcut: readerZoomShortcuts.entries
-                .where((e) => e.value.command == entry.key)
-                .map((e) => e.key as SingleActivator)
-                .firstOrNull,
+            shortcut: entry.key == ReaderZoomCommand.actualSize && !_readerFocused
+                ? null
+                : readerZoomShortcuts.entries
+                      .where((e) => e.value.command == entry.key)
+                      .map((e) => e.key as SingleActivator)
+                      .firstOrNull,
           ),
       if (inLibrary) ...[
         AppCommand(

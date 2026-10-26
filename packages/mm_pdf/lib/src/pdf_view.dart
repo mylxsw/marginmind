@@ -688,6 +688,8 @@ class _MMPdfViewState extends State<MMPdfView> {
         (cached.$1.height - scaled.height).abs() < .000001 &&
         identical(cached.$2, highlights) &&
         cached.$3 == widget.emphasisColor) {
+      _overlayCache.remove(page.pageNumber);
+      _overlayCache[page.pageNumber] = cached;
       return cached.$4;
     }
     final overlays = <Widget>[

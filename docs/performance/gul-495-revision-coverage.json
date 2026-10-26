@@ -1,0 +1,52 @@
+{
+  "baseline": "b24198e",
+  "changed_hit": 352,
+  "changed_lines": 357,
+  "percent": 98.59943977591037,
+  "files": {
+    "apps/marginmind/lib/app/app_commands.dart": {
+      "hit": 44,
+      "lines": 44
+    },
+    "apps/marginmind/lib/app/providers.dart": {
+      "hit": 21,
+      "lines": 21
+    },
+    "apps/marginmind/lib/features/workspace/widgets/map_pane.dart": {
+      "hit": 15,
+      "lines": 15
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart": {
+      "hit": 51,
+      "lines": 51
+    },
+    "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart": {
+      "hit": 6,
+      "lines": 6
+    },
+    "apps/marginmind/lib/features/workspace/workspace_controller.dart": {
+      "hit": 14,
+      "lines": 14
+    },
+    "apps/marginmind/lib/features/workspace/workspace_screen.dart": {
+      "hit": 30,
+      "lines": 30
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_en.dart": {
+      "hit": 3,
+      "lines": 3
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart": {
+      "hit": 3,
+      "lines": 3
+    },
+    "packages/mm_pdf/lib/src/pdf_view.dart": {
+      "hit": 134,
+      "lines": 139
+    },
+    "packages/mm_pdf/lib/src/preview_cache.dart": {
+      "hit": 31,
+      "lines": 31
+    }
+  }
+}
