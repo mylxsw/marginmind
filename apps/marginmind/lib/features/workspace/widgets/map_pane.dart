@@ -5,6 +5,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
+import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
@@ -97,6 +98,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final card = cardId == null ? null : content.card(cardId);
     final node = cardId == null ? null : content.node(cardId, mapId: mapId);
     final hasChildren = content.childrenOf(cardId, mapId: mapId).isNotEmpty;
+    final now = ref.read(clockProvider)();
+    final branchDue = card != null && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
+    final suspendable = card != null && (card.suspended || card.kind != CardKind.topic);
 
     showMMMenu(
       context,
@@ -107,6 +111,20 @@ class _MapPaneState extends ConsumerState<MapPane> {
           MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: 'F2'),
           if (content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
+          const MMMenuDivider(),
+        ],
+        if (branchDue || suspendable) ...[
+          if (branchDue)
+            MMMenuItem(
+              l.reviewBranch,
+              () =>
+                  ref.read(navigationProvider.notifier).startReview(widget.studySetId, mapId: mapId, branchId: card.id),
+            ),
+          if (suspendable)
+            MMMenuItem(
+              card.suspended ? l.resumeCard : l.suspendCard,
+              () => controller.setSuspended(card.id, suspended: !card.suspended),
+            ),
           const MMMenuDivider(),
         ],
         MMMenuItem(l.addChildTopic, () => addTopic(asChild: true), shortcut: '⇥'),

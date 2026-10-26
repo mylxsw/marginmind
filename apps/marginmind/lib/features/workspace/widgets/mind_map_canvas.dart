@@ -951,6 +951,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.size,
       spec.image,
       spec.imageHeight,
+      spec.suspended,
       widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
       id == widget.flashCardId,
       _dragging?.contains(id) ?? false,
@@ -958,6 +959,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       mapScale(widget.transformation.value),
       widget.onContextMenu != null,
       l.revealSource,
+      l.cardSuspended,
     );
     final cached = _nodeWidgets[id];
     if (cached != null && cached.signature == signature) return cached.child;
@@ -971,42 +973,45 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               if (_hovered.value == id) _hovered.value = null;
             },
       child: RepaintBoundary(
-        child: Opacity(
-          opacity: _dragging?.contains(id) ?? false ? 0.35 : 1,
-          child: _draggable(
-            id,
-            spec,
-            _NodeView(
-              spec: spec,
-              selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
-              flashing: id == widget.flashCardId,
-              onPressStart: () => _tapModifiers[id] = _additive,
-              onTap: () {
-                widget.focusNode.requestFocus();
-                final additive = _tapModifiers.remove(id) ?? false;
-                if (widget.connectingFromId != null) {
-                  if (id == rootNodeId) {
-                    widget.onCancelConnect?.call();
-                  } else {
-                    widget.onConnect?.call(id);
+        child: Semantics(
+          value: spec.suspended ? l.cardSuspended : null,
+          child: Opacity(
+            opacity: _dragging?.contains(id) ?? false ? 0.35 : 1,
+            child: _draggable(
+              id,
+              spec,
+              _NodeView(
+                spec: spec,
+                selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+                flashing: id == widget.flashCardId,
+                onPressStart: () => _tapModifiers[id] = _additive,
+                onTap: () {
+                  widget.focusNode.requestFocus();
+                  final additive = _tapModifiers.remove(id) ?? false;
+                  if (widget.connectingFromId != null) {
+                    if (id == rootNodeId) {
+                      widget.onCancelConnect?.call();
+                    } else {
+                      widget.onConnect?.call(id);
+                    }
+                    return;
                   }
-                  return;
-                }
-                _select(id == rootNodeId ? null : id, additive: additive);
-              },
-              onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
-              onSecondaryTapUp: widget.onContextMenu == null
-                  ? null
-                  : (position) {
-                      widget.focusNode.requestFocus();
-                      final selected = id == rootNodeId ? null : id;
-                      if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
-                      widget.onContextMenu!(selected, position);
-                    },
-              onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
-                  ? () => widget.onReveal(id)
-                  : null,
-              revealLabel: l.revealSource,
+                  _select(id == rootNodeId ? null : id, additive: additive);
+                },
+                onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
+                onSecondaryTapUp: widget.onContextMenu == null
+                    ? null
+                    : (position) {
+                        widget.focusNode.requestFocus();
+                        final selected = id == rootNodeId ? null : id;
+                        if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
+                        widget.onContextMenu!(selected, position);
+                      },
+                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
+                    ? () => widget.onReveal(id)
+                    : null,
+                revealLabel: l.revealSource,
+              ),
             ),
           ),
         ),
@@ -1434,7 +1439,7 @@ class _NodeView extends StatelessWidget {
       _Kind.note => (Color.alphaBlend(c.quaternaryFill, c.canvas), 12.0, const <BoxShadow>[]),
     };
 
-    final Widget body = switch (spec.kind) {
+    final Widget content = switch (spec.kind) {
       _Kind.root => Center(
         child: Text(
           spec.title,
@@ -1505,6 +1510,9 @@ class _NodeView extends StatelessWidget {
         ],
       ),
     };
+
+    // Only the content fades: the selection ring and reveal button stay crisp.
+    final body = spec.suspended ? Opacity(opacity: _suspendedOpacity, child: content) : content;
 
     final padding = switch (spec.kind) {
       _Kind.root => const EdgeInsets.symmetric(horizontal: 18),

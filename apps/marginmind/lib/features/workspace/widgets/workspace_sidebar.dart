@@ -89,6 +89,20 @@ class WorkspaceSidebar extends ConsumerWidget {
             label: tag,
             selected: tag.toLowerCase() == tagFilter?.toLowerCase(),
             onTap: () => controller.filterTag(tag.toLowerCase() == tagFilter?.toLowerCase() ? null : tag),
+            onContextMenu: content!.dueCount(now, mapId: state.activeMapId, tag: tag) > 0
+                ? (position) => showMMMenu(
+                    context,
+                    position: position,
+                    entries: [
+                      MMMenuItem(
+                        l.reviewTag,
+                        () => ref
+                            .read(navigationProvider.notifier)
+                            .startReview(studySetId, mapId: state.activeMapId, tag: tag),
+                      ),
+                    ],
+                  )
+                : null,
           ),
     ];
     final hits = content == null

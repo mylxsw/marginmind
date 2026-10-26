@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_core/mm_core.dart' show CardKind;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -233,6 +234,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             s.readerPanelVisible,
             s.findVisible,
             s.layout,
+            s.tagFilter,
           ),
         ),
       );
@@ -397,11 +399,28 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               .firstOrNull,
         ),
     ]);
+    final now = ref.read(clockProvider)();
+    final reviewMapId = workspaceState?.activeMapId;
+    final tagFilter = workspaceState?.tagFilter;
+    final branchDue = selected != null && workspace!.content.dueCount(now, mapId: reviewMapId, branchId: selected) > 0;
+    final tagDue = tagFilter != null && workspace!.content.dueCount(now, mapId: reviewMapId, tag: tagFilter) > 0;
+    final selectedCard = selected == null ? null : workspace!.content.card(selected);
     final study = [
       AppCommand(
         l.startReview,
-        inWorkspace ? () => nav.startReview(workspaceId, mapId: workspaceState!.activeMapId) : null,
+        inWorkspace ? () => nav.startReview(workspaceId, mapId: reviewMapId) : null,
         shortcut: AppShortcuts.review,
+      ),
+      AppCommand(
+        l.reviewBranch,
+        branchDue ? () => nav.startReview(workspaceId!, mapId: reviewMapId, branchId: selected) : null,
+      ),
+      AppCommand(l.reviewTag, tagDue ? () => nav.startReview(workspaceId!, mapId: reviewMapId, tag: tagFilter) : null),
+      AppCommand(
+        selectedCard?.suspended ?? false ? l.resumeCard : l.suspendCard,
+        editable && selectedCard != null && (selectedCard.suspended || selectedCard.kind != CardKind.topic)
+            ? () => workspace.setSuspended(selectedCard.id, suspended: !selectedCard.suspended)
+            : null,
       ),
     ];
     final map = <AppCommand>[

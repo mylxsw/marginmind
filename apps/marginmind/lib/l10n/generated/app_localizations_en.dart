@@ -713,6 +713,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startReview => 'Start Review';
 
   @override
+  String get reviewBranch => 'Review Branch';
+
+  @override
+  String get reviewTag => 'Review Tag';
+
+  @override
+  String get suspendCard => 'Suspend Card';
+
+  @override
+  String get resumeCard => 'Resume Card';
+
+  @override
+  String get cardSuspended => 'Suspended';
+
+  @override
   String get sectionCards => 'Cards';
 
   @override
