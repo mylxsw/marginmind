@@ -4,8 +4,44 @@ import FlutterMacOS
 class MainFlutterWindow: NSWindow {
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
+  private var toolbarVisibilityBeforeFullScreen: Bool?
+
+  // The forwarding toolbar is only an event surface. On macOS 26 custom
+  // toolbar items otherwise gain Liquid Glass, obscuring Flutter's controls.
+  override var toolbar: NSToolbar? {
+    didSet {
+      toolbar?.items.forEach { $0.isBordered = false }
+    }
+  }
+
+  // The toolbar only enlarges the native button container in windowed mode.
+  // AppKit otherwise detaches an opaque toolbar above our full-size Flutter
+  // content in full screen. Hide it there and let the system title bar reveal
+  // its buttons normally when the pointer reaches the top of the screen.
+  func observeToolbarFullScreenTransitions() {
+    for name in [NSWindow.didEnterFullScreenNotification,
+                 NSWindow.didExitFullScreenNotification] {
+      NotificationCenter.default.addObserver(self, selector: #selector(toolbarFullScreenTransition(_:)),
+                                            name: name, object: self)
+    }
+  }
+
+  @objc private func toolbarFullScreenTransition(_ notification: Notification) {
+    if notification.name == NSWindow.didEnterFullScreenNotification {
+      toolbarVisibilityBeforeFullScreen = toolbar?.isVisible
+      toolbar?.isVisible = false
+    } else if let visible = toolbarVisibilityBeforeFullScreen {
+      toolbar?.isVisible = visible
+      toolbarVisibilityBeforeFullScreen = nil
+    }
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+  }
 
   override func awakeFromNib() {
+    observeToolbarFullScreenTransitions()
     let flutterViewController = FlutterViewController()
     let windowFrame = self.frame
     self.contentViewController = flutterViewController

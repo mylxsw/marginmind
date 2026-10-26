@@ -33,7 +33,7 @@ jobs:
           if-no-files-found: warn
 
   macos:
-    name: Build macOS app
+    name: Build and test macOS app
     runs-on: macos-latest
     needs: check
     steps:
@@ -45,4 +45,6 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter build macos --debug
+        working-directory: apps/marginmind
+      - run: xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES
         working-directory: apps/marginmind
