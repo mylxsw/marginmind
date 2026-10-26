@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
@@ -288,7 +290,6 @@ void main() {
 
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip(RegExp('^Find Next')), warnIfMissed: false);
     r.controller.openFind();
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
@@ -353,7 +354,6 @@ void main() {
     expect(r.container.read(workspaceProvider('demo-1')).readerPanelMode, ReaderPanelMode.thumbnails);
 
     // The keyboard is in the sidebar search until the reader is clicked.
-    await tester.tapAt(tester.getCenter(find.byType(ReaderFindBar), warnIfMissed: false), warnIfMissed: false);
     await pressWithControl(tester, LogicalKeyboardKey.keyF);
     expect(r.container.read(workspaceProvider('demo-1')).findVisible, isFalse);
     await tester.tapAt(const Offset(700, 300));

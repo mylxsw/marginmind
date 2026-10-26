@@ -207,7 +207,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                     controller.recordPage(doc.id, page);
                                   },
                                   onSelectionChanged: (selected) {
-                                    if (!selected && ref.read(provider).pending is PendingSelection) dismissSelection();
+                                    if (!selected && ref.read(provider).pending is PendingSelection) {
+                                      dismissSelection();
+                                    }
                                   },
                                   onHighlightTap: (id, bounds) {
                                     _pdf.clearSelection();
