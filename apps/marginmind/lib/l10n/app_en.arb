@@ -447,8 +447,8 @@
   "promoteNode": "Promote Node",
   "insertParentNode": "Insert Parent",
   "toggleNodeFold": "Toggle Collapse",
-  "fitMap": "Fit Map to Window",
-  "centerCurrentNode": "Center on Current Node",
+  "fitMap": "Show Entire Map",
+  "centerCurrentNode": "Locate Selected Node",
   "cutNodes": "Cut",
   "pasteNodes": "Paste",
   "newMap": "New Mind Map…",
@@ -511,5 +511,6 @@
   "readerStyleWhite": "White",
   "readerStyleDark": "Dark",
   "readerStylePaper": "Paper",
-  "readerStyleGreen": "Soft Green"
+  "readerStyleGreen": "Light Green",
+  "readerAppearance": "Reading Appearance"
 }

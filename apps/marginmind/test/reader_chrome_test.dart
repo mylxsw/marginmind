@@ -56,26 +56,22 @@ void main() {
       expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('论文：检索练习效应')), findsNothing);
     });
 
-    testWidgets('PDF menu controls the sidebar and remembers reading colors', (tester) async {
+    testWidgets('reader tools control the sidebar and appearance separately', (tester) async {
       final container = await openSet(tester);
-      final menu = find.byKey(const ValueKey('pdf-options'));
+      final menu = find.byKey(const ValueKey('reader-appearance'));
       expect(find.descendant(of: find.byType(ReaderPane), matching: menu), findsOneWidget);
       expect(find.descendant(of: find.byType(MMToolbar), matching: menu), findsNothing);
       expect(container.read(provider).readerPanelVisible, isFalse);
-      await tester.tap(menu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Show Page Sidebar'));
+      await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
       await tester.pumpAndSettle();
       expect(container.read(provider).readerPanelVisible, isTrue);
-      await tester.tap(menu);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Hide Page Sidebar'));
+      await tester.tap(find.byTooltip(RegExp('Hide Page Sidebar')));
       await tester.pumpAndSettle();
       expect(container.read(provider).readerPanelVisible, isFalse);
       for (final (label, style) in [
         ('Dark', MMReaderStyle.dark),
         ('Paper', MMReaderStyle.paper),
-        ('Soft Green', MMReaderStyle.green),
+        ('Light Green', MMReaderStyle.green),
         ('White', MMReaderStyle.white),
       ]) {
         await tester.tap(menu);
@@ -85,7 +81,8 @@ void main() {
         expect(container.read(settingsProvider).readerStyle, style);
         await tester.tap(menu);
         await tester.pumpAndSettle();
-        expect(find.text('✓ $label'), findsOneWidget);
+        expect(find.text(label), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsOneWidget);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
       }

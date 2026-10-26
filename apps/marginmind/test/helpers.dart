@@ -137,3 +137,9 @@ Matcher sameColor(Color expected) => predicate<Color>(
       (actual.b - expected.b).abs() < 0.02,
   'color close to $expected',
 );
+
+/// Reveal the complete fixture before pointer tests address distant nodes.
+Future<void> showWholeMap(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('Show Entire Map'));
+  await tester.pumpAndSettle();
+}

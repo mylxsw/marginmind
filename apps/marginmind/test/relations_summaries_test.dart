@@ -330,7 +330,7 @@ void main() {
       await tester.pumpAndSettle();
       await focusMap(tester);
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
-      expect(mapScale(viewer(tester).transformationController!.value), greaterThanOrEqualTo(mapReadableScale));
+      expect(mapScale(viewer(tester).transformationController!.value), greaterThanOrEqualTo(mapMinScale));
       final view = viewerBox(tester).localToGlobal(Offset.zero) & viewerBox(tester).size;
       expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it: ${tester.getRect(text)} in $view');
       await settleHud(tester);

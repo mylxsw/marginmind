@@ -228,8 +228,8 @@
   "promoteNode": "提升一级",
   "insertParentNode": "插入父节点",
   "toggleNodeFold": "折叠或展开",
-  "fitMap": "适应窗口",
-  "centerCurrentNode": "居中到当前节点",
+  "fitMap": "查看全图",
+  "centerCurrentNode": "定位选中节点",
   "cutNodes": "剪切",
   "pasteNodes": "粘贴",
   "newMap": "新建脑图…",
@@ -291,5 +291,6 @@
   "readerStyleWhite": "白色",
   "readerStyleDark": "黑暗",
   "readerStylePaper": "纸质",
-  "readerStyleGreen": "护眼（淡绿）"
+  "readerStyleGreen": "浅绿",
+  "readerAppearance": "阅读外观"
 }

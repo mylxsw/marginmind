@@ -72,6 +72,7 @@ void main() {
   group('E-06 excerpts and notes on the map', () {
     testWidgets('an excerpt title is edited in place and can be cleared again', (tester) async {
       final container = await openFirstSet(tester);
+      await showWholeMap(tester);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final excerpt = controller.content.cards.singleWhere((c) => c.kind == CardKind.excerpt);
       // Untitled, the excerpt is the whole card: no title row to click.
@@ -427,14 +428,14 @@ void main() {
           flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus)
               .singleWhere((item) => item.label == label);
       expect(command('Add Child Topic').onSelected, isNotNull);
-      expect(command('Fit Map to Window').onSelected, isNull);
-      expect(command('Center on Current Node').onSelected, isNull);
+      expect(command('Show Entire Map').onSelected, isNull);
+      expect(command('Locate Selected Node').onSelected, isNull);
       container.read(workspaceProvider('demo-1').notifier).setMapView(MapViewMode.map);
       await tester.pumpAndSettle();
       await tester.tap(find.text('遗忘的规律'));
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
-      expect(command('Center on Current Node').onSelected, isNotNull);
+      expect(command('Locate Selected Node').onSelected, isNotNull);
       await settleHud(tester);
     }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 

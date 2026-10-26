@@ -36,6 +36,7 @@ void main() {
       find.descendant(of: find.byType(MMSidebar), matching: find.widgetWithText(MMBadge, count));
 
   Future<void> openNodeMenu(WidgetTester tester, String text) async {
+    await showWholeMap(tester);
     await tester.tap(find.text(text), buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();
   }

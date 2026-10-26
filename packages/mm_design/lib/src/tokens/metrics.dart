@@ -28,6 +28,12 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  /// Keep the excerpt-target hint clear of the map view controls.
+  static const double mapViewControlsReservedWidth = 260;
+  static const double readerSidebarWidth = 240;
+  static const double readerSidebarMinWidth = 180;
+  static const double readerSidebarMaxWidth = 360;
+  static const double readerContentMinWidth = 240;
   static const double toolbarHeight = 56;
   static const double toolbarGroupHeight = 36;
   static const Size toolbarButton = Size(34, 30);

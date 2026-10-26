@@ -26,14 +26,24 @@ class MapPane extends ConsumerStatefulWidget {
 }
 
 class _MapPaneState extends ConsumerState<MapPane> {
-  final _transform = TransformationController();
+  final _transforms = <String, TransformationController>{};
+  TransformationController get _transform =>
+      _transforms.putIfAbsent(ref.read(workspaceProvider(widget.studySetId)).activeMapId, TransformationController.new);
+
+  void _viewCommand(MindMapCommand command) {
+    final target = _focus.context;
+    if (target != null) Actions.invoke(target, MindMapIntent(command));
+  }
+
   // Survives canvas remounts when switching outline/map or active map.
   int _handledLocateTick = 0;
   final _focus = FocusNode(debugLabel: 'MindMap');
 
   @override
   void dispose() {
-    _transform.dispose();
+    for (final transform in _transforms.values) {
+      transform.dispose();
+    }
     _focus.dispose();
     super.dispose();
   }
@@ -325,60 +335,62 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
             ),
           Positioned(
-            left: 12,
-            top: 10,
-            child: MMGlass(
-              borderRadius: BorderRadius.circular(20),
-              padding: const EdgeInsets.fromLTRB(3, 3, 4, 3),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    height: 34,
-                    padding: const EdgeInsets.only(left: 12, right: 10),
-                    alignment: Alignment.centerLeft,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: MMSizes.sidebarWidth),
-                      child: Text(
-                        mapTitle.isEmpty ? l.mainMap : mapTitle,
-                        style: t.headline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const MMToolbarDivider(),
-                  MMSegmentedControl<MapViewMode>(
-                    value: state.mapView,
-                    onChanged: controller.setMapView,
-                    segments: [
-                      MMSegment(value: MapViewMode.map, label: l.mapView),
-                      MMSegment(value: MapViewMode.outline, label: l.outlineView),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            right: 12,
-            top: 10,
-            child: MMToolbarGroup(
+            left: MMSpacing.m,
+            right: MMSpacing.m,
+            top: MMSpacing.s,
+            child: Row(
               children: [
-                MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
-                MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
-                MMToolbarButton(
-                  icon: MMIcons.trash,
-                  tooltip: l.removeFromMap,
-                  onPressed: state.selectedMarkId != null
-                      ? controller.removeSelectedMark
-                      : state.selectedCardId == null
-                      ? null
-                      : remove,
+                Expanded(
+                  child: Text(
+                    mapTitle.isEmpty ? l.mainMap : mapTitle,
+                    style: t.headline,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                MMSegmentedControl<MapViewMode>(
+                  value: state.mapView,
+                  onChanged: controller.setMapView,
+                  segments: [
+                    MMSegment(value: MapViewMode.map, label: l.mapView),
+                    MMSegment(value: MapViewMode.outline, label: l.outlineView),
+                  ],
+                ),
+                const SizedBox(width: MMSpacing.s),
+                MMToolbarGroup(
+                  children: [
+                    MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
+                    MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
+                    MMToolbarButton(
+                      icon: MMIcons.trash,
+                      tooltip: l.removeFromMap,
+                      onPressed: state.selectedMarkId != null
+                          ? controller.removeSelectedMark
+                          : state.selectedCardId == null
+                          ? null
+                          : remove,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          if (state.mapView == MapViewMode.map && excerptTargetId != null)
+            Positioned(
+              left: MMSpacing.m,
+              bottom: MMSpacing.m,
+              right: MMSizes.mapViewControlsReservedWidth,
+              child: IgnorePointer(
+                child: Text(
+                  l.newExcerptTarget(
+                    excerptTargetId == rootNodeId ? rootTitle : content.card(excerptTargetId)?.title ?? '',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.footnote.copyWith(color: c.secondaryLabel),
+                ),
+              ),
+            ),
           if (state.mapView == MapViewMode.map)
             Positioned(
               right: 12,
@@ -390,6 +402,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     MMIconButton(
+                      icon: MMIcons.fitMap,
+                      tooltip: l.fitMap,
+                      onPressed: () => _viewCommand(MindMapCommand.fit),
+                    ),
+                    MMIconButton(
+                      icon: MMIcons.locate,
+                      tooltip: l.centerCurrentNode,
+                      onPressed: () => _viewCommand(MindMapCommand.center),
+                    ),
+                    const MMToolbarDivider(),
+                    MMIconButton(
                       icon: MMIcons.zoomOut,
                       tooltip: l.zoomOut,
                       size: 26,
@@ -399,7 +422,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     ),
                     SizedBox(
                       width: 44,
-                      child: _ZoomLabel(transform: _transform, style: t.callout),
+                      child: MMInteractive(
+                        tooltip: l.pdfActualSize,
+                        semanticLabel: l.pdfActualSize,
+                        onTap: () => _zoom(1 / mapScale(_transform.value)),
+                        builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
+                      ),
                     ),
                     MMIconButton(
                       icon: MMIcons.zoomIn,

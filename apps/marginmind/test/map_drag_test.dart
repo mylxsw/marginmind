@@ -220,7 +220,10 @@ void main() {
     final previews = <Rect>{};
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 16));
-      if (h.preview.evaluate().isNotEmpty) previews.add(tester.getRect(h.preview));
+      if (h.preview.evaluate().isNotEmpty) {
+        previews.add(tester.getRect(h.preview));
+        if (previews.length > 1) break;
+      }
     }
     expect(previews.length, greaterThan(1));
     final shown = tester.getRect(h.preview);

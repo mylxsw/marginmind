@@ -18,12 +18,14 @@ class AppSettings {
     this.language = LanguagePreference.system,
     this.annotationTool = AnnotationTool.select,
     this.readerStyle = MMReaderStyle.white,
+    this.readerSidebarWidth = MMSizes.readerSidebarWidth,
   });
 
   final AppearancePreference appearance;
   final LanguagePreference language;
   final AnnotationTool annotationTool;
   final MMReaderStyle readerStyle;
+  final double readerSidebarWidth;
 
   ThemeMode get themeMode => switch (appearance) {
     AppearancePreference.system => ThemeMode.system,
@@ -43,11 +45,13 @@ class AppSettings {
     LanguagePreference? language,
     AnnotationTool? annotationTool,
     MMReaderStyle? readerStyle,
+    double? readerSidebarWidth,
   }) => AppSettings(
     appearance: appearance ?? this.appearance,
     language: language ?? this.language,
     annotationTool: annotationTool ?? this.annotationTool,
     readerStyle: readerStyle ?? this.readerStyle,
+    readerSidebarWidth: readerSidebarWidth ?? this.readerSidebarWidth,
   );
 }
 
@@ -62,11 +66,21 @@ class SettingsController extends Notifier<AppSettings> {
   AppSettings build() {
     final prefs = ref.watch(sharedPreferencesProvider);
     return AppSettings(
+      readerSidebarWidth: (prefs.getDouble('settings.readerSidebarWidth') ?? MMSizes.readerSidebarWidth).clamp(
+        MMSizes.readerSidebarMinWidth,
+        MMSizes.readerSidebarMaxWidth,
+      ),
       readerStyle: _parse(MMReaderStyle.values, prefs.getString(_readerStyleKey), MMReaderStyle.white),
       annotationTool: _parse(AnnotationTool.values, prefs.getString(_annotationToolKey), AnnotationTool.select),
       appearance: _parse(AppearancePreference.values, prefs.getString(_appearanceKey), AppearancePreference.system),
       language: _parse(LanguagePreference.values, prefs.getString(_languageKey), LanguagePreference.system),
     );
+  }
+
+  Future<void> setReaderSidebarWidth(double width, {bool persist = true}) async {
+    final value = width.clamp(MMSizes.readerSidebarMinWidth, MMSizes.readerSidebarMaxWidth);
+    state = state.copyWith(readerSidebarWidth: value);
+    if (persist) await ref.read(sharedPreferencesProvider).setDouble('settings.readerSidebarWidth', value);
   }
 
   Future<void> setReaderStyle(MMReaderStyle value) async {

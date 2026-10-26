@@ -51,7 +51,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         final before = controller.content.cards.map((c) => c.id).toSet();
-        final plus = find.byKey(const ValueKey('excerpt-target'));
+        final plus = find.byKey(const ValueKey('node-add-child'));
         // Exercise the padded area outside the visible blue circle as well.
         final bounds = tester.getRect(plus);
         await tester.tapAt(bounds.center + Offset(0, -bounds.height * 0.4));
@@ -73,6 +73,13 @@ void main() {
   group('E-01 the node becomes a text field and the map follows it', () {
     testWidgets('no dialog; the node widens and its neighbors move smoothly', (tester) async {
       final container = await openFirstSet(tester);
+      final canvas = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
+      canvas.transformation.value = zoomMapAt(
+        canvas.transformation.value,
+        tester.getSize(find.byType(MindMapCanvas)).center(Offset.zero),
+        0.6 / mapScale(canvas.transformation.value),
+      );
+      await tester.pumpAndSettle();
       final excerptLeft = tester.getTopLeft(find.text(_excerpt)).dx;
       await doubleTap(tester, find.text('遗忘的规律'));
       expect(_field, findsOneWidget);

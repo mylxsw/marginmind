@@ -9,6 +9,7 @@ import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
+import '../../settings/app_settings.dart';
 import '../../shared/pdf_drop.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
@@ -63,6 +64,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final state = ref.read(provider);
+    final minReader = state.readerPanelVisible
+        ? ref.watch(settingsProvider.select((s) => s.readerSidebarWidth)) +
+              MMSizes.readerContentMinWidth +
+              MMSizes.dividerHitWidth
+        : MMSizes.readerMinWidth;
     final controller = ref.read(provider.notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId));
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
@@ -79,6 +85,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             sidebarVisible: state.sidebarVisible,
             windowWidth: constraints.maxWidth,
             sidebarWidth: MMSizes.sidebarWidth + MMSizes.sidebarInset,
+            minPrimary: minReader,
           );
           final collapsed = state.sidebarVisible && !shown.sidebarVisible;
           if (collapsed != state.sidebarAutoCollapsed) {
@@ -86,7 +93,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               if (mounted) controller.setSidebarAutoCollapsed(collapsed);
             });
           }
-          return _scaffold(context, state, controller, doc, setTitle, shown.sidebarVisible, shown.mode);
+          return _scaffold(context, state, controller, doc, setTitle, shown.sidebarVisible, shown.mode, minReader);
         },
       ),
     );
@@ -100,6 +107,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     String setTitle,
     bool sidebarVisible,
     MMSplitMode layout,
+    double minReader,
   ) {
     final l = context.l10n;
     return MMWindowScaffold(
@@ -120,7 +128,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 ? null
                 : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
             actions: [
-              _AnnotationTools(state: state, controller: controller),
               MMToolbarGroup(
                 children: [
                   MMToolbarButton(
@@ -156,54 +163,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         child: MMSplitView(
           mode: layout,
           fraction: state.splitFraction,
+          minPrimaryWidth: minReader,
           onFractionChanged: controller.setSplitFraction,
           primary: ReaderPane(studySetId: widget.studySetId),
           secondary: MapPane(studySetId: widget.studySetId),
         ),
       ),
-    );
-  }
-}
-
-class _AnnotationTools extends StatelessWidget {
-  const _AnnotationTools({required this.state, required this.controller});
-
-  final WorkspaceState state;
-  final WorkspaceController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    MMToolbarButton tool(IconData icon, String label, AnnotationTool value) => MMToolbarButton(
-      icon: icon,
-      tooltip: switch (value) {
-        AnnotationTool.highlight => AppShortcuts.tip(label, AppShortcuts.toggleAnnotationTool),
-        AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
-        AnnotationTool.select => label,
-      },
-      selected: state.tool == value,
-      onPressed: () => controller.setTool(value),
-    );
-    return MMToolbarGroup(
-      children: [
-        tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
-        tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
-        tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-        const MMToolbarDivider(),
-        MMColorMenuButton(
-          selected: state.color,
-          labelOf: l.colorName,
-          tooltip: l.annotationColor,
-          onChanged: controller.setColor,
-        ),
-        const MMToolbarDivider(),
-        MMToolbarButton(
-          icon: MMIcons.syncToMap,
-          tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
-          selected: state.syncToMap,
-          onPressed: controller.toggleSyncToMap,
-        ),
-      ],
     );
   }
 }

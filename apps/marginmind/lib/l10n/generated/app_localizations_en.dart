@@ -780,10 +780,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toggleNodeFold => 'Toggle Collapse';
 
   @override
-  String get fitMap => 'Fit Map to Window';
+  String get fitMap => 'Show Entire Map';
 
   @override
-  String get centerCurrentNode => 'Center on Current Node';
+  String get centerCurrentNode => 'Locate Selected Node';
 
   @override
   String get cutNodes => 'Cut';
@@ -966,5 +966,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerStylePaper => 'Paper';
 
   @override
-  String get readerStyleGreen => 'Soft Green';
+  String get readerStyleGreen => 'Light Green';
+
+  @override
+  String get readerAppearance => 'Reading Appearance';
 }

@@ -12,16 +12,23 @@ import '../workspace_controller.dart';
 import 'notices.dart';
 
 /// Width of the page sidebar inside the source pane.
-const readerSidebarWidth = 216.0;
+const readerSidebarWidth = MMSizes.readerSidebarWidth;
 
 /// Page sidebar of the source pane: thumbnails, the PDF's own table of
 /// contents, the reader's bookmarks and the document's highlights.
 class ReaderSidebar extends ConsumerWidget {
-  const ReaderSidebar({super.key, required this.studySetId, required this.document, required this.pdf});
+  const ReaderSidebar({
+    super.key,
+    required this.studySetId,
+    required this.document,
+    required this.pdf,
+    this.width = readerSidebarWidth,
+  });
 
   final String studySetId;
   final Document document;
   final MMPdfViewController pdf;
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,7 +40,7 @@ class ReaderSidebar extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
-      width: readerSidebarWidth,
+      width: width,
       decoration: BoxDecoration(
         color: c.sidebarOpaque,
         border: Border(right: BorderSide(color: c.separator)),
@@ -243,11 +250,13 @@ class _OutlineState extends State<_Outline> {
         final folded = _collapsed.contains(item);
         return MMInteractive(
           key: ValueKey('outline-$index'),
+          tooltip: item.title,
+          semanticLabel: item.title,
           onTap: item.isNavigable ? () => widget.pdf.jumpToPage(item.page) : null,
           selected: selected,
           builder: (context, s) => Container(
             constraints: const BoxConstraints(minHeight: MMSizes.sidebarRow),
-            padding: EdgeInsets.fromLTRB(2 + depth * 12.0, 4, 6, 4),
+            padding: EdgeInsets.fromLTRB(2 + math.min(depth, 6) * 12.0, 4, 6, 4),
             decoration: BoxDecoration(
               color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
               borderRadius: BorderRadius.circular(MMRadii.row),
@@ -273,7 +282,7 @@ class _OutlineState extends State<_Outline> {
                 Expanded(
                   child: Text(
                     item.title,
-                    maxLines: 3,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: t.callout.copyWith(
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

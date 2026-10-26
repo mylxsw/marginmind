@@ -60,6 +60,7 @@ void main() {
   Finder node(String id) => find.byKey(ValueKey(id));
   testWidgets('modifier click toggles map and outline selections; delete is one undo step', (tester) async {
     final container = await openFirstSet(tester);
+    await showWholeMap(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     WorkspaceState state() => container.read(workspaceProvider('demo-1'));
     controller.selectCard('c3');
@@ -103,6 +104,7 @@ void main() {
 
   testWidgets('marquee selects intersecting nodes and batch drag/color each undo once', (tester) async {
     final container = await openFirstSet(tester);
+    await showWholeMap(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     final bounds = tester
         .getRect(node('c3'))

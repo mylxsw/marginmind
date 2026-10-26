@@ -744,10 +744,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get toggleNodeFold => '折叠或展开';
 
   @override
-  String get fitMap => '适应窗口';
+  String get fitMap => '查看全图';
 
   @override
-  String get centerCurrentNode => '居中到当前节点';
+  String get centerCurrentNode => '定位选中节点';
 
   @override
   String get cutNodes => '剪切';
@@ -930,5 +930,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerStylePaper => '纸质';
 
   @override
-  String get readerStyleGreen => '护眼（淡绿）';
+  String get readerStyleGreen => '浅绿';
+
+  @override
+  String get readerAppearance => '阅读外观';
 }

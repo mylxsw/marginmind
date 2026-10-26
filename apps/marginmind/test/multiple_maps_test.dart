@@ -152,7 +152,6 @@ void main() {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     MindMapCanvas canvas() => tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
-    final fitted = canvas().transformation.value.clone();
     final annotation = controller.content.annotations.single.id;
     final card = controller.content.cardForAnnotation(annotation)!;
 
@@ -177,19 +176,20 @@ void main() {
     canvas().transformation.value = Matrix4.identity()..scaleByDouble(1.5, 1.5, 1, 1);
     controller.selectCard('c3');
     await tester.pumpAndSettle();
+    final preserved = canvas().transformation.value.clone();
     controller.setMapView(MapViewMode.outline);
     await tester.pumpAndSettle();
     controller.setMapView(MapViewMode.map);
     await tester.pumpAndSettle();
     expect(canvas().locateCardTick, 0);
-    expect(canvas().transformation.value.storage, orderedEquals(fitted.storage));
+    expect(canvas().transformation.value.storage, orderedEquals(preserved.storage));
 
     await controller.addMap('Other map');
     await tester.pumpAndSettle();
     await controller.selectMap(MindMap.defaultId);
     await tester.pumpAndSettle();
     expect(canvas().locateCardTick, 0);
-    expect(canvas().transformation.value.storage, orderedEquals(fitted.storage));
+    expect(canvas().transformation.value.storage, orderedEquals(preserved.storage));
     await settleHud(tester);
   });
 

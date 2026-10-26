@@ -13,6 +13,9 @@ import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
+
+import 'package:marginmind/app/app_commands.dart';
+
 import 'workspace_test.dart' show openFirstSet;
 
 final _now = DateTime(2026);
@@ -297,7 +300,7 @@ void main() {
       expect(h.navigated, isEmpty);
     });
 
-    testWidgets('fit shows a small map whole and a large one readable around the selection', (tester) async {
+    testWidgets('fit shows the entire map; locate restores readable scale', (tester) async {
       final h = _Harness(tester);
       await h.pump(_topics(4));
       h.focus.requestFocus();
@@ -314,17 +317,15 @@ void main() {
       await h.pump(_topics(80), size: const Size(500, 400));
       h.focus.requestFocus();
       await h.key(LogicalKeyboardKey.digit0, primary: true);
-      expect(h.scale, mapReadableScale);
+      expect(h.scale, lessThan(mapReadableScale));
       final small = tester.getRect(find.byType(MindMapCanvas));
-      expect(h.node('t40').center.dx, closeTo(small.center.dx, 0.5));
-      expect(h.node('t40').center.dy, closeTo(small.center.dy, 0.5));
-
-      // Without a selection, around the root.
-      h.selection = null;
-      await h.pump(_topics(80), size: const Size(500, 400));
-      h.focus.requestFocus();
-      await h.key(LogicalKeyboardKey.digit0, primary: true);
-      expect(h.node(rootNodeId).center.dx, closeTo(small.center.dx, 0.5));
+      for (final id in ['t0', 't79']) {
+        expect(small.contains(h.node(id).center), isTrue);
+      }
+      Actions.invoke(h.focus.context!, const MindMapIntent(MindMapCommand.center));
+      await tester.pumpAndSettle();
+      expect(h.scale, mapLocateScale);
+      expect((h.node('t40').center - small.center).distance, lessThan(1));
     });
 
     testWidgets('the first view of a wide balanced map is centered on the root', (tester) async {
@@ -365,6 +366,7 @@ void main() {
       expect(tester.getRect(source).top, greaterThan(h.node('e1').top));
       expect(tester.getRect(source).bottom, lessThan(h.node('e1').bottom));
       await mouse.moveTo(Offset.zero);
+      await tester.pump(MMMotion.standard);
       await tester.pumpAndSettle();
       expect(source, findsNothing);
 
@@ -425,63 +427,32 @@ void main() {
     });
   });
 
-  group('U-M5 excerpt target', () {
-    testWidgets('the node new excerpts go under is marked on its corner', (tester) async {
+  group('node actions', () {
+    testWidgets('add child stays screen-sized and follows the selected node', (tester) async {
       final h = _Harness(tester);
-      h.excerptTarget = 'topic';
-      await h.pump(_excerpts());
-      final mark = tester.getRect(find.byKey(const ValueKey('excerpt-target')));
-      expect(mark.center.dx, closeTo(h.node('topic').right, 0.5));
-      expect(mark.center.dy, closeTo(h.node('topic').top, 0.5));
-
-      h.excerptTarget = rootNodeId;
-      await h.pump(_excerpts());
-      expect(
-        tester.getRect(find.byKey(const ValueKey('excerpt-target'))).center.dx,
-        closeTo(h.node(rootNodeId).right, 0.5),
-      );
-
-      h.excerptTarget = null;
-      await h.pump(_excerpts());
-      expect(find.byKey(const ValueKey('excerpt-target')), findsNothing);
+      h.selection = 't2';
+      await h.pump(_topics(4));
+      for (final scale in [0.5, 1.17, 2.0]) {
+        h.transform.value = zoomMapAt(h.transform.value, h.center, scale / h.scale);
+        await tester.pumpAndSettle();
+        final mark = tester.getRect(find.byKey(const ValueKey('node-add-child')));
+        expect(mark.size, const Size(32, 32));
+        expect(mark.center.dx, closeTo(h.node('t2').left, .5));
+        expect(mark.center.dy, closeTo(h.node('t2').top, .5));
+      }
     });
 
-    testWidgets('the pane marks the target on the map instead of describing it', (tester) async {
+    testWidgets('excerpt destination is a separate hint, not the add button', (tester) async {
       final container = await openFirstSet(tester);
       final controller = container.read(workspaceProvider('demo-1').notifier);
-      final l = AppLocalizations.of(tester.element(find.byType(MindMapCanvas)));
-      expect(find.text(l.newExcerptTarget('认知科学入门')), findsNothing);
-      Rect mark() => tester.getRect(find.byKey(const ValueKey('excerpt-target')));
-      Rect node(String title) =>
-          tester.getRect(find.ancestor(of: find.text(title), matching: find.byType(Positioned)).first);
-      // Nothing selected: the root.
-      expect(mark().center.dx, closeTo(node('认知科学入门').right, 0.5));
-      // A topic takes new excerpts itself; an excerpt sends them to its parent.
-      final topic = controller.content.cards.firstWhere((c) => c.title == '对策一：间隔重复');
-      controller.selectCard(topic.id);
-      await tester.pumpAndSettle();
-      final target = tester.getRect(find.byKey(ValueKey(topic.id)));
-      expect(mark().center, isNot(Offset.zero));
-      expect((mark().center.dx - target.left).abs() < 0.5 || (mark().center.dx - target.right).abs() < 0.5, isTrue);
-      expect(mark().center.dy, closeTo(target.top, 0.5));
       final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
-      final parent = controller.content.node(excerpt.id)!.parentId!;
       controller.selectCard(excerpt.id);
       await tester.pumpAndSettle();
-      expect(mark().center.dy, closeTo(tester.getRect(find.byKey(ValueKey(parent))).top, 0.5));
-      final semantics = tester.ensureSemantics();
-      await tester.pump();
-      expect(find.bySemanticsLabel(l.newExcerptTarget(controller.content.card(parent)!.title)), findsOneWidget);
-      semantics.dispose();
+      final parent = controller.content.node(excerpt.id)!.parentId!;
+      final l = AppLocalizations.of(tester.element(find.byType(MindMapCanvas)));
+      expect(find.text(l.newExcerptTarget(controller.content.card(parent)!.title)), findsOneWidget);
+      expect(find.byKey(const ValueKey('node-add-child')), findsOneWidget);
       await settleHud(tester);
-    });
-
-    testWidgets('on the left side the mark sits on the outer corner', (tester) async {
-      final h = _Harness(tester);
-      h.excerptTarget = 't2';
-      await h.pump(_topics(4));
-      final mark = tester.getRect(find.byKey(const ValueKey('excerpt-target')));
-      expect(mark.center.dx, closeTo(h.node('t2').left, 0.5));
     });
   });
 

@@ -13,6 +13,7 @@ import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
 import 'reader_sidebar.dart';
+import 'reader_annotation_tools.dart';
 import 'selection_toolbar.dart';
 
 /// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
@@ -163,7 +164,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (doc != null)
+        if (openDocs.length > 1)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
             child: Row(
@@ -185,44 +186,71 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         ),
                       ),
                     ),
-                const Spacer(),
-                Builder(
-                  builder: (context) => MMButton(
-                    key: const ValueKey('pdf-options'),
-                    label: l.pdfOptions,
-                    icon: MMIcons.chevronDown,
-                    onPressed: () {
-                      final box = context.findRenderObject()! as RenderBox;
-                      showMMMenu(
-                        context,
-                        position: box.localToGlobal(Offset(0, box.size.height)),
-                        entries: [
-                          MMMenuItem(
-                            state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                            controller.toggleReaderPanel,
-                          ),
-                          for (final (mode, label) in [
-                            (ReaderPanelMode.thumbnails, l.readerThumbnails),
-                            (ReaderPanelMode.outline, l.readerOutline),
-                            (ReaderPanelMode.bookmarks, l.readerBookmarks),
-                            (ReaderPanelMode.annotations, l.readerAnnotations),
-                          ])
-                            MMMenuItem(label, () => controller.showReaderPanel(mode)),
-                          const MMMenuDivider(),
-                          for (final command in readerStyleCommands(
-                            l,
-                            style,
-                            ref.read(settingsProvider.notifier).setReaderStyle,
-                          ))
-                            MMMenuItem(command.label, command.onInvoke),
-                          const MMMenuDivider(),
-                          MMMenuItem(l.pdfFitWidth, _pdf.fitWidth),
-                          MMMenuItem(l.pdfFitPage, _pdf.fitPage),
-                        ],
-                      );
-                    },
+              ],
+            ),
+          ),
+        if (doc != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+            child: Wrap(
+              spacing: MMSpacing.s,
+              runSpacing: MMSpacing.s,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                MMToolbarButton(
+                  icon: MMIcons.sidebar,
+                  tooltip: AppShortcuts.tip(
+                    state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+                    AppShortcuts.toggleReaderSidebar,
+                  ),
+                  selected: state.readerPanelVisible,
+                  onPressed: controller.toggleReaderPanel,
+                ),
+                MMToolbarButton(icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
+                MMToolbarButton(icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
+                MMToolbarButton(icon: MMIcons.fitWidth, tooltip: l.pdfFitWidth, onPressed: _pdf.fitWidth),
+                MMToolbarButton(icon: MMIcons.fitPage, tooltip: l.pdfFitPage, onPressed: _pdf.fitPage),
+                PopupMenuButton<MMReaderStyle>(
+                  key: const ValueKey('reader-appearance'),
+                  tooltip: l.readerAppearance,
+                  onSelected: ref.read(settingsProvider.notifier).setReaderStyle,
+                  itemBuilder: (context) => [
+                    for (final value in MMReaderStyle.values)
+                      PopupMenuItem(
+                        value: value,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: MMSpacing.xl,
+                              height: MMSpacing.xl,
+                              decoration: BoxDecoration(
+                                color: value.paperColor,
+                                border: Border.all(color: c.separator),
+                                borderRadius: BorderRadius.circular(MMRadii.field),
+                              ),
+                              child: Center(
+                                child: Text('Aa', style: context.mmText.footnote.copyWith(color: value.inkColor)),
+                              ),
+                            ),
+                            const SizedBox(width: MMSpacing.s),
+                            Text(switch (value) {
+                              MMReaderStyle.white => l.readerStyleWhite,
+                              MMReaderStyle.dark => l.readerStyleDark,
+                              MMReaderStyle.paper => l.readerStylePaper,
+                              MMReaderStyle.green => l.readerStyleGreen,
+                            }),
+                            const Spacer(),
+                            if (value == style) Icon(Icons.check, color: c.accent, size: MMSpacing.l),
+                          ],
+                        ),
+                      ),
+                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(MMSpacing.s),
+                    child: Text(l.readerAppearance, style: context.mmText.callout),
                   ),
                 ),
+                ReaderAnnotationTools(state: state, controller: controller),
               ],
             ),
           ),
@@ -241,129 +269,136 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     ),
                   ],
                 )
-              : Row(
-                  children: [
-                    if (state.readerPanelVisible)
-                      ReaderSidebar(studySetId: widget.studySetId, document: doc, pdf: _pdf),
-                    Expanded(
-                      child: Listener(
-                        onPointerSignal: (_) => dismissSelection(),
-                        onPointerPanZoomStart: (_) => dismissSelection(),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: !ref.watch(pdfRenderingEnabledProvider)
-                                  ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
-                                  : MMPdfView(
-                                      key: ValueKey(doc.id),
-                                      filePath: controller.filePath(doc),
-                                      controller: _pdf,
-                                      initialPage:
-                                          ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
-                                      backgroundColor: c.readerBackground,
-                                      emphasisColor: c.accent,
-                                      pageColorFilter: style.pageFilter,
-                                      highlights: _highlights(content, doc.id, state),
-                                      areaSelecting: state.tool == AnnotationTool.area,
-                                      onAreaSelected: (area) async {
-                                        dismissSelection();
-                                        final notice = await controller.excerptArea(
-                                          doc.id,
-                                          area,
-                                          () => _pdf.captureArea(area.page, area.rect),
-                                        );
-                                        if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                                      },
-                                      onViewportChanged: dismissSelection,
-                                      onPageChanged: (page, _) {
-                                        dismissSelection();
-                                        controller.recordPage(doc.id, page);
-                                      },
-                                      onSelectionChanged: (selected) {
-                                        if (!selected && ref.read(provider).pending is PendingSelection) {
-                                          dismissSelection();
-                                        }
-                                      },
-                                      onHighlightTap: (id, bounds) {
-                                        _pdf.clearSelection();
-                                        controller.tapHighlight(id, bounds);
-                                      },
-                                      onSelectionCommitted: (selection) async {
-                                        final notice = await controller.onSelectionCommitted(doc.id, selection);
-                                        if (notice != null) {
-                                          await _pdf.clearSelection();
-                                          if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                                        }
-                                      },
-                                    ),
-                            ),
-                            if (state.findVisible)
-                              Positioned(
-                                top: 12,
-                                left: 12,
-                                right: 16,
-                                child: Align(
-                                  alignment: Alignment.topRight,
-                                  child: ReaderFindBar(
-                                    pdf: _pdf,
-                                    focusTick: state.findFocusTick,
-                                    onClose: controller.closeFind,
-                                  ),
-                                ),
-                              ),
-                            if (state.pending case final PendingAction pending)
+              : LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      if (state.readerPanelVisible)
+                        _ResizableReaderSidebar(
+                          studySetId: widget.studySetId,
+                          document: doc,
+                          pdf: _pdf,
+                          available: constraints.maxWidth,
+                        ),
+                      Expanded(
+                        child: Listener(
+                          onPointerSignal: (_) => dismissSelection(),
+                          onPointerPanZoomStart: (_) => dismissSelection(),
+                          child: Stack(
+                            children: [
                               Positioned.fill(
-                                child: MMFloatingToolbarLayout(
-                                  avoid: _pagePillArea,
-                                  anchor: switch (pending) {
-                                    PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
-                                    PendingHighlight(:final viewportRect) => viewportRect,
-                                  },
-                                  child: SelectionToolbar(
-                                    key: ObjectKey(pending),
-                                    studySetId: widget.studySetId,
-                                    pending: pending,
-                                    pdf: _pdf,
-                                    rootTitle: rootTitle,
+                                child: !ref.watch(pdfRenderingEnabledProvider)
+                                    ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
+                                    : MMPdfView(
+                                        key: ValueKey(doc.id),
+                                        filePath: controller.filePath(doc),
+                                        controller: _pdf,
+                                        initialPage:
+                                            ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
+                                        backgroundColor: c.readerBackground,
+                                        emphasisColor: c.accent,
+                                        pageColorFilter: style.pageFilter,
+                                        highlights: _highlights(content, doc.id, state),
+                                        areaSelecting: state.tool == AnnotationTool.area,
+                                        onAreaSelected: (area) async {
+                                          dismissSelection();
+                                          final notice = await controller.excerptArea(
+                                            doc.id,
+                                            area,
+                                            () => _pdf.captureArea(area.page, area.rect),
+                                          );
+                                          if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                        },
+                                        onViewportChanged: dismissSelection,
+                                        onPageChanged: (page, _) {
+                                          dismissSelection();
+                                          controller.recordPage(doc.id, page);
+                                        },
+                                        onSelectionChanged: (selected) {
+                                          if (!selected && ref.read(provider).pending is PendingSelection) {
+                                            dismissSelection();
+                                          }
+                                        },
+                                        onHighlightTap: (id, bounds) {
+                                          _pdf.clearSelection();
+                                          controller.tapHighlight(id, bounds);
+                                        },
+                                        onSelectionCommitted: (selection) async {
+                                          final notice = await controller.onSelectionCommitted(doc.id, selection);
+                                          if (notice != null) {
+                                            await _pdf.clearSelection();
+                                            if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                          }
+                                        },
+                                      ),
+                              ),
+                              if (state.findVisible)
+                                Positioned(
+                                  top: 12,
+                                  left: 12,
+                                  right: 16,
+                                  child: Align(
+                                    alignment: Alignment.topRight,
+                                    child: ReaderFindBar(
+                                      pdf: _pdf,
+                                      focusTick: state.findFocusTick,
+                                      onClose: controller.closeFind,
+                                    ),
+                                  ),
+                                ),
+                              if (state.pending case final PendingAction pending)
+                                Positioned.fill(
+                                  child: MMFloatingToolbarLayout(
+                                    avoid: _pagePillArea,
+                                    anchor: switch (pending) {
+                                      PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
+                                      PendingHighlight(:final viewportRect) => viewportRect,
+                                    },
+                                    child: SelectionToolbar(
+                                      key: ObjectKey(pending),
+                                      studySetId: widget.studySetId,
+                                      pending: pending,
+                                      pdf: _pdf,
+                                      rootTitle: rootTitle,
+                                    ),
+                                  ),
+                                ),
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 16,
+                                child: Center(
+                                  child: Consumer(
+                                    builder: (context, ref, _) {
+                                      final page =
+                                          ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ??
+                                          doc.lastPage;
+                                      return _PagePill(
+                                        page: page,
+                                        editRequests: _pageFieldRequests,
+                                        pageCount: doc.pageCount,
+                                        onJump: (page) {
+                                          dismissSelection();
+                                          _pdf.jumpToPage(page);
+                                        },
+                                        onPrevious: () {
+                                          dismissSelection();
+                                          _pdf.goToPage((page) - 1);
+                                        },
+                                        onNext: () {
+                                          dismissSelection();
+                                          _pdf.goToPage((page) + 1);
+                                        },
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: 16,
-                              child: Center(
-                                child: Consumer(
-                                  builder: (context, ref, _) {
-                                    final page =
-                                        ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ??
-                                        doc.lastPage;
-                                    return _PagePill(
-                                      page: page,
-                                      editRequests: _pageFieldRequests,
-                                      pageCount: doc.pageCount,
-                                      onJump: (page) {
-                                        dismissSelection();
-                                        _pdf.jumpToPage(page);
-                                      },
-                                      onPrevious: () {
-                                        dismissSelection();
-                                        _pdf.goToPage((page) - 1);
-                                      },
-                                      onNext: () {
-                                        dismissSelection();
-                                        _pdf.goToPage((page) + 1);
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
         ),
       ],
@@ -611,6 +646,45 @@ class _Tab extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ResizableReaderSidebar extends ConsumerWidget {
+  const _ResizableReaderSidebar({
+    required this.studySetId,
+    required this.document,
+    required this.pdf,
+    required this.available,
+  });
+  final double available;
+  final String studySetId;
+  final Document document;
+  final MMPdfViewController pdf;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preferred = ref.watch(settingsProvider.select((s) => s.readerSidebarWidth));
+    final width = preferred.clamp(
+      MMSizes.readerSidebarMinWidth,
+      (available - MMSizes.readerContentMinWidth).clamp(MMSizes.readerSidebarMinWidth, MMSizes.readerSidebarMaxWidth),
+    );
+    return Row(
+      children: [
+        ReaderSidebar(studySetId: studySetId, document: document, pdf: pdf, width: width),
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            key: const ValueKey('reader-sidebar-resize'),
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (event) =>
+                ref.read(settingsProvider.notifier).setReaderSidebarWidth(width + event.delta.dx, persist: false),
+            onHorizontalDragEnd: (_) => ref
+                .read(settingsProvider.notifier)
+                .setReaderSidebarWidth(ref.read(settingsProvider).readerSidebarWidth),
+            child: const SizedBox(width: MMSizes.dividerHitWidth, height: double.infinity),
+          ),
+        ),
+      ],
     );
   }
 }

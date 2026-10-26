@@ -4,6 +4,10 @@ import 'package:flutter/cupertino.dart';
 /// with Flutter) so the same names work on every platform; the SF Symbol each
 /// one stands for is noted for a future native-symbol renderer on macOS.
 abstract final class MMIcons {
+  static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;
+  static const IconData fitWidth = CupertinoIcons.arrow_left_right;
+  static const IconData fitPage = CupertinoIcons.rectangle;
+  static const IconData locate = CupertinoIcons.location_circle;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
   static const IconData search = CupertinoIcons.search; // magnifyingglass
   static const IconData add = CupertinoIcons.add; // plus

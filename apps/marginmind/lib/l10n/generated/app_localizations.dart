@@ -1421,13 +1421,13 @@ abstract class AppLocalizations {
   /// No description provided for @fitMap.
   ///
   /// In en, this message translates to:
-  /// **'Fit Map to Window'**
+  /// **'Show Entire Map'**
   String get fitMap;
 
   /// No description provided for @centerCurrentNode.
   ///
   /// In en, this message translates to:
-  /// **'Center on Current Node'**
+  /// **'Locate Selected Node'**
   String get centerCurrentNode;
 
   /// No description provided for @cutNodes.
@@ -1781,8 +1781,14 @@ abstract class AppLocalizations {
   /// No description provided for @readerStyleGreen.
   ///
   /// In en, this message translates to:
-  /// **'Soft Green'**
+  /// **'Light Green'**
   String get readerStyleGreen;
+
+  /// No description provided for @readerAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Appearance'**
+  String get readerAppearance;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -136,20 +136,16 @@ void main() {
     });
   });
 
-  testWidgets('the PDF menu opens and closes the page sidebar', (tester) async {
+  testWidgets('the PDF toolbar opens and closes the page sidebar', (tester) async {
     await openReader(tester);
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('pdf-options')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Show Page Sidebar'));
+    await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsOneWidget);
     expect(find.byIcon(MMIcons.outline), findsNothing, reason: 'no contents, no tab');
     expect(find.byIcon(MMIcons.bookmark), findsOneWidget);
     expect(find.byIcon(MMIcons.annotations), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('pdf-options')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hide Page Sidebar'));
+    await tester.tap(find.byTooltip(RegExp('Hide Page Sidebar')));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
   });

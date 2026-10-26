@@ -1,3 +1,5 @@
+import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -81,7 +83,7 @@ void main() {
         reason: '${shortcut.value}',
       );
     }
-    command('Center on Current Node').onSelected!();
+    command('Locate Selected Node').onSelected!();
     await tester.pumpAndSettle();
     command('Add Sibling After').onSelected!();
     await tester.pumpAndSettle();
@@ -103,7 +105,7 @@ void main() {
     await tester.tap(find.byType(TextField).first);
     await tester.pumpAndSettle();
     expect(command('Add Child Topic').onSelected, isNull);
-    expect(command('Center on Current Node').onSelected, isNull);
+    expect(command('Locate Selected Node').onSelected, isNull);
     await settleHud(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
@@ -234,7 +236,10 @@ void main() {
     // Too deep to fit readably: "fit" stops at the readable zoom, centered on
     // the selection.
     await key(tester, LogicalKeyboardKey.digit0, primary: true);
-    expect(mapScale(transform.value), mapReadableScale);
+    expect(mapScale(transform.value), lessThan(mapReadableScale));
+    Actions.invoke(canvas(tester).focusNode.context!, const MindMapIntent(MindMapCommand.center));
+    await tester.pumpAndSettle();
+    expect(mapScale(transform.value), mapLocateScale);
     visible(tester, find.byKey(const ValueKey('c3')));
     final viewport = tester.getRect(find.byType(MindMapCanvas));
     expect(tester.getCenter(find.byKey(const ValueKey('c3'))).dx, closeTo(viewport.center.dx, 1));
@@ -256,9 +261,9 @@ void main() {
     String label() => '${(mapScale(transform.value) * 100).round()}%';
     await key(tester, LogicalKeyboardKey.digit0, primary: true);
     final fitted = mapScale(transform.value);
-    expect(fitted, mapReadableScale);
+    expect(fitted, lessThan(mapReadableScale));
     expect(find.text(label()), findsOneWidget);
-    await tester.tap(find.byTooltip('Zoom Out'));
+    await tester.tap(find.descendant(of: find.byType(MapPane), matching: find.byTooltip('Zoom Out')));
     await tester.pumpAndSettle();
     expect(mapScale(transform.value), closeTo(math.max(fitted / 1.25, mapMinScale), 1e-9));
     expect(find.text(label()), findsOneWidget);

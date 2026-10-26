@@ -255,6 +255,7 @@ void main() {
 
   testWidgets('dragging a node onto a topic makes it a child', (tester) async {
     final container = await openFirstSet(tester);
+    await showWholeMap(tester);
     final from = tester.getCenter(find.text('这条先陡后平的曲线，被称为遗忘曲线。'));
     final gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
     await tester.pump(const Duration(milliseconds: 50));
