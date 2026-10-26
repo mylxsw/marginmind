@@ -30,14 +30,14 @@ PDF 有日期页眉、路径与变化页码的页脚，中英文硬换行、连�
 - `dart format --set-exit-if-changed apps packages`：161 个文件，无改动。
 - `flutter analyze`：无问题。
 - `python3 -m unittest discover -s tool/tests`：3 项通过。
-- `python3 tool/coverage.py`：七个套件全部通过，总覆盖率 91.42%；新纯函数 107/107 行，选区接入新增可执行行 44/44，共 151/151。
+- `python3 tool/coverage.py`：七个套件全部通过，总覆盖率 91.42%；新纯函数 107/107 行，选区接入新增可执行行 45/45，共 152/152。
 - `xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES`（应用目录）：3 项原生测试通过。
 - `flutter build macos --release`：通过；上述截图来自独立签名的 Release 应用。
 
 自审覆盖选区→引文→高亮→卡片→复习完整链路、空选区、无文本/几何无效、反向跨页选择、
 邻页失败、异步过期与卸载、旧数据、正文误判和多栏间隙。修复了两项真机发现：PDFium 的 U+0002
 断词标记，以及主题改变后 PDF 画布缓存仍显示原始选区的问题（下一帧显式重绘）。
-空白/纯页眉选区会清掉原生选区并关闭旧工具条，已补真实选区委托回归测试。
+空白/纯页眉选区会清掉原生选区并关闭旧工具条，已补真实选区委托回归测试，并在最终 Release 构建中拖选页眉复验：不出现工具条或卡片。
 
 ## 识别边界与人工项
 
