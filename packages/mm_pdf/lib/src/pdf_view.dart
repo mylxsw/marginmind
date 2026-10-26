@@ -354,6 +354,7 @@ class MMPdfView extends StatefulWidget {
 
 class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
+
   /// Created once the viewer is ready: the searcher needs an open document.
   PdfTextSearcher? _searcher;
   PdfTextSelection? _selection;
