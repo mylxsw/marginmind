@@ -168,7 +168,10 @@ class MMPdfViewController extends ChangeNotifier {
   void search(String query) {
     _query = query;
     final state = _state;
-    if (state == null || !state._ready) return;
+    if (state == null || !state._ready) {
+      _notify();
+      return;
+    }
     if (query.isEmpty) {
       state._searcher.resetTextSearch();
     } else {
@@ -228,6 +231,16 @@ class MMPdfViewController extends ChangeNotifier {
   void _reportReady(int pageCount, List<MMPdfOutlineItem> outline) {
     _pageCount = pageCount;
     _outline = outline;
+    _notify();
+  }
+
+  /// Lets widget tests that have no PDF engine stand in for an open
+  /// document: pretends the view reported these values.
+  @visibleForTesting
+  void debugReport({int? pageCount, int? page, List<MMPdfOutlineItem>? outline}) {
+    if (pageCount != null) _pageCount = pageCount;
+    if (page != null) _page = page;
+    if (outline != null) _outline = outline;
     _notify();
   }
 
