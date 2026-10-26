@@ -54,7 +54,9 @@ class MMSplitView extends StatelessWidget {
   }) {
     if (mode != MMSplitMode.split) return (sidebarVisible: sidebarVisible, mode: mode);
     final needed = minPrimary + minSecondary + 1;
-    if (windowWidth - (sidebarVisible ? sidebarWidth : 0) >= needed) return (sidebarVisible: sidebarVisible, mode: mode);
+    if (windowWidth - (sidebarVisible ? sidebarWidth : 0) >= needed) {
+      return (sidebarVisible: sidebarVisible, mode: mode);
+    }
     if (windowWidth >= needed) return (sidebarVisible: false, mode: mode);
     return (sidebarVisible: sidebarVisible, mode: MMSplitMode.primary);
   }

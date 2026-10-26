@@ -45,7 +45,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       _searchFocus.requestFocus();
     });
 
-    final l = context.l10n;
     ref.watch(
       provider.select(
         (s) => (
