@@ -38,7 +38,8 @@ class CardDetails extends ConsumerWidget {
     final (icon, kindLabel) = switch (card?.kind) {
       CardKind.excerpt => (MMIcons.document, l.detailsExcerpt),
       CardKind.image => (MMIcons.areaSelect, l.detailsImage),
-      CardKind.note => (MMIcons.addNote, l.detailsNote),
+      // Research notes get their own details with the research flow.
+      CardKind.note || CardKind.research => (MMIcons.addNote, l.detailsNote),
       CardKind.topic || null => (MMIcons.mindMap, l.detailsTopic),
     };
     final header = RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel);
@@ -67,7 +68,7 @@ class CardDetails extends ConsumerWidget {
       _DetailsTitle(
         key: ValueKey('details-title-${card.id}'),
         title: card.title,
-        note: card.kind == CardKind.note,
+        note: card.kind == CardKind.note || card.kind == CardKind.research,
         optional: card.kind == CardKind.excerpt || card.kind == CardKind.image,
         onCommit: (text) => controller.setTitle(card.id, text),
       ),

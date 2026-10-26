@@ -516,6 +516,27 @@ void main() {
       await settleHud(tester);
     });
 
+    testWidgets('a research card shows like a note until the research flow brings its own details', (tester) async {
+      final base = demoContent();
+      final content = base.copyWith(
+        cards: [
+          ...base.cards,
+          Card(id: 'r1', kind: CardKind.research, title: '结论', createdAt: testNow),
+        ],
+        nodes: [
+          ...base.nodes,
+          const MapNode(cardId: 'r1', order: 99),
+        ],
+      );
+      final app = await _open(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
+      app.controller.showDetails('r1');
+      await tester.pumpAndSettle();
+      expect(_inPanel(find.text('Note')), findsOneWidget);
+      expect(tester.widget<MMInlineTextField>(titleField()).multiline, isTrue);
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
+    });
+
     testWidgets('a note’s text is edited with line breaks; an image shows its picture', (tester) async {
       final app = await _open(tester);
       await app.controller.addNote('第一行');
