@@ -48,6 +48,7 @@ class ResearchHttp {
     String method = 'GET',
     Map<String, String> headers = const {},
     Object? body,
+    void Function(Uri url, Map<String, String> headers)? onResponse,
   }) async* {
     budget.validate();
     cancellation.check();
@@ -123,6 +124,7 @@ class ResearchHttp {
             _ => ResearchFailureKind.invalidRequest,
           });
         }
+        onResponse?.call(target, response.headers);
         final length = response.contentLength;
         if (length != null && length > budget.responseBytes) {
           throw const ResearchFailure(ResearchFailureKind.budget);

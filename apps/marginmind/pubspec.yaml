@@ -19,6 +19,8 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.6
   shared_preferences: ^2.5.6
+  mm_research:
+    path: ../../packages/mm_research
   mm_core:
     path: ../../packages/mm_core
   mm_data:
