@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -104,6 +105,46 @@ void main() {
       await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
       await tester.pumpAndSettle();
       expect(container.read(provider).layout, MMSplitMode.primary);
+      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+    });
+  });
+
+  group('sidebar commands with no room for it', () {
+    testWidgets('toggling the sidebar shows it, as the reader alone', (tester) async {
+      final container = await openSet(tester, size: const Size(900, 820));
+      await tester.pumpAndSettle();
+      expect(container.read(provider).sidebarAutoCollapsed, isTrue);
+      expect(find.text('Mind Maps').hitTestable(), findsNothing);
+      container.read(provider.notifier).toggleSidebar();
+      await tester.pumpAndSettle();
+      expect(container.read(provider).layout, MMSplitMode.primary);
+      expect(container.read(provider).sidebarAutoCollapsed, isFalse);
+      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+      // Back to the usual toggle once it is on screen.
+      container.read(provider.notifier).toggleSidebar();
+      await tester.pumpAndSettle();
+      expect(find.text('Mind Maps').hitTestable(), findsNothing);
+    });
+
+    testWidgets('find in the sidebar brings it back and focuses the search field', (tester) async {
+      final container = await openSet(tester, size: const Size(900, 820));
+      await tester.pumpAndSettle();
+      container.read(focusRequestsProvider.notifier).request(FocusTarget.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+      final field = tester.widget<TextField>(find.byType(TextField).first);
+      expect(field.focusNode?.hasFocus, isTrue);
+    });
+
+    testWidgets('a hidden sidebar is shown by the same commands in a wide window', (tester) async {
+      final container = await openSet(tester, size: const Size(1400, 820));
+      container.read(provider.notifier).toggleSidebar();
+      await tester.pumpAndSettle();
+      expect(find.text('Mind Maps').hitTestable(), findsNothing);
+      container.read(focusRequestsProvider.notifier).request(FocusTarget.search);
+      await tester.pumpAndSettle();
+      expect(container.read(provider).sidebarVisible, isTrue);
+      expect(container.read(provider).layout, MMSplitMode.split);
       expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
     });
   });

@@ -351,7 +351,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 }
 
 /// Space the page pill takes at the bottom of the reader; floating toolbars
-/// keep clear of it.
+/// keep clear of it. An estimate that is wider than `_PagePill`; change both
+/// together.
 const _pagePillBottom = 16.0;
 const _pagePillSize = Size(200, 32);
 

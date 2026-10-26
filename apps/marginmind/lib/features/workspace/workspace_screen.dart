@@ -41,8 +41,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 != FocusTarget.search) return;
-      if (!ref.read(provider).sidebarVisible) ref.read(provider.notifier).toggleSidebar();
-      _searchFocus.requestFocus();
+      ref.read(provider.notifier).showSidebar();
+      // The field takes focus once the sidebar is back in the tree.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchFocus.requestFocus();
+      });
     });
 
     ref.watch(
@@ -77,6 +80,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             windowWidth: constraints.maxWidth,
             sidebarWidth: MMSizes.sidebarWidth + MMSizes.sidebarInset,
           );
+          final collapsed = state.sidebarVisible && !shown.sidebarVisible;
+          if (collapsed != state.sidebarAutoCollapsed) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) controller.setSidebarAutoCollapsed(collapsed);
+            });
+          }
           return _scaffold(context, state, controller, doc, setTitle, shown.sidebarVisible, shown.mode);
         },
       ),
@@ -93,7 +102,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     MMSplitMode layout,
   ) {
     final l = context.l10n;
-    final autoCollapsed = state.sidebarVisible && !sidebarVisible;
     return MMWindowScaffold(
       sidebarVisible: sidebarVisible,
       onDragStart: WindowChrome.onDragStart,
@@ -113,10 +121,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 : MMIconButton(
                     icon: MMIcons.sidebar,
                     tooltip: l.showSidebar,
-                    // With no room beside the map, the sidebar replaces it.
-                    onPressed: autoCollapsed
-                        ? () => controller.setLayout(MMSplitMode.primary)
-                        : controller.toggleSidebar,
+                    onPressed: controller.showSidebar,
                   ),
             actions: [
               _AnnotationTools(state: state, controller: controller),
