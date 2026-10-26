@@ -103,7 +103,20 @@ class MindMapCanvas extends StatefulWidget {
     this.onCancelConnect,
     this.onMarkContextMenu,
     this.excerptTargetId,
+    this.expandedCardIds = const {},
+    this.onToggleExpanded,
+    this.onOpenDetails,
   });
+
+  /// Cards shown with their whole text; the others are cut to a preview.
+  final Set<String> expandedCardIds;
+
+  /// "Show full text" / "Show less" on a cut card.
+  final ValueChanged<String>? onToggleExpanded;
+
+  /// Double click on an excerpt opens its details (other nodes edit in
+  /// place, through [onRename]).
+  final ValueChanged<String>? onOpenDetails;
 
   /// The node new excerpts are added under ([rootNodeId] for the root),
   /// marked on the map; null shows no mark.
@@ -546,6 +559,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         if (selected != null) widget.onDelete();
       case MindMapCommand.fold:
         if (selected != null) widget.onToggleCollapsed(selected);
+      case MindMapCommand.expand:
+        if (selected != null) widget.onCommand?.call(command);
       case MindMapCommand.up || MindMapCommand.down:
         if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
       case MindMapCommand.fit:
@@ -970,6 +985,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       widget.onContextMenu != null,
       l.revealSource,
       l.cardSuspended,
+      spec.truncated,
+      spec.expanded,
+      widget.onToggleExpanded != null,
+      widget.onOpenDetails != null,
+      l.expandCardText,
     );
     final cached = _nodeWidgets[id];
     if (cached != null && cached.signature == signature) return cached.child;
@@ -1004,7 +1024,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   }
                   _select(id == rootNodeId ? null : id, additive: additive);
                 },
-                onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
+                onDoubleTap: id == rootNodeId
+                    ? null
+                    : spec.kind == _Kind.excerpt && widget.onOpenDetails != null
+                    ? () => widget.onOpenDetails!(id)
+                    : () => widget.onRename(id),
+                onToggleExpanded: widget.onToggleExpanded == null
+                    ? null
+                    : () {
+                        widget.focusNode.requestFocus();
+                        widget.onSelect(id);
+                        widget.onToggleExpanded!(id);
+                      },
+                expandLabel: l.expandCardText,
+                collapseLabel: l.collapseCardText,
                 onSecondaryTapUp: widget.onContextMenu == null
                     ? null
                     : (position) {
@@ -1043,6 +1076,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       textScaler: MediaQuery.textScalerOf(context),
       locale: Localizations.localeOf(context),
       textDirection: Directionality.of(context),
+      expanded: widget.expandedCardIds,
     );
     final specs = _cache._specs;
     _tapModifiers.removeWhere((id, _) => !specs.containsKey(id));
@@ -1094,6 +1128,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           if (event is! KeyDownEvent || field != null || _markField != null) return KeyEventResult.ignored;
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
+          // On macOS ⌥Space types a no-break space, and the Option key can
+          // reach the keyboard state after it: never take it for Space (edit).
+          if (key == LogicalKeyboardKey.space && event.character == '\u00a0') {
+            _command(MindMapCommand.expand);
+            return KeyEventResult.handled;
+          }
           for (final entry in mindMapShortcuts.entries) {
             if (entry.key.accepts(event, HardwareKeyboard.instance)) {
               _command(entry.value);
@@ -1451,7 +1491,15 @@ class _NodeView extends StatelessWidget {
     required this.revealLabel,
     this.editor,
     this.onPressStart,
+    this.onToggleExpanded,
+    this.expandLabel = '',
+    this.collapseLabel = '',
   });
+
+  /// Shows a cut card's whole text, or its preview again.
+  final VoidCallback? onToggleExpanded;
+  final String expandLabel;
+  final String collapseLabel;
 
   /// Replaces the title (a note's text) while it is edited in place; the
   /// node then takes no gestures of its own.
@@ -1522,8 +1570,8 @@ class _NodeView extends StatelessWidget {
                       editor ??
                       Text(
                         spec.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: spec.expanded ? null : 1,
+                        overflow: spec.expanded ? null : TextOverflow.ellipsis,
                         style: t.headline.copyWith(height: 17 / 13),
                       ),
                 ),
@@ -1548,17 +1596,42 @@ class _NodeView extends StatelessWidget {
               ),
               child: Text(
                 spec.quote ?? '',
-                maxLines: _NodeSpec.maxQuoteLines,
-                overflow: TextOverflow.ellipsis,
+                maxLines: spec.expanded ? null : _NodeSpec.maxQuoteLines,
+                overflow: spec.expanded ? null : TextOverflow.ellipsis,
                 style: t.readingExcerpt,
+              ),
+            ),
+          if (spec.truncated)
+            Padding(
+              padding: const EdgeInsets.only(top: _NodeSpec.toggleGap),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _ExpandToggle(
+                  expanded: spec.expanded,
+                  label: spec.expanded ? collapseLabel : expandLabel,
+                  onTap: onToggleExpanded,
+                ),
               ),
             ),
         ],
       ),
     };
 
+    // A card's content is laid out at its new size at once while the card
+    // grows or shrinks to it (expanding, a title row appearing): it is
+    // revealed from the top rather than squeezed.
+    final sized = spec.kind == _Kind.excerpt || spec.kind == _Kind.image
+        ? ClipRect(
+            child: OverflowBox(
+              alignment: AlignmentDirectional.topStart,
+              minHeight: 0,
+              maxHeight: double.infinity,
+              child: content,
+            ),
+          )
+        : content;
     // Only the content fades: the selection ring and reveal button stay crisp.
-    final body = spec.suspended ? Opacity(opacity: _suspendedOpacity, child: content) : content;
+    final body = spec.suspended ? Opacity(opacity: _suspendedOpacity, child: sized) : sized;
 
     final padding = switch (spec.kind) {
       _Kind.root => const EdgeInsets.symmetric(horizontal: 18),
@@ -1708,6 +1781,45 @@ class _AddChildButton extends StatelessWidget {
             alignment: Alignment.center,
             child: Icon(MMIcons.add, size: 10, color: c.onAccent),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.
+class _ExpandToggle extends StatelessWidget {
+  const _ExpandToggle({required this.expanded, required this.label, required this.onTap});
+
+  final bool expanded;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final height = MediaQuery.textScalerOf(context).scale(_NodeSpec.toggleLineHeight);
+    return MMInteractive(
+      onTap: onTap,
+      enabled: onTap != null,
+      semanticLabel: label,
+      canRequestFocus: false,
+      builder: (context, state) => SizedBox(
+        height: height,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: context.mmText.footnote.copyWith(
+                color: c.accent,
+                decoration: state.hovered ? TextDecoration.underline : null,
+                decorationColor: c.accent,
+              ),
+            ),
+            const SizedBox(width: MMSpacing.xxs),
+            Icon(expanded ? MMIcons.chevronUp : MMIcons.chevronDown, size: 9, color: c.accent),
+          ],
         ),
       ),
     );

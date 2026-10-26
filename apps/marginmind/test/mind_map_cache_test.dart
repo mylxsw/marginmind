@@ -201,19 +201,20 @@ void main() {
       locale: locale,
       textDirection: direction,
     );
+    // Root, topic, note, the excerpt's quote and its title (one line or more).
     expect(environment(colors: MMTheme.dark()), same(original));
-    expect(cache.measurementCount, count + 4);
+    expect(cache.measurementCount, count + 5);
     count = cache.measurementCount;
     final scaled = environment(scaler: TextScaler.linear(1.5));
     expect(scaled.rects['c0']!.height, greaterThan(original.rects['c0']!.height));
     expect(scaled.rects['c1']!.height, greaterThan(original.rects['c1']!.height));
-    expect(cache.measurementCount, count + 4);
+    expect(cache.measurementCount, count + 5);
     count = cache.measurementCount;
     environment(locale: const Locale('zh'));
-    expect(cache.measurementCount, count + 4);
+    expect(cache.measurementCount, count + 5);
     count = cache.measurementCount;
     environment(direction: TextDirection.rtl);
-    expect(cache.measurementCount, count + 4);
+    expect(cache.measurementCount, count + 5);
   });
   test('the inherited text style is measured with and invalidates measurements', () {
     // Rendered titles inherit the ambient style (on macOS: the system font and
@@ -229,7 +230,7 @@ void main() {
       theme: theme,
       baseStyle: const TextStyle(letterSpacing: 2),
     );
-    expect(cache.measurementCount, count + 4);
+    expect(cache.measurementCount, count + 5);
     expect(spaced.rects['c0']!.width, greaterThan(plain.rects['c0']!.width));
   });
 
@@ -277,10 +278,11 @@ void main() {
       cards: [Card(id: 'e', kind: CardKind.excerpt, annotationId: 'a', createdAt: now)],
       nodes: const [MapNode(cardId: 'e', order: 0)],
     );
-    // Four lines of quote, no title row, no source row.
-    expect(update(cache, content).rects['e']!.height, 11 + (4 * 20 + 12) + 11 + 2);
+    // Four lines of quote and the "show full text" row; no title row, no source row.
+    const cut = 11 + (4 * 20 + 12) + 4 + 14 + 11 + 2;
+    expect(update(cache, content).rects['e']!.height, cut);
     final measured = cache.measurementCount;
-    expect(update(cache, content.copyWith(nodes: [...content.nodes])).rects['e']!.height, 116);
+    expect(update(cache, content.copyWith(nodes: [...content.nodes])).rects['e']!.height, cut);
     expect(cache.measurementCount, measured, reason: 'the cut quote is cached');
     final typing = cache.update(
       content: content,
@@ -289,9 +291,88 @@ void main() {
       theme: theme,
       draft: ('e', ''),
     );
-    expect(typing.rects['e']!.height, 116 + 17 + 6, reason: 'the title field opens even while empty');
+    expect(
+      typing.rects['e']!.height,
+      11 + (4 * 20 + 12) + 11 + 2 + 17 + 6,
+      reason: 'the title field opens even while empty; while typing the card shows its preview',
+    );
     final titled = content.copyWith(cards: [content.cards.single.copyWith(title: 'Title')]);
-    expect(update(cache, titled).rects['e']!.height, 116 + 17 + 6);
+    expect(update(cache, titled).rects['e']!.height, cut + 17 + 6);
+  });
+
+  group('C01 full text', () {
+    TreeLayoutResult expand(MindMapRenderCache cache, StudySetContent content, Set<String> expanded) =>
+        cache.update(content: content, rootTitle: 'Root', localizations: english, theme: theme, expanded: expanded);
+
+    StudySetContent excerpt({required String quote, String title = ''}) => fixture(0).copyWith(
+      annotations: [
+        Annotation(id: 'a', documentId: 'd', page: 1, rects: const [], quote: quote, colorIndex: 0, createdAt: now),
+      ],
+      cards: [Card(id: 'e', kind: CardKind.excerpt, title: title, annotationId: 'a', createdAt: now)],
+      nodes: const [MapNode(cardId: 'e', order: 0)],
+    );
+
+    int lines(String text, TextStyle style, double width) {
+      final p = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: width);
+      final n = p.computeLineMetrics().length;
+      p.dispose();
+      return n;
+    }
+
+    test('the expanded set is part of the key: the card grows and shrinks back from cache', () {
+      final cache = MindMapRenderCache();
+      final long = 'word ' * 80;
+      final content = excerpt(quote: long);
+      final cut = expand(cache, content, const {});
+      expect(expand(cache, content, const {}), same(cut));
+      final layouts = cache.layoutCount;
+      final open = expand(cache, content, {'e'});
+      expect(open, isNot(same(cut)), reason: 'a new expanded set is measured again');
+      expect(cache.layoutCount, layouts + 1);
+      final all = lines(long, MMTypography.readingExcerpt, 174);
+      expect(all, greaterThan(4));
+      expect(open.rects['e']!.height, 11 + (all * 20 + 12) + 4 + 14 + 11 + 2);
+      // An equal set (another instance) changes nothing.
+      expect(expand(cache, content, {'e'}), same(open));
+      final measured = cache.measurementCount;
+      final back = expand(cache, content, const {});
+      expect(back.rects['e']!.height, cut.rects['e']!.height);
+      expect(expand(cache, content, {'e'}).rects['e']!.height, open.rects['e']!.height);
+      expect(cache.measurementCount, measured, reason: 'both texts stay measured');
+    });
+
+    test('a long title is cut to one line and shown whole when expanded', () {
+      final cache = MindMapRenderCache();
+      final title = 'title ' * 12;
+      final content = excerpt(quote: 'short', title: title);
+      final titleLines = lines(title, MMTypography.headline.copyWith(height: 17 / 13), 174);
+      expect(titleLines, greaterThan(1));
+      final cut = expand(cache, content, const {}).rects['e']!.height;
+      expect(cut, 11 + (17 + 6) + (20 + 12) + 4 + 14 + 11 + 2, reason: 'a cut title offers the full text');
+      final open = expand(cache, content, {'e'}).rects['e']!.height;
+      expect(open, 11 + (titleLines * 17 + 6) + (20 + 12) + 4 + 14 + 11 + 2);
+    });
+
+    test('short cards have nothing to expand; editing shows the preview', () {
+      final cache = MindMapRenderCache();
+      final short = excerpt(quote: 'short');
+      final plain = expand(cache, short, const {}).rects['e']!.height;
+      expect(plain, 11 + (20 + 12) + 11 + 2);
+      expect(expand(cache, short, {'e'}).rects['e']!.height, plain, reason: 'nothing is cut, nothing to show');
+      final long = excerpt(quote: 'word ' * 80);
+      final typing = cache.update(
+        content: long,
+        rootTitle: 'Root',
+        localizations: english,
+        theme: theme,
+        draft: ('e', ''),
+        expanded: {'e'},
+      );
+      expect(typing.rects['e']!.height, 11 + 17 + 6 + (4 * 20 + 12) + 11 + 2);
+    });
   });
 
   test('500 nodes: single text edit + measurement + reflow p95 below 16 ms', () {
@@ -316,7 +397,8 @@ void main() {
     // ignore: avoid_print
     print('500-node edit/reflow: median=${times[49]}us p95=${times[94]}us (limit 16000us)');
     expect(times[94], lessThan(16000));
-    expect(cache.measurementCount, 620);
+    // Each titled excerpt's title is also measured once, to know whether it is cut.
+    expect(cache.measurementCount, 786);
     expect(cache.layoutCount, greaterThan(100));
   });
 }

@@ -1003,4 +1003,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerAppearance => 'Reading Appearance';
+
+  @override
+  String get research => 'Research';
+
+  @override
+  String get showResearchPanel => 'Show Research Panel';
+
+  @override
+  String get hideResearchPanel => 'Hide Research Panel';
+
+  @override
+  String get researchEmptyTitle => 'Select text or a map node to research';
+
+  @override
+  String get showCardDetails => 'Show Details';
+
+  @override
+  String get hideCardDetails => 'Hide Details';
+
+  @override
+  String get closePanel => 'Close';
+
+  @override
+  String get expandCardText => 'Show Full Text';
+
+  @override
+  String get collapseCardText => 'Show Less';
+
+  @override
+  String get toggleCardText => 'Expand or Collapse Full Text';
+
+  @override
+  String get detailsExcerpt => 'Excerpt';
+
+  @override
+  String get detailsImage => 'Image';
+
+  @override
+  String get detailsNote => 'Note';
+
+  @override
+  String get detailsTopic => 'Topic';
+
+  @override
+  String get addTitle => 'Add Title';
+
+  @override
+  String revealSourcePage(int page) {
+    return 'Reveal in Source · Page $page';
+  }
+
+  @override
+  String get reviewStatusNew => 'Not reviewed yet';
+
+  @override
+  String reviewStatusScheduled(DateTime date, int count) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.MMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'reviewed $count times',
+      one: 'reviewed once',
+    );
+    return 'Next $dateString · $_temp0';
+  }
 }

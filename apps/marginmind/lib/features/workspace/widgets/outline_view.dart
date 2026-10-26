@@ -159,6 +159,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       // The outline always shows the whole tree and has no viewport to fit.
       // Relations and summaries are drawn on the map only.
       case MindMapCommand.fold ||
+          MindMapCommand.expand ||
           MindMapCommand.fit ||
           MindMapCommand.center ||
           MindMapCommand.relation ||

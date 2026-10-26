@@ -78,7 +78,9 @@ void main() {
       // Untitled, the excerpt is the whole card: no title row to click.
       expect(find.text('Untitled excerpt'), findsNothing);
       final compact = tester.getSize(find.byKey(ValueKey(excerpt.id))).height;
-      await doubleTap(tester, find.text(_quote));
+      // Double-click opens the details; F2 edits the title in place.
+      await _select(tester, find.text(_quote));
+      await key(tester, LogicalKeyboardKey.f2);
       expect(find.byType(MMSheet), findsNothing);
       expect(container.read(workspaceProvider('demo-1')).editingCardId, excerpt.id);
       // The title starts empty (the placeholder is not text to edit).

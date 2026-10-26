@@ -73,6 +73,20 @@ abstract final class AppShortcuts {
   static SingleActivator get readerBookmarks => primaryShortcut(LogicalKeyboardKey.digit3, alt: true);
   static SingleActivator get readerAnnotations => primaryShortcut(LogicalKeyboardKey.digit4, alt: true);
 
+  /// ⌃⌘R, beside ⌃⌘S for the sidebar (⌘R, ⇧⌘R and ⌥⌘R are taken). Where
+  /// Ctrl is the primary modifier, Ctrl+R, Ctrl+Shift+R and Ctrl+Alt+R are
+  /// taken by the same commands, so it takes all three modifiers.
+  static SingleActivator get researchPanel => defaultTargetPlatform == TargetPlatform.macOS
+      ? primaryShortcut(LogicalKeyboardKey.keyR, control: true)
+      : primaryShortcut(LogicalKeyboardKey.keyR, shift: true, alt: true);
+
+  /// Like Finder's Get Info. A focused text field keeps ⌘I (the command is
+  /// disabled while one has the keyboard).
+  static SingleActivator get cardDetails => primaryShortcut(LogicalKeyboardKey.keyI);
+
+  /// Space edits the selected node; ⌥Space only changes how much it shows.
+  static SingleActivator get toggleCardText => const SingleActivator(LogicalKeyboardKey.space, alt: true);
+
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
   static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
   static SingleActivator get toggleInkTool => primaryShortcut(LogicalKeyboardKey.keyM, shift: true);
@@ -100,6 +114,7 @@ enum MindMapCommand {
   paste,
   relation,
   summary,
+  expand,
 }
 
 class MindMapIntent extends Intent {
@@ -126,6 +141,7 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   primaryShortcut(LogicalKeyboardKey.digit0): MindMapCommand.fit,
   primaryShortcut(LogicalKeyboardKey.keyR, alt: true): MindMapCommand.relation,
   primaryShortcut(LogicalKeyboardKey.bracketRight): MindMapCommand.summary,
+  AppShortcuts.toggleCardText: MindMapCommand.expand,
 };
 
 /// Reader zoom commands resolve through the focused reader.
@@ -248,6 +264,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             s.findVisible,
             s.layout,
             s.tagFilter,
+            s.panel,
           ),
         ),
       );
@@ -460,6 +477,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               editable ? () => workspace.placeCardInMap(selected, map.id) : null,
             ),
         ],
+      AppCommand(
+        workspaceState?.panel == RightPanel.details ? l.hideCardDetails : l.showCardDetails,
+        editable && !_textFocused && (selected != null || workspaceState?.panel == RightPanel.details)
+            ? workspace.toggleDetails
+            : null,
+        shortcut: AppShortcuts.cardDetails,
+      ),
       AppCommand(l.newMap, editable ? () => showNewMapSheet(context, ref, workspaceId!) : null),
       AppCommand(
         l.renameMap,
@@ -504,6 +528,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.center: l.centerCurrentNode,
       MindMapCommand.relation: l.addRelation,
       MindMapCommand.summary: l.addSummary,
+      MindMapCommand.expand: l.toggleCardText,
     };
     // Dispatch through the focused canvas so menu and keyboard run the same action.
     // The outline always shows the whole tree: folding, fitting and
@@ -515,6 +540,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.center,
       MindMapCommand.relation,
       MindMapCommand.summary,
+      MindMapCommand.expand,
     };
     final inOutline = workspaceState?.mapView == MapViewMode.outline;
     for (final entry in mapLabels.entries) {
@@ -612,6 +638,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.read(workspaceProvider(workspaceId).notifier).toggleSidebar,
           shortcut: AppShortcuts.toggleSidebar,
         ),
+        // Registered now; shown once research is wired in.
+        if (ref.watch(researchAvailableProvider))
+          AppCommand(
+            workspaceState!.panel == RightPanel.research ? l.hideResearchPanel : l.showResearchPanel,
+            workspace.toggleResearchPanel,
+            shortcut: AppShortcuts.researchPanel,
+          ),
       ],
       if (inWorkspace) ...[
         AppCommand(

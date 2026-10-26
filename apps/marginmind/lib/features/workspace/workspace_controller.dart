@@ -17,6 +17,16 @@ export '../../settings/app_settings.dart' show AnnotationTool;
 
 enum MapViewMode { map, outline }
 
+/// What the right panel shows. One panel, one content at a time.
+enum RightPanel { research, details }
+
+/// Where the right panel was opened from: in split layout the other pane
+/// steps aside (the map for the source, the source for the map).
+enum PanelOrigin { reader, map, toolbar }
+
+/// What the right panel's closing restores.
+typedef _PanelRestore = ({MMSplitMode layout, bool sidebarVisible});
+
 /// What the reader's page sidebar lists.
 enum ReaderPanelMode { thumbnails, outline, bookmarks, annotations }
 
@@ -144,6 +154,9 @@ class WorkspaceState {
     this.readerPanelMode = ReaderPanelMode.thumbnails,
     this.findVisible = false,
     this.findFocusTick = 0,
+    this.panel,
+    this.detailCardId,
+    this.expandedCardIds = const {},
   });
 
   /// Latest repository snapshot, including completed writes before stream delivery.
@@ -211,6 +224,19 @@ class WorkspaceState {
   final bool findVisible;
   final int findFocusTick;
 
+  /// The right panel, or null when it is closed.
+  final RightPanel? panel;
+
+  /// The card the details show when no card is selected: the last one they
+  /// showed. While a card is selected the details follow the selection.
+  final String? detailCardId;
+
+  /// Cards shown with their full text on the map. A view choice: never saved.
+  final Set<String> expandedCardIds;
+
+  /// The card the details panel shows.
+  String? get detailsCardId => selectedCardId ?? detailCardId;
+
   WorkspaceState copyWith({
     StudySetContent? content,
     String? activeMapId,
@@ -255,6 +281,10 @@ class WorkspaceState {
     ReaderPanelMode? readerPanelMode,
     bool? findVisible,
     int? findFocusTick,
+    RightPanel? panel,
+    bool closePanel = false,
+    String? detailCardId,
+    Set<String>? expandedCardIds,
   }) {
     return WorkspaceState(
       content: content ?? this.content,
@@ -301,6 +331,14 @@ class WorkspaceState {
       readerPanelMode: readerPanelMode ?? this.readerPanelMode,
       findVisible: findVisible ?? this.findVisible,
       findFocusTick: findFocusTick ?? this.findFocusTick,
+      panel: closePanel ? null : (panel ?? this.panel),
+      // Open details follow the selection, and keep the last card shown.
+      detailCardId:
+          detailCardId ??
+          (!closePanel && (panel ?? this.panel) == RightPanel.details && !selectRoot
+              ? selectedCardId ?? this.selectedCardId ?? this.detailCardId
+              : this.detailCardId),
+      expandedCardIds: expandedCardIds != null ? Set.unmodifiable(expandedCardIds) : this.expandedCardIds,
     );
   }
 }
@@ -577,12 +615,102 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(sidebarVisible: !state.sidebarVisible);
   }
 
-  /// Brings the sidebar on screen. With no room beside the map it takes the
-  /// map's place (the reader alone), like the toolbar button.
+  /// Brings the sidebar on screen. With no room beside the right panel the
+  /// sidebar takes the panel's place; with no room beside the map, the map's
+  /// place (the reader alone), like the toolbar button.
   void showSidebar() {
+    if (state.sidebarAutoCollapsed && state.panel != null) {
+      closePanel();
+      state = state.copyWith(sidebarVisible: true, sidebarAutoCollapsed: false);
+      return;
+    }
     state = state.sidebarAutoCollapsed
         ? state.copyWith(layout: MMSplitMode.primary, sidebarAutoCollapsed: false)
         : state.copyWith(sidebarVisible: true);
+  }
+
+  // ---- right panel ------------------------------------------------------------
+
+  _PanelRestore? _panelRestore;
+
+  /// Opens the right panel on [content]. The first opening remembers the
+  /// layout and sidebar; in split layout the pane the user did not start
+  /// from steps aside. Switching content keeps the panel where it is.
+  void openPanel(RightPanel content, {PanelOrigin origin = PanelOrigin.toolbar}) {
+    if (state.panel != null) {
+      state = state.copyWith(panel: content);
+      return;
+    }
+    _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
+    final layout = state.layout != MMSplitMode.split
+        ? null
+        : switch (origin) {
+            PanelOrigin.reader => MMSplitMode.primary,
+            PanelOrigin.map => MMSplitMode.secondary,
+            PanelOrigin.toolbar => null,
+          };
+    state = state.copyWith(panel: content, layout: layout);
+  }
+
+  /// Closes the right panel and brings back the layout and sidebar it found.
+  /// The panes stayed mounted, so their zoom and scroll positions are as
+  /// they were; the map's view is left alone.
+  void closePanel() {
+    if (state.panel == null) return;
+    final restore = _panelRestore;
+    _panelRestore = null;
+    state = state.copyWith(
+      closePanel: true,
+      layout: restore?.layout,
+      sidebarVisible: restore?.sidebarVisible,
+      // Keyboard focus goes back to the card the details showed.
+      selectedCardId: state.panel == RightPanel.details && state.selectedCardId == null
+          ? _existing(state.detailCardId)
+          : null,
+    );
+  }
+
+  String? _existing(String? cardId) =>
+      cardId != null && content.node(cardId, mapId: state.activeMapId) != null ? cardId : null;
+
+  /// ⌃⌘R: opens the research panel, switches the panel to research, or
+  /// closes it when research is already showing.
+  void toggleResearchPanel() {
+    if (state.panel == RightPanel.research) return closePanel();
+    openPanel(RightPanel.research);
+  }
+
+  /// Shows [cardId] (default: the selected card) in the details panel, opened
+  /// from the map.
+  void showDetails([String? cardId]) {
+    final id = cardId ?? state.selectedCardId;
+    if (id == null || content.card(id) == null) return;
+    openPanel(RightPanel.details, origin: PanelOrigin.map);
+    state = state.copyWith(selectedCardId: id, detailCardId: id);
+  }
+
+  /// ⌘I: shows the selected card's details, or closes them. Open details
+  /// follow the selection, so they always show the selected card.
+  void toggleDetails() => state.panel == RightPanel.details ? closePanel() : showDetails();
+
+  /// Shows a card's full text on the map, or cuts it back to its preview.
+  void toggleExpanded(String cardId) {
+    final next = {...state.expandedCardIds};
+    if (!next.remove(cardId)) next.add(cardId);
+    state = state.copyWith(expandedCardIds: next);
+  }
+
+  /// ⌥Space: expands the selected cards, or collapses them when all are
+  /// expanded already.
+  void toggleSelectedExpanded() {
+    final ids = state.selectedCardIds.isNotEmpty
+        ? state.selectedCardIds
+        : {if (state.selectedCardId != null) state.selectedCardId!};
+    if (ids.isEmpty) return;
+    final collapse = ids.every(state.expandedCardIds.contains);
+    state = state.copyWith(
+      expandedCardIds: collapse ? state.expandedCardIds.difference(ids) : state.expandedCardIds.union(ids),
+    );
   }
 
   void setSidebarAutoCollapsed(bool value) {
@@ -1111,6 +1239,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _update((c) => _editor.setSuspended(c, cardId, suspended: suspended));
 
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
+
+  /// A title typed in the details panel, with the in-place editor's rules:
+  /// trimmed; only excerpts and images may be left untitled.
+  Future<void> setTitle(String cardId, String text) async {
+    final card = content.card(cardId);
+    final title = text.trim();
+    if (card == null || title == card.title) return;
+    if (title.isEmpty && card.kind != CardKind.excerpt && card.kind != CardKind.image) return;
+    await rename(cardId, title);
+  }
 
   // ---- in-place editing -------------------------------------------------------
 

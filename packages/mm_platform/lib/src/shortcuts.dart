@@ -18,6 +18,7 @@ String describeShortcut(SingleActivator activator) {
     LogicalKeyboardKey.enter => '↩',
     LogicalKeyboardKey.escape => 'Esc',
     LogicalKeyboardKey.period => '.',
+    LogicalKeyboardKey.space => 'Space',
     final k => k.keyLabel.toUpperCase(),
   };
   if (mac) {

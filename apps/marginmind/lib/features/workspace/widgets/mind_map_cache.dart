@@ -27,6 +27,7 @@ class MindMapRenderCache {
   TextDirection _direction = TextDirection.ltr;
   (String, String)? _draft;
   (String, String)? _markDraft;
+  Set<String> _expanded = const {};
   TreeLayoutResult? _layout;
   List<(String, String?, double, double)> _geometry = [];
   List<(String, String, String, String, double, double)> _summaryGeometry = [];
@@ -65,6 +66,10 @@ class MindMapRenderCache {
 
     /// Likewise for the label of a relation or summary (id, text).
     (String, String)? markDraft,
+
+    /// Cards shown with their whole text: part of the key, since it changes
+    /// what is measured and so every size and the layout.
+    Set<String> expanded = const {},
   }) {
     final environmentChanged =
         _theme != theme ||
@@ -78,6 +83,7 @@ class MindMapRenderCache {
         _mapId == mapId &&
         _draft == draft &&
         _markDraft == markDraft &&
+        setEquals(_expanded, expanded) &&
         identical(_localizations, localizations)) {
       return _layout!;
     }
@@ -95,6 +101,7 @@ class MindMapRenderCache {
     _mapId = mapId;
     _draft = draft;
     _markDraft = markDraft;
+    _expanded = Set.of(expanded);
     _localizations = localizations;
 
     // Index once: childrenOf/card/annotation each scan the content lists.
@@ -141,6 +148,7 @@ class MindMapRenderCache {
                   localizations,
                   this,
                   editing: draft?.$1 == card.id,
+                  expanded: expanded.contains(card.id),
                 ),
                 collapsed: node.collapsed,
               ),
@@ -272,6 +280,8 @@ class _NodeSpec {
     this.imageHeight = 0,
     String? label,
     this.suspended = false,
+    this.truncated = false,
+    this.expanded = false,
   }) : label = label ?? title;
 
   final _Kind kind;
@@ -298,10 +308,25 @@ class _NodeSpec {
   /// Kept out of review: drawn faded.
   final bool suspended;
 
+  /// The card's preview cuts its text (quote past [maxQuoteLines] lines, or
+  /// a title past one line): it offers to show the whole text.
+  final bool truncated;
+
+  /// The whole text is shown (only ever set on a [truncated] card).
+  final bool expanded;
+
   static const excerptWidth = 240.0;
   static const maxQuoteLines = 4;
   static const _excerptTextWidth = excerptWidth - 12 - 38 - 16;
   static const imageWidth = excerptWidth - 12 - 38;
+
+  /// Title text beside the color dot (9) and its gap (7).
+  static const titleTextWidth = imageWidth - 16;
+  static final titleStyle = MMTypography.headline.copyWith(height: 17 / 13);
+
+  /// "Show full text" / "Show less" below a cut card: gap and line height.
+  static const toggleGap = MMSpacing.xs;
+  static const toggleLineHeight = 14.0;
 
   factory _NodeSpec.root(String title, MindMapRenderCache cache) {
     final w = cache._measure(title, MMTypography.title3, 360).size.width;
@@ -322,6 +347,7 @@ class _NodeSpec {
     AppLocalizations l,
     MindMapRenderCache cache, {
     bool editing = false,
+    bool expanded = false,
   }) {
     // Excerpts and images show a title row only when they have a title (or
     // one is being typed).
@@ -370,9 +396,21 @@ class _NodeSpec {
           suspended: card.suspended,
         );
       case CardKind.excerpt:
-        final quote = cache._clip(a?.quote ?? '', MMTypography.readingExcerpt, _excerptTextWidth, maxQuoteLines);
+        final full = a?.quote ?? '';
+        final clipped = cache._clip(full, MMTypography.readingExcerpt, _excerptTextWidth, maxQuoteLines);
+        // While the title is typed the field keeps one line, so the card
+        // shows its preview.
+        final titleLines = card.title.isEmpty || editing
+            ? 1
+            : cache._measure(card.title, titleStyle, titleTextWidth).lines;
+        final truncated = !editing && (clipped != full || titleLines > 1);
+        final open = truncated && expanded;
+        final quote = open ? full : clipped;
         final lines = cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines;
-        final height = 11 + titleRow + (lines * cache._textScaler.scale(20) + 12) + 11 + 2;
+        final scale = cache._textScaler.scale;
+        final shownTitle = titled ? (open ? titleLines : 1) * scale(17) + 6 : 0;
+        final toggle = truncated ? toggleGap + scale(toggleLineHeight) : 0;
+        final height = 11 + shownTitle + (lines * scale(20) + 12) + toggle + 11 + 2;
         return _NodeSpec._(
           _Kind.excerpt,
           card.title,
@@ -380,8 +418,10 @@ class _NodeSpec {
           source,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
           Size(excerptWidth, height.toDouble()),
-          label: card.title.isEmpty ? (quote.isEmpty ? l.untitledExcerpt : quote) : card.title,
+          label: card.title.isEmpty ? (clipped.isEmpty ? l.untitledExcerpt : clipped) : card.title,
           suspended: card.suspended,
+          truncated: truncated,
+          expanded: open,
         );
     }
   }

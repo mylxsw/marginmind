@@ -15,7 +15,9 @@ import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
 import 'widgets/notices.dart';
 import 'widgets/reader_pane.dart';
+import 'widgets/right_panel.dart';
 import 'widgets/workspace_sidebar.dart';
+import 'workspace_layout.dart';
 
 /// A study set window: sidebar, unified toolbar, and the source / map split
 /// (design canvas artboard 01).
@@ -60,6 +62,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           s.syncToMap,
           s.activeDocumentId,
           s.readerPanelVisible,
+          s.panel,
         ),
       ),
     );
@@ -79,15 +82,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Preserve independent sidebar choices. Narrow windows temporarily
-          // show one content pane; the toolbar reflects the visible layout.
-          final shown = (
+          // hide the sidebar beside the right panel and show one content
+          // pane; the toolbar reflects the visible layout.
+          final shown = resolveWorkspaceLayout(
+            windowWidth: constraints.maxWidth,
             sidebarVisible: state.sidebarVisible,
-            mode: MMSplitView.effectiveMode(
-              state.layout,
-              constraints.maxWidth - (state.sidebarVisible ? MMSizes.sidebarWidth + MMSizes.sidebarInset : 0),
-              minReader,
-              MMSizes.mapMinWidth,
-            ),
+            layout: state.layout,
+            panelOpen: state.panel != null,
+            minReader: minReader,
           );
           final collapsed = state.sidebarVisible && !shown.sidebarVisible;
           if (collapsed != state.sidebarAutoCollapsed) {
@@ -95,7 +97,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               if (mounted) controller.setSidebarAutoCollapsed(collapsed);
             });
           }
-          return _scaffold(context, state, controller, doc, setTitle, shown.sidebarVisible, shown.mode, minReader);
+          return _scaffold(
+            context,
+            state,
+            controller,
+            doc,
+            setTitle,
+            shown.sidebarVisible,
+            shown.mode,
+            minReader,
+            shown.panelWidth,
+          );
         },
       ),
     );
@@ -110,6 +122,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     bool sidebarVisible,
     MMSplitMode layout,
     double minReader,
+    double panelWidth,
   ) {
     final l = context.l10n;
     return MMWindowScaffold(
@@ -152,28 +165,52 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
                 ],
               ),
+              // Registered now, shown once research is wired in.
+              if (ref.watch(researchAvailableProvider))
+                MMToolbarGroup(
+                  children: [
+                    MMToolbarButton(
+                      icon: MMIcons.research,
+                      tooltip: AppShortcuts.tip(l.research, AppShortcuts.researchPanel),
+                      selected: state.panel == RightPanel.research,
+                      onPressed: controller.toggleResearchPanel,
+                    ),
+                  ],
+                ),
             ],
           );
         },
       ),
-      body: PdfDropTarget(
-        label: l.dropToImport,
-        onDrop: (files) async {
-          final notice = await controller.importDocuments(files);
-          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-        },
-        child: MMSplitView(
-          mode: layout,
-          onModeChanged: controller.setLayout,
-          primaryLabel: l.layoutReader,
-          secondaryLabel: l.layoutMap,
-          splitLabel: l.layoutSplit,
-          fraction: state.splitFraction,
-          minPrimaryWidth: minReader,
-          onFractionChanged: controller.setSplitFraction,
-          primary: ReaderPane(studySetId: widget.studySetId),
-          secondary: MapPane(studySetId: widget.studySetId),
-        ),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: PdfDropTarget(
+              label: l.dropToImport,
+              onDrop: (files) async {
+                final notice = await controller.importDocuments(files);
+                if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+              },
+              child: MMSplitView(
+                mode: layout,
+                onModeChanged: controller.setLayout,
+                primaryLabel: l.layoutReader,
+                secondaryLabel: l.layoutMap,
+                splitLabel: l.layoutSplit,
+                fraction: state.splitFraction,
+                minPrimaryWidth: minReader,
+                onFractionChanged: controller.setSplitFraction,
+                primary: ReaderPane(studySetId: widget.studySetId),
+                secondary: MapPane(studySetId: widget.studySetId),
+              ),
+            ),
+          ),
+          if (state.panel != null)
+            SizedBox(
+              width: panelWidth,
+              child: RightPanelView(studySetId: widget.studySetId),
+            ),
+        ],
       ),
     );
   }

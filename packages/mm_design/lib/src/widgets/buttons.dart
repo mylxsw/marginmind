@@ -62,11 +62,16 @@ class MMButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[Icon(icon, size: 14, color: fg), const SizedBox(width: 6)],
-                Text(
-                  label,
-                  style: t.headline.copyWith(
-                    color: fg,
-                    fontWeight: variant == MMButtonVariant.primary ? FontWeight.w600 : FontWeight.w500,
+                // A label wider than the room it is given ends in an ellipsis.
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.headline.copyWith(
+                      color: fg,
+                      fontWeight: variant == MMButtonVariant.primary ? FontWeight.w600 : FontWeight.w500,
+                    ),
                   ),
                 ),
               ],

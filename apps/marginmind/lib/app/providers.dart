@@ -44,6 +44,11 @@ final studySetProvider = Provider.family<StudySet?, String>(
   (ref, id) => ref.watch(studySetsProvider).value?.where((s) => s.id == id).firstOrNull,
 );
 
+/// Whether research has a usable UI. Its commands and the research panel are
+/// registered already, but stay out of menus, toolbars and shortcuts until
+/// the research flow is wired in.
+final researchAvailableProvider = Provider<bool>((ref) => false);
+
 /// Whether the source pane renders PDFs. Widget tests turn this off
 /// because they have no real files and no PDFium.
 final pdfRenderingEnabledProvider = Provider<bool>((ref) => true);
