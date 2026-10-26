@@ -903,10 +903,32 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> copySelection({bool cut = false}) async {
     if (_editing != null || _creating || _clipboardBusy) return;
     final ids = state.selectedCardIds.toList();
-    final entries = MapClipboard.copy(content, ids, mapId: state.activeMapId, resolveImage: imagePath);
-    if (entries.isEmpty) return;
     _clipboardBusy = true;
     try {
+      final files = <String, String>{};
+      final preview = MapClipboard.copy(content, ids, mapId: state.activeMapId);
+      if (preview.isEmpty) return;
+      final repository = _repo;
+      for (final entry in preview) {
+        for (final source in entry.sources) {
+          for (final version in source.versions) {
+            if (files.containsKey(version.snapshotFile)) continue;
+            if (repository is! ResearchSnapshotRepository) throw StateError('Research snapshots unavailable');
+            files[version.snapshotFile] = await (repository as ResearchSnapshotRepository).readResearchSnapshot(
+              studySetId,
+              version.snapshotFile,
+            );
+          }
+        }
+      }
+      if (!ref.mounted) return;
+      final entries = MapClipboard.copy(
+        content,
+        ids,
+        mapId: state.activeMapId,
+        resolveImage: imagePath,
+        snapshots: files,
+      );
       await MMMapClipboard.write(text: MapClipboard.toText(entries), internal: MapClipboard.encode(entries));
       if (cut && ref.mounted && _editing == null && !_creating) await removeCards(ids);
     } finally {
@@ -925,10 +947,22 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           (data.internal == null ? null : MapClipboard.decode(data.internal!)) ?? MapClipboard.fromText(data.text);
       if (entries.isEmpty) return;
       final images = await _importClipboardImages(entries);
+      final snapshots = <String, String>{};
+      final repository = _repo;
+      for (final entry in entries) {
+        for (final snapshot in entry.snapshots.entries) {
+          if (snapshots.containsKey(snapshot.key)) continue;
+          if (repository is! ResearchSnapshotRepository) throw StateError('Research snapshots unavailable');
+          snapshots[snapshot.key] = await (repository as ResearchSnapshotRepository).writeResearchSnapshot(
+            studySetId,
+            snapshot.value,
+          );
+        }
+      }
       if (!ref.mounted || _editing != null || _creating) return;
       var roots = <String>[];
       await _update((c) {
-        final (next, ids) = _editor.paste(c, entries, parentId: parent, images: images);
+        final (next, ids) = _editor.paste(c, entries, parentId: parent, images: images, snapshots: snapshots);
         roots = ids;
         return next;
       });

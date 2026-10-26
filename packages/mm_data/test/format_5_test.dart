@@ -23,7 +23,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('current');
     final after = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-    expect(after['format'], 6);
+    expect(after['format'], 7);
     for (final key in before.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], before[key]);
     }
@@ -49,7 +49,7 @@ void main() {
     await file.writeAsBytes(await File('test/fixtures/format-3.json').readAsBytes());
     final store = FileLibraryStore(root);
     final c = await store.load('current');
-    expect(jsonDecode(await file.readAsString())['format'], 6);
+    expect(jsonDecode(await file.readAsString())['format'], 7);
     expect(c.bookmarks, isEmpty);
     expect(await File('${file.path}.format-3.bak').exists(), isTrue);
     await store.dispose();
@@ -69,7 +69,7 @@ void main() {
     final reopened = FileLibraryStore(root);
     final read = await reopened.load('current');
     expect(read.bookmarkAt(doc.id, 7)?.title, '第一章');
-    expect(jsonDecode(await file.readAsString())['format'], 6);
+    expect(jsonDecode(await file.readAsString())['format'], 7);
     await reopened.update('current', (c) => editor.removeDocument(c, doc.id));
     expect((await reopened.load('current')).bookmarks, isEmpty);
     await reopened.dispose();
@@ -87,7 +87,7 @@ void main() {
 
   test('a newer format is not opened', () async {
     final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
-    json['format'] = 7;
+    json['format'] = 8;
     final text = jsonEncode(json);
     await file.writeAsString(text);
     final store = FileLibraryStore(root);

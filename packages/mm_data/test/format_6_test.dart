@@ -24,7 +24,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('legacy');
     final migrated = jsonDecode(await file.readAsString()) as Map;
-    expect(migrated['format'], 6);
+    expect(migrated['format'], 7);
     for (final key in original.keys.where((k) => k != 'format' && k != 'content')) {
       expect(migrated[key], original[key]);
     }
@@ -77,7 +77,7 @@ void main() {
     await backup.writeAsBytes(source);
     store = FileLibraryStore(root);
     expect((await store.load('legacy')).cards.length, 3);
-    expect(jsonDecode(await file.readAsString())['format'], 6);
+    expect(jsonDecode(await file.readAsString())['format'], 7);
     await store.dispose();
   });
 

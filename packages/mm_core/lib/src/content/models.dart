@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import 'research.dart';
+
 /// A rectangle in PDF page coordinates (points, origin bottom-left, so
 /// `top >= bottom`). Independent of zoom and screen size.
 @immutable
@@ -196,7 +198,7 @@ class Annotation {
   );
 }
 
-enum CardKind { topic, excerpt, note, image }
+enum CardKind { topic, excerpt, note, image, research }
 
 /// A node's content. Its place in the mind map is stored separately in
 /// [MapNode], so one card could appear in several maps later.
@@ -208,6 +210,9 @@ class Card {
     this.title = '',
     this.annotationId,
     this.imageFileName,
+    this.researchNoteId,
+    this.textFormat = TextFormat.plain,
+    this.imageOrigin,
     this.tags = const [],
     this.suspended = false,
     required this.createdAt,
@@ -224,6 +229,9 @@ class Card {
 
   /// Content-addressed image path relative to the package.
   final String? imageFileName;
+  final String? researchNoteId;
+  final TextFormat textFormat;
+  final String? imageOrigin;
   final DateTime createdAt;
 
   final List<String> tags;
@@ -231,7 +239,7 @@ class Card {
   /// Shared across maps; a suspended card stays out of every review queue.
   final bool suspended;
 
-  Card copyWith({String? title, List<String>? tags, bool? suspended}) => Card(
+  Card copyWith({String? title, List<String>? tags, bool? suspended, TextFormat? textFormat}) => Card(
     id: id,
     kind: kind,
     title: title ?? this.title,
@@ -239,6 +247,9 @@ class Card {
     suspended: suspended ?? this.suspended,
     annotationId: annotationId,
     imageFileName: imageFileName,
+    researchNoteId: researchNoteId,
+    textFormat: textFormat ?? this.textFormat,
+    imageOrigin: imageOrigin,
     createdAt: createdAt,
   );
 
@@ -248,6 +259,9 @@ class Card {
     'title': title,
     if (annotationId != null) 'annotationId': annotationId,
     if (imageFileName != null) 'imageFileName': imageFileName,
+    if (researchNoteId != null) 'researchNoteId': researchNoteId,
+    'textFormat': textFormat.name,
+    if (imageOrigin != null) 'imageOrigin': imageOrigin,
     if (tags.isNotEmpty) 'tags': tags,
     if (suspended) 'suspended': true,
     'createdAt': createdAt.toIso8601String(),
@@ -259,6 +273,9 @@ class Card {
     title: (j['title'] as String?) ?? '',
     annotationId: j['annotationId'] as String?,
     imageFileName: j['imageFileName'] as String?,
+    researchNoteId: j['researchNoteId'] as String?,
+    textFormat: TextFormat.values.byName(j['textFormat'] as String? ?? 'plain'),
+    imageOrigin: j['imageOrigin'] as String?,
     tags: List.unmodifiable(((j['tags'] as List?) ?? const []).cast<String>()),
     suspended: (j['suspended'] as bool?) ?? false,
     createdAt: DateTime.parse(j['createdAt'] as String),
@@ -268,14 +285,20 @@ class Card {
 /// A named map. The stable default id keeps format 1 placements unchanged.
 @immutable
 class MindMap {
-  const MindMap({required this.id, required this.title});
+  const MindMap({required this.id, required this.title, this.density = MapDensity.full});
   static const defaultId = 'main';
   static const main = MindMap(id: defaultId, title: '');
   final String id;
   final String title;
-  MindMap copyWith({String? title}) => MindMap(id: id, title: title ?? this.title);
-  Map<String, Object?> toJson() => {'id': id, 'title': title};
-  factory MindMap.fromJson(Map<String, Object?> j) => MindMap(id: j['id'] as String, title: j['title'] as String);
+  final MapDensity density;
+  MindMap copyWith({String? title, MapDensity? density}) =>
+      MindMap(id: id, title: title ?? this.title, density: density ?? this.density);
+  Map<String, Object?> toJson() => {'id': id, 'title': title, 'density': density.name};
+  factory MindMap.fromJson(Map<String, Object?> j) => MindMap(
+    id: j['id'] as String,
+    title: j['title'] as String,
+    density: MapDensity.values.byName(j['density'] as String? ?? 'full'),
+  );
 }
 
 /// Placement of a card in the main mind map. `parentId == null` means a
@@ -288,6 +311,7 @@ class MapNode {
     this.parentId,
     required this.order,
     this.collapsed = false,
+    this.width,
   });
 
   final String cardId;
@@ -299,13 +323,22 @@ class MapNode {
 
   /// Children are hidden in the map view.
   final bool collapsed;
+  final double? width;
 
-  MapNode copyWith({String? parentId, bool toRoot = false, double? order, bool? collapsed}) => MapNode(
+  MapNode copyWith({
+    String? parentId,
+    bool toRoot = false,
+    double? order,
+    bool? collapsed,
+    double? width,
+    bool resetWidth = false,
+  }) => MapNode(
     cardId: cardId,
     mapId: mapId,
     parentId: toRoot ? null : (parentId ?? this.parentId),
     order: order ?? this.order,
     collapsed: collapsed ?? this.collapsed,
+    width: resetWidth ? null : (width ?? this.width),
   );
 
   Map<String, Object?> toJson() => {
@@ -314,6 +347,7 @@ class MapNode {
     if (parentId != null) 'parentId': parentId,
     'order': order,
     if (collapsed) 'collapsed': true,
+    if (width != null) 'width': width,
   };
 
   factory MapNode.fromJson(Map<String, Object?> j) => MapNode(
@@ -322,6 +356,7 @@ class MapNode {
     parentId: j['parentId'] as String?,
     order: _d(j['order']),
     collapsed: (j['collapsed'] as bool?) ?? false,
+    width: (j['width'] as num?)?.toDouble(),
   );
 }
 
