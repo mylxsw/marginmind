@@ -112,6 +112,21 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   primaryShortcut(LogicalKeyboardKey.bracketRight): MindMapCommand.summary,
 };
 
+/// Reader zoom commands resolve through the focused reader.
+enum ReaderZoomCommand { zoomIn, zoomOut, actualSize, fitWidth, fitPage }
+
+class ReaderZoomIntent extends Intent {
+  const ReaderZoomIntent(this.command);
+  final ReaderZoomCommand command;
+}
+
+Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
+  primaryShortcut(LogicalKeyboardKey.equal): const ReaderZoomIntent(ReaderZoomCommand.zoomIn),
+  primaryShortcut(LogicalKeyboardKey.equal, shift: true): const ReaderZoomIntent(ReaderZoomCommand.zoomIn),
+  primaryShortcut(LogicalKeyboardKey.minus): const ReaderZoomIntent(ReaderZoomCommand.zoomOut),
+  primaryShortcut(LogicalKeyboardKey.digit0): const ReaderZoomIntent(ReaderZoomCommand.actualSize),
+};
+
 /// Selection commands share their intents between menus and the floating toolbar.
 enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight }
 
@@ -448,7 +463,29 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               : null,
         ),
     ]);
+    final readerZoomLabels = {
+      ReaderZoomCommand.zoomIn: l.zoomIn,
+      ReaderZoomCommand.zoomOut: l.zoomOut,
+      ReaderZoomCommand.actualSize: l.pdfActualSize,
+      ReaderZoomCommand.fitWidth: l.pdfFitWidth,
+      ReaderZoomCommand.fitPage: l.pdfFitPage,
+    };
     final view = <AppCommand>[
+      if (inWorkspace)
+        for (final entry in readerZoomLabels.entries)
+          AppCommand(
+            entry.value,
+            _readerFocused && !_textFocused && workspaceState?.activeDocumentId != null
+                ? () {
+                    final focus = FocusManager.instance.primaryFocus?.context;
+                    if (focus != null) Actions.maybeInvoke(focus, ReaderZoomIntent(entry.key));
+                  }
+                : null,
+            shortcut: readerZoomShortcuts.entries
+                .where((e) => e.value.command == entry.key)
+                .map((e) => e.key as SingleActivator)
+                .firstOrNull,
+          ),
       if (inLibrary) ...[
         AppCommand(
           l.viewAsIcons,

@@ -470,7 +470,13 @@
   "renameMap": "Rename Mind Map…",
   "deleteMap": "Delete Mind Map",
   "addToNamedMap": "Add to “{title}”",
-  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}},
+  "@addToNamedMap": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "cardTags": "Tags…",
   "sectionTags": "Tags",
   "addTag": "Add Tag",
@@ -483,7 +489,13 @@
   "deleteRelation": "Delete Relationship",
   "deleteSummary": "Delete Summary",
   "exportSummary": "Summary: {label}",
-  "@exportSummary": {"placeholders": {"label": {"type": "String"}}},
+  "@exportSummary": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "exportRelations": "Relationships",
   "readerThumbnails": "Thumbnails",
   "readerOutline": "Table of Contents",
@@ -500,7 +512,16 @@
   "findPrevious": "Find Previous",
   "noResults": "No Results",
   "matchOf": "{current} / {total}",
-  "@matchOf": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@matchOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "pageNumberField": "Page Number",
   "goBack": "Back",
   "firstPage": "First Page",
@@ -509,5 +530,8 @@
   "noBookmarks": "No Bookmarks",
   "noAnnotations": "No Annotations",
   "expandSection": "Expand",
-  "collapseSection": "Collapse"
+  "collapseSection": "Collapse",
+  "pdfActualSize": "Actual Size",
+  "pdfFitWidth": "Fit Width",
+  "pdfFitPage": "Fit Page"
 }

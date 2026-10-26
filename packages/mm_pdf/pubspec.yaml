@@ -16,6 +16,9 @@ dependencies:
   pdfrx: ^2.10.1
 
 dev_dependencies:
+  window_manager: ^0.5.1
+  mm_platform:
+    path: ../mm_platform
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0

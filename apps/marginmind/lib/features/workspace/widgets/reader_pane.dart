@@ -25,7 +25,7 @@ class ReaderPane extends ConsumerStatefulWidget {
 }
 
 class _ReaderPaneState extends ConsumerState<ReaderPane> {
-  final _focus = FocusNode(debugLabel: 'reader', skipTraversal: true);
+  final _focus = FocusNode(debugLabel: 'PDF reader', skipTraversal: true);
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));
 
@@ -33,6 +33,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   void dispose() {
     _focus.dispose();
     super.dispose();
+  }
+
+  void _zoom(ReaderZoomCommand command) {
+    switch (command) {
+      case ReaderZoomCommand.zoomIn:
+        _pdf.zoomIn();
+      case ReaderZoomCommand.zoomOut:
+        _pdf.zoomOut();
+      case ReaderZoomCommand.actualSize:
+        _pdf.actualSize();
+      case ReaderZoomCommand.fitWidth:
+        _pdf.fitWidth();
+      case ReaderZoomCommand.fitPage:
+        _pdf.fitPage();
+    }
   }
 
   @override
@@ -70,6 +85,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
     return Actions(
       actions: {
+        ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(onInvoke: (intent) { _zoom(intent.command); return null; }),
         ReaderNavIntent: CallbackAction<ReaderNavIntent>(
           onInvoke: (intent) {
             dismissSelection();
@@ -81,7 +97,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       },
       child: Shortcuts(
-        shortcuts: readerNavShortcuts,
+        shortcuts: {...readerNavShortcuts, ...readerZoomShortcuts},
         child: Focus(
           focusNode: _focus,
           child: Listener(
