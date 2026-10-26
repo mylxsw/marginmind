@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:macos_window_utils/toolbars/toolbars.dart';
 import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -35,12 +34,8 @@ abstract final class DesktopWindow {
       await WindowManipulator.makeTitlebarTransparent();
       await WindowManipulator.enableFullSizeContentView();
       await WindowManipulator.hideTitle();
-      // Let AppKit position and hit-test its own buttons inside a full-height
-      // title bar. Moving the buttons alone puts them outside that hit region.
-      // BlockingToolbar forwards the remaining toolbar area to Flutter, keeping
-      // our controls and empty-space drag / double-click gestures interactive.
-      await WindowManipulator.addToolbar(toolbar: const BlockingToolbar());
-      await WindowManipulator.setToolbarStyle(toolbarStyle: NSWindowToolbarStyle.unified);
+      // MainFlutterWindow installs the unified native toolbar and forwards
+      // its content events to Flutter. AppKit owns the window button layout.
     }
 
     final options = WindowOptions(title: title, size: initialSize, minimumSize: minimumSize, center: true);

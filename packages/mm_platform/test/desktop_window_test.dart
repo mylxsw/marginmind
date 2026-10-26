@@ -54,7 +54,7 @@ void main() {
     messenger.setMockMethodCallHandler(screens, null);
   });
 
-  test('macOS installs a unified forwarding toolbar before showing the window', () async {
+  test('macOS keeps the native toolbar and configures full-size content before showing', () async {
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     expect(DesktopWindow.drawsWindowButtonsInContent, isTrue);
     await DesktopWindow.initialize(title: 'MarginMind', minimumSize: const Size(900, 600));
@@ -65,14 +65,7 @@ void main() {
       'makeTitlebarTransparent',
       'enableFullSizeContentView',
       'hideTitle',
-      'addToolbar',
-      'setToolbarStyle',
     ]);
-    expect(chromeCalls[4].arguments, {
-      'toolbarName': 'BlockingToolbar',
-      'toolbarArguments': {'blockingAreaDebugColor': ''},
-    });
-    expect(chromeCalls[5].arguments, {'toolbarStyle': 'unified'});
     expect(windowCalls.first.method, 'ensureInitialized');
     expect(
       windowCalls.map((call) => call.method),
