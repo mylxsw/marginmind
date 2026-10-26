@@ -10,8 +10,8 @@
 `mm_platform/KeychainSecretStore` 经 `marginmind/secret_store` 方法通道调用 macOS Security。
 应用组合根负责读密钥并注入适配器，界面不接触 HTTP、供应商 JSON 或平台插件。
 
-本任务不定义第二套持久化实体，不升级文件格式。`ResearchSessionRepository<T>` 的类型参数绑定
-P2-A2 的会话实体；其文件存储实现归 P2-A2。SearchProvider / ContentExtractor 仅定义端口，
+本任务不定义第二套持久化实体，不升级文件格式。会话持久化统一使用 P2-A2 的 `ResearchSessionRepository`（`mm_core` content），
+本任务的临时泛型端口已在合并时移除。SearchProvider / ContentExtractor 仅定义端口，
 OpenAlex、WKWebView / Readability 与会话调度不在本次实现范围。
 
 ## 请求与事件合同

@@ -170,11 +170,3 @@ abstract interface class SecretStore {
   Future<void> write(String account, String value);
   Future<void> delete(String account);
 }
-
-/// Typed at the composition root with P2-A2's session entity; no second disk schema.
-abstract interface class ResearchSessionRepository<T> {
-  Future<T?> read(String studySetId, String sessionId);
-  Future<void> write(String studySetId, String sessionId, T session);
-  Future<void> delete(String studySetId, String sessionId);
-  Future<List<String>> list(String studySetId);
-}

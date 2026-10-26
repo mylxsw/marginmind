@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'research.dart';
 import 'review.dart';
 
 /// Everything inside one study set: documents, highlights, cards and the
@@ -19,6 +20,11 @@ class StudySetContent {
     this.memoryStates = const [],
     this.relations = const [],
     this.summaries = const [],
+    this.researchNotes = const [],
+    this.noteAttachments = const [],
+    this.evidence = const [],
+    this.researchSources = const [],
+    this.inkStrokes = const [],
     this.bookmarks = const [],
   });
 
@@ -47,6 +53,11 @@ class StudySetContent {
   final List<MapSummary> summaries;
 
   /// The reader's page bookmarks, across documents.
+  final List<ResearchNote> researchNotes;
+  final List<NoteAttachment> noteAttachments;
+  final List<Evidence> evidence;
+  final List<ResearchSource> researchSources;
+  final List<InkStroke> inkStrokes;
   final List<Bookmark> bookmarks;
 
   /// Bookmarks of [documentId] in page order.
@@ -81,6 +92,8 @@ class StudySetContent {
     if (a < 0 || b < 0) return null;
     return siblings.sublist(a < b ? a : b, (a < b ? b : a) + 1);
   }
+
+  ResearchNote? researchNote(String id) => researchNotes.where((n) => n.id == id).firstOrNull;
 
   Document? document(String id) => documents.where((d) => d.id == id).firstOrNull;
   Annotation? annotation(String id) => annotations.where((a) => a.id == id).firstOrNull;
@@ -119,7 +132,7 @@ class StudySetContent {
         switch (c.kind) {
           CardKind.excerpt => annotation(c.annotationId ?? '') != null,
           CardKind.note => c.title.trim().isNotEmpty,
-          CardKind.topic => false,
+          CardKind.topic || CardKind.research => false,
           CardKind.image => c.imageFileName != null,
         },
   );
@@ -241,6 +254,11 @@ class StudySetContent {
     List<MemoryState>? memoryStates,
     List<MapRelation>? relations,
     List<MapSummary>? summaries,
+    List<ResearchNote>? researchNotes,
+    List<NoteAttachment>? noteAttachments,
+    List<Evidence>? evidence,
+    List<ResearchSource>? researchSources,
+    List<InkStroke>? inkStrokes,
     List<Bookmark>? bookmarks,
   }) {
     return StudySetContent(
@@ -254,6 +272,11 @@ class StudySetContent {
       memoryStates: memoryStates ?? this.memoryStates,
       relations: relations ?? this.relations,
       summaries: summaries ?? this.summaries,
+      researchNotes: researchNotes ?? this.researchNotes,
+      noteAttachments: noteAttachments ?? this.noteAttachments,
+      evidence: evidence ?? this.evidence,
+      researchSources: researchSources ?? this.researchSources,
+      inkStrokes: inkStrokes ?? this.inkStrokes,
       bookmarks: bookmarks ?? this.bookmarks,
     );
   }
@@ -269,6 +292,11 @@ class StudySetContent {
     'memoryStates': [for (final s in memoryStates) s.toJson()],
     'relations': [for (final r in relations) r.toJson()],
     'summaries': [for (final s in summaries) s.toJson()],
+    'researchNotes': [for (final v in researchNotes) v.toJson()],
+    'noteAttachments': [for (final v in noteAttachments) v.toJson()],
+    'evidence': [for (final v in evidence) v.toJson()],
+    'researchSources': [for (final v in researchSources) v.toJson()],
+    'inkStrokes': [for (final v in inkStrokes) v.toJson()],
     'bookmarks': [for (final b in bookmarks) b.toJson()],
   };
 
@@ -287,6 +315,11 @@ class StudySetContent {
       memoryStates: list('memoryStates', MemoryState.fromJson),
       relations: list('relations', MapRelation.fromJson),
       summaries: list('summaries', MapSummary.fromJson),
+      researchNotes: list('researchNotes', ResearchNote.fromJson),
+      noteAttachments: list('noteAttachments', NoteAttachment.fromJson),
+      evidence: list('evidence', Evidence.fromJson),
+      researchSources: list('researchSources', ResearchSource.fromJson),
+      inkStrokes: list('inkStrokes', InkStroke.fromJson),
       bookmarks: list('bookmarks', Bookmark.fromJson),
     );
   }

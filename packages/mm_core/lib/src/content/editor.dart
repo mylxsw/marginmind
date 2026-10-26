@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'models.dart';
+import 'research.dart';
 import 'map_clipboard.dart';
 import 'review.dart';
 import 'study_set_content.dart';
@@ -14,6 +17,212 @@ class StudySetEditor {
 
   final String Function() newId;
   final DateTime Function() now;
+
+  /// Save the note and its attachments as one undoable value. Evidence is
+  /// immutable: an existing id must retain its original captured bytes.
+  StudySetContent saveResearchNote(
+    StudySetContent c,
+    ResearchNote note, {
+    List<NoteTarget> targets = const [],
+    List<Evidence> evidence = const [],
+    List<ResearchSource> sources = const [],
+    bool createCard = false,
+    String? parentId,
+  }) {
+    if (createCard && (c.map(mapId) == null || (parentId != null && c.node(parentId, mapId: mapId) == null))) {
+      throw ArgumentError('Invalid research card destination');
+    }
+    final byEvidence = {for (final e in c.evidence) e.id: e};
+    for (final e in evidence) {
+      if (byEvidence[e.id] case final existing?) {
+        if (jsonEncode(existing.toJson()) != jsonEncode(e.toJson())) throw ArgumentError('Evidence is immutable');
+      }
+      byEvidence[e.id] = e;
+    }
+    final bySource = {for (final s in c.researchSources) s.id: s};
+    for (final source in sources) {
+      final versions = {for (final v in bySource[source.id]?.versions ?? <SourceVersion>[]) v.version: v};
+      for (final version in source.versions) {
+        final previous = versions[version.version];
+        if (previous != null && (previous.hash != version.hash || previous.snapshotFile != version.snapshotFile)) {
+          throw ArgumentError('Source versions are immutable');
+        }
+        versions[version.version] = version;
+      }
+      bySource[source.id] = ResearchSource.fromJson({
+        ...source.toJson(),
+        'versions': [for (final v in versions.values) v.toJson()],
+      });
+    }
+    for (final e in byEvidence.values) {
+      final source = bySource[e.sourceId];
+      if (source == null || !source.versions.any((v) => v.version == e.sourceVersion)) {
+        throw ArgumentError('Unresolved evidence source');
+      }
+    }
+    if (note.citations.any((ref) => !byEvidence.containsKey(ref.evidenceId))) {
+      throw ArgumentError('Unresolved evidence reference');
+    }
+    var next = c.copyWith(
+      researchNotes: [
+        for (final n in c.researchNotes)
+          if (n.id != note.id) n,
+        note,
+      ],
+      evidence: byEvidence.values.toList(),
+      researchSources: bySource.values.toList(),
+    );
+    for (final target in targets) {
+      next = attachNote(next, note.id, target);
+    }
+    if (createCard) {
+      final card = Card(id: newId(), kind: CardKind.research, researchNoteId: note.id, createdAt: now());
+      next = _place(next, card, parentId);
+      next = attachNote(next, note.id, CardTarget(cardId: card.id));
+    }
+    return next;
+  }
+
+  StudySetContent attachNote(StudySetContent c, String noteId, NoteTarget target) {
+    if (c.researchNote(noteId) == null) throw ArgumentError('Unknown research note');
+    switch (target) {
+      case PdfTarget(:final documentId, :final pages):
+        final doc = c.document(documentId);
+        if (doc == null || pages.isEmpty || pages.any((p) => p.page < 1 || p.page > doc.pageCount)) {
+          throw ArgumentError('Invalid PDF attachment');
+        }
+      case CardTarget(:final cardId):
+        if (c.card(cardId) == null) throw ArgumentError('Unknown attachment card');
+    }
+    if (c.noteAttachments.any(
+      (a) => a.noteId == noteId && jsonEncode(a.target.toJson()) == jsonEncode(target.toJson()),
+    )) {
+      return c;
+    }
+    return c.copyWith(
+      noteAttachments: [
+        ...c.noteAttachments,
+        NoteAttachment(id: newId(), noteId: noteId, target: target),
+      ],
+    );
+  }
+
+  StudySetContent detachNote(StudySetContent c, String attachmentId) => c.copyWith(
+    noteAttachments: [
+      for (final a in c.noteAttachments)
+        if (a.id != attachmentId) a,
+    ],
+  );
+
+  /// Remove research cards in every map, lifting their unrelated children.
+  /// Evidence and snapshots remain available to undo and to other notes.
+  StudySetContent deleteNote(StudySetContent c, String noteId) {
+    if (c.researchNote(noteId) == null) return c;
+    final kill = {
+      for (final card in c.cards)
+        if (card.researchNoteId == noteId) card.id,
+    };
+    final nodes = <MapNode>[];
+    final orders = <(String, String?), double>{};
+    void walk(String mapId, String? parentId, String? destination, Set<String> seen) {
+      for (final node in c.childrenOf(parentId, mapId: mapId)) {
+        if (!seen.add(node.cardId)) continue;
+        if (kill.contains(node.cardId)) {
+          walk(mapId, node.cardId, destination, seen);
+        } else {
+          final key = (mapId, destination);
+          final order = orders[key] = (orders[key] ?? 0) + 1;
+          nodes.add(node.copyWith(parentId: destination, toRoot: destination == null, order: order));
+          walk(mapId, node.cardId, node.cardId, seen);
+        }
+      }
+    }
+
+    for (final map in c.maps) {
+      walk(map.id, null, null, <String>{});
+    }
+
+    return c.copyWith(
+      researchNotes: [
+        for (final n in c.researchNotes)
+          if (n.id != noteId) n,
+      ],
+      noteAttachments: [
+        for (final a in c.noteAttachments)
+          if (a.noteId != noteId && !(a.target is CardTarget && kill.contains((a.target as CardTarget).cardId))) a,
+      ],
+      cards: [
+        for (final card in c.cards)
+          if (!kill.contains(card.id)) card,
+      ],
+      nodes: nodes,
+      relations: [
+        for (final r in c.relations)
+          if (!kill.contains(r.fromId) && !kill.contains(r.toId)) r,
+      ],
+      summaries: [
+        for (final r in c.summaries)
+          if (!kill.contains(r.parentId) && !kill.contains(r.fromId) && !kill.contains(r.toId)) r,
+      ],
+    );
+  }
+
+  StudySetContent setNoteFormat(StudySetContent c, String noteId, TextFormat format) => c.copyWith(
+    researchNotes: [
+      for (final n in c.researchNotes) n.id == noteId ? n.copyWith(textFormat: format, updatedAt: now()) : n,
+    ],
+  );
+
+  StudySetContent setCardTextFormat(StudySetContent c, String cardId, TextFormat format) =>
+      c.copyWith(cards: [for (final card in c.cards) card.id == cardId ? card.copyWith(textFormat: format) : card]);
+
+  StudySetContent setCardWidth(StudySetContent c, String cardId, double? width) {
+    if (width != null && (!width.isFinite || width <= 0)) throw ArgumentError.value(width, 'width');
+    return c.copyWith(
+      nodes: [
+        for (final n in c.nodes)
+          n.mapId == mapId && n.cardId == cardId ? n.copyWith(width: width, resetWidth: width == null) : n,
+      ],
+    );
+  }
+
+  StudySetContent setMapDensity(StudySetContent c, MapDensity density) =>
+      c.copyWith(maps: [for (final m in c.maps) m.id == mapId ? m.copyWith(density: density) : m]);
+
+  StudySetContent addInkStroke(StudySetContent c, InkStroke stroke) {
+    final doc = c.document(stroke.documentId);
+    final ellipse = stroke.ellipse;
+    final invalidEllipse =
+        ellipse != null &&
+        (![ellipse.left, ellipse.top, ellipse.right, ellipse.bottom].every((v) => v.isFinite) ||
+            ellipse.left >= ellipse.right ||
+            ellipse.bottom >= ellipse.top);
+    if (invalidEllipse ||
+        doc == null ||
+        stroke.page < 1 ||
+        stroke.page > doc.pageCount ||
+        !stroke.width.isFinite ||
+        stroke.width <= 0 ||
+        stroke.colorIndex < 0 ||
+        stroke.points.length > InkStroke.maxPoints ||
+        stroke.points.any((p) => !p.x.isFinite || !p.y.isFinite) ||
+        switch (stroke.tool) {
+          InkTool.ellipse => stroke.ellipse == null || stroke.points.isNotEmpty,
+          InkTool.arrow => stroke.points.length != 2 || stroke.ellipse != null,
+          _ => stroke.points.isEmpty || stroke.ellipse != null,
+        }) {
+      throw ArgumentError('Invalid ink stroke');
+    }
+    if (c.inkStrokes.any((s) => s.id == stroke.id)) return c;
+    return c.copyWith(inkStrokes: [...c.inkStrokes, stroke]);
+  }
+
+  StudySetContent removeInkStroke(StudySetContent c, String strokeId) => c.copyWith(
+    inkStrokes: [
+      for (final s in c.inkStrokes)
+        if (s.id != strokeId) s,
+    ],
+  );
 
   /// Tags belong to shared card content, independently of map placements.
   StudySetContent setTags(StudySetContent c, String cardId, Iterable<String> tags) {
@@ -45,7 +254,15 @@ class StudySetEditor {
   /// Keep at least one map; shared cards and schedules survive map deletion.
   StudySetContent removeMap(StudySetContent c, String id) {
     if (c.maps.length <= 1 || c.map(id) == null) return c;
+    final detached = {
+      for (final n in c.nodes)
+        if (n.mapId == id && !c.nodes.any((other) => other.mapId != id && other.cardId == n.cardId)) n.cardId,
+    };
     return c.copyWith(
+      noteAttachments: [
+        for (final a in c.noteAttachments)
+          if (!(a.target is CardTarget && detached.contains((a.target as CardTarget).cardId))) a,
+      ],
       maps: [
         for (final m in c.maps)
           if (m.id != id) m,
@@ -207,8 +424,13 @@ class StudySetEditor {
     List<OutlineEntry> entries, {
     String? parentId,
     Map<String, String> images = const {},
+    Map<String, String> snapshots = const {},
   }) {
     if (parentId != null && c.node(parentId, mapId: mapId) == null) return (c, const []);
+    var research = c;
+    final copiedNotes = <String, String>{};
+    final copiedSources = <String, String>{};
+    final copiedEvidence = <String, String>{};
     final cards = [...c.cards];
     final nodes = [...c.nodes];
     final annotations = [...c.annotations];
@@ -224,6 +446,93 @@ class StudySetEditor {
       var kind = entry.kind;
       var title = entry.title;
       String? imageFileName;
+      for (final original in entry.researchNotes) {
+        var noteId = copiedNotes[original.id];
+        if (noteId == null) {
+          final sourceIds = {
+            for (final ref in original.citations)
+              for (final e in entry.evidence)
+                if (e.id == ref.evidenceId) e.sourceId,
+          };
+          final sources = <ResearchSource>[];
+          for (final source in entry.sources.where((s) => sourceIds.contains(s.id))) {
+            if (copiedSources.containsKey(source.id)) continue;
+            final versions = [
+              for (final v in source.versions)
+                if (snapshots[v.snapshotFile] case final imported?)
+                  SourceVersion(
+                    version: v.version,
+                    snapshotFile: imported,
+                    hash: imported.split('/').last.split('.').first,
+                  ),
+            ];
+            if (versions.length != source.versions.length) {
+              throw const FormatException('Research snapshots must be imported before paste');
+            }
+            for (var i = 0; i < versions.length; i++) {
+              if (versions[i].snapshotFile != 'research/snapshots/${source.versions[i].hash}.md') {
+                throw const FormatException('Clipboard snapshot hash mismatch');
+              }
+            }
+            final sourceId = copiedSources[source.id] = newId();
+            sources.add(
+              ResearchSource.fromJson({
+                ...source.toJson(),
+                'id': sourceId,
+                'versions': [for (final v in versions) v.toJson()],
+              }),
+            );
+          }
+          final evidence = <Evidence>[];
+          for (final ref in original.citations) {
+            if (copiedEvidence.containsKey(ref.evidenceId)) continue;
+            final source = entry.evidence.where((e) => e.id == ref.evidenceId).firstOrNull;
+            if (source == null || !copiedSources.containsKey(source.sourceId)) {
+              throw const FormatException('Missing research evidence');
+            }
+            final evidenceId = copiedEvidence[source.id] = newId();
+            evidence.add(
+              Evidence.fromJson({...source.toJson(), 'id': evidenceId, 'sourceId': copiedSources[source.sourceId]}),
+            );
+          }
+          noteId = copiedNotes[original.id] = newId();
+          final pdf = entry.pdfAttachments
+              .where((a) => a.noteId == original.id)
+              .map((a) => a.target)
+              .whereType<PdfTarget>()
+              .toList();
+          final missing = pdf.any((p) => c.document(p.documentId) == null);
+          final noteJson = {
+            ...original.toJson(),
+            'id': noteId,
+            'citations': [for (final ref in original.citations) EvidenceRef(copiedEvidence[ref.evidenceId]!).toJson()],
+            'sourceLocationMissing': original.sourceLocationMissing || missing,
+          };
+          noteJson.remove('sessionId'); // Session histories are deliberately not copied.
+          research = saveResearchNote(
+            research,
+            ResearchNote.fromJson(noteJson),
+            evidence: evidence,
+            sources: sources,
+            targets: [
+              for (final p in pdf)
+                if (c.document(p.documentId) != null) p,
+            ],
+          );
+        }
+        research = research.copyWith(
+          noteAttachments: [
+            ...research.noteAttachments,
+            NoteAttachment(
+              id: newId(),
+              noteId: noteId,
+              target: CardTarget(cardId: id),
+            ),
+          ],
+        );
+      }
+      final researchNoteId = copiedNotes[entry.researchNoteId];
+      if (kind == CardKind.research && researchNoteId == null) throw const FormatException('Missing research note');
       if (kind == CardKind.image) {
         // Document ids are unique per package: a present source document
         // means the image file (never collected) is in this package too.
@@ -267,6 +576,9 @@ class StudySetEditor {
           id: id,
           kind: kind,
           title: title,
+          researchNoteId: researchNoteId,
+          textFormat: entry.textFormat,
+          imageOrigin: entry.imageOrigin,
           annotationId: annotationId,
           imageFileName: imageFileName,
           tags: List.unmodifiable(entry.tags),
@@ -280,6 +592,7 @@ class StudySetEditor {
           parentId: parents.lastOrNull ?? parentId,
           order: entry.depth == 0 ? order++ : nodes.length.toDouble(),
           collapsed: entry.collapsed,
+          width: entry.width,
         ),
       );
       if (entry.depth == 0) roots.add(id);
@@ -288,7 +601,7 @@ class StudySetEditor {
     if (entries.isEmpty) return (c, roots);
     // Pasted children must be visible, even if their target was folded.
     return (
-      c.copyWith(
+      research.copyWith(
         cards: cards,
         annotations: annotations,
         nodes: [
@@ -675,6 +988,14 @@ class StudySetEditor {
         for (final d in next.documents)
           if (d.id != documentId) d,
       ],
+      noteAttachments: [
+        for (final a in next.noteAttachments)
+          if (!(a.target is PdfTarget && (a.target as PdfTarget).documentId == documentId)) a,
+      ],
+      inkStrokes: [
+        for (final s in next.inkStrokes)
+          if (s.documentId != documentId) s,
+      ],
       bookmarks: [
         for (final b in next.bookmarks)
           if (b.documentId != documentId) b,
@@ -740,6 +1061,10 @@ class StudySetEditor {
         relations: [
           for (final r in c.relations)
             if (r.mapId != mapId || !(kill.contains(r.fromId) || kill.contains(r.toId))) r,
+        ],
+        noteAttachments: [
+          for (final a in c.noteAttachments)
+            if (!(a.target is CardTarget && removed.containsKey((a.target as CardTarget).cardId))) a,
         ],
         cards: [
           for (final card in c.cards)
