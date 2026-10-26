@@ -32,7 +32,7 @@ abstract final class MMIcons {
   static const IconData inkFreehand = CupertinoIcons.scribble; // scribble
   static const IconData inkEllipse = CupertinoIcons.circle; // circle
   static const IconData inkArrow = CupertinoIcons.arrow_up_right; // arrow.up.right
-  static const IconData inkEraser = CupertinoIcons.pencil_slash; // eraser
+  static const IconData inkEraser = CupertinoIcons.delete_left; // delete.left (no Cupertino eraser)
   static const IconData undo = CupertinoIcons.arrow_uturn_left; // arrow.uturn.backward
   static const IconData text = CupertinoIcons.textformat; // character.textbox
   static const IconData syncToMap = CupertinoIcons.arrow_branch; // arrow.triangle.branch
