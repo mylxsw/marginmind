@@ -161,9 +161,7 @@ void main() {
     await controller.nextMatch();
     expect(controller.isReady, isFalse);
     expect(controller.pageCount, 0);
-    await tester.pumpWidget(
-      MaterialApp(home: MMPdfThumbnail(controller: controller, page: 1, width: 10, height: 10)),
-    );
+    await tester.pumpWidget(MaterialApp(home: MMPdfThumbnail(controller: controller, page: 1, width: 10, height: 10)));
     expect(find.byType(PdfPageView), findsNothing);
   });
 
@@ -173,7 +171,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.canGoBack, isTrue);
     await tester.pumpWidget(
-      MaterialApp(home: MMPdfView(key: const ValueKey('other'), filePath: 'other.pdf', controller: controller)),
+      MaterialApp(
+        home: MMPdfView(key: const ValueKey('other'), filePath: 'other.pdf', controller: controller),
+      ),
     );
     await tester.pump();
     expect(controller.canGoBack, isFalse);

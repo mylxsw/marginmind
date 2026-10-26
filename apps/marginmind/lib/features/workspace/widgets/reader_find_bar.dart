@@ -123,13 +123,7 @@ class _ReaderFindBarState extends State<ReaderFindBar> {
                   iconSize: 12,
                   onPressed: count > 0 ? () => _step(backwards: false) : null,
                 ),
-                MMIconButton(
-                  icon: MMIcons.close,
-                  tooltip: l.done,
-                  size: 26,
-                  iconSize: 11,
-                  onPressed: widget.onClose,
-                ),
+                MMIconButton(icon: MMIcons.close, tooltip: l.done, size: 26, iconSize: 11, onPressed: widget.onClose),
               ],
             );
           },

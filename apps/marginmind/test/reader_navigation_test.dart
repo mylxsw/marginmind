@@ -27,7 +27,12 @@ Future<({ProviderContainer container, WorkspaceController controller, MMPdfViewC
   return (container: container, controller: controller, pdf: container.read(readerPdfProvider('demo-1')));
 }
 
-Future<void> pressWithControl(WidgetTester tester, LogicalKeyboardKey key, {bool shift = false, bool alt = false}) async {
+Future<void> pressWithControl(
+  WidgetTester tester,
+  LogicalKeyboardKey key, {
+  bool shift = false,
+  bool alt = false,
+}) async {
   await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
   if (shift) await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
   if (alt) await tester.sendKeyDownEvent(LogicalKeyboardKey.alt);
@@ -193,7 +198,10 @@ void main() {
     final r = await openReader(tester);
     r.pdf.debugReport(
       pageCount: 164,
-      outline: const [MMPdfOutlineItem(title: '附录', page: 0), _chapter2],
+      outline: const [
+        MMPdfOutlineItem(title: '附录', page: 0),
+        _chapter2,
+      ],
     );
     r.controller.showReaderPanel(ReaderPanelMode.outline);
     await tester.pumpAndSettle();
@@ -269,7 +277,11 @@ void main() {
   testWidgets('area highlights are listed by their tool name', (tester) async {
     final r = await openReader(tester);
     r.controller.showReaderPanel(ReaderPanelMode.annotations);
-    await r.controller.highlight('c1', const MMPdfSelection(page: 2, rects: [PageRect(1, 20, 30, 10)], text: ''), MMAnnotationColor.blue);
+    await r.controller.highlight(
+      'c1',
+      const MMPdfSelection(page: 2, rects: [PageRect(1, 20, 30, 10)], text: ''),
+      MMAnnotationColor.blue,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Area Select'), findsOneWidget);
   });

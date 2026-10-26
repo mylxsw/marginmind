@@ -634,9 +634,8 @@ class StudySetEditor {
   }
 
   /// An empty [title] goes back to the unnamed bookmark.
-  StudySetContent renameBookmark(StudySetContent c, String bookmarkId, String title) => c.copyWith(
-    bookmarks: [for (final b in c.bookmarks) b.id == bookmarkId ? b.copyWith(title: title.trim()) : b],
-  );
+  StudySetContent renameBookmark(StudySetContent c, String bookmarkId, String title) =>
+      c.copyWith(bookmarks: [for (final b in c.bookmarks) b.id == bookmarkId ? b.copyWith(title: title.trim()) : b]);
 
   StudySetContent removeBookmark(StudySetContent c, String bookmarkId) => c.copyWith(
     bookmarks: [

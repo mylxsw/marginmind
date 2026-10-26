@@ -1591,6 +1591,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Relationships'**
   String get exportRelations;
+
+  /// No description provided for @readerThumbnails.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnails'**
+  String get readerThumbnails;
+
+  /// No description provided for @readerOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Table of Contents'**
+  String get readerOutline;
+
+  /// No description provided for @readerBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks'**
+  String get readerBookmarks;
+
+  /// No description provided for @readerAnnotations.
+  ///
+  /// In en, this message translates to:
+  /// **'Annotations'**
+  String get readerAnnotations;
+
+  /// No description provided for @showReaderSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Page Sidebar'**
+  String get showReaderSidebar;
+
+  /// No description provided for @hideReaderSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Page Sidebar'**
+  String get hideReaderSidebar;
+
+  /// No description provided for @addBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Bookmark'**
+  String get addBookmark;
+
+  /// No description provided for @removeBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Bookmark'**
+  String get removeBookmark;
+
+  /// No description provided for @renameBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Bookmark…'**
+  String get renameBookmark;
+
+  /// No description provided for @deleteBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Bookmark'**
+  String get deleteBookmark;
+
+  /// No description provided for @findInDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Find in Document'**
+  String get findInDocument;
+
+  /// No description provided for @findNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Next'**
+  String get findNext;
+
+  /// No description provided for @findPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Previous'**
+  String get findPrevious;
+
+  /// No description provided for @noResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No Results'**
+  String get noResults;
+
+  /// No description provided for @matchOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}'**
+  String matchOf(int current, int total);
+
+  /// No description provided for @pageNumberField.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Number'**
+  String get pageNumberField;
+
+  /// No description provided for @goBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get goBack;
+
+  /// No description provided for @firstPage.
+  ///
+  /// In en, this message translates to:
+  /// **'First Page'**
+  String get firstPage;
+
+  /// No description provided for @lastPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Page'**
+  String get lastPage;
+
+  /// No description provided for @menuGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get menuGo;
+
+  /// No description provided for @noBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'No Bookmarks'**
+  String get noBookmarks;
+
+  /// No description provided for @noAnnotations.
+  ///
+  /// In en, this message translates to:
+  /// **'No Annotations'**
+  String get noAnnotations;
+
+  /// No description provided for @expandSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get expandSection;
+
+  /// No description provided for @collapseSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get collapseSection;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

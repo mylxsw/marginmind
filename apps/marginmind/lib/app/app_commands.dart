@@ -516,17 +516,27 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     final go = [
-      AppCommand(l.findNext, canRead && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
-          shortcut: AppShortcuts.findNext),
-      AppCommand(l.findPrevious, canRead && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
-          shortcut: AppShortcuts.findPrevious),
+      AppCommand(
+        l.findNext,
+        canRead && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
+        shortcut: AppShortcuts.findNext,
+      ),
+      AppCommand(
+        l.findPrevious,
+        canRead && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
+        shortcut: AppShortcuts.findPrevious,
+      ),
       AppCommand(
         bookmarked ? l.removeBookmark : l.addBookmark,
         canRead && !_textFocused ? workspace.toggleBookmark : null,
         shortcut: AppShortcuts.toggleBookmark,
       ),
       AppCommand(l.goBack, canRead && !_textFocused ? () => pdf!.goBack() : null, shortcut: AppShortcuts.goBack),
-      AppCommand(l.firstPage, canRead && !_textFocused ? () => pdf!.firstPage() : null, shortcut: AppShortcuts.firstPage),
+      AppCommand(
+        l.firstPage,
+        canRead && !_textFocused ? () => pdf!.firstPage() : null,
+        shortcut: AppShortcuts.firstPage,
+      ),
       AppCommand(l.lastPage, canRead && !_textFocused ? () => pdf!.lastPage() : null, shortcut: AppShortcuts.lastPage),
     ];
     // The component gallery is a developer tool.

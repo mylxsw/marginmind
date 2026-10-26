@@ -89,11 +89,11 @@ class ReaderSidebar extends ConsumerWidget {
     );
   }
 
-  List<Annotation> _annotations(StudySetContent content) =>
-      content.annotationsOn(document.id)..sort((a, b) {
-        final byPage = a.page.compareTo(b.page);
-        return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
-      });
+  List<Annotation> _annotations(StudySetContent content) => content.annotationsOn(document.id)
+    ..sort((a, b) {
+      final byPage = a.page.compareTo(b.page);
+      return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
+    });
 }
 
 // ---- thumbnails ---------------------------------------------------------------
@@ -417,6 +417,7 @@ class _Empty extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) =>
-      Center(child: Text(label, style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel)));
+  Widget build(BuildContext context) => Center(
+    child: Text(label, style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel)),
+  );
 }

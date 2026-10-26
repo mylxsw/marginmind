@@ -115,173 +115,173 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (openDocs.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: MMIconButton(
-                      icon: MMIcons.sidebar,
-                      tooltip: AppShortcuts.tip(
-                        state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                        AppShortcuts.toggleReaderSidebar,
-                      ),
-                      size: 28,
-                      iconSize: 15,
-                      color: state.readerPanelVisible ? c.accent : c.icon,
-                      onPressed: controller.toggleReaderPanel,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (openDocs.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: MMIconButton(
+                    icon: MMIcons.sidebar,
+                    tooltip: AppShortcuts.tip(
+                      state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+                      AppShortcuts.toggleReaderSidebar,
                     ),
+                    size: 28,
+                    iconSize: 15,
+                    color: state.readerPanelVisible ? c.accent : c.icon,
+                    onPressed: controller.toggleReaderPanel,
                   ),
-                  for (final d in openDocs)
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 240),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: _Tab(
-                            title: d.title,
-                            active: d.id == state.activeDocumentId,
-                            onOpen: () => controller.openDocument(d.id),
-                            onClose: () => controller.closeDocument(d.id),
-                            closeLabel: l.closeTab,
-                          ),
+                ),
+                for (final d in openDocs)
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 240),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: _Tab(
+                          title: d.title,
+                          active: d.id == state.activeDocumentId,
+                          onOpen: () => controller.openDocument(d.id),
+                          onClose: () => controller.closeDocument(d.id),
+                          closeLabel: l.closeTab,
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          Expanded(
-            child: doc == null
-                ? MMEmptyState(
-                    icon: MMIcons.document,
-                    title: l.readerEmptyTitle,
-                    message: l.readerEmptyMessage,
-                    actions: [
-                      MMButton(
-                        label: l.importPdf,
-                        icon: MMIcons.import,
-                        variant: MMButtonVariant.primary,
-                        onPressed: () => pickAndImportDocuments(context, ref, widget.studySetId),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      if (state.readerPanelVisible)
-                        ReaderSidebar(studySetId: widget.studySetId, document: doc, pdf: _pdf),
-                      Expanded(
-                        child: Listener(
-                    onPointerSignal: (_) => dismissSelection(),
-                    onPointerPanZoomStart: (_) => dismissSelection(),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: !ref.watch(pdfRenderingEnabledProvider)
-                              ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
-                              : MMPdfView(
-                                  key: ValueKey(doc.id),
-                                  filePath: controller.filePath(doc),
-                                  controller: _pdf,
-                                  initialPage: doc.lastPage,
-                                  backgroundColor: c.readerBackground,
-                                  emphasisColor: c.accent,
-                                  highlights: _highlights(content, doc.id, state),
-                                  areaSelecting: state.tool == AnnotationTool.area,
-                                  onAreaSelected: (area) async {
+          ),
+        Expanded(
+          child: doc == null
+              ? MMEmptyState(
+                  icon: MMIcons.document,
+                  title: l.readerEmptyTitle,
+                  message: l.readerEmptyMessage,
+                  actions: [
+                    MMButton(
+                      label: l.importPdf,
+                      icon: MMIcons.import,
+                      variant: MMButtonVariant.primary,
+                      onPressed: () => pickAndImportDocuments(context, ref, widget.studySetId),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    if (state.readerPanelVisible)
+                      ReaderSidebar(studySetId: widget.studySetId, document: doc, pdf: _pdf),
+                    Expanded(
+                      child: Listener(
+                        onPointerSignal: (_) => dismissSelection(),
+                        onPointerPanZoomStart: (_) => dismissSelection(),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: !ref.watch(pdfRenderingEnabledProvider)
+                                  ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
+                                  : MMPdfView(
+                                      key: ValueKey(doc.id),
+                                      filePath: controller.filePath(doc),
+                                      controller: _pdf,
+                                      initialPage: doc.lastPage,
+                                      backgroundColor: c.readerBackground,
+                                      emphasisColor: c.accent,
+                                      highlights: _highlights(content, doc.id, state),
+                                      areaSelecting: state.tool == AnnotationTool.area,
+                                      onAreaSelected: (area) async {
+                                        dismissSelection();
+                                        final notice = await controller.excerptArea(
+                                          doc.id,
+                                          area,
+                                          () => _pdf.captureArea(area.page, area.rect),
+                                        );
+                                        if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                      },
+                                      onViewportChanged: dismissSelection,
+                                      onPageChanged: (page, _) {
+                                        dismissSelection();
+                                        controller.recordPage(doc.id, page);
+                                      },
+                                      onSelectionChanged: (selected) {
+                                        if (!selected && ref.read(provider).pending is PendingSelection) {
+                                          dismissSelection();
+                                        }
+                                      },
+                                      onHighlightTap: (id, bounds) {
+                                        _pdf.clearSelection();
+                                        controller.tapHighlight(id, bounds);
+                                      },
+                                      onSelectionCommitted: (selection) async {
+                                        final notice = await controller.onSelectionCommitted(doc.id, selection);
+                                        if (notice != null) {
+                                          await _pdf.clearSelection();
+                                          if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                        }
+                                      },
+                                    ),
+                            ),
+                            if (state.findVisible)
+                              Positioned(
+                                top: 12,
+                                right: 16,
+                                child: ReaderFindBar(
+                                  pdf: _pdf,
+                                  focusTick: state.findFocusTick,
+                                  onClose: controller.closeFind,
+                                ),
+                              ),
+                            if (state.pending case final PendingAction pending)
+                              Positioned.fill(
+                                child: MMFloatingToolbarLayout(
+                                  anchor: switch (pending) {
+                                    PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
+                                    PendingHighlight(:final viewportRect) => viewportRect,
+                                  },
+                                  child: SelectionToolbar(
+                                    key: ObjectKey(pending),
+                                    studySetId: widget.studySetId,
+                                    pending: pending,
+                                    pdf: _pdf,
+                                    rootTitle: rootTitle,
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 16,
+                              child: Center(
+                                child: _PagePill(
+                                  page: state.currentPages[doc.id] ?? doc.lastPage,
+                                  pageCount: doc.pageCount,
+                                  onJump: (page) {
                                     dismissSelection();
-                                    final notice = await controller.excerptArea(
-                                      doc.id,
-                                      area,
-                                      () => _pdf.captureArea(area.page, area.rect),
-                                    );
-                                    if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                    _pdf.jumpToPage(page);
                                   },
-                                  onViewportChanged: dismissSelection,
-                                  onPageChanged: (page, _) {
+                                  onPrevious: () {
                                     dismissSelection();
-                                    controller.recordPage(doc.id, page);
+                                    _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) - 1);
                                   },
-                                  onSelectionChanged: (selected) {
-                                    if (!selected && ref.read(provider).pending is PendingSelection) {
-                                      dismissSelection();
-                                    }
-                                  },
-                                  onHighlightTap: (id, bounds) {
-                                    _pdf.clearSelection();
-                                    controller.tapHighlight(id, bounds);
-                                  },
-                                  onSelectionCommitted: (selection) async {
-                                    final notice = await controller.onSelectionCommitted(doc.id, selection);
-                                    if (notice != null) {
-                                      await _pdf.clearSelection();
-                                      if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                                    }
+                                  onNext: () {
+                                    dismissSelection();
+                                    _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) + 1);
                                   },
                                 ),
-                        ),
-                        if (state.findVisible)
-                          Positioned(
-                            top: 12,
-                            right: 16,
-                            child: ReaderFindBar(
-                              pdf: _pdf,
-                              focusTick: state.findFocusTick,
-                              onClose: controller.closeFind,
-                            ),
-                          ),
-                        if (state.pending case final PendingAction pending)
-                          Positioned.fill(
-                            child: MMFloatingToolbarLayout(
-                              anchor: switch (pending) {
-                                PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
-                                PendingHighlight(:final viewportRect) => viewportRect,
-                              },
-                              child: SelectionToolbar(
-                                key: ObjectKey(pending),
-                                studySetId: widget.studySetId,
-                                pending: pending,
-                                pdf: _pdf,
-                                rootTitle: rootTitle,
                               ),
                             ),
-                          ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 16,
-                          child: Center(
-                            child: _PagePill(
-                              page: state.currentPages[doc.id] ?? doc.lastPage,
-                              pageCount: doc.pageCount,
-                              onJump: (page) {
-                                dismissSelection();
-                                _pdf.jumpToPage(page);
-                              },
-                              onPrevious: () {
-                                dismissSelection();
-                                _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) - 1);
-                              },
-                              onNext: () {
-                                dismissSelection();
-                                _pdf.goToPage((state.currentPages[doc.id] ?? doc.lastPage) + 1);
-                              },
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
                       ),
                     ),
-                    ],
-                  ),
-          ),
-        ],
-      );
+                  ],
+                ),
+        ),
+      ],
+    );
   }
 
   List<MMPdfHighlight> _highlights(StudySetContent content, String documentId, WorkspaceState state) {
