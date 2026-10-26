@@ -288,6 +288,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncToMapOff => 'Sync excerpts to map: Off';
 
   @override
+  String get annotationColor => 'Highlight Color';
+
+  @override
   String get layoutReader => 'Source Only';
 
   @override
@@ -748,9 +751,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get excerptWithNote => 'Excerpt with Note';
-
-  @override
-  String get noteText => 'Note';
 
   @override
   String get addSiblingAfter => 'Add Sibling After';

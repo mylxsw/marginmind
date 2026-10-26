@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/annotation_colors.dart';
+import '../tokens/metrics.dart';
+import '../tokens/motion.dart';
+import 'glass.dart';
 
 /// Row of the six annotation colors (Finder-tag style). The selected dot
 /// gets a ring of its own color.
@@ -54,4 +58,110 @@ class MMColorPicker extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Toolbar button showing the current annotation color; clicking it opens
+/// an [MMColorPicker] pop-up below the button. Choosing a color closes the
+/// pop-up.
+class MMColorMenuButton extends StatelessWidget {
+  const MMColorMenuButton({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    required this.labelOf,
+    required this.tooltip,
+  });
+
+  final MMAnnotationColor selected;
+  final ValueChanged<MMAnnotationColor> onChanged;
+  final String Function(MMAnnotationColor color) labelOf;
+  final String tooltip;
+
+  Future<void> _open(BuildContext context) async {
+    final box = context.findRenderObject()! as RenderBox;
+    final origin = box.localToGlobal(Offset(box.size.width / 2, box.size.height));
+    final picked = await showGeneralDialog<MMAnnotationColor>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      transitionDuration: MMMotion.quick,
+      pageBuilder: (context, _, _) => CallbackShortcuts(
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
+        child: FocusScope(
+          autofocus: true,
+          child: CustomSingleChildLayout(
+            delegate: _ColorMenuLayout(origin),
+            child: Material(
+              type: MaterialType.transparency,
+              child: MMGlass(
+                borderRadius: BorderRadius.circular(MMRadii.capsuleButton + 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: MMColorPicker(
+                  selected: selected,
+                  labelOf: labelOf,
+                  onChanged: (color) => Navigator.of(context).pop(color),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return MMInteractive(
+      onTap: () => _open(context),
+      tooltip: tooltip,
+      semanticLabel: tooltip,
+      builder: (context, s) => AnimatedContainer(
+        duration: MMMotion.quick,
+        height: MMSizes.toolbarButton.height,
+        constraints: BoxConstraints(minWidth: MMSizes.toolbarButton.width),
+        decoration: BoxDecoration(
+          color: s.pressed
+              ? c.pressed
+              : s.hovered
+              ? c.hover
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: selected.color,
+            shape: BoxShape.circle,
+            boxShadow: s.focused ? [BoxShadow(color: c.accent, spreadRadius: 2)] : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Centers the pop-up under [origin], keeping it inside the window.
+class _ColorMenuLayout extends SingleChildLayoutDelegate {
+  _ColorMenuLayout(this.origin);
+
+  final Offset origin;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
+
+  @override
+  Offset getPositionForChild(Size size, Size child) {
+    final maxX = size.width - child.width - MMSpacing.s;
+    final x = (origin.dx - child.width / 2).clamp(MMSpacing.s, maxX < MMSpacing.s ? MMSpacing.s : maxX);
+    return Offset(x, origin.dy + MMSpacing.xs);
+  }
+
+  @override
+  bool shouldRelayout(_ColorMenuLayout old) => old.origin != origin;
 }

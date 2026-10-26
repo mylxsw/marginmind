@@ -98,10 +98,20 @@ class MMFloatingToolbarColor extends StatelessWidget {
 /// is in this widget's coordinates; rebuild with a new rect and the toolbar
 /// follows. Pointer events outside [child] reach the content underneath.
 class MMFloatingToolbarLayout extends StatelessWidget {
-  const MMFloatingToolbarLayout({super.key, required this.anchor, required this.child, this.padding = EdgeInsets.zero});
+  const MMFloatingToolbarLayout({
+    super.key,
+    required this.anchor,
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.avoid,
+  });
 
   final Rect anchor;
   final Widget child;
+
+  /// Area of a neighbouring floating control, given this widget's size, that
+  /// the toolbar steps aside for (see [placeFloatingToolbar]).
+  final Rect Function(Size size)? avoid;
 
   /// Area along the edges the toolbar must stay out of, such as a window
   /// toolbar overlapping the content.
@@ -109,24 +119,30 @@ class MMFloatingToolbarLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomSingleChildLayout(delegate: _FloatingToolbarDelegate(anchor, padding), child: child);
+    return CustomSingleChildLayout(delegate: _FloatingToolbarDelegate(anchor, padding, avoid), child: child);
   }
 }
 
 class _FloatingToolbarDelegate extends SingleChildLayoutDelegate {
-  _FloatingToolbarDelegate(this.anchor, this.padding);
+  _FloatingToolbarDelegate(this.anchor, this.padding, this.avoid);
 
   final Rect anchor;
   final EdgeInsets padding;
+  final Rect Function(Size size)? avoid;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
 
   @override
   Offset getPositionForChild(Size size, Size childSize) =>
-      placeFloatingToolbar(anchor: anchor, size: childSize, viewport: padding.deflateRect(Offset.zero & size)).offset;
+      placeFloatingToolbar(
+        anchor: anchor,
+        size: childSize,
+        viewport: padding.deflateRect(Offset.zero & size),
+        avoid: avoid?.call(size),
+      ).offset;
 
   @override
   bool shouldRelayout(_FloatingToolbarDelegate oldDelegate) =>
-      oldDelegate.anchor != anchor || oldDelegate.padding != padding;
+      oldDelegate.anchor != anchor || oldDelegate.padding != padding || oldDelegate.avoid != avoid;
 }

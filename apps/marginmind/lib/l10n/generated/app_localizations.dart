@@ -572,6 +572,12 @@ abstract class AppLocalizations {
   /// **'Sync excerpts to map: Off'**
   String get syncToMapOff;
 
+  /// No description provided for @annotationColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight Color'**
+  String get annotationColor;
+
   /// No description provided for @layoutReader.
   ///
   /// In en, this message translates to:
@@ -1357,12 +1363,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Excerpt with Note'**
   String get excerptWithNote;
-
-  /// No description provided for @noteText.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get noteText;
 
   /// No description provided for @addSiblingAfter.
   ///
