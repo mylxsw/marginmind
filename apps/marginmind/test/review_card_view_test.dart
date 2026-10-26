@@ -129,7 +129,7 @@ void main() {
   });
 
   group('excerptPageTextProvider', () {
-    Future<String?> read(WidgetTester tester, {required bool render, String cardId = 'c5'}) async {
+    Future<PageContent?> read(WidgetTester tester, {required bool render, String cardId = 'c5'}) async {
       final container = ProviderContainer(overrides: await testOverrides(renderPdf: render));
       addTearDown(container.dispose);
       container.listen(contentProvider('demo-1'), (_, _) {});

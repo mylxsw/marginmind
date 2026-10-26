@@ -11,6 +11,7 @@ void main() {
 
   test('pageText reads one page and gives null for bad pages', () async {
     expect(await MMPdfEngine.pageText('any.pdf', 2), 'Selected passage');
+    expect(await MMPdfEngine.pageContent('any.pdf', 2), (text: 'Selected passage', height: 800.0));
     expect(await MMPdfEngine.pageText('any.pdf', 0), isNull);
     expect(await MMPdfEngine.pageText('any.pdf', 4), isNull);
   });

@@ -6,6 +6,7 @@
 library;
 
 export 'src/content/editor.dart';
+export 'src/content/excerpt_lines.dart';
 export 'src/content/map_export.dart';
 export 'src/content/map_clipboard.dart';
 export 'src/content/models.dart';

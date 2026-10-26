@@ -24,12 +24,17 @@ abstract final class MMPdfEngine {
 
   /// The text of 1-based [page] of [path], or null when the file or page
   /// cannot be read.
-  static Future<String?> pageText(String path, int page) async {
+  static Future<String?> pageText(String path, int page) async => (await pageContent(path, page))?.text;
+
+  /// Like [pageText], with the page height in points.
+  static Future<({String text, double height})?> pageContent(String path, int page) async {
     PdfDocument? doc;
     try {
       doc = await PdfDocument.openFile(path);
       if (page < 1 || page > doc.pages.length) return null;
-      return (await doc.pages[page - 1].loadText())?.fullText;
+      final pdfPage = doc.pages[page - 1];
+      final text = (await pdfPage.loadText())?.fullText;
+      return text == null ? null : (text: text, height: pdfPage.height);
     } catch (_) {
       return null;
     } finally {

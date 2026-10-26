@@ -50,6 +50,43 @@ void main() {
       expect(r.after, ' 很快。第三句。');
     });
 
+    test('matches Chinese broken across lines against a quote joined without spaces', () {
+      final r = excerptContext('第一句。细胞分\n裂的过程\n很快。第三句。', '细胞分裂的过程很快。')!;
+      expect(r.before, '第一句。');
+      expect(r.after, '第三句。');
+    });
+
+    test('matches English broken across lines and hyphenated words', () {
+      const text = 'Cells divide. Mitosis has\nfour inter-\nnational phases. Last one.';
+      final r = excerptContext(text, 'has four international phases.')!;
+      expect(r.before, 'Cells divide. Mitosis ');
+      expect(r.after, ' Last one.');
+    });
+
+    test('matches mixed Chinese and English', () {
+      final r = excerptContext('前文。DNA 复制发\n生在 S 期。后文。', 'DNA 复制发生在 S 期')!;
+      expect(r.before, '前文。');
+      expect(r.after, '。后文。');
+    });
+
+    test('still matches quotes saved with a space between Chinese characters', () {
+      expect(excerptContext('细胞分\n裂很快。', '细胞 分裂'), isNull);
+      expect(excerptContext('细胞\n分裂 很快。', '细胞 分裂'), isNotNull);
+    });
+
+    test('treats paragraph breaks and full-width marks as sentence boundaries', () {
+      final r = excerptContext('标题\n\n什么是细胞？细胞是基本单位！它很小', '基本单位')!;
+      expect(r.before, '什么是细胞？细胞是');
+      expect(r.after, '！它很小');
+    });
+
+    test('picks the occurrence closest to the highlight', () {
+      const text = '甲说。重复的话。乙说。丙说。丁说。重复的话。戊说。';
+      expect(excerptContext(text, '重复的话', near: 0)!.before, '甲说。');
+      expect(excerptContext(text, '重复的话', near: 1)!.before, '丁说。');
+      expect(excerptContext(text, '重复的话')!.before, '甲说。');
+    });
+
     test('returns null when the quote is missing or blank', () {
       expect(excerptContext(page, 'absent'), isNull);
       expect(excerptContext(page, '  '), isNull);
@@ -69,6 +106,16 @@ void main() {
       expect(face.back.source, ReviewSource(documentId: c.documents.single.id, documentTitle: 'Book', page: 4));
       expect(face.back.notes, isEmpty);
       expect(needsPageText(card, c), isTrue);
+    });
+
+    test('a repeated quote is told apart by where it was highlighted', () {
+      const repeated = '开头。重复的话。中间一。中间二。结尾。重复的话。收尾。';
+      final (c, card) = excerpt(quote: '重复的话');
+      expect(buildReviewFace(card, c, pageText: repeated).front.before, '开头。');
+      // The rect's top is 20: near the top of a 22-high page, near the bottom of a 2000-high one.
+      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 22).front.after, '。中间一。');
+      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 2000).front.after, '。收尾。');
+      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 0).front.before, '开头。');
     });
 
     test('the user title is the prompt, path kept', () {
