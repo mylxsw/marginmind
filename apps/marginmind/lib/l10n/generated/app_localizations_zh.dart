@@ -1054,13 +1054,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ocrRecognize => '识别文字…';
 
   @override
+  String get ocrTitle => '识别文字';
+
+  @override
   String get ocrStart => '开始识别';
 
   @override
   String get ocrNoText => '本页文字尚不能选择';
-
-  @override
-  String get ocrReady => '已识别 · 可选字和搜索';
 
   @override
   String get ocrRecognized => '已识别';

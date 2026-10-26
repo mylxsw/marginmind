@@ -146,6 +146,7 @@ void main() {
     expect(find.text('本页文字尚不能选择'), findsOneWidget);
     await tester.tap(find.text('识别文字…'));
     await tester.pumpAndSettle();
+    expect(tester.widget<MMSheet>(find.byType(MMSheet)).title, '识别文字');
     await tester.tap(find.text('页码范围'));
     await tester.pumpAndSettle();
     final fields = find.byType(EditableText);
@@ -173,7 +174,9 @@ void main() {
       cancelled: false,
     ));
     await tester.pumpAndSettle();
-    expect(find.text('已识别 · 可选字和搜索'), findsOneWidget);
+    expect(find.text('已识别 · 可选字和搜索'), findsNothing);
+    expect(find.text('本页文字尚不能选择'), findsNothing);
+    expect(find.text('识别文字…'), findsNothing);
     expect(find.text('已识别'), findsOneWidget);
     // A later unrecognized page still offers OCR.
     app.read(workspaceProvider('demo-1').notifier).recordPage('c1', 3);

@@ -13,8 +13,8 @@
 ## 验证
 
 - `dart format --set-exit-if-changed apps packages`、`flutter analyze`。
-- 八包测试通过，汇总覆盖率 93.88%（11213/11944 行）；应用 325 项测试、Python 工具 11 项测试通过。新增 Dart OCR 文件覆盖率超过 95%；原生 `PdfOcr.swift` 为 254/258 行（98.45%）。
-- `xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES`：10 项原生测试通过，含实际 Vision 中英文识别、像素不变、文本选择坐标、旋转裁剪、取消续跑、重复任务、错误清理，以及识别队列阻塞时仍可检测另一份文档。
+- 八包测试通过，汇总覆盖率 94.04%（11955/12713 行）；应用 333 项测试、Python 工具 11 项测试通过。新增 Dart OCR 文件覆盖率超过 95%；原生 `PdfOcr.swift` 为 254/258 行（98.45%）。
+- `xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES`：15 项原生测试通过，含实际 Vision 中英文识别、像素不变、文本选择坐标、旋转裁剪、取消续跑、重复任务、错误清理，以及识别队列阻塞时仍可检测另一份文档。
 - 300 页真实 Vision 回归：27.01 秒，主线程 20 ms 定时器响应 1324 次；第 30 页 RSS 543.70 MiB，后续采样峰值 682.28 MiB（增长 138.58 MiB）。测试限制预热后增长小于 256 MiB。指标来自 XCTest activity `OCR_STRESS`；不同硬件、图像质量和布局会影响速度。
 - 回归测试覆盖：翻页不重建阅读面板，切换文档恢复页码，副本重新打开后清理旧选区并重跑已有搜索。
 
@@ -23,10 +23,12 @@
 | 截图 | 内容 |
 | --- | --- |
 | [scan.png](scan.png) | 扫描页提示与识别入口 |
-| [options.png](options.png) | 范围与中英文选项 |
+| [options.png](options.png) | 标题“识别文字”（无省略号）、范围与中英文选项 |
 | [progress.png](progress.png) | 300 页后台识别与工具栏进度胶囊 |
-| [recognized.png](recognized.png) | 副本载入，页面与文档行显示已识别 |
-| [search.png](search.png) | 中文“学习”命中 300 页，文字高亮与扫描图像对齐 |
+| [recognized.png](recognized.png) | 完成后顶部无提示条，“已识别”只保留在侧栏文档行 |
+| [search.png](search.png) | 中文“学习”命中 12 页，完成后不常驻提示条 |
+
+根据 Review 更新了识别前、对话框、完成与搜索截图，使用 12 页样本；进度截图保留此前 300 页批次，300 页原生回归也已重跑。完成后的提示条已移除，菜单 / 按钮仍用“识别文字…”。
 
 本机 macrun 默认 socket 不存在，已有备用 socket 无响应；截图通过本机窗口捕获获得。此处为自动化输入验证，未声称物理鼠标和键盘验收。
 

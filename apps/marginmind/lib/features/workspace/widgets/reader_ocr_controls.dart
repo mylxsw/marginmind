@@ -67,13 +67,11 @@ class _ReaderOcrControlsState extends ConsumerState<ReaderOcrControls> {
     if (state.running) return const SizedBox.shrink();
     if (document == null && !state.failed) return const SizedBox.shrink();
     final hasText = document?.textPages.contains(page) ?? false;
-    if (!state.running && hasText && !document!.hasCopy && !state.failed) return const SizedBox.shrink();
+    if (hasText) return const SizedBox.shrink();
     final label = state.failed
         ? l.ocrFailed
         : state.cancelled
         ? l.ocrCancelled
-        : hasText
-        ? l.ocrReady
         : l.ocrNoText;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
@@ -176,7 +174,7 @@ class _OcrOptionsState extends ConsumerState<_OcrOptions> {
     };
     final valid = first >= 1 && last >= first && last <= widget.pageCount;
     return MMSheet(
-      title: l.ocrRecognize,
+      title: l.ocrTitle,
       actions: [
         MMButton(label: l.cancel, onPressed: () => Navigator.pop(context)),
         MMButton(

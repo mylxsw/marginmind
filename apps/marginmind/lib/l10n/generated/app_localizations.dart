@@ -2012,6 +2012,12 @@ abstract class AppLocalizations {
   /// **'Recognize Text…'**
   String get ocrRecognize;
 
+  /// No description provided for @ocrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize Text'**
+  String get ocrTitle;
+
   /// No description provided for @ocrStart.
   ///
   /// In en, this message translates to:
@@ -2023,12 +2029,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No selectable text on this page'**
   String get ocrNoText;
-
-  /// No description provided for @ocrReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Recognized · Select and search'**
-  String get ocrReady;
 
   /// No description provided for @ocrRecognized.
   ///

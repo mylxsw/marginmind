@@ -1096,13 +1096,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ocrRecognize => 'Recognize Text…';
 
   @override
+  String get ocrTitle => 'Recognize Text';
+
+  @override
   String get ocrStart => 'Start Recognition';
 
   @override
   String get ocrNoText => 'No selectable text on this page';
-
-  @override
-  String get ocrReady => 'Recognized · Select and search';
 
   @override
   String get ocrRecognized => 'Recognized';
