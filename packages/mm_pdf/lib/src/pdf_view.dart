@@ -618,6 +618,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       _pendingReveal = (page, rects);
       return;
     }
+    if (page < 1 || page > _controller.pageCount) return;
     if (rects.isEmpty) {
       await _controller.goToPage(pageNumber: page, anchor: PdfPageAnchor.top);
       return;
@@ -626,7 +627,15 @@ class _MMPdfViewState extends State<MMPdfView> {
     final r = rects.map((r) => r.right).reduce((a, b) => a > b ? a : b);
     final t = rects.map((r) => r.top).reduce((a, b) => a > b ? a : b);
     final b = rects.map((r) => r.bottom).reduce((a, b) => a < b ? a : b);
-    await _controller.goToRectInsidePage(pageNumber: page, rect: PdfRect(l, t, r, b), anchor: PdfPageAnchor.center);
+    final layout = _controller.layout.pageLayouts[page - 1];
+    final target = PdfRect(
+      l,
+      t,
+      r,
+      b,
+    ).toRect(page: _controller.pages[page - 1], scaledPageSize: layout.size).shift(layout.topLeft);
+    // Center in document coordinates without fitting the excerpt to the viewport.
+    await _controller.goTo(_controller.calcMatrixFor(target.center, zoom: _controller.currentZoom));
   }
 
   Future<void> _loadOutline(PdfDocument document) async {
