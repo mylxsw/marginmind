@@ -19,6 +19,21 @@ extension AppLocalizationsX on AppLocalizations {
     MMAnnotationColor.purple => colorPurple,
   };
 
+  String inkColorName(MMInkColor color) => switch (color) {
+    MMInkColor.red => colorRed,
+    MMInkColor.orange => colorOrange,
+    MMInkColor.yellow => colorYellow,
+    MMInkColor.green => colorGreen,
+    MMInkColor.blue => colorBlue,
+    MMInkColor.black => colorBlack,
+  };
+
+  String inkWidthName(MMInkWidth width) => switch (width) {
+    MMInkWidth.thin => inkThin,
+    MMInkWidth.medium => inkMedium,
+    MMInkWidth.bold => inkBold,
+  };
+
   /// "Just now", "3 days ago", "Last month"…
   String relativeTime(DateTime time, DateTime now) {
     final d = now.difference(time);

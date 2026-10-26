@@ -19,6 +19,7 @@ class ReaderAnnotationTools extends StatelessWidget {
       tooltip: switch (value) {
         AnnotationTool.highlight => AppShortcuts.tip(label, AppShortcuts.toggleAnnotationTool),
         AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
+        AnnotationTool.ink => AppShortcuts.tip(label, AppShortcuts.toggleInkTool),
         AnnotationTool.select => label,
       },
       selected: state.tool == value,
@@ -29,6 +30,7 @@ class ReaderAnnotationTools extends StatelessWidget {
         tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
         tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
         tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
+        tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
         const MMToolbarDivider(),
         MMColorMenuButton(
           selected: state.color,

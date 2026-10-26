@@ -1,14 +1,16 @@
+import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:mm_core/mm_core.dart' show AnnotationPage, PageRect;
+import 'package:flutter/services.dart';
+import 'package:mm_core/mm_core.dart' show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
+import 'ink.dart';
 import 'pdf_navigation.dart';
 import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
@@ -455,6 +457,11 @@ class MMPdfView extends StatefulWidget {
     this.onViewportChanged,
     this.areaSelecting = false,
     this.onAreaSelected,
+    this.inkStrokes = const [],
+    this.inkColors = const [],
+    this.ink,
+    this.onInkDrawn,
+    this.onInkErased,
   });
 
   final String filePath;
@@ -484,6 +491,24 @@ class MMPdfView extends StatefulWidget {
   final bool areaSelecting;
   final ValueChanged<MMPdfArea>? onAreaSelected;
 
+  /// Pen strokes of this document, drawn above highlights. They never take
+  /// pointer events: text selection and highlight clicks work through them.
+  final List<InkStroke> inkStrokes;
+
+  /// Stroke colors by [InkStroke.colorIndex].
+  final List<Color> inkColors;
+
+  /// The pen in hand; drags then draw (or erase) instead of selecting text.
+  /// Scrolling and zooming keep working. Null when not drawing.
+  final MMPdfInk? ink;
+
+  /// A stroke was finished. It stays on screen until [inkStrokes] changes.
+  final ValueChanged<MMPdfInkDraft>? onInkDrawn;
+
+  /// One eraser gesture (a click or a drag) touched these whole strokes.
+  /// They stay hidden until [inkStrokes] changes.
+  final ValueChanged<Set<String>>? onInkErased;
+
   @override
   State<MMPdfView> createState() => _MMPdfViewState();
 }
@@ -498,6 +523,270 @@ class _MMPdfViewState extends State<MMPdfView> {
   final _previewTokens = <PdfPageRenderCancellationToken>{};
   Map<int, List<MMPdfHighlight>> _highlightsByPage = {};
   final _overlayCache = <int, (Size, List<MMPdfHighlight>, Color, List<Widget>)>{};
+
+  // ---- ink ---------------------------------------------------------------------
+
+  Map<int, List<InkStroke>> _inkByPage = {};
+  Set<String> _inkIds = {};
+
+  /// Strokes being erased, per page, so only that page repaints.
+  final _inkHidden = <int, ValueNotifier<Set<String>>>{};
+  final _inkRevision = ValueNotifier<int>(0);
+
+  /// The stroke under the pen: page and points in page coordinates.
+  (int, List<InkPoint>)? _inkLive;
+  Offset? _inkLastLocal;
+
+  /// Finished strokes the parent has not stored yet.
+  List<(int, InkStroke)> _inkPending = const [];
+  final _erasing = <String>{};
+  Timer? _inkSettle;
+
+  void _indexInk() {
+    final next = <int, List<InkStroke>>{};
+    for (final s in widget.inkStrokes) {
+      (next[s.page] ??= []).add(s);
+    }
+    for (final entry in next.entries) {
+      final old = _inkByPage[entry.key];
+      if (old != null && _sameStrokes(old, entry.value)) next[entry.key] = old;
+    }
+    _inkByPage = next;
+    final ids = {for (final s in widget.inkStrokes) s.id};
+    if (ids.length != _inkIds.length || !ids.containsAll(_inkIds)) {
+      // The parent stored (or undid) something: what was waiting is now real.
+      final stored = ids.difference(_inkIds).length;
+      _inkIds = ids;
+      _settleInk(keep: ids, stored: stored);
+    }
+  }
+
+  /// Drops the oldest [stored] strokes waiting for the parent (all of them
+  /// when null); hidden strokes stay hidden only while they still exist in
+  /// [keep] (null: unhide everything).
+  void _settleInk({Set<String>? keep, int? stored}) {
+    if (_inkPending.isNotEmpty && stored != 0) {
+      _inkPending = stored == null ? const [] : _inkPending.skip(stored).toList();
+      _bumpInk();
+    }
+    if (_inkPending.isEmpty) {
+      _inkSettle?.cancel();
+      _inkSettle = null;
+    }
+    for (final hidden in _inkHidden.values) {
+      if (hidden.value.isEmpty) continue;
+      final still = keep == null ? <String>{} : hidden.value.where(keep.contains).toSet();
+      if (still.length != hidden.value.length) hidden.value = still;
+    }
+  }
+
+  void _bumpInk() {
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _inkRevision.value++;
+      });
+    } else {
+      _inkRevision.value++;
+    }
+  }
+
+  /// If the parent never confirms (e.g. the save failed), stop pretending.
+  void _awaitParent() {
+    _inkSettle?.cancel();
+    _inkSettle = Timer(const Duration(seconds: 2), () {
+      if (mounted) _settleInk();
+    });
+  }
+
+  ValueNotifier<Set<String>> _hiddenOn(int page) => _inkHidden[page] ??= ValueNotifier(const {});
+
+  List<(int, InkStroke)> _liveStrokes() {
+    final live = _inkLive;
+    final ink = widget.ink;
+    if (live == null || ink == null || ink.tool == MMPdfInkTool.eraser) return _inkPending;
+    final stroke = InkStroke(
+      id: '',
+      documentId: '',
+      page: live.$1,
+      // The circle is drawn freehand and regularized on release.
+      tool: ink.tool == MMPdfInkTool.arrow ? InkTool.arrow : InkTool.pen,
+      colorIndex: ink.colorIndex,
+      width: ink.width,
+      points: ink.tool == MMPdfInkTool.arrow && live.$2.length > 1 ? [live.$2.first, live.$2.last] : live.$2,
+    );
+    return [..._inkPending, (live.$1, stroke)];
+  }
+
+  /// Page-to-viewport mapping, or null if the page is not laid out.
+  InkMapping? _viewportMapping(int pageNumber) {
+    if (!_ready || pageNumber < 1 || pageNumber > _controller.layout.pageLayouts.length) return null;
+    final page = _controller.document.pages[pageNumber - 1];
+    final layout = _controller.layout.pageLayouts[pageNumber - 1];
+    return (
+      point: (p) => _controller.documentToLocal(PdfPoint(p.x, p.y).toOffsetInDocument(page: page, pageRect: layout)),
+      scale: layout.height / page.height * _controller.currentZoom,
+    );
+  }
+
+  /// The page under [local] (viewport coordinates) and the point on it in
+  /// page coordinates. [page] pins the page and clamps to its edges.
+  (int, InkPoint, double)? _pagePoint(Offset local, {int? page}) {
+    if (!_ready) return null;
+    final layouts = _controller.layout.pageLayouts;
+    var point = _controller.localToDocument(local);
+    final index = page != null ? page - 1 : layouts.indexWhere((r) => r.contains(point));
+    if (index < 0 || index >= layouts.length) return null;
+    final bounds = layouts[index];
+    point = Offset(point.dx.clamp(bounds.left, bounds.right), point.dy.clamp(bounds.top, bounds.bottom));
+    final pdfPage = _controller.document.pages[index];
+    final p = (point - bounds.topLeft).toPdfPoint(page: pdfPage, scaledPageSize: bounds.size);
+    // Viewport pixels per page point.
+    final scale = bounds.height / pdfPage.height * _controller.currentZoom;
+    return (index + 1, InkPoint(p.x, p.y), scale);
+  }
+
+  void _inkStart(Offset local) {
+    final ink = widget.ink;
+    if (ink == null) return;
+    if (ink.tool == MMPdfInkTool.eraser) {
+      _erasing.clear();
+      _eraseAt(local);
+      return;
+    }
+    final hit = _pagePoint(local);
+    _inkLive = hit == null ? null : (hit.$1, [hit.$2]);
+    _inkLastLocal = local;
+    _bumpInk();
+  }
+
+  void _inkUpdate(Offset local) {
+    final ink = widget.ink;
+    if (ink == null) return;
+    if (ink.tool == MMPdfInkTool.eraser) {
+      _eraseAt(local);
+      return;
+    }
+    final live = _inkLive;
+    if (live == null) return;
+    // Sub-pixel jitter adds points, not shape.
+    if (_inkLastLocal != null && (local - _inkLastLocal!).distance < 1) return;
+    final hit = _pagePoint(local, page: live.$1);
+    if (hit == null) return;
+    _inkLastLocal = local;
+    live.$2.add(hit.$2);
+    _bumpInk();
+  }
+
+  void _inkEnd() {
+    final ink = widget.ink;
+    if (ink == null) return;
+    if (ink.tool == MMPdfInkTool.eraser) {
+      if (_erasing.isEmpty) return;
+      final ids = Set.of(_erasing);
+      _erasing.clear();
+      _awaitParent();
+      widget.onInkErased?.call(ids);
+      return;
+    }
+    final live = _inkLive;
+    _inkLive = null;
+    _inkLastLocal = null;
+    _bumpInk();
+    if (live == null) return;
+    final draft = _draft(ink, live.$1, live.$2);
+    if (draft == null) return;
+    _inkPending = [..._inkPending, (draft.page, draft.toStroke(id: '', documentId: ''))];
+    _awaitParent();
+    widget.onInkDrawn?.call(draft);
+  }
+
+  void _inkCancel() {
+    _erasing.clear();
+    if (_inkLive == null) return;
+    _inkLive = null;
+    _inkLastLocal = null;
+    _bumpInk();
+  }
+
+  MMPdfInkDraft? _draft(MMPdfInk ink, int page, List<InkPoint> points) {
+    if (points.length < 2) return null;
+    final xs = points.map((p) => p.x), ys = points.map((p) => p.y);
+    final extent = math.max(xs.reduce(math.max) - xs.reduce(math.min), ys.reduce(math.max) - ys.reduce(math.min));
+    // A click or a twitch is not a stroke.
+    if (extent < 2) return null;
+    MMPdfInkDraft pen() => MMPdfInkDraft(
+      page: page,
+      tool: InkTool.pen,
+      colorIndex: ink.colorIndex,
+      width: ink.width,
+      points: simplifyInk(points),
+    );
+    switch (ink.tool) {
+      case MMPdfInkTool.freehand:
+        return pen();
+      case MMPdfInkTool.ellipse:
+        // ⇧ keeps the hand-drawn shape.
+        if (HardwareKeyboard.instance.isShiftPressed) return pen();
+        return MMPdfInkDraft(
+          page: page,
+          tool: InkTool.ellipse,
+          colorIndex: ink.colorIndex,
+          width: ink.width,
+          ellipse: inkEllipseBounds(points, padding: ink.width / 2 + 1),
+        );
+      case MMPdfInkTool.arrow:
+        return MMPdfInkDraft(
+          page: page,
+          tool: InkTool.arrow,
+          colorIndex: ink.colorIndex,
+          width: ink.width,
+          points: [points.first, points.last],
+        );
+      case MMPdfInkTool.eraser:
+        return null;
+    }
+  }
+
+  void _eraseAt(Offset local) {
+    final hit = _pagePoint(local);
+    if (hit == null) return;
+    final (page, point, scale) = hit;
+    final strokes = _inkByPage[page];
+    if (strokes == null) return;
+    final hidden = _hiddenOn(page);
+    // About 6 screen pixels around the pointer, whatever the zoom.
+    final radius = 6 / scale;
+    final touched = {
+      for (final s in strokes)
+        if (!hidden.value.contains(s.id) && inkStrokeHit(s, point, radius)) s.id,
+    };
+    if (touched.isEmpty) return;
+    _erasing.addAll(touched);
+    hidden.value = {...hidden.value, ...touched};
+  }
+
+  Widget? _inkOverlay(Rect pageRect, PdfPage page) {
+    final strokes = _inkByPage[page.pageNumber];
+    if (strokes == null || widget.inkColors.isEmpty) return null;
+    return Positioned.fill(
+      key: const ValueKey('ink'),
+      child: IgnorePointer(
+        child: RepaintBoundary(
+          child: CustomPaint(
+            painter: InkPagePainter(
+              strokes: strokes,
+              colors: widget.inkColors,
+              hidden: _hiddenOn(page.pageNumber),
+              map: (size) => (
+                point: (p) => PdfPoint(p.x, p.y).toOffset(page: page, scaledPageSize: size),
+                scale: size.height / page.height,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _indexHighlights() {
     final next = <int, List<MMPdfHighlight>>{};
@@ -561,6 +850,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     super.initState();
     widget.controller._attach(this);
     _indexHighlights();
+    _indexInk();
     _controller.addListener(_viewportChanged);
   }
 
@@ -568,6 +858,13 @@ class _MMPdfViewState extends State<MMPdfView> {
   void didUpdateWidget(MMPdfView oldWidget) {
     super.didUpdateWidget(oldWidget);
     _indexHighlights();
+    if (oldWidget.filePath != widget.filePath) {
+      _inkLive = null;
+      _erasing.clear();
+      _settleInk();
+    }
+    _indexInk();
+    if (widget.ink == null || widget.ink!.tool != oldWidget.ink?.tool) _inkCancel();
     if (oldWidget.filePath != widget.filePath) {
       _ready = false;
       _invalidatePreviews();
@@ -609,6 +906,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     _selectionEpoch++;
     // The area rectangle is anchored to the document while it scrolls; the
     // viewer may adjust its transform during layout, so repaint after it.
+    if (_inkLive != null || _inkPending.isNotEmpty) _bumpInk();
     if (_area != null) {
       if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -629,6 +927,11 @@ class _MMPdfViewState extends State<MMPdfView> {
     widget.controller._detach(this);
     _invalidatePreviews();
     _areaRevision.dispose();
+    _inkSettle?.cancel();
+    _inkRevision.dispose();
+    for (final hidden in _inkHidden.values) {
+      hidden.dispose();
+    }
     super.dispose();
   }
 
@@ -764,7 +1067,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   Future<void> _commitSelection() async {
-    if (widget.areaSelecting) return;
+    if (widget.areaSelecting || widget.ink != null) return;
     final epoch = ++_selectionEpoch;
     // pdfrx settles the selection a frame after the pointer is released.
     await Future<void>.delayed(const Duration(milliseconds: 120));
@@ -844,8 +1147,9 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
     final highlights = _highlightOverlays(context, pageRect, page);
+    final ink = _inkOverlay(pageRect, page);
     final selected = _cleanSelection?.where((p) => p.page == page.pageNumber);
-    if (selected == null || selected.isEmpty) return highlights;
+    if (selected == null || selected.isEmpty) return ink == null ? highlights : [...highlights, ink];
     // Transient selection is kept outside the persistent highlight LRU.
     return [
       for (final selection in selected)
@@ -855,6 +1159,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             child: IgnorePointer(child: ColoredBox(color: widget.emphasisColor.withValues(alpha: 0.25))),
           ),
       ...highlights,
+      ?ink,
     ];
   }
 
@@ -882,6 +1187,8 @@ class _MMPdfViewState extends State<MMPdfView> {
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
                   onTap: (_) {
+                    // With the pen out, a click on a highlight is drawing.
+                    if (widget.ink != null) return false;
                     // Cancel a pending text-selection commit from this click.
                     _selectionEpoch++;
                     final bounds = h.rects
@@ -964,6 +1271,46 @@ class _MMPdfViewState extends State<MMPdfView> {
               ),
             ),
           ),
+        if (widget.ink case final ink?)
+          Positioned.fill(
+            // Translucent like the area tool: scrolling still reaches the viewer.
+            child: MouseRegion(
+              cursor: ink.tool == MMPdfInkTool.eraser ? SystemMouseCursors.cell : SystemMouseCursors.precise,
+              opaque: false,
+              hitTestBehavior: HitTestBehavior.translucent,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                dragStartBehavior: DragStartBehavior.down,
+                supportedDevices: const {
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                  PointerDeviceKind.touch,
+                },
+                // The eraser bites on pointer down, so a click erases too;
+                // a click then ends as a cancelled drag.
+                onPanDown: ink.tool == MMPdfInkTool.eraser ? (d) => _inkStart(d.localPosition) : null,
+                onPanStart: ink.tool == MMPdfInkTool.eraser ? null : (d) => _inkStart(d.localPosition),
+                onPanUpdate: (d) => _inkUpdate(d.localPosition),
+                onPanEnd: (_) => _inkEnd(),
+                onPanCancel: ink.tool == MMPdfInkTool.eraser ? _inkEnd : _inkCancel,
+              ),
+            ),
+          ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: InkLivePainter(
+                  strokes: _liveStrokes,
+                  colors: widget.inkColors,
+                  map: _viewportMapping,
+                  repaint: _inkRevision,
+                ),
+              ),
+            ),
+          ),
+        ),
         Positioned.fill(
           child: ValueListenableBuilder<int>(
             valueListenable: _areaRevision,
@@ -1038,7 +1385,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           pageBackgroundPaintCallbacks: [_beginPagePaint],
           pagePaintCallbacks: [_paintMatches, _endPagePaint],
           textSelectionParams: PdfTextSelectionParams(
-            enabled: !widget.areaSelecting,
+            enabled: !widget.areaSelecting && widget.ink == null,
             showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;
@@ -1085,6 +1432,15 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
       final r = x.rects[j], s = y.rects[j];
       if (r.left != s.left || r.top != s.top || r.right != s.right || r.bottom != s.bottom) return false;
     }
+  }
+  return true;
+}
+
+bool _sameStrokes(List<InkStroke> a, List<InkStroke> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    // Strokes are immutable and never edited in place: the id is the content.
+    if (a[i].id != b[i].id) return false;
   }
   return true;
 }
