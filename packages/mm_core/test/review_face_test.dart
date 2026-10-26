@@ -83,7 +83,7 @@ void main() {
     test('picks the occurrence closest to the highlight', () {
       const text = '甲说。重复的话。乙说。丙说。丁说。重复的话。戊说。';
       expect(excerptContext(text, '重复的话', near: 0)!.before, '甲说。');
-      expect(excerptContext(text, '重复的话', near: 1)!.before, '丙说。丁说。');
+      expect(excerptContext(text, '重复的话', near: 1)!.before, '丁说。');
       expect(excerptContext(text, '重复的话')!.before, '甲说。');
     });
 
@@ -112,8 +112,9 @@ void main() {
       const repeated = '开头。重复的话。中间一。中间二。结尾。重复的话。收尾。';
       final (c, card) = excerpt(quote: '重复的话');
       expect(buildReviewFace(card, c, pageText: repeated).front.before, '开头。');
-      // The rect (top 20 of a 40-high page) is mid-page; (top 20) of 22 is near the bottom.
-      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 22).front.after, '收尾。');
+      // The rect's top is 20: near the top of a 22-high page, near the bottom of a 2000-high one.
+      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 22).front.after, '。中间一。');
+      expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 2000).front.after, '。收尾。');
       expect(buildReviewFace(card, c, pageText: repeated, pageHeight: 0).front.before, '开头。');
     });
 
