@@ -344,7 +344,10 @@ void main() {
       await tester.pumpAndSettle();
       final source = find.text('Book · Page 3');
       expect(source, findsOneWidget);
-      expect(tester.getRect(source).top, greaterThan(h.node('e1').bottom), reason: 'below the card');
+      // Beside the card on its outer side, not over the next sibling.
+      expect(tester.getRect(source).left, greaterThan(h.node('e1').right));
+      expect(tester.getRect(source).top, greaterThan(h.node('e1').top));
+      expect(tester.getRect(source).bottom, lessThan(h.node('e1').bottom));
       await mouse.moveTo(Offset.zero);
       await tester.pumpAndSettle();
       expect(source, findsNothing);
@@ -356,6 +359,20 @@ void main() {
       await mouse.moveTo(h.node('topic').center);
       await tester.pumpAndSettle();
       expect(find.text('Book · Page 3'), findsNothing);
+
+      // Left of the root, the label sits on the card's left.
+      final twoSides = _excerpts().copyWith(
+        cards: [
+          ..._excerpts().cards,
+          Card(id: 'first', kind: CardKind.topic, title: 'First', createdAt: _now),
+        ],
+        nodes: [
+          const MapNode(cardId: 'first', parentId: null, order: -1),
+          ..._excerpts().nodes,
+        ],
+      );
+      await h.pump(twoSides);
+      expect(tester.getRect(find.text('Book · Page 5')).right, lessThan(h.node('e2').left));
     });
 
     testWidgets('a quote longer than four lines ends with an ellipsis', (tester) async {

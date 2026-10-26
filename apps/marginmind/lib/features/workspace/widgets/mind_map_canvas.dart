@@ -592,6 +592,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     widget.onNavigate(direction);
   }
 
+  /// Space between a card and its source label: clear of its fold button.
+  double _sourceGap(String id) => _cache._expandable.contains(id) ? MMSpacing.xl + MMSpacing.s : MMSpacing.s;
+
   bool _leftRelation(MapRelation r) =>
       _layout != null && _layout!.leftSide.contains(r.fromId) && _layout!.leftSide.contains(r.toId);
 
@@ -1277,11 +1280,23 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         if (specs[id]?.meta case final meta?)
                                           if (result.rects[id!] case final r?)
                                             if (_shown(id, r) case final shown)
-                                              Positioned(
-                                                left: shown.left + MMSpacing.m,
-                                                top: shown.bottom + MMSpacing.xs,
-                                                child: _SourceLabel(meta, maxWidth: shown.width - MMSpacing.m * 2),
-                                              ),
+                                              // Beside the card on its outer side, past the fold
+                                              // button: below it would cover the next sibling.
+                                              if (result.leftSide.contains(id))
+                                                Positioned(
+                                                  left: shown.left - _sourceGap(id),
+                                                  top: shown.top + MMSpacing.xs,
+                                                  child: FractionalTranslation(
+                                                    translation: const Offset(-1, 0),
+                                                    child: _SourceLabel(meta, maxWidth: shown.width),
+                                                  ),
+                                                )
+                                              else
+                                                Positioned(
+                                                  left: shown.right + _sourceGap(id),
+                                                  top: shown.top + MMSpacing.xs,
+                                                  child: _SourceLabel(meta, maxWidth: shown.width),
+                                                ),
                                     ],
                                   ),
                                 ),
@@ -1579,7 +1594,7 @@ class _ExcerptTargetMark extends StatelessWidget {
   }
 }
 
-/// A card's source (document and page), shown below it while it is hovered
+/// A card's source (document and page), shown beside it while it is hovered
 /// or selected rather than on every card.
 class _SourceLabel extends StatelessWidget {
   const _SourceLabel(this.text, {required this.maxWidth});
