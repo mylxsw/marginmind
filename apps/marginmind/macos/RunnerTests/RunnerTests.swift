@@ -6,6 +6,27 @@ import XCTest
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testResearchKeychainRoundTripAndValidation() throws {
+    let account = "test-" + UUID().uuidString
+    func invoke(_ method: String, _ arguments: [String: String]) -> Any? {
+      var value: Any?
+      SecretStoreChannel.handle(FlutterMethodCall(methodName: method, arguments: arguments)) { value = $0 }
+      return value
+    }
+    defer { _ = invoke("delete", ["account": account]) }
+    XCTAssertNil(invoke("read", ["account": account]))
+    XCTAssertNil(invoke("write", ["account": account, "value": "test-value"]))
+    XCTAssertEqual(invoke("read", ["account": account]) as? String, "test-value")
+    XCTAssertNil(invoke("write", ["account": account, "value": "updated"]))
+    XCTAssertEqual(invoke("read", ["account": account]) as? String, "updated")
+    XCTAssertNil(invoke("delete", ["account": account]))
+    XCTAssertNil(invoke("delete", ["account": account]))
+    XCTAssertNil(invoke("read", ["account": account]))
+    XCTAssertNotNil(invoke("read", ["account": ""]) as? FlutterError)
+    XCTAssertNotNil(invoke("write", ["account": account]) as? FlutterError)
+    XCTAssertNotNil(invoke("unknown", ["account": account]))
+  }
+
   func testReleaseRendererWorkaroundIsPackaged() {
     XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "FLTEnableImpeller") as? Bool, false)
   }

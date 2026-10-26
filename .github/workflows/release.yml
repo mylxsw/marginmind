@@ -35,7 +35,9 @@ jobs:
           # would look for its data outside its container).
           codesign --force --deep --sign - "$APP"
           codesign --force --sign - --entitlements macos/Runner/Release.entitlements "$APP"
-          codesign -d --entitlements - "$APP" | grep -q com.apple.security.app-sandbox
+          codesign -d --entitlements - "$APP" > signed-entitlements.plist
+          /usr/libexec/PlistBuddy -c "Print :com.apple.security.app-sandbox" signed-entitlements.plist | grep -qx true
+          /usr/libexec/PlistBuddy -c "Print :com.apple.security.network.client" signed-entitlements.plist | grep -qx true
           mkdir -p dist/dmg
           cp -R "$APP" dist/dmg/
           ln -s /Applications dist/dmg/Applications

@@ -26,6 +26,7 @@
 flutter analyze
 dart format --set-exit-if-changed apps packages
 (cd packages/mm_core && dart test)
+(cd packages/mm_research && dart test)
 (cd packages/mm_data && dart test)
 (cd packages/mm_layout && dart test)
 (cd packages/mm_design && flutter test)
@@ -49,7 +50,7 @@ python3 tool/coverage.py
 python3 tool/coverage.py --report-only
 ```
 
-脚本对七个测试套件逐包启用 `--coverage`；纯 Dart 包再用
+脚本对八个测试套件逐包启用 `--coverage`；纯 Dart 包再用
 `coverage:format_coverage` 转为 LCOV。报告按仓库相对路径与行号合并，
 同一源码被多个套件执行时只计一次。包含报告中的项目 `lib/` 源码（含生成代码），
 不计 SDK、第三方依赖或测试代码。`mm_pdf` 使用可控的测试后端验证真实 PDF 视图与选区回调，

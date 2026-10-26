@@ -1,7 +1,9 @@
 import Cocoa
 import FlutterMacOS
+import Security
 
 class MainFlutterWindow: NSWindow {
+  private var secretStore: SecretStoreChannel?
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
   private var toolbarVisibilityBeforeFullScreen: Bool?
@@ -77,6 +79,7 @@ class MainFlutterWindow: NSWindow {
 
     installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
+    secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
 
     let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
@@ -241,5 +244,58 @@ final class SystemAppearanceChannel: NSObject {
         | (channel(accent.greenComponent) << 8) | channel(accent.blueComponent)
     }
     return values
+  }
+}
+
+/// App-scoped generic passwords; never copies secrets into defaults or logs.
+final class SecretStoreChannel {
+  private let channel: FlutterMethodChannel
+
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(name: "marginmind/secret_store", binaryMessenger: messenger)
+    channel.setMethodCallHandler(Self.handle)
+  }
+
+  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+      guard let args = call.arguments as? [String: String],
+            let account = args["account"], !account.isEmpty, account.count <= 256 else {
+        result(FlutterError(code: "invalid_arguments", message: nil, details: nil))
+        return
+      }
+      let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: "io.github.mylxsw.marginmind.research",
+        kSecAttrAccount as String: account,
+        kSecAttrSynchronizable as String: false,
+      ]
+      var status: OSStatus
+      switch call.method {
+      case "read":
+        var readQuery = query
+        readQuery[kSecReturnData as String] = true
+        readQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+        var value: CFTypeRef?
+        status = SecItemCopyMatching(readQuery as CFDictionary, &value)
+        if status == errSecItemNotFound { result(nil); return }
+        if status == errSecSuccess, let data = value as? Data,
+           let text = String(data: data, encoding: .utf8) { result(text); return }
+      case "write":
+        guard let value = args["value"] else {
+          result(FlutterError(code: "invalid_arguments", message: nil, details: nil)); return
+        }
+        let values: [String: Any] = [kSecValueData as String: Data(value.utf8)]
+        status = SecItemUpdate(query as CFDictionary, values as CFDictionary)
+        if status == errSecItemNotFound {
+          var insert = query.merging(values) { _, new in new }
+          insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+          status = SecItemAdd(insert as CFDictionary, nil)
+        }
+        if status == errSecSuccess { result(nil); return }
+      case "delete":
+        status = SecItemDelete(query as CFDictionary)
+        if status == errSecSuccess || status == errSecItemNotFound { result(nil); return }
+      default: result(FlutterMethodNotImplemented); return
+      }
+      result(FlutterError(code: "keychain_failure", message: nil, details: nil))
   }
 }

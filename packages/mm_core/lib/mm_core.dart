@@ -20,3 +20,5 @@ export 'src/study_set/folder.dart';
 export 'src/study_set/library_query.dart';
 export 'src/study_set/study_set.dart';
 export 'src/study_set/study_set_repository.dart';
+
+export 'src/research/ports.dart';

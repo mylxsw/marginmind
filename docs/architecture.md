@@ -10,6 +10,7 @@
 apps/marginmind ──► mm_design    (令牌、主题、组件)
         │      ──► mm_platform  (窗口、快捷键、系统外观)
         │      ──► mm_pdf ─────┐ (PDF 渲染、选字、高亮叠加)
+        │      ──► mm_research ┤ (研究 HTTP、AI 流式适配器；纯 Dart)
         │      ──► mm_data ────┤ (学习集文件包)
         │      ──► mm_layout   │ (脑图树布局；纯 Dart)
         └──────► mm_core ◄─────┘ (实体、编辑操作、端口、查询；纯 Dart)
@@ -18,8 +19,9 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 | 包 | 职责 | 可以依赖 |
 | --- | --- | --- |
 | `mm_core` | 实体（`StudySet`、`Folder`）、仓库端口（`StudySetRepository`）、纯查询（`LibraryQuery`）。`testing.dart` 提供内存实现和示例数据。 | 仅 Dart 标准库与 `meta` |
+| `mm_research` | Anthropic Messages、OpenAI Responses、兼容 Chat Completions；SSE、引用候选、预算、安全 HTTP。协议与持久化实体分离。 | `mm_core`、`http`（纯 Dart） |
 | `mm_design` | 设计令牌、`MMTheme`、所有可复用组件。不含业务概念，不含文案。 | Flutter、`cupertino_icons` |
-| `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`window_manager`、`macos_window_utils` |
+| `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`mm_core`、`window_manager`、`macos_window_utils` |
 | `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/` + `images/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
 | `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
 | `mm_layout` | `TreeLayout`：向右生长的树，父节点在子树块中垂直居中；`balanced: true` 时中心主题的分支按子树高度分到左右两侧（前一部分在右，其余在左并镜像生长），左侧节点记在 `leftSide`。输入节点尺寸（及概要标签尺寸），输出矩形、连线和概要位置。 | 仅 `meta` |
@@ -111,3 +113,15 @@ macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Con
 - **新摘录文本（GUL-498）**：`mm_pdf` 的 `buildExcerptText` 是不依赖 Flutter / PDF 引擎的纯函数，接收完整页文字、字符矩形和选区索引。视图只额外加载所选页的直接邻页作为重复证据；按矩形选出几何最上/最下行，位于上下 8%、与正文分离、至少两页文字及位置一致时才剔除；变化的行首/行尾页码要求数字差等于 PDF 页码差，支持书眉及 HTTP(S)/文件路径页脚；日期单独归一化。证据不足保留原文。段内中文直接连接，西文加空格，处理软连字符、PDFium U+0002 和拉丁断词；空行及明显几何段间距保留。新高亮矩形按同一基线合并，跨大列间隙不连。松开后用清理矩形绘制选区并隐藏引擎的临时预览，持久行高亮接入按页索引和 overlay LRU，临时选区单独绘制，不污染持久缓存；清理结果直接进入现有高亮 / 摘录 / 卡片链路；旧数据、渲染旧矩形和 format 5 均不变。
 
 - **阅读器界面（GUL-504）**：窗口标题是当前文档名，副标题只放页码；只有一份文档时不显示标签栏，页面侧栏开关在工具栏。`MMSplitView.resolveNarrow` 根据窗口宽度推出实际显示：分栏放不下时先收起侧栏，再退化为只看原文；偏好（`sidebarVisible`、`layout`）不改，窗口放宽后恢复，布局按钮按实际显示着色。浮动工具条（`placeFloatingToolbar(avoid:)`）避开页码胶囊，两侧都压到时放在选区上方。“添加笔记”调用 `excerptAndEditNote`：摘录和空笔记在同一事务中创建，原地编辑（E-06），确认后记一步撤销，Esc 或留空整体放弃。颜色选择收进工具栏的 `MMColorMenuButton`。
+
+### 研究接入（GUL-514）
+
+`mm_core/src/research/ports.dart` 定义 `AiProvider`、`SearchProvider`、`ContentExtractor`、
+`SecretStore`、`ResearchSessionRepository<T>`、请求/事件/引用候选与取消令牌。AI 输出带会话和请求 ID，
+应用层负责防止迟到响应写入新请求。`ResearchCitation` 不等于已保存的证据，只有校验到快照原文后才能归档。
+会话实体、快照与 format 7 存储由 P2-A2 定义；本任务不改变文件格式。
+
+`mm_platform` 的 `KeychainSecretStore` 实现 SecretStore；原生处理器随 macOS Runner 注册。
+`mm_research` 不依赖 Flutter 或 mm_platform，组合根读取密钥后注入适配器。
+新包已加入 workspace 和 `tool/coverage.py`。详细预算、方式映射及验证限制见
+[ADR 0001](decisions/0001-research-ai-integration.md)。
