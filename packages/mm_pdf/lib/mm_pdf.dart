@@ -4,3 +4,4 @@ library;
 
 export 'src/pdf_engine.dart';
 export 'src/pdf_view.dart';
+export 'src/pdf_navigation.dart';
