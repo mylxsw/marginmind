@@ -36,7 +36,12 @@ void main() {
       expect((p.offset & size).overlaps(pill), isFalse);
       // Clear of the pill: the usual placement stays.
       expect(
-        placeFloatingToolbar(anchor: anchor, size: size, viewport: viewport, avoid: const Rect.fromLTWH(0, 560, 100, 30)),
+        placeFloatingToolbar(
+          anchor: anchor,
+          size: size,
+          viewport: viewport,
+          avoid: const Rect.fromLTWH(0, 560, 100, 30),
+        ),
         place(anchor),
       );
     });

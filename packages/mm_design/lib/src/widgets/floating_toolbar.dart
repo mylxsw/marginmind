@@ -134,13 +134,12 @@ class _FloatingToolbarDelegate extends SingleChildLayoutDelegate {
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
 
   @override
-  Offset getPositionForChild(Size size, Size childSize) =>
-      placeFloatingToolbar(
-        anchor: anchor,
-        size: childSize,
-        viewport: padding.deflateRect(Offset.zero & size),
-        avoid: avoid?.call(size),
-      ).offset;
+  Offset getPositionForChild(Size size, Size childSize) => placeFloatingToolbar(
+    anchor: anchor,
+    size: childSize,
+    viewport: padding.deflateRect(Offset.zero & size),
+    avoid: avoid?.call(size),
+  ).offset;
 
   @override
   bool shouldRelayout(_FloatingToolbarDelegate oldDelegate) =>

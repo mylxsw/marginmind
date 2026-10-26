@@ -19,9 +19,8 @@ Future<ProviderContainer> openSet(WidgetTester tester, {Size size = const Size(1
 
 MMToolbar toolbar(WidgetTester tester) => tester.widget<MMToolbar>(find.byType(MMToolbar));
 
-bool selected(WidgetTester tester, IconData icon) => tester
-    .widget<MMToolbarButton>(find.widgetWithIcon(MMToolbarButton, icon))
-    .selected;
+bool selected(WidgetTester tester, IconData icon) =>
+    tester.widget<MMToolbarButton>(find.widgetWithIcon(MMToolbarButton, icon)).selected;
 
 /// Reported layout overflows (a toolbar narrower than any real window) are not under test.
 void drainOverflow(WidgetTester tester) {

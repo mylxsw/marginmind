@@ -95,79 +95,81 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final l = context.l10n;
     final autoCollapsed = state.sidebarVisible && !sidebarVisible;
     return MMWindowScaffold(
-        sidebarVisible: sidebarVisible,
-        onDragStart: WindowChrome.onDragStart,
-        onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
-        showsWindowButtons: WindowChrome.showsWindowButtons,
-        sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
-        toolbar: Consumer(
-          builder: (context, ref, _) {
-            final page = doc == null
+      sidebarVisible: sidebarVisible,
+      onDragStart: WindowChrome.onDragStart,
+      onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
+      showsWindowButtons: WindowChrome.showsWindowButtons,
+      sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
+      toolbar: Consumer(
+        builder: (context, ref, _) {
+          final page = doc == null
+              ? null
+              : (ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage);
+          return MMToolbar(
+            title: doc?.title ?? setTitle,
+            subtitle: doc == null ? null : l.pageNumber(page!),
+            leading: sidebarVisible
                 ? null
-                : (ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage);
-            return MMToolbar(
-              title: doc?.title ?? setTitle,
-              subtitle: doc == null ? null : l.pageNumber(page!),
-              leading: sidebarVisible
-                  ? null
-                  : MMIconButton(
-                      icon: MMIcons.sidebar,
-                      tooltip: l.showSidebar,
-                      // With no room beside the map, the sidebar replaces it.
-                      onPressed: autoCollapsed ? () => controller.setLayout(MMSplitMode.primary) : controller.toggleSidebar,
-                    ),
-              actions: [
-                _AnnotationTools(state: state, controller: controller),
-                if (doc != null && layout != MMSplitMode.secondary)
-                  MMToolbarButton(
+                : MMIconButton(
                     icon: MMIcons.sidebar,
-                    tooltip: AppShortcuts.tip(
-                      state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                      AppShortcuts.toggleReaderSidebar,
-                    ),
-                    selected: state.readerPanelVisible,
-                    onPressed: controller.toggleReaderPanel,
+                    tooltip: l.showSidebar,
+                    // With no room beside the map, the sidebar replaces it.
+                    onPressed: autoCollapsed
+                        ? () => controller.setLayout(MMSplitMode.primary)
+                        : controller.toggleSidebar,
                   ),
-                MMToolbarGroup(
-                  children: [
-                    MMToolbarButton(
-                      icon: MMIcons.layoutReader,
-                      tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-                      selected: layout == MMSplitMode.primary,
-                      onPressed: () => controller.setLayout(MMSplitMode.primary),
-                    ),
-                    MMToolbarButton(
-                      icon: MMIcons.layoutSplit,
-                      tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                      selected: layout == MMSplitMode.split,
-                      onPressed: () => controller.setLayout(MMSplitMode.split),
-                    ),
-                    MMToolbarButton(
-                      icon: MMIcons.layoutMap,
-                      tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-                      selected: layout == MMSplitMode.secondary,
-                      onPressed: () => controller.setLayout(MMSplitMode.secondary),
-                    ),
-                  ],
+            actions: [
+              _AnnotationTools(state: state, controller: controller),
+              if (doc != null && layout != MMSplitMode.secondary)
+                MMToolbarButton(
+                  icon: MMIcons.sidebar,
+                  tooltip: AppShortcuts.tip(
+                    state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+                    AppShortcuts.toggleReaderSidebar,
+                  ),
+                  selected: state.readerPanelVisible,
+                  onPressed: controller.toggleReaderPanel,
                 ),
-              ],
-            );
-          },
+              MMToolbarGroup(
+                children: [
+                  MMToolbarButton(
+                    icon: MMIcons.layoutReader,
+                    tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+                    selected: layout == MMSplitMode.primary,
+                    onPressed: () => controller.setLayout(MMSplitMode.primary),
+                  ),
+                  MMToolbarButton(
+                    icon: MMIcons.layoutSplit,
+                    tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                    selected: layout == MMSplitMode.split,
+                    onPressed: () => controller.setLayout(MMSplitMode.split),
+                  ),
+                  MMToolbarButton(
+                    icon: MMIcons.layoutMap,
+                    tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+                    selected: layout == MMSplitMode.secondary,
+                    onPressed: () => controller.setLayout(MMSplitMode.secondary),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+      body: PdfDropTarget(
+        label: l.dropToImport,
+        onDrop: (files) async {
+          final notice = await controller.importDocuments(files);
+          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+        },
+        child: MMSplitView(
+          mode: layout,
+          fraction: state.splitFraction,
+          onFractionChanged: controller.setSplitFraction,
+          primary: ReaderPane(studySetId: widget.studySetId),
+          secondary: MapPane(studySetId: widget.studySetId),
         ),
-        body: PdfDropTarget(
-          label: l.dropToImport,
-          onDrop: (files) async {
-            final notice = await controller.importDocuments(files);
-            if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-          },
-          child: MMSplitView(
-            mode: layout,
-            fraction: state.splitFraction,
-            onFractionChanged: controller.setSplitFraction,
-            primary: ReaderPane(studySetId: widget.studySetId),
-            secondary: MapPane(studySetId: widget.studySetId),
-          ),
-        ),
+      ),
     );
   }
 }
