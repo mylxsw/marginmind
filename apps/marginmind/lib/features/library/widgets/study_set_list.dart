@@ -174,7 +174,6 @@ class _Row extends StatelessWidget {
       onTapDown: onSelect,
       onDoubleTap: onOpen,
       selected: selected,
-      semanticLabel: set.title,
       builder: (context, s) => Container(
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),

@@ -6,6 +6,7 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/library/library_controller.dart';
+import 'package:marginmind/features/library/widgets/study_set_card.dart';
 import 'package:marginmind/features/library/widgets/study_set_cover.dart';
 import 'package:marginmind/shared/pdf_picker.dart';
 import 'package:mm_core/mm_core.dart';
@@ -181,6 +182,18 @@ void main() {
       expect(tester.getSemantics(row('Recent')).label, 'Recent');
       semantics.dispose();
     });
+  });
+
+  testWidgets('VoiceOver reads a study set title once, with its details and star button', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpApp(tester);
+    final title = DemoLibrary.studySets(testNow).firstWhere((s) => s.starred).title;
+    final card = find.ancestor(of: find.text(title).last, matching: find.byType(StudySetCard));
+    final label = tester.getSemantics(card).label.split('\n');
+    expect(label.where((part) => part == title), hasLength(1));
+    expect(label.length, greaterThan(1)); // cards, documents and last opened
+    expect(find.descendant(of: card, matching: find.bySemanticsLabel('Remove Star')), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('VoiceOver reads the first-run buttons once', (tester) async {
