@@ -402,7 +402,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final now = ref.read(clockProvider)();
     final reviewMapId = workspaceState?.activeMapId;
     final tagFilter = workspaceState?.tagFilter;
-    final branchDue = selected != null && workspace!.content.dueCount(now, mapId: reviewMapId, branchId: selected) > 0;
+    // A leaf is a single card, not a branch.
+    final branchDue =
+        selected != null &&
+        workspace!.content.childrenOf(selected, mapId: reviewMapId!).isNotEmpty &&
+        workspace.content.dueCount(now, mapId: reviewMapId, branchId: selected) > 0;
     final tagDue = tagFilter != null && workspace!.content.dueCount(now, mapId: reviewMapId, tag: tagFilter) > 0;
     final selectedCard = selected == null ? null : workspace!.content.card(selected);
     final study = [

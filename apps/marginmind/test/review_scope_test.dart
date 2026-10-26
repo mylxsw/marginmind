@@ -55,6 +55,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await openNodeMenu(tester, _quote);
+    // A leaf is a single card, not a branch.
+    expect(find.text('Review Branch'), findsNothing);
     await tester.tap(find.text('Suspend Card'));
     await tester.pumpAndSettle();
     expect(controller.content.card(excerpt.id)!.suspended, isTrue);
@@ -170,6 +172,7 @@ void main() {
 
     controller.selectCard(excerpt.id);
     await tester.pumpAndSettle();
+    expect(command('Review Branch').onSelected, isNull);
     command('Suspend Card').onSelected!();
     await tester.pumpAndSettle();
     expect(controller.content.card(excerpt.id)!.suspended, isTrue);

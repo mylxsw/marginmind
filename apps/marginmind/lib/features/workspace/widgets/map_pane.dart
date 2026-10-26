@@ -99,7 +99,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final node = cardId == null ? null : content.node(cardId, mapId: mapId);
     final hasChildren = content.childrenOf(cardId, mapId: mapId).isNotEmpty;
     final now = ref.read(clockProvider)();
-    final branchDue = card != null && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
+    // A leaf is a single card, not a branch.
+    final branchDue = card != null && hasChildren && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
     final suspendable = card != null && (card.suspended || card.kind != CardKind.topic);
 
     showMMMenu(
