@@ -104,7 +104,7 @@ void main() {
       expect(find.byType(WorkspaceScreen), findsOneWidget);
       container.read(navigationProvider.notifier).startReview('demo-1');
       await tester.pumpAndSettle();
-      expect(find.text(l.reviewPromptExcerpt), findsOneWidget);
+      expect(find.byKey(const ValueKey('page-prompt')), findsOneWidget);
     });
   }
 }

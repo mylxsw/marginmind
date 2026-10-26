@@ -131,7 +131,7 @@ void main() {
       await tester.pumpAndSettle();
       final l = AppLocalizations.of(tester.element(find.byType(ReviewScreen)));
 
-      expect(find.text(l.reviewPromptExcerpt), findsOneWidget);
+      expect(find.byKey(const ValueKey('page-prompt')), findsOneWidget);
       expect(find.text('这条先陡后平的曲线，被称为遗忘曲线。'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pumpAndSettle();

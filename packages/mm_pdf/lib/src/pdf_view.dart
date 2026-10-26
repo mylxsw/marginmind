@@ -356,6 +356,67 @@ class _MMPdfThumbnailState extends State<MMPdfThumbnail> {
   );
 }
 
+/// One page of the PDF at [filePath], opened on its own (no reader needed),
+/// with [covers] drawn over it in [coverColor]. Draws nothing while the file
+/// loads or when it cannot be read.
+class MMPdfPagePreview extends StatelessWidget {
+  const MMPdfPagePreview({
+    super.key,
+    required this.filePath,
+    required this.page,
+    this.covers = const [],
+    required this.coverColor,
+    this.backgroundColor = const Color(0xFFFFFFFF),
+  });
+
+  final String filePath;
+  final int page;
+  final List<PageRect> covers;
+  final Color coverColor;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return PdfDocumentViewBuilder.file(
+      filePath,
+      builder: (context, document) {
+        if (document == null || page < 1 || page > document.pages.length) return const SizedBox.shrink();
+        final size = document.pages[page - 1];
+        return AspectRatio(
+          aspectRatio: size.width / size.height,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final sx = box.maxWidth / size.width;
+              final sy = box.maxHeight / size.height;
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: PdfPageView(
+                      document: document,
+                      pageNumber: page,
+                      maximumDpi: 144,
+                      backgroundColor: backgroundColor,
+                      decoration: BoxDecoration(color: backgroundColor),
+                    ),
+                  ),
+                  for (final r in covers)
+                    Positioned(
+                      left: r.left * sx,
+                      top: (size.height - r.top) * sy,
+                      width: (r.right - r.left) * sx,
+                      height: (r.top - r.bottom) * sy,
+                      child: ColoredBox(color: coverColor),
+                    ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// PDF pages with text selection and clickable highlights.
 class MMPdfView extends StatefulWidget {
   const MMPdfView({

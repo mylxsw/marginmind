@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/app.dart';
 import '../../app/navigation.dart';
@@ -100,7 +101,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
       body = MMEmptyState(
         icon: MMIcons.success,
         title: session.reviewed == 0 ? l.reviewNothingDueTitle : l.reviewDoneTitle,
-        message: session.reviewed == 0 ? l.reviewNothingDueMessage : l.reviewDoneMessage(session.reviewed),
+        message: session.reviewed == 0 ? null : l.reviewDoneMessage(session.reviewed),
         actions: [
           MMButton(label: l.backToStudySet, variant: MMButtonVariant.primary, autofocus: true, onPressed: _back),
         ],
@@ -128,6 +129,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                       constraints: const BoxConstraints(maxWidth: 640),
                       child: _ReviewCard(
                         key: ValueKey('${session.index}-$id'),
+                        studySetId: widget.studySetId,
                         card: card,
                         content: content,
                         rootTitle: content.map(controller.mapId ?? '')?.title.isNotEmpty == true
@@ -181,9 +183,10 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
+class _ReviewCard extends ConsumerWidget {
   const _ReviewCard({
     super.key,
+    required this.studySetId,
     required this.card,
     required this.content,
     required this.rootTitle,
@@ -192,6 +195,7 @@ class _ReviewCard extends StatelessWidget {
     required this.onRevealSource,
   });
 
+  final String studySetId;
   final Card card;
   final StudySetContent content;
   final String rootTitle;
@@ -200,32 +204,82 @@ class _ReviewCard extends StatelessWidget {
   final VoidCallback onRevealSource;
 
   @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    final t = context.mmText;
-    final path = [
-      rootTitle,
-      ...content.pathOf(card.id, mapId: mapId ?? MindMap.defaultId),
-    ].where((s) => s.trim().isNotEmpty).join('  ›  ');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final needsText = needsPageText(card, content);
+    // The front waits for the page text so it never flashes the thumbnail.
+    final text = needsText ? ref.watch(excerptPageTextProvider((studySetId: studySetId, cardId: card.id))) : null;
+    if (text != null && text.isLoading) return const SizedBox.shrink();
+    final face = buildReviewFace(
+      card,
+      content,
+      mapId: mapId ?? MindMap.defaultId,
+      rootTitle: rootTitle,
+      pageText: text?.value,
+    );
+    return ReviewCardView(
+      face: face,
+      revealed: revealed,
+      pagePath: _pagePath(ref, face.front),
+      onRevealSource: onRevealSource,
+    );
+  }
+
+  String? _pagePath(WidgetRef ref, ReviewFront front) {
+    if (front.prompt != ReviewPrompt.page) return null;
     final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
     final doc = annotation == null ? null : content.document(annotation.documentId);
-    final color = MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0);
-    final isImage = card.kind == CardKind.image && card.imageFileName != null;
-    // Image cards answer like excerpts: their picture replaces the quote.
-    final isExcerpt = card.kind == CardKind.excerpt || isImage;
-    final hasQuestion = isExcerpt && card.title.trim().isNotEmpty;
+    if (doc == null || !ref.watch(pdfRenderingEnabledProvider)) return null;
+    return ref.read(contentRepositoryProvider).resolveFile(studySetId, doc.fileName);
+  }
+}
 
-    final prompt = hasQuestion
-        ? Text(card.title, style: t.title2)
-        : Text(
-            isImage
-                ? l.reviewPromptImage
-                : isExcerpt
-                ? l.reviewPromptExcerpt
-                : l.reviewPromptNote,
-            style: t.title3,
-          );
+/// The card itself: [face]'s front, and its back once [revealed].
+class ReviewCardView extends StatelessWidget {
+  const ReviewCardView({
+    super.key,
+    required this.face,
+    required this.revealed,
+    this.pagePath,
+    required this.onRevealSource,
+  });
+
+  final ReviewFace face;
+  final bool revealed;
+
+  /// The PDF file behind a [ReviewPrompt.page] front; without it the front
+  /// shows a blank page instead.
+  final String? pagePath;
+  final VoidCallback onRevealSource;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final t = context.mmText;
+    final front = face.front;
+    final back = face.back;
+    final source = back.source;
+    final color = MMAnnotationColor.fromIndex(back.colorIndex);
+    final answer = <Widget>[
+      if (back.imageFileName != null)
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 360),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
+            child: CardImage(back.imageFileName!),
+          ),
+        )
+      else if (back.quote.isNotEmpty)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: color.cardTint,
+            borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
+            border: Border(left: BorderSide(color: color.color, width: 3)),
+          ),
+          child: SelectableText(back.quote, style: t.readingExcerpt.copyWith(fontSize: 16, height: 1.6)),
+        ),
+      for (final note in back.notes) SelectableText(note, style: t.body.copyWith(fontSize: 16, height: 1.6)),
+    ];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
@@ -233,70 +287,111 @@ class _ReviewCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(path, maxLines: 2, overflow: TextOverflow.ellipsis, style: t.footnote),
-          const SizedBox(height: 12),
-          prompt,
-          if (isExcerpt && doc != null && !hasQuestion) ...[
-            const SizedBox(height: 6),
-            Text(
-              '${doc.title} · ${l.pageNumber(annotation!.page)}',
-              style: t.callout.copyWith(color: c.secondaryLabel),
-            ),
+          if (front.path.isNotEmpty) ...[
+            Text(front.path.join('  ›  '), maxLines: 2, overflow: TextOverflow.ellipsis, style: t.footnote),
+            const SizedBox(height: 12),
           ],
-          if (!revealed && isExcerpt && !hasQuestion) ...[
-            const SizedBox(height: 16),
-            Text(l.reviewQuestionTip, style: t.footnote),
+          if (front.prompt == ReviewPrompt.title) Text(front.title, style: t.title2),
+          if (!revealed) ...[
+            if (front.prompt == ReviewPrompt.cloze) _Cloze(front: front),
+            if (front.prompt == ReviewPrompt.page) _PagePrompt(front: front, path: pagePath),
           ],
           if (revealed) ...[
-            const SizedBox(height: 20),
-            Container(height: 0.5, color: c.separator),
-            const SizedBox(height: 20),
-            if (isImage)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
-                  child: CardImage(card.imageFileName!, semanticLabel: card.title.isEmpty ? null : card.title),
-                ),
-              ),
-            if (isExcerpt && annotation != null) ...[
-              if (!isImage)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: color.cardTint,
-                    borderRadius: BorderRadius.circular(MMRadii.excerpt + 2),
-                    border: Border(left: BorderSide(color: color.color, width: 3)),
-                  ),
-                  child: SelectableText(annotation.quote, style: t.readingExcerpt.copyWith(fontSize: 16, height: 1.6)),
-                ),
-              const SizedBox(height: 12),
+            if (front.prompt == ReviewPrompt.title) ...[
+              const SizedBox(height: 20),
+              Container(height: 0.5, color: c.separator),
+              const SizedBox(height: 20),
+            ],
+            for (final block in answer) ...[block, const SizedBox(height: 12)],
+            if (source != null)
               Row(
                 children: [
-                  // The source is already under the prompt unless the
-                  // card has its own question.
                   Expanded(
-                    child: doc == null || !hasQuestion
-                        ? const SizedBox.shrink()
-                        : Text(
-                            '${doc.title} · ${l.pageNumber(annotation.page)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.footnote,
-                          ),
+                    child: Text(
+                      '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.footnote,
+                    ),
                   ),
                   MMButton(
-                    label: l.revealSource,
+                    label: context.l10n.revealSource,
                     icon: MMIcons.revealSource,
                     variant: MMButtonVariant.plain,
                     onPressed: onRevealSource,
                   ),
                 ],
               ),
-            ] else if (!isImage)
-              SelectableText(card.title, style: t.body.copyWith(fontSize: 16, height: 1.6)),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Sentence context with a block where the excerpt was, about as wide as
+/// the excerpt is long.
+class _Cloze extends StatelessWidget {
+  const _Cloze({required this.front});
+
+  final ReviewFront front;
+
+  static const _charWidth = 9.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final style = context.mmText.readingExcerpt.copyWith(fontSize: 18, height: 1.7);
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          TextSpan(text: front.before),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Container(
+              key: const ValueKey('cloze-mask'),
+              width: math.min(math.max(front.maskLength * _charWidth, 36), 360),
+              height: 20,
+              decoration: BoxDecoration(color: c.secondaryLabel, borderRadius: BorderRadius.circular(MMRadii.excerpt)),
+            ),
+          ),
+          TextSpan(text: front.after),
+        ],
+      ),
+    );
+  }
+}
+
+/// Thumbnail of the source page with the excerpt's area covered.
+class _PagePrompt extends StatelessWidget {
+  const _PagePrompt({required this.front, required this.path});
+
+  final ReviewFront front;
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 320, maxWidth: 400),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(MMRadii.excerpt),
+          child: path == null
+              ? AspectRatio(
+                  key: const ValueKey('page-prompt'),
+                  aspectRatio: 0.75,
+                  child: ColoredBox(color: c.quaternaryFill),
+                )
+              : MMPdfPagePreview(
+                  key: const ValueKey('page-prompt'),
+                  filePath: path!,
+                  page: front.page!,
+                  covers: front.areas,
+                  coverColor: c.secondaryLabel,
+                ),
+        ),
       ),
     );
   }

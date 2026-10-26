@@ -395,12 +395,8 @@
     }
   },
   "reviewProgress": "Review progress",
-  "reviewPromptExcerpt": "Recall this excerpt",
-  "reviewPromptNote": "Recall this note",
-  "reviewPromptImage": "Recall this image",
-  "reviewQuestionTip": "Tip: rename an excerpt to a question and it becomes the prompt here.",
   "reviewDoneTitle": "All done for now",
-  "reviewDoneMessage": "{count, plural, =1{You reviewed 1 card. Come back when more are due.} other{You reviewed {count} cards. Come back when more are due.}}",
+  "reviewDoneMessage": "{count, plural, =1{1 card reviewed} other{{count} cards reviewed}}",
   "@reviewDoneMessage": {
     "placeholders": {
       "count": {
@@ -409,7 +405,6 @@
     }
   },
   "reviewNothingDueTitle": "Nothing to review",
-  "reviewNothingDueMessage": "Excerpts and notes in the mind map show up here when they’re due.",
   "showAnswer": "Show Answer",
   "startReview": "Start Review",
   "sectionCards": "Cards",

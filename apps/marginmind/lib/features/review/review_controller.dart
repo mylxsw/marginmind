@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
 import '../../app/navigation.dart';
@@ -109,3 +110,20 @@ class ReviewSession extends Notifier<ReviewSessionState> {
 final reviewSessionProvider = NotifierProvider.autoDispose.family<ReviewSession, ReviewSessionState, String>(
   ReviewSession.new,
 );
+
+/// The text of the page an untitled excerpt came from, which its card front
+/// quotes around. Null when the file cannot be read (or PDFs are not
+/// rendered), so the front falls back to the page thumbnail.
+final excerptPageTextProvider = FutureProvider.autoDispose.family<String?, ({String studySetId, String cardId})>((
+  ref,
+  key,
+) async {
+  if (!ref.watch(pdfRenderingEnabledProvider)) return null;
+  final content = ref.read(contentProvider(key.studySetId)).value;
+  final card = content?.card(key.cardId);
+  final annotation = card?.annotationId == null ? null : content!.annotation(card!.annotationId!);
+  final doc = annotation == null ? null : content!.document(annotation.documentId);
+  if (doc == null) return null;
+  final path = ref.read(contentRepositoryProvider).resolveFile(key.studySetId, doc.fileName);
+  return MMPdfEngine.pageText(path, annotation!.page);
+});
