@@ -15,6 +15,8 @@ class StudySetContent {
     this.nodes = const [],
     this.maps = const [MindMap.main],
     this.reviews = const [],
+    this.reviewLogs = const [],
+    this.memoryStates = const [],
     this.relations = const [],
     this.summaries = const [],
     this.bookmarks = const [],
@@ -32,6 +34,13 @@ class StudySetContent {
   /// Review history per card. Entries of deleted cards are kept (and
   /// ignored) so undoing a delete brings the card back with its schedule.
   final List<ReviewState> reviews;
+
+  /// Append-only rating history, including deleted cards.
+  final List<ReviewLog> reviewLogs;
+  final List<MemoryState> memoryStates;
+
+  MemoryState? memoryOf(String cardId) => memoryStates.where((s) => s.cardId == cardId).firstOrNull;
+  List<ReviewLog> reviewLogsOf(String cardId) => List.unmodifiable(reviewLogs.where((entry) => entry.cardId == cardId));
 
   /// Lines between cards and summaries of sibling ranges, per map.
   final List<MapRelation> relations;
@@ -192,6 +201,8 @@ class StudySetContent {
     List<MapNode>? nodes,
     List<MindMap>? maps,
     List<ReviewState>? reviews,
+    List<ReviewLog>? reviewLogs,
+    List<MemoryState>? memoryStates,
     List<MapRelation>? relations,
     List<MapSummary>? summaries,
     List<Bookmark>? bookmarks,
@@ -203,6 +214,8 @@ class StudySetContent {
       nodes: nodes ?? this.nodes,
       maps: maps ?? this.maps,
       reviews: reviews ?? this.reviews,
+      reviewLogs: reviewLogs ?? this.reviewLogs,
+      memoryStates: memoryStates ?? this.memoryStates,
       relations: relations ?? this.relations,
       summaries: summaries ?? this.summaries,
       bookmarks: bookmarks ?? this.bookmarks,
@@ -216,6 +229,8 @@ class StudySetContent {
     'maps': [for (final m in maps) m.toJson()],
     'nodes': [for (final n in nodes) n.toJson()],
     'reviews': [for (final r in reviews) r.toJson()],
+    'reviewLogs': [for (final r in reviewLogs) r.toJson()],
+    'memoryStates': [for (final s in memoryStates) s.toJson()],
     'relations': [for (final r in relations) r.toJson()],
     'summaries': [for (final s in summaries) s.toJson()],
     'bookmarks': [for (final b in bookmarks) b.toJson()],
@@ -232,6 +247,8 @@ class StudySetContent {
       nodes: list('nodes', MapNode.fromJson),
       maps: j['maps'] == null ? const [MindMap.main] : list('maps', MindMap.fromJson),
       reviews: list('reviews', ReviewState.fromJson),
+      reviewLogs: list('reviewLogs', ReviewLog.fromJson),
+      memoryStates: list('memoryStates', MemoryState.fromJson),
       relations: list('relations', MapRelation.fromJson),
       summaries: list('summaries', MapSummary.fromJson),
       bookmarks: list('bookmarks', Bookmark.fromJson),

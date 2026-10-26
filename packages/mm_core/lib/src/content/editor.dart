@@ -588,10 +588,44 @@ class StudySetEditor {
     nodes: [for (final n in c.nodes) n.mapId == mapId && n.cardId == cardId ? n.copyWith(collapsed: collapsed) : n],
   );
 
+  /// Stores memory parameters without changing the legacy schedule.
+  StudySetContent setMemoryState(StudySetContent c, MemoryState state) {
+    if (c.card(state.cardId) == null) return c;
+    return c.copyWith(
+      memoryStates: [
+        for (final existing in c.memoryStates)
+          if (existing.cardId != state.cardId) existing,
+        state,
+      ],
+    );
+  }
+
+  StudySetContent setSuspended(StudySetContent c, String cardId, {required bool suspended}) {
+    final card = c.card(cardId);
+    if (card == null || card.suspended == suspended) return c;
+    return c.copyWith(
+      cards: [for (final value in c.cards) value.id == cardId ? value.copyWith(suspended: suspended) : value],
+    );
+  }
+
   /// Records a review of [cardId] rated [rating].
   StudySetContent rate(StudySetContent c, String cardId, Rating rating) {
-    final next = ReviewScheduler.rate(cardId, c.reviewOf(cardId), rating, now());
+    if (c.card(cardId) == null) return c;
+    final reviewedAt = now();
+    final previous = c.reviewOf(cardId);
+    final next = ReviewScheduler.rate(cardId, previous, rating, reviewedAt);
     return c.copyWith(
+      reviewLogs: [
+        ...c.reviewLogs,
+        ReviewLog(
+          id: newId(),
+          cardId: cardId,
+          reviewedAt: reviewedAt,
+          rating: rating,
+          intervalBefore: previous?.intervalDays ?? 0,
+          intervalAfter: next.intervalDays,
+        ),
+      ],
       reviews: [
         for (final r in c.reviews)
           if (r.cardId != cardId) r,
@@ -648,6 +682,8 @@ class StudySetEditor {
   /// not undoable taken from [current]: review history and reading position.
   static StudySetContent restore(StudySetContent snapshot, StudySetContent current) => snapshot.copyWith(
     reviews: current.reviews,
+    reviewLogs: current.reviewLogs,
+    memoryStates: current.memoryStates,
     documents: [
       for (final d in snapshot.documents)
         if (current.document(d.id) case final now?)
