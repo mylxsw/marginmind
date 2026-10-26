@@ -350,8 +350,10 @@ void main() {
       expect(find.text('Titled'), findsOneWidget);
       expect(find.text('Book · Page 3'), findsNothing);
       expect(find.text('Book · Page 5'), findsNothing);
-      // Padding, title row (titled only), quote lines in their box; no source row.
-      expect(h.node('e1').height / h.scale, 11 + (4 * 20 + 12) + 11 + 2);
+      // Padding, title row (titled only), quote lines in their box, the full
+      // text toggle (cut quotes only); no source row.
+      expect(h.node('e1').height / h.scale, 11 + (4 * 20 + 12) + 4 + 14 + 11 + 2);
+      expect(find.text('Show Full Text'), findsOneWidget, reason: 'only e1 is cut');
       expect(h.node('e2').height / h.scale, 11 + (17 + 6) + (1 * 20 + 12) + 11 + 2);
 
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);

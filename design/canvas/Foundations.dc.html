@@ -273,7 +273,9 @@ class Component extends DCLogic {
       ['page', '固定', '#FFFFFF', '#FFFFFF', 'PDF 页面，不随外观变化'],
       ['accent', 'controlAccentColor', '#007AFF', '#0A84FF', '选中环、侧栏图标、开启状态'],
       ['accent.fill', 'selectedContentBackgroundColor', '#0A66D0', '#0A66D0', '承载白字的选中背景（大纲选中行、主按钮）'],
-      ['accent.tint', 'accent 12% / 20%', 'rgba(0,122,255,.12)', 'rgba(10,132,255,.20)', '工具按钮的选中底、联动光晕']
+      ['accent.tint', 'accent 12% / 20%', 'rgba(0,122,255,.12)', 'rgba(10,132,255,.20)', '工具按钮的选中底、联动光晕'],
+      ['research', '自定义（不随系统强调色）', '#5E5CE6', '#7D7AFF', '研究面板标题、研究入口、研究笔记竖线'],
+      ['research.tint', 'research 12% / 20%', 'rgba(94,92,230,.12)', 'rgba(125,122,255,.20)', '研究笔记卡片底色、研究按钮选中底']
     ];
     const palette = [
       ['黄', '#FFCC00', 'systemYellow', '要点'], ['绿', '#34C759', 'systemGreen', '概念、定义'], ['蓝', '#007AFF', 'systemBlue', '例子、证据'],
@@ -341,7 +343,8 @@ class Component extends DCLogic {
         { range: '窗口 ≥ 1280', rule: '侧栏 + 原文 + 脑图三栏，默认布局' },
         { range: '960 – 1279', rule: '侧栏自动收起（系统行为），⌃⌘S 临时呼出' },
         { range: '全屏', rule: '工具栏随指针移到顶部时出现，原文与脑图各占半屏' },
-        { range: '台前调度 / 分屏', rule: '窗口窄于 960 时只保留一个面板，用 ⌘1 / ⌘3 切换' }
+        { range: '台前调度 / 分屏', rule: '窗口窄于 960 时只保留一个面板，用 ⌘1 / ⌘3 切换' },
+        { range: '右侧面板（研究 / 卡片详情）', rule: '宽 400；放不下侧栏 + 面板 + 当前内容时先收起侧栏、面板改为 360，再按分栏规则收起一栏；关闭后恢复' }
       ],
       native: [
         { what: '窗口与红绿灯', how: 'macos_window_utils', why: '全尺寸内容视图 + 透明标题栏，保留系统真正的红绿灯和窗口拖拽、缩放行为。' },

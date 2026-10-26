@@ -30,6 +30,15 @@ void main() {
         expect(contrastRatio(c.onAccent, c.accentFill), greaterThanOrEqualTo(4.5));
       });
 
+      test('research labels reach 4.5:1 on the window and keep their own hue', () {
+        expect(contrastRatio(c.research, c.windowBackground), greaterThanOrEqualTo(4.5));
+        expect(c.researchTint.toARGB32() & 0xFFFFFF, c.research.toARGB32() & 0xFFFFFF);
+        expect(c.researchTint.a, lessThan(0.3));
+        final tinted = c.withAccent(const Color(0xFFFF9500));
+        expect(tinted.research, c.research, reason: 'the system accent never recolors research');
+        expect(c.lerp(c, 0.5).research, c.research);
+      });
+
       test('withAccent follows the system accent', () {
         const purple = Color(0xFFAF52DE);
         final tinted = c.withAccent(purple);

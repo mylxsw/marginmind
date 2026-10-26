@@ -56,6 +56,11 @@ abstract final class MMSizes {
   static const double field = 28;
   static const double segmented = 28;
   static const double readerMinWidth = 420;
+
+  /// Right panel shared by research and card details; narrower when the
+  /// window cannot also fit the sidebar beside the content.
+  static const double rightPanelWidth = 400;
+  static const double rightPanelNarrowWidth = 360;
   static const double mapMinWidth = 360;
   static const double dividerHitWidth = 8;
   static const Size windowMinSize = Size(960, 600);

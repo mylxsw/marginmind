@@ -937,4 +937,65 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readerAppearance => '阅读外观';
+
+  @override
+  String get research => '研究';
+
+  @override
+  String get showResearchPanel => '显示研究面板';
+
+  @override
+  String get hideResearchPanel => '隐藏研究面板';
+
+  @override
+  String get researchEmptyTitle => '选中原文或脑图节点，开始研究';
+
+  @override
+  String get showCardDetails => '显示详情';
+
+  @override
+  String get hideCardDetails => '隐藏详情';
+
+  @override
+  String get closePanel => '关闭';
+
+  @override
+  String get expandCardText => '展开全文';
+
+  @override
+  String get collapseCardText => '收起';
+
+  @override
+  String get toggleCardText => '展开或收起全文';
+
+  @override
+  String get detailsExcerpt => '摘录卡片';
+
+  @override
+  String get detailsImage => '图片卡片';
+
+  @override
+  String get detailsNote => '笔记';
+
+  @override
+  String get detailsTopic => '主题';
+
+  @override
+  String get addTitle => '添加标题';
+
+  @override
+  String revealSourcePage(int page) {
+    return '回到原文 · 第 $page 页';
+  }
+
+  @override
+  String get reviewStatusNew => '尚未复习';
+
+  @override
+  String reviewStatusScheduled(DateTime date, int count) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.MMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return '下次 $dateString · 已复习 $count 次';
+  }
 }

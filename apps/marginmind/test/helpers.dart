@@ -70,18 +70,20 @@ Future<ProviderContainer> pumpApp(
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
   PdfPicker? pdfPicker,
+  List<Override> overrides = const [],
+  Size size = const Size(1280, 820),
 }) async {
-  tester.view.physicalSize = const Size(1280, 820);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final overrides = await testOverrides(
+  final base = await testOverrides(
     prefs: prefs,
     sets: sets,
     content: content,
     renderPdf: renderPdf,
     pdfPicker: pdfPicker,
   );
-  await tester.pumpWidget(ProviderScope(overrides: overrides, child: const MarginMindApp()));
+  await tester.pumpWidget(ProviderScope(overrides: [...base, ...overrides], child: const MarginMindApp()));
   await tester.pumpAndSettle();
   return ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));
 }

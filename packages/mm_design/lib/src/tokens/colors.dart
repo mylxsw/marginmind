@@ -28,6 +28,8 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.accentFill,
     required this.accentTint,
     required this.onAccent,
+    required this.research,
+    required this.researchTint,
     required this.glass,
     required this.glassOpaque,
     required this.glassHighlight,
@@ -91,6 +93,13 @@ class MMColors extends ThemeExtension<MMColors> {
   final Color accentTint;
   final Color onAccent;
 
+  /// Research: the research panel, research notes and their entry points.
+  /// Fixed, unlike [accent], so research stays apart from selection.
+  final Color research;
+
+  /// [research] at 12% / 20%: research card wash, selected research controls.
+  final Color researchTint;
+
   /// Floating control glass.
   final Color glass;
   final Color glassOpaque;
@@ -131,6 +140,8 @@ class MMColors extends ThemeExtension<MMColors> {
     accentFill: Color(0xFF0A66D0),
     accentTint: Color(0x1F007AFF),
     onAccent: Color(0xFFFFFFFF),
+    research: Color(0xFF5E5CE6),
+    researchTint: Color(0x1F5E5CE6),
     glass: Color(0xC7FFFFFF),
     glassOpaque: Color(0xFFFFFFFF),
     glassHighlight: Color(0xF2FFFFFF),
@@ -171,6 +182,8 @@ class MMColors extends ThemeExtension<MMColors> {
     accentFill: Color(0xFF0A66D0),
     accentTint: Color(0x330A84FF),
     onAccent: Color(0xFFFFFFFF),
+    research: Color(0xFF7D7AFF),
+    researchTint: Color(0x337D7AFF),
     glass: Color(0xC7323235),
     glassOpaque: Color(0xFF323235),
     glassHighlight: Color(0x24FFFFFF),
@@ -218,6 +231,8 @@ class MMColors extends ThemeExtension<MMColors> {
       accentFill: accentFill ?? this.accentFill,
       accentTint: accentTint ?? this.accentTint,
       onAccent: onAccent,
+      research: research,
+      researchTint: researchTint,
       glass: glass,
       glassOpaque: glassOpaque,
       glassHighlight: glassHighlight,
@@ -261,6 +276,8 @@ class MMColors extends ThemeExtension<MMColors> {
       accentFill: c(accentFill, other.accentFill),
       accentTint: c(accentTint, other.accentTint),
       onAccent: c(onAccent, other.onAccent),
+      research: c(research, other.research),
+      researchTint: c(researchTint, other.researchTint),
       glass: c(glass, other.glass),
       glassOpaque: c(glassOpaque, other.glassOpaque),
       glassHighlight: c(glassHighlight, other.glassHighlight),

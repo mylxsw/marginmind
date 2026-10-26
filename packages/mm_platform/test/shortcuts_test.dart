@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show SingleActivator;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -13,6 +14,7 @@ void main() {
     expect(s.control, isFalse);
     expect(describeShortcut(s), '⇧⌘L');
     expect(describeShortcut(primaryShortcut(LogicalKeyboardKey.keyS, control: true)), '⌃⌘S');
+    expect(describeShortcut(const SingleActivator(LogicalKeyboardKey.space, alt: true)), '⌥Space');
   });
 
   test('primary modifier is Ctrl elsewhere', () {
@@ -21,6 +23,7 @@ void main() {
     expect(s.meta, isFalse);
     expect(s.control, isTrue);
     expect(describeShortcut(s), 'Ctrl+1');
+    expect(describeShortcut(const SingleActivator(LogicalKeyboardKey.space, alt: true)), 'Alt+Space');
   });
 
   test('appearance parses the native snapshot', () {

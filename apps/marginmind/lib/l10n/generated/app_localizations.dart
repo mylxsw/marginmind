@@ -1795,6 +1795,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading Appearance'**
   String get readerAppearance;
+
+  /// No description provided for @research.
+  ///
+  /// In en, this message translates to:
+  /// **'Research'**
+  String get research;
+
+  /// No description provided for @showResearchPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Research Panel'**
+  String get showResearchPanel;
+
+  /// No description provided for @hideResearchPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Research Panel'**
+  String get hideResearchPanel;
+
+  /// No description provided for @researchEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select text or a map node to research'**
+  String get researchEmptyTitle;
+
+  /// No description provided for @showCardDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Details'**
+  String get showCardDetails;
+
+  /// No description provided for @hideCardDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Details'**
+  String get hideCardDetails;
+
+  /// No description provided for @closePanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closePanel;
+
+  /// No description provided for @expandCardText.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Full Text'**
+  String get expandCardText;
+
+  /// No description provided for @collapseCardText.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Less'**
+  String get collapseCardText;
+
+  /// No description provided for @toggleCardText.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand or Collapse Full Text'**
+  String get toggleCardText;
+
+  /// No description provided for @detailsExcerpt.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpt'**
+  String get detailsExcerpt;
+
+  /// No description provided for @detailsImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get detailsImage;
+
+  /// No description provided for @detailsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get detailsNote;
+
+  /// No description provided for @detailsTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get detailsTopic;
+
+  /// No description provided for @addTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Title'**
+  String get addTitle;
+
+  /// No description provided for @revealSourcePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal in Source · Page {page}'**
+  String revealSourcePage(int page);
+
+  /// No description provided for @reviewStatusNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reviewed yet'**
+  String get reviewStatusNew;
+
+  /// No description provided for @reviewStatusScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Next {date} · {count, plural, =1{reviewed once} other{reviewed {count} times}}'**
+  String reviewStatusScheduled(DateTime date, int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

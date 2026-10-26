@@ -236,6 +236,28 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('a button label wider than its room ends in an ellipsis', (tester) async {
+    await tester.pumpWidget(
+      harness(
+        SizedBox(
+          width: 120,
+          child: Row(
+            children: [
+              Flexible(
+                child: MMButton(icon: MMIcons.revealSource, label: 'A very long button label', onPressed: () {}),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final label = tester.widget<Text>(find.text('A very long button label'));
+    expect(label.maxLines, 1);
+    expect(label.overflow, TextOverflow.ellipsis);
+    expect(tester.getSize(find.byType(MMButton)).width, lessThanOrEqualTo(120));
+  });
+
   testWidgets('color picker draws a card-colored gap inside the selection ring', (tester) async {
     await tester.pumpWidget(
       harness(MMColorPicker(selected: MMAnnotationColor.green, onChanged: (_) {}, labelOf: (c) => c.name)),

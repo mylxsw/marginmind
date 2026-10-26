@@ -95,6 +95,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
         controller.addRelation();
       case MindMapCommand.summary:
         controller.addSummaryAndEdit(l.newSummaryLabel);
+      case MindMapCommand.expand:
+        controller.toggleSelectedExpanded();
       default:
         break;
     }
@@ -119,6 +121,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
       entries: [
         if (card != null) ...[
           MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),
+          MMMenuItem(
+            l.showCardDetails,
+            () => controller.showDetails(card.id),
+            shortcut: describeShortcut(AppShortcuts.cardDetails),
+          ),
           MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: 'F2'),
           if (content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
@@ -228,9 +235,19 @@ class _MapPaneState extends ConsumerState<MapPane> {
           s.selectedMarkId,
           s.editingMarkId,
           s.connectingFromId,
+          s.expandedCardIds,
         ),
       ),
     );
+    // Closing the details hands the keyboard back to the map and its node;
+    // the view stays where it was.
+    ref.listen(provider.select((s) => s.panel), (previous, next) {
+      if (previous != RightPanel.details || next != null) return;
+      // After the frame: the closing panel first gives up the focus it held.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    });
     final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
     final loadedContent = ref.watch(workspaceContentProvider(widget.studySetId));
@@ -303,6 +320,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onCancelConnect: controller.cancelConnecting,
                     onMarkContextMenu: _showMarkMenu,
                     excerptTargetId: excerptTargetId,
+                    expandedCardIds: state.expandedCardIds,
+                    onToggleExpanded: controller.toggleExpanded,
+                    onOpenDetails: controller.showDetails,
                   )
                 : OutlineView(
                     key: ValueKey(state.activeMapId),
