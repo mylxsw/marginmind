@@ -218,6 +218,44 @@ void main() {
     expect(ring, sameColor(MMAnnotationColor.green.color));
   });
 
+  testWidgets('color menu button shows the current color and picks from a pop-up', (tester) async {
+    var picked = MMAnnotationColor.green;
+    await tester.pumpWidget(
+      harness(
+        StatefulBuilder(
+          builder: (context, setState) => MMColorMenuButton(
+            selected: picked,
+            tooltip: 'Color',
+            labelOf: (c) => c.name,
+            onChanged: (c) => setState(() => picked = c),
+          ),
+        ),
+      ),
+    );
+    // Closed: one dot, no picker.
+    expect(find.byType(MMColorPicker), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Color'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MMColorPicker), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('pink'));
+    await tester.pumpAndSettle();
+    expect(picked, MMAnnotationColor.pink);
+    expect(find.byType(MMColorPicker), findsNothing);
+
+    // Esc and a click outside dismiss without choosing.
+    await tester.tap(find.bySemanticsLabel('Color'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(MMColorPicker), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Color'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    expect(find.byType(MMColorPicker), findsNothing);
+    expect(picked, MMAnnotationColor.pink);
+  });
+
   testWidgets('reduce transparency removes the blur', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
