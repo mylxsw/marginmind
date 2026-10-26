@@ -104,7 +104,7 @@ class MMPdfViewController extends ChangeNotifier {
 
   bool get isReady => _state?._ready ?? false;
 
-  /// Scrolls so that [rects] on [page] are centered.
+  /// Scrolls so that [rects] on [page] are centered (left-aligned when wider than the viewport).
   Future<void> reveal(int page, List<PageRect> rects) async => _state?._reveal(page, rects);
 
   /// Same as [reveal], and remembers where the reader was for [goBack].
@@ -114,21 +114,24 @@ class MMPdfViewController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> goToPage(int page) async => _state?._controller.goToPage(pageNumber: page);
+  Future<void> goToPage(int page, {bool alignTop = false}) async =>
+      _state?._controller.goToPage(pageNumber: page, anchor: alignTop ? PdfPageAnchor.top : null);
 
   /// Deliberate jump to [page] (clamped to the document); [goBack] returns.
-  Future<void> jumpToPage(int page) async {
+  /// The page's top edge lands at the top of the viewport unless [alignTop]
+  /// is false (the last page then rests at the bottom).
+  Future<void> jumpToPage(int page, {bool alignTop = true}) async {
     if (!isReady || _pageCount == 0) return;
     final target = page.clamp(1, _pageCount);
     if (target == _page) return;
     _history.record(_page);
-    await goToPage(target);
+    await goToPage(target, alignTop: alignTop);
     _notify();
   }
 
   Future<void> firstPage() => jumpToPage(1);
 
-  Future<void> lastPage() => jumpToPage(_pageCount);
+  Future<void> lastPage() => jumpToPage(_pageCount, alignTop: false);
 
   bool get canGoBack => _history.canGoBack;
 
@@ -635,7 +638,11 @@ class _MMPdfViewState extends State<MMPdfView> {
       b,
     ).toRect(page: _controller.pages[page - 1], scaledPageSize: layout.size).shift(layout.topLeft);
     // Center in document coordinates without fitting the excerpt to the viewport.
-    await _controller.goTo(_controller.calcMatrixFor(target.center, zoom: _controller.currentZoom));
+    // An excerpt wider than the viewport would lose both ends: start at its left edge.
+    final zoom = _controller.currentZoom;
+    final wide = target.width * zoom > _controller.viewSize.width;
+    final center = wide ? Offset(target.left + _controller.viewSize.width / 2 / zoom, target.center.dy) : target.center;
+    await _controller.goTo(_controller.calcMatrixFor(center, zoom: zoom));
   }
 
   Future<void> _loadOutline(PdfDocument document) async {

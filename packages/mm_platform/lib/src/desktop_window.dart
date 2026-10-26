@@ -7,6 +7,12 @@ import 'package:window_manager/window_manager.dart';
 
 /// Native window setup and the few window actions the UI needs.
 abstract final class DesktopWindow {
+  /// Whether the window is full screen, kept current from the native
+  /// enter / leave events. Menus read it to offer the opposite action.
+  static final ValueListenable<bool> fullScreen = _fullScreen;
+  static final _fullScreen = ValueNotifier<bool>(false);
+  static final _listener = _FullScreenListener();
+
   static bool get isDesktop =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.macOS ||
@@ -28,6 +34,9 @@ abstract final class DesktopWindow {
   }) async {
     if (!isDesktop) return;
     await windowManager.ensureInitialized();
+    windowManager.removeListener(_listener);
+    windowManager.addListener(_listener);
+    _fullScreen.value = await windowManager.isFullScreen();
 
     if (isMacOS) {
       await WindowManipulator.initialize();
@@ -59,4 +68,22 @@ abstract final class DesktopWindow {
       await windowManager.maximize();
     }
   }
+
+  @visibleForTesting
+  static void debugSetFullScreen(bool value) => _fullScreen.value = value;
+
+  /// Enters full screen, or leaves it when the window already is. [fullScreen]
+  /// follows once the system reports the transition.
+  static Future<void> toggleFullScreen() async {
+    if (!isDesktop) return;
+    await windowManager.setFullScreen(!await windowManager.isFullScreen());
+  }
+}
+
+class _FullScreenListener with WindowListener {
+  @override
+  void onWindowEnterFullScreen() => DesktopWindow._fullScreen.value = true;
+
+  @override
+  void onWindowLeaveFullScreen() => DesktopWindow._fullScreen.value = false;
 }

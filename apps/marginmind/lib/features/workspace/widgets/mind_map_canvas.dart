@@ -445,15 +445,34 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     widget.transformation.value = m.clone()..setTranslationRaw(m.storage[12] + delta.dx, m.storage[13] + delta.dy, 0);
   }
 
-  /// Centers an explicitly located card at a readable scale.
+  /// The card with its source label, which hangs beside it on the outer side.
+  Rect _withSourceLabel(String id, LayoutRect rect) {
+    final card = Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height);
+    final meta = _cache._specs[id]?.meta;
+    if (meta == null) return card;
+    final painter = TextPainter(
+      text: TextSpan(text: meta, style: context.mmText.footnote),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    final extent = _sourceGap(id) + math.min(painter.width + 2 * MMSpacing.xs, rect.width);
+    painter.dispose();
+    return _layout!.leftSide.contains(id)
+        ? Rect.fromLTRB(card.left - extent, card.top, card.right, card.bottom)
+        : Rect.fromLTRB(card.left, card.top, card.right + extent, card.bottom);
+  }
+
+  /// Centers an explicitly located card, and the source label beside it, at a
+  /// readable scale.
   void _locate(String id, int tick) {
     if (tick <= _handledLocateTick) return;
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final scale = math.max(mapLocateScale, mapScale(widget.transformation.value));
+    final bounds = _withSourceLabel(id, rect);
     widget.transformation.value = Matrix4.identity()
       ..translateByDouble(
-        _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
+        _viewport.width / 2 - bounds.center.dx * scale,
         _viewport.height / 2 - rect.centerY * scale,
         0,
         1,

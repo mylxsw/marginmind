@@ -82,6 +82,17 @@ void main() {
     expect(controller.outline.first.children.single.page, 3);
   });
 
+  viewTest('a jump puts the page at the top of the viewport; the last page rests at the bottom', (tester) async {
+    final controller = await open(tester);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    await settle(tester, controller.jumpToPage(2));
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, closeTo(16, 1));
+    await settle(tester, controller.lastPage());
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[2].bottomRight).dy, closeTo(pdf.viewSize.height - 16, 1));
+    await settle(tester, controller.jumpToPage(2, alignTop: false));
+    expect(controller.currentPage, 2);
+  });
+
   viewTest('jumps move the page, are clamped, and back returns', (tester) async {
     final pages = <int>[];
     final controller = await open(tester, onPageChanged: (page, _) => pages.add(page));

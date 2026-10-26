@@ -56,7 +56,7 @@ final navigationProvider = NotifierProvider<AppNavigation, AppRoute>(AppNavigati
 
 /// One-shot focus requests from menu commands (e.g. ⌘F) to whichever screen
 /// owns the target field. Screens listen and call `requestFocus`.
-enum FocusTarget { search }
+enum FocusTarget { search, pageField }
 
 class FocusRequests extends Notifier<(FocusTarget, int)?> {
   @override

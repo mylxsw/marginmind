@@ -1,6 +1,7 @@
 /// Joins hard wraps; blank lines remain paragraph boundaries. Only discretionary
 /// soft hyphens, PDFium’s U+0002 hyphen marker and Latin trailing-hyphen wraps
-/// are dehyphenated.
+/// are dehyphenated. A wrap carries no space between CJK characters, but one the
+/// PDF text already has next to a Latin word or number stays.
 String joinExcerptLines(String text) {
   final paragraphs = text
       .replaceAll('\u0002', '')
@@ -10,9 +11,14 @@ String joinExcerptLines(String text) {
       .split(RegExp(r'\n\s*\n'));
   return paragraphs
       .map((paragraph) {
-        final lines = paragraph.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty);
         var result = '';
-        for (final line in lines) {
+        var spaceAfter = false;
+        for (final raw in paragraph.split('\n')) {
+          final line = raw.trim();
+          if (line.isEmpty) continue;
+          final spaceBefore = raw.startsWith(RegExp(r'\s'));
+          final hadSpace = spaceAfter || spaceBefore;
+          spaceAfter = raw.endsWith(RegExp(r'\s'));
           if (result.isEmpty) {
             result = line;
           } else if (result.endsWith('\u00ad')) {
@@ -23,7 +29,9 @@ String joinExcerptLines(String text) {
             final noSpace =
                 RegExp(r'[\u2e80-\u9fff\uf900-\ufaff，。！？；：、（]$').hasMatch(result) ||
                 RegExp(r'^[\u2e80-\u9fff\uf900-\ufaff，。！？；：、）]').hasMatch(line);
-            result += '${noSpace ? '' : ' '}$line';
+            final keepSpace =
+                hadSpace && (RegExp(r'[A-Za-z0-9]$').hasMatch(result) || RegExp(r'^[A-Za-z0-9]').hasMatch(line));
+            result += '${noSpace && !keepSpace ? '' : ' '}$line';
           }
         }
         return result;

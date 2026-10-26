@@ -7,6 +7,8 @@ import 'package:mm_platform/mm_platform.dart';
 import '../features/gallery/gallery_screen.dart';
 import '../features/library/library_screen.dart';
 import '../features/review/review_screen.dart';
+import '../features/workspace/widgets/reader_pane.dart';
+import '../features/workspace/workspace_controller.dart';
 import '../features/workspace/workspace_screen.dart';
 import '../settings/app_settings.dart';
 import '../settings/system_appearance.dart';
@@ -21,6 +23,13 @@ class MarginMindApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final system = ref.watch(systemAppearanceProvider);
+    // The page pill sits at the bottom centre of the reader: the HUD goes above it.
+    final route = ref.watch(navigationProvider);
+    final pillShown =
+        route is WorkspaceRoute &&
+        ref.watch(
+          workspaceProvider(route.studySetId).select((s) => s.activeDocumentId != null && s.layout != MMSplitMode.secondary),
+        );
     return MaterialApp(
       onGenerateTitle: (context) => context.l10n.appName,
       debugShowCheckedModeBanner: false,
@@ -38,7 +47,10 @@ class MarginMindApp extends ConsumerWidget {
       builder: (context, child) => MMAppearance(
         reduceTransparency: system.reduceTransparency,
         reduceMotion: system.reduceMotion,
-        child: MMHudHost(child: child ?? const SizedBox.shrink()),
+        child: MMHudHost(
+          bottom: pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
       home: const AppShell(),
     );

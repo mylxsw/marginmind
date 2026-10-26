@@ -12,8 +12,10 @@ void main() {
   late List<MethodCall> chromeCalls;
   late List<MethodCall> windowCalls;
   var maximized = false;
+  var fullScreen = false;
 
   setUp(() {
+    fullScreen = false;
     chromeCalls = [];
     windowCalls = [];
     maximized = false;
@@ -40,7 +42,8 @@ void main() {
       windowCalls.add(call);
       return switch (call.method) {
         'isMaximized' => maximized,
-        'isFullScreen' || 'isMinimized' => false,
+        'isFullScreen' => fullScreen,
+        'isMinimized' => false,
         'getBounds' => {'x': 0.0, 'y': 0.0, 'width': 1280.0, 'height': 820.0},
         _ => null,
       };
@@ -105,5 +108,38 @@ void main() {
     maximized = true;
     await DesktopWindow.toggleZoom();
     expect(windowCalls.map((call) => call.method), ['isMaximized', 'unmaximize']);
+  });
+
+  test('full screen follows the native events and the toggle goes the other way', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    fullScreen = true;
+    await DesktopWindow.initialize(title: 'MarginMind', minimumSize: const Size(900, 600));
+    expect(DesktopWindow.fullScreen.value, isTrue, reason: 'read from the window at startup');
+
+    Future<void> native(String event) => messenger.handlePlatformMessage(
+      'window_manager',
+      const StandardMethodCodec().encodeMethodCall(MethodCall('onEvent', {'eventName': event})),
+      (_) {},
+    );
+    await native('leave-full-screen');
+    expect(DesktopWindow.fullScreen.value, isFalse);
+    await native('enter-full-screen');
+    expect(DesktopWindow.fullScreen.value, isTrue);
+
+    windowCalls.clear();
+    await DesktopWindow.toggleFullScreen();
+    expect(windowCalls.map((call) => call.method), ['isFullScreen', 'setFullScreen']);
+    expect(windowCalls.last.arguments, {'isFullScreen': false});
+    windowCalls.clear();
+    fullScreen = false;
+    await DesktopWindow.toggleFullScreen();
+    expect(windowCalls.last.arguments, {'isFullScreen': true});
+
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    windowCalls.clear();
+    await DesktopWindow.toggleFullScreen();
+    expect(windowCalls, isEmpty);
+    DesktopWindow.debugSetFullScreen(false);
+    expect(DesktopWindow.fullScreen.value, isFalse);
   });
 }
