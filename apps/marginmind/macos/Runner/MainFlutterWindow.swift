@@ -4,6 +4,7 @@ import Security
 
 class MainFlutterWindow: NSWindow {
   private var articleParser: ArticleParserChannel?
+  private var pdfOcr: PdfOcrChannel?
   private var secretStore: SecretStoreChannel?
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
@@ -97,6 +98,7 @@ class MainFlutterWindow: NSWindow {
     installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
     articleParser = ArticleParserChannel(messenger: flutterViewController.engine.binaryMessenger)
+    pdfOcr = PdfOcrChannel(messenger: flutterViewController.engine.binaryMessenger)
     secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
 

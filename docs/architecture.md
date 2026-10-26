@@ -133,3 +133,7 @@ macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Con
 `mm_research` 不依赖 Flutter 或 mm_platform，组合根读取密钥后注入适配器。
 新包已加入 workspace 和 `tool/coverage.py`。详细预算、方式映射及验证限制见
 [ADR 0001](decisions/0001-research-ai-integration.md)。
+
+### 扫描 PDF 文字识别（GUL-521）
+
+`mm_platform` 的 `VisionPdfOcr` 通过方法通道调用 Runner 的 `PdfOcrChannel`。后台串行队列逐页使用 Vision、Core Graphics 和 Core Text 生成带隐藏文本层的 `documents/<hash>.ocr.pdf`，原 PDF 不变。副本由约定文件名发现，沿用 format 7，不新增模型字段。应用层 `readerOcrProvider(sourcePath)` 管理进度、取消和副本重载；阅读器打开副本后复用 pdfrx 的选字、搜索、摘录和高亮坐标。坐标、取消语义和资源上限见 [验证记录](evidence/gul-521/README.md)。

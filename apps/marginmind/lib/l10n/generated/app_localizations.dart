@@ -2005,6 +2005,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview Image'**
   String get previewImage;
+
+  /// No description provided for @ocrRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize Text…'**
+  String get ocrRecognize;
+
+  /// No description provided for @ocrStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Recognition'**
+  String get ocrStart;
+
+  /// No description provided for @ocrNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No selectable text on this page'**
+  String get ocrNoText;
+
+  /// No description provided for @ocrReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized · Select and search'**
+  String get ocrReady;
+
+  /// No description provided for @ocrRecognized.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized'**
+  String get ocrRecognized;
+
+  /// No description provided for @ocrCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled · Completed pages kept'**
+  String get ocrCancelled;
+
+  /// No description provided for @ocrFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition failed · Try again'**
+  String get ocrFailed;
+
+  /// No description provided for @ocrProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognizing text {done}/{total}'**
+  String ocrProgress(int done, int total);
+
+  /// No description provided for @ocrScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get ocrScope;
+
+  /// No description provided for @ocrAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages'**
+  String get ocrAllPages;
+
+  /// No description provided for @ocrCurrentPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Current page'**
+  String get ocrCurrentPage;
+
+  /// No description provided for @ocrPageRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Page range'**
+  String get ocrPageRange;
+
+  /// No description provided for @ocrLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get ocrLanguage;
+
+  /// No description provided for @ocrChineseEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese + English'**
+  String get ocrChineseEnglish;
+
+  /// No description provided for @ocrChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get ocrChinese;
+
+  /// No description provided for @ocrEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get ocrEnglish;
+
+  /// No description provided for @ocrFirstPage.
+  ///
+  /// In en, this message translates to:
+  /// **'First page'**
+  String get ocrFirstPage;
+
+  /// No description provided for @ocrLastPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Last page'**
+  String get ocrLastPage;
+
+  /// No description provided for @ocrInvalidRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a range from 1 to {count}'**
+  String ocrInvalidRange(int count);
+
+  /// No description provided for @ocrThisPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize This Page'**
+  String get ocrThisPage;
+
+  /// No description provided for @ocrCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Text Recognition'**
+  String get ocrCancel;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
@@ -17,6 +18,8 @@ import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
 import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
+import '../reader_ocr.dart';
+import 'reader_ocr_controls.dart';
 
 /// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
 /// text action toolbar and the floating page pill.
@@ -174,6 +177,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
+    final source = doc == null ? null : controller.filePath(doc);
+    final ocr = source == null || !ref.watch(pdfOcrServiceProvider).supported
+        ? null
+        : ref.watch(readerOcrProvider(source));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -296,8 +303,18 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   icon: const Icon(MMIcons.appearance),
                 ),
                 ReaderAnnotationTools(state: state, controller: controller),
+                if (ocr?.running == true) ReaderOcrProgress(source: source!),
               ],
             ),
+          ),
+        if (ocr != null)
+          ReaderOcrControls(
+            key: ValueKey(source),
+            source: source!,
+            studySetId: widget.studySetId,
+            documentId: doc!.id,
+            initialPage: doc.lastPage,
+            onRecognize: () => showReaderOcrOptions(context, ref, widget.studySetId),
           ),
         Expanded(
           child: doc == null
@@ -334,15 +351,24 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             child: Stack(
                               children: [
                                 Positioned.fill(
-                                  child: !ref.watch(pdfRenderingEnabledProvider)
+                                  child:
+                                      !ref.watch(pdfRenderingEnabledProvider) ||
+                                          (ocr != null && ocr.document == null && !ocr.failed)
                                       ? ColoredBox(
                                           key: ValueKey('pdf-placeholder-${doc.id}'),
                                           color: c.readerBackground,
                                         )
                                       : MMPdfView(
-                                          key: ValueKey(doc.id),
-                                          filePath: controller.filePath(doc),
+                                          key: ocr == null || ocr.revision == 0
+                                              ? ValueKey(doc.id)
+                                              : ValueKey((doc.id, ocr.revision)),
+                                          filePath: ocr?.document?.path ?? controller.filePath(doc),
                                           controller: _pdf,
+                                          onReady: (_) {
+                                            if (ocr?.document?.hasCopy != true) return;
+                                            dismissSelection();
+                                            _pdf.search(_pdf.searchQuery);
+                                          },
                                           initialPage:
                                               ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
                                           backgroundColor: c.readerBackground,
@@ -367,6 +393,26 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                             );
                                             if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
                                           },
+                                          onTextUnavailable: ocr == null || ocr.running
+                                              ? null
+                                              : (page, position) {
+                                                  showMMMenu(
+                                                    context,
+                                                    position: position,
+                                                    entries: [
+                                                      MMMenuItem(l.ocrNoText, null),
+                                                      MMMenuItem(l.ocrThisPage, () {
+                                                        ref
+                                                            .read(readerOcrProvider(source!).notifier)
+                                                            .recognize(page, page, PdfOcrLanguage.chineseEnglish);
+                                                      }),
+                                                      MMMenuItem(
+                                                        l.ocrRecognize,
+                                                        () => showReaderOcrOptions(context, ref, widget.studySetId),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
                                           onViewportChanged: dismissSelection,
                                           onPageChanged: (page, _) {
                                             dismissSelection();

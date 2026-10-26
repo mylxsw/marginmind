@@ -1091,4 +1091,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get previewImage => 'Preview Image';
+
+  @override
+  String get ocrRecognize => 'Recognize Text…';
+
+  @override
+  String get ocrStart => 'Start Recognition';
+
+  @override
+  String get ocrNoText => 'No selectable text on this page';
+
+  @override
+  String get ocrReady => 'Recognized · Select and search';
+
+  @override
+  String get ocrRecognized => 'Recognized';
+
+  @override
+  String get ocrCancelled => 'Cancelled · Completed pages kept';
+
+  @override
+  String get ocrFailed => 'Recognition failed · Try again';
+
+  @override
+  String ocrProgress(int done, int total) {
+    return 'Recognizing text $done/$total';
+  }
+
+  @override
+  String get ocrScope => 'Pages';
+
+  @override
+  String get ocrAllPages => 'All pages';
+
+  @override
+  String get ocrCurrentPage => 'Current page';
+
+  @override
+  String get ocrPageRange => 'Page range';
+
+  @override
+  String get ocrLanguage => 'Language';
+
+  @override
+  String get ocrChineseEnglish => 'Chinese + English';
+
+  @override
+  String get ocrChinese => 'Chinese';
+
+  @override
+  String get ocrEnglish => 'English';
+
+  @override
+  String get ocrFirstPage => 'First page';
+
+  @override
+  String get ocrLastPage => 'Last page';
+
+  @override
+  String ocrInvalidRange(int count) {
+    return 'Enter a range from 1 to $count';
+  }
+
+  @override
+  String get ocrThisPage => 'Recognize This Page';
+
+  @override
+  String get ocrCancel => 'Cancel Text Recognition';
 }

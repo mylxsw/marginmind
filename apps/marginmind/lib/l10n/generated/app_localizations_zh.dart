@@ -1049,4 +1049,71 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get previewImage => '预览图片';
+
+  @override
+  String get ocrRecognize => '识别文字…';
+
+  @override
+  String get ocrStart => '开始识别';
+
+  @override
+  String get ocrNoText => '本页文字尚不能选择';
+
+  @override
+  String get ocrReady => '已识别 · 可选字和搜索';
+
+  @override
+  String get ocrRecognized => '已识别';
+
+  @override
+  String get ocrCancelled => '已取消 · 已识别页面已保留';
+
+  @override
+  String get ocrFailed => '识别失败 · 请重试';
+
+  @override
+  String ocrProgress(int done, int total) {
+    return '识别文字 $done/$total';
+  }
+
+  @override
+  String get ocrScope => '范围';
+
+  @override
+  String get ocrAllPages => '全部';
+
+  @override
+  String get ocrCurrentPage => '当前页';
+
+  @override
+  String get ocrPageRange => '页码范围';
+
+  @override
+  String get ocrLanguage => '语言';
+
+  @override
+  String get ocrChineseEnglish => '中文 + 英文';
+
+  @override
+  String get ocrChinese => '仅中文';
+
+  @override
+  String get ocrEnglish => '仅英文';
+
+  @override
+  String get ocrFirstPage => '起始页';
+
+  @override
+  String get ocrLastPage => '结束页';
+
+  @override
+  String ocrInvalidRange(int count) {
+    return '请输入 1 至 $count 内的页码范围';
+  }
+
+  @override
+  String get ocrThisPage => '识别本页';
+
+  @override
+  String get ocrCancel => '取消文字识别';
 }
