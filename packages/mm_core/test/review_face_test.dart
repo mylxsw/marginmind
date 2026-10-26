@@ -57,7 +57,8 @@ void main() {
     });
 
     test('matches English broken across lines and hyphenated words', () {
-      final r = excerptContext('Cells divide. Mitosis has\nfour inter-\nnational phases. Last one.', 'has four international phases.')!;
+      const text = 'Cells divide. Mitosis has\nfour inter-\nnational phases. Last one.';
+      final r = excerptContext(text, 'has four international phases.')!;
       expect(r.before, 'Cells divide. Mitosis ');
       expect(r.after, ' Last one.');
     });
