@@ -93,6 +93,39 @@ void main() {
     });
   });
 
+  group('excerptContextAcross', () {
+    // The quote leaves out the footer of page 33 and the header of page 34.
+    const first =
+        '26/10/2026, 09:20\nEarlier text. Opening line. Elaborative interrogation means asking why\na fact is true.\nbook.html 33/301';
+    const last = '26/10/2026, 09:20\nIt connects to what you know. Next sentence here. Another one.\nbook.html 34/301';
+    const quote = 'Elaborative interrogation means asking why a fact is true. It connects to what you know.';
+
+    test('takes the text before from the first page and after from the last', () {
+      expect(excerptContext('$first\n$last', quote), isNull);
+      final r = excerptContextAcross(first, last, quote)!;
+      expect(r.before, 'Opening line. ');
+      expect(r.after, ' Next sentence here.');
+    });
+
+    test('finds a head or tail shorter than the usual lookup on its page', () {
+      final r = excerptContextAcross(
+        '页眉\n更早。前文。理解深度取决于\n你建立的联系，\n第 33 页',
+        '页眉\n新知识才会牢。后文。再后。',
+        '理解深度取决于你建立的联系，新知识才会牢。',
+      )!;
+      expect(r.before, '前文。');
+      expect(r.after, '后文。');
+      // Under six characters on a page is too little to place the quote.
+      expect(excerptContextAcross('前文。理解深度取决于你建立的联系，', '才会牢。', '理解深度取决于你建立的联系，才会牢。'), isNull);
+    });
+
+    test('returns null when either end is missing or the quote is blank', () {
+      expect(excerptContextAcross(first, 'unrelated', quote), isNull);
+      expect(excerptContextAcross('unrelated', last, quote), isNull);
+      expect(excerptContextAcross(first, last, ' '), isNull);
+    });
+  });
+
   group('excerpt cards', () {
     test('cloze front: path without the root, context, mask as long as the quote', () {
       final (c, card) = excerpt();
@@ -106,6 +139,17 @@ void main() {
       expect(face.back.source, ReviewSource(documentId: c.documents.single.id, documentTitle: 'Book', page: 4));
       expect(face.back.notes, isEmpty);
       expect(needsPageText(card, c), isTrue);
+    });
+
+    test('an excerpt running onto the next page quotes around both pages', () {
+      final (c, card) = excerpt(quote: 'four phases, and each is short. The next');
+      const p1 = 'Cells divide. Mitosis has four phases, and each\nBook 4';
+      const p2 = 'Book 5\nis short. The next step is meiosis. Last sentence.';
+      expect(buildReviewFace(card, c, pageText: p1).front.prompt, ReviewPrompt.page);
+      final face = buildReviewFace(card, c, pageText: p1, lastPageText: p2);
+      expect(face.front.prompt, ReviewPrompt.cloze);
+      expect(face.front.before, 'Cells divide. Mitosis has ');
+      expect(face.front.after, ' step is meiosis. Last sentence.');
     });
 
     test('a repeated quote is told apart by where it was highlighted', () {

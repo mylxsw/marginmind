@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:meta/meta.dart';
 
 import 'excerpt_lines.dart';
@@ -150,7 +152,8 @@ bool needsPageText(Card card, StudySetContent content) {
 /// [pageText] is the text of the excerpt's first page, when it could be
 /// read; without it an untitled excerpt falls back to the page thumbnail.
 /// With [pageHeight] a repeated passage is told apart by where it was
-/// highlighted.
+/// highlighted. [lastPageText] is the text of the excerpt's last page when
+/// it runs past the first.
 ReviewFace buildReviewFace(
   Card card,
   StudySetContent content, {
@@ -158,6 +161,7 @@ ReviewFace buildReviewFace(
   String rootTitle = '',
   String? pageText,
   double? pageHeight,
+  String? lastPageText,
 }) {
   final path = [
     for (final t in content.pathOf(card.id, mapId: mapId))
@@ -215,7 +219,10 @@ ReviewFace buildReviewFace(
       ? null
       : annotation.pages.first.rects.first.top;
   final near = top == null || pageHeight == null || pageHeight <= 0 ? null : 1 - top / pageHeight;
-  final context = quote.isEmpty || pageText == null ? null : excerptContext(pageText, quote, near: near);
+  var context = quote.isEmpty || pageText == null ? null : excerptContext(pageText, quote, near: near);
+  if (context == null && quote.isNotEmpty && pageText != null && lastPageText != null) {
+    context = excerptContextAcross(pageText, lastPageText, quote, near: near);
+  }
   if (context != null) {
     return ReviewFace(
       front: ReviewFront(
@@ -272,20 +279,60 @@ String _fold(String text) => text.replaceAll(RegExp(r'\s+'), ' ').trim();
     at = _nearest(t, q, near);
     if (at < 0) return null;
   }
-  final end = at + q.length;
+  return (before: _before(t, at), after: _after(t, at + q.length));
+}
 
-  // One sentence back from where the excerpt starts, one forward from where
-  // it ends; an excerpt that already ends a sentence adds no more of it.
+/// How much of a quote's head and tail is looked up on its first and last
+/// page: up to [_edge] characters, fewer when only a little of the quote
+/// is on that page, but never under [_minEdge].
+const _edge = 24;
+const _minEdge = 6;
+
+/// [excerptContext] for a quote that runs from [firstPage] onto a later page
+/// ending with [lastPage]. The page breaks carry running headers and footers
+/// the quote left out, so the text before it is found from the quote's head
+/// on the first page and the text after it from its tail on the last.
+({String before, String after})? excerptContextAcross(
+  String firstPage,
+  String lastPage,
+  String quote, {
+  double? near,
+}) {
+  for (final norm in [_normalize, _fold]) {
+    final q = norm(quote).trim();
+    if (q.isEmpty) return null;
+    final first = norm(firstPage), last = norm(lastPage);
+    final shortest = math.min(_minEdge, q.length);
+    var at = -1, end = -1;
+    for (var n = math.min(_edge, q.length); n >= shortest && at < 0; n--) {
+      at = _nearest(first, q.substring(0, n), near);
+    }
+    for (var n = math.min(_edge, q.length); n >= shortest && end < 0; n--) {
+      final i = last.indexOf(q.substring(q.length - n));
+      if (i >= 0) end = i + n;
+    }
+    if (at >= 0 && end >= 0) return (before: _before(first, at), after: _after(last, end));
+  }
+  return null;
+}
+
+/// One sentence back from where the excerpt starts at [at] in [t].
+String _before(String t, int at) {
   var start = _sentenceStart(t, at);
   var back = start;
   while (back > 0 && (t[back - 1] == ' ' || _enders.contains(t[back - 1]))) {
     back--;
   }
   if (back > 0) start = _sentenceStart(t, back);
-  var stop = _enders.contains(t[end - 1]) ? end : _sentenceEnd(t, end);
-  if (stop < t.length) stop = _sentenceEnd(t, stop);
+  return t.substring(start, at).trimLeft();
+}
 
-  return (before: t.substring(start, at).trimLeft(), after: t.substring(end, stop).trimRight());
+/// One sentence forward from where the excerpt ends at [end] in [t]; an
+/// excerpt that already ends a sentence adds no more of it.
+String _after(String t, int end) {
+  var stop = end > 0 && _enders.contains(t[end - 1]) ? end : _sentenceEnd(t, end);
+  if (stop < t.length) stop = _sentenceEnd(t, stop);
+  return t.substring(end, stop).trimRight();
 }
 
 /// Where [q] occurs in [t], the occurrence closest to the [near] fraction of

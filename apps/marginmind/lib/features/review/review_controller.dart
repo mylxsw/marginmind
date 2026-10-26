@@ -112,9 +112,10 @@ final reviewSessionProvider = NotifierProvider.autoDispose.family<ReviewSession,
 );
 
 /// The text of the page an untitled excerpt came from, which its card front
-/// quotes around. Null when the file cannot be read (or PDFs are not
-/// rendered), so the front falls back to the page thumbnail.
-typedef PageContent = ({String text, double height});
+/// quotes around, and of its last page when it runs onto later pages. Null
+/// when the file cannot be read (or PDFs are not rendered), so the front
+/// falls back to the page thumbnail.
+typedef PageContent = ({String text, double height, String? lastText});
 
 final excerptPageTextProvider = FutureProvider.autoDispose.family<PageContent?, ({String studySetId, String cardId})>((
   ref,
@@ -127,5 +128,9 @@ final excerptPageTextProvider = FutureProvider.autoDispose.family<PageContent?, 
   final doc = annotation == null ? null : content!.document(annotation.documentId);
   if (doc == null) return null;
   final path = ref.read(contentRepositoryProvider).resolveFile(key.studySetId, doc.fileName);
-  return MMPdfEngine.pageContent(path, annotation!.page);
+  final first = await MMPdfEngine.pageContent(path, annotation!.page);
+  if (first == null) return null;
+  final lastPage = annotation.pages.last.page;
+  final lastText = lastPage == annotation.page ? null : await MMPdfEngine.pageText(path, lastPage);
+  return (text: first.text, height: first.height, lastText: lastText);
 });
