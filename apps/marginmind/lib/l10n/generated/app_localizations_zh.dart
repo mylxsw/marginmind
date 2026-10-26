@@ -1116,4 +1116,71 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ocrCancel => '取消文字识别';
+
+  @override
+  String get exportMap => '导出脑图…';
+
+  @override
+  String get exportBranch => '导出此分支…';
+
+  @override
+  String get exportAction => '导出…';
+
+  @override
+  String get exportFormat => '格式';
+
+  @override
+  String get exportRange => '范围';
+
+  @override
+  String get exportWholeMap => '整张脑图';
+
+  @override
+  String get exportCurrentBranch => '当前分支';
+
+  @override
+  String get exportAppearance => '外观';
+
+  @override
+  String get exportLight => '浅色';
+
+  @override
+  String get exportDark => '深色';
+
+  @override
+  String get exportTransparent => '透明背景';
+
+  @override
+  String get exportScale => '清晰度';
+
+  @override
+  String get exportLarge => '图片超过 8000 像素，部分应用可能打不开。请降低倍率或改用 PDF。';
+
+  @override
+  String get exportReduced => '已自动降低倍率，以满足图片尺寸和内存限制。';
+
+  @override
+  String get exportLoading => '正在准备导出…';
+
+  @override
+  String get exportFailed => '导出失败，请重试。';
+
+  @override
+  String get exportRetry => '重试';
+
+  @override
+  String exportPixels(String width, String height) {
+    return '$width × $height 像素';
+  }
+
+  @override
+  String exportCentimeters(String width, String height) {
+    return '$width × $height 厘米';
+  }
+
+  @override
+  String get exportResearchNote => '研究笔记';
+
+  @override
+  String get exportSource => '出处';
 }

@@ -11,6 +11,7 @@ import '../features/library/new_study_set.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
+import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
 import '../settings/app_settings.dart';
@@ -315,13 +316,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         shortcut: AppShortcuts.importDocument,
       ),
     ];
-    file.addAll([
-      AppCommand(
-        l.exportMarkdown,
-        inWorkspace ? () => exportMap(context, ref, workspaceId, ExportFormat.markdown) : null,
-      ),
-      AppCommand(l.exportOpml, inWorkspace ? () => exportMap(context, ref, workspaceId, ExportFormat.opml) : null),
-    ]);
+    file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.
       final focus = FocusManager.instance.primaryFocus?.context;

@@ -2131,6 +2131,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel Text Recognition'**
   String get ocrCancel;
+
+  /// No description provided for @exportMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Map…'**
+  String get exportMap;
+
+  /// No description provided for @exportBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Export This Branch…'**
+  String get exportBranch;
+
+  /// No description provided for @exportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export…'**
+  String get exportAction;
+
+  /// No description provided for @exportFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get exportFormat;
+
+  /// No description provided for @exportRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Range'**
+  String get exportRange;
+
+  /// No description provided for @exportWholeMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire map'**
+  String get exportWholeMap;
+
+  /// No description provided for @exportCurrentBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Current branch'**
+  String get exportCurrentBranch;
+
+  /// No description provided for @exportAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get exportAppearance;
+
+  /// No description provided for @exportLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get exportLight;
+
+  /// No description provided for @exportDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get exportDark;
+
+  /// No description provided for @exportTransparent.
+  ///
+  /// In en, this message translates to:
+  /// **'Transparent'**
+  String get exportTransparent;
+
+  /// No description provided for @exportScale.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution'**
+  String get exportScale;
+
+  /// No description provided for @exportLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This image exceeds 8000 pixels. Some apps may not open it. Reduce the scale or use PDF.'**
+  String get exportLarge;
+
+  /// No description provided for @exportReduced.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale reduced automatically to fit image dimensions and memory limits.'**
+  String get exportReduced;
+
+  /// No description provided for @exportLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing export…'**
+  String get exportLoading;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed. Please try again.'**
+  String get exportFailed;
+
+  /// No description provided for @exportRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get exportRetry;
+
+  /// No description provided for @exportPixels.
+  ///
+  /// In en, this message translates to:
+  /// **'{width} × {height} pixels'**
+  String exportPixels(String width, String height);
+
+  /// No description provided for @exportCentimeters.
+  ///
+  /// In en, this message translates to:
+  /// **'{width} × {height} cm'**
+  String exportCentimeters(String width, String height);
+
+  /// No description provided for @exportResearchNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Research note'**
+  String get exportResearchNote;
+
+  /// No description provided for @exportSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get exportSource;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

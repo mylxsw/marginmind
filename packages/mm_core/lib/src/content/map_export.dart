@@ -25,6 +25,30 @@ class MapExporter {
   final StudySetContent content;
   final String rootTitle;
   final String mapId;
+
+  /// A snapshot shared by text and visual export. Folded descendants are included.
+  static StudySetContent scope(StudySetContent content, String mapId, String? branchId) {
+    if (branchId == null) return content;
+    if (content.node(branchId, mapId: mapId) == null) {
+      throw ArgumentError.value(branchId, 'branchId', 'Not in the map');
+    }
+    final ids = content.branch(branchId, mapId: mapId);
+    return content.copyWith(
+      nodes: [
+        for (final n in content.nodes)
+          if (n.mapId == mapId && ids.contains(n.cardId)) n.copyWith(toRoot: n.cardId == branchId, collapsed: false),
+      ],
+      relations: [
+        for (final r in content.relationsOf(mapId))
+          if (ids.contains(r.fromId) && ids.contains(r.toId)) r,
+      ],
+      summaries: [
+        for (final (s, range) in content.summariesOf(mapId))
+          if (range.every(ids.contains) && (s.parentId == null || ids.contains(s.parentId))) s,
+      ],
+    );
+  }
+
   final String relationsTitle;
   final String researchNoteLabel;
   final String sourceLabel;

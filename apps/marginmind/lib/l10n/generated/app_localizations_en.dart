@@ -1158,4 +1158,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ocrCancel => 'Cancel Text Recognition';
+
+  @override
+  String get exportMap => 'Export Map…';
+
+  @override
+  String get exportBranch => 'Export This Branch…';
+
+  @override
+  String get exportAction => 'Export…';
+
+  @override
+  String get exportFormat => 'Format';
+
+  @override
+  String get exportRange => 'Range';
+
+  @override
+  String get exportWholeMap => 'Entire map';
+
+  @override
+  String get exportCurrentBranch => 'Current branch';
+
+  @override
+  String get exportAppearance => 'Appearance';
+
+  @override
+  String get exportLight => 'Light';
+
+  @override
+  String get exportDark => 'Dark';
+
+  @override
+  String get exportTransparent => 'Transparent';
+
+  @override
+  String get exportScale => 'Resolution';
+
+  @override
+  String get exportLarge => 'This image exceeds 8000 pixels. Some apps may not open it. Reduce the scale or use PDF.';
+
+  @override
+  String get exportReduced => 'Scale reduced automatically to fit image dimensions and memory limits.';
+
+  @override
+  String get exportLoading => 'Preparing export…';
+
+  @override
+  String get exportFailed => 'Export failed. Please try again.';
+
+  @override
+  String get exportRetry => 'Retry';
+
+  @override
+  String exportPixels(String width, String height) {
+    return '$width × $height pixels';
+  }
+
+  @override
+  String exportCentimeters(String width, String height) {
+    return '$width × $height cm';
+  }
+
+  @override
+  String get exportResearchNote => 'Research note';
+
+  @override
+  String get exportSource => 'Source';
 }

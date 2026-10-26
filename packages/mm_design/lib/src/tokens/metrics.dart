@@ -28,6 +28,12 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double mapExportNodeWidth = 240;
+  static const double mapExportCanvasPadding = 72;
+  static const double mapExportImageFallbackHeight = 120;
+  static const double mapExportSheetWidth = 560;
+  static const double mapExportPreviewHeight = 180;
+
   /// Keep the excerpt-target hint clear of the map view controls.
   static const double mapViewControlsReservedWidth = 260;
   static const double readerSidebarWidth = 240;
