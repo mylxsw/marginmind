@@ -8,7 +8,8 @@ enum NoteOrigin { user, ai, excerpt, mixed }
 
 enum MapDensity { full, compact, titleOnly }
 
-enum InkTool { pen, highlighter, ellipse }
+/// [arrow] is a straight stroke from its first to its second (last) point.
+enum InkTool { pen, highlighter, ellipse, arrow }
 
 /// Stable page coordinates; shared by attachments and research starting points.
 sealed class NoteTarget {

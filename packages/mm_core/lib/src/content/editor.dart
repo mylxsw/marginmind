@@ -206,9 +206,11 @@ class StudySetEditor {
         stroke.colorIndex < 0 ||
         stroke.points.length > InkStroke.maxPoints ||
         stroke.points.any((p) => !p.x.isFinite || !p.y.isFinite) ||
-        (stroke.tool == InkTool.ellipse
-            ? stroke.ellipse == null || stroke.points.isNotEmpty
-            : stroke.points.isEmpty || stroke.ellipse != null)) {
+        switch (stroke.tool) {
+          InkTool.ellipse => stroke.ellipse == null || stroke.points.isNotEmpty,
+          InkTool.arrow => stroke.points.length != 2 || stroke.ellipse != null,
+          _ => stroke.points.isEmpty || stroke.ellipse != null,
+        }) {
       throw ArgumentError('Invalid ink stroke');
     }
     if (c.inkStrokes.any((s) => s.id == stroke.id)) return c;

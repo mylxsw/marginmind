@@ -98,6 +98,33 @@ void main() {
         ellipse: const PageRect(0, 10, 10, 0),
       ),
     );
+    c = editor.addInkStroke(
+      c,
+      InkStroke(
+        id: 'arrow',
+        documentId: 'doc',
+        page: 1,
+        tool: InkTool.arrow,
+        colorIndex: 2,
+        width: 2,
+        points: [const InkPoint(1, 1), const InkPoint(8, 9)],
+      ),
+    );
+    expect(
+      () => editor.addInkStroke(
+        c,
+        InkStroke(
+          id: 'bad-arrow',
+          documentId: 'doc',
+          page: 1,
+          tool: InkTool.arrow,
+          colorIndex: 2,
+          width: 2,
+          points: [const InkPoint(1, 1)],
+        ),
+      ),
+      throwsArgumentError,
+    );
     c = c.copyWith(
       cards: [
         ...c.cards,
