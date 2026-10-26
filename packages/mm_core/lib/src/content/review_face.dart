@@ -292,12 +292,7 @@ const _minEdge = 6;
 /// ending with [lastPage]. The page breaks carry running headers and footers
 /// the quote left out, so the text before it is found from the quote's head
 /// on the first page and the text after it from its tail on the last.
-({String before, String after})? excerptContextAcross(
-  String firstPage,
-  String lastPage,
-  String quote, {
-  double? near,
-}) {
+({String before, String after})? excerptContextAcross(String firstPage, String lastPage, String quote, {double? near}) {
   for (final norm in [_normalize, _fold]) {
     final q = norm(quote).trim();
     if (q.isEmpty) return null;

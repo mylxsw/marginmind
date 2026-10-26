@@ -91,7 +91,6 @@
   "readerEmptyMessage": "在侧栏选择一份文档，或者向这个学习集导入 PDF。",
   "readerPlaceholder": "PDF 渲染会在 mm_pdf 包接入后出现在这里，这一页只是占位。",
   "mapEmptyTitle": "摘录会出现在这里",
-  "mapEmptyMessage": "在原文里划线，摘录就会变成卡片，挂在当前选中的主题下。",
   "mapView": "脑图",
   "outlineView": "大纲",
   "newExcerptTarget": "新摘录 → {topic}",

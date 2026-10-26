@@ -638,12 +638,6 @@ abstract class AppLocalizations {
   /// **'Your excerpts will appear here'**
   String get mapEmptyTitle;
 
-  /// No description provided for @mapEmptyMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Highlight a sentence in the source and it becomes a card under the selected topic.'**
-  String get mapEmptyMessage;
-
   /// No description provided for @mapView.
   ///
   /// In en, this message translates to:

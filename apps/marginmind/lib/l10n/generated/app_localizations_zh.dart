@@ -314,9 +314,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapEmptyTitle => '摘录会出现在这里';
 
   @override
-  String get mapEmptyMessage => '在原文里划线，摘录就会变成卡片，挂在当前选中的主题下。';
-
-  @override
   String get mapView => '脑图';
 
   @override

@@ -302,13 +302,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
               right: 0,
               bottom: 72,
               child: IgnorePointer(
-                child: Column(
-                  children: [
-                    Text(l.mapEmptyTitle, style: t.headline),
-                    const SizedBox(height: 4),
-                    Text(l.mapEmptyMessage, textAlign: TextAlign.center, style: t.footnote),
-                  ],
-                ),
+                child: Text(l.mapEmptyTitle, textAlign: TextAlign.center, style: t.headline),
               ),
             ),
           Positioned(
