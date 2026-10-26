@@ -1128,6 +1128,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           if (event is! KeyDownEvent || field != null || _markField != null) return KeyEventResult.ignored;
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
+          // On macOS ⌥Space types a no-break space, and the Option key can
+          // reach the keyboard state after it: never take it for Space (edit).
+          if (key == LogicalKeyboardKey.space && event.character == '\u00a0') {
+            _command(MindMapCommand.expand);
+            return KeyEventResult.handled;
+          }
           for (final entry in mindMapShortcuts.entries) {
             if (entry.key.accepts(event, HardwareKeyboard.instance)) {
               _command(entry.value);

@@ -610,6 +610,19 @@ void main() {
       await settleHud(tester);
     });
 
+    testWidgets('⌥Space as macOS delivers it (a no-break space) expands instead of editing', (tester) async {
+      final app = await _open(tester, content: _longExcerpt());
+      await showWholeMap(tester);
+      final id = _longCardId(app.controller);
+      await _tapCard(tester, find.byKey(ValueKey(id)));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.space, platform: 'macos', character: '\u00a0');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.space, platform: 'macos');
+      await tester.pumpAndSettle();
+      expect(_state(app.container).editingCardId, isNull);
+      expect(_state(app.container).expandedCardIds, {id});
+      await settleHud(tester);
+    });
+
     testWidgets('an expanded card opens its details without moving the map', (tester) async {
       final app = await _open(tester, content: _longExcerpt());
       await showWholeMap(tester);
