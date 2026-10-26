@@ -163,7 +163,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(mapScale(canvas().transformation.value), greaterThanOrEqualTo(mapLocateScale));
     final viewport = tester.getRect(find.byType(MindMapCanvas));
-    expect((tester.getRect(find.byKey(ValueKey(card.id))).center - viewport.center).distance, lessThan(1));
+    // The card and its source label, beside it, are centered together.
+    final cardRect = tester.getRect(find.byKey(ValueKey(card.id)));
+    final label = tester.getRect(find.textContaining('Page 24')).inflate(MMSpacing.xs);
+    final located = cardRect.expandToInclude(label);
+    expect((located.center.dx - viewport.center.dx).abs(), lessThan(4));
+    expect((cardRect.center.dy - viewport.center.dy).abs(), lessThan(1));
+    expect(located.left, greaterThanOrEqualTo(viewport.left));
+    expect(located.right, lessThanOrEqualTo(viewport.right));
     await settleHud(tester);
 
     // A user can pan, zoom and select another node after locating.

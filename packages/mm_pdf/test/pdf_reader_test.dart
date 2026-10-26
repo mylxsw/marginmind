@@ -86,9 +86,11 @@ void main() {
     final controller = await open(tester);
     final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
     await settle(tester, controller.jumpToPage(2));
-    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, closeTo(16, 1));
+    // The viewer's 16-point page margin scales with the zoom.
+    final margin = 16 * pdf.currentZoom;
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, closeTo(margin, 1));
     await settle(tester, controller.lastPage());
-    expect(pdf.documentToLocal(pdf.layout.pageLayouts[2].bottomRight).dy, closeTo(pdf.viewSize.height - 16, 1));
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[2].bottomRight).dy, closeTo(pdf.viewSize.height - margin, 1));
     await settle(tester, controller.jumpToPage(2, alignTop: false));
     expect(controller.currentPage, 2);
   });

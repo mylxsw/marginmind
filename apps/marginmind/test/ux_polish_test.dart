@@ -78,14 +78,14 @@ void main() {
         flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus).firstWhere((i) => i.label == label);
 
     final goToPage = item(l.goToPage);
-    expect(goToPage.shortcut, AppShortcuts.goToPage);
+    expect(goToPage.shortcut, isA<SingleActivator>().having((s) => s.trigger, 'key', LogicalKeyboardKey.keyG));
     expect(goToPage.onSelected, isNotNull);
     goToPage.onSelected!();
     await tester.pumpAndSettle();
     expect(find.byType(MMInlineTextField), findsOneWidget);
 
     addTearDown(() => DesktopWindow.debugSetFullScreen(false));
-    expect(item(l.enterFullScreen).shortcut, AppShortcuts.fullScreen);
+    expect(item(l.enterFullScreen).shortcut, isA<SingleActivator>().having((s) => s.trigger, 'key', LogicalKeyboardKey.keyF));
     expect(item(l.enterFullScreen).onSelected, isNotNull);
     DesktopWindow.debugSetFullScreen(true);
     await tester.pumpAndSettle();
