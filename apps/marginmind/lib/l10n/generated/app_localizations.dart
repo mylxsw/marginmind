@@ -1784,6 +1784,12 @@ abstract class AppLocalizations {
   /// **'Light Green'**
   String get readerStyleGreen;
 
+  /// No description provided for @readerZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom and Fit'**
+  String get readerZoom;
+
   /// No description provided for @readerAppearance.
   ///
   /// In en, this message translates to:

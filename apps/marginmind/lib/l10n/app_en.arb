@@ -512,5 +512,6 @@
   "readerStyleDark": "Dark",
   "readerStylePaper": "Paper",
   "readerStyleGreen": "Light Green",
+  "readerZoom": "Zoom and Fit",
   "readerAppearance": "Reading Appearance"
 }

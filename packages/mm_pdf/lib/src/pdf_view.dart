@@ -117,6 +117,16 @@ class MMPdfViewController extends ChangeNotifier {
   Future<void> goToPage(int page, {bool alignTop = false}) async =>
       _state?._controller.goToPage(pageNumber: page, anchor: alignTop ? PdfPageAnchor.top : null);
 
+  /// Direct manipulation: no animated jumps queue up while scrubbing.
+  Future<void> scrubToPage(int page) async {
+    if (!isReady || _pageCount == 0) return;
+    await _state!._controller.goToPage(
+      pageNumber: page.clamp(1, _pageCount),
+      anchor: PdfPageAnchor.top,
+      duration: Duration.zero,
+    );
+  }
+
   /// Deliberate jump to [page] (clamped to the document); [goBack] returns.
   /// The page's top edge lands at the top of the viewport unless [alignTop]
   /// is false (the last page then rests at the bottom).
@@ -999,7 +1009,9 @@ class _MMPdfViewState extends State<MMPdfView> {
           onViewSizeChanged: (size, previous, controller) {
             if (previous == null || size.width == previous.width) return;
             final center = controller.value.calcPosition(previous);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
+            // pdfrx calls this after layout in a microtask. A post-frame
+            // callback here can wait indefinitely for another scheduled frame.
+            Future.microtask(() {
               if (!mounted || !_ready || controller.viewSize != size) return;
               final fit = controller.calcMatrixFitWidthForPage(pageNumber: controller.pageNumber ?? 1);
               controller.goTo(

@@ -571,16 +571,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (state.sidebarAutoCollapsed != value) state = state.copyWith(sidebarAutoCollapsed: value);
   }
 
-  void toggleReaderPanel() => state = state.copyWith(
-    readerPanelVisible: !state.readerPanelVisible,
-    sidebarVisible: state.readerPanelVisible ? null : false,
-  );
+  void toggleReaderPanel() => state = state.copyWith(readerPanelVisible: !state.readerPanelVisible);
 
   /// Opens the reader sidebar on [mode] (the source pane comes back in
   /// map-only layout, since the user asked for it).
   void showReaderPanel(ReaderPanelMode mode) => state = state.copyWith(
     readerPanelVisible: true,
-    sidebarVisible: false,
     readerPanelMode: mode,
     layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
   );

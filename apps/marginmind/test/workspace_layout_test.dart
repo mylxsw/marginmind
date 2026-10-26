@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
@@ -17,7 +18,7 @@ void main() {
     r.pdf.debugReport(pageCount: 164, page: 24, outline: const [MMPdfOutlineItem(title: title, page: 20)]);
     r.controller.showReaderPanel(ReaderPanelMode.outline);
     await tester.pumpAndSettle();
-    expect(r.container.read(workspaceProvider('demo-1')).sidebarVisible, isFalse);
+    expect(r.container.read(workspaceProvider('demo-1')).sidebarVisible, isTrue);
     final text = tester.widget<Text>(find.text(title));
     expect(text.maxLines, 1);
     expect(text.overflow, TextOverflow.ellipsis);
@@ -36,6 +37,49 @@ void main() {
     expect(tester.getSize(sidebar).width, after);
     r.container.invalidate(settingsProvider);
     expect(r.container.read(settingsProvider).readerSidebarWidth, after);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reader controls are compact; progress appears on hover and divider restores panes', (tester) async {
+    final r = await openReader(tester);
+    r.controller.toggleReaderPanel();
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).sidebarVisible, isTrue);
+    r.controller.toggleReaderPanel();
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).sidebarVisible, isTrue);
+    expect(find.text('Reading Appearance'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('reader-zoom')));
+    await tester.pumpAndSettle();
+    expect(find.text('Fit Width'), findsOneWidget);
+    expect(find.text('Fit Page'), findsOneWidget);
+    await tester.tap(find.text('Fit Width'));
+    await tester.pumpAndSettle();
+    final progress = find.byKey(const ValueKey('reader-page-progress'));
+    expect(progress, findsNothing);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('pdf-placeholder-c1'))));
+    await tester.pumpAndSettle();
+    expect(progress, findsOneWidget);
+    await tester.drag(progress, const Offset(100, 0));
+    await tester.pumpAndSettle();
+    await mouse.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+    expect(progress, findsNothing);
+    await mouse.removePointer();
+    await tester.tap(find.byTooltip('Map Only'));
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
+    await tester.tap(find.byTooltip('Split'));
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
+    await tester.tap(find.byTooltip('Source Only'));
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
+    await tester.tap(find.byTooltip('Split'));
+    await tester.pumpAndSettle();
+    expect(r.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
     expect(tester.takeException(), isNull);
   });
 

@@ -22,8 +22,11 @@ Future<ProviderContainer> openSet(WidgetTester tester, {Size size = const Size(1
 
 MMToolbar toolbar(WidgetTester tester) => tester.widget<MMToolbar>(find.byType(MMToolbar));
 
-bool selected(WidgetTester tester, IconData icon) =>
-    tester.widget<MMToolbarButton>(find.widgetWithIcon(MMToolbarButton, icon)).selected;
+bool selected(WidgetTester tester, IconData icon) => tester
+    .widget<MMToolbarButton>(
+      find.descendant(of: find.byType(MMToolbar), matching: find.widgetWithIcon(MMToolbarButton, icon)),
+    )
+    .selected;
 
 /// Reported layout overflows (a toolbar narrower than any real window) are not under test.
 void drainOverflow(WidgetTester tester) {
@@ -99,12 +102,12 @@ void main() {
       expect(selected(tester, MMIcons.layoutSplit), isTrue);
     });
 
-    testWidgets('narrowing collapses the sidebar first and keeps split', (tester) async {
+    testWidgets('narrowing preserves the sidebar and temporarily shows the reader', (tester) async {
       final container = await openSet(tester, size: const Size(960, 820));
       expect(container.read(provider).sidebarVisible, isTrue, reason: 'the preference is untouched');
-      expect(find.text('Mind Maps').hitTestable(), findsNothing);
-      expect(selected(tester, MMIcons.layoutSplit), isTrue);
-      expect(find.byType(MapPane).hitTestable(), findsOneWidget);
+      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+      expect(selected(tester, MMIcons.layoutReader), isTrue);
+      expect(find.byType(MapPane).hitTestable(), findsNothing);
     });
 
     testWidgets('then falls back to the reader and the layout button says so', (tester) async {
@@ -125,30 +128,30 @@ void main() {
       expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
     });
 
-    testWidgets('showing the sidebar when it has no room switches to the reader', (tester) async {
+    testWidgets('hiding the sidebar restores split without changing layout preference', (tester) async {
       final container = await openSet(tester, size: const Size(1000, 820));
       await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
       await tester.pumpAndSettle();
-      expect(container.read(provider).layout, MMSplitMode.primary);
-      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+      expect(container.read(provider).layout, MMSplitMode.split);
+      expect(find.text('Mind Maps').hitTestable(), findsNothing);
+      expect(find.byType(MapPane).hitTestable(), findsOneWidget);
     });
   });
 
   group('sidebar commands with no room for it', () {
-    testWidgets('toggling the sidebar shows it, as the reader alone', (tester) async {
+    testWidgets('sidebar toggles independently and split resumes when space is available', (tester) async {
       final container = await openSet(tester, size: const Size(900, 820));
-      await tester.pumpAndSettle();
-      expect(container.read(provider).sidebarAutoCollapsed, isTrue);
-      expect(find.text('Mind Maps').hitTestable(), findsNothing);
-      container.read(provider.notifier).toggleSidebar();
-      await tester.pumpAndSettle();
-      expect(container.read(provider).layout, MMSplitMode.primary);
       expect(container.read(provider).sidebarAutoCollapsed, isFalse);
       expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
-      // Back to the usual toggle once it is on screen.
       container.read(provider.notifier).toggleSidebar();
       await tester.pumpAndSettle();
+      expect(container.read(provider).layout, MMSplitMode.split);
       expect(find.text('Mind Maps').hitTestable(), findsNothing);
+      expect(find.byType(MapPane).hitTestable(), findsOneWidget);
+      container.read(provider.notifier).toggleSidebar();
+      await tester.pumpAndSettle();
+      expect(find.text('Mind Maps').hitTestable(), findsOneWidget);
+      expect(find.byType(MapPane).hitTestable(), findsNothing);
     });
 
     testWidgets('find in the sidebar brings it back and focuses the search field', (tester) async {

@@ -108,7 +108,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ReaderPane), findsNothing);
     expect(find.byType(ReaderPane, skipOffstage: false), findsOneWidget);
-    await tester.tap(find.byIcon(MMIcons.layoutSplit));
+    await tester.tap(find.descendant(of: find.byType(MMToolbar), matching: find.byIcon(MMIcons.layoutSplit)));
     await tester.pumpAndSettle();
     expect(find.byType(ReaderPane), findsOneWidget);
   });

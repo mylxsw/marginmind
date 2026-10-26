@@ -78,14 +78,16 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       resolve: controller.imagePath,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // A narrow window gives up the sidebar before the map; the toolbar
-          // shows what is on screen, not what was asked for.
-          final shown = MMSplitView.resolveNarrow(
-            mode: state.layout,
+          // Preserve independent sidebar choices. Narrow windows temporarily
+          // show one content pane; the toolbar reflects the visible layout.
+          final shown = (
             sidebarVisible: state.sidebarVisible,
-            windowWidth: constraints.maxWidth,
-            sidebarWidth: MMSizes.sidebarWidth + MMSizes.sidebarInset,
-            minPrimary: minReader,
+            mode: MMSplitView.effectiveMode(
+              state.layout,
+              constraints.maxWidth - (state.sidebarVisible ? MMSizes.sidebarWidth + MMSizes.sidebarInset : 0),
+              minReader,
+              MMSizes.mapMinWidth,
+            ),
           );
           final collapsed = state.sidebarVisible && !shown.sidebarVisible;
           if (collapsed != state.sidebarAutoCollapsed) {
@@ -162,6 +164,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         },
         child: MMSplitView(
           mode: layout,
+          onModeChanged: controller.setLayout,
+          primaryLabel: l.layoutReader,
+          secondaryLabel: l.layoutMap,
+          splitLabel: l.layoutSplit,
           fraction: state.splitFraction,
           minPrimaryWidth: minReader,
           onFractionChanged: controller.setSplitFraction,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/mm_theme.dart';
+import '../icons/mm_icons.dart';
+import 'toolbar.dart';
 import '../tokens/metrics.dart';
 
 /// Which panes of an [MMSplitView] are visible.
@@ -18,6 +20,10 @@ class MMSplitView extends StatelessWidget {
     required this.primary,
     required this.secondary,
     this.mode = MMSplitMode.split,
+    this.onModeChanged,
+    this.primaryLabel = 'Source Only',
+    this.secondaryLabel = 'Map Only',
+    this.splitLabel = 'Split',
     this.fraction = 0.5,
     this.onFractionChanged,
     this.minPrimaryWidth = MMSizes.readerMinWidth,
@@ -27,6 +33,8 @@ class MMSplitView extends StatelessWidget {
   final Widget primary;
   final Widget secondary;
   final MMSplitMode mode;
+  final ValueChanged<MMSplitMode>? onModeChanged;
+  final String primaryLabel, secondaryLabel, splitLabel;
 
   /// Share of the width given to [primary] in split mode.
   final double fraction;
@@ -119,6 +127,37 @@ class MMSplitView extends StatelessWidget {
                     onDoubleTap: () => onFractionChanged!(0.5),
                     child: Semantics(label: 'Divider', slider: true, child: const SizedBox.expand()),
                   ),
+                ),
+              ),
+            if (onModeChanged != null)
+              Positioned(
+                left: split
+                    ? (pw - MMSizes.toolbarButton.width).clamp(0, w - MMSizes.toolbarButton.width * 2)
+                    : showP
+                    ? null
+                    : MMSpacing.s,
+                right: !split && showP ? MMSpacing.s : null,
+                bottom: MMSizes.toolbarHeight + MMSpacing.m,
+                child: MMToolbarGroup(
+                  children: [
+                    if (split) ...[
+                      MMToolbarButton(
+                        icon: MMIcons.chevronLeft,
+                        tooltip: secondaryLabel,
+                        onPressed: () => onModeChanged!(MMSplitMode.secondary),
+                      ),
+                      MMToolbarButton(
+                        icon: MMIcons.chevronRight,
+                        tooltip: primaryLabel,
+                        onPressed: () => onModeChanged!(MMSplitMode.primary),
+                      ),
+                    ] else
+                      MMToolbarButton(
+                        icon: MMIcons.layoutSplit,
+                        tooltip: splitLabel,
+                        onPressed: () => onModeChanged!(MMSplitMode.split),
+                      ),
+                  ],
                 ),
               ),
           ],

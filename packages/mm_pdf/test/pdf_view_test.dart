@@ -183,6 +183,13 @@ void main() {
     await complete(controller.goToPage(2));
     await complete(controller.fitWidth());
     expect(pdf.currentZoom, closeTo((pdf.viewSize.width - 32) / 600, .001));
+    await controller.scrubToPage(1);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, 1);
+    await controller.scrubToPage(999);
+    await tester.pumpAndSettle();
+    expect(controller.currentPage, controller.pageCount);
+    await complete(controller.goToPage(2));
     await complete(controller.fitPage());
     final rect = pdf.layout.pageLayouts[1];
     expect(pdf.documentToLocal(rect.topLeft).dy, greaterThanOrEqualTo(-1));
@@ -221,7 +228,8 @@ void main() {
     final y = pdf.centerPosition.dy;
     for (final size in [544.0, 760.0]) {
       width.value = size;
-      await tester.pumpAndSettle();
+      // One layout frame must apply the zoom, without another input/frame.
+      await tester.pump();
       expect(pdf.currentZoom, closeTo((size - 32) / 600, .001));
       expect(pdf.centerPosition.dy, closeTo(y, 1));
       final page = pdf.layout.pageLayouts[1];
