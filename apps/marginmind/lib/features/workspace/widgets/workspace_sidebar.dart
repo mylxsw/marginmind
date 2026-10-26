@@ -121,7 +121,7 @@ class WorkspaceSidebar extends ConsumerWidget {
           icon: switch (card.kind) {
             CardKind.topic => MMIcons.addTopic,
             CardKind.excerpt || CardKind.image => MMIcons.highlight,
-            CardKind.note => MMIcons.addNote,
+            CardKind.note || CardKind.research => MMIcons.addNote,
           },
           label: card.title.isNotEmpty ? card.title : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
           selected: card.id == state.selectedCardId,

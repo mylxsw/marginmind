@@ -20,7 +20,8 @@ import 'format_migration.dart';
 /// or backed up as a whole. Writes go to a temp file and are renamed into
 /// place, and writes to one set are serialized. A SQLite store (drift) can
 /// replace this behind the same ports once data grows.
-class FileLibraryStore implements StudySetRepository, StudySetContentRepository {
+class FileLibraryStore
+    implements StudySetRepository, StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
   FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator})
     : _clock = clock ?? DateTime.now,
       _newId = idGenerator ?? newId;
@@ -38,6 +39,11 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   /// Failures from the last library scan, keyed by package path. Failed
   /// packages are skipped; callers may surface these diagnostics separately.
   Map<String, Object> get packageLoadErrors => Map.unmodifiable(_packageLoadErrors);
+  final _researchSessionSyncErrors = <String, Object>{};
+
+  /// A session is a projection of canonical note ids. Its failure must not
+  /// turn a committed content edit into a failed (and unrecorded) undo step.
+  Map<String, Object> get researchSessionSyncErrors => Map.unmodifiable(_researchSessionSyncErrors);
   final _libraryChanges = StreamController<void>.broadcast();
   final _contentChanges = StreamController<String>.broadcast();
   final Map<String, Future<void>> _writeQueue = {};
@@ -86,6 +92,10 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
         sets[record.id] = record;
       } on FormatException catch (error) {
         _packageLoadErrors[entry.path] = error;
+      } on TypeError catch (error) {
+        _packageLoadErrors[entry.path] = FormatException('Invalid study set data: $error');
+      } on ArgumentError catch (error) {
+        _packageLoadErrors[entry.path] = FormatException('Invalid study set data: $error');
       } on FileSystemException catch (error) {
         // Backup conflicts and package IO failures affect only this package.
         // Do not repair or overwrite its source/backup on the error path.
@@ -185,7 +195,7 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
     _sets[studySetId] = record.copyWith(content: next);
     _contentChanges.add(studySetId);
     _libraryChanges.add(null);
-    await _persist(studySetId);
+    await _persist(studySetId, syncSessions: !identical(record.content.researchNotes, next.researchNotes));
     return next;
   }
 
@@ -227,13 +237,109 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
     final name = 'images/${sha256.convert(bytes)}.$extension';
     final target = File(p.join(_packagePath(studySetId), name));
     // Use the same per-set queue as JSON writes, including concurrent imports.
-    final previous = _writeQueue[studySetId] ?? Future<void>.value();
-    final next = previous.then((_) async {
+    await _queueWrite(studySetId, () async {
       if (!await target.exists()) await _atomicWrite(target, bytes);
     });
-    _writeQueue[studySetId] = next;
-    await next;
     return name;
+  }
+
+  static void _safeResearchId(String id) {
+    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id)) throw ArgumentError.value(id, 'sessionId');
+  }
+
+  static void _safeSnapshot(String name) {
+    if (!RegExp(r'^research/snapshots/[0-9a-f]{64}\.md$').hasMatch(name)) {
+      throw ArgumentError.value(name, 'snapshotFile');
+    }
+  }
+
+  Future<void> _queueWrite(String id, Future<void> Function() action) {
+    final next = (_writeQueue[id] ?? Future<void>.value()).then((_) => action());
+    // Each caller observes its own error; later writes can still retry.
+    _writeQueue[id] = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
+
+  @override
+  Future<String> writeResearchSnapshot(String studySetId, String markdown) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    final bytes = utf8.encode(markdown);
+    final name = 'research/snapshots/${sha256.convert(bytes)}.md';
+    final file = File(resolveFile(studySetId, name));
+    await _queueWrite(studySetId, () async {
+      _require(studySetId);
+      if (await file.exists()) {
+        if (!_sameBytes(await file.readAsBytes(), bytes)) {
+          throw FileSystemException('Snapshot hash conflict', file.path);
+        }
+      } else {
+        await _atomicWrite(file, bytes);
+      }
+    });
+    return name;
+  }
+
+  @override
+  Future<String> readResearchSnapshot(String studySetId, String fileName) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    _safeSnapshot(fileName);
+    final bytes = await File(resolveFile(studySetId, fileName)).readAsBytes();
+    if ('research/snapshots/${sha256.convert(bytes)}.md' != fileName) {
+      throw const FormatException('Snapshot hash mismatch');
+    }
+    return utf8.decode(bytes);
+  }
+
+  @override
+  Future<void> saveResearchSession(String studySetId, ResearchSession session) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    _safeResearchId(session.id);
+    await _queueWrite(studySetId, () async {
+      final current = session.reconcile(_require(studySetId).content);
+      await _atomicWrite(
+        File(resolveFile(studySetId, 'research/sessions/${session.id}.json')),
+        utf8.encode(jsonEncode(current.toJson())),
+      );
+    });
+  }
+
+  @override
+  Future<ResearchSession?> loadResearchSession(String studySetId, String sessionId) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    _safeResearchId(sessionId);
+    await (_writeQueue[studySetId] ?? Future<void>.value());
+    final file = File(resolveFile(studySetId, 'research/sessions/$sessionId.json'));
+    if (!await file.exists()) return null;
+    final session = ResearchSession.fromJson((jsonDecode(await file.readAsString()) as Map).cast());
+    if (session.id != sessionId) throw const FormatException('Session id mismatch');
+    return session.reconcile(_require(studySetId).content);
+  }
+
+  Future<void> _syncResearchSessions(String id, StudySetContent content) async {
+    final dir = Directory(resolveFile(id, 'research/sessions'));
+    try {
+      if (!await dir.exists()) return;
+      await for (final file in dir.list()) {
+        if (file is! File || !file.path.endsWith('.json')) continue;
+        try {
+          final session = ResearchSession.fromJson((jsonDecode(await file.readAsString()) as Map).cast());
+          final updated = session.reconcile(content);
+          if (jsonEncode(session.savedNoteIds) != jsonEncode(updated.savedNoteIds)) {
+            await _atomicWrite(file, utf8.encode(jsonEncode(updated.toJson())));
+          }
+          _researchSessionSyncErrors.remove(file.path);
+        } catch (error) {
+          _researchSessionSyncErrors[file.path] = error;
+        }
+      }
+      _researchSessionSyncErrors.remove(dir.path);
+    } on FileSystemException catch (error) {
+      _researchSessionSyncErrors[dir.path] = error;
+    }
   }
 
   static bool _sameBytes(List<int> a, List<int> b) {
@@ -278,18 +384,16 @@ class FileLibraryStore implements StudySetRepository, StudySetContentRepository 
   }
 
   /// Serializes writes per set; each write stores the latest in-memory state.
-  Future<void> _persist(String id) {
-    final previous = _writeQueue[id] ?? Future<void>.value();
-    final next = previous.then((_) async {
+  Future<void> _persist(String id, {bool syncSessions = false}) {
+    return _queueWrite(id, () async {
       final record = _sets[id];
       if (record == null) return;
       final dir = Directory(_packagePath(id));
       await dir.create(recursive: true);
       final file = File(p.join(dir.path, 'studyset.json'));
       await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(record.toJson())));
+      if (syncSessions) await _syncResearchSessions(id, record.content);
     });
-    _writeQueue[id] = next;
-    return next;
   }
 
   /// Waits for pending writes (used by tests and on shutdown).

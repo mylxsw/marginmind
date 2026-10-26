@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
+import '../content/research_repository.dart';
 
 import '../content/study_set_content.dart';
 import '../content/study_set_content_repository.dart';
 
 /// Content kept in memory; files are "imported" by remembering their path.
-class InMemoryStudySetContentRepository implements StudySetContentRepository {
+class InMemoryStudySetContentRepository
+    implements StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
   InMemoryStudySetContentRepository([Map<String, StudySetContent>? initial]) : _content = {...?initial};
 
   final Map<String, StudySetContent> _content;
@@ -50,6 +56,31 @@ class InMemoryStudySetContentRepository implements StudySetContentRepository {
     images[name] = List.unmodifiable(bytes);
     return name;
   }
+
+  final _sessions = <(String, String), ResearchSession>{};
+  final _snapshots = <(String, String), String>{};
+
+  @override
+  Future<ResearchSession?> loadResearchSession(String studySetId, String sessionId) async =>
+      _sessions[(studySetId, sessionId)]?.reconcile(await load(studySetId));
+
+  @override
+  Future<void> saveResearchSession(String studySetId, ResearchSession session) async {
+    _sessions[(studySetId, session.id)] = ResearchSession.fromJson(
+      (jsonDecode(jsonEncode(session.toJson())) as Map).cast(),
+    );
+  }
+
+  @override
+  Future<String> writeResearchSnapshot(String studySetId, String markdown) async {
+    final name = 'research/snapshots/${sha256.convert(utf8.encode(markdown))}.md';
+    _snapshots[(studySetId, name)] = markdown;
+    return name;
+  }
+
+  @override
+  Future<String> readResearchSnapshot(String studySetId, String fileName) async =>
+      _snapshots[(studySetId, fileName)] ?? (throw StateError('Missing snapshot'));
 
   @override
   String resolveFile(String studySetId, String fileName) => fileName;

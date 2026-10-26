@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'models.dart';
+import 'research.dart';
 import 'study_set_content.dart';
 
 /// Turns a mind map into portable text formats.
@@ -16,6 +17,8 @@ class MapExporter {
     String Function(Document doc, int page)? source,
     String Function(String label)? summary,
     this.relationsTitle = 'Relationships',
+    this.researchNoteLabel = '研究笔记',
+    this.sourceLabel = '出处',
   }) : _source = source ?? ((doc, page) => '${doc.title}, p. $page'),
        _summary = summary ?? ((label) => label.isEmpty ? 'Summary' : 'Summary: $label');
 
@@ -23,6 +26,8 @@ class MapExporter {
   final String rootTitle;
   final String mapId;
   final String relationsTitle;
+  final String researchNoteLabel;
+  final String sourceLabel;
   final String Function(Document doc, int page) _source;
   final String Function(String label) _summary;
 
@@ -38,6 +43,11 @@ class MapExporter {
         final card = content.card(n.cardId);
         if (card == null) continue;
         out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
+        if (card.kind == CardKind.research) {
+          for (final line in _researchBody(card).split('\n')) {
+            out.writeln('${'  ' * (depth + 1)}$line');
+          }
+        }
         walk(card.id, depth + 1);
         // A summary follows the last sibling it covers.
         for (final (summary, range) in _summaries) {
@@ -70,6 +80,9 @@ class MapExporter {
 
   String _markdownLine(Card card) {
     switch (card.kind) {
+      case CardKind.research:
+        final note = content.researchNote(card.researchNoteId ?? '');
+        return '$researchNoteLabel：${_oneLine(note?.title ?? card.title)}';
       case CardKind.topic:
         return '**${_oneLine(card.title)}**';
       case CardKind.image:
@@ -149,7 +162,33 @@ class MapExporter {
     ].join();
   }
 
+  String _researchBody(Card card) {
+    final note = content.researchNote(card.researchNoteId ?? '');
+    if (note == null) return '';
+    final lines = <String>[note.body];
+    for (final ref in note.citations) {
+      final evidence = content.evidence.where((e) => e.id == ref.evidenceId).firstOrNull;
+      final source = content.researchSources.where((s) => s.id == evidence?.sourceId).firstOrNull;
+      if (source != null) lines.add('${source.title} · ${source.url} · ${source.fetchedAt.toIso8601String()}');
+    }
+    for (final a in content.noteAttachments.where((a) => a.noteId == note.id)) {
+      if (a.target case PdfTarget(:final documentId, :final pages)) {
+        final doc = content.document(documentId);
+        if (doc != null) {
+          for (final page in pages) {
+            lines.add('$sourceLabel：${_source(doc, page.page)}');
+          }
+        }
+      }
+    }
+    return lines.join('\n');
+  }
+
   String _opmlAttributes(Card card) {
+    if (card.kind == CardKind.research) {
+      final note = content.researchNote(card.researchNoteId ?? '');
+      return 'text="${_xml(note?.title ?? card.title)}" _note="${_xml(_researchBody(card))}"';
+    }
     if (card.kind == CardKind.image) {
       // An untitled image is named by its package file; the source is a note.
       final a = content.annotation(card.annotationId ?? '');

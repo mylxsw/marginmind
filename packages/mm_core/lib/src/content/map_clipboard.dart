@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'models.dart';
+import 'research.dart';
 import 'study_set_content.dart';
 
 /// A portable, preorder forest. Depth is relative to the copied roots.
@@ -13,8 +14,26 @@ class OutlineEntry {
     this.imageFileName,
     this.imagePath,
     this.collapsed = false,
+    this.width,
+    this.textFormat = TextFormat.plain,
+    this.imageOrigin,
+    this.researchNoteId,
+    this.researchNotes = const [],
+    this.evidence = const [],
+    this.sources = const [],
+    this.pdfAttachments = const [],
+    this.snapshots = const {},
     this.tags = const [],
   });
+  final double? width;
+  final TextFormat textFormat;
+  final String? imageOrigin;
+  final String? researchNoteId;
+  final List<ResearchNote> researchNotes;
+  final List<Evidence> evidence;
+  final List<ResearchSource> sources;
+  final List<NoteAttachment> pdfAttachments;
+  final Map<String, String> snapshots;
   final List<String> tags;
   final int depth;
   final String title;
@@ -39,6 +58,7 @@ abstract final class MapClipboard {
     Iterable<String> selected, {
     String mapId = MindMap.defaultId,
     String Function(String fileName)? resolveImage,
+    Map<String, String> snapshots = const {},
   }) {
     final ids = selected.toSet();
     final result = <OutlineEntry>[];
@@ -50,11 +70,52 @@ abstract final class MapClipboard {
         if (card == null) continue;
         final level = depth ?? (ids.contains(card.id) ? 0 : null);
         if (level != null) {
+          final noteIds = {
+            if (card.researchNoteId != null) card.researchNoteId!,
+            for (final a in content.noteAttachments)
+              if (a.target is CardTarget && (a.target as CardTarget).cardId == card.id) a.noteId,
+          };
+          final notes = [
+            for (final n in content.researchNotes)
+              if (noteIds.contains(n.id)) n,
+          ];
+          final evidenceIds = {
+            for (final n in notes)
+              for (final ref in n.citations) ref.evidenceId,
+          };
+          final evidence = [
+            for (final e in content.evidence)
+              if (evidenceIds.contains(e.id)) e,
+          ];
+          final sourceIds = {for (final e in evidence) e.sourceId};
+          final sources = [
+            for (final source in content.researchSources)
+              if (sourceIds.contains(source.id)) source,
+          ];
+          final files = {
+            for (final source in sources)
+              for (final v in source.versions) v.snapshotFile,
+          };
           result.add(
             OutlineEntry(
               level,
               card.title,
               kind: card.kind,
+              width: node.width,
+              textFormat: card.textFormat,
+              imageOrigin: card.imageOrigin,
+              researchNoteId: card.researchNoteId,
+              researchNotes: notes,
+              evidence: evidence,
+              sources: sources,
+              pdfAttachments: [
+                for (final a in content.noteAttachments)
+                  if (noteIds.contains(a.noteId) && a.target is PdfTarget) a,
+              ],
+              snapshots: {
+                for (final file in files)
+                  if (snapshots.containsKey(file)) file: snapshots[file]!,
+              },
               tags: card.tags,
               imageFileName: card.imageFileName,
               imagePath: card.imageFileName == null ? null : resolveImage?.call(card.imageFileName!),
@@ -78,6 +139,8 @@ abstract final class MapClipboard {
             ? e.title
             : e.kind == CardKind.image && e.imageFileName != null
             ? '![](${e.imageFileName})'
+            : e.kind == CardKind.research
+            ? (e.researchNotes.where((n) => n.id == e.researchNoteId).firstOrNull?.title ?? '')
             : (e.annotation?.quote ?? '');
         return '${'\t' * e.depth}${title.replaceAll(RegExp(r'[\r\n]+'), ' ')}';
       })
@@ -121,11 +184,20 @@ abstract final class MapClipboard {
 
   static String encode(List<OutlineEntry> entries) => jsonEncode({
     'format': format,
-    'version': 2,
+    'version': 3,
     'nodes': [
       for (final e in entries)
         {
           'depth': e.depth,
+          if (e.width != null) 'width': e.width,
+          'textFormat': e.textFormat.name,
+          if (e.imageOrigin != null) 'imageOrigin': e.imageOrigin,
+          if (e.researchNoteId != null) 'researchNoteId': e.researchNoteId,
+          'researchNotes': [for (final n in e.researchNotes) n.toJson()],
+          'evidence': [for (final v in e.evidence) v.toJson()],
+          'sources': [for (final v in e.sources) v.toJson()],
+          'pdfAttachments': [for (final v in e.pdfAttachments) v.toJson()],
+          'snapshots': e.snapshots,
           'title': e.title,
           'kind': e.kind.name,
           'collapsed': e.collapsed,
@@ -140,8 +212,9 @@ abstract final class MapClipboard {
   /// Untrusted system clipboard data; callers can fall back to plain text.
   static List<OutlineEntry>? decode(String data) {
     try {
+      if (data.length > 32 * 1024 * 1024) return null;
       final json = jsonDecode(data) as Map;
-      if (json['format'] != format || (json['version'] != 1 && json['version'] != 2)) return null;
+      if (json['format'] != format || ![1, 2, 3].contains(json['version'])) return null;
       final nodes = json['nodes'] as List;
       if (nodes.length > maxEntries) return null;
       final result = <OutlineEntry>[];
@@ -150,10 +223,25 @@ abstract final class MapClipboard {
         final e = raw as Map;
         final depth = e['depth'] as int;
         if (depth < 0 || depth > previous + 1 || depth > 256) return null;
+        final width = (e['width'] as num?)?.toDouble();
+        if (width != null && (!width.isFinite || width <= 0)) return null;
         result.add(
           OutlineEntry(
             depth,
             e['title'] as String,
+            width: (e['width'] as num?)?.toDouble(),
+            textFormat: TextFormat.values.byName(e['textFormat'] as String? ?? 'plain'),
+            imageOrigin: e['imageOrigin'] as String?,
+            researchNoteId: e['researchNoteId'] as String?,
+            researchNotes: [
+              for (final v in e['researchNotes'] as List? ?? []) ResearchNote.fromJson((v as Map).cast()),
+            ],
+            evidence: [for (final v in e['evidence'] as List? ?? []) Evidence.fromJson((v as Map).cast())],
+            sources: [for (final v in e['sources'] as List? ?? []) ResearchSource.fromJson((v as Map).cast())],
+            pdfAttachments: [
+              for (final v in e['pdfAttachments'] as List? ?? []) NoteAttachment.fromJson((v as Map).cast()),
+            ],
+            snapshots: ((e['snapshots'] as Map?) ?? {}).cast<String, String>(),
             kind: CardKind.values.byName(e['kind'] as String),
             tags: List.unmodifiable(((e['tags'] as List?) ?? const []).cast<String>()),
             imageFileName: e['imageFileName'] as String?,

@@ -340,6 +340,7 @@ class _NodeSpec {
           Size(s.width + 32, s.height + 18),
           suspended: card.suspended,
         );
+      case CardKind.research:
       case CardKind.note:
         final s = cache._measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44).size;
         return _NodeSpec._(

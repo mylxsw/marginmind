@@ -68,6 +68,7 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
       case CardKind.topic:
         final s = measure(card.title, MMTypography.headline, 192).size;
         return Size(s.width + 32, s.height + 18);
+      case CardKind.research:
       case CardKind.note:
         final s = measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 186).size;
         return Size(s.width + 48, s.height + 16);
