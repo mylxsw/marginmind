@@ -711,18 +711,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewProgress => 'Review progress';
 
   @override
-  String get reviewPromptExcerpt => 'Recall this excerpt';
-
-  @override
-  String get reviewPromptNote => 'Recall this note';
-
-  @override
-  String get reviewPromptImage => 'Recall this image';
-
-  @override
-  String get reviewQuestionTip => 'Tip: rename an excerpt to a question and it becomes the prompt here.';
-
-  @override
   String get reviewDoneTitle => 'All done for now';
 
   @override
@@ -730,17 +718,14 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'You reviewed $count cards. Come back when more are due.',
-      one: 'You reviewed 1 card. Come back when more are due.',
+      other: '$count cards reviewed',
+      one: '1 card reviewed',
     );
     return '$_temp0';
   }
 
   @override
   String get reviewNothingDueTitle => 'Nothing to review';
-
-  @override
-  String get reviewNothingDueMessage => 'Excerpts and notes in the mind map show up here when they’re due.';
 
   @override
   String get showAnswer => 'Show Answer';

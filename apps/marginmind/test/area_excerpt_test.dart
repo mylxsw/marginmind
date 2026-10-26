@@ -261,12 +261,13 @@ void main() {
     container.read(navigationProvider.notifier).startReview('demo-1');
     await tester.pumpAndSettle();
     final l = AppLocalizations.of(tester.element(find.byType(ReviewScreen)));
-    expect(find.text(l.reviewPromptImage), findsOneWidget);
-    expect(find.text('图表集 · ${l.pageNumber(7)}'), findsOneWidget);
+    expect(find.byKey(const ValueKey('page-prompt')), findsOneWidget);
+    expect(find.text('图表集 · ${l.pageNumber(7)}'), findsNothing);
     expect(find.byType(CardImage), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await tester.pumpAndSettle();
     expect(find.byType(CardImage), findsOneWidget);
+    expect(find.text('图表集 · ${l.pageNumber(7)}'), findsOneWidget);
     final image = tester.widget<Image>(find.descendant(of: find.byType(CardImage), matching: find.byType(Image)));
     final provider = image.image as ResizeImage;
     expect((provider.imageProvider as FileImage).file.path, 'images/figure.png');
