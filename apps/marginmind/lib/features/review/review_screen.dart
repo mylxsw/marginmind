@@ -214,7 +214,8 @@ class _ReviewCard extends ConsumerWidget {
       content,
       mapId: mapId ?? MindMap.defaultId,
       rootTitle: rootTitle,
-      pageText: text?.value,
+      pageText: text?.value?.text,
+      pageHeight: text?.value?.height,
     );
     return ReviewCardView(
       face: face,

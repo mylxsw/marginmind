@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import 'excerpt_lines.dart';
 import 'models.dart';
 import 'study_set_content.dart';
 
@@ -148,12 +149,15 @@ bool needsPageText(Card card, StudySetContent content) {
 ///
 /// [pageText] is the text of the excerpt's first page, when it could be
 /// read; without it an untitled excerpt falls back to the page thumbnail.
+/// With [pageHeight] a repeated passage is told apart by where it was
+/// highlighted.
 ReviewFace buildReviewFace(
   Card card,
   StudySetContent content, {
   String mapId = MindMap.defaultId,
   String rootTitle = '',
   String? pageText,
+  double? pageHeight,
 }) {
   final path = [
     for (final t in content.pathOf(card.id, mapId: mapId))
@@ -207,7 +211,11 @@ ReviewFace buildReviewFace(
     );
   }
   final quote = isImage ? '' : (annotation?.quote.trim() ?? '');
-  final context = quote.isEmpty || pageText == null ? null : excerptContext(pageText, quote);
+  final top = annotation == null || annotation.pages.isEmpty || annotation.pages.first.rects.isEmpty
+      ? null
+      : annotation.pages.first.rects.first.top;
+  final near = top == null || pageHeight == null || pageHeight <= 0 ? null : 1 - top / pageHeight;
+  final context = quote.isEmpty || pageText == null ? null : excerptContext(pageText, quote, near: near);
   if (context != null) {
     return ReviewFace(
       front: ReviewFront(
@@ -237,19 +245,33 @@ ReviewFace buildReviewFace(
   );
 }
 
-const _enders = '.!?。！？';
+const _enders = '.!?。！？\n';
+
+/// [text] the way [pageText] and quotes are compared: wrapped lines joined by
+/// the same rule the excerpt text was built with, runs of spaces folded.
+String _normalize(String text) => joinExcerptLines(text).replaceAll(RegExp(r'[ \t ]+'), ' ');
+
+/// Quotes saved before lines were joined keep a space between CJK
+/// characters, so they are matched with all whitespace folded as well.
+String _fold(String text) => text.replaceAll(RegExp(r'\s+'), ' ').trim();
 
 /// The sentence in [pageText] holding [quote], plus one sentence on each
 /// side, split at the excerpt: text before it and text after it. Null when
-/// [quote] is not found. Whitespace is folded first, since PDF text wraps
-/// lines in the middle of sentences.
-({String before, String after})? excerptContext(String pageText, String quote) {
-  String fold(String s) => s.replaceAll(RegExp(r'\s+'), ' ');
-  final t = fold(pageText);
-  final q = fold(quote).trim();
+/// [quote] is not found. Both are normalized with [joinExcerptLines] first,
+/// since PDF text wraps lines in the middle of sentences. When the quote
+/// occurs more than once, [near] (0 at the top of the page, 1 at the bottom)
+/// picks the occurrence closest to where it was highlighted.
+({String before, String after})? excerptContext(String pageText, String quote, {double? near}) {
+  var t = _normalize(pageText);
+  var q = _normalize(quote).trim();
   if (q.isEmpty) return null;
-  final at = t.indexOf(q);
-  if (at < 0) return null;
+  var at = _nearest(t, q, near);
+  if (at < 0) {
+    t = _fold(pageText);
+    q = _fold(quote);
+    at = _nearest(t, q, near);
+    if (at < 0) return null;
+  }
   final end = at + q.length;
 
   // One sentence back from where the excerpt starts, one forward from where
@@ -266,11 +288,23 @@ const _enders = '.!?。！？';
   return (before: t.substring(start, at).trimLeft(), after: t.substring(end, stop).trimRight());
 }
 
+/// Where [q] occurs in [t], the occurrence closest to the [near] fraction of
+/// the text when there are several; -1 when absent.
+int _nearest(String t, String q, double? near) {
+  var best = t.indexOf(q);
+  if (best < 0 || near == null) return best;
+  final target = near.clamp(0.0, 1.0) * t.length;
+  for (var i = t.indexOf(q, best + 1); i >= 0; i = t.indexOf(q, i + 1)) {
+    if ((i - target).abs() < (best - target).abs()) best = i;
+  }
+  return best;
+}
+
 int _sentenceStart(String t, int from) {
   for (var i = from - 1; i >= 0; i--) {
     if (_enders.contains(t[i])) {
       var j = i + 1;
-      while (j < from && t[j] == ' ') {
+      while (j < from && (t[j] == ' ' || t[j] == '\n')) {
         j++;
       }
       return j;

@@ -114,7 +114,7 @@ final reviewSessionProvider = NotifierProvider.autoDispose.family<ReviewSession,
 /// The text of the page an untitled excerpt came from, which its card front
 /// quotes around. Null when the file cannot be read (or PDFs are not
 /// rendered), so the front falls back to the page thumbnail.
-final excerptPageTextProvider = FutureProvider.autoDispose.family<String?, ({String studySetId, String cardId})>((
+final excerptPageTextProvider = FutureProvider.autoDispose.family<({String text, double height})?, ({String studySetId, String cardId})>((
   ref,
   key,
 ) async {
@@ -125,5 +125,5 @@ final excerptPageTextProvider = FutureProvider.autoDispose.family<String?, ({Str
   final doc = annotation == null ? null : content!.document(annotation.documentId);
   if (doc == null) return null;
   final path = ref.read(contentRepositoryProvider).resolveFile(key.studySetId, doc.fileName);
-  return MMPdfEngine.pageText(path, annotation!.page);
+  return MMPdfEngine.pageContent(path, annotation!.page);
 });
