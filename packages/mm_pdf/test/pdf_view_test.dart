@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_pdf/src/pdf_pixel_grid.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -11,6 +12,52 @@ import 'excerpt_text_test.dart' as fixture;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
+
+  testWidgets('preview follows zoom and display DPR with a bounded allocation', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final dpr in [1.0, 2.0, 3.0, 1.0]) {
+      final samples = 2 * dpr;
+      tester.view.devicePixelRatio = dpr;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(filePath: 'scale.pdf', controller: controller),
+        ),
+      );
+      for (var i = 0; i < 100 && !controller.isReady; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      expect(controller.isReady, isTrue);
+      final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+      final pdf = viewer.controller!;
+      pdf.value = Matrix4.diagonal3Values(0.5, 0.5, 1);
+      TestPdfRender.requestedFullSizes.clear();
+      await tester.pump();
+      final page = pdf.document.pages.first;
+      final renderScale = viewer.params.getPageRenderingScale!;
+      final context = tester.element(find.byType(PdfViewer));
+      // Normal page-fit sizes should no longer use a 200-DPI bitmap.
+      expect(renderScale(context, page, pdf, 200 / 72), closeTo(pdf.currentZoom * samples, 0.002));
+      final plan = pdfPreviewPlan(Size(page.width, page.height), pdf.currentZoom, dpr);
+      for (var i = 0; i < 20 && TestPdfRender.requestedFullSizes.isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(TestPdfRender.requestedFullSizes, contains((page.width * plan.scale, page.height * plan.scale)));
+      expect((page.width * plan.scale).toInt(), plan.deviceSize!.width * 2);
+      expect((page.height * plan.scale).toInt(), plan.deviceSize!.height * 2);
+      pdf.value = Matrix4.diagonal3Values(4, 4, 1);
+      await tester.pump();
+      expect(renderScale(context, page, pdf, 200 / 72), 4000 / 800);
+      // Reset between display changes; the viewer remains mounted.
+      pdf.value = Matrix4.diagonal3Values(pdf.minScale, pdf.minScale, 1);
+      await tester.pump();
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+  });
 
   testWidgets('zoom commands fit the current page and are safe before ready', (tester) async {
     final controller = MMPdfViewController();

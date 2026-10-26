@@ -10,6 +10,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
 import 'pdf_navigation.dart';
+import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
 
 /// A highlight to draw on a page.
@@ -567,6 +568,22 @@ class _MMPdfViewState extends State<MMPdfView> {
   void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
       _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
 
+  void _beginPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    canvas.save();
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // Only the supersampled preview is snapped. Above the allocation limit,
+    // pdfrx's partial tiles retain their own coordinate system.
+    final plan = pdfPreviewPlan(Size(page.width, page.height), _controller.currentZoom, dpr);
+    if (plan.deviceSize == null) return;
+    final origin = _controller.documentToGlobal(pageRect.topLeft);
+    final end = _controller.documentToGlobal(pageRect.bottomRight);
+    if (origin != null && end != null) {
+      alignPdfPage(canvas, pageRect, Rect.fromPoints(origin, end), dpr, deviceSize: plan.deviceSize);
+    }
+  }
+
+  void _endPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) => canvas.restore();
+
   void _searchChanged() => widget.controller._syncSearch();
 
   void _viewportChanged() {
@@ -957,12 +974,17 @@ class _MMPdfViewState extends State<MMPdfView> {
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
           margin: 16,
-          // pdfrx already provides adjacent-page prefetch, zoom previews and
-          // a 100 MiB image budget. Keep its defaults: a lower preview scale
-          // increased tile memory in the macOS benchmark without a latency win.
+          // Match PDFium's integer bitmap to the aligned device rectangle.
+          getPageRenderingScale: (context, page, controller, estimatedScale) => pdfPreviewPlan(
+            Size(page.width, page.height),
+            controller.currentZoom,
+            MediaQuery.devicePixelRatioOf(context),
+          ).scale,
+          // Retain pdfrx's adjacent-page prefetch and 100 MiB image-cache budget.
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
-          pagePaintCallbacks: [_paintMatches],
+          pageBackgroundPaintCallbacks: [_beginPagePaint],
+          pagePaintCallbacks: [_paintMatches, _endPagePaint],
           textSelectionParams: PdfTextSelectionParams(
             enabled: !widget.areaSelecting,
             showContextMenuAutomatically: false,

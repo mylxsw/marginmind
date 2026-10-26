@@ -6,6 +6,10 @@ import XCTest
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testReleaseRendererWorkaroundIsPackaged() {
+    XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "FLTEnableImpeller") as? Bool, false)
+  }
+
   func testForwardingToolbarRemainsInvisibleAndButtonsReceiveMouseHits() throws {
     let window = MainFlutterWindow(
       contentRect: NSRect(x: 100, y: 100, width: 1000, height: 800),

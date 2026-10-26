@@ -97,11 +97,13 @@ abstract final class TestPdfOutline {
 /// (blank) pixels for area captures when [produceImages] is set.
 abstract final class TestPdfRender {
   static bool produceImages = false;
+  static final requestedFullSizes = <(double?, double?)>[];
 
   /// Arguments of each produced render.
   static final renders = <Map<String, Object?>>[];
 
   static Future<PdfImage?> _render(Map<Symbol, dynamic> args) {
+    requestedFullSizes.add((args[#fullWidth] as double?, args[#fullHeight] as double?));
     if (!produceImages) return Future.value(null);
     final width = args[#width] as int;
     final height = args[#height] as int;

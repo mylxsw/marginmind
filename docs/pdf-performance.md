@@ -2,7 +2,7 @@
 
 ## 结构
 
-`mm_pdf` 继续封装 pdfrx / PDFium；应用层不引用渲染插件。页面图像由 pdfrx 管理：保留默认 100 MiB 目标预算、横纵方向各一个视口的预渲染范围和默认渐进预览策略，缩放期间复用预览，静止后由 pdfrx 补齐详细图块。预算是 pdfrx 的软上限，不包含文字层和 GPU 内存。曾试验 1200 像素低分辨率预览与 128 MiB 预算，缩放后 RSS 反而上升且帧耗时无稳定收益，已撤回。
+`mm_pdf` 继续封装 pdfrx / PDFium；应用层不引用渲染插件。页面图像由 pdfrx 管理：保留默认 100 MiB 目标预算、横纵方向各一个视口的预渲染范围；GUL-500 将整页预览改为设备像素精确 2:1（最长边 4000），缩放期间复用预览，静止后由 pdfrx 补齐详细图块。预算是 pdfrx 的软上限，不包含文字层和 GPU 内存。曾试验 1200 像素低分辨率预览与 128 MiB 预算，缩放后 RSS 反而上升且帧耗时无稳定收益，已撤回。
 
 高亮按页建立索引，每页仅遍历自己的矩形。等价标注列表保留身份，未变化页面复用 overlay widget；缓存最多保存 16 页最近一次缩放尺寸。改色、几何变化、强调状态和文档切换使相应缓存失效。框选矩形通过独立 notifier 更新，拖动不重建整个 PDF 视图。
 
@@ -40,5 +40,7 @@ python3 tool/run_pdf_benchmark.py after
 ## 工作区通知隔离
 
 即时阅读位置由独立的 `readingPagesProvider` 提供，只有页码显示订阅。工作区展示内容通过 `workspaceContentProvider` 过滤仅阅读元数据变化的保存通知；原始仓库和资料库继续收到完整更新。GUL-496 的缩略图请求接口没有变化。工作区回归证据及尚缺的真实触控板验收见 [评审修订记录](performance/gul-495-revision.md)。
+
+GUL-500 的基准入口另测 10 次跨页跳转后的首次正文墨迹：读取实际 RepaintBoundary 图像，中央区域出现至少 100 个 RGB 均小于 100 的像素才结束计时，5 秒超时失败。该延迟包含 GPU 回读，不是 PDFium 纯渲染时间；逐次数据在 JSON 的 `appearance.samples`。对照数据和限制见 [GUL-500 基准](ux-audit/GUL-500/benchmark.md)。
 
 完整工作区的原生滚轮事件基准入口为 `apps/marginmind/benchmark/workspace.dart`，生成器为 `tool/sample/make_image_pdf.swift`，录制与输入脚本为 `tool/run_workspace_benchmark.py` / `tool/workspace_wheel.swift`。MMPdfThumbnail 统一调用上述 renderPreview 缓存，不再使用 PdfPageView。物理手势与原生按键匹配由项目所有者按 `docs/macos-acceptance.md` 最终验收。

@@ -1,0 +1,96 @@
+Release runtime sample, PID 62227, 2026-10-26; command: sample 62227 10 1
+Flutter 3.47.2 / engine a804b26164 / FLTEnableImpeller=false
+Build includes main 19fa24f and GUL-500 review changes.
+Raster-thread excerpts (leading call-graph indentation omitted):
+8197 Thread_16271012: io.flutter.raster
+58 flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)  (in FlutterMacOS) + 3672  [0x1048d0678]  embedder_external_view_embedder.cc:598
+58 flutter::DlSkCanvasAdapter::Flush()  (in FlutterMacOS) + 92  [0x10408a628]  dl_sk_canvas.cc:394
+58 GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*>, SkSurfaces::BackendSurfaceAccess, GrFlushInfo const&, skgpu::MutableTextureState const*)  (in FlutterMacOS) + 184  [0x1042ab5e0]  GrDrawingManager.cpp:540
+50 GrDrawingManager::flush(SkSpan<GrSurfaceProxy*>, SkSurfaces::BackendSurfaceAccess, GrFlushInfo const&, skgpu::MutableTextureState const*)  (in FlutterMacOS) + 1904  [0x1042aac84]  GrDrawingManager.cpp:209
+46 GrDrawingManager::executeRenderTasks(GrOpFlushState*)  (in FlutterMacOS) + 208  [0x1042ab204]  GrDrawingManager.cpp:290
+8 GrMtlOpsRenderPass::onBindPipeline(GrProgramInfo const&, SkRect const&)  (in FlutterMacOS) + 508  [0x1043ac010]  GrMtlOpsRenderPass.mm:87
+8 GrMtlOpsRenderPass::setupRenderCommandEncoder(GrMtlPipelineState*)  (in FlutterMacOS) + 68  [0x1043ac1ac]  GrMtlOpsRenderPass.mm:309
+7 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 116  [0x1043a3974]  GrMtlCommandBuffer.mm:171
+1 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 56  [0x1043a3938]  GrMtlCommandBuffer.mm:165
+1 GrMtlCommandBuffer::endAllEncoding()  (in FlutterMacOS) + 204  [0x1043a2b74]  GrMtlCommandBuffer.mm:211
+1 GrMtlOpsRenderPass::onBindPipeline(GrProgramInfo const&, SkRect const&)  (in FlutterMacOS) + 88  [0x1043abe6c]  GrMtlOpsRenderPass.mm:71
+1 GrMtlOpsRenderPass::onBindPipeline(GrProgramInfo const&, SkRect const&)  (in FlutterMacOS) + 140  [0x1043abea0]  GrMtlOpsRenderPass.mm:83
+1 GrMtlOpsRenderPass::onBindPipeline(GrProgramInfo const&, SkRect const&)  (in FlutterMacOS) + 224  [0x1043abef4]  GrMtlOpsRenderPass.mm:95
+5 GrMtlOpsRenderPass::onBindPipeline(GrProgramInfo const&, SkRect const&)  (in FlutterMacOS) + 508  [0x1043ac010]  GrMtlOpsRenderPass.mm:87
+5 GrMtlOpsRenderPass::setupRenderCommandEncoder(GrMtlPipelineState*)  (in FlutterMacOS) + 68  [0x1043ac1ac]  GrMtlOpsRenderPass.mm:309
+5 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 116  [0x1043a3974]  GrMtlCommandBuffer.mm:171
+1 GrMtlOpsRenderPass::onBindTextures(GrGeometryProcessor const&, GrSurfaceProxy const* const*, GrPipeline const&)  (in FlutterMacOS) + 56  [0x1043ac340]  GrMtlOpsRenderPass.mm:145
+19 GrMtlOpsRenderPass::GrMtlOpsRenderPass(GrMtlGpu*, GrRenderTarget*, sk_sp<GrMtlFramebuffer>, GrSurfaceOrigin, GrOpsRenderPass::LoadAndStoreInfo const&, GrOpsRenderPass::StencilLoadAndStoreInfo const&)  (in FlutterMacOS) + 108  [0x1043abb34]  GrMtlOpsRenderPass.mm:33
+16 GrMtlOpsRenderPass::setupRenderPass(GrOpsRenderPass::LoadAndStoreInfo const&, GrOpsRenderPass::StencilLoadAndStoreInfo const&)  (in FlutterMacOS) + 512  [0x1043ab9a0]  GrMtlOpsRenderPass.mm:272
+16 GrMtlOpsRenderPass::setupRenderCommandEncoder(GrMtlPipelineState*)  (in FlutterMacOS) + 68  [0x1043ac1ac]  GrMtlOpsRenderPass.mm:309
+14 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 116  [0x1043a3974]  GrMtlCommandBuffer.mm:171
+1 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 56  [0x1043a3938]  GrMtlCommandBuffer.mm:165
+1 GrMtlCommandBuffer::endAllEncoding()  (in FlutterMacOS) + 64  [0x1043a2ae8]  GrMtlCommandBuffer.mm:210
+1 GrMtlCommandBuffer::getRenderCommandEncoder(MTLRenderPassDescriptor*, GrMtlPipelineState const*, GrMtlOpsRenderPass*)  (in FlutterMacOS) + 120  [0x1043a33ec]  GrMtlCommandBuffer.mm:151
+2 GrMtlOpsRenderPass::setupRenderPass(GrOpsRenderPass::LoadAndStoreInfo const&, GrOpsRenderPass::StencilLoadAndStoreInfo const&)  (in FlutterMacOS) + 140  [0x1043ab82c]  GrMtlOpsRenderPass.mm:249
+1 GrMtlOpsRenderPass::setupRenderPass(GrOpsRenderPass::LoadAndStoreInfo const&, GrOpsRenderPass::StencilLoadAndStoreInfo const&)  (in FlutterMacOS) + 332  [0x1043ab8ec]  GrMtlOpsRenderPass.mm:259
+1 GrMtlOpsRenderPass::submit()  (in FlutterMacOS) + 112  [0x1043abdcc]  GrMtlOpsRenderPass.mm:46
+3 GrDrawingManager::executeRenderTasks(GrOpFlushState*)  (in FlutterMacOS) + 108  [0x1042ab1a0]  GrDrawingManager.cpp:266
+1 GrDrawingManager::executeRenderTasks(GrOpFlushState*)  (in FlutterMacOS) + 256  [0x1042ab234]  GrDrawingManager.cpp:306
+4 GrDrawingManager::flush(SkSpan<GrSurfaceProxy*>, SkSurfaces::BackendSurfaceAccess, GrFlushInfo const&, skgpu::MutableTextureState const*)  (in FlutterMacOS) + 1924  [0x1042aac98]  GrDrawingManager.cpp:211
+3 GrDrawingManager::removeRenderTasks()  (in FlutterMacOS) + 220  [0x1042aa434]  GrDrawingManager.cpp:322
+1 GrDrawingManager::removeRenderTasks()  (in FlutterMacOS) + 0  [0x1042aa358]  GrDrawingManager.cpp:311
+3 GrDrawingManager::flush(SkSpan<GrSurfaceProxy*>, SkSurfaces::BackendSurfaceAccess, GrFlushInfo const&, skgpu::MutableTextureState const*)  (in FlutterMacOS) + 1608  [0x1042aab5c]  GrDrawingManager.cpp:203
+1 GrDrawingManager::flush(SkSpan<GrSurfaceProxy*>, SkSurfaces::BackendSurfaceAccess, GrFlushInfo const&, skgpu::MutableTextureState const*)  (in FlutterMacOS) + 1592  [0x1042aab4c]  GrDrawingManager.cpp:201
+41 flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)  (in FlutterMacOS) + 3532  [0x1048d05ec]  embedder_external_view_embedder.cc:598
+41 flutter::DlSkCanvasAdapter::DrawDisplayList(sk_sp<flutter::DisplayList>, float)  (in FlutterMacOS) + 376  [0x10408a354]  dl_sk_canvas.cc:361
+28 SkCanvas::saveLayer(SkCanvas::SaveLayerRec const&)  (in FlutterMacOS) + 324  [0x1040be870]  SkCanvas.cpp:509
+27 SkCanvas::internalSaveLayer(SkCanvas::SaveLayerRec const&, SkCanvas::SaveLayerStrategy, bool)  (in FlutterMacOS) + 2480  [0x1040bf284]  SkCanvas.cpp:1078
+26 SkCanvas::internalDrawDeviceWithFilter(SkDevice*, SkDevice*, SkSpan<sk_sp<SkImageFilter>>, SkPaint const&, SkCanvas::DeviceCompatibleWithFilter, SkColorInfo const&, float, SkTileMode, bool)  (in FlutterMacOS) + 4480  [0x1040c0a58]  SkCanvas.cpp:855
+4 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+4 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+3 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+3 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+3 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+3 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 288  [0x10436ea28]  OpsTask.cpp:457
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+1 SkCanvas::clipRect(SkRect const&, SkClipOp, bool)  (in FlutterMacOS) + 264  [0x1040c30c4]  SkCanvas.cpp:1385
+1 SkCanvas::onClipRect(SkRect const&, SkClipOp, SkCanvas::ClipEdgeStyle)  (in FlutterMacOS) + 68  [0x1040c3138]  SkCanvas.cpp:1393
+2 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+2 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+1 SkCanvas::restore()  (in FlutterMacOS) + 124  [0x1040be668]  SkCanvas.cpp:472
+1 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+1 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+1 SkCanvas::concat(SkMatrix const&)  (in FlutterMacOS) + 152  [0x1040c2a10]  SkCanvas.cpp:1340
+1 SkCanvas::concat(SkM44 const&)  (in FlutterMacOS) + 168  [0x1040c2bc0]  SkCanvas.cpp:1352
+1 SkCanvas::drawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 244  [0x1040c4954]  SkCanvas.cpp:1700
+1 SkCanvas::onDrawRect(SkRect const&, SkPaint const&)  (in FlutterMacOS) + 328  [0x1040c66b0]  SkCanvas.cpp:2060
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 288  [0x10436ea28]  OpsTask.cpp:457
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+1 SkCanvas::internalDrawDeviceWithFilter(SkDevice*, SkDevice*, SkSpan<sk_sp<SkImageFilter>>, SkPaint const&, SkCanvas::DeviceCompatibleWithFilter, SkColorInfo const&, float, SkTileMode, bool)  (in FlutterMacOS) + 5096  [0x1040c0cc0]  SkCanvas.cpp:871
+1 skgpu::ganesh::Device::drawSpecial(SkSpecialImage*, SkMatrix const&, SkSamplingOptions const&, SkPaint const&, SkCanvas::SrcRectConstraint)  (in FlutterMacOS) + 544  [0x10428bbd8]  Device_drawTexture.cpp:446
+1 skgpu::ganesh::Device::drawEdgeAAImage(SkImage const*, SkRect const&, SkRect const&, SkPoint const*, SkCanvas::QuadAAFlags, SkMatrix const&, SkSamplingOptions const&, SkPaint const&, SkCanvas::SrcRectConstraint, SkMatrix const&, SkTileMode)  (in FlutterMacOS) + 3772  [0x10428b7a8]  Device_drawTexture.cpp:283
+1 skgpu::ganesh::SurfaceDrawContext::drawTexture(GrClip const*, GrSurfaceProxyView, SkAlphaType, SkFilterMode, SkMipmapMode, SkBlendMode, SkRGBA4f<(SkAlphaType)2> const&, SkRect const&, SkRect const&, GrQuadAAFlags, SkCanvas::SrcRectConstraint, SkMatrix const&, sk_sp<GrColorSpaceXform>)  (in FlutterMacOS) + 276  [0x1042f5228]  SurfaceDrawContext.cpp:644
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 148  [0x10436e99c]  OpsTask.cpp:456
+1 std::__fl::__function::__func<skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)::$_0, std::__fl::allocator<skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)::$_0>, void (GrSurfaceProxy*, skgpu::Mipmapped)>::operator()(GrSurfaceProxy*&&, skgpu::Mipmapped&&)  (in FlutterMacOS) + 68  [0x104371308]  function.h:319
+1 SkCanvas::internalSaveLayer(SkCanvas::SaveLayerRec const&, SkCanvas::SaveLayerStrategy, bool)  (in FlutterMacOS) + 212  [0x1040be9a8]  SkCanvas.cpp:884
+4 SkCanvas::drawTextBlob(SkTextBlob const*, float, float, SkPaint const&)  (in FlutterMacOS) + 360  [0x1040c86a4]  SkCanvas.cpp:2599
+4 SkCanvas::onDrawTextBlob(SkTextBlob const*, float, float, SkPaint const&)  (in FlutterMacOS) + 256  [0x1040c7f14]  SkCanvas.cpp:2446
+4 SkCanvas::onDrawGlyphRunList(sktext::GlyphRunList const&, SkPaint const&)  (in FlutterMacOS) + 144  [0x1040c7fe8]  SkCanvas.cpp:2461
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+3 SkCanvas::drawRRect(SkRRect const&, SkPaint const&)  (in FlutterMacOS) + 216  [0x1040c46d8]  SkCanvas.cpp:1730
+3 SkCanvas::onDrawRRect(SkRRect const&, SkPaint const&)  (in FlutterMacOS) + 488  [0x1040c7058]  SkCanvas.cpp:2195
+1 skgpu::ganesh::OpsTask::addDrawOp(GrDrawingManager*, std::__fl::unique_ptr<GrOp, std::__fl::default_delete<GrOp>>, bool, GrProcessorSet::Analysis const&, GrAppliedClip&&, GrDstProxyView const&, GrTextureResolveManager, GrCaps const&)  (in FlutterMacOS) + 488  [0x10436eaf0]  OpsTask.cpp:474
+4 SkCanvas::drawRRect(SkRRect const&, SkPaint const&)  (in FlutterMacOS) + 216  [0x1040c46d8]  SkCanvas.cpp:1730
+4 SkCanvas::onDrawRRect(SkRRect const&, SkPaint const&)  (in FlutterMacOS) + 488  [0x1040c7058]  SkCanvas.cpp:2195
+1 GrDirectContext::abandoned()  (in FlutterMacOS) + 0  [0x1042a3b64]  GrDirectContext.cpp:165
+1 SkCanvas::drawTextBlob(SkTextBlob const*, float, float, SkPaint const&)  (in FlutterMacOS) + 360  [0x1040c86a4]  SkCanvas.cpp:2599
+1 SkCanvas::onDrawTextBlob(SkTextBlob const*, float, float, SkPaint const&)  (in FlutterMacOS) + 256  [0x1040c7f14]  SkCanvas.cpp:2446
+1 SkCanvas::onDrawGlyphRunList(sktext::GlyphRunList const&, SkPaint const&)  (in FlutterMacOS) + 144  [0x1040c7fe8]  SkCanvas.cpp:2461
+41 flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)  (in FlutterMacOS) + 4092  [0x1048d081c]  embedder_external_view_embedder.cc:627
+11 flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)  (in FlutterMacOS) + 2876  [0x1048d035c]  embedder_external_view_embedder.cc:561
+11 std::__fl::__function::__func<flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)::$_0, std::__fl::allocator<flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)::$_0>, std::__fl::unique_ptr<flutter::EmbedderRenderTarget, std::__fl::default_delete<flutter::EmbedderRenderTarget>> (impeller::TSize<int> const&)>::operator()(impeller::TSize<int> const&)  (in FlutterMacOS) + 168  [0x1048d20d4]  function.h:319
+11 std::__fl::__function::__func<InferExternalViewEmbedderFromArgs(FlutterCompositor const*, bool)::$_0, std::__fl::allocator<InferExternalViewEmbedderFromArgs(FlutterCompositor const*, bool)::$_0>, std::__fl::unique_ptr<flutter::EmbedderRenderTarget, std::__fl::default_delete<flutter::EmbedderRenderTarget>> (GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, FlutterBackingStoreConfig const&)>::operator()(GrDirectContext*&&, std::__fl::shared_ptr<impeller::AiksContext> const&, FlutterBackingStoreConfig const&)  (in FlutterMacOS) + 152  [0x1048c1ae4]  function.h:319
+1 flutter::EmbedderExternalViewEmbedder::SubmitFlutterView(long long, GrDirectContext*, std::__fl::shared_ptr<impeller::AiksContext> const&, std::__fl::unique_ptr<flutter::SurfaceFrame, std::__fl::default_delete<flutter::SurfaceFrame>>)  (in FlutterMacOS) + 1992  [0x1048cffe8]  embedder_external_view_embedder.cc:558
+
+Shared DisplayList signatures can contain impeller::TRect / Matrix / AiksContext types;
+these type names alone do not identify the active GPU backend. Positive GrMtl/SkCanvas
+raster frames above identify Skia/Ganesh. Sampling does not prove absence of all Impeller code.

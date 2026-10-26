@@ -48,7 +48,7 @@ P0 一览：
 
 | 编号 | 现状 | 期望（参照） | 优先级 |
 | --- | --- | --- | --- |
-| U-R1 | 1× 显示器上 PDF 文字发虚，同样的页面宽度预览是清晰的；切到 2× 后清晰。[截图](ux-audit/03-text-sharpness-1x.jpg) | 和预览一样清晰。需要先查清是渲染分辨率还是纹理缩放的问题。 | P1 |
+| U-R1 | **已修复（PR #31）**：[验证与截图](ux-audit/GUL-500/README.md)。原问题：1× 显示器上 PDF 文字发虚，同样的页面宽度预览是清晰的；切到 2× 后清晰。[截图](ux-audit/03-text-sharpness-1x.jpg) | 和预览一样清晰。需要先查清是渲染分辨率还是纹理缩放的问题。 | P1 |
 | U-R2 | 原文没有缩放命令：“显示”菜单里没有放大、缩小、实际大小、适合宽度，⌘− 没有反应，只能用触控板捏合。 | 预览：⌘+ / ⌘− / ⌘0，菜单里列出。快捷键按焦点所在的面板生效，和脑图的 ⌘0“适应窗口”不冲突。 | P1 |
 | U-R3 | 301 页的文档只能靠滚动和翻页定位，页码胶囊只能点前后箭头。 | 预览“前往页面”（⌥⌘G）；点页码胶囊可以直接输入页码。 | P1 |
 | U-R4 | 选区在页面下部时，浮动工具条和页码胶囊叠在一起，挡住颜色点。[截图](ux-audit/04-cross-page-footer.jpg) | 工具条避开页码胶囊；放不下时放到选区上方。 | P1 |
@@ -106,7 +106,7 @@ P0 一览：
 
 | 编号 | 现状 | 期望（参照） | 优先级 |
 | --- | --- | --- | --- |
-| U-G1 | 用自动化把窗口缩小到约 960×600 时应用崩溃（SIGSEGV），之后同样的操作重复 6 次没有复现。崩溃在 Flutter 的 Impeller 渲染线程：`impeller::Canvas::SetupRenderPass()`（canvas.cc:1615）空指针，调用链 `RenderToTarget` ← `EmbedderExternalViewEmbedder::SubmitFlutterView` ← `Rasterizer::DrawToSurfaces`。数据没有丢失。[截图](ux-audit/16-crash-dialog.jpg) | 不崩溃。先写一个反复调整窗口大小的脚本稳定复现，再查 Flutter 上游是否有已知问题和修复版本，最后决定升级引擎还是规避。 | P0 |
+| U-G1 | **已修复（PR #31）**（临时回退 Skia；Release 基线未复现偶发崩溃）：[调查与压力记录](ux-audit/GUL-500/README.md)。原问题：用自动化把窗口缩小到约 960×600 时应用崩溃（SIGSEGV），之后同样的操作重复 6 次没有复现。崩溃在 Flutter 的 Impeller 渲染线程：`impeller::Canvas::SetupRenderPass()`（canvas.cc:1615）空指针，调用链 `RenderToTarget` ← `EmbedderExternalViewEmbedder::SubmitFlutterView` ← `Rasterizer::DrawToSurfaces`。数据没有丢失。[截图](ux-audit/16-crash-dialog.jpg) | 不崩溃。先写一个反复调整窗口大小的脚本稳定复现，再查 Flutter 上游是否有已知问题和修复版本，最后决定升级引擎还是规避。 | P0 |
 | U-G2 | **已修复（PR #30）**。Release 版的设置里有开发用的“组件库”按钮，点了会进入组件演示页。菜单里的同一入口已经用 `kDebugMode` 隐藏，设置页没有（`apps/marginmind/lib/settings/settings_sheet.dart:25`）。[截图](ux-audit/14-settings-gallery.jpg) | 和菜单一致，只在调试构建里出现。 | P1 |
 
 ## 分批修复
