@@ -227,11 +227,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             if (state.findVisible)
                               Positioned(
                                 top: 12,
+                                left: 12,
                                 right: 16,
-                                child: ReaderFindBar(
-                                  pdf: _pdf,
-                                  focusTick: state.findFocusTick,
-                                  onClose: controller.closeFind,
+                                child: Align(
+                                  alignment: Alignment.topRight,
+                                  child: ReaderFindBar(
+                                    pdf: _pdf,
+                                    focusTick: state.findFocusTick,
+                                    onClose: controller.closeFind,
+                                  ),
                                 ),
                               ),
                             if (state.pending case final PendingAction pending)

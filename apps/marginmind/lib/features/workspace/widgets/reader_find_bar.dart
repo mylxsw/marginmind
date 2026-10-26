@@ -70,8 +70,8 @@ class _ReaderFindBarState extends State<ReaderFindBar> {
     return MMGlass(
       borderRadius: BorderRadius.circular(MMRadii.card),
       padding: const EdgeInsets.all(MMSpacing.xs),
-      child: SizedBox(
-        width: 380,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
         child: ListenableBuilder(
           listenable: widget.pdf,
           builder: (context, _) {
