@@ -77,7 +77,10 @@ class MindMapRenderCache {
         identical(_localizations, localizations)) {
       return _layout!;
     }
-    if (environmentChanged) _measurements.clear();
+    if (environmentChanged) {
+      _measurements.clear();
+      _clipped.clear();
+    }
     _theme = theme;
     _baseStyle = baseStyle;
     _textScaler = textScaler;
@@ -133,6 +136,7 @@ class MindMapRenderCache {
                   documents[annotations[card.annotationId]?.documentId],
                   localizations,
                   this,
+                  editing: draft?.$1 == card.id,
                 ),
                 collapsed: node.collapsed,
               ),
@@ -169,6 +173,7 @@ class MindMapRenderCache {
         summaryGap: MMSpacing.m,
         bracketWidth: MMSpacing.m,
         labelGap: MMSpacing.s,
+        balanced: true,
       ).layout(tree, summaries: summaries);
       layoutCount++;
       _geometry = geometry;
@@ -213,16 +218,67 @@ class MindMapRenderCache {
     _measurements[key] = result;
     return result;
   }
+
+  final _clipped = <(String, TextStyle, double, int), String>{};
+
+  /// [text] as shown in at most [maxLines] lines of [width]: cut at the end
+  /// of the last line with an ellipsis when it is longer. The renderer's own
+  /// ellipsis is not reliable with fallback fonts (the excerpt serif), so the
+  /// shown text carries it.
+  String _clip(String text, TextStyle style, double width, int maxLines) {
+    if (_measure(text, style, width).lines <= maxLines) return text;
+    final key = (text, style, width, maxLines);
+    final cached = _clipped.remove(key);
+    if (cached != null) return _clipped[key] = cached;
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: _baseStyle.merge(style)),
+      textDirection: _direction,
+      textScaler: _textScaler,
+      locale: _locale,
+    )..layout(maxWidth: width);
+    final last = painter.computeLineMetrics()[maxLines - 1];
+    var end = painter.getPositionForOffset(Offset(0, last.baseline + last.descent + 1)).offset;
+    painter.dispose();
+    measurementCount++;
+    var clipped = text;
+    while (end > 0) {
+      clipped = '${text.substring(0, end).trimRight()}…';
+      if (_measure(clipped, style, width).lines <= maxLines) break;
+      end--;
+      // Never split a surrogate pair.
+      if (end > 0 && (text.codeUnitAt(end) & 0xFC00) == 0xDC00) end--;
+    }
+    if (_clipped.length == measurementCapacity) _clipped.remove(_clipped.keys.first);
+    return _clipped[key] = clipped;
+  }
 }
 
 enum _Kind { root, topic, excerpt, note, image }
 
 /// What a node shows, and its measured size (layout needs sizes up front).
 class _NodeSpec {
-  _NodeSpec._(this.kind, this.title, this.quote, this.meta, this.color, this.size, {this.image, this.imageHeight = 0});
+  _NodeSpec._(
+    this.kind,
+    this.title,
+    this.quote,
+    this.meta,
+    this.color,
+    this.size, {
+    this.image,
+    this.imageHeight = 0,
+    String? label,
+  }) : label = label ?? title;
 
   final _Kind kind;
+
+  /// Shown title; empty for an excerpt or image without one (no title row).
   final String title;
+
+  /// What the node is called for assistive technology and in its editor.
+  final String label;
+
+  /// The quote as shown: at most [maxQuoteLines] lines, ending with an
+  /// ellipsis when cut. The source ([meta]) is shown on hover or selection.
   final String? quote;
   final String? meta;
   final MMAnnotationColor? color;
@@ -234,6 +290,7 @@ class _NodeSpec {
   final double imageHeight;
 
   static const excerptWidth = 240.0;
+  static const maxQuoteLines = 4;
   static const _excerptTextWidth = excerptWidth - 12 - 38 - 16;
   static const imageWidth = excerptWidth - 12 - 38;
 
@@ -249,7 +306,19 @@ class _NodeSpec {
     );
   }
 
-  factory _NodeSpec.forCard(Card card, Annotation? a, Document? doc, AppLocalizations l, MindMapRenderCache cache) {
+  factory _NodeSpec.forCard(
+    Card card,
+    Annotation? a,
+    Document? doc,
+    AppLocalizations l,
+    MindMapRenderCache cache, {
+    bool editing = false,
+  }) {
+    // Excerpts and images show a title row only when they have a title (or
+    // one is being typed).
+    final titled = card.title.isNotEmpty || editing;
+    final titleRow = titled ? cache._textScaler.scale(17) + 6 : 0;
+    final source = doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}';
     switch (card.kind) {
       case CardKind.topic:
         final s = cache._measure(card.title, MMTypography.headline, 220 - 28).size;
@@ -261,36 +330,30 @@ class _NodeSpec {
         final r = a?.rects.firstOrNull;
         final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
         final imageHeight = (imageWidth * aspect).clamp(36.0, 200.0).roundToDouble();
-        final height = 11 + cache._textScaler.scale(17) + 6 + imageHeight + 6 + cache._textScaler.scale(14) + 11 + 2;
+        final height = 11 + titleRow + imageHeight + 11 + 2;
         return _NodeSpec._(
           _Kind.image,
-          card.title.isEmpty ? l.imageExcerpt : card.title,
+          card.title,
           null,
-          doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}',
+          source,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
           Size(excerptWidth, height.toDouble()),
           image: card.imageFileName,
           imageHeight: imageHeight,
+          label: card.title.isEmpty ? l.imageExcerpt : card.title,
         );
       case CardKind.excerpt:
-        final quote = a?.quote ?? '';
-        final lines = math.min(4, cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines);
-        final height =
-            11 +
-            cache._textScaler.scale(17) +
-            6 +
-            (lines * cache._textScaler.scale(20) + 12) +
-            6 +
-            cache._textScaler.scale(14) +
-            11 +
-            2;
+        final quote = cache._clip(a?.quote ?? '', MMTypography.readingExcerpt, _excerptTextWidth, maxQuoteLines);
+        final lines = cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines;
+        final height = 11 + titleRow + (lines * cache._textScaler.scale(20) + 12) + 11 + 2;
         return _NodeSpec._(
           _Kind.excerpt,
-          card.title.isEmpty ? l.untitledExcerpt : card.title,
+          card.title,
           quote,
-          doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}',
+          source,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
           Size(excerptWidth, height.toDouble()),
+          label: card.title.isEmpty ? (quote.isEmpty ? l.untitledExcerpt : quote) : card.title,
         );
     }
   }

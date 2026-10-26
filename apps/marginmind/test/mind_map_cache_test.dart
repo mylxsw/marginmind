@@ -35,7 +35,8 @@ StudySetContent fixture([int count = 499]) => StudySetContent(
         documentId: 'd',
         page: i + 1,
         rects: const [],
-        quote: '摘录 $i text with several words and lines to measure.',
+        // Short enough to show whole (see the clipping test).
+        quote: '摘录 $i text with words.',
         colorIndex: i % 6,
         createdAt: now,
       ),
@@ -74,7 +75,9 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
       case CardKind.excerpt:
         final quote = content.annotation(card.annotationId ?? '')?.quote ?? '';
         final lines = math.min(4, measure(quote, MMTypography.readingExcerpt, 174).lines);
-        return Size(240, (11 + 17 + 6 + (lines * 20 + 12) + 6 + 14 + 11 + 2).toDouble());
+        // No title row without a title; the source is not on the card.
+        final title = card.title.isEmpty ? 0 : 17 + 6;
+        return Size(240, (11 + title + (lines * 20 + 12) + 11 + 2).toDouble());
     }
   }
 
@@ -96,6 +99,7 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
     levelGap: 56,
     siblingGap: 14,
     padding: 72,
+    balanced: true,
   ).layout(build(rootNodeId, Size(measure(title, MMTypography.title3, 360).size.width + 40, 42)));
 }
 
@@ -262,6 +266,33 @@ void main() {
     update(cache, StudySetContent.empty, title: 'Version 0');
     expect(cache.measurementCount, count + 1);
   });
+  test('excerpts: a title row only with a title or while typing one; long quotes are cut once', () {
+    final cache = MindMapRenderCache();
+    final long = 'word ' * 80;
+    final content = fixture(0).copyWith(
+      annotations: [
+        Annotation(id: 'a', documentId: 'd', page: 1, rects: const [], quote: long, colorIndex: 0, createdAt: now),
+      ],
+      cards: [Card(id: 'e', kind: CardKind.excerpt, annotationId: 'a', createdAt: now)],
+      nodes: const [MapNode(cardId: 'e', order: 0)],
+    );
+    // Four lines of quote, no title row, no source row.
+    expect(update(cache, content).rects['e']!.height, 11 + (4 * 20 + 12) + 11 + 2);
+    final measured = cache.measurementCount;
+    expect(update(cache, content.copyWith(nodes: [...content.nodes])).rects['e']!.height, 116);
+    expect(cache.measurementCount, measured, reason: 'the cut quote is cached');
+    final typing = cache.update(
+      content: content,
+      rootTitle: 'Root',
+      localizations: english,
+      theme: theme,
+      draft: ('e', ''),
+    );
+    expect(typing.rects['e']!.height, 116 + 17 + 6, reason: 'the title field opens even while empty');
+    final titled = content.copyWith(cards: [content.cards.single.copyWith(title: 'Title')]);
+    expect(update(cache, titled).rects['e']!.height, 116 + 17 + 6);
+  });
+
   test('500 nodes: single text edit + measurement + reflow p95 below 16 ms', () {
     final content = fixture();
     final cache = MindMapRenderCache();

@@ -16,7 +16,8 @@ void main() {
     String? selection;
     String? flash;
     var dark = false;
-    var width = 780.0;
+    // Wide enough that the first fit stays at 100% (nodes are kept per zoom).
+    var width = 840.0;
     final moves = <String>[];
     late StateSetter rebuild;
     await tester.pumpWidget(

@@ -74,12 +74,16 @@ void main() {
       final container = await openFirstSet(tester);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final excerpt = controller.content.cards.singleWhere((c) => c.kind == CardKind.excerpt);
-      await doubleTap(tester, find.text('Untitled excerpt'));
+      // Untitled, the excerpt is the whole card: no title row to click.
+      expect(find.text('Untitled excerpt'), findsNothing);
+      final compact = tester.getSize(find.byKey(ValueKey(excerpt.id))).height;
+      await doubleTap(tester, find.text(_quote));
       expect(find.byType(MMSheet), findsNothing);
       expect(container.read(workspaceProvider('demo-1')).editingCardId, excerpt.id);
       // The title starts empty (the placeholder is not text to edit).
       expect(_text(tester).text, '');
       final height = tester.getSize(find.ancestor(of: _field, matching: find.byType(Positioned)).first).height;
+      expect(height, greaterThan(compact), reason: 'the title row opens while editing');
       await _type(tester, '遗忘曲线：一条很长很长的标题，不会把卡片撑高');
       await tester.pumpAndSettle();
       expect(tester.getSize(find.ancestor(of: _field, matching: find.byType(Positioned)).first).height, height);
@@ -96,7 +100,8 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(controller.content.card(excerpt.id)!.title, '');
-      expect(find.text('Untitled excerpt'), findsOneWidget);
+      expect(find.text('Untitled excerpt'), findsNothing);
+      expect(tester.getSize(find.byKey(ValueKey(excerpt.id))).height, compact);
 
       // Two edits, two undo steps.
       await controller.undo();
