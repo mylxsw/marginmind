@@ -15,6 +15,7 @@ void main() {
     var content = fixture(3);
     String? selection;
     String? flash;
+    var locateTick = 0;
     var dark = false;
     // Wide enough that the first fit stays at 100% (nodes are kept per zoom).
     var width = 840.0;
@@ -37,6 +38,7 @@ void main() {
                   rootTitle: 'Root',
                   selectedCardId: selection,
                   flashCardId: flash,
+                  locateCardTick: locateTick,
                   transformation: transform,
                   focusNode: focus,
                   onSelect: (id) => rebuild(() => selection = id),
@@ -67,8 +69,22 @@ void main() {
     expect(selection, 'c0');
     expect(nodeChild('c2'), same(unchanged), reason: 'Selecting another node must retain unchanged node subtrees');
     expect(edges().shouldRepaint(original), isFalse);
-    rebuild(() => flash = 'c1');
-    await tester.pumpAndSettle();
+    for (final zoom in [0.1, 1.5]) {
+      transform.value = Matrix4.identity()
+        ..translateByDouble(-2000, -2000, 0, 1)
+        ..scaleByDouble(zoom, zoom, 1, 1);
+      rebuild(() {
+        flash = selection = 'c1';
+        locateTick++;
+      });
+      await tester.pumpAndSettle();
+      expect(mapScale(transform.value), closeTo(zoom < 1 ? mapLocateScale : zoom, .001));
+      final viewport = tester.getRect(find.byType(InteractiveViewer));
+      final card = tester.getRect(find.byKey(const ValueKey('c1')));
+      expect((card.center - viewport.center).distance, lessThan(1));
+      expect(viewport.contains(card.topLeft), isTrue);
+      expect(viewport.contains(card.bottomRight), isTrue);
+    }
     expect(edges().shouldRepaint(original), isFalse);
     transform.value = Matrix4.identity()
       ..translateByDouble(10, 20, 0, 1)

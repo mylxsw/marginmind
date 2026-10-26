@@ -59,6 +59,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   });
 
+  testWidgets('reveal centers a multi-rect excerpt without changing zoom', (tester) async {
+    final controller = MMPdfViewController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'reveal.pdf', controller: controller),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    const rects = [PageRect(250, 450, 330, 430), PageRect(270, 425, 350, 400)];
+    for (final zoom in [1.0, 2.0]) {
+      await pdf.setZoom(pdf.centerPosition, zoom, duration: Duration.zero);
+      await tester.pumpAndSettle();
+      final before = pdf.currentZoom;
+      final action = controller.reveal(2, rects);
+      await tester.pumpAndSettle();
+      await action;
+      expect(pdf.currentZoom, closeTo(before, .001));
+      final layout = pdf.layout.pageLayouts[1];
+      final target = const PdfRect(
+        250,
+        450,
+        350,
+        400,
+      ).toRect(page: pdf.pages[1], scaledPageSize: layout.size).shift(layout.topLeft);
+      final center = pdf.documentToLocal(target.center);
+      expect((center - pdf.viewSize.center(Offset.zero)).distance, lessThan(1));
+      expect(pdf.visibleRect.contains(target.topLeft), isTrue);
+      expect(pdf.visibleRect.contains(target.bottomRight), isTrue);
+    }
+    final before = pdf.value.clone();
+    await controller.reveal(0, rects);
+    await controller.reveal(999, rects);
+    expect(pdf.value, before);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
   testWidgets('zoom commands fit the current page and are safe before ready', (tester) async {
     final controller = MMPdfViewController();
     await controller.zoomIn();

@@ -51,6 +51,9 @@ Matrix4 zoomMapAt(Matrix4 m, Offset focal, double factor) {
 /// e^(-delta / this) per event, like InteractiveViewer.
 const _wheelZoomFactor = 200.0;
 
+/// Explicit location restores the designed text size, retaining closer zoom.
+const mapLocateScale = 1.0;
+
 /// While dragging a node, the canvas pans when the pointer is within this
 /// distance of its sides (or outside them), up to [_autoScrollSpeed]
 /// logical pixels per second.
@@ -67,6 +70,7 @@ class MindMapCanvas extends StatefulWidget {
     required this.rootTitle,
     required this.selectedCardId,
     required this.flashCardId,
+    this.locateCardTick = 0,
     required this.transformation,
     required this.onSelect,
     required this.onReveal,
@@ -117,6 +121,9 @@ class MindMapCanvas extends StatefulWidget {
   final ValueChanged<String>? onToggleSelection;
   final ValueChanged<Set<String>>? onSelectMany;
   final String? flashCardId;
+
+  /// Changes for each explicit location, including repeated requests for one card.
+  final int locateCardTick;
   final TransformationController transformation;
   final ValueChanged<String?> onSelect;
   final ValueChanged<String> onReveal;
@@ -386,6 +393,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       widget.transformation.value = Matrix4.identity()
         ..translateByDouble(dx, dy, 0, 1)
         ..scaleByDouble(scale, scale, 1, 1);
+      if (widget.locateCardTick > 0 && widget.selectedCardId != null) _locate(widget.selectedCardId!);
     });
   }
 
@@ -403,7 +411,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         if (mounted) _updateDrop();
       });
     }
-    if (_boxStart == null &&
+    if (widget.locateCardTick != oldWidget.locateCardTick && widget.selectedCardId != null) {
+      final id = widget.selectedCardId!;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _locate(id));
+    } else if (_boxStart == null &&
         (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
           ? widget.flashCardId!
@@ -422,6 +433,21 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final scale = mapScale(m);
     final delta = (previous - anchor) * scale;
     widget.transformation.value = m.clone()..setTranslationRaw(m.storage[12] + delta.dx, m.storage[13] + delta.dy, 0);
+  }
+
+  /// Centers an explicitly located card at a readable scale.
+  void _locate(String id) {
+    final rect = _layout?.rects[id];
+    if (!mounted || rect == null || _viewport.isEmpty) return;
+    final scale = math.max(mapLocateScale, mapScale(widget.transformation.value));
+    widget.transformation.value = Matrix4.identity()
+      ..translateByDouble(
+        _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
+        _viewport.height / 2 - rect.centerY * scale,
+        0,
+        1,
+      )
+      ..scaleByDouble(scale, scale, 1, 1);
   }
 
   /// Pans (keeping the zoom) so a newly created or linked node is on screen:

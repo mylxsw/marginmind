@@ -126,6 +126,7 @@ class WorkspaceState {
     this.selectedCardId,
     this.selectedCardIds = const {},
     this.flashCardId,
+    this.locateCardTick = 0,
     this.flashAnnotationId,
     this.editingCardId,
     this.selectedMarkId,
@@ -163,6 +164,7 @@ class WorkspaceState {
   final String? selectedCardId;
   final Set<String> selectedCardIds;
   final String? flashCardId;
+  final int locateCardTick;
   final String? flashAnnotationId;
 
   /// Card whose title (a note's text) is being edited in place.
@@ -212,6 +214,7 @@ class WorkspaceState {
     Set<String>? selectedCardIds,
     bool selectRoot = false,
     String? flashCardId,
+    int? locateCardTick,
     String? flashAnnotationId,
     bool clearFlash = false,
     String? editingCardId,
@@ -254,6 +257,7 @@ class WorkspaceState {
           ? Set.unmodifiable({selectedCardId})
           : this.selectedCardIds,
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
+      locateCardTick: locateCardTick ?? this.locateCardTick,
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
       editingCardId: clearEditing ? null : (editingCardId ?? this.editingCardId),
@@ -808,6 +812,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _update((c) => _expandAncestors(c, card.id), undoable: false);
     state = state.copyWith(
       selectedCardId: card.id,
+      locateCardTick: state.locateCardTick + 1,
       clearPending: true,
       mapView: MapViewMode.map,
       layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
