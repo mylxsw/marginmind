@@ -27,6 +27,33 @@ void main() {
       expect(rect.overlaps(anchor), isFalse, reason: '$rect overlaps $anchor');
     }
 
+    test('avoids another floating control by switching sides', () {
+      const anchor = Rect.fromLTWH(300, 300, 200, 20);
+      // The pill sits where the toolbar would go above the anchor.
+      const pill = Rect.fromLTWH(300, 250, 200, 36);
+      final p = placeFloatingToolbar(anchor: anchor, size: size, viewport: viewport, avoid: pill);
+      expect(p.side, MMFloatingSide.below);
+      expect((p.offset & size).overlaps(pill), isFalse);
+      // Clear of the pill: the usual placement stays.
+      expect(
+        placeFloatingToolbar(
+          anchor: anchor,
+          size: size,
+          viewport: viewport,
+          avoid: const Rect.fromLTWH(0, 560, 100, 30),
+        ),
+        place(anchor),
+      );
+    });
+
+    test('goes above when both sides touch the avoided area', () {
+      const anchor = Rect.fromLTWH(300, 300, 200, 20);
+      const wide = Rect.fromLTWH(0, 200, 800, 300);
+      final p = placeFloatingToolbar(anchor: anchor, size: size, viewport: viewport, avoid: wide);
+      expect(p.side, MMFloatingSide.above);
+      expect(p.offset.dy, 300 - gap - 36);
+    });
+
     test('sits centered above a selection in the middle', () {
       const anchor = Rect.fromLTWH(300, 300, 200, 20);
       final p = place(anchor);

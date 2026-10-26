@@ -277,6 +277,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get syncToMapOff => '摘录同步到脑图：关';
 
   @override
+  String get annotationColor => '标注颜色';
+
+  @override
   String get layoutReader => '只看原文';
 
   @override
@@ -712,9 +715,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get excerptWithNote => '摘录并添加笔记';
-
-  @override
-  String get noteText => '笔记';
 
   @override
   String get addSiblingAfter => '在后面添加同级节点';

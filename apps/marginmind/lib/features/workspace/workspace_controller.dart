@@ -136,6 +136,7 @@ class WorkspaceState {
     this.reveal,
     this.canUndo = false,
     this.canRedo = false,
+    this.sidebarAutoCollapsed = false,
     this.readerPanelVisible = false,
     this.readerPanelMode = ReaderPanelMode.thumbnails,
     this.findVisible = false,
@@ -185,6 +186,10 @@ class WorkspaceState {
   final bool canUndo;
   final bool canRedo;
 
+  /// The window is too narrow for the sidebar beside the map, so it is not on
+  /// screen although [sidebarVisible] is set. Reported by the screen, not saved.
+  final bool sidebarAutoCollapsed;
+
   /// The reader's page sidebar (thumbnails, contents, bookmarks, highlights).
   final bool readerPanelVisible;
   final ReaderPanelMode readerPanelMode;
@@ -230,6 +235,7 @@ class WorkspaceState {
     RevealRequest? reveal,
     bool? canUndo,
     bool? canRedo,
+    bool? sidebarAutoCollapsed,
     bool? readerPanelVisible,
     ReaderPanelMode? readerPanelMode,
     bool? findVisible,
@@ -272,6 +278,7 @@ class WorkspaceState {
       reveal: reveal ?? this.reveal,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
+      sidebarAutoCollapsed: sidebarAutoCollapsed ?? this.sidebarAutoCollapsed,
       readerPanelVisible: readerPanelVisible ?? this.readerPanelVisible,
       readerPanelMode: readerPanelMode ?? this.readerPanelMode,
       findVisible: findVisible ?? this.findVisible,
@@ -547,7 +554,22 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   // ---- panels ---------------------------------------------------------------
 
-  void toggleSidebar() => state = state.copyWith(sidebarVisible: !state.sidebarVisible);
+  void toggleSidebar() {
+    if (state.sidebarAutoCollapsed) return showSidebar();
+    state = state.copyWith(sidebarVisible: !state.sidebarVisible);
+  }
+
+  /// Brings the sidebar on screen. With no room beside the map it takes the
+  /// map's place (the reader alone), like the toolbar button.
+  void showSidebar() {
+    state = state.sidebarAutoCollapsed
+        ? state.copyWith(layout: MMSplitMode.primary, sidebarAutoCollapsed: false)
+        : state.copyWith(sidebarVisible: true);
+  }
+
+  void setSidebarAutoCollapsed(bool value) {
+    if (state.sidebarAutoCollapsed != value) state = state.copyWith(sidebarAutoCollapsed: value);
+  }
 
   void toggleReaderPanel() => state = state.copyWith(readerPanelVisible: !state.readerPanelVisible);
 
@@ -734,7 +756,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return null;
   }
 
-  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color, {String? note}) async {
+  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
     final parent = excerptTargetId;
     late Card card;
     await _update((c) {
@@ -747,7 +769,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         parentId: parent,
       );
       card = created;
-      return note == null ? next : _editor.addNote(next, text: note, parentId: card.id).$1;
+      return next;
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
@@ -1036,6 +1058,31 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
       }
       return card;
+    });
+  }
+
+  /// Excerpts the selected text and opens an empty note under the new card for
+  /// typing in place. The excerpt and the typed note are one undo step;
+  /// cancelling or leaving the note empty leaves nothing behind.
+  Future<Card?> excerptAndEditNote(String documentId, MMPdfSelection s, MMAnnotationColor color) {
+    return _createAndEdit((_) async {
+      final parent = excerptTargetId;
+      late Card note;
+      await _update((c) {
+        final (next, excerpt) = _editor.createExcerpt(
+          c,
+          documentId: documentId,
+          pages: s.pages,
+          quote: s.text,
+          colorIndex: color.index,
+          parentId: parent,
+        );
+        final (withNote, created) = _editor.addNote(next, text: '', parentId: excerpt.id);
+        note = created;
+        return withNote;
+      });
+      state = state.copyWith(clearPending: true, selectedCardId: note.id);
+      return note;
     });
   }
 

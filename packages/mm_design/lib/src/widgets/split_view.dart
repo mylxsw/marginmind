@@ -40,6 +40,27 @@ class MMSplitView extends StatelessWidget {
     return mode;
   }
 
+  /// What a window of [windowWidth] actually shows: when [mode] is `split`
+  /// and the panes do not fit beside the sidebar ([sidebarWidth] wide, if
+  /// [sidebarVisible]), the sidebar collapses first; if they still do not
+  /// fit, the layout falls back to the primary pane alone.
+  static ({bool sidebarVisible, MMSplitMode mode}) resolveNarrow({
+    required MMSplitMode mode,
+    required bool sidebarVisible,
+    required double windowWidth,
+    required double sidebarWidth,
+    double minPrimary = MMSizes.readerMinWidth,
+    double minSecondary = MMSizes.mapMinWidth,
+  }) {
+    if (mode != MMSplitMode.split) return (sidebarVisible: sidebarVisible, mode: mode);
+    final needed = minPrimary + minSecondary + 1;
+    if (windowWidth - (sidebarVisible ? sidebarWidth : 0) >= needed) {
+      return (sidebarVisible: sidebarVisible, mode: mode);
+    }
+    if (windowWidth >= needed) return (sidebarVisible: false, mode: mode);
+    return (sidebarVisible: sidebarVisible, mode: MMSplitMode.primary);
+  }
+
   /// Width of the primary pane in split mode, respecting both minimums.
   static double primaryWidth(double width, double fraction, double minPrimary, double minSecondary) {
     final max = width - 1 - minSecondary;

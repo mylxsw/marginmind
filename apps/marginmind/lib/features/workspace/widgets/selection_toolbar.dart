@@ -106,17 +106,11 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
           command == ReaderSelectionCommand.deleteHighlight) {
         return;
       }
-      String? note;
       if (command == ReaderSelectionCommand.note) {
-        // The toolbar must stay mounted while its sheet is open, but cannot
-        // dispatch shortcuts through the sheet's text field.
-        note = await showRenameSheet(
-          context,
-          title: context.l10n.addNote,
-          initial: '',
-          fieldLabel: context.l10n.noteText,
-        );
-        if (!mounted || note == null || note.isEmpty) return;
+        // The note is typed on its card in the map; the selection is done.
+        await controller.excerptAndEditNote(pending.documentId, pending.selection, selectedColor);
+        await pdf.clearSelection();
+        return;
       }
       if (command == ReaderSelectionCommand.copy) {
         await Clipboard.setData(ClipboardData(text: pending.selection.text));
@@ -126,7 +120,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
       } else {
         final notice = command == ReaderSelectionCommand.highlight
             ? await controller.highlight(pending.documentId, pending.selection, selectedColor)
-            : await controller.excerpt(pending.documentId, pending.selection, selectedColor, note: note);
+            : await controller.excerpt(pending.documentId, pending.selection, selectedColor);
         if (mounted) showNotice(context, notice, rootTitle: rootTitle);
       }
       await pdf.clearSelection();

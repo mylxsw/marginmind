@@ -34,10 +34,15 @@ class MMFloatingPlacement {
 /// leave the viewport. Horizontally the toolbar is centered on the anchor and
 /// pushed inwards so it keeps [margin] from the viewport edges. The result is
 /// always fully inside the viewport unless the toolbar is larger than it.
+///
+/// With [avoid] (another floating control, such as the page pill) the first
+/// of the above / below positions that clears it wins; when neither does the
+/// toolbar goes above the anchor, as high as the viewport allows.
 MMFloatingPlacement placeFloatingToolbar({
   required Rect anchor,
   required Size size,
   required Rect viewport,
+  Rect? avoid,
   double gap = MMSpacing.s,
   double margin = MMSpacing.s,
 }) {
@@ -63,5 +68,13 @@ MMFloatingPlacement placeFloatingToolbar({
     side = roomAbove >= roomBelow ? MMFloatingSide.above : MMFloatingSide.below;
     y = side == MMFloatingSide.above ? aboveTop : belowTop;
   }
-  return MMFloatingPlacement(Offset(x, clampAxis(y, bounds.top, bounds.bottom - size.height)), side);
+  MMFloatingPlacement at(MMFloatingSide side, double y) =>
+      MMFloatingPlacement(Offset(x, clampAxis(y, bounds.top, bounds.bottom - size.height)), side);
+
+  final preferred = at(side, y);
+  if (avoid == null || !(preferred.offset & size).overlaps(avoid)) return preferred;
+  final other = side == MMFloatingSide.above ? MMFloatingSide.below : MMFloatingSide.above;
+  final alternative = at(other, other == MMFloatingSide.above ? aboveTop : belowTop);
+  if (!(alternative.offset & size).overlaps(avoid)) return alternative;
+  return at(MMFloatingSide.above, aboveTop);
 }

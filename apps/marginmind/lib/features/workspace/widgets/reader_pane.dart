@@ -154,25 +154,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (openDocs.isNotEmpty)
+        if (openDocs.length > 1)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: MMIconButton(
-                    icon: MMIcons.sidebar,
-                    tooltip: AppShortcuts.tip(
-                      state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                      AppShortcuts.toggleReaderSidebar,
-                    ),
-                    size: 28,
-                    iconSize: 15,
-                    color: state.readerPanelVisible ? c.accent : c.icon,
-                    onPressed: controller.toggleReaderPanel,
-                  ),
-                ),
                 for (final d in openDocs)
                   Flexible(
                     child: ConstrainedBox(
@@ -279,6 +265,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             if (state.pending case final PendingAction pending)
                               Positioned.fill(
                                 child: MMFloatingToolbarLayout(
+                                  avoid: _pagePillArea,
                                   anchor: switch (pending) {
                                     PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                                     PendingHighlight(:final viewportRect) => viewportRect,
@@ -362,6 +349,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ];
   }
 }
+
+/// Space the page pill takes at the bottom of the reader; floating toolbars
+/// keep clear of it. An estimate that is wider than `_PagePill`; change both
+/// together.
+const _pagePillBottom = 16.0;
+const _pagePillSize = Size(200, 32);
+
+Rect _pagePillArea(Size viewport) => Rect.fromLTWH(
+  (viewport.width - _pagePillSize.width) / 2,
+  viewport.height - _pagePillBottom - _pagePillSize.height,
+  _pagePillSize.width,
+  _pagePillSize.height,
+);
 
 /// "n / N" that turns into a field on click: type a page, Enter jumps.
 class _PageField extends StatefulWidget {
