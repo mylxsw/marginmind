@@ -195,4 +195,4 @@ L-01～L-03 的排期、统计与暂停界面由后续任务实现，不计入�
 ### GUL-508：L-01 FSRS 排期
 
 复习排期由简化 SM-2 替换为 FSRS-5，评分界面保持不变；旧卡初始化保留原到期时间。
-状态：待补 PR 编号。固定数据曲线与 Mac Release 对照见 [验证记录](evidence/gul-508/README.md)。
+状态：已修复（PR #40）。固定数据曲线与 Mac Release 对照见 [验证记录](evidence/gul-508/README.md)。
