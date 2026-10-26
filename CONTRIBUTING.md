@@ -30,9 +30,11 @@ dart format --set-exit-if-changed apps packages
 (cd packages/mm_platform && flutter test)
 (cd packages/mm_pdf && flutter test)
 (cd apps/marginmind && flutter test)
+# macOS：原生窗口命中、工具栏和全屏切换
+(cd apps/marginmind && xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES)
 ```
 
-CI（`.github/workflows/ci.yml`）会在 Linux 上执行同样的检查，并在 macOS 上构建应用。
+CI（`.github/workflows/ci.yml`）会在 Linux 上执行同样的检查，并在 macOS 上构建应用、运行原生窗口测试。
 
 ## 覆盖率
 

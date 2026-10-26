@@ -4,13 +4,78 @@ import FlutterMacOS
 class MainFlutterWindow: NSWindow {
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
+  private var toolbarVisibilityBeforeFullScreen: Bool?
+  private var chromeDelegate: WindowChromeDelegate?
+
+  // window_manager owns the delegate. Preserve its optional callbacks while
+  // adding AppKit's failure callback (there is no failure notification).
+  override var delegate: NSWindowDelegate? {
+    get { super.delegate }
+    set {
+      if let current = chromeDelegate, newValue === current { return }
+      if let target = newValue {
+        let proxy = WindowChromeDelegate(host: self, target: target)
+        chromeDelegate = proxy
+        super.delegate = proxy
+      } else {
+        super.delegate = nil
+        chromeDelegate = nil
+      }
+    }
+  }
+
+  func installFlutterToolbar(eventTarget: NSResponder) {
+    let nativeToolbar = FlutterWindowToolbar(identifier: "marginmind.flutterToolbar")
+    nativeToolbar.eventTarget = eventTarget
+    nativeToolbar.delegate = nativeToolbar
+    nativeToolbar.showsBaselineSeparator = false
+    nativeToolbar.allowsUserCustomization = false
+    nativeToolbar.allowsExtensionItems = false
+    if #available(macOS 15.0, *) { nativeToolbar.allowsDisplayModeCustomization = false }
+    toolbar = nativeToolbar
+    nativeToolbar.isVisible = true
+    toolbarStyle = .unified
+  }
+
+  // The toolbar only enlarges the native button container in windowed mode.
+  // AppKit otherwise detaches an opaque toolbar above our full-size Flutter
+  // content during the full-screen animation. Hide it before entering; AppKit
+  // still reveals its buttons when the pointer reaches the screen's top edge.
+  func observeToolbarFullScreenTransitions() {
+    for name in [NSWindow.willEnterFullScreenNotification,
+                 NSWindow.didExitFullScreenNotification] {
+      NotificationCenter.default.addObserver(self, selector: #selector(toolbarFullScreenTransition(_:)),
+                                            name: name, object: self)
+    }
+  }
+
+  @objc private func toolbarFullScreenTransition(_ notification: Notification) {
+    if notification.name == NSWindow.willEnterFullScreenNotification {
+      toolbarVisibilityBeforeFullScreen = toolbar?.isVisible
+      toolbar?.isVisible = false
+    } else {
+      restoreToolbarAfterFullScreen()
+    }
+  }
+
+  fileprivate func restoreToolbarAfterFullScreen() {
+    guard let visible = toolbarVisibilityBeforeFullScreen else { return }
+    toolbar?.isVisible = visible
+    toolbarVisibilityBeforeFullScreen = nil
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+  }
 
   override func awakeFromNib() {
+    observeToolbarFullScreenTransitions()
     let flutterViewController = FlutterViewController()
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
 
+    installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
 
@@ -43,6 +108,90 @@ class MainFlutterWindow: NSWindow {
 
     super.awakeFromNib()
   }
+}
+
+/// Adds only full-screen failure recovery; all other delegate behavior stays
+/// with the window plugin. Both references are weak, as NSWindow delegates are.
+final class WindowChromeDelegate: NSObject, NSWindowDelegate {
+  private weak var host: MainFlutterWindow?
+  private weak var target: NSWindowDelegate?
+
+  init(host: MainFlutterWindow, target: NSWindowDelegate) {
+    self.host = host
+    self.target = target
+    super.init()
+  }
+
+  override func responds(to selector: Selector!) -> Bool {
+    super.responds(to: selector) || target?.responds(to: selector) == true
+  }
+
+  override func forwardingTarget(for selector: Selector!) -> Any? {
+    target ?? super.forwardingTarget(for: selector)
+  }
+
+  func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+    host?.restoreToolbarAfterFullScreen()
+    target?.windowDidFailToEnterFullScreen?(window)
+  }
+}
+
+/// A transparent event surface alongside AppKit's own window buttons.
+/// Keep this local: the plugin's BlockingToolbar only forwards down/up.
+final class FlutterWindowToolbar: NSToolbar, NSToolbarDelegate {
+  weak var eventTarget: NSResponder?
+  private let eventItem = NSToolbarItem.Identifier("marginmind.flutterEvents")
+
+  func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    [.flexibleSpace, eventItem]
+  }
+
+  func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    toolbarDefaultItemIdentifiers(toolbar)
+  }
+
+  func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier,
+               willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+    guard itemIdentifier == eventItem else { return nil }
+    let item = NSToolbarItem(itemIdentifier: itemIdentifier)
+    let view = FlutterToolbarEventView()
+    view.eventTarget = eventTarget
+    view.widthAnchor.constraint(greaterThanOrEqualToConstant: 1).isActive = true
+    view.widthAnchor.constraint(lessThanOrEqualToConstant: 100000).isActive = true
+    item.view = view
+    // macOS 26 otherwise adds glass over Flutter's own controls.
+    item.isBordered = false
+    return item
+  }
+}
+
+final class FlutterToolbarEventView: NSView {
+  weak var eventTarget: NSResponder?
+
+  override var mouseDownCanMoveWindow: Bool { false }
+  override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+  override func mouseDown(with event: NSEvent) {
+    // A transparent title bar can still start an AppKit drag despite
+    // mouseDownCanMoveWindow. Flutter decides whether this is text selection,
+    // a control click, or an empty-space drag via DesktopWindow.startDragging.
+    let host = window
+    let wasMovable = host?.isMovable
+    host?.isMovable = false
+    defer { if let wasMovable = wasMovable { host?.isMovable = wasMovable } }
+    eventTarget?.mouseDown(with: event)
+  }
+
+  override func mouseUp(with event: NSEvent) { eventTarget?.mouseUp(with: event) }
+  override func mouseDragged(with event: NSEvent) { eventTarget?.mouseDragged(with: event) }
+  override func mouseMoved(with event: NSEvent) { eventTarget?.mouseMoved(with: event) }
+  override func rightMouseDown(with event: NSEvent) { eventTarget?.rightMouseDown(with: event) }
+  override func rightMouseUp(with event: NSEvent) { eventTarget?.rightMouseUp(with: event) }
+  override func rightMouseDragged(with event: NSEvent) { eventTarget?.rightMouseDragged(with: event) }
+  override func otherMouseDown(with event: NSEvent) { eventTarget?.otherMouseDown(with: event) }
+  override func otherMouseUp(with event: NSEvent) { eventTarget?.otherMouseUp(with: event) }
+  override func otherMouseDragged(with event: NSEvent) { eventTarget?.otherMouseDragged(with: event) }
+  override func scrollWheel(with event: NSEvent) { eventTarget?.scrollWheel(with: event) }
 }
 
 /// Reports the system accent color and accessibility display options to
