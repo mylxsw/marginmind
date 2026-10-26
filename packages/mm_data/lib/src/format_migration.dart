@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 5;
+const currentStudySetFormat = 6;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -16,6 +16,7 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 3) result = _toFormat3(result);
   if (format < 4) result = _toFormat4(result);
   if (format < 5) result = _toFormat5(result);
+  if (format < 6) result = _toFormat6(result);
   return result;
 }
 
@@ -71,4 +72,15 @@ Map<String, Object?> _annotation(Map<String, Object?> json) {
     {'page': page, 'rects': rects},
   ];
   return result;
+}
+
+/// Format 6: rating history, optional FSRS state and card suspension.
+/// Old schedules stay byte-for-byte equivalent; absent suspension reads false.
+Map<String, Object?> _toFormat6(Map<String, Object?> json) {
+  final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
+  return {
+    ...json,
+    'format': 6,
+    'content': {...content, 'reviewLogs': const [], 'memoryStates': const []},
+  };
 }

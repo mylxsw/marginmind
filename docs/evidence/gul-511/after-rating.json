@@ -1,0 +1,194 @@
+{
+  "format": 6,
+  "id": "legacy",
+  "title": "旧学习集",
+  "colorIndex": 2,
+  "folderId": "folder",
+  "starred": true,
+  "createdAt": "2026-10-20T08:00:00.000Z",
+  "lastOpenedAt": "2026-10-26T17:57:29.249357",
+  "content": {
+    "documents": [
+      {
+        "id": "doc",
+        "title": "认知",
+        "fileName": "documents/original.pdf",
+        "pageCount": 120,
+        "lastPage": 42,
+        "importedAt": "2026-10-20T08:00:00.000Z",
+        "lastReadAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a",
+        "documentId": "doc",
+        "pages": [
+          {
+            "page": 3,
+            "rects": [
+              {
+                "l": 1.0,
+                "t": 10.0,
+                "r": 20.0,
+                "b": 2.0
+              },
+              {
+                "l": 2.0,
+                "t": 20.0,
+                "r": 30.0,
+                "b": 12.0
+              }
+            ]
+          }
+        ],
+        "quote": "记忆 & 学习",
+        "colorIndex": 2,
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "id": "unattached",
+        "documentId": "doc",
+        "pages": [
+          {
+            "page": 5,
+            "rects": [
+              {
+                "l": 1.0,
+                "t": 10.0,
+                "r": 20.0,
+                "b": 2.0
+              },
+              {
+                "l": 2.0,
+                "t": 20.0,
+                "r": 30.0,
+                "b": 12.0
+              }
+            ]
+          }
+        ],
+        "quote": "记忆 & 学习",
+        "colorIndex": 2,
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "cards": [
+      {
+        "id": "topic",
+        "kind": "topic",
+        "title": "主题",
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "id": "excerpt",
+        "kind": "excerpt",
+        "title": "摘录",
+        "annotationId": "a",
+        "tags": [
+          "记忆",
+          "memory"
+        ],
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "id": "note",
+        "kind": "note",
+        "title": "笔记",
+        "createdAt": "2026-10-20T08:00:00.000Z"
+      }
+    ],
+    "maps": [
+      {
+        "id": "main",
+        "title": ""
+      },
+      {
+        "id": "second",
+        "title": "第二张图"
+      }
+    ],
+    "nodes": [
+      {
+        "cardId": "topic",
+        "mapId": "main",
+        "order": 1.0,
+        "collapsed": true
+      },
+      {
+        "cardId": "excerpt",
+        "mapId": "main",
+        "parentId": "topic",
+        "order": 0.5
+      },
+      {
+        "cardId": "note",
+        "mapId": "main",
+        "order": 2.0
+      },
+      {
+        "cardId": "excerpt",
+        "mapId": "second",
+        "order": 0.0
+      }
+    ],
+    "reviews": [
+      {
+        "cardId": "deleted-card",
+        "due": "2026-10-20T08:00:00.000Z",
+        "interval": 3.0,
+        "ease": 2.5,
+        "reps": 2,
+        "lapses": 1,
+        "last": "2026-10-20T08:00:00.000Z"
+      },
+      {
+        "cardId": "excerpt",
+        "due": "2026-11-03T05:57:58.513611",
+        "interval": 7.5,
+        "ease": 2.5,
+        "reps": 3,
+        "lapses": 1,
+        "last": "2026-10-26T17:57:58.513611"
+      }
+    ],
+    "reviewLogs": [
+      {
+        "id": "f8a293e4f8ae87e5987db5fb07dee6db",
+        "cardId": "excerpt",
+        "reviewedAt": "2026-10-26T17:57:58.513611",
+        "rating": "good",
+        "intervalBefore": 3.0,
+        "intervalAfter": 7.5
+      }
+    ],
+    "memoryStates": [],
+    "relations": [
+      {
+        "id": "relation",
+        "mapId": "main",
+        "fromId": "topic",
+        "toId": "note",
+        "label": "相关"
+      }
+    ],
+    "summaries": [
+      {
+        "id": "summary",
+        "mapId": "main",
+        "fromId": "topic",
+        "toId": "note",
+        "label": "概括"
+      }
+    ],
+    "bookmarks": [
+      {
+        "id": "bookmark",
+        "documentId": "doc",
+        "page": 42,
+        "createdAt": "2026-10-20T08:00:00.000Z",
+        "title": "继续"
+      }
+    ]
+  }
+}
