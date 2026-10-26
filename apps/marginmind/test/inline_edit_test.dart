@@ -33,6 +33,43 @@ Future<void> _select(WidgetTester tester, String title) async {
 String _json(StudySetContent c) => jsonEncode(c.toJson());
 
 void main() {
+  testWidgets('corner plus creates and edits one child under its marked node', (tester) async {
+    final container = await openFirstSet(tester);
+    final provider = workspaceProvider('demo-1');
+    final controller = container.read(provider.notifier);
+    final topic = controller.content.cards.firstWhere((c) => c.title == '对策一：间隔重复');
+    final canvas = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
+    for (final parent in [null, topic.id]) {
+      for (final scale in [0.5, 1.17]) {
+        controller.selectCard(parent);
+        await tester.pumpAndSettle();
+        final transform = canvas.transformation;
+        transform.value = zoomMapAt(
+          transform.value,
+          tester.getSize(find.byType(MindMapCanvas)).center(Offset.zero),
+          scale / mapScale(transform.value),
+        );
+        await tester.pumpAndSettle();
+        final before = controller.content.cards.map((c) => c.id).toSet();
+        final plus = find.byKey(const ValueKey('excerpt-target'));
+        // Exercise the padded area outside the visible blue circle as well.
+        final bounds = tester.getRect(plus);
+        await tester.tapAt(bounds.center + Offset(0, -bounds.height * 0.4));
+        await tester.pumpAndSettle();
+        final added = controller.content.cards.where((c) => !before.contains(c.id)).toList();
+        expect(added, hasLength(1));
+        expect(controller.content.node(added.single.id)!.parentId, parent);
+        expect(container.read(provider).editingCardId, added.single.id);
+        expect(_field, findsOneWidget);
+        tester.testTextInput.enterText('Corner child $parent $scale');
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(controller.content.card(added.single.id)!.title, 'Corner child $parent $scale');
+      }
+    }
+    await settleHud(tester);
+  });
+
   group('E-01 the node becomes a text field and the map follows it', () {
     testWidgets('no dialog; the node widens and its neighbors move smoothly', (tester) async {
       final container = await openFirstSet(tester);

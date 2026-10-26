@@ -1137,6 +1137,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
             final scene = widget.transformation.toScene(event.localPosition);
             if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) return;
+            // The corner button extends outside the node; do not start a
+            // box selection in its padded hit area.
+            final target = widget.excerptTargetId;
+            final targetRect = result.rects[target];
+            if (target != null && targetRect != null) {
+              final shown = _shown(target, targetRect);
+              final corner = Offset(result.leftSide.contains(target) ? shown.left : shown.right, shown.top);
+              if (Rect.fromCenter(center: corner, width: MMSpacing.xxxl, height: MMSpacing.xxxl).contains(scene)) {
+                return;
+              }
+            }
             if (_markAt(scene) != null) return;
             widget.focusNode.requestFocus();
             setState(() {
@@ -1326,11 +1337,15 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                             if (result.rects[id] case final r?)
                               if (_shown(id, r) case final shown)
                                 Positioned(
-                                  left: result.leftSide.contains(id) ? shown.left : shown.right,
-                                  top: shown.top,
-                                  child: FractionalTranslation(
-                                    translation: const Offset(-0.5, -0.5),
-                                    child: _ExcerptTargetMark(label: l.newExcerptTarget(specs[id]!.label)),
+                                  left: (result.leftSide.contains(id) ? shown.left : shown.right) - MMSpacing.l,
+                                  top: shown.top - MMSpacing.l,
+                                  child: _ExcerptTargetMark(
+                                    label: l.newExcerptTarget(specs[id]!.label),
+                                    onPressed: () {
+                                      widget.focusNode.requestFocus();
+                                      widget.onSelect(id == rootNodeId ? null : id);
+                                      widget.onAddChild();
+                                    },
                                   ),
                                 ),
                           if (_dragging == null)
@@ -1636,27 +1651,35 @@ class _EdgesPainter extends CustomPainter {
 
 /// Marks the node new excerpts go under, on its corner.
 class _ExcerptTargetMark extends StatelessWidget {
-  const _ExcerptTargetMark({required this.label});
+  const _ExcerptTargetMark({required this.label, required this.onPressed});
 
   final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    return Semantics(
-      container: true,
-      label: label,
-      child: Container(
+    return MMInteractive(
+      semanticLabel: label,
+      tooltip: context.l10n.addChildTopic,
+      cursor: SystemMouseCursors.click,
+      onTap: onPressed,
+      builder: (context, state) => SizedBox.square(
         key: const ValueKey('excerpt-target'),
-        width: 18,
-        height: 18,
-        decoration: BoxDecoration(
-          color: c.accent,
-          shape: BoxShape.circle,
-          border: Border.all(color: c.canvas, width: 1.5),
+        dimension: MMSpacing.xxxl,
+        child: Center(
+          child: Container(
+            width: MMRadii.capsule,
+            height: MMRadii.capsule,
+            decoration: BoxDecoration(
+              color: state.pressed ? c.accent.withValues(alpha: 0.7) : c.accent,
+              shape: BoxShape.circle,
+              border: Border.all(color: c.canvas, width: 1.5),
+            ),
+            alignment: Alignment.center,
+            child: Icon(MMIcons.add, size: 10, color: c.onAccent),
+          ),
         ),
-        alignment: Alignment.center,
-        child: Icon(MMIcons.add, size: 10, color: c.onAccent),
       ),
     );
   }
