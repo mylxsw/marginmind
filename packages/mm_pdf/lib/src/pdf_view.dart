@@ -9,6 +9,7 @@ import 'package:mm_core/mm_core.dart' show AnnotationPage, PageRect;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'pdf_navigation.dart';
+import 'preview_cache.dart';
 
 /// A highlight to draw on a page.
 @immutable
@@ -139,9 +140,41 @@ class MMPdfViewController extends ChangeNotifier {
 
   Future<void> clearSelection() async => _state?._clearSelection();
 
-  Future<void> zoomIn() async => _state?._controller.zoomUp();
+  Future<void> zoomIn() async {
+    if (isReady) await _state!._controller.zoomUp();
+  }
 
-  Future<void> zoomOut() async => _state?._controller.zoomDown();
+  Future<void> zoomOut() async {
+    if (isReady) await _state!._controller.zoomDown();
+  }
+
+  /// PDF points map 1:1 to logical pixels, independent of display DPR.
+  Future<void> actualSize() async {
+    if (!isReady) return;
+    final pdf = _state!._controller;
+    await pdf.setZoom(pdf.centerPosition, 1);
+  }
+
+  Future<void> fitWidth() async {
+    if (!isReady) return;
+    final pdf = _state!._controller;
+    await pdf.goTo(pdf.calcMatrixFitWidthForPage(pageNumber: pdf.pageNumber ?? 1));
+  }
+
+  Future<void> fitPage() async {
+    if (!isReady) return;
+    final pdf = _state!._controller;
+    await pdf.goTo(pdf.calcMatrixForFit(pageNumber: pdf.pageNumber ?? 1));
+  }
+
+  /// Document-scoped thumbnail cache for sidebar consumers (GUL-496).
+  /// Width is in physical pixels, rounded up to a 64px bucket; max 1024.
+  /// Returns read-only PNG bytes, or null if unavailable or invalidated.
+  /// Consumers must discard results when their document/page changes.
+  Future<Uint8List?> renderPreview(int page, {int pixelWidth = 160}) async {
+    if (!isReady) return null;
+    return _state!._previews.get(page, pixelWidth: pixelWidth);
+  }
 
   /// Renders [rect] of [page] as PNG bytes at [scale] pixels per point
   /// (longest side capped at [maxPixels]); null if the view is not ready or
@@ -267,7 +300,7 @@ class MMPdfViewController extends ChangeNotifier {
 
 /// A lazily rendered page preview for the reader sidebar. Draws nothing
 /// until [controller] has an open document.
-class MMPdfThumbnail extends StatelessWidget {
+class MMPdfThumbnail extends StatefulWidget {
   const MMPdfThumbnail({
     super.key,
     required this.controller,
@@ -284,22 +317,43 @@ class MMPdfThumbnail extends StatelessWidget {
   final Color backgroundColor;
 
   @override
-  Widget build(BuildContext context) {
-    final document = controller._state?._ready ?? false ? controller._state!._controller.document : null;
-    return SizedBox(
-      width: width,
-      height: height,
-      child: document == null || page < 1 || page > document.pages.length
-          ? null
-          : PdfPageView(
-              document: document,
-              pageNumber: page,
-              maximumDpi: 144,
-              backgroundColor: backgroundColor,
-              decoration: BoxDecoration(color: backgroundColor),
-            ),
-    );
-  }
+  State<MMPdfThumbnail> createState() => _MMPdfThumbnailState();
+}
+
+class _MMPdfThumbnailState extends State<MMPdfThumbnail> {
+  (PdfDocument, int, int)? _request;
+  Future<Uint8List?>? _image;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.controller,
+    builder: (context, _) {
+      final state = widget.controller._state;
+      final document = state?._ready == true ? state!._controller.document : null;
+      final width = (widget.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 1024);
+      final request = document == null ? null : (document, widget.page, width);
+      if (request != _request) {
+        _request = request;
+        _image = request == null ? null : widget.controller.renderPreview(widget.page, pixelWidth: width);
+      }
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: ColoredBox(
+          color: widget.backgroundColor,
+          child: request == null
+              ? null
+              : FutureBuilder<Uint8List?>(
+                  key: ValueKey(request),
+                  future: _image,
+                  builder: (context, snapshot) => snapshot.data == null
+                      ? const SizedBox()
+                      : Image.memory(snapshot.data!, fit: BoxFit.contain, gaplessPlayback: false),
+                ),
+        ),
+      );
+    },
+  );
 }
 
 /// PDF pages with text selection and clickable highlights.
@@ -357,6 +411,59 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   /// Created once the viewer is ready: the searcher needs an open document.
   PdfTextSearcher? _searcher;
+  late final _previews = MMPdfPreviewCache(render: _renderPreview);
+  final _areaRevision = ValueNotifier<int>(0);
+  final _previewTokens = <PdfPageRenderCancellationToken>{};
+  Map<int, List<MMPdfHighlight>> _highlightsByPage = {};
+  final _overlayCache = <int, (Size, List<MMPdfHighlight>, Color, List<Widget>)>{};
+
+  void _indexHighlights() {
+    final next = <int, List<MMPdfHighlight>>{};
+    for (final h in widget.highlights) {
+      (next[h.page] ??= []).add(h);
+    }
+    for (final entry in next.entries) {
+      final old = _highlightsByPage[entry.key];
+      if (old != null && _sameHighlights(old, entry.value)) next[entry.key] = old;
+    }
+    _highlightsByPage = next;
+    _overlayCache.removeWhere((page, value) => !identical(next[page], value.$2));
+  }
+
+  Future<Uint8List?> _renderPreview(int number, int width) async {
+    if (!_ready || number > _controller.document.pages.length) return null;
+    final page = _controller.document.pages[number - 1];
+    final token = page.createCancellationToken();
+    _previewTokens.add(token);
+    PdfImage? image;
+    ui.Image? bitmap;
+    try {
+      image = await page.render(
+        cancellationToken: token,
+        width: width,
+        height: math.max(1, (page.height * width / page.width).round()),
+        fullWidth: width.toDouble(),
+        fullHeight: page.height * width / page.width,
+        backgroundColor: 0xffffffff,
+      );
+      if (image == null || token.isCanceled) return null;
+      bitmap = await image.createImage();
+      final bytes = await bitmap.toByteData(format: ui.ImageByteFormat.png);
+      return bytes?.buffer.asUint8List();
+    } finally {
+      bitmap?.dispose();
+      image?.dispose();
+      _previewTokens.remove(token);
+    }
+  }
+
+  void _invalidatePreviews() {
+    _previews.clear();
+    for (final token in _previewTokens) {
+      token.cancel();
+    }
+  }
+
   PdfTextSelection? _selection;
   bool _ready = false;
   int _selectionEpoch = 0;
@@ -370,17 +477,28 @@ class _MMPdfViewState extends State<MMPdfView> {
   void initState() {
     super.initState();
     widget.controller._attach(this);
+    _indexHighlights();
     _controller.addListener(_viewportChanged);
   }
 
   @override
   void didUpdateWidget(MMPdfView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _indexHighlights();
+    if (oldWidget.filePath != widget.filePath) {
+      _ready = false;
+      _invalidatePreviews();
+      _overlayCache.clear();
+      _selection = null;
+      _area = null;
+      _pendingReveal = null;
+      _selectionEpoch++;
+    }
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller._detach(this);
       widget.controller._attach(this);
     }
-    if (!widget.areaSelecting && _area != null) _area = null;
+    if (!widget.areaSelecting && _area != null) _changeArea(null);
   }
 
   void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
@@ -395,10 +513,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     if (_area != null) {
       if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() {});
+          if (mounted) _areaRevision.value++;
         });
       } else {
-        setState(() {});
+        _areaRevision.value++;
       }
     }
     widget.onViewportChanged?.call();
@@ -410,6 +528,8 @@ class _MMPdfViewState extends State<MMPdfView> {
     _searcher?.removeListener(_searchChanged);
     _searcher?.dispose();
     widget.controller._detach(this);
+    _invalidatePreviews();
+    _areaRevision.dispose();
     super.dispose();
   }
 
@@ -474,11 +594,16 @@ class _MMPdfViewState extends State<MMPdfView> {
     }
   }
 
+  void _changeArea((int, Offset, Offset)? area) {
+    _area = area;
+    _areaRevision.value++;
+  }
+
   void _areaStart(DragStartDetails d) {
     if (!_ready) return;
     final point = _controller.localToDocument(d.localPosition);
     final index = _controller.layout.pageLayouts.indexWhere((r) => r.contains(point));
-    setState(() => _area = index < 0 ? null : (index, point, point));
+    _changeArea(index < 0 ? null : (index, point, point));
   }
 
   void _areaUpdate(DragUpdateDetails d) {
@@ -487,13 +612,13 @@ class _MMPdfViewState extends State<MMPdfView> {
     final bounds = _controller.layout.pageLayouts[area.$1];
     final point = _controller.localToDocument(d.localPosition);
     final clamped = Offset(point.dx.clamp(bounds.left, bounds.right), point.dy.clamp(bounds.top, bounds.bottom));
-    setState(() => _area = (area.$1, area.$2, clamped));
+    _changeArea((area.$1, area.$2, clamped));
   }
 
   void _areaEnd() {
     final area = _area;
     if (area == null) return;
-    setState(() => _area = null);
+    _changeArea(null);
     final viewport = _areaViewportRect(area);
     // A click or a sliver is not an area.
     if (viewport.width < 6 || viewport.height < 6) return;
@@ -576,61 +701,72 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
     final scaled = pageRect.size;
-    return [
-      for (final h in widget.highlights)
-        if (h.page == page.pageNumber)
-          for (final r in h.rects)
-            Builder(
-              builder: (context) {
-                final rect = PdfRect(r.left, r.top, r.right, r.bottom).toRect(page: page, scaledPageSize: scaled);
-                return Positioned.fromRect(
-                  rect: rect.inflate(1),
-                  child: PdfOverlayInteractionRegion(
-                    onTap: (_) {
-                      // Cancel a pending text-selection commit from this click.
-                      _selectionEpoch++;
-                      final bounds = h.rects
-                          .map(
-                            (r) => _controller.calcRectForRectInsidePage(
-                              pageNumber: h.page,
-                              rect: PdfRect(r.left, r.top, r.right, r.bottom),
-                            ),
-                          )
-                          .reduce((a, b) => a.expandToInclude(b));
-                      widget.onHighlightTap?.call(
-                        h.id,
-                        Rect.fromPoints(
-                          _controller.documentToLocal(bounds.topLeft),
-                          _controller.documentToLocal(bounds.bottomRight),
-                        ),
-                      );
-                      return true;
-                    },
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
-                          borderRadius: BorderRadius.circular(2),
-                          border: h.emphasized
-                              ? Border.all(color: widget.emphasisColor, width: 2)
-                              : h.framed
-                              ? Border.all(color: h.underline ?? h.color, width: 2)
-                              : (h.underline == null
-                                    ? null
-                                    : Border(bottom: BorderSide(color: h.underline!, width: 2))),
-                        ),
+    final highlights = _highlightsByPage[page.pageNumber];
+    if (highlights == null) return const [];
+    final cached = _overlayCache[page.pageNumber];
+    if (cached != null &&
+        (cached.$1.width - scaled.width).abs() < .000001 &&
+        (cached.$1.height - scaled.height).abs() < .000001 &&
+        identical(cached.$2, highlights) &&
+        cached.$3 == widget.emphasisColor) {
+      _overlayCache.remove(page.pageNumber);
+      _overlayCache[page.pageNumber] = cached;
+      return cached.$4;
+    }
+    final overlays = <Widget>[
+      for (final h in highlights)
+        for (final r in h.rects)
+          Builder(
+            builder: (context) {
+              final rect = PdfRect(r.left, r.top, r.right, r.bottom).toRect(page: page, scaledPageSize: scaled);
+              return Positioned.fromRect(
+                rect: rect.inflate(1),
+                child: PdfOverlayInteractionRegion(
+                  onTap: (_) {
+                    // Cancel a pending text-selection commit from this click.
+                    _selectionEpoch++;
+                    final bounds = h.rects
+                        .map(
+                          (r) => _controller.calcRectForRectInsidePage(
+                            pageNumber: h.page,
+                            rect: PdfRect(r.left, r.top, r.right, r.bottom),
+                          ),
+                        )
+                        .reduce((a, b) => a.expandToInclude(b));
+                    widget.onHighlightTap?.call(
+                      h.id,
+                      Rect.fromPoints(
+                        _controller.documentToLocal(bounds.topLeft),
+                        _controller.documentToLocal(bounds.bottomRight),
+                      ),
+                    );
+                    return true;
+                  },
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
+                        borderRadius: BorderRadius.circular(2),
+                        border: h.emphasized
+                            ? Border.all(color: widget.emphasisColor, width: 2)
+                            : h.framed
+                            ? Border.all(color: h.underline ?? h.color, width: 2)
+                            : (h.underline == null ? null : Border(bottom: BorderSide(color: h.underline!, width: 2))),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
     ];
+    if (_overlayCache.length >= 16) _overlayCache.remove(_overlayCache.keys.first);
+    _overlayCache[page.pageNumber] = (scaled, highlights, widget.emphasisColor, overlays);
+    return overlays;
   }
 
   @override
   Widget build(BuildContext context) {
-    final area = _area;
     return Stack(
       children: [
         Positioned.fill(child: _viewer()),
@@ -654,22 +790,34 @@ class _MMPdfViewState extends State<MMPdfView> {
                 onPanStart: _areaStart,
                 onPanUpdate: _areaUpdate,
                 onPanEnd: (_) => _areaEnd(),
-                onPanCancel: () => setState(() => _area = null),
+                onPanCancel: () => _changeArea(null),
               ),
             ),
           ),
-        if (area != null)
-          Positioned.fromRect(
-            rect: _areaViewportRect(area),
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: widget.emphasisColor.withValues(alpha: 0.12),
-                  border: Border.all(color: widget.emphasisColor, width: 1.5),
+        Positioned.fill(
+          child: ValueListenableBuilder<int>(
+            valueListenable: _areaRevision,
+            builder: (context, value, child) {
+              final area = _area;
+              return IgnorePointer(
+                child: Stack(
+                  children: [
+                    if (area != null)
+                      Positioned.fromRect(
+                        rect: _areaViewportRect(area),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: widget.emphasisColor.withValues(alpha: 0.12),
+                            border: Border.all(color: widget.emphasisColor, width: 1.5),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            },
           ),
+        ),
       ],
     );
   }
@@ -684,6 +832,9 @@ class _MMPdfViewState extends State<MMPdfView> {
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
           margin: 16,
+          // pdfrx already provides adjacent-page prefetch, zoom previews and
+          // a 100 MiB image budget. Keep its defaults: a lower preview scale
+          // increased tile memory in the macOS benchmark without a latency win.
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
           pagePaintCallbacks: [_paintMatches],
@@ -715,4 +866,25 @@ class _MMPdfViewState extends State<MMPdfView> {
       ),
     );
   }
+}
+
+// Preserve page-list identity when a parent rebuilds with equivalent objects.
+bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    final x = a[i], y = b[i];
+    if (x.id != y.id ||
+        x.color != y.color ||
+        x.underline != y.underline ||
+        x.emphasized != y.emphasized ||
+        x.framed != y.framed ||
+        x.rects.length != y.rects.length) {
+      return false;
+    }
+    for (var j = 0; j < x.rects.length; j++) {
+      final r = x.rects[j], s = y.rects[j];
+      if (r.left != s.left || r.top != s.top || r.right != s.right || r.bottom != s.bottom) return false;
+    }
+  }
+  return true;
 }

@@ -191,13 +191,28 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final c = context.mmColors;
     final t = context.mmText;
     final provider = workspaceProvider(widget.studySetId);
-    final state = ref.watch(provider);
+    ref.watch(
+      provider.select(
+        (s) => (
+          s.activeMapId,
+          s.selectedCardId,
+          s.selectedCardIds,
+          s.mapView,
+          s.flashCardId,
+          s.editingCardId,
+          s.selectedMarkId,
+          s.editingMarkId,
+          s.connectingFromId,
+        ),
+      ),
+    );
+    final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
-    final loadedContent = state.content;
+    final loadedContent = ref.watch(workspaceContentProvider(widget.studySetId));
     // The controller's copy includes its own writes before the stream
     // delivers them, so a node created for editing is there at once.
     final content = loadedContent == null ? StudySetContent.empty : controller.content;
-    final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
+    final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
     final mapTitle = content.map(state.activeMapId)?.title ?? '';
     final rootTitle = mapTitle.isEmpty ? setTitle : mapTitle;
     final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId);

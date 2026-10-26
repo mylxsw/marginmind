@@ -1735,6 +1735,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collapse'**
   String get collapseSection;
+
+  /// No description provided for @pdfActualSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Size'**
+  String get pdfActualSize;
+
+  /// No description provided for @pdfFitWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Width'**
+  String get pdfFitWidth;
+
+  /// No description provided for @pdfFitPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit Page'**
+  String get pdfFitPage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

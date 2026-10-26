@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart' show AxisDirection, Rect;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -97,6 +97,17 @@ class ImportedNotice extends WorkspaceNotice {
   final List<String> failed;
 }
 
+/// Live reading positions do not invalidate workspace layout or native menus.
+final readingPagesProvider = NotifierProvider.family<ReadingPages, Map<String, int>, String>(ReadingPages.new);
+
+class ReadingPages extends Notifier<Map<String, int>> {
+  ReadingPages(this.studySetId);
+  final String studySetId;
+  @override
+  Map<String, int> build() => const {};
+  void record(String id, int page) => state = {...state, id: page};
+}
+
 class WorkspaceState {
   const WorkspaceState({
     this.content,
@@ -122,7 +133,6 @@ class WorkspaceState {
     this.connectingFromId,
     this.pending,
     this.reveal,
-    this.currentPages = const {},
     this.canUndo = false,
     this.canRedo = false,
     this.readerPanelVisible = false,
@@ -170,9 +180,6 @@ class WorkspaceState {
   final PendingAction? pending;
   final RevealRequest? reveal;
 
-  /// Page currently shown per document (persisted as `lastPage`, debounced).
-  final Map<String, int> currentPages;
-
   final bool canUndo;
   final bool canRedo;
 
@@ -218,7 +225,6 @@ class WorkspaceState {
     PendingAction? pending,
     bool clearPending = false,
     RevealRequest? reveal,
-    Map<String, int>? currentPages,
     bool? canUndo,
     bool? canRedo,
     bool? readerPanelVisible,
@@ -240,14 +246,13 @@ class WorkspaceState {
       activeDocumentId: clearActive ? null : (activeDocumentId ?? this.activeDocumentId),
       sidebarQuery: sidebarQuery ?? this.sidebarQuery,
       tagFilter: clearTagFilter ? null : (tagFilter ?? this.tagFilter),
-      selectedCardIds: Set.unmodifiable(
-        selectedCardIds ??
-            (selectRoot
-                ? <String>{}
-                : selectedCardId != null
-                ? {selectedCardId}
-                : this.selectedCardIds),
-      ),
+      selectedCardIds: selectedCardIds != null
+          ? Set.unmodifiable(selectedCardIds)
+          : selectRoot
+          ? const {}
+          : selectedCardId != null
+          ? Set.unmodifiable({selectedCardId})
+          : this.selectedCardIds,
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
@@ -261,7 +266,6 @@ class WorkspaceState {
       connectingFromId: clearConnecting ? null : (connectingFromId ?? this.connectingFromId),
       pending: clearPending ? null : (pending ?? this.pending),
       reveal: reveal ?? this.reveal,
-      currentPages: currentPages ?? this.currentPages,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
       readerPanelVisible: readerPanelVisible ?? this.readerPanelVisible,
@@ -468,6 +472,15 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
     final mark = s.selectedMarkId != null && _markExists(c, mapId, s.selectedMarkId!) ? s.selectedMarkId : null;
     final connecting = s.connectingFromId != null && c.node(s.connectingFromId!, mapId: mapId) != null;
+    if (listEquals(open, s.openDocumentIds) &&
+        active == s.activeDocumentId &&
+        mapId == s.activeMapId &&
+        selectedId == s.selectedCardId &&
+        setEquals(selectedIds, s.selectedCardIds) &&
+        mark == s.selectedMarkId &&
+        (connecting || s.connectingFromId == null)) {
+      return s;
+    }
     return s.copyWith(
       selectedMarkId: mark,
       clearMark: mark == null,
@@ -672,8 +685,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void recordPage(String documentId, int page) {
-    if (state.currentPages[documentId] == page) return;
-    state = state.copyWith(currentPages: {...state.currentPages, documentId: page});
+    final pages = readingPagesProvider(studySetId);
+    if (ref.read(pages)[documentId] == page) return;
+    ref.read(pages.notifier).record(documentId, page);
     _pageTimer?.cancel();
     _pageTimer = Timer(const Duration(milliseconds: 800), () {
       _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
@@ -685,7 +699,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// The page of the active document the reader is on.
   int? get activePage {
     final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
-    return doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);
+    return doc == null ? null : (ref.read(readingPagesProvider(studySetId))[doc.id] ?? doc.lastPage);
   }
 
   /// ⌘D: bookmarks the page being read, or removes the bookmark it has.
@@ -1350,3 +1364,33 @@ class _MarkEditSession {
 }
 
 final workspaceProvider = NotifierProvider.family<WorkspaceController, WorkspaceState, String>(WorkspaceController.new);
+
+/// Workspace presentation ignores persisted reading metadata. The repository
+/// remains authoritative; library Continue Learning still observes contentProvider.
+final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref, id) {
+  StudySetContent? visible;
+  bool sameDocument(Document a, Document b) =>
+      a.id == b.id &&
+      a.title == b.title &&
+      a.fileName == b.fileName &&
+      a.pageCount == b.pageCount &&
+      a.importedAt == b.importedAt;
+  bool samePresentation(StudySetContent a, StudySetContent b) =>
+      identical(a.cards, b.cards) &&
+      identical(a.nodes, b.nodes) &&
+      identical(a.maps, b.maps) &&
+      identical(a.annotations, b.annotations) &&
+      identical(a.reviews, b.reviews) &&
+      identical(a.relations, b.relations) &&
+      identical(a.summaries, b.summaries) &&
+      identical(a.bookmarks, b.bookmarks) &&
+      a.documents.length == b.documents.length &&
+      Iterable.generate(a.documents.length).every((i) => sameDocument(a.documents[i], b.documents[i]));
+  return ref.watch(
+    workspaceProvider(id).select((value) {
+      final next = value.content;
+      if (next == null || visible == null || !samePresentation(visible!, next)) visible = next;
+      return visible;
+    }),
+  );
+});

@@ -7,7 +7,6 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
-import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -31,7 +30,7 @@ class ReaderSidebar extends ConsumerWidget {
     final provider = workspaceProvider(studySetId);
     final controller = ref.read(provider.notifier);
     final mode = ref.watch(provider.select((s) => s.readerPanelMode));
-    final content = ref.watch(contentProvider(studySetId)).value ?? StudySetContent.empty;
+    final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
 
     return Container(
       width: readerSidebarWidth,

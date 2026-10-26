@@ -909,4 +909,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get collapseSection => '折叠';
+
+  @override
+  String get pdfActualSize => '实际大小';
+
+  @override
+  String get pdfFitWidth => '适合宽度';
+
+  @override
+  String get pdfFitPage => '适合页面';
 }

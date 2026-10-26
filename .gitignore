@@ -21,3 +21,9 @@ coverage/
 
 # Local tooling
 macrun.toml
+
+# Local PDF performance runs
+/performance-artifacts/
+/apps/marginmind/assets/sample/benchmark.pdf
+
+/apps/marginmind/assets/sample/workspace-images.pdf

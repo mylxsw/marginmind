@@ -1,0 +1,31 @@
+{
+  "changed_hit": 221,
+  "changed_lines": 226,
+  "percent": 97.78761061946902,
+  "files": {
+    "apps/marginmind/lib/app/app_commands.dart": {
+      "hit": 26,
+      "lines": 26
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart": {
+      "hit": 26,
+      "lines": 26
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_en.dart": {
+      "hit": 3,
+      "lines": 3
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart": {
+      "hit": 3,
+      "lines": 3
+    },
+    "packages/mm_pdf/lib/src/pdf_view.dart": {
+      "hit": 132,
+      "lines": 137
+    },
+    "packages/mm_pdf/lib/src/preview_cache.dart": {
+      "hit": 31,
+      "lines": 31
+    }
+  }
+}

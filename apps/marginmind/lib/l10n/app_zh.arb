@@ -282,5 +282,9 @@
   "noBookmarks": "没有书签",
   "noAnnotations": "没有标注",
   "expandSection": "展开",
-  "collapseSection": "折叠"
+  "collapseSection": "折叠",
+  "pdfFiles": "PDF 文档",
+  "pdfActualSize": "实际大小",
+  "pdfFitWidth": "适合宽度",
+  "pdfFitPage": "适合页面"
 }

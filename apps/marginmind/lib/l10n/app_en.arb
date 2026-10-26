@@ -509,5 +509,9 @@
   "noBookmarks": "No Bookmarks",
   "noAnnotations": "No Annotations",
   "expandSection": "Expand",
-  "collapseSection": "Collapse"
+  "collapseSection": "Collapse",
+  "pdfFiles": "PDF documents",
+  "pdfActualSize": "Actual Size",
+  "pdfFitWidth": "Fit Width",
+  "pdfFitPage": "Fit Page"
 }

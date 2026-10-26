@@ -946,4 +946,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get collapseSection => 'Collapse';
+
+  @override
+  String get pdfActualSize => 'Actual Size';
+
+  @override
+  String get pdfFitWidth => 'Fit Width';
+
+  @override
+  String get pdfFitPage => 'Fit Page';
 }
