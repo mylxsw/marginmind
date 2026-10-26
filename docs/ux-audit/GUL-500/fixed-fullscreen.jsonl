@@ -1,4 +1,4 @@
-{"event": "start", "pid": 56881, "cycles": 30, "sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "delay_seconds": 0.02, "fullscreen": true}
+{"event": "start", "pid": 62227, "cycles": 30, "sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "delay_seconds": 0.02, "fullscreen": true}
 {"event": "cycle", "completed_cycles": 1, "resize_requests": 5, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
 {"event": "cycle", "completed_cycles": 2, "resize_requests": 10, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
 {"event": "cycle", "completed_cycles": 3, "resize_requests": 15, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
@@ -29,4 +29,4 @@
 {"event": "cycle", "completed_cycles": 28, "resize_requests": 140, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
 {"event": "cycle", "completed_cycles": 29, "resize_requests": 145, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
 {"event": "cycle", "completed_cycles": 30, "resize_requests": 150, "observed_sizes": [[1280, 820], [1279, 819], [1280, 820], [960, 640], [1280, 820]], "fullscreen_states": [true, false]}
-{"event": "passed", "cycles": 30, "resize_requests": 150, "observed_transitions": 120, "fullscreen_transitions": 60, "elapsed_seconds": 103.48}
+{"event": "passed", "cycles": 30, "resize_requests": 150, "observed_transitions": 120, "fullscreen_transitions": 60, "elapsed_seconds": 103.49}

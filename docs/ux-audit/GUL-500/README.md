@@ -64,7 +64,8 @@ Preview 同为 1280×820 窗口，但适合窗口时页面宽约 523 逻辑像�
 墨量基本相等；基线的深色占比高来自锯齿化抽样，新策略将墨迹分布为连续的抗锯齿灰。
 **1× 与 Preview 的剩余差异来自笔画主干加粗（CoreText stem darkening）和显示字号不同，
 不属于采样问题，不再阻塞本 PR。** Preview 页面更宽，字形约大 6%；其平均墨量为 15.48。
-最终人眼验收和合并由 mylxsw 决定。若真实 1× 显示器上仍希望加深，可另行评估 gamma 调整；
+评审和合并由 Arch/Opus (Ora) 负责；真实 1× 屏幕的人眼验收保留在最终验收清单。
+若真实 1× 显示器上仍希望加深，可另行评估 gamma 调整；
 这也会加深图片和高亮，需要所有者权衡，不纳入本 PR。
 
 ### 防止再次漏线的测试
@@ -94,7 +95,7 @@ Preview 同为 1280×820 窗口，但适合窗口时页面宽约 523 逻辑像�
 不能证明原崩溃与该补丁完全同源；配置依据为
 [Flutter 官方文档](https://docs.flutter.dev/perf/impeller#macos)。
 
-**回退跟进负责人：Arch/GPT-Astra（本 issue 负责人）；合并确认由 mylxsw 负责。**
+**回退跟进负责人：Arch/GPT-Astra（本 issue 负责人）；合并由 Arch/Opus (Ora) 负责。**
 重新开启条件：稳定版明确包含 #192522 或等价修复；单独升级 PR 同步 `.fvmrc`、CI、
 发布工作流；去掉开关后补运行时后端证据，并通过同一缩放/全屏压力、1×/2×截图回归。
 在这些条件满足前保留回退，不因测试若干轮没崩就自行开启。
@@ -114,7 +115,7 @@ python3 tool/resize_stress.py --pid <PID> --cycles 30 --fullscreen > fullscreen.
 | 构建 | 完整轮数 | resize 请求 / 实际变化 | 全屏状态变化 | 结果 |
 | --- | ---: | ---: | ---: | --- |
 | Impeller 基线 | 28（目标 30） | 140 / 112（仅完整轮） | 56（仅完整轮） | 第 29 轮 AX 读回失败：[JSONL](baseline-fullscreen.jsonl) |
-| Skia 回退（最终构建） | 30 | 150 / 120 | 60 | 无崩溃，103.48 秒：[JSONL](fixed-fullscreen.jsonl) |
+| Skia 回退（最终构建） | 30 | 150 / 120 | 60 | 无崩溃，103.49 秒：[JSONL](fixed-fullscreen.jsonl) |
 
 基线第 29 轮发生 AX `cannotComplete (-25204)`，进程仍在、CGWindow 窗口仍在，
 `sample` 的主线程和光栅线程都处于事件循环等待；没有对应新崩溃报告。
