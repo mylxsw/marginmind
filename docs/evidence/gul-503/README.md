@@ -21,6 +21,6 @@
 ## 检查命令
 
 - `flutter analyze`、`dart format --set-exit-if-changed apps packages`：通过。
-- `python3 tool/coverage.py`：七个测试套件全部通过，总行覆盖率 91.99%；本次改动的行覆盖率 98.87%（349 / 353）。
+- `python3 tool/coverage.py`：七个测试套件全部通过，总行覆盖率 92.00%；本次改动的行覆盖率 98.89%（356 / 360）。
 - E-12 基准：`mm_layout` 500 节点布局 p95 约 0.4～0.5 ms（右向与平衡布局相同，修改前约 0.5 ms，上限 16 ms）；`mind_map_cache_test` 500 节点编辑重排基准通过。
 - `flutter build macos --release`：通过。
