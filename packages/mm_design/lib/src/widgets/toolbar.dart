@@ -82,9 +82,10 @@ class MMToolbarButton extends StatelessWidget {
     required this.onPressed,
     this.selected = false,
     this.label,
-  });
+  }) : assert(icon != null || label != null);
 
-  final IconData icon;
+  /// Null for a text-only button (e.g. "Done"); [label] is then required.
+  final IconData? icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool selected;
@@ -124,8 +125,9 @@ class MMToolbarButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: fg),
-              if (label != null) ...[const SizedBox(width: 6), Text(label!, style: t.callout.copyWith(color: fg))],
+              if (icon != null) Icon(icon, size: 16, color: fg),
+              if (icon != null && label != null) const SizedBox(width: 6),
+              if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
             ],
           ),
         );

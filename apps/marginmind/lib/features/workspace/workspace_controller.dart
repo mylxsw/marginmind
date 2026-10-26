@@ -119,6 +119,9 @@ class WorkspaceState {
     this.tool = AnnotationTool.select,
     this.color = MMAnnotationColor.yellow,
     this.syncToMap = true,
+    this.inkTool = MMPdfInkTool.freehand,
+    this.inkColor = MMInkColor.red,
+    this.inkWidth = MMInkWidth.medium,
     this.openDocumentIds = const [],
     this.activeDocumentId,
     this.sidebarQuery = '',
@@ -156,6 +159,15 @@ class WorkspaceState {
 
   /// Whether a new highlight also creates a card in the mind map.
   final bool syncToMap;
+
+  /// The pen's shape, color and width while [tool] is [AnnotationTool.ink].
+  final MMPdfInkTool inkTool;
+  final MMInkColor inkColor;
+  final MMInkWidth inkWidth;
+
+  /// What [MMPdfView.ink] gets: the pen, or null when not drawing.
+  MMPdfInk? get ink =>
+      tool == AnnotationTool.ink ? MMPdfInk(tool: inkTool, colorIndex: inkColor.index, width: inkWidth.points) : null;
   final List<String> openDocumentIds;
   final String? activeDocumentId;
   final String sidebarQuery;
@@ -209,6 +221,9 @@ class WorkspaceState {
     AnnotationTool? tool,
     MMAnnotationColor? color,
     bool? syncToMap,
+    MMPdfInkTool? inkTool,
+    MMInkColor? inkColor,
+    MMInkWidth? inkWidth,
     List<String>? openDocumentIds,
     String? activeDocumentId,
     bool clearActive = false,
@@ -251,6 +266,9 @@ class WorkspaceState {
       tool: tool ?? this.tool,
       color: color ?? this.color,
       syncToMap: syncToMap ?? this.syncToMap,
+      inkTool: inkTool ?? this.inkTool,
+      inkColor: inkColor ?? this.inkColor,
+      inkWidth: inkWidth ?? this.inkWidth,
       openDocumentIds: openDocumentIds ?? this.openDocumentIds,
       activeDocumentId: clearActive ? null : (activeDocumentId ?? this.activeDocumentId),
       sidebarQuery: sidebarQuery ?? this.sidebarQuery,
@@ -603,8 +621,30 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<void> setTool(AnnotationTool tool) {
     if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
+    // The pen belongs to this window and this session; it never comes back
+    // armed after a restart.
+    if (tool == AnnotationTool.ink) return Future.value();
     return ref.read(settingsProvider.notifier).setAnnotationTool(tool);
   }
+
+  /// ⇧⌘M: picks up the pen, or puts it down.
+  Future<void> toggleInkTool() =>
+      setTool(state.tool == AnnotationTool.ink ? AnnotationTool.select : AnnotationTool.ink);
+
+  /// Esc / Done: back to the Select tool.
+  Future<void> exitInk() => state.tool == AnnotationTool.ink ? setTool(AnnotationTool.select) : Future.value();
+
+  void setInkTool(MMPdfInkTool tool) => state = state.copyWith(inkTool: tool);
+
+  void setInkColor(MMInkColor color) => state = state.copyWith(
+    inkColor: color,
+    inkTool: state.inkTool == MMPdfInkTool.eraser ? MMPdfInkTool.freehand : null,
+  );
+
+  void setInkWidth(MMInkWidth width) => state = state.copyWith(
+    inkWidth: width,
+    inkTool: state.inkTool == MMPdfInkTool.eraser ? MMPdfInkTool.freehand : null,
+  );
 
   Future<void> toggleTool() =>
       setTool(state.tool == AnnotationTool.highlight ? AnnotationTool.select : AnnotationTool.highlight);
@@ -815,6 +855,26 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
     return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
+  }
+
+  // ---- ink ---------------------------------------------------------------------
+
+  /// One finished pen stroke; one undo step.
+  Future<void> addInkStroke(String documentId, MMPdfInkDraft draft) async {
+    if (content.document(documentId) == null) return;
+    final stroke = draft.toStroke(id: ref.read(editorProvider).newId(), documentId: documentId);
+    try {
+      await _update((c) => _editor.addInkStroke(c, stroke));
+    } on ArgumentError {
+      // A stroke the model rejects (e.g. a page the document no longer has)
+      // is dropped; the view stops showing it on its own.
+    }
+  }
+
+  /// Whole strokes touched by one eraser gesture; one undo step.
+  Future<void> eraseInkStrokes(Set<String> ids) async {
+    if (ids.isEmpty) return;
+    await _update((c) => ids.fold(c, _editor.removeInkStroke));
   }
 
   /// Absolute path of an image stored in this study set.
@@ -1474,6 +1534,7 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       identical(a.relations, b.relations) &&
       identical(a.summaries, b.summaries) &&
       identical(a.bookmarks, b.bookmarks) &&
+      identical(a.inkStrokes, b.inkStrokes) &&
       a.documents.length == b.documents.length &&
       Iterable.generate(a.documents.length).every((i) => sameDocument(a.documents[i], b.documents[i]));
   return ref.watch(

@@ -23,7 +23,7 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 | `mm_design` | 设计令牌、`MMTheme`、所有可复用组件。不含业务概念，不含文案。 | Flutter、`cupertino_icons` |
 | `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`mm_core`、`window_manager`、`macos_window_utils` |
 | `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/` + `images/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
-| `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
+| `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、笔迹层、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
 | `mm_layout` | `TreeLayout`：向右生长的树，父节点在子树块中垂直居中；`balanced: true` 时中心主题的分支按子树高度分到左右两侧（前一部分在右，其余在左并镜像生长），左侧节点记在 `leftSide`。输入节点尺寸（及概要标签尺寸），输出矩形、连线和概要位置。 | 仅 `meta` |
 | `apps/marginmind` | 组合根：Riverpod providers、路由、菜单与快捷键、功能界面、多语言。 | 以上全部 |
 
@@ -50,6 +50,8 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 
 - 内部剪贴板写 version 3，继续读取 version 1 / 2；携带多页位置、图片引用和复制时图片文件的绝对路径（`imagePath`）。同包粘贴（源文档仍在，或包内已有卡片引用该图片）直接复用图片；粘贴到其他学习集时，控制器只读取以条目自身 `images/<sha256>.png|jpg` 结尾的路径，经 `importImage` 校验并导入后，图片卡片保留图片但不带原文位置；读取失败或路径不符时降为文字笔记。阅读器将选区按页保存，分页绘制同一 ID 的高亮；跨页引文按阅读顺序以换行连接，回到原文定位到起始页。工作区维护活动脑图 ID，画布、大纲、拖拽、查找、剪贴板与导出均使用该 ID；侧栏管理脑图，节点菜单可以将同一卡片加入其他脑图。
 - **框选摘录（C-02）**：阅读器的“框选”工具（⇧⌘R）下，`MMPdfView(areaSelecting: true)` 用一个半透明的拖动识别器优先接管指针拖动（滚轮和触控板滚动仍交给 PDF 视图），矩形限制在起点所在页，松开后回调 `MMPdfArea`（页码 + PDF 坐标矩形）。`MMPdfViewController.captureArea` 用 PDFium 按每点 3 像素（最长边不超过 3000）渲染该区域为 PNG。控制器先导入图片，再用 `StudySetEditor.createAreaExcerpt` 一次写入“空引文的单矩形高亮 + 图片卡片”，只记一步撤销；截图或导入失败不改动内容。框选的高亮在原文上以描边显示，点击后的浮动工具条没有“复制”。移除图片卡片（且不在其他脑图中）时同时删除它的框选高亮。脑图、大纲、侧栏和复习中的图片通过 `CardImageScope` 解析为包内文件；脑图节点按框选矩形的宽高比预留图片高度，无需先解码。
+
+- **基础圈画（GUL-518 / P2-C04）**：标注工具组的“画笔”（⇧⌘M，`AnnotationTool.ink`）只属于当前窗口和本次运行，不写入设置，重启后回到选择工具；Esc 或“完成”退出。画笔下 `MMPdfView(ink: MMPdfInk)` 用与框选相同的半透明拖动识别器接管指针（滚轮、触控板照常滚动缩放），并关闭文字选择与高亮点击。笔迹以 PDF 页面坐标记录（pdfrx `toPdfPoint` / `toOffset`，与高亮同一坐标系，含页面旋转），起点所在页为准、越界夹到页边；松手后自由线做 Douglas–Peucker 简化（0.3 点起，超过 1000 点加倍容差），圈画规整为外接椭圆（按住 ⇧ 保留手绘，存为自由线），箭头只存起止两点；宽度单位是 PDF 点，随缩放一起变粗。橡皮擦按下即判定，点击或划过约 6 屏幕像素内的整条笔迹，一次手势回调一次 `onInkErased`。每页一个 `IgnorePointer` + `RepaintBoundary` 的 `CustomPainter`，按页保留列表身份（同 ID 序列复用旧列表），擦除中的隐藏集合按页通知，所以只有变化的页面重绘；正在画和刚画完、等待父层保存的笔迹在视口层单独绘制，父层的 `inkStrokes` 出现新 ID 后移交给页面层，2 秒未确认则放弃显示。控制器 `addInkStroke` / `eraseInkStrokes` 各是一次 `_update`，所以每一笔、每一次擦除各一步撤销；模型拒绝的笔迹（如页码越界）直接丢弃。
 
 - **标签（C-05）**：`Card.tags` 保存共享标签；`StudySetEditor.setTags` 去掉首尾空白、忽略空标签并按大小写不敏感去重，一次保存记一步撤销。旧卡片缺少 `tags` 时读为空列表。`StudySetContent.tags(mapId:)` 列出当前图的标签；`search(query, mapId:, tag:)` 同时匹配标题、引文和标签，可与精确标签筛选组合，空查询配合标签会返回该标签下的全部卡片（含折叠后代）。侧栏“标签”列出当前图标签，点选后在卡片分组展示匹配结果，点“全部标签”清除筛选。节点菜单与“脑图”菜单可编辑标签，内部剪贴板保留标签。
 
