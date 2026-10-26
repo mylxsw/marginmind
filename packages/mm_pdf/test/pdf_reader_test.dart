@@ -12,6 +12,13 @@ void main() {
     TestPdfOutline.nodes = [];
   });
 
+  // Navigation animates, so its future completes only while frames are pumped.
+  Future<void> settle(WidgetTester tester, Future<void> action) async {
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await action;
+  }
+
   Future<MMPdfViewController> open(WidgetTester tester, {void Function(int, int)? onPageChanged}) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
@@ -75,32 +82,25 @@ void main() {
     var notified = 0;
     controller.addListener(() => notified++);
 
-    await controller.jumpToPage(3);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.jumpToPage(3));
     expect(controller.currentPage, 3);
     expect(controller.canGoBack, isTrue);
     expect(notified, greaterThan(0));
 
     await controller.jumpToPage(3);
-    await controller.jumpToPage(99);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.jumpToPage(99));
     expect(controller.currentPage, 3, reason: 'jumping to where you are does nothing; 99 clamps to the last page');
 
-    await controller.firstPage();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.firstPage());
     expect(controller.currentPage, 1);
-    await controller.lastPage();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.lastPage());
     expect(controller.currentPage, 3);
 
-    await controller.goBack();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.goBack());
     expect(controller.currentPage, 1);
-    await controller.goBack();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.goBack());
     expect(controller.currentPage, 3);
-    await controller.goBack();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.goBack());
     expect(controller.currentPage, 1);
     expect(controller.canGoBack, isFalse);
     expect(pages, contains(3));
@@ -108,11 +108,9 @@ void main() {
 
   testWidgets('jumping to a rectangle records the origin', (tester) async {
     final controller = await open(tester);
-    await controller.jumpToRect(2, const []);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.jumpToRect(2, const []));
     expect(controller.currentPage, 2);
-    await controller.goBack();
-    await tester.pumpAndSettle();
+    await settle(tester, controller.goBack());
     expect(controller.currentPage, 1);
   });
 
@@ -127,11 +125,9 @@ void main() {
     expect(controller.matchCount, 3);
     expect(controller.matchIndex, 0);
 
-    await tester.runAsync(controller.nextMatch);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.nextMatch());
     expect(controller.matchIndex, 1);
-    await tester.runAsync(controller.previousMatch);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.previousMatch());
     expect(controller.matchIndex, 0);
 
     controller.search('absent phrase');
@@ -167,8 +163,7 @@ void main() {
 
   testWidgets('swapping the document resets what the controller knows', (tester) async {
     final controller = await open(tester);
-    await controller.jumpToPage(2);
-    await tester.pumpAndSettle();
+    await settle(tester, controller.jumpToPage(2));
     expect(controller.canGoBack, isTrue);
     await tester.pumpWidget(
       MaterialApp(
