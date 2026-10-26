@@ -48,9 +48,8 @@ class StatsScreen extends ConsumerWidget {
     if (data != null) {
       final days = ReviewStats.daily(data.logs, now);
       final upcoming = ReviewStats.upcoming(data.dues, now);
-      final windowLogs = days.fold<int>(0, (n, d) => n + d.reviewed);
-      final windowKept = days.fold<int>(0, (n, d) => n + d.remembered);
-      final retention = windowLogs == 0 ? null : windowKept / windowLogs;
+      final since = days.first.day;
+      final retention = ReviewStats.retention(data.logs.where((log) => !log.reviewedAt.toLocal().isBefore(since)));
       body = SingleChildScrollView(
         padding: const EdgeInsets.all(MMSpacing.xxl),
         child: Center(
@@ -62,9 +61,9 @@ class StatsScreen extends ConsumerWidget {
                 _StatsSection(
                   key: const ValueKey('stats-reviewed'),
                   title: l.statsReviewed,
-                  value: '${days.last.reviewed}',
+                  value: '${days.fold<int>(0, (n, d) => n + d.reviewed)}',
                   child: _BarChart(
-                    values: [for (final d in days) d.reviewed.toDouble()],
+                    values: [for (final d in days) d.reviewed == 0 ? null : d.reviewed.toDouble()],
                     semanticLabel: l.statsReviewed,
                   ),
                 ),
@@ -74,7 +73,7 @@ class StatsScreen extends ConsumerWidget {
                   title: l.statsRetention,
                   value: retention == null ? '—' : '${(retention * 100).round()}%',
                   child: _BarChart(
-                    values: [for (final d in days) d.retention ?? 0],
+                    values: [for (final d in days) d.retention],
                     max: 1,
                     semanticLabel: l.statsRetention,
                   ),
@@ -84,7 +83,10 @@ class StatsScreen extends ConsumerWidget {
                   key: const ValueKey('stats-upcoming'),
                   title: l.statsUpcoming,
                   value: '${upcoming.fold<int>(0, (a, b) => a + b)}',
-                  child: _BarChart(values: [for (final n in upcoming) n.toDouble()], semanticLabel: l.statsUpcoming),
+                  child: _BarChart(
+                    values: [for (final n in upcoming) n == 0 ? null : n.toDouble()],
+                    semanticLabel: l.statsUpcoming,
+                  ),
                 ),
               ],
             ),
@@ -145,12 +147,12 @@ class _StatsSection extends StatelessWidget {
   }
 }
 
-/// Equal-width bars on a baseline. A day without a value keeps a thin stub
-/// so the timeline stays readable.
+/// Equal-width bars on a baseline. A day without a value (null) keeps a thin
+/// neutral stub; a value of zero is a thin accent stub.
 class _BarChart extends StatelessWidget {
   const _BarChart({required this.values, required this.semanticLabel, this.max});
 
-  final List<double> values;
+  final List<double?> values;
   final double? max;
   final String semanticLabel;
 
@@ -170,15 +172,16 @@ class _BarChart extends StatelessWidget {
 class BarChartPainter extends CustomPainter {
   const BarChartPainter({required this.values, required this.bar, required this.stub, this.max});
 
-  final List<double> values;
+  final List<double?> values;
   final double? max;
   final Color bar;
   final Color stub;
 
-  /// Bar heights as a share of the chart height, 0–1.
-  List<double> get fractions {
-    final top = max ?? values.fold<double>(0, (a, b) => b > a ? b : a);
-    return [for (final v in values) top <= 0 ? 0 : (v / top).clamp(0.0, 1.0)];
+  /// Bar heights as a share of the chart height, 0–1; null for a day
+  /// without a value.
+  List<double?> get fractions {
+    final top = max ?? values.fold<double>(0, (a, b) => b != null && b > a ? b : a);
+    return [for (final v in values) v == null ? null : (top <= 0 ? 0 : (v / top).clamp(0.0, 1.0))];
   }
 
   @override
@@ -190,13 +193,16 @@ class BarChartPainter extends CustomPainter {
     final fractions = this.fractions;
     for (var i = 0; i < values.length; i++) {
       final left = i * (width + gap);
-      final height = fractions[i] == 0 ? stubHeight : (size.height * fractions[i]).clamp(stubHeight, size.height);
+      final fraction = fractions[i];
+      final height = fraction == null || fraction == 0
+          ? stubHeight
+          : (size.height * fraction).clamp(stubHeight, size.height);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(left, size.height - height, width, height),
           Radius.circular(width.clamp(0, 4) / 2),
         ),
-        Paint()..color = fractions[i] == 0 ? stub : bar,
+        Paint()..color = fraction == null ? stub : bar,
       );
     }
   }

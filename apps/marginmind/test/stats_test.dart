@@ -61,7 +61,7 @@ void main() {
     expect(find.text('Reviews'), findsOneWidget);
     expect(find.text('Retained'), findsOneWidget);
     expect(find.text('Next 30 Days'), findsOneWidget);
-    expect(value(tester, 'stats-reviewed').data, '3');
+    expect(value(tester, 'stats-reviewed').data, '4');
     expect(value(tester, 'stats-retention').data, '75%');
     expect(find.byType(CustomPaint), findsWidgets);
 
@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<StatsRoute>());
     expect(find.text('认知科学入门'), findsOneWidget);
-    expect(value(tester, 'stats-reviewed').data, '3');
+    expect(value(tester, 'stats-reviewed').data, '4');
 
     await tester.tap(find.byTooltip('Back to Study Set'));
     await tester.pumpAndSettle();
@@ -113,7 +113,23 @@ void main() {
     test('scales to the largest value, or to a fixed maximum', () {
       expect(const BarChartPainter(values: [0, 2, 4], bar: bar, stub: stub).fractions, [0, .5, 1]);
       expect(const BarChartPainter(values: [0, 0], bar: bar, stub: stub).fractions, [0, 0]);
+      expect(const BarChartPainter(values: [null, 4, null], bar: bar, stub: stub).fractions, [null, 1, null]);
       expect(const BarChartPainter(values: [.5, 2], max: 1, bar: bar, stub: stub).fractions, [.5, 1]);
+    });
+
+    test('draws a zero in the accent color and a missing value in the neutral one', () async {
+      const painter = BarChartPainter(values: [null, 0], max: 1, bar: bar, stub: stub);
+      final recorder = PictureRecorder();
+      painter.paint(Canvas(recorder), const Size(23, 10));
+      final image = await recorder.endRecording().toImage(23, 10);
+      final data = (await image.toByteData())!;
+      Color at(int x) {
+        final i = (9 * 23 + x) * 4;
+        return Color.fromARGB(data.getUint8(i + 3), data.getUint8(i), data.getUint8(i + 1), data.getUint8(i + 2));
+      }
+
+      expect(at(4), stub);
+      expect(at(17), bar);
     });
 
     test('paints every bar and repaints only on change', () {
