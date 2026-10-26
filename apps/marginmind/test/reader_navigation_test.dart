@@ -50,7 +50,15 @@ void main() {
       addTearDown(container.dispose);
       container.listen(workspaceProvider('demo-1'), (_, _) {});
       await container.read(contentProvider('demo-1').future);
-      return (container, container.read(workspaceProvider('demo-1').notifier));
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      return (container, controller);
+    }
+
+    // A study set opens on the document read last; these need none open.
+    void closeAll(ProviderContainer container, WorkspaceController controller) {
+      for (final id in [...container.read(workspaceProvider('demo-1')).openDocumentIds]) {
+        controller.closeDocument(id);
+      }
     }
 
     test('the page sidebar starts closed on thumbnails and keeps its mode', () async {
@@ -82,6 +90,7 @@ void main() {
     test('find needs a document, can be asked again and closes with the document', () async {
       final (container, controller) = await create();
       WorkspaceState state() => container.read(workspaceProvider('demo-1'));
+      closeAll(container, controller);
       controller.openFind();
       expect(state().findVisible, isFalse);
       controller.openDocument('c1');
@@ -103,6 +112,7 @@ void main() {
 
     test('bookmarks follow the page being read: add, remove, rename, delete, undo', () async {
       final (container, controller) = await create();
+      closeAll(container, controller);
       await controller.toggleBookmark();
       expect(controller.content.bookmarks, isEmpty, reason: 'no document is open');
       controller.openDocument('c1');

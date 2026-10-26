@@ -109,7 +109,7 @@ class _Thumbnails extends StatefulWidget {
 }
 
 class _ThumbnailsState extends State<_Thumbnails> {
-  static const _extent = 168.0;
+  static const _extent = 184.0;
   static const _thumbWidth = 112.0;
   static const _thumbHeight = 144.0;
 
