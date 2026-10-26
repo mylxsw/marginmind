@@ -342,9 +342,14 @@ int _nearest(String t, String q, double? near) {
   return best;
 }
 
+/// Whether a sentence ends at [i] in [t]. A period inside a number or a
+/// section label such as “7.5” does not.
+bool _endsAt(String t, int i) =>
+    _enders.contains(t[i]) && (t[i] != '.' || i + 1 == t.length || !RegExp(r'[0-9A-Za-z]').hasMatch(t[i + 1]));
+
 int _sentenceStart(String t, int from) {
   for (var i = from - 1; i >= 0; i--) {
-    if (_enders.contains(t[i])) {
+    if (_endsAt(t, i)) {
       var j = i + 1;
       while (j < from && (t[j] == ' ' || t[j] == '\n')) {
         j++;
@@ -357,7 +362,7 @@ int _sentenceStart(String t, int from) {
 
 int _sentenceEnd(String t, int from) {
   for (var i = from; i < t.length; i++) {
-    if (_enders.contains(t[i])) return i + 1;
+    if (_endsAt(t, i)) return i + 1;
   }
   return t.length;
 }

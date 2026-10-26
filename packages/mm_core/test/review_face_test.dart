@@ -87,6 +87,12 @@ void main() {
       expect(excerptContext(text, '重复的话')!.before, '甲说。');
     });
 
+    test('a period inside a number or section label does not end a sentence', () {
+      final r = excerptContext('前文。卡片应能独立成立。7.5 图式 schema 是知识的组织方式。再后。', '卡片应能独立成立。')!;
+      expect(r.after, '7.5 图式 schema 是知识的组织方式。');
+      expect(excerptContext('It grew 3.5 times. Then it stopped. End.', 'Then')!.before, 'It grew 3.5 times. ');
+    });
+
     test('returns null when the quote is missing or blank', () {
       expect(excerptContext(page, 'absent'), isNull);
       expect(excerptContext(page, '  '), isNull);
