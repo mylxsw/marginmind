@@ -224,7 +224,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                       key: ValueKey(doc.id),
                                       filePath: controller.filePath(doc),
                                       controller: _pdf,
-                                      initialPage: doc.lastPage,
+                                      initialPage:
+                                          ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
                                       backgroundColor: c.readerBackground,
                                       emphasisColor: c.accent,
                                       highlights: _highlights(content, doc.id, state),

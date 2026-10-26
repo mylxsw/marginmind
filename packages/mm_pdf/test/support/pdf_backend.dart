@@ -4,14 +4,16 @@ import 'dart:typed_data';
 
 import 'package:pdfrx/pdfrx.dart';
 
-void installTestPdfBackend() {
+void installTestPdfBackend({int pageCount = 3}) {
   Pdfrx.cacheDirectoryPath = Directory.systemTemp.path;
-  PdfrxEntryFunctions.instance = _Engine();
+  PdfrxEntryFunctions.instance = _Engine(pageCount);
 }
 
 // Deterministic backend: exercise the actual viewer and selection delegate
 // without requiring a native PDFium asset in flutter test or CI.
 class _Engine implements PdfrxEntryFunctions {
+  _Engine(this.pageCount);
+  final int pageCount;
   @override
   Future<void> init() async {}
   @override
@@ -20,15 +22,16 @@ class _Engine implements PdfrxEntryFunctions {
     PdfPasswordProvider? passwordProvider,
     bool firstAttemptByEmptyPassword = true,
     bool useProgressiveLoading = false,
-  }) async => _Document();
+  }) async => _Document(pageCount);
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _Document extends PdfDocument {
-  _Document() : super(sourceName: 'selection-test.pdf');
+  _Document(this.pageCount) : super(sourceName: 'selection-test.pdf');
+  final int pageCount;
   @override
-  late List<PdfPage> pages = [_Page(this, 1), _Page(this, 2), _Page(this, 3)];
+  late List<PdfPage> pages = List.generate(pageCount, (index) => _Page(this, index + 1));
   @override
   bool get isEncrypted => false;
   @override

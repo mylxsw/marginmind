@@ -14,8 +14,10 @@ import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/workspace_screen.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../packages/mm_pdf/test/support/pdf_backend.dart';
 import 'helpers.dart';
 
 void main() {
@@ -53,6 +55,36 @@ void main() {
     await controller.finishEditing('New topic');
     await settleHud(tester);
   });
+  for (final saved in [false, true]) {
+    testWidgets('switching document tabs restores the latest ${saved ? "saved" : "unsaved"} page', (tester) async {
+      installTestPdfBackend(pageCount: 164);
+      final container = await pumpApp(tester, renderPdf: true);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      final original = tester.element(find.byType(MMPdfView));
+      expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).initialPage, 1);
+
+      controller.recordPage('c1', 50);
+      await tester.pump(saved ? const Duration(seconds: 1) : const Duration(milliseconds: 20));
+      await tester.pumpAndSettle();
+      expect(container.read(contentProvider('demo-1')).value!.document('c1')!.lastPage, saved ? 50 : 1);
+      // The presentation intentionally retains its original document object.
+      expect(container.read(workspaceContentProvider('demo-1'))!.document('c1')!.lastPage, 1);
+      controller.openDocument('c2');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('c2')), findsOneWidget);
+      controller.openDocument('c1');
+      await tester.pumpAndSettle();
+      expect(tester.element(find.byType(MMPdfView)), isNot(same(original)));
+      expect(tester.widget<MMPdfView>(find.byType(MMPdfView)).initialPage, 50);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(container.read(readingPagesProvider('demo-1'))['c1'], 50);
+      expect(container.read(contentProvider('demo-1')).value!.document('c1')!.lastPage, 50);
+    });
+  }
+
   testWidgets('disk-backed 300-node workspace ignores reading metadata and library summary emissions', (tester) async {
     late Directory dir;
     late FileLibraryStore store;
