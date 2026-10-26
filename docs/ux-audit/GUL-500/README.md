@@ -13,7 +13,7 @@ U-G1：采用 macOS `FLTEnableImpeller=false` 的临时规避，不升级 Flutte
 此外，显示模式切换期间，同机先前运行的 Debug 实例产生了同栈崩溃，见
 [去除路径的栈摘录](display-switch-crash.txt)。这不是本分支 Release 基线，不能混入下表计数。
 原审查的栈与 [Flutter #192522](https://github.com/flutter/flutter/pull/192522)
-描述的错尺寸 back-buffer / 空纹理问题一致，；未验证上游补丁本身，仍不能证明同一根因。
+描述的错尺寸 back-buffer / 空纹理问题一致；未验证上游补丁本身，仍不能证明同一根因。
 截至查询时该 PR 仍为 OPEN、`mergedAt=null`，没有已确认包含该修复的稳定版本。
 回退方式来自 [Flutter 官方 macOS Impeller 文档](https://docs.flutter.dev/perf/impeller#macos)。
 后续仅在稳定版包含该修复、同样的压力测试及截图验证通过后移除此配置；升级需另开 PR
@@ -46,10 +46,10 @@ AppKit 可能合并快速请求或约束窗口大小，因此分别报告请求�
 这是进程外 AX 压力测试，不等同于上游在同一 AppKit 调用栈中同步 shrink/restore 的
 确定性复现程序，也不覆盖全屏、显示器热插拔等全部触发路径。
 
-| 构建 | 轮数 / 调整次数 | 结果 | 记录 |
+| 构建 | 轮数 / 缩放请求数 | 结果 | 记录 |
 | --- | ---: | --- | --- |
-| 基线，Impeller | 待完成 | 待完成 | [JSONL](baseline-resize.jsonl) |
-| 修改后，Skia | 待完成 | 待完成 | [JSONL](fixed-resize.jsonl) |
+| 基线，Impeller | 250 / 1250 | 无崩溃；1000 次实际尺寸变化，125.51 秒 | [JSONL](baseline-resize.jsonl) |
+| 修改后，Skia | 250 / 1250 | 无崩溃；1000 次实际尺寸变化，119.47 秒 | [JSONL](fixed-resize.jsonl) |
 
 早期 960×600 的直接读回脚本曾在修改后第 137 轮中断（[记录](interrupted-resize.jsonl)）：
 应用仍存活，后续独立读回为 960×634，确认是原生窗口最小高度约束。
@@ -71,7 +71,7 @@ AppKit 可能合并快速请求或约束窗口大小，因此分别报告请求�
 ## 自动化验证
 
 - `dart format --set-exit-if-changed apps packages`、`flutter analyze` 通过。
-- 七个 Dart / Flutter 测试套件全部通过，汇总行覆盖率 **91.32%**，`mm_pdf` **93.13%**。
+- 七个 Dart / Flutter 测试套件全部通过，汇总行覆盖率 **91.33%**，`mm_pdf` **93.13%**。
 - 新回调的 3 个可执行行全部覆盖；测试观察真实 viewer 发给测试 PDF 后端的像素尺寸，
   覆盖 1× → 2× → 3× → 1×、缩放与整页分配上限。
 - Python 工具测试通过；`python3 -m trace --count --summary --module unittest discover -s tool/tests`
