@@ -212,7 +212,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
     final bookmarked =
         hasDocument &&
-        workspace!.content.bookmarkAt(workspaceState!.activeDocumentId!, workspace.activePage ?? 0) != null;
+        workspace.content.bookmarkAt(workspaceState.activeDocumentId!, workspace.activePage ?? 0) != null;
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -493,7 +493,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (inWorkspace) ...[
         AppCommand(
           workspaceState!.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-          hasDocument ? workspace!.toggleReaderPanel : null,
+          hasDocument ? workspace.toggleReaderPanel : null,
           shortcut: AppShortcuts.toggleReaderSidebar,
         ),
         for (final (mode, label, shortcut) in [
@@ -502,13 +502,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           (ReaderPanelMode.bookmarks, l.readerBookmarks, AppShortcuts.readerBookmarks),
           (ReaderPanelMode.annotations, l.readerAnnotations, AppShortcuts.readerAnnotations),
         ])
-          AppCommand(label, hasDocument ? () => workspace!.showReaderPanel(mode) : null, shortcut: shortcut),
+          AppCommand(label, hasDocument ? () => workspace.showReaderPanel(mode) : null, shortcut: shortcut),
       ],
       // ⌘F finds in the PDF when the keyboard is in the reader, else in the sidebar.
       AppCommand(
         findsInDocument ? l.findInDocument : l.search,
         findsInDocument
-            ? workspace!.openFind
+            ? workspace.openFind
             : (inLibrary || inWorkspace)
             ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.search)
             : null,
@@ -516,13 +516,13 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     final go = [
-      AppCommand(l.findNext, canRead && workspaceState!.findVisible ? () => pdf!.nextMatch() : null,
+      AppCommand(l.findNext, canRead && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
           shortcut: AppShortcuts.findNext),
-      AppCommand(l.findPrevious, canRead && workspaceState!.findVisible ? () => pdf!.previousMatch() : null,
+      AppCommand(l.findPrevious, canRead && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
           shortcut: AppShortcuts.findPrevious),
       AppCommand(
         bookmarked ? l.removeBookmark : l.addBookmark,
-        canRead && !_textFocused ? workspace!.toggleBookmark : null,
+        canRead && !_textFocused ? workspace.toggleBookmark : null,
         shortcut: AppShortcuts.toggleBookmark,
       ),
       AppCommand(l.goBack, canRead && !_textFocused ? () => pdf!.goBack() : null, shortcut: AppShortcuts.goBack),

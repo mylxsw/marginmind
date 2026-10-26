@@ -37,7 +37,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   @override
   Widget build(BuildContext context) {
-    final l = context.l10n;
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
     final state = ref.watch(provider);
@@ -275,6 +274,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       ],
                     ),
                       ),
+                    ),
                     ],
                   ),
           ),
@@ -406,7 +406,6 @@ class _PagePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    final t = context.mmText;
     return MMGlass(
       borderRadius: BorderRadius.circular(16),
       padding: const EdgeInsets.all(3),
