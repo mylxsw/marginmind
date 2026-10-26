@@ -113,6 +113,8 @@ dart format --set-exit-if-changed apps packages
 
 完整的项目背景、已完成工作和后续计划见 [docs/project-plan.md](docs/project-plan.md)。
 
+二期需求与 agent 接手说明见 [内容增强与阅读研究](docs/phase-2-requirements.md)，涵盖卡片全文、外部图片、OCR、批注、导出和 Research 工作台。
+
 - [x] 设计稿与 UI 规范（`design/`）
 - [x] 设计系统、应用框架、多语言、外观设置、应用图标
 - [x] 学习集文件包（`.mmset`，JSON + PDF 副本）

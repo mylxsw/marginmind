@@ -10,6 +10,8 @@
 
 项目背景、当前进度和开发计划：[docs/project-plan.md](docs/project-plan.md)。
 
+二期功能开发请先读 [二期需求与执行说明](docs/phase-2-requirements.md)，按需求 ID 和依赖批次接手，并登记验收证据。
+
 ## 约定
 
 - **分层与依赖**：见 [docs/architecture.md](docs/architecture.md)。`mm_core` 不能引入 Flutter；功能代码不能直接使用第三方 UI 或平台插件，只能通过 `mm_design` / `mm_platform`。
