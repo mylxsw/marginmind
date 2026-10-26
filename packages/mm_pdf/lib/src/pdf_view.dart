@@ -172,23 +172,25 @@ class MMPdfViewController extends ChangeNotifier {
       _notify();
       return;
     }
+    final searcher = state._searcher;
+    if (searcher == null) return;
     if (query.isEmpty) {
-      state._searcher.resetTextSearch();
+      searcher.resetTextSearch();
     } else {
-      state._searcher.startTextSearch(query, searchImmediately: true);
+      searcher.startTextSearch(query, searchImmediately: true);
     }
     _syncSearch();
   }
 
   Future<void> nextMatch() async {
     if (_matchCount == 0) return;
-    await _state?._searcher.goToNextMatch();
+    await _state?._searcher?.goToNextMatch();
     _syncSearch();
   }
 
   Future<void> previousMatch() async {
     if (_matchCount == 0) return;
-    await _state?._searcher.goToPrevMatch();
+    await _state?._searcher?.goToPrevMatch();
     _syncSearch();
   }
 
@@ -352,7 +354,8 @@ class MMPdfView extends StatefulWidget {
 
 class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
-  late final _searcher = PdfTextSearcher(_controller);
+  /// Created once the viewer is ready: the searcher needs an open document.
+  PdfTextSearcher? _searcher;
   PdfTextSelection? _selection;
   bool _ready = false;
   int _selectionEpoch = 0;
@@ -367,7 +370,6 @@ class _MMPdfViewState extends State<MMPdfView> {
     super.initState();
     widget.controller._attach(this);
     _controller.addListener(_viewportChanged);
-    _searcher.addListener(_searchChanged);
   }
 
   @override
@@ -379,6 +381,9 @@ class _MMPdfViewState extends State<MMPdfView> {
     }
     if (!widget.areaSelecting && _area != null) _area = null;
   }
+
+  void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
+      _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
 
   void _searchChanged() => widget.controller._syncSearch();
 
@@ -401,8 +406,8 @@ class _MMPdfViewState extends State<MMPdfView> {
   @override
   void dispose() {
     _controller.removeListener(_viewportChanged);
-    _searcher.removeListener(_searchChanged);
-    _searcher.dispose();
+    _searcher?.removeListener(_searchChanged);
+    _searcher?.dispose();
     widget.controller._detach(this);
     super.dispose();
   }
@@ -680,7 +685,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           margin: 16,
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
-          pagePaintCallbacks: [_searcher.pageTextMatchPaintCallback],
+          pagePaintCallbacks: [_paintMatches],
           textSelectionParams: PdfTextSelectionParams(
             enabled: !widget.areaSelecting,
             showContextMenuAutomatically: false,
@@ -691,6 +696,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           ),
           onViewerReady: (document, controller) {
             _ready = true;
+            _searcher = PdfTextSearcher(_controller)..addListener(_searchChanged);
             _pageCount = document.pages.length;
             widget.controller._reportReady(_pageCount, const []);
             _loadOutline(document);
