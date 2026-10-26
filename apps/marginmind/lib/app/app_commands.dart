@@ -6,7 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../features/library/library_controller.dart';
-import '../features/library/widgets/new_study_set_sheet.dart';
+import '../features/library/new_study_set.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
@@ -218,7 +218,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
       AppCommand(
         l.newStudySet,
-        inLibrary ? () => showNewStudySetSheet(context, ref) : null,
+        inLibrary ? () => newStudySetFromPdfs(context, ref) : null,
         shortcut: AppShortcuts.newStudySet,
       ),
       AppCommand(

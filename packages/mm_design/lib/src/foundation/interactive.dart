@@ -22,6 +22,11 @@ class MMInteractionState {
 ///
 /// macOS keeps the arrow cursor on buttons, so the default cursor is
 /// [SystemMouseCursors.basic]. Enter and Space activate when focused.
+///
+/// A [semanticLabel] names the control on its own: the content's text is left
+/// out of the accessibility tree so VoiceOver reads the name once. Without a
+/// label the content's text becomes the name; leave it out when the content
+/// holds other controls (a star or close button) that must stay reachable.
 class MMInteractive extends StatefulWidget {
   const MMInteractive({
     super.key,
@@ -33,6 +38,7 @@ class MMInteractive extends StatefulWidget {
     this.selected = false,
     this.enabled = true,
     this.semanticLabel,
+    this.semanticValue,
     this.tooltip,
     this.focusNode,
     this.autofocus = false,
@@ -49,6 +55,9 @@ class MMInteractive extends StatefulWidget {
   final bool selected;
   final bool enabled;
   final String? semanticLabel;
+
+  /// Read after the name, e.g. a count or a page number.
+  final String? semanticValue;
   final String? tooltip;
   final FocusNode? focusNode;
   final bool autofocus;
@@ -95,7 +104,10 @@ class _MMInteractiveState extends State<MMInteractive> {
       onTap: _enabled ? widget.onTap : null,
       onDoubleTap: _enabled ? widget.onDoubleTap : null,
       onSecondaryTap: widget.onSecondaryTap,
-      child: widget.builder(context, state),
+      // Only the content: the gesture and focus actions stay on the node.
+      child: widget.semanticLabel == null
+          ? widget.builder(context, state)
+          : ExcludeSemantics(child: widget.builder(context, state)),
     );
 
     child = FocusableActionDetector(
@@ -121,6 +133,7 @@ class _MMInteractiveState extends State<MMInteractive> {
       selected: widget.selected,
       enabled: _enabled,
       label: widget.semanticLabel,
+      value: widget.semanticValue,
       child: child,
     );
 

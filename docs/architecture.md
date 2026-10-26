@@ -67,6 +67,7 @@ lib/
 │  └─ gallery/               组件库（开发用）
 ├─ shared/l10n.dart          多语言辅助（颜色名、相对时间、复习间隔）
 ├─ shared/pdf_drop.dart      从 Finder 拖入 PDF 的放置区域
+├─ shared/pdf_picker.dart    选择 PDF 的打开面板（测试中替换）
 └─ l10n/                     ARB 源文件与生成的本地化代码
 ```
 

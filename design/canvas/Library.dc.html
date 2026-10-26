@@ -144,8 +144,6 @@ a{color:inherit;text-decoration:none}a:hover{color:inherit}
             <span style="{{st.emptyIcon}}">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5z"></path><path d="M10 4h4.5A1.5 1.5 0 0 1 16 5.5v13a1.5 1.5 0 0 1-1.5 1.5H10"></path><path d="m16 6 3.6-.9a1 1 0 0 1 1.2.7l2 8"></path></svg>
             </span>
-            <span style="{{st.emptyTitle}}">开始你的第一个学习集</span>
-            <span style="{{st.emptyText}}">把一本或几本 PDF 拖到这里，MarginMind 会为它们建一个学习集。之后的划线、卡片和脑图都放在里面。</span>
             <div style="display: flex; gap: 10px; margin-top: 8px">
               <button type="button" onClick="{{openSheet}}" style="{{st.primaryBtn}}">新建学习集</button>
               <a href="Main.dc.html" style="{{st.secondaryBtn}}">打开示例学习集</a>
@@ -428,7 +426,7 @@ class Component extends DCLogic {
       td2num: 'font: 400 13px/16px ' + sys + '; color: ' + t.label2 + '; text-align: right; font-variant-numeric: tabular-nums;',
 
       empty: 'flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; text-align: center;',
-      dropZone: 'width: min(560px, 100%); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 40px; box-sizing: border-box; border-radius: 24px; border: 1.5px dashed ' + t.fill + '; background: ' + t.fill2 + ';',
+      dropZone: 'display: flex; flex-direction: column; align-items: center; gap: 10px;',
       emptyIcon: 'width: 72px; height: 72px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; background: ' + t.accentTint + '; color: ' + t.accent + ';',
       emptyTitle: 'font: 700 20px/26px ' + sys + '; color: ' + t.label + ';',
       emptyText: 'max-width: 400px; font: 400 13px/20px ' + sys + '; color: ' + t.label2 + ';',

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/shared/pdf_picker.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,12 +33,14 @@ StudySetContent demoContent() {
   return c5;
 }
 
-/// Overrides that make the app run in memory with fixed time.
+/// Overrides that make the app run in memory with fixed time. The open
+/// panel answers with [pdfPicker], or is cancelled.
 Future<List<Override>> testOverrides({
   Map<String, Object> prefs = const {},
   bool renderPdf = false,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
+  PdfPicker? pdfPicker,
 }) async {
   SharedPreferences.setMockInitialValues(prefs);
   final instance = await SharedPreferences.getInstance();
@@ -45,6 +48,7 @@ Future<List<Override>> testOverrides({
     sharedPreferencesProvider.overrideWithValue(instance),
     clockProvider.overrideWithValue(() => testNow),
     pdfRenderingEnabledProvider.overrideWithValue(renderPdf),
+    pdfPickerProvider.overrideWithValue(pdfPicker ?? (_) async => const []),
     studySetRepositoryProvider.overrideWithValue(
       InMemoryStudySetRepository(
         sets: sets ?? DemoLibrary.studySets(testNow),
@@ -65,11 +69,18 @@ Future<ProviderContainer> pumpApp(
   bool renderPdf = false,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
+  PdfPicker? pdfPicker,
 }) async {
   tester.view.physicalSize = const Size(1280, 820);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final overrides = await testOverrides(prefs: prefs, sets: sets, content: content, renderPdf: renderPdf);
+  final overrides = await testOverrides(
+    prefs: prefs,
+    sets: sets,
+    content: content,
+    renderPdf: renderPdf,
+    pdfPicker: pdfPicker,
+  );
   await tester.pumpWidget(ProviderScope(overrides: overrides, child: const MarginMindApp()));
   await tester.pumpAndSettle();
   return ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));

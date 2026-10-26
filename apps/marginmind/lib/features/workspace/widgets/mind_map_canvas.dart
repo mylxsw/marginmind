@@ -1245,7 +1245,6 @@ class _NodeView extends StatelessWidget {
       onTap: onTap,
       onDoubleTap: onDoubleTap,
       selected: selected,
-      semanticLabel: spec.title,
       builder: (context, s) => _decorated(c, bg, radius, shadow, ring, body, padding),
     );
   }

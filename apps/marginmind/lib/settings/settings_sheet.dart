@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -11,7 +12,10 @@ Future<void> showSettingsSheet(BuildContext context) =>
 
 /// Appearance and language. Changes apply immediately and persist.
 class SettingsSheet extends ConsumerWidget {
-  const SettingsSheet({super.key});
+  const SettingsSheet({super.key, this.showsGallery = kDebugMode});
+
+  /// The component gallery is a development tool, like its menu item.
+  final bool showsGallery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,14 +25,15 @@ class SettingsSheet extends ConsumerWidget {
     return MMSheet(
       title: l.settingsTitle,
       actions: [
-        MMButton(
-          label: l.componentGallery,
-          variant: MMButtonVariant.plain,
-          onPressed: () {
-            Navigator.of(context).pop();
-            ref.read(navigationProvider.notifier).showGallery();
-          },
-        ),
+        if (showsGallery)
+          MMButton(
+            label: l.componentGallery,
+            variant: MMButtonVariant.plain,
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(navigationProvider.notifier).showGallery();
+            },
+          ),
         const Spacer(),
         MMButton(
           label: l.done,

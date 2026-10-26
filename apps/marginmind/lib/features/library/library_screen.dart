@@ -13,9 +13,9 @@ import '../../shared/l10n.dart';
 import '../../shared/pdf_drop.dart';
 import '../workspace/widgets/notices.dart';
 import 'library_controller.dart';
+import 'new_study_set.dart';
 import 'sample_study_set.dart';
 import 'widgets/continue_card.dart';
-import 'widgets/new_study_set_sheet.dart';
 import 'widgets/study_set_card.dart';
 import 'widgets/study_set_list.dart';
 
@@ -71,7 +71,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final visible = view.query.apply(sets);
     final dueTotal = sets.fold<int>(0, (n, s) => n + s.dueCount);
 
-    final subtitle = [l.librarySetCount(visible.length), if (dueTotal > 0) l.libraryDueCount(dueTotal)].join(' · ');
+    // An empty library or result says so in the body; no "No study sets".
+    final subtitle = visible.isEmpty
+        ? null
+        : [l.librarySetCount(visible.length), if (dueTotal > 0) l.libraryDueCount(dueTotal)].join(' · ');
 
     final sortLabel = switch (view.query.sort) {
       LibrarySort.recent => l.sortRecent,
@@ -129,7 +132,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               MMToolbarButton(
                 icon: MMIcons.add,
                 tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                onPressed: () => showNewStudySetSheet(context, ref),
+                onPressed: () => newStudySetFromPdfs(context, ref),
               ),
             ],
           ),
@@ -169,6 +172,9 @@ class _LibrarySidebar extends ConsumerWidget {
       selected: filter == f,
       onTap: () => controller.setFilter(f),
     );
+    // Like Finder and Mail: only a non-zero count says something. "Recent"
+    // has no count of its own.
+    Widget? count(int n) => n > 0 ? MMCount(n) : null;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -190,9 +196,9 @@ class _LibrarySidebar extends ConsumerWidget {
         MMSidebarSection(
           title: l.librarySection,
           children: [
-            item(MMIcons.grid, l.libraryTitleAll, LibraryFilter.all, trailing: MMCount(sets.length)),
+            item(MMIcons.grid, l.libraryTitleAll, LibraryFilter.all, trailing: count(sets.length)),
             item(MMIcons.recent, l.libraryRecent, LibraryFilter.recent),
-            item(MMIcons.star, l.libraryStarred, LibraryFilter.starred, trailing: MMCount(starred)),
+            item(MMIcons.star, l.libraryStarred, LibraryFilter.starred, trailing: count(starred)),
             item(MMIcons.review, l.libraryDue, LibraryFilter.due, trailing: due > 0 ? MMBadge('$due') : null),
           ],
         ),
@@ -205,14 +211,14 @@ class _LibrarySidebar extends ConsumerWidget {
                   MMIcons.folder,
                   f.name,
                   FolderFilter(f.id),
-                  trailing: MMCount(sets.where((s) => s.folderId == f.id).length),
+                  trailing: count(sets.where((s) => s.folderId == f.id).length),
                 ),
               if (hasUnfiled)
                 item(
                   MMIcons.folder,
                   l.libraryUnfiled,
                   const FolderFilter(null),
-                  trailing: MMCount(sets.where((s) => s.folderId == null).length),
+                  trailing: count(sets.where((s) => s.folderId == null).length),
                 ),
             ],
           ),
@@ -262,17 +268,15 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
     final t = context.mmText;
     final controller = ref.read(libraryViewProvider.notifier);
 
+    // Dropping PDFs works here too; the drop target's hover state shows it.
     if (sets.isEmpty) {
       return MMEmptyState(
-        dropZone: true,
         icon: MMIcons.studySet,
-        title: l.firstRunTitle,
-        message: l.firstRunMessage,
         actions: [
           MMButton(
             label: l.newStudySet,
             variant: MMButtonVariant.primary,
-            onPressed: () => showNewStudySetSheet(context, ref),
+            onPressed: () => newStudySetFromPdfs(context, ref),
           ),
           MMButton(
             label: l.openSample,

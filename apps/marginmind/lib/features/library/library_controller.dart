@@ -61,13 +61,16 @@ class LibraryViewController extends Notifier<LibraryViewState> {
 
   void toggleSidebar() => state = state.copyWith(sidebarVisible: !state.sidebarVisible);
 
-  /// Files dropped on the library: a new study set named after the first
-  /// file, with all of them imported, then opened.
+  /// PDFs dropped on the library or picked for a new study set: a set named
+  /// after the first file, in the folder being viewed, with all of them
+  /// imported, then opened.
   Future<ImportedNotice> createFromFiles(List<DroppedFile> files) async {
     final repo = ref.read(studySetRepositoryProvider);
     final count = ref.read(studySetsProvider).value?.length ?? 0;
     final title = files.first.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
-    final created = await repo.create(NewStudySet(title: title, colorIndex: count % 6));
+    final filter = state.query.filter;
+    final folderId = filter is FolderFilter ? filter.folderId : null;
+    final created = await repo.create(NewStudySet(title: title, colorIndex: count % 6, folderId: folderId));
     final notice = await ref.read(workspaceProvider(created.id).notifier).importDocuments(files);
     setFilter(LibraryFilter.all);
     await open(created.id);

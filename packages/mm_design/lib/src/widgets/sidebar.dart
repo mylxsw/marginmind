@@ -116,6 +116,7 @@ class MMSidebarSection extends StatelessWidget {
 
 /// Sidebar row (height 28): accent-tinted icon, label, optional count.
 /// Selection is a gray rounded fill; text weight does not change.
+/// VoiceOver reads the label and the count once each.
 class MMSidebarItem extends StatelessWidget {
   const MMSidebarItem({
     super.key,
@@ -147,7 +148,6 @@ class MMSidebarItem extends StatelessWidget {
       onTap: onTap,
       onDoubleTap: onDoubleTap,
       selected: selected,
-      semanticLabel: label,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
         height: MMSizes.sidebarRow,

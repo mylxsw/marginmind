@@ -387,7 +387,13 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       _title(context, 'MMEmptyState'),
       SizedBox(
         height: 360,
-        child: MMEmptyState(dropZone: true, icon: MMIcons.studySet, title: l.firstRunTitle, message: l.firstRunMessage),
+        child: MMEmptyState(
+          icon: MMIcons.studySet,
+          actions: [
+            MMButton(label: l.newStudySet, variant: MMButtonVariant.primary, onPressed: () {}),
+            MMButton(label: l.openSample, onPressed: () {}),
+          ],
+        ),
       ),
     ];
   }

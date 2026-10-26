@@ -246,7 +246,6 @@ class _OutlineState extends State<_Outline> {
           key: ValueKey('outline-$index'),
           onTap: item.isNavigable ? () => widget.pdf.jumpToPage(item.page) : null,
           selected: selected,
-          semanticLabel: item.title,
           builder: (context, s) => Container(
             constraints: const BoxConstraints(minHeight: MMSizes.sidebarRow),
             padding: EdgeInsets.fromLTRB(2 + depth * 12.0, 4, 6, 4),
@@ -372,6 +371,7 @@ class _Annotations extends StatelessWidget {
           key: ValueKey('annotation-${annotation.id}'),
           onTap: () => pdf.jumpToRect(first.page, first.rects),
           semanticLabel: annotation.quote.isEmpty ? l.toolArea : annotation.quote,
+          semanticValue: l.pageNumber(first.page),
           builder: (context, s) => Container(
             constraints: const BoxConstraints(minHeight: MMSizes.sidebarRow),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
