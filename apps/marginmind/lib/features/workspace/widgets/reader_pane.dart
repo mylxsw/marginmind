@@ -381,6 +381,7 @@ class _PageField extends StatefulWidget {
   const _PageField({required this.page, required this.pageCount, required this.onJump, required this.editRequests});
 
   final int page;
+
   /// Changes when the field should open, without a click.
   final int editRequests;
   final int pageCount;

@@ -46,7 +46,10 @@ void main() {
     expect(field, findsNothing);
     await pressWithControl(tester, LogicalKeyboardKey.keyG, alt: true);
     expect(field, findsOneWidget);
-    expect(tester.widget<TextField>(find.descendant(of: field, matching: find.byType(TextField))).focusNode!.hasFocus, isTrue);
+    expect(
+      tester.widget<TextField>(find.descendant(of: field, matching: find.byType(TextField))).focusNode!.hasFocus,
+      isTrue,
+    );
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(field, findsNothing);
@@ -87,7 +90,10 @@ void main() {
     DesktopWindow.debugSetFullScreen(true);
     await tester.pumpAndSettle();
     expect(item(l.exitFullScreen).onSelected, isNotNull);
-    expect(flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus).map((i) => i.label), isNot(contains(l.enterFullScreen)));
+    expect(
+      flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus).map((i) => i.label),
+      isNot(contains(l.enterFullScreen)),
+    );
     DesktopWindow.debugSetFullScreen(false);
     await tester.pumpAndSettle();
     expect(item(l.enterFullScreen), isNotNull);

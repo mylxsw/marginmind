@@ -1634,11 +1634,29 @@ abstract class AppLocalizations {
   /// **'Last Page'**
   String get lastPage;
 
+  /// No description provided for @goToPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Page…'**
+  String get goToPage;
+
   /// No description provided for @menuGo.
   ///
   /// In en, this message translates to:
   /// **'Go'**
   String get menuGo;
+
+  /// No description provided for @enterFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Full Screen'**
+  String get enterFullScreen;
+
+  /// No description provided for @exitFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Full Screen'**
+  String get exitFullScreen;
 
   /// No description provided for @noBookmarks.
   ///

@@ -28,7 +28,8 @@ class MarginMindApp extends ConsumerWidget {
     final pillShown =
         route is WorkspaceRoute &&
         ref.watch(
-          workspaceProvider(route.studySetId).select((s) => s.activeDocumentId != null && s.layout != MMSplitMode.secondary),
+          workspaceProvider(route.studySetId)
+              .select((s) => s.activeDocumentId != null && s.layout != MMSplitMode.secondary),
         );
     return MaterialApp(
       onGenerateTitle: (context) => context.l10n.appName,
