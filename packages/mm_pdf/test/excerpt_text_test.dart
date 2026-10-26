@@ -98,6 +98,15 @@ void main() {
     expect(buildExcerptText([short], [ExcerptTextSpan(1, 0, short.text.length)]).text, contains('26/10/2026'));
   });
   test('does not normalize digits in distinct chapter titles or mismatched margin positions', () {
+    final chineseA = page(1, header: '第 1 章');
+    final chineseB = page(2, header: '第 2 章');
+    expect(
+      buildExcerptText([chineseA, chineseB], [ExcerptTextSpan(1, 0, chineseA.text.length)]).text,
+      contains('第 1 章'),
+    );
+    final pageA = page(1, header: '第 1 页');
+    final pageB = page(2, header: '第 2 页');
+    expect(buildExcerptText([pageA, pageB], [ExcerptTextSpan(1, 0, pageA.text.length)]).text, isNot(contains('第 1 页')));
     final a = page(1, header: 'Chapter 1');
     final b = page(2, header: 'Chapter 2');
     expect(buildExcerptText([a, b], [ExcerptTextSpan(1, 0, a.text.length)]).text, contains('Chapter 1'));

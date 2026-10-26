@@ -129,7 +129,7 @@ ExcerptTextResult buildExcerptText(List<ExcerptPageText> evidence, List<ExcerptT
     final value = s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
     // Do not equate distinct chapter headings such as “Chapter 1 / 2”.
     final variable =
-        RegExp(r'^(?:\d+(?:\s*/\s*\d+)?|(?:page|第)\s*\d+.*)$').hasMatch(value) ||
+        RegExp(r'^(?:\d+(?:\s*/\s*\d+)?|page\s+\d+(?:\s+(?:of|/)\s*\d+)?|第\s*\d+\s*页)$').hasMatch(value) ||
         RegExp(r'\d+[/-]\d+[/-]\d+').hasMatch(value) ||
         value.startsWith('file:') ||
         value.startsWith('/') ||
