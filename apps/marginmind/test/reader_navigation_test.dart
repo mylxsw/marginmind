@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
+import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -200,7 +201,7 @@ void main() {
     r.pdf.debugReport(outline: const []);
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.outline), findsNothing);
-    expect(find.byKey(const ValueKey('thumbnail-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('thumbnail-21')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -275,9 +276,10 @@ void main() {
     final r = await openReader(tester);
     r.controller.showReaderPanel(ReaderPanelMode.annotations);
     await tester.pumpAndSettle();
-    expect(find.text('这条先陡后平的曲线，被称为遗忘曲线。'), findsOneWidget);
-    expect(find.text('24'), findsOneWidget);
-    await tester.tap(find.text('这条先陡后平的曲线，被称为遗忘曲线。'));
+    Finder inSidebar(String text) => find.descendant(of: find.byType(ReaderSidebar), matching: find.text(text));
+    expect(inSidebar('这条先陡后平的曲线，被称为遗忘曲线。'), findsOneWidget);
+    expect(inSidebar('24'), findsOneWidget);
+    await tester.tap(inSidebar('这条先陡后平的曲线，被称为遗忘曲线。'));
     await tester.pump();
     r.controller.openDocument('c2');
     await tester.pumpAndSettle();

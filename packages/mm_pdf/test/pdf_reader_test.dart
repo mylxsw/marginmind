@@ -19,6 +19,13 @@ void main() {
     await action;
   }
 
+  // Closes the viewer at the end so its timers do not outlive the test.
+  void viewTest(String name, Future<void> Function(WidgetTester tester) body) => testWidgets(name, (tester) async {
+    await body(tester);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   Future<MMPdfViewController> open(WidgetTester tester, {void Function(int, int)? onPageChanged}) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
@@ -52,7 +59,7 @@ void main() {
     return controller;
   }
 
-  testWidgets('reports page count, current page and an empty outline', (tester) async {
+  viewTest('reports page count, current page and an empty outline', (tester) async {
     final controller = await open(tester);
     expect(controller.pageCount, 3);
     expect(controller.currentPage, 1);
@@ -61,7 +68,7 @@ void main() {
     expect(find.byType(PdfPageView), findsNWidgets(3));
   });
 
-  testWidgets('reads the outline into pages and children', (tester) async {
+  viewTest('reads the outline into pages and children', (tester) async {
     TestPdfOutline.nodes = [
       PdfOutlineNode(
         title: ' Chapter ',
@@ -75,7 +82,7 @@ void main() {
     expect(controller.outline.first.children.single.page, 3);
   });
 
-  testWidgets('jumps move the page, are clamped, and back returns', (tester) async {
+  viewTest('jumps move the page, are clamped, and back returns', (tester) async {
     final pages = <int>[];
     final controller = await open(tester, onPageChanged: (page, _) => pages.add(page));
     expect(controller.canGoBack, isFalse);
@@ -106,7 +113,7 @@ void main() {
     expect(pages, contains(3));
   });
 
-  testWidgets('jumping to a rectangle records the origin', (tester) async {
+  viewTest('jumping to a rectangle records the origin', (tester) async {
     final controller = await open(tester);
     await settle(tester, controller.jumpToRect(2, const []));
     expect(controller.currentPage, 2);
@@ -114,7 +121,7 @@ void main() {
     expect(controller.currentPage, 1);
   });
 
-  testWidgets('searches the whole document, steps through hits and clears', (tester) async {
+  viewTest('searches the whole document, steps through hits and clears', (tester) async {
     final controller = await open(tester);
     controller.search('passage');
     for (var i = 0; i < 50 && (controller.isSearching || controller.matchCount < 3); i++) {
@@ -146,7 +153,7 @@ void main() {
     expect(controller.matchCount, 0);
   });
 
-  testWidgets('a controller without a view ignores every command', (tester) async {
+  viewTest('a controller without a view ignores every command', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
     await controller.jumpToPage(2);
@@ -161,7 +168,7 @@ void main() {
     expect(find.byType(PdfPageView), findsNothing);
   });
 
-  testWidgets('swapping the document resets what the controller knows', (tester) async {
+  viewTest('swapping the document resets what the controller knows', (tester) async {
     final controller = await open(tester);
     await settle(tester, controller.jumpToPage(2));
     expect(controller.canGoBack, isTrue);
