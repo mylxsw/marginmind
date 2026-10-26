@@ -1,0 +1,66 @@
+Release baseline runtime sample, PID 52945, 2026-10-26
+Command: sample 52945 10 1; FLTEnableImpeller absent
+Raster-thread excerpts; leading call-graph indentation omitted:
+8348 Thread_16225217: io.flutter.raster
+25 impeller::Canvas::SaveLayer(impeller::Paint const&, std::__fl::optional<impeller::TRect<float>>, flutter::DlImageFilter const*, impeller::ContentBoundsPromise, unsigned int, bool, std::__fl::optional<long long>)  (in FlutterMacOS) + 3776  [0x106439bf8]  canvas.cc:1937
+7 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::TSize<long long>, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&, bool, bool, int) const  (in FlutterMacOS) + 756  [0x106468ba4]  content_context.cc:926
+4 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 136  [0x106468c9c]  content_context.cc:941
+4 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+2 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 184  [0x106468ccc]  content_context.cc:947
+2 impeller::RenderPassMTL::Draw()  (in FlutterMacOS) + 316  [0x10651c298]  render_pass_mtl.mm:339
+1 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 340  [0x106468d68]  content_context.cc:966
+1 impeller::RenderPassMTL::~RenderPassMTL()  (in FlutterMacOS) + 168  [0x10651b978]  render_pass_mtl.mm:173
+2 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::TSize<long long>, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&, bool, bool, int) const  (in FlutterMacOS) + 568  [0x106468ae8]  content_context.cc:921
+8 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::TSize<long long>, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&, bool, bool, int) const  (in FlutterMacOS) + 756  [0x106468ba4]  content_context.cc:926
+6 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 136  [0x106468c9c]  content_context.cc:941
+6 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+2 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 184  [0x106468ccc]  content_context.cc:947
+1 impeller::RenderPassMTL::Draw()  (in FlutterMacOS) + 316  [0x10651c298]  render_pass_mtl.mm:339
+1 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::TSize<long long>, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&, bool, bool, int) const  (in FlutterMacOS) + 568  [0x106468ae8]  content_context.cc:921
+5 impeller::ContentContext::MakeSubpass(std::__fl::basic_string_view<char, std::__fl::char_traits<char>>, impeller::RenderTarget const&, std::__fl::shared_ptr<impeller::CommandBuffer> const&, std::__fl::function<bool (impeller::ContentContext const&, impeller::RenderPass&)> const&) const  (in FlutterMacOS) + 136  [0x106468c9c]  content_context.cc:941
+4 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+1 impeller::RenderPassMTL::IsValid() const  (in FlutterMacOS) + 28  [0x10651bae0]  render_pass_mtl.mm:176
+10 impeller::Canvas::SaveLayer(impeller::Paint const&, std::__fl::optional<impeller::TRect<float>>, flutter::DlImageFilter const*, impeller::ContentBoundsPromise, unsigned int, bool, std::__fl::optional<long long>)  (in FlutterMacOS) + 2020  [0x10643951c]  canvas.cc:1831
+8 impeller::Canvas::FlipBackdrop(impeller::TPoint<float>, bool, bool, bool)  (in FlutterMacOS) + 952  [0x10643f3d8]  canvas.cc:2485
+7 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+1 impeller::Canvas::FlipBackdrop(impeller::TPoint<float>, bool, bool, bool)  (in FlutterMacOS) + 148  [0x10643f0b4]  canvas.cc:2434
+1 impeller::RenderPassMTL::~RenderPassMTL()  (in FlutterMacOS) + 208  [0x10651b9a0]  render_pass_mtl.mm:173
+1 impeller::Canvas::FlipBackdrop(impeller::TPoint<float>, bool, bool, bool)  (in FlutterMacOS) + 1036  [0x10643f42c]  canvas.cc:2497
+7 impeller::Canvas::SaveLayer(impeller::Paint const&, std::__fl::optional<impeller::TRect<float>>, flutter::DlImageFilter const*, impeller::ContentBoundsPromise, unsigned int, bool, std::__fl::optional<long long>)  (in FlutterMacOS) + 3760  [0x106439be8]  canvas.cc:1937
+7 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+1 impeller::Canvas::SaveLayer(impeller::Paint const&, std::__fl::optional<impeller::TRect<float>>, flutter::DlImageFilter const*, impeller::ContentBoundsPromise, unsigned int, bool, std::__fl::optional<long long>)  (in FlutterMacOS) + 2944  [0x1064398b8]  canvas.cc:1902
+5 impeller::Canvas::DrawTextFrame(std::__fl::shared_ptr<impeller::TextFrame> const&, impeller::TPoint<float>, impeller::Paint const&)  (in FlutterMacOS) + 1016  [0x10644028c]  canvas.cc:2168
+5 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+1 impeller::RenderPassMTL::SetVertexBuffer(impeller::BufferView*, unsigned long)  (in FlutterMacOS) + 64  [0x10651bfb8]  render_pass_mtl.mm:295
+1 impeller::RenderPassMTL::Draw()  (in FlutterMacOS) + 288  [0x10651c27c]  render_pass_mtl.mm:356
+2 impeller::Canvas::DrawPath(flutter::DlPath const&, impeller::Paint const&)  (in FlutterMacOS) + 300  [0x106436a18]  canvas.cc:475
+2 impeller::Canvas::AddRenderEntityWithFiltersToCurrentPass(impeller::Entity&, impeller::Geometry const*, impeller::Paint const&, bool, std::__fl::shared_ptr<impeller::Contents>)  (in FlutterMacOS) + 1440  [0x10643733c]  canvas.cc:0
+2 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+2 impeller::Canvas::DrawRect(impeller::TRect<float> const&, impeller::Paint const&)  (in FlutterMacOS) + 1004  [0x10643b988]  canvas.cc:977
+2 impeller::Canvas::AddRenderSDFEntityToCurrentPass(impeller::Paint const&, impeller::UberSDFParameters, bool, std::__fl::optional<impeller::Matrix> const&)  (in FlutterMacOS) + 1096  [0x10643b1e4]  canvas.cc:2211
+2 impeller::Canvas::AddRenderEntityWithFiltersToCurrentPass(impeller::Entity&, impeller::Geometry const*, impeller::Paint const&, bool, std::__fl::shared_ptr<impeller::Contents>)  (in FlutterMacOS) + 1440  [0x10643733c]  canvas.cc:0
+2 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+2 impeller::RenderPassMTL::Draw()  (in FlutterMacOS) + 316  [0x10651c298]  render_pass_mtl.mm:339
+1 impeller::Canvas::DrawRoundRect(impeller::RoundRect const&, impeller::Paint const&)  (in FlutterMacOS) + 808  [0x10643c8f0]  canvas.cc:1107
+1 impeller::Canvas::AttemptDrawBlurredRRect(impeller::RoundRect const&, impeller::Paint const&)  (in FlutterMacOS) + 336  [0x106438ab8]  canvas.cc:672
+1 impeller::Canvas::AttemptDrawBlur(impeller::Canvas::BlurShape&, impeller::Paint const&)  (in FlutterMacOS) + 908  [0x106438874]  canvas.cc:0
+1 impeller::Canvas::AttemptDrawBlur(impeller::Canvas::BlurShape&, impeller::Paint const&)::$_0::operator()() const  (in FlutterMacOS) + 368  [0x10643a0f0]  canvas.cc:769
+1 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+1 impeller::RenderPassMTL::SetIndexBuffer(impeller::BufferView, impeller::IndexType)  (in FlutterMacOS) + 60  [0x10651c0b8]  render_pass_mtl.mm:313
+1 impeller::Canvas::DrawRoundRect(impeller::RoundRect const&, impeller::Paint const&)  (in FlutterMacOS) + 1232  [0x10643ca98]  canvas.cc:1141
+1 impeller::Canvas::AddRenderSDFEntityToCurrentPass(impeller::Paint const&, impeller::UberSDFParameters, bool, std::__fl::optional<impeller::Matrix> const&)  (in FlutterMacOS) + 1096  [0x10643b1e4]  canvas.cc:2211
+1 impeller::Canvas::AddRenderEntityWithFiltersToCurrentPass(impeller::Entity&, impeller::Geometry const*, impeller::Paint const&, bool, std::__fl::shared_ptr<impeller::Contents>)  (in FlutterMacOS) + 1440  [0x10643733c]  canvas.cc:0
+1 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+2 impeller::Canvas::DrawRoundRect(impeller::RoundRect const&, impeller::Paint const&)  (in FlutterMacOS) + 808  [0x10643c8f0]  canvas.cc:1107
+2 impeller::Canvas::AttemptDrawBlurredRRect(impeller::RoundRect const&, impeller::Paint const&)  (in FlutterMacOS) + 336  [0x106438ab8]  canvas.cc:672
+2 impeller::Canvas::AttemptDrawBlur(impeller::Canvas::BlurShape&, impeller::Paint const&)  (in FlutterMacOS) + 908  [0x106438874]  canvas.cc:0
+2 impeller::Canvas::AttemptDrawBlur(impeller::Canvas::BlurShape&, impeller::Paint const&)::$_0::operator()() const  (in FlutterMacOS) + 368  [0x10643a0f0]  canvas.cc:769
+2 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+1 impeller::RenderPassMTL::Draw()  (in FlutterMacOS) + 316  [0x10651c298]  render_pass_mtl.mm:339
+1 impeller::Canvas::DrawTextFrame(std::__fl::shared_ptr<impeller::TextFrame> const&, impeller::TPoint<float>, impeller::Paint const&)  (in FlutterMacOS) + 892  [0x106440210]  canvas.cc:2167
+1 impeller::Canvas::DrawTextFrame(std::__fl::shared_ptr<impeller::TextFrame> const&, impeller::TPoint<float>, impeller::Paint const&)  (in FlutterMacOS) + 1016  [0x10644028c]  canvas.cc:2168
+1 impeller::Canvas::AddRenderEntityToCurrentPass(impeller::Entity&, bool)  (in FlutterMacOS) + 2152  [0x106438268]  canvas.cc:2401
+1 impeller::Canvas::GetLocalCoverageLimit() const  (in FlutterMacOS) + 0  [0x10643ecc0]  canvas.cc:1673
+3 impeller::Canvas::ClipGeometry(impeller::Geometry const&, impeller::Entity::ClipOperation, bool)  (in FlutterMacOS) + 696  [0x10643a40c]  canvas.cc:1341
+3 impeller::RenderPassMTL::RenderPassMTL(std::__fl::shared_ptr<impeller::Context const>, impeller::RenderTarget const&, id<MTLCommandBuffer>)  (in FlutterMacOS) + 768  [0x10651b5bc]  render_pass_mtl.mm:152
+5 impeller::Canvas::EndReplay()  (in FlutterMacOS) + 420  [0x10644106c]  canvas.cc:2628

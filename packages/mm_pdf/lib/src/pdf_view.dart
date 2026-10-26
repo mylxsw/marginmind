@@ -10,6 +10,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
 import 'pdf_navigation.dart';
+import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
 
 /// A highlight to draw on a page.
@@ -567,6 +568,21 @@ class _MMPdfViewState extends State<MMPdfView> {
   void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
       _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
 
+  void _beginPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    canvas.save();
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // Only the supersampled preview is snapped. Above the allocation limit,
+    // pdfrx's partial tiles retain their own coordinate system.
+    if (_controller.currentZoom * math.max(3.0, 2 * dpr) * math.max(page.width, page.height) > 4000) return;
+    final origin = _controller.documentToGlobal(pageRect.topLeft);
+    final end = _controller.documentToGlobal(pageRect.bottomRight);
+    if (origin != null && end != null) {
+      alignPdfPage(canvas, pageRect, Rect.fromPoints(origin, end), dpr);
+    }
+  }
+
+  void _endPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) => canvas.restore();
+
   void _searchChanged() => widget.controller._syncSearch();
 
   void _viewportChanged() {
@@ -957,17 +973,17 @@ class _MMPdfViewState extends State<MMPdfView> {
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
           margin: 16,
-          // pdfrx otherwise downsamples a fixed 200-DPI preview with bilinear
-          // filtering, softening text on 1x displays. Keep at least two
-          // samples per logical pixel for low-DPI text; above the bounded preview size pdfrx
-          // still supplies its native-resolution visible-page tiles.
+          // Within the allocation budget, keep >=2 samples per device pixel
+          // (including Retina) and align
+          // the page paint to the device grid to avoid a second fractional shift.
           getPageRenderingScale: (context, page, controller, estimatedScale) => math.min(
-            controller.currentZoom * math.max(2.0, MediaQuery.devicePixelRatioOf(context)),
-            math.min(estimatedScale, 2000 / math.max(page.width, page.height)),
+            controller.currentZoom * math.max(3.0, 2 * MediaQuery.devicePixelRatioOf(context)),
+            4000 / math.max(page.width, page.height),
           ),
           pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
           pageOverlaysBuilder: _pageOverlays,
-          pagePaintCallbacks: [_paintMatches],
+          pageBackgroundPaintCallbacks: [_beginPagePaint],
+          pagePaintCallbacks: [_paintMatches, _endPagePaint],
           textSelectionParams: PdfTextSelectionParams(
             enabled: !widget.areaSelecting,
             showContextMenuAutomatically: false,

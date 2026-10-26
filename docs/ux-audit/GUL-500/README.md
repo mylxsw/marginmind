@@ -1,82 +1,114 @@
-# GUL-500 渲染验证
+# GUL-500 渲染验证（复审版）
 
-## 环境与结论
-
-2026-10-26，Mac mini / Apple Silicon，macOS 26.6.2，Flutter 3.47.2
+2026-10-26，Mac mini / macOS 26.6.2，Flutter 3.47.2
 （framework `d3b14c8769`，engine `a804b26164`），pdfrx 2.10.1。
-基线为 `8bb4d8a`，两组都是 `flutter build macos --release`，保留发布沙盒
-entitlements，以临时 bundle ID `io.github.mylxsw.marginmind.gul500` 运行，
-使用仓库自带的双语示例 PDF 第 1 页、分栏视图、1280×820 窗口。
+所有对比均为 Release，保留发布沙盒 entitlements，测试 bundle ID 为
+`io.github.mylxsw.marginmind.gul500`，使用仓库示例 PDF 第 1 页。
 
-U-G1：采用 macOS `FLTEnableImpeller=false` 的临时规避，不升级 Flutter。
-基线未复现原崩溃，不能据有限循环排除偶发问题；此改动也不是修复上游引擎。
-此外，显示模式切换期间，同机先前运行的 Debug 实例产生了同栈崩溃，见
-[去除路径的栈摘录](display-switch-crash.txt)。这不是本分支 Release 基线，不能混入下表计数。
-原审查的栈与 [Flutter #192522](https://github.com/flutter/flutter/pull/192522)
-描述的错尺寸 back-buffer / 空纹理问题一致；未验证上游补丁本身，仍不能证明同一根因。
-截至查询时该 PR 仍为 OPEN、`mergedAt=null`，没有已确认包含该修复的稳定版本。
-回退方式来自 [Flutter 官方 macOS Impeller 文档](https://docs.flutter.dev/perf/impeller#macos)。
-后续仅在稳定版包含该修复、同样的压力测试及截图验证通过后移除此配置；升级需另开 PR
-并同步 `.fvmrc`、CI 和发布工作流。
+## U-R1：候选修正与验收边界
 
-U-R1：不是遗漏 DPR。pdfrx 的 `_paintPages` 已使用 `currentZoom * devicePixelRatio`，
-但普通倍率未触发精细分块时，绘制的是固定 `200 / 72` 倍的整页预览，且
-`drawImageRect` 使用 `FilterQuality.low`（双线性采样）。例如当前约 492 逻辑像素宽
-的 PDF 页面，1× 实际仍在缩小约 1654 像素宽的预览，细笔画出现采样不均。
-通过公开的 `getPageRenderingScale` 回调让整页预览采用当前缩放 × max(2, DPR)：
-1× 使用两倍超采样，避免单倍位图再经亚像素定位 / 双线性采样造成柔化；2× 保持
-原生物理像素密度，3× 及以上继续跟随实际 DPR。
-最长边最多 2000 像素且不超过引擎建议值；超过上限后仍由 pdfrx 的可见区域分块
-保证实际像素分辨率。页面布局、选区和高亮的 PDF 坐标不变。
+撤回上一版“2× 原生像素预览足够清晰”的结论。上一版 `max(2, DPR)` 在 2×
+退化为一份物理像素采样，再叠加非整数页面位置和双线性过滤，会让细笔画发灰。
+仅把页面绘制对齐到物理像素，也没有解决本 PDF 在 1× 下的细笔画问题。
 
-## 窗口缩放
+本次采用 `zoom × max(3, 2 × DPR)`：1× 三倍采样，2× 两倍物理像素采样。
+整页最长边上限从 2000 提高到 4000 像素（正方形 RGBA 位图最坏 64 MB），
+超过预算后继续使用 pdfrx 的可见区域分块；不再用固定 200 DPI 限制 Retina 超采样。
+在预算内，用背景/前景绘制回调成对 save/restore，把每页内容和同层选区、搜索标记
+对齐设备像素网格；坐标换算使用 `documentToGlobal`，不假设 Canvas 包含祖先层变换。
+页面原点位移每轴不超过半个物理像素，宽高收缩小于一个物理像素。
+PDF 文档坐标和导航不变；独立 widget 高亮/命中区域可能存在上述亚像素偏差。
+高倍率分块不套用该变换，避免改变 tile 的坐标系。
 
-先打开 Release 应用和示例 PDF，用其实际 PID 执行：
+### 控制变量原图
+
+同一 Skia 渲染器、同一 1280×820 逻辑窗口、同一示例 PDF / 分栏 / 页位置。
+基线是 `8bb4d8a` 的原始采样，仅在测试 app 的 Info.plist 关闭 Impeller；
+新图使用本次采样和对齐策略。显示模式为 1512×949 逻辑像素，分别真实输出
+1512×949（1×）和 3024×1898（2×），没有缩放截图冒充 DPR；最后恢复 2×。
+
+| 倍率 | Skia 原始采样 | Skia 新策略 | Preview.app 参照 |
+| --- | --- | --- | --- |
+| 1× | [原图](skia-before-1x.png) | [原图](skia-after-1x.png) | [原图](preview-1x.png) |
+| 2× | [原图](skia-before-2x.png) | [原图](skia-after-2x.png) | [原图](preview-2x.png) |
+
+Preview 同样是 1280×820 窗口，单页适合窗口模式；其页面宽度与应用分栏不同，
+只作原生文本观感参照，不把它与应用的 ROI 做数值比较。请在 100% 原图下查看。
+旧 `before-*.png` / `after-*.png` 保留为第一次评审历史，不作为本次控制变量证据。
+
+同一正文 ROI：逻辑坐标 `(300,170)-(700,700)`，2× 即 `(600,340)-(1400,1400)`。
+精确计数见 [JSON](screenshot-metrics.json)。灰度用 Pillow `convert('L')`；比例以整个 ROI（包括白底）为分母。
+
+| 倍率 / 采样 | 深色 ≤60 | 中间灰 >60 且 ≤200 |
+| --- | ---: | ---: |
+| 1× Skia 基线 | 2.23% | 5.56% |
+| 1× 新策略 | 1.74% | 6.48% |
+| 2× Skia 基线 | 2.24% | 5.47% |
+| 2× 上次被退回版本 | 0.28% | 9.62% |
+| 2× 新策略 | 2.19% | 5.68% |
+
+2× 大幅发灰的回归已消除，接近基线；1× 部分细笔画更连续，但整体仍略淡。
+**这些数值不能证明 1× 已达到“与 Preview 一样清晰”或“明显更清楚”。U-R1 保留待复审，
+不把自动化测试通过当成视觉验收，也不建议在视觉标准未确认前合并。**
+
+像素回归测试实际用 `FilterQuality.low` 绘制一像素黑线：半像素偏移时成为两条灰线，
+对齐后必须是一条黑线且没有灰色邻行。另测 1×/2×/3×、负坐标、不同亚像素偏移、
+退化小矩形，并观察 viewer 发给 PDF 后端的尺寸，断言 Retina 不再回落为 1:1 采样。
+
+## U-G1：Skia 是实际运行后端，仍属预防性规避
+
+`FLTEnableImpeller=false` 未升级引擎。Release 进程活动渲染时运行 `sample <pid> 10 1`：
+
+- [Skia 栈摘录](skia-runtime.txt)：光栅线程出现 `DlSkCanvasAdapter::Flush`、
+  `GrMtlOpsRenderPass`、`GrMtlCommandBuffer`，证明实际运行 Skia/Ganesh Metal 后端。
+- [Impeller 基线摘录](impeller-runtime.txt)：出现 `impeller::RenderPassMTL::Draw` 等帧。
+- Skia 栈的共享 DisplayList 函数签名仍带 `impeller::TRect/Matrix/AiksContext` 类型；
+  因此不能用全文搜索“没有 impeller::”判断后端。关键是实际光栅调用链的正向证据。
+
+[Flutter #192522](https://github.com/flutter/flutter/pull/192522) 查询仍为 OPEN、未合并。
+不能证明原崩溃与该补丁完全同源；配置依据为
+[Flutter 官方文档](https://docs.flutter.dev/perf/impeller#macos)。
+
+**回退跟进负责人：Arch/GPT-Astra（本 issue 负责人）；合并确认由 mylxsw 负责。**
+重新开启条件：稳定版明确包含 #192522 或等价修复；单独升级 PR 同步 `.fvmrc`、CI、
+发布工作流；去掉开关后补运行时后端证据，并通过同一缩放/全屏压力、1×/2×截图回归。
+在这些条件满足前保留回退，不因测试若干轮没崩就自行开启。
+
+### 固定 PID 的窗口 / 原生全屏压力
 
 ```sh
-python3 tool/resize_stress.py --pid <PID> --cycles 250 --delay 0.02 > resize.jsonl
+python3 tool/resize_stress.py --pid <PID> --cycles 30 --fullscreen > fullscreen.jsonl
 ```
 
-每轮尺寸：1280×820 → 1279×819 → 1280×820 → 960×640 → 1280×820。
-当前原生工具栏会把 600 高的请求约束为 634，因此小窗口使用 640 高。
-脚本通过 macOS Accessibility 写尺寸、等待 20ms 并记录每次读回的实际尺寸。
-AppKit 可能合并快速请求或约束窗口大小，因此分别报告请求数和观察到的尺寸变化数，
-不把被约束的请求当成崩溃；退出、读写错误、超时、无效尺寸或整轮尺寸始终不变均返回非零。
-目标 PID 固定，失败不会重启应用、换进程或把中断轮计为完成。
-这是进程外 AX 压力测试，不等同于上游在同一 AppKit 调用栈中同步 shrink/restore 的
-确定性复现程序，也不覆盖全屏、显示器热插拔等全部触发路径。
+每轮先请求 1280×820 → 1279×819 → 1280×820 → 960×640 → 1280×820，
+记录每次实际尺寸；再通过原生 AX 对象写 `AXFullScreen=true/false`，有限等待状态到达，
+等待动画并再次读回。辅助 Swift 进程保留同一 AX 窗口引用，避免 System Events 在全屏
+时按应用名称重新解析窗口。失败、超时、窗口消失返回非零，不重启目标、不换 PID，
+未完成的轮次不计入成功。需要终端辅助功能权限和 Xcode Command Line Tools。
 
-| 构建 | 轮数 / 缩放请求数 | 结果 | 记录 |
-| --- | ---: | --- | --- |
-| 基线，Impeller | 250 / 1250 | 无崩溃；1000 次实际尺寸变化，125.51 秒 | [JSONL](baseline-resize.jsonl) |
-| 修改后，Skia | 250 / 1250 | 无崩溃；1000 次实际尺寸变化，119.47 秒 | [JSONL](fixed-resize.jsonl) |
+| 构建 | 完整轮数 | resize 请求 / 实际变化 | 全屏状态变化 | 结果 |
+| --- | ---: | ---: | ---: | --- |
+| Impeller 基线 | 28（目标 30） | 140 / 112（仅完整轮） | 56（仅完整轮） | 第 29 轮 AX 读回失败：[JSONL](baseline-fullscreen.jsonl) |
+| Skia 回退（最终构建） | 30 | 150 / 120 | 60 | 无崩溃，103.48 秒：[JSONL](fixed-fullscreen.jsonl) |
 
-早期 960×600 的直接读回脚本曾在修改后第 137 轮中断（[记录](interrupted-resize.jsonl)）：
-应用仍存活，后续独立读回为 960×634，确认是原生窗口最小高度约束。
-另一次并发试跑也遇到尺寸读回不一致（[记录](interrupted-concurrent-resize.jsonl)）。
-这些中断不计作崩溃或通过；表内两组均使用最终记录实际尺寸的同一脚本重新跑满。
+基线第 29 轮发生 AX `cannotComplete (-25204)`，进程仍在、CGWindow 窗口仍在，
+`sample` 的主线程和光栅线程都处于事件循环等待；没有对应新崩溃报告。
+因此是未完成的压力测试，**不能把它说成已复现 Impeller 崩溃，也不能声称基线通过 30 轮**。
+Skia 与基线的目标次数均为 30；目前仍不足以建立“基线崩溃、修改后不崩”的因果证据，
+结论继续是预防性规避。
 
-## 原始截图
+失败日志中的工作区绝对路径已脱敏；轮次和错误内容保留。
 
-同一台 Mac 的显示模式分别为 1512×949 逻辑像素 / 1512×949 物理像素（1×），
-以及 1512×949 逻辑像素 / 3024×1898 物理像素（2×）。使用系统显示模式切换，
-没有用截图缩放模拟 DPR；完成后恢复 2×。截图是窗口原始 PNG，不含阴影。
-请打开原图以 100% 查看；浏览器把 2× 图缩小会掩盖区别。
-
-| 显示倍率 | 修改前 | 修改后 |
-| --- | --- | --- |
-| 1× | [原图](before-1x.png) | [原图](after-1x.png) |
-| 2× | [原图](before-2x.png) | [原图](after-2x.png) |
+最初仅用 AppleScript 的全屏尝试分别完成 1 / 2 轮后发生 AX 查询错误，进程仍存活且
+CGWindow 中窗口仍存在；不是已确认的引擎崩溃，也不算通过，保留
+[基线中断](interrupted-baseline-fullscreen.jsonl) / [Skia 中断](interrupted-fixed-fullscreen.jsonl)。
+此前仅窗口尺寸的 250 轮结果保留在 [基线](baseline-resize.jsonl) / [Skia](fixed-resize.jsonl)。
+此前同机 Debug 实例显示模式切换的 [同栈崩溃](display-switch-crash.txt) 也不是本次受控
+Release 基线，不能混入计数。没有做物理热插拔；显示模式切换用于截图，不当作压力轮次。
 
 ## 自动化验证
 
-- `dart format --set-exit-if-changed apps packages`、`flutter analyze` 通过。
-- 七个 Dart / Flutter 测试套件全部通过，汇总行覆盖率 **91.33%**，`mm_pdf` **93.13%**。
-- 新回调的 3 个可执行行全部覆盖；测试观察真实 viewer 发给测试 PDF 后端的像素尺寸，
-  覆盖 1× → 2× → 3× → 1×、缩放与整页分配上限。
-- Python 工具测试通过；`python3 -m trace --count --summary --module unittest discover -s tool/tests`
-  的脚本行覆盖率为 100%。测试覆盖计数、错误中断、尺寸校验、超时和参数校验。
-- `xcodebuild test ... -enableCodeCoverage YES` 的 4 项原生窗口测试通过，包含打包后
-  `FLTEnableImpeller` 的配置断言。Release 构建通过。
-
-物理触控板、跨显示器拖动和原生全屏的人工回归项见 `docs/macos-acceptance.md`。
+- format、analyze、七套 Dart/Flutter 测试通过；总行覆盖率 **91.34%**，PDF 包 **93.54%**。
+- 新增像素绘制/几何回归测试通过，Python 工具 **11 项测试**通过，压力脚本行覆盖率 100%。
+- Release 构建通过；4 项原生窗口测试（包含打包配置断言）此前通过，CI 再次执行。
+- 物理输入的人工回归项见 `docs/macos-acceptance.md`。视觉验收与这些自动测试分开。

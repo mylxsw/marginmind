@@ -60,4 +60,30 @@ class ResizeStressTests(unittest.TestCase):
                 stress.main()
         with patch('sys.argv', ['resize_stress', '--pid', '123']), patch.object(stress, 'run', return_value=0) as run:
             self.assertEqual(stress.main(), 0)
-            run.assert_called_once_with(123, 250, 0.02)
+            run.assert_called_once_with(123, 250, 0.02, fullscreen=False)
+
+    def test_fullscreen_checks_both_states_and_fixed_pid(self):
+        with patch.object(stress.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'true, false\n')) as run:
+            self.assertEqual(stress.fullscreen_cycle(123), [True, False])
+        command = run.call_args.args[0]
+        self.assertEqual(command[0], 'swift')
+        self.assertTrue(command[1].endswith('ax_fullscreen.swift'))
+        self.assertEqual(command[2], '123')
+        self.assertEqual(run.call_args.kwargs['timeout'], 30)
+        for value in ['false, false', 'true', '']:
+            with patch.object(stress.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, value)):
+                with self.assertRaises(ValueError):
+                    stress.fullscreen_cycle(123)
+
+    def test_incomplete_fullscreen_cycle_is_not_counted(self):
+        messages = []
+        with patch.object(stress, 'resize_cycle', return_value=stress.SIZES), patch.object(
+            stress, 'fullscreen_cycle', side_effect=[[True, False], subprocess.TimeoutExpired('osascript', 20)]
+        ):
+            self.assertEqual(stress.run(123, 2, 0.02, messages.append, fullscreen=True), 1)
+        self.assertEqual(json.loads(messages[-1])['completed_cycles'], 1)
+        self.assertEqual(json.loads(messages[-2])['fullscreen_states'], [True, False])
+        messages.clear()
+        with patch.object(stress, 'resize_cycle', return_value=stress.SIZES), patch.object(stress, 'fullscreen_cycle', return_value=[True, False]):
+            self.assertEqual(stress.run(123, 2, 0.02, messages.append, fullscreen=True), 0)
+        self.assertEqual(json.loads(messages[-1])['fullscreen_transitions'], 4)

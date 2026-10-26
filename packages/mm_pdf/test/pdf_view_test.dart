@@ -19,7 +19,7 @@ void main() {
     addTearDown(controller.dispose);
     addTearDown(tester.view.resetDevicePixelRatio);
     for (final dpr in [1.0, 2.0, 3.0, 1.0]) {
-      final samples = math.max(2.0, dpr);
+      final samples = math.max(3.0, 2 * dpr);
       tester.view.devicePixelRatio = dpr;
       await tester.pumpWidget(
         MaterialApp(
@@ -58,11 +58,11 @@ void main() {
         TestPdfRender.requestedFullSizes,
         contains((600.0 * pdf.currentZoom * samples, 800.0 * pdf.currentZoom * samples)),
       );
-      // The engine's own limit is retained for unusually small budgets.
-      expect(renderScale(context, page, pdf, 0.1), 0.1);
+      // A Retina preview must not collapse to 1:1 device sampling again.
+      expect(renderScale(context, page, pdf, 200 / 72) / (pdf.currentZoom * dpr), greaterThanOrEqualTo(2));
       pdf.value = Matrix4.diagonal3Values(4, 4, 1);
       await tester.pump();
-      expect(renderScale(context, page, pdf, 200 / 72), 2000 / 800);
+      expect(renderScale(context, page, pdf, 200 / 72), 4000 / 800);
       // Reset between display changes; the viewer remains mounted.
       pdf.value = Matrix4.diagonal3Values(pdf.minScale, pdf.minScale, 1);
       await tester.pump();

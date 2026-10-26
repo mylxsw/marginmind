@@ -1,0 +1,58 @@
+[
+  {
+    "file": "skia-before-1x.png",
+    "roi": [
+      300,
+      170,
+      700,
+      700
+    ],
+    "pixels": 212000,
+    "dark_le_60": 4730,
+    "gray_61_to_200": 11789,
+    "dark_percent": 2.2311,
+    "gray_percent": 5.5608
+  },
+  {
+    "file": "skia-after-1x.png",
+    "roi": [
+      300,
+      170,
+      700,
+      700
+    ],
+    "pixels": 212000,
+    "dark_le_60": 3698,
+    "gray_61_to_200": 13746,
+    "dark_percent": 1.7443,
+    "gray_percent": 6.484
+  },
+  {
+    "file": "skia-before-2x.png",
+    "roi": [
+      600,
+      340,
+      1400,
+      1400
+    ],
+    "pixels": 848000,
+    "dark_le_60": 18962,
+    "gray_61_to_200": 46382,
+    "dark_percent": 2.2361,
+    "gray_percent": 5.4696
+  },
+  {
+    "file": "skia-after-2x.png",
+    "roi": [
+      600,
+      340,
+      1400,
+      1400
+    ],
+    "pixels": 848000,
+    "dark_le_60": 18549,
+    "gray_61_to_200": 48172,
+    "dark_percent": 2.1874,
+    "gray_percent": 5.6807
+  }
+]
