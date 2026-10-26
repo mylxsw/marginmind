@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_platform/mm_platform.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,3 +47,11 @@ final studySetProvider = Provider.family<StudySet?, String>(
 /// Whether the source pane renders PDFs. Widget tests turn this off
 /// because they have no real files and no PDFium.
 final pdfRenderingEnabledProvider = Provider<bool>((ref) => true);
+
+/// Talks to the PDF view of a study set's source pane, so menus, the reader
+/// sidebar and the find bar can drive it without owning it.
+final readerPdfProvider = Provider.family<MMPdfViewController, String>((ref, studySetId) {
+  final controller = MMPdfViewController();
+  ref.onDispose(controller.dispose);
+  return controller;
+});

@@ -15,6 +15,7 @@ class MMSearchField extends StatefulWidget {
     this.focusNode,
     this.onChanged,
     this.onSubmitted,
+    this.onEscape,
     this.height = MMSizes.field,
     this.filled = true,
   });
@@ -24,6 +25,9 @@ class MMSearchField extends StatefulWidget {
   final FocusNode? focusNode;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
+
+  /// Replaces the default Esc behavior (clear, then give focus back).
+  final VoidCallback? onEscape;
   final double height;
   final bool filled;
 
@@ -74,7 +78,9 @@ class _MMSearchFieldState extends State<MMSearchField> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_controller.text.isNotEmpty) {
+          if (widget.onEscape != null) {
+            widget.onEscape!();
+          } else if (_controller.text.isNotEmpty) {
             _clear();
           } else {
             _focus.unfocus();

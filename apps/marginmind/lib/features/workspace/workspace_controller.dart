@@ -17,6 +17,9 @@ export '../../settings/app_settings.dart' show AnnotationTool;
 
 enum MapViewMode { map, outline }
 
+/// What the reader's page sidebar lists.
+enum ReaderPanelMode { thumbnails, outline, bookmarks, annotations }
+
 /// Something the source pane is waiting on the user to decide.
 sealed class PendingAction {
   const PendingAction();
@@ -121,6 +124,10 @@ class WorkspaceState {
     this.currentPages = const {},
     this.canUndo = false,
     this.canRedo = false,
+    this.readerPanelVisible = false,
+    this.readerPanelMode = ReaderPanelMode.thumbnails,
+    this.findVisible = false,
+    this.findFocusTick = 0,
   });
 
   final String activeMapId;
@@ -165,6 +172,15 @@ class WorkspaceState {
   final bool canUndo;
   final bool canRedo;
 
+  /// The reader's page sidebar (thumbnails, contents, bookmarks, highlights).
+  final bool readerPanelVisible;
+  final ReaderPanelMode readerPanelMode;
+
+  /// The find-in-document bar is open; [findFocusTick] changes whenever the
+  /// user asks for it again so the field takes focus and selects its text.
+  final bool findVisible;
+  final int findFocusTick;
+
   WorkspaceState copyWith({
     String? activeMapId,
     bool? sidebarVisible,
@@ -200,6 +216,10 @@ class WorkspaceState {
     Map<String, int>? currentPages,
     bool? canUndo,
     bool? canRedo,
+    bool? readerPanelVisible,
+    ReaderPanelMode? readerPanelMode,
+    bool? findVisible,
+    int? findFocusTick,
   }) {
     return WorkspaceState(
       activeMapId: activeMapId ?? this.activeMapId,
@@ -238,6 +258,10 @@ class WorkspaceState {
       currentPages: currentPages ?? this.currentPages,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
+      readerPanelVisible: readerPanelVisible ?? this.readerPanelVisible,
+      readerPanelMode: readerPanelMode ?? this.readerPanelMode,
+      findVisible: findVisible ?? this.findVisible,
+      findFocusTick: findFocusTick ?? this.findFocusTick,
     );
   }
 }
@@ -478,6 +502,30 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void toggleSidebar() => state = state.copyWith(sidebarVisible: !state.sidebarVisible);
 
+  void toggleReaderPanel() => state = state.copyWith(readerPanelVisible: !state.readerPanelVisible);
+
+  /// Opens the reader sidebar on [mode] (the source pane comes back in
+  /// map-only layout, since the user asked for it).
+  void showReaderPanel(ReaderPanelMode mode) => state = state.copyWith(
+    readerPanelVisible: true,
+    readerPanelMode: mode,
+    layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
+  );
+
+  void setReaderPanelMode(ReaderPanelMode mode) => state = state.copyWith(readerPanelMode: mode);
+
+  /// Opens the find bar of the active document (or focuses it again).
+  void openFind() {
+    if (state.activeDocumentId == null) return;
+    state = state.copyWith(
+      findVisible: true,
+      findFocusTick: state.findFocusTick + 1,
+      layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
+    );
+  }
+
+  void closeFind() => state = state.copyWith(findVisible: false);
+
   void setLayout(MMSplitMode layout) => state = state.copyWith(layout: layout);
 
   void setSplitFraction(double value) => state = state.copyWith(splitFraction: value.clamp(0.1, 0.9));
@@ -513,6 +561,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(
       openDocumentIds: open,
       activeDocumentId: id,
+      findVisible: id == state.activeDocumentId ? null : false,
       clearPending: true,
       layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
     );
@@ -525,6 +574,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       openDocumentIds: open,
       activeDocumentId: wasActive ? open.lastOrNull : null,
       clearActive: wasActive && open.isEmpty,
+      findVisible: wasActive ? false : null,
       clearPending: true,
     );
   }
@@ -599,6 +649,26 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
     });
   }
+
+  // ---- bookmarks ---------------------------------------------------------------
+
+  /// The page of the active document the reader is on.
+  int? get activePage {
+    final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
+    return doc == null ? null : (state.currentPages[doc.id] ?? doc.lastPage);
+  }
+
+  /// ⌘D: bookmarks the page being read, or removes the bookmark it has.
+  Future<void> toggleBookmark() async {
+    final documentId = state.activeDocumentId;
+    final page = activePage;
+    if (documentId == null || page == null) return;
+    await _update((c) => _editor.toggleBookmark(c, documentId, page));
+  }
+
+  Future<void> renameBookmark(String id, String title) => _update((c) => _editor.renameBookmark(c, id, title));
+
+  Future<void> removeBookmark(String id) => _update((c) => _editor.removeBookmark(c, id));
 
   // ---- excerpts and highlights ------------------------------------------------
 

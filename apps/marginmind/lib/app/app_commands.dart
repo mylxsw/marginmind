@@ -12,6 +12,7 @@ import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
 import '../shared/l10n.dart';
 import 'navigation.dart';
+import 'providers.dart';
 
 /// A user-invocable command: one definition feeds the macOS menu bar,
 /// keyboard shortcuts on other platforms and tooltips.
@@ -44,6 +45,18 @@ abstract final class AppShortcuts {
   static SingleActivator get undo => primaryShortcut(LogicalKeyboardKey.keyZ);
   static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
   static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
+
+  static SingleActivator get findNext => primaryShortcut(LogicalKeyboardKey.keyG);
+  static SingleActivator get findPrevious => primaryShortcut(LogicalKeyboardKey.keyG, shift: true);
+  static SingleActivator get toggleBookmark => primaryShortcut(LogicalKeyboardKey.keyD);
+  static SingleActivator get goBack => primaryShortcut(LogicalKeyboardKey.bracketLeft);
+  static SingleActivator get firstPage => const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true);
+  static SingleActivator get lastPage => const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true);
+  static SingleActivator get toggleReaderSidebar => primaryShortcut(LogicalKeyboardKey.keyS, alt: true);
+  static SingleActivator get readerThumbnails => primaryShortcut(LogicalKeyboardKey.digit1, alt: true);
+  static SingleActivator get readerOutline => primaryShortcut(LogicalKeyboardKey.digit2, alt: true);
+  static SingleActivator get readerBookmarks => primaryShortcut(LogicalKeyboardKey.digit3, alt: true);
+  static SingleActivator get readerAnnotations => primaryShortcut(LogicalKeyboardKey.digit4, alt: true);
 
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
   static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
@@ -113,6 +126,20 @@ Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
   primaryShortcut(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.copy),
 };
 
+/// Page navigation keys that only act while the reader has the keyboard
+/// (Home and End belong to text fields everywhere else).
+enum ReaderNavCommand { firstPage, lastPage }
+
+class ReaderNavIntent extends Intent {
+  const ReaderNavIntent(this.command);
+  final ReaderNavCommand command;
+}
+
+Map<ShortcutActivator, ReaderNavIntent> get readerNavShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.home): const ReaderNavIntent(ReaderNavCommand.firstPage),
+  const SingleActivator(LogicalKeyboardKey.end): const ReaderNavIntent(ReaderNavCommand.lastPage),
+};
+
 /// Installs the menu bar (macOS) or equivalent shortcuts (elsewhere) for
 /// the current route.
 class AppMenus extends ConsumerStatefulWidget {
@@ -127,6 +154,7 @@ class AppMenus extends ConsumerStatefulWidget {
 class _AppMenusState extends ConsumerState<AppMenus> {
   late bool _textFocused;
   bool _mapFocused = false;
+  bool _readerFocused = false;
 
   bool get _isTextFocused =>
       FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -142,10 +170,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final textFocused = _isTextFocused;
     final focus = FocusManager.instance.primaryFocus?.context;
     final mapFocused = focus != null && Actions.maybeFind<MindMapIntent>(focus) != null;
-    if (textFocused == _textFocused && mapFocused == _mapFocused) return;
+    final readerFocused = focus != null && Actions.maybeFind<ReaderNavIntent>(focus) != null;
+    if (textFocused == _textFocused && mapFocused == _mapFocused && readerFocused == _readerFocused) return;
     setState(() {
       _textFocused = textFocused;
       _mapFocused = mapFocused;
+      _readerFocused = readerFocused;
     });
   }
 
@@ -171,6 +201,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     // wait: they would land in the edit's undo step and be lost on Esc.
     final editable =
         workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
+    final hasDocument =
+        workspace != null &&
+        workspaceState!.activeDocumentId != null &&
+        workspace.content.document(workspaceState.activeDocumentId!) != null;
+    // Page commands wait while a title or note is typed, but not in the
+    // reader's own fields (the find bar).
+    final canRead = hasDocument && (!_textFocused || _readerFocused);
+    final findsInDocument = hasDocument && _readerFocused;
+    final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
+    final bookmarked =
+        hasDocument &&
+        workspace!.content.bookmarkAt(workspaceState!.activeDocumentId!, workspace.activePage ?? 0) != null;
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -448,11 +490,44 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           shortcut: AppShortcuts.toggleSidebar,
         ),
       ],
+      if (inWorkspace) ...[
+        AppCommand(
+          workspaceState!.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+          hasDocument ? workspace!.toggleReaderPanel : null,
+          shortcut: AppShortcuts.toggleReaderSidebar,
+        ),
+        for (final (mode, label, shortcut) in [
+          (ReaderPanelMode.thumbnails, l.readerThumbnails, AppShortcuts.readerThumbnails),
+          (ReaderPanelMode.outline, l.readerOutline, AppShortcuts.readerOutline),
+          (ReaderPanelMode.bookmarks, l.readerBookmarks, AppShortcuts.readerBookmarks),
+          (ReaderPanelMode.annotations, l.readerAnnotations, AppShortcuts.readerAnnotations),
+        ])
+          AppCommand(label, hasDocument ? () => workspace!.showReaderPanel(mode) : null, shortcut: shortcut),
+      ],
+      // ⌘F finds in the PDF when the keyboard is in the reader, else in the sidebar.
       AppCommand(
-        l.search,
-        (inLibrary || inWorkspace) ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.search) : null,
+        findsInDocument ? l.findInDocument : l.search,
+        findsInDocument
+            ? workspace!.openFind
+            : (inLibrary || inWorkspace)
+            ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.search)
+            : null,
         shortcut: AppShortcuts.find,
       ),
+    ];
+    final go = [
+      AppCommand(l.findNext, canRead && workspaceState!.findVisible ? () => pdf!.nextMatch() : null,
+          shortcut: AppShortcuts.findNext),
+      AppCommand(l.findPrevious, canRead && workspaceState!.findVisible ? () => pdf!.previousMatch() : null,
+          shortcut: AppShortcuts.findPrevious),
+      AppCommand(
+        bookmarked ? l.removeBookmark : l.addBookmark,
+        canRead && !_textFocused ? workspace!.toggleBookmark : null,
+        shortcut: AppShortcuts.toggleBookmark,
+      ),
+      AppCommand(l.goBack, canRead && !_textFocused ? () => pdf!.goBack() : null, shortcut: AppShortcuts.goBack),
+      AppCommand(l.firstPage, canRead && !_textFocused ? () => pdf!.firstPage() : null, shortcut: AppShortcuts.firstPage),
+      AppCommand(l.lastPage, canRead && !_textFocused ? () => pdf!.lastPage() : null, shortcut: AppShortcuts.lastPage),
     ];
     // The component gallery is a developer tool.
     final help = [if (kDebugMode) AppCommand(l.componentGallery, nav.showGallery, shortcut: AppShortcuts.gallery)];
@@ -491,6 +566,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               _provided(PlatformProvidedMenuItemType.toggleFullScreen),
             ],
           ),
+          PlatformMenu(label: l.menuGo, menus: [for (final c in go) _item(c)]),
           PlatformMenu(
             label: l.menuMap,
             menus: [
@@ -514,7 +590,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
     return CallbackShortcuts(
       bindings: {
-        for (final c in [settings, ...file, ...edit, ...view, ...map, ...study, ...help])
+        for (final c in [settings, ...file, ...edit, ...view, ...go, ...map, ...study, ...help])
           if (c.shortcut != null && c.onInvoke != null) c.shortcut!: c.onInvoke!,
       },
       child: Focus(autofocus: true, child: widget.child),
