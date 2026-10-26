@@ -25,6 +25,29 @@ void main() {
     return (named, named.card(card.id)!);
   }
 
+  test('external image fronts use a question or parent, never a source page', () {
+    final (c, topic) = e.addTopic(StudySetContent.empty, title: ' Biology ');
+    final (content, image) = e.createImage(
+      c,
+      imageFileName: 'images/chart.png',
+      parentId: topic.id,
+      imageOrigin: 'pasted',
+    );
+    for (final title in ['', '  What is shown?  ']) {
+      final face = buildReviewFace(image.copyWith(title: title), content);
+      expect(face.front.path, ['Biology']);
+      expect(face.front.prompt, ReviewPrompt.title);
+      expect(face.front.title, title.isEmpty ? 'Biology' : 'What is shown?');
+      expect(face.front.page, isNull);
+      expect(face.back.imageFileName, 'images/chart.png');
+      expect(face.back.quote, isEmpty);
+      expect(face.back.source, isNull);
+    }
+    final (root, rootImage) = e.createImage(StudySetContent.empty, imageFileName: 'images/root.jpg');
+    expect(buildReviewFace(rootImage, root, rootTitle: 'Study set').front.title, 'Study set');
+    expect(buildReviewFace(rootImage, root).front.prompt, ReviewPrompt.none);
+  });
+
   group('excerptContext', () {
     test('keeps the sentence and one on each side, split at the excerpt', () {
       final r = excerptContext(page, 'four phases')!;

@@ -38,7 +38,24 @@ void main() {
     );
     expect(await MMMapClipboard.read(), (text: '', internal: null));
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  testWidgets('reads screenshot bytes, Finder paths and an empty clipboard', (tester) async {
+    final bytes = Uint8List.fromList([1, 2]);
+    Object? value = {'bytes': bytes};
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MMMapClipboard.channel,
+      (_) async => value,
+    );
+    expect((await MMMapClipboard.readImage())!.bytes, bytes);
+    value = {'path': '/tmp/chart.jpg'};
+    expect((await MMMapClipboard.readImage())!.path, '/tmp/chart.jpg');
+    value = null;
+    expect(await MMMapClipboard.readImage(), isNull);
+    value = <String, Object?>{};
+    expect(await MMMapClipboard.readImage(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
   testWidgets('other platforms use system text clipboard including empty data', (tester) async {
+    expect(await MMMapClipboard.readImage(), isNull);
     Object? written;
     var empty = false;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(

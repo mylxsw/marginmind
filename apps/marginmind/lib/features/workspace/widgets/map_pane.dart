@@ -9,6 +9,7 @@ import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/card_image.dart';
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
@@ -54,8 +55,16 @@ class _MapPaneState extends ConsumerState<MapPane> {
     _transform.value = zoomMapAt(_transform.value, center, factor);
   }
 
-  /// Every card is edited in place, on the map and in the outline.
-  void rename(String cardId) => ref.read(workspaceProvider(widget.studySetId).notifier).beginEditing(cardId);
+  /// Image cards open a preview; text cards are edited in place.
+  void rename(String cardId) {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final card = controller.content.card(cardId);
+    if (card?.kind == CardKind.image && card?.imageFileName != null) {
+      showCardImagePreview(context, card!.imageFileName!);
+    } else {
+      controller.beginEditing(cardId);
+    }
+  }
 
   /// A new topic opens for editing in place; Esc removes it again.
   Future<void> addTopic({bool asChild = false}) => ref
@@ -126,7 +135,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
             () => controller.showDetails(card.id),
             shortcut: describeShortcut(AppShortcuts.cardDetails),
           ),
-          MMMenuItem(card.kind == CardKind.note ? l.editNote : l.renameTitle, () => rename(card.id), shortcut: 'F2'),
+          MMMenuItem(
+            card.kind == CardKind.image
+                ? l.previewImage
+                : card.kind == CardKind.note
+                ? l.editNote
+                : l.renameTitle,
+            () => rename(card.id),
+            shortcut: 'F2',
+          ),
           if (content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
           const MMMenuDivider(),
@@ -147,6 +164,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
         ],
         MMMenuItem(l.addChildTopic, () => addTopic(asChild: true), shortcut: '⇥'),
         MMMenuItem(l.addNote, addNote),
+        MMMenuItem(l.insertImage, () => pickAndInsertImages(context, ref, widget.studySetId)),
         if (card != null && hasChildren) ...[
           const MMMenuDivider(),
           MMMenuItem((node?.collapsed ?? false) ? l.expandNode : l.collapseNode, () {
@@ -421,6 +439,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    MMIconButton(
+                      icon: MMIcons.image,
+                      tooltip: l.insertImage,
+                      onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
+                    ),
+                    const MMToolbarDivider(),
                     MMIconButton(
                       icon: MMIcons.fitMap,
                       tooltip: l.fitMap,

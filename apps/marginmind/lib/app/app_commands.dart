@@ -364,7 +364,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       final mapClipboard = editable && _mapFocused && !_textFocused;
       final hasNodes = workspaceState?.selectedCardIds.isNotEmpty ?? false;
       final readerCopy = command == MindMapCommand.copy && (selectionOpen || (highlightOpen && highlightText));
-      final enabled = _textFocused || (mapClipboard && (command == MindMapCommand.paste || hasNodes)) || readerCopy;
+      final imagePaste = editable && !_textFocused && command == MindMapCommand.paste;
+      final enabled =
+          imagePaste || _textFocused || (mapClipboard && (command == MindMapCommand.paste || hasNodes)) || readerCopy;
       edit.add(
         AppCommand(
           switch (command) {
@@ -385,6 +387,10 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                     Actions.maybeInvoke(focus, intent);
                   } else if (mapClipboard) {
                     Actions.maybeInvoke(focus, MindMapIntent(command));
+                  } else if (imagePaste) {
+                    workspace.pasteSelection(imagesOnly: true).catchError((Object _) {
+                      if (context.mounted) MMHud.show(context, l.imageImportFailed, icon: MMIcons.close);
+                    });
                   } else {
                     invokeSelection(ReaderSelectionCommand.copy);
                   }
@@ -465,6 +471,10 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     ];
     final map = <AppCommand>[
       AppCommand(
+        l.insertImage,
+        editable && !_textFocused ? () => pickAndInsertImages(context, ref, workspaceId!) : null,
+      ),
+      AppCommand(
         l.cardTags,
         editable && selected != null ? () => showCardTagsSheet(context, ref, workspaceId!, selected) : null,
       ),
@@ -519,7 +529,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.child: l.addChildTopic,
       MindMapCommand.promote: l.promoteNode,
       MindMapCommand.parent: l.insertParentNode,
-      MindMapCommand.edit: l.renameTitle,
+      MindMapCommand.edit: selectedCard?.kind == CardKind.image ? l.previewImage : l.renameTitle,
       MindMapCommand.delete: l.removeFromMap,
       MindMapCommand.fold: l.toggleNodeFold,
       MindMapCommand.up: l.moveUp,

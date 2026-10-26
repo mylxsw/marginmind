@@ -5,6 +5,14 @@ import 'package:flutter/services.dart';
 abstract final class MMMapClipboard {
   static const channel = MethodChannel('marginmind/map_clipboard');
 
+  /// Screenshot bytes, or a Finder image URL, copied into the package by callers.
+  static Future<({Uint8List? bytes, String? path})?> readImage() async {
+    if (defaultTargetPlatform != TargetPlatform.macOS) return null;
+    final data = await channel.invokeMapMethod<String, Object?>('readImage');
+    if (data == null || (data['bytes'] == null && data['path'] == null)) return null;
+    return (bytes: data['bytes'] as Uint8List?, path: data['path'] as String?);
+  }
+
   static Future<void> write({required String text, required String internal}) async {
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       await channel.invokeMethod<void>('write', {'text': text, 'internal': internal});

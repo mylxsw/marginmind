@@ -7,6 +7,32 @@ import Network
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testImageClipboardReadsPNGJPEGFinderAndTIFF() throws {
+    let board = NSPasteboard.withUniqueName()
+    defer { board.releaseGlobally() }
+    XCTAssertNil(MainFlutterWindow.readImage(from: board))
+    for type in [NSPasteboard.PasteboardType.png, NSPasteboard.PasteboardType("public.jpeg")] {
+      board.clearContents()
+      let bytes = Data([1, 2, 3])
+      board.setData(bytes, forType: type)
+      XCTAssertEqual((MainFlutterWindow.readImage(from: board)?["bytes"] as? FlutterStandardTypedData)?.data, bytes)
+    }
+    board.clearContents()
+    let url = URL(fileURLWithPath: "/tmp/chart.png")
+    board.writeObjects([url as NSURL])
+    XCTAssertEqual(MainFlutterWindow.readImage(from: board)?["path"] as? String, url.path)
+    board.clearContents()
+    let bitmap = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+      bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+      bytesPerRow: 0, bitsPerPixel: 0))
+    board.setData(bitmap.tiffRepresentation, forType: .tiff)
+    let png = try XCTUnwrap((MainFlutterWindow.readImage(from: board)?["bytes"] as? FlutterStandardTypedData)?.data)
+    XCTAssertEqual(Array(png.prefix(8)), [137, 80, 78, 71, 13, 10, 26, 10])
+    board.clearContents()
+    board.setString("text only", forType: .string)
+    XCTAssertNil(MainFlutterWindow.readImage(from: board))
+  }
+
   func testResearchKeychainRoundTripAndValidation() throws {
     let account = "test-" + UUID().uuidString
     func invoke(_ method: String, _ arguments: [String: String]) -> Any? {

@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/pdf_picker.dart';
+import '../../../shared/image_picker.dart';
 import '../workspace_controller.dart';
 
 /// Shows a controller outcome as a HUD, in the current language.
@@ -259,5 +260,25 @@ class _CardTagsSheetState extends State<_CardTagsSheet> {
         ],
       ),
     );
+  }
+}
+
+/// All image entry points share validation, persistence and error feedback.
+Future<void> insertImageFiles(BuildContext context, WidgetRef ref, String studySetId, List<String> paths) async {
+  if (paths.isEmpty) return;
+  try {
+    final inserted = await ref.read(workspaceProvider(studySetId).notifier).insertImages(paths: paths);
+    if (inserted && context.mounted) MMHud.show(context, context.l10n.imageInserted);
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.imageImportFailed, icon: MMIcons.close);
+  }
+}
+
+Future<void> pickAndInsertImages(BuildContext context, WidgetRef ref, String studySetId) async {
+  try {
+    final paths = await ref.read(imagePickerProvider)(context.l10n.imageFiles);
+    if (context.mounted) await insertImageFiles(context, ref, studySetId, paths);
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.imageImportFailed, icon: MMIcons.close);
   }
 }

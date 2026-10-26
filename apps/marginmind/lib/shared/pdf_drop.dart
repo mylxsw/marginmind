@@ -9,11 +9,12 @@ typedef DroppedFile = ({String path, String name});
 /// Accepts PDFs dragged in from Finder. While a drag hovers, the area gets
 /// an accent outline and a glass label saying what dropping will do.
 class PdfDropTarget extends StatefulWidget {
-  const PdfDropTarget({super.key, required this.label, required this.onDrop, required this.child});
+  const PdfDropTarget({super.key, required this.label, required this.onDrop, this.onImageDrop, required this.child});
 
   /// What happens on drop, e.g. "Import into this study set".
   final String label;
   final ValueChanged<List<DroppedFile>> onDrop;
+  final ValueChanged<List<DroppedFile>>? onImageDrop;
   final Widget child;
 
   @override
@@ -29,6 +30,14 @@ class _PdfDropTargetState extends State<PdfDropTarget> {
       for (final f in details.files)
         if (f.path.toLowerCase().endsWith('.pdf')) (path: f.path, name: f.name),
     ];
+    if (widget.onImageDrop != null) {
+      final others = [
+        for (final f in details.files)
+          if (!f.path.toLowerCase().endsWith('.pdf')) (path: f.path, name: f.name),
+      ];
+      if (others.isNotEmpty) widget.onImageDrop!(others);
+      if (pdfs.isEmpty) return;
+    }
     if (pdfs.isEmpty) {
       MMHud.show(context, context.l10n.dropOnlyPdf, icon: MMIcons.close);
       return;
@@ -40,6 +49,7 @@ class _PdfDropTargetState extends State<PdfDropTarget> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     return DropTarget(
+      enable: ModalRoute.of(context)?.isCurrent ?? true,
       onDragEntered: (_) => setState(() => _hovering = true),
       onDragExited: (_) => setState(() => _hovering = false),
       onDragDone: _done,
@@ -49,24 +59,27 @@ class _PdfDropTargetState extends State<PdfDropTarget> {
           if (_hovering)
             Positioned.fill(
               child: IgnorePointer(
-                child: Container(
-                  margin: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: c.accentTint,
-                    borderRadius: BorderRadius.circular(MMRadii.card),
-                    border: Border.all(color: c.accent, width: 2),
-                  ),
-                  alignment: Alignment.center,
-                  child: MMGlass(
-                    borderRadius: BorderRadius.circular(20),
-                    padding: const EdgeInsets.fromLTRB(14, 9, 16, 9),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(MMIcons.import, size: 15, color: c.label),
-                        const SizedBox(width: 8),
-                        Text(widget.label, style: context.mmText.headline),
-                      ],
+                child: CustomPaint(
+                  foregroundPainter: widget.onImageDrop == null ? null : _DropBorder(c.accent),
+                  child: Container(
+                    margin: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: c.accentTint,
+                      borderRadius: BorderRadius.circular(MMRadii.card),
+                      border: widget.onImageDrop == null ? Border.all(color: c.accent, width: MMSpacing.xxs) : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: MMGlass(
+                      borderRadius: BorderRadius.circular(20),
+                      padding: const EdgeInsets.fromLTRB(14, 9, 16, 9),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(MMIcons.import, size: 15, color: c.label),
+                          const SizedBox(width: 8),
+                          Text(widget.label, style: context.mmText.headline),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -76,4 +89,29 @@ class _PdfDropTargetState extends State<PdfDropTarget> {
       ),
     );
   }
+}
+
+class _DropBorder extends CustomPainter {
+  _DropBorder(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius((Offset.zero & size).deflate(MMSpacing.s), const Radius.circular(MMRadii.card)),
+      );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = MMSpacing.xxs;
+    for (final metric in path.computeMetrics()) {
+      for (double start = 0; start < metric.length; start += MMSpacing.s + MMSpacing.xs) {
+        canvas.drawPath(metric.extractPath(start, start + MMSpacing.s), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DropBorder oldDelegate) => oldDelegate.color != color;
 }

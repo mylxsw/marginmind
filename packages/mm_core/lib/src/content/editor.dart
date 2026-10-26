@@ -378,7 +378,8 @@ class StudySetEditor {
   (StudySetContent, Card) createImage(
     StudySetContent c, {
     required String imageFileName,
-    required String annotationId,
+    String? annotationId,
+    String? imageOrigin,
     String title = '',
     String? parentId,
   }) {
@@ -388,6 +389,7 @@ class StudySetEditor {
       title: title.trim(),
       annotationId: annotationId,
       imageFileName: imageFileName,
+      imageOrigin: imageOrigin,
       createdAt: now(),
     );
     return (_place(c, card, parentId), card);
