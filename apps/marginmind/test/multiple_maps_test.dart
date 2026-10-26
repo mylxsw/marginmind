@@ -77,7 +77,11 @@ void main() {
       controller.selectNeighbor(AxisDirection.left);
       expect(state().selectedCardId, topic.id);
       await controller.toggleCollapsed(topic.id);
+      final tick = state().locateCardTick;
       await controller.locateHighlightCard(annotation);
+      expect(state().locateCardTick, tick + 1);
+      await controller.locateHighlightCard(annotation);
+      expect(state().locateCardTick, tick + 2);
       expect(controller.content.node(topic.id, mapId: id)!.collapsed, isFalse);
       expect(controller.content.node(card.id)!.parentId, 'c3');
       final md = controller.export(opml: false, rootTitle: 'set', source: (_, _) => 'source');

@@ -85,8 +85,8 @@ P0 一览：
 
 | 编号 | 现状 | 期望（参照） | 优先级 |
 | --- | --- | --- | --- |
-| U-B1 | 从卡片“在原文中显示”后，PDF 被放大到摘录区域的宽度，页面左右两侧的文字被裁掉；没有菜单或快捷键能恢复缩放（见 U-R2）。原因是 `_reveal` 调用了 pdfrx 的 `goToRectInsidePage`，它会缩放到矩形大小（`packages/mm_pdf/lib/src/pdf_view.dart:220`）。[截图](ux-audit/09-reveal-zoomed.jpg) | 预览、MarginNote：保持当前缩放，只滚动到摘录所在位置并居中，再闪烁提示。 | P0 |
-| U-B2 | 从原文高亮“定位卡片”后卡片被选中，但脑图停在 10%，看不出是哪一张。[截图](ux-audit/10-locate-card.jpg) | MarginNote：定位时把卡片居中并放大到看得清，再闪烁。 | P1 |
+| U-B1（已修复（PR #33）） | 从卡片“在原文中显示”后，PDF 被放大到摘录区域的宽度，页面左右两侧的文字被裁掉；没有菜单或快捷键能恢复缩放（见 U-R2）。原因是 `_reveal` 调用了 pdfrx 的 `goToRectInsidePage`，它会缩放到矩形大小（`packages/mm_pdf/lib/src/pdf_view.dart:220`）。[截图](ux-audit/09-reveal-zoomed.jpg) | 预览、MarginNote：保持当前缩放，只滚动到摘录所在位置并居中，再闪烁提示。 | P0 |
+| U-B2（已修复（PR #33）） | 从原文高亮“定位卡片”后卡片被选中，但脑图停在 10%，看不出是哪一张。[截图](ux-audit/10-locate-card.jpg) | MarginNote：定位时把卡片居中并放大到看得清，再闪烁。 | P1 |
 
 ### 6. 复习
 
