@@ -17,11 +17,11 @@ void main() {
   );
   const memory = MemoryState(cardId: 'a', stability: 3.5, difficulty: 5, phase: MemoryPhase.review);
 
-  test('each rating appends exactly one log and retains SM-2 scheduling', () {
+  test('each rating appends exactly one log and uses FSRS scheduling', () {
     var c = initial;
     for (final rating in [...Rating.values, Rating.good]) {
       final previous = c;
-      final expected = ReviewScheduler.rate('a', c.reviewOf('a'), rating, time);
+      final expected = ReviewScheduler.rate('a', c.reviewOf('a'), rating, time, memory: c.memoryOf('a'));
       ReviewScheduler.preview('a', c.reviewOf('a'), time);
       c = editor.rate(c, 'a', rating);
       expect(c.reviewOf('a')!.toJson(), expected.toJson());
@@ -35,7 +35,7 @@ void main() {
       expect(c.reviewLogs.take(previous.reviewLogs.length), previous.reviewLogs);
     }
     c = editor.rate(c, 'b', Rating.hard);
-    expect(c.reviewOf('b')!.intervalDays, .5);
+    expect(c.reviewOf('b')!.intervalDays, 0);
     expect(c.reviewLogs.map((e) => e.id).toSet().length, 6);
     expect(c.reviewLogsOf('a').length, 5);
     expect(c.reviewLogsOf('missing'), isEmpty);
@@ -57,11 +57,12 @@ void main() {
     expect(c.reviews, isEmpty);
     c = editor.rate(c, 'a', Rating.good);
     final removed = editor.removeFromMap(c, 'a');
-    expect(removed.memoryOf('a'), next);
+    expect(removed.memoryOf('a'), c.memoryOf('a'));
+    expect(c.memoryOf('a'), isNot(same(next)));
     expect(removed.reviewLogs, c.reviewLogs);
     final restored = StudySetEditor.restore(initial, removed);
     expect(restored.card('a'), isNotNull);
-    expect(restored.memoryOf('a'), next);
+    expect(restored.memoryOf('a'), c.memoryOf('a'));
     expect(restored.reviews, c.reviews);
     expect(restored.reviewLogs, c.reviewLogs);
     expect(StudySetContent.fromJson(restored.toJson()).toJson(), restored.toJson());

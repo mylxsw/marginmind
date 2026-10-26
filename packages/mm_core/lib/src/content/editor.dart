@@ -6,7 +6,9 @@ import 'study_set_content.dart';
 /// Every change to a study set's content, as pure functions. The UI calls
 /// these through the repository; tests call them directly.
 class StudySetEditor {
-  StudySetEditor({required this.newId, required this.now, this.mapId = MindMap.defaultId});
+  StudySetEditor({required this.newId, required this.now, this.mapId = MindMap.defaultId, this.fsrsParameters});
+
+  final FsrsParameters? fsrsParameters;
 
   final String mapId;
 
@@ -608,13 +610,37 @@ class StudySetEditor {
     );
   }
 
+  /// Fill missing legacy memory states without moving any existing due date.
+  /// Existing FSRS states and logs are preserved; repeated calls are no-ops.
+  static StudySetContent initializeMemory(StudySetContent c) {
+    final known = c.memoryStates.map((m) => m.cardId).toSet();
+    final missing = [
+      for (final r in c.reviews)
+        if (known.add(r.cardId)) ReviewScheduler.fromLegacy(r),
+    ];
+    return missing.isEmpty ? c : c.copyWith(memoryStates: [...c.memoryStates, ...missing]);
+  }
+
   /// Records a review of [cardId] rated [rating].
   StudySetContent rate(StudySetContent c, String cardId, Rating rating) {
     if (c.card(cardId) == null) return c;
     final reviewedAt = now();
     final previous = c.reviewOf(cardId);
-    final next = ReviewScheduler.rate(cardId, previous, rating, reviewedAt);
+    final result = ReviewScheduler.schedule(
+      cardId,
+      previous,
+      rating,
+      reviewedAt,
+      memory: c.memoryOf(cardId),
+      parameters: fsrsParameters,
+    );
+    final next = result.review;
     return c.copyWith(
+      memoryStates: [
+        for (final state in c.memoryStates)
+          if (state.cardId != cardId) state,
+        result.memory,
+      ],
       reviewLogs: [
         ...c.reviewLogs,
         ReviewLog(

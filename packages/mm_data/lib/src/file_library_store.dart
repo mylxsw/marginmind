@@ -383,6 +383,6 @@ class _SetRecord {
     starred: (j['starred'] as bool?) ?? false,
     createdAt: DateTime.parse(j['createdAt'] as String),
     lastOpenedAt: DateTime.parse(j['lastOpenedAt'] as String),
-    content: StudySetContent.fromJson(((j['content'] as Map?) ?? const {}).cast()),
+    content: StudySetEditor.initializeMemory(StudySetContent.fromJson(((j['content'] as Map?) ?? const {}).cast())),
   );
 }

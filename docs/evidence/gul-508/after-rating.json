@@ -1,0 +1,95 @@
+{
+  "format": 6,
+  "id": "cohort",
+  "title": "GUL-508 FSRS",
+  "colorIndex": 2,
+  "folderId": "folder",
+  "starred": true,
+  "createdAt": "2026-10-20T08:00:00.000Z",
+  "lastOpenedAt": "2026-10-26T18:23:07.064479",
+  "content": {
+    "documents": [],
+    "annotations": [],
+    "cards": [
+      {
+        "id": "card-002",
+        "kind": "note",
+        "title": "FSRS regression 2",
+        "createdAt": "2026-10-26T00:00:00.000Z"
+      },
+      {
+        "id": "card-003",
+        "kind": "note",
+        "title": "FSRS regression 3",
+        "createdAt": "2026-10-26T00:00:00.000Z"
+      }
+    ],
+    "maps": [
+      {
+        "id": "main",
+        "title": ""
+      }
+    ],
+    "nodes": [
+      {
+        "cardId": "card-002",
+        "mapId": "main",
+        "order": 2.0
+      },
+      {
+        "cardId": "card-003",
+        "mapId": "main",
+        "order": 3.0
+      }
+    ],
+    "reviews": [
+      {
+        "cardId": "card-003",
+        "due": "2026-10-25T00:00:00.000Z",
+        "interval": 3.0,
+        "ease": 3.5,
+        "reps": 4,
+        "lapses": 3,
+        "last": "2026-10-23T00:00:00.000Z"
+      },
+      {
+        "cardId": "card-002",
+        "due": "2026-10-29T18:23:27.780186",
+        "interval": 3.0,
+        "ease": 2.5,
+        "reps": 4,
+        "lapses": 2,
+        "last": "2026-10-26T18:23:27.780186"
+      }
+    ],
+    "reviewLogs": [
+      {
+        "id": "643525d9f9877bce3bee82b80b4e3a3a",
+        "cardId": "card-002",
+        "reviewedAt": "2026-10-26T18:23:27.780186",
+        "rating": "good",
+        "intervalBefore": 1.0,
+        "intervalAfter": 3.0
+      }
+    ],
+    "memoryStates": [
+      {
+        "cardId": "card-003",
+        "stability": 3.0,
+        "difficulty": 4.386294361119891,
+        "phase": "review",
+        "learningStep": 0
+      },
+      {
+        "cardId": "card-002",
+        "stability": 3.46735238,
+        "difficulty": 6.08539138,
+        "phase": "review",
+        "learningStep": 0
+      }
+    ],
+    "relations": [],
+    "summaries": [],
+    "bookmarks": []
+  }
+}

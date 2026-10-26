@@ -92,22 +92,6 @@ void main() {
   });
 
   group('review', () {
-    test('scheduler grows intervals and resets on again', () {
-      var s = ReviewScheduler.rate('c', null, Rating.good, now);
-      expect(s.intervalDays, 1);
-      expect(s.due, now.add(const Duration(days: 1)));
-      s = ReviewScheduler.rate('c', s, Rating.good, now);
-      expect(s.intervalDays, 3);
-      s = ReviewScheduler.rate('c', s, Rating.good, now);
-      expect(s.intervalDays, closeTo(7.5, 0.001));
-      s = ReviewScheduler.rate('c', s, Rating.again, now);
-      expect(s.intervalDays, 0);
-      expect(s.lapses, 1);
-      expect(s.due, now.add(ReviewScheduler.relearnDelay));
-      expect(s.ease, closeTo(2.3, 0.001));
-      expect(ReviewScheduler.rate('c', null, Rating.easy, now).intervalDays, 4);
-    });
-
     test('queue has due cards first, then new ones, never topics', () {
       final (c0, doc) = withDoc();
       final (c1, _) = editor.addTopic(c0, title: 'T');
