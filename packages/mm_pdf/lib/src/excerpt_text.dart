@@ -119,26 +119,49 @@ List<_Line> _lines(ExcerptPageText page) {
   return lines;
 }
 
+/// Compare the unchanged title/path and a page number at either edge. The
+/// printed number may have an offset, but must progress with the PDF page.
+bool _sameMarginText(String a, int pageA, String b, int pageB) {
+  if (a == b) return true;
+  List<(String, int)> numbered(String text) {
+    // Chapter headings are content, even when a chapter starts on every page.
+    if (RegExp(r'^(?:chapter\s+\d+|第\s*\d+\s*章)').hasMatch(text)) return [];
+    final result = <(String, int)>[];
+    for (final pattern in [
+      RegExp(r'^(\d+)(?=\s|$)'),
+      RegExp(r'(?:^|\s)(\d+)(?:\s*/\s*\d+)?$'),
+      RegExp(r'第\s*(\d+)\s*页$'),
+    ]) {
+      final match = pattern.firstMatch(text);
+      if (match == null) continue;
+      final value = match[1]!;
+      // group 1 may follow a whitespace prefix or “第”.
+      final start = text.indexOf(value, match.start);
+      final number = int.tryParse(value);
+      if (number != null) result.add((text.replaceRange(start, start + value.length, '#'), number));
+    }
+    return result;
+  }
+
+  final left = numbered(a), right = numbered(b);
+  return left.any((x) => right.any((y) => x.$1 == y.$1 && y.$2 - x.$2 == pageB - pageA));
+}
+
 /// Uses full neighbouring pages as evidence, never the selected fragment alone.
-/// Only first/last lines in the outer 8% with a separated body qualify. At least
+/// Only geometrically topmost/bottommost lines in the outer 8% with a
+/// separated body qualify. Text extraction order is preserved in the quote. At least
 /// two distinct pages must agree in text and position. Ambiguity keeps text.
 ExcerptTextResult buildExcerptText(List<ExcerptPageText> evidence, List<ExcerptTextSpan> spans) {
   final lines = {for (final page in evidence) page.page: _lines(page)};
   final candidates = <(int, _Line, bool, String, double)>[];
   String signature(String s) {
     final value = s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-    // Do not equate distinct chapter headings such as “Chapter 1 / 2”.
-    final variable =
-        RegExp(r'^(?:\d+(?:\s*/\s*\d+)?|page\s+\d+(?:\s+(?:of|/)\s*\d+)?|第\s*\d+\s*页)$').hasMatch(value) ||
-        RegExp(r'\d+[/-]\d+[/-]\d+').hasMatch(value) ||
-        value.startsWith('file:') ||
-        value.startsWith('/') ||
-        RegExp(r'^[a-z]:[\\/]').hasMatch(value);
-    return variable ? value.replaceAll(RegExp(r'\d+'), '#') : value;
+    // Printed dates repeat independently of the PDF's page number.
+    return RegExp(r'\d+[/-]\d+[/-]\d+').hasMatch(value) ? value.replaceAll(RegExp(r'\d+'), '#') : value;
   }
 
   for (final page in evidence) {
-    final onPage = lines[page.page]!;
+    final onPage = [...lines[page.page]!]..sort((a, b) => b.bounds.top.compareTo(a.bounds.top));
     if (onPage.length < 3 || page.height <= 0) continue;
     for (final top in [true, false]) {
       final line = top ? onPage.first : onPage.last;
@@ -151,7 +174,9 @@ ExcerptTextResult buildExcerptText(List<ExcerptPageText> evidence, List<ExcerptT
   }
   final excluded = <(int, int)>{};
   for (final a in candidates) {
-    if (candidates.any((b) => a.$1 != b.$1 && a.$3 == b.$3 && a.$4 == b.$4 && (a.$5 - b.$5).abs() < 0.015)) {
+    if (candidates.any(
+      (b) => a.$1 != b.$1 && a.$3 == b.$3 && _sameMarginText(a.$4, a.$1, b.$4, b.$1) && (a.$5 - b.$5).abs() < 0.015,
+    )) {
       excluded.add((a.$1, a.$2.start));
     }
   }

@@ -26,6 +26,21 @@ ExcerptPageText page(
   );
 }
 
+ExcerptPageText reorder(ExcerptPageText source, List<int> order) {
+  final rows = RegExp(r'[^\n]+').allMatches(source.text).toList();
+  return ExcerptPageText(
+    page: source.page,
+    height: source.height,
+    text: order.map((i) => rows[i][0]!).join('\n'),
+    rects: [
+      for (var n = 0; n < order.length; n++) ...[
+        ...source.rects.sublist(rows[order[n]].start, rows[order[n]].end),
+        if (n < order.length - 1) const PageRect(0, 0, 0, 0),
+      ],
+    ],
+  );
+}
+
 void main() {
   test('joins Chinese, English, mixed scripts, punctuation, CRLF and paragraphs', () {
     for (final entry in {
@@ -112,6 +127,58 @@ void main() {
     expect(buildExcerptText([a, b], [ExcerptTextSpan(1, 0, a.text.length)]).text, contains('Chapter 1'));
     final c = page(2, header: 'Chapter 1', top: 799);
     expect(buildExcerptText([a, c], [ExcerptTextSpan(1, 0, a.text.length)]).text, contains('Chapter 1'));
+  });
+
+  test('geometric extremes identify margins drawn after or between body runs', () {
+    for (final order in [
+      [1, 2, 3, 0, 4],
+      [4, 1, 0, 2, 3],
+      [1, 4, 2, 0, 3],
+    ]) {
+      final a = reorder(page(1), order), b = reorder(page(2), order);
+      final result = buildExcerptText([a, b], [ExcerptTextSpan(1, 0, a.text.length)]);
+      expect(result.text, '中文硬换行接下去 English wrapped text');
+      expect(result.pages.single.rects, hasLength(3));
+    }
+  });
+  test('edge page numbers follow PDF page differences, including offsets and gaps', () {
+    for (final title in [(int n) => '$n  Book Title', (int n) => 'Book Title  $n']) {
+      for (final delta in [1, 3]) {
+        final a = page(4, header: title(12));
+        final b = page(4 + delta, header: title(12 + delta));
+        final result = buildExcerptText([b, a], [ExcerptTextSpan(4, 0, a.text.length)]);
+        expect(result.text, isNot(contains('Book Title')));
+        expect(result.pages.single.rects, hasLength(3));
+        final wrong = page(4 + delta, header: title(12 + delta + 1));
+        expect(buildExcerptText([a, wrong], [ExcerptTextSpan(4, 0, a.text.length)]).text, contains('Book Title'));
+      }
+    }
+  });
+  test('browser footer compares page numerator and preserves other URL digits and totals', () {
+    for (final scheme in ['http', 'https', 'file']) {
+      final a = page(5, footer: '$scheme://example.test/book2 3/12');
+      final b = page(7, footer: '$scheme://example.test/book2 5/12');
+      expect(buildExcerptText([a, b], [ExcerptTextSpan(5, 0, a.text.length)]).text, isNot(contains(scheme)));
+      for (final footer in [
+        '$scheme://example.test/book2 4/12',
+        '$scheme://example.test/book2 5/13',
+        '$scheme://example.test/book3 5/12',
+      ]) {
+        final other = page(7, footer: footer);
+        expect(buildExcerptText([a, other], [ExcerptTextSpan(5, 0, a.text.length)]).text, contains(scheme));
+      }
+    }
+  });
+  test('different titles and embedded digits are not treated as page numbers', () {
+    for (final headers in [
+      ('12 Book One', '13 Book Two'),
+      ('Book 12 Title', 'Book 13 Title'),
+      ('Chapter 12', 'Chapter 13'),
+      ('第12章', '第13章'),
+    ]) {
+      final a = page(1, header: headers.$1), b = page(2, header: headers.$2);
+      expect(buildExcerptText([a, b], [ExcerptTextSpan(1, 0, a.text.length)]).text, contains(headers.$1));
+    }
   });
   test('retains paragraph spacing inferred from geometric gaps', () {
     final a = page(1, ys: [700, 680, 630]);

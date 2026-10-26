@@ -311,6 +311,10 @@ void main() {
       MaterialApp(
         home: MMPdfView(
           filePath: 'margin-test.pdf',
+          highlights: const [
+            MMPdfHighlight(id: 'existing', page: 1, rects: [PageRect(30, 500, 120, 480)], color: Colors.yellow),
+            MMPdfHighlight(id: 'unselected', page: 3, rects: [PageRect(30, 500, 120, 480)], color: Colors.yellow),
+          ],
           controller: controller,
           onSelectionCommitted: (s) => committed = s,
         ),
@@ -318,6 +322,21 @@ void main() {
     );
     await _waitReady(tester, controller);
     final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    List<Widget> overlays(int number) {
+      final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+      return viewer.params.pageOverlaysBuilder!(
+        tester.element(find.byType(PdfViewer)),
+        Rect.fromLTWH(
+          0,
+          0,
+          pdf.layout.pageLayouts[number - 1].width * pdf.currentZoom,
+          pdf.layout.pageLayouts[number - 1].height * pdf.currentZoom,
+        ),
+        pdf.document.pages[number - 1],
+      );
+    }
+
+    final cachedFirst = overlays(1), cachedThird = overlays(3);
     final a = (await tester.runAsync(pdf.document.pages.first.loadStructuredText))!;
     final b = (await tester.runAsync(pdf.document.pages[1].loadStructuredText))!;
     await tester.runAsync(
@@ -342,12 +361,17 @@ void main() {
     expect(committed!.pages.map((p) => p.page), [1, 2]);
     expect(committed!.pages.every((p) => p.rects.length == 3), isTrue);
     expect(Theme.of(tester.element(find.byType(PdfViewer))).textSelectionTheme.selectionColor, Colors.transparent);
+    expect(overlays(1).last, same(cachedFirst.single));
+    expect(overlays(1), hasLength(4));
+    expect(overlays(3), same(cachedThird));
     await controller.clearSelection();
     await tester.pump();
     expect(
       Theme.of(tester.element(find.byType(PdfViewer))).textSelectionTheme.selectionColor,
       isNot(Colors.transparent),
     );
+    expect(overlays(1), same(cachedFirst));
+    expect(overlays(3), same(cachedThird));
     committed = null;
     await tester.runAsync(
       () => pdf.textSelectionDelegate.setTextSelectionPointRange(
