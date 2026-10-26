@@ -1,0 +1,102 @@
+RUN 1 before
+00:00 +0: loading <baseline>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <baseline>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=68us p95=116us (limit 16000us)
+00:00 +1: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=421us p95=533us (limit 16000us)
+00:00 +12: All tests passed!
+RUN 1 after
+00:00 +0: loading <after>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <after>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=69us p95=148us (limit 16000us)
+00:00 +1: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <after>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <after>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <after>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <after>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <after>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <after>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <after>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <after>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <after>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=421us p95=555us (limit 16000us)
+00:00 +12: All tests passed!
+RUN 2 before
+00:00 +0: loading <baseline>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <baseline>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=68us p95=133us (limit 16000us)
+00:00 +1: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=422us p95=540us (limit 16000us)
+00:00 +12: All tests passed!
+RUN 2 after
+00:00 +0: loading <after>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <after>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=69us p95=152us (limit 16000us)
+00:00 +1: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <after>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <after>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <after>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <after>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <after>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <after>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <after>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <after>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <after>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=454us p95=578us (limit 16000us)
+00:00 +12: All tests passed!
+RUN 3 before
+00:00 +0: loading <baseline>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <baseline>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=68us p95=134us (limit 16000us)
+00:00 +1: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <baseline>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=426us p95=548us (limit 16000us)
+00:00 +12: All tests passed!
+RUN 3 after
+00:00 +0: loading <after>/apps/marginmind/test/mind_map_cache_test.dart
+00:00 +0: <after>/packages/mm_layout/test/tree_layout_benchmark_test.dart: 500 nodes: full layout and one resized node p95 below 16 ms
+500-node full layout/reflow: median=68us p95=140us (limit 16000us)
+00:00 +1: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 mixed nodes preserve every original rectangle and edge
+00:00 +2: <after>/apps/marginmind/test/mind_map_cache_test.dart: unchanged content, read position and annotation color reuse layout and measurements
+00:00 +3: <after>/apps/marginmind/test/mind_map_cache_test.dart: one text change measures once, reflows correctly; undo uses cached text
+00:00 +4: <after>/apps/marginmind/test/mind_map_cache_test.dart: move, reorder, fold, unfold, remove and missing cards preserve legacy layout
+00:00 +5: <after>/apps/marginmind/test/mind_map_cache_test.dart: root title, empty text and excerpts without annotations are measured
+00:00 +6: <after>/apps/marginmind/test/mind_map_cache_test.dart: theme, scale, locale and direction invalidate measurements
+00:00 +7: <after>/apps/marginmind/test/mind_map_cache_test.dart: the inherited text style is measured with and invalidates measurements
+00:00 +8: <after>/apps/marginmind/test/mind_map_cache_test.dart: same text shares measurements only when style and width match
+00:00 +9: <after>/apps/marginmind/test/mind_map_cache_test.dart: equal-size title changes update text without relayout
+00:00 +10: <after>/apps/marginmind/test/mind_map_cache_test.dart: measurement cache is bounded during long editing sessions
+00:00 +11: <after>/apps/marginmind/test/mind_map_cache_test.dart: 500 nodes: single text edit + measurement + reflow p95 below 16 ms
+500-node edit/reflow: median=417us p95=550us (limit 16000us)
+00:00 +12: All tests passed!

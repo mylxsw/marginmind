@@ -96,6 +96,7 @@ class ImportedNotice extends WorkspaceNotice {
 
 class WorkspaceState {
   const WorkspaceState({
+    this.content,
     this.activeMapId = MindMap.defaultId,
     this.sidebarVisible = true,
     this.layout = MMSplitMode.split,
@@ -122,6 +123,9 @@ class WorkspaceState {
     this.canUndo = false,
     this.canRedo = false,
   });
+
+  /// Latest repository snapshot, including completed writes before stream delivery.
+  final StudySetContent? content;
 
   final String activeMapId;
   final bool sidebarVisible;
@@ -166,6 +170,7 @@ class WorkspaceState {
   final bool canRedo;
 
   WorkspaceState copyWith({
+    StudySetContent? content,
     String? activeMapId,
     bool? sidebarVisible,
     MMSplitMode? layout,
@@ -202,6 +207,7 @@ class WorkspaceState {
     bool? canRedo,
   }) {
     return WorkspaceState(
+      content: content ?? this.content,
       activeMapId: activeMapId ?? this.activeMapId,
       sidebarVisible: sidebarVisible ?? this.sidebarVisible,
       layout: layout ?? this.layout,
@@ -262,22 +268,49 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.listen(contentProvider(studySetId), (_, next) {
       final c = next.value;
       if (c == null) return;
-      _latest = c;
-      state = _withTabs(state, c);
+      // Events can have been queued before a completed write. Read the
+      // current repository snapshot instead of installing that old payload.
+      unawaited(_refreshContent());
     });
     ref.listen(settingsProvider.select((s) => s.annotationTool), (_, tool) {
       if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
     });
     final initialState = WorkspaceState(tool: ref.read(settingsProvider).annotationTool);
     final initial = ref.read(contentProvider(studySetId)).value;
-    return initial == null ? initialState : _withTabs(initialState, initial);
+    return initial == null ? initialState : _withTabs(initialState.copyWith(content: initial), initial);
   }
 
-  /// The newest content seen, from either the stream or our own writes
-  /// (the stream delivers a write a moment after it completes).
-  StudySetContent? _latest;
+  int _contentRequest = 0;
+  Future<void>? _contentRefresh;
 
-  StudySetContent get content => _latest ?? ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;
+  StudySetContent get content => state.content ?? StudySetContent.empty;
+
+  void _publishContent(StudySetContent next) {
+    if (!ref.mounted || identical(state.content, next)) return;
+    state = _withTabs(state.copyWith(content: next), next);
+  }
+
+  Future<void> _refreshContent() => _contentRefresh = _readContent(++_contentRequest);
+
+  Future<void> _readContent(int request) async {
+    final next = await _repo.load(studySetId);
+    if (!ref.mounted) return;
+    if (request != _contentRequest) {
+      // A write must not finish before the newer refresh it yielded to.
+      await _contentRefresh;
+      return;
+    }
+    _publishContent(next);
+  }
+
+  /// Repository loads are in-memory snapshots in both local adapters. Reading
+  /// after persistence also retains external edits made while our write waited
+  /// for disk, rather than publishing the older value returned by update().
+  Future<StudySetContent> _write(StudySetContent Function(StudySetContent) change) async {
+    final next = await _repo.update(studySetId, change);
+    if (ref.mounted) await _refreshContent();
+    return next;
+  }
 
   StudySetEditor get _editor {
     final editor = ref.read(editorProvider);
@@ -326,9 +359,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (_transactionDepth == 0) return;
     final before = _transactionBefore;
     if (before != null) {
-      final next = await _repo.update(studySetId, (c) => StudySetEditor.restore(before, c));
-      _latest = next;
-      if (ref.mounted) state = _withTabs(state, next).copyWith(clearPending: true);
+      await _write((c) => StudySetEditor.restore(before, c));
+      if (ref.mounted) state = state.copyWith(clearPending: true);
     }
     _transactionBefore = null;
     _transactionDepth = 0;
@@ -349,12 +381,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) =>
       _enqueue(() async {
         StudySetContent? before;
-        final next = await _repo.update(studySetId, (c) {
+        final next = await _write((c) {
           before = c;
           return change(c);
         });
-        _latest = next;
-        if (ref.mounted) state = _withTabs(state, next);
         if (undoable && before != null && !_sameEdits(before!, next)) {
           if (_transactionDepth > 0) {
             _transactionBefore ??= before;
@@ -383,13 +413,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
         final snapshot = from.last;
         StudySetContent? current;
-        _latest = await _repo.update(studySetId, (c) {
+        await _write((c) {
           current = c;
           return StudySetEditor.restore(snapshot, c);
         });
         from.removeLast();
         to.add(current!);
-        if (ref.mounted) state = _withTabs(state, _latest!).copyWith(clearPending: true);
+        if (ref.mounted) state = state.copyWith(clearPending: true);
         _syncHistory();
         return UndoneNotice(redo: redo);
       });

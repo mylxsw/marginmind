@@ -26,7 +26,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final provider = workspaceProvider(studySetId);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
-    final content = ref.watch(contentProvider(studySetId)).value;
+    final content = state.content;
     final studySet = ref.watch(studySetProvider(studySetId));
     final documents = content?.documents ?? const [];
     final query = state.sidebarQuery.trim().toLowerCase();

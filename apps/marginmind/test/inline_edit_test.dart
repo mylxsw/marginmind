@@ -50,6 +50,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 60));
       final midway = tester.getTopLeft(find.text(_excerpt)).dx;
+      // Retarget an animation before it finishes: its first frame must start
+      // at the currently displayed position, not the previous layout target.
+      tester.testTextInput.enterText('遗忘的规律与记忆巩固和练习');
+      await tester.pump();
+      expect(tester.getTopLeft(find.text(_excerpt)).dx, closeTo(midway, 0.01));
       await tester.pumpAndSettle();
       final settled = tester.getTopLeft(find.text(_excerpt)).dx;
       expect(tester.getSize(_field).width, greaterThan(width));
