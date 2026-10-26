@@ -506,5 +506,10 @@
   "statistics": "Statistics",
   "statsReviewed": "Reviews",
   "statsRetention": "Retained",
-  "statsUpcoming": "Next 30 Days"
+  "statsUpcoming": "Next 30 Days",
+  "pdfOptions": "PDF Options",
+  "readerStyleWhite": "White",
+  "readerStyleDark": "Dark",
+  "readerStylePaper": "Paper",
+  "readerStyleGreen": "Soft Green"
 }

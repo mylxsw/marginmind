@@ -136,16 +136,20 @@ void main() {
     });
   });
 
-  testWidgets('the toolbar toggle opens and closes the page sidebar', (tester) async {
+  testWidgets('the PDF menu opens and closes the page sidebar', (tester) async {
     await openReader(tester);
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
-    await tester.tap(find.byIcon(MMIcons.sidebar).last);
+    await tester.tap(find.byKey(const ValueKey('pdf-options')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show Page Sidebar'));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsOneWidget);
     expect(find.byIcon(MMIcons.outline), findsNothing, reason: 'no contents, no tab');
     expect(find.byIcon(MMIcons.bookmark), findsOneWidget);
     expect(find.byIcon(MMIcons.annotations), findsOneWidget);
-    await tester.tap(find.byIcon(MMIcons.sidebar).last);
+    await tester.tap(find.byKey(const ValueKey('pdf-options')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hide Page Sidebar'));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
   });
@@ -184,7 +188,7 @@ void main() {
     expect(weightOf('1.1 记忆'), FontWeight.w600);
     expect(weightOf('第一章'), FontWeight.w400);
 
-    await tester.tap(find.byIcon(MMIcons.chevronDown).first);
+    await tester.tap(find.descendant(of: find.byType(ReaderSidebar), matching: find.byIcon(MMIcons.chevronDown)).first);
     await tester.pumpAndSettle();
     expect(find.text('1.1 记忆'), findsNothing);
     await tester.tap(find.text('第二章'));
@@ -192,7 +196,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1.1 记忆'), findsOneWidget);
 
-    await tester.tap(find.byIcon(MMIcons.chevronDown).first);
+    await tester.tap(find.descendant(of: find.byType(ReaderSidebar), matching: find.byIcon(MMIcons.chevronDown)).first);
     await tester.pumpAndSettle();
     r.pdf.debugReport(page: 150);
     await tester.pumpAndSettle();

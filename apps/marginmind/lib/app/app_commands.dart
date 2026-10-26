@@ -11,9 +11,21 @@ import '../features/library/new_study_set.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
+import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
 import 'navigation.dart';
 import 'providers.dart';
+
+List<AppCommand> readerStyleCommands(AppLocalizations l, MMReaderStyle selected, ValueChanged<MMReaderStyle> select) =>
+    [
+      for (final (style, label) in [
+        (MMReaderStyle.white, l.readerStyleWhite),
+        (MMReaderStyle.dark, l.readerStyleDark),
+        (MMReaderStyle.paper, l.readerStylePaper),
+        (MMReaderStyle.green, l.readerStyleGreen),
+      ])
+        AppCommand('${selected == style ? '✓ ' : ''}$label', () => select(style)),
+    ];
 
 /// A user-invocable command: one definition feeds the macOS menu bar,
 /// keyboard shortcuts on other platforms and tooltips.
@@ -613,6 +625,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ])
           AppCommand(label, hasDocument ? () => workspace.showReaderPanel(mode) : null, shortcut: shortcut),
       ],
+      if (hasDocument)
+        ...readerStyleCommands(
+          l,
+          ref.watch(settingsProvider).readerStyle,
+          ref.read(settingsProvider.notifier).setReaderStyle,
+        ),
       // ⌘F finds in the PDF when the keyboard is in the reader, else in the sidebar.
       AppCommand(
         findsInDocument ? l.findInDocument : l.search,

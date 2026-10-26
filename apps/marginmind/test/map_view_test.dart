@@ -161,38 +161,27 @@ void main() {
       }
     });
 
-    testWidgets('the mouse wheel pans; Shift + wheel pans sideways; neither zooms', (tester) async {
+    testWidgets('ordinary mouse wheel zooms at the pointer and Shift pans sideways', (tester) async {
       final h = _Harness(tester);
       await h.pump(_topics(30), size: const Size(500, 400));
-      final scale = h.scale, start = h.translation;
-
-      await h.wheel(const Offset(0, 40));
-      expect(h.scale, scale);
-      expect(h.translation, start + const Offset(0, -40));
-
-      await h.wheel(const Offset(0, -40));
-      expect(h.translation, start);
-
+      final scale = h.scale;
+      final at = h.center;
+      final local = at - tester.getTopLeft(find.byType(MindMapCanvas));
+      final point = h.transform.toScene(local);
+      await h.wheel(const Offset(0, -40), at: at);
+      expect(h.scale, closeTo(scale * math.exp(40 / 200), 1e-9));
+      expect((h.transform.toScene(local) - point).distance, lessThan(1e-6));
+      await h.wheel(const Offset(0, 40), at: at);
+      expect(h.scale, closeTo(scale, 1e-9));
+      final start = h.translation;
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await h.wheel(const Offset(0, 30));
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
       expect(h.translation, start + const Offset(-30, 0));
-      expect(h.scale, scale);
-    });
-
-    testWidgets('wheel panning stops once the far side of the map is in view', (tester) async {
-      final h = _Harness(tester);
-      await h.pump(_topics(30), size: const Size(500, 400));
-      for (var i = 0; i < 200; i++) {
+      for (var i = 0; i < 40; i++) {
         await h.wheel(const Offset(0, 100));
       }
-      final viewport = tester.getRect(find.byType(MindMapCanvas));
-      final bottom = [for (var i = 0; i < 30; i++) h.node('t$i').bottom].reduce(math.max);
-      expect(bottom, lessThanOrEqualTo(viewport.bottom));
-      expect(bottom, greaterThan(viewport.top), reason: 'the map is not scrolled away');
-      final settled = h.translation;
-      await h.wheel(const Offset(0, 100));
-      expect(h.translation, settled);
+      expect(h.scale, mapMinScale);
     });
 
     testWidgets('⌘ / Ctrl + wheel zooms at the pointer', (tester) async {

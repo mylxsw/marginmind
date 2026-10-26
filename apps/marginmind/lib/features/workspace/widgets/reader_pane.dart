@@ -8,6 +8,7 @@ import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../settings/app_settings.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
@@ -158,30 +159,70 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final l = context.l10n;
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
+    final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (openDocs.length > 1)
+        if (doc != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
             child: Row(
               children: [
-                for (final d in openDocs)
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: _Tab(
-                          title: d.title,
-                          active: d.id == state.activeDocumentId,
-                          onOpen: () => controller.openDocument(d.id),
-                          onClose: () => controller.closeDocument(d.id),
-                          closeLabel: l.closeTab,
+                if (openDocs.length > 1)
+                  for (final d in openDocs)
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 240),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: _Tab(
+                            title: d.title,
+                            active: d.id == state.activeDocumentId,
+                            onOpen: () => controller.openDocument(d.id),
+                            onClose: () => controller.closeDocument(d.id),
+                            closeLabel: l.closeTab,
+                          ),
                         ),
                       ),
                     ),
+                const Spacer(),
+                Builder(
+                  builder: (context) => MMButton(
+                    key: const ValueKey('pdf-options'),
+                    label: l.pdfOptions,
+                    icon: MMIcons.chevronDown,
+                    onPressed: () {
+                      final box = context.findRenderObject()! as RenderBox;
+                      showMMMenu(
+                        context,
+                        position: box.localToGlobal(Offset(0, box.size.height)),
+                        entries: [
+                          MMMenuItem(
+                            state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+                            controller.toggleReaderPanel,
+                          ),
+                          for (final (mode, label) in [
+                            (ReaderPanelMode.thumbnails, l.readerThumbnails),
+                            (ReaderPanelMode.outline, l.readerOutline),
+                            (ReaderPanelMode.bookmarks, l.readerBookmarks),
+                            (ReaderPanelMode.annotations, l.readerAnnotations),
+                          ])
+                            MMMenuItem(label, () => controller.showReaderPanel(mode)),
+                          const MMMenuDivider(),
+                          for (final command in readerStyleCommands(
+                            l,
+                            style,
+                            ref.read(settingsProvider.notifier).setReaderStyle,
+                          ))
+                            MMMenuItem(command.label, command.onInvoke),
+                          const MMMenuDivider(),
+                          MMMenuItem(l.pdfFitWidth, _pdf.fitWidth),
+                          MMMenuItem(l.pdfFitPage, _pdf.fitPage),
+                        ],
+                      );
+                    },
                   ),
+                ),
               ],
             ),
           ),
@@ -221,6 +262,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
                                       backgroundColor: c.readerBackground,
                                       emphasisColor: c.accent,
+                                      pageColorFilter: style.pageFilter,
                                       highlights: _highlights(content, doc.id, state),
                                       areaSelecting: state.tool == AnnotationTool.area,
                                       onAreaSelected: (area) async {

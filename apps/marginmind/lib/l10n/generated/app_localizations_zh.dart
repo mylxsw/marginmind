@@ -916,4 +916,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statsUpcoming => '未来 30 天';
+
+  @override
+  String get pdfOptions => 'PDF 操作';
+
+  @override
+  String get readerStyleWhite => '白色';
+
+  @override
+  String get readerStyleDark => '黑暗';
+
+  @override
+  String get readerStylePaper => '纸质';
+
+  @override
+  String get readerStyleGreen => '护眼（淡绿）';
 }

@@ -26,6 +26,10 @@ void main() {
     expect(container.read(settingsProvider).locale, const Locale('zh'));
     expect(prefs.getString('settings.language'), 'zh');
     expect(prefs.getString('settings.appearance'), 'system');
+    await container.read(settingsProvider.notifier).setReaderStyle(MMReaderStyle.paper);
+    expect(prefs.getString('settings.readerStyle'), 'paper');
+    container.invalidate(settingsProvider);
+    expect(container.read(settingsProvider).readerStyle, MMReaderStyle.paper);
   });
 
   test('unknown stored values fall back to defaults', () async {

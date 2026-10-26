@@ -952,4 +952,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statsUpcoming => 'Next 30 Days';
+
+  @override
+  String get pdfOptions => 'PDF Options';
+
+  @override
+  String get readerStyleWhite => 'White';
+
+  @override
+  String get readerStyleDark => 'Dark';
+
+  @override
+  String get readerStylePaper => 'Paper';
+
+  @override
+  String get readerStyleGreen => 'Soft Green';
 }

@@ -286,5 +286,10 @@
   "statistics": "统计",
   "statsReviewed": "复习量",
   "statsRetention": "记住率",
-  "statsUpcoming": "未来 30 天"
+  "statsUpcoming": "未来 30 天",
+  "pdfOptions": "PDF 操作",
+  "readerStyleWhite": "白色",
+  "readerStyleDark": "黑暗",
+  "readerStylePaper": "纸质",
+  "readerStyleGreen": "护眼（淡绿）"
 }

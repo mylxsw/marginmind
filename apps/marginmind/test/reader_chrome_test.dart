@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -6,6 +7,7 @@ import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:marginmind/settings/app_settings.dart';
 
 import 'helpers.dart';
 
@@ -54,16 +56,42 @@ void main() {
       expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('论文：检索练习效应')), findsNothing);
     });
 
-    testWidgets('the page sidebar toggle lives in the toolbar', (tester) async {
+    testWidgets('PDF menu controls the sidebar and remembers reading colors', (tester) async {
       final container = await openSet(tester);
+      final menu = find.byKey(const ValueKey('pdf-options'));
+      expect(find.descendant(of: find.byType(ReaderPane), matching: menu), findsOneWidget);
+      expect(find.descendant(of: find.byType(MMToolbar), matching: menu), findsNothing);
       expect(container.read(provider).readerPanelVisible, isFalse);
-      await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show Page Sidebar'));
       await tester.pumpAndSettle();
       expect(container.read(provider).readerPanelVisible, isTrue);
-      expect(find.byTooltip(RegExp('Hide Page Sidebar')), findsOneWidget);
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hide Page Sidebar'));
+      await tester.pumpAndSettle();
+      expect(container.read(provider).readerPanelVisible, isFalse);
+      for (final (label, style) in [
+        ('Dark', MMReaderStyle.dark),
+        ('Paper', MMReaderStyle.paper),
+        ('Soft Green', MMReaderStyle.green),
+        ('White', MMReaderStyle.white),
+      ]) {
+        await tester.tap(menu);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+        expect(container.read(settingsProvider).readerStyle, style);
+        await tester.tap(menu);
+        await tester.pumpAndSettle();
+        expect(find.text('✓ $label'), findsOneWidget);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
       container.read(provider.notifier).setLayout(MMSplitMode.secondary);
       await tester.pumpAndSettle();
-      expect(find.byTooltip(RegExp('Hide Page Sidebar')), findsNothing);
+      expect(menu.hitTestable(), findsNothing);
     });
   });
 

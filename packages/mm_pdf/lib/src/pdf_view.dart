@@ -436,6 +436,7 @@ class MMPdfView extends StatefulWidget {
     this.initialPage = 1,
     this.backgroundColor = const Color(0xFFEDEDF0),
     this.emphasisColor = const Color(0xFF007AFF),
+    this.pageColorFilter,
     this.onReady,
     this.onPageChanged,
     this.onSelectionCommitted,
@@ -452,6 +453,7 @@ class MMPdfView extends StatefulWidget {
   final int initialPage;
   final Color backgroundColor;
   final Color emphasisColor;
+  final ColorFilter? pageColorFilter;
 
   /// Called once the document is open, with its page count.
   final ValueChanged<int>? onReady;
@@ -993,6 +995,22 @@ class _MMPdfViewState extends State<MMPdfView> {
         initialPageNumber: widget.initialPage,
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
+          pageImageColorFilter: widget.pageColorFilter,
+          onViewSizeChanged: (size, previous, controller) {
+            if (previous == null || size.width == previous.width) return;
+            final center = controller.value.calcPosition(previous);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted || !_ready || controller.viewSize != size) return;
+              final fit = controller.calcMatrixFitWidthForPage(pageNumber: controller.pageNumber ?? 1);
+              controller.goTo(
+                controller.calcMatrixFor(
+                  Offset(controller.documentSize.width / 2, center.dy),
+                  zoom: fit?.getMaxScaleOnAxis() ?? controller.currentZoom,
+                ),
+                duration: Duration.zero,
+              );
+            });
+          },
           margin: 16,
           // Remove pdfrx's default 80% reduction in mouse-wheel movement.
           scrollByMouseWheel: 1,

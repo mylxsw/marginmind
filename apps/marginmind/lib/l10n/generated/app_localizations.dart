@@ -1753,6 +1753,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next 30 Days'**
   String get statsUpcoming;
+
+  /// No description provided for @pdfOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF Options'**
+  String get pdfOptions;
+
+  /// No description provided for @readerStyleWhite.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get readerStyleWhite;
+
+  /// No description provided for @readerStyleDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get readerStyleDark;
+
+  /// No description provided for @readerStylePaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get readerStylePaper;
+
+  /// No description provided for @readerStyleGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft Green'**
+  String get readerStyleGreen;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -580,21 +580,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       ..scaleByDouble(scale, scale, 1, 1);
   }
 
-  /// Mouse wheel pans (Shift + wheel sideways); ⌘ / Ctrl + wheel and
-  /// pinching zoom at the pointer. Trackpad scrolling arrives as pan/zoom
-  /// gestures, which the viewer pans itself.
+  /// Mouse wheel zooms at the pointer; Shift + wheel pans sideways.
+  /// Trackpad pan/zoom gestures retain their native behavior.
   void _pointerSignal(PointerSignalEvent event) {
     if (event is PointerScrollEvent && event.kind != PointerDeviceKind.trackpad) {
       GestureBinding.instance.pointerSignalResolver.register(event, (e) {
         final scroll = e as PointerScrollEvent;
-        final keyboard = HardwareKeyboard.instance;
-        if (keyboard.isMetaPressed || keyboard.isControlPressed) {
+        if (HardwareKeyboard.instance.isShiftPressed) {
+          _panBy(-Offset(scroll.scrollDelta.dy, scroll.scrollDelta.dx));
+        } else {
           _zoomAt(scroll.localPosition, math.exp(-scroll.scrollDelta.dy / _wheelZoomFactor));
-          return;
         }
-        var delta = scroll.scrollDelta;
-        if (keyboard.isShiftPressed && delta.dx == 0) delta = Offset(delta.dy, 0);
-        _panBy(-delta);
       });
     } else if (event is PointerScaleEvent) {
       GestureBinding.instance.pointerSignalResolver.register(
@@ -1185,8 +1181,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           },
           child: InteractiveViewer(
             panEnabled: _boxStart == null,
-            // Zooming is handled above: the viewer would zoom on every wheel
-            // tick instead of scrolling.
+            // Zooming is handled above to preserve the pointer anchor.
             scaleEnabled: false,
             transformationController: widget.transformation,
             constrained: false,

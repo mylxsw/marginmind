@@ -54,6 +54,8 @@ void main() {
         await tester.pump();
       }
       expect(controller.isReady, isTrue);
+      // Finish viewport resizing before explicitly choosing a test zoom.
+      await tester.pumpAndSettle();
       final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
       final pdf = viewer.controller!;
       pdf.value = Matrix4.diagonal3Values(0.5, 0.5, 1);
@@ -185,6 +187,47 @@ void main() {
     final rect = pdf.layout.pageLayouts[1];
     expect(pdf.documentToLocal(rect.topLeft).dy, greaterThanOrEqualTo(-1));
     expect(pdf.documentToLocal(rect.bottomRight).dy, lessThanOrEqualTo(pdf.viewSize.height + 1));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  testWidgets('resizing the reader refits page width without losing reading position', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    final width = ValueNotifier<double>(760);
+    addTearDown(width.dispose);
+    const filter = ColorFilter.mode(Colors.amber, BlendMode.modulate);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: ValueListenableBuilder<double>(
+            valueListenable: width,
+            builder: (_, value, _) => SizedBox(
+              width: value,
+              height: 550,
+              child: MMPdfView(filePath: 'resize.pdf', controller: controller, pageColorFilter: filter),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+    expect(viewer.params.pageImageColorFilter, filter);
+    final pdf = viewer.controller!;
+    await pdf.goToPage(pageNumber: 2, duration: Duration.zero);
+    await tester.pumpAndSettle();
+    final y = pdf.centerPosition.dy;
+    for (final size in [544.0, 760.0]) {
+      width.value = size;
+      await tester.pumpAndSettle();
+      expect(pdf.currentZoom, closeTo((size - 32) / 600, .001));
+      expect(pdf.centerPosition.dy, closeTo(y, 1));
+      final page = pdf.layout.pageLayouts[1];
+      expect(pdf.documentToLocal(page.topLeft).dx, greaterThanOrEqualTo(0));
+      expect(pdf.documentToLocal(page.bottomRight).dx, lessThanOrEqualTo(size));
+    }
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
   });

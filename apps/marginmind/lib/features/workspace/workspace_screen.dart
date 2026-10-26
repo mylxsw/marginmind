@@ -121,16 +121,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
             actions: [
               _AnnotationTools(state: state, controller: controller),
-              if (doc != null && layout != MMSplitMode.secondary)
-                MMToolbarButton(
-                  icon: MMIcons.sidebar,
-                  tooltip: AppShortcuts.tip(
-                    state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                    AppShortcuts.toggleReaderSidebar,
-                  ),
-                  selected: state.readerPanelVisible,
-                  onPressed: controller.toggleReaderPanel,
-                ),
               MMToolbarGroup(
                 children: [
                   MMToolbarButton(
