@@ -274,7 +274,8 @@ class _NodeSpec {
   /// Shown title; empty for an excerpt or image without one (no title row).
   final String title;
 
-  /// What the node is called for assistive technology and in its editor.
+  /// What the node is called in its title editor and in the excerpt-target
+  /// mark (the node itself is named by its content).
   final String label;
 
   /// The quote as shown: at most [maxQuoteLines] lines, ending with an
