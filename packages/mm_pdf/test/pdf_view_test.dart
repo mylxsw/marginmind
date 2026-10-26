@@ -6,6 +6,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 import 'support/pdf_backend.dart';
+import 'excerpt_text_test.dart' as fixture;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -278,7 +279,7 @@ void main() {
       expect(committed, isNotNull);
       expect(committed!.pages.map((p) => p.page), [1, 2, 3]);
       expect(committed!.pages.every((p) => p.rects.isNotEmpty), isTrue);
-      expect(committed!.text, 'passage\nSelected passage\nSelected');
+      expect(committed!.text, 'passage Selected passage Selected');
       expect(committed!.page, 1);
       expect(committed!.rects, committed!.pages.first.rects);
       final viewport = Offset.zero & tester.getSize(find.byType(MMPdfView));
@@ -295,6 +296,98 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
   }
+  testWidgets('clean selection excludes margins on real delegate', (tester) async {
+    TestPdfText.pages = {
+      for (var n = 1; n <= 3; n++)
+        n: (() {
+          final source = fixture.page(n);
+          return PdfPageRawText(source.text, [for (final r in source.rects) PdfRect(r.left, r.top, r.right, r.bottom)]);
+        })(),
+    };
+    addTearDown(() => TestPdfText.pages = {});
+    final controller = MMPdfViewController();
+    MMPdfSelection? committed;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(
+          filePath: 'margin-test.pdf',
+          highlights: const [
+            MMPdfHighlight(id: 'existing', page: 1, rects: [PageRect(30, 500, 120, 480)], color: Colors.yellow),
+            MMPdfHighlight(id: 'unselected', page: 3, rects: [PageRect(30, 500, 120, 480)], color: Colors.yellow),
+          ],
+          controller: controller,
+          onSelectionCommitted: (s) => committed = s,
+        ),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    List<Widget> overlays(int number) {
+      final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+      return viewer.params.pageOverlaysBuilder!(
+        tester.element(find.byType(PdfViewer)),
+        Rect.fromLTWH(
+          0,
+          0,
+          pdf.layout.pageLayouts[number - 1].width * pdf.currentZoom,
+          pdf.layout.pageLayouts[number - 1].height * pdf.currentZoom,
+        ),
+        pdf.document.pages[number - 1],
+      );
+    }
+
+    final cachedFirst = overlays(1), cachedThird = overlays(3);
+    final a = (await tester.runAsync(pdf.document.pages.first.loadStructuredText))!;
+    final b = (await tester.runAsync(pdf.document.pages[1].loadStructuredText))!;
+    await tester.runAsync(
+      () => pdf.textSelectionDelegate.setTextSelectionPointRange(
+        PdfTextSelectionRange.fromPoints(
+          PdfTextSelectionPoint(a, a.fullText.indexOf('中文')),
+          PdfTextSelectionPoint(b, b.fullText.indexOf('wrapped') + 6),
+        ),
+      ),
+    );
+    final listener = tester
+        .widgetList<Listener>(find.descendant(of: find.byType(MMPdfView), matching: find.byType(Listener)))
+        .firstWhere((w) => w.onPointerUp != null);
+    listener.onPointerUp!(const PointerUpEvent());
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump();
+    expect(committed, isNotNull);
+    expect(committed!.text, isNot(contains('2026')));
+    expect(committed!.text, isNot(contains('file:')));
+    expect(committed!.text, isNot(contains('\n')));
+    expect(committed!.pages.map((p) => p.page), [1, 2]);
+    expect(committed!.pages.every((p) => p.rects.length == 3), isTrue);
+    expect(Theme.of(tester.element(find.byType(PdfViewer))).textSelectionTheme.selectionColor, Colors.transparent);
+    expect(overlays(1).last, same(cachedFirst.single));
+    expect(overlays(1), hasLength(4));
+    expect(overlays(3), same(cachedThird));
+    await controller.clearSelection();
+    await tester.pump();
+    expect(
+      Theme.of(tester.element(find.byType(PdfViewer))).textSelectionTheme.selectionColor,
+      isNot(Colors.transparent),
+    );
+    expect(overlays(1), same(cachedFirst));
+    expect(overlays(3), same(cachedThird));
+    committed = null;
+    await tester.runAsync(
+      () => pdf.textSelectionDelegate.setTextSelectionPointRange(
+        PdfTextSelectionRange.fromPoints(PdfTextSelectionPoint(a, 0), PdfTextSelectionPoint(a, 8)),
+      ),
+    );
+    listener.onPointerUp!(const PointerUpEvent());
+    await tester.pump(const Duration(milliseconds: 130));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pump();
+    expect(committed, isNull);
+    expect(pdf.textSelectionDelegate.hasSelectedText, isFalse);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
   testWidgets('highlight tap reports union bounds after zoom and scroll', (tester) async {
     final controller = MMPdfViewController();
     String? tapped;

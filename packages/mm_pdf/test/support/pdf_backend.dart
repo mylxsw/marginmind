@@ -73,6 +73,7 @@ class _Page implements PdfPage {
   PdfPageRenderCancellationToken createCancellationToken() => _Token();
   @override
   Future<PdfPageRawText?> loadText() async =>
+      TestPdfText.pages[pageNumber] ??
       PdfPageRawText('Selected passage', List.generate(16, (i) => PdfRect(30 + i * 10, 700, 40 + i * 10, 680)));
   @override
   Future<List<PdfLink>> loadLinks({bool compact = false, bool enableAutoLinkDetection = true}) async => [];
@@ -81,6 +82,10 @@ class _Page implements PdfPage {
     if (invocation.memberName == #render) return TestPdfRender._render(invocation.namedArguments);
     return super.noSuchMethod(invocation);
   }
+}
+
+abstract final class TestPdfText {
+  static Map<int, PdfPageRawText> pages = {};
 }
 
 /// The table of contents the test backend's document reports.

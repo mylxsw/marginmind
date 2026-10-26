@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:mm_core/mm_core.dart' show AnnotationPage, PageRect;
 import 'package:pdfrx/pdfrx.dart';
 
+import 'excerpt_text.dart';
 import 'pdf_navigation.dart';
 import 'preview_cache.dart';
 
@@ -526,6 +527,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   PdfTextSelection? _selection;
+  List<AnnotationPage>? _cleanSelection;
   bool _ready = false;
   int _selectionEpoch = 0;
   int _pageCount = 0;
@@ -708,6 +710,7 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   Future<void> _clearSelection() async {
     _selectionEpoch++;
+    if (_cleanSelection != null) setState(() => _cleanSelection = null);
     if (_controller.isReady) await _controller.textSelectionDelegate.clearTextSelection();
   }
 
@@ -721,30 +724,60 @@ class _MMPdfViewState extends State<MMPdfView> {
     if (selection == null || !selection.hasSelectedText) return;
     final ranges = await selection.getSelectedTextRanges();
     if (!mounted || epoch != _selectionEpoch || ranges.isEmpty) return;
-    final pageNumbers = ranges.map((r) => r.pageNumber).toSet().toList()..sort();
-    final pages = <AnnotationPage>[];
-    final texts = <String>[];
+    final selectedPages = ranges.map((r) => r.pageNumber).toSet();
+    // Bound IO to selected pages and immediate neighbours; never scan a book.
+    final evidencePages = <int>{
+      for (final n in selectedPages)
+        for (final neighbour in [n - 1, n, n + 1])
+          if (neighbour >= 1 && neighbour <= _controller.document.pages.length) neighbour,
+    };
+    final evidence = <ExcerptPageText>[];
+    for (final n in evidencePages) {
+      final page = _controller.document.pages[n - 1];
+      // Reuse selected structured text so indices are exactly those of ranges.
+      PdfPageText structured;
+      try {
+        structured = selectedPages.contains(n)
+            ? ranges.firstWhere((r) => r.pageNumber == n).pageText
+            : await page.loadStructuredText();
+      } catch (_) {
+        // A neighbour failing to load must not prevent an excerpt.
+        continue;
+      }
+      if (!mounted || epoch != _selectionEpoch) return;
+      evidence.add(
+        ExcerptPageText(
+          page: n,
+          height: page.height,
+          text: structured.fullText,
+          rects: [for (final r in structured.charRects) PageRect(r.left, r.top, r.right, r.bottom)],
+        ),
+      );
+    }
+    final excerpt = buildExcerptText(evidence, [for (final r in ranges) ExcerptTextSpan(r.pageNumber, r.start, r.end)]);
+    setState(() => _cleanSelection = excerpt.pages);
+    // pdfrx caches its canvas painter across inherited Theme changes. Repaint
+    // after the transparent native selection color has reached the viewer.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && epoch == _selectionEpoch && _controller.isReady) _controller.invalidate();
+    });
+    final pages = excerpt.pages;
+    final text = excerpt.text;
     Rect? bounds;
-    for (final page in pageNumbers) {
-      final onPage = ranges.where((r) => r.pageNumber == page);
-      final rects = <PageRect>[
-        for (final range in onPage)
-          for (final f in range.enumerateFragmentBoundingRects())
-            PageRect(f.bounds.left, f.bounds.top, f.bounds.right, f.bounds.bottom),
-      ];
-      if (rects.isEmpty) continue;
-      pages.add(AnnotationPage(page: page, rects: List.unmodifiable(rects)));
-      texts.add(onPage.map((r) => r.text).join());
-      for (final r in rects) {
+    for (final page in pages) {
+      for (final r in page.rects) {
         final rect = _controller.calcRectForRectInsidePage(
-          pageNumber: page,
+          pageNumber: page.page,
           rect: PdfRect(r.left, r.top, r.right, r.bottom),
         );
         bounds = bounds?.expandToInclude(rect) ?? rect;
       }
     }
-    final text = texts.join('\n');
-    if (text.trim().isEmpty || bounds == null) return;
+    if (text.trim().isEmpty || bounds == null) {
+      // A margin-only selection must also dismiss any previous toolbar.
+      await _clearSelection();
+      return;
+    }
     final viewportRect = Rect.fromPoints(
       _controller.documentToLocal(bounds.topLeft),
       _controller.documentToLocal(bounds.bottomRight),
@@ -761,6 +794,22 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
+    final highlights = _highlightOverlays(context, pageRect, page);
+    final selected = _cleanSelection?.where((p) => p.page == page.pageNumber);
+    if (selected == null || selected.isEmpty) return highlights;
+    // Transient selection is kept outside the persistent highlight LRU.
+    return [
+      for (final selection in selected)
+        for (final r in selection.rects)
+          Positioned.fromRect(
+            rect: PdfRect(r.left, r.top, r.right, r.bottom).toRect(page: page, scaledPageSize: pageRect.size),
+            child: IgnorePointer(child: ColoredBox(color: widget.emphasisColor.withValues(alpha: 0.25))),
+          ),
+      ...highlights,
+    ];
+  }
+
+  List<Widget> _highlightOverlays(BuildContext context, Rect pageRect, PdfPage page) {
     final scaled = pageRect.size;
     final highlights = _highlightsByPage[page.pageNumber];
     if (highlights == null) return const [];
@@ -830,7 +879,18 @@ class _MMPdfViewState extends State<MMPdfView> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned.fill(child: _viewer()),
+        Positioned.fill(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              textSelectionTheme: Theme.of(context).textSelectionTheme.copyWith(
+                selectionColor: _cleanSelection == null
+                    ? Theme.of(context).textSelectionTheme.selectionColor
+                    : Colors.transparent,
+              ),
+            ),
+            child: _viewer(),
+          ),
+        ),
         if (widget.areaSelecting)
           Positioned.fill(
             // Translucent: wheel and trackpad scrolling still reach the
@@ -885,6 +945,10 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   Widget _viewer() {
     return Listener(
+      onPointerDown: (_) {
+        _selectionEpoch++;
+        if (_cleanSelection != null) setState(() => _cleanSelection = null);
+      },
       onPointerUp: (_) => _commitSelection(),
       child: PdfViewer.file(
         widget.filePath,
@@ -904,6 +968,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;
+              if (!selection.hasSelectedText && _cleanSelection != null) setState(() => _cleanSelection = null);
               widget.onSelectionChanged?.call(selection.hasSelectedText);
             },
           ),
