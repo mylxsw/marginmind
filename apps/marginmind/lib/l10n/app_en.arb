@@ -394,6 +394,11 @@
   "reviewNothingDueTitle": "Nothing to review",
   "showAnswer": "Show Answer",
   "startReview": "Start Review",
+  "reviewBranch": "Review Branch",
+  "reviewTag": "Review Tag",
+  "suspendCard": "Suspend Card",
+  "resumeCard": "Resume Card",
+  "cardSuspended": "Suspended",
   "sectionCards": "Cards",
   "intervalMinutes": "{count} min",
   "@intervalMinutes": {

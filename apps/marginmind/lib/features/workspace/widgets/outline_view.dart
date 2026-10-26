@@ -272,6 +272,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
             meta: annotation == null ? null : l.pageNumber(annotation.page),
             dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
             bold: bold,
+            suspended: card.suspended,
             selected: widget.selectedCardIds.contains(card.id) || card.id == widget.selectedCardId,
             onTap: () => _tap(card.id),
             onDoubleTap: () =>
@@ -350,6 +351,7 @@ class _OutlineRow extends StatelessWidget {
     this.meta,
     this.dot,
     this.bold = false,
+    this.suspended = false,
     this.editor,
   });
 
@@ -359,6 +361,9 @@ class _OutlineRow extends StatelessWidget {
   final String? meta;
   final Color? dot;
   final bool bold;
+
+  /// Kept out of review: the label is shown in the secondary color.
+  final bool suspended;
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback? onDoubleTap;
@@ -375,7 +380,11 @@ class _OutlineRow extends StatelessWidget {
     final t = context.mmText;
     final editing = editor != null;
     // The field keeps the row's normal colors so the text stays readable.
-    final fg = selected && !editing ? c.onAccent : c.label;
+    final fg = selected && !editing
+        ? c.onAccent
+        : suspended
+        ? c.secondaryLabel
+        : c.label;
     final fg2 = selected && !editing ? c.onAccent.withValues(alpha: 0.85) : c.secondaryLabel;
     return MMInteractive(
       onTapDown: editing ? null : onTap,

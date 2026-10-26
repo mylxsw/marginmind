@@ -680,6 +680,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get startReview => '开始复习';
 
   @override
+  String get reviewBranch => '复习此分支';
+
+  @override
+  String get reviewTag => '复习此标签';
+
+  @override
+  String get suspendCard => '暂停复习';
+
+  @override
+  String get resumeCard => '恢复复习';
+
+  @override
+  String get cardSuspended => '已暂停';
+
+  @override
   String get sectionCards => '卡片';
 
   @override

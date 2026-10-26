@@ -52,7 +52,8 @@ class ReviewSessionState {
   );
 }
 
-/// One review session over a study set's due and new cards. The queue is
+/// One review session over a study set's due and new cards, optionally
+/// limited to a map, a branch of it or a tag. The queue is
 /// fixed when the session starts, so cards made meanwhile wait for the
 /// next session. Ratings are saved immediately and are not undoable.
 class ReviewSession extends Notifier<ReviewSessionState> {
@@ -60,11 +61,16 @@ class ReviewSession extends Notifier<ReviewSessionState> {
 
   final String studySetId;
   String? mapId;
+  String? branchId;
+  String? tag;
 
   @override
   ReviewSessionState build() {
     final route = ref.read(navigationProvider);
-    mapId = route is ReviewRoute && route.studySetId == studySetId ? route.mapId : null;
+    final scope = route is ReviewRoute && route.studySetId == studySetId ? route : null;
+    mapId = scope?.mapId;
+    branchId = scope?.branchId;
+    tag = scope?.tag;
     ref.listen(contentProvider(studySetId), (_, next) {
       final c = next.value;
       if (c != null && !state.started) state = _start(c);
@@ -75,7 +81,10 @@ class ReviewSession extends Notifier<ReviewSessionState> {
 
   ReviewSessionState _start(StudySetContent c) {
     final now = ref.read(clockProvider)();
-    return ReviewSessionState(started: true, queue: [for (final card in c.reviewQueue(now, mapId: mapId)) card.id]);
+    return ReviewSessionState(
+      started: true,
+      queue: [for (final card in c.reviewQueue(now, mapId: mapId, branchId: branchId, tag: tag)) card.id],
+    );
   }
 
   StudySetContent get content => ref.read(contentProvider(studySetId)).value ?? StudySetContent.empty;

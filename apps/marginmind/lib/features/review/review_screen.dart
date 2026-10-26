@@ -88,6 +88,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     final controller = ref.read(provider.notifier);
     final content = ref.watch(contentProvider(widget.studySetId)).value ?? StudySetContent.empty;
     final setTitle = ref.watch(studySetProvider(widget.studySetId))?.title ?? '';
+    // A tag or branch session is named by what it covers.
+    final branchTitle = content.card(controller.branchId ?? '')?.title ?? '';
+    final scopeTitle = controller.tag ?? (branchTitle.isNotEmpty ? branchTitle : setTitle);
     final id = session.currentId;
     final card = id == null ? null : content.card(id);
     if (id != null && card == null && content != StudySetContent.empty) {
@@ -176,8 +179,8 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
         toolbar: MMToolbar(
           title: l.reviewTitle,
           subtitle: session.finished || !session.started
-              ? setTitle
-              : '$setTitle · ${l.reviewRemaining(session.remaining)}',
+              ? scopeTitle
+              : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
           leading: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.backToStudySet, onPressed: _back),
         ),
         body: CardImageScope(

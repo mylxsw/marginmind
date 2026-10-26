@@ -3,6 +3,10 @@ part of 'mind_map_canvas.dart';
 /// Vertical space between sibling nodes; drops split it between them.
 const _siblingGap = 14.0;
 
+/// How much of a suspended card shows through: enough to read, clearly set
+/// apart from the cards still in review.
+const _suspendedOpacity = 0.45;
+
 /// Widest summary label before it wraps.
 const _summaryLabelWidth = 200.0;
 
@@ -267,6 +271,7 @@ class _NodeSpec {
     this.image,
     this.imageHeight = 0,
     String? label,
+    this.suspended = false,
   }) : label = label ?? title;
 
   final _Kind kind;
@@ -289,6 +294,9 @@ class _NodeSpec {
   /// area's aspect ratio (layout needs it before the file is decoded).
   final String? image;
   final double imageHeight;
+
+  /// Kept out of review: drawn faded.
+  final bool suspended;
 
   static const excerptWidth = 240.0;
   static const maxQuoteLines = 4;
@@ -323,10 +331,26 @@ class _NodeSpec {
     switch (card.kind) {
       case CardKind.topic:
         final s = cache._measure(card.title, MMTypography.headline, 220 - 28).size;
-        return _NodeSpec._(_Kind.topic, card.title, null, null, null, Size(s.width + 32, s.height + 18));
+        return _NodeSpec._(
+          _Kind.topic,
+          card.title,
+          null,
+          null,
+          null,
+          Size(s.width + 32, s.height + 18),
+          suspended: card.suspended,
+        );
       case CardKind.note:
         final s = cache._measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44).size;
-        return _NodeSpec._(_Kind.note, card.title, null, null, null, Size(s.width + 48, s.height + 16));
+        return _NodeSpec._(
+          _Kind.note,
+          card.title,
+          null,
+          null,
+          null,
+          Size(s.width + 48, s.height + 16),
+          suspended: card.suspended,
+        );
       case CardKind.image:
         final r = a?.rects.firstOrNull;
         final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
@@ -342,6 +366,7 @@ class _NodeSpec {
           image: card.imageFileName,
           imageHeight: imageHeight,
           label: card.title.isEmpty ? l.imageExcerpt : card.title,
+          suspended: card.suspended,
         );
       case CardKind.excerpt:
         final quote = cache._clip(a?.quote ?? '', MMTypography.readingExcerpt, _excerptTextWidth, maxQuoteLines);
@@ -355,6 +380,7 @@ class _NodeSpec {
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
           Size(excerptWidth, height.toDouble()),
           label: card.title.isEmpty ? (quote.isEmpty ? l.untitledExcerpt : quote) : card.title,
+          suspended: card.suspended,
         );
     }
   }

@@ -126,12 +126,21 @@ class StudySetContent {
 
   /// What a review session at [now] covers: due cards (most overdue first),
   /// then up to [ReviewScheduler.newPerSession] new cards in creation order.
-  List<Card> reviewQueue(DateTime now, {String? mapId}) {
+  /// Suspended cards are never included. [mapId] limits it to one map;
+  /// [branchId] to that card and everything below it (folded or not) on
+  /// [mapId] (the main map when null); [tag] to cards carrying it (exact,
+  /// case-insensitive). Filters apply before the new-card limit.
+  List<Card> reviewQueue(DateTime now, {String? mapId, String? branchId, String? tag}) {
     final byId = {for (final r in reviews) r.cardId: r};
+    final branch = branchId == null ? null : this.branch(branchId, mapId: mapId ?? MindMap.defaultId);
+    final wanted = tag?.toLowerCase();
     final due = <Card>[];
     final fresh = <Card>[];
     for (final c in reviewableCards) {
+      if (c.suspended) continue;
       if (mapId != null && node(c.id, mapId: mapId) == null) continue;
+      if (branch != null && !branch.contains(c.id)) continue;
+      if (wanted != null && !c.tags.any((t) => t.toLowerCase() == wanted)) continue;
       final r = byId[c.id];
       if (r == null) {
         fresh.add(c);
@@ -144,7 +153,25 @@ class StudySetContent {
     return [...due, ...fresh.take(ReviewScheduler.newPerSession)];
   }
 
-  int dueCount(DateTime now, {String? mapId}) => reviewQueue(now, mapId: mapId).length;
+  int dueCount(DateTime now, {String? mapId, String? branchId, String? tag}) =>
+      reviewQueue(now, mapId: mapId, branchId: branchId, tag: tag).length;
+
+  /// [cardId] and every card below it on [mapId], folded or not; empty when
+  /// the card is not on that map.
+  Set<String> branch(String cardId, {String mapId = MindMap.defaultId}) {
+    if (node(cardId, mapId: mapId) == null) return const {};
+    final children = <String, List<String>>{};
+    for (final n in nodes) {
+      if (n.mapId == mapId && n.parentId != null) children.putIfAbsent(n.parentId!, () => []).add(n.cardId);
+    }
+    final ids = <String>{};
+    final pending = [cardId];
+    while (pending.isNotEmpty) {
+      final id = pending.removeLast();
+      if (ids.add(id)) pending.addAll(children[id] ?? const []);
+    }
+    return ids;
+  }
 
   /// Titles of the topics/cards above [cardId], root first.
   List<String> pathOf(String cardId, {String mapId = MindMap.defaultId}) {

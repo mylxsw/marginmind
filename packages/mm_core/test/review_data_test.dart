@@ -73,7 +73,7 @@ void main() {
     }
   });
 
-  test('suspension defaults false, persists, is undoable and does not yet filter queues', () {
+  test('suspension defaults false, persists, is undoable and leaves the queue', () {
     expect(initial.card('a')!.suspended, isFalse);
     var c = editor.setSuspended(initial, 'a', suspended: true);
     expect(c.card('a')!.suspended, isTrue);
@@ -81,7 +81,7 @@ void main() {
     c = editor.setTags(c, 'a', ['tag']);
     expect(c.card('a')!.copyWith(title: 'renamed').suspended, isTrue);
     expect(StudySetContent.fromJson(c.toJson()).card('a')!.suspended, isTrue);
-    expect(c.reviewQueue(time).map((e) => e.id), ['a', 'b']);
+    expect(c.reviewQueue(time).map((e) => e.id), ['b']);
     expect(editor.setSuspended(c, 'a', suspended: true), same(c));
     expect(editor.setSuspended(c, 'missing', suspended: true), same(c));
     expect(editor.setSuspended(c, 'a', suspended: false).card('a')!.suspended, isFalse);

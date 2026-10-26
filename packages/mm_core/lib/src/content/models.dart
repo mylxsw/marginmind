@@ -228,7 +228,7 @@ class Card {
 
   final List<String> tags;
 
-  /// Shared across maps; queue filtering is implemented by the review feature.
+  /// Shared across maps; a suspended card stays out of every review queue.
   final bool suspended;
 
   Card copyWith({String? title, List<String>? tags, bool? suspended}) => Card(

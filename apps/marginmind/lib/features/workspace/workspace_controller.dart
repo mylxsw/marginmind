@@ -1012,6 +1012,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return _update((c) => _editor.setTags(c, cardId, values));
   }
 
+  /// Keeps [cardId] out of review (or lets it back in); one undo step.
+  Future<void> setSuspended(String cardId, {required bool suspended}) =>
+      _update((c) => _editor.setSuspended(c, cardId, suspended: suspended));
+
   Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
 
   // ---- in-place editing -------------------------------------------------------

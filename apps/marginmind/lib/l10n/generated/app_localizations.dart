@@ -1310,6 +1310,36 @@ abstract class AppLocalizations {
   /// **'Start Review'**
   String get startReview;
 
+  /// No description provided for @reviewBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Branch'**
+  String get reviewBranch;
+
+  /// No description provided for @reviewTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Tag'**
+  String get reviewTag;
+
+  /// No description provided for @suspendCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspend Card'**
+  String get suspendCard;
+
+  /// No description provided for @resumeCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume Card'**
+  String get resumeCard;
+
+  /// No description provided for @cardSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get cardSuspended;
+
   /// No description provided for @sectionCards.
   ///
   /// In en, this message translates to:
