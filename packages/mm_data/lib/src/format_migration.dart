@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 4;
+const currentStudySetFormat = 5;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -15,6 +15,7 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 2) result = _toFormat2(result);
   if (format < 3) result = _toFormat3(result);
   if (format < 4) result = _toFormat4(result);
+  if (format < 5) result = _toFormat5(result);
   return result;
 }
 
@@ -49,6 +50,16 @@ Map<String, Object?> _toFormat4(Map<String, Object?> json) {
     ...json,
     'format': 4,
     'content': {...content, 'relations': const [], 'summaries': const []},
+  };
+}
+
+/// Format 5: reader bookmarks. Older apps would drop them on save.
+Map<String, Object?> _toFormat5(Map<String, Object?> json) {
+  final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
+  return {
+    ...json,
+    'format': 5,
+    'content': {...content, 'bookmarks': const []},
   };
 }
 

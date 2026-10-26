@@ -615,8 +615,35 @@ class StudySetEditor {
         for (final d in next.documents)
           if (d.id != documentId) d,
       ],
+      bookmarks: [
+        for (final b in next.bookmarks)
+          if (b.documentId != documentId) b,
+      ],
     );
   }
+
+  /// Adds a bookmark on [page] of [documentId], or removes the one that is
+  /// already there. Pages outside the document are ignored.
+  StudySetContent toggleBookmark(StudySetContent c, String documentId, int page) {
+    final doc = c.document(documentId);
+    if (doc == null || page < 1 || page > doc.pageCount) return c;
+    final existing = c.bookmarkAt(documentId, page);
+    if (existing != null) return removeBookmark(c, existing.id);
+    final bookmark = Bookmark(id: newId(), documentId: documentId, page: page, createdAt: now());
+    return c.copyWith(bookmarks: [...c.bookmarks, bookmark]);
+  }
+
+  /// An empty [title] goes back to the unnamed bookmark.
+  StudySetContent renameBookmark(StudySetContent c, String bookmarkId, String title) => c.copyWith(
+    bookmarks: [for (final b in c.bookmarks) b.id == bookmarkId ? b.copyWith(title: title.trim()) : b],
+  );
+
+  StudySetContent removeBookmark(StudySetContent c, String bookmarkId) => c.copyWith(
+    bookmarks: [
+      for (final b in c.bookmarks)
+        if (b.id != bookmarkId) b,
+    ],
+  );
 
   /// [snapshot] (an earlier state, for undo/redo) with the parts that are
   /// not undoable taken from [current]: review history and reading position.
