@@ -170,6 +170,7 @@
   "toolText": "Text",
   "syncToMapOn": "Sync excerpts to map: On",
   "syncToMapOff": "Sync excerpts to map: Off",
+  "annotationColor": "Highlight Color",
   "layoutReader": "Source Only",
   "layoutSplit": "Split",
   "layoutMap": "Map Only",
@@ -430,7 +431,6 @@
   "excerptInColor": "Excerpt in {color}",
   "locateCard": "Locate Card",
   "excerptWithNote": "Excerpt with Note",
-  "noteText": "Note",
   "@excerptInColor": {
     "placeholders": {
       "color": {

@@ -734,7 +734,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return null;
   }
 
-  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color, {String? note}) async {
+  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
     final parent = excerptTargetId;
     late Card card;
     await _update((c) {
@@ -747,7 +747,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         parentId: parent,
       );
       card = created;
-      return note == null ? next : _editor.addNote(next, text: note, parentId: card.id).$1;
+      return next;
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
@@ -1036,6 +1036,31 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         await _update((c) => _editor.setCollapsed(c, parent, collapsed: false));
       }
       return card;
+    });
+  }
+
+  /// Excerpts the selected text and opens an empty note under the new card for
+  /// typing in place. The excerpt and the typed note are one undo step;
+  /// cancelling or leaving the note empty leaves nothing behind.
+  Future<Card?> excerptAndEditNote(String documentId, MMPdfSelection s, MMAnnotationColor color) {
+    return _createAndEdit((_) async {
+      final parent = excerptTargetId;
+      late Card note;
+      await _update((c) {
+        final (next, excerpt) = _editor.createExcerpt(
+          c,
+          documentId: documentId,
+          pages: s.pages,
+          quote: s.text,
+          colorIndex: color.index,
+          parentId: parent,
+        );
+        final (withNote, created) = _editor.addNote(next, text: '', parentId: excerpt.id);
+        note = created;
+        return withNote;
+      });
+      state = state.copyWith(clearPending: true, selectedCardId: note.id);
+      return note;
     });
   }
 

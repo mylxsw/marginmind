@@ -11,6 +11,29 @@ void main() {
     expect(MMSplitView.effectiveMode(MMSplitMode.secondary, 300, 420, 360), MMSplitMode.secondary);
   });
 
+  group('resolveNarrow', () {
+    ({bool sidebarVisible, MMSplitMode mode}) resolve(MMSplitMode mode, double width, {bool sidebar = true}) =>
+        MMSplitView.resolveNarrow(mode: mode, sidebarVisible: sidebar, windowWidth: width, sidebarWidth: 244);
+
+    test('keeps everything when it fits', () {
+      expect(resolve(MMSplitMode.split, 1100), (sidebarVisible: true, mode: MMSplitMode.split));
+    });
+
+    test('collapses the sidebar before leaving split', () {
+      expect(resolve(MMSplitMode.split, 900), (sidebarVisible: false, mode: MMSplitMode.split));
+    });
+
+    test('falls back to the reader once even the panes alone do not fit', () {
+      expect(resolve(MMSplitMode.split, 700), (sidebarVisible: true, mode: MMSplitMode.primary));
+      expect(resolve(MMSplitMode.split, 700, sidebar: false), (sidebarVisible: false, mode: MMSplitMode.primary));
+    });
+
+    test('single-pane layouts are left alone', () {
+      expect(resolve(MMSplitMode.secondary, 500), (sidebarVisible: true, mode: MMSplitMode.secondary));
+      expect(resolve(MMSplitMode.primary, 500), (sidebarVisible: true, mode: MMSplitMode.primary));
+    });
+  });
+
   test('primary width respects both minimums', () {
     expect(MMSplitView.primaryWidth(1000, 0.5, 420, 360), 500);
     expect(MMSplitView.primaryWidth(1000, 0.1, 420, 360), 420);

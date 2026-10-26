@@ -44,6 +44,9 @@ Future<void> pressWithControl(
   await tester.pumpAndSettle();
 }
 
+/// The toolbar subtitle also says "Page n", so look inside the page sidebar.
+Finder inReaderSidebar(String text) => find.descendant(of: find.byType(ReaderSidebar), matching: find.text(text));
+
 void main() {
   group('workspace state', () {
     Future<(ProviderContainer, WorkspaceController)> create() async {
@@ -233,10 +236,10 @@ void main() {
     await tester.pumpAndSettle();
     await pressWithControl(tester, LogicalKeyboardKey.keyD);
     expect(r.controller.content.bookmarkAt('c1', 5), isNotNull);
-    expect(find.text('Page 5'), findsOneWidget);
+    expect(inReaderSidebar('Page 5'), findsOneWidget);
     expect(find.text('No Bookmarks'), findsNothing);
 
-    await tester.tap(find.text('Page 5'), buttons: kSecondaryMouseButton);
+    await tester.tap(inReaderSidebar('Page 5'), buttons: kSecondaryMouseButton);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename Bookmark…'));
     await tester.pumpAndSettle();
@@ -266,7 +269,7 @@ void main() {
     await r.controller.toggleBookmark();
     r.controller.showReaderPanel(ReaderPanelMode.bookmarks);
     await tester.pumpAndSettle();
-    expect(find.text('Page 3'), findsOneWidget);
+    expect(inReaderSidebar('Page 3'), findsOneWidget);
     r.controller.openDocument('c2');
     await tester.pumpAndSettle();
     expect(find.text('No Bookmarks'), findsOneWidget);
