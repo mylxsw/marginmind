@@ -134,6 +134,33 @@ class _Harness {
 
 void main() {
   group('U-M1 wheel and trackpad', () {
+    testWidgets('small maps drag freely in a tall viewport at every zoom', (tester) async {
+      tester.view.physicalSize = const Size(900, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final h = _Harness(tester);
+      await h.pump(_topics(4), size: const Size(800, 1300));
+      for (final scale in [0.5, 0.6, 1.0, 1.5]) {
+        h.transform.value = Matrix4.identity()..scaleByDouble(scale, scale, 1, 1);
+        await tester.pump();
+        final gesture = await tester.startGesture(const Offset(400, 800), kind: PointerDeviceKind.mouse);
+        await gesture.moveBy(const Offset(0, 30));
+        await tester.pump();
+        final start = h.translation;
+        await gesture.moveBy(const Offset(50, 180));
+        await tester.pump();
+        expect(h.translation.dx - start.dx, closeTo(50, .01));
+        expect(h.translation.dy - start.dy, closeTo(180, .01));
+        expect(h.scale, closeTo(scale, .001));
+        await gesture.moveBy(const Offset(-50, -180));
+        await tester.pump();
+        expect((h.translation - start).distance, lessThan(.01));
+        await gesture.cancel();
+        await tester.pumpAndSettle();
+      }
+    });
+
     testWidgets('the mouse wheel pans; Shift + wheel pans sideways; neither zooms', (tester) async {
       final h = _Harness(tester);
       await h.pump(_topics(30), size: const Size(500, 400));

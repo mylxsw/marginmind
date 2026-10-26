@@ -994,6 +994,8 @@ class _MMPdfViewState extends State<MMPdfView> {
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
           margin: 16,
+          // Remove pdfrx's default 80% reduction in mouse-wheel movement.
+          scrollByMouseWheel: 1,
           // Match PDFium's integer bitmap to the aligned device rectangle.
           getPageRenderingScale: (context, page, controller, estimatedScale) => pdfPreviewPlan(
             Size(page.width, page.height),

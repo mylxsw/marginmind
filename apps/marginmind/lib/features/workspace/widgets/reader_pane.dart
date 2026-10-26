@@ -163,7 +163,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       children: [
         if (openDocs.length > 1)
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
             child: Row(
               children: [
                 for (final d in openDocs)
@@ -482,7 +482,10 @@ class _PagePill extends StatelessWidget {
     final l = context.l10n;
     final c = context.mmColors;
     return MMGlass(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(MMRadii.capsule),
+      color: c.glassOpaque,
+      blurSigma: 0,
+      shadows: const [],
       padding: const EdgeInsets.all(3),
       child: Row(
         mainAxisSize: MainAxisSize.min,

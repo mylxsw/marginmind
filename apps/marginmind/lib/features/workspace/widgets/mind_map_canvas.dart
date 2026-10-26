@@ -1181,7 +1181,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             constrained: false,
             minScale: mapMinScale,
             maxScale: mapMaxScale,
-            boundaryMargin: const EdgeInsets.all(600),
+            // A finite scene boundary pins small maps when zoomed out.
+            // Manual panning must work at every scale and viewport height.
+            boundaryMargin: const EdgeInsets.all(double.infinity),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: (details) {

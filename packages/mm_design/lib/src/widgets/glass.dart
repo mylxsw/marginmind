@@ -45,7 +45,7 @@ class MMGlass extends StatelessWidget {
       ),
       child: Padding(padding: padding, child: child),
     );
-    if (!reduce) {
+    if (!reduce && blurSigma > 0) {
       surface = BackdropFilter(
         filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
         child: surface,

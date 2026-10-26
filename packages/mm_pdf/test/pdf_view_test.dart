@@ -13,6 +13,30 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
 
+  testWidgets('mouse wheel uses full scroll distance without changing zoom', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'wheel.pdf', controller: controller),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    final jump = controller.jumpToPage(2);
+    await tester.pumpAndSettle();
+    await jump;
+    final before = pdf.value.clone();
+    await tester.sendEventToBinding(
+      PointerScrollEvent(position: tester.getCenter(find.byType(PdfViewer)), scrollDelta: const Offset(0, 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(pdf.value.storage[13] - before.storage[13], closeTo(-100 * before.storage[0], 1));
+    expect(pdf.value.storage[0], before.storage[0]);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
   testWidgets('preview follows zoom and display DPR with a bounded allocation', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
