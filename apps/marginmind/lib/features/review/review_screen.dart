@@ -149,7 +149,13 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
             padding: const EdgeInsets.only(bottom: 28),
             child: session.revealed
                 ? _RatingBar(
-                    intervals: ReviewScheduler.preview(card.id, content.reviewOf(card.id), ref.read(clockProvider)()),
+                    intervals: ReviewScheduler.preview(
+                      card.id,
+                      content.reviewOf(card.id),
+                      ref.read(clockProvider)(),
+                      memory: content.memoryOf(card.id),
+                      parameters: ref.read(editorProvider).fsrsParameters,
+                    ),
                     onRate: controller.rate,
                   )
                 : MMButton(label: l.showAnswer, variant: MMButtonVariant.primary, onPressed: controller.reveal),

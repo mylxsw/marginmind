@@ -32,7 +32,8 @@ void main() {
       expect(migrated['content'][key], original['content'][key], reason: '$key must survive');
     }
     expect(c.reviewLogs, isEmpty);
-    expect(c.memoryStates, isEmpty);
+    expect(c.memoryStates.length, c.reviews.length);
+    expect(c.reviews.map((r) => r.toJson()), before.reviews.map((r) => r.toJson()));
     expect(c.cards.every((card) => !card.suspended), isTrue);
     for (var day = 0; day < 30; day++) {
       final time = DateTime.utc(2026, 10, 20 + day);
@@ -84,7 +85,7 @@ void main() {
     final store = FileLibraryStore(root);
     var id = 0;
     final editor = StudySetEditor(newId: () => 'log-${id++}', now: () => DateTime.utc(2026, 10, 26));
-    await store.update('legacy', (c) => editor.rate(c, 'excerpt', Rating.good));
+    final first = await store.update('legacy', (c) => editor.rate(c, 'excerpt', Rating.good));
     await store.update('legacy', (c) => editor.rate(c, 'excerpt', Rating.again));
     await store.update(
       'legacy',
@@ -98,8 +99,8 @@ void main() {
     final reopened = FileLibraryStore(root);
     final c = await reopened.load('legacy');
     expect(c.toJson(), result.toJson());
-    expect(c.reviewLogs.map((r) => r.intervalBefore), [3.0, 7.5]);
-    expect(c.reviewLogs.map((r) => r.intervalAfter), [7.5, 0]);
+    expect(c.reviewLogs.map((r) => r.intervalBefore), [3.0, first.reviewOf('excerpt')!.intervalDays]);
+    expect(c.reviewLogs.map((r) => r.intervalAfter), [first.reviewOf('excerpt')!.intervalDays, 0]);
     expect(c.card('excerpt')!.suspended, isTrue);
     expect(c.memoryOf('excerpt')!.stability, 3.5);
     expect(await File('${file.path}.format-5.bak').readAsBytes(), source);

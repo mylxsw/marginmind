@@ -6,6 +6,7 @@ import 'package:marginmind/features/review/review_controller.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:marginmind/features/review/review_screen.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
@@ -126,6 +127,51 @@ void main() {
     // Back of the same card: the page prompt is gone.
     await pump(tester, face, revealed: true);
     expect(find.byKey(const ValueKey('page-prompt')), findsNothing);
+  });
+
+  testWidgets('rating preview uses persisted memory and the injected FSRS parameters', (tester) async {
+    final review = ReviewState(
+      cardId: 'a',
+      due: testNow,
+      intervalDays: 1,
+      ease: 2.5,
+      reps: 3,
+      lapses: 0,
+      lastReviewedAt: testNow,
+    );
+    const memory = MemoryState(cardId: 'a', stability: 50, difficulty: 5, phase: MemoryPhase.review);
+    final content = StudySetContent(
+      cards: [Card(id: 'a', kind: CardKind.note, title: 'Answer', createdAt: testNow)],
+      nodes: const [MapNode(cardId: 'a', order: 0)],
+      reviews: [review],
+      memoryStates: const [memory],
+    );
+    final repo = InMemoryStudySetContentRepository({'demo-1': content});
+    final parameters = FsrsParameters(maximumInterval: 7);
+    final editor = StudySetEditor(newId: () => 'log', now: () => testNow, fsrsParameters: parameters);
+    final overrides = await testOverrides(content: repo, prefs: {'locale': 'en'});
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [...overrides, editorProvider.overrideWithValue(editor)],
+        child: MaterialApp(
+          theme: MMTheme.light(),
+          locale: const Locale('en'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const ReviewScreen(studySetId: 'demo-1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show Answer'));
+    await tester.pumpAndSettle();
+    expect(find.text('7 days'), findsNWidgets(3));
+    await tester.tap(find.text('Good'));
+    await tester.pumpAndSettle();
+    final saved = await repo.load('demo-1');
+    expect(saved.reviewOf('a')!.intervalDays, 7);
+    expect(saved.memoryOf('a')!.stability, 50);
+    expect(saved.reviewLogs.single.intervalAfter, 7);
   });
 
   group('excerptPageTextProvider', () {
