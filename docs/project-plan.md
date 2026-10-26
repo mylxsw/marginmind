@@ -216,7 +216,7 @@ v0.5 验收时记下的跨页选择夹带页脚页码的问题，已收进体验
 
 ✅ v0.5 之后在真机上用 301 页的中英文 PDF 走了一遍核心闭环，问题清单和分批方案见 [ux-audit.md](ux-audit.md)：4 个 P0、16 个 P1、9 个 P2，分成 7 批，连同项目所有者报告的窗口按钮、PDF 滚动与导航、脑图闪烁三个问题，由 [#24](https://github.com/mylxsw/marginmind/pull/24)–[#36](https://github.com/mylxsw/marginmind/pull/36) 全部修复。这一轮记为 **v0.6 体验优化**，原定 v0.6 的 FSRS / 统计顺延为 v0.7（5.1）。
 
-发布前的整体复验（GUL-506，[#37](https://github.com/mylxsw/marginmind/pull/37)）记在 [ux-audit.md 第 8 节](ux-audit.md#8-v06-整体复验)：当场修复了跨页摘录复习卡退回页面缩略图、脑图空状态多一行说明文字；复验新发现的小问题列在同一节，排在 v0.7 之后处理。
+发布前的整体复验（GUL-506，[#37](https://github.com/mylxsw/marginmind/pull/37)）记在 [ux-audit.md 第 8 节](ux-audit.md#8-v06-整体复验)：当场修复了跨页摘录复习卡退回页面缩略图、挖空下文在小节号处断句、脑图空状态多一行说明文字；新发现的 7 个打磨项（U-N1 ～ U-N7）汇总为后续任务 GUL-507。
 
 ## 6. 待确认事项
 
