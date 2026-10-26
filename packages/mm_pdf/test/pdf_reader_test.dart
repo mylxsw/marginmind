@@ -117,9 +117,9 @@ void main() {
     expect(controller.canGoBack, isTrue);
     expect(notified, greaterThan(0));
 
-    await controller.jumpToPage(3);
+    await settle(tester, controller.jumpToPage(3));
     await settle(tester, controller.jumpToPage(99));
-    expect(controller.currentPage, 3, reason: 'jumping to where you are does nothing; 99 clamps to the last page');
+    expect(controller.currentPage, 3, reason: 'jumping to where you are adds no history; 99 clamps to the last page');
 
     await settle(tester, controller.firstPage());
     expect(controller.currentPage, 1);
