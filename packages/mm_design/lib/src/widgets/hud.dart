@@ -9,11 +9,16 @@ import '../tokens/motion.dart';
 import 'glass.dart';
 
 /// Hosts the HUD capsule shown at the bottom of the window. Put it above the
-/// Navigator (e.g. in `MaterialApp.builder`) and call [MMHud.show].
+/// Navigator (e.g. in `MaterialApp.builder`) and call [MMHud.show]. [bottom] is
+/// the capsule's distance from the window's bottom edge; raise it to clear
+/// controls docked there.
 class MMHudHost extends StatefulWidget {
-  const MMHudHost({super.key, required this.child});
+  const MMHudHost({super.key, required this.child, this.bottom = defaultBottom});
+
+  static const double defaultBottom = 22;
 
   final Widget child;
+  final double bottom;
 
   @override
   State<MMHudHost> createState() => MMHudState();
@@ -60,7 +65,7 @@ class MMHudState extends State<MMHudHost> {
         Positioned(
           left: 0,
           right: 0,
-          bottom: 22,
+          bottom: widget.bottom,
           child: IgnorePointer(
             // Above the Navigator there is no Material: give text a style.
             child: Material(

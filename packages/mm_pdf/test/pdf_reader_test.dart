@@ -82,6 +82,29 @@ void main() {
     expect(controller.outline.first.children.single.page, 3);
   });
 
+  viewTest('a jump puts the page at the top of the viewport; the last page rests at the bottom', (tester) async {
+    final controller = await open(tester);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    await settle(tester, controller.jumpToPage(2));
+    // The viewer's 16-point page margin scales with the zoom.
+    final margin = 16 * pdf.currentZoom;
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, closeTo(margin, 1));
+    // On the page but scrolled part way down: jumping to it again brings its top back.
+    pdf.value = pdf.value.clone()..setTranslationRaw(pdf.value.storage[12], pdf.value.storage[13] + 60, 0);
+    await tester.pump();
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, isNot(closeTo(margin, 1)));
+    await settle(tester, controller.jumpToPage(2));
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft).dy, closeTo(margin, 1));
+    expect(controller.canGoBack, isTrue);
+    await settle(tester, controller.goBack());
+    expect(controller.currentPage, 1, reason: 'the repeat jump added no history entry');
+    await settle(tester, controller.jumpToPage(2));
+    await settle(tester, controller.lastPage());
+    expect(pdf.documentToLocal(pdf.layout.pageLayouts[2].bottomRight).dy, closeTo(pdf.viewSize.height - margin, 1));
+    await settle(tester, controller.jumpToPage(2, alignTop: false));
+    expect(controller.currentPage, 2);
+  });
+
   viewTest('jumps move the page, are clamped, and back returns', (tester) async {
     final pages = <int>[];
     final controller = await open(tester, onPageChanged: (page, _) => pages.add(page));
@@ -94,9 +117,9 @@ void main() {
     expect(controller.canGoBack, isTrue);
     expect(notified, greaterThan(0));
 
-    await controller.jumpToPage(3);
+    await settle(tester, controller.jumpToPage(3));
     await settle(tester, controller.jumpToPage(99));
-    expect(controller.currentPage, 3, reason: 'jumping to where you are does nothing; 99 clamps to the last page');
+    expect(controller.currentPage, 3, reason: 'jumping to where you are adds no history; 99 clamps to the last page');
 
     await settle(tester, controller.firstPage());
     expect(controller.currentPage, 1);

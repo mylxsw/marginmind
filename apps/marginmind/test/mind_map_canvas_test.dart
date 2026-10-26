@@ -81,9 +81,17 @@ void main() {
       expect(mapScale(transform.value), closeTo(zoom < 1 ? mapLocateScale : zoom, .001));
       final viewport = tester.getRect(find.byType(InteractiveViewer));
       final card = tester.getRect(find.byKey(const ValueKey('c1')));
-      expect((card.center - viewport.center).distance, lessThan(1));
-      expect(viewport.contains(card.topLeft), isTrue);
-      expect(viewport.contains(card.bottomRight), isTrue);
+      // The source label beside the card counts as part of what is located.
+      final label = tester.getRect(find.textContaining('Source ·')).inflate(MMSpacing.xs);
+      final located = card.expandToInclude(label);
+      expect(
+        (located.center.dx - viewport.center.dx).abs(),
+        lessThan(4),
+        reason: 'label width is measured, not laid out',
+      );
+      expect((card.center.dy - viewport.center.dy).abs(), lessThan(1));
+      expect(viewport.contains(located.topLeft), isTrue);
+      expect(viewport.contains(located.bottomRight), isTrue);
     }
     expect(edges().shouldRepaint(original), isFalse);
     transform.value = Matrix4.identity()

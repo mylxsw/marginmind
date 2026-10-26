@@ -57,6 +57,19 @@ void main() {
       expect(joinExcerptLines(entry.key), entry.value);
     }
   });
+  test('keeps the space the text already has between a Latin word and Chinese', () {
+    for (final entry in {
+      'Ebbinghaus \n在 1885 年': 'Ebbinghaus 在 1885 年',
+      'Ebbinghaus\n 在 1885 年': 'Ebbinghaus 在 1885 年',
+      '发表于 \n1885 年': '发表于 1885 年',
+      '发表于\n1885 年': '发表于1885 年',
+      '中文 \n继续': '中文继续',
+      '中文\n 继续': '中文继续',
+      'Ebbinghaus\n在': 'Ebbinghaus在',
+    }.entries) {
+      expect(joinExcerptLines(entry.key), entry.value);
+    }
+  });
   test('dehyphenates broken words and discretionary hyphens; keeps explicit punctuation', () {
     expect(joinExcerptLines('inter\u0002national'), 'international');
     expect(joinExcerptLines('inter-\nnational cooper\u00ad\nation'), 'international cooperation');

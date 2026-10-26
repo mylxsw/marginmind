@@ -894,7 +894,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastPage => 'Last Page';
 
   @override
+  String get goToPage => 'Go to Page…';
+
+  @override
   String get menuGo => 'Go';
+
+  @override
+  String get enterFullScreen => 'Enter Full Screen';
+
+  @override
+  String get exitFullScreen => 'Exit Full Screen';
 
   @override
   String get noBookmarks => 'No Bookmarks';

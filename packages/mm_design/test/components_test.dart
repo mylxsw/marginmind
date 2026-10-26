@@ -182,6 +182,37 @@ void main() {
     expect(hidden.opacity, 0);
   });
 
+  testWidgets('HUD can be raised to clear controls at the bottom', (tester) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Future<double> shownBottom(double? bottom) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: MMTheme.light(),
+          home: MMHudHost(
+            bottom: bottom ?? MMHudHost.defaultBottom,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => MMButton(label: 'Go', onPressed: () => MMHud.show(context, 'Saved')),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Go'));
+      await tester.pump();
+      final bottomEdge = tester.getRect(find.text('Saved')).bottom;
+      await tester.pump(MMMotion.hud);
+      await tester.pumpAndSettle();
+      return 600 - bottomEdge;
+    }
+
+    final low = await shownBottom(null);
+    final raised = await shownBottom(80);
+    expect(raised - low, closeTo(80 - MMHudHost.defaultBottom, .5));
+  });
+
   testWidgets('color picker selects by name and disabled buttons ignore taps', (tester) async {
     var picked = MMAnnotationColor.yellow;
     var tapped = false;

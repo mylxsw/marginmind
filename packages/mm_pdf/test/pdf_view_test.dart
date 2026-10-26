@@ -97,6 +97,36 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
+  testWidgets('reveal starts at the left edge of an excerpt wider than the viewport', (tester) async {
+    final controller = MMPdfViewController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'wide.pdf', controller: controller),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    await pdf.setZoom(pdf.centerPosition, 2, duration: Duration.zero);
+    await tester.pumpAndSettle();
+    const rects = [PageRect(20, 450, 580, 400)];
+    final action = controller.reveal(2, rects);
+    await tester.pumpAndSettle();
+    await action;
+    final layout = pdf.layout.pageLayouts[1];
+    final target = const PdfRect(
+      20,
+      450,
+      580,
+      400,
+    ).toRect(page: pdf.pages[1], scaledPageSize: layout.size).shift(layout.topLeft);
+    expect(target.width * pdf.currentZoom, greaterThan(pdf.viewSize.width));
+    final topLeft = pdf.documentToLocal(target.topLeft);
+    expect(topLeft.dx, closeTo(0, 1), reason: 'both ends cannot show; the start does');
+    expect(pdf.documentToLocal(target.center).dy, closeTo(pdf.viewSize.height / 2, 1));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
   testWidgets('zoom commands fit the current page and are safe before ready', (tester) async {
     final controller = MMPdfViewController();
     await controller.zoomIn();

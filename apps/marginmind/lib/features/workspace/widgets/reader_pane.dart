@@ -5,6 +5,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
+import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
@@ -26,6 +27,9 @@ class ReaderPane extends ConsumerStatefulWidget {
 
 class _ReaderPaneState extends ConsumerState<ReaderPane> {
   final _focus = FocusNode(debugLabel: 'PDF reader', skipTraversal: true);
+
+  /// Counts the menu's "Go to Page…" requests; the page field opens on each.
+  int _pageFieldRequests = 0;
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));
 
@@ -54,6 +58,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
+    ref.listen(focusRequestsProvider, (_, next) {
+      if (next?.$1 == FocusTarget.pageField) setState(() => _pageFieldRequests++);
+    });
     ref.watch(
       provider.select(
         (s) => (
@@ -291,6 +298,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                         doc.lastPage;
                                     return _PagePill(
                                       page: page,
+                                      editRequests: _pageFieldRequests,
                                       pageCount: doc.pageCount,
                                       onJump: (page) {
                                         dismissSelection();
@@ -354,7 +362,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 /// keep clear of it. An estimate that is wider than `_PagePill`; change both
 /// together.
 const _pagePillBottom = 16.0;
-const _pagePillSize = Size(200, 32);
+const _pagePillHeight = 32.0;
+const _pagePillSize = Size(200, _pagePillHeight);
+
+/// How far the page pill reaches up from the window's bottom edge; the HUD
+/// stays above it.
+const pagePillClearance = _pagePillBottom + _pagePillHeight;
 
 Rect _pagePillArea(Size viewport) => Rect.fromLTWH(
   (viewport.width - _pagePillSize.width) / 2,
@@ -365,9 +378,12 @@ Rect _pagePillArea(Size viewport) => Rect.fromLTWH(
 
 /// "n / N" that turns into a field on click: type a page, Enter jumps.
 class _PageField extends StatefulWidget {
-  const _PageField({required this.page, required this.pageCount, required this.onJump});
+  const _PageField({required this.page, required this.pageCount, required this.onJump, required this.editRequests});
 
   final int page;
+
+  /// Changes when the field should open, without a click.
+  final int editRequests;
   final int pageCount;
   final ValueChanged<int> onJump;
 
@@ -379,6 +395,12 @@ class _PageFieldState extends State<_PageField> {
   final _text = TextEditingController();
   final _focus = FocusNode();
   bool _editing = false;
+
+  @override
+  void didUpdateWidget(_PageField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.editRequests != oldWidget.editRequests) _start();
+  }
 
   @override
   void dispose() {
@@ -441,6 +463,7 @@ class _PageFieldState extends State<_PageField> {
 class _PagePill extends StatelessWidget {
   const _PagePill({
     required this.page,
+    required this.editRequests,
     required this.pageCount,
     required this.onJump,
     required this.onPrevious,
@@ -448,6 +471,7 @@ class _PagePill extends StatelessWidget {
   });
 
   final int page;
+  final int editRequests;
   final int pageCount;
   final ValueChanged<int> onJump;
   final VoidCallback onPrevious;
@@ -473,7 +497,7 @@ class _PagePill extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _PageField(page: page, pageCount: pageCount, onJump: onJump),
+            child: _PageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
           ),
           MMIconButton(
             icon: MMIcons.chevronRight,

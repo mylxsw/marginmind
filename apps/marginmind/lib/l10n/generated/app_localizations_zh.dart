@@ -858,7 +858,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lastPage => '末页';
 
   @override
+  String get goToPage => '前往页面…';
+
+  @override
   String get menuGo => '前往';
+
+  @override
+  String get enterFullScreen => '进入全屏';
+
+  @override
+  String get exitFullScreen => '退出全屏';
 
   @override
   String get noBookmarks => '没有书签';

@@ -41,7 +41,7 @@ abstract final class AppShortcuts {
   static SingleActivator get addTopic => primaryShortcut(LogicalKeyboardKey.keyN, shift: true);
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
   static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
-  static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true);
+  static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true, shift: true);
   static SingleActivator get undo => primaryShortcut(LogicalKeyboardKey.keyZ);
   static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
   static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
@@ -49,6 +49,8 @@ abstract final class AppShortcuts {
   static SingleActivator get findNext => primaryShortcut(LogicalKeyboardKey.keyG);
   static SingleActivator get findPrevious => primaryShortcut(LogicalKeyboardKey.keyG, shift: true);
   static SingleActivator get toggleBookmark => primaryShortcut(LogicalKeyboardKey.keyD);
+  static SingleActivator get goToPage => primaryShortcut(LogicalKeyboardKey.keyG, alt: true);
+  static SingleActivator get fullScreen => primaryShortcut(LogicalKeyboardKey.keyF, control: true);
   static SingleActivator get goBack => primaryShortcut(LogicalKeyboardKey.bracketLeft);
   static SingleActivator get firstPage => const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true);
   static SingleActivator get lastPage => const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true);
@@ -179,7 +181,10 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     super.initState();
     _textFocused = _isTextFocused;
     FocusManager.instance.addListener(_focusChanged);
+    DesktopWindow.fullScreen.addListener(_windowChanged);
   }
+
+  void _windowChanged() => setState(() {});
 
   void _focusChanged() {
     final textFocused = _isTextFocused;
@@ -197,6 +202,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
   @override
   void dispose() {
     FocusManager.instance.removeListener(_focusChanged);
+    DesktopWindow.fullScreen.removeListener(_windowChanged);
     super.dispose();
   }
 
@@ -226,6 +232,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             s.activeDocumentId,
             s.readerPanelVisible,
             s.findVisible,
+            s.layout,
           ),
         ),
       );
@@ -611,7 +618,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         shortcut: AppShortcuts.firstPage,
       ),
       AppCommand(l.lastPage, canRead && !_textFocused ? () => pdf!.lastPage() : null, shortcut: AppShortcuts.lastPage),
+      // The page pill is part of the reader: with the map alone there is no field to focus.
+      AppCommand(
+        l.goToPage,
+        canRead && !_textFocused && workspaceState.layout != MMSplitMode.secondary
+            ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.pageField)
+            : null,
+        shortcut: AppShortcuts.goToPage,
+      ),
     ];
+    final fullScreen = AppCommand(
+      DesktopWindow.fullScreen.value ? l.exitFullScreen : l.enterFullScreen,
+      DesktopWindow.toggleFullScreen,
+      shortcut: AppShortcuts.fullScreen,
+    );
     // The component gallery is a developer tool.
     final help = [if (kDebugMode) AppCommand(l.componentGallery, nav.showGallery, shortcut: AppShortcuts.gallery)];
 
@@ -646,7 +666,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             label: l.menuView,
             menus: [
               PlatformMenuItemGroup(members: [for (final c in view) _item(c)]),
-              _provided(PlatformProvidedMenuItemType.toggleFullScreen),
+              PlatformMenuItemGroup(members: [_item(fullScreen)]),
             ],
           ),
           PlatformMenu(label: l.menuGo, menus: [for (final c in go) _item(c)]),
