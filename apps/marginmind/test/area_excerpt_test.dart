@@ -145,7 +145,8 @@ void main() {
     final card = controller.content.cards.last;
     final l = AppLocalizations.of(tester.element(find.byType(CardImage)));
     expect(find.byType(CardImage), findsOneWidget);
-    expect(find.text(l.imageExcerpt), findsOneWidget);
+    // Untitled, the picture is the card: no title row, no source line.
+    expect(find.text(l.imageExcerpt), findsNothing);
     // The image is sized from the area's aspect ratio (2:1) before decoding.
     expect(
       tester.getSize(find.byType(CardImage)).width / tester.getSize(find.byType(CardImage)).height,

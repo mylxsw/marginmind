@@ -271,11 +271,15 @@ void main() {
   testWidgets('dragging a node onto a topic makes it a child', (tester) async {
     final container = await openFirstSet(tester);
     final from = tester.getCenter(find.text('这条先陡后平的曲线，被称为遗忘曲线。'));
-    final to = tester.getCenter(find.text('对策一：间隔重复'));
     final gesture = await tester.startGesture(from, kind: PointerDeviceKind.mouse);
     await tester.pump(const Duration(milliseconds: 50));
+    await gesture.moveBy(const Offset(-20, 0));
+    // Grabbing selects the node, which may pan it into view: aim afterwards.
+    await tester.pumpAndSettle();
+    final start = from + const Offset(-20, 0);
+    final to = tester.getCenter(find.text('对策一：间隔重复'));
     for (var i = 1; i <= 10; i++) {
-      await gesture.moveTo(Offset.lerp(from, to, i / 10)!);
+      await gesture.moveTo(Offset.lerp(start, to, i / 10)!);
       await tester.pump(const Duration(milliseconds: 16));
     }
     await gesture.up();

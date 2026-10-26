@@ -185,21 +185,34 @@ void main() {
         viewerBox(tester)
             .localToGlobal(MatrixUtils.transformPoint(viewer(tester).transformationController!.value, scene));
 
-    /// Empty canvas left of the root node.
+    /// Empty canvas below the root node (branches leave it on both sides).
     Offset blank(WidgetTester tester) {
       final root = sceneRect(tester, rootNodeId);
-      return toGlobal(tester, Offset(root.left - 30, root.center.dy));
+      return toGlobal(tester, Offset(root.center.dx, root.bottom + 30));
+    }
+
+    /// Pans so [finder] is in the middle of the map pane.
+    Future<void> reveal(WidgetTester tester, Finder finder) async {
+      final controller = viewer(tester).transformationController!;
+      final box = viewerBox(tester);
+      final d = box.size.center(Offset.zero) - box.globalToLocal(tester.getCenter(finder));
+      final m = controller.value;
+      controller.value = m.clone()..setTranslationRaw(m.storage[12] + d.dx, m.storage[13] + d.dy, 0);
+      await tester.pumpAndSettle();
     }
 
     /// A point on the drawn line from [from] to [to], away from its label;
     /// [others] are the nodes the line has to take into account.
-    Offset onLine(WidgetTester tester, String from, String to, {List<String> others = const []}) => toGlobal(
-      tester,
-      cubicPoint(
-        relationCurve(sceneRect(tester, from), sceneRect(tester, to), [for (final id in others) sceneRect(tester, id)]),
-        0.3,
-      ),
-    );
+    Offset onLine(WidgetTester tester, String from, String to, {List<String> others = const [], double t = 0.3}) =>
+        toGlobal(
+          tester,
+          cubicPoint(
+            relationCurve(sceneRect(tester, from), sceneRect(tester, to), [
+              for (final id in others) sceneRect(tester, id),
+            ]),
+            t,
+          ),
+        );
 
     Future<WorkspaceController> open(WidgetTester tester) async {
       final container = await openFirstSet(tester);
@@ -243,7 +256,8 @@ void main() {
 
       controller.selectCard(null);
       await tester.pumpAndSettle();
-      await tester.tapAt(onLine(tester, 'c3', 'c4', others: ['c6']));
+      // A short line: its label covers the middle.
+      await tester.tapAt(onLine(tester, 'c3', 'c4', others: ['c6'], t: 0.1));
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, id);
       await focusMap(tester);
@@ -283,11 +297,14 @@ void main() {
     testWidgets('a line between stacked nodes and its label stay inside the scene and the fitted view', (tester) async {
       final controller = await open(tester);
       const label = 'a rather long relationship label';
-      controller.selectCard(null);
+      // A column of leaves under c3, the tallest branch: right of the root.
+      controller.selectCard('c3');
+      final first = await controller.addTopic('First');
+      controller.selectCard('c3');
       final middle = await controller.addTopic('A much wider topic in between');
-      controller.selectCard(null);
+      controller.selectCard('c3');
       final last = await controller.addTopic('Last');
-      controller.selectCards(['c4', last.id]);
+      controller.selectCards([first.id, last.id]);
       await controller.addRelation();
       await controller.finishMarkEditing(label);
       await tester.pumpAndSettle();
@@ -300,7 +317,7 @@ void main() {
       // The canvas: the nearest stack holding both the label and the nodes.
       final around = find.ancestor(of: text, matching: find.byType(Stack)).evaluate().toSet();
       final canvas = find
-          .ancestor(of: find.byKey(const ValueKey('c4')), matching: find.byType(Stack))
+          .ancestor(of: find.byKey(const ValueKey('c3')), matching: find.byType(Stack))
           .evaluate()
           .firstWhere(around.contains);
       final scene = tester.getRect(find.byElementPredicate((e) => e == canvas));
@@ -308,8 +325,12 @@ void main() {
       expect(inside(scene, rect), isTrue, reason: 'not clipped: $rect in $scene');
       expect(rect.left, greaterThan(tester.getRect(find.byKey(ValueKey(middle.id))).right), reason: 'past the column');
 
+      // The map alone has room to fit it all at a readable zoom.
+      controller.setLayout(MMSplitMode.secondary);
+      await tester.pumpAndSettle();
       await focusMap(tester);
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      expect(mapScale(viewer(tester).transformationController!.value), greaterThanOrEqualTo(mapReadableScale));
       final view = viewerBox(tester).localToGlobal(Offset.zero) & viewerBox(tester).size;
       expect(inside(view, tester.getRect(text)), isTrue, reason: 'fit shows it: ${tester.getRect(text)} in $view');
       await settleHud(tester);
@@ -317,7 +338,6 @@ void main() {
 
     testWidgets('a summary is added from the menu, edited in place and removed from its bracket menu', (tester) async {
       final controller = await open(tester);
-      final width = tester.getRect(find.byKey(const ValueKey('c3'))).right;
       controller.selectCards(['c3', 'c4']);
       await tester.pumpAndSettle();
       await focusMap(tester);
@@ -328,7 +348,9 @@ void main() {
       final summary = controller.content.summaries.single;
       expect(summary.label, 'Two ideas');
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      await reveal(tester, find.text('Two ideas'));
       final label = tester.getRect(find.text('Two ideas'));
+      final width = tester.getRect(find.byKey(const ValueKey('c3'))).right;
       expect(label.left, greaterThan(width), reason: 'right of the covered nodes');
       final text = tester.renderObject<RenderParagraph>(find.text('Two ideas'));
       expect(
@@ -345,13 +367,14 @@ void main() {
       expect(controller.content.summaries.single.label, 'Two ideas');
 
       // The bracket sits just left of the label.
-      final scale = mapScale(viewer(tester).transformationController!.value);
-      final bracket = Offset(
-        label.left - (MMSpacing.s + MMSpacing.m / 2) * scale - MMSpacing.m * scale,
-        label.center.dy,
-      );
       controller.selectCard(null);
       await tester.pumpAndSettle();
+      final scale = mapScale(viewer(tester).transformationController!.value);
+      final shown = tester.getRect(find.text('Two ideas'));
+      final bracket = Offset(
+        shown.left - (MMSpacing.s + MMSpacing.m / 2) * scale - MMSpacing.m * scale,
+        shown.center.dy,
+      );
       await tester.tapAt(bracket, buttons: kSecondaryButton);
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, summary.id);
@@ -398,8 +421,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.content.relations, isEmpty);
 
-      // The toolbar's trash removes a selected mark too. The label ends at the
-      // window's right edge: tap its start.
+      // The toolbar's trash removes a selected mark too. The label may end at
+      // the window's right edge: tap its start.
+      await reveal(tester, find.text('Summary'));
       await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
       await tester.pump(kDoubleTapTimeout);
       await tester.pumpAndSettle();

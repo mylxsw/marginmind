@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +30,26 @@ double mapScale(Matrix4 m) => m.storage[0];
 /// jump back in.
 const mapMinScale = 0.05;
 const mapMaxScale = 2.5;
+
+/// Below this zoom node text is no longer readable: the first view and
+/// "fit" stop here, and "fit" then centers on the selection instead.
+const mapReadableScale = 0.6;
+
+/// [m] zoomed by [factor] (kept within [mapMinScale]..[mapMaxScale]) so the
+/// point at [focal] (viewport coordinates) stays where it is.
+Matrix4 zoomMapAt(Matrix4 m, Offset focal, double factor) {
+  final current = mapScale(m);
+  final f = (current * factor).clamp(mapMinScale, mapMaxScale) / current;
+  return Matrix4.identity()
+    ..translateByDouble(focal.dx, focal.dy, 0, 1)
+    ..scaleByDouble(f, f, 1, 1)
+    ..translateByDouble(-focal.dx, -focal.dy, 0, 1)
+    ..multiply(m);
+}
+
+/// Mouse wheel ticks scroll 20 logical pixels; ⌘ + wheel zooms by
+/// e^(-delta / this) per event, like InteractiveViewer.
+const _wheelZoomFactor = 200.0;
 
 /// While dragging a node, the canvas pans when the pointer is within this
 /// distance of its sides (or outside them), up to [_autoScrollSpeed]
@@ -77,7 +98,12 @@ class MindMapCanvas extends StatefulWidget {
     this.onConnect,
     this.onCancelConnect,
     this.onMarkContextMenu,
+    this.excerptTargetId,
   });
+
+  /// The node new excerpts are added under ([rootNodeId] for the root),
+  /// marked on the map; null shows no mark.
+  final String? excerptTargetId;
 
   /// False until the content has been read from disk; the first fit waits
   /// for it so it measures the real tree.
@@ -178,6 +204,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   late final _motion = AnimationController(vsync: this, duration: MMMotion.standard, value: 1);
   Map<String, Rect> _from = const {};
 
+  /// The card under the mouse; its source is shown below it.
+  final _hovered = ValueNotifier<String?>(null);
+
+  /// Trackpad pinch: the gesture's scale at the last update.
+  double? _pinchScale;
+
   @override
   String? get editingCardId => widget.editingCardId;
   @override
@@ -265,6 +297,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     mark?.dispose();
     _autoScroll.dispose();
     _motion.dispose();
+    _hovered.dispose();
     super.dispose();
   }
 
@@ -320,7 +353,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         onSecondaryTapUp: null,
         onReveal: null,
         revealLabel: '',
-        editor: fieldEditor(f, style: style, kind: kind, label: spec.title, maxLines: maxLines),
+        editor: fieldEditor(f, style: style, kind: kind, label: spec.label, maxLines: maxLines),
       ),
     );
   }
@@ -330,17 +363,23 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Offset? _rootAnchor;
   Size _viewport = Size.zero;
 
-  /// First time the map is shown: scale down (to 60% at most) so the whole
-  /// tree fits, and center it. Later the user's pan/zoom is kept.
+  /// First time the map is shown: scale down (to [mapReadableScale] at most)
+  /// so the whole tree fits, and center it; a map too wide for that shows
+  /// the root (centered when branches grow on both sides). Later the
+  /// user's pan/zoom is kept.
   void _fitOnce(TreeLayoutResult result, BoxConstraints viewport) {
     if (_centered || !widget.loaded || !viewport.hasBoundedHeight || !viewport.hasBoundedWidth) return;
     _centered = true;
     final w = viewport.maxWidth, h = viewport.maxHeight;
     final scene = _sceneSize(result);
-    final scale = math.min(1.0, math.min((w - 24) / scene.width, (h - 24) / scene.height)).clamp(0.6, 1.0);
+    final scale = math.min(1.0, math.min((w - 24) / scene.width, (h - 24) / scene.height)).clamp(mapReadableScale, 1.0);
     final root = result.rects[rootNodeId]!;
     final fitsWidth = scene.width * scale <= w;
-    final dx = fitsWidth ? (w - scene.width * scale) / 2 : w * 0.04 - (root.left - 24) * scale;
+    final dx = fitsWidth
+        ? (w - scene.width * scale) / 2
+        : result.leftSide.isNotEmpty
+        ? w / 2 - (root.left + root.width / 2) * scale
+        : w * 0.04 - (root.left - 24) * scale;
     final dy = h / 2 - root.centerY * scale;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -385,14 +424,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     widget.transformation.value = m.clone()..setTranslationRaw(m.storage[12] + delta.dx, m.storage[13] + delta.dy, 0);
   }
 
-  /// Pans (keeping the zoom) so a newly created or linked node is on screen.
-  void _ensureVisible(String id) {
+  /// Pans (keeping the zoom) so a newly created or linked node is on screen:
+  /// where it is drawn now, or once the layout animation has [settled] (a
+  /// node left of the root grows leftward as it moves).
+  void _ensureVisible(String id, {bool settled = false}) {
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final m = widget.transformation.value;
     final scale = mapScale(m);
     final tx = m.storage[12], ty = m.storage[13];
-    final shown = _shown(id, rect);
+    final shown = settled ? _rect(rect) : _shown(id, rect);
     final left = shown.left * scale + tx, right = shown.right * scale + tx;
     final top = shown.top * scale + ty, bottom = shown.bottom * scale + ty;
     const margin = MMSpacing.xxxl;
@@ -440,6 +481,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               (_viewport.height - MMSpacing.xl * 2) / scene.height,
             )
             .clamp(mapMinScale, 1.0);
+        // Too large to read as a whole: the readable zoom, around the selection.
+        if (scale < mapReadableScale) {
+          _centerOn(selected ?? rootNodeId, mapReadableScale);
+          return;
+        }
         widget.transformation.value = Matrix4.identity()
           ..translateByDouble(
             (_viewport.width - scene.width * scale) / 2,
@@ -449,16 +495,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           )
           ..scaleByDouble(scale, scale, 1, 1);
       case MindMapCommand.center:
-        final rect = _layout?.rects[selected ?? rootNodeId];
-        if (rect == null || _viewport.isEmpty) return;
-        final m = widget.transformation.value;
-        final scale = mapScale(m);
-        widget.transformation.value = m.clone()
-          ..setTranslationRaw(
-            _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
-            _viewport.height / 2 - rect.centerY * scale,
-            0,
-          );
+        _centerOn(selected ?? rootNodeId, mapScale(widget.transformation.value));
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
         widget.onCommand?.call(command);
       case MindMapCommand.siblingAfter ||
@@ -470,6 +507,96 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         if (selected != null) widget.onCommand?.call(command);
     }
   }
+
+  /// Shows the node [id] in the middle of the view at [scale].
+  void _centerOn(String id, double scale) {
+    final rect = _layout?.rects[id];
+    if (rect == null || _viewport.isEmpty) return;
+    widget.transformation.value = Matrix4.identity()
+      ..translateByDouble(
+        _viewport.width / 2 - (rect.left + rect.width / 2) * scale,
+        _viewport.height / 2 - rect.centerY * scale,
+        0,
+        1,
+      )
+      ..scaleByDouble(scale, scale, 1, 1);
+  }
+
+  /// Mouse wheel pans (Shift + wheel sideways); ⌘ / Ctrl + wheel and
+  /// pinching zoom at the pointer. Trackpad scrolling arrives as pan/zoom
+  /// gestures, which the viewer pans itself.
+  void _pointerSignal(PointerSignalEvent event) {
+    if (event is PointerScrollEvent && event.kind != PointerDeviceKind.trackpad) {
+      GestureBinding.instance.pointerSignalResolver.register(event, (e) {
+        final scroll = e as PointerScrollEvent;
+        final keyboard = HardwareKeyboard.instance;
+        if (keyboard.isMetaPressed || keyboard.isControlPressed) {
+          _zoomAt(scroll.localPosition, math.exp(-scroll.scrollDelta.dy / _wheelZoomFactor));
+          return;
+        }
+        var delta = scroll.scrollDelta;
+        if (keyboard.isShiftPressed && delta.dx == 0) delta = Offset(delta.dy, 0);
+        _panBy(-delta);
+      });
+    } else if (event is PointerScaleEvent) {
+      GestureBinding.instance.pointerSignalResolver.register(
+        event,
+        (e) => _zoomAt(e.localPosition, (e as PointerScaleEvent).scale),
+      );
+    }
+  }
+
+  void _zoomAt(Offset focal, double factor) {
+    if (factor == 1 || factor.isNaN) return;
+    widget.transformation.value = zoomMapAt(widget.transformation.value, focal, factor);
+  }
+
+  /// Pans by [delta] (viewport pixels), but not past the far side of the map
+  /// coming [_autoScrollEdge] into view.
+  void _panBy(Offset delta) {
+    final layout = _layout;
+    if (layout == null || _viewport.isEmpty || delta == Offset.zero) return;
+    final m = widget.transformation.value;
+    final scale = mapScale(m);
+    final current = Offset(m.storage[12], m.storage[13]);
+    final scene = _sceneSize(layout);
+    final next = clampAutoScroll(
+      current,
+      delta,
+      Rect.fromLTWH(current.dx, current.dy, scene.width * scale, scene.height * scale),
+      _viewport,
+      margin: _autoScrollEdge,
+    );
+    if (next == current) return;
+    widget.transformation.value = m.clone()..setTranslationRaw(next.dx, next.dy, 0);
+  }
+
+  /// Arrow keys follow the drawing: on the left of the root, left goes to
+  /// the children and right to the parent, and left from the root goes to
+  /// its first branch on the left.
+  void _navigate(AxisDirection direction) {
+    final layout = _layout;
+    final selected = widget.selectedCardId ?? rootNodeId;
+    if (layout != null && direction == AxisDirection.left && selected == rootNodeId) {
+      final first = layout.edges.where((e) => e.parentId == rootNodeId && layout.leftSide.contains(e.childId));
+      if (first.isNotEmpty) widget.onSelect(first.first.childId);
+      return;
+    }
+    if (layout != null && layout.leftSide.contains(selected)) {
+      direction = switch (direction) {
+        AxisDirection.left => AxisDirection.right,
+        AxisDirection.right => AxisDirection.left,
+        _ => direction,
+      };
+    }
+    widget.onNavigate(direction);
+  }
+
+  /// Space between a card and its source label: clear of its fold button.
+  double _sourceGap(String id) => _cache._expandable.contains(id) ? MMSpacing.xl + MMSpacing.s : MMSpacing.s;
+
+  bool _leftRelation(MapRelation r) =>
+      _layout != null && _layout!.leftSide.contains(r.fromId) && _layout!.leftSide.contains(r.toId);
 
   /// The relation line or summary bracket at [scene], if any. Labels are
   /// widgets and take their own clicks.
@@ -485,7 +612,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final r in _cache._relations.reversed) {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
-      final curve = relationCurve(a, b, others);
+      final curve = relationCurveOnSide(a, b, others, left: _leftRelation(r));
       var previous = curve.$1;
       for (var i = 1; i <= 24; i++) {
         final point = cubicPoint(curve, i / 24);
@@ -505,7 +632,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final r in _cache._relations) {
       final from = layout.rects[r.fromId], to = layout.rects[r.toId];
       if (from == null || to == null) continue;
-      final curve = relationCurve(_rect(from), _rect(to), others);
+      final curve = relationCurveOnSide(_rect(from), _rect(to), others, left: _leftRelation(r));
       for (var i = 0; i <= 8; i++) {
         final p = cubicPoint(curve, i / 8);
         width = math.max(width, p.dx + MMSpacing.l);
@@ -513,15 +640,24 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       }
       final label = _cache._markLabels[r.id] ?? '';
       if (label.isEmpty && r.id != _markField?.id) continue;
-      // Relation labels are laid out on one line, without a width limit.
-      final size = _cache._measure(label, MMTypography.footnote, double.infinity).size;
-      final box = Size(math.max(size.width, MMSpacing.xxxl) + MMSpacing.xs * 2, size.height + MMSpacing.xxs * 2);
+      final box = _relationLabelSize(r.id);
       final middle = cubicPoint(curve, 0.5);
-      final right = relationGoesAround(curve) ? middle.dx + MMSpacing.xs + box.width : middle.dx + box.width / 2;
+      final right = !relationGoesAround(curve)
+          ? middle.dx + box.width / 2
+          : _leftRelation(r)
+          ? middle.dx
+          : middle.dx + MMSpacing.xs + box.width;
       width = math.max(width, right + MMSpacing.l);
       height = math.max(height, middle.dy + box.height / 2 + MMSpacing.l);
     }
     return Size(width, height);
+  }
+
+  /// A relation label's box. Labels are laid out on one line, without a
+  /// width limit.
+  Size _relationLabelSize(String id) {
+    final size = _cache._measure(_cache._markLabels[id] ?? '', MMTypography.footnote, double.infinity).size;
+    return Size(math.max(size.width, MMSpacing.xxxl) + MMSpacing.xs * 2, size.height + MMSpacing.xxs * 2);
   }
 
   /// What a relation line between stacked nodes goes around: the nodes and
@@ -532,12 +668,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   ];
 
   /// The middle of a relation's line as drawn now, where its label sits, and
-  /// whether the label goes beside it (lines around a column) or on it.
-  (Offset, bool)? _relationMiddle(MapRelation r, List<Rect> others) {
+  /// where the label goes: beside it, outward (-1 left, 1 right) for lines
+  /// around a column, or on it (0).
+  (Offset, int)? _relationMiddle(MapRelation r, List<Rect> others) {
     final from = _layout?.rects[r.fromId], to = _layout?.rects[r.toId];
     if (from == null || to == null) return null;
-    final curve = relationCurve(_drawn(r.fromId, from), _drawn(r.toId, to), others);
-    return (cubicPoint(curve, 0.5), relationGoesAround(curve));
+    final left = _leftRelation(r);
+    final curve = relationCurveOnSide(_drawn(r.fromId, from), _drawn(r.toId, to), others, left: left);
+    return (cubicPoint(curve, 0.5), relationGoesAround(curve) ? (left ? -1 : 1) : 0);
   }
 
   /// A label of a relation (at the middle of its line) or summary.
@@ -767,43 +905,51 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (cached != null && cached.signature == signature) return cached.child;
     // Callbacks read the current widget, so retaining an unchanged node never
     // retains a stale selection, command handler or connection target.
-    final child = RepaintBoundary(
-      child: Opacity(
-        opacity: _dragging?.contains(id) ?? false ? 0.35 : 1,
-        child: _draggable(
-          id,
-          spec,
-          _NodeView(
-            spec: spec,
-            selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
-            flashing: id == widget.flashCardId,
-            onPressStart: () => _tapModifiers[id] = _additive,
-            onTap: () {
-              widget.focusNode.requestFocus();
-              final additive = _tapModifiers.remove(id) ?? false;
-              if (widget.connectingFromId != null) {
-                if (id == rootNodeId) {
-                  widget.onCancelConnect?.call();
-                } else {
-                  widget.onConnect?.call(id);
-                }
-                return;
-              }
-              _select(id == rootNodeId ? null : id, additive: additive);
+    final child = MouseRegion(
+      onEnter: spec.meta == null ? null : (_) => _hovered.value = id,
+      onExit: spec.meta == null
+          ? null
+          : (_) {
+              if (_hovered.value == id) _hovered.value = null;
             },
-            onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
-            onSecondaryTapUp: widget.onContextMenu == null
-                ? null
-                : (position) {
-                    widget.focusNode.requestFocus();
-                    final selected = id == rootNodeId ? null : id;
-                    if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
-                    widget.onContextMenu!(selected, position);
-                  },
-            onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
-                ? () => widget.onReveal(id)
-                : null,
-            revealLabel: l.revealSource,
+      child: RepaintBoundary(
+        child: Opacity(
+          opacity: _dragging?.contains(id) ?? false ? 0.35 : 1,
+          child: _draggable(
+            id,
+            spec,
+            _NodeView(
+              spec: spec,
+              selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+              flashing: id == widget.flashCardId,
+              onPressStart: () => _tapModifiers[id] = _additive,
+              onTap: () {
+                widget.focusNode.requestFocus();
+                final additive = _tapModifiers.remove(id) ?? false;
+                if (widget.connectingFromId != null) {
+                  if (id == rootNodeId) {
+                    widget.onCancelConnect?.call();
+                  } else {
+                    widget.onConnect?.call(id);
+                  }
+                  return;
+                }
+                _select(id == rootNodeId ? null : id, additive: additive);
+              },
+              onDoubleTap: id == rootNodeId ? null : () => widget.onRename(id),
+              onSecondaryTapUp: widget.onContextMenu == null
+                  ? null
+                  : (position) {
+                      widget.focusNode.requestFocus();
+                      final selected = id == rootNodeId ? null : id;
+                      if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
+                      widget.onContextMenu!(selected, position);
+                    },
+              onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
+                  ? () => widget.onReveal(id)
+                  : null,
+              revealLabel: l.revealSource,
+            ),
           ),
         ),
       ),
@@ -844,7 +990,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final sceneSize = _sceneSize(result);
     if ((layoutChanged || viewportChanged) && _centered) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId);
+        if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId, settled: true);
       });
     }
 
@@ -910,11 +1056,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           if (meta && (direction == AxisDirection.up || direction == AxisDirection.down)) {
             widget.onShift(direction == AxisDirection.up ? -1 : 1);
           } else {
-            widget.onNavigate(direction);
+            _navigate(direction);
           }
           return KeyEventResult.handled;
         },
         child: Listener(
+          onPointerSignal: _pointerSignal,
+          onPointerPanZoomStart: (_) => _pinchScale = 1,
+          onPointerPanZoomUpdate: (event) {
+            final previous = _pinchScale;
+            if (previous == null || event.scale == previous || event.scale <= 0) return;
+            _pinchScale = event.scale;
+            _zoomAt(event.localPosition, event.scale / previous);
+          },
+          onPointerPanZoomEnd: (_) => _pinchScale = null,
           onPointerDown: (event) {
             if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
             final scene = widget.transformation.toScene(event.localPosition);
@@ -956,6 +1111,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           },
           child: InteractiveViewer(
             panEnabled: _boxStart == null,
+            // Zooming is handled above: the viewer would zoom on every wheel
+            // tick instead of scrolling.
+            scaleEnabled: false,
             transformationController: widget.transformation,
             constrained: false,
             minScale: mapMinScale,
@@ -1020,6 +1178,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                   key: const ValueKey('mind-map-marks'),
                                   painter: _MarksPainter(
                                     rects: rects,
+                                    leftSide: result.leftSide,
                                     relations: _cache._relations,
                                     summaries: result.summaries,
                                     selectedId: widget.selectedMarkId,
@@ -1046,15 +1205,29 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                               Positioned.fromRect(rect: _rect(e.value.label), child: _markLabel(e.key, summary: true)),
                           for (final r in _cache._relations)
                             if ((_cache._markLabels[r.id] ?? '').isNotEmpty || r.id == _markField?.id)
-                              if (_relationMiddle(r, obstacles) case (final middle, final beside))
-                                Positioned(
-                                  left: middle.dx + (beside ? MMSpacing.xs : 0),
-                                  top: middle.dy,
-                                  child: FractionalTranslation(
-                                    translation: Offset(beside ? 0 : -0.5, -0.5),
-                                    child: _markLabel(r.id, summary: false),
+                              if (_relationMiddle(r, obstacles) case (final middle, final side))
+                                if (side < 0)
+                                  // Outward on the left, but never off the canvas.
+                                  Positioned(
+                                    left: math.max(
+                                      MMSpacing.xs,
+                                      middle.dx - MMSpacing.xs - _relationLabelSize(r.id).width,
+                                    ),
+                                    top: middle.dy,
+                                    child: FractionalTranslation(
+                                      translation: const Offset(0, -0.5),
+                                      child: _markLabel(r.id, summary: false),
+                                    ),
+                                  )
+                                else
+                                  Positioned(
+                                    left: middle.dx + side * MMSpacing.xs,
+                                    top: middle.dy,
+                                    child: FractionalTranslation(
+                                      translation: Offset(side == 0 ? -0.5 : 0, -0.5),
+                                      child: _markLabel(r.id, summary: false),
+                                    ),
                                   ),
-                                ),
                           if (_boxStart != null && _boxEnd != null)
                             Positioned.fromRect(
                               rect: Rect.fromPoints(_boxStart!, _boxEnd!),
@@ -1084,10 +1257,65 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                   ),
                                 ),
                               ),
+                          if (widget.excerptTargetId case final id?)
+                            if (result.rects[id] case final r?)
+                              if (_shown(id, r) case final shown)
+                                Positioned(
+                                  left: result.leftSide.contains(id) ? shown.left : shown.right,
+                                  top: shown.top,
+                                  child: FractionalTranslation(
+                                    translation: const Offset(-0.5, -0.5),
+                                    child: _ExcerptTargetMark(label: l.newExcerptTarget(specs[id]!.label)),
+                                  ),
+                                ),
+                          if (_dragging == null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ValueListenableBuilder<String?>(
+                                  valueListenable: _hovered,
+                                  builder: (context, hovered, _) => Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      for (final id in {hovered, widget.selectedCardId})
+                                        if (specs[id]?.meta case final meta?)
+                                          if (result.rects[id!] case final r?)
+                                            if (_shown(id, r) case final shown)
+                                              // Beside the card on its outer side, past the fold
+                                              // button: below it would cover the next sibling.
+                                              if (result.leftSide.contains(id))
+                                                Positioned(
+                                                  left: shown.left - _sourceGap(id),
+                                                  top: shown.top + MMSpacing.xs,
+                                                  child: FractionalTranslation(
+                                                    translation: const Offset(-1, 0),
+                                                    child: _SourceLabel(meta, maxWidth: shown.width),
+                                                  ),
+                                                )
+                                              else
+                                                Positioned(
+                                                  left: shown.right + _sourceGap(id),
+                                                  top: shown.top + MMSpacing.xs,
+                                                  child: _SourceLabel(meta, maxWidth: shown.width),
+                                                ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           for (final id in expandable)
                             if (result.rects[id] case final r?)
                               if (_shown(id, r) case final shown)
-                                Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
+                                if (result.leftSide.contains(id))
+                                  Positioned(
+                                    left: shown.left - 3,
+                                    top: shown.center.dy - 9,
+                                    child: FractionalTranslation(
+                                      translation: const Offset(-1, 0),
+                                      child: foldButtons[id]!,
+                                    ),
+                                  )
+                                else
+                                  Positioned(left: shown.right + 3, top: shown.center.dy - 9, child: foldButtons[id]!),
                         ],
                       );
                     },
@@ -1167,30 +1395,33 @@ class _NodeView extends StatelessWidget {
           ),
         ],
       ),
+      // The excerpt is the card: a title row only when there is a title.
       _Kind.excerpt || _Kind.image => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(color: spec.color!.color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child:
-                    editor ??
-                    Text(
-                      spec.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.headline.copyWith(height: 17 / 13),
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
+          if (spec.title.isNotEmpty || editor != null) ...[
+            Row(
+              children: [
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(color: spec.color!.color, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child:
+                      editor ??
+                      Text(
+                        spec.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.headline.copyWith(height: 17 / 13),
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           if (spec.kind == _Kind.image)
             SizedBox(
               height: spec.imageHeight,
@@ -1206,10 +1437,13 @@ class _NodeView extends StatelessWidget {
                 color: spec.color!.cardTint,
                 borderRadius: BorderRadius.circular(MMRadii.excerpt),
               ),
-              child: Text(spec.quote ?? '', maxLines: 4, overflow: TextOverflow.ellipsis, style: t.readingExcerpt),
+              child: Text(
+                spec.quote ?? '',
+                maxLines: _NodeSpec.maxQuoteLines,
+                overflow: TextOverflow.ellipsis,
+                style: t.readingExcerpt,
+              ),
             ),
-          const SizedBox(height: 6),
-          Text(spec.meta ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: t.footnote),
         ],
       ),
     };
@@ -1314,8 +1548,9 @@ class _EdgesPainter extends CustomPainter {
     for (final e in layout.edges) {
       final a = _at(e.parentId);
       final b = _at(e.childId);
-      final start = Offset(a.right, a.center.dy);
-      final end = Offset(b.left, b.center.dy);
+      final left = layout.leftSide.contains(e.childId);
+      final start = Offset(left ? a.left : a.right, a.center.dy);
+      final end = Offset(left ? b.right : b.left, b.center.dy);
       final midX = (start.dx + end.dx) / 2;
       final path = Path()
         ..moveTo(start.dx, start.dy)
@@ -1329,6 +1564,62 @@ class _EdgesPainter extends CustomPainter {
   @override
   bool shouldRepaint(_EdgesPainter old) =>
       old.layout != layout || old.color != color || !identical(old.from, from) || old.t != t;
+}
+
+/// Marks the node new excerpts go under, on its corner.
+class _ExcerptTargetMark extends StatelessWidget {
+  const _ExcerptTargetMark({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return Semantics(
+      container: true,
+      label: label,
+      child: Container(
+        key: const ValueKey('excerpt-target'),
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: c.accent,
+          shape: BoxShape.circle,
+          border: Border.all(color: c.canvas, width: 1.5),
+        ),
+        alignment: Alignment.center,
+        child: Icon(MMIcons.add, size: 10, color: c.onAccent),
+      ),
+    );
+  }
+}
+
+/// A card's source (document and page), shown beside it while it is hovered
+/// or selected rather than on every card.
+class _SourceLabel extends StatelessWidget {
+  const _SourceLabel(this.text, {required this.maxWidth});
+
+  final String text;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(MMRadii.excerpt),
+          boxShadow: c.cardShadow,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs, vertical: MMSpacing.xxs),
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.footnote),
+        ),
+      ),
+    );
+  }
 }
 
 /// Number of nodes being dragged, on the drag feedback.
@@ -1442,10 +1733,27 @@ class _FoldButton extends StatelessWidget {
   return (start, start + d * 0.25 + normal, start + d * 0.75 + normal, end);
 }
 
+/// [relationCurve] for a relation whose ends both grow [left] of the root:
+/// mirrored, so a line between stacked nodes goes around their outer (left)
+/// side. Its control points stay on the canvas (x ≥ 0).
+@visibleForTesting
+(Offset, Offset, Offset, Offset) relationCurveOnSide(Rect a, Rect b, Iterable<Rect> others, {required bool left}) {
+  if (!left) return relationCurve(a, b, others);
+  Rect flip(Rect r) => Rect.fromLTRB(-r.right, r.top, -r.left, r.bottom);
+  final c = relationCurve(flip(a), flip(b), others.map(flip));
+  Offset back(Offset p) => Offset(-p.dx, p.dy);
+  Offset control(Offset p) => Offset(math.max(-p.dx, 0), p.dy);
+  return (back(c.$1), control(c.$2), control(c.$3), back(c.$4));
+}
+
 /// Whether [c] is the curve [relationCurve] runs around the right of a
-/// column. Its label then sits beside the apex instead of on it.
+/// column (or [relationCurveOnSide] around the left). Its label then sits
+/// beside the apex instead of on it.
 bool relationGoesAround((Offset, Offset, Offset, Offset) c) =>
-    c.$2.dx == c.$3.dx && c.$2.dy == c.$1.dy && c.$3.dy == c.$4.dy && c.$2.dx > math.max(c.$1.dx, c.$4.dx);
+    c.$2.dx == c.$3.dx &&
+    c.$2.dy == c.$1.dy &&
+    c.$3.dy == c.$4.dy &&
+    (c.$2.dx > math.max(c.$1.dx, c.$4.dx) || c.$2.dx < math.min(c.$1.dx, c.$4.dx));
 
 @visibleForTesting
 Offset cubicPoint((Offset, Offset, Offset, Offset) c, double t) {
@@ -1466,6 +1774,7 @@ double _distanceToSegment(Offset p, Offset a, Offset b) {
 class _MarksPainter extends CustomPainter {
   _MarksPainter({
     required this.rects,
+    this.leftSide = const {},
     required this.relations,
     required this.summaries,
     required this.selectedId,
@@ -1477,6 +1786,7 @@ class _MarksPainter extends CustomPainter {
   });
 
   final Map<String, Rect> rects;
+  final Set<String> leftSide;
   final List<MapRelation> relations;
   final Map<String, SummaryPlacement> summaries;
   final String? selectedId;
@@ -1497,14 +1807,17 @@ class _MarksPainter extends CustomPainter {
 
     for (final e in summaries.entries) {
       final selected = e.key == selectedId;
-      canvas.drawPath(_bracketPath(_rect(e.value.bracket)), stroke(selected ? accent : bracket, selected ? 2 : 1.5));
+      canvas.drawPath(
+        _bracketPath(_rect(e.value.bracket), left: e.value.left),
+        stroke(selected ? accent : bracket, selected ? 2 : 1.5),
+      );
     }
     final others = [...rects.values, for (final s in summaries.values) _rect(s.label)];
     for (final r in relations) {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
       final selected = r.id == selectedId;
-      final c = relationCurve(a, b, others);
+      final c = relationCurveOnSide(a, b, others, left: leftSide.contains(r.fromId) && leftSide.contains(r.toId));
       final paint = stroke(selected ? accent : line, selected ? 2 : 1.5);
       final path = Path()
         ..moveTo(c.$1.dx, c.$1.dy)
@@ -1514,7 +1827,12 @@ class _MarksPainter extends CustomPainter {
     }
     final from = connectFrom == null ? null : rects[connectFrom];
     if (from != null && pointer != null && !from.contains(pointer!)) {
-      final c = relationCurve(from, Rect.fromCenter(center: pointer!, width: 0, height: 0), others);
+      final c = relationCurveOnSide(
+        from,
+        Rect.fromCenter(center: pointer!, width: 0, height: 0),
+        others,
+        left: leftSide.contains(connectFrom),
+      );
       final paint = stroke(accent, 1.5);
       final path = Path()
         ..moveTo(c.$1.dx, c.$1.dy)
@@ -1524,11 +1842,12 @@ class _MarksPainter extends CustomPainter {
     }
   }
 
-  /// A right curly brace filling [r]: ends at the left, point at the right.
-  static Path _bracketPath(Rect r) {
+  /// A right curly brace filling [r]: ends at the left, point at the right;
+  /// mirrored on the [left] side.
+  static Path _bracketPath(Rect r, {bool left = false}) {
     final m = r.left + r.width / 2, cy = r.center.dy;
     final k = math.min(r.width / 2, r.height / 4);
-    return Path()
+    final path = Path()
       ..moveTo(r.left, r.top)
       ..quadraticBezierTo(m, r.top, m, r.top + k)
       ..lineTo(m, cy - k)
@@ -1536,6 +1855,11 @@ class _MarksPainter extends CustomPainter {
       ..quadraticBezierTo(m, cy, m, cy + k)
       ..lineTo(m, r.bottom - k)
       ..quadraticBezierTo(m, r.bottom, r.left, r.bottom);
+    if (!left) return path;
+    final mirror = Matrix4.identity()
+      ..translateByDouble(r.left + r.right, 0, 0, 1)
+      ..scaleByDouble(-1, 1, 1, 1);
+    return path.transform(mirror.storage);
   }
 
   static void _dashed(Canvas canvas, Path path, Paint paint) {
@@ -1563,6 +1887,7 @@ class _MarksPainter extends CustomPainter {
   @override
   bool shouldRepaint(_MarksPainter old) =>
       !mapEquals(old.rects, rects) ||
+      !identical(old.leftSide, leftSide) ||
       !identical(old.relations, relations) ||
       !identical(old.summaries, summaries) ||
       old.selectedId != selectedId ||

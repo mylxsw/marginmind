@@ -231,10 +231,13 @@ void main() {
     controller.selectCard('c3');
     await tester.pumpAndSettle();
     visible(tester, find.byKey(const ValueKey('c3')));
+    // Too deep to fit readably: "fit" stops at the readable zoom, centered on
+    // the selection.
     await key(tester, LogicalKeyboardKey.digit0, primary: true);
-    expect(mapScale(transform.value), lessThan(0.3));
-    visible(tester, find.byKey(const ValueKey(rootNodeId)));
-    visible(tester, find.byKey(ValueKey(id)));
+    expect(mapScale(transform.value), mapReadableScale);
+    visible(tester, find.byKey(const ValueKey('c3')));
+    final viewport = tester.getRect(find.byType(MindMapCanvas));
+    expect(tester.getCenter(find.byKey(const ValueKey('c3'))).dx, closeTo(viewport.center.dx, 1));
     expect(tester.takeException(), isNull);
     await settleHud(tester);
   });
@@ -253,8 +256,7 @@ void main() {
     String label() => '${(mapScale(transform.value) * 100).round()}%';
     await key(tester, LogicalKeyboardKey.digit0, primary: true);
     final fitted = mapScale(transform.value);
-    expect(fitted, lessThan(0.3));
-    expect(fitted, greaterThanOrEqualTo(mapMinScale));
+    expect(fitted, mapReadableScale);
     expect(find.text(label()), findsOneWidget);
     await tester.tap(find.byTooltip('Zoom Out'));
     await tester.pumpAndSettle();

@@ -153,7 +153,7 @@ void main() {
 
     // Onto itself or empty canvas: no preview, no move.
     expect(await dropAt((r) => r.center, 't0'), isNull);
-    expect(await dropAt((r) => Offset(r.right + 200, r.center.dy), 't3'), isNull);
+    expect(await dropAt((r) => Offset(r.center.dx, r.bottom + 120), 't3'), isNull);
     expect(h.moves, isEmpty);
     expect(tester.takeException(), isNull);
   });
@@ -185,12 +185,13 @@ void main() {
     await h.pump(_topics(40), size: const Size(500, 400));
     double ty() => h.transform.value.storage[13];
     final canvas = tester.getRect(find.byType(MindMapCanvas));
-    // The tree is centered on the root, so the middle topic is on screen.
-    final gesture = await h.grab('t20');
+    // Branches split between both sides of the root (t0–t19 on the right),
+    // centered on it, so the middle of the right column is on screen.
+    final gesture = await h.grab('t10');
     final start = ty();
 
     // Near the bottom edge: the map moves up and keeps moving.
-    final edge = Offset(h.node('t20').left + 10, canvas.bottom - 6);
+    final edge = Offset(h.node('t10').left + 10, canvas.bottom - 6);
     await h.moveTo(gesture, edge);
     await tester.pump(const Duration(milliseconds: 100));
     final early = ty();
@@ -209,7 +210,7 @@ void main() {
     final settled = ty();
     await tester.pump(const Duration(milliseconds: 200));
     expect(ty(), settled);
-    expect(h.node('t39').bottom, lessThanOrEqualTo(canvas.bottom));
+    expect(h.node('t19').bottom, lessThanOrEqualTo(canvas.bottom));
 
     // Back up toward the top edge; when the pointer rests the preview
     // follows the nodes scrolling under it.
@@ -226,12 +227,15 @@ void main() {
     // Which slot the last preview stands for, read from the nodes around it.
     String? expected;
     for (var i = 0; i < 40; i++) {
-      if (i == 20) continue;
+      if (i == 10) continue;
       final r = h.node('t$i');
-      if (shown.height < 4 && (shown.center.dy - (r.top - 7 * mapScale(h.transform.value))).abs() < 1) {
-        expected = 't20:null:${i < 20 ? i : i - 1}';
+      // Both sides have a node at each height: the line is drawn under its own.
+      if (shown.height < 4 &&
+          (shown.left - r.left).abs() < 1 &&
+          (shown.center.dy - (r.top - 7 * mapScale(h.transform.value))).abs() < 1) {
+        expected = 't10:null:${i < 10 ? i : i - 1}';
       } else if (shown == r) {
-        expected = 't20:t$i:null';
+        expected = 't10:t$i:null';
       }
     }
     expect(expected, isNotNull);

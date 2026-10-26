@@ -38,14 +38,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
   void _zoom(double factor) {
     final size = context.size ?? const Size(800, 600);
     final center = Offset(size.width / 2, size.height / 2);
-    final current = mapScale(_transform.value);
-    final target = (current * factor).clamp(mapMinScale, mapMaxScale);
-    final f = target / current;
-    _transform.value = Matrix4.identity()
-      ..translateByDouble(center.dx, center.dy, 0, 1)
-      ..scaleByDouble(f, f, 1, 1)
-      ..translateByDouble(-center.dx, -center.dy, 0, 1)
-      ..multiply(_transform.value);
+    _transform.value = zoomMapAt(_transform.value, center, factor);
   }
 
   /// Every card is edited in place, on the map and in the outline.
@@ -215,8 +208,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
     final mapTitle = content.map(state.activeMapId)?.title ?? '';
     final rootTitle = mapTitle.isEmpty ? setTitle : mapTitle;
-    final targetId = StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId);
-    final targetTitle = targetId == null ? rootTitle : (content.card(targetId)?.title ?? rootTitle);
+    // Where new excerpts go, marked on the map once there is a document.
+    final excerptTargetId = content.documents.isEmpty
+        ? null
+        : StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId) ?? rootNodeId;
 
     Future<void> remove() async {
       final notice = await controller.removeSelected();
@@ -271,6 +266,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onConnect: controller.connectTo,
                     onCancelConnect: controller.cancelConnecting,
                     onMarkContextMenu: _showMarkMenu,
+                    excerptTargetId: excerptTargetId,
                   )
                 : OutlineView(
                     key: ValueKey(state.activeMapId),
@@ -320,29 +316,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   Container(
                     height: 34,
                     padding: const EdgeInsets.only(left: 12, right: 10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: MMSizes.sidebarWidth),
-                          child: Text(
-                            mapTitle.isEmpty ? l.mainMap : mapTitle,
-                            style: t.headline,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 200),
-                          child: Text(
-                            l.newExcerptTarget(targetTitle),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.footnote,
-                          ),
-                        ),
-                      ],
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: MMSizes.sidebarWidth),
+                      child: Text(
+                        mapTitle.isEmpty ? l.mainMap : mapTitle,
+                        style: t.headline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                   const MMToolbarDivider(),
