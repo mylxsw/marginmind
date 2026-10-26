@@ -118,3 +118,8 @@ SNI 和证书校验，通过 ConnectionTask 返回连接并在取消时清理已
 默认测试使用本地自签名 TLS 服务，证书仅包含 research.test，验证成功握手及错误域名被拒绝。
 可选 network 标签测试走真实 ResearchHttp，请求 OpenAlex（无需 Key）：2026-10-27 已通过。
 这只验证公网 HTTPS 传输，不代表 Anthropic/OpenAI 真实模型服务已验证。
+
+取消边界：TCP 建连及已完成握手的 Socket 可被关闭；`SecureSocket.secure` 开始后会从原 Socket
+分离底层连接，Dart 未暴露握手中的 Socket。因而握手期间取消只能由请求总超时结束调用，
+并在握手返回时销毁 TLS Socket，不能保证恶意服务器停滞握手时立即释放底层连接。
+本地停滞握手探针未通过即时关闭断言；此项仍需后续收紧，不能把普通流取消测试当作该场景已覆盖。
