@@ -1,6 +1,8 @@
 import Cocoa
 import FlutterMacOS
 import XCTest
+import CoreText
+import PDFKit
 import Network
 
 @testable import MarginMind
@@ -328,5 +330,218 @@ extension RunnerTests {
     XCTAssertTrue((result["text"] as? String)?.contains("Original document") == true)
     XCTAssertFalse((result["text"] as? String)?.contains("EXECUTED") == true)
     wait(for: [unwanted], timeout: 0.3)
+  }
+}
+
+extension RunnerTests {
+  private func ocrFixture(pages: Int = 2, rotated: Bool = false) throws -> URL {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+    let url = directory.appendingPathComponent("sample.pdf")
+    var media = CGRect(x: 0, y: 0, width: 600, height: 800)
+    let context = try XCTUnwrap(CGContext(url as CFURL, mediaBox: &media, nil))
+    for index in 0..<pages {
+      context.beginPDFPage(nil)
+      context.setFillColor(CGColor(gray: 1, alpha: 1)); context.fill(media)
+      if index == 1 {
+        context.textPosition = CGPoint(x: 60, y: 500)
+        CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: "Existing text", attributes:
+          [.font: NSFont.systemFont(ofSize: 24)])), context)
+      } else {
+        let bitmap = try XCTUnwrap(CGContext(data: nil, width: 1200, height: 1600, bitsPerComponent: 8,
+          bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        bitmap.setFillColor(CGColor(gray: 1, alpha: 1)); bitmap.fill(CGRect(x: 0, y: 0, width: 1200, height: 1600))
+        bitmap.textPosition = CGPoint(x: 120, y: 1200)
+        CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: "MarginMind local recognition", attributes:
+          [.font: NSFont.systemFont(ofSize: 48)])), bitmap)
+        bitmap.textPosition = CGPoint(x: 120, y: 1080)
+        CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: "学习与思考，知识与实践", attributes:
+          [.font: NSFont(name: "PingFangSC-Regular", size: 48)!])), bitmap)
+        context.draw(try XCTUnwrap(bitmap.makeImage()), in: media)
+      }
+      context.endPDFPage()
+    }
+    context.closePDF()
+    if rotated {
+      let document = try XCTUnwrap(PDFDocument(url: url))
+      let page = try XCTUnwrap(document.page(at: 0))
+      page.setBounds(CGRect(x: 20, y: 30, width: 540, height: 700), for: .cropBox)
+      page.rotation = 90
+      XCTAssertTrue(document.write(to: url))
+    }
+    return url
+  }
+
+  private func ocrPixels(_ url: URL) throws -> Data {
+    let document = try XCTUnwrap(CGPDFDocument(url as CFURL))
+    let page = try XCTUnwrap(document.page(at: 1))
+    let (bounds, transform) = PdfOcrEngine.geometry(page)
+    let bitmap = try XCTUnwrap(CGContext(data: nil, width: Int(bounds.width), height: Int(bounds.height),
+      bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+    bitmap.setFillColor(CGColor(gray: 1, alpha: 1)); bitmap.fill(bounds)
+    bitmap.concatenate(transform); bitmap.drawPDFPage(page)
+    return Data(bytes: try XCTUnwrap(bitmap.data), count: bitmap.bytesPerRow * bitmap.height)
+  }
+
+  func testOcrBilingualVisionAndInvisibleLayer() throws {
+    let source = try ocrFixture()
+    let original = try Data(contentsOf: source)
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["textPages"] as? [Int], [2])
+    var progress = [Int]()
+    let result = try PdfOcrEngine.run(source: source, first: 1, last: 2, languages: ["zh-Hans", "en-US"],
+      cancelled: { false }, progress: { done, total in progress.append(done); XCTAssertEqual(total, 2) })
+    XCTAssertEqual(progress, [1, 2])
+    XCTAssertEqual(result["textPages"] as? [Int], [1, 2])
+    XCTAssertEqual(try Data(contentsOf: source), original)
+    let output = PdfOcrEngine.copyURL(source)
+    let document = try XCTUnwrap(PDFDocument(url: output))
+    let text = try XCTUnwrap(document.page(at: 0)?.string)
+    XCTAssertTrue(text.contains("MarginMind"), text)
+    XCTAssertTrue(text.contains("学习"), text)
+    XCTAssertEqual(document.page(at: 1)?.string?.trimmingCharacters(in: .whitespacesAndNewlines), "Existing text")
+    XCTAssertEqual(try ocrPixels(source), try ocrPixels(output), "Hidden text must leave artwork identical")
+    // PDFKit selection bounds exercise the actual encoded PDF text positions.
+    let match = try XCTUnwrap(document.findString("MarginMind", withOptions: []).first)
+    let rect = match.bounds(for: try XCTUnwrap(document.page(at: 0)))
+    XCTAssertEqual(rect.minX, 60, accuracy: 8)
+    XCTAssertEqual(rect.minY, 600, accuracy: 10)
+    XCTAssertGreaterThan(rect.width, 100)
+  }
+
+  func testOcrRotatedCropCoordinatesAndResumeAfterCancel() throws {
+    let source = try ocrFixture(pages: 3, rotated: true)
+    let before = try ocrPixels(source)
+    var calls = 0
+    let line = PdfOcrEngine.Line(text: "坐标 Coordinates", rect: CGRect(x: 0.1, y: 0.5, width: 0.4, height: 0.05))
+    let result = try PdfOcrEngine.run(source: source, first: 1, last: 3, languages: ["en-US"],
+      cancelled: { calls == 1 }, progress: { _, _ in }, recognizer: { _, _ in calls += 1; return [line] })
+    XCTAssertEqual(result["cancelled"] as? Bool, true)
+    XCTAssertEqual(result["textPages"] as? [Int], [1, 2])
+    XCTAssertEqual(try ocrPixels(PdfOcrEngine.copyURL(source)), before)
+    let copy = try XCTUnwrap(PDFDocument(url: PdfOcrEngine.copyURL(source)))
+    let page = try XCTUnwrap(copy.page(at: 0))
+    XCTAssertEqual(page.bounds(for: .mediaBox).size, CGSize(width: 700, height: 540))
+    let selection = try XCTUnwrap(copy.findString("坐标 Coordinates", withOptions: []).first)
+    let rect = selection.bounds(for: page)
+    XCTAssertEqual(rect.minX, 70, accuracy: 1)
+    XCTAssertEqual(rect.minY, 270, accuracy: 8)
+    XCTAssertEqual(rect.width, 280, accuracy: 2)
+    calls = 0
+    _ = try PdfOcrEngine.run(source: source, first: 1, last: 3, languages: ["en-US"],
+      cancelled: { false }, progress: { _, _ in }, recognizer: { _, _ in calls += 1; return [line] })
+    XCTAssertEqual(calls, 1, "Skip both existing and previously recognized text")
+    XCTAssertEqual(try PdfOcrEngine.inspect(source)["textPages"] as? [Int], [1, 2, 3])
+  }
+
+  func testOcrFailureDoesNotReplaceCopyAndRejectsRange() throws {
+    let source = try ocrFixture()
+    let copy = PdfOcrEngine.copyURL(source)
+    try FileManager.default.copyItem(at: source, to: copy)
+    let original = try Data(contentsOf: copy)
+    XCTAssertThrowsError(try PdfOcrEngine.run(source: source, first: 0, last: 2, languages: ["en-US"],
+      cancelled: { false }, progress: { _, _ in }))
+    XCTAssertThrowsError(try PdfOcrEngine.run(source: source, first: 1, last: 99, languages: ["en-US"],
+      cancelled: { false }, progress: { _, _ in }))
+    XCTAssertThrowsError(try PdfOcrEngine.run(source: source, first: 1, last: 2, languages: ["en-US"],
+      cancelled: { false }, progress: { _, _ in }, recognizer: { _, _ in throw PdfOcrEngine.Failure.render }))
+    XCTAssertEqual(try Data(contentsOf: copy), original)
+    XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path).count, 2)
+  }
+}
+
+extension RunnerTests {
+  func testOcr300PagesKeepsMainRunLoopResponsiveAndMemoryBounded() async throws {
+    let source = try ocrFixture(pages: 300)
+    @Sendable nonisolated func residentBytes() -> UInt64 {
+      var info = mach_task_basic_info()
+      var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<integer_t>.size)
+      let status = withUnsafeMutablePointer(to: &info) { pointer in
+        pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+          task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+        }
+      }
+      return status == KERN_SUCCESS ? UInt64(info.resident_size) : 0
+    }
+    var heartbeats = 0
+    let timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in heartbeats += 1 }
+    defer { timer.invalidate() }
+    let start = Date()
+    let metrics: (Int, UInt64, UInt64) = try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue(label: "ocr-stress-test", qos: .userInitiated).async {
+        do {
+          var warm: UInt64 = 0, peak: UInt64 = 0
+          let result = try PdfOcrEngine.run(source: source, first: 1, last: 300, languages: ["zh-Hans", "en-US"],
+            cancelled: { false }, progress: { done, _ in
+              if done == 30 { warm = residentBytes() }
+              if done >= 30 && done % 10 == 0 { peak = max(peak, residentBytes()) }
+            })
+          continuation.resume(returning: ((result["textPages"] as? [Int])?.count ?? 0, warm, peak))
+        } catch { continuation.resume(throwing: error) }
+      }
+    }
+    XCTAssertEqual(metrics.0, 300)
+    XCTAssertGreaterThan(heartbeats, 10, "Main run loop must run throughout recognition")
+    XCTAssertGreaterThan(metrics.1, 0)
+    XCTAssertLessThan(metrics.2 - min(metrics.1, metrics.2), 256 * 1024 * 1024,
+      "Memory growth after warmup must not scale with page count")
+    XCTContext.runActivity(named: "OCR_STRESS pages=300 seconds=\(Date().timeIntervalSince(start)) mainHeartbeats=\(heartbeats) warmRSS=\(metrics.1) peakRSS=\(metrics.2)") { _ in }
+  }
+}
+
+extension RunnerTests {
+  func testOcrChannelValidationBusyProgressCancellationAndErrors() async throws {
+    let view = FlutterViewController()
+    let worker = DispatchQueue(label: "test.ocr-paused")
+    let channel = PdfOcrChannel(messenger: view.engine.binaryMessenger, worker: worker)
+    let source = try ocrFixture()
+    // Opening another document must not wait behind a long OCR batch.
+    worker.suspend()
+    let inspectedWhileBusy = expectation(description: "inspection independent of OCR queue")
+    channel.handle(FlutterMethodCall(methodName: "inspect", arguments: ["source": source.path])) { value in
+      XCTAssertEqual((value as? [String: Any])?["pageCount"] as? Int, 2)
+      inspectedWhileBusy.fulfill()
+    }
+    await fulfillment(of: [inspectedWhileBusy], timeout: 2)
+    worker.resume()
+    func sync(_ method: String, _ arguments: Any?) -> Any? {
+      var value: Any?
+      channel.handle(FlutterMethodCall(methodName: method, arguments: arguments)) { value = $0 }
+      return value
+    }
+    func invoke(_ method: String, _ arguments: [String: Any]) async -> Any? {
+      await withCheckedContinuation { continuation in
+        channel.handle(FlutterMethodCall(methodName: method, arguments: arguments)) {
+          continuation.resume(returning: $0)
+        }
+      }
+    }
+    for (method, args) in [("inspect", nil), ("unknown", [:]), ("inspect", ["source": "relative.pdf"]),
+                           ("inspect", ["source": "/x.ocr.pdf"]), ("recognize", ["source": source.path]),
+                           ("recognize", ["source": source.path, "id": "x", "first": 1, "last": 2, "languages": ["invalid"]])] as [(String, Any?)] {
+      XCTAssertEqual((sync(method, args) as? FlutterError)?.code, "invalid_arguments")
+    }
+    let inspected = await invoke("inspect", ["source": source.path]) as? [String: Any]
+    XCTAssertEqual(inspected?["pageCount"] as? Int, 2)
+    let readFailure = await invoke("inspect", ["source": "/missing/sample.pdf"]) as? FlutterError
+    XCTAssertEqual(readFailure?.code, "read_failed")
+    let args: [String: Any] = ["source": source.path, "id": "job", "first": 1, "last": 2, "languages": ["zh-Hans", "en-US"]]
+    let complete = expectation(description: "cancelled copy")
+    channel.handle(FlutterMethodCall(methodName: "recognize", arguments: args)) { value in
+      XCTAssertEqual((value as? [String: Any])?["cancelled"] as? Bool, true)
+      complete.fulfill()
+    }
+    XCTAssertEqual((sync("recognize", args) as? FlutterError)?.code, "busy")
+    XCTAssertNil(sync("cancel", ["id": "old-job"]))
+    XCTAssertNil(sync("cancel", ["id": "job"]))
+    await fulfillment(of: [complete], timeout: 10)
+    let resumed = await invoke("recognize", args) as? [String: Any]
+    XCTAssertEqual(resumed?["textPages"] as? [Int], [1, 2])
+    var bad = args; bad["first"] = 0
+    let failure = await invoke("recognize", bad) as? FlutterError
+    XCTAssertEqual(failure?.code, "recognition_failed")
+    withExtendedLifetime(view) {}
   }
 }

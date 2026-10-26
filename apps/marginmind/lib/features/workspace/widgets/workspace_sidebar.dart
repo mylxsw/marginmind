@@ -1,3 +1,5 @@
+import '../reader_ocr.dart';
+
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -56,7 +58,9 @@ class WorkspaceSidebar extends ConsumerWidget {
           MMSidebarItem(
             icon: MMIcons.document,
             label: d.title,
-            trailing: MMCount(d.pageCount),
+            trailing: ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
+                ? Text(l.ocrRecognized, style: context.mmText.footnote)
+                : MMCount(d.pageCount),
             selected: d.id == state.activeDocumentId,
             onTap: () => controller.openDocument(d.id),
             onContextMenu: (position) => _documentMenu(context, ref, d, position),

@@ -9,6 +9,8 @@ import 'package:mm_platform/mm_platform.dart';
 import '../features/library/library_controller.dart';
 import '../features/library/new_study_set.dart';
 import '../features/workspace/widgets/notices.dart';
+import '../features/workspace/widgets/reader_ocr_controls.dart';
+import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_sheet.dart';
 import '../settings/app_settings.dart';
@@ -589,7 +591,22 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ReaderZoomCommand.fitWidth: l.pdfFitWidth,
       ReaderZoomCommand.fitPage: l.pdfFitPage,
     };
+    final ocrSource = hasDocument
+        ? workspace.filePath(workspace.content.document(workspaceState.activeDocumentId!)!)
+        : null;
+    final ocrState = ocrSource == null ? null : ref.watch(readerOcrProvider(ocrSource));
     final view = <AppCommand>[
+      if (inWorkspace && ref.watch(pdfOcrServiceProvider).supported) ...[
+        AppCommand(
+          l.ocrRecognize,
+          hasDocument && ocrState?.running != true ? () => showReaderOcrOptions(context, ref, workspaceId) : null,
+        ),
+        if (ocrState?.running == true)
+          AppCommand(
+            l.ocrCancel,
+            ocrState!.cancelling ? null : () => ref.read(readerOcrProvider(ocrSource!).notifier).cancel(),
+          ),
+      ],
       if (inWorkspace)
         for (final entry in readerZoomLabels.entries)
           AppCommand(

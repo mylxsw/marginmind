@@ -13,6 +13,58 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
 
+  testWidgets('drag on empty text prompts OCR; clicks, text, area and ink do not', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    addTearDown(() => TestPdfText.pages = {});
+    TestPdfText.pages = {1: PdfPageRawText('', [])};
+    final prompted = <int>[];
+    Future<void> open({bool area = false, MMPdfInk? ink}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(
+            filePath: 'scan.pdf',
+            controller: controller,
+            areaSelecting: area,
+            ink: ink,
+            onTextUnavailable: (page, _) => prompted.add(page),
+          ),
+        ),
+      );
+      await _waitReady(tester, controller);
+      await tester.pumpAndSettle();
+    }
+
+    await open();
+    final viewer = tester.widget<PdfViewer>(find.byType(PdfViewer));
+    final pdf = viewer.controller!;
+    final start = pdf.documentToLocal(pdf.layout.pageLayouts.first.topLeft + const Offset(60, 100));
+    await tester.tapAt(start);
+    await tester.pumpAndSettle();
+    expect(prompted, isEmpty);
+    await tester.dragFrom(start, const Offset(100, 0), kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(prompted, [1]);
+    await open(area: true);
+    await tester.dragFrom(start, const Offset(100, 40), kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(prompted, [1]);
+    await open(ink: const MMPdfInk(tool: MMPdfInkTool.freehand, colorIndex: 0, width: 2));
+    await tester.dragFrom(start, const Offset(100, 40), kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(prompted, [1]);
+    await open();
+    final jump = controller.jumpToPage(2);
+    await tester.pumpAndSettle();
+    await jump;
+    final textStart = pdf.documentToLocal(pdf.layout.pageLayouts[1].topLeft + const Offset(60, 100));
+    await tester.dragFrom(textStart, const Offset(100, 0), kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(prompted, [1]);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
   testWidgets('mouse wheel uses full scroll distance without changing zoom', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);

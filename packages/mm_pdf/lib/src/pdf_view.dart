@@ -452,6 +452,7 @@ class MMPdfView extends StatefulWidget {
     this.onReady,
     this.onPageChanged,
     this.onSelectionCommitted,
+    this.onTextUnavailable,
     this.onSelectionChanged,
     this.onHighlightTap,
     this.onViewportChanged,
@@ -478,6 +479,9 @@ class MMPdfView extends StatefulWidget {
 
   /// The mouse was released with text selected.
   final ValueChanged<MMPdfSelection>? onSelectionCommitted;
+
+  /// A mouse drag on a page with no text layer. Image/ink gestures are excluded.
+  final void Function(int page, Offset globalPosition)? onTextUnavailable;
 
   /// Selection appeared (non-null) or was cleared (null).
   final ValueChanged<bool>? onSelectionChanged;
@@ -1339,13 +1343,43 @@ class _MMPdfViewState extends State<MMPdfView> {
     );
   }
 
+  Offset? _textDragStart;
+
+  Future<void> _textPointerUp(PointerUpEvent event) async {
+    final start = _textDragStart;
+    _textDragStart = null;
+    unawaited(_commitSelection());
+    if (start == null ||
+        widget.onTextUnavailable == null ||
+        !_ready ||
+        widget.areaSelecting ||
+        widget.ink != null ||
+        (event.localPosition - start).distance < kTouchSlop) {
+      return;
+    }
+    final epoch = _selectionEpoch;
+    final point = _controller.localToDocument(start);
+    final index = _controller.layout.pageLayouts.indexWhere((rect) => rect.contains(point));
+    if (index < 0) return;
+    try {
+      final text = await _controller.document.pages[index].loadStructuredText();
+      if (mounted && epoch == _selectionEpoch && text.fullText.trim().isEmpty) {
+        widget.onTextUnavailable?.call(index + 1, event.position);
+      }
+    } catch (_) {
+      // Failure to read a text layer must not interrupt pointer handling.
+    }
+  }
+
   Widget _viewer() {
     return Listener(
-      onPointerDown: (_) {
+      onPointerDown: (event) {
+        _textDragStart = event.localPosition;
         _selectionEpoch++;
         if (_cleanSelection != null) setState(() => _cleanSelection = null);
       },
-      onPointerUp: (_) => _commitSelection(),
+      onPointerUp: _textPointerUp,
+      onPointerCancel: (_) => _textDragStart = null,
       child: PdfViewer.file(
         widget.filePath,
         controller: _controller,
