@@ -73,13 +73,22 @@ class ResearchHttp {
     ]);
     try {
       var target = url;
+      final forwardedHeaders = Map<String, String>.of(headers);
+      bool sensitive(String name) => const {
+        'authorization',
+        'proxy-authorization',
+        'x-api-key',
+        'api-key',
+        'cookie',
+        'cookie2',
+      }.contains(name.toLowerCase());
       var redirects = 0;
       var attempt = 0;
       while (true) {
         await guarded(policy.validate(target));
         final request = http.AbortableRequest(method, target, abortTrigger: abort.future)
           ..followRedirects = false
-          ..headers.addAll(headers);
+          ..headers.addAll(forwardedHeaders);
         if (body != null) {
           request.headers['content-type'] = 'application/json';
           request.body = jsonEncode(body);
@@ -87,10 +96,14 @@ class ResearchHttp {
         final response = await guarded(client.send(request));
         if (response.statusCode >= 300 && response.statusCode < 400) {
           // Never forward API keys, authorization, or POST payloads on redirects.
-          if (method != 'GET' || headers.isNotEmpty || ++redirects > 5 || response.headers['location'] == null) {
+          if (method != 'GET' ||
+              forwardedHeaders.keys.any(sensitive) ||
+              ++redirects > 5 ||
+              response.headers['location'] == null) {
             throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
           }
           await response.stream.listen(null).cancel();
+          forwardedHeaders.removeWhere((name, _) => sensitive(name));
           target = target.resolve(response.headers['location']!);
           continue;
         }

@@ -150,6 +150,51 @@ void main() {
       throwsA(failure(ResearchFailureKind.unsafeUrl)),
     );
   });
+  test('safe headers survive cross-host redirects and each hop is validated', () async {
+    final resolved = <String>[];
+    final seen = <http.Request>[];
+    final transport = ResearchHttp(
+      policy: UrlPolicy(
+        lookup: (host) async {
+          resolved.add(host);
+          return [InternetAddress('8.8.8.8')];
+        },
+      ),
+      clientFactory: () => MockClient((r) async {
+        seen.add(r);
+        return seen.length == 1
+            ? http.Response('', 302, headers: {'location': 'https://second.example/next'})
+            : http.Response('ok', 200);
+      }),
+    );
+    await transport
+        .send(
+          url,
+          cancellation: CancellationToken(),
+          headers: {'accept': 'application/json', 'user-agent': 'MarginMind'},
+        )
+        .toList();
+    expect(resolved, ['example.com', 'second.example']);
+    expect(seen.last.headers['accept'], 'application/json');
+    expect(seen.last.headers['user-agent'], 'MarginMind');
+  });
+  for (final name in ['Authorization', 'X-API-Key', 'API-Key', 'Cookie', 'Cookie2', 'Proxy-Authorization']) {
+    test('GET redirect rejects credential header $name case-insensitively', () async {
+      var calls = 0;
+      final transport = ResearchHttp(
+        policy: publicPolicy(),
+        clientFactory: () => MockClient((_) async {
+          calls++;
+          return http.Response('', 302, headers: {'location': 'https://second.example/'});
+        }),
+      );
+      await expectLater(
+        transport.send(url, cancellation: CancellationToken(), headers: {name: 'secret'}).toList(),
+        throwsA(failure(ResearchFailureKind.unsafeUrl)),
+      );
+      expect(calls, 1);
+    });
+  }
   test('size limit checks declared length and streaming bytes', () async {
     for (final length in [null, 10]) {
       final transport = ResearchHttp(

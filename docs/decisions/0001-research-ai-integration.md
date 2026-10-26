@@ -78,7 +78,7 @@ OpenAI 的 `max_tool_calls = searches` 限制所有内置工具调用总数，�
 网页只允许 HTTP(S)，拒绝凭据 URL、回环、私网、链路本地、元数据地址、共享地址段、
 非全局 IPv6、IPv4-mapped/NAT64/6to4 等转译地址。DNS 结果中出现一个不可用地址就拒绝；
 连接使用已验证的数值 IP（TLS 主机名不变），关闭环境代理，避免校验与连接之间的 DNS 重绑定。
-每次重定向重新校验，最多 5 次。API POST 或携带请求头时拒绝重定向，避免泄露密钥。
+每次重定向重新校验，最多 5 次。API 非 GET 请求或携带 authorization、proxy-authorization、x-api-key、api-key、cookie/cookie2 时拒绝重定向，避免泄露密钥。
 
 本机 Ollama 例外仅用于用户显式启用的兼容 API 完整 endpoint：同 origin、同 path 且 DNS
 全部为 loopback；不放行局域网。远端 API 必须 HTTPS。此例外不共享给网页读取。
@@ -107,3 +107,14 @@ HTTP 重试、取消、超时、大小上限、危险地址/重定向及提示�
 八包覆盖率测试均通过；mm_research 97.12%（43 项确定性测试）。
 macOS Debug 构建通过，5 项 Xcode 原生测试通过，含真实 Keychain 临时测试账号的读写/覆盖/删除。
 无界面改动，不需要截图。以上验证不等同于真实模型服务接通。
+
+### PR #45 HTTPS Review 修复
+
+自定义 connectionFactory 必须显式升级 TLS；HttpClient 不会自动升级普通 Socket。
+现在先连接校验后的 IP，再通过 `SecureSocket.secure(host: url.host)` 使用原始域名完成
+SNI 和证书校验，通过 ConnectionTask 返回连接并在取消时清理已建立的 Socket。
+普通 accept/user-agent 请求头可以跟随重定向，每一跳仍重新校验 URL；凭据头匹配不区分大小写。
+
+默认测试使用本地自签名 TLS 服务，证书仅包含 research.test，验证成功握手及错误域名被拒绝。
+可选 network 标签测试走真实 ResearchHttp，请求 OpenAlex（无需 Key）：2026-10-27 已通过。
+这只验证公网 HTTPS 传输，不代表 Anthropic/OpenAI 真实模型服务已验证。

@@ -55,13 +55,40 @@ class UrlPolicy {
     return addresses;
   }
 
-  HttpClient createClient() {
-    final client = HttpClient()..findProxy = (_) => 'DIRECT';
+  HttpClient createClient({SecurityContext? context}) {
+    final client = HttpClient(context: context)..findProxy = (_) => 'DIRECT';
     // Connect to the vetted numeric address, retaining the URI host for TLS/SNI.
     // This closes the DNS check/connect rebinding window.
     client.connectionFactory = (url, proxyHost, proxyPort) async {
       final addresses = await validate(url);
-      return Socket.startConnect(addresses.first, url.port);
+      final connection = await Socket.startConnect(addresses.first, url.port);
+      if (url.scheme == 'http') return connection;
+      Socket? connected;
+      var cancelled = false;
+      final secure = connection.socket.then((socket) async {
+        connected = socket;
+        if (cancelled) {
+          socket.destroy();
+          throw const SocketException('Connection cancelled');
+        }
+        try {
+          final tls = await SecureSocket.secure(socket, host: url.host, context: context);
+          connected = tls;
+          if (cancelled) {
+            tls.destroy();
+            throw const SocketException('Connection cancelled');
+          }
+          return tls;
+        } catch (_) {
+          socket.destroy();
+          rethrow;
+        }
+      });
+      return ConnectionTask.fromSocket(secure, () {
+        cancelled = true;
+        connection.cancel();
+        connected?.destroy();
+      });
     };
     return client;
   }
