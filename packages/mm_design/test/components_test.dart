@@ -116,6 +116,24 @@ void main() {
     expect(changes, ['memory', '']);
   });
 
+  testWidgets('search field hands Esc to the owner when asked to', (tester) async {
+    var escapes = 0;
+    await tester.pumpWidget(
+      harness(
+        SizedBox(
+          width: 240,
+          child: MMSearchField(placeholder: 'Search', onEscape: () => escapes++),
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField), 'memory');
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(escapes, 1);
+    expect(find.text('memory'), findsOneWidget, reason: 'the owner decides what Esc does');
+  });
+
   testWidgets('sheet opens from the top and closes on Esc', (tester) async {
     await tester.pumpWidget(
       harness(
