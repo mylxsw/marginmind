@@ -933,7 +933,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerStyleGreen => '浅绿';
 
   @override
-  String get readerZoom => '缩放与适配';
+  String get readerZoom => '页面适配';
 
   @override
   String get readerAppearance => '阅读外观';

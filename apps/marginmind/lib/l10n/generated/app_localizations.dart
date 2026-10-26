@@ -1787,7 +1787,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerZoom.
   ///
   /// In en, this message translates to:
-  /// **'Zoom and Fit'**
+  /// **'Page Fit'**
   String get readerZoom;
 
   /// No description provided for @readerAppearance.

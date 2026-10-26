@@ -36,7 +36,7 @@ class MMToolbar extends StatelessWidget {
           child: Row(
             children: [
               if (leading != null) ...[leading!, const SizedBox(width: 8)],
-              Flexible(
+              Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +48,6 @@ class MMToolbar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const Spacer(),
               for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
             ],
           ),

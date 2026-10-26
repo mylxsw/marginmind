@@ -140,7 +140,7 @@ class MMColors extends ThemeExtension<MMColors> {
     rootNode: Color(0xFF1D1D1F),
     onRootNode: Color(0xFFFFFFFF),
     scrim: Color(0x1F000000),
-    glassShadow: [BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 4))],
+    glassShadow: [], // Floating chrome uses a hairline instead of blurred shadows.
     cardShadow: [
       BoxShadow(color: Color(0x0F000000), blurRadius: 2, offset: Offset(0, 1)),
       BoxShadow(color: Color(0x0D000000), blurRadius: 14, offset: Offset(0, 4)),
@@ -180,7 +180,7 @@ class MMColors extends ThemeExtension<MMColors> {
     rootNode: Color(0xFFF5F5F7),
     onRootNode: Color(0xFF1D1D1F),
     scrim: Color(0x40000000),
-    glassShadow: [BoxShadow(color: Color(0x4D000000), blurRadius: 16, offset: Offset(0, 4))],
+    glassShadow: [], // Floating chrome uses a hairline instead of blurred shadows.
     cardShadow: [BoxShadow(color: Color(0x59000000), blurRadius: 10, offset: Offset(0, 2))],
     sidebarShadow: [BoxShadow(color: Color(0x40000000), blurRadius: 24, offset: Offset(0, 6))],
     sheetShadow: [BoxShadow(color: Color(0x8C000000), blurRadius: 60, offset: Offset(0, 24))],

@@ -176,6 +176,16 @@ void main() {
           .widgetList<DecoratedBox>(find.descendant(of: find.byType(MMGlass), matching: find.byType(DecoratedBox)))
           .map((b) => (b.decoration as BoxDecoration).color);
       expect(fills, contains(colors.glass));
+      expect(colors.glassShadow, isEmpty);
+      for (final box in tester.widgetList<DecoratedBox>(
+        find.descendant(of: find.byType(MMGlass), matching: find.byType(DecoratedBox)),
+      )) {
+        expect(((box.decoration as BoxDecoration).boxShadow ?? []).where((s) => s.blurRadius > 0), isEmpty);
+      }
+      expect(
+        (Theme.of(tester.element(find.byType(MMGlass).first)).tooltipTheme.decoration as BoxDecoration).boxShadow,
+        isEmpty,
+      );
       for (final icon in [MMIcons.copy, MMIcons.addNote]) {
         expect(tester.widget<Icon>(find.byIcon(icon)).color, colors.label);
       }

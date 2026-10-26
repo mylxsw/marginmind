@@ -969,7 +969,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerStyleGreen => 'Light Green';
 
   @override
-  String get readerZoom => 'Zoom and Fit';
+  String get readerZoom => 'Page Fit';
 
   @override
   String get readerAppearance => 'Reading Appearance';

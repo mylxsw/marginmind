@@ -208,6 +208,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   selected: state.readerPanelVisible,
                   onPressed: controller.toggleReaderPanel,
                 ),
+                MMToolbarButton(icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
+                MMToolbarButton(icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
                 PopupMenuButton<ReaderZoomCommand>(
                   key: const ValueKey('reader-zoom'),
                   tooltip: l.readerZoom,
@@ -218,17 +220,24 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     padding: EdgeInsets.zero,
                   ),
                   iconSize: MMSpacing.l,
-                  icon: const Icon(MMIcons.readerZoom),
+                  icon: const Icon(MMIcons.fitPage),
                   onSelected: _zoom,
                   itemBuilder: (_) => [
                     for (final entry in [
-                      (ReaderZoomCommand.zoomIn, l.zoomIn),
-                      (ReaderZoomCommand.zoomOut, l.zoomOut),
-                      (ReaderZoomCommand.actualSize, l.pdfActualSize),
-                      (ReaderZoomCommand.fitWidth, l.pdfFitWidth),
-                      (ReaderZoomCommand.fitPage, l.pdfFitPage),
+                      (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
+                      (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
+                      (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
                     ])
-                      PopupMenuItem(value: entry.$1, child: Text(entry.$2)),
+                      PopupMenuItem(
+                        value: entry.$1,
+                        child: Row(
+                          children: [
+                            Icon(entry.$3, size: MMSpacing.l),
+                            const SizedBox(width: MMSpacing.s),
+                            Text(entry.$2),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 PopupMenuButton<MMReaderStyle>(
@@ -428,28 +437,46 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                             if ((_hoveringPdf || _scrubPage != null) && doc.pageCount > 1)
                                               Padding(
                                                 padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl),
-                                                child: Slider(
-                                                  key: const ValueKey('reader-page-progress'),
-                                                  min: 1,
-                                                  max: doc.pageCount.toDouble(),
-                                                  value: (_scrubPage ?? page.toDouble()).clamp(
-                                                    1,
-                                                    doc.pageCount.toDouble(),
+                                                child: MMGlass(
+                                                  child: SliderTheme(
+                                                    data: SliderTheme.of(context).copyWith(
+                                                      activeTrackColor: c.secondaryLabel.withValues(alpha: .65),
+                                                      inactiveTrackColor: c.secondaryLabel.withValues(alpha: .2),
+                                                      thumbColor: c.secondaryLabel,
+                                                      overlayColor: c.secondaryLabel.withValues(alpha: .1),
+                                                      trackHeight: MMSpacing.xxs,
+                                                      thumbShape: const RoundSliderThumbShape(
+                                                        enabledThumbRadius: MMSpacing.xs,
+                                                        elevation: 0,
+                                                        pressedElevation: 0,
+                                                      ),
+                                                      showValueIndicator: ShowValueIndicator.never,
+                                                    ),
+                                                    child: Slider(
+                                                      key: const ValueKey('reader-page-progress'),
+                                                      min: 1,
+                                                      max: doc.pageCount.toDouble(),
+                                                      value: (_scrubPage ?? page.toDouble()).clamp(
+                                                        1,
+                                                        doc.pageCount.toDouble(),
+                                                      ),
+                                                      label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
+                                                      semanticFormatterCallback: (v) =>
+                                                          '${v.round()} / ${doc.pageCount}',
+                                                      onChangeStart: (v) {
+                                                        dismissSelection();
+                                                        setState(() => _scrubPage = v);
+                                                      },
+                                                      onChanged: (v) {
+                                                        setState(() => _scrubPage = v);
+                                                        _pdf.scrubToPage(v.round());
+                                                      },
+                                                      onChangeEnd: (v) {
+                                                        _pdf.scrubToPage(v.round());
+                                                        setState(() => _scrubPage = null);
+                                                      },
+                                                    ),
                                                   ),
-                                                  label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
-                                                  semanticFormatterCallback: (v) => '${v.round()} / ${doc.pageCount}',
-                                                  onChangeStart: (v) {
-                                                    dismissSelection();
-                                                    setState(() => _scrubPage = v);
-                                                  },
-                                                  onChanged: (v) {
-                                                    setState(() => _scrubPage = v);
-                                                    _pdf.scrubToPage(v.round());
-                                                  },
-                                                  onChangeEnd: (v) {
-                                                    _pdf.scrubToPage(v.round());
-                                                    setState(() => _scrubPage = null);
-                                                  },
                                                 ),
                                               ),
                                           ],

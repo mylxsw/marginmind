@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 /// one stands for is noted for a future native-symbol renderer on macOS.
 abstract final class MMIcons {
   static const IconData readerNavigation = CupertinoIcons.square_stack_3d_up;
-  static const IconData readerZoom = CupertinoIcons.zoom_in;
+  static const IconData actualSize = CupertinoIcons.arrow_up_left_arrow_down_right;
   static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;
   static const IconData fitWidth = CupertinoIcons.arrow_left_right;
   static const IconData fitPage = CupertinoIcons.rectangle;
