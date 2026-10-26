@@ -225,6 +225,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get colorPurple => 'Purple';
 
   @override
+  String get colorRed => 'Red';
+
+  @override
+  String get colorBlack => 'Black';
+
+  @override
   String get showLibrary => 'Show Library';
 
   @override
@@ -267,6 +273,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toggleAreaTool => 'Toggle Area Select';
 
   @override
+  String get toggleInkTool => 'Toggle Pen';
+
+  @override
   String get toolSelect => 'Select';
 
   @override
@@ -280,6 +289,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toolText => 'Text';
+
+  @override
+  String get inkFreehand => 'Freehand';
+
+  @override
+  String get inkEllipse => 'Circle';
+
+  @override
+  String get inkArrow => 'Arrow';
+
+  @override
+  String get inkEraser => 'Eraser';
+
+  @override
+  String get inkThin => 'Thin';
+
+  @override
+  String get inkMedium => 'Medium';
+
+  @override
+  String get inkBold => 'Bold';
 
   @override
   String get syncToMapOn => 'Sync excerpts to map: On';

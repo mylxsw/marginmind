@@ -10,7 +10,7 @@ enum AppearancePreference { system, light, dark }
 
 enum LanguagePreference { system, zh, en }
 
-enum AnnotationTool { select, highlight, area }
+enum AnnotationTool { select, highlight, area, ink }
 
 class AppSettings {
   const AppSettings({
@@ -71,7 +71,15 @@ class SettingsController extends Notifier<AppSettings> {
         MMSizes.readerSidebarMaxWidth,
       ),
       readerStyle: _parse(MMReaderStyle.values, prefs.getString(_readerStyleKey), MMReaderStyle.white),
-      annotationTool: _parse(AnnotationTool.values, prefs.getString(_annotationToolKey), AnnotationTool.select),
+      // The pen is never restored (see WorkspaceController.setTool).
+      annotationTool: _parse(
+        [
+          for (final t in AnnotationTool.values)
+            if (t != AnnotationTool.ink) t,
+        ],
+        prefs.getString(_annotationToolKey),
+        AnnotationTool.select,
+      ),
       appearance: _parse(AppearancePreference.values, prefs.getString(_appearanceKey), AppearancePreference.system),
       language: _parse(LanguagePreference.values, prefs.getString(_languageKey), LanguagePreference.system),
     );

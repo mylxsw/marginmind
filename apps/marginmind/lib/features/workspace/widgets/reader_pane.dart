@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -14,6 +15,7 @@ import 'notices.dart';
 import 'reader_find_bar.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
+import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
 
 /// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
@@ -78,6 +80,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           s.readerPanelVisible,
           s.findVisible,
           s.findFocusTick,
+          s.inkTool,
+          s.inkColor,
+          s.inkWidth,
+          s.canUndo,
         ),
       ),
     );
@@ -130,18 +136,23 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       },
       child: Shortcuts(
         shortcuts: {...readerNavShortcuts, ...readerZoomShortcuts},
-        child: Focus(
-          focusNode: _focus,
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            // Clicking anywhere in the pane makes it the keyboard's home
-            // (⌘F finds in the document), unless a field inside has it.
-            onPointerDown: (_) {
-              if (!_focus.hasFocus) _focus.requestFocus();
-            },
-            child: ColoredBox(
-              color: c.readerBackground,
-              child: _body(context, state, controller, content, doc, openDocs, rootTitle, dismissSelection),
+        child: CallbackShortcuts(
+          bindings: {
+            if (state.tool == AnnotationTool.ink) const SingleActivator(LogicalKeyboardKey.escape): controller.exitInk,
+          },
+          child: Focus(
+            focusNode: _focus,
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              // Clicking anywhere in the pane makes it the keyboard's home
+              // (⌘F finds in the document), unless a field inside has it.
+              onPointerDown: (_) {
+                if (!_focus.hasFocus) _focus.requestFocus();
+              },
+              child: ColoredBox(
+                color: c.readerBackground,
+                child: _body(context, state, controller, content, doc, openDocs, rootTitle, dismissSelection),
+              ),
             ),
           ),
         ),
@@ -339,6 +350,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           pageColorFilter: style.pageFilter,
                                           highlights: _highlights(content, doc.id, state),
                                           areaSelecting: state.tool == AnnotationTool.area,
+                                          inkStrokes: [
+                                            for (final s in content.inkStrokes)
+                                              if (s.documentId == doc.id) s,
+                                          ],
+                                          inkColors: _inkColors,
+                                          ink: state.ink,
+                                          onInkDrawn: (draft) => controller.addInkStroke(doc.id, draft),
+                                          onInkErased: controller.eraseInkStrokes,
                                           onAreaSelected: (area) async {
                                             dismissSelection();
                                             final notice = await controller.excerptArea(
@@ -371,6 +390,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           },
                                         ),
                                 ),
+                                if (state.tool == AnnotationTool.ink)
+                                  Positioned(
+                                    top: MMSpacing.s,
+                                    left: 0,
+                                    right: 0,
+                                    child: Center(
+                                      child: ReaderInkToolbar(
+                                        state: state,
+                                        controller: controller,
+                                        onUndo: () async {
+                                          final notice = await controller.undo();
+                                          if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                                        },
+                                      ),
+                                    ),
+                                  ),
                                 if (state.findVisible)
                                   Positioned(
                                     top: 12,
@@ -527,6 +562,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ];
   }
 }
+
+final _inkColors = [for (final c in MMInkColor.values) c.stroke];
 
 /// Space the page pill takes at the bottom of the reader; floating toolbars
 /// keep clear of it. An estimate that is wider than `_PagePill`; change both

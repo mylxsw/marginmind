@@ -53,6 +53,29 @@ class MMFloatingToolbarColor extends StatelessWidget {
   final bool selected;
 
   @override
+  Widget build(BuildContext context) =>
+      MMFloatingToolbarSwatch(color: color.color, tooltip: tooltip, onPressed: onPressed, selected: selected);
+}
+
+/// A color dot of any palette (annotation or ink) sized like a toolbar
+/// button; the selected dot gets a ring of its own color.
+class MMFloatingToolbarSwatch extends StatelessWidget {
+  const MMFloatingToolbarSwatch({
+    super.key,
+    required this.color,
+    required this.tooltip,
+    required this.onPressed,
+    this.selected = false,
+  });
+
+  final Color color;
+
+  /// Localized color name, shown in the tooltip and read by screen readers.
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool selected;
+
+  @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
     return MMInteractive(
@@ -77,16 +100,66 @@ class MMFloatingToolbarColor extends StatelessWidget {
           width: MMSizes.floatingToolbarDot,
           height: MMSizes.floatingToolbarDot,
           decoration: BoxDecoration(
-            color: s.enabled ? color.color : color.color.withValues(alpha: 0.3),
+            color: s.enabled ? color : color.withValues(alpha: 0.3),
             shape: BoxShape.circle,
             boxShadow: selected || s.focused
                 ? [
                     // Painted in order: the outer ring first, then the gap over it.
-                    BoxShadow(color: s.focused ? c.accent : color.color, spreadRadius: 3.5),
+                    BoxShadow(color: s.focused ? c.accent : color, spreadRadius: 3.5),
                     BoxShadow(color: c.glassOpaque, spreadRadius: 2),
                   ]
                 : null,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Stroke width choice: a dot as thick as the stroke, tinted when selected.
+class MMFloatingToolbarStrokeWidth extends StatelessWidget {
+  const MMFloatingToolbarStrokeWidth({
+    super.key,
+    required this.width,
+    required this.tooltip,
+    required this.onPressed,
+    this.selected = false,
+  });
+
+  /// Stroke width in points; the dot is `width * 2 + 2` across.
+  final double width;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return MMInteractive(
+      onTap: onPressed,
+      selected: selected,
+      tooltip: tooltip,
+      semanticLabel: tooltip,
+      builder: (context, s) => AnimatedContainer(
+        duration: MMMotion.quick,
+        width: MMSizes.floatingToolbarColor,
+        height: MMSizes.floatingToolbarColor,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? c.accentTint
+              : s.pressed
+              ? c.pressed
+              : s.hovered
+              ? c.hover
+              : Colors.transparent,
+          shape: BoxShape.circle,
+          border: s.focused ? Border.all(color: c.accent, width: 2) : null,
+        ),
+        child: Container(
+          width: width * 2 + 2,
+          height: width * 2 + 2,
+          decoration: BoxDecoration(color: selected ? c.accent : c.label, shape: BoxShape.circle),
         ),
       ),
     );

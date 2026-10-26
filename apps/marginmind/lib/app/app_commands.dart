@@ -89,6 +89,7 @@ abstract final class AppShortcuts {
 
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
   static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
+  static SingleActivator get toggleInkTool => primaryShortcut(LogicalKeyboardKey.keyM, shift: true);
 
   /// "Tooltip (⌘1)".
   static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
@@ -616,6 +617,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (inWorkspace) ...[
         AppCommand(l.toggleAnnotationTool, workspace!.toggleTool, shortcut: AppShortcuts.toggleAnnotationTool),
         AppCommand(l.toggleAreaTool, workspace.toggleAreaTool, shortcut: AppShortcuts.toggleAreaTool),
+        AppCommand(l.toggleInkTool, workspace.toggleInkTool, shortcut: AppShortcuts.toggleInkTool),
         AppCommand(
           l.layoutReader,
           () => ref.read(workspaceProvider(workspaceId).notifier).setLayout(MMSplitMode.primary),

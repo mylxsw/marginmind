@@ -446,6 +446,18 @@ abstract class AppLocalizations {
   /// **'Purple'**
   String get colorPurple;
 
+  /// No description provided for @colorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get colorRed;
+
+  /// No description provided for @colorBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get colorBlack;
+
   /// No description provided for @showLibrary.
   ///
   /// In en, this message translates to:
@@ -530,6 +542,12 @@ abstract class AppLocalizations {
   /// **'Toggle Area Select'**
   String get toggleAreaTool;
 
+  /// No description provided for @toggleInkTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Pen'**
+  String get toggleInkTool;
+
   /// No description provided for @toolSelect.
   ///
   /// In en, this message translates to:
@@ -559,6 +577,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text'**
   String get toolText;
+
+  /// No description provided for @inkFreehand.
+  ///
+  /// In en, this message translates to:
+  /// **'Freehand'**
+  String get inkFreehand;
+
+  /// No description provided for @inkEllipse.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get inkEllipse;
+
+  /// No description provided for @inkArrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrow'**
+  String get inkArrow;
+
+  /// No description provided for @inkEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser'**
+  String get inkEraser;
+
+  /// No description provided for @inkThin.
+  ///
+  /// In en, this message translates to:
+  /// **'Thin'**
+  String get inkThin;
+
+  /// No description provided for @inkMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get inkMedium;
+
+  /// No description provided for @inkBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get inkBold;
 
   /// No description provided for @syncToMapOn.
   ///

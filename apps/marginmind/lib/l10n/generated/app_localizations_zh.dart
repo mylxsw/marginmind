@@ -214,6 +214,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get colorPurple => '紫色';
 
   @override
+  String get colorRed => '红色';
+
+  @override
+  String get colorBlack => '黑色';
+
+  @override
   String get showLibrary => '显示资料库';
 
   @override
@@ -256,6 +262,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get toggleAreaTool => '切换框选';
 
   @override
+  String get toggleInkTool => '切换画笔';
+
+  @override
   String get toolSelect => '选择';
 
   @override
@@ -265,10 +274,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get toolArea => '框选';
 
   @override
-  String get toolPen => '手写';
+  String get toolPen => '画笔';
 
   @override
   String get toolText => '文本';
+
+  @override
+  String get inkFreehand => '自由线';
+
+  @override
+  String get inkEllipse => '圈画';
+
+  @override
+  String get inkArrow => '箭头';
+
+  @override
+  String get inkEraser => '橡皮擦';
+
+  @override
+  String get inkThin => '细';
+
+  @override
+  String get inkMedium => '中';
+
+  @override
+  String get inkBold => '粗';
 
   @override
   String get syncToMapOn => '摘录同步到脑图：开';
