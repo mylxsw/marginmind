@@ -67,4 +67,7 @@ with (out / f'{name}.log').open('w') as log, (out / f'{name}-record.log').open('
 data = json.loads((out / f'{name}.log').read_text().split('PDF_BENCHMARK_JSON=')[1])
 (out / f'{name}.json').write_text(json.dumps(data, indent=2))
 for scenario, result in data.items():
+    if 'ui' not in result:
+        print(scenario, result)
+        continue
     print(scenario, 'UI', result['ui']['p95_ms'], 'raster', result['raster']['p95_ms'], 'total', result['total']['p95_ms'])

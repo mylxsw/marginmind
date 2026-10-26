@@ -1,9 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_pdf/src/pdf_pixel_grid.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -19,7 +18,7 @@ void main() {
     addTearDown(controller.dispose);
     addTearDown(tester.view.resetDevicePixelRatio);
     for (final dpr in [1.0, 2.0, 3.0, 1.0]) {
-      final samples = math.max(3.0, 2 * dpr);
+      final samples = 2 * dpr;
       tester.view.devicePixelRatio = dpr;
       await tester.pumpWidget(
         MaterialApp(
@@ -40,26 +39,15 @@ void main() {
       final renderScale = viewer.params.getPageRenderingScale!;
       final context = tester.element(find.byType(PdfViewer));
       // Normal page-fit sizes should no longer use a 200-DPI bitmap.
-      expect(renderScale(context, page, pdf, 200 / 72), closeTo(pdf.currentZoom * samples, 0.0001));
-      for (
-        var i = 0;
-        i < 20 &&
-            !TestPdfRender.requestedFullSizes.contains((
-              600.0 * pdf.currentZoom * samples,
-              800.0 * pdf.currentZoom * samples,
-            ));
-        i++
-      ) {
+      expect(renderScale(context, page, pdf, 200 / 72), closeTo(pdf.currentZoom * samples, 0.002));
+      final plan = pdfPreviewPlan(Size(page.width, page.height), pdf.currentZoom, dpr);
+      for (var i = 0; i < 20 && TestPdfRender.requestedFullSizes.isEmpty; i++) {
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
         await tester.pump(const Duration(milliseconds: 100));
       }
-      // Observe the actual PDF backend request, including a 2x -> 1x move.
-      expect(
-        TestPdfRender.requestedFullSizes,
-        contains((600.0 * pdf.currentZoom * samples, 800.0 * pdf.currentZoom * samples)),
-      );
-      // A Retina preview must not collapse to 1:1 device sampling again.
-      expect(renderScale(context, page, pdf, 200 / 72) / (pdf.currentZoom * dpr), greaterThanOrEqualTo(2));
+      expect(TestPdfRender.requestedFullSizes, contains((page.width * plan.scale, page.height * plan.scale)));
+      expect((page.width * plan.scale).toInt(), plan.deviceSize!.width * 2);
+      expect((page.height * plan.scale).toInt(), plan.deviceSize!.height * 2);
       pdf.value = Matrix4.diagonal3Values(4, 4, 1);
       await tester.pump();
       expect(renderScale(context, page, pdf, 200 / 72), 4000 / 800);

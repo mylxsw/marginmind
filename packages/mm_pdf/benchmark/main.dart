@@ -6,6 +6,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -41,6 +42,7 @@ class Benchmark extends StatefulWidget {
 class _BenchmarkState extends State<Benchmark> {
   final controller = MMPdfViewController();
   final viewKey = GlobalKey();
+  final paintKey = GlobalKey();
   final frames = <FrameTiming>[];
   final results = <String, Object>{};
   String phase = 'Loading';
@@ -128,6 +130,33 @@ class _BenchmarkState extends State<Benchmark> {
         }
       }
       SchedulerBinding.instance.removeTimingsCallback(frames.addAll);
+      final appearance = <Map<String, Object>>[];
+      // Actual visible ink, not render request duration or FrameTiming. The
+      // readback overhead is included, making this an observable upper bound.
+      for (final page in [299, 279, 259, 239, 219, 199, 179, 159, 139, 119]) {
+        final watch = Stopwatch()..start();
+        await pdf.goToPage(pageNumber: page, duration: Duration.zero);
+        var ink = 0;
+        do {
+          SchedulerBinding.instance.scheduleFrame();
+          await SchedulerBinding.instance.endOfFrame;
+          final boundary = paintKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 1);
+          final data = (await image.toByteData())!.buffer.asUint8List();
+          ink = 0;
+          for (var y = image.height ~/ 5; y < image.height * 4 ~/ 5; y++) {
+            for (var x = image.width * 3 ~/ 10; x < image.width * 7 ~/ 10; x++) {
+              final offset = (y * image.width + x) * 4;
+              if (data[offset] < 100 && data[offset + 1] < 100 && data[offset + 2] < 100) ink++;
+            }
+          }
+          image.dispose();
+        } while (ink < 100 && watch.elapsedMilliseconds < 5000);
+        if (ink < 100) throw StateError('Page $page did not display ink in 5 seconds');
+        appearance.add({'page': page, 'first_ink_ms': watch.elapsedMicroseconds / 1000, 'ink_pixels': ink});
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      results['appearance'] = {'method': 'jump to first visible ink, includes GPU readback', 'samples': appearance};
       // stdout is collected by the runner, including on Release builds.
       // ignore: avoid_print
       print('PDF_BENCHMARK_JSON=${jsonEncode(results)}');
@@ -141,12 +170,15 @@ class _BenchmarkState extends State<Benchmark> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text('PDF benchmark · $phase')),
-    body: MMPdfView(
-      key: viewKey,
-      filePath: widget.path,
-      controller: controller,
-      highlights: highlights,
-      onReady: (_) => run(),
+    body: RepaintBoundary(
+      key: paintKey,
+      child: MMPdfView(
+        key: viewKey,
+        filePath: widget.path,
+        controller: controller,
+        highlights: highlights,
+        onReady: (_) => run(),
+      ),
     ),
   );
 }

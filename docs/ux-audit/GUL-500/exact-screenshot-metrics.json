@@ -1,0 +1,59 @@
+{
+  "roi_logical": [
+    300,
+    170,
+    700,
+    700
+  ],
+  "gray": "Pillow L, includes white background",
+  "images": {
+    "skia-before-1x": {
+      "size": [
+        1280,
+        820
+      ],
+      "dark_percent": 2.231132075471698,
+      "middle_percent": 5.560849056603773
+    },
+    "skia-after-1x": {
+      "size": [
+        1280,
+        820
+      ],
+      "dark_percent": 1.7443396226415093,
+      "middle_percent": 6.483962264150944
+    },
+    "exact1-1x": {
+      "size": [
+        1280,
+        820
+      ],
+      "dark_percent": 0.1641509433962264,
+      "middle_percent": 10.637735849056604
+    },
+    "exact2-1x": {
+      "size": [
+        1280,
+        820
+      ],
+      "dark_percent": 0.25518867924528305,
+      "middle_percent": 9.79622641509434
+    },
+    "skia-before-2x": {
+      "size": [
+        2560,
+        1640
+      ],
+      "dark_percent": 2.2360849056603773,
+      "middle_percent": 5.469575471698113
+    },
+    "exact2-2x": {
+      "size": [
+        2560,
+        1640
+      ],
+      "dark_percent": 2.1495283018867926,
+      "middle_percent": 5.71061320754717
+    }
+  }
+}
