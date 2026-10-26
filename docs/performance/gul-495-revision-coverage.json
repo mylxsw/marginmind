@@ -1,32 +1,32 @@
 {
-  "baseline": "b24198e",
-  "changed_hit": 352,
-  "changed_lines": 357,
-  "percent": 98.59943977591037,
+  "baseline": "8bb4d8a",
+  "changed_hit": 382,
+  "changed_lines": 387,
+  "percent": 98.70801033591731,
   "files": {
     "apps/marginmind/lib/app/app_commands.dart": {
-      "hit": 44,
-      "lines": 44
-    },
-    "apps/marginmind/lib/app/providers.dart": {
-      "hit": 21,
-      "lines": 21
+      "hit": 51,
+      "lines": 51
     },
     "apps/marginmind/lib/features/workspace/widgets/map_pane.dart": {
       "hit": 15,
       "lines": 15
     },
     "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart": {
-      "hit": 51,
-      "lines": 51
+      "hit": 46,
+      "lines": 46
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_sidebar.dart": {
+      "hit": 1,
+      "lines": 1
     },
     "apps/marginmind/lib/features/workspace/widgets/workspace_sidebar.dart": {
       "hit": 6,
       "lines": 6
     },
     "apps/marginmind/lib/features/workspace/workspace_controller.dart": {
-      "hit": 14,
-      "lines": 14
+      "hit": 40,
+      "lines": 40
     },
     "apps/marginmind/lib/features/workspace/workspace_screen.dart": {
       "hit": 30,
@@ -41,8 +41,8 @@
       "lines": 3
     },
     "packages/mm_pdf/lib/src/pdf_view.dart": {
-      "hit": 134,
-      "lines": 139
+      "hit": 156,
+      "lines": 161
     },
     "packages/mm_pdf/lib/src/preview_cache.dart": {
       "hit": 31,

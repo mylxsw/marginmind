@@ -300,7 +300,7 @@ class MMPdfViewController extends ChangeNotifier {
 
 /// A lazily rendered page preview for the reader sidebar. Draws nothing
 /// until [controller] has an open document.
-class MMPdfThumbnail extends StatelessWidget {
+class MMPdfThumbnail extends StatefulWidget {
   const MMPdfThumbnail({
     super.key,
     required this.controller,
@@ -317,22 +317,43 @@ class MMPdfThumbnail extends StatelessWidget {
   final Color backgroundColor;
 
   @override
-  Widget build(BuildContext context) {
-    final document = controller._state?._ready ?? false ? controller._state!._controller.document : null;
-    return SizedBox(
-      width: width,
-      height: height,
-      child: document == null || page < 1 || page > document.pages.length
-          ? null
-          : PdfPageView(
-              document: document,
-              pageNumber: page,
-              maximumDpi: 144,
-              backgroundColor: backgroundColor,
-              decoration: BoxDecoration(color: backgroundColor),
-            ),
-    );
-  }
+  State<MMPdfThumbnail> createState() => _MMPdfThumbnailState();
+}
+
+class _MMPdfThumbnailState extends State<MMPdfThumbnail> {
+  (PdfDocument, int, int)? _request;
+  Future<Uint8List?>? _image;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.controller,
+    builder: (context, _) {
+      final state = widget.controller._state;
+      final document = state?._ready == true ? state!._controller.document : null;
+      final width = (widget.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 1024);
+      final request = document == null ? null : (document, widget.page, width);
+      if (request != _request) {
+        _request = request;
+        _image = request == null ? null : widget.controller.renderPreview(widget.page, pixelWidth: width);
+      }
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: ColoredBox(
+          color: widget.backgroundColor,
+          child: request == null
+              ? null
+              : FutureBuilder<Uint8List?>(
+                  key: ValueKey(request),
+                  future: _image,
+                  builder: (context, snapshot) => snapshot.data == null
+                      ? const SizedBox()
+                      : Image.memory(snapshot.data!, fit: BoxFit.contain, gaplessPlayback: false),
+                ),
+        ),
+      );
+    },
+  );
 }
 
 /// PDF pages with text selection and clickable highlights.

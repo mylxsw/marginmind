@@ -50,6 +50,7 @@ void main() {
     expect(builds[MapPane], greaterThan(0));
     expect(builds[WorkspaceSidebar], greaterThan(0));
     expect(builds[AppMenus], greaterThan(0));
+    await controller.finishEditing('New topic');
     await settleHud(tester);
   });
   testWidgets('disk-backed 300-node workspace ignores reading metadata and library summary emissions', (tester) async {
@@ -93,7 +94,11 @@ void main() {
     await tester.pump();
     await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pumpAndSettle();
-    expect(container.read(contentProvider(id)).value!.nodes.length, greaterThan(300));
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pumpAndSettle();
+    }
+    expect(container.read(workspaceProvider(id)).content!.nodes.length, greaterThan(300));
     final builds = <Type, int>{};
     const watched = {WorkspaceScreen, MapPane, ReaderPane, WorkspaceSidebar, AppMenus};
     final old = debugOnRebuildDirtyWidget;

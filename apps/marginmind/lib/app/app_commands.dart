@@ -246,9 +246,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final canRead = hasDocument && (!_textFocused || _readerFocused);
     final findsInDocument = hasDocument && _readerFocused;
     final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
+    final bookmarkContent = workspace?.content;
+    final bookmarkPage = workspace?.activePage ?? 0;
     final bookmarked =
         hasDocument &&
-        workspace.content.bookmarkAt(workspaceState.activeDocumentId!, workspace.activePage ?? 0) != null;
+        ref.watch(
+          readingPagesProvider(workspaceId!).select(
+            (pages) =>
+                bookmarkContent!.bookmarkAt(
+                  workspaceState.activeDocumentId!,
+                  pages[workspaceState.activeDocumentId] ?? bookmarkPage,
+                ) !=
+                null,
+          ),
+        );
     final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),

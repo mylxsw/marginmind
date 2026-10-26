@@ -104,6 +104,38 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
+  testWidgets('sidebar thumbnails share renderPreview bytes and do not rerasterize cached pages', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = MMPdfViewController();
+    Widget tree(bool show) => MaterialApp(
+      home: Row(
+        children: [
+          Expanded(
+            child: MMPdfView(filePath: 'shared-preview.pdf', controller: controller),
+          ),
+          if (show) MMPdfThumbnail(controller: controller, page: 1, width: 160, height: 200),
+        ],
+      ),
+    );
+    await tester.pumpWidget(tree(false));
+    await _waitReady(tester, controller);
+    TestPdfRender.produceImages = true;
+    TestPdfRender.renders.clear();
+    addTearDown(() => TestPdfRender.produceImages = false);
+    final bytes = await tester.runAsync(() => controller.renderPreview(1));
+    expect(bytes, isNotNull);
+    final count = TestPdfRender.renders.where((r) => r['width'] == 192).length;
+    await tester.pumpWidget(tree(true));
+    await tester.pumpAndSettle();
+    final thumbnail = find.byType(MMPdfThumbnail);
+    final image = tester.widget<Image>(find.descendant(of: thumbnail, matching: find.byType(Image)));
+    expect((image.image as MemoryImage).bytes, same(bytes));
+    expect(TestPdfRender.renders.where((r) => r['width'] == 192).length, count);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
   testWidgets('equivalent highlights reuse overlays, changes invalidate only their page', (tester) async {
     final controller = MMPdfViewController();
     List<MMPdfHighlight> highlights({Color color = Colors.yellow, double right = 60, bool second = true}) => [

@@ -40,3 +40,5 @@ python3 tool/run_pdf_benchmark.py after
 ## 工作区通知隔离
 
 即时阅读位置由独立的 `readingPagesProvider` 提供，只有页码显示订阅。工作区展示内容通过 `workspaceContentProvider` 过滤仅阅读元数据变化的保存通知；原始仓库和资料库继续收到完整更新。GUL-496 的缩略图请求接口没有变化。工作区回归证据及尚缺的真实触控板验收见 [评审修订记录](performance/gul-495-revision.md)。
+
+完整工作区的原生滚轮事件基准入口为 `apps/marginmind/benchmark/workspace.dart`，生成器为 `tool/sample/make_image_pdf.swift`，录制与输入脚本为 `tool/run_workspace_benchmark.py` / `tool/workspace_wheel.swift`。MMPdfThumbnail 统一调用上述 renderPreview 缓存，不再使用 PdfPageView。物理手势与原生按键匹配由项目所有者按 `docs/macos-acceptance.md` 最终验收。
