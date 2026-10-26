@@ -321,5 +321,12 @@
   "addTitle": "添加标题",
   "revealSourcePage": "回到原文 · 第 {page} 页",
   "reviewStatusNew": "尚未复习",
-  "reviewStatusScheduled": "下次 {date} · 已复习 {count} 次"
+  "reviewStatusScheduled": "下次 {date} · 已复习 {count} 次",
+  "insertImage": "插入图片…",
+  "imageFiles": "PNG / JPEG 图片",
+  "imageQuestion": "题面",
+  "imageImportFailed": "图片导入失败，请选择 PNG 或 JPEG 文件。",
+  "imageInserted": "已插入图片",
+  "dropImage": "松开以插入图片",
+  "previewImage": "预览图片"
 }

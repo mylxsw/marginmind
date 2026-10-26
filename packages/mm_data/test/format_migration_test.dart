@@ -234,11 +234,19 @@ void main() {
     await source.writeAsString('not an image');
     await expectLater(store.importImage('legacy', source.path), throwsFormatException);
     final editor = StudySetEditor(newId: () => 'image', now: () => DateTime.utc(2026));
-    await store.update('legacy', (c) => editor.createImage(c, imageFileName: paths[0], annotationId: 'a').$1);
+    await store.update(
+      'legacy',
+      (c) => editor.createImage(c, imageFileName: paths[0], imageOrigin: 'file:diagram.png', title: 'Question').$1,
+    );
+    await source.delete();
+    await other.delete();
     await store.dispose();
     final reopened = FileLibraryStore(root);
     final card = (await reopened.load('legacy')).card('image')!;
     expect(card.kind, CardKind.image);
+    expect(card.annotationId, isNull);
+    expect(card.imageOrigin, 'file:diagram.png');
+    expect(card.title, 'Question');
     expect(card.imageFileName, paths[0]);
     expect(await File(reopened.resolveFile('legacy', card.imageFileName!)).readAsBytes(), png);
     await reopened.dispose();

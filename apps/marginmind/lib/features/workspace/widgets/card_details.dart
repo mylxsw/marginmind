@@ -60,7 +60,13 @@ class CardDetails extends ConsumerWidget {
               // the panel does not jump when the picture arrives.
               child: AspectRatio(
                 aspectRatio: _aspect(annotation),
-                child: CardImage(card.imageFileName!, semanticLabel: card.title.isEmpty ? l.imageExcerpt : card.title),
+                child: GestureDetector(
+                  onTap: () => showCardImagePreview(context, card.imageFileName!),
+                  child: CardImage(
+                    card.imageFileName!,
+                    semanticLabel: card.title.isEmpty ? l.imageExcerpt : card.title,
+                  ),
+                ),
               ),
             ),
           ),
@@ -69,6 +75,7 @@ class CardDetails extends ConsumerWidget {
         key: ValueKey('details-title-${card.id}'),
         title: card.title,
         note: card.kind == CardKind.note || card.kind == CardKind.research,
+        image: card.kind == CardKind.image,
         optional: card.kind == CardKind.excerpt || card.kind == CardKind.image,
         onCommit: (text) => controller.setTitle(card.id, text),
       ),
@@ -220,6 +227,7 @@ class _DetailsTitle extends StatefulWidget {
     required this.title,
     required this.note,
     required this.optional,
+    this.image = false,
     required this.onCommit,
   });
 
@@ -228,6 +236,7 @@ class _DetailsTitle extends StatefulWidget {
   /// Whether the title may be cleared (excerpts and images show their
   /// content instead); a cleared required title comes back.
   final bool optional;
+  final bool image;
 
   /// A note's text: body style, ⇧Enter for a new line.
   final bool note;
@@ -307,14 +316,17 @@ class _DetailsTitleState extends State<_DetailsTitle> {
         children: [
           if (_controller.text.isEmpty)
             IgnorePointer(
-              child: Text(context.l10n.addTitle, style: style.copyWith(color: c.secondaryLabel)),
+              child: Text(
+                (widget.image ? context.l10n.imageQuestion : context.l10n.addTitle),
+                style: style.copyWith(color: c.secondaryLabel),
+              ),
             ),
           MMInlineTextField(
             controller: _controller,
             focusNode: _focus,
             style: style,
             multiline: widget.note,
-            semanticLabel: context.l10n.addTitle,
+            semanticLabel: (widget.image ? context.l10n.imageQuestion : context.l10n.addTitle),
             onSubmitted: _focus.unfocus,
             onCancel: () {
               _editing = false;

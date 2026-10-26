@@ -1070,4 +1070,25 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'Next $dateString · $_temp0';
   }
+
+  @override
+  String get insertImage => 'Insert Image…';
+
+  @override
+  String get imageFiles => 'PNG / JPEG Images';
+
+  @override
+  String get imageQuestion => 'Question';
+
+  @override
+  String get imageImportFailed => 'Could not import image. Choose a PNG or JPEG file.';
+
+  @override
+  String get imageInserted => 'Image inserted';
+
+  @override
+  String get dropImage => 'Drop to insert image';
+
+  @override
+  String get previewImage => 'Preview Image';
 }

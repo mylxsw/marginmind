@@ -70,6 +70,22 @@ class MainFlutterWindow: NSWindow {
     NotificationCenter.default.removeObserver(self)
   }
 
+  /// Shared with native tests, using a private pasteboard there.
+  static func readImage(from pasteboard: NSPasteboard) -> [String: Any]? {
+    if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL],
+      let url = urls.first {
+      return ["path": url.path]
+    } else if let png = pasteboard.data(forType: .png) {
+      return ["bytes": FlutterStandardTypedData(bytes: png)]
+    } else if let jpeg = pasteboard.data(forType: NSPasteboard.PasteboardType("public.jpeg")) {
+      return ["bytes": FlutterStandardTypedData(bytes: jpeg)]
+    } else if let tiff = pasteboard.data(forType: .tiff),
+      let bitmap = NSBitmapImageRep(data: tiff), let png = bitmap.representation(using: .png, properties: [:]) {
+      // macOS screenshots commonly expose only TIFF on the pasteboard.
+      return ["bytes": FlutterStandardTypedData(bytes: png)]
+    } else { return nil }
+  }
+
   override func awakeFromNib() {
     observeToolbarFullScreenTransitions()
     let flutterViewController = FlutterViewController()
@@ -101,6 +117,8 @@ class MainFlutterWindow: NSWindow {
         pasteboard.clearContents()
         if pasteboard.writeObjects([item]) { result(nil) }
         else { result(FlutterError(code: "clipboard_write", message: nil, details: nil)) }
+      case "readImage":
+        result(Self.readImage(from: pasteboard))
       case "read":
         var values = ["text": pasteboard.string(forType: .string) ?? ""]
         if let data = pasteboard.string(forType: type) { values["internal"] = data }

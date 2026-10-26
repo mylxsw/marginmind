@@ -543,5 +543,12 @@
   "@revealSourcePage": {"placeholders": {"page": {"type": "int"}}},
   "reviewStatusNew": "Not reviewed yet",
   "reviewStatusScheduled": "Next {date} · {count, plural, =1{reviewed once} other{reviewed {count} times}}",
-  "@reviewStatusScheduled": {"placeholders": {"date": {"type": "DateTime", "format": "MMMd"}, "count": {"type": "int"}}}
+  "@reviewStatusScheduled": {"placeholders": {"date": {"type": "DateTime", "format": "MMMd"}, "count": {"type": "int"}}},
+  "insertImage": "Insert Image…",
+  "imageFiles": "PNG / JPEG Images",
+  "imageQuestion": "Question",
+  "imageImportFailed": "Could not import image. Choose a PNG or JPEG file.",
+  "imageInserted": "Image inserted",
+  "dropImage": "Drop to insert image",
+  "previewImage": "Preview Image"
 }

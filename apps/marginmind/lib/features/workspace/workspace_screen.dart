@@ -185,23 +185,32 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: PdfDropTarget(
-              label: l.dropToImport,
-              onDrop: (files) async {
-                final notice = await controller.importDocuments(files);
-                if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-              },
-              child: MMSplitView(
-                mode: layout,
-                onModeChanged: controller.setLayout,
-                primaryLabel: l.layoutReader,
-                secondaryLabel: l.layoutMap,
-                splitLabel: l.layoutSplit,
-                fraction: state.splitFraction,
-                minPrimaryWidth: minReader,
-                onFractionChanged: controller.setSplitFraction,
-                primary: ReaderPane(studySetId: widget.studySetId),
-                secondary: MapPane(studySetId: widget.studySetId),
+            child: MMSplitView(
+              mode: layout,
+              onModeChanged: controller.setLayout,
+              primaryLabel: l.layoutReader,
+              secondaryLabel: l.layoutMap,
+              splitLabel: l.layoutSplit,
+              fraction: state.splitFraction,
+              minPrimaryWidth: minReader,
+              onFractionChanged: controller.setSplitFraction,
+              primary: PdfDropTarget(
+                label: l.dropToImport,
+                onDrop: (files) async {
+                  final notice = await controller.importDocuments(files);
+                  if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+                },
+                child: ReaderPane(studySetId: widget.studySetId),
+              ),
+              secondary: PdfDropTarget(
+                label: l.dropImage,
+                onDrop: (files) async {
+                  final notice = await controller.importDocuments(files);
+                  if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+                },
+                onImageDrop: (files) =>
+                    insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
+                child: MapPane(studySetId: widget.studySetId),
               ),
             ),
           ),

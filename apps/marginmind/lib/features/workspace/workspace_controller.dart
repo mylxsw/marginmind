@@ -1124,16 +1124,83 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
   }
 
-  Future<void> pasteSelection() async {
+  /// Imports resources and creates their cards in one serialized undo step.
+  /// Retains package resources on undo, so redo never needs the original file.
+  Future<bool> insertImages({List<String> paths = const [], Uint8List? bytes, bool pasted = false}) async {
+    if (_editing != null || _markEditing != null || _creating || _clipboardBusy) return false;
+    _clipboardBusy = true;
+    try {
+      return await _insertImages(paths: paths, bytes: bytes, pasted: pasted);
+    } finally {
+      _clipboardBusy = false;
+    }
+  }
+
+  Future<bool> _insertImages({List<String> paths = const [], Uint8List? bytes, bool pasted = false}) async {
+    final parent = excerptTargetId;
+    final editor = _editor;
+    final repository = _repo;
+    return _enqueue(() async {
+      final names = <String>[];
+      for (final path in paths) {
+        if (!RegExp(r'\.(png|jpe?g)$', caseSensitive: false).hasMatch(path)) {
+          throw const FormatException('Expected PNG or JPEG image');
+        }
+        names.add(await repository.importImage(studySetId, path));
+      }
+      if (bytes != null) names.add(await repository.importImageBytes(studySetId, bytes));
+      if (!ref.mounted || names.isEmpty) return false;
+      late StudySetContent before;
+      Card? last;
+      await _write((c) {
+        if (c.map(editor.mapId) == null || (parent != null && c.node(parent, mapId: editor.mapId) == null)) {
+          throw StateError('Image destination no longer exists');
+        }
+        before = c;
+        for (var i = 0; i < names.length; i++) {
+          final result = editor.createImage(
+            c,
+            imageFileName: names[i],
+            parentId: parent,
+            imageOrigin: pasted || i >= paths.length ? 'pasted' : 'file:${paths[i].split(RegExp(r'[/\\]')).last}',
+          );
+          c = result.$1;
+          last = result.$2;
+        }
+        return c;
+      });
+      if (_transactionDepth > 0) {
+        _transactionBefore ??= before;
+      } else {
+        _record(before);
+      }
+      _syncHistory();
+      if (ref.mounted && last != null) {
+        selectCard(last!.id);
+        _flash(cardId: last!.id);
+      }
+      return true;
+    });
+  }
+
+  Future<void> pasteSelection({bool imagesOnly = false}) async {
     if (_editing != null || _creating || _clipboardBusy) return;
     final parent = state.selectedCardId;
     _clipboardBusy = true;
     try {
       final data = await MMMapClipboard.read();
       if (!ref.mounted || _editing != null || _creating) return;
-      final entries =
-          (data.internal == null ? null : MapClipboard.decode(data.internal!)) ?? MapClipboard.fromText(data.text);
-      if (entries.isEmpty) return;
+      final internalEntries = data.internal == null ? null : MapClipboard.decode(data.internal!);
+      final entries = internalEntries ?? MapClipboard.fromText(data.text);
+      if (internalEntries == null) {
+        final image = await MMMapClipboard.readImage();
+        if (!ref.mounted || _editing != null || _creating) return;
+        if (image != null) {
+          await _insertImages(paths: image.path == null ? const [] : [image.path!], bytes: image.bytes, pasted: true);
+          return;
+        }
+      }
+      if (entries.isEmpty || imagesOnly) return;
       final images = await _importClipboardImages(entries);
       final snapshots = <String, String>{};
       final repository = _repo;

@@ -214,6 +214,19 @@ ReviewFace buildReviewFace(
       back: back,
     );
   }
+  if (isImage && annotation == null) {
+    final parentId = content.node(card.id, mapId: mapId)?.parentId;
+    final parent = parentId == null ? null : content.card(parentId);
+    final parentTitle = parent == null ? rootTitle.trim() : parent.title.trim();
+    return ReviewFace(
+      front: ReviewFront(
+        path: path,
+        prompt: parentTitle.isEmpty ? ReviewPrompt.none : ReviewPrompt.title,
+        title: parentTitle,
+      ),
+      back: back,
+    );
+  }
   final quote = isImage ? '' : (annotation?.quote.trim() ?? '');
   final top = annotation == null || annotation.pages.isEmpty || annotation.pages.first.rects.isEmpty
       ? null

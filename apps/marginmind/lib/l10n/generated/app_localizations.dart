@@ -1963,6 +1963,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next {date} · {count, plural, =1{reviewed once} other{reviewed {count} times}}'**
   String reviewStatusScheduled(DateTime date, int count);
+
+  /// No description provided for @insertImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Image…'**
+  String get insertImage;
+
+  /// No description provided for @imageFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'PNG / JPEG Images'**
+  String get imageFiles;
+
+  /// No description provided for @imageQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get imageQuestion;
+
+  /// No description provided for @imageImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import image. Choose a PNG or JPEG file.'**
+  String get imageImportFailed;
+
+  /// No description provided for @imageInserted.
+  ///
+  /// In en, this message translates to:
+  /// **'Image inserted'**
+  String get imageInserted;
+
+  /// No description provided for @dropImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop to insert image'**
+  String get dropImage;
+
+  /// No description provided for @previewImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview Image'**
+  String get previewImage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

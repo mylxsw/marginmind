@@ -1028,4 +1028,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
     return '下次 $dateString · 已复习 $count 次';
   }
+
+  @override
+  String get insertImage => '插入图片…';
+
+  @override
+  String get imageFiles => 'PNG / JPEG 图片';
+
+  @override
+  String get imageQuestion => '题面';
+
+  @override
+  String get imageImportFailed => '图片导入失败，请选择 PNG 或 JPEG 文件。';
+
+  @override
+  String get imageInserted => '已插入图片';
+
+  @override
+  String get dropImage => '松开以插入图片';
+
+  @override
+  String get previewImage => '预览图片';
 }
