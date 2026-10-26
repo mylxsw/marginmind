@@ -279,7 +279,15 @@ ExtractedContent markdownArticle(ReadableHtml article) {
         }
         return '\n\n$fence\n$text\n$fence\n\n';
       case 'code':
-        return '`${node.text.replaceAll('`', '\\`')}`';
+        // Backslashes do not escape backticks inside CommonMark code spans.
+        // A longer delimiter keeps source text from escaping into active markup.
+        final text = node.text;
+        if (!text.contains('`')) return '`$text`';
+        var fence = '``';
+        while (text.contains(fence)) {
+          fence += '`';
+        }
+        return '$fence $text $fence';
       case 'a':
         final target = article.url.resolve(node.attributes['href'] ?? '');
         if (!['http', 'https'].contains(target.scheme) || target.userInfo.isNotEmpty) return body;

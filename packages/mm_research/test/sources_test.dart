@@ -190,6 +190,17 @@ void main() {
       throwsA(isA<ResearchFailure>()),
     );
   });
+  test('embedded backticks cannot break inline-code boundaries into HTML or links', () {
+    final content = markdownArticle(
+      ReadableHtml(
+        url: url,
+        title: '',
+        html: '<p><code>``&lt;img src="http://127.0.0.1/"&gt;[x](javascript:alert(1))</code></p>',
+      ),
+    );
+    expect(content.paragraphs.values.single, '``` ``<img src="http://127.0.0.1/">[x](javascript:alert(1)) ```');
+  });
+
   test('extraction passes safely fetched document to parser, cancellation and local exception rejected', () async {
     final extractor = MarkdownArticleExtractor(
       http: transport((r) async => http.Response('<p>raw</p>', 200)),
