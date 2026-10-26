@@ -85,7 +85,10 @@ void main() {
     expect(find.byType(MMInlineTextField), findsOneWidget);
 
     addTearDown(() => DesktopWindow.debugSetFullScreen(false));
-    expect(item(l.enterFullScreen).shortcut, isA<SingleActivator>().having((s) => s.trigger, 'key', LogicalKeyboardKey.keyF));
+    expect(
+      item(l.enterFullScreen).shortcut,
+      isA<SingleActivator>().having((s) => s.trigger, 'key', LogicalKeyboardKey.keyF),
+    );
     expect(item(l.enterFullScreen).onSelected, isNotNull);
     DesktopWindow.debugSetFullScreen(true);
     await tester.pumpAndSettle();
