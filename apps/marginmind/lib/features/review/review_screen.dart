@@ -216,6 +216,7 @@ class _ReviewCard extends ConsumerWidget {
       rootTitle: rootTitle,
       pageText: text?.value?.text,
       pageHeight: text?.value?.height,
+      lastPageText: text?.value?.lastText,
     );
     return ReviewCardView(
       face: face,

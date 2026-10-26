@@ -326,9 +326,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapEmptyTitle => 'Your excerpts will appear here';
 
   @override
-  String get mapEmptyMessage => 'Highlight a sentence in the source and it becomes a card under the selected topic.';
-
-  @override
   String get mapView => 'Map';
 
   @override
