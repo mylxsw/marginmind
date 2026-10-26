@@ -1,0 +1,3 @@
+tags:
+  network:
+    skip: 'Opt-in public network smoke test: dart test --tags network --run-skipped'

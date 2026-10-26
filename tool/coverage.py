@@ -10,6 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = {
     'packages/mm_core': 'dart',
+    'packages/mm_research': 'dart',
     'packages/mm_layout': 'dart',
     'packages/mm_data': 'dart',
     'packages/mm_design': 'flutter',

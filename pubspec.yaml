@@ -12,6 +12,7 @@ workspace:
   - packages/mm_platform
   - packages/mm_pdf
   - packages/mm_data
+  - packages/mm_research
   - packages/mm_layout
 
 dev_dependencies:
