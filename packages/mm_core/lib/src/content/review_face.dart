@@ -342,10 +342,12 @@ int _nearest(String t, String q, double? near) {
   return best;
 }
 
+final _wordChar = RegExp(r'[0-9A-Za-z]');
+
 /// Whether a sentence ends at [i] in [t]. A period inside a number or a
 /// section label such as “7.5” does not.
 bool _endsAt(String t, int i) =>
-    _enders.contains(t[i]) && (t[i] != '.' || i + 1 == t.length || !RegExp(r'[0-9A-Za-z]').hasMatch(t[i + 1]));
+    _enders.contains(t[i]) && (t[i] != '.' || i + 1 == t.length || !_wordChar.hasMatch(t[i + 1]));
 
 int _sentenceStart(String t, int from) {
   for (var i = from - 1; i >= 0; i--) {
