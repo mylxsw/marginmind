@@ -118,11 +118,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             subtitle: doc == null ? null : l.pageNumber(page!),
             leading: sidebarVisible
                 ? null
-                : MMIconButton(
-                    icon: MMIcons.sidebar,
-                    tooltip: l.showSidebar,
-                    onPressed: controller.showSidebar,
-                  ),
+                : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
             actions: [
               _AnnotationTools(state: state, controller: controller),
               if (doc != null && layout != MMSplitMode.secondary)
