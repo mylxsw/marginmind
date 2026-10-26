@@ -18,7 +18,7 @@ String joinExcerptLines(String text) {
           if (line.isEmpty) continue;
           final spaceBefore = raw.startsWith(RegExp(r'\s'));
           final hadSpace = spaceAfter || spaceBefore;
-          spaceAfter = raw.endsWith(RegExp(r'\s'));
+          spaceAfter = RegExp(r'\s$').hasMatch(raw);
           if (result.isEmpty) {
             result = line;
           } else if (result.endsWith('\u00ad')) {

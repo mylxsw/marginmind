@@ -111,7 +111,8 @@ void main() {
   });
 
   test('full screen follows the native events and the toggle goes the other way', () async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    // Linux skips the macOS-only toolbar setup, which can run once per process.
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     fullScreen = true;
     await DesktopWindow.initialize(title: 'MarginMind', minimumSize: const Size(900, 600));
     expect(DesktopWindow.fullScreen.value, isTrue, reason: 'read from the window at startup');

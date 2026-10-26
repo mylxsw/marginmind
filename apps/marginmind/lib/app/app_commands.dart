@@ -621,7 +621,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       // The page pill is part of the reader: with the map alone there is no field to focus.
       AppCommand(
         l.goToPage,
-        canRead && !_textFocused && workspaceState!.layout != MMSplitMode.secondary
+        canRead && !_textFocused && workspaceState.layout != MMSplitMode.secondary
             ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.pageField)
             : null,
         shortcut: AppShortcuts.goToPage,
