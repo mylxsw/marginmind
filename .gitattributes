@@ -1,0 +1,4 @@
+# Preserve byte-identical upstream recordings; exclude vendor whitespace noise.
+packages/mm_research/test/fixtures/articles/*.html -whitespace linguist-vendored
+packages/mm_research/test/fixtures/articles/*.txt linguist-vendored
+packages/mm_platform/assets/readability/Readability.js linguist-vendored

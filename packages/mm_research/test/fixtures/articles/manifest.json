@@ -1,0 +1,162 @@
+[
+  {
+    "name": "gmw",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/gmw/source.html",
+    "sha256": "9dae2c47570271a0a532ccc4880b10b5ec837b67239a287455a6b9e19e00b3b7",
+    "language": "zh",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "pixnet",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/pixnet/source.html",
+    "sha256": "cbd38d76508cb428f294ce5389b5dd687e24899535ea84a4155b504e84e20c47",
+    "language": "zh",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "qq",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/qq/source.html",
+    "sha256": "9b58c32629b910507d16dafe0cb7c81d06337aede2da1b07d3b0aec756f392a6",
+    "language": "zh",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "youth",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/youth/source.html",
+    "sha256": "899e43896a02cea7e55dcc4e6109eba63ac0c965eabeeb6936ed02aeb3fde295",
+    "language": "zh",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "bbc-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/bbc-1/source.html",
+    "sha256": "b5ca9d50b6ede3fc7e95c988475fc4dbc693331ce4b4faca5b8a2696f13a7917",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "ars-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/ars-1/source.html",
+    "sha256": "69fe78634727dafa313f490fade17aa229bb2c9df34d3df7b60da22189216f13",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "aclu",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/aclu/source.html",
+    "sha256": "c0158d5f30deb75da3ebb6f8ed45948b967575b9e85fe87da64e0a047d851aa2",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "cnn",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/cnn/source.html",
+    "sha256": "8c7640176eb567232d2b7f5ba9f7b3b76b46a61d2ee48338ca64680bdff1f983",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "daringfireball-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/daringfireball-1/source.html",
+    "sha256": "c21b617e6a320580ea71b47bb7751e3cd6e8985c7d21f91cfb9662ca31aa7d21",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "dropbox-blog",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/dropbox-blog/source.html",
+    "sha256": "64012a265b3e1e6722be2bf0d39dca554f5b3d8c9fe811f7be004e25124e5ea6",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "engadget",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/engadget/source.html",
+    "sha256": "5055dc4ea7a7d8ca80c4946e5448900e93c08cba5708f35991b67667ce1f47d6",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "gitlab-blog",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/gitlab-blog/source.html",
+    "sha256": "46a9b823bf11a9e61d39d814d15affb44147f60198acef6d9df159006889eb94",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "google-sre-book-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/google-sre-book-1/source.html",
+    "sha256": "8e265718877a06f32d1524b4d1118fb16bbb8bc549cf830f04d44294de7c3e65",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "guardian-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/guardian-1/source.html",
+    "sha256": "48dd41ccd7f07c550b884e7e40213da141952f450ccb8d8ffe01250b75cf889d",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "ietf-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/ietf-1/source.html",
+    "sha256": "8276ffcf6165ef788d89a5c0b2c6eb777c581b7f608e31a633989ed41e83dad0",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "lwn-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/lwn-1/source.html",
+    "sha256": "d1c03893435a55e130dd0689282a178dbb166feabd99894435580f3a3ddd7197",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "mozilla-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/mozilla-1/source.html",
+    "sha256": "49171015a6f3313e006ff59ebc60971abe57bd6babc5b2ea1a5364f8abe0dbec",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "quanta-1",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/quanta-1/source.html",
+    "sha256": "b62f8673090e005392bd1888c57ba4f26de04ad8e155d5878c948e5acf8e15a8",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "v8-blog",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/v8-blog/source.html",
+    "sha256": "b630ea40054bb7263831e96be18e193d7054d7943ce522750115199940ab87d4",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  },
+  {
+    "name": "wordpress",
+    "upstream": "https://raw.githubusercontent.com/mozilla/readability/0.6.0/test/test-pages/wordpress/source.html",
+    "sha256": "157d8ec67187d55d7b975d1edfbed4eaf4fcc7d1b8c15d7ef6e20287caaea69d",
+    "language": "en",
+    "recording": "upstream Mozilla fixture; original recording date unknown",
+    "imported": "2026-10-27"
+  }
+]

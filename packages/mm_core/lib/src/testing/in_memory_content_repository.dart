@@ -58,6 +58,12 @@ class InMemoryStudySetContentRepository
   }
 
   final _sessions = <(String, String), ResearchSession>{};
+  @override
+  Future<List<ResearchSession>> listResearchSessions(String studySetId) async => [
+    for (final entry in _sessions.entries)
+      if (entry.key.$1 == studySetId) entry.value.reconcile(await load(studySetId)),
+  ];
+
   final _snapshots = <(String, String), String>{};
 
   @override

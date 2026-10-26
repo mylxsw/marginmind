@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 import XCTest
+import Network
 
 @testable import MarginMind
 
@@ -202,4 +203,104 @@ private final class WindowDelegateSpy: NSObject, NSWindowDelegate {
   func windowShouldClose(_ sender: NSWindow) -> Bool { false }
   func windowDidResize(_ notification: Notification) { resizes += 1 }
   func windowDidFailToEnterFullScreen(_ window: NSWindow) { failures += 1 }
+}
+
+extension RunnerTests {
+  private var repositoryRoot: URL {
+    var path = URL(fileURLWithPath: #filePath)
+    for _ in 0..<5 { path.deleteLastPathComponent() }
+    return path
+  }
+  private func readabilityScript() throws -> String {
+    try String(contentsOf: repositoryRoot.appendingPathComponent("packages/mm_platform/assets/readability/Readability.js"), encoding: .utf8)
+  }
+  private func parseArticle(_ html: String, script: String? = nil) throws -> Any? {
+    let done = expectation(description: "Readability completes")
+    var result: Any?
+    let job = ArticleParseJob(html: html, script: try script ?? readabilityScript()) { value in result = value; done.fulfill() }
+    job.start()
+    wait(for: [done], timeout: 25)
+    withExtendedLifetime(job) {}
+    return result
+  }
+  func testRecordedEnglishAndChineseArticles() throws {
+    let directory = repositoryRoot.appendingPathComponent("packages/mm_research/test/fixtures/articles")
+    let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: directory.appendingPathComponent("manifest.json"))) as! [[String: Any]]
+    XCTAssertEqual(manifest.count, 20)
+    for item in manifest {
+      let name = item["name"] as! String
+      let html = try String(contentsOf: directory.appendingPathComponent(name + ".html"), encoding: .utf8)
+      let expected = try String(contentsOf: directory.appendingPathComponent(name + ".txt"), encoding: .utf8)
+      let result = try XCTUnwrap(try parseArticle(html) as? [String: Any], name)
+      let text = try XCTUnwrap(result["text"] as? String, name)
+      let normalized = text.components(separatedBy: .whitespacesAndNewlines).joined()
+      XCTAssertEqual(normalized, expected, name)
+    }
+  }
+  func testArticleChannelContract() throws {
+    let view = FlutterViewController()
+    let channel = ArticleParserChannel(messenger: view.engine.binaryMessenger)
+    func invoke(_ method: String, _ arguments: [String: String]?) -> Any? {
+      var value: Any?
+      channel.handle(FlutterMethodCall(methodName: method, arguments: arguments)) { value = $0 }
+      return value
+    }
+    XCTAssertNotNil(invoke("parse", nil) as? FlutterError)
+    XCTAssertNotNil(invoke("parse", ["id": "1"]) as? FlutterError)
+    XCTAssertNotNil(invoke("unknown", ["id": "1"]))
+    for url in ["file:///etc/passwd", "http://u:p@example.com"] {
+      XCTAssertNotNil(invoke("parse", ["id": "1", "url": url, "html": "x", "script": "x"]) as? FlutterError)
+    }
+    let args = ["id": "job", "url": "https://example.com", "html": "<p>Article content.</p>", "script": try readabilityScript()]
+    let cancelled = expectation(description: "channel cancellation")
+    channel.handle(FlutterMethodCall(methodName: "parse", arguments: args)) { value in
+      XCTAssertEqual((value as? FlutterError)?.code, "cancelled"); cancelled.fulfill()
+    }
+    XCTAssertNil(invoke("cancel", ["id": "job"]))
+    wait(for: [cancelled], timeout: 2)
+    let done = expectation(description: "channel result")
+    channel.handle(FlutterMethodCall(methodName: "parse", arguments: args)) { value in
+      XCTAssertNotNil(value as? [String: Any]); done.fulfill()
+    }
+    wait(for: [done], timeout: 25)
+    view.engine.shutDownEngine()
+  }
+  func testArticleParserFailureAndCancellation() throws {
+    XCTAssertEqual((try parseArticle("<html><body></body></html>") as? FlutterError)?.code, "unparseable")
+    XCTAssertEqual((try parseArticle("<form><p>Sign in</p><input type=password></form>") as? FlutterError)?.code, "login_required")
+    XCTAssertEqual((try parseArticle("<p>text</p>", script: "invalid javascript @") as? FlutterError)?.code, "unparseable")
+    var calls = 0
+    let job = ArticleParseJob(html: "<p>text</p>", script: try readabilityScript()) { result in
+      calls += 1
+      XCTAssertEqual((result as? FlutterError)?.code, "cancelled")
+    }
+    job.start(); job.cancel(); job.cancel()
+    XCTAssertEqual(calls, 1)
+  }
+  func testArticleParserBlocksPrivateSubresourcesAndPageScripts() throws {
+    let listener = try NWListener(using: .tcp, on: .any)
+    let ready = expectation(description: "local trap ready")
+    let unwanted = expectation(description: "no private requests")
+    unwanted.isInverted = true
+    listener.stateUpdateHandler = { state in if case .ready = state { ready.fulfill() } }
+    listener.newConnectionHandler = { connection in unwanted.fulfill(); connection.cancel() }
+    listener.start(queue: .main)
+    defer { listener.cancel() }
+    wait(for: [ready], timeout: 5)
+    let port = try XCTUnwrap(listener.port).rawValue
+    let url = "http://127.0.0.1:\(port)/private"
+    let html = """
+      <html><head><meta http-equiv="refresh" content="0;url=\(url)">
+      <link rel="stylesheet" href="\(url)"><style>body{background:url('\(url)')}</style></head>
+      <body><article><h1>Safe title</h1><p>Original document text preserved for reading.</p>
+      <img src="\(url)" onerror="fetch('\(url)')"><iframe src="\(url)"></iframe>
+      <object data="\(url)"></object><video poster="\(url)" src="\(url)"></video>
+      <script>fetch('\(url)'); document.body.innerHTML='EXECUTED';</script>
+      </article></body></html>
+      """
+    let result = try XCTUnwrap(try parseArticle(html) as? [String: Any])
+    XCTAssertTrue((result["text"] as? String)?.contains("Original document") == true)
+    XCTAssertFalse((result["text"] as? String)?.contains("EXECUTED") == true)
+    wait(for: [unwanted], timeout: 0.3)
+  }
 }

@@ -18,6 +18,30 @@ void main() {
   });
   tearDown(() => root.delete(recursive: true));
 
+  test('session enumeration survives restart, sorts updates and never scans snapshots', () async {
+    final store = FileLibraryStore(root);
+    await store.load('legacy');
+    expect(await store.listResearchSessions('legacy'), isEmpty);
+    final now = DateTime.utc(2026);
+    for (final id in ['first', 'second']) {
+      await store.saveResearchSession(
+        'legacy',
+        ResearchSession(
+          id: id,
+          question: id,
+          status: 'running',
+          createdAt: now,
+          updatedAt: id == 'first' ? now : now.add(const Duration(seconds: 1)),
+        ),
+      );
+    }
+    final snapshot = await store.writeResearchSnapshot('legacy', 'retained');
+    final reopened = FileLibraryStore(root);
+    expect((await reopened.listResearchSessions('legacy')).map((s) => s.id), ['second', 'first']);
+    expect(await reopened.readResearchSnapshot('legacy', snapshot), 'retained');
+    expect((jsonDecode(await file.readAsString()) as Map)['format'], 7);
+  });
+
   test('fixed format 6 preserves all prior fields and 365 daily due counts', () async {
     final original = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
     final before = StudySetContent.fromJson((original['content'] as Map).cast());

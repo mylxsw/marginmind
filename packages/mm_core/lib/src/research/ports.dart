@@ -144,9 +144,24 @@ class SearchRequest {
 }
 
 class SearchHit {
-  const SearchHit({required this.url, required this.title, this.snippet = ''});
+  const SearchHit({
+    required this.url,
+    required this.title,
+    this.snippet = '',
+    this.kind = 'web',
+    this.doi,
+    this.authors = const [],
+    this.publishedAt,
+    this.openAccess,
+    this.openAccessUrl,
+  });
   final Uri url;
-  final String title, snippet;
+  final String title, snippet, kind;
+  final String? doi;
+  final List<String> authors;
+  final DateTime? publishedAt;
+  final bool? openAccess;
+  final Uri? openAccessUrl;
 }
 
 abstract interface class SearchProvider {
@@ -154,11 +169,12 @@ abstract interface class SearchProvider {
 }
 
 class ExtractedContent {
-  ExtractedContent({required this.url, required this.title, required Map<String, String> paragraphs})
+  ExtractedContent({required this.url, required this.title, this.canonicalUrl, required Map<String, String> paragraphs})
     : paragraphs = Map.unmodifiable(paragraphs);
   final Uri url;
   final String title;
   final Map<String, String> paragraphs;
+  final Uri? canonicalUrl;
 }
 
 abstract interface class ContentExtractor {
@@ -169,4 +185,23 @@ abstract interface class SecretStore {
   Future<String?> read(String account);
   Future<void> write(String account, String value);
   Future<void> delete(String account);
+}
+
+/// Platform returns Readability HTML; Markdown and paragraph IDs belong to research.
+class ReadableHtml {
+  const ReadableHtml({required this.url, required this.title, required this.html, this.canonicalUrl});
+  final Uri url;
+  final String title, html;
+  final Uri? canonicalUrl;
+}
+
+abstract interface class HtmlArticleParser {
+  Future<ReadableHtml> parse(Uri url, String html, CancellationToken cancellation);
+}
+
+/// Disposable downloaded HTML, never source snapshots or evidence.
+abstract interface class ResearchDocumentCache {
+  Future<String?> read(Uri url);
+  Future<void> write(Uri url, String html);
+  Future<void> clear();
 }

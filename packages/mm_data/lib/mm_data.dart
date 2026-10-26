@@ -2,3 +2,4 @@
 library;
 
 export 'src/file_library_store.dart';
+export 'src/research_cache.dart';

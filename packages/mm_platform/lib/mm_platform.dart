@@ -10,3 +10,4 @@ export 'src/system_appearance.dart';
 export 'src/map_clipboard.dart';
 
 export 'src/secret_store.dart';
+export 'src/article_parser.dart';

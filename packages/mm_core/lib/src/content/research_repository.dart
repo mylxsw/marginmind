@@ -86,6 +86,7 @@ class ResearchSession {
 }
 
 abstract interface class ResearchSessionRepository {
+  Future<List<ResearchSession>> listResearchSessions(String studySetId);
   Future<ResearchSession?> loadResearchSession(String studySetId, String sessionId);
   Future<void> saveResearchSession(String studySetId, ResearchSession session);
 }

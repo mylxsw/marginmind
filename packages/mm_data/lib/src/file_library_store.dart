@@ -319,6 +319,23 @@ class FileLibraryStore
     return session.reconcile(_require(studySetId).content);
   }
 
+  @override
+  Future<List<ResearchSession>> listResearchSessions(String studySetId) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    await (_writeQueue[studySetId] ?? Future<void>.value());
+    final directory = Directory(resolveFile(studySetId, 'research/sessions'));
+    if (!await directory.exists()) return [];
+    final sessions = <ResearchSession>[];
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File || !entity.path.endsWith('.json')) continue;
+      final session = await loadResearchSession(studySetId, p.basenameWithoutExtension(entity.path));
+      if (session != null) sessions.add(session);
+    }
+    sessions.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return sessions;
+  }
+
   Future<void> _syncResearchSessions(String id, StudySetContent content) async {
     final dir = Directory(resolveFile(id, 'research/sessions'));
     try {
