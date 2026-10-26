@@ -179,17 +179,7 @@ void main() {
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
     final controller = container.read(workspaceProvider('demo-1').notifier);
-    // A selection right above the page pill: below it the toolbar would cover the pill.
-    final viewport = tester.getRect(find.byType(MMFloatingToolbarLayout, skipOffstage: false).first);
-    await controller.onSelectionCommitted(
-      'c1',
-      MMPdfSelection(
-        page: 1,
-        rects: const [PageRect(10, 100, 200, 88)],
-        text: 'A selected passage',
-        viewportRect: Rect.fromLTWH(viewport.width / 2 - 90, 60, 180, 20),
-      ),
-    );
+    await controller.onSelectionCommitted('c1', selection);
     await tester.pumpAndSettle();
     final layout = tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout));
     final area = layout.avoid!(const Size(800, 600));
@@ -238,11 +228,17 @@ void main() {
     expect(noteShortcut.alt, isTrue);
     command(l.excerptWithNote).onSelected!();
     await tester.pumpAndSettle();
+    // The note is typed on its card in the map, where selection keys stay out of the way.
+    expect(container.read(workspaceProvider('demo-1')).editingCardId, isNotNull);
+    expect(find.byType(SelectionToolbar), findsNothing);
     expect(command(l.excerptAction).onSelected, isNull);
     expect(command(l.highlightAction).onSelected, isNull);
-    await tester.enterText(find.descendant(of: find.byType(MMSheet), matching: find.byType(EditableText)), 'EH');
+    tester.testTextInput.enterText('EH');
+    expect(controller.content.annotations.length, 2);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     expect(controller.content.annotations.length, 1);
-    await tester.tap(find.text('Cancel'));
+    await controller.onSelectionCommitted('c1', selection);
     await tester.pumpAndSettle();
     command(l.excerptAction).onSelected!();
     await tester.pumpAndSettle();
