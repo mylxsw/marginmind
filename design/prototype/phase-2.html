@@ -1,0 +1,1982 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginMind 二期 · 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii). */
+:root{
+  --win:#FFFFFF; --sidebar:rgba(242,242,246,.86); --reader:#EDEDF0; --canvas:#FBFBFD; --card:#FFFFFF; --page:#FFFFFF;
+  --label:#1D1D1F; --label2:#636366; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --sel:rgba(0,0,0,.075); --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentFill:#0A66D0; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --glass:rgba(255,255,255,.80); --hair:rgba(0,0,0,.08); --line:rgba(60,60,67,.24); --excerpt:#3A3A3C;
+  --root:#1D1D1F; --onRoot:#fff; --scrim:rgba(0,0,0,.12);
+  --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+  --sheetShadow:0 24px 60px rgba(0,0,0,.25);
+  --research:#5E5CE6; --researchTint:rgba(94,92,230,.10);
+  --ok:#28A745; --warn:#C27C0E; --err:#D70015;
+  --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+  --mono:"SF Mono",Menlo,monospace;
+}
+.dark{
+  --win:#1E1E1F; --sidebar:rgba(44,44,47,.86); --reader:#262628; --canvas:#1C1C1E; --card:#2C2C2E; --page:#FFFFFF;
+  --label:#F5F5F7; --label2:#AEAEB2; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --sel:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.20);
+  --glass:rgba(50,50,53,.80); --hair:rgba(0,0,0,.5); --line:rgba(235,235,245,.22); --excerpt:#D1D1D6;
+  --root:#F5F5F7; --onRoot:#1D1D1F; --scrim:rgba(0,0,0,.25);
+  --cardShadow:0 2px 10px rgba(0,0,0,.35); --sheetShadow:0 24px 60px rgba(0,0,0,.55);
+  --research:#7D7AFF; --researchTint:rgba(125,122,255,.16);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
+body{background:linear-gradient(135deg,#c9d6e8 0%,#e6dcef 50%,#f1e2d6 100%);overflow:hidden}
+body.dark{background:linear-gradient(135deg,#1b2333 0%,#2a2333 50%,#33281f 100%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+input,textarea,select{font:inherit;color:inherit}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.i.s{width:14px;height:14px}.i.xs{width:12px;height:12px}.i.l{width:18px;height:18px}
+
+#desk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px 318px 18px 18px;transition:padding 260ms}
+body.demo-min #desk{padding-right:58px}
+#win{position:relative;width:100%;max-width:1520px;height:100%;max-height:940px;background:var(--win);border-radius:24px;overflow:hidden;
+  box-shadow:0 0 0 .5px rgba(0,0,0,.25),0 30px 80px rgba(0,0,0,.28);display:flex;transition:max-width 320ms cubic-bezier(.2,0,0,1)}
+#win.narrow{max-width:1040px}
+
+/* ---------- Sidebar ---------- */
+#side{position:relative;z-index:3;width:236px;flex:none;margin:8px 0 8px 8px;border-radius:16px;background:var(--sidebar);
+  backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 6px 24px rgba(0,0,0,.06);
+  display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:hidden;transition:margin 320ms,width 320ms,opacity 200ms}
+#win.side-off #side{width:0;margin-left:0;padding:0;opacity:0}
+.lights{display:flex;gap:8px;height:28px;align-items:center;padding:0 6px}
+.lights span{width:12px;height:12px;border-radius:6px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+.side-set{display:flex;align-items:center;gap:8px;height:34px;padding:0 8px;border-radius:8px;font-weight:600;font-size:13px}
+.side-set .ic{width:22px;height:22px;border-radius:6px;background:linear-gradient(180deg,#5E9BFF,#2D6FE0);color:#fff;display:flex;align-items:center;justify-content:center}
+.side-search{display:flex;align-items:center;gap:6px;height:28px;margin:4px 2px 6px;padding:0 8px;border-radius:8px;background:var(--fill4);color:var(--label2)}
+.side-search input{border:0;background:none;outline:none;flex:1;min-width:0;font-size:13px}
+.sec{font-size:11px;font-weight:600;color:var(--label2);padding:10px 8px 4px;display:flex;align-items:center}
+.sec .grow{flex:1}
+.row{display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:8px;white-space:nowrap;overflow:hidden}
+.row:hover{background:var(--hover)}.row.on{background:var(--sel)}
+.row .ri{color:var(--accent);flex:none}.row .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.count{font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:9px;font-size:10.5px;font-weight:500;background:var(--fill);color:var(--label2);white-space:nowrap}
+.pill.run{background:var(--researchTint);color:var(--research)}
+.pill.ok{background:rgba(52,199,89,.14);color:#1f8a3b}.dark .pill.ok{color:#4cd964}
+.pill.warn{background:rgba(255,149,0,.15);color:#b86200}.dark .pill.warn{color:#ffb340}
+.pill.err{background:rgba(255,59,48,.12);color:#c4161c}.dark .pill.err{color:#ff6961}
+.pill.ext{background:transparent;box-shadow:inset 0 0 0 1px var(--sep)}
+.dot{width:6px;height:6px;border-radius:3px;background:currentColor;flex:none}
+.spin{width:12px;height:12px;border-radius:50%;border:1.6px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Main ---------- */
+#main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.toolbar{height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;position:relative;z-index:4}
+#win.side-off .toolbar{padding-left:118px}
+.tb-lights{display:none;position:absolute;left:16px;top:14px;padding:0}
+#win.side-off .tb-lights{display:flex}
+.tb-title{min-width:0;margin-right:auto;display:flex;flex-direction:column;line-height:1.15}
+.tb-title b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-title span{font-size:11px;color:var(--label2)}
+.capsule{display:flex;align-items:center;height:36px;padding:3px;border-radius:18px;background:var(--glass);backdrop-filter:blur(24px);box-shadow:0 0 0 .5px var(--hair)}
+.tbtn{position:relative;height:30px;min-width:30px;padding:0 7px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--icon)}
+.tbtn:hover{background:var(--hover)}.tbtn:active{background:var(--pressed)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}
+.tbtn.research.on{background:var(--researchTint);color:var(--research)}
+.tbtn .lbl{font-size:12px}
+.tdiv{width:1px;height:16px;background:var(--sep);margin:0 3px}
+.seg{display:flex;height:30px;padding:2px;border-radius:15px;background:var(--fill4)}
+.seg button{height:26px;padding:0 10px;border-radius:13px;font-size:12px;color:var(--label2);display:flex;align-items:center;gap:4px}
+.seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.seg.sm{height:26px}.seg.sm button{height:22px;padding:0 8px;font-size:11.5px}
+.tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:3px 7px;border-radius:5px;background:rgba(40,40,42,.92);color:#fff;font-size:11px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 120ms .4s;z-index:50}
+[data-tip]:hover>.tip{opacity:1}
+.prog-capsule{display:flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 12px;border-radius:15px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair);font-size:12px;color:var(--label2)}
+.prog-capsule .bar{width:80px;height:4px;border-radius:2px;background:var(--fill);overflow:hidden}
+.prog-capsule .bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width 300ms}
+
+#content{flex:1;min-height:0;display:flex;position:relative;margin:0 8px 8px 8px;gap:0}
+.pane{position:relative;min-width:0;border-radius:14px;overflow:hidden;transition:flex 320ms cubic-bezier(.2,0,0,1),opacity 200ms}
+#reader{flex:1.05;background:var(--reader);display:flex;flex-direction:column}
+#map{flex:1;background:var(--canvas);box-shadow:inset 0 0 0 .5px var(--sep)}
+.vdiv{width:8px;flex:none;cursor:col-resize;position:relative}
+.vdiv::after{content:"";position:absolute;left:3.5px;top:12px;bottom:12px;width:1px;background:transparent}
+.pane.hide{flex:0 0 0 !important;opacity:0;pointer-events:none}
+.vdiv.hide{display:none}
+
+/* ---------- Reader ---------- */
+.doc-tabs{display:flex;gap:4px;padding:6px 8px 0;flex:none}
+.doc-tab{display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:8px;font-size:12px;color:var(--label2);max-width:240px}
+.doc-tab .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-tab.on{background:var(--win);color:var(--label);box-shadow:0 0 0 .5px var(--hair)}
+.doc-tab:hover:not(.on){background:var(--hover)}
+.reader-scroll{flex:1;overflow:auto;position:relative;padding:18px 0 80px}
+.page{position:relative;margin:0 auto;background:var(--page);color:#1d1d1f;box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.06);
+  width:560px;padding:56px 58px 60px;transform-origin:top center;transition:width 200ms}
+.page + .page{margin-top:16px}
+.page .run-head{font-size:10px;color:#8e8e93;display:flex;justify-content:space-between;margin-bottom:26px;font-family:var(--sans)}
+.page h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:0 0 6px}
+.page h3{font-family:var(--serif);font-size:15.5px;font-weight:600;margin:22px 0 10px}
+.page p{font-family:var(--serif);font-size:14.5px;line-height:2.05;margin:0 0 10px;text-align:justify;text-indent:2em}
+.page .pno{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:10px;color:#8e8e93;font-family:var(--sans)}
+.page ::selection{background:rgba(0,122,255,.28)}
+.hl{border-radius:2px;cursor:pointer}
+.hl.y{background:rgba(255,204,0,.36)}.hl.g{background:rgba(52,199,89,.30)}.hl.b{background:rgba(0,122,255,.24)}.hl.p{background:rgba(255,45,85,.24)}.hl.o{background:rgba(255,149,0,.30)}.hl.v{background:rgba(175,82,222,.26)}
+.hl.flash{animation:flash 1.6s}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px rgba(0,122,255,.45)}100%{box-shadow:0 0 0 0 rgba(0,122,255,0)}}
+.rn-anchor{background-image:linear-gradient(90deg,var(--research) 50%,transparent 50%);background-size:6px 1.5px;background-repeat:repeat-x;background-position:0 100%;padding-bottom:1px}
+.rn-marker{position:absolute;right:16px;width:24px;height:24px;border-radius:12px 12px 12px 4px;background:var(--research);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;box-shadow:0 2px 6px rgba(94,92,230,.4);cursor:pointer;animation:pop 320ms cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.ink-layer{position:absolute;inset:0;pointer-events:none}
+.ink-layer.active{pointer-events:auto;cursor:crosshair}
+.ink-layer.erase{cursor:cell}
+.ink-layer path,.ink-layer ellipse,.ink-layer line{vector-effect:non-scaling-stroke}
+.ink-layer.erase .stroke{cursor:pointer}
+.ink-layer.erase .stroke:hover{opacity:.35}
+.scan .scan-img{filter:contrast(1.05) blur(.25px);user-select:none;-webkit-user-select:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.012) 0 2px,transparent 2px 4px)}
+.scan.page{background:#f7f4ec}
+.scan .scan-img p{color:#2b2b2b;transform:rotate(-.35deg)}
+.scan.recognized .scan-img{user-select:text;-webkit-user-select:text}
+.ocr-badge{position:absolute;top:14px;right:14px;font-family:var(--sans);font-size:10.5px}
+.reader-banner{margin:0 auto 14px;width:560px;display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--win);box-shadow:0 0 0 .5px var(--hair);font-size:12.5px;line-height:1.5}
+.reader-banner .bi{width:28px;height:28px;border-radius:8px;background:var(--accentTint);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.reader-banner .bt{flex:1}.reader-banner b{display:block;font-size:13px;margin-bottom:2px}
+.reader-float{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5}
+.pen-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:2px;height:40px;padding:4px 6px;border-radius:20px;background:var(--glass);backdrop-filter:blur(24px);box-shadow:0 0 0 .5px var(--hair)}
+.cdot{width:16px;height:16px;border-radius:8px;margin:0 3px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.2);position:relative}
+.cdot.on::after{content:"";position:absolute;inset:-4px;border-radius:12px;box-shadow:0 0 0 2px var(--accent)}
+.wdot{width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.wdot.on{background:var(--accentTint)}
+.wdot i{display:block;border-radius:6px;background:var(--label)}
+
+/* Floating selection toolbar (MMFloatingToolbar) */
+.ftb{position:absolute;z-index:20;display:flex;align-items:center;gap:1px;height:38px;padding:4px;border-radius:19px;background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 6px 20px rgba(0,0,0,.10);animation:fin 150ms}
+@keyframes fin{from{opacity:0;transform:translateY(4px)}}
+.ftb .cdot{width:14px;height:14px;margin:0 5px}
+.ftb .tbtn{height:30px}
+.ftb .tbtn.research{color:var(--research);padding:0 9px 0 7px}
+.ftb .tbtn.research:hover{background:var(--researchTint)}
+.kbd{font-family:var(--sans);font-size:10.5px;color:var(--label2);padding:0 4px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--sep);line-height:16px}
+
+/* ---------- Mind map ---------- */
+.map-stage{position:absolute;inset:0;overflow:hidden;cursor:grab}
+.map-world{position:absolute;left:0;top:0;transform-origin:0 0}
+.map-world svg.links{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.node{position:absolute;cursor:default;user-select:none;-webkit-user-select:none}
+.node.sel>.nb{box-shadow:0 0 0 2px var(--accent),var(--cardShadow) !important}
+.node.flash>.nb{animation:nflash 1.6s}
+@keyframes nflash{0%,50%{box-shadow:0 0 0 4px rgba(94,92,230,.45),var(--cardShadow)}100%{box-shadow:var(--cardShadow)}}
+.nb{position:relative}
+.n-root .nb{background:var(--root);color:var(--onRoot);font-weight:600;font-size:15px;padding:10px 18px;border-radius:12px;white-space:nowrap}
+.n-topic .nb{background:var(--fill);padding:7px 12px;border-radius:10px;font-weight:500;white-space:nowrap}
+.n-note .nb{background:var(--fill4);padding:8px 12px;border-radius:10px;width:220px;line-height:1.5;font-size:12.5px}
+.n-note .nb ul,.n-note .nb ol{margin:2px 0;padding-left:18px}.n-note .nb p{margin:0}
+.n-note.editing .nb{background:var(--card);box-shadow:0 0 0 2px var(--accent)}
+.n-ex .nb,.n-img .nb,.n-rn .nb{background:var(--card);border-radius:12px;box-shadow:var(--cardShadow);width:var(--w,240px);padding:10px 12px 10px 18px}
+.n-ex .bar,.n-img .bar,.n-rn .bar{position:absolute;left:7px;top:10px;bottom:10px;width:3px;border-radius:2px}
+.n-ex .ttl{font-size:12.5px;font-weight:600;margin-bottom:4px;line-height:1.35;padding-right:22px}
+.n-ex .q{font-family:var(--serif);font-size:13px;line-height:20px;color:var(--excerpt);display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:4}
+.compact .n-ex .q{-webkit-line-clamp:2}
+.n-ex.expanded .q{-webkit-line-clamp:unset;display:block}
+.more{display:flex;align-items:center;gap:3px;margin-top:5px;font-size:11px;color:var(--accent);cursor:pointer;width:max-content;padding:1px 4px 1px 0;border-radius:4px}
+.more:hover{text-decoration:underline}
+.goto{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--icon);opacity:.7}
+.goto:hover{background:var(--hover);opacity:1}
+.src{font-size:10.5px;color:var(--label2);margin-top:6px;display:flex;align-items:center;gap:4px}
+.n-img .imgbox{border-radius:6px;overflow:hidden;background:var(--fill4);margin-top:2px}
+.n-img .imgbox img,.n-img .imgbox svg{display:block;width:100%;height:auto}
+.n-img .ttl{font-size:12.5px;font-weight:600;margin-bottom:6px}
+.n-rn .nb{background:linear-gradient(180deg,var(--researchTint),transparent 70%),var(--card)}
+.n-rn .bar{background:var(--research)}
+.n-rn .kind{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--research);font-weight:600;margin-bottom:4px}
+.n-rn .ttl{font-size:12.5px;font-weight:600;line-height:1.4}
+.n-rn .sum{font-size:12px;line-height:1.5;color:var(--label2);margin-top:3px;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:2}
+.compact .n-rn .sum,.compact .n-img .imgbox{display:none}
+.resize{position:absolute;top:8px;bottom:8px;right:-5px;width:10px;cursor:ew-resize;opacity:0;display:flex;align-items:center;justify-content:center}
+.resize::after{content:"";width:3px;height:22px;border-radius:2px;background:var(--accent)}
+.node:hover .resize,.node.sel .resize{opacity:.7}
+.add-child{position:absolute;right:-30px;top:50%;margin-top:-11px;width:22px;height:22px;border-radius:11px;background:var(--card);box-shadow:0 0 0 .5px var(--hair),0 1px 3px rgba(0,0,0,.12);display:none;align-items:center;justify-content:center;color:var(--icon)}
+.node.sel .add-child{display:flex}
+.map-controls{position:absolute;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;z-index:5}
+.map-hint{position:absolute;left:12px;bottom:14px;font-size:11.5px;color:var(--label2);display:flex;align-items:center;gap:6px;z-index:5}
+.drop-overlay{position:absolute;inset:8px;border-radius:12px;border:2px dashed var(--accent);background:var(--accentTint);display:none;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:var(--accent);font-weight:600;z-index:30}
+.drop-overlay.on{display:flex}
+
+/* ---------- Right panel (research / inspector) ---------- */
+#rpanel{flex:0 0 0;width:0;opacity:0;margin-left:0;background:var(--win);border-radius:14px;box-shadow:0 0 0 .5px var(--sep);display:flex;flex-direction:column;overflow:hidden;transition:flex 320ms cubic-bezier(.2,0,0,1),opacity 200ms,margin 320ms}
+#rpanel.open{flex:0 0 400px;opacity:1;margin-left:8px}
+#win.narrow #rpanel.open{flex-basis:360px}
+.rp-head{padding:12px 14px 10px;border-bottom:1px solid var(--sep);flex:none}
+.rp-top{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.rp-kind{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--research)}
+.rp-kind.detail{color:var(--label2)}
+.ib{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--icon)}
+.ib:hover{background:var(--hover)}
+.origin{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:var(--fill4);cursor:pointer}
+.origin:hover{background:var(--fill)}
+.origin .oq{font-family:var(--serif);font-size:12px;line-height:1.6;color:var(--excerpt);display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:2}
+.origin .om{font-size:11px;color:var(--label2);margin-top:2px;display:flex;gap:6px;align-items:center}
+.rp-q{font-size:15px;font-weight:600;line-height:1.4;margin:10px 0 0;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px}
+.rp-q:hover{background:var(--hover)}.rp-q:focus{background:var(--fill4);box-shadow:0 0 0 2px var(--accentTint)}
+.runline{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;color:var(--label2)}
+.steps{display:flex;gap:4px;align-items:center;flex:1;min-width:0;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.step.done{color:var(--label)}.step.now{color:var(--research);font-weight:500}
+.step .chev{opacity:.4}
+.lnk{color:var(--accent);cursor:pointer}.lnk:hover{text-decoration:underline}
+.rp-tabs{padding:10px 14px 0;flex:none}
+.rp-body{flex:1;overflow:auto;padding:12px 14px 16px;position:relative}
+.rp-foot{flex:none;border-top:1px solid var(--sep);padding:10px 12px}
+.composer{display:flex;align-items:flex-end;gap:6px;padding:6px 6px 6px 10px;border-radius:12px;background:var(--fill4);box-shadow:inset 0 0 0 .5px var(--sep)}
+.composer textarea{flex:1;border:0;background:none;resize:none;outline:none;height:20px;line-height:20px;font-size:13px}
+.sendb{width:26px;height:26px;border-radius:13px;background:var(--research);color:#fff;display:flex;align-items:center;justify-content:center}
+.comp-meta{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--label2)}
+.mode-badge{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;font-size:11.5px;line-height:1.45;margin-bottom:12px;background:var(--fill4);color:var(--label2)}
+.mode-badge.offline{background:rgba(255,149,0,.10);color:#9a5a00}.dark .mode-badge.offline{color:#ffb340}
+.mode-badge.web{background:var(--researchTint);color:var(--research)}
+.ans-sec{margin-bottom:14px}
+.ans-sec h4{font-size:11px;font-weight:600;color:var(--label2);margin:0 0 6px;letter-spacing:.02em}
+.pt{display:flex;gap:8px;padding:7px 8px;margin:0 -8px;border-radius:9px;line-height:1.6;position:relative}
+.pt:hover{background:var(--hover)}
+.pt.chk{background:var(--researchTint)}
+.pt .cb{width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.2px var(--label2);flex:none;margin-top:3px;display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;opacity:.55}
+.pt:hover .cb,.pt.chk .cb{opacity:1}
+.pt.chk .cb{background:var(--research);box-shadow:none}
+.pt .tx{flex:1;min-width:0}
+.pt .tx[contenteditable=true]{outline:none;background:var(--card);box-shadow:0 0 0 2px var(--accent);border-radius:5px;padding:0 4px;margin:0 -4px}
+.pt .acts{position:absolute;right:6px;top:-12px;display:none;gap:1px;padding:2px;border-radius:8px;background:var(--glass);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px var(--hair),0 2px 8px rgba(0,0,0,.1)}
+.pt:hover .acts{display:flex}
+.pt .acts button{height:22px;padding:0 7px;border-radius:6px;font-size:11px;color:var(--label2)}
+.pt .acts button:hover{background:var(--hover);color:var(--label)}
+.edited{font-size:10.5px;color:var(--research);margin-left:4px;white-space:nowrap}
+.cite{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:15px;padding:0 4px;margin:0 1px;border-radius:4px;background:var(--fill);color:var(--label2);font-size:10px;font-weight:600;vertical-align:1px;cursor:pointer;font-family:var(--sans)}
+.cite:hover{background:var(--research);color:#fff}
+.quote{font-family:var(--serif);font-size:12.5px;line-height:1.7;color:var(--excerpt);border-left:2px solid var(--research);padding:1px 0 1px 9px;margin-top:4px}
+.savebar{position:sticky;bottom:-16px;margin:12px -14px -16px;padding:10px 14px;background:var(--glass);backdrop-filter:blur(20px);border-top:1px solid var(--sep);display:flex;align-items:center;gap:8px}
+.btn{height:28px;padding:0 12px;border-radius:14px;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;background:var(--fill);color:var(--label)}
+.btn:hover{filter:brightness(.97)}
+.btn.pri{background:var(--accent);color:#fff}
+.btn.res{background:var(--research);color:#fff}
+.btn.plain{background:none;color:var(--accent);padding:0 6px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn.sm{height:24px;padding:0 9px;font-size:11.5px}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:30px 18px;color:var(--label2);font-size:12.5px;line-height:1.6}
+.empty .ei{width:40px;height:40px;border-radius:12px;background:var(--fill4);display:flex;align-items:center;justify-content:center;color:var(--icon)}
+.empty b{color:var(--label);font-size:13.5px}
+.src-item{padding:10px;margin:0 -6px 6px;border-radius:10px;position:relative}
+.src-item:hover{background:var(--hover)}
+.src-item .st{display:flex;gap:8px;align-items:flex-start}
+.src-ic{width:26px;height:26px;border-radius:7px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.src-item h5{margin:0;font-size:13px;font-weight:600;line-height:1.4}
+.src-item .meta{font-size:11px;color:var(--label2);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.src-item .why{font-size:12px;line-height:1.55;margin-top:6px;color:var(--label)}
+.src-item .why b{font-weight:500;color:var(--label2)}
+.src-item .sa{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
+.src-item.inuse::before{content:"";position:absolute;left:-2px;top:12px;bottom:12px;width:3px;border-radius:2px;background:var(--research)}
+.dupe{font-size:11px;color:var(--label2);margin-top:6px;display:flex;align-items:center;gap:4px}
+.filter-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.chip{height:24px;padding:0 9px;border-radius:12px;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--sep);color:var(--label2);display:inline-flex;align-items:center;gap:4px}
+.chip.on{background:var(--label);color:var(--win);box-shadow:none}
+.chip:hover:not(.on){background:var(--hover)}
+.article{font-size:13.5px;line-height:1.85}
+.article h1{font-size:18px;line-height:1.4;margin:6px 0 6px}
+.article h2{font-size:14.5px;margin:18px 0 6px}
+.article p{margin:0 0 10px;position:relative}
+.article p[data-pid]::before{content:attr(data-pid);position:absolute;left:-26px;top:3px;font-size:9.5px;color:var(--label2);opacity:0;font-family:var(--mono)}
+.article p:hover::before{opacity:.8}
+.article p.cited{background:var(--researchTint);border-radius:4px;box-shadow:-6px 0 0 var(--researchTint),6px 0 0 var(--researchTint)}
+.article table{border-collapse:collapse;font-size:12px;margin:6px 0 12px;width:100%}
+.article th,.article td{border:1px solid var(--sep);padding:4px 7px;text-align:left}
+.article th{background:var(--fill4);font-weight:600}
+.article figure{margin:8px 0 12px;font-size:11.5px;color:var(--label2)}
+.article ::selection{background:rgba(94,92,230,.28)}
+.ai-box{border-radius:10px;padding:9px 11px;background:var(--researchTint);margin:10px 0 14px;font-size:12.5px;line-height:1.6}
+.ai-box .h{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--research);margin-bottom:3px}
+.art-meta{font-size:11px;color:var(--label2);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.clip-tb{position:absolute;z-index:25;display:flex;gap:2px;padding:3px;border-radius:16px;background:var(--glass);backdrop-filter:blur(20px);box-shadow:0 0 0 .5px var(--hair),0 4px 14px rgba(0,0,0,.12)}
+.clip-tb button{height:26px;padding:0 10px;border-radius:13px;font-size:12px;display:flex;align-items:center;gap:4px}
+.clip-tb button:hover{background:var(--hover)}
+.saved-item{padding:10px 12px;border-radius:12px;box-shadow:0 0 0 .5px var(--sep);margin-bottom:8px;background:var(--card)}
+.saved-item h5{margin:0 0 4px;font-size:13px}
+.saved-item .att{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.att-chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;background:var(--fill4);font-size:11px;color:var(--label2);cursor:pointer}
+.att-chip:hover{background:var(--fill);color:var(--label)}
+.clip-draft{padding:8px 10px;border-radius:10px;background:var(--fill4);margin-bottom:6px;font-size:12px;line-height:1.6}
+.clip-draft .from{font-size:10.5px;color:var(--label2);margin-top:3px}
+.insp-sec{margin-bottom:16px}
+.insp-sec h4{font-size:11px;font-weight:600;color:var(--label2);margin:0 0 6px}
+.insp-quote{font-family:var(--serif);font-size:14px;line-height:1.9;color:var(--excerpt);padding:10px 12px;border-radius:10px;background:var(--fill4)}
+.insp-title{font-size:16px;font-weight:600;line-height:1.4;outline:none;padding:2px 4px;margin:0 -4px;border-radius:6px}
+.insp-title:focus{background:var(--fill4);box-shadow:0 0 0 2px var(--accentTint)}
+.kv{display:grid;grid-template-columns:72px 1fr;gap:6px 8px;font-size:12px}
+.kv span:nth-child(odd){color:var(--label2)}
+.tag{display:inline-flex;height:20px;padding:0 7px;border-radius:10px;background:var(--fill);font-size:11px;align-items:center;margin:0 4px 4px 0}
+
+/* ---------- Popovers / sheets / HUD ---------- */
+.pop{position:absolute;z-index:40;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);border-radius:14px;box-shadow:0 0 0 .5px var(--hair),0 14px 40px rgba(0,0,0,.18);animation:fin 160ms}
+.dark .pop{background:rgba(44,44,47,.94)}
+.launch{width:440px;padding:14px}
+.launch .lh{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--research);margin-bottom:8px}
+.launch .lq{padding:7px 10px;border-radius:9px;background:var(--fill4)}
+.launch .lq span{font-family:var(--serif);font-size:12.5px;line-height:1.65;color:var(--excerpt);display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;-webkit-line-clamp:2}
+.intents{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.intent{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;border-radius:10px;font-size:11.5px;color:var(--label);position:relative;box-shadow:inset 0 0 0 1px var(--sep)}
+.intent .ii{color:var(--research)}
+.intent:hover{background:var(--hover)}
+.intent.on{background:var(--researchTint);box-shadow:inset 0 0 0 1.5px var(--research)}
+.intent .rec{position:absolute;top:-6px;right:-4px;font-size:9px;padding:0 4px;border-radius:5px;background:var(--research);color:#fff;line-height:14px}
+.fld{margin-top:10px}
+.fld label{display:flex;align-items:center;font-size:11px;font-weight:600;color:var(--label2);margin-bottom:4px}
+.fld label .grow{flex:1}
+.ta{width:100%;border:0;outline:none;border-radius:8px;padding:7px 9px;background:var(--card);box-shadow:inset 0 0 0 1px var(--sep);font-size:13px;line-height:1.5;resize:none}
+.ta:focus{box-shadow:inset 0 0 0 1px var(--accent),0 0 0 3px var(--accentTint)}
+.kw{display:flex;flex-wrap:wrap;gap:5px;padding:5px;border-radius:8px;background:var(--card);box-shadow:inset 0 0 0 1px var(--sep)}
+.kw span{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 4px 0 8px;border-radius:6px;background:var(--fill);font-size:12px}
+.kw span button{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--label2)}
+.kw input{border:0;outline:none;background:none;flex:1;min-width:80px;font-size:12px}
+.ctx{margin-top:10px;border-radius:9px;box-shadow:inset 0 0 0 1px var(--sep);font-size:12px}
+.ctx-h{display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer}
+.ctx-h .grow{flex:1;color:var(--label2)}
+.ctx-b{padding:0 10px 10px;display:none}
+.ctx.open .ctx-b{display:block}
+.ctx-part{display:flex;gap:8px;padding:6px 0;border-top:1px solid var(--sep);align-items:flex-start}
+.ctx-part .tx{font-family:var(--serif);font-size:11.5px;line-height:1.6;color:var(--excerpt);flex:1}
+.ctx-part .tx.sel{color:var(--label)}
+.sw{width:28px;height:16px;border-radius:8px;background:var(--fill);position:relative;flex:none;cursor:pointer;transition:background 150ms}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left 150ms}
+.sw.on{background:var(--ok)}.sw.on::after{left:14px}
+.sw.dis{opacity:.4;pointer-events:none}
+.lfoot{display:flex;align-items:center;gap:8px;margin-top:12px}
+.lfoot .grow{flex:1}
+.note{font-size:11px;color:var(--label2);line-height:1.5}
+.warnline{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;line-height:1.5;color:var(--label2);padding:7px 9px;border-radius:8px;background:rgba(255,149,0,.10);margin-top:8px}
+.menu{min-width:200px;padding:5px}
+.mi{display:flex;align-items:center;gap:8px;height:26px;padding:0 9px;border-radius:6px;font-size:13px;white-space:nowrap}
+.mi:hover{background:var(--accent);color:#fff}
+.mi:hover .count,.mi:hover .ii{color:#fff}
+.mi .grow{flex:1}.mi .ii{color:var(--icon)}
+.mi.res .ii{color:var(--research)}
+.msep{height:1px;background:var(--sep);margin:4px 6px}
+.mh{font-size:11px;font-weight:600;color:var(--label2);padding:4px 9px 2px}
+.scrim{position:absolute;inset:0;z-index:60;background:var(--scrim);display:flex;justify-content:center;align-items:flex-start;animation:fade 200ms}
+@keyframes fade{from{opacity:0}}
+.sheet{margin-top:56px;width:520px;max-height:calc(100% - 80px);overflow:auto;background:var(--win);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),var(--sheetShadow);padding:18px 20px;animation:drop 260ms cubic-bezier(.2,0,0,1)}
+@keyframes drop{from{transform:translateY(-16px);opacity:0}}
+.sheet h3{margin:0 0 4px;font-size:15px}
+.sheet .sub{font-size:12px;color:var(--label2);margin-bottom:12px}
+.sfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;align-items:center}
+.sfoot .grow{flex:1}
+.radio{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:10px;box-shadow:inset 0 0 0 1px var(--sep);margin-bottom:6px;cursor:pointer}
+.radio .rd{width:16px;height:16px;border-radius:8px;box-shadow:inset 0 0 0 1.4px var(--label2);flex:none;margin-top:1px}
+.radio.on{box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--accentTint)}
+.radio.on .rd{box-shadow:inset 0 0 0 5px var(--accent)}
+.radio b{display:block;font-size:13px;font-weight:500}.radio span{font-size:11.5px;color:var(--label2)}
+.cbx{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-top:8px;cursor:pointer}
+.cbx i{width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1.2px var(--label2);display:flex;align-items:center;justify-content:center;color:#fff}
+.cbx.on i{background:var(--accent);box-shadow:none}
+.cite-row{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;background:var(--fill4);margin-bottom:4px;font-size:12px}
+.cite-row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preview-box{height:200px;border-radius:10px;background:var(--canvas);box-shadow:inset 0 0 0 1px var(--sep);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.hud{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:10px;height:36px;padding:0 8px 0 16px;border-radius:18px;background:rgba(30,30,32,.88);color:#fff;font-size:12.5px;backdrop-filter:blur(20px);animation:fin 200ms;white-space:nowrap}
+.hud .btn{background:rgba(255,255,255,.14);color:#fff;height:26px}
+.lightbox{position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;animation:fade 200ms}
+.lightbox .lb-img{max-width:80%;max-height:75%;overflow:auto;border-radius:8px;background:#fff}
+.lightbox .lb-bar{display:flex;gap:8px;align-items:center;color:#fff;font-size:12px}
+.review{position:absolute;inset:0;z-index:65;background:var(--win);display:flex;flex-direction:column;animation:fade 200ms}
+.rv-top{height:56px;display:flex;align-items:center;gap:10px;padding:0 16px 0 88px}
+.rv-card{margin:20px auto 0;width:620px;min-height:420px;border-radius:18px;background:var(--card);box-shadow:0 0 0 .5px var(--hair),0 8px 30px rgba(0,0,0,.08);padding:28px 32px;display:flex;flex-direction:column}
+.rv-path{font-size:11.5px;color:var(--label2);display:flex;gap:4px;align-items:center;margin-bottom:14px}
+.rv-q{font-size:20px;font-weight:600;line-height:1.45}
+.rv-ans{border-top:1px solid var(--sep);margin-top:18px;padding-top:18px}
+.rv-rate{display:flex;gap:10px;justify-content:center;margin-top:auto;padding-top:22px}
+.rv-rate .btn{height:44px;min-width:104px;flex-direction:column;gap:0;border-radius:12px}
+.rv-rate .btn small{font-size:10.5px;color:var(--label2)}
+
+/* ---------- Demo console (outside the product) ---------- */
+#demo{position:fixed;right:14px;top:14px;z-index:200;width:288px;max-height:calc(100% - 28px);overflow:auto;border-radius:14px;background:rgba(20,20,22,.90);color:#f2f2f7;
+  backdrop-filter:blur(20px);box-shadow:0 10px 40px rgba(0,0,0,.35);font-size:12px;transition:transform 260ms}
+#demo.min{transform:translateX(250px)}
+#demo .dh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-weight:600;position:sticky;top:0;background:rgba(20,20,22,.96)}
+#demo .dh .grow{flex:1}
+#demo .dh button{color:#aeaeb2;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+#demo .dh button:hover{background:rgba(255,255,255,.1)}
+#demo .dsec{padding:8px 12px}
+#demo .dt{font-size:10.5px;color:#8e8e93;font-weight:600;margin:4px 0 6px;letter-spacing:.04em}
+#demo .scn{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;padding:6px 8px;border-radius:8px;margin-bottom:2px;line-height:1.45}
+#demo .scn:hover{background:rgba(255,255,255,.08)}
+#demo .scn.on{background:rgba(94,92,230,.35)}
+#demo .scn .n{width:18px;height:18px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:10.5px;flex:none;margin-top:1px}
+#demo .scn small{display:block;color:#a1a1a6;font-size:10.5px}
+#demo .tg{display:flex;align-items:center;justify-content:space-between;padding:5px 2px}
+#demo .tg .seg{background:rgba(255,255,255,.08)}
+#demo .tg .seg button{color:#aeaeb2;height:22px;padding:0 8px;font-size:11px}
+#demo .tg .seg button.on{background:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+#demo .seg{height:26px}
+#guide{margin:8px 12px 12px;padding:9px 10px;border-radius:10px;background:rgba(94,92,230,.25);line-height:1.55;font-size:11.5px;color:#e5e5ea}
+#guide b{color:#fff}
+.coach{position:absolute;z-index:90;pointer-events:none;border-radius:12px;box-shadow:0 0 0 3px rgba(94,92,230,.85),0 0 0 9px rgba(94,92,230,.25);animation:coach 1.4s ease-in-out infinite}
+@keyframes coach{50%{box-shadow:0 0 0 3px rgba(94,92,230,.85),0 0 0 14px rgba(94,92,230,.08)}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+<symbol id="i-research" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="m19.5 19.5-4.6-4.6"/><path d="M18.5 2.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="currentColor" stroke-width="1"/><path d="M8.2 10.5h4.6M10.5 8.2v4.6" stroke-width="1.4"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></symbol>
+<symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M9.5 4.5v15M5.5 8.5h1.5M5.5 11h1.5"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.5h7l4 4v12a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/><path d="M13.5 3.5v4h4M8.5 12h7M8.5 15.5h7"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 9.5h8M8 12h8M8 14.5h5"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.2"/><circle cx="19" cy="5.5" r="2.2"/><circle cx="19" cy="18.5" r="2.2"/><path d="M7.2 12H11c1.5 0 2-1 2-2.5V8c0-1.5.6-2.5 2-2.5h1.8M11 12c1.5 0 2 1 2 2.5V16c0 1.5.6 2.5 2 2.5h1.8"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3.5 12.3V4.5a1 1 0 0 1 1-1h7.8l8.2 8.2a1.5 1.5 0 0 1 0 2.1l-6.2 6.2a1.5 1.5 0 0 1-2.1 0z"/><circle cx="8" cy="8" r="1.3"/></symbol>
+<symbol id="i-cards" viewBox="0 0 24 24"><rect x="3.5" y="7" width="13" height="13" rx="2.5"/><path d="M7.5 7V5.5A2 2 0 0 1 9.5 3.5h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 24 24"><path d="M5 3.5l13 6.2-5.6 1.7-2.4 5.8z"/><path d="M12.5 12.5l5 5"/></symbol>
+<symbol id="i-hl" viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L11 18l-5 .5.5-5z"/><path d="M4 21h8"/></symbol>
+<symbol id="i-area" viewBox="0 0 24 24"><path d="M7 3.5v13.5h13.5"/><path d="M3.5 7H17v13.5"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="M16.5 3.5l4 4L8.5 19.5 3.5 20.5l1-5z"/><path d="M14 6l4 4"/></symbol>
+<symbol id="i-free" viewBox="0 0 24 24"><path d="M3.5 16c2.5-6 5-8 6.5-5s2 5 4 2 3.5-7 6.5-6"/></symbol>
+<symbol id="i-circle" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4.5 19.5l15-15M10 4.5h9.5V14"/></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24"><path d="M8.5 20.5l-5-5L14 5l6 6-9.5 9.5zM19.5 20.5h-11M9 10l6 6"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14.5L4 9.5l5-5"/><path d="M4 9.5h10a6 6 0 0 1 0 12h-3"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-cr" viewBox="0 0 24 24"><path d="M9.5 5.5l6.5 6.5-6.5 6.5"/></symbol>
+<symbol id="i-cl" viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol>
+<symbol id="i-cd" viewBox="0 0 24 24"><path d="M5.5 9.5L12 16l6.5-6.5"/></symbol>
+<symbol id="i-cu" viewBox="0 0 24 24"><path d="M5.5 14.5L12 8l6.5 6.5"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M9.5 8.5l-5 5 5 5"/><path d="M4.5 13.5h10a5 5 0 0 0 0-10h-2"/></symbol>
+<symbol id="i-goto" viewBox="0 0 24 24"><path d="M8 16L16.5 7.5M9 7.5h7.5V15"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24"><path d="M13.5 4.5h6v6M19.5 4.5L11 13"/><path d="M17.5 14v4.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1H10"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8.5 8.5"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M4.5 5.5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v9l-5 5h-9a1 1 0 0 1-1-1z"/><path d="M14.5 19.5v-4a1 1 0 0 1 1-1h4M8 9h8M8 12.5h5"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18" cy="12" r="1.2" fill="currentColor"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.5 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.5-3.5-8.5s1-5.9 3.5-8.5z"/></symbol>
+<symbol id="i-paper" viewBox="0 0 24 24"><path d="M4 6.5l8-3 8 3-8 3z"/><path d="M7 8v5c0 1.5 2.2 3 5 3s5-1.5 5-3V8M20 6.5v6"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3.5v11M8 7.5l4-4 4 4"/><path d="M8.5 10.5H6.5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-2"/></symbol>
+<symbol id="i-zin" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5M11 8.5v5"/></symbol>
+<symbol id="i-zout" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/></symbol>
+<symbol id="i-vreader" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></symbol>
+<symbol id="i-vsplit" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M12 4.5v15"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 15.5H3z"/><path d="M12 10v4.5M12 17v.2"/></symbol>
+<symbol id="i-wifioff" viewBox="0 0 24 24"><path d="M3.5 3.5l17 17M8.5 16a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4-2.3M19 12.5a10 10 0 0 0-2.7-1.9M2 9a14.5 14.5 0 0 1 4.5-2.8M22 9a14.5 14.5 0 0 0-11-3.4"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 17.5h6M10 20.5h4M12 3.5a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.4 1.1 2.2v1h5v-1c0-.8.4-1.6 1.1-2.2A6 6 0 0 0 12 3.5z"/></symbol>
+<symbol id="i-read" viewBox="0 0 24 24"><path d="M3.5 5.5c3-1 6-1 8.5 1v13c-2.5-2-5.5-2-8.5-1zM20.5 5.5c-3-1-6-1-8.5 1v13c2.5-2 5.5-2 8.5-1z"/></symbol>
+<symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16M7 20h10M5 7.5h14M5 7.5l-2.5 6a3 3 0 0 0 5 0zM19 7.5l-2.5 6a3 3 0 0 0 5 0z"/></symbol>
+<symbol id="i-trans" viewBox="0 0 24 24"><path d="M3.5 5.5h9M8 3.5v2M5.5 5.5c.5 3 2.5 5.5 5.5 7M10.5 5.5c-.5 3-2.5 5.5-5.5 7M12.5 20.5l4-10 4 10M14 17h5"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8z"/><path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"/></symbol>
+<symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 4.5h6a3.5 3.5 0 0 1 0 7H7zM7 11.5h7a4 4 0 0 1 0 8H7z" stroke-width="2"/></symbol>
+<symbol id="i-ital" viewBox="0 0 24 24"><path d="M10 4.5h8M6 19.5h8M14 4.5l-4 15"/></symbol>
+<symbol id="i-ul" viewBox="0 0 24 24"><path d="M9.5 6.5h11M9.5 12h11M9.5 17.5h11"/><circle cx="4.5" cy="6.5" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="17.5" r="1" fill="currentColor"/></symbol>
+<symbol id="i-ol" viewBox="0 0 24 24"><path d="M10 6.5h10.5M10 12h10.5M10 17.5h10.5M4 5l1.5-1v5M4 14.5c0-1 2.5-1.3 2.5 0 0 1-2.5 2-2.5 3h2.6"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M14.5 3.5h6v6M9.5 20.5h-6v-6M20.5 3.5l-7 7M3.5 20.5l7-7"/></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4M12 8v4l3 2"/></symbol>
+</defs>
+</svg>
+
+<div id="desk">
+<div id="win">
+  <!-- ======== Sidebar ======== -->
+  <nav id="side" aria-label="学习集">
+    <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span>
+      <span style="flex:1"></span><button class="ib" data-act="toggleSide" title="隐藏侧栏（⌃⌘S）"><svg class="i"><use href="#i-sidebar"/></svg></button></div>
+    <div class="side-set"><span class="ic"><svg class="i s"><use href="#i-read"/></svg></span><span style="flex:1">认知科学入门</span></div>
+    <label class="side-search"><svg class="i s"><use href="#i-search"/></svg><input placeholder="搜索文档、卡片和研究笔记"></label>
+    <div class="sec">文档</div>
+    <div class="row on" data-act="doc" data-doc="0"><svg class="i ri"><use href="#i-doc"/></svg><span class="t">认知科学入门.pdf</span><span class="count">312 页</span></div>
+    <div class="row" data-act="doc" data-doc="1"><svg class="i ri"><use href="#i-scan"/></svg><span class="t">扫描讲义（第三章）.pdf</span><span class="count" id="scanCount">未识别</span></div>
+    <div class="sec">脑图</div>
+    <div class="row on"><svg class="i ri"><use href="#i-map"/></svg><span class="t">主脑图</span><span class="count" id="nodeCount">12</span></div>
+    <div class="sec"><span class="grow">研究</span><button class="ib" style="width:20px;height:20px" data-act="newResearch" title="新研究"><svg class="i s"><use href="#i-plus"/></svg></button></div>
+    <div id="sessionList"></div>
+    <div class="sec">学习</div>
+    <div class="row" data-act="review"><svg class="i ri"><use href="#i-cards"/></svg><span class="t">复习</span><span class="pill" style="background:var(--accent);color:#fff">2</span></div>
+    <div class="row"><svg class="i ri"><use href="#i-chart"/></svg><span class="t">统计</span></div>
+    <div class="sec">标签</div>
+    <div class="row"><svg class="i ri"><use href="#i-tag"/></svg><span class="t">考试重点</span><span class="count">4</span></div>
+  </nav>
+
+  <!-- ======== Main ======== -->
+  <div id="main">
+    <div class="toolbar" id="toolbar">
+      <div class="lights tb-lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span><button class="ib" data-act="toggleSide" title="显示侧栏（⌃⌘S）" style="margin-left:6px"><svg class="i"><use href="#i-sidebar"/></svg></button></div>
+      <div class="tb-title"><b id="docTitle">认知科学入门.pdf</b><span id="docSub">第 42 页，共 312 页</span></div>
+      <div id="ocrProgress"></div>
+      <div class="capsule" id="toolCaps">
+        <button class="tbtn on" data-tool="select" data-tip>  <svg class="i"><use href="#i-cursor"/></svg><span class="tip">选择（默认）</span></button>
+        <button class="tbtn" data-tool="hl" data-tip><svg class="i"><use href="#i-hl"/></svg><span class="tip">高亮笔（⇧⌘H）</span></button>
+        <button class="tbtn" data-tool="area" data-tip><svg class="i"><use href="#i-area"/></svg><span class="tip">框选（⇧⌘R）</span></button>
+        <button class="tbtn" data-tool="pen" data-tip><svg class="i"><use href="#i-pen"/></svg><span class="tip">画笔（⇧⌘M）· 新</span></button>
+      </div>
+      <div class="seg" id="layoutSeg">
+        <button data-layout="reader" title="原文（⌘1）"><svg class="i s"><use href="#i-vreader"/></svg></button>
+        <button data-layout="split" class="on" title="分栏（⌘2）"><svg class="i s"><use href="#i-vsplit"/></svg></button>
+        <button data-layout="map" title="脑图（⌘3）"><svg class="i s"><use href="#i-map"/></svg></button>
+      </div>
+      <div class="capsule">
+        <button class="tbtn" data-act="export" data-tip><svg class="i"><use href="#i-share"/></svg><span class="tip">导出脑图…（PNG / PDF / Markdown / OPML）</span></button>
+        <button class="tbtn research" id="researchToggle" data-act="togglePanel" data-tip><svg class="i"><use href="#i-research"/></svg><span class="lbl">研究</span><span class="tip">研究面板（⌃⌘R）</span></button>
+      </div>
+    </div>
+
+    <div id="content">
+      <section class="pane" id="reader">
+        <div class="doc-tabs" id="docTabs"></div>
+        <div class="reader-scroll" id="readerScroll"></div>
+        <div class="reader-float" id="readerFloat"></div>
+      </section>
+      <div class="vdiv" id="vdiv"></div>
+      <section class="pane" id="map">
+        <div class="map-stage" id="stage"><div class="map-world" id="world"><svg class="links" id="links"></svg></div></div>
+        <div class="map-hint" id="mapHint"></div>
+        <div class="map-controls">
+          <div class="seg sm" id="densitySeg" title="卡片显示（P2-C06）"><button data-density="compact">紧凑</button><button data-density="full" class="on">完整</button></div>
+          <div class="capsule" style="height:30px;padding:2px">
+            <button class="tbtn" style="height:24px;min-width:24px" data-act="addImage" title="插入图片（粘贴 / 拖入 / 选择）"><svg class="i s"><use href="#i-image"/></svg></button>
+            <span class="tdiv"></span>
+            <button class="tbtn" style="height:24px;min-width:24px" data-act="zoomOut"><svg class="i s"><use href="#i-zout"/></svg></button>
+            <span id="zoomLbl" style="font-size:11px;color:var(--label2);width:36px;text-align:center">100%</span>
+            <button class="tbtn" style="height:24px;min-width:24px" data-act="zoomIn"><svg class="i s"><use href="#i-zin"/></svg></button>
+            <button class="tbtn" style="height:24px;min-width:24px" data-act="fit" title="查看全图（⌘0）"><svg class="i s"><use href="#i-fit"/></svg></button>
+          </div>
+        </div>
+        <div class="drop-overlay" id="dropOverlay"><svg class="i l"><use href="#i-image"/></svg>松开即可把图片加入脑图<span style="font-weight:400;font-size:12px">图片会复制进学习集，原文件删除也不受影响</span></div>
+      </section>
+      <aside id="rpanel" aria-label="研究"></aside>
+    </div>
+  </div>
+  <div id="layer"></div>
+</div>
+</div>
+
+<input type="file" id="filePick" accept="image/png,image/jpeg" style="display:none">
+
+<aside id="demo">
+  <div class="dh"><svg class="i s"><use href="#i-layers"/></svg><span class="grow">演示控制台 · 不属于产品界面</span><button data-demo="min" title="收起"><svg class="i s"><use href="#i-cr"/></svg></button></div>
+  <div id="guide"></div>
+  <div class="dsec">
+    <div class="dt">场景（点选即跳转并给出提示）</div>
+    <div id="scenes"></div>
+  </div>
+  <div class="dsec">
+    <div class="dt">环境与状态</div>
+    <div class="tg"><span>AI 服务</span><div class="seg" data-env="ai"><button data-v="on" class="on">已配置</button><button data-v="off">未配置</button></div></div>
+    <div class="tg"><span>网络</span><div class="seg" data-env="net"><button data-v="ok" class="on">正常</button><button data-v="off">断网</button></div></div>
+    <div class="tg"><span>外观</span><div class="seg" data-env="theme"><button data-v="light" class="on">浅色</button><button data-v="dark">深色</button></div></div>
+    <div class="tg"><span>窗口</span><div class="seg" data-env="width"><button data-v="wide" class="on">宽</button><button data-v="narrow">窄</button></div></div>
+    <div class="tg"><span>重置所有演示数据</span><button class="btn sm" data-demo="reset" style="background:rgba(255,255,255,.12);color:#fff">重置</button></div>
+    <p style="color:#8e8e93;font-size:10.5px;line-height:1.5;margin:6px 2px 4px">资料、引用与 AI 回答均为演示数据，用于表达交互与状态，不代表已选定的服务或真实检索结果。</p>
+  </div>
+</aside>
+<div id="hudHost"></div>
+<script>
+'use strict';
+/* ==========================================================================
+   MarginMind 二期高保真原型。单文件、无依赖。所有资料与 AI 回答均为演示数据。
+   ========================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const ic = (n, c = '') => `<svg class="i ${c}"><use href="#i-${n}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const uid = p => p + Math.random().toString(36).slice(2, 8);
+const win = $('#win');
+const COLORS = [['y', '#FFCC00', '黄'], ['g', '#34C759', '绿'], ['b', '#007AFF', '蓝'], ['p', '#FF2D55', '粉'], ['o', '#FF9500', '橙'], ['v', '#AF52DE', '紫']];
+const now = () => { const d = new Date(); return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+
+/* ---------------- Demo content ---------------- */
+const PAGE42 = `
+<div class="run-head"><span>第 3 章　判断与启发</span><span>认知科学入门</span></div>
+<h3>3.2　锚定效应</h3>
+<p>当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。特沃斯基和卡尼曼把这种现象称为<span class="hl y" data-hl="h1">锚定效应</span>。</p>
+<p>在一项经典实验中，研究者先转动一个动过手脚的幸运轮，让它停在 10 或 65，然后请被试估计联合国中非洲国家所占的比例。看到 10 的人给出的估计中位数是 25%，看到 65 的人则是 45%。<span id="s-claim">一个明显随机的数字，竟能让估计相差将近一倍。</span></p>
+<p>锚定并不局限于实验室。<span class="hl g" data-hl="h2">房地产经纪人在看过不同的挂牌价之后，对同一套房子的估价出现了显著差异，而他们大多否认自己受到了挂牌价的影响。</span>法官在量刑时、谈判者在出价时，也会被首先提出的数字所牵引。</p>
+<p>关于锚定为什么会发生，目前有两种主要解释。<span id="s-mech">一种认为它来自“调整不足”：人们从锚出发，调整到一个似乎合理的范围边缘就停下了；另一种认为它是一种“选择性通达”：锚激活了与之相容的信息，使人更容易想到支持锚值的证据。</span>两种机制可能在不同情境下各自起作用。</p>
+<p>值得注意的是，提醒人们“不要受锚影响”往往收效甚微。比较有效的做法是主动“考虑相反的情况”——刻意寻找锚值可能错误的理由。</p>
+<div class="pno">42</div>`;
+const PAGE43 = `
+<div class="run-head"><span>第 3 章　判断与启发</span><span>认知科学入门</span></div>
+<h3>3.3　可得性启发</h3>
+<p>可得性启发是指人们根据事例在脑海中浮现的难易程度来判断其频率或概率。越容易想起的事件，人们越倾向于认为它常见。</p>
+<p>媒体对飞机失事的大量报道，使许多人高估了乘坐飞机的风险；而每天都在发生、却很少成为新闻的交通事故，反而容易被低估。<span class="hl b" data-hl="h3">“容易想起”与“经常发生”并不是一回事。</span></p>
+<p>可得性还会受到情绪的影响。生动的、带有强烈情绪色彩的事例更容易被记住，也就更容易在判断时被调用。</p>
+<div class="pno">43</div>`;
+const SCAN = `
+<div class="scan-img">
+<div class="run-head" style="color:#777"><span>认知心理学 · 课程讲义</span><span>第三讲</span></div>
+<h3 style="font-family:var(--serif)">三、判断中的启发式</h3>
+<p>启发式是一种“够用就好”的思考捷径。它在多数时候有效，但在特定条件下会产生系统性的偏差。</p>
+<p><span id="scan-s1">课堂实验：请一半同学先写下手机号码的最后两位，再估计本校图书馆的藏书量（万册）。结果显示，尾号较大的同学给出的估计普遍更高。</span></p>
+<p>讨论：这个结果能否说明锚定效应？还需要排除哪些解释？请结合教材 3.2 节回答。</p>
+</div>
+<div class="pno" style="color:#888">— 7 —</div>`;
+
+const DOCS = [
+  { name: '认知科学入门.pdf', pages: [{ no: 42, html: PAGE42 }, { no: 43, html: PAGE43 }], total: 312, icon: 'doc' },
+  { name: '扫描讲义（第三章）.pdf', pages: [{ no: 7, html: SCAN, scan: true }], total: 12, icon: 'scan' },
+];
+
+const IMG_CHART = `<svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg" style="background:#fff">
+<text x="12" y="18" font-size="10" fill="#333" font-family="-apple-system,PingFang SC">课堂复现：不同锚值下的估计（%）</text>
+<line x1="30" y1="120" x2="228" y2="120" stroke="#bbb"/>
+<rect x="52" y="78" width="46" height="42" rx="3" fill="#8ab4f8"/><text x="64" y="72" font-size="10" fill="#333">25</text>
+<rect x="140" y="45" width="46" height="75" rx="3" fill="#f6a05a"/><text x="152" y="39" font-size="10" fill="#333">45</text>
+<text x="56" y="133" font-size="9" fill="#666" font-family="-apple-system,PingFang SC">锚值 10</text><text x="144" y="133" font-size="9" fill="#666" font-family="-apple-system,PingFang SC">锚值 65</text>
+<path d="M200 20 l14 0" stroke="#e33" stroke-width="2"/><text x="170" y="24" font-size="8" fill="#e33">手绘标记</text></svg>`;
+
+function initialNodes() {
+  return [
+    { id: 'root', parent: null, kind: 'root', title: '认知科学入门' },
+    { id: 't1', parent: 'root', kind: 'topic', title: '系统 1 与系统 2' },
+    { id: 'e1', parent: 't1', kind: 'ex', color: 'b', title: '', quote: '系统 1 自动而快速地运作，几乎不费力，也没有自主控制的感觉；系统 2 则把注意力分配给需要费脑力的活动。', src: { doc: 0, page: 12 } },
+    { id: 't2', parent: 'root', kind: 'topic', title: '认知偏差' },
+    { id: 't3', parent: 't2', kind: 'topic', title: '锚定效应' },
+    { id: 'e2', parent: 't3', kind: 'ex', color: 'y', title: '锚定效应的定义', quote: '当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。特沃斯基和卡尼曼把这种现象称为锚定效应。', src: { doc: 0, page: 42, hl: 'h1' } },
+    { id: 'e3', parent: 't3', kind: 'ex', color: 'g', title: '', quote: '房地产经纪人在看过不同的挂牌价之后，对同一套房子的估价出现了显著差异，而他们大多否认自己受到了挂牌价的影响。', src: { doc: 0, page: 42, hl: 'h2' } },
+    { id: 'i1', parent: 't3', kind: 'img', title: '这张图说明了锚值如何影响估计？', img: IMG_CHART, origin: '粘贴的截图 · 10 月 26 日' },
+    { id: 't4', parent: 't2', kind: 'topic', title: '可得性启发' },
+    { id: 'e4', parent: 't4', kind: 'ex', color: 'b', title: '', quote: '“容易想起”与“经常发生”并不是一回事。', src: { doc: 0, page: 43, hl: 'h3' } },
+    { id: 'n1', parent: 't4', kind: 'note', html: '<p><b>例子</b>：飞机失事 vs. 车祸</p><ul><li>媒体报道多 → <i>容易想起</i></li><li>实际概率低</li></ul>' },
+    { id: 't5', parent: 'root', kind: 'topic', title: '思考题' },
+    { id: 'n2', parent: 't5', kind: 'note', html: '<p>锚定效应能不能通过训练来消除？</p>' },
+  ];
+}
+
+/* ---------------- State ---------------- */
+let S;
+function freshState() {
+  return {
+    layout: 'split', saved: null, sideOpen: true, narrow: false, ai: true, net: true, theme: 'light',
+    tool: 'select', pen: { shape: 'free', color: '#FF3B30', width: 2 }, strokes: {}, inkUndo: [],
+    doc: 0, readerZoom: 1, ocr: { state: 'none', done: 0, total: 12, timer: null },
+    zoom: 1, pan: { x: 30, y: 0 }, density: 'full', selected: null, expanded: new Set(), widths: {},
+    nodes: initialNodes(), panel: { open: false, mode: 'research', detailId: null },
+    sessions: [], active: null, later: [{ id: 'l1', q: '“考虑相反的情况”具体怎么做？', from: '认知科学入门.pdf · 第 42 页' }],
+    notes: {}, anchors: [], undo: [], scene: null,
+  };
+}
+S = freshState();
+
+/* ---------------- Small UI helpers ---------------- */
+const layer = $('#layer');
+function closeFloating(keepSheet) {
+  $$('.pop,.ftb,.clip-tb,.coach', layer).forEach(e => e.remove());
+  if (!keepSheet) $$('.scrim,.lightbox', layer).forEach(e => e.remove());
+}
+function winRect(el) {
+  const r = el.getBoundingClientRect(), w = win.getBoundingClientRect();
+  return { x: r.left - w.left, y: r.top - w.top, w: r.width, h: r.height, r: r.right - w.left, b: r.bottom - w.top };
+}
+function placePop(pop, anchor, pref = 'below') {
+  layer.appendChild(pop);
+  const W = win.clientWidth, H = win.clientHeight, pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = anchor.x + anchor.w / 2 - pw / 2, y = pref === 'above' ? anchor.y - ph - 8 : anchor.b + 8;
+  if (pref === 'above' && y < 60) y = anchor.b + 8;
+  if (pref === 'below' && y + ph > H - 10) y = Math.max(60, anchor.y - ph - 8);
+  if (y + ph > H - 10) y = Math.max(10, H - ph - 10);
+  x = Math.max(10, Math.min(x, W - pw - 10));
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  return pop;
+}
+let hudT;
+function hud(text, action, fn) {
+  const host = $('#hudHost'); clearTimeout(hudT);
+  layer.querySelectorAll('.hud').forEach(e => e.remove());
+  const h = document.createElement('div'); h.className = 'hud';
+  h.innerHTML = `<span>${text}</span>` + (action ? `<button class="btn sm">${action}</button>` : '');
+  if (action) h.querySelector('button').onclick = () => { h.remove(); fn(); };
+  layer.appendChild(h);
+  hudT = setTimeout(() => h.remove(), action ? 5200 : 2600);
+}
+function coach(el, ms = 3800) {
+  if (!el) return;
+  $$('.coach', layer).forEach(e => e.remove());
+  const r = winRect(el), c = document.createElement('div');
+  c.className = 'coach'; Object.assign(c.style, { left: r.x - 4 + 'px', top: r.y - 4 + 'px', width: r.w + 8 + 'px', height: r.h + 8 + 'px' });
+  layer.appendChild(c); setTimeout(() => c.remove(), ms);
+}
+function snapshot() {
+  S.undo.push(JSON.stringify({ nodes: S.nodes, notes: S.notes, anchors: S.anchors, sessions: S.sessions.map(s => ({ id: s.id, saved: s.saved, clips: s.clips })) }));
+  if (S.undo.length > 100) S.undo.shift();
+}
+function undo() {
+  if (S.tool === 'pen' && S.inkUndo.length) return inkUndo();
+  const j = S.undo.pop(); if (!j) return hud('没有可以撤销的操作');
+  const o = JSON.parse(j);
+  S.nodes = o.nodes; S.notes = o.notes; S.anchors = o.anchors;
+  o.sessions.forEach(x => { const s = S.sessions.find(y => y.id === x.id); if (s) { s.saved = x.saved; s.clips = x.clips; } });
+  if (S.panel.mode === 'detail' && !nodeById(S.panel.detailId)) S.panel.mode = 'research';
+  renderAll(); hud('已撤销');
+}
+const nodeById = id => S.nodes.find(n => n.id === id);
+// Scroll only the nearest pane: Element.scrollIntoView would also scroll the clipped window frame.
+function scrollToEl(el, smooth = true) {
+  if (!el) return;
+  const box = el.closest('.reader-scroll,.rp-body'); if (!box) return;
+  const r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+  box.scrollTo({ top: box.scrollTop + r.top - b.top - b.height / 2 + r.height / 2, behavior: smooth ? 'smooth' : 'instant' });
+}
+document.addEventListener('scroll', e => { const t = e.target; if (t.id === 'win' || t.id === 'desk' || t.id === 'content' || t.id === 'main' || (t.classList && (t.classList.contains('pane') || t.classList.contains('map-stage')))) { t.scrollTop = 0; t.scrollLeft = 0; } }, true);
+
+/* ---------------- Layout & chrome ---------------- */
+function effectiveLayout() { return S.layout; }
+function applyLayout() {
+  const L = effectiveLayout();
+  $('#reader').classList.toggle('hide', L === 'map');
+  $('#map').classList.toggle('hide', L === 'reader');
+  $('#vdiv').classList.toggle('hide', L !== 'split');
+  $$('#layoutSeg button').forEach(b => b.classList.toggle('on', b.dataset.layout === L));
+  win.classList.toggle('side-off', !S.sideOpen);
+  win.classList.toggle('narrow', S.narrow);
+  $('#rpanel').classList.toggle('open', S.panel.open);
+  $('#researchToggle').classList.toggle('on', S.panel.open && S.panel.mode === 'research');
+  setTimeout(() => {
+    layoutMap();
+    if (L !== 'reader') { if (S.selected && nodeById(S.selected)) revealNode(S.selected); else { S.pan.x = 30; S.pan.y = Math.max(20, (stage.clientHeight - (S._mapSize?.h || 0) * S.zoom) / 2); applyPan(); } }
+    if (L !== 'map' && Math.abs(fitFactor() - (S._fit || 1)) > .01) renderReader();
+  }, 340);
+}
+function fitFactor() { const w = $('#reader').clientWidth; return w ? Math.min(1, (w - 32) / 560) : 1; }
+function openPanel(from) {
+  if (!S.panel.open) {
+    S.saved = { layout: S.layout, side: S.sideOpen };
+    if (S.layout === 'split') S.layout = from === 'node' ? 'map' : from === 'pdf' ? 'reader' : 'split';
+    if (S.narrow) S.sideOpen = false;
+    S.panel.open = true;
+  }
+  applyLayout();
+}
+function closePanel() {
+  S.panel.open = false;
+  if (S.saved) { S.layout = S.saved.layout; S.sideOpen = S.saved.side; S.saved = null; }
+  applyLayout();
+}
+
+/* ---------------- Reader ---------------- */
+function renderReader() {
+  const d = DOCS[S.doc];
+  $('#docTabs').innerHTML = DOCS.map((x, i) => `<button class="doc-tab ${i === S.doc ? 'on' : ''}" data-act="doc" data-doc="${i}">${ic(x.icon, 's')}<span class="t">${x.name}</span></button>`).join('');
+  $$('#side .row[data-doc]').forEach(r => r.classList.toggle('on', +r.dataset.doc === S.doc));
+  $('#docTitle').textContent = d.name;
+  $('#docSub').textContent = `第 ${d.pages[0].no} 页，共 ${d.total} 页`;
+  const sc = $('#readerScroll');
+  let html = '';
+  if (S.doc === 1 && S.ocr.state !== 'done') {
+    html += `<div class="reader-banner" style="zoom:${Math.max(.8, fitFactor())}"><span class="bi">${ic('scan')}</span><div class="bt"><b>这是扫描版 PDF，文字还不能选择或搜索</b>
+      识别后就能像普通 PDF 一样选字、搜索和摘录。识别在本机完成，不上传，原 PDF 不会被修改。
+      ${S.ocr.state === 'running' ? `<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><span class="spin" style="color:var(--accent)"></span>正在识别第 ${S.ocr.done + 1} / ${S.ocr.total} 页…<button class="btn sm" data-act="ocrCancel">取消</button></div>`
+      : S.ocr.state === 'cancelled' ? `<div style="margin-top:8px" class="note">已取消，已识别的 ${S.ocr.done} 页会保留。</div>` : ''}</div>
+      ${S.ocr.state === 'running' ? '' : `<button class="btn pri" data-act="ocrStart">${S.ocr.state === 'cancelled' ? '继续识别' : '识别文字…'}</button>`}</div>`;
+  }
+  S._fit = fitFactor();
+  d.pages.forEach(p => {
+    const scan = p.scan ? ' scan' + (S.ocr.state === 'done' ? ' recognized' : '') : '';
+    html += `<div class="page${scan}" data-page="${S.doc}-${p.no}" style="zoom:${(S.readerZoom * S._fit).toFixed(3)}">${p.html}
+      ${p.scan && S.ocr.state === 'done' ? `<span class="ocr-badge pill ok">${ic('check', 'xs')}已识别 · 可选字和搜索</span>` : ''}
+      <svg class="ink-layer" data-ink="${S.doc}-${p.no}"></svg></div>`;
+  });
+  sc.innerHTML = html;
+  // Research anchors on PDF pages.
+  S.anchors.forEach(a => {
+    if (a.doc !== S.doc) return;
+    const span = sc.querySelector(`[data-anchor="${a.id}"]`) || sc.querySelector('#' + a.sid);
+    if (!span) return;
+    span.classList.add('rn-anchor'); span.dataset.anchor = a.id;
+    const page = span.closest('.page');
+    const m = document.createElement('div'); m.className = 'rn-marker'; m.dataset.marker = a.id;
+    m.title = '研究笔记'; m.innerHTML = ic('note', 'xs');
+    m.style.top = (span.offsetTop - 2) + 'px'; page.appendChild(m);
+  });
+  renderInk(); renderReaderFloat();
+}
+function renderReaderFloat() {
+  const pen = S.tool === 'pen';
+  $('#readerFloat').innerHTML = `<div class="capsule" style="height:32px">
+    <button class="tbtn" style="height:26px" data-act="rzOut">${ic('zout', 's')}</button>
+    <span style="font-size:11.5px;color:var(--label2);width:44px;text-align:center">${Math.round(S.readerZoom * 100)}%</span>
+    <button class="tbtn" style="height:26px" data-act="rzIn">${ic('zin', 's')}</button></div>`;
+  $$('.pen-bar').forEach(e => e.remove());
+  if (pen) {
+    const P = S.pen, bar = document.createElement('div'); bar.className = 'pen-bar';
+    bar.innerHTML = [['free', '自由线'], ['circle', '圈画（松手自动规整）'], ['arrow', '箭头'], ['eraser', '橡皮擦（擦除整条笔迹）']]
+      .map(([k, t]) => `<button class="tbtn ${P.shape === k ? 'on' : ''}" data-pen="${k}" data-tip>${ic(k === 'free' ? 'free' : k)}<span class="tip">${t}</span></button>`).join('')
+      + '<span class="tdiv"></span>'
+      + ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#1D1D1F'].map(c => `<button class="cdot ${P.color === c ? 'on' : ''}" data-penc="${c}" style="background:${c}"></button>`).join('')
+      + '<span class="tdiv"></span>'
+      + [1.5, 2.5, 4].map(w => `<button class="wdot ${P.width === w ? 'on' : ''}" data-penw="${w}" title="粗细"><i style="width:${w * 2 + 2}px;height:${w * 2 + 2}px"></i></button>`).join('')
+      + `<span class="tdiv"></span><button class="tbtn" data-act="inkUndo" data-tip>${ic('undo')}<span class="tip">撤销笔迹（⌘Z）</span></button>`
+      + `<button class="tbtn" data-act="penDone" style="padding:0 10px"><span class="lbl">完成</span></button>`;
+    $('#reader').appendChild(bar);
+  }
+  $$('.ink-layer').forEach(l => { l.classList.toggle('active', pen); l.classList.toggle('erase', pen && S.pen.shape === 'eraser'); });
+}
+function setTool(t) {
+  S.tool = t;
+  $$('#toolCaps .tbtn').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  closeFloating(true); renderReaderFloat();
+  if (t === 'pen') hud('画笔：笔迹绑定页面坐标，缩放和重开都不会漂移；选择工具下不会误触');
+  if (t === 'hl') hud('高亮笔：拖选即高亮并生成卡片');
+  if (t === 'area') hud('框选：拖出区域生成图片卡片（一期能力，保留）');
+}
+
+/* ---------- Ink (P2-C04) ---------- */
+function renderInk() {
+  $$('.ink-layer').forEach(svg => {
+    // Page-space coordinates: the aspect ratio is zoom-invariant, so strokes never drift.
+    const key = svg.dataset.ink, p = svg.parentElement, h = Math.round(p.offsetHeight * 560 / p.offsetWidth);
+    svg.setAttribute('viewBox', `0 0 560 ${h}`);
+    svg.style.width = '100%'; svg.style.height = '100%';
+    svg.innerHTML = `<defs><marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>`
+      + (S.strokes[key] || []).map(strokeSvg).join('');
+  });
+}
+function strokeSvg(s) {
+  const common = `class="stroke" data-sid="${s.id}" stroke="${s.color}" stroke-width="${s.width}" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".9"`;
+  if (s.shape === 'circle') return `<ellipse ${common} cx="${s.cx}" cy="${s.cy}" rx="${s.rx}" ry="${s.ry}"/>`;
+  if (s.shape === 'arrow') { const [a, b] = [s.pts[0], s.pts[s.pts.length - 1]]; return `<line ${common} x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" marker-end="url(#ah)"/>`; }
+  return `<path ${common} d="M${s.pts.map(p => p.join(' ')).join('L')}"/>`;
+}
+let drawing = null;
+document.addEventListener('pointerdown', e => {
+  const svg = e.target.closest('.ink-layer.active'); if (!svg) return;
+  const key = svg.dataset.ink;
+  if (S.pen.shape === 'eraser') {
+    const st = e.target.closest('.stroke'); if (!st) return;
+    const arr = S.strokes[key]; const i = arr.findIndex(s => s.id === st.dataset.sid);
+    if (i >= 0) { S.inkUndo.push({ type: 'erase', key, stroke: arr[i], i }); arr.splice(i, 1); renderInk(); }
+    return;
+  }
+  const pt = toInk(svg, e);
+  drawing = { svg, key, s: { id: uid('k'), shape: S.pen.shape, color: S.pen.color, width: S.pen.width, pts: [pt] } };
+  svg.setPointerCapture(e.pointerId); e.preventDefault();
+});
+document.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  drawing.s.pts.push(toInk(drawing.svg, e));
+  const tmp = drawing.svg.querySelector('.tmp') || drawing.svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'g'));
+  tmp.setAttribute('class', 'tmp');
+  const s = drawing.s;
+  tmp.innerHTML = strokeSvg(s.shape === 'arrow' ? s : { ...s, shape: 'free' });
+});
+document.addEventListener('pointerup', () => {
+  if (!drawing) return;
+  const { key, s } = drawing; drawing = null;
+  if (s.pts.length < 2) { renderInk(); return; }
+  if (s.shape === 'circle') {
+    const xs = s.pts.map(p => p[0]), ys = s.pts.map(p => p[1]);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    Object.assign(s, { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, rx: (x1 - x0) / 2 + 3, ry: (y1 - y0) / 2 + 3 });
+  }
+  (S.strokes[key] = S.strokes[key] || []).push(s);
+  S.inkUndo.push({ type: 'add', key, id: s.id });
+  renderInk();
+});
+function toInk(svg, e) {
+  const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+  return [Math.round((e.clientX - r.left) / r.width * vb.width * 10) / 10, Math.round((e.clientY - r.top) / r.height * vb.height * 10) / 10];
+}
+function inkUndo() {
+  const a = S.inkUndo.pop(); if (!a) return hud('没有可以撤销的笔迹');
+  const arr = S.strokes[a.key] || [];
+  if (a.type === 'add') { const i = arr.findIndex(s => s.id === a.id); if (i >= 0) arr.splice(i, 1); }
+  else arr.splice(a.i, 0, a.stroke);
+  renderInk(); hud('已撤销一笔');
+}
+
+/* ---------- Selection toolbar ---------- */
+let pendingSel = null; // {quote, rect, range, doc, page, hl}
+document.addEventListener('mouseup', e => {
+  if (S.tool !== 'select' && S.tool !== 'hl') return;
+  if (e.target.closest('.ftb,.pop,.rn-marker,.sheet,#demo')) return;
+  const page = e.target.closest('.page');
+  if (!page) return;
+  if (page.classList.contains('scan') && !page.classList.contains('recognized')) return;
+  setTimeout(() => {
+    const sel = getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!page.contains(range.commonAncestorContainer)) return;
+    const quote = sel.toString().replace(/\s+/g, ' ').trim();
+    if (quote.length < 2) return;
+    const [doc, pg] = page.dataset.page.split('-').map(Number);
+    pendingSel = { quote, range: range.cloneRange(), rect: winRect({ getBoundingClientRect: () => range.getBoundingClientRect() }), doc, page: pg };
+    if (S.tool === 'hl') return excerpt('y');
+    showFtb();
+  }, 0);
+});
+document.addEventListener('mousedown', e => {
+  const page = e.target.closest('.page.scan:not(.recognized)');
+  if (page && S.tool === 'select' && S.ocr.state !== 'running') {
+    closeFloating();
+    const pop = document.createElement('div'); pop.className = 'pop'; pop.style.padding = '10px 12px'; pop.style.width = '280px';
+    pop.innerHTML = `<div style="font-weight:600;margin-bottom:4px">这一页还没有识别文字</div><div class="note" style="margin-bottom:8px">识别后才能选字和摘录。只识别这一页通常只需几秒。</div>
+      <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn sm" data-act="ocrStart">识别全部…</button><button class="btn sm pri" data-act="ocrPage">识别本页</button></div>`;
+    placePop(pop, { x: e.clientX - win.getBoundingClientRect().left - 1, y: e.clientY - win.getBoundingClientRect().top, w: 2, h: 2, b: e.clientY - win.getBoundingClientRect().top + 4 });
+  }
+});
+function showFtb(hlEl) {
+  closeFloating(true);
+  const f = document.createElement('div'); f.className = 'ftb';
+  const isHl = !!hlEl;
+  f.innerHTML = COLORS.map(([k, c, n]) => `<button class="cdot" data-ftb-color="${k}" style="background:${c}" title="${isHl ? '换成' + n + '色' : '摘录到脑图（' + n + '）· E'}"></button>`).join('')
+    + '<span class="tdiv"></span>'
+    + (isHl ? `<button class="tbtn" data-ftb="locate" data-tip>${ic('goto')}<span class="tip">定位卡片（⌘L）</span></button>`
+      : `<button class="tbtn" data-ftb="hl" data-tip>${ic('hl')}<span class="tip">仅高亮（H）</span></button>`)
+    + `<button class="tbtn" data-ftb="copy" data-tip>${ic('copy')}<span class="tip">复制（⌘C）</span></button>`
+    + (isHl ? '' : `<button class="tbtn" data-ftb="note" data-tip>${ic('note')}<span class="tip">摘录并添加笔记</span></button>`)
+    + `<span class="tdiv"></span><button class="tbtn research" data-ftb="research" data-tip>${ic('research')}<span class="lbl">研究</span><span class="kbd">R</span><span class="tip">研究所选内容（⇧⌘E）</span></button>`;
+  placePop(f, pendingSel.rect, 'above');
+}
+function excerpt(color) {
+  if (!pendingSel) return;
+  snapshot();
+  const hid = uid('h');
+  try { const sp = document.createElement('span'); sp.className = 'hl ' + color; sp.dataset.hl = hid; pendingSel.range.surroundContents(sp); } catch (_) { /* cross-element selection: card still created */ }
+  const parent = S.selected && ['topic', 'root'].includes(nodeById(S.selected)?.kind) ? S.selected : 't3';
+  const n = { id: uid('e'), parent, kind: 'ex', color, title: '', quote: pendingSel.quote, src: { doc: pendingSel.doc, page: pendingSel.page, hl: hid } };
+  persistPageHtml();
+  S.nodes.push(n); getSelection().removeAllRanges(); closeFloating(); pendingSel = null;
+  renderMap(); flashNode(n.id);
+  hud(`已摘录到「${nodeById(parent).title}」`, '撤销', undo);
+}
+function persistPageHtml() {
+  // Keep DOM-made highlights/anchors across re-renders of the demo pages.
+  $$('#readerScroll .page').forEach(p => {
+    const [d, no] = p.dataset.page.split('-').map(Number);
+    const pg = DOCS[d].pages.find(x => x.no === no); if (!pg) return;
+    const c = p.cloneNode(true); c.querySelectorAll('.ink-layer,.rn-marker,.ocr-badge').forEach(x => x.remove());
+    c.querySelectorAll('.rn-anchor').forEach(x => x.classList.remove('rn-anchor'));
+    pg.html = c.innerHTML;
+  });
+}
+
+/* ---------------- Mind map ---------------- */
+const stage = $('#stage'), world = $('#world');
+function nodeHtml(n) {
+  const w = S.widths[n.id];
+  const style = w ? `style="--w:${w}px"` : '';
+  const sel = S.selected === n.id ? ' sel' : '';
+  const resize = ['ex', 'img', 'rn'].includes(n.kind) ? '<span class="resize" data-resize title="拖动调整宽度，双击恢复"></span>' : '';
+  const add = `<span class="add-child">${ic('plus', 'xs')}</span>`;
+  if (n.kind === 'root' || n.kind === 'topic') return `<div class="node n-${n.kind}${sel}" data-id="${n.id}"><div class="nb">${esc(n.title)}</div>${add}</div>`;
+  if (n.kind === 'note') return `<div class="node n-note${sel}" data-id="${n.id}"><div class="nb">${n.html}</div>${add}</div>`;
+  if (n.kind === 'ex') {
+    const exp = S.expanded.has(n.id);
+    const long = n.quote.length > (S.density === 'compact' ? 34 : 68);
+    return `<div class="node n-ex${sel}${exp ? ' expanded' : ''}" data-id="${n.id}" ${style}><div class="nb"><span class="bar" style="background:${COLORS.find(c => c[0] === n.color)[1]}"></span>
+      <button class="goto" data-goto title="回到原文（⌘L）">${ic('goto', 's')}</button>
+      ${n.title ? `<div class="ttl">${esc(n.title)}</div>` : ''}<div class="q">${esc(n.quote)}</div>
+      ${long ? `<span class="more" data-more>${exp ? '收起' + ic('cu', 'xs') : '展开全文' + ic('cd', 'xs')}</span>` : ''}
+      ${exp ? `<div class="src">${ic('doc', 'xs')}${DOCS[n.src.doc].name} · 第 ${n.src.page} 页</div>` : ''}</div>${resize}${add}</div>`;
+  }
+  if (n.kind === 'img') return `<div class="node n-img${sel}" data-id="${n.id}" ${style}><div class="nb"><span class="bar" style="background:#8E8E93"></span>
+      ${n.title ? `<div class="ttl">${esc(n.title)}</div>` : ''}<div class="imgbox" data-lightbox>${n.img.startsWith('<svg') ? n.img : `<img src="${n.img}" alt="">`}</div>
+      <div class="src">${ic('image', 'xs')}外部图片 · 没有原文位置</div></div>${resize}${add}</div>`;
+  if (n.kind === 'rn') {
+    const note = S.notes[n.noteId]; if (!note) return '';
+    return `<div class="node n-rn${sel}" data-id="${n.id}" ${style}><div class="nb"><span class="bar"></span>
+      <div class="kind">${ic('research', 'xs')}研究笔记 · ${note.cites.length} 个来源${note.edited ? ' · 已手改' : ''}</div>
+      <div class="ttl">${esc(note.title)}</div><div class="sum">${esc(note.body)}</div>
+      <span class="more" data-detail>查看全文与引用${ic('cr', 'xs')}</span></div>${resize}${add}</div>`;
+  }
+  return '';
+}
+function renderMap() {
+  const keepSvg = $('#links');
+  world.innerHTML = ''; world.appendChild(keepSvg);
+  world.insertAdjacentHTML('beforeend', S.nodes.map(nodeHtml).join(''));
+  $('#map').classList.toggle('compact', S.density === 'compact');
+  $$('#densitySeg button').forEach(b => b.classList.toggle('on', b.dataset.density === S.density));
+  $('#nodeCount').textContent = S.nodes.length;
+  layoutMap();
+  $('#mapHint').innerHTML = S.selected ? '' : `${ic('info', 's')}粘贴截图（⌘V）或把图片拖进来，可以直接生成图片卡片`;
+}
+function layoutMap() {
+  const size = {}, st = {}, pos = {};
+  $$('.node', world).forEach(el => size[el.dataset.id] = { w: el.offsetWidth, h: el.offsetHeight });
+  const kids = id => S.nodes.filter(n => n.parent === id && size[n.id]);
+  const VG = 12, HG = 54;
+  const sub = id => { const k = kids(id); const t = k.reduce((a, c) => a + sub(c.id), 0) + VG * Math.max(0, k.length - 1); return st[id] = Math.max(size[id].h, t); };
+  const place = (id, x, y) => {
+    const k = kids(id); pos[id] = { x, y: y + (st[id] - size[id].h) / 2 };
+    const tot = k.reduce((a, c) => a + st[c.id], 0) + VG * Math.max(0, k.length - 1);
+    let cy = y + (st[id] - tot) / 2;
+    k.forEach(c => { place(c.id, x + size[id].w + HG, cy); cy += st[c.id] + VG; });
+  };
+  if (!size.root) return;
+  sub('root'); place('root', 0, 0);
+  let paths = '', maxX = 0, maxY = 0;
+  S.nodes.forEach(n => {
+    const p = pos[n.id]; if (!p) return;
+    const el = world.querySelector(`.node[data-id="${n.id}"]`); el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
+    maxX = Math.max(maxX, p.x + size[n.id].w); maxY = Math.max(maxY, p.y + size[n.id].h);
+    if (n.parent && pos[n.parent]) {
+      const a = pos[n.parent], sa = size[n.parent], x1 = a.x + sa.w, y1 = a.y + sa.h / 2, x2 = p.x, y2 = p.y + size[n.id].h / 2, mx = (x1 + x2) / 2;
+      paths += `<path d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}" stroke="var(--line)" stroke-width="1.5" fill="none"/>`;
+    }
+  });
+  const svg = $('#links'); svg.setAttribute('width', maxX + 40); svg.setAttribute('height', maxY + 40); svg.innerHTML = paths;
+  S._mapSize = { w: maxX, h: maxY };
+  if (!S._fitted && stage.clientHeight) { S._fitted = true; S.pan = { x: 30, y: Math.max(20, (stage.clientHeight - maxY) / 2) }; }
+  applyPan();
+}
+function applyPan() { world.style.transform = `translate(${S.pan.x}px,${S.pan.y}px) scale(${S.zoom})`; $('#zoomLbl').textContent = Math.round(S.zoom * 100) + '%'; }
+function fitMap() {
+  const m = S._mapSize; if (!m) return;
+  S.zoom = Math.min(1, (stage.clientWidth - 60) / m.w, (stage.clientHeight - 80) / m.h);
+  S.pan = { x: (stage.clientWidth - m.w * S.zoom) / 2, y: (stage.clientHeight - m.h * S.zoom) / 2 - 10 }; applyPan();
+}
+function revealNode(id) {
+  const el = world.querySelector(`.node[data-id="${id}"]`); if (!el) return;
+  const x = parseFloat(el.style.left) * S.zoom + S.pan.x, y = parseFloat(el.style.top) * S.zoom + S.pan.y;
+  if (x < 20 || x + el.offsetWidth * S.zoom > stage.clientWidth - 20 || y < 20 || y + el.offsetHeight * S.zoom > stage.clientHeight - 60) {
+    S.pan.x = stage.clientWidth / 2 - (parseFloat(el.style.left) + el.offsetWidth / 2) * S.zoom;
+    S.pan.y = stage.clientHeight / 2 - (parseFloat(el.style.top) + el.offsetHeight / 2) * S.zoom; applyPan();
+  }
+}
+function flashNode(id) {
+  setTimeout(() => { revealNode(id); const el = world.querySelector(`.node[data-id="${id}"]`); if (el) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1700); } }, 60);
+}
+function selectNode(id) {
+  S.selected = id;
+  $$('.node', world).forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+  $('#mapHint').innerHTML = id ? '' : `${ic('info', 's')}粘贴截图（⌘V）或把图片拖进来，可以直接生成图片卡片`;
+  if (S.panel.open && S.panel.mode === 'detail' && id) { S.panel.detailId = id; renderPanel(); }
+}
+// Pan & wheel
+let panDrag = null, resizeDrag = null;
+stage.addEventListener('mousedown', e => {
+  const rz = e.target.closest('[data-resize]');
+  if (rz) { const el = rz.closest('.node'); resizeDrag = { id: el.dataset.id, x: e.clientX, w: el.querySelector('.nb').offsetWidth }; e.preventDefault(); return; }
+  if (e.target.closest('.node') || e.button !== 0) return;
+  panDrag = { x: e.clientX, y: e.clientY, px: S.pan.x, py: S.pan.y, moved: false }; stage.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (resizeDrag) { S.widths[resizeDrag.id] = Math.max(200, Math.min(480, resizeDrag.w + (e.clientX - resizeDrag.x) / S.zoom)); const el = world.querySelector(`.node[data-id="${resizeDrag.id}"]`); el.style.setProperty('--w', S.widths[resizeDrag.id] + 'px'); layoutMap(); return; }
+  if (!panDrag) return;
+  S.pan.x = panDrag.px + e.clientX - panDrag.x; S.pan.y = panDrag.py + e.clientY - panDrag.y; panDrag.moved = true; applyPan();
+});
+window.addEventListener('mouseup', () => { if (panDrag && !panDrag.moved) selectNode(null); panDrag = null; resizeDrag = null; stage.style.cursor = ''; });
+stage.addEventListener('wheel', e => { e.preventDefault(); if (e.metaKey || e.ctrlKey) { S.zoom = Math.max(.3, Math.min(2, S.zoom * (e.deltaY < 0 ? 1.08 : .92))); } else { S.pan.x -= e.shiftKey ? e.deltaY : e.deltaX; S.pan.y -= e.shiftKey ? 0 : e.deltaY; } applyPan(); }, { passive: false });
+stage.addEventListener('dblclick', e => {
+  const rz = e.target.closest('[data-resize]'); if (rz) { delete S.widths[rz.closest('.node').dataset.id]; renderMap(); return; }
+  const n = e.target.closest('.node'); if (!n) return;
+  const node = nodeById(n.dataset.id);
+  if (node.kind === 'note') return editNote(node);
+  if (node.kind === 'img') return lightbox(node);
+  if (node.kind === 'topic') { const nb = n.querySelector('.nb'); nb.contentEditable = true; nb.focus(); document.execCommand('selectAll'); nb.onblur = () => { nb.contentEditable = false; snapshot(); node.title = nb.textContent.trim() || node.title; renderMap(); }; nb.onkeydown = k => { if (k.key === 'Enter') { k.preventDefault(); nb.blur(); } }; }
+  if (node.kind === 'ex' || node.kind === 'rn') showDetail(node.id);
+});
+stage.addEventListener('click', e => {
+  const n = e.target.closest('.node'); if (!n) return;
+  const id = n.dataset.id;
+  if (e.target.closest('[data-more]')) { S.expanded.has(id) ? S.expanded.delete(id) : S.expanded.add(id); selectNode(id); renderMap(); return; }
+  if (e.target.closest('[data-goto]')) return gotoSource(nodeById(id));
+  if (e.target.closest('[data-detail]')) return showDetail(id);
+  if (e.target.closest('.add-child')) return addChild(id);
+  selectNode(id);
+});
+stage.addEventListener('contextmenu', e => {
+  const n = e.target.closest('.node'); if (!n) return;
+  e.preventDefault(); selectNode(n.dataset.id); nodeMenu(nodeById(n.dataset.id), e);
+});
+function addChild(pid) {
+  snapshot(); const n = { id: uid('t'), parent: pid, kind: 'topic', title: '新主题' }; S.nodes.push(n); renderMap(); selectNode(n.id);
+  const nb = world.querySelector(`.node[data-id="${n.id}"] .nb`); nb.contentEditable = true; nb.focus(); document.execCommand('selectAll');
+  nb.onblur = () => { nb.contentEditable = false; const t = nb.textContent.trim(); if (!t) { S.nodes = S.nodes.filter(x => x.id !== n.id); S.undo.pop(); } else n.title = t; renderMap(); };
+  nb.onkeydown = k => { if (k.key === 'Enter') { k.preventDefault(); nb.blur(); } if (k.key === 'Escape') { nb.textContent = ''; nb.blur(); } };
+}
+function gotoSource(n) {
+  if (!n?.src) return;
+  if (S.layout === 'map') { S.layout = 'split'; applyLayout(); }
+  if (S.doc !== n.src.doc) { S.doc = n.src.doc; renderReader(); }
+  const hl = $(`#readerScroll [data-hl="${n.src.hl}"]`);
+  if (hl) { scrollToEl(hl); hl.classList.add('flash'); setTimeout(() => hl.classList.remove('flash'), 1700); }
+  else hud(`示例中第 ${n.src.page} 页未加载，真实应用会跳页并闪烁原句`);
+}
+/* C07: note editing with basic formatting */
+function editNote(node) {
+  const el = world.querySelector(`.node[data-id="${node.id}"]`), nb = el.querySelector('.nb');
+  el.classList.add('editing'); nb.contentEditable = true; nb.focus({ preventScroll: true });
+  const bar = document.createElement('div'); bar.className = 'pop'; bar.style.cssText += 'display:flex;gap:1px;padding:3px;border-radius:12px';
+  bar.innerHTML = [['bold', 'bold', '加粗 ⌘B'], ['italic', 'ital', '斜体 ⌘I'], ['insertUnorderedList', 'ul', '无序列表（输入“- ”）'], ['insertOrderedList', 'ol', '有序列表（输入“1. ”）']]
+    .map(([c, i, t]) => `<button class="tbtn" style="height:26px;min-width:28px" data-fmt="${c}" title="${t}">${ic(i, 's')}</button>`).join('')
+    + `<span class="tdiv"></span><span class="note" style="padding:0 6px;align-self:center">⇧Enter 换行 · Esc 完成</span>`;
+  placePop(bar, winRect(nb), 'above');
+  // Track the card while editing: layout and panning may still move it.
+  const follow = () => { if (!bar.isConnected) return; const r = winRect(nb); bar.style.top = Math.max(60, r.y - bar.offsetHeight - 8) + 'px'; bar.style.left = Math.max(10, r.x) + 'px'; requestAnimationFrame(follow); };
+  requestAnimationFrame(follow);
+  bar.addEventListener('mousedown', e => { e.preventDefault(); const b = e.target.closest('[data-fmt]'); if (b) document.execCommand(b.dataset.fmt); });
+  const done = () => { el.classList.remove('editing'); nb.contentEditable = false; bar.remove(); snapshot(); node.html = nb.innerHTML; renderMap(); };
+  nb.onblur = done;
+  nb.onkeydown = k => { if (k.key === 'Escape') { k.preventDefault(); nb.blur(); } if ((k.metaKey || k.ctrlKey) && k.key === 'b') { k.preventDefault(); document.execCommand('bold'); } if ((k.metaKey || k.ctrlKey) && k.key === 'i') { k.preventDefault(); document.execCommand('italic'); } k.stopPropagation(); };
+}
+function lightbox(node) {
+  closeFloating();
+  const lb = document.createElement('div'); lb.className = 'lightbox';
+  lb.innerHTML = `<div class="lb-img" style="width:${480}px">${node.img.startsWith('<svg') ? node.img : `<img src="${node.img}" style="width:100%">`}</div>
+    <div class="lb-bar"><span>${esc(node.title || '图片')}</span><span style="opacity:.6">· ${node.origin || '外部图片'}</span>
+    <button class="btn sm" data-lbz="-">${ic('zout', 's')}</button><button class="btn sm" data-lbz="+">${ic('zin', 's')}</button><button class="btn sm" data-act="closeLb">关闭（Esc）</button></div>`;
+  layer.appendChild(lb);
+  lb.addEventListener('click', e => { const z = e.target.closest('[data-lbz]'); const box = lb.querySelector('.lb-img'); if (z) { box.style.width = Math.max(240, Math.min(1200, box.offsetWidth + (z.dataset.lbz === '+' ? 120 : -120))) + 'px'; } else if (e.target === lb) lb.remove(); });
+}
+/* C02: external image import (paste / drop / pick) */
+function addImageCard(src, origin) {
+  snapshot();
+  const parent = S.selected && ['topic', 'root'].includes(nodeById(S.selected)?.kind) ? S.selected : (S.selected ? nodeById(S.selected).parent : 't3');
+  const n = { id: uid('i'), parent, kind: 'img', title: '', img: src, origin };
+  S.nodes.push(n); renderMap(); selectNode(n.id); flashNode(n.id);
+  hud(`图片已复制进学习集，加入「${nodeById(parent).title}」`, '撤销', undo);
+}
+document.addEventListener('paste', e => {
+  if (document.activeElement && (document.activeElement.isContentEditable || /INPUT|TEXTAREA/.test(document.activeElement.tagName))) return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (!item) return;
+  e.preventDefault(); const f = item.getAsFile(); const r = new FileReader(); r.onload = () => addImageCard(r.result, '粘贴的截图 · 刚刚'); r.readAsDataURL(f);
+});
+$('#map').addEventListener('dragover', e => { if ([...e.dataTransfer.items].some(i => i.kind === 'file')) { e.preventDefault(); $('#dropOverlay').classList.add('on'); } });
+$('#map').addEventListener('dragleave', e => { if (!e.relatedTarget || !$('#map').contains(e.relatedTarget)) $('#dropOverlay').classList.remove('on'); });
+$('#map').addEventListener('drop', e => {
+  e.preventDefault(); $('#dropOverlay').classList.remove('on');
+  const f = [...e.dataTransfer.files].find(x => /image\/(png|jpeg)/.test(x.type));
+  if (!f) return hud('只支持 PNG 或 JPEG 图片');
+  const r = new FileReader(); r.onload = () => addImageCard(r.result, f.name); r.readAsDataURL(f);
+});
+$('#filePick').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => addImageCard(r.result, f.name); r.readAsDataURL(f); e.target.value = ''; });
+</script>
+<script>
+'use strict';
+/* ---------------- Research: intents & demo data ---------------- */
+const INTENTS = [
+  { k: 'explain', n: '解释概念', i: 'bulb', mode: 'ai', src: ['web'] },
+  { k: 'interpret', n: '解读这段', i: 'read', mode: 'ai', src: ['web'] },
+  { k: 'verify', n: '查证观点', i: 'scale', mode: 'web', src: ['web', 'paper'] },
+  { k: 'video', n: '找视频 / 图解', i: 'play', mode: 'search', src: ['video', 'image'] },
+  { k: 'paper', n: '找论文', i: 'paper', mode: 'web', src: ['paper'] },
+  { k: 'deep', n: '深入研究', i: 'research', mode: 'web', src: ['web', 'paper'] },
+  { k: 'translate', n: '翻译并解释', i: 'trans', mode: 'ai', src: ['web'] },
+];
+const MODES = { search: '只搜索', ai: '问 AI（不联网）', web: '联网研究' };
+const SRC_KINDS = { web: ['网页', 'globe'], paper: ['论文', 'paper'], video: ['视频', 'play'], image: ['图片', 'image'] };
+function termOf(q) { if (q.length <= 10) return q; const m = q.match(/锚定|可得性|调整不足|选择性通达|启发/); return m ? ({ 锚定: '锚定效应', 可得性: '可得性启发' }[m[0]] || m[0]) : '锚定效应'; }
+function recommend(q, origin) {
+  if (origin.type === 'node') return 'explain';
+  if (/^[\x00-\x7F\s]+$/.test(q) && q.length > 12) return 'translate';
+  if (q.length <= 10) return 'explain';
+  if (/\d|竟|证明|表明|显著|导致|一倍/.test(q)) return 'verify';
+  if (q.length > 50) return 'interpret';
+  return 'explain';
+}
+function questionFor(intent, q, origin) {
+  const t = origin.type === 'node' ? origin.title : termOf(q);
+  return {
+    explain: `「${t}」是什么意思？请结合上下文举一个例子。`,
+    interpret: '这段话的论点、推理过程和隐含前提分别是什么？',
+    verify: q.length > 40 ? '这段话中的结论有依据吗？有没有反例或适用条件？' : `“${q.replace(/[。.]$/, '')}”——这个说法可靠吗？有没有反例或适用条件？`,
+    video: `找一个直观讲解「${t}」的视频或图解`,
+    paper: `关于「${t}」有哪些代表性研究？结论和局限是什么？`,
+    deep: '',
+    translate: '翻译这段话，并解释其中的术语。',
+  }[intent];
+}
+function keywordsFor(intent, q, origin) {
+  const t = origin.type === 'node' ? origin.title : termOf(q);
+  const en = { 锚定效应: 'anchoring effect', 可得性启发: 'availability heuristic' }[t];
+  const k = [t]; if (en) k.push(en);
+  if (intent === 'verify') k.push('幸运轮 实验', 'anchoring replication');
+  if (intent === 'paper') k.push('meta-analysis');
+  if (intent === 'video') k.push('讲解');
+  return k;
+}
+function demoSources() {
+  return [
+    { id: 1, kind: 'web', title: '锚定效应：从幸运轮实验到现实决策', site: 'psychspace.example.org', author: '心理学空间编辑部', date: '2024-03-12', read: 'full', why: '复述了 1974 年幸运轮实验的数字，并列出 3 项后续复现。', dupes: 2, inuse: true },
+    { id: 2, kind: 'paper', title: 'Judgment under Uncertainty: Heuristics and Biases', site: 'Science 185(4157)', author: 'Tversky, A. & Kahneman, D.', date: '1974', doi: '10.1126/science.185.4157.1124', read: 'abstract', access: '出版商全文（需订阅）', why: '锚定效应的原始论文。只读到了摘要，没有读到正文。', inuse: false },
+    { id: 3, kind: 'paper', title: 'Investigating variation in replicability: A “Many Labs” replication project', site: 'Social Psychology 45(3)', author: 'Klein, R. A. et al.', date: '2014', doi: '10.1027/1864-9335/a000178', read: 'full', access: '开放获取 PDF', why: '36 个实验室联合复现，锚定是结果最稳定的效应之一。', inuse: true },
+    { id: 4, kind: 'web', title: 'Anchoring effect', site: 'en.wikipedia.org', author: '', date: '', read: 'full', why: '汇总了极端锚值、专家判断等边界条件。', inuse: true },
+    { id: 5, kind: 'web', title: '为什么你总被第一个报价牵着走', site: 'finance-weekly.example.com', author: '', date: '2023-11-02', read: 'failed', fail: '页面需要登录，无法读取正文', why: '标题相关，但未能读取内容，不作为证据。', inuse: false },
+    { id: 6, kind: 'video', title: '3 分钟看懂锚定效应', site: 'bilibili.com', author: 'UP 主 · 认知小课堂', date: '2022-06-18', read: 'nosub', why: '没有可用字幕：只能保存链接和你自己的笔记。', inuse: false },
+  ];
+}
+const READ_STATE = { none: ['未读取', ''], snippet: ['仅搜索简介', ''], abstract: ['仅摘要', 'warn'], full: ['已提取正文', 'ok'], sub: ['已取得字幕', 'ok'], failed: ['读取失败', 'err'], nosub: ['无字幕', 'warn'] };
+function webAnswer() {
+  return [
+    { h: '结论', pts: [{ id: 'a1', t: '结论可靠，但幅度要加限定：锚定效应在大规模复现中稳定存在；“相差将近一倍”来自一次小样本实验，不宜直接推广到其他场景。', c: [1, 3] }] },
+    { h: '关键解释', pts: [
+      { id: 'a2', t: '幸运轮实验中，锚值 10 与 65 两组的估计中位数分别为 25% 与 45%。这组数字来自二手转述；原论文只读到了摘要，未在正文中核对。', c: [1] },
+      { id: 'a3', t: '“Many Labs”在 36 个实验室复现了锚定，它属于效应最大、最稳定的一类。', c: [3], q: 'The anchoring effects were among the largest and most robust of the effects investigated.' },
+    ] },
+    { h: '不同观点与限制', pts: [
+      { id: 'a4', t: '锚值越离谱、判断者越熟悉该领域，效应通常越弱，但不会完全消失。', c: [4] },
+      { id: 'a5', t: '“提醒别受影响”效果有限，与本书第 42 页最后一段的说法一致。', c: [1] },
+    ] },
+    { h: '待解决的问题', pts: [{ id: 'a6', t: '法官、医生等专家在真实工作中的锚定幅度，是否与实验室结果一致？', c: [] }] },
+  ];
+}
+function offlineAnswer(t) {
+  return [
+    { h: '简短结论', pts: [{ id: 'b1', t: `「${t}」指最先接触到的数字或信息会成为“锚”，后续判断从它出发调整，但往往调整不足，结果偏向锚值。`, c: [] }] },
+    { h: '关键解释', pts: [
+      { id: 'b2', t: '它与“认知偏差”分支下的其他条目共同点在于：都是省力的判断捷径在特定条件下产生的系统性偏差。', c: [] },
+      { id: 'b3', t: '例子：商品先标原价 999 元再打折到 599 元，599 会显得便宜，因为 999 成了比较的锚。', c: [] },
+    ] },
+    { h: '待解决的问题', pts: [{ id: 'b4', t: '想核实具体的实验数据，可以切换到“联网研究”查证。', c: [] }] },
+  ];
+}
+function basedAnswer(srcs) {
+  return [
+    { h: '基于所选资料的回答', pts: [
+      { id: 'c1', t: '两份资料都支持锚定效应稳定存在；其中复现研究提供了跨实验室的证据，科普文章提供了经典实验的数字。', c: srcs },
+      { id: 'c2', t: '所选资料没有讨论锚定在专家群体中的幅度，这一点无法从中得出结论。', c: [] },
+    ] },
+  ];
+}
+const ARTICLES = {
+  1: { h: '锚定效应：从幸运轮实验到现实决策', paras: [
+    ['p1', '1974 年，特沃斯基和卡尼曼在《科学》上发表了一篇讨论不确定条件下判断的论文，其中描述了一个后来被反复引用的实验。'],
+    ['p2', '研究者转动一个只会停在 10 或 65 的幸运轮，随后请被试估计非洲国家在联合国中所占的比例。看到 10 的一组估计中位数为 25%，看到 65 的一组为 45%。'],
+    ['h', '后续复现'],
+    ['p3', '此后的研究在定价、法律判决和谈判中观察到了类似的效果。下面的表格汇总了三项常被引用的复现：'],
+    ['table', ''],
+    ['p4', '值得注意的是，事先提醒被试“不要受到前一个数字影响”，对结果的改变很小。'],
+  ] },
+  3: { h: 'Investigating variation in replicability: A “Many Labs” replication project', paras: [
+    ['p1', 'We conducted replications of 13 classic and contemporary effects across 36 independent samples totaling 6,344 participants.'],
+    ['h', 'Results'],
+    ['p7', 'The anchoring effects were among the largest and most robust of the effects investigated. Variation across samples and settings was small relative to the size of the effects.'],
+    ['p8', 'Effects differed in how strongly they replicated; some showed weak or no evidence of an effect.'],
+  ] },
+  4: { h: 'Anchoring effect', paras: [
+    ['p1', 'The anchoring effect is a psychological phenomenon in which an individual\'s judgments or decisions are influenced by a reference point or “anchor”.'],
+    ['h', 'Boundary conditions'],
+    ['p5', 'Even implausible anchors can influence estimates, although the magnitude of the effect tends to decrease as the anchor becomes more extreme or the judge has more domain expertise.'],
+  ] },
+};
+
+/* ---------------- Node context menu ---------------- */
+function nodeMenu(n, e) {
+  closeFloating();
+  const m = document.createElement('div'); m.className = 'pop menu';
+  const canDetail = n.kind !== 'root';
+  m.innerHTML = `<div class="mh">研究「${esc((n.title || n.quote || '笔记').slice(0, 12))}」</div>`
+    + INTENTS.filter(x => x.k !== 'translate').map(x => `<div class="mi res" data-nres="${x.k}">${ic(x.i, 's ii')}<span class="grow">${x.n}</span>${x.k === 'explain' ? '<span class="kbd">⇧⌘E</span>' : ''}</div>`).join('')
+    + '<div class="msep"></div>'
+    + (canDetail ? `<div class="mi" data-nact="detail">${ic('info', 's ii')}<span class="grow">显示详情</span><span class="kbd">⌘I</span></div>` : '')
+    + `<div class="mi" data-nact="image">${ic('image', 's ii')}<span class="grow">插入图片…</span></div>`
+    + (n.src ? `<div class="mi" data-nact="goto">${ic('goto', 's ii')}<span class="grow">回到原文</span><span class="kbd">⌘L</span></div>` : '')
+    + `<div class="mi" data-nact="exportBranch">${ic('share', 's ii')}<span class="grow">导出此分支…</span></div>`
+    + (S.widths[n.id] ? `<div class="mi" data-nact="resetWidth">${ic('fit', 's ii')}<span class="grow">恢复默认宽度</span></div>` : '');
+  layer.appendChild(m);
+  const w = win.getBoundingClientRect();
+  m.style.left = Math.min(e.clientX - w.left, win.clientWidth - m.offsetWidth - 10) + 'px';
+  m.style.top = Math.min(e.clientY - w.top, win.clientHeight - m.offsetHeight - 10) + 'px';
+  m.addEventListener('click', ev => {
+    const r = ev.target.closest('[data-nres]'), a = ev.target.closest('[data-nact]');
+    if (r) { m.remove(); openLauncher({ type: 'node', id: n.id, title: n.title || (n.quote || '').slice(0, 16) || '笔记', path: pathOf(n.id) }, r.dataset.nres, winRect(world.querySelector(`.node[data-id="${n.id}"]`))); }
+    if (a) {
+      m.remove();
+      ({ detail: () => showDetail(n.id), image: () => $('#filePick').click(), goto: () => gotoSource(n), exportBranch: () => exportSheet(n.id), resetWidth: () => { delete S.widths[n.id]; renderMap(); } })[a.dataset.nact]();
+    }
+  });
+}
+function pathOf(id) { const out = []; let n = nodeById(id); while (n && n.parent) { n = nodeById(n.parent); if (n) out.unshift(n.title); } return out; }
+
+/* ---------------- Launcher ---------------- */
+function openLauncher(origin, intentKey, anchor) {
+  closeFloating(true);
+  const q = origin.type === 'pdf' ? origin.quote : origin.title;
+  const L = { origin, intent: intentKey || recommend(q, origin), rec: recommend(q, origin), ctxOpen: false, ctx: { prev: true, next: true, head: true, parent: true, kids: false }, join: 'new' };
+  const it = INTENTS.find(x => x.k === L.intent);
+  L.mode = S.ai ? it.mode : 'search'; L.q = questionFor(L.intent, q, origin); L.kw = keywordsFor(L.intent, q, origin); L.src = [...it.src];
+  const pop = document.createElement('div'); pop.className = 'pop launch'; pop.dataset.launcher = '1';
+  const running = S.sessions.find(s => s.status === 'running');
+  const draw = () => {
+    const ctxParts = origin.type === 'pdf'
+      ? [['sel', '所选内容', origin.quote, true], ['prev', '前一段', '在一项经典实验中，研究者先转动一个动过手脚的幸运轮……', L.ctx.prev], ['next', '后一段', '锚定并不局限于实验室。房地产经纪人在看过不同的挂牌价之后……', L.ctx.next], ['head', '章节标题', '第 3 章 判断与启发 › 3.2 锚定效应', L.ctx.head]]
+      : [['sel', '节点', origin.title, true], ['parent', '上级路径', origin.path.join(' › ') || '（根节点）', L.ctx.parent], ['kids', '子节点内容', '3 张摘录卡片、1 张图片卡片（图片不会发送）', L.ctx.kids]];
+    const chars = ctxParts.reduce((a, p) => a + (p[3] ? p[2].length : 0), 0) * (origin.type === 'pdf' ? 3 : 2);
+    const aiOff = !S.ai;
+    pop.innerHTML = `<div class="lh">${ic('research', 's')}研究${origin.type === 'pdf' ? '所选内容' : '节点'}<span style="flex:1"></span><span class="note" style="font-weight:400">${origin.type === 'pdf' ? `${DOCS[origin.doc].name} · 第 ${origin.page} 页` : '主脑图 › ' + esc(origin.path.concat(origin.title).join(' › '))}</span></div>
+      <div class="lq"><span>${esc(q)}</span></div>
+      ${running ? `<div class="fld"><label>当前有一项研究正在进行</label>
+        <div class="radio ${L.join === 'new' ? 'on' : ''}" data-join="new"><span class="rd"></span><div><b>作为新研究</b><span>与正在进行的研究互不影响，结果各自归属</span></div></div>
+        <div class="radio ${L.join === 'add' ? 'on' : ''}" data-join="add"><span class="rd"></span><div><b>加入当前问题</b><span>作为「${esc(running.q.slice(0, 18))}…」的补充上下文</span></div></div></div>` : ''}
+      <div class="intents">${INTENTS.map(x => `<button class="intent ${x.k === L.intent ? 'on' : ''}" data-intent="${x.k}">${x.k === L.rec ? '<span class="rec">推荐</span>' : ''}<span class="ii">${ic(x.i)}</span>${x.n}</button>`).join('')}</div>
+      <div class="fld"><label><span class="grow">问题（可以改写）</span></label><textarea class="ta" rows="2" data-lq placeholder="${L.intent === 'deep' ? '写下你想深入弄清的问题…' : ''}">${esc(L.q)}</textarea></div>
+      ${L.mode !== 'ai' ? `<div class="fld"><label><span class="grow">搜索关键词</span><span style="font-weight:400">不会把整段原文当作搜索词</span></label>
+        <div class="kw">${L.kw.map((k, i) => `<span>${esc(k)}<button data-kwdel="${i}">${ic('x', 'xs')}</button></span>`).join('')}<input data-kwadd placeholder="添加关键词，回车确认"></div></div>
+        <div class="fld"><label><span class="grow">来源</span></label><div style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(SRC_KINDS).map(([k, [n, i]]) => `<button class="chip ${L.src.includes(k) ? 'on' : ''}" data-srck="${k}">${ic(i, 'xs')}${n}</button>`).join('')}</div></div>` : ''}
+      <div class="fld"><label><span class="grow">方式</span></label><div class="seg" style="width:max-content">${Object.entries(MODES).map(([k, n]) => `<button data-mode="${k}" class="${L.mode === k ? 'on' : ''}" ${aiOff && k !== 'search' ? 'disabled style="opacity:.4"' : ''}>${k === 'web' ? ic('globe', 'xs') : k === 'ai' ? ic('spark', 'xs') : ic('search', 'xs')}${n}</button>`).join('')}</div>
+        ${aiOff ? `<div class="warnline">${ic('info', 's')}<span>还没有设置 AI 服务。只搜索也能完成查找、阅读和摘取。<span class="lnk" data-act="settings">设置 AI 服务…</span></span></div>` : ''}
+        <div class="note" style="margin-top:6px">${{ search: '只检索并列出资料，不调用 AI，不产生 AI 费用。', ai: '只把下面勾选的上下文发给 AI，不联网，回答不会附外部引用。', web: '先检索、读取资料，再基于实际读到的内容回答；单次最多 8 次搜索、读取 12 个页面。' }[L.mode]}</div></div>
+      ${L.mode !== 'search' ? `<div class="ctx ${L.ctxOpen ? 'open' : ''}"><div class="ctx-h" data-ctxtoggle>${ic('lock', 's')}<span class="grow">将发送给 AI：${ctxParts.filter(p => p[3]).map(p => p[1]).join(' + ')}（约 ${chars} 字）</span>${ic(L.ctxOpen ? 'cu' : 'cd', 's')}</div>
+        <div class="ctx-b">${ctxParts.map(p => `<div class="ctx-part"><span class="sw ${p[3] ? 'on' : ''} ${p[0] === 'sel' ? 'dis' : ''}" data-ctx="${p[0]}"></span><div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--label2)">${p[1]}</div><div class="tx ${p[0] === 'sel' ? 'sel' : ''}">${esc(p[2])}</div></div></div>`).join('')}
+        <div class="note" style="margin-top:6px">整篇文档不会上传。网页搜索只发送关键词，不发送原文。</div></div></div>` : ''}
+      <div class="lfoot"><button class="btn" data-lact="later">${ic('clock', 's')}稍后研究</button><span class="grow"></span><span class="note">⌘↩</span><button class="btn res" data-lact="go">${L.join === 'add' ? '加入当前问题' : '开始研究'}</button></div>`;
+  };
+  draw();
+  const a = anchor || { x: win.clientWidth / 2 - 1, y: 80, w: 2, h: 2, b: 80 };
+  placePop(pop, a, 'below');
+  pop.addEventListener('input', e => { if (e.target.matches('[data-lq]')) L.q = e.target.value; });
+  pop.addEventListener('keydown', e => {
+    if (e.target.matches('[data-kwadd]') && e.key === 'Enter' && e.target.value.trim()) { L.kw.push(e.target.value.trim()); draw(); pop.querySelector('[data-kwadd]').focus(); }
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); go(); }
+    e.stopPropagation();
+  });
+  const go = () => {
+    if (!L.q.trim()) { pop.querySelector('[data-lq]').focus(); return hud('先写下要研究的问题'); }
+    pop.remove();
+    if (L.join === 'add' && running) { running.extra = (running.extra || 0) + 1; hud('已作为补充上下文加入当前研究；原研究的保存位置不变'); openPanel(origin.type); S.active = running.id; renderPanel(); renderSessions(); return; }
+    startSession(L);
+  };
+  pop.addEventListener('click', e => {
+    const t = e.target;
+    const iv = t.closest('[data-intent]'); if (iv) { L.intent = iv.dataset.intent; const it2 = INTENTS.find(x => x.k === L.intent); L.mode = S.ai ? it2.mode : 'search'; L.q = questionFor(L.intent, q, origin); L.kw = keywordsFor(L.intent, q, origin); L.src = [...it2.src]; draw(); if (L.intent === 'deep') pop.querySelector('[data-lq]').focus(); return; }
+    const md = t.closest('[data-mode]'); if (md && !md.disabled) { L.mode = md.dataset.mode; draw(); return; }
+    const kd = t.closest('[data-kwdel]'); if (kd) { L.kw.splice(+kd.dataset.kwdel, 1); draw(); return; }
+    const sk = t.closest('[data-srck]'); if (sk) { const k = sk.dataset.srck; L.src = L.src.includes(k) ? L.src.filter(x => x !== k) : [...L.src, k]; draw(); return; }
+    if (t.closest('[data-ctxtoggle]')) { L.ctxOpen = !L.ctxOpen; draw(); return; }
+    const cx = t.closest('[data-ctx]'); if (cx && cx.dataset.ctx !== 'sel') { L.ctx[cx.dataset.ctx] = !L.ctx[cx.dataset.ctx]; draw(); return; }
+    const jn = t.closest('[data-join]'); if (jn) { L.join = jn.dataset.join; draw(); return; }
+    const la = t.closest('[data-lact]');
+    if (la?.dataset.lact === 'go') go();
+    if (la?.dataset.lact === 'later') { pop.remove(); S.later.unshift({ id: uid('l'), q: L.q, from: origin.type === 'pdf' ? `${DOCS[origin.doc].name} · 第 ${origin.page} 页` : '脑图 · ' + origin.title }); renderSessions(); hud('已加入“稍后研究”，选区和问题都已保存'); }
+  });
+  setTimeout(() => pop.querySelector('[data-lq]')?.focus(), 30);
+}
+function researchSelection() {
+  if (!pendingSel) return;
+  // Bind the session to a stable anchor in the page (mirrors SourceAnchor: doc + page + rects + quote).
+  const aid = uid('a');
+  try { const sp = document.createElement('span'); sp.dataset.anchor = aid; pendingSel.range.surroundContents(sp); persistPageHtml(); } catch (_) { /* falls back to paragraph */ }
+  const origin = { type: 'pdf', doc: pendingSel.doc, page: pendingSel.page, quote: pendingSel.quote, anchor: aid };
+  const rect = pendingSel.rect; getSelection().removeAllRanges(); closeFloating(); pendingSel = null;
+  openLauncher(origin, null, rect);
+}
+
+/* ---------------- Sessions ---------------- */
+const timers = {};
+function startSession(L) {
+  const s = { id: uid('s'), q: L.q, intent: L.intent, mode: L.mode, origin: L.origin, kw: L.kw, srcKinds: L.src, status: 'running', step: 0, readN: 0, tab: 'answer', reading: null, checked: new Set(), edits: {}, sources: [], answer: null, clips: [], saved: [], filter: 'all', at: now(), error: null };
+  S.sessions.unshift(s); S.active = s.id; S.panel.mode = 'research';
+  openPanel(L.origin.type); renderSessions(); renderPanel(); run(s);
+}
+function run(s) {
+  clearTimers(s); s.status = 'running'; s.error = null; s.step = 0; s.readN = 0;
+  const T = (ms, fn) => (timers[s.id] = timers[s.id] || []).push(setTimeout(() => { if (s.status !== 'running') return; fn(); renderSessions(); if (S.active === s.id) renderPanel(); }, ms));
+  if (!S.net) { T(900, () => { s.status = 'failed'; s.error = s.mode === 'ai' ? '无法连接 AI 服务：网络不可用' : '检索失败：网络不可用'; }); return; }
+  if (s.mode === 'ai') { s.step = 2; T(1600, () => { s.answer = offlineAnswer(s.origin.type === 'node' ? s.origin.title : termOf(s.origin.quote)); s.status = 'done'; }); return; }
+  T(1100, () => { s.sources = demoSources().filter(x => s.srcKinds.includes(x.kind) || (s.srcKinds.includes('web') && x.kind === 'web')); if (!s.sources.length) s.sources = demoSources(); s.step = 1; });
+  if (s.mode === 'search') { T(1500, () => { s.sources.forEach(x => { if (x.read === 'full') x.read = 'snippet'; x.inuse = false; }); s.status = 'done'; s.tab = 'sources'; }); return; }
+  [1700, 2200, 2700].forEach((ms, i) => T(ms, () => { s.readN = i + 1; }));
+  T(3300, () => { s.step = 2; });
+  T(4600, () => { s.answer = webAnswer(); s.status = 'done'; });
+}
+function clearTimers(s) { (timers[s.id] || []).forEach(clearTimeout); timers[s.id] = []; }
+function cancelSession(s) { clearTimers(s); s.status = 'cancelled'; renderSessions(); renderPanel(); hud('已取消；已经取得的资料和保存的笔记都会保留'); }
+const activeSession = () => S.sessions.find(s => s.id === S.active);
+function renderSessions() {
+  const st = s => s.status === 'running' ? '<span class="pill run"><span class="spin" style="width:9px;height:9px"></span>进行中</span>'
+    : s.status === 'failed' ? '<span class="pill err">失败</span>' : s.status === 'cancelled' ? '<span class="pill">已取消</span>' : s.status === 'interrupted' ? '<span class="pill warn">已中断</span>'
+      : s.saved.length ? `<span class="count">${s.saved.length} 条笔记</span>` : '';
+  $('#sessionList').innerHTML = S.sessions.map(s => `<div class="row ${S.panel.open && S.panel.mode === 'research' && S.active === s.id ? 'on' : ''}" data-act="openSession" data-sid="${s.id}">${ic('research', 'ri')}<span class="t">${esc(s.q)}</span>${st(s)}</div>`).join('')
+    + `<div class="row" data-act="later">${ic('clock', 'ri')}<span class="t">稍后研究</span><span class="count">${S.later.length}</span></div>`;
+}
+
+/* ---------------- Right panel ---------------- */
+const rp = $('#rpanel');
+function renderPanel() {
+  if (S.panel.mode === 'detail') return renderDetail();
+  const s = activeSession();
+  if (!s) {
+    rp.innerHTML = `<div class="rp-head"><div class="rp-top"><span class="rp-kind">${ic('research', 's')}研究</span><span style="flex:1"></span><button class="ib" data-act="settings" title="研究设置">${ic('gear', 's')}</button><button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div></div>
+      <div class="rp-body"><div class="empty"><span class="ei">${ic('research', 'l')}</span><b>选中原文或脑图节点，开始研究</b>在 PDF 里选中文字后点浮动工具条上的“研究”（或按 R），或者在脑图节点上右键选择“研究”。<br>研究得到的结论可以保存到原文和脑图，并保留来源。</div>
+      ${S.later.length ? `<div class="sec" style="padding-left:0">稍后研究</div>${S.later.map(l => `<div class="saved-item"><h5>${esc(l.q)}</h5><div class="note">${esc(l.from)}</div><div class="att"><button class="btn sm res" data-act="resumeLater" data-lid="${l.id}">继续研究</button></div></div>`).join('')}` : ''}</div>`;
+    return;
+  }
+  const o = s.origin;
+  const originHtml = o.type === 'pdf'
+    ? `<div class="origin" data-act="backOrigin" title="回到起点">${ic('back', 's')}<div style="flex:1;min-width:0"><div class="oq">${esc(o.quote)}</div><div class="om">${ic('doc', 'xs')}${DOCS[o.doc].name} · 第 ${o.page} 页${s.extra ? ` · 另有 ${s.extra} 处补充上下文` : ''}</div></div></div>`
+    : `<div class="origin" data-act="backOrigin" title="回到节点">${ic('back', 's')}<div style="flex:1;min-width:0"><div class="oq" style="font-family:var(--sans);font-weight:600">${esc(o.title)}</div><div class="om">${ic('map', 'xs')}主脑图 › ${esc(o.path.join(' › '))}</div></div></div>`;
+  const steps = s.mode === 'ai' ? [['生成解答', 2]] : s.mode === 'search' ? [['检索资料', 0], ['整理结果', 1]] : [['检索', 0], [`读取资料 ${s.readN}/3`, 1], ['生成解答', 2]];
+  let run;
+  if (s.status === 'running') run = `<div class="steps">${steps.map(([n, k], i) => `<span class="step ${s.step > k ? 'done' : s.step === k ? 'now' : ''}">${s.step > k ? ic('check', 'xs') : s.step === k ? '<span class="spin" style="width:10px;height:10px"></span>' : ''}${n}</span>${i < steps.length - 1 ? `<span class="chev">${ic('cr', 'xs')}</span>` : ''}`).join('')}</div><button class="btn sm" data-act="cancelRun">${ic('stop', 'xs')}取消</button>`;
+  else if (s.status === 'failed') run = `<span class="pill err">${ic('wifioff', 'xs')}${esc(s.error)}</span><span style="flex:1"></span><button class="btn sm" data-act="retryRun">重试</button>`;
+  else if (s.status === 'cancelled') run = `<span class="pill">已取消</span><span style="flex:1"></span><button class="btn sm" data-act="retryRun">重新开始</button>`;
+  else if (s.status === 'interrupted') run = `<span class="pill warn">上次退出时中断，没有自动重发请求</span><span style="flex:1"></span><button class="btn sm" data-act="retryRun">重试</button>`;
+  else run = `<span class="pill ${s.mode === 'web' ? 'run' : ''}">${s.mode === 'web' ? ic('globe', 'xs') : s.mode === 'ai' ? ic('spark', 'xs') : ic('search', 'xs')}${MODES[s.mode]}</span><span>${s.at} 完成</span>${s.mode === 'web' ? `<span>· 使用 ${s.sources.filter(x => x.inuse).length} 个来源</span>` : ''}`;
+  const nSrc = s.sources.length, nSaved = s.saved.length + s.clips.length;
+  rp.innerHTML = `<div class="rp-head">
+      <div class="rp-top"><span class="rp-kind">${ic('research', 's')}研究</span><span style="flex:1"></span>
+        <button class="ib" data-act="history" title="研究记录">${ic('history', 's')}</button><button class="ib" data-act="settings" title="研究设置">${ic('gear', 's')}</button><button class="ib" data-act="togglePanel" title="关闭（恢复原来的布局）">${ic('x', 's')}</button></div>
+      ${originHtml}
+      <div class="rp-q" contenteditable="true" data-act="editQ" spellcheck="false">${esc(s.q)}</div>
+      <div class="runline">${run}</div></div>
+    ${s.reading ? '' : `<div class="rp-tabs"><div class="seg" style="width:100%">${[['answer', '解答'], ['sources', `资料${nSrc ? ' ' + nSrc : ''}`], ['saved', `已摘取${nSaved ? ' ' + nSaved : ''}`]].map(([k, n]) => `<button style="flex:1;justify-content:center" data-tab="${k}" class="${s.tab === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>`}
+    <div class="rp-body" id="rpBody">${s.reading ? readerHtml(s) : s.tab === 'answer' ? answerHtml(s) : s.tab === 'sources' ? sourcesHtml(s) : savedHtml(s)}</div>
+    ${!s.reading && s.tab === 'answer' && S.ai ? `<div class="rp-foot"><div class="composer"><textarea id="followup" placeholder="追问，或补充你的想法…" rows="1"></textarea><button class="sendb" data-act="followup">${ic('up', 's')}</button></div>
+      <div class="comp-meta"><span class="pill">${s.mode === 'ai' ? ic('spark', 'xs') + '不联网' : ic('globe', 'xs') + '可联网'}</span><span>追问沿用当前上下文 · 历史保存在本研究中</span></div></div>` : ''}`;
+}
+function citeHtml(c) { return c.map(i => `<span class="cite" data-cite="${i}" title="${esc(demoSources().find(x => x.id === i)?.title || '')}">${i}</span>`).join(''); }
+function answerHtml(s) {
+  if (!S.ai && !s.answer) return `<div class="empty"><span class="ei">${ic('spark', 'l')}</span><b>还没有设置 AI 服务</b>不配置 AI 也能完成研究：搜索资料、阅读正文、手动划选并保存到原文和脑图。<div style="display:flex;gap:8px;margin-top:4px"><button class="btn" data-tab="sources">查看资料</button><button class="btn pri" data-act="settings">设置 AI 服务…</button></div></div>`;
+  if (s.status === 'failed' && !s.answer) return `<div class="empty"><span class="ei">${ic('wifioff', 'l')}</span><b>${esc(s.error)}</b>已保存的研究笔记和证据离线也可以阅读。恢复网络后点“重试”，不会自动重复发送请求。</div>`;
+  if (!s.answer) {
+    if (s.mode === 'search' && s.status !== 'running') {
+      const picked = s.sources.filter(x => x.inuse);
+      return `<div class="empty"><span class="ei">${ic('search', 'l')}</span><b>“只搜索”不会生成解答</b>在“资料”里阅读、摘取即可。${S.ai ? '也可以勾选几份资料，让 AI 只基于它们回答。' : ''}
+        ${S.ai ? `<button class="btn res" data-act="basedOn" ${picked.length ? '' : 'disabled'}>${ic('spark', 's')}基于所选 ${picked.length} 份资料回答</button>` : ''}</div>`;
+    }
+    return `<div style="display:flex;flex-direction:column;gap:10px;padding-top:4px">${[90, 70, 84, 60].map(w => `<div style="height:12px;width:${w}%;border-radius:6px;background:var(--fill4)"></div>`).join('')}<div class="note" style="margin-top:4px">${s.mode === 'web' ? '正在检索和读取资料。你可以继续阅读或切换选区，结果仍会回到这项研究。' : '正在生成解答…'}</div></div>`;
+  }
+  const badge = s.based ? `<div class="mode-badge web">${ic('layers', 's')}<span>只基于你选的 ${s.based.length} 份资料（均已提取正文）回答，没有联网搜索。</span></div>`
+    : s.mode === 'ai' ? `<div class="mode-badge offline">${ic('wifioff', 's')}<span><b>未联网</b> · 只基于${s.origin.type === 'node' ? `节点「${esc(s.origin.title)}」及其上级路径` : '所选内容和相邻段落'}。这里没有外部来源，因此不附引用。</span></div>`
+      : `<div class="mode-badge web">${ic('globe', 's')}<span>联网研究 · 实际使用了 ${s.sources.filter(x => x.inuse).length} 个来源。<span class="lnk" data-tab="sources">查看读取范围</span></span></div>`;
+  const body = s.answer.map(sec => `<div class="ans-sec"><h4>${sec.h}</h4>${sec.pts.map(p => {
+    const e = s.edits[p.id];
+    return `<div class="pt ${s.checked.has(p.id) ? 'chk' : ''}" data-pt="${p.id}"><span class="cb" data-check="${p.id}">${ic('check', 'xs')}</span>
+      <div style="flex:1;min-width:0"><span class="tx">${esc(e || p.t)}</span>${citeHtml(p.c)}${e ? '<span class="edited">· 你修改过</span>' : ''}${!p.c.length && s.mode === 'web' && sec.h !== '待解决的问题' ? '<span class="edited" style="color:var(--warn)">· 无来源依据</span>' : ''}
+      ${p.q ? `<div class="quote">${esc(p.q)}<div class="note" style="font-family:var(--sans)">来源 [${p.c[0]}] 第 ¶7 段 · 原文摘录，未改写</div></div>` : ''}</div>
+      <div class="acts"><button data-pact="edit">编辑</button><button data-pact="ask">追问</button><button data-pact="save">保存</button></div></div>`;
+  }).join('')}</div>`).join('');
+  const failed = s.sources.filter(x => x.read === 'failed').length;
+  const n = s.checked.size;
+  return badge + body
+    + (failed && s.mode === 'web' ? `<div class="note" style="display:flex;gap:6px;align-items:center">${ic('warn', 's')}${failed} 个来源读取失败，没有作为证据。</div>` : '')
+    + `<div class="savebar">${n ? `<span>已选 ${n} 条要点</span><button class="btn plain sm" data-act="clearChk">取消选择</button>` : '<span class="note">勾选要点，或在资料正文中划选，然后保存</span>'}<span style="flex:1"></span><button class="btn res" data-act="saveNote" ${n ? '' : 'disabled'}>保存为研究笔记…</button></div>`;
+}
+function sourcesHtml(s) {
+  if (s.status === 'running' && !s.sources.length) return `<div class="empty"><span class="spin" style="color:var(--research);width:18px;height:18px"></span>正在检索：${s.kw.map(esc).join(' · ')}</div>`;
+  if (!s.sources.length) return `<div class="empty"><span class="ei">${ic(s.status === 'failed' ? 'wifioff' : 'search', 'l')}</span>${s.status === 'failed' ? '<b>没有取得资料</b>网络恢复后可以重试，也可以直接粘贴一段正文作为资料。<button class="btn" data-act="pasteSource">粘贴正文…</button>' : s.mode === 'ai' ? '<b>这项研究没有联网</b>“问 AI（不联网）”不会检索资料。需要依据时，可以改为联网研究。<button class="btn res" data-act="toWeb">改为联网研究</button>' : '暂无资料'}</div>`;
+  const kinds = ['all', ...new Set(s.sources.map(x => x.kind))];
+  const list = s.sources.filter(x => s.filter === 'all' || x.kind === s.filter);
+  const color = { web: '#0A84FF', paper: '#AF52DE', video: '#FF375F', image: '#30B0C7' };
+  return `<div class="filter-row">${kinds.map(k => `<button class="chip ${s.filter === k ? 'on' : ''}" data-filter="${k}">${k === 'all' ? '全部' : SRC_KINDS[k][0]}</button>`).join('')}<span style="flex:1"></span><span class="note">按相关度</span></div>`
+    + list.map(x => {
+      const [rs, rc] = READ_STATE[x.read];
+      return `<div class="src-item ${x.inuse ? 'inuse' : ''}" data-src="${x.id}"><div class="st"><span class="src-ic" style="background:${color[x.kind]}">${ic(SRC_KINDS[x.kind][1], 's')}</span>
+        <div style="flex:1;min-width:0"><h5>${esc(x.title)}</h5><div class="meta"><span>${esc(x.site)}</span>${x.author ? `<span>· ${esc(x.author)}</span>` : ''}${x.date ? `<span>· ${x.date}</span>` : ''}${x.doi ? `<span>· DOI ${x.doi}</span>` : ''}</div>
+        <div class="meta" style="margin-top:5px"><span class="pill ${rc}">${rs}</span>${x.access ? `<span class="pill ext">${x.access}</span>` : ''}${x.inuse && s.mode === 'web' ? '<span class="pill run">用于解答</span>' : ''}</div></div></div>
+        <div class="why"><b>相关性：</b>${esc(x.why)}</div>
+        ${x.dupes ? `<div class="dupe">${ic('layers', 'xs')}另有 ${x.dupes} 处转载已合并，不计为独立证据</div>` : ''}
+        <div class="sa">${x.kind === 'video' ? `<button class="btn sm" data-sact="open">${ic('ext', 'xs')}在 B 站打开</button><button class="btn sm" data-sact="keep">保存链接</button>`
+          : `<button class="btn sm" data-sact="read">${ic('read', 'xs')}${x.read === 'failed' ? '查看原因' : '阅读'}</button><button class="btn sm" data-sact="toggle">${x.inuse ? ic('check', 'xs') + '已加入资料' : ic('plus', 'xs') + '加入资料'}</button>`}
+          <button class="btn sm plain" data-sact="later">稍后阅读</button></div></div>`;
+    }).join('')
+    + `<div class="src-item" style="opacity:.9"><div class="st"><span class="src-ic" style="background:#8E8E93">${ic('ext', 's')}</span><div style="flex:1"><h5>在 YouTube 中搜索「${esc(s.kw[0])}」</h5><div class="meta"><span class="pill ext">外部搜索</span><span>在浏览器打开，结果不会被读取或计入资料</span></div></div></div></div>`;
+}
+function readerHtml(s) {
+  const x = s.sources.find(y => y.id === s.reading);
+  const back = `<button class="btn sm" data-act="backList">${ic('cl', 'xs')}资料</button>`;
+  if (x.read === 'failed') return `${back}<div class="empty" style="padding-top:22px"><span class="ei">${ic('warn', 'l')}</span><b>无法提取正文</b>${esc(x.fail)}。我们不会绕过登录或付费限制。<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center"><button class="btn sm">${ic('ext', 'xs')}打开原网页</button><button class="btn sm" data-act="pasteSource">粘贴正文</button><button class="btn sm">只保存链接</button></div></div>`;
+  if (x.read === 'abstract') return `${back}<div class="article" style="margin-top:10px"><h1>${esc(x.title)}</h1><div class="art-meta">${esc(x.author)} · ${x.site} · ${x.date} · DOI ${x.doi}</div>
+    <div class="warnline" style="margin-top:10px">${ic('info', 's')}<span>只读到了摘要，全文需要订阅。解答不会把它当作“读过全文”。<span class="lnk">打开出版商页面 ↗</span></span></div>
+    <h2>摘要</h2><p data-pid="abs">This article describes three heuristics that are employed in making judgments under uncertainty: representativeness, availability, and adjustment from an anchor…</p></div>`;
+  const a = ARTICLES[x.id] || ARTICLES[1];
+  const cited = s.citeFocus;
+  return `<div style="display:flex;align-items:center;gap:6px">${back}<span style="flex:1"></span><button class="btn sm plain">${ic('ext', 'xs')}打开原网页</button></div>
+    <div class="article" style="padding-left:22px;margin-top:8px"><h1>${esc(a.h)}</h1>
+    <div class="art-meta"><span>${esc(x.site)}</span>${x.date ? `<span>· ${x.date}</span>` : ''}<span class="pill ok">已提取正文</span><span>· 抓取于 10-26 ${s.at}</span><span>· 快照已保存，网页失效也能看</span></div>
+    ${S.ai ? `<div class="ai-box"><div class="h">${ic('spark', 'xs')}AI 摘要 · 不是原文</div>${x.id === 3 ? '36 个样本、6344 名被试复现 13 个效应；锚定效应最大、最稳定，样本间差异小。' : '文章复述了幸运轮实验，并汇总了定价、司法、谈判中的复现。提醒被试本身作用很小。'}</div>` : ''}
+    ${a.paras.map(([pid, t]) => pid === 'h' ? `<h2>${esc(t)}</h2>` : pid === 'table' ? `<table><tr><th>场景</th><th>被试</th><th>结果</th></tr><tr><td>二手房估价</td><td>房产经纪人</td><td>挂牌价显著影响估价</td></tr><tr><td>量刑</td><td>法官</td><td>掷骰结果影响刑期</td></tr><tr><td>谈判</td><td>MBA 学生</td><td>首次报价影响成交价</td></tr></table>` : `<p data-pid="¶${pid.slice(1)}" class="${cited === pid ? 'cited' : ''}">${esc(t)}</p>`).join('')}
+    <figure>图片加载失败时只显示说明文字，不影响正文阅读。</figure></div>
+    <div class="note" style="margin-top:8px">提示：在正文里划选一段，可以摘取为证据（保留段落位置）。</div>`;
+}
+function savedHtml(s) {
+  const notes = s.saved.map(id => S.notes[id]).filter(Boolean);
+  if (!notes.length && !s.clips.length) return `<div class="empty"><span class="ei">${ic('note', 'l')}</span><b>还没有摘取内容</b>研究记录本身不会自动进入原文、脑图或复习。只有你勾选或划选并保存的内容，才会成为研究笔记。</div>`;
+  return (s.clips.length ? `<div class="sec" style="padding:0 0 6px">摘取的证据（草稿）</div>${s.clips.map(c => `<div class="clip-draft">“${esc(c.text)}”<div class="from">${esc(c.src)} · ${c.pid} · 自动提取的原文</div></div>`).join('')}<button class="btn res sm" data-act="saveClips" style="margin:4px 0 14px">用这些证据写研究笔记…</button>` : '')
+    + (notes.length ? `<div class="sec" style="padding:0 0 6px">已保存的研究笔记</div>` : '')
+    + notes.map(n => `<div class="saved-item"><h5>${esc(n.title)}</h5><div class="note" style="color:var(--label)">${esc(n.body)}</div>
+      <div class="att">${n.att.pdf ? `<span class="att-chip" data-act="gotoAnchor" data-nid="${n.id}">${ic('doc', 'xs')}原文 · 第 ${n.att.pdf.page} 页</span>` : ''}${n.att.node ? `<span class="att-chip" data-act="gotoNoteNode" data-nid="${n.id}">${ic('map', 'xs')}脑图 · ${esc(nodeById(nodeById(n.att.node)?.parent)?.title || '')}</span>` : ''}<span class="att-chip">${ic('link', 'xs')}${n.cites.length} 个引用</span></div></div>`).join('');
+}
+
+/* ---------------- Save sheet (P2-R06) ---------------- */
+function saveSheet(s, preset) {
+  closeFloating();
+  const pts = preset?.pts || s.answer?.flatMap(x => x.pts).filter(p => s.checked.has(p.id)) || [];
+  const cites = [...new Set([...pts.flatMap(p => p.c), ...(preset?.clips || []).map(c => c.sid)])];
+  const fromPdf = s.origin.type === 'pdf';
+  const topics = S.nodes.filter(n => ['root', 'topic'].includes(n.kind));
+  const defTarget = fromPdf ? 't3' : s.origin.id;
+  const st = { dest: fromPdf ? 'both' : 'map', target: defTarget, split: false, review: false, title: pts[0] ? (s.edits[pts[0].id] || pts[0].t).split(/[：:，,]/)[0].slice(0, 24) : (preset?.clips?.[0]?.text.slice(0, 20) || ''), body: pts.map(p => s.edits[p.id] || p.t).join('\n') || (preset?.clips || []).map(c => '“' + c.text + '”').join('\n') };
+  const sc = document.createElement('div'); sc.className = 'scrim';
+  const draw = () => {
+    sc.innerHTML = `<div class="sheet"><h3>保存研究笔记</h3><div class="sub">只保存你选中的内容；研究记录本身不会进入原文、脑图或复习。</div>
+      <div class="fld"><label>标题（显示在脑图卡片上）</label><input class="ta" data-st="title" value="${esc(st.title)}"></div>
+      <div class="fld"><label>内容（可以修改；修改后仍保留原引用）</label><textarea class="ta" rows="4" data-st="body">${esc(st.body)}</textarea></div>
+      <div class="fld"><label>引用（${cites.length}）</label>${cites.length ? cites.map(i => { const x = demoSources().find(y => y.id === i); return `<div class="cite-row"><span class="cite">${i}</span><span class="grow">${esc(x.title)}</span><span class="pill ${READ_STATE[x.read][1]}">${READ_STATE[x.read][0]}</span></div>`; }).join('') : '<div class="note">没有外部来源（例如“不联网”的 AI 解答）。保存后会标注“无外部依据”。</div>'}</div>
+      <div class="fld"><label>保存到</label>
+        <div class="radio ${st.dest === 'both' ? 'on' : ''} ${fromPdf ? '' : 'dis'}" data-dest="both" style="${fromPdf ? '' : 'opacity:.45;pointer-events:none'}"><span class="rd"></span><div><b>原文和脑图（推荐）</b><span>${fromPdf ? '两处引用同一条笔记，改任意一处，另一处同步' : '这个节点没有原文位置'}</span></div></div>
+        <div class="radio ${st.dest === 'pdf' ? 'on' : ''}" data-dest="pdf" style="${fromPdf ? '' : 'opacity:.45;pointer-events:none'}"><span class="rd"></span><div><b>只附到原文</b><span>在选区旁显示笔记标记，不修改 PDF 文件</span></div></div>
+        <div class="radio ${st.dest === 'map' ? 'on' : ''}" data-dest="map"><span class="rd"></span><div><b>只加入脑图</b><span>作为卡片挂到下面选择的位置</span></div></div></div>
+      ${st.dest !== 'pdf' ? `<div class="fld"><label>挂在脑图的</label><select class="ta" data-st="target">${topics.map(t => `<option value="${t.id}" ${t.id === st.target ? 'selected' : ''}>${esc(pathOf(t.id).concat(t.title).join(' › '))}</option>`).join('')}</select>
+        <div class="note" style="margin-top:4px">${fromPdf ? '默认：这一页摘录所在的分支' : '默认：发起研究的节点'}</div>
+        ${pts.length > 1 ? `<div class="cbx ${st.split ? 'on' : ''}" data-tg="split"><i>${ic('check', 'xs')}</i>把 ${pts.length} 条要点拆成子节点（否则合为一张卡）</div>` : ''}</div>` : ''}
+      <div class="cbx ${st.review ? 'on' : ''}" data-tg="review"><i>${ic('check', 'xs')}</i>加入复习（默认不加入）</div>
+      <div class="sfoot"><span class="note grow">一次保存只算一步撤销</span><button class="btn" data-sv="cancel">取消</button><button class="btn res" data-sv="ok">保存</button></div></div>`;
+  };
+  draw(); layer.appendChild(sc);
+  sc.addEventListener('input', e => { const k = e.target.dataset.st; if (k) st[k] = e.target.value; });
+  sc.addEventListener('change', e => { const k = e.target.dataset.st; if (k) st[k] = e.target.value; });
+  sc.addEventListener('click', e => {
+    if (e.target === sc) return sc.remove();
+    const d = e.target.closest('[data-dest]'); if (d) { st.dest = d.dataset.dest; draw(); return; }
+    const t = e.target.closest('[data-tg]'); if (t) { st[t.dataset.tg] = !st[t.dataset.tg]; draw(); return; }
+    const b = e.target.closest('[data-sv]'); if (!b) return;
+    if (b.dataset.sv === 'cancel') return sc.remove();
+    if (b.disabled) return;
+    b.disabled = true; b.innerHTML = '<span class="spin"></span>保存中'; // repeat clicks cannot create duplicates
+    setTimeout(() => { commitNote(s, st, pts, cites); sc.remove(); }, 380);
+  });
+}
+function commitNote(s, st, pts, cites) {
+  snapshot();
+  const id = uid('rn'), note = { id, title: st.title.trim() || '研究笔记', body: st.body.trim(), q: s.q, cites, author: s.mode === 'search' ? '摘录' : 'AI + 你', edited: pts.some(p => s.edits[p.id]), review: st.review, att: {}, at: now(), session: s.id };
+  S.notes[id] = note;
+  if (st.dest !== 'map' && s.origin.type === 'pdf') { const a = { id: s.origin.anchor || uid('a'), noteId: id, doc: s.origin.doc, page: s.origin.page, sid: 's-claim' }; S.anchors.push(a); note.att.pdf = a; }
+  if (st.dest !== 'pdf') {
+    const nid = uid('m'); S.nodes.push({ id: nid, parent: st.target, kind: 'rn', noteId: id }); note.att.node = nid; S.selected = nid;
+    if (st.split && pts.length > 1) pts.forEach(p => S.nodes.push({ id: uid('n'), parent: nid, kind: 'note', html: `<p>${esc(s.edits[p.id] || p.t)}</p>` }));
+  }
+  s.saved.push(id); s.checked.clear(); s.clips = [];
+  renderAll();
+  if (note.att.node) flashNode(note.att.node);
+  const where = st.dest === 'both' ? '原文和脑图' : st.dest === 'pdf' ? '原文' : '脑图';
+  const mapHidden = S.layout === 'reader' && st.dest !== 'pdf';
+  hud(`已保存到${where}${mapHidden ? '（脑图暂时收起）' : ''}`, mapHidden ? '在脑图中查看' : '撤销', mapHidden ? () => { S.layout = 'split'; applyLayout(); setTimeout(() => flashNode(note.att.node), 360); } : undo);
+}
+
+/* ---------------- Inspector (P2-C01 detail) ---------------- */
+function showDetail(id) { S.panel.mode = 'detail'; S.panel.detailId = id; if (!S.panel.open) { S.saved = { layout: S.layout, side: S.sideOpen }; S.panel.open = true; if (S.layout === 'split') S.layout = 'map'; if (S.narrow) S.sideOpen = false; } selectNode(id); applyLayout(); renderPanel(); renderSessions(); }
+function renderDetail() {
+  const n = nodeById(S.panel.detailId);
+  if (!n) { S.panel.mode = 'research'; return renderPanel(); }
+  const head = (k, icon) => `<div class="rp-head"><div class="rp-top"><span class="rp-kind detail">${ic(icon, 's')}${k}</span><span style="flex:1"></span>${S.sessions.length ? `<button class="btn sm plain" data-act="toResearch">${ic('research', 'xs')}研究</button>` : ''}<button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div></div>`;
+  const review = `<div class="insp-sec"><h4>复习</h4><div class="kv"><span>状态</span><span>下次复习 10 月 29 日 · 已复习 3 次</span></div></div>`;
+  let body = '';
+  if (n.kind === 'ex') body = head('摘录卡片', 'doc') + `<div class="rp-body"><div class="insp-sec"><div class="insp-title" contenteditable="true" data-edit="title" data-placeholder="添加标题（会成为复习题面）">${esc(n.title) || '<span style="color:var(--label2)">添加标题（会成为复习题面）</span>'}</div></div>
+    <div class="insp-sec"><h4>原文（完整，不可修改）</h4><div class="insp-quote">${esc(n.quote)}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" data-act="detailGoto">${ic('goto', 'xs')}回到原文 · 第 ${n.src.page} 页</button><button class="btn sm" data-act="copyQuote">${ic('copy', 'xs')}复制</button></div></div>
+    <div class="insp-sec"><h4>标签</h4><span class="tag">考试重点</span><span class="tag" style="background:none;box-shadow:inset 0 0 0 1px var(--sep)">+ 添加</span></div>${review}
+    <div class="note">关闭详情后，脑图保持原来的位置和缩放。按 Esc 关闭，⌘I 再次打开。</div></div>`;
+  else if (n.kind === 'img') body = head('外部图片', 'image') + `<div class="rp-body"><div class="insp-sec"><div class="imgbox" data-act="lb" style="border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--sep);cursor:zoom-in">${n.img.startsWith('<svg') ? n.img : `<img src="${n.img}" style="width:100%;display:block">`}</div></div>
+    <div class="insp-sec"><h4>题面（复习时先显示这一行）</h4><div class="insp-title" contenteditable="true" data-edit="title" style="font-size:14px">${esc(n.title) || '<span style="color:var(--label2)">例如：这张图说明了什么？</span>'}</div></div>
+    <div class="insp-sec"><h4>来源</h4><div class="kv"><span>来自</span><span>${esc(n.origin || '外部图片')}</span><span>原文位置</span><span>无（不显示“回原文”）</span><span>存储</span><span>已复制进学习集，原文件删除也能看</span></div></div>${review}</div>`;
+  else if (n.kind === 'rn') {
+    const note = S.notes[n.noteId];
+    body = head('研究笔记', 'research') + `<div class="rp-body">
+      <div class="insp-sec"><div class="insp-title" contenteditable="true" data-edit="ntitle">${esc(note.title)}</div><div class="note" style="margin-top:4px">${note.author} · ${note.at} 保存${note.edited ? ' · 含你修改过的内容' : ''} · 源自问题“${esc(note.q.slice(0, 20))}…”</div></div>
+      <div class="insp-sec"><h4>内容</h4><div class="insp-quote" style="font-family:var(--sans);font-size:13px;line-height:1.7;white-space:pre-wrap" contenteditable="true" data-edit="nbody">${esc(note.body)}</div></div>
+      <div class="insp-sec"><h4>引用（${note.cites.length}）</h4>${note.cites.length ? note.cites.map(i => { const x = demoSources().find(y => y.id === i); return `<div class="cite-row"><span class="cite">${i}</span><span class="grow">${esc(x.title)}</span><span class="note">抓取于 10-26</span></div>`; }).join('') : '<div class="note">无外部依据（不联网的 AI 解答）</div>'}</div>
+      <div class="insp-sec"><h4>关联位置</h4>
+        ${note.att.pdf ? `<div class="cite-row">${ic('doc', 's')}<span class="grow">原文 · 认知科学入门.pdf 第 ${note.att.pdf.page} 页</span><button class="btn sm plain" data-act="gotoAnchor" data-nid="${note.id}">定位</button><button class="btn sm plain" data-act="unlinkPdf" data-nid="${note.id}">解除</button></div>` : '<div class="note" style="margin-bottom:4px">未附到原文</div>'}
+        ${note.att.node ? `<div class="cite-row">${ic('map', 's')}<span class="grow">脑图 · ${esc(pathOf(note.att.node).join(' › '))}</span><button class="btn sm plain" data-act="gotoNoteNode" data-nid="${note.id}">定位</button></div>` : ''}
+        <div class="note">解除关联只移除这一处位置，笔记和引用仍然保留。</div></div>
+      <div class="insp-sec"><h4>复习</h4><div style="display:flex;align-items:center;gap:8px"><span class="sw ${note.review ? 'on' : ''}" data-act="toggleNoteReview" data-nid="${note.id}"></span><span>加入复习</span><span class="note">（默认不加入，复用现有 FSRS 排期）</span></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="openNoteSession" data-nid="${note.id}">${ic('research', 'xs')}打开研究记录</button><button class="btn sm" style="color:var(--err)" data-act="deleteNote" data-nid="${note.id}">${ic('trash', 'xs')}删除研究笔记…</button></div></div>`;
+  } else if (n.kind === 'note') body = head('笔记', 'note') + `<div class="rp-body"><div class="insp-sec"><h4>内容</h4><div class="insp-quote" style="font-family:var(--sans);font-size:13px">${n.html}</div></div><div class="note">双击脑图中的笔记即可编辑，支持加粗、斜体和列表；旧的纯文本笔记保持原样。</div>${review}</div>`;
+  else body = head('主题', 'map') + `<div class="rp-body"><div class="insp-sec"><div class="insp-title">${esc(n.title)}</div><div class="note" style="margin-top:6px">路径：${esc(pathOf(n.id).join(' › ') || '根节点')}</div></div><button class="btn sm res" data-act="researchNode">${ic('research', 'xs')}研究这个节点…</button></div>`;
+  rp.innerHTML = body;
+}
+rp.addEventListener('input', e => {
+  const k = e.target.dataset.edit; if (!k) return;
+  const n = nodeById(S.panel.detailId);
+  if (k === 'title') { n.title = e.target.textContent.trim(); const el = world.querySelector(`.node[data-id="${n.id}"] .ttl`); if (el) el.textContent = n.title; else renderMap(); }
+  if (k === 'ntitle' || k === 'nbody') {
+    const note = S.notes[n.noteId]; note[k === 'ntitle' ? 'title' : 'body'] = e.target.textContent; note.edited = true;
+    // One note, two places: the map card updates live; the PDF popover reads the same object.
+    const card = world.querySelector(`.node[data-id="${n.id}"]`); if (card) { card.querySelector('.ttl').textContent = note.title; card.querySelector('.sum').textContent = note.body; }
+  }
+});
+rp.addEventListener('focusout', e => { if (e.target.dataset.edit) layoutMap(); });
+
+function markerPop(aid, el) {
+  closeFloating();
+  const a = S.anchors.find(x => x.id === aid), note = S.notes[a.noteId];
+  const p = document.createElement('div'); p.className = 'pop'; p.style.width = '320px'; p.style.padding = '12px 14px';
+  p.innerHTML = `<div class="rp-kind" style="margin-bottom:6px">${ic('research', 'xs')}研究笔记 · ${note.cites.length} 个来源</div><div style="font-weight:600;line-height:1.45">${esc(note.title)}</div>
+    <div style="font-size:12.5px;line-height:1.6;margin-top:4px;color:var(--label2);white-space:pre-wrap">${esc(note.body.slice(0, 140))}${note.body.length > 140 ? '…' : ''}</div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${note.att.node ? `<button class="btn sm" data-act="gotoNoteNode" data-nid="${note.id}">${ic('map', 'xs')}在脑图中定位</button>` : ''}<button class="btn sm" data-act="noteDetail" data-nid="${note.id}">查看全文与引用</button><button class="btn sm plain" data-act="openNoteSession" data-nid="${note.id}">打开研究</button></div>`;
+  placePop(p, winRect(el), 'below');
+}
+
+/* ---------------- Export (P2-C05) ---------------- */
+function exportSheet(branchId) {
+  closeFloating();
+  const st = { fmt: 'png', range: branchId ? 'branch' : 'all', theme: 'light', scale: 2, branch: branchId || 't2' };
+  const sc = document.createElement('div'); sc.className = 'scrim';
+  const draw = () => {
+    const m = S._mapSize || { w: 1200, h: 700 };
+    const k = st.range === 'branch' ? .55 : 1, W = Math.round((m.w * k + 80) * st.scale), H = Math.round((m.h * k + 80) * st.scale), big = Math.max(W, H) > 8000;
+    sc.innerHTML = `<div class="sheet" style="width:560px"><h3>导出脑图</h3><div class="sub">图片和 PDF 包含卡片、图片、关联线与概要；Markdown / OPML 会带上研究笔记和可读的出处。</div>
+      <div class="seg" style="width:max-content;margin-bottom:12px">${[['png', 'PNG 图片'], ['pdf', 'PDF'], ['md', 'Markdown'], ['opml', 'OPML']].map(([k2, n]) => `<button data-fmt2="${k2}" class="${st.fmt === k2 ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="preview-box" id="expPrev"></div>
+      ${['png', 'pdf'].includes(st.fmt) ? `<div class="note" style="margin-top:6px;display:flex;gap:8px"><span>${st.fmt === 'png' ? `${W.toLocaleString()} × ${H.toLocaleString()} 像素` : `${Math.round(W / st.scale / 72 * 2.54)} × ${Math.round(H / st.scale / 72 * 2.54)} 厘米 · 矢量文字可搜索`}</span></div>` : ''}
+      ${big && st.fmt === 'png' ? `<div class="warnline">${ic('warn', 's')}<span>图片较大（超过 8000 像素），部分应用可能打不开。建议降为 2×，或改用 PDF。</span></div>` : ''}
+      <div style="display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin-top:12px;font-size:12.5px">
+        <span class="note">范围</span><div class="seg sm" style="width:max-content"><button data-rng="all" class="${st.range === 'all' ? 'on' : ''}">整张脑图</button><button data-rng="branch" class="${st.range === 'branch' ? 'on' : ''}">分支「${esc(nodeById(st.branch).title)}」</button></div>
+        ${['png', 'pdf'].includes(st.fmt) ? `<span class="note">外观</span><div class="seg sm" style="width:max-content">${[['light', '浅色'], ['dark', '深色'], ['clear', '透明背景']].filter(x => st.fmt === 'png' || x[0] !== 'clear').map(([k2, n]) => `<button data-th="${k2}" class="${st.theme === k2 ? 'on' : ''}">${n}</button>`).join('')}</div>` : ''}
+        ${st.fmt === 'png' ? `<span class="note">清晰度</span><div class="seg sm" style="width:max-content">${[1, 2, 3].map(x => `<button data-sc="${x}" class="${st.scale === x ? 'on' : ''}">${x}×</button>`).join('')}</div>` : ''}
+        ${['md', 'opml'].includes(st.fmt) ? `<span class="note">研究笔记</span><span>作为卡片导出：标题、正文、引用列表（标题 · 网址 · 抓取时间）</span>` : ''}
+      </div>
+      <div class="sfoot"><button class="btn" data-ex="cancel">取消</button><button class="btn pri" data-ex="ok">导出…</button></div></div>`;
+    const pv = sc.querySelector('#expPrev');
+    if (['png', 'pdf'].includes(st.fmt)) {
+      const clone = world.cloneNode(true); clone.removeAttribute('id');
+      const s2 = Math.min(500 / (m.w + 40), 180 / (m.h + 40)) / k;
+      clone.style.transform = `scale(${s2})`; clone.style.left = '20px'; clone.style.top = '10px';
+      if (st.range === 'branch') clone.style.transform += ` translate(${-260}px,${-40}px)`;
+      const wrap = document.createElement('div'); wrap.style.cssText = `position:absolute;inset:0;background:${st.theme === 'dark' ? '#1C1C1E' : st.theme === 'clear' ? 'repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/14px 14px' : '#FBFBFD'}`;
+      if (st.theme === 'dark') wrap.className = 'dark';
+      wrap.appendChild(clone); pv.appendChild(wrap);
+    } else pv.innerHTML = `<pre style="margin:0;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.6;align-self:stretch;width:100%;overflow:hidden;color:var(--label)">${st.fmt === 'md' ? esc(`- 认知偏差\n  - 锚定效应\n    - > 当人们需要估计一个未知的数量时……（第 42 页）\n    - [研究笔记] ${Object.values(S.notes)[0]?.title || '结论可靠，但幅度要加限定'}\n      - 引用：[1] 锚定效应：从幸运轮实验到现实决策 · psychspace.example.org · 抓取于 2026-10-26`) : esc(`<outline text="锚定效应">\n  <outline text="锚定效应的定义" _note="当人们需要估计……（第 42 页）"/>\n  <outline text="[研究笔记] …" _note="引用：[1] … 抓取于 2026-10-26"/>`)}</pre>`;
+  };
+  draw(); layer.appendChild(sc);
+  sc.addEventListener('click', e => {
+    if (e.target === sc) return sc.remove();
+    const t = e.target.closest('[data-fmt2],[data-rng],[data-th],[data-sc],[data-ex]'); if (!t) return;
+    if (t.dataset.fmt2) st.fmt = t.dataset.fmt2; if (t.dataset.rng) st.range = t.dataset.rng; if (t.dataset.th) st.theme = t.dataset.th; if (t.dataset.sc) st.scale = +t.dataset.sc;
+    if (t.dataset.ex === 'cancel') return sc.remove();
+    if (t.dataset.ex === 'ok') { sc.remove(); return hud(`已导出 ${({ png: 'PNG', pdf: 'PDF', md: 'Markdown', opml: 'OPML' })[st.fmt]}（演示）`); }
+    draw();
+  });
+}
+
+/* ---------------- Settings ---------------- */
+function settingsSheet() {
+  closeFloating();
+  const sc = document.createElement('div'); sc.className = 'scrim';
+  sc.innerHTML = `<div class="sheet" style="width:560px"><h3>研究设置</h3><div class="sub">服务、模型和收费方式还没有最终选定。这里展示的是配置位置和边界，不代表已确定任何供应商。</div>
+    <div class="fld"><label>AI 服务</label><div style="display:flex;gap:8px"><select class="ta" style="flex:1"><option>${S.ai ? '示例：OpenAI 兼容接口' : '未设置'}</option><option>示例：Anthropic</option><option>示例：本机模型（Ollama）</option></select><input class="ta" style="flex:1" type="password" value="${S.ai ? 'sk-demo-xxxxxxxx' : ''}" placeholder="API Key"></div>
+      <div class="note" style="margin-top:4px">${ic('lock', 'xs')} Key 保存在 macOS 钥匙串，不会写进学习集、导出文件或日志。</div></div>
+    <div class="fld"><label>网页搜索</label><select class="ta"><option>示例：搜索服务 A（需 Key）</option><option>示例：自建 SearXNG</option></select></div>
+    <div class="fld"><label>论文检索</label><select class="ta"><option>OpenAlex（结构化检索，无需 Key）</option></select></div>
+    <div class="fld"><label>每次联网研究的上限</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div class="ta">搜索 <b>8</b> 次</div><div class="ta">读取 <b>12</b> 个页面</div><div class="ta">最长 <b>3</b> 分钟</div></div>
+      <div class="note" style="margin-top:4px">达到任意上限就停止并给出已有结果；随时可以取消。</div></div>
+    <div class="fld"><label>隐私</label><div class="cbx on"><i>${ic('check', 'xs')}</i>开始研究前显示将要发送的上下文</div><div class="cbx on"><i>${ic('check', 'xs')}</i>阻止访问本机和内网地址</div><div class="cbx"><i>${ic('check', 'xs')}</i>保存网页图片到本地快照（默认只保存文字）</div></div>
+    <div class="fld"><label>缓存</label><div style="display:flex;gap:8px;align-items:center"><span class="note" style="flex:1">网页缓存 18.4 MB。清理缓存不会删除你保存的证据和快照。</span><button class="btn sm">清理缓存</button></div></div>
+    <div class="sfoot"><button class="btn pri" data-act="closeSheet">完成</button></div></div>`;
+  layer.appendChild(sc);
+  sc.addEventListener('click', e => { if (e.target === sc) sc.remove(); const c = e.target.closest('.cbx'); if (c) c.classList.toggle('on'); });
+}
+
+/* ---------------- OCR (P2-C03) ---------------- */
+function ocrStart(onlyPage) {
+  closeFloating();
+  if (onlyPage) { S.ocr.total = 1; }
+  else {
+    const p = document.createElement('div'); p.className = 'pop'; p.style.width = '330px'; p.style.padding = '14px';
+    p.innerHTML = `<div style="font-weight:600;margin-bottom:8px">识别文字</div>
+      <div class="fld" style="margin-top:0"><label>范围</label><div class="seg sm"><button class="on">全部 12 页</button><button>当前页</button><button>第 _ 到 _ 页</button></div></div>
+      <div class="fld"><label>语言</label><div class="seg sm"><button class="on">中文 + 英文</button><button>仅中文</button><button>仅英文</button></div></div>
+      <div class="note" style="margin-top:10px">使用 macOS 自带的文字识别，在本机完成，不上传。已经有文字的页面会自动跳过。</div>
+      <div class="lfoot"><span class="grow"></span><button class="btn" data-act="closePop">取消</button><button class="btn pri" data-act="ocrGo">开始识别</button></div>`;
+    placePop(p, winRect($('.reader-banner .btn') || $('#readerScroll')), 'below');
+    return;
+  }
+  ocrGo();
+}
+function ocrGo() {
+  closeFloating(); S.ocr.state = 'running'; S.ocr.done = 0; renderReader(); renderOcrCaps();
+  const tick = () => {
+    if (S.ocr.state !== 'running') return;
+    S.ocr.done++; renderOcrCaps(); if (S.doc === 1) renderReader();
+    if (S.ocr.done >= S.ocr.total) { S.ocr.state = 'done'; $('#scanCount').textContent = '已识别'; renderOcrCaps(); renderReader(); hud('识别完成：现在可以选字、搜索和摘录'); return; }
+    S.ocr.timer = setTimeout(tick, 420);
+  };
+  S.ocr.timer = setTimeout(tick, 420);
+}
+function renderOcrCaps() {
+  const o = S.ocr, el = $('#ocrProgress');
+  el.innerHTML = o.state === 'running' ? `<div class="prog-capsule">${ic('scan', 's')}识别文字 ${o.done}/${o.total}<span class="bar"><i style="width:${o.done / o.total * 100}%"></i></span><button class="ib" style="width:22px;height:22px" data-act="ocrCancel" title="取消">${ic('x', 'xs')}</button></div>` : '';
+}
+
+/* ---------------- Review (P2-C02 image cards / notes) ---------------- */
+function openReview() {
+  closeFloating();
+  const img = S.nodes.find(n => n.kind === 'img'), note = S.nodes.find(n => n.id === 'n1');
+  const cards = [img && { path: pathOf(img.id), q: img.title || '回想：这张图片说明了什么？', a: `<div style="border-radius:10px;overflow:hidden;box-shadow:0 0 0 .5px var(--sep);max-width:420px">${img.img.startsWith('<svg') ? img.img : `<img src="${img.img}" style="width:100%">`}</div><div class="note" style="margin-top:8px">外部图片 · 没有原文位置，因此不显示“回到原文”</div>`, kind: '图片卡片' },
+    { path: pathOf('n1'), q: '可得性启发的典型例子是什么？为什么会高估？', a: `<div style="font-size:14px;line-height:1.7">${note.html}</div>`, kind: '笔记卡片（带格式）' }].filter(Boolean);
+  let i = 0, flipped = false;
+  const rv = document.createElement('div'); rv.className = 'review';
+  const draw = () => {
+    if (i >= cards.length) { rv.innerHTML = `<div class="rv-top"><b>复习 · 认知科学入门</b><span style="flex:1"></span><button class="btn" data-rv="close">完成</button></div><div class="empty" style="margin-top:80px"><span class="ei">${ic('check', 'l')}</span><b>今天的卡片都复习完了</b>研究笔记只有在你主动加入复习后才会出现在这里。</div>`; return; }
+    const c = cards[i];
+    rv.innerHTML = `<div class="rv-top"><b>复习 · 认知科学入门</b><span class="note">${i + 1} / ${cards.length} · ${c.kind}</span><span style="flex:1"></span><button class="btn" data-rv="close">结束</button></div>
+      <div class="rv-card"><div class="rv-path">${ic('map', 'xs')}${esc(c.path.join(' › '))}</div><div class="rv-q">${esc(c.q)}</div>
+      ${flipped ? `<div class="rv-ans">${c.a}</div><div class="rv-rate">${[['重来', '1 分钟'], ['困难', '6 分钟'], ['良好', '1 天'], ['简单', '4 天']].map(([n, t], k) => `<button class="btn" data-rv="rate">${n}<small>${k + 1} · ${t}</small></button>`).join('')}</div>`
+        : `<div class="rv-rate"><button class="btn pri" style="min-width:180px" data-rv="flip">显示答案（空格）</button></div>`}</div>`;
+  };
+  draw(); layer.appendChild(rv);
+  rv.addEventListener('click', e => { const b = e.target.closest('[data-rv]'); if (!b) return; if (b.dataset.rv === 'close') rv.remove(); if (b.dataset.rv === 'flip') { flipped = true; draw(); } if (b.dataset.rv === 'rate') { i++; flipped = false; draw(); } });
+}
+</script>
+<script>
+'use strict';
+/* ---------------- Global click delegation ---------------- */
+const ACTS = {
+  toggleSide: () => { S.sideOpen = !S.sideOpen; applyLayout(); },
+  doc: el => { S.doc = +el.dataset.doc; closeFloating(); renderReader(); if (S.layout === 'map') { S.layout = 'split'; applyLayout(); } },
+  togglePanel: () => { if (S.panel.open && S.panel.mode === 'research') closePanel(); else if (S.panel.open) { S.panel.mode = 'research'; renderPanel(); applyLayout(); } else { S.panel.mode = 'research'; openPanel('toolbar'); renderPanel(); } renderSessions(); },
+  newResearch: () => { S.active = null; S.panel.mode = 'research'; openPanel('toolbar'); renderPanel(); renderSessions(); },
+  openSession: el => { S.active = el.dataset.sid; S.panel.mode = 'research'; const s = activeSession(); openPanel(s.origin.type); renderPanel(); renderSessions(); },
+  later: () => { S.active = null; S.panel.mode = 'research'; openPanel('toolbar'); renderPanel(); renderSessions(); },
+  resumeLater: el => { const l = S.later.find(x => x.id === el.dataset.lid); S.later = S.later.filter(x => x !== l); startSession({ q: l.q, intent: 'deep', mode: S.ai ? 'web' : 'search', origin: { type: 'pdf', doc: 0, page: 42, quote: '比较有效的做法是主动“考虑相反的情况”——刻意寻找锚值可能错误的理由。' }, kw: ['考虑相反的情况', 'consider the opposite debiasing'], src: ['web', 'paper'] }); },
+  export: () => exportSheet(),
+  settings: () => settingsSheet(),
+  closeSheet: () => closeFloating(),
+  closePop: () => closeFloating(true),
+  closeLb: () => closeFloating(),
+  review: () => openReview(),
+  addImage: () => $('#filePick').click(),
+  zoomIn: () => { S.zoom = Math.min(2, S.zoom * 1.15); applyPan(); },
+  zoomOut: () => { S.zoom = Math.max(.3, S.zoom / 1.15); applyPan(); },
+  fit: () => fitMap(),
+  rzIn: () => { S.readerZoom = Math.min(2, +(S.readerZoom + .15).toFixed(2)); renderReader(); },
+  rzOut: () => { S.readerZoom = Math.max(.6, +(S.readerZoom - .15).toFixed(2)); renderReader(); },
+  inkUndo: () => inkUndo(),
+  penDone: () => setTool('select'),
+  ocrStart: () => ocrStart(false),
+  ocrPage: () => { S.ocr.total = 1; ocrGo(); },
+  ocrGo: () => { S.ocr.total = 12; ocrGo(); },
+  ocrCancel: () => { clearTimeout(S.ocr.timer); S.ocr.state = 'cancelled'; renderOcrCaps(); renderReader(); },
+  cancelRun: () => cancelSession(activeSession()),
+  retryRun: () => { const s = activeSession(); run(s); renderPanel(); renderSessions(); },
+  backOrigin: () => {
+    const o = activeSession().origin;
+    if (o.type === 'node') { if (S.layout === 'reader') { S.layout = 'map'; applyLayout(); } selectNode(o.id); flashNode(o.id); return; }
+    if (S.layout === 'map') { S.layout = 'reader'; applyLayout(); }
+    if (S.doc !== o.doc) { S.doc = o.doc; renderReader(); }
+    const el = $(`#readerScroll [data-anchor="${o.anchor}"]`) || $('#s-claim');
+    if (el) { scrollToEl(el); el.classList.add('hl', 'v', 'flash'); setTimeout(() => el.classList.remove('hl', 'v', 'flash'), 1700); }
+  },
+  saveNote: () => saveSheet(activeSession()),
+  clearChk: () => { activeSession().checked.clear(); renderPanel(); },
+  basedOn: () => { const s = activeSession(); const ids = s.sources.filter(x => x.inuse).map(x => x.id); s.status = 'running'; s.step = 2; renderPanel(); setTimeout(() => { s.answer = basedAnswer(ids); s.based = ids; s.status = 'done'; s.tab = 'answer'; renderPanel(); renderSessions(); }, 1400); },
+  toWeb: () => { const s = activeSession(); s.mode = 'web'; s.srcKinds = ['web', 'paper']; s.answer = null; run(s); renderPanel(); },
+  backList: () => { const s = activeSession(); s.reading = null; s.citeFocus = null; renderPanel(); },
+  pasteSource: () => hud('粘贴的正文会标记为“用户粘贴”，与自动提取的证据区分'),
+  history: () => hud('研究记录：问题、查询、所选资料和草稿都保存在本研究中，退出后可以恢复'),
+  followup: () => { const t = $('#followup'); if (!t.value.trim()) return; hud('追问已加入本研究的对话记录（演示）'); t.value = ''; },
+  saveClips: () => { const s = activeSession(); saveSheet(s, { pts: [], clips: s.clips }); },
+  gotoAnchor: el => { const note = S.notes[el.dataset.nid]; closeFloating(true); if (!note?.att.pdf) return; if (S.layout === 'map') { S.layout = 'split'; applyLayout(); } if (S.doc !== 0) { S.doc = 0; renderReader(); } const m = $(`[data-marker="${note.att.pdf.id}"]`); if (m) { scrollToEl(m); setTimeout(() => coach(m, 1800), 450); } },
+  gotoNoteNode: el => { const note = S.notes[el.dataset.nid]; closeFloating(true); if (!note?.att.node) return; if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); setTimeout(() => { selectNode(note.att.node); flashNode(note.att.node); }, 360); } else { selectNode(note.att.node); flashNode(note.att.node); } },
+  noteDetail: el => { closeFloating(true); const note = S.notes[el.dataset.nid]; if (note.att.node) showDetail(note.att.node); },
+  openNoteSession: el => { closeFloating(true); const note = S.notes[el.dataset.nid]; S.active = note.session; S.panel.mode = 'research'; const s = activeSession(); s.tab = 'saved'; s.reading = null; openPanel(s.origin.type); renderPanel(); renderSessions(); },
+  unlinkPdf: el => { snapshot(); const note = S.notes[el.dataset.nid]; S.anchors = S.anchors.filter(a => a.noteId !== note.id); note.att.pdf = null; renderReader(); renderPanel(); hud('已解除与原文的关联，笔记仍在脑图中', '撤销', undo); },
+  toggleNoteReview: el => { const note = S.notes[el.dataset.nid]; note.review = !note.review; renderPanel(); hud(note.review ? '已加入复习，按现有 FSRS 排期' : '已移出复习'); },
+  deleteNote: el => {
+    const note = S.notes[el.dataset.nid];
+    const sc = document.createElement('div'); sc.className = 'scrim';
+    sc.innerHTML = `<div class="sheet" style="width:420px"><h3>删除这条研究笔记？</h3><div class="sub" style="line-height:1.6">将同时移除：${[note.att.pdf && '原文第 ' + note.att.pdf.page + ' 页的笔记标记', note.att.node && '脑图上的卡片'].filter(Boolean).join('、') || '（没有其他关联）'}。引用的资料快照仍保留在研究记录中。可以用 ⌘Z 撤销。</div>
+      <div class="sfoot"><button class="btn" data-act="closeSheet">取消</button><button class="btn" style="background:var(--err);color:#fff" data-act="confirmDelete" data-nid="${note.id}">删除</button></div></div>`;
+    layer.appendChild(sc);
+  },
+  confirmDelete: el => { snapshot(); const note = S.notes[el.dataset.nid]; S.anchors = S.anchors.filter(a => a.noteId !== note.id); S.nodes = S.nodes.filter(n => n.noteId !== note.id && n.parent !== note.att.node); delete S.notes[note.id]; S.sessions.forEach(s => s.saved = s.saved.filter(x => x !== note.id)); closeFloating(); S.panel.mode = 'research'; renderAll(); hud('已删除研究笔记及其关联', '撤销', undo); },
+  toResearch: () => { S.panel.mode = 'research'; renderPanel(); applyLayout(); renderSessions(); },
+  detailGoto: () => gotoSource(nodeById(S.panel.detailId)),
+  copyQuote: () => hud('已复制原文'),
+  lb: () => lightbox(nodeById(S.panel.detailId)),
+  researchNode: () => { const n = nodeById(S.panel.detailId); openLauncher({ type: 'node', id: n.id, title: n.title, path: pathOf(n.id) }, 'explain', winRect(world.querySelector(`.node[data-id="${n.id}"]`) || rp)); },
+};
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (!t.isConnected) return; // a popover re-rendered under the click; it already handled it
+  // Floating selection toolbar
+  const fc = t.closest('[data-ftb-color]');
+  if (fc) { if (S._hlTarget) { S._hlTarget.className = 'hl ' + fc.dataset.ftbColor; persistPageHtml(); const card = S.nodes.find(n => n.src?.hl === S._hlTarget.dataset.hl); if (card) { card.color = fc.dataset.ftbColor; renderMap(); } S._hlTarget = null; closeFloating(); } else excerpt(fc.dataset.ftbColor); return; }
+  const fb = t.closest('[data-ftb]');
+  if (fb) {
+    const k = fb.dataset.ftb;
+    if (k === 'research') {
+      if (S._hlTarget) { const el = S._hlTarget; S._hlTarget = null; const [doc, page] = el.closest('.page').dataset.page.split('-').map(Number); closeFloating(); openLauncher({ type: 'pdf', doc, page, quote: el.textContent, anchor: (el.dataset.anchor = el.dataset.anchor || uid('a')) }, null, winRect(el)); persistPageHtml(); }
+      else researchSelection();
+    }
+    if (k === 'copy') { closeFloating(); hud('已复制'); }
+    if (k === 'hl') { if (pendingSel) { try { const sp = document.createElement('span'); sp.className = 'hl y'; pendingSel.range.surroundContents(sp); persistPageHtml(); } catch (_) { } getSelection().removeAllRanges(); closeFloating(); hud('已高亮'); } }
+    if (k === 'note') { excerpt('y'); const last = S.nodes[S.nodes.length - 1]; S.nodes.push({ id: uid('n'), parent: last.id, kind: 'note', html: '<p></p>' }); renderMap(); setTimeout(() => editNote(S.nodes[S.nodes.length - 1]), 80); }
+    if (k === 'locate') { const card = S.nodes.find(n => n.src?.hl === S._hlTarget?.dataset.hl); closeFloating(); S._hlTarget = null; if (card) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(card.id); flashNode(card.id); } }
+    return;
+  }
+  // Click on an existing highlight
+  const hl = t.closest('.page .hl');
+  if (hl && getSelection().isCollapsed && S.tool === 'select') { S._hlTarget = hl; pendingSel = { rect: winRect(hl) }; showFtb(hl); return; }
+  const mk = t.closest('[data-marker]'); if (mk) return markerPop(mk.dataset.marker, mk);
+  // Panel internals
+  const tab = t.closest('[data-tab]'); if (tab) { const s = activeSession(); if (s) { s.tab = tab.dataset.tab; s.reading = null; renderPanel(); } return; }
+  const ck = t.closest('[data-check]'); if (ck) { const s = activeSession(); const id = ck.dataset.check; s.checked.has(id) ? s.checked.delete(id) : s.checked.add(id); renderPanel(); return; }
+  const pa = t.closest('[data-pact]');
+  if (pa) {
+    const s = activeSession(), ptEl = pa.closest('[data-pt]'), id = ptEl.dataset.pt, p = s.answer.flatMap(x => x.pts).find(x => x.id === id);
+    if (pa.dataset.pact === 'edit') { const tx = ptEl.querySelector('.tx'); tx.contentEditable = true; tx.focus(); getSelection().selectAllChildren(tx); tx.onblur = () => { tx.contentEditable = false; const v = tx.textContent.trim(); if (v && v !== p.t) s.edits[id] = v; renderPanel(); }; tx.onkeydown = k => { if (k.key === 'Enter' && !k.shiftKey) { k.preventDefault(); tx.blur(); } k.stopPropagation(); }; }
+    if (pa.dataset.pact === 'ask') { const f = $('#followup'); if (f) { f.value = `关于“${(s.edits[id] || p.t).slice(0, 18)}…”：`; f.focus(); } }
+    if (pa.dataset.pact === 'save') saveSheet(s, { pts: [p] });
+    return;
+  }
+  const cite = t.closest('[data-cite]');
+  if (cite && rp.contains(cite)) { const s = activeSession(); if (!s) return; const id = +cite.dataset.cite; const x = s.sources.find(y => y.id === id); if (!x) return; s.reading = id; s.citeFocus = id === 3 ? 'p7' : id === 1 ? 'p2' : 'p5'; renderPanel(); setTimeout(() => scrollToEl($('#rpBody .cited')), 50); return; }
+  const fl = t.closest('[data-filter]'); if (fl) { activeSession().filter = fl.dataset.filter; renderPanel(); return; }
+  const sa = t.closest('[data-sact]');
+  if (sa) {
+    const s = activeSession(), x = s.sources.find(y => y.id === +sa.closest('[data-src]').dataset.src), k = sa.dataset.sact;
+    if (k === 'read') { s.reading = x.id; if (x.read === 'snippet') x.read = 'full'; renderPanel(); }
+    if (k === 'toggle') { x.inuse = !x.inuse; renderPanel(); }
+    if (k === 'later') hud('已加入“稍后阅读”');
+    if (k === 'open') hud('在浏览器中打开（外部）');
+    if (k === 'keep') hud('已保存链接；没有字幕，不会生成视频总结');
+    return;
+  }
+  const pen = t.closest('[data-pen]'); if (pen) { S.pen.shape = pen.dataset.pen; renderReaderFloat(); return; }
+  const pc = t.closest('[data-penc]'); if (pc) { S.pen.color = pc.dataset.penc; if (S.pen.shape === 'eraser') S.pen.shape = 'free'; renderReaderFloat(); return; }
+  const pw = t.closest('[data-penw]'); if (pw) { S.pen.width = +pw.dataset.penw; renderReaderFloat(); return; }
+  const tool = t.closest('[data-tool]'); if (tool) return setTool(tool.dataset.tool);
+  const lay = t.closest('[data-layout]'); if (lay) { S.layout = lay.dataset.layout; applyLayout(); return; }
+  const den = t.closest('[data-density]'); if (den) { S.density = den.dataset.density; renderMap(); return; }
+  const lbx = t.closest('[data-lightbox]'); if (lbx && stage.contains(lbx)) return; // handled by dblclick
+  const a = t.closest('[data-act]');
+  if (a && ACTS[a.dataset.act] && a.dataset.act !== 'editQ') { ACTS[a.dataset.act](a); return; }
+  // Click elsewhere closes floating UI (not sheets)
+  if (!t.closest('.pop,.ftb,.sheet,#demo,.clip-tb,.hud')) { $$('.pop,.ftb,.clip-tb', layer).forEach(e => e.remove()); S._hlTarget = null; }
+});
+// Editable research question
+rp.addEventListener('keydown', e => { if (e.target.matches('.rp-q') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } e.stopPropagation(); });
+rp.addEventListener('focusout', e => { if (e.target.matches('.rp-q')) { const s = activeSession(); if (s) { s.q = e.target.textContent.trim() || s.q; renderSessions(); } } });
+// Clip evidence from the article reader
+rp.addEventListener('mouseup', () => {
+  setTimeout(() => {
+    const s = activeSession(); if (!s?.reading) return;
+    const sel = getSelection(); if (sel.isCollapsed) return;
+    const r = sel.getRangeAt(0); const p = r.startContainer.parentElement?.closest('.article p'); if (!p) return;
+    const text = sel.toString().trim(); if (text.length < 4) return;
+    $$('.clip-tb', layer).forEach(x => x.remove());
+    const tb = document.createElement('div'); tb.className = 'clip-tb';
+    tb.innerHTML = `<button data-clip="ev">${ic('plus', 'xs')}摘取为证据</button><button data-clip="note">${ic('note', 'xs')}直接写成笔记…</button>`;
+    placePop(tb, winRect({ getBoundingClientRect: () => r.getBoundingClientRect() }), 'above');
+    tb.onclick = e => {
+      const k = e.target.closest('[data-clip]')?.dataset.clip; if (!k) return;
+      const x = s.sources.find(y => y.id === s.reading);
+      const clip = { text, pid: p.dataset.pid || '¶', src: x.title, sid: x.id };
+      tb.remove(); sel.removeAllRanges();
+      if (k === 'ev') { snapshot(); s.clips.push(clip); renderPanel(); hud(`已摘取到“已摘取”（${s.clips.length}），保留段落位置 ${clip.pid}`); }
+      else saveSheet(s, { pts: [], clips: [clip] });
+    };
+  }, 0);
+});
+
+/* ---------------- Keyboard ---------------- */
+document.addEventListener('keydown', e => {
+  const typing = document.activeElement && (document.activeElement.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+  const mod = e.metaKey || e.ctrlKey;
+  const rv = $('.review', layer);
+  if (rv && !typing) {
+    if (e.key === ' ') { e.preventDefault(); return rv.querySelector('[data-rv="flip"]')?.click(); }
+    if (['1', '2', '3', '4'].includes(e.key)) { const b = rv.querySelectorAll('[data-rv="rate"]')[+e.key - 1]; if (b) { e.preventDefault(); return b.click(); } }
+  }
+  if (e.key === 'Escape') {
+    if (rv) return rv.remove();
+    if ($('.scrim,.lightbox', layer)) return closeFloating();
+    if ($('.pop,.ftb', layer)) { closeFloating(true); S._hlTarget = null; return; }
+    if (S.tool === 'pen') return setTool('select');
+    if (S.panel.open && S.panel.mode === 'detail') return S.sessions.length ? ACTS.toResearch() : closePanel();
+    return;
+  }
+  if (typing) return;
+  if ($('.ftb', layer)) {
+    const k = e.key.toLowerCase();
+    if (k === 'r' && !mod) { e.preventDefault(); return $('.ftb [data-ftb="research"]').click(); }
+    if (k === 'e' && !mod && pendingSel?.range) { e.preventDefault(); return excerpt(S._lastColor || 'y'); }
+    if (k === 'h' && !mod && pendingSel?.range) { e.preventDefault(); return $('.ftb [data-ftb="hl"]')?.click(); }
+  }
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); return undo(); }
+  if (mod && e.key.toLowerCase() === 'i' && S.selected) { e.preventDefault(); return showDetail(S.selected); }
+  if (mod && e.shiftKey && e.key.toLowerCase() === 'e') { e.preventDefault(); if (pendingSel?.range) return researchSelection(); if (S.selected) { const n = nodeById(S.selected); return openLauncher({ type: 'node', id: n.id, title: n.title || '笔记', path: pathOf(n.id) }, null, winRect(world.querySelector(`.node[data-id="${n.id}"]`))); } return hud('先选中原文或一个脑图节点'); }
+  if (e.ctrlKey && e.metaKey && e.key.toLowerCase() === 'r') { e.preventDefault(); return ACTS.togglePanel(); }
+  if (mod && ['1', '2', '3'].includes(e.key)) { e.preventDefault(); S.layout = ['reader', 'split', 'map'][+e.key - 1]; return applyLayout(); }
+  if (mod && e.key === '0') { e.preventDefault(); return fitMap(); }
+  if (e.key === ' ' && S.selected && nodeById(S.selected)?.kind === 'img') { e.preventDefault(); return lightbox(nodeById(S.selected)); }
+});
+
+/* ---------------- Demo console ---------------- */
+const SCENES = [
+  { k: 'verify', t: '从 PDF 选中一句话发起「查证」', d: 'R01–R06 全流程：联网研究 → 读正文 → 勾选要点 → 同时保存到原文和脑图', go() { toDoc0('split'); selectSentence('s-claim'); }, g: '已选中第 42 页的一句话，浮动工具条右侧多了 <b>研究</b>（快捷键 R）。点它 → 选“查证观点”（已推荐）→ 开始研究。完成后勾选两条要点，点“保存为研究笔记…”，选择“原文和脑图”。' },
+  { k: 'node', t: '从脑图节点发起「解释」（不联网）', d: '保留脑图、收起原文；明确标注“未联网”，不伪造引用', go() { toDoc0('split'); selectNode('t3'); setTimeout(() => { const el = world.querySelector('.node[data-id="t3"]'); const r = el.getBoundingClientRect(); nodeMenu(nodeById('t3'), { clientX: r.right - 10, clientY: r.bottom + 4 }); }, 380); }, g: '已在“锚定效应”节点上打开右键菜单。选择 <b>解释概念</b>：方式默认“问 AI（不联网）”，展开“将发送给 AI”可以看到并调整上下文。' },
+  { k: 'switch', t: '研究进行中切换选区', d: '结果仍归属原研究；新问题可以独立研究或加入当前问题', go() { toDoc0('split'); if (!S.sessions.some(s => s.status === 'running')) startSession({ q: '一个随机数字真的能让估计相差近一倍吗？', intent: 'verify', mode: S.ai ? 'web' : 'search', origin: { type: 'pdf', doc: 0, page: 42, quote: '一个明显随机的数字，竟能让估计相差将近一倍。' }, kw: ['锚定效应', 'anchoring effect'], src: ['web', 'paper'] }); setTimeout(() => selectSentence('s-mech'), 500); }, g: '一项研究正在进行。现在又选中了另一句话：点 <b>研究</b>，弹窗会让你选“作为新研究”或“加入当前问题”。不论怎么切换，原研究的保存位置都不会串。' },
+  { k: 'c01', t: '卡片全文查看与详情（C01）', d: '卡片内展开 / 收起；⌘I 打开详情，关闭后脑图不动', go() { toDoc0('map'); selectNode('e2'); setTimeout(() => coach(world.querySelector('.node[data-id="e2"] .more')), 380); }, g: '长摘录被截断时底部有 <b>展开全文</b>，布局会自动让位。选中卡片按 <b>⌘I</b> 或双击，在右侧详情里看完整原文、标签和复习状态。' },
+  { k: 'c02', t: '外部图片卡片（C02）', d: '粘贴截图、拖入或选择 PNG/JPEG；无原文来源时不显示“回原文”', go() { toDoc0('map'); selectNode('t3'); setTimeout(() => coach($('[data-act="addImage"]')), 380); }, g: '已选中“锚定效应”。现在可以 <b>直接 ⌘V 粘贴一张截图</b>，或从 Finder 拖一张图片到脑图上，或点右下角图片按钮选择文件。双击图片卡片可放大查看。' },
+  { k: 'c03', t: '扫描 PDF 文字识别（C03）', d: '本机识别、显示进度、可取消，识别后可选字和摘录', go() { S.doc = 1; S.layout = 'split'; closePanelIfOpen(); applyLayout(); renderReader(); setTimeout(() => coach($('.reader-banner')), 200); }, g: '打开了扫描讲义：顶部提示文字还不能选。点 <b>识别文字…</b>，或直接在页面上拖选，会提示“识别本页”。识别中工具栏显示进度，可以取消。' },
+  { k: 'c04', t: '基础圈画（C04）', d: '自由线 / 圈画 / 箭头 / 橡皮擦，缩放后不漂移，可撤销', go() { toDoc0('reader'); setTool('pen'); }, g: '画笔已开启。在页面上画几笔，试试 <b>圈画</b>（松手自动规整成椭圆）和 <b>箭头</b>；然后点右下角放大 / 缩小，笔迹始终贴着原位置。⌘Z 撤销，Esc 退出画笔。' },
+  { k: 'c05', t: '脑图导出 PNG / PDF（C05）', d: '整图或分支，外观与清晰度，大图提示', go() { toDoc0('map'); exportSheet(); }, g: '导出面板中切换 PNG / PDF / Markdown / OPML。PNG 选 3× 会看到“图片较大”的提示。' },
+  { k: 'c06', t: '卡片宽度与紧凑显示（C06）', d: '拖动卡片右边缘调宽度；双击边缘恢复；紧凑 / 完整切换', go() { toDoc0('map'); selectNode('e3'); setTimeout(() => { coach(world.querySelector('.node[data-id="e3"] .resize'), 2400); later(() => coach($('#densitySeg')), 2500); }, 380); }, g: '把鼠标移到选中卡片的右边缘，出现蓝色手柄后 <b>拖动调整宽度</b>，连线和布局会跟着更新；右下角 <b>紧凑 / 完整</b> 切换显示密度，正文不被改写。' },
+  { k: 'c07', t: '笔记基础格式（C07）', d: '加粗、斜体、有序 / 无序列表；旧纯文本无损', go() { toDoc0('map'); selectNode('n1'); setTimeout(() => editNote(nodeById('n1')), 760); }, g: '笔记已进入编辑：用上方小工具条或 <b>⌘B / ⌘I</b> 设置格式。Esc 完成。' },
+  { k: 'fail', t: '没有 AI / 断网 / 读取失败的退路', d: '每种失败都有真实状态和可行的下一步', go() { setEnv('ai', 'off'); toDoc0('split'); selectSentence('s-claim'); }, g: '已切换为 <b>未配置 AI</b>。点“研究”：只能选“只搜索”，仍可阅读正文、划选摘取并保存。再到控制台切到 <b>断网</b> 重试，看失败状态；资料里“读取失败”“仅摘要”“无字幕”各有退路。' },
+  { k: 'review', t: '复习外部图片卡', d: '无 PDF 来源的图片卡用题面 + 分支路径出题', go() { openReview(); }, g: '图片卡正面是你写的题面和分支路径，背面才显示图片；不会出现“回到原文”。' },
+  { k: 'settings', t: '研究设置（服务、Key、上限）', d: '可替换的服务、钥匙串、预算与隐私开关', go() { settingsSheet(); }, g: '这里只展示配置位置与边界：服务与收费方式待选型后确定。' },
+];
+const coachTimers = [];
+function later(fn, ms) { coachTimers.push(setTimeout(fn, ms)); }
+function closePanelIfOpen() { if (S.panel.open) closePanel(); }
+function toDoc0(layout) { closeFloating(); if (S.panel.open) closePanel(); S.doc = 0; S.layout = layout; if (S.tool !== 'select') setTool('select'); applyLayout(); renderReader(); }
+function selectSentence(id) {
+  setTimeout(() => {
+    const el = $('#' + id) || $(`[data-anchor] #${id}`); if (!el) return;
+    scrollToEl(el, false);
+    setTimeout(() => {
+      const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      const [doc, page] = el.closest('.page').dataset.page.split('-').map(Number);
+      pendingSel = { quote: el.textContent.trim(), range: r.cloneRange(), rect: winRect(el), doc, page };
+      showFtb(); setTimeout(() => coach($('.ftb [data-ftb="research"]'), 3000), 100);
+    }, 380);
+  }, 360);
+}
+function renderScenes() {
+  $('#scenes').innerHTML = SCENES.map((s, i) => `<button class="scn ${S.scene === s.k ? 'on' : ''}" data-scene="${s.k}"><span class="n">${i + 1}</span><span>${s.t}<small>${s.d}</small></span></button>`).join('');
+  const cur = SCENES.find(s => s.k === S.scene);
+  $('#guide').innerHTML = cur ? cur.g : '<b>欢迎。</b>这是二期完成后的 MarginMind：可以直接操作（选中原文、右键节点、粘贴图片……），也可以从下面的场景开始。右侧的研究面板、原文笔记标记、脑图研究卡片都是新增内容。';
+}
+function setEnv(k, v) {
+  const seg = $(`#demo [data-env="${k}"]`); $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  if (k === 'ai') S.ai = v === 'on';
+  if (k === 'net') S.net = v === 'ok';
+  if (k === 'theme') { S.theme = v; document.body.classList.toggle('dark', v === 'dark'); }
+  if (k === 'width') { S.narrow = v === 'narrow'; if (S.narrow && S.panel.open) S.sideOpen = false; if (!S.narrow && S.saved) S.sideOpen = S.saved.side; applyLayout(); }
+  renderPanel();
+}
+$('#demo').addEventListener('click', e => {
+  const sc = e.target.closest('[data-scene]'); if (sc) { coachTimers.forEach(clearTimeout); coachTimers.length = 0; $$('.coach', layer).forEach(x => x.remove()); S.scene = sc.dataset.scene; renderScenes(); SCENES.find(s => s.k === S.scene).go(); return; }
+  const env = e.target.closest('[data-env] button'); if (env) return setEnv(env.parentElement.dataset.env, env.dataset.v);
+  const d = e.target.closest('[data-demo]');
+  if (d?.dataset.demo === 'min') { $('#demo').classList.toggle('min'); document.body.classList.toggle('demo-min'); setTimeout(layoutMap, 340); return; }
+  if (d?.dataset.demo === 'reset') { Object.values(timers).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
+});
+
+/* ---------------- Boot ---------------- */
+function renderAll() { renderReader(); renderMap(); renderPanel(); renderSessions(); applyLayout(); }
+window.addEventListener('resize', () => layoutMap());
+// Simulate "interrupted on quit": a session restored from last launch.
+S.sessions.push({ id: 'old', q: '“选择性通达”和“调整不足”哪个解释更有力？', intent: 'paper', mode: 'web', origin: { type: 'pdf', doc: 0, page: 42, quote: '一种认为它来自“调整不足”……另一种认为它是一种“选择性通达”……', anchor: null }, kw: ['selective accessibility', 'insufficient adjustment'], srcKinds: ['paper'], status: 'interrupted', step: 1, readN: 1, tab: 'sources', reading: null, checked: new Set(), edits: {}, sources: demoSources().filter(x => x.kind === 'paper'), answer: null, clips: [], saved: [], filter: 'all', at: '昨天 21:40' });
+renderAll(); renderScenes(); renderOcrCaps();
+if (location.hash) { const k = location.hash.slice(1); const sc = SCENES.find(s => s.k === k); if (sc) { S.scene = k; renderScenes(); setTimeout(() => sc.go(), 400); } }
+</script>
+</body>
+</html>
