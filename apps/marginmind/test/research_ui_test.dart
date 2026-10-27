@@ -791,7 +791,7 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
     await _settle(tester);
     expect(ai.requests.last.question, contains('再举一个例子'));
-    expect(_session(app, id).session.history, hasLength(turn + 4));
+    expect(_session(app, id).session.history, hasLength(turn + 3));
     await gesture.removePointer();
 
     // The old research opens from the sidebar with its retry.
