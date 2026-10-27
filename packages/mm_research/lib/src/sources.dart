@@ -66,11 +66,46 @@ ResearchSource videoSource(Uri url, DateTime now) {
     url: canonical.toString(),
     canonicalUrl: normalized,
     kind: 'video',
-    title: id!,
+    // The page title is looked up separately; the link stands in until then.
+    title: canonical.toString(),
     videoId: id,
     fetchedAt: now,
     readState: 'noTranscript',
   );
+}
+
+/// Video titles from keyless public endpoints: YouTube oEmbed and Bilibili's
+/// video info. Any failure returns null so the link remains the title.
+class VideoTitles {
+  VideoTitles({ResearchHttp? http}) : http = http ?? ResearchHttp();
+  final ResearchHttp http;
+
+  Future<String?> lookup(ResearchSource source, CancellationToken cancellation) async {
+    final id = source.videoId;
+    if (source.kind != 'video' || id == null) return null;
+    final bilibili = Uri.parse(source.url).host == 'www.bilibili.com';
+    final url = !bilibili
+        ? Uri.https('www.youtube.com', '/oembed', {'url': source.canonicalUrl, 'format': 'json'})
+        : Uri.https('api.bilibili.com', '/x/web-interface/view', {
+            if (id.startsWith('BV')) 'bvid': id else 'aid': id.substring(2),
+          });
+    try {
+      final bytes = await http
+          .send(
+            url,
+            cancellation: cancellation,
+            headers: {'accept': 'application/json'},
+            budget: const ResearchBudget(duration: Duration(seconds: 8), responseBytes: 262144),
+          )
+          .expand((e) => e)
+          .toList();
+      final json = jsonDecode(utf8.decode(bytes)) as Map;
+      final title = bilibili ? (json['code'] == 0 ? (json['data'] as Map?)?['title'] : null) : json['title'];
+      return title is String && title.trim().isNotEmpty ? title.trim() : null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 ResearchSource sourceFromHit(SearchHit hit, DateTime now) {
@@ -113,7 +148,7 @@ ResearchSource mergeSource(List<ResearchSource> sources, ResearchSource incoming
   final old = sources[index];
   final merged = ResearchSource.fromJson({
     ...old.toJson(),
-    'title': old.title.isEmpty ? incoming.title : old.title,
+    'title': old.title.isEmpty || (old.kind == 'video' && _linkTitle(old)) ? incoming.title : old.title,
     'doi': old.doi ?? incoming.doi,
     'readState': old.readState == 'unread' ? incoming.readState : old.readState,
     'authors': old.authors.isEmpty ? incoming.authors : old.authors,
@@ -121,6 +156,10 @@ ResearchSource mergeSource(List<ResearchSource> sources, ResearchSource incoming
   sources[index] = merged;
   return merged;
 }
+
+/// A video saved before its title was known shows its link (or, in older
+/// sessions, its ID); a later save with a real title replaces it.
+bool _linkTitle(ResearchSource s) => s.title == s.url || s.title == s.videoId;
 
 /// A browser action, not a source and never consumed by the extraction pipeline.
 Uri externalSearchLink(String query) => Uri.https('www.google.com', '/search', {'q': query});

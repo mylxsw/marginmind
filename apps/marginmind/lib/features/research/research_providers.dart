@@ -31,6 +31,7 @@ final researchSessionsProvider = FutureProvider.family<List<ResearchSession>, St
   return sessions..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 });
 final researchSearchProvider = Provider<SearchProvider>((ref) => OpenAlexSearch());
+final researchVideoTitlesProvider = Provider<VideoTitles?>((ref) => VideoTitles());
 final researchCacheProvider = Provider<ResearchDocumentCache?>((ref) => null);
 final researchExtractorProvider = Provider<ContentExtractor>(
   (ref) => MarkdownArticleExtractor(parser: WebKitArticleParser(), cache: ref.watch(researchCacheProvider)),
@@ -66,6 +67,7 @@ class ResearchSessionController extends AsyncNotifier<ResearchSessionState> {
       recovery: recovery,
       newRequestId: newId,
       now: ref.watch(clockProvider),
+      videoTitles: ref.watch(researchVideoTitlesProvider),
       onSaved: () {
         if (!disposed) ref.invalidate(researchSessionsProvider(key.studySetId));
       },

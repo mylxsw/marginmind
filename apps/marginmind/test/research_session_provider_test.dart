@@ -50,6 +50,7 @@ void main() {
         contentRepositoryProvider.overrideWithValue(repository),
         researchRecoveryProvider.overrideWithValue(ResearchRecovery(repository, () async => ['set'])),
         researchSearchProvider.overrideWithValue(Search()),
+        researchVideoTitlesProvider.overrideWithValue(null),
         researchExtractorProvider.overrideWithValue(Extractor()),
       ],
     );

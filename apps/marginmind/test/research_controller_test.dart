@@ -93,6 +93,7 @@ void main() {
         researchRecoveryProvider.overrideWithValue(ResearchRecovery(repo, () async => ['demo-1'])),
         researchAiFactoryProvider.overrideWithValue(() async => ai),
         researchSearchProvider.overrideWithValue(_Search()),
+        researchVideoTitlesProvider.overrideWithValue(null),
         researchExtractorProvider.overrideWithValue(_Extractor()),
       ],
     );

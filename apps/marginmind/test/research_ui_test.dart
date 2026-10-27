@@ -174,6 +174,7 @@ Future<_App> _open(
       if (fakeAi) researchAiFactoryProvider.overrideWithValue(() async => ai),
       researchExtractorProvider.overrideWithValue(extractor ?? _Extractor()),
       researchSearchProvider.overrideWithValue(search ?? _Search()),
+      researchVideoTitlesProvider.overrideWithValue(null),
       researchSecretStoreProvider.overrideWithValue(secrets ?? _Secrets()),
       ...overrides,
     ],

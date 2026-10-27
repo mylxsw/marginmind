@@ -45,6 +45,58 @@ void main() {
     expect(hit.kind, 'video');
     expect(hit.title, 'Video');
     expect(hit.readState, 'noTranscript');
+    expect(
+      sourceFromHit(SearchHit(url: Uri.parse('https://youtu.be/dQw4w9WgXcQ'), title: ''), now).title,
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    );
+  });
+
+  test('video titles from YouTube oEmbed and Bilibili; any failure keeps the link', () async {
+    final now = DateTime(2026);
+    final youtube = videoSource(Uri.parse('https://youtu.be/dQw4w9WgXcQ'), now);
+    final bv = videoSource(Uri.parse('https://www.bilibili.com/video/BV1xx411c7mD?p=2'), now);
+    final av = videoSource(Uri.parse('https://bilibili.com/video/av170001'), now);
+    expect(youtube.title, youtube.url);
+    final seen = <Uri>[];
+    VideoTitles titles(int status, Object body) => VideoTitles(
+      http: transport((r) async {
+        seen.add(r.url);
+        return http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json; charset=utf-8'});
+      }),
+    );
+    expect(await titles(200, {'title': ' Never Gonna Give You Up '}).lookup(youtube, CancellationToken()), 'Never Gonna Give You Up');
+    expect(seen.last.host, 'www.youtube.com');
+    expect(seen.last.path, '/oembed');
+    expect(seen.last.queryParameters['url'], youtube.canonicalUrl);
+    final bilibili = titles(200, {
+      'code': 0,
+      'data': {'title': '字幕君交流场所'},
+    });
+    expect(await bilibili.lookup(bv, CancellationToken()), '字幕君交流场所');
+    expect(seen.last.queryParameters, {'bvid': 'BV1xx411c7mD'});
+    expect(await bilibili.lookup(av, CancellationToken()), '字幕君交流场所');
+    expect(seen.last.queryParameters, {'aid': '170001'});
+    expect(await titles(200, {'code': -404, 'message': 'x'}).lookup(bv, CancellationToken()), isNull);
+    expect(await titles(200, {'title': '  '}).lookup(youtube, CancellationToken()), isNull);
+    expect(await titles(404, {}).lookup(youtube, CancellationToken()), isNull);
+    final calls = seen.length;
+    final web = ResearchSource(id: 'w', url: 'https://e.com', canonicalUrl: 'https://e.com/', kind: 'web', title: 'W', fetchedAt: now);
+    expect(await titles(200, {'title': 'x'}).lookup(web, CancellationToken()), isNull);
+    expect(seen.length, calls);
+  });
+
+  test('a real video title replaces a link or ID placeholder but not a known title', () {
+    final now = DateTime(2026);
+    final link = videoSource(Uri.parse('https://youtu.be/dQw4w9WgXcQ'), now);
+    ResearchSource titled(ResearchSource s, String title) => ResearchSource.fromJson({...s.toJson(), 'title': title});
+    for (final placeholder in [link, titled(link, 'dQw4w9WgXcQ')]) {
+      final sources = [placeholder];
+      mergeSource(sources, titled(link, 'Real'));
+      expect(sources.single.title, 'Real');
+    }
+    final sources = [titled(link, 'Real')];
+    mergeSource(sources, link);
+    expect(sources.single.title, 'Real');
   });
 
   test('OpenAlex query, metadata, abstract inversion and optional bearer credential', () async {

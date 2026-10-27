@@ -64,6 +64,7 @@ class ResearchSessionEngine {
     required this.newRequestId,
     DateTime Function()? now,
     this.onSaved,
+    this.videoTitles,
   }) : _state = ResearchSessionState(session),
        now = now ?? DateTime.now;
   final String studySetId;
@@ -73,6 +74,7 @@ class ResearchSessionEngine {
   final String Function() newRequestId;
   final DateTime Function() now;
   final void Function()? onSaved;
+  final VideoTitles? videoTitles;
   ResearchSessionState _state;
   ResearchSessionState get state => _state;
   final _changes = StreamController<ResearchSessionState>.broadcast();
@@ -573,10 +575,13 @@ class ResearchSessionEngine {
     });
   }
 
-  /// Link-only sources never produce snapshots or evidence.
-  Future<void> saveVideoLink(Uri url) {
-    final source = videoSource(url, now());
-    return _write((s) {
+  /// Link-only sources never produce snapshots or evidence. The video's own
+  /// title is looked up once; without it the link is the title.
+  Future<void> saveVideoLink(Uri url) async {
+    final link = videoSource(url, now());
+    final title = await videoTitles?.lookup(link, CancellationToken());
+    final source = title == null ? link : ResearchSource.fromJson({...link.toJson(), 'title': title});
+    await _write((s) {
       final current = ResearchSessionState(s);
       final sources = [...current.sources];
       mergeSource(sources, source);
