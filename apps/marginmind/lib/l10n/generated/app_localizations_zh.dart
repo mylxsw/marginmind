@@ -2395,4 +2395,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantAskMore => '继续问';
+
+  @override
+  String get assistantSearxngInvalid => '请输入有效的 HTTP 或 HTTPS 端点';
 }

@@ -6,10 +6,13 @@ typedef AddressLookup = Future<List<InternetAddress>> Function(String host);
 
 /// Web URLs and provider credentials never share the localhost exception.
 class UrlPolicy {
-  UrlPolicy({AddressLookup? lookup, this.localEndpoint, this.providerEndpoint})
+  UrlPolicy({AddressLookup? lookup, this.localEndpoint, this.privateEndpoint, this.providerEndpoint})
     : lookup = lookup ?? InternetAddress.lookup;
   final AddressLookup lookup;
   final Uri? localEndpoint;
+
+  /// Explicit service origin only; never share with web/source requests.
+  final Uri? privateEndpoint;
 
   /// Only an explicitly configured HTTPS provider may use a proxy fake-IP.
   /// Web/source URLs never receive this exception. TLS still verifies the host.
@@ -54,11 +57,27 @@ class UrlPolicy {
     final addresses = parsed == null ? await lookup(host) : [parsed];
     final local = localEndpoint;
     final allowLoopback = local != null && url.origin == local.origin && url.path == local.path;
+    final allowPrivate = privateEndpoint != null && url.origin == privateEndpoint!.origin;
+    bool private(InternetAddress a) {
+      final b = a.rawAddress;
+      return a.isLoopback ||
+          a.isLinkLocal ||
+          (b.length == 4 &&
+              (b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) || (b[0] == 192 && b[1] == 168))) ||
+          (b.length == 16 && (b[0] & 0xfe) == 0xfc);
+    }
+
     final allowFake = providerEndpoint == url && url.scheme == 'https' && parsed == null;
     bool fake(InternetAddress a) =>
         a.rawAddress.length == 4 && a.rawAddress[0] == 198 && (a.rawAddress[1] == 18 || a.rawAddress[1] == 19);
     if (addresses.isEmpty ||
-        addresses.any((a) => !publicAddress(a) && !(allowLoopback && a.isLoopback) && !(allowFake && fake(a)))) {
+        addresses.any(
+          (a) =>
+              !publicAddress(a) &&
+              !(allowLoopback && a.isLoopback) &&
+              !(allowPrivate && private(a)) &&
+              !(allowFake && fake(a)),
+        )) {
       throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
     }
     return addresses;

@@ -1418,5 +1418,6 @@
   "assistantAskWith": "Ask About It…",
   "assistantAnchorGone": "The original place was deleted",
   "assistantOpenConversation": "Open Conversation",
-  "assistantAskMore": "Ask More"
+  "assistantAskMore": "Ask More",
+  "assistantSearxngInvalid": "Enter a valid HTTP or HTTPS endpoint"
 }

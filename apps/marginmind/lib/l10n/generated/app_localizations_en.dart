@@ -2504,4 +2504,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantAskMore => 'Ask More';
+
+  @override
+  String get assistantSearxngInvalid => 'Enter a valid HTTP or HTTPS endpoint';
 }

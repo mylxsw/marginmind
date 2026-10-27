@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_assistant/mm_assistant.dart' show SearxngSearch;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
@@ -563,7 +564,21 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
     super.dispose();
   }
 
+  bool get _invalidSearxng {
+    if (_settings.provider != AssistantProvider.compatible && _settings.provider != AssistantProvider.ollama) {
+      return false;
+    }
+    if (_searxng.text.trim().isEmpty) return false;
+    try {
+      SearxngSearch.parseEndpoint(_searxng.text.trim());
+      return false;
+    } on ResearchFailure {
+      return true;
+    }
+  }
+
   Future<void> _save() async {
+    if (_invalidSearxng) return;
     final settings = AssistantSettings(
       provider: _settings.provider,
       model: _model.text.trim(),
@@ -611,7 +626,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
           label: l.save,
           variant: MMButtonVariant.primary,
           color: c.research,
-          onPressed: _save,
+          onPressed: _invalidSearxng ? null : _save,
         ),
       ],
       child: Column(
@@ -651,10 +666,24 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
           if (_settings.provider == AssistantProvider.compatible || _settings.provider == AssistantProvider.ollama)
             MMFormRow(
               label: 'SearXNG',
-              child: MMTextField(
-                key: const ValueKey('settings-searxng'),
-                controller: _searxng,
-                semanticLabel: 'SearXNG',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  MMTextField(
+                    key: const ValueKey('settings-searxng'),
+                    controller: _searxng,
+                    semanticLabel: 'SearXNG',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (_invalidSearxng)
+                    Padding(
+                      padding: const EdgeInsets.only(top: MMSpacing.xs),
+                      child: Text(
+                        l.assistantSearxngInvalid,
+                        style: context.mmText.footnote.copyWith(color: c.critical),
+                      ),
+                    ),
+                ],
               ),
             ),
           MMFormRow(

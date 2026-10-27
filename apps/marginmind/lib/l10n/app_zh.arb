@@ -793,5 +793,6 @@
   "assistantAskWith": "带上它自由提问…",
   "assistantAnchorGone": "原位置已删除",
   "assistantOpenConversation": "打开原对话",
-  "assistantAskMore": "继续问"
+  "assistantAskMore": "继续问",
+  "assistantSearxngInvalid": "请输入有效的 HTTP 或 HTTPS 端点"
 }
