@@ -454,11 +454,20 @@ void main() {
       return _offlineAnswer(r);
     });
     final app = await _open(tester, ai: ai);
+    MMSplitMode layout() => app.container.read(workspaceProvider('demo-1')).layout;
+    app.workspace.setLayout(MMSplitMode.split);
     await _openLauncher(tester, app.workspace, _claim);
     await _tap(tester, find.byKey(const ValueKey('launcher-start')));
     await _settle(tester);
     final a = app.container.read(researchPanelProvider('demo-1')).sessionId!;
     expect(find.byKey(const ValueKey('research-cancel')), findsOneWidget);
+    expect(layout(), MMSplitMode.primary, reason: 'started from the source: the map steps aside');
+    // Closed, then reopened from the sidebar: it opens beside its source.
+    app.workspace.closePanel();
+    await _wait(tester);
+    expect(layout(), MMSplitMode.split);
+    await _tap(tester, find.byKey(ValueKey('sidebar-research-$a')));
+    expect(layout(), MMSplitMode.primary);
 
     // Another passage while A runs: the launcher offers new or join.
     await _openLauncher(tester, app.workspace, _other);

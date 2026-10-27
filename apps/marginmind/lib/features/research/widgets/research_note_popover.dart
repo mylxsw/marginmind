@@ -88,7 +88,7 @@ class ResearchNotePopover extends ConsumerWidget {
                       label: l.researchCardOpen,
                       onPressed: () {
                         workspace.dismissPending();
-                        panel.showNote(note.id);
+                        panel.showNote(note.id, origin: PanelOrigin.reader);
                       },
                     ),
                     if (note.sessionId != null)
@@ -97,7 +97,7 @@ class ResearchNotePopover extends ConsumerWidget {
                         variant: MMButtonVariant.plain,
                         onPressed: () {
                           workspace.dismissPending();
-                          panel.show(note.sessionId!, tab: ResearchTab.saved);
+                          panel.show(note.sessionId!, origin: PanelOrigin.reader, tab: ResearchTab.saved);
                         },
                       ),
                   ],

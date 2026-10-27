@@ -116,6 +116,14 @@ class ResearchPanelState {
   );
 }
 
+/// The pane a research started from, which stays beside the panel: the
+/// source for a passage, the map for a node.
+PanelOrigin researchPanelOrigin(SourceAnchor? anchor) => switch (anchor?.target) {
+  PdfTarget() => PanelOrigin.reader,
+  CardTarget() => PanelOrigin.map,
+  _ => PanelOrigin.toolbar,
+};
+
 class ResearchPanelController extends Notifier<ResearchPanelState> {
   ResearchPanelController(this.studySetId);
 
@@ -141,8 +149,11 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   // ---- what the panel shows --------------------------------------------------------
 
   /// Shows [sessionId] in the research panel, opening it beside the pane the
-  /// research came from.
-  void show(String sessionId, {PanelOrigin origin = PanelOrigin.toolbar, ResearchTab? tab}) {
+  /// research came from: [origin], or else where the session started.
+  void show(String sessionId, {PanelOrigin? origin, ResearchTab? tab}) {
+    origin ??= researchPanelOrigin(
+      ref.read(researchSessionsProvider(studySetId)).value?.where((s) => s.id == sessionId).firstOrNull?.anchor,
+    );
     state = state.copyWith(
       sessionId: sessionId,
       tab: tab ?? (sessionId == state.sessionId ? state.tab : ResearchTab.answer),
@@ -174,9 +185,9 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   void closeReading() => state = state.copyWith(closeReading: true);
 
   /// A saved note, with its citations and places, in the panel.
-  void showNote(String noteId) {
+  void showNote(String noteId, {PanelOrigin origin = PanelOrigin.toolbar}) {
     state = state.copyWith(noteId: noteId);
-    _workspace.openPanel(RightPanel.research);
+    _workspace.openPanel(RightPanel.research, origin: origin);
   }
 
   void closeNote() => state = state.copyWith(clearNote: true);

@@ -382,9 +382,14 @@ class _ResearchLauncherState extends ConsumerState<ResearchLauncher> {
                     ai: settings.aiConfigured,
                     web: settings.webAvailable,
                     onChanged: (m) => setState(() => _method = m),
+                    hint: (m) => switch (m) {
+                      ResearchMethod.search => l.researchMethodSearchNote,
+                      ResearchMethod.offline => l.researchMethodOfflineNote,
+                      ResearchMethod.web => l.researchMethodWebNote(settings.searches, settings.pages),
+                    },
                   ),
-                  const SizedBox(height: MMSpacing.xs + 2),
-                  if (!settings.aiConfigured)
+                  if (!settings.aiConfigured) ...[
+                    const SizedBox(height: MMSpacing.xs + 2),
                     ResearchNotice(
                       icon: MMIcons.info,
                       text: l.researchNoAi,
@@ -393,13 +398,8 @@ class _ResearchLauncherState extends ConsumerState<ResearchLauncher> {
                         Navigator.of(context).pop();
                         unawaited(showResearchSettingsSheet(context));
                       },
-                    )
-                  else
-                    Text(switch (_method) {
-                      ResearchMethod.search => l.researchMethodSearchNote,
-                      ResearchMethod.offline => l.researchMethodOfflineNote,
-                      ResearchMethod.web => l.researchMethodWebNote(settings.searches, settings.pages),
-                    }, style: t.footnote.copyWith(color: c.secondaryLabel)),
+                    ),
+                  ],
                   if (_method != ResearchMethod.search && settings.showContext) ...[
                     const SizedBox(height: MMSpacing.m),
                     _ContextBox(

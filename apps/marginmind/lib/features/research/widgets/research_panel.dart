@@ -922,22 +922,11 @@ class _PointRowState extends ConsumerState<_PointRow> {
                     ),
                   if (quote != null) ...[
                     const SizedBox(height: MMSpacing.s - 2),
-                    Container(
-                      padding: const EdgeInsets.only(left: MMSpacing.s + 2),
-                      decoration: BoxDecoration(
-                        border: Border(left: BorderSide(color: c.research, width: 2)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(quote.quote, maxLines: 4, overflow: TextOverflow.ellipsis, style: t.readingExcerpt),
-                          const SizedBox(height: MMSpacing.xxs),
-                          Text(
-                            l.researchQuoteFrom(value.numberOf(quote.sourceId)),
-                            style: t.footnote.copyWith(color: c.secondaryLabel),
-                          ),
-                        ],
-                      ),
+                    EvidenceQuote(
+                      key: ValueKey('quote-${point.key}'),
+                      quote: quote.quote,
+                      caption: l.researchQuoteFrom(value.numberOf(quote.sourceId)),
+                      onOpen: () => controller.openReading(quote.sourceId, paragraphId: quote.locator.paragraphId),
                     ),
                   ],
                   if (_hovered && editing == null)

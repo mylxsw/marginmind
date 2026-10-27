@@ -127,17 +127,16 @@ class ResearchNoteView extends ConsumerWidget {
                           ),
                           for (final e in evidence)
                             if (e.sourceId == s.id)
-                              Container(
-                                margin: const EdgeInsets.only(top: MMSpacing.xs),
-                                padding: const EdgeInsets.only(left: MMSpacing.s),
-                                decoration: BoxDecoration(
-                                  border: Border(left: BorderSide(color: c.research, width: 2)),
-                                ),
-                                child: Text(
-                                  e.quote,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: t.readingExcerpt,
+                              Padding(
+                                padding: const EdgeInsets.only(top: MMSpacing.xs),
+                                child: EvidenceQuote(
+                                  key: ValueKey('note-quote-${e.id}'),
+                                  quote: e.quote,
+                                  onOpen: note.sessionId == null
+                                      ? null
+                                      : () => panel
+                                          ..show(note.sessionId!, tab: ResearchTab.sources)
+                                          ..openReading(e.sourceId, paragraphId: e.locator.paragraphId),
                                 ),
                               ),
                         ],

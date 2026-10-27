@@ -657,13 +657,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Opens the right panel on [content]. The first opening remembers the
   /// layout and sidebar; in split layout the pane the user did not start
-  /// from steps aside. Switching content keeps the panel where it is.
+  /// from steps aside, also when the panel is already open (closing still
+  /// restores what the first opening found).
   void openPanel(RightPanel content, {PanelOrigin origin = PanelOrigin.toolbar}) {
-    if (state.panel != null) {
-      state = state.copyWith(panel: content);
-      return;
-    }
-    _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
+    if (state.panel == null) _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
     final layout = state.layout != MMSplitMode.split
         ? null
         : switch (origin) {

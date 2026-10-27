@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/research/research_answer.dart';
+import 'package:marginmind/features/research/research_controller.dart';
 import 'package:marginmind/features/research/research_drafts.dart';
 import 'package:marginmind/features/research/research_intents.dart';
 import 'package:marginmind/features/research/research_origin.dart';
 import 'package:marginmind/features/research/research_settings.dart';
 import 'package:marginmind/features/research/widgets/research_reading.dart';
 import 'package:marginmind/features/research/widgets/research_sources.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_research/mm_research.dart';
@@ -273,6 +275,13 @@ void main() {
     final children = node.parts.firstWhere((p) => p.kind == ResearchContextKind.children);
     expect(children.on, isFalse);
     expect(children.text, contains('遗忘曲线'));
+  });
+
+  test('the pane a research came from stays beside the panel', () {
+    final pdf = PdfTarget(documentId: 'd', pages: const [], quote: 'q');
+    expect(researchPanelOrigin(SourceAnchor(target: pdf)), PanelOrigin.reader);
+    expect(researchPanelOrigin(const SourceAnchor(target: CardTarget(cardId: 'c'))), PanelOrigin.map);
+    expect(researchPanelOrigin(null), PanelOrigin.toolbar);
   });
 
   test('card titles: topic, excerpt and research cards by what they show', () {

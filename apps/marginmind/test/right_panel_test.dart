@@ -198,7 +198,14 @@ void main() {
       app.controller.openPanel(RightPanel.research);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.split);
+      // A research started from a pane while the panel is open beside both
+      // still puts the other pane aside; closing restores the split.
+      app.controller.openPanel(RightPanel.research, origin: PanelOrigin.map);
+      await tester.pumpAndSettle();
+      expect(_state(app.container).layout, MMSplitMode.secondary);
       app.controller.closePanel();
+      await tester.pumpAndSettle();
+      expect(_state(app.container).layout, MMSplitMode.split);
       app.controller.setLayout(MMSplitMode.secondary);
       app.controller.openPanel(RightPanel.research, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();

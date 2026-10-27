@@ -271,12 +271,16 @@ class ResearchMethodPicker extends StatelessWidget {
     required this.ai,
     required this.web,
     required this.onChanged,
+    this.hint,
   });
 
   final ResearchMethod value;
   final bool ai;
   final bool web;
   final ValueChanged<ResearchMethod> onChanged;
+
+  /// What a method does, shown on hover.
+  final String Function(ResearchMethod)? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +304,7 @@ class ResearchMethodPicker extends StatelessWidget {
                   ResearchMethod.web => web,
                 },
                 semanticLabel: methodLabel(l, m),
+                tooltip: hint?.call(m),
                 onTap: () => onChanged(m),
                 builder: (context, s) => Opacity(
                   opacity: s.enabled ? 1 : 0.4,
@@ -423,6 +428,98 @@ class CiteBadge extends StatelessWidget {
           '$number',
           style: context.mmText.footnote.copyWith(color: s.hovered ? c.onAccent : c.research, height: 15 / 11),
         ),
+      ),
+    );
+  }
+}
+
+/// Evidence quoted under a point or in a note: at most four lines, with
+/// Expand / Collapse when there is more. Clicking the text opens the source
+/// at the quoted paragraph.
+class EvidenceQuote extends StatefulWidget {
+  const EvidenceQuote({super.key, required this.quote, this.caption, this.onOpen});
+
+  static const maxLines = 4;
+
+  final String quote;
+  final String? caption;
+  final VoidCallback? onOpen;
+
+  @override
+  State<EvidenceQuote> createState() => _EvidenceQuoteState();
+}
+
+class _EvidenceQuoteState extends State<EvidenceQuote> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final c = context.mmColors;
+    final t = context.mmText;
+    return Container(
+      padding: const EdgeInsets.only(left: MMSpacing.s + 2),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: c.research, width: 2)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final painter = TextPainter(
+            text: TextSpan(text: widget.quote, style: t.readingExcerpt),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+            maxLines: EvidenceQuote.maxLines,
+          )..layout(maxWidth: constraints.maxWidth);
+          final long = painter.didExceedMaxLines;
+          painter.dispose();
+          final text = Text(
+            widget.quote,
+            maxLines: _expanded ? null : EvidenceQuote.maxLines,
+            overflow: _expanded ? null : TextOverflow.ellipsis,
+            style: t.readingExcerpt,
+          );
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.onOpen == null)
+                text
+              else
+                MMInteractive(
+                  onTap: widget.onOpen,
+                  semanticLabel: widget.quote,
+                  builder: (context, s) => text,
+                ),
+              if (long || widget.caption != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: MMSpacing.xxs),
+                  child: Row(
+                    children: [
+                      if (widget.caption != null)
+                        Flexible(
+                          child: Text(
+                            widget.caption!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.footnote.copyWith(color: c.secondaryLabel),
+                          ),
+                        ),
+                      if (long) ...[
+                        if (widget.caption != null) const SizedBox(width: MMSpacing.s),
+                        MMInteractive(
+                          onTap: () => setState(() => _expanded = !_expanded),
+                          semanticLabel: _expanded ? l.collapseSection : l.expandSection,
+                          builder: (context, s) => Text(
+                            _expanded ? l.collapseSection : l.expandSection,
+                            style: t.footnote.copyWith(color: s.hovered ? c.research : c.accent),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

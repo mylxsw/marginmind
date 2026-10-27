@@ -743,9 +743,9 @@
   "researchMethodSearch": "Search Only",
   "researchMethodOffline": "Ask AI",
   "researchMethodWeb": "Web Research",
-  "researchMethodSearchNote": "No AI, no AI cost.",
-  "researchMethodOfflineNote": "Sends only the context below; no web search.",
-  "researchMethodWebNote": "Up to {searches} searches and {pages} pages.",
+  "researchMethodSearchNote": "No AI, no AI cost",
+  "researchMethodOfflineNote": "Sends only the selection and its context; no web search",
+  "researchMethodWebNote": "Up to {searches} searches and {pages} pages",
   "@researchMethodWebNote": {
     "placeholders": {
       "searches": {
@@ -876,7 +876,7 @@
       }
     }
   },
-  "researchFailedSources": "{count, plural, =1{1 source} other{{count} sources}} could not be read and are not evidence.",
+  "researchFailedSources": "{count, plural, =1{1 source} other{{count} sources}} couldn't be read",
   "@researchFailedSources": {
     "placeholders": {
       "count": {
@@ -977,7 +977,7 @@
     }
   },
   "researchCantRead": "Couldn't read the text",
-  "researchReadLogin": "The page needs a sign-in. Sign-ins and paywalls are not bypassed.",
+  "researchReadLogin": "The page needs a sign-in",
   "researchReadTimeout": "The page took too long.",
   "researchReadUnparseable": "No article text was found.",
   "researchReadUnsafe": "This address is not allowed.",
@@ -987,7 +987,7 @@
   "researchPasteText": "Paste Text…",
   "researchSaveLinkOnly": "Save Link Only",
   "researchReadAgain": "Read Again",
-  "researchAbstractOnly": "Only the abstract was read; answers don't treat it as read in full.",
+  "researchAbstractOnly": "Only the abstract was read",
   "researchOpenPublisher": "Publisher Page",
   "researchPasteTitle": "Paste Text",
   "researchClipsTitle": "Evidence (draft)",
