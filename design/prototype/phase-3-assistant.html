@@ -2364,6 +2364,7 @@ function settingsInput(e) {
   if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return paintSettings(); }
   if (t.matches('[data-swsx]')) { S.searxng = t.value; S.search.addr = t.value; searchCheck(); return; }
   if (t.matches('[data-swengsel]')) { S.search.engine = t.value; S.search.status = 'idle'; return paintSettings(); }
+  if (t.matches('[data-swsacct]')) { S.search.acct = t.value; searchCheck(); return; }
   if (t.matches('[data-swskey]')) { S.search.key = t.value; searchCheck(); return; }
 }
 document.addEventListener('dblclick', e => {
@@ -2452,15 +2453,15 @@ function addProviderPicker(anchor) {
 
 
 /* ---------- 网页搜索: its own page, independent of which model answers ---------- */
-const ENGINES = [['model', '模型自带搜索'], ['searxng', 'SearXNG'], ['tavily', 'Tavily'], ['brave', 'Brave Search']];
+const ENGINES = [['model', '模型自带搜索'], ['cloudflare', 'Cloudflare'], ['searxng', 'SearXNG'], ['tavily', 'Tavily'], ['brave', 'Brave Search']];
 let swSearchT = null;
 function searchCheck() {
   clearTimeout(swSearchT); const E = S.search;
-  if ((E.engine === 'searxng' && !E.addr) || ((E.engine === 'tavily' || E.engine === 'brave') && !E.key)) { E.status = 'idle'; return; }
+  if ((E.engine === 'searxng' && !E.addr) || ((E.engine === 'tavily' || E.engine === 'brave') && !E.key) || (E.engine === 'cloudflare' && (!E.key || !E.acct))) { E.status = 'idle'; return; }
   E.status = 'busy';
   swSearchT = setTimeout(() => {
     E.status = !S.net ? 'err' : (E.engine !== 'searxng' && E.key.length < 6) ? 'err' : 'ok';
-    E.err = !S.net ? '连不上搜索服务' : 'API Key 无效';
+    E.err = !S.net ? '连不上搜索服务' : E.engine === 'cloudflare' ? 'API Token 无效或缺少 Workers AI 权限' : 'API Key 无效';
     if (SW?.tab === 'search') { const a = document.activeElement, k = a?.dataset && Object.keys(a.dataset)[0], pos = a?.selectionStart; paintSettings(); if (k) { const el = $(`#setwin [data-${k}]`); el?.focus(); el?.setSelectionRange?.(pos, pos); } }
   }, 700);
 }
@@ -2473,7 +2474,8 @@ function swSearch() {
     <div class="st-group">
       <div class="st-r"><span>搜索服务</span><select class="st-pop" data-swengsel>${ENGINES.map(([k, n]) => `<option value="${k}" ${E.engine === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       ${E.engine === 'searxng' ? `<div class="st-r"><span>地址</span><input class="st-in" data-swsx value="${esc(E.addr)}" placeholder="http://localhost:8080"></div>` : ''}
-      ${E.engine === 'tavily' || E.engine === 'brave' ? `<div class="st-r"><span>API Key</span><input class="st-in" type="password" data-swskey value="${esc(E.key)}" placeholder="粘贴 Key"></div>` : ''}
+      ${E.engine === 'cloudflare' ? `<div class="st-r"><span>账户 ID</span><input class="st-in" data-swsacct value="${esc(E.acct || '')}" placeholder="Cloudflare 账户 ID"></div>` : ''}
+      ${E.engine === 'tavily' || E.engine === 'brave' || E.engine === 'cloudflare' ? `<div class="st-r"><span>${E.engine === 'cloudflare' ? 'API Token' : 'API Key'}</span><input class="st-in" type="password" data-swskey value="${esc(E.key)}" placeholder="${E.engine === 'cloudflare' ? '粘贴 Token' : '粘贴 Key'}"></div>` : ''}
       ${st}
     </div>
     ${noBuiltin ? `<div class="st-note">${ic('info', 'xs')}${esc(def.m.name)} 不带搜索，联网时请改用其他搜索服务</div>` : ''}
@@ -2744,7 +2746,7 @@ const SCENES = [
   { k: 'broken', t: '工具调用彻底失败', d: '错误不再笼统写“网络不可用”；详情可展开、可复制；给出能走通的下一步', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__broken' }); }, g: '错误块写明 <b>模型没能正确调用工具</b>，点 <b>详情</b> 看模型、失败原因和停止原因；<b>不用工具重答</b> 直接根据附带的原文回答，<b>换个模型</b> 打开模型菜单，复制按钮复制诊断信息（不含 Key 和正文）。' },
   { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
   { k: 'models', t: '设置 · 模型', d: '只管大语言模型：服务、Key、启用哪些模型、默认模型', go() { settingsWindow('models', 'p2'); }, g: '应用设置（⌘,）里 <b>模型</b> 一页：每个服务一张卡片，右侧开关启用 / 停用整个服务；展开后填地址和 API Key，模型逐个用开关启用，<b>添加模型…</b> 自动拉取该服务的模型列表。' },
-  { k: 'search', t: '设置 · 网页搜索', d: '和模型分开：选搜索服务，按需填地址或 Key', go() { settingsWindow('search'); }, g: '<b>网页搜索</b> 单独一页：模型自带搜索、SearXNG、Tavily、Brave Search 四选一；SearXNG 填地址，Tavily / Brave 填 API Key。默认模型不带搜索时会提示改用其他搜索服务。' },
+  { k: 'search', t: '设置 · 网页搜索', d: '和模型分开：选搜索服务，按需填地址或 Key', go() { settingsWindow('search'); }, g: '<b>网页搜索</b> 单独一页：模型自带搜索、Cloudflare、SearXNG、Tavily、Brave Search 五选一；Cloudflare 填账户 ID 和 API Token，SearXNG 填地址，Tavily / Brave 填 API Key。默认模型不带搜索时会提示改用其他搜索服务。' },
   { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已添加的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，只有名字。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
 ];
 const coachTimers = [];

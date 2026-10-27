@@ -353,10 +353,10 @@ Markdown 解析用成熟库（`markdown` 包 + 自定义 `MarkdownStyleSheet`）
 
 | 区域 | 规格 |
 | --- | --- |
-| 搜索服务 | 一张卡片：“搜索服务”+ 弹出按钮：模型自带搜索（默认，Claude / OpenAI / Gemini 可用）、SearXNG、Tavily、Brave Search |
-| 按需字段 | SearXNG → “地址”（如 `http://localhost:8080`）；Tavily / Brave Search → “API Key”。字段修改后自动检查，失败时在卡片末行右对齐显示原因（“API Key 无效”“连不上搜索服务”） |
+| 搜索服务 | 一张卡片：“搜索服务”+ 弹出按钮：模型自带搜索（默认，Claude / OpenAI / Gemini 可用）、Cloudflare、SearXNG、Tavily、Brave Search |
+| 按需字段 | Cloudflare → “账户 ID”+“API Token”（Token 需要 Workers AI 与 AI Gateway 的读取权限）；SearXNG → “地址”（如 `http://localhost:8080`）；Tavily / Brave Search → “API Key”。字段修改后自动检查，失败时在卡片末行右对齐显示原因（“API Key 无效”“连不上搜索服务”） |
 | 不可用提示 | 选“模型自带搜索”而默认模型不带搜索时，卡片下方一行 `caution` 提示：“X 不带搜索，联网时请改用其他搜索服务”。这是唯一的说明文字，因为缺了它联网会悄悄失效 |
-| 后端 | 搜索服务实现统一的 `web_search` 后端接口（ADR 0002）：模型自带搜索复用供应商检索，SearXNG / Tavily / Brave 走各自 API；论文检索（OpenAlex）固定开启，不需要配置 |
+| 后端 | 搜索服务实现统一的 `web_search` 后端接口（ADR 0002）：模型自带搜索复用供应商检索，Cloudflare 走 `POST https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/websearch/`（`Authorization: Bearer <token>`，请求体 `{query, limit, options: {gateway: {id: "default"}}}`，provider 用默认值，结果取 `items[].url / title / description`），SearXNG / Tavily / Brave 走各自 API；论文检索（OpenAlex）固定开启，不需要配置 |
 
 **不放进设置的东西**：
 
