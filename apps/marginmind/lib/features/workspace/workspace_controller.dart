@@ -161,6 +161,7 @@ class WorkspaceState {
     this.selectedCardId,
     this.selectedCardIds = const {},
     this.flashCardId,
+    this.flashCardIds = const {},
     this.locateCardTick = 0,
     this.flashAnnotationId,
     this.editingCardId,
@@ -212,6 +213,7 @@ class WorkspaceState {
   final String? selectedCardId;
   final Set<String> selectedCardIds;
   final String? flashCardId;
+  final Set<String> flashCardIds;
   final int locateCardTick;
   final String? flashAnnotationId;
 
@@ -282,6 +284,7 @@ class WorkspaceState {
     Set<String>? selectedCardIds,
     bool selectRoot = false,
     String? flashCardId,
+    Set<String>? flashCardIds,
     int? locateCardTick,
     String? flashAnnotationId,
     bool clearFlash = false,
@@ -335,6 +338,7 @@ class WorkspaceState {
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
       locateCardTick: locateCardTick ?? this.locateCardTick,
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
+      flashCardIds: clearFlash ? const {} : (flashCardIds ?? this.flashCardIds),
       flashAnnotationId: clearFlash ? null : (flashAnnotationId ?? this.flashAnnotationId),
       editingCardId: clearEditing ? null : (editingCardId ?? this.editingCardId),
       // Any change of the node selection deselects the mark.
@@ -512,6 +516,33 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         }
         return next;
       });
+
+  /// Assistant adapters use the workspace writer so each proposal/save is one
+  /// undo step and repository observers immediately update sidebar counts.
+  Future<StudySetContent> applyAssistantChange(StudySetContent Function(StudySetContent) change) async {
+    if (_transactionDepth > 0 || _editing != null || _creating || _markEditing != null) {
+      throw StateError('Finish the current edit first');
+    }
+    return _update((content) {
+      if (_transactionDepth > 0 || _editing != null || _creating || _markEditing != null) {
+        throw StateError('Finish the current edit first');
+      }
+      return change(content);
+    });
+  }
+
+  Future<void> setCardBody(String id, String body, [TextFormat? format]) => _update(
+    (c) => c.copyWith(
+      cards: [for (final card in c.cards) card.id == id ? card.copyWith(body: body, textFormat: format) : card],
+    ),
+  );
+
+  /// A single state event contains every committed new node; canvas flashes
+  /// them together and uses the final node as its scroll destination.
+  void flashAssistantNodes(List<String> ids) {
+    if (!ref.mounted || ids.isEmpty) return;
+    _flash(cardId: ids.last, cardIds: Set.unmodifiable(ids));
+  }
 
   void _syncHistory() {
     if (!ref.mounted) return;
@@ -1886,9 +1917,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (ref.mounted) state = state.copyWith(clearMark: true);
   }
 
-  void _flash({String? cardId, String? annotationId}) {
+  void _flash({String? cardId, String? annotationId, Set<String> cardIds = const {}}) {
     _flashTimer?.cancel();
-    state = state.copyWith(flashCardId: cardId, flashAnnotationId: annotationId);
+    state = state.copyWith(flashCardId: cardId, flashCardIds: cardIds, flashAnnotationId: annotationId);
     _flashTimer = Timer(MMMotion.flash, () {
       if (ref.mounted) state = state.copyWith(clearFlash: true);
     });

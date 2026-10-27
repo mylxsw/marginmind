@@ -207,11 +207,13 @@ class Conversation {
     this.title = '',
     List<Message> messages = const [],
     this.online = true,
+    this.readOnly = false,
   }) : messages = List.unmodifiable(messages);
   final String id, studySetId, title;
   final AssistantModel model;
   final List<Message> messages;
   final bool online;
+  final bool readOnly;
   bool get running => messages.any((m) => m.status == MessageStatus.running);
   Conversation copyWith({String? title, List<Message>? messages, AssistantModel? model, bool? online}) => Conversation(
     id: id,
@@ -220,6 +222,7 @@ class Conversation {
     messages: messages ?? this.messages,
     model: model ?? this.model,
     online: online ?? this.online,
+    readOnly: readOnly,
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -228,6 +231,7 @@ class Conversation {
     'model': model.toJson(),
     'messages': messages.map((m) => m.toJson()).toList(),
     'online': online,
+    'readOnly': readOnly,
   };
   factory Conversation.fromJson(Map<String, dynamic> j) => Conversation(
     id: j['id'],
@@ -236,5 +240,6 @@ class Conversation {
     model: AssistantModel.fromJson(Map<String, dynamic>.from(j['model'])),
     messages: [for (final m in j['messages']) Message.fromJson(Map<String, dynamic>.from(m))],
     online: j['online'],
+    readOnly: j['readOnly'] ?? false,
   );
 }

@@ -92,6 +92,31 @@ void main() {
     container.dispose();
   });
   Conversation view() => container.read(assistantControllerProvider);
+  test('legacy conversations reject mutations without contacting the provider', () async {
+    final legacy = Conversation(
+      id: 'legacy',
+      studySetId: 'set',
+      model: model,
+      online: false,
+      readOnly: true,
+      messages: [Message(id: 'answer', requestId: 'request', role: MessageRole.agent, text: 'Archive')],
+    );
+    await storage.save(sdk.AgentState(sessionId: 'legacy', metadata: {'assistant.view': legacy.toJson()}));
+    await controller.openConversation('legacy');
+    expect(() => controller.send('change'), throwsStateError);
+    await expectLater(controller.saveNote('answer', const SaveNoteRequest(title: 'x')), throwsStateError);
+    await expectLater(controller.switchModel(model), throwsStateError);
+    await expectLater(controller.setOnline(true), throwsStateError);
+    await expectLater(controller.selectOperation('p', 'op', true), throwsStateError);
+    await expectLater(controller.applyProposal('p'), throwsStateError);
+    await expectLater(controller.dismissProposal('p'), throwsStateError);
+    await expectLater(controller.reopenProposal('p'), throwsStateError);
+    expect(factories, 0);
+    await controller.newConversation();
+    expect(container.read(assistantControllerProvider).readOnly, isFalse);
+    expect(container.read(assistantControllerProvider).online, isTrue);
+  });
+
   test('stream, save, retry original context, new/open and model switching', () async {
     const context = ContextItem(id: 'sel', kind: ContextKind.selection, displayText: 'Selection', auto: true);
     await controller.send('hello', contexts: [context], skill: 'explain');

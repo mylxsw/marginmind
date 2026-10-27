@@ -95,6 +95,16 @@ class CardDetails extends ConsumerWidget {
         optional: card.kind == CardKind.excerpt || card.kind == CardKind.image,
         onCommit: (text, format) => controller.setTitle(card.id, text, format),
       ),
+      if (card.body.isNotEmpty)
+        _DetailsTitle(
+          key: ValueKey('details-body-${card.id}'),
+          optional: false,
+          title: card.body,
+          format: card.textFormat,
+          note: true,
+          formatted: true,
+          onCommit: (text, format) => controller.setCardBody(card.id, text, format),
+        ),
       if (card.kind == CardKind.excerpt && annotation != null)
         Container(
           key: const ValueKey('details-quote'),

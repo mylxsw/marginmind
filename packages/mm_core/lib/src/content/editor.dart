@@ -597,6 +597,7 @@ class StudySetEditor {
           id: id,
           kind: kind,
           title: title,
+          body: entry.body,
           researchNoteId: researchNoteId,
           textFormat: entry.textFormat,
           imageOrigin: entry.imageOrigin,
@@ -1063,6 +1064,7 @@ class StudySetEditor {
   /// [snapshot] (an earlier state, for undo/redo) with the parts that are
   /// not undoable taken from [current]: review history and reading position.
   static StudySetContent restore(StudySetContent snapshot, StudySetContent current) => snapshot.copyWith(
+    assistantReceipts: current.assistantReceipts,
     reviews: current.reviews,
     reviewLogs: current.reviewLogs,
     memoryStates: current.memoryStates,
