@@ -1363,14 +1363,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get researchMethodWeb => 'Web Research';
 
   @override
-  String get researchMethodSearchNote => 'No AI, no AI cost.';
+  String get researchMethodSearchNote => 'No AI, no AI cost';
 
   @override
-  String get researchMethodOfflineNote => 'Sends only the context below; no web search.';
+  String get researchMethodOfflineNote => 'Sends only the selection and its context; no web search';
 
   @override
   String researchMethodWebNote(int searches, int pages) {
-    return 'Up to $searches searches and $pages pages.';
+    return 'Up to $searches searches and $pages pages';
   }
 
   @override
@@ -1579,7 +1579,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String researchFailedSources(int count) {
     String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count sources', one: '1 source');
-    return '$_temp0 could not be read and are not evidence.';
+    return '$_temp0 couldn\'t be read';
   }
 
   @override
@@ -1732,7 +1732,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get researchCantRead => 'Couldn\'t read the text';
 
   @override
-  String get researchReadLogin => 'The page needs a sign-in. Sign-ins and paywalls are not bypassed.';
+  String get researchReadLogin => 'The page needs a sign-in';
 
   @override
   String get researchReadTimeout => 'The page took too long.';
@@ -1762,7 +1762,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get researchReadAgain => 'Read Again';
 
   @override
-  String get researchAbstractOnly => 'Only the abstract was read; answers don\'t treat it as read in full.';
+  String get researchAbstractOnly => 'Only the abstract was read';
 
   @override
   String get researchOpenPublisher => 'Publisher Page';

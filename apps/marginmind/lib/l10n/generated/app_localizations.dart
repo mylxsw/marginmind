@@ -2513,19 +2513,19 @@ abstract class AppLocalizations {
   /// No description provided for @researchMethodSearchNote.
   ///
   /// In en, this message translates to:
-  /// **'No AI, no AI cost.'**
+  /// **'No AI, no AI cost'**
   String get researchMethodSearchNote;
 
   /// No description provided for @researchMethodOfflineNote.
   ///
   /// In en, this message translates to:
-  /// **'Sends only the context below; no web search.'**
+  /// **'Sends only the selection and its context; no web search'**
   String get researchMethodOfflineNote;
 
   /// No description provided for @researchMethodWebNote.
   ///
   /// In en, this message translates to:
-  /// **'Up to {searches} searches and {pages} pages.'**
+  /// **'Up to {searches} searches and {pages} pages'**
   String researchMethodWebNote(int searches, int pages);
 
   /// No description provided for @researchSetUpAi.
@@ -2879,7 +2879,7 @@ abstract class AppLocalizations {
   /// No description provided for @researchFailedSources.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 source} other{{count} sources}} could not be read and are not evidence.'**
+  /// **'{count, plural, =1{1 source} other{{count} sources}} couldn\'t be read'**
   String researchFailedSources(int count);
 
   /// No description provided for @researchChecked.
@@ -3131,7 +3131,7 @@ abstract class AppLocalizations {
   /// No description provided for @researchReadLogin.
   ///
   /// In en, this message translates to:
-  /// **'The page needs a sign-in. Sign-ins and paywalls are not bypassed.'**
+  /// **'The page needs a sign-in'**
   String get researchReadLogin;
 
   /// No description provided for @researchReadTimeout.
@@ -3191,7 +3191,7 @@ abstract class AppLocalizations {
   /// No description provided for @researchAbstractOnly.
   ///
   /// In en, this message translates to:
-  /// **'Only the abstract was read; answers don\'t treat it as read in full.'**
+  /// **'Only the abstract was read'**
   String get researchAbstractOnly;
 
   /// No description provided for @researchOpenPublisher.

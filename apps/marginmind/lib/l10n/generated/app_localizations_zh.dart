@@ -1321,14 +1321,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get researchMethodWeb => '联网研究';
 
   @override
-  String get researchMethodSearchNote => '不调用 AI，不产生 AI 费用。';
+  String get researchMethodSearchNote => '不调用 AI，不产生 AI 费用';
 
   @override
-  String get researchMethodOfflineNote => '只发送下面的上下文，不联网。';
+  String get researchMethodOfflineNote => '只发送所选内容和上下文，不联网';
 
   @override
   String researchMethodWebNote(int searches, int pages) {
-    return '最多 $searches 次搜索、读取 $pages 个页面。';
+    return '最多 $searches 次搜索、读取 $pages 个页面';
   }
 
   @override
@@ -1523,7 +1523,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String researchFailedSources(int count) {
-    return '$count 个来源读取失败，没有作为证据。';
+    return '$count 个来源读取失败';
   }
 
   @override
@@ -1664,7 +1664,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get researchCantRead => '无法提取正文';
 
   @override
-  String get researchReadLogin => '页面需要登录。不会绕过登录或付费限制。';
+  String get researchReadLogin => '页面需要登录';
 
   @override
   String get researchReadTimeout => '页面加载超时。';
@@ -1694,7 +1694,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get researchReadAgain => '重新读取';
 
   @override
-  String get researchAbstractOnly => '只读到摘要，解答不会把它当作读过全文。';
+  String get researchAbstractOnly => '只读到摘要';
 
   @override
   String get researchOpenPublisher => '出版商页面';
