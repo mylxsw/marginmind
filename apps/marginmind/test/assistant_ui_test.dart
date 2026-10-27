@@ -674,7 +674,10 @@ void main() {
     await pumpFor(tester, 20);
     expect(conversationOf(tester).model.provider, AssistantProvider.ollama);
     expect(conversationOf(tester).online, false);
-    expect(conversationOf(tester).messages.last.text, '重试后');
+    // The retried answer takes the failed one's place.
+    expect(conversationOf(tester).messages, hasLength(7));
+    expect(conversationOf(tester).messages[1].text, '重试后');
+    expect(find.text('网络不可用'), findsNothing);
   });
 
   testWidgets('the window composition runs and reports a bad endpoint', (tester) async {

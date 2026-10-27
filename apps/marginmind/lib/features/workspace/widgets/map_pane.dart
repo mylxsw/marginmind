@@ -11,6 +11,7 @@ import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/card_image.dart';
 import '../../assistant/assistant_entry.dart';
+import '../../assistant/assistant_reader.dart' show assistantRootId;
 import '../../assistant/assistant_scope.dart' show assistantPreviewProvider;
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../workspace_controller.dart';
@@ -130,8 +131,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
     final askTitle = card == null ? '' : researchCardTitle(content, card.id);
     final topic = card?.kind == CardKind.topic;
-    void ask(AssistantSkill? skill, {bool branch = false}) =>
-        askAboutNode(ref, widget.studySetId, card!.id, branch: branch, text: skill?.prompt(l), skill: skill?.name);
+    // The root stands for the whole map: its branch is everything on it.
+    void ask(AssistantSkill? skill, {bool branch = false}) => askAboutNode(
+      ref,
+      widget.studySetId,
+      card?.id ?? assistantRootId,
+      branch: branch,
+      text: skill?.prompt(l),
+      skill: skill?.name,
+    );
     showMMMenu(
       context,
       position: position,
@@ -150,6 +158,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
           ],
           if (card.kind == CardKind.excerpt) MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify)),
           MMMenuItem(l.assistantAskWith, () => ask(null)),
+          const MMMenuDivider(),
+        ],
+        if (card == null) ...[
+          MMMenuHeader(l.askAssistant),
+          MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
+          MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
           const MMMenuDivider(),
         ],
         if (card != null) ...[

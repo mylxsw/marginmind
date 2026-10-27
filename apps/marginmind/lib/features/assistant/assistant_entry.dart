@@ -175,10 +175,10 @@ String mapTitle(WidgetRef ref, String studySetId, String mapId) {
 
 /// Sends [text] with the outgoing contexts. A leading `/command` picks its
 /// skill; alone it sends the skill's own question. Ignored while an answer
-/// is being written (the controller allows one run at a time).
+/// is being written in any conversation (one run at a time per study set).
 void assistantSend(WidgetRef ref, String studySetId, AppLocalizations l, String text, {String? skill}) {
   final controller = ref.read(assistantControllerProvider.notifier);
-  if (ref.read(assistantControllerProvider).running) return;
+  if (controller.busy) return;
   var question = text.trim();
   if (skill == null && question.startsWith('/')) {
     for (final s in AssistantSkill.values) {

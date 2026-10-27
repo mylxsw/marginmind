@@ -127,9 +127,15 @@ void main() {
     expect(notes.notes.values.single.conversationId, view().id);
     final old = view().messages.last;
     await controller.retry(old.id);
-    expect(view().messages, hasLength(4));
-    expect(view().messages[2].contexts.single.id, 'sel');
+    // Regenerating replaces the answer; the old one stays in the saved state only.
+    expect(view().messages, hasLength(2));
+    expect(view().messages.first.contexts.single.id, 'sel');
     expect(view().messages.last.requestId, isNot(old.requestId));
+    expect(view().messages.last.text, 'again');
+    final saved = (await storage.loadOrCreate(view().id, null)).metadata;
+    expect((saved['assistant.replaced'] as List).single['id'], old.id);
+    expect((saved['assistant.view'] as Map)['messages'], hasLength(2));
+    await expectLater(controller.retry(view().messages.first.id), throwsStateError);
     await controller.setOnline(false);
     expect(view().online, false);
     await controller.switchModel(
@@ -144,7 +150,7 @@ void main() {
     await controller.newConversation();
     expect(view().messages, isEmpty);
     await controller.openConversation(id);
-    expect(view().messages, hasLength(4));
+    expect(view().messages, hasLength(2));
     expect(factories, 2);
   });
   test('proposal lifecycle, dependent selections and duplicate apply', () async {

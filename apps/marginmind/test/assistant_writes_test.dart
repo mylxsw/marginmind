@@ -52,6 +52,8 @@ void main() {
     expect(workspace.content.cards.length, before);
     expect(workspace.content.dueCount(testNow), due);
     expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
+    // Undo voids the receipt, so the proposal is not taken for applied.
+    expect(await executor.receipt('p'), isNull);
     await workspace.redo();
     expect(workspace.content.cards.length, before + 2);
     expect((await executor.receipt('p'))!.proposalId, 'p');
@@ -59,6 +61,30 @@ void main() {
     await expectLater(executor.apply(p, {'t'}), throwsStateError);
     await workspace.abortTransaction();
   });
+  test('an undone proposal applies again as a new undo step', () async {
+    final before = workspace.content.cards.length;
+    final p = MapEditProposal(
+      id: 'again',
+      studySetId: 'demo-1',
+      mapId: 'main',
+      baseRevision: assistantMapRevision(workspace.content, 'main'),
+      operations: const [MapEditOperation(id: 't', kind: MapEditKind.addTopic, parentId: 'main', title: 'Again')],
+    );
+    final first = await executor.apply(p, {'t'});
+    await workspace.undo();
+    expect(workspace.content.cards.length, before);
+    final second = await executor.apply(p, {'t'});
+    expect(second.nodeIds, hasLength(1));
+    expect(workspace.content.cards.length, before + 1);
+    expect(workspace.content.assistantReceipts.where((r) => r.proposalId == 'again'), hasLength(1));
+    expect(first.proposalId, second.proposalId);
+    // Redo history was replaced by the new apply; undo takes it away again.
+    expect(container.read(workspaceProvider('demo-1')).canRedo, isFalse);
+    await workspace.undo();
+    expect(await executor.receipt('again'), isNull);
+    expect(workspace.content.cards.length, before);
+  });
+
   test('every nonempty operation combination undoes and redoes as one step', () async {
     const ops = [
       MapEditOperation(id: 't', kind: MapEditKind.addTopic, parentId: 'main', title: 'Topic'),

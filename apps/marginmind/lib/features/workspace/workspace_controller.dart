@@ -563,7 +563,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         StudySetContent? current;
         await _write((c) {
           current = c;
-          return StudySetEditor.restore(snapshot, c);
+          // An undone assistant change loses its receipt, so its proposal can
+          // be applied again; redo brings the receipt back.
+          return StudySetEditor.restore(snapshot, c).copyWith(assistantReceipts: snapshot.assistantReceipts);
         });
         from.removeLast();
         to.add(current!);

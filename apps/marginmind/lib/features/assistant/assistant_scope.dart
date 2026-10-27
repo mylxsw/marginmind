@@ -311,14 +311,20 @@ final assistantConversationsProvider = FutureProvider.family<List<ConversationSu
   return out..sort((a, b) => b.stamp.compareTo(a.stamp));
 });
 
-/// [saved] with the live conversation in place of its saved copy.
-List<ConversationSummary> mergeLive(List<ConversationSummary> saved, Conversation live) {
+/// [saved] with the live conversations, the open one and the one answering
+/// out of view ([background]), in place of their saved copies.
+List<ConversationSummary> mergeLive(List<ConversationSummary> saved, Conversation live, {Conversation? background}) {
+  final lives = [
+    for (final c in [live, ?background])
+      if (c.messages.isNotEmpty) c,
+  ];
   final rest = [
     for (final s in saved)
-      if (s.id != live.id) s,
+      if (s.id != live.id && s.id != background?.id) s,
   ];
-  if (live.messages.isEmpty) return rest;
-  return [ConversationSummary.of(live, live: true), ...rest]..sort((a, b) => b.stamp.compareTo(a.stamp));
+  if (lives.isEmpty) return rest;
+  return [for (final c in lives) ConversationSummary.of(c, live: true), ...rest]
+    ..sort((a, b) => b.stamp.compareTo(a.stamp));
 }
 
 /// Renames a conversation that is not open.

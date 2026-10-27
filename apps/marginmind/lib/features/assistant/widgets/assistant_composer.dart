@@ -132,7 +132,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   void _send([String? text, String? skill]) {
     if (!widget.configured) return;
     final value = text ?? _text.text;
-    if (value.trim().isEmpty || ref.read(assistantControllerProvider).running) return;
+    if (value.trim().isEmpty || ref.read(assistantControllerProvider.notifier).busy) return;
     assistantSend(ref, widget.studySetId, _l, value, skill: skill);
     if (text == null) _text.clear();
   }
@@ -241,7 +241,9 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final quick = outgoing.any(
       (c) => c.kind == ContextKind.selection || c.kind == ContextKind.node || c.kind == ContextKind.branch,
     );
-    final canSend = configured && _text.text.trim().isNotEmpty;
+    // One answer at a time per study set: another conversation is answering.
+    final elsewhere = ref.watch(assistantBackgroundProvider) != null;
+    final canSend = configured && !elsewhere && _text.text.trim().isNotEmpty;
     final commands = _slash.isShowing ? _commands : const <AssistantSkill>[];
 
     return CompositedTransformTarget(
