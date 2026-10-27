@@ -29,77 +29,269 @@ Path anthropicMark() {
 Path openaiMark() {
   final p = Path();
   p.moveTo(22.2819, 9.8211);
-  p.arcToPoint(Offset(21.7662, 4.9103), radius: Radius.elliptical(5.9847, 5.9847), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(15.2564, 2.0103), radius: Radius.elliptical(6.0462, 6.0462), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(4.9807, 4.1818), radius: Radius.elliptical(6.0651, 6.0651), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(0.983, 7.0818), radius: Radius.elliptical(5.9847, 5.9847), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(1.7257, 14.1784), radius: Radius.elliptical(6.0462, 6.0462), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(2.2367, 19.0891), radius: Radius.elliptical(5.98, 5.98), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(8.7513, 21.9892), radius: Radius.elliptical(6.051, 6.051), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(13.2599, 24), radius: Radius.elliptical(5.9847, 5.9847), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(19.0317, 19.7942), radius: Radius.elliptical(6.0557, 6.0557), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(23.0294, 16.8941), radius: Radius.elliptical(5.9894, 5.9894), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(22.2819, 9.8212), radius: Radius.elliptical(6.0557, 6.0557), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(21.7662, 4.9103),
+    radius: Radius.elliptical(5.9847, 5.9847),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(15.2564, 2.0103),
+    radius: Radius.elliptical(6.0462, 6.0462),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(4.9807, 4.1818),
+    radius: Radius.elliptical(6.0651, 6.0651),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(0.983, 7.0818),
+    radius: Radius.elliptical(5.9847, 5.9847),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(1.7257, 14.1784),
+    radius: Radius.elliptical(6.0462, 6.0462),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(2.2367, 19.0891),
+    radius: Radius.elliptical(5.98, 5.98),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(8.7513, 21.9892),
+    radius: Radius.elliptical(6.051, 6.051),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(13.2599, 24),
+    radius: Radius.elliptical(5.9847, 5.9847),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(19.0317, 19.7942),
+    radius: Radius.elliptical(6.0557, 6.0557),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(23.0294, 16.8941),
+    radius: Radius.elliptical(5.9894, 5.9894),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(22.2819, 9.8212),
+    radius: Radius.elliptical(6.0557, 6.0557),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(13.2599, 22.4292);
-  p.arcToPoint(Offset(10.3835, 21.3884), radius: Radius.elliptical(4.4755, 4.4755), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(10.3835, 21.3884),
+    radius: Radius.elliptical(4.4755, 4.4755),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(10.5254, 21.308);
   p.lineTo(15.3037, 18.5498);
-  p.arcToPoint(Offset(15.6964, 17.8685), radius: Radius.elliptical(0.7948, 0.7948), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(15.6964, 17.8685),
+    radius: Radius.elliptical(0.7948, 0.7948),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(15.6964, 11.1316);
   p.lineTo(17.7164, 12.3002);
-  p.arcToPoint(Offset(17.7544, 12.3522), radius: Radius.elliptical(0.071, 0.071), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(17.7544, 12.3522),
+    radius: Radius.elliptical(0.071, 0.071),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(17.7544, 17.9348);
-  p.arcToPoint(Offset(13.2599, 22.4292), radius: Radius.elliptical(4.504, 4.504), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(13.2599, 22.4292),
+    radius: Radius.elliptical(4.504, 4.504),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.close();
   p.moveTo(3.5992, 18.3038);
-  p.arcToPoint(Offset(3.0646, 15.2901), radius: Radius.elliptical(4.4708, 4.4708), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(3.0646, 15.2901),
+    radius: Radius.elliptical(4.4708, 4.4708),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(3.2066, 15.3753);
   p.lineTo(7.9896, 18.1335);
-  p.arcToPoint(Offset(8.7702, 18.1335), radius: Radius.elliptical(0.7712, 0.7712), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(8.7702, 18.1335),
+    radius: Radius.elliptical(0.7712, 0.7712),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(14.613, 14.765);
   p.lineTo(14.613, 17.0974);
-  p.arcToPoint(Offset(14.5798, 17.1589), radius: Radius.elliptical(0.0804, 0.0804), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(14.5798, 17.1589),
+    radius: Radius.elliptical(0.0804, 0.0804),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(9.74, 19.9502);
-  p.arcToPoint(Offset(3.5992, 18.3038), radius: Radius.elliptical(4.4992, 4.4992), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(3.5992, 18.3038),
+    radius: Radius.elliptical(4.4992, 4.4992),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.close();
   p.moveTo(2.3408, 7.8956);
-  p.arcToPoint(Offset(4.7063, 5.9228), radius: Radius.elliptical(4.485, 4.485), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(4.7063, 5.9228),
+    radius: Radius.elliptical(4.485, 4.485),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(4.7063, 11.6);
-  p.arcToPoint(Offset(5.0942, 12.2765), radius: Radius.elliptical(0.7664, 0.7664), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(5.0942, 12.2765),
+    radius: Radius.elliptical(0.7664, 0.7664),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(10.9086, 15.6308);
   p.lineTo(8.8885, 16.7993);
-  p.arcToPoint(Offset(8.8175, 16.7993), radius: Radius.elliptical(0.0757, 0.0757), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(8.8175, 16.7993),
+    radius: Radius.elliptical(0.0757, 0.0757),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(3.9872, 14.0128);
-  p.arcToPoint(Offset(2.3408, 7.872), radius: Radius.elliptical(4.504, 4.504), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(2.3408, 7.872),
+    radius: Radius.elliptical(4.504, 4.504),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.close();
   p.moveTo(18.9371, 11.7514);
   p.lineTo(13.1038, 8.364);
   p.lineTo(15.1192, 7.2);
-  p.arcToPoint(Offset(15.1902, 7.2), radius: Radius.elliptical(0.0757, 0.0757), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(15.1902, 7.2),
+    radius: Radius.elliptical(0.0757, 0.0757),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(20.0205, 9.9913);
-  p.arcToPoint(Offset(19.344, 18.0955), radius: Radius.elliptical(4.4944, 4.4944), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(19.344, 18.0955),
+    radius: Radius.elliptical(4.4944, 4.4944),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(19.344, 12.4183);
-  p.arcToPoint(Offset(18.937, 11.7513), radius: Radius.elliptical(0.79, 0.79), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(18.937, 11.7513),
+    radius: Radius.elliptical(0.79, 0.79),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(20.9478, 8.7283);
   p.lineTo(20.8058, 8.6431);
   p.lineTo(16.0323, 5.8613);
-  p.arcToPoint(Offset(15.2469, 5.8613), radius: Radius.elliptical(0.7759, 0.7759), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(15.2469, 5.8613),
+    radius: Radius.elliptical(0.7759, 0.7759),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(9.409, 9.2297);
   p.lineTo(9.409, 6.8974);
-  p.arcToPoint(Offset(9.4374, 6.8359), radius: Radius.elliptical(0.0662, 0.0662), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(9.4374, 6.8359),
+    radius: Radius.elliptical(0.0662, 0.0662),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(14.2677, 4.0493);
-  p.arcToPoint(Offset(20.9479, 8.7093), radius: Radius.elliptical(4.4992, 4.4992), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(20.9479, 8.7093),
+    radius: Radius.elliptical(4.4992, 4.4992),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.close();
   p.moveTo(8.3065, 12.863);
   p.lineTo(6.2865, 11.6992);
-  p.arcToPoint(Offset(6.2485, 11.6425), radius: Radius.elliptical(0.0804, 0.0804), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(6.2485, 11.6425),
+    radius: Radius.elliptical(0.0804, 0.0804),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(6.2485, 6.0742);
-  p.arcToPoint(Offset(13.6242, 2.6205), radius: Radius.elliptical(4.4992, 4.4992), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(13.6242, 2.6205),
+    radius: Radius.elliptical(4.4992, 4.4992),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.lineTo(13.4822, 2.701);
   p.lineTo(8.704, 5.459);
-  p.arcToPoint(Offset(8.3113, 6.1403), radius: Radius.elliptical(0.7948, 0.7948), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(8.3113, 6.1403),
+    radius: Radius.elliptical(0.7948, 0.7948),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(9.4041, 10.4976);
   p.lineTo(12.0061, 8.9978);
@@ -120,12 +312,30 @@ Path geminiMark() {
   p.quadraticBezierTo(17.13, 13.89, 19.32, 12.96);
   p.quadraticBezierTo(21.51, 12, 24, 12);
   p.quadraticBezierTo(21.51, 12, 19.32, 11.07);
-  p.arcToPoint(Offset(15.51, 8.49), radius: Radius.elliptical(12.3, 12.3), rotation: 0, largeArc: false, clockwise: true);
-  p.arcToPoint(Offset(12.93, 4.68), radius: Radius.elliptical(12.3, 12.3), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(15.51, 8.49),
+    radius: Radius.elliptical(12.3, 12.3),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
+  p.arcToPoint(
+    Offset(12.93, 4.68),
+    radius: Radius.elliptical(12.3, 12.3),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.quadraticBezierTo(12, 2.49, 12, 0);
   p.quadraticBezierTo(12, 2.49, 11.04, 4.68);
   p.quadraticBezierTo(10.11, 6.87, 8.49, 8.49);
-  p.arcToPoint(Offset(4.68, 11.07), radius: Radius.elliptical(12.3, 12.3), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(4.68, 11.07),
+    radius: Radius.elliptical(12.3, 12.3),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.quadraticBezierTo(2.49, 12, 0, 12);
   p.quadraticBezierTo(2.49, 12, 4.68, 12.96);
   p.quadraticBezierTo(6.87, 13.89, 8.49, 15.51);
@@ -136,28 +346,70 @@ Path geminiMark() {
 Path ollamaMark() {
   final p = Path();
   p.moveTo(16.361, 10.26);
-  p.arcToPoint(Offset(15.803, 10.73), radius: Radius.elliptical(0.894, 0.894), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(15.803, 10.73),
+    radius: Radius.elliptical(0.894, 0.894),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(15.731, 10.878);
   p.lineTo(15.732, 11.085);
   p.cubicTo(15.732, 11.278, 15.736, 11.302, 15.791, 11.438);
   p.cubicTo(15.867, 11.631, 15.943, 11.75, 16.082, 11.886);
   p.cubicTo(16.322, 12.124, 16.592, 12.186, 16.954, 12.091);
-  p.arcToPoint(Offset(17.471, 11.655), radius: Radius.elliptical(0.86, 0.86), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(17.551, 11.157), radius: Radius.elliptical(0.752, 0.752), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(17.471, 11.655),
+    radius: Radius.elliptical(0.86, 0.86),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(17.551, 11.157),
+    radius: Radius.elliptical(0.752, 0.752),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(17.487, 10.704, 17.221, 10.375, 16.827, 10.26);
-  p.arcToPoint(Offset(16.361, 10.26), radius: Radius.elliptical(1.06, 1.06), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(16.361, 10.26),
+    radius: Radius.elliptical(1.06, 1.06),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(7.158, 10.265);
   p.cubicTo(6.853, 10.361, 6.625, 10.585, 6.508, 10.904);
-  p.arcToPoint(Offset(6.448, 11.424), radius: Radius.elliptical(1.187, 1.187), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(6.448, 11.424),
+    radius: Radius.elliptical(1.187, 1.187),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(6.505, 11.733, 6.758, 12.014, 7.046, 12.091);
   p.cubicTo(7.408, 12.186, 7.678, 12.124, 7.918, 11.886);
   p.cubicTo(8.058, 11.75, 8.133, 11.631, 8.209, 11.438);
   p.cubicTo(8.264, 11.302, 8.268, 11.278, 8.268, 11.085);
   p.lineTo(8.269, 10.878);
   p.lineTo(8.197, 10.73);
-  p.arcToPoint(Offset(7.632, 10.258), radius: Radius.elliptical(0.894, 0.894), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(7.158, 10.265), radius: Radius.elliptical(1.02, 1.02), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(7.632, 10.258),
+    radius: Radius.elliptical(0.894, 0.894),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(7.158, 10.265),
+    radius: Radius.elliptical(1.02, 1.02),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(11.342, 12.265);
   p.cubicTo(11.211, 12.336, 11.119, 12.515, 11.147, 12.648);
@@ -171,13 +423,31 @@ Path ollamaMark() {
   p.cubicTo(12.383, 13.856, 12.426, 13.704, 12.364, 13.413);
   p.cubicTo(12.312, 13.17, 12.322, 13.133, 12.451, 13.058);
   p.cubicTo(12.588, 12.978, 12.732, 12.839, 12.775, 12.744);
-  p.arcToPoint(Offset(12.6, 12.264), radius: Radius.elliptical(0.365, 0.365), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(12.419, 12.231), radius: Radius.elliptical(0.394, 0.394), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(12.6, 12.264),
+    radius: Radius.elliptical(0.365, 0.365),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(12.419, 12.231),
+    radius: Radius.elliptical(0.394, 0.394),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(12.293, 12.231, 12.212, 12.261, 12.064, 12.355);
   p.lineTo(11.979, 12.408);
   p.lineTo(11.926, 12.376);
   p.cubicTo(11.707, 12.246, 11.667, 12.231, 11.535, 12.233);
-  p.arcToPoint(Offset(11.342, 12.265), radius: Radius.elliptical(0.396, 0.396), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(11.342, 12.265),
+    radius: Radius.elliptical(0.396, 0.396),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(11.732, 10.07);
   p.cubicTo(11.359, 10.106, 11.257, 10.12, 11.078, 10.156);
@@ -192,15 +462,33 @@ Path ollamaMark() {
   p.cubicTo(15.7, 13.485, 15.705, 13.422, 15.705, 13.129);
   p.cubicTo(15.705, 12.832, 15.7, 12.774, 15.66, 12.598);
   p.cubicTo(15.372, 11.308, 14.121, 10.294, 12.588, 10.101);
-  p.arcToPoint(Offset(11.733, 10.07), radius: Radius.elliptical(6.873, 6.873), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(11.733, 10.07),
+    radius: Radius.elliptical(6.873, 6.873),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(12.377, 11.007);
-  p.arcToPoint(Offset(13.817, 11.521), radius: Radius.elliptical(3.283, 3.283), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(13.817, 11.521),
+    radius: Radius.elliptical(3.283, 3.283),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(14.04, 11.669, 14.354, 11.979, 14.488, 12.183);
   p.cubicTo(14.654, 12.434, 14.748, 12.691, 14.791, 13.003);
   p.cubicTo(14.811, 13.146, 14.801, 13.254, 14.748, 13.485);
   p.cubicTo(14.668, 13.83, 14.416, 14.19, 14.076, 14.442);
-  p.arcToPoint(Offset(13.387, 14.79), radius: Radius.elliptical(3.115, 3.115), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(13.387, 14.79),
+    radius: Radius.elliptical(3.115, 3.115),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(13.005, 14.912, 12.755, 14.934, 11.862, 14.928);
   p.cubicTo(11.28, 14.922, 11.176, 14.918, 11.009, 14.886);
   p.cubicTo(10.439, 14.779, 9.987, 14.552, 9.659, 14.206);
@@ -211,15 +499,45 @@ Path ollamaMark() {
   p.cubicTo(11.791, 10.989, 12.19, 10.989, 12.377, 11.007);
   p.close();
   p.moveTo(6.874, 0.007);
-  p.arcToPoint(Offset(6.191, 0.305), radius: Radius.elliptical(1.653, 1.653), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(6.191, 0.305),
+    radius: Radius.elliptical(1.653, 1.653),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(5.617, 0.74, 5.173, 1.666, 4.985, 2.819);
   p.cubicTo(4.915, 3.255, 4.866, 3.859, 4.866, 4.322);
   p.cubicTo(4.866, 4.866, 4.93, 5.562, 5.021, 6.043);
   p.cubicTo(5.041, 6.15, 5.052, 6.245, 5.044, 6.251);
-  p.arcToPoint(Offset(4.857, 6.403), radius: Radius.elliptical(8.12, 8.12), rotation: 0, largeArc: false, clockwise: true);
-  p.arcToPoint(Offset(3.908, 7.423), radius: Radius.elliptical(5.324, 5.324), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(2.968, 9.762), radius: Radius.elliptical(5.49, 5.49), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(2.945, 11.119), radius: Radius.elliptical(6.625, 6.625), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(4.857, 6.403),
+    radius: Radius.elliptical(8.12, 8.12),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
+  p.arcToPoint(
+    Offset(3.908, 7.423),
+    radius: Radius.elliptical(5.324, 5.324),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(2.968, 9.762),
+    radius: Radius.elliptical(5.49, 5.49),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(2.945, 11.119),
+    radius: Radius.elliptical(6.625, 6.625),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(3.036, 11.899, 3.27, 12.557, 3.672, 13.159);
   p.lineTo(3.802, 13.354);
   p.lineTo(3.765, 13.418);
@@ -229,7 +547,13 @@ Path ollamaMark() {
   p.cubicTo(3.248, 18.265, 3.441, 18.853, 3.656, 19.244);
   p.cubicTo(3.727, 19.372, 3.899, 19.637, 3.92, 19.651);
   p.cubicTo(3.927, 19.654, 3.906, 19.718, 3.874, 19.792);
-  p.arcToPoint(Offset(3.326, 21.665), radius: Radius.elliptical(7.405, 7.405), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(3.326, 21.665),
+    radius: Radius.elliptical(7.405, 7.405),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(3.264, 22.082, 3.255, 22.217, 3.255, 22.656);
   p.cubicTo(3.255, 23.216, 3.286, 23.488, 3.403, 23.935);
   p.lineTo(3.42, 24);
@@ -240,13 +564,37 @@ Path ollamaMark() {
   p.lineTo(5.426, 19.726);
   p.lineTo(5.426, 19.549);
   p.cubicTo(5.426, 19.384, 5.423, 19.365, 5.369, 19.256);
-  p.arcToPoint(Offset(5.175, 19.006), radius: Radius.elliptical(0.915, 0.915), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(4.79, 18.463), radius: Radius.elliptical(1.74, 1.74), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(5.175, 19.006),
+    radius: Radius.elliptical(0.915, 0.915),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(4.79, 18.463),
+    radius: Radius.elliptical(1.74, 1.74),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(4.366, 17.543, 4.284, 16.177, 4.582, 15.012);
   p.cubicTo(4.706, 14.526, 4.911, 14.094, 5.126, 13.858);
-  p.arcToPoint(Offset(5.349, 13.327), radius: Radius.elliptical(0.787, 0.787), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(5.349, 13.327),
+    radius: Radius.elliptical(0.787, 0.787),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(5.349, 13.132, 5.279, 12.972, 5.125, 12.805);
-  p.arcToPoint(Offset(4.308, 11.076), radius: Radius.elliptical(3.136, 3.136), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(4.308, 11.076),
+    radius: Radius.elliptical(3.136, 3.136),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(4.168, 10.116, 4.422, 9.071, 4.998, 8.242);
   p.cubicTo(5.561, 7.428, 6.351, 6.906, 7.235, 6.767);
   p.cubicTo(7.434, 6.734, 7.805, 6.739, 8.011, 6.777);
@@ -257,7 +605,13 @@ Path ollamaMark() {
   p.cubicTo(10.492, 4.73, 10.963, 4.533, 11.431, 4.439);
   p.cubicTo(11.601, 4.404, 11.681, 4.399, 12, 4.399);
   p.cubicTo(12.319, 4.399, 12.398, 4.404, 12.569, 4.439);
-  p.arcToPoint(Offset(14.483, 5.436), radius: Radius.elliptical(4.07, 4.07), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(14.483, 5.436),
+    radius: Radius.elliptical(4.07, 4.07),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(14.6, 5.545, 14.881, 5.893, 14.971, 6.038);
   p.cubicTo(15.005, 6.095, 15.066, 6.215, 15.103, 6.305);
   p.cubicTo(15.208, 6.546, 15.298, 6.651, 15.477, 6.735);
@@ -269,14 +623,32 @@ Path ollamaMark() {
   p.cubicTo(18.574, 13.127, 18.574, 13.527, 18.874, 13.858);
   p.cubicTo(19.367, 14.397, 19.675, 15.724, 19.582, 16.894);
   p.cubicTo(19.52, 17.666, 19.322, 18.357, 19.049, 18.748);
-  p.arcToPoint(Offset(18.825, 19.006), radius: Radius.elliptical(2.096, 2.096), rotation: 0, largeArc: false, clockwise: true);
-  p.arcToPoint(Offset(18.631, 19.256), radius: Radius.elliptical(0.916, 0.916), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(18.825, 19.006),
+    radius: Radius.elliptical(2.096, 2.096),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
+  p.arcToPoint(
+    Offset(18.631, 19.256),
+    radius: Radius.elliptical(0.916, 0.916),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(18.577, 19.365, 18.574, 19.384, 18.574, 19.549);
   p.lineTo(18.574, 19.727);
   p.lineTo(18.722, 20.017);
   p.cubicTo(18.97, 20.493, 19.102, 20.84, 19.22, 21.312);
   p.cubicTo(19.473, 22.32, 19.451, 23.322, 19.161, 23.893);
-  p.arcToPoint(Offset(19.117, 23.991), radius: Radius.elliptical(0.845, 0.845), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(19.117, 23.991),
+    radius: Radius.elliptical(0.845, 0.845),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(19.117, 23.997, 19.446, 24, 19.849, 24);
   p.lineTo(20.579, 24);
   p.lineTo(20.599, 23.926);
@@ -289,29 +661,101 @@ Path ollamaMark() {
   p.cubicTo(20.564, 18.93, 20.795, 18.215, 20.912, 17.271);
   p.cubicTo(20.943, 17.011, 20.943, 15.893, 20.912, 15.643);
   p.cubicTo(20.829, 14.998, 20.73, 14.561, 20.564, 14.118);
-  p.arcToPoint(Offset(20.235, 13.418), radius: Radius.elliptical(6.083, 6.083), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(20.235, 13.418),
+    radius: Radius.elliptical(6.083, 6.083),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(20.197, 13.354);
   p.lineTo(20.328, 13.16);
   p.cubicTo(20.73, 12.556, 20.964, 11.898, 21.055, 11.12);
-  p.arcToPoint(Offset(21.031, 9.762), radius: Radius.elliptical(6.625, 6.625), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(20.092, 7.423), radius: Radius.elliptical(5.512, 5.512), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(19.142, 6.403), radius: Radius.elliptical(5.325, 5.325), rotation: 0, largeArc: false, clockwise: false);
-  p.arcToPoint(Offset(18.956, 6.251), radius: Radius.elliptical(8.097, 8.097), rotation: 0, largeArc: false, clockwise: true);
-  p.arcToPoint(Offset(18.979, 6.043), radius: Radius.elliptical(0.692, 0.692), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(21.031, 9.762),
+    radius: Radius.elliptical(6.625, 6.625),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(20.092, 7.423),
+    radius: Radius.elliptical(5.512, 5.512),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(19.142, 6.403),
+    radius: Radius.elliptical(5.325, 5.325),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
+  p.arcToPoint(
+    Offset(18.956, 6.251),
+    radius: Radius.elliptical(8.097, 8.097),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
+  p.arcToPoint(
+    Offset(18.979, 6.043),
+    radius: Radius.elliptical(0.692, 0.692),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(19.187, 4.956, 19.18, 3.6, 18.962, 2.54);
   p.cubicTo(18.772, 1.616, 18.427, 0.882, 17.982, 0.458);
   p.cubicTo(17.628, 0.12, 17.266, -0.024, 16.832, 0.003);
   p.cubicTo(15.836, 0.062, 15.032, 1.208, 14.716, 3.013);
-  p.arcToPoint(Offset(14.619, 3.739), radius: Radius.elliptical(6.805, 6.805), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(14.619, 3.739),
+    radius: Radius.elliptical(6.805, 6.805),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(14.619, 3.775, 14.612, 3.805, 14.604, 3.805);
-  p.arcToPoint(Offset(14.455, 3.727), radius: Radius.elliptical(0.96, 0.96), rotation: 0, largeArc: false, clockwise: true);
-  p.arcToPoint(Offset(12, 3.03), radius: Radius.elliptical(4.857, 4.857), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(14.455, 3.727),
+    radius: Radius.elliptical(0.96, 0.96),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
+  p.arcToPoint(
+    Offset(12, 3.03),
+    radius: Radius.elliptical(4.857, 4.857),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(11.168, 3.03, 10.313, 3.273, 9.544, 3.728);
-  p.arcToPoint(Offset(9.396, 3.806), radius: Radius.elliptical(0.958, 0.958), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(9.396, 3.806),
+    radius: Radius.elliptical(0.958, 0.958),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(9.388, 3.806, 9.381, 3.776, 9.381, 3.74);
-  p.arcToPoint(Offset(9.284, 3.015), radius: Radius.elliptical(6.71, 6.71), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(9.284, 3.015),
+    radius: Radius.elliptical(6.71, 6.71),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.cubicTo(8.997, 1.392, 8.337, 0.319, 7.46, 0.048);
-  p.arcToPoint(Offset(6.875, 0.007), radius: Radius.elliptical(2.096, 2.096), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(6.875, 0.007),
+    radius: Radius.elliptical(2.096, 2.096),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.close();
   p.moveTo(7.167, 1.409);
   p.cubicTo(7.415, 1.606, 7.69, 2.168, 7.849, 2.797);
@@ -325,7 +769,13 @@ Path ollamaMark() {
   p.cubicTo(7.223, 5.39, 6.901, 5.431, 6.593, 5.514);
   p.lineTo(6.355, 5.574);
   p.cubicTo(6.322, 5.581, 6.317, 5.571, 6.298, 5.43);
-  p.arcToPoint(Offset(6.314, 3.107), radius: Radius.elliptical(8.438, 8.438), rotation: 0, largeArc: false, clockwise: true);
+  p.arcToPoint(
+    Offset(6.314, 3.107),
+    radius: Radius.elliptical(8.438, 8.438),
+    rotation: 0,
+    largeArc: false,
+    clockwise: true,
+  );
   p.cubicTo(6.438, 2.319, 6.727, 1.606, 7.01, 1.396);
   p.cubicTo(7.077, 1.346, 7.089, 1.347, 7.167, 1.409);
   p.close();
@@ -334,7 +784,13 @@ Path ollamaMark() {
   p.cubicTo(17.77, 3.139, 17.85, 4.313, 17.702, 5.43);
   p.cubicTo(17.683, 5.57, 17.678, 5.581, 17.645, 5.574);
   p.lineTo(17.407, 5.514);
-  p.arcToPoint(Offset(16.453, 5.39), radius: Radius.elliptical(3.693, 3.693), rotation: 0, largeArc: false, clockwise: false);
+  p.arcToPoint(
+    Offset(16.453, 5.39),
+    radius: Radius.elliptical(3.693, 3.693),
+    rotation: 0,
+    largeArc: false,
+    clockwise: false,
+  );
   p.lineTo(16.175, 5.39);
   p.lineTo(16.056, 5.212);
   p.lineTo(15.937, 5.037);

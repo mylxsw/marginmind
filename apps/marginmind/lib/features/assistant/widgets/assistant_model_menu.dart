@@ -19,7 +19,8 @@ String conversationModelLabel(WidgetRef ref, AssistantModel model) {
 }
 
 bool sameModel(AssistantModel a, AssistantModel b) =>
-    a.model == b.model && (a.serviceId == null || b.serviceId == null ? a.provider == b.provider : a.serviceId == b.serviceId);
+    a.model == b.model &&
+    (a.serviceId == null || b.serviceId == null ? a.provider == b.provider : a.serviceId == b.serviceId);
 
 /// The model menu above [anchor]: enabled models grouped by service, names
 /// only, then “Manage Models…”. A choice changes this conversation only.

@@ -12,9 +12,8 @@ ServiceBrand serviceBrand(ServiceProtocol protocol, String endpoint) => switch (
   ServiceProtocol.anthropic => ServiceBrand.anthropic,
   ServiceProtocol.gemini => ServiceBrand.gemini,
   ServiceProtocol.ollama => ServiceBrand.ollama,
-  ServiceProtocol.openai => Uri.tryParse(endpoint.trim())?.host == 'api.openai.com'
-      ? ServiceBrand.openai
-      : ServiceBrand.compatible,
+  ServiceProtocol.openai =>
+    Uri.tryParse(endpoint.trim())?.host == 'api.openai.com' ? ServiceBrand.openai : ServiceBrand.compatible,
 };
 
 /// A service's official mark on its brand tile ([size] square, rounded).

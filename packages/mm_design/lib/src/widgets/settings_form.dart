@@ -152,9 +152,7 @@ class MMPopUpButton<T> extends StatelessWidget {
                 context,
                 position: box.localToGlobal(Offset(0, box.size.height + 2)),
                 minWidth: box.size.width,
-                entries: [
-                  for (final (v, text) in items) MMMenuItem(text, () => onChanged!(v), checked: v == value),
-                ],
+                entries: [for (final (v, text) in items) MMMenuItem(text, () => onChanged!(v), checked: v == value)],
               );
             }
           : null,
@@ -165,10 +163,7 @@ class MMPopUpButton<T> extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: maxWidth),
         height: 22,
         padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
-        decoration: BoxDecoration(
-          color: s.hovered ? c.fill : c.quaternaryFill,
-          borderRadius: BorderRadius.circular(6),
-        ),
+        decoration: BoxDecoration(color: s.hovered ? c.fill : c.quaternaryFill, borderRadius: BorderRadius.circular(6)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

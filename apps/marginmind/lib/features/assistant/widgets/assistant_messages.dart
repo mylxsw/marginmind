@@ -386,9 +386,7 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
     final style = t.callout.copyWith(fontWeight: FontWeight.w400);
     final current = steps.lastOrNull;
     final title = running
-        ? (current == null
-              ? l.assistantThinking
-              : current.narration ?? stepLabel(l, current.toolName))
+        ? (current == null ? l.assistantThinking : current.narration ?? stepLabel(l, current.toolName))
         : l.assistantWorkedFor(m.elapsedSeconds < 1 ? 1 : m.elapsedSeconds);
     return Padding(
       padding: const EdgeInsets.only(bottom: MMSpacing.s),
@@ -414,7 +412,12 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
                               style: style.copyWith(color: c.secondaryLabel),
                             ),
                           )
-                        : Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: style.copyWith(color: fg)),
+                        : Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: style.copyWith(color: fg),
+                          ),
                   ),
                   if (failures > 0)
                     Text(
@@ -467,7 +470,10 @@ class _TimelineRow extends StatelessWidget {
     if (step.narration case final words?) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Text(words, style: t.callout.copyWith(fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.65, color: c.label)),
+        child: Text(
+          words,
+          style: t.callout.copyWith(fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.65, color: c.label),
+        ),
       );
     }
     final failed = step.status == TraceStatus.error;
@@ -495,10 +501,7 @@ class _TimelineRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: t.callout.copyWith(
-                    fontWeight: FontWeight.w400,
-                    color: failed ? c.critical : c.secondaryLabel,
-                  ),
+                  style: t.callout.copyWith(fontWeight: FontWeight.w400, color: failed ? c.critical : c.secondaryLabel),
                 ),
                 if (failed && step.reason != null)
                   Text(step.reason!, style: t.mono.copyWith(fontSize: 10.5, color: c.secondaryLabel)),
@@ -930,7 +933,10 @@ class _StatusBlockState extends State<_StatusBlock> {
                   builder: (context, s) => Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(l.assistantDetails, style: t.footnote.copyWith(color: s.hovered ? c.label : c.secondaryLabel)),
+                      Text(
+                        l.assistantDetails,
+                        style: t.footnote.copyWith(color: s.hovered ? c.label : c.secondaryLabel),
+                      ),
                       const SizedBox(width: 2),
                       Icon(_open ? MMIcons.chevronDown : MMIcons.chevronRight, size: 10, color: c.secondaryLabel),
                     ],

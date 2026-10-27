@@ -1502,9 +1502,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get researchErrorAuthentication => 'The API key was rejected';
 
   @override
-  String get researchErrorRateLimited => 'Too many requests; try again later';
-
-  @override
   String get researchErrorBudget => 'Reached the limit';
 
   @override
@@ -2083,9 +2080,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantNewConversation => 'New Conversation';
 
   @override
-  String get assistantSettings => 'Assistant Settings';
-
-  @override
   String get assistantHistory => 'Conversations';
 
   @override
@@ -2117,28 +2111,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantStop => 'Stop';
-
-  @override
-  String assistantModelSwitched(String name) {
-    return 'Switched to $name';
-  }
-
-  @override
-  String assistantLocalModel(String name) {
-    return 'Local · $name';
-  }
-
-  @override
-  String assistantSteps(int count) {
-    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count steps', one: '1 step');
-    return '$_temp0';
-  }
-
-  @override
-  String get assistantStepsOnline => 'online';
-
-  @override
-  String get assistantStepsOffline => 'offline';
 
   @override
   String get assistantToolReadSelection => 'Reading the selection';
@@ -2419,43 +2391,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantPasteKey => 'Paste API key';
 
   @override
-  String get assistantModelField => 'Model';
-
-  @override
-  String get assistantEndpointField => 'Endpoint';
-
-  @override
   String get assistantConnect => 'Connect';
-
-  @override
-  String get assistantKeyInvalid => 'Invalid key';
 
   @override
   String get assistantCannotConnect => 'Cannot reach the service';
 
   @override
-  String get assistantConnectionInvalid => 'Check the model name and service URL; remote services require HTTPS';
-
-  @override
-  String get assistantConnectionTimeout => 'Connection timed out; check your network and try again';
-
-  @override
-  String get assistantServiceClaude => 'Claude';
-
-  @override
-  String get assistantServiceOpenAI => 'OpenAI';
-
-  @override
-  String get assistantServiceCompatible => 'Compatible';
-
-  @override
   String get assistantServiceOllama => 'Local · Ollama';
-
-  @override
-  String get assistantService => 'Service';
-
-  @override
-  String get assistantLocalSetting => 'Local model';
 
   @override
   String assistantQuestions(int count) {
@@ -2513,9 +2455,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantAskMore => 'Ask More';
-
-  @override
-  String get assistantSearxngInvalid => 'Enter a valid HTTP or HTTPS endpoint';
 
   @override
   String get settingsGeneral => 'General';

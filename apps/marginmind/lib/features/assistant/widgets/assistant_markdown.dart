@@ -364,10 +364,8 @@ class _Renderer {
     );
   }
 
-  InlineSpan inline(List<md.Node> nodes, TextStyle style) => TextSpan(
-    style: style,
-    children: [for (final n in nodes) _span(n, style)],
-  );
+  InlineSpan inline(List<md.Node> nodes, TextStyle style) =>
+      TextSpan(style: style, children: [for (final n in nodes) _span(n, style)]);
 
   InlineSpan _span(md.Node node, TextStyle style) {
     if (node is md.Text) return TextSpan(text: node.text);

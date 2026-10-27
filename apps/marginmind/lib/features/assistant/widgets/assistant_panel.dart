@@ -241,48 +241,51 @@ class AssistantHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Flexible(
-            child: MMInteractive(
-              key: const ValueKey('assistant-title'),
-              onTap: () {
-                ref.read(researchPanelProvider(studySetId).notifier).closeNote();
-                ui.showHistory(!history);
-              },
-              semanticLabel: shown,
-              semanticValue: l.assistantHistory,
-              builder: (context, s) => AnimatedContainer(
-                duration: MMMotion.quick,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: s.hovered ? c.hover : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
-                      child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
-                    ),
-                    const SizedBox(width: MMSpacing.s),
-                    Flexible(
-                      child: Text(
-                        shown,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.headline.copyWith(color: c.label),
+          // The title takes the free width, so the buttons sit at the right edge.
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MMInteractive(
+                key: const ValueKey('assistant-title'),
+                onTap: () {
+                  ref.read(researchPanelProvider(studySetId).notifier).closeNote();
+                  ui.showHistory(!history);
+                },
+                semanticLabel: shown,
+                semanticValue: l.assistantHistory,
+                builder: (context, s) => AnimatedContainer(
+                  duration: MMMotion.quick,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: s.hovered ? c.hover : Colors.transparent,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
+                        child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
                       ),
-                    ),
-                    const SizedBox(width: MMSpacing.xs),
-                    Icon(history ? MMIcons.chevronUp : MMIcons.chevronDown, size: 11, color: c.icon),
-                  ],
+                      const SizedBox(width: MMSpacing.s),
+                      Flexible(
+                        child: Text(
+                          shown,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.headline.copyWith(color: c.label),
+                        ),
+                      ),
+                      const SizedBox(width: MMSpacing.xs),
+                      Icon(history ? MMIcons.chevronUp : MMIcons.chevronDown, size: 11, color: c.icon),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const Spacer(),
           MMIconButton(
             key: const ValueKey('assistant-new'),
             icon: MMIcons.add,

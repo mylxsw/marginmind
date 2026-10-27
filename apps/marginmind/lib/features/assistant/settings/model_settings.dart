@@ -653,6 +653,7 @@ class _ModelRowState extends ConsumerState<_ModelRow> {
                 focusNode: _focus,
                 style: t.body.copyWith(color: c.label),
                 semanticLabel: l.settingsName,
+                maxLines: 1,
                 onSubmitted: _commit,
                 onCancel: () => setState(() => _editing = false),
                 onTapOutside: _commit,
@@ -761,8 +762,9 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
   }
 
   Future<void> _load() async {
-    final l = context.l10n;
     final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(widget.service.id)) ?? '';
+    if (!mounted) return;
+    final l = context.l10n;
     try {
       final models = await ref.read(serviceCatalogProvider).list(widget.service, key, cancellation: _cancel);
       if (mounted) setState(() => _models = models);
@@ -806,7 +808,8 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
     final l = context.l10n;
     final navigator = Navigator.of(context);
     navigator.pop();
-    if (failed && navigator.context.mounted) MMHud.show(navigator.context, l.assistantErrorFailed, icon: MMIcons.warning);
+    if (failed && navigator.context.mounted)
+      MMHud.show(navigator.context, l.assistantErrorFailed, icon: MMIcons.warning);
   }
 
   @override
@@ -823,7 +826,9 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
         if (lower.isEmpty || m.id.toLowerCase().contains(lower) || m.name.toLowerCase().contains(lower)) m,
     ];
     final manual =
-        query.isNotEmpty && !(models ?? const <ServiceModel>[]).any((m) => m.id.toLowerCase() == lower) && models != null
+        query.isNotEmpty &&
+            !(models ?? const <ServiceModel>[]).any((m) => m.id.toLowerCase() == lower) &&
+            models != null
         ? query
         : null;
     final count = _picked.where((id) => !added.contains(id)).length;

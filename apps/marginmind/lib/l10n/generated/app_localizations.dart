@@ -2756,12 +2756,6 @@ abstract class AppLocalizations {
   /// **'The API key was rejected'**
   String get researchErrorAuthentication;
 
-  /// No description provided for @researchErrorRateLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Too many requests; try again later'**
-  String get researchErrorRateLimited;
-
   /// No description provided for @researchErrorBudget.
   ///
   /// In en, this message translates to:
@@ -3716,12 +3710,6 @@ abstract class AppLocalizations {
   /// **'New Conversation'**
   String get assistantNewConversation;
 
-  /// No description provided for @assistantSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Assistant Settings'**
-  String get assistantSettings;
-
   /// No description provided for @assistantHistory.
   ///
   /// In en, this message translates to:
@@ -3787,36 +3775,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop'**
   String get assistantStop;
-
-  /// No description provided for @assistantModelSwitched.
-  ///
-  /// In en, this message translates to:
-  /// **'Switched to {name}'**
-  String assistantModelSwitched(String name);
-
-  /// No description provided for @assistantLocalModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Local · {name}'**
-  String assistantLocalModel(String name);
-
-  /// No description provided for @assistantSteps.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
-  String assistantSteps(int count);
-
-  /// No description provided for @assistantStepsOnline.
-  ///
-  /// In en, this message translates to:
-  /// **'online'**
-  String get assistantStepsOnline;
-
-  /// No description provided for @assistantStepsOffline.
-  ///
-  /// In en, this message translates to:
-  /// **'offline'**
-  String get assistantStepsOffline;
 
   /// No description provided for @assistantToolReadSelection.
   ///
@@ -4298,29 +4256,11 @@ abstract class AppLocalizations {
   /// **'Paste API key'**
   String get assistantPasteKey;
 
-  /// No description provided for @assistantModelField.
-  ///
-  /// In en, this message translates to:
-  /// **'Model'**
-  String get assistantModelField;
-
-  /// No description provided for @assistantEndpointField.
-  ///
-  /// In en, this message translates to:
-  /// **'Endpoint'**
-  String get assistantEndpointField;
-
   /// No description provided for @assistantConnect.
   ///
   /// In en, this message translates to:
   /// **'Connect'**
   String get assistantConnect;
-
-  /// No description provided for @assistantKeyInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid key'**
-  String get assistantKeyInvalid;
 
   /// No description provided for @assistantCannotConnect.
   ///
@@ -4328,53 +4268,11 @@ abstract class AppLocalizations {
   /// **'Cannot reach the service'**
   String get assistantCannotConnect;
 
-  /// No description provided for @assistantConnectionInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Check the model name and service URL; remote services require HTTPS'**
-  String get assistantConnectionInvalid;
-
-  /// No description provided for @assistantConnectionTimeout.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection timed out; check your network and try again'**
-  String get assistantConnectionTimeout;
-
-  /// No description provided for @assistantServiceClaude.
-  ///
-  /// In en, this message translates to:
-  /// **'Claude'**
-  String get assistantServiceClaude;
-
-  /// No description provided for @assistantServiceOpenAI.
-  ///
-  /// In en, this message translates to:
-  /// **'OpenAI'**
-  String get assistantServiceOpenAI;
-
-  /// No description provided for @assistantServiceCompatible.
-  ///
-  /// In en, this message translates to:
-  /// **'Compatible'**
-  String get assistantServiceCompatible;
-
   /// No description provided for @assistantServiceOllama.
   ///
   /// In en, this message translates to:
   /// **'Local · Ollama'**
   String get assistantServiceOllama;
-
-  /// No description provided for @assistantService.
-  ///
-  /// In en, this message translates to:
-  /// **'Service'**
-  String get assistantService;
-
-  /// No description provided for @assistantLocalSetting.
-  ///
-  /// In en, this message translates to:
-  /// **'Local model'**
-  String get assistantLocalSetting;
 
   /// No description provided for @assistantQuestions.
   ///
@@ -4483,12 +4381,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask More'**
   String get assistantAskMore;
-
-  /// No description provided for @assistantSearxngInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a valid HTTP or HTTPS endpoint'**
-  String get assistantSearxngInvalid;
 
   /// No description provided for @settingsGeneral.
   ///

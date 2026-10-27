@@ -35,11 +35,10 @@ class FakeSecrets implements SecretStore {
 /// A model catalog without network: every service answers with [status]
 /// and lists [models]; probing marks tools as supported.
 class FakeCatalog extends ServiceCatalog {
-  FakeCatalog({
-    this.status = ConnectionStatus.ok,
-    List<ServiceModel>? models,
-    this.listFailure,
-  }) : models = models ?? const [ServiceModel(id: 'claude-sonnet-5-5', name: 'Claude Sonnet'), ServiceModel(id: 'claude-haiku-5-5')];
+  FakeCatalog({this.status = ConnectionStatus.ok, List<ServiceModel>? models, this.listFailure})
+    : models =
+          models ??
+          const [ServiceModel(id: 'claude-sonnet-5-5', name: 'Claude Sonnet'), ServiceModel(id: 'claude-haiku-5-5')];
   ConnectionStatus status;
   List<ServiceModel> models;
   ResearchFailure? listFailure;

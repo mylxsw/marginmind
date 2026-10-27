@@ -1454,9 +1454,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get researchErrorAuthentication => 'API Key 无效';
 
   @override
-  String get researchErrorRateLimited => '请求过多，请稍后重试';
-
-  @override
   String get researchErrorBudget => '已达到上限';
 
   @override
@@ -1988,9 +1985,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantNewConversation => '新对话';
 
   @override
-  String get assistantSettings => '助手设置';
-
-  @override
   String get assistantHistory => '对话记录';
 
   @override
@@ -2022,27 +2016,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantStop => '停止';
-
-  @override
-  String assistantModelSwitched(String name) {
-    return '已切换到 $name';
-  }
-
-  @override
-  String assistantLocalModel(String name) {
-    return '本机 · $name';
-  }
-
-  @override
-  String assistantSteps(int count) {
-    return '用了 $count 步';
-  }
-
-  @override
-  String get assistantStepsOnline => '已联网';
-
-  @override
-  String get assistantStepsOffline => '未联网';
 
   @override
   String get assistantToolReadSelection => '读取所选内容';
@@ -2311,43 +2284,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantPasteKey => '粘贴 API Key';
 
   @override
-  String get assistantModelField => '模型';
-
-  @override
-  String get assistantEndpointField => '地址';
-
-  @override
   String get assistantConnect => '连接';
-
-  @override
-  String get assistantKeyInvalid => 'Key 无效';
 
   @override
   String get assistantCannotConnect => '连不上服务';
 
   @override
-  String get assistantConnectionInvalid => '请检查模型名称和服务地址；远程服务需使用 HTTPS';
-
-  @override
-  String get assistantConnectionTimeout => '连接超时，请检查网络后重试';
-
-  @override
-  String get assistantServiceClaude => 'Claude';
-
-  @override
-  String get assistantServiceOpenAI => 'OpenAI';
-
-  @override
-  String get assistantServiceCompatible => '兼容服务';
-
-  @override
   String get assistantServiceOllama => '本机 · Ollama';
-
-  @override
-  String get assistantService => '服务';
-
-  @override
-  String get assistantLocalSetting => '本机模型';
 
   @override
   String assistantQuestions(int count) {
@@ -2404,9 +2347,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantAskMore => '继续问';
-
-  @override
-  String get assistantSearxngInvalid => '请输入有效的 HTTP 或 HTTPS 端点';
 
   @override
   String get settingsGeneral => '通用';

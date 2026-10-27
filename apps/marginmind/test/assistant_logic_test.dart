@@ -28,7 +28,9 @@ const _paper = Citation(marker: '[source:2]', sourceId: 's2', version: 1, url: '
 void main() {
   group('answer text', () {
     test('markdown: headings, quotes, lists, tables, rules and citations', () {
-      final nodes = parseMarkdown('### 结论\n\n> 原句\n\n- 甲\n  - 乙\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n---\n\n见 [page:3]');
+      final nodes = parseMarkdown(
+        '### 结论\n\n> 原句\n\n- 甲\n  - 乙\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n---\n\n见 [page:3]',
+      );
       final tags = [for (final n in nodes) (n as dynamic).tag as String];
       expect(tags, ['h3', 'blockquote', 'ul', 'table', 'hr', 'p']);
       final cite = (nodes.last as dynamic).children.last;

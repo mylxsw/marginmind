@@ -14,8 +14,10 @@ import '../assistant_settings.dart';
 import 'model_settings.dart' show modelLabel, serviceCheckDelay;
 
 /// Checks a search backend; tests replace it to stay off the network.
-typedef WebSearchChecker =
-    Future<ConnectionStatus> Function(SearchProvider provider, {CancellationToken? cancellation});
+typedef WebSearchChecker = Future<ConnectionStatus> Function(
+  SearchProvider provider, {
+  CancellationToken? cancellation,
+});
 
 final webSearchCheckerProvider = Provider<WebSearchChecker>((ref) => checkWebSearch);
 
@@ -111,11 +113,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
       if (backend != WebSearchBackend.model && backend != WebSearchBackend.searxng) {
         await ref
             .read(webSearchSettingsProvider.notifier)
-            .saveKey(
-              backend,
-              _key.text,
-              accountId: backend == WebSearchBackend.cloudflare ? _account.text : null,
-            );
+            .saveKey(backend, _key.text, accountId: backend == WebSearchBackend.cloudflare ? _account.text : null);
       }
     } catch (_) {
       if (mounted) setState(() => _failure = l.assistantErrorFailed);
@@ -147,7 +145,8 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
       _checking = false;
       _failure = switch (status) {
         ConnectionStatus.ok => null,
-        ConnectionStatus.authFailed => backend == WebSearchBackend.cloudflare ? l.settingsTokenInvalid : l.assistantErrorKey,
+        ConnectionStatus.authFailed =>
+          backend == WebSearchBackend.cloudflare ? l.settingsTokenInvalid : l.assistantErrorKey,
         ConnectionStatus.unreachable => l.settingsSearchUnreachable,
       };
     });
@@ -163,21 +162,26 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     final model = ref.watch(assistantDefaultModelProvider);
     final services = ref.watch(assistantServicesProvider).value;
     final field = t.body.copyWith(color: c.label);
-    MMSettingsRow input(String label, TextEditingController controller, String key, {String? hint, bool secret = false}) =>
-        MMSettingsRow(
-          label: label,
-          trailing: MMTextField(
-            key: ValueKey(key),
-            controller: controller,
-            plain: true,
-            obscureText: secret,
-            textAlign: TextAlign.right,
-            style: field,
-            placeholder: hint,
-            semanticLabel: label,
-            onChanged: _changed,
-          ),
-        );
+    MMSettingsRow input(
+      String label,
+      TextEditingController controller,
+      String key, {
+      String? hint,
+      bool secret = false,
+    }) => MMSettingsRow(
+      label: label,
+      trailing: MMTextField(
+        key: ValueKey(key),
+        controller: controller,
+        plain: true,
+        obscureText: secret,
+        textAlign: TextAlign.right,
+        style: field,
+        placeholder: hint,
+        semanticLabel: label,
+        onChanged: _changed,
+      ),
+    );
     return SettingsPage(
       key: const ValueKey('settings-web-search'),
       icon: MMIcons.web,

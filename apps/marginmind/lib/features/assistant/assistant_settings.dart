@@ -20,7 +20,8 @@ String legacyAssistantAccount(AssistantProvider provider) => switch (provider) {
 };
 
 /// The model the old settings used when none was typed: only Claude had one.
-String legacyAssistantModel(AssistantProvider provider) => provider == AssistantProvider.claude ? 'claude-opus-5-5' : '';
+String legacyAssistantModel(AssistantProvider provider) =>
+    provider == AssistantProvider.claude ? 'claude-opus-5-5' : '';
 
 /// What a conversation starts with before any service is set up.
 const unconfiguredAssistantModel = AssistantModel(provider: AssistantProvider.claude, model: '', endpoint: '');

@@ -828,7 +828,6 @@
   "researchErrorTimeout": "Timed out",
   "researchErrorUnavailable": "Can't reach the service",
   "researchErrorAuthentication": "The API key was rejected",
-  "researchErrorRateLimited": "Too many requests; try again later",
   "researchErrorBudget": "Reached the limit",
   "researchErrorRefusal": "The AI declined to answer",
   "researchErrorUnsupported": "Not supported by this service",
@@ -1172,7 +1171,6 @@
   "showAssistant": "Show Assistant",
   "hideAssistant": "Hide Assistant",
   "assistantNewConversation": "New Conversation",
-  "assistantSettings": "Assistant Settings",
   "assistantHistory": "Conversations",
   "assistantConversations": "Conversations",
   "assistantNoConversations": "No conversations yet",
@@ -1184,32 +1182,6 @@
   "assistantOffline": "Offline",
   "assistantSend": "Send",
   "assistantStop": "Stop",
-  "assistantModelSwitched": "Switched to {name}",
-  "@assistantModelSwitched": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "assistantLocalModel": "Local · {name}",
-  "@assistantLocalModel": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "assistantSteps": "{count, plural, =1{1 step} other{{count} steps}}",
-  "@assistantSteps": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "assistantStepsOnline": "online",
-  "assistantStepsOffline": "offline",
   "assistantToolReadSelection": "Reading the selection",
   "assistantToolReadPages": "Reading pages",
   "assistantToolSearch": "Searching the study set",
@@ -1384,19 +1356,9 @@
   "assistantSuggestOrganize": "Organize this section into the map",
   "assistantConnectTitle": "Connect an AI service",
   "assistantPasteKey": "Paste API key",
-  "assistantModelField": "Model",
-  "assistantEndpointField": "Endpoint",
   "assistantConnect": "Connect",
-  "assistantKeyInvalid": "Invalid key",
   "assistantCannotConnect": "Cannot reach the service",
-  "assistantConnectionInvalid": "Check the model name and service URL; remote services require HTTPS",
-  "assistantConnectionTimeout": "Connection timed out; check your network and try again",
-  "assistantServiceClaude": "Claude",
-  "assistantServiceOpenAI": "OpenAI",
-  "assistantServiceCompatible": "Compatible",
   "assistantServiceOllama": "Local · Ollama",
-  "assistantService": "Service",
-  "assistantLocalSetting": "Local model",
   "assistantQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
   "@assistantQuestions": {
     "placeholders": {
@@ -1422,7 +1384,6 @@
   "assistantAnchorGone": "The original place was deleted",
   "assistantOpenConversation": "Open Conversation",
   "assistantAskMore": "Ask More",
-  "assistantSearxngInvalid": "Enter a valid HTTP or HTTPS endpoint",
   "settingsGeneral": "General",
   "settingsReading": "Reading",
   "settingsModels": "Models",

@@ -121,6 +121,58 @@ void main() {
     final saved = await storage.loadOrCreate(view().id, null);
     expect(saved.metadata['assistant.diagnostics'], isNotNull);
   });
+  test('retry without tools runs once with tools off; the conversation keeps its model', () async {
+    final seen = <bool>[];
+    factory = (s, c, q) async {
+      seen.add(c.model.supportsTools);
+      if (seen.length == 1) throw const ResearchFailure(ResearchFailureKind.toolProtocol);
+      return createAssistantRun(
+        client: client,
+        model: 'fake',
+        state: s,
+        requestId: q.requestId,
+        reader: Reader(),
+        scope: scopeFromContexts('set', q.contexts),
+        mapId: 'map',
+        baseRevision: executor.revision,
+        parents: executor.parents,
+      );
+    };
+    await controller.send('question');
+    expect(view().messages.last.errorKind, ResearchFailureKind.toolProtocol);
+    await controller.retry(view().messages.last.id, tools: false);
+    expect(seen, [true, false]);
+    expect(view().messages.last.status, MessageStatus.done);
+    expect(view().messages, hasLength(2));
+    expect(view().model.supportsTools, isTrue);
+  });
+
+  test('new conversations start with the current default model', () async {
+    AssistantModel? current;
+    final c = ProviderContainer(
+      overrides: [
+        assistantDependenciesProvider.overrideWithValue(
+          AssistantDependencies(
+            studySetId: 'set',
+            model: model,
+            defaultModel: () => current,
+            storage: storage,
+            executor: executor,
+            notes: notes,
+            runFactory: (s, c, q) async => throw const ResearchFailure(ResearchFailureKind.unavailable),
+          ),
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+    final sub = c.listen(assistantControllerProvider, (_, _) {});
+    addTearDown(sub.close);
+    expect(c.read(assistantControllerProvider).model.model, 'fake');
+    current = const AssistantModel(provider: AssistantProvider.gemini, model: 'g', endpoint: 'https://g.example');
+    await c.read(assistantControllerProvider.notifier).newConversation();
+    expect(c.read(assistantControllerProvider).model.model, 'g');
+  });
+
   test('factory failures use shared classification instead of network fallback', () async {
     factory = (_, _, _) async => throw const ResearchFailure(ResearchFailureKind.toolProtocol);
     await controller.send('question');
