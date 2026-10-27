@@ -637,6 +637,7 @@ class _Tail extends ConsumerWidget {
                 label: l.assistantUseLocal,
                 onPressed: () async {
                   await controller.switchModel(local);
+                  await controller.setOnline(false);
                   retry();
                 },
               ),
@@ -683,7 +684,7 @@ class _Tail extends ConsumerWidget {
   static AssistantModel? _localModel(WidgetRef ref) => ref
       .read(assistantSettingsProvider.notifier)
       .models()
-      .where((m) => m.provider == AssistantProvider.ollama)
+      .where((m) => m.provider == AssistantProvider.ollama && m.localEnabled && m.model.trim().isNotEmpty)
       .firstOrNull;
 }
 

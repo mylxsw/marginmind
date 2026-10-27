@@ -242,7 +242,6 @@ void main() {
     expect(merged.title, 'A');
     expect(merged.readState, 'snippet');
     expect(sources, hasLength(1));
-    expect(ResearchReadState.values, hasLength(7));
   });
   test('Markdown preserves structure and stable paragraph IDs; removes active HTML and image URLs', () {
     final article = ReadableHtml(

@@ -11,8 +11,14 @@ class Citation {
     this.paragraphId,
     this.url,
     this.quote = '',
+    this.title = '',
+    this.kind = '',
+    this.fetchedAt,
+    this.snapshotFile,
   });
-  final String marker, quote;
+  final String marker, quote, title, kind;
+  final DateTime? fetchedAt;
+  final String? snapshotFile;
   final String? documentId, sourceId, paragraphId, url;
   final int? page, version;
   bool get external => sourceId != null;
@@ -25,6 +31,10 @@ class Citation {
     'paragraphId': paragraphId,
     'url': url,
     'quote': quote,
+    'title': title,
+    'kind': kind,
+    'fetchedAt': fetchedAt?.toUtc().toIso8601String(),
+    'snapshotFile': snapshotFile,
   };
   factory Citation.fromJson(Map<String, dynamic> j) => Citation(
     marker: j['marker'],
@@ -35,6 +45,10 @@ class Citation {
     paragraphId: j['paragraphId'],
     url: j['url'],
     quote: j['quote'] ?? '',
+    title: j['title'] ?? '',
+    kind: j['kind'] ?? '',
+    fetchedAt: DateTime.tryParse(j['fetchedAt'] ?? ''),
+    snapshotFile: j['snapshotFile'],
   );
 }
 
@@ -68,6 +82,10 @@ class CitationRegistry {
       paragraphId: paragraph,
       url: s.url.toString(),
       quote: text,
+      title: s.title,
+      kind: s.kind,
+      fetchedAt: s.fetchedAt,
+      snapshotFile: s.snapshotFile,
     );
     return key;
   }

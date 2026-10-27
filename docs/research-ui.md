@@ -1,3 +1,5 @@
+> 已被第三期助手取代。当前交互见 [助手方案](phase-3-assistant.md) 与 [助手架构](assistant-architecture.md)。本文仅保留历史设计；旧启动卡、三标签面板与保存表单已移除。
+
 # P2-R3 研究界面
 
 依据 `docs/phase-2-design.md` 第 3、4 节和原型场景 1、2、3、11、13。代码在

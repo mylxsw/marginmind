@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import '../../app/providers.dart';
 import '../workspace/workspace_controller.dart';
 import 'assistant_controller.dart';
+import 'assistant_network.dart';
 import 'assistant_reader.dart';
 import 'assistant_settings.dart';
 import 'assistant_writes.dart';
@@ -54,7 +55,7 @@ final assistantArchiveProvider = Provider.family<AssistantArchive, String>((ref,
   return AssistantArchive(storage: storage, ids: storage.list);
 });
 
-/// Network tools; null until bound (GUL-532), so runs never claim to be online.
+/// Optional network override for tests or alternate hosts. Production is built per request.
 final assistantNetworkProvider = Provider<AssistantNetwork?>((ref) => null);
 
 /// Text of a page of a PDF file, for the reader.
@@ -73,7 +74,8 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     executor: ref.watch(assistantMapEditExecutorProvider(studySetId)),
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
     online: settings.online,
-    runFactory: (agent, conversation, question) {
+    runFactory: (agent, conversation, question) async {
+      final network = ref.read(assistantNetworkProvider) ?? await assistantNetworkFor(ref, studySetId, conversation);
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
       final mapId = ref.read(workspaceProvider(studySetId)).activeMapId;
       // Revision and parents come from one snapshot, as the executor checks both.
@@ -89,7 +91,7 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
         mapId: mapId,
         revision: () => assistantMapRevision(snapshot, mapId),
         parents: () => mapParents(snapshot, mapId),
-        network: ref.read(assistantNetworkProvider),
+        network: network,
       )(agent, conversation, question);
     },
   );

@@ -4,7 +4,7 @@
 
 ## UI 接入
 
-GUL-530 起由 `AssistantScope`（`features/assistant/widgets/assistant_panel.dart`）在学习集窗口外层建立 ProviderScope，override `assistantDependenciesProvider` 与 `assistantControllerProvider`；窗口存在期间对话一直存活，关闭面板或切换文档不中断生成（切换对话仍按控制器契约先停止旧运行）。依赖由 `assistantDependenciesForProvider(studySetId)` 组合：对话存储 `assistantArchiveProvider`（文件仓库用 `ConversationStorage`，内存仓库用 `MemoryConversationArchive`）、GUL-531 的 executor / NoteSaver、`assistantNetworkProvider`（默认 null，GUL-532 提供）；revision 与 parents 取自同一个 content 快照（`assistantMapRevision`、`mapParents`，根节点为 mapId）。读取端口为 `WorkspaceReader`：选区原文来自本轮问题的 ContextItem（`displayText` 即原句），重启后也能重读；上下文与读取里的脑图根节点 ID 为 `__root__`，与画布一致。对话列表首次加载前执行一次 `LegacyConversationMigration`；只读对话不显示输入区，回答只保留复制。
+GUL-530 起由 `AssistantScope`（`features/assistant/widgets/assistant_panel.dart`）在学习集窗口外层建立 ProviderScope，override `assistantDependenciesProvider` 与 `assistantControllerProvider`；窗口存在期间对话一直存活，关闭面板或切换文档不中断生成（切换对话仍按控制器契约先停止旧运行）。依赖由 `assistantDependenciesForProvider(studySetId)` 组合：对话存储 `assistantArchiveProvider`（文件仓库用 `ConversationStorage`，内存仓库用 `MemoryConversationArchive`）、GUL-531 的 executor / NoteSaver、`assistantNetworkProvider`（可选测试覆盖；生产通过 `assistantNetworkFor` 按本轮模型创建）；revision 与 parents 取自同一个 content 快照（`assistantMapRevision`、`mapParents`，根节点为 mapId）。读取端口为 `WorkspaceReader`：选区原文来自本轮问题的 ContextItem（`displayText` 即原句），重启后也能重读；上下文与读取里的脑图根节点 ID 为 `__root__`，与画布一致。对话列表首次加载前执行一次 `LegacyConversationMigration`；只读对话不显示输入区，回答只保留复制。
 
 窗口外的入口（菜单栏、选区工具条、节点菜单、卡片详情）只调用 `askAssistant` / `askAboutPassage` / `askAboutNode`：写入 `assistantUiProvider`（附带的上下文、待发送问题、聚焦请求、来源抽屉），由窗口内的宿主发送。对 GUL-528 契约的向后兼容扩展：`AssistantController.rename`、`ConversationStorage.list`、`AssistantSettingsController.saved/select/models`。
 
@@ -41,12 +41,13 @@ saveNote(messageId, SaveNoteRequest(title: title, mapId: mapId, parentId: parent
 
 8 个内存 Skill 的名字：explain、translate、verify、summarize、quiz、organize、papers、videos。`skill` 可显式激活，或由模型通过 activate_skills 激活。解释/翻译/总结只有读工具；出题/整理增加提议；查证/论文/视频增加联网工具。动态激活不能绕过联网开关、Policy 或 ReadScope。没有文件系统 Skill、脚本、MCP、规划、子 Agent 或隐式模型诊断。
 
-`AssistantNetwork` 的三个方法：search(keywords)、papers(keywords)、fetch(url)，均带取消令牌。GUL-532 实现真实后端：
+`AssistantNetwork` 的三个方法：search(keywords)、papers(keywords)、fetch(url)，均带取消令牌。GUL-532 的 `SnapshotAssistantNetwork` 实现真实后端：
 
 - Claude/Responses 复用现有 mm_research 供应商内置搜索，仅转换为标题、URL、摘要；丢弃其结论与引用。
 - compatible/Ollama 使用设置中的 SearXNG endpoint；未配置时明确 unavailable。
 - fetch 必须再次使用独立网页 UrlPolicy、安全传输、快照持久化和段落编号，成功提交后才返回 kind=snapshot 的 AssistantSource。OpenAlex 返回 kind=openAlex 的元数据，不假称全文。
-- 内存实现只供测试；没有真实后端时返回 unavailable，不声称已经联网。真实联网接入是 GUL-532 的范围，不是本阶段已完成能力。
+- 内存实现只供测试。生产网络每轮新建，搜索最多 3 次、抓取最多 5 次；公共与供应商传输共享 2 MiB 原始响应和 90 秒期限，外层运行预算仍限制工具、输出和总时限。公共网页不享有本机或供应商 API 的地址例外。
+- 网页与 OpenAlex 元数据均先提交学习集中的内容寻址快照，再返回来源。来源 ID 为快照路径，版本固定为 1；内容变化会产生新 ID，不覆盖旧快照。引用携带 title/kind/snapshotFile/fetchedAt 及实际段落，随对话持久化，来源抽屉显示标题、站点、版本、快照时间和被引段落。失败或取消后不会登记来源。
 
 `[page:N]` 为本轮唯一主文档的 1-based 页码；其他文档通过 `[source:N]` 登记本地引用。外部 source 只接受已提交快照或 OpenAlex。每轮新建登记表；流式尾部未闭合括号被缓冲，完整后校验，伪造编号和悬空引用丢弃。引用与本轮读取登记表一同持久化；后者位于 metadata 的 `assistant.reads[requestId]`，中断恢复也能追溯已读取的内容。
 
@@ -107,3 +108,10 @@ StudySetContentRepository、同学习集 StateStorage 和显示用 model。入�
 metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessionId、证据及目标，新增 conversationId。
 先写对话后补笔记链接，失败可重跑，已有归档不覆盖。Conversation.readOnly 在 JSON 往返和 copyWith 中保留，
 控制器拒绝发送、提议操作、保存笔记和设置修改；UI 应隐藏这些控件，仍可新建普通对话。
+
+
+## GUL-532 接入与清理
+
+设置和首次连接支持 Ollama 的 `/v1/chat/completions`，无需 API Key；仅允许显式启用的 loopback 地址。设置可保存 SearXNG JSON 搜索 endpoint。云端不可用时“改用本机模型”切换至已配置且启用的 Ollama，并关闭联网后重新请求。未安装 / 未启动 Ollama 时仍如实显示连接失败，不隐式回退到云端。
+
+旧研究启动卡、三标签面板、保存表单、生成控制器、session_engine、兼容模型适配器及废弃功能开关已移除。保留两种供应商的内置搜索协议、公共安全传输与正文提取；保留旧会话文件和只读迁移、研究笔记查看 / 编辑 / 复习，不删除历史内容。

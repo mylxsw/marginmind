@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
-import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/card_details.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/widgets/right_panel.dart';
@@ -271,8 +270,8 @@ void main() {
   });
 
   group('commands', () {
-    testWidgets('the assistant does not depend on research being available', (tester) async {
-      final app = await _open(tester, overrides: [researchAvailableProvider.overrideWithValue(false)]);
+    testWidgets('only the assistant entry remains after research removal', (tester) async {
+      final app = await _open(tester);
       expect(find.byTooltip(RegExp('^Research')), findsNothing);
       expect(find.byKey(const ValueKey('toolbar-assistant')), findsOneWidget);
       await _press(tester, AppShortcuts.assistantPanel);
