@@ -436,6 +436,7 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     final saved = ref.read(assistantSettingsProvider.notifier).saved(p);
     setState(() {
       _service = p;
+      _key.clear();
       _model.text = saved.model;
       _endpoint.text = saved.endpoint;
       _error = null;
@@ -444,8 +445,8 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
 
   Future<void> _connect() async {
     final l = context.l10n;
-    final key = _key.text.trim();
-    if (_connecting || key.isEmpty || _model.text.trim().isEmpty) return;
+    final key = _service == AssistantProvider.ollama ? '' : _key.text.trim();
+    if (_connecting || (_service != AssistantProvider.ollama && key.isEmpty) || _model.text.trim().isEmpty) return;
     setState(() {
       _connecting = true;
       _error = null;
@@ -457,7 +458,7 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
       model: _model.text.trim(),
       endpoint: _endpoint.text.trim(),
       online: current.online,
-      localEnabled: current.localEnabled,
+      localEnabled: current.localEnabled || _service == AssistantProvider.ollama,
       searxngEndpoint: current.searxngEndpoint,
     );
     final failure = await ref.read(assistantConnectionTesterProvider)(settings.configuration, key);
@@ -470,7 +471,7 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
       return;
     }
     await notifier.configure(settings);
-    await notifier.saveKey(key);
+    if (_service != AssistantProvider.ollama) await notifier.saveKey(key);
     await ref.read(assistantControllerProvider.notifier).switchModel(settings.configuration);
     if (mounted) setState(() => _connecting = false);
   }
@@ -548,10 +549,15 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
           ),
           const SizedBox(height: 10),
           if (_service != AssistantProvider.claude) ...[
-            MMTextField(controller: _model, placeholder: l.assistantModelField, semanticLabel: l.assistantModelField),
+            MMTextField(
+              key: const ValueKey('connect-model'),
+              controller: _model,
+              placeholder: l.assistantModelField,
+              semanticLabel: l.assistantModelField,
+            ),
             const SizedBox(height: 6),
           ],
-          if (_service == AssistantProvider.compatible) ...[
+          if (_service == AssistantProvider.compatible || _service == AssistantProvider.ollama) ...[
             MMTextField(
               controller: _endpoint,
               placeholder: l.assistantEndpointField,
@@ -561,16 +567,17 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
           ],
           Row(
             children: [
-              Expanded(
-                child: MMTextField(
-                  key: const ValueKey('connect-key'),
-                  controller: _key,
-                  obscureText: true,
-                  placeholder: l.assistantPasteKey,
-                  semanticLabel: l.assistantPasteKey,
-                  onSubmitted: (_) => _connect(),
+              if (_service != AssistantProvider.ollama)
+                Expanded(
+                  child: MMTextField(
+                    key: const ValueKey('connect-key'),
+                    controller: _key,
+                    obscureText: true,
+                    placeholder: l.assistantPasteKey,
+                    semanticLabel: l.assistantPasteKey,
+                    onSubmitted: (_) => _connect(),
+                  ),
                 ),
-              ),
               const SizedBox(width: MMSpacing.s),
               if (_connecting)
                 SizedBox(

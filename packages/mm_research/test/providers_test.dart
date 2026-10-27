@@ -34,7 +34,7 @@ String sse(List<Map<String, dynamic>> events) => [
 Matcher failure(ResearchFailureKind kind) => isA<ResearchFailure>().having((e) => e.kind, 'kind', kind);
 
 void main() {
-  for (final protocol in ['anthropic', 'responses', 'compatible']) {
+  for (final protocol in ['anthropic', 'responses']) {
     late Map<String, dynamic> sent;
     late int calls;
     AiProvider provider(String content, {int fragment = 1}) {
@@ -55,13 +55,7 @@ void main() {
       );
       return switch (protocol) {
         'anthropic' => AnthropicProvider(apiKey: 'TEST_KEY', http: transport),
-        'responses' => OpenAiResponsesProvider(apiKey: 'TEST_KEY', model: 'test-model', http: transport),
-        _ => OpenAiCompatibleProvider(
-          endpoint: Uri.parse('https://provider.example/v1/chat/completions'),
-          model: 'test-model',
-          apiKey: 'TEST_KEY',
-          http: transport,
-        ),
+        _ => OpenAiResponsesProvider(apiKey: 'TEST_KEY', model: 'test-model', http: transport),
       };
     }
 

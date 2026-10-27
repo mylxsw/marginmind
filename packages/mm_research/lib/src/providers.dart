@@ -5,49 +5,34 @@ import 'package:mm_core/mm_core.dart';
 import 'transport.dart';
 import 'url_policy.dart';
 
-enum _Protocol { anthropic, responses, compatible }
+enum _Protocol { anthropic, responses }
 
 class AnthropicProvider extends _Provider {
-  AnthropicProvider({required String apiKey, ResearchHttp? http, String model = 'claude-opus-5-5'})
+  AnthropicProvider({required String apiKey, ResearchHttp? http, String model = 'claude-opus-5-5', Uri? endpoint})
     : super(
         _Protocol.anthropic,
-        Uri.parse('https://api.anthropic.com/v1/messages'),
+        endpoint ?? Uri.parse('https://api.anthropic.com/v1/messages'),
         apiKey,
         model,
-        http ?? ResearchHttp(policy: UrlPolicy(providerEndpoint: Uri.parse('https://api.anthropic.com/v1/messages'))),
+        http ??
+            ResearchHttp(
+              policy: UrlPolicy(providerEndpoint: endpoint ?? Uri.parse('https://api.anthropic.com/v1/messages')),
+            ),
       );
 }
 
 class OpenAiResponsesProvider extends _Provider {
-  OpenAiResponsesProvider({required String apiKey, required String model, ResearchHttp? http})
+  OpenAiResponsesProvider({required String apiKey, required String model, ResearchHttp? http, Uri? endpoint})
     : super(
         _Protocol.responses,
-        Uri.parse('https://api.openai.com/v1/responses'),
+        endpoint ?? Uri.parse('https://api.openai.com/v1/responses'),
         apiKey,
         model,
-        http ?? ResearchHttp(policy: UrlPolicy(providerEndpoint: Uri.parse('https://api.openai.com/v1/responses'))),
+        http ??
+            ResearchHttp(
+              policy: UrlPolicy(providerEndpoint: endpoint ?? Uri.parse('https://api.openai.com/v1/responses')),
+            ),
       );
-}
-
-class OpenAiCompatibleProvider extends _Provider {
-  /// endpoint is the full chat/completions URL. Local access is opt-in and
-  /// limited to this exact loopback endpoint, never to arbitrary private hosts.
-  OpenAiCompatibleProvider({
-    required Uri endpoint,
-    required String model,
-    String apiKey = '',
-    bool allowLocalhost = false,
-    ResearchHttp? http,
-  }) : super(
-         _Protocol.compatible,
-         endpoint,
-         apiKey,
-         model,
-         http ??
-             ResearchHttp(
-               policy: UrlPolicy(localEndpoint: allowLocalhost ? endpoint : null, providerEndpoint: endpoint),
-             ),
-       );
 }
 
 abstract class _Provider implements AiProvider {
@@ -65,14 +50,11 @@ abstract class _Provider implements AiProvider {
 
   Map<String, Object?> payload(AiRequest r) {
     r.budget.validate();
-    if (r.mode == ResearchMode.web && protocol == _Protocol.compatible) {
-      throw const ResearchFailure(ResearchFailureKind.unsupported);
-    }
     if (r.mode != ResearchMode.sources && r.documents.isNotEmpty ||
         r.mode == ResearchMode.sources && r.documents.isEmpty ||
         model.isEmpty ||
         r.question.isEmpty ||
-        (endpoint.scheme != 'https' && !(protocol == _Protocol.compatible && http.policy.localEndpoint == endpoint))) {
+        endpoint.scheme != 'https') {
       throw const ResearchFailure(ResearchFailureKind.invalidRequest);
     }
     final prompt = jsonEncode({
@@ -151,15 +133,7 @@ abstract class _Provider implements AiProvider {
         },
       };
     }
-    return {
-      'model': model,
-      'stream': true,
-      'max_tokens': r.budget.outputTokens,
-      'messages': [
-        {'role': 'system', 'content': instruction},
-        {'role': 'user', 'content': prompt},
-      ],
-    };
+    throw const ResearchFailure(ResearchFailureKind.unsupported);
   }
 
   @override
@@ -352,25 +326,6 @@ class _ResponseState {
         null,
         providerErrorMessage(jsonEncode({'error': error}), secrets: [apiKey]),
       );
-    }
-    if (protocol == _Protocol.compatible) {
-      if (e['type'] == 'done') {
-        completed = stopped;
-        return;
-      }
-      for (final c in e['choices'] as List? ?? []) {
-        final d = c['delta'] as Map? ?? {};
-        if (d['tool_calls'] != null || d['function_call'] != null) {
-          throw const ResearchFailure(ResearchFailureKind.unsupported, 'client_tool');
-        }
-        if (d['refusal'] != null || c['finish_reason'] == 'content_filter') {
-          throw const ResearchFailure(ResearchFailureKind.refusal);
-        }
-        if (d['content'] is String) yield delta(d['content'] as String);
-        if (c['finish_reason'] == 'stop') stopped = true;
-        if (c['finish_reason'] == 'length') throw const ResearchFailure(ResearchFailureKind.budget);
-      }
-      return;
     }
     switch (e['type']) {
       case 'content_block_start':

@@ -9,3 +9,5 @@ export 'src/providers.dart';
 export 'src/models.dart';
 
 export 'src/legacy_migration.dart';
+
+export 'src/network.dart';

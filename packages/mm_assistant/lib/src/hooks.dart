@@ -87,7 +87,11 @@ class PolicyHook extends AgentHook {
     }
     try {
       final args = jsonDecode(context.call.arguments) as Map<String, dynamic>;
-      final pages = name == 'read_pages' ? (args['to'] as int) - (args['from'] as int) + 1 : 0;
+      final pages = switch (name) {
+        'read_pages' => (args['to'] as int) - (args['from'] as int) + 1,
+        'fetch_source' => 1,
+        _ => 0,
+      };
       if (pages < 0) return const ToolCallHookResult.deny(reason: 'Invalid page range');
       budget.reserve(readPages: pages, search: {'web_search', 'search_papers', 'search_study_set'}.contains(name));
       if (name == 'fetch_source') await urls.validate(Uri.parse(args['url'] as String));

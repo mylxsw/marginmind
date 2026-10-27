@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
+import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_markdown.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -457,6 +458,53 @@ void main() {
     expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
   });
 
+  testWidgets('Ollama connects without a key and settings retain the local model and SearXNG', (tester) async {
+    AssistantModel? checked;
+    final app = await openAssistantApp(
+      tester,
+      key: false,
+      connect: (model, key) async {
+        expect(key, isEmpty);
+        checked = model;
+        return null;
+      },
+    );
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('connect-key')), matching: find.byType(EditableText)),
+      'unused-cloud-key',
+    );
+    await tester.tap(find.byKey(const ValueKey('connect-ollama')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-key')), findsNothing);
+    final model = find.descendant(of: find.byKey(const ValueKey('connect-model')), matching: find.byType(EditableText));
+    await tester.enterText(model, 'llama3.2');
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await pumpFor(tester, 20);
+    expect(checked!.provider, AssistantProvider.ollama);
+    expect(checked!.localEnabled, true);
+    expect(checked!.endpoint, 'http://localhost:11434/v1/chat/completions');
+    expect(app.secrets.values, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('API Key'), findsNothing);
+    final searx = find.descendant(
+      of: find.byKey(const ValueKey('settings-searxng')),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(searx, 'https://search.example/search');
+    await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
+    await tester.tap(find.byKey(const ValueKey('assistant-settings-save')));
+    await tester.pumpAndSettle();
+    final settings = app.container.read(assistantSettingsProvider);
+    expect(settings.localEnabled, true);
+    expect(settings.searxngEndpoint, 'https://search.example/search');
+    expect(settings.model, 'llama3.2');
+  });
+
   testWidgets('settings sheet switches the service and the conversation follows', (tester) async {
     final app = await openAssistantApp(tester, prefs: {'assistant.model.claude': 'claude-opus-5-5'});
     app.secrets.values['openai'] = 'k';
@@ -500,10 +548,13 @@ void main() {
   testWidgets('sources: numbered row, drawer over the panel, browser, Esc closes the drawer first', (tester) async {
     final archive = MemoryConversationArchive();
     final state = sdk.AgentState(sessionId: 'web-1');
-    const web = Citation(
+    final web = Citation(
       marker: '[source:1]',
       sourceId: 's1',
       version: 1,
+      title: '快照标题',
+      fetchedAt: DateTime(2026, 10, 27, 12, 30),
+      snapshotFile: 'research/snapshots/s1.md',
       url: 'https://www.example.org/anchoring',
       quote: '被引用的段落',
     );
@@ -519,7 +570,7 @@ void main() {
           requestId: 'r',
           role: MessageRole.agent,
           text: '> 部分可靠\n见 [source:1] 与 [链接](https://example.org/more)。',
-          citations: const [web],
+          citations: [web],
           online: true,
           traces: const [
             TraceStep('t1', 'web_search', TraceStatus.done),
@@ -534,7 +585,7 @@ void main() {
     await pumpFor(tester, 20);
     expect(find.textContaining('已联网'), findsOneWidget);
     expect(find.text('未联网'), findsNothing);
-    expect(find.text('example.org'), findsOneWidget);
+    expect(find.text('快照标题'), findsOneWidget);
     // The link opens in the browser.
     await tester.tap(find.text('链接'));
     await tester.pump();
@@ -544,6 +595,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('source-drawer')), findsOneWidget);
     expect(find.text('[1] 网页'), findsOneWidget);
+    final drawer = find.byKey(const ValueKey('source-drawer'));
+    expect(find.descendant(of: drawer, matching: find.text('快照标题')), findsOneWidget);
+    expect(find.descendant(of: drawer, matching: find.textContaining('2026')), findsOneWidget);
     expect(find.text('被引用的段落'), findsOneWidget);
     await tester.tap(find.text('在浏览器打开'));
     await tester.pump();
@@ -552,7 +606,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('source-drawer')), findsNothing);
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
-    await tester.tap(find.text('example.org'));
+    await tester.tap(find.text('快照标题'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
@@ -604,6 +658,7 @@ void main() {
     await tester.tap(find.text('改用本机模型'));
     await pumpFor(tester, 20);
     expect(conversationOf(tester).model.provider, AssistantProvider.ollama);
+    expect(conversationOf(tester).online, false);
     expect(conversationOf(tester).messages.last.text, '重试后');
   });
 

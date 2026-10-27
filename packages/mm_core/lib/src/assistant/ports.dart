@@ -72,7 +72,11 @@ class AssistantSource {
     required this.title,
     required this.url,
     required Map<String, String> paragraphs,
+    this.fetchedAt,
+    this.snapshotFile,
   }) : paragraphs = Map.unmodifiable(paragraphs);
+  final DateTime? fetchedAt;
+  final String? snapshotFile;
   final String id, kind, title;
   final int version;
   final Uri url;

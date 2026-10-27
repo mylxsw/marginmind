@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -25,8 +26,9 @@ Widget inScope(BuildContext context, Widget child) =>
 
 enum SourceKind { web, paper, video }
 
-/// What a source is, from its address (the citation carries no kind).
+/// Prefer the recorded kind; legacy citations fall back to the address.
 SourceKind sourceKind(Citation c) {
+  if (c.kind == 'openAlex') return SourceKind.paper;
   final host = Uri.tryParse(c.url ?? '')?.host ?? '';
   if (RegExp(r'(^|\.)(youtube\.com|youtu\.be|bilibili\.com|vimeo\.com)$').hasMatch(host)) return SourceKind.video;
   if (RegExp(r'(^|\.)(doi\.org|openalex\.org|arxiv\.org)$').hasMatch(host)) return SourceKind.paper;
@@ -39,8 +41,9 @@ IconData sourceIcon(Citation c) => switch (sourceKind(c)) {
   SourceKind.video => MMIcons.video,
 };
 
-/// The source's site: citations name no title, only where they were read.
+/// Prefer the title captured with the snapshot; legacy citations show the site.
 String sourceTitle(Citation c) {
+  if (c.title.isNotEmpty) return c.title;
   final url = Uri.tryParse(c.url ?? '');
   return url == null || url.host.isEmpty ? (c.sourceId ?? '') : url.host.replaceFirst(RegExp(r'^www\.'), '');
 }
@@ -486,7 +489,14 @@ class SourceDrawer extends ConsumerWidget {
                 if (citation.version != null) ...[
                   const SizedBox(height: MMSpacing.xxs),
                   Text(
-                    [if (url?.host case final host? when host.isNotEmpty) host, 'v${citation.version}'].join(' · '),
+                    [
+                      if (url?.host case final host? when host.isNotEmpty) host,
+                      'v${citation.version}',
+                      if (citation.fetchedAt case final stamp?)
+                        DateFormat.yMd(Localizations.localeOf(context).toLanguageTag())
+                            .add_Hm()
+                            .format(stamp.toLocal()),
+                    ].join(' · '),
                     style: t.footnote.copyWith(color: c.secondaryLabel),
                   ),
                 ],
@@ -511,12 +521,11 @@ String serviceName(AppLocalizations l, AssistantProvider p) => switch (p) {
   AssistantProvider.claude => l.assistantServiceClaude,
   AssistantProvider.responses => l.assistantServiceOpenAI,
   AssistantProvider.compatible => l.assistantServiceCompatible,
-  AssistantProvider.ollama => l.assistantServiceOllama,
+  AssistantProvider.ollama => 'Ollama',
 };
 
-/// The services the panel can connect to now (Ollama comes with the local
-/// model work).
-const connectableServices = [AssistantProvider.claude, AssistantProvider.responses, AssistantProvider.compatible];
+/// Services supported by the bounded assistant transport.
+const connectableServices = AssistantProvider.values;
 
 /// The assistant's settings sheet: service, model, key and network.
 Future<void> showAssistantSettings(BuildContext context, WidgetRef ref) =>
@@ -534,6 +543,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
   final _model = TextEditingController();
   final _endpoint = TextEditingController();
   final _key = TextEditingController();
+  final _searxng = TextEditingController();
 
   @override
   void initState() {
@@ -541,6 +551,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
     _settings = ref.read(assistantSettingsProvider);
     _model.text = _settings.model;
     _endpoint.text = _settings.endpoint;
+    _searxng.text = _settings.searxngEndpoint;
   }
 
   @override
@@ -548,6 +559,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
     _model.dispose();
     _endpoint.dispose();
     _key.dispose();
+    _searxng.dispose();
     super.dispose();
   }
 
@@ -558,7 +570,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
       endpoint: _endpoint.text.trim(),
       online: _settings.online,
       localEnabled: _settings.localEnabled,
-      searxngEndpoint: _settings.searxngEndpoint,
+      searxngEndpoint: _searxng.text.trim(),
     );
     final notifier = ref.read(assistantSettingsProvider.notifier);
     await notifier.configure(settings);
@@ -577,7 +589,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
         model: next.model,
         endpoint: next.endpoint,
         online: _settings.online,
-        localEnabled: _settings.localEnabled,
+        localEnabled: _settings.localEnabled || p == AssistantProvider.ollama,
         searxngEndpoint: _settings.searxngEndpoint,
       );
       _model.text = next.model;
@@ -621,18 +633,50 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
               semanticLabel: l.assistantModelField,
             ),
           ),
-          if (_settings.provider == AssistantProvider.compatible)
+          if (_settings.provider == AssistantProvider.compatible || _settings.provider == AssistantProvider.ollama)
             MMFormRow(
               label: l.assistantEndpointField,
               child: MMTextField(controller: _endpoint, semanticLabel: l.assistantEndpointField),
             ),
+          if (_settings.provider != AssistantProvider.ollama)
+            MMFormRow(
+              label: 'API Key',
+              child: MMTextField(
+                controller: _key,
+                obscureText: true,
+                placeholder: l.assistantPasteKey,
+                semanticLabel: 'API Key',
+              ),
+            ),
+          if (_settings.provider == AssistantProvider.compatible || _settings.provider == AssistantProvider.ollama)
+            MMFormRow(
+              label: 'SearXNG',
+              child: MMTextField(
+                key: const ValueKey('settings-searxng'),
+                controller: _searxng,
+                semanticLabel: 'SearXNG',
+              ),
+            ),
           MMFormRow(
-            label: 'API Key',
-            child: MMTextField(
-              controller: _key,
-              obscureText: true,
-              placeholder: l.assistantPasteKey,
-              semanticLabel: 'API Key',
+            label: l.assistantLocalSetting,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MMSwitch(
+                key: const ValueKey('settings-local-enabled'),
+                value: _settings.localEnabled,
+                color: c.research,
+                semanticLabel: l.assistantLocalSetting,
+                onChanged: (v) => setState(
+                  () => _settings = AssistantSettings(
+                    provider: _settings.provider,
+                    model: _settings.model,
+                    endpoint: _settings.endpoint,
+                    online: _settings.online,
+                    localEnabled: v,
+                    searxngEndpoint: _settings.searxngEndpoint,
+                  ),
+                ),
+              ),
             ),
           ),
           MMFormRow(

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:io';
+import 'dart:convert';
 
 import 'package:dart_agent_core/dart_agent_core.dart' hide MessageRole;
 import 'package:dio/dio.dart';
@@ -36,6 +38,50 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
   localEnabled: provider == AssistantProvider.ollama,
 );
 void main() {
+  test('Ollama generates through the real pinned loopback transport without a key', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final config = AssistantModel(
+      provider: AssistantProvider.ollama,
+      model: 'local-model',
+      endpoint: 'http://127.0.0.1:${server.port}/v1/chat/completions',
+      localEnabled: true,
+    );
+    final connection = connectAssistant(config, '');
+    final served = () async {
+      final request = await server.first;
+      expect(request.uri.path, '/v1/chat/completions');
+      final body = jsonDecode(await utf8.decoder.bind(request).join()) as Map;
+      expect(body['model'], 'local-model');
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(
+        jsonEncode({
+          'id': 'local',
+          'object': 'chat.completion',
+          'created': 1,
+          'model': 'local-model',
+          'choices': [
+            {
+              'index': 0,
+              'message': {'role': 'assistant', 'content': 'Local answer'},
+              'finish_reason': 'stop',
+            },
+          ],
+        }),
+      );
+      await request.response.close();
+    }();
+    try {
+      final result = await connection.client.generate([
+        UserMessage.text('question'),
+      ], modelConfig: ModelConfig(model: config.model, maxTokens: 16));
+      expect(result.textOutput, 'Local answer');
+      await served;
+    } finally {
+      connection.close();
+      await server.close(force: true);
+    }
+  });
+
   for (final provider in AssistantProvider.values) {
     test('$provider builds correct SDK and exact endpoint with no SDK retries', () async {
       final adapter = Adapter((o, n) {
