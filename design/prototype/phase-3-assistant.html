@@ -597,6 +597,68 @@ body.demo-min #desk{padding-right:58px}
 .rnav .rrow .tbtn{height:22px;min-width:22px;padding:0}
 .rnav .track{flex:1;height:1px;background:var(--line);position:relative}
 .rnav .track i{position:absolute;left:0;top:0;height:1px;background:var(--label2)}
+/* ---------- Settings window (⌘,) — a separate macOS window, not a sheet ---------- */
+.setwin-scrim{position:absolute;inset:0;z-index:100;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;animation:fade 160ms}
+.setwin{position:relative;width:880px;max-width:calc(100% - 60px);height:600px;max-height:calc(100% - 50px);background:var(--win);border-radius:14px;box-shadow:0 0 0 .5px var(--hair),0 30px 80px rgba(0,0,0,.35);display:flex;overflow:hidden;animation:drop 220ms cubic-bezier(.2,0,0,1)}
+.sw-side{width:200px;flex:none;background:var(--sidebar);padding:10px 8px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--sep)}
+.sw-side .lights{margin-bottom:10px}
+.sw-side .lights span:first-child{cursor:pointer}
+.sw-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.sw-title{height:48px;flex:none;display:flex;align-items:center;padding:0 20px;font-weight:600;font-size:14px;border-bottom:1px solid var(--sep)}
+.sw-body{flex:1;min-height:0;overflow:auto}
+.sw-models{display:flex;height:100%}
+.sw-plist{width:200px;flex:none;border-right:1px solid var(--sep);padding:8px;display:flex;flex-direction:column;gap:2px}
+.sw-plist .row{height:34px}
+.sw-plist-foot{margin-top:auto;display:flex;gap:2px;border-top:1px solid var(--sep);padding-top:6px}
+.plogo{width:22px;height:22px;border-radius:6px;background:var(--fill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.pdot{width:7px;height:7px;border-radius:4px;background:var(--ok);flex:none}
+.pdot.idle,.pdot.off{background:var(--fill)}.pdot.err{background:var(--err)}.pdot.busy{background:var(--warn)}
+.sw-pdetail{flex:1;min-width:0;overflow:auto;padding:16px 20px 20px}
+.sw-ph{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sw-name{font:inherit;font-size:16px;font-weight:600;border:0;background:none;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;width:200px}
+.sw-name:focus{background:var(--fill4);box-shadow:0 0 0 2px var(--accentTint)}
+.sw-grid,.sw-form{display:grid;grid-template-columns:96px 1fr;gap:10px 12px;align-items:center;font-size:12.5px}
+.sw-form{padding:20px 24px;grid-template-columns:120px minmax(0,360px)}
+.sw-grid label,.sw-form label{color:var(--label2);text-align:right}
+.sw-key{display:flex;gap:6px;align-items:center}
+.sw-key .ta{flex:1}
+.sw-kc{color:var(--label2);display:flex}
+.sw-actions{display:flex;gap:8px;align-items:center}
+.sw-err{color:var(--err);font-size:11.5px}
+.sw-sec{display:flex;align-items:center;gap:6px;margin:20px 0 8px;font-size:12px;font-weight:600;color:var(--label2)}
+.sw-sec .grow{flex:1}
+.sw-mlist{border-radius:10px;box-shadow:inset 0 0 0 1px var(--sep);overflow:hidden}
+.sw-mrow,.sw-frow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--sep)}
+.sw-mrow:first-child,.sw-frow:first-child{border-top:0}
+.sw-mrow .grow,.sw-frow .grow{flex:1;min-width:0}
+.sw-mrow.off .sw-mn,.sw-mrow.off .capi{opacity:.45}
+.sw-mn{font-size:13px;font-weight:500;outline:none;border-radius:4px}
+.sw-mn[contenteditable=true]{background:var(--card);box-shadow:0 0 0 2px var(--accent);padding:0 4px}
+.sw-mid{font-family:var(--mono);font-size:10.5px;color:var(--label2);margin-top:1px}
+.capi{display:inline-flex;gap:5px;color:var(--label2)}
+.sw-ctx{font-size:11px;color:var(--label2);width:38px;text-align:right;font-variant-numeric:tabular-nums}
+.sw-mdel{opacity:0;width:22px;height:22px}
+.sw-mrow:hover .sw-mdel{opacity:1}
+.sw-mempty{padding:24px;display:flex;justify-content:center}
+.sw-fetch-scrim{position:absolute;inset:0;background:rgba(0,0,0,.18);display:flex;align-items:flex-start;justify-content:center;z-index:5}
+.sw-fetch{margin-top:48px;width:520px;max-height:calc(100% - 80px);background:var(--win);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),var(--sheetShadow);display:flex;flex-direction:column;overflow:hidden;animation:drop 200ms}
+.sw-fh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--sep)}
+.sw-fh .grow{flex:1}
+.sw-flist{overflow:auto;flex:1;min-height:120px}
+.sw-frow{cursor:default}
+.sw-frow:hover{background:var(--hover)}
+.sw-frow.have{opacity:.5}
+.sw-frow .cbx{margin:0}
+.sw-steps{display:flex;gap:16px;align-items:center}
+.stepper{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 3px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--sep)}
+.stepper button{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.stepper button:hover{background:var(--hover)}
+.stepper b{min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.sw{display:inline-block;vertical-align:middle}
+.mmenu{min-width:240px}
+.mmenu .capi{opacity:.7}
+.mi:hover .capi{color:#fff}
+.as-acts{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none}
 </style>
 </head>
 <body>
@@ -676,6 +738,7 @@ body.demo-min #desk{padding-right:58px}
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4v4.5H15"/></symbol>
 <symbol id="i-cardplus" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M12 9v6M9 12h6"/></symbol>
 <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
 </defs>
 </svg>
 
@@ -713,7 +776,7 @@ body.demo-min #desk{padding-right:58px}
         <button data-layout="map" title="脑图（⌘3）"><svg class="i s"><use href="#i-map"/></svg></button>
       </div>
       <div class="capsule">
-        <button class="tbtn research" id="researchToggle" data-act="togglePanel" data-tip><svg class="i"><use href="#i-spark"/></svg><span class="lbl">助手</span><span class="tip">助手（⌃⌘R）</span></button>
+        <button class="tbtn research" id="researchToggle" data-act="togglePanel" data-tip><svg class="i"><use href="#i-spark"/></svg><span class="tip">助手（⌃⌘R）</span></button>
       </div>
     </div>
 
@@ -817,7 +880,7 @@ const now = () => { const d = new Date(); return `${d.getHours()}:${String(d.get
 const PAGE42 = `
 <div class="run-head"><span>第 3 章　判断与启发</span><span>认知科学入门</span></div>
 <h3>3.2　锚定效应</h3>
-<p>当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。特沃斯基和卡尼曼把这种现象称为<span class="hl y" data-hl="h1">锚定效应</span>。</p>
+<p>当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。<span id="s-tversky">特沃斯基</span>和卡尼曼把这种现象称为<span class="hl y" data-hl="h1">锚定效应</span>。</p>
 <p>在一项经典实验中，研究者先转动一个动过手脚的幸运轮，让它停在 10 或 65，然后请被试估计联合国中非洲国家所占的比例。看到 10 的人给出的估计中位数是 25%，看到 65 的人则是 45%。<span id="s-claim">一个明显随机的数字，竟能让估计相差将近一倍。</span></p>
 <p>锚定并不局限于实验室。<span class="hl g" data-hl="h2">房地产经纪人在看过不同的挂牌价之后，对同一套房子的估价出现了显著差异，而他们大多否认自己受到了挂牌价的影响。</span>法官在量刑时、谈判者在出价时，也会被首先提出的数字所牵引。</p>
 <p>关于锚定为什么会发生，目前有两种主要解释。<span id="s-mech">一种认为它来自“调整不足”：人们从锚出发，调整到一个似乎合理的范围边缘就停下了；另一种认为它是一种“选择性通达”：锚激活了与之相容的信息，使人更容易想到支持锚值的证据。</span>两种机制可能在不同情境下各自起作用。</p>
@@ -881,7 +944,7 @@ function freshState() {
     zoom: 1, pan: { x: 30, y: 0 }, density: 'full', selected: null, expanded: new Set(), widths: {},
     nodes: initialNodes(), panel: { open: false, mode: 'chat', detailId: null, list: false },
     chats: [], chat: null, props: {}, comp: { text: '', items: [], autoOff: false, web: true, slash: null },
-    model: 'Claude Sonnet', local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
+    providers: null, defaults: { chat: 'p1|claude-sonnet-4-5', quick: 'p1|claude-haiku-4-5', org: 'p1|claude-sonnet-4-5', offline: 'p3|qwen3:8b' }, searchBy: 'model', searxng: '', limits: { searches: 3, pages: 5 }, ctxPrefs: { page: true, node: true, title: 'auto' }, local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
     notes: {}, anchors: [], undo: [], scene: null,
   };
 }
@@ -1152,7 +1215,7 @@ function showFtb(hlEl) {
       : `<button class="tbtn" data-ftb="hl" data-tip>${ic('hl')}<span class="tip">仅高亮（H）</span></button>`)
     + `<button class="tbtn" data-ftb="copy" data-tip>${ic('copy')}<span class="tip">复制（⌘C）</span></button>`
     + (isHl ? '' : `<button class="tbtn" data-ftb="note" data-tip>${ic('note')}<span class="tip">摘录并添加笔记</span></button>`)
-    + `<span class="tdiv"></span><button class="tbtn research" data-ftb="ask" data-tip>${ic('spark')}<span class="lbl">问助手</span><span class="kbd">A</span><span class="tip">问助手（⇧⌘E）</span></button>`;
+    + `<span class="tdiv"></span><button class="tbtn research" data-ftb="ask" data-tip>${ic('spark')}<span class="tip">问助手（A · ⇧⌘E）</span></button>`;
   placePop(f, pendingSel.rect, 'above');
 }
 function excerpt(color) {
@@ -1409,6 +1472,7 @@ const SOURCES = {
   3: { kind: 'web', title: '锚定效应：从幸运轮实验到现实决策', site: 'psychspace.example.org · 2024-03', paras: ['锚定效应最早由特沃斯基和卡尼曼在 1974 年系统描述。', '<mark>在房地产经纪人的现场研究中，挂牌价高 12% 的一组给出的评估价平均高出约 10%，而大多数经纪人表示自己“没有参考挂牌价”。</mark>', '“考虑相反的情况”是目前证据最充分的减弱方法之一。'] },
   4: { kind: 'paper', title: 'Explaining the enigmatic anchoring effect: mechanisms of selective accessibility', site: 'J. Pers. Soc. Psychol. · 1997 · Mussweiler & Strack', paras: ['<mark>Anchoring effects are the result of the selective accessibility of anchor-consistent knowledge.</mark>'] },
   5: { kind: 'paper', title: 'The anchoring-and-adjustment heuristic: why the adjustments are insufficient', site: 'Psychological Science · 2006 · Epley & Gilovich', paras: ['<mark>Adjustments from self-generated anchors tend to be insufficient because people stop adjusting once a plausible value is reached.</mark>'] },
+  7: { kind: 'web', title: 'Amos Tversky — 生平与主要研究', site: 'encyclopedia.example.org · 2025-02', paras: ['<mark>阿莫斯·特沃斯基（1937–1996），以色列裔美国认知心理学家，与丹尼尔·卡尼曼合作研究不确定性下的判断与决策。</mark>', '<mark>卡尼曼 2002 年获诺贝尔经济学奖时，特沃斯基已去世，未能共同获奖。</mark>'] },
   6: { kind: 'video', title: '锚定效应 5 分钟图解（中文字幕）', site: '视频 · 5:12 · 有字幕', paras: ['（视频字幕摘要）先展示幸运轮，再让观众估计……'] },
 };
 const KIND_IC = { web: 'globe', paper: 'paper', video: 'play', image: 'image' };
@@ -1431,7 +1495,7 @@ function ctxLabel(it) {
   if (it.type === 'sel') return `“${it.quote.slice(0, 22)}${it.quote.length > 22 ? '…' : ''}”`;
   if (it.type === 'node') return `脑图 · ${(nodeById(it.id)?.title || nodeById(it.id)?.quote || '节点').slice(0, 14)}`;
   if (it.type === 'branch') return `分支 · ${nodeById(it.id)?.title || ''}`;
-  if (it.type === 'page') return `${DOCS[it.doc].name.replace('.pdf', '')} · 第 ${it.page} 页`;
+  if (it.type === 'page') return `第 ${it.page} 页 · ${DOCS[it.doc].name.replace('.pdf', '')}`;
   if (it.type === 'doc') return `整本 · ${DOCS[it.doc].name}`;
   if (it.type === 'map') return '整张主脑图';
   return '';
@@ -1441,8 +1505,8 @@ function ctxIcon(it) { return { sel: 'hl', node: 'map', branch: 'map', page: 'do
 function autoCtx() {
   const L = S.layout, out = [];
   const n = S.selected && nodeById(S.selected);
-  if (n && L !== 'reader' && !S.comp.items.some(x => x.id === n.id)) out.push({ type: 'node', id: n.id, auto: true });
-  if (L !== 'map' && !S.comp.items.some(x => x.type === 'sel')) out.push({ type: 'page', doc: S.doc, page: DOCS[S.doc].pages[0].no, auto: true });
+  if (n && S.ctxPrefs.node && L !== 'reader' && !S.comp.items.some(x => x.id === n.id)) out.push({ type: 'node', id: n.id, auto: true });
+  if (S.ctxPrefs.page && L !== 'map' && !S.comp.items.some(x => x.type === 'sel')) out.push({ type: 'page', doc: S.doc, page: DOCS[S.doc].pages[0].no, auto: true });
   return S.comp.autoOff ? [] : out;
 }
 
@@ -1458,6 +1522,7 @@ function detectSkill(text) {
   if (/视频|图解|动画/.test(t)) return 'video';
   if (/总结|概括|要点/.test(t)) return 'summarize';
   if (/避免|减弱|怎么办|应对|克服/.test(t)) return 'debias';
+  if (/是谁|谁是|什么人/.test(t)) return 'who';
   if (/解释|是什么|什么意思|讲讲|举.*例/.test(t)) return 'explain';
   return 'chat';
 }
@@ -1476,7 +1541,12 @@ function planFor(text, ctx) {
     : sub.kind === 'node' ? ['map', `读取分支「${sub.text}」：${S.nodes.filter(n => n.parent === sub.node?.id).length} 个子节点`] : ['doc', '读取第 42 页正文'];
   const term = /锚|anchor/i.test(sub.text) || sub.kind === 'page' ? '锚定效应' : /可得/.test(sub.text) ? '可得性启发' : sub.text.slice(0, 12);
   const P = { skill, web: false, steps: [readStep], cites: [], prop: null, title: text.slice(0, 24) };
-  if (skill === 'explain' || skill === 'chat') {
+  if (skill === 'who') {
+    P.web = true; P.cites = [7];
+    P.steps.push(['globe', '联网搜索：Amos Tversky'], ['read', '阅读 1 个来源']);
+    P.answer = `<p><b>阿莫斯·特沃斯基</b>（Amos Tversky，1937–1996），认知心理学家，和卡尼曼一起研究不确定性下的判断 ${C(7)}。</p><ul><li>书里提到他，是因为锚定效应出自两人的研究 ${L42}。</li><li>卡尼曼 2002 年获诺贝尔经济学奖时，他已去世 ${C(7)}。</li></ul>`;
+    P.title = '特沃斯基是谁';
+  } else if (skill === 'explain' || skill === 'chat') {
     P.answer = sub.kind === 'sel' && /调整不足|选择性通达/.test(sub.text)
       ? `<p>这段话在说：锚定为什么会发生，有两种互补的解释 ${LMECH}。</p><ul><li><b>调整不足</b>：从锚出发往合理方向调，调到“差不多”就停了——停得太早。像从 65 往下估，估到 50 觉得“可以了”。</li><li><b>选择性通达</b>：锚让你优先想起和它一致的信息。听到 65，脑子里先冒出“非洲国家很多”的证据。</li></ul><p><b>区别</b>：前者是<i>调整过程</i>出了问题，后者是<i>回忆内容</i>被带偏。作者认为两者可能在不同情境下各自起作用。</p>`
       : term === '可得性启发'
@@ -1543,7 +1613,8 @@ function send(text, opts = {}) {
   let c = activeChat(); if (!c || opts.fresh) c = newChat();
   if (c.msgs.some(m => m.status === 'running')) return hud('上一条还在生成，可以先停止');
   const P = planFor(text, items);
-  if (!c.msgs.length) c.title = P.title;
+  if (!c.msgs.length) c.title = titleFor(text, items, P);
+  c.model = c.model || S.defaults.chat; syncLocal();
   c.msgs.push({ role: 'user', text, ctx: items.map(x => ({ ...x })) });
   const m = { role: 'agent', id: uid('m'), skill: P.skill, steps: [], html: '', status: 'running', web: P.web, cites: P.cites, plan: P, ctx: items };
   c.msgs.push(m); c.at = now();
@@ -1581,9 +1652,9 @@ function renderPanel() {
   const c = activeChat();
   rp.innerHTML = `<div class="as-head">
       <button class="as-title" data-act="chatList" title="对话记录">${'<span class="as-badge">' + ic('spark', 's') + '</span>'}<span class="t">${esc(c && S.ai ? c.title : '助手')}</span>${ic('cd', 'xs')}</button>
-      <button class="ib" data-act="newChat" title="新对话">${ic('plus', 's')}</button>
-      <button class="ib" data-act="settings" title="助手设置">${ic('gear', 's')}</button>
-      <button class="ib" data-act="togglePanel" title="关闭（⌃⌘R）">${ic('x', 's')}</button></div>
+      <div class="as-acts"><button class="ib" data-act="newChat" title="新对话">${ic('plus', 's')}</button>
+      <button class="ib" data-act="settings" title="设置（⌘,）">${ic('gear', 's')}</button>
+      <button class="ib" data-act="togglePanel" title="关闭（⌃⌘R）">${ic('x', 's')}</button></div></div>
     <div class="as-body" id="asBody"></div>
     <div class="as-foot" id="asFoot">
       <div id="asCtx"></div>
@@ -1639,6 +1710,7 @@ function agentHtml(m) {
   else if (m.status === 'done') tail = `${m.prop ? propHtml(S.props[m.prop]) : ''}<div class="macts">
       ${m.saved && S.notes[m.saved] ? `<span class="savedtag">${ic('check', 'xs')}已存为笔记</span><button class="tbtn" data-mact="locate" data-mid="${m.id}">${ic('goto', 'xs')}<span class="lbl">定位</span></button>`
       : m.prop ? '' : `<button class="tbtn pri" data-mact="save" data-mid="${m.id}">${ic('cardplus', 'xs')}<span class="lbl">存为笔记</span></button>`}
+      ${m.prop || m.skill === 'organize' ? '' : `<button class="tbtn" data-mact="organize" data-mid="${m.id}" title="整理进脑图">${ic('wand', 'xs')}</button>`}
       <button class="tbtn" data-mact="copy" data-mid="${m.id}" title="复制">${ic('copy', 'xs')}</button>
       <button class="tbtn" data-mact="retry" data-mid="${m.id}" title="重新生成">${ic('refresh', 'xs')}</button></div>`;
   return `<div class="msg agent" data-mid="${m.id}">${trace}<div class="ans">${m.html}${live && m.html ? '<span class="caret"></span>' : ''}</div>${srcs}${tail}</div>`;
@@ -1672,7 +1744,7 @@ function paintRow() {
     <button class="tbtn" data-act="slashMenu" title="快捷指令（/）">${ic('slash', 's')}</button>
     <button class="tbtn web ${webOn ? 'on' : ''}" data-act="toggleWeb" title="${S.net ? '联网' : '当前断网'}">${ic(S.net ? 'globe' : 'wifioff', 's')}<span class="lbl">${!S.net ? '断网' : S.comp.web ? '联网' : '不联网'}</span></button>
     <span class="grow"></span>
-    <button class="tbtn" data-act="modelMenu" title="切换模型"><span class="lbl">${esc(S.local ? '本机 · qwen3' : S.model)}</span>${ic('cd', 'xs')}</button>
+    <button class="tbtn" data-act="modelMenu" title="切换模型"><span class="lbl">${esc(modelLabel(currentModelKey()))}</span>${ic('cd', 'xs')}</button>
     ${running ? `<button class="sendb2 stop" data-act="stopRun" title="停止（Esc）">${ic('stop', 'xs')}</button>` : `<button class="sendb2" data-act="sendMsg" ${S.ai ? '' : 'disabled'} title="发送（↩）">${ic('up', 's')}</button>`}`;
 }
 function paintChatList() {
@@ -1811,14 +1883,6 @@ function atMenu() {
   placePop(m, winRect($('[data-act="atMenu"]')), 'above');
   m.addEventListener('click', e => { const a = e.target.closest('[data-at]'); if (!a) return; const it = opts.find(o => o[0] === a.dataset.at)[3]; S.comp.items.push(it); m.remove(); paintComposer(); $('#asInput').focus(); });
 }
-function modelMenu() {
-  closeFloating(true);
-  const ms = ['Claude Sonnet', 'GPT', 'Gemini', '通义千问', '本机 · qwen3'];
-  const m = document.createElement('div'); m.className = 'pop menu';
-  m.innerHTML = ms.map(n => `<div class="mi" data-model="${n}">${(S.local ? '本机 · qwen3' : S.model) === n ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${n}</span></div>`).join('');
-  placePop(m, winRect($('[data-act="modelMenu"]')), 'above');
-  m.addEventListener('click', e => { const a = e.target.closest('[data-model]'); if (!a) return; const n = a.dataset.model; S.local = n.startsWith('本机'); if (!S.local) S.model = n; m.remove(); paintRow(); hud(S.local ? '已切换到本机模型' : `已切换到 ${n}`); });
-}
 
 /* ---------- Panel events ---------- */
 rp.addEventListener('input', e => {
@@ -1885,8 +1949,9 @@ rp.addEventListener('click', e => {
     const c = activeChat(), m = c.msgs.find(x => x.id === ma.dataset.mid), k = ma.dataset.mact;
     if (k === 'save') saveAnswer(m, ma);
     if (k === 'copy') hud('已复制');
+    if (k === 'organize') { S.comp.items = m.ctx.filter(x => !x.auto); send('把这部分整理进脑图'); }
     if (k === 'retry') { m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
-    if (k === 'local') { S.local = true; m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
+    if (k === 'local') { c.model = S.defaults.offline; syncLocal(); m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
     if (k === 'locate') { const note = S.notes[m.saved]; if (note?.att.node) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(note.att.node); flashNode(note.att.node); } }
   }
 });
@@ -1936,7 +2001,7 @@ function showDetail(id) { S.panel.mode = 'detail'; S.panel.detailId = id; if (!S
 function renderDetail() {
   const n = nodeById(S.panel.detailId);
   if (!n) { S.panel.mode = 'chat'; return renderPanel(); }
-  const head = (k, icon) => `<div class="as-head"><span class="rp-kind detail" style="flex:1">${ic(icon, 's')}${k}</span><button class="btn sm plain" data-act="askAbout">${ic('spark', 'xs')}问助手</button><button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div>`;
+  const head = (k, icon) => `<div class="as-head"><span class="rp-kind detail" style="flex:1">${ic(icon, 's')}${k}</span><button class="ib" data-act="askAbout" title="问助手">${ic('spark', 's')}</button><button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div>`;
   const review = `<div class="insp-sec"><h4>复习</h4><div class="kv"><span>状态</span><span>下次复习 10 月 29 日 · 已复习 3 次</span></div></div>`;
   let body = '';
   if (n.kind === 'ex') body = head('摘录卡片', 'doc') + `<div class="rp-body"><div class="insp-sec"><div class="insp-title" contenteditable="true" data-edit="title">${esc(n.title) || '<span style="color:var(--label2)">添加标题</span>'}</div></div>
@@ -1971,19 +2036,225 @@ function markerPop(aid, el) {
 }
 
 /* ---------------- Settings ---------------- */
-function settingsSheet() {
-  closeFloating();
-  const sc = document.createElement('div'); sc.className = 'scrim';
-  sc.innerHTML = `<div class="sheet" style="width:560px"><h3>助手设置</h3>
-    <div class="fld"><label>AI 服务与模型</label><div style="display:flex;gap:8px"><select class="ta" style="flex:1"><option>${S.ai ? '示例：Claude（Anthropic）' : '未设置'}</option><option>示例：OpenAI / OpenAI 兼容</option><option>示例：Gemini</option><option>示例：通义千问 / Kimi / 智谱</option><option>本机：Ollama</option></select><input class="ta" style="flex:1" type="password" value="${S.ai ? 'sk-demo-xxxxxxxx' : ''}" placeholder="API Key"></div></div>
-    <div class="fld"><label>联网</label><div class="cbx on"><i>${ic('check', 'xs')}</i>需要时搜索网页和论文</div><div class="cbx on"><i>${ic('check', 'xs')}</i>阻止访问本机和内网地址</div></div>
-    <div class="fld"><label>修改学习集</label><div class="cbx on"><i>${ic('check', 'xs')}</i>改动脑图前先预览</div></div>
-    <div class="fld"><label>上下文</label><div class="cbx on"><i>${ic('check', 'xs')}</i>自动附带正在看的页面和选中的卡片</div></div>
-    <div class="fld"><label>每次回答的上限</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="ta">最多 <b>12</b> 步工具调用</div><div class="ta">最长 <b>3</b> 分钟</div></div></div>
-    <div class="sfoot"><button class="btn pri" data-act="closeSheet">完成</button></div></div>`;
-  layer.appendChild(sc);
-  sc.addEventListener('click', e => { if (e.target === sc) sc.remove(); const c = e.target.closest('.cbx'); if (c) c.classList.toggle('on'); });
+
+
+/* ---------------- Models: providers → my models → per-task defaults ----------------
+   A provider is an endpoint speaking one protocol. Its model list is fetched from the
+   protocol's list endpoint (OpenAI /v1/models, Anthropic /v1/models, Gemini models.list,
+   Ollama /api/tags); the user adds the ones they want to "my models". Only enabled models
+   appear in the composer. Each conversation remembers the model it was switched to. */
+const PROTOS = {
+  openai: { n: 'OpenAI 兼容', base: 'https://api.openai.com/v1', list: 'GET /models', key: true },
+  anthropic: { n: 'Anthropic', base: 'https://api.anthropic.com', list: 'GET /v1/models', key: true },
+  gemini: { n: 'Google Gemini', base: 'https://generativelanguage.googleapis.com', list: 'GET /v1beta/models', key: true },
+  ollama: { n: 'Ollama', base: 'http://localhost:11434', list: 'GET /api/tags', key: false },
+};
+const CAPS = { tools: ['wand', '工具调用'], vision: ['image', '图片输入'], web: ['globe', '内置搜索'], think: ['bulb', '推理'] };
+function seedProviders() {
+  return [
+    { id: 'p1', name: 'Anthropic', proto: 'anthropic', base: 'https://api.anthropic.com', key: 'sk-ant-demo', status: 'ok', on: true,
+      models: [{ id: 'claude-sonnet-4-5', name: 'Claude Sonnet', caps: ['tools', 'vision', 'web'], ctx: '200K', on: true }, { id: 'claude-haiku-4-5', name: 'Claude Haiku', caps: ['tools', 'vision'], ctx: '200K', on: true }],
+      catalog: [['claude-opus-4-1', 'Claude Opus', ['tools', 'vision', 'web', 'think'], '200K'], ['claude-sonnet-4-5', 'Claude Sonnet', ['tools', 'vision', 'web'], '200K'], ['claude-haiku-4-5', 'Claude Haiku', ['tools', 'vision'], '200K']] },
+    { id: 'p2', name: 'Squirrel', proto: 'openai', base: 'https://squirrel.aicode.cc/v1', key: 'sk-demo', status: 'ok', on: true,
+      models: [{ id: 'coding/auto', name: 'Coding Auto', caps: ['tools'], ctx: '128K', on: true }],
+      catalog: [['coding/auto', 'Coding Auto', ['tools'], '128K'], ['gpt-5', 'GPT-5', ['tools', 'vision', 'think'], '400K'], ['gpt-5-mini', 'GPT-5 mini', ['tools', 'vision'], '400K'], ['deepseek-v3.2', 'DeepSeek V3.2', ['tools'], '128K'], ['deepseek-r1', 'DeepSeek R1', ['think'], '64K'], ['qwen3-max', 'Qwen3 Max', ['tools'], '256K'], ['kimi-k2', 'Kimi K2', ['tools'], '256K'], ['glm-4.6', 'GLM-4.6', ['tools'], '200K'], ['text-embedding-3-small', 'text-embedding-3-small', [], '8K']] },
+    { id: 'p3', name: '本机', proto: 'ollama', base: 'http://localhost:11434', key: '', status: 'ok', on: true,
+      models: [{ id: 'qwen3:8b', name: 'Qwen3 8B', caps: ['tools'], ctx: '40K', on: true }],
+      catalog: [['qwen3:8b', 'qwen3:8b', ['tools'], '40K'], ['llama3.2:3b', 'llama3.2:3b', ['tools'], '128K'], ['gemma3:12b', 'gemma3:12b', ['vision'], '128K']] },
+  ];
 }
+const mkey = (p, m) => `${p.id}|${m.id}`;
+function findModel(key) { const [pid, mid] = (key || '').split('|'); const p = S.providers.find(x => x.id === pid); const m = p?.models.find(x => x.id === mid); return p && m ? { p, m } : null; }
+function enabledModels() { return S.providers.filter(p => p.on && p.status === 'ok').flatMap(p => p.models.filter(m => m.on).map(m => ({ p, m, key: mkey(p, m) }))); }
+function currentModelKey() { const c = activeChat(); const k = c?.model || S.defaults.chat; return findModel(k) ? k : enabledModels()[0]?.key; }
+function modelLabel(key) { const f = findModel(key); return f ? f.m.name : '选择模型'; }
+function syncLocal() { const f = findModel(currentModelKey()); S.local = f?.p.proto === 'ollama'; }
+
+function modelMenu() {
+  closeFloating(true);
+  const cur = currentModelKey();
+  const groups = S.providers.filter(p => p.on && p.status === 'ok' && p.models.some(m => m.on));
+  const m = document.createElement('div'); m.className = 'pop menu mmenu';
+  m.innerHTML = groups.map(p => `<div class="mh">${esc(p.name)}</div>` + p.models.filter(x => x.on).map(x => `<div class="mi" data-model="${mkey(p, x)}">${mkey(p, x) === cur ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${esc(x.name)}</span><span class="capi">${x.caps.filter(c => c !== 'tools').map(c => ic(CAPS[c][0], 'xs')).join('')}</span></div>`).join('')).join('<div class="msep"></div>')
+    + `<div class="msep"></div><div class="mi" data-model="__manage">${ic('gear', 's ii')}<span class="grow">管理模型…</span><span class="kbd">⌘,</span></div>`;
+  placePop(m, winRect($('[data-act="modelMenu"]')), 'above');
+  m.addEventListener('click', e => {
+    const a = e.target.closest('[data-model]'); if (!a) return; m.remove();
+    if (a.dataset.model === '__manage') return settingsWindow('models');
+    const c = activeChat() || newChat(); c.model = a.dataset.model; syncLocal(); paintRow(); renderSessions();
+  });
+}
+
+/* ---------------- Settings window (⌘,) ---------------- */
+const SET_PAGES = [['models', '模型服务', 'spark'], ['defaults', '默认模型', 'cards'], ['web', '联网', 'globe'], ['context', '上下文与隐私', 'lock'], ['chats', '对话', 'chat']];
+let SW = null; // { page, prov, fetch: {open, q, picked:Set, state}, err }
+function settingsWindow(page, provId) {
+  closeFloating();
+  SW = { page: page || 'models', prov: provId || S.providers[0]?.id, fetch: null, err: null, reveal: false };
+  $$('.setwin-scrim', layer).forEach(e => e.remove());
+  const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin" id="setwin"></div>';
+  layer.appendChild(sc); paintSettings();
+  sc.addEventListener('click', settingsClick); sc.addEventListener('input', settingsInput);
+}
+function settingsSheet() { settingsWindow('models'); }
+function paintSettings() {
+  const w = $('#setwin'); if (!w) return;
+  const pg = SET_PAGES.find(x => x[0] === SW.page);
+  w.innerHTML = `<div class="sw-side"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+      ${SET_PAGES.map(([k, n, i]) => `<div class="row ${SW.page === k ? 'on' : ''}" data-swpage="${k}">${ic(i, 'ri')}<span class="t">${n}</span></div>`).join('')}</div>
+    <div class="sw-main"><div class="sw-title">${pg[1]}</div><div class="sw-body">${({ models: swModels, defaults: swDefaults, web: swWeb, context: swContext, chats: swChats })[SW.page]()}</div></div>
+    ${SW.fetch ? swFetchSheet() : ''}`;
+}
+const swToggle = (k, on, dis) => `<span class="sw ${on ? 'on' : ''} ${dis ? 'dis' : ''}" data-swt="${k}"></span>`;
+function provDot(p) { return `<span class="pdot ${!p.on ? 'off' : p.status}"></span>`; }
+function swModels() {
+  const p = S.providers.find(x => x.id === SW.prov);
+  const list = `<div class="sw-plist">${S.providers.map(x => `<div class="row ${x.id === SW.prov ? 'on' : ''}" data-swprov="${x.id}"><span class="plogo">${esc(x.name.slice(0, 1))}</span><span class="t">${esc(x.name)}</span>${provDot(x)}</div>`).join('')}
+    <div class="sw-plist-foot"><button class="ib" data-sw="addProv" title="添加服务">${ic('plus', 's')}</button><button class="ib" data-sw="delProv" title="移除服务" ${p ? '' : 'disabled'}>${ic('minus', 's')}</button></div></div>`;
+  if (!p) return `<div class="sw-models">${list}<div class="sw-pdetail"><div class="empty"><span class="ei">${ic('spark', 'l')}</span><button class="btn ag" data-sw="addProv">添加服务</button></div></div></div>`;
+  const P = PROTOS[p.proto];
+  const st = !p.on ? '' : p.status === 'ok' ? `<span class="pill ok">${ic('check', 'xs')}已连接</span>` : p.status === 'err' ? `<span class="pill err">${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="pill"><span class="spin" style="width:9px;height:9px"></span></span>' : '<span class="pill">未连接</span>';
+  return `<div class="sw-models">${list}<div class="sw-pdetail">
+    <div class="sw-ph"><input class="sw-name" data-swf="name" value="${esc(p.name)}">${st}<span class="grow"></span>${swToggle('provOn', p.on)}</div>
+    <div class="sw-grid">
+      <label>协议</label><div class="seg sm">${Object.entries(PROTOS).map(([k, x]) => `<button data-swproto="${k}" class="${p.proto === k ? 'on' : ''}">${x.n}</button>`).join('')}</div>
+      <label>地址</label><input class="ta" data-swf="base" value="${esc(p.base)}" placeholder="${P.base}">
+      ${P.key ? `<label>API Key</label><div class="sw-key"><input class="ta" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button><span class="sw-kc" title="保存在钥匙串">${ic('lock', 'xs')}</span></div>` : ''}
+      <span></span><div class="sw-actions"><button class="btn sm" data-sw="check">检查连接</button>${SW.err ? `<span class="sw-err">${esc(SW.err)}</span>` : ''}</div>
+    </div>
+    <div class="sw-sec"><span class="grow">模型</span><button class="btn sm" data-sw="manual">${ic('plus', 'xs')}手动添加</button><button class="btn sm ag" data-sw="fetch">${ic('refresh', 'xs')}获取模型列表</button></div>
+    <div class="sw-mlist">${p.models.length ? p.models.map((m, i) => `<div class="sw-mrow ${m.on ? '' : 'off'}" data-mi="${i}">
+        <div class="grow"><div class="sw-mn" data-swmname="${i}" title="双击重命名">${esc(m.name)}</div><div class="sw-mid">${esc(m.id)}</div></div>
+        <span class="capi">${m.caps.map(c => `<span title="${CAPS[c][1]}">${ic(CAPS[c][0], 'xs')}</span>`).join('')}</span><span class="sw-ctx">${m.ctx}</span>
+        <button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('trash', 'xs')}</button>${swToggle('m' + i, m.on)}</div>`).join('') : `<div class="sw-mempty"><button class="btn sm ag" data-sw="fetch">${ic('refresh', 'xs')}获取模型列表</button></div>`}</div>
+  </div></div>`;
+}
+function swFetchSheet() {
+  const p = S.providers.find(x => x.id === SW.prov), F = SW.fetch;
+  const have = new Set(p.models.map(m => m.id));
+  const rows = p.catalog.filter(([id, n]) => !F.q || (id + n).toLowerCase().includes(F.q.toLowerCase()));
+  const nPick = [...F.picked].filter(id => !have.has(id)).length;
+  return `<div class="sw-fetch-scrim"><div class="sw-fetch">
+    <div class="sw-fh"><b>${esc(p.name)}</b><span class="note">${PROTOS[p.proto].list}</span><span class="grow"></span><label class="side-search" style="margin:0;width:200px">${ic('search', 's')}<input data-swq placeholder="搜索" value="${esc(F.q)}"></label></div>
+    <div class="sw-flist">${F.state === 'busy' ? '<div class="empty"><span class="spin" style="color:var(--agent)"></span></div>'
+      : rows.map(([id, n, caps, ctx]) => { const on = have.has(id) || F.picked.has(id); return `<div class="sw-frow ${have.has(id) ? 'have' : ''}" data-swpick="${esc(id)}"><span class="cbx ${on ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">${esc(n)}</div><div class="sw-mid">${esc(id)}</div></div><span class="capi">${caps.map(c => `<span title="${CAPS[c][1]}">${ic(CAPS[c][0], 'xs')}</span>`).join('')}</span><span class="sw-ctx">${ctx}</span></div>`; }).join('')}</div>
+    <div class="sfoot" style="margin-top:0;padding:10px 14px;border-top:1px solid var(--sep)"><button class="btn sm plain" data-sw="pickAll">全选</button><span class="grow"></span><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加 ${nPick || ''} 个</button></div></div></div>`;
+}
+function modelSelect(k) {
+  const em = enabledModels();
+  return `<select class="ta" data-swdef="${k}">${em.map(x => `<option value="${x.key}" ${S.defaults[k] === x.key ? 'selected' : ''}>${esc(x.p.name)} · ${esc(x.m.name)}</option>`).join('')}</select>`;
+}
+function swDefaults() {
+  return `<div class="sw-form">
+    <label>对话</label>${modelSelect('chat')}
+    <label>翻译与标题</label>${modelSelect('quick')}
+    <label>整理与出题</label>${modelSelect('org')}
+    <label>断网时</label>${modelSelect('offline')}</div>`;
+}
+function swWeb() {
+  return `<div class="sw-form">
+    <label>默认联网</label><div>${swToggle('webDefault', S.comp.web)}</div>
+    <label>检索</label><div class="seg sm" style="width:max-content"><button data-swsearch="model" class="${S.searchBy === 'model' ? 'on' : ''}">模型自带搜索</button><button data-swsearch="searxng" class="${S.searchBy === 'searxng' ? 'on' : ''}">SearXNG</button></div>
+    ${S.searchBy === 'searxng' ? `<label>SearXNG 地址</label><input class="ta" data-swsx value="${esc(S.searxng)}" placeholder="http://localhost:8080">` : ''}
+    <label>每次最多</label><div class="sw-steps"><span>${stepper('searches', S.limits.searches)} 次搜索</span><span>${stepper('pages', S.limits.pages)} 个网页</span></div>
+    <label>内网地址</label><div>${swToggle('blockLan', true, true)}</div></div>`;
+}
+const stepper = (k, v) => `<span class="stepper"><button data-swstep="${k}" data-d="-1">${ic('minus', 'xs')}</button><b>${v}</b><button data-swstep="${k}" data-d="1">${ic('plus', 'xs')}</button></span>`;
+function swContext() {
+  return `<div class="sw-form">
+    <label>正在看的页面</label><div>${swToggle('autoPage', S.ctxPrefs.page)}</div>
+    <label>选中的卡片</label><div>${swToggle('autoNode', S.ctxPrefs.node)}</div>
+    <label>对话标题</label><div class="seg sm" style="width:max-content"><button data-swtitle="auto" class="${S.ctxPrefs.title === 'auto' ? 'on' : ''}">自动生成</button><button data-swtitle="first" class="${S.ctxPrefs.title === 'first' ? 'on' : ''}">第一个问题</button></div></div>`;
+}
+function swChats() {
+  const n = S.chats.length;
+  return `<div class="sw-form">
+    <label>保存位置</label><div>本学习集</div>
+    <label>对话</label><div>${n} 个</div>
+    <label></label><div><button class="btn sm" style="color:var(--err)" data-sw="clearChats" ${n ? '' : 'disabled'}>删除全部对话…</button></div></div>`;
+}
+function settingsClick(e) {
+  const t = e.target, p = S.providers.find(x => x.id === SW.prov);
+  if (t.classList.contains('setwin-scrim') || t.closest('[data-sw="close"]')) { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; paintRow(); return; }
+  const pg = t.closest('[data-swpage]'); if (pg) { SW.page = pg.dataset.swpage; SW.err = null; return paintSettings(); }
+  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = pv.dataset.swprov; SW.err = null; return paintSettings(); }
+  const pr = t.closest('[data-swproto]'); if (pr && p) { p.proto = pr.dataset.swproto; p.base = PROTOS[p.proto].base; p.status = 'idle'; return paintSettings(); }
+  const tg = t.closest('[data-swt]');
+  if (tg && !tg.classList.contains('dis')) {
+    const k = tg.dataset.swt;
+    if (k === 'provOn') p.on = !p.on;
+    else if (k[0] === 'm' && /^m\d+$/.test(k)) { const m = p.models[+k.slice(1)]; m.on = !m.on; }
+    else if (k === 'webDefault') S.comp.web = !S.comp.web;
+    else if (k === 'autoPage') S.ctxPrefs.page = !S.ctxPrefs.page;
+    else if (k === 'autoNode') S.ctxPrefs.node = !S.ctxPrefs.node;
+    return paintSettings();
+  }
+  const sr = t.closest('[data-swsearch]'); if (sr) { S.searchBy = sr.dataset.swsearch; return paintSettings(); }
+  const ti = t.closest('[data-swtitle]'); if (ti) { S.ctxPrefs.title = ti.dataset.swtitle; return paintSettings(); }
+  const stp = t.closest('[data-swstep]'); if (stp) { const k = stp.dataset.swstep; S.limits[k] = Math.max(1, Math.min(20, S.limits[k] + +stp.dataset.d)); return paintSettings(); }
+  const md = t.closest('[data-swmdel]'); if (md) { p.models.splice(+md.dataset.swmdel, 1); return paintSettings(); }
+  const pk = t.closest('[data-swpick]');
+  if (pk && SW.fetch && !pk.classList.contains('have')) { const id = pk.dataset.swpick; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
+  const a = t.closest('[data-sw]')?.dataset.sw; if (!a) return;
+  if (a === 'reveal') { SW.reveal = !SW.reveal; return paintSettings(); }
+  if (a === 'check') {
+    if (PROTOS[p.proto].key && !p.key) { SW.err = '缺少 API Key'; return paintSettings(); }
+    p.status = 'busy'; SW.err = null; paintSettings();
+    return setTimeout(() => { if (!S.net && p.proto !== 'ollama') { p.status = 'err'; p.err = '连不上服务'; } else { p.status = 'ok'; p.err = null; } if (SW) paintSettings(); }, 700);
+  }
+  if (a === 'fetch') {
+    if (PROTOS[p.proto].key && !p.key) { SW.err = '缺少 API Key'; return paintSettings(); }
+    if (!S.net && p.proto !== 'ollama') { SW.err = '连不上服务'; return paintSettings(); }
+    SW.err = null; SW.fetch = { q: '', picked: new Set(), state: 'busy' }; paintSettings();
+    return setTimeout(() => { if (SW?.fetch) { SW.fetch.state = 'ok'; p.status = 'ok'; paintSettings(); } }, 600);
+  }
+  if (a === 'pickAll') { const have = new Set(p.models.map(m => m.id)); p.catalog.forEach(([id]) => { if (!have.has(id)) SW.fetch.picked.add(id); }); return paintSettings(); }
+  if (a === 'fetchClose') { SW.fetch = null; return paintSettings(); }
+  if (a === 'fetchAdd') {
+    const have = new Set(p.models.map(m => m.id));
+    p.catalog.filter(([id]) => SW.fetch.picked.has(id) && !have.has(id)).forEach(([id, n, caps, ctx]) => p.models.push({ id, name: n, caps, ctx, on: true }));
+    const added = [...SW.fetch.picked].filter(id => !have.has(id)).length;
+    SW.fetch = null; paintSettings(); return hud(`已添加 ${added} 个模型`);
+  }
+  if (a === 'manual') { const id = prompt('模型 ID'); if (id && id.trim()) { p.models.push({ id: id.trim(), name: id.trim(), caps: [], ctx: '—', on: true }); paintSettings(); } return; }
+  if (a === 'addProv') {
+    const m = document.createElement('div'); m.className = 'pop menu'; m.style.zIndex = 120;
+    m.innerHTML = Object.entries(PROTOS).map(([k, x]) => `<div class="mi" data-newproto="${k}"><span class="grow">${x.n}</span></div>`).join('');
+    placePop(m, winRect(t.closest('[data-sw]')), 'above');
+    m.addEventListener('click', ev => { const k = ev.target.closest('[data-newproto]')?.dataset.newproto; if (!k) return; m.remove();
+      const np = { id: uid('p'), name: PROTOS[k].n, proto: k, base: PROTOS[k].base, key: '', status: 'idle', on: true, models: [], catalog: seedProviders().find(x => x.proto === k)?.catalog || [] };
+      S.providers.push(np); SW.prov = np.id; SW.page = 'models'; paintSettings(); setTimeout(() => $('#setwin [data-swf="key"]')?.focus() || $('#setwin [data-swf="base"]')?.focus(), 30); });
+    return;
+  }
+  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = S.providers[0]?.id; return paintSettings(); }
+  if (a === 'clearChats') { S.chats = []; S.chat = null; renderSessions(); renderPanel(); return paintSettings(); }
+}
+function settingsInput(e) {
+  const t = e.target, p = S.providers.find(x => x.id === SW?.prov);
+  if (t.dataset.swf && p) { p[t.dataset.swf] = t.value; if (t.dataset.swf !== 'name') p.status = 'idle'; else $$(`[data-swprov="${p.id}"] .t`).forEach(x => x.textContent = t.value); return; }
+  if (t.matches('[data-swq]')) { SW.fetch.q = t.value; const pos = t.selectionStart; paintSettings(); const q = $('#setwin [data-swq]'); q.focus(); q.setSelectionRange(pos, pos); return; }
+  if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return; }
+  if (t.matches('[data-swsx]')) { S.searxng = t.value; }
+}
+document.addEventListener('dblclick', e => {
+  const n = e.target.closest('[data-swmname]'); if (!n || !SW) return;
+  const p = S.providers.find(x => x.id === SW.prov), m = p.models[+n.dataset.swmname];
+  n.contentEditable = true; n.focus(); document.execCommand('selectAll');
+  n.onblur = () => { n.contentEditable = false; m.name = n.textContent.trim() || m.id; paintSettings(); };
+  n.onkeydown = k => { if (k.key === 'Enter') { k.preventDefault(); n.blur(); } k.stopPropagation(); };
+});
+document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); settingsWindow(SW?.page || 'models'); } if (e.key === 'Escape' && SW) { if (SW.fetch) { SW.fetch = null; paintSettings(); } else { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; } e.stopImmediatePropagation(); } }, true);
+
+/* ---------- Conversation titles: name the subject, not the pronoun ---------- */
+function titleFor(text, ctx, P) {
+  if (S.ctxPrefs.title === 'first') return text.slice(0, 24);
+  const sel = ctx.find(x => x.type === 'sel');
+  const term = sel && sel.quote.length <= 12 ? sel.quote : null;
+  if (term && /他|她|它|这个|这段|这句|这里/.test(text)) return text.replace(/他|她|它|这个|这段|这句|这里/, term).replace(/[？?。]$/, '').slice(0, 24);
+  return P.title;
+}
+
+if (!S.providers) S.providers = seedProviders();
 
 /* ---------------- Export (P2-C05) ---------------- */
 function exportSheet(branchId) {
@@ -2187,7 +2458,7 @@ document.addEventListener('click', e => {
   const a = t.closest('[data-act]');
   if (a && ACTS[a.dataset.act]) { ACTS[a.dataset.act](a); return; }
   // Click elsewhere closes floating UI (not sheets)
-  if (!t.closest('.pop,.ftb,.sheet,#demo,.clip-tb,.hud')) { $$('.pop,.ftb,.clip-tb', layer).forEach(e => e.remove()); S._hlTarget = null; }
+  if (!t.closest('.pop,.ftb,.sheet,#demo,.clip-tb,.hud,.setwin-scrim')) { $$('.pop,.ftb,.clip-tb', layer).forEach(e => e.remove()); S._hlTarget = null; }
 });
 
 /* ---------------- Keyboard ---------------- */
@@ -2242,7 +2513,9 @@ const SCENES = [
   { k: 'c05', t: '脑图导出', d: 'PNG / PDF / Markdown / OPML', go() { toDoc0('map'); exportSheet(); }, g: '导出面板中切换格式；AI 笔记会带着来源一起导出。' },
   { k: 'c07', t: '笔记基础格式', d: '加粗、斜体、列表', go() { toDoc0('map'); selectNode('n1'); setTimeout(() => editNote(nodeById('n1')), 760); }, g: '用上方小工具条或 <b>⌘B / ⌘I</b> 设置格式。Esc 完成。' },
   { k: 'review', t: '复习（含助手生成的问答卡）', d: '图片卡、笔记卡、问答卡统一按 FSRS 排期', go() { openReview(); }, g: '先做场景 4 再来，会看到助手出的题也在复习里。' },
-  { k: 'settings', t: '助手设置', d: '一个服务即可用；修改前预览默认开启', go() { settingsSheet(); }, g: '设置只保留必要项：服务与 Key、联网、修改前预览、上下文、上限。' },
+  { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
+  { k: 'models', t: '设置 · 模型服务', d: '按协议获取模型列表，勾选加入；不同任务用不同模型', go() { settingsWindow('models', 'p2'); setTimeout(() => $('#setwin [data-sw="fetch"]')?.click(), 500); }, g: '左侧是服务，右侧是协议、地址和 Key。点 <b>获取模型列表</b> 会按协议请求（OpenAI 兼容是 <code>GET /models</code>），勾选后加入“我的模型”；开关控制它是否出现在输入框的模型菜单里。<b>默认模型</b> 一页给对话、翻译与标题、整理与出题分别指定模型。' },
+  { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已启用的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，图标标出图片输入、内置搜索、推理能力。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
 ];
 const coachTimers = [];
 function later(fn, ms) { coachTimers.push(setTimeout(fn, ms)); }
@@ -2278,7 +2551,7 @@ $('#demo').addEventListener('click', e => {
   const env = e.target.closest('[data-env] button'); if (env) return setEnv(env.parentElement.dataset.env, env.dataset.v);
   const d = e.target.closest('[data-demo]');
   if (d?.dataset.demo === 'min') { $('#demo').classList.toggle('min'); document.body.classList.toggle('demo-min'); setTimeout(layoutMap, 340); return; }
-  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
+  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); S.providers = seedProviders(); seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
 });
 
 /* ---------------- Boot ---------------- */
