@@ -96,6 +96,39 @@ void main() {
     budget: ResearchBudget(duration: duration),
   );
 
+  test('video links survive restart, deduplicate and never reach extraction', () async {
+    await engine.saveVideoLink(Uri.parse('https://youtu.be/dQw4w9WgXcQ'));
+    await engine.saveVideoLink(Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ&utm_source=x'));
+    final source = engine.state.sources.single;
+    expect(source.kind, 'video');
+    expect(source.readState, 'noTranscript');
+    await engine.readSources(Extractor((_) async => throw StateError('must not extract video')), [source.id]);
+    expect(engine.state.sources.single.readState, 'noTranscript');
+    expect(engine.state.sources.single.versions, isEmpty);
+    expect(engine.state.evidence, isEmpty);
+    final restored = ResearchSessionState((await repository.loadResearchSession('set', 'session'))!);
+    expect(restored.sources.single.toJson(), source.toJson());
+  });
+
+  test('refetch keeps old evidence and monotonically versions identical content', () async {
+    await engine.search(Search([SearchHit(url: Uri.parse('https://example.com/page'), title: 'Page')]), 'q');
+    final id = engine.state.sources.single.id;
+    final extractor = Extractor(
+      (url) async => markdownArticle(ReadableHtml(url: url, title: 'Page', html: '<p>Old text</p>')),
+    );
+    await engine.readSources(extractor, [id]);
+    final old = engine.state.sources.single.versions.single;
+    await engine.readSources(extractor, [id]);
+    final fresh = engine.state.sources.single.versions.last;
+    expect(fresh.version, old.version + 1);
+    expect(fresh.snapshotFile, old.snapshotFile);
+    expect(snapshotParagraphs(await repository.readResearchSnapshot('set', old.snapshotFile)).values, ['Old text']);
+    await engine.readSources(Extractor((_) async => throw StateError('offline')), [id]);
+    expect(engine.state.sources.single.versions, hasLength(2));
+    final meta = engine.state.metadata[id] as Map;
+    expect((meta['versions'] as Map).keys, containsAll(['1', '2']));
+  });
+
   test('startup recovery completes globally before first request and never regenerates', () async {
     await repository.saveResearchSession('set', session('old', 'running'));
     await repository.saveResearchSession('set', session('legacy', 'idle'));
@@ -239,7 +272,7 @@ void main() {
     expect(engine.state.session.status, 'cancelled');
   });
 
-  test('URL and DOI duplicates merge; source failures do not abort other reads; snapshots idempotent', () async {
+  test('URL and DOI duplicates merge; source failures do not abort other reads; snapshots deduplicated with separate fetch versions', () async {
     await engine.search(
       Search([
         SearchHit(
@@ -266,7 +299,8 @@ void main() {
     expect(engine.state.sources.last.readState, 'failed');
     expect(engine.state.session.status, 'done');
     await engine.readSources(extractor, [source.id]);
-    expect(engine.state.sources.first.versions, hasLength(2));
+    expect(engine.state.sources.first.versions, hasLength(3));
+    expect(engine.state.sources.first.versions[1].snapshotFile, engine.state.sources.first.versions[2].snapshotFile);
     final content = await repository.readResearchSnapshot('set', engine.state.sources.first.versions.last.snapshotFile);
     expect(snapshotParagraphs(content).values, ['真实证据']);
   });

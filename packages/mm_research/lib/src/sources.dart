@@ -34,7 +34,52 @@ String? canonicalDoi(String? doi) {
   return RegExp(r'^10\.\d{4,9}/\S+$').hasMatch(value) ? value : null;
 }
 
+/// Accept only concrete video pages; never treat a search page as evidence.
+ResearchSource videoSource(Uri url, DateTime now) {
+  UrlPolicy.syntax(url);
+  final host = url.host.toLowerCase();
+  String? id;
+  Uri? canonical;
+  if (const ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'].contains(host)) {
+    id = host == 'youtu.be'
+        ? url.pathSegments.firstOrNull
+        : url.path == '/watch'
+        ? url.queryParameters['v']
+        : url.pathSegments.length == 2 && const ['shorts', 'embed'].contains(url.pathSegments.first)
+        ? url.pathSegments.last
+        : null;
+    if (id != null && RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(id)) {
+      canonical = Uri.https('www.youtube.com', '/watch', {'v': id});
+    }
+  } else if (const ['bilibili.com', 'www.bilibili.com', 'm.bilibili.com'].contains(host)) {
+    id = url.pathSegments.length >= 2 && url.pathSegments.first == 'video' ? url.pathSegments[1] : null;
+    if (id != null && RegExp(r'^(BV[A-Za-z0-9]{10}|av[0-9]+)$').hasMatch(id)) {
+      canonical = Uri.https('www.bilibili.com', '/video/$id', {
+        if (int.tryParse(url.queryParameters['p'] ?? '') case final int page when page > 0) 'p': '$page',
+      });
+    }
+  }
+  if (canonical == null) throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'invalid_video_link');
+  final normalized = canonicalUrl(canonical);
+  return ResearchSource(
+    id: sha256.convert(utf8.encode(normalized)).toString(),
+    url: canonical.toString(),
+    canonicalUrl: normalized,
+    kind: 'video',
+    title: id!,
+    videoId: id,
+    fetchedAt: now,
+    readState: 'noTranscript',
+  );
+}
+
 ResearchSource sourceFromHit(SearchHit hit, DateTime now) {
+  try {
+    final video = videoSource(hit.url, now);
+    return ResearchSource.fromJson({...video.toJson(), 'title': hit.title.isEmpty ? video.title : hit.title});
+  } on ResearchFailure {
+    /* Other search hits use the ordinary source pipeline. */
+  }
   final url = canonicalUrl(hit.url);
   final doi = canonicalDoi(hit.doi ?? (hit.url.host.toLowerCase() == 'doi.org' ? hit.url.path.substring(1) : null));
   return ResearchSource(
@@ -128,7 +173,9 @@ class OpenAlexSearch implements SearchProvider {
         for (final a in work['authorships'] as List? ?? [])
           if ((a as Map)['author']?['display_name'] case final String name) name,
       ],
-      publishedAt: DateTime.tryParse(work['publication_date'] as String? ?? ''),
+      publishedAt:
+          DateTime.tryParse(work['publication_date'] as String? ?? '') ??
+          (work['publication_year'] is int ? DateTime(work['publication_year'] as int) : null),
       openAccess: oa?['is_oa'] as bool?,
       openAccessUrl: oaUrl != null && ['https', 'http'].contains(oaUrl.scheme) && oaUrl.host.isNotEmpty ? oaUrl : null,
     );

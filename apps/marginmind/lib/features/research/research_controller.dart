@@ -62,6 +62,7 @@ class ResearchPanelState {
     this.tab = ResearchTab.answer,
     this.readingSourceId,
     this.focusParagraphId,
+    this.readingVersion,
     this.filter,
     this.noteId,
     this.progress = const {},
@@ -75,6 +76,7 @@ class ResearchPanelState {
   /// A source opened for reading, and the paragraph to scroll to.
   final String? readingSourceId;
   final String? focusParagraphId;
+  final int? readingVersion;
   final ResearchSourceKind? filter;
 
   /// A saved note shown in the panel instead of the session.
@@ -95,6 +97,7 @@ class ResearchPanelState {
     ResearchTab? tab,
     String? readingSourceId,
     String? focusParagraphId,
+    int? readingVersion,
     bool closeReading = false,
     ResearchSourceKind? filter,
     bool clearFilter = false,
@@ -107,7 +110,16 @@ class ResearchPanelState {
     sessionId: clearSession ? null : (sessionId ?? this.sessionId),
     tab: tab ?? this.tab,
     readingSourceId: closeReading ? null : (readingSourceId ?? this.readingSourceId),
-    focusParagraphId: closeReading ? null : (focusParagraphId ?? this.focusParagraphId),
+    focusParagraphId: closeReading
+        ? null
+        : readingSourceId != null
+        ? focusParagraphId
+        : this.focusParagraphId,
+    readingVersion: closeReading
+        ? null
+        : readingSourceId != null
+        ? readingVersion
+        : this.readingVersion,
     filter: clearFilter ? null : (filter ?? this.filter),
     noteId: clearNote ? null : (noteId ?? this.noteId),
     progress: progress ?? this.progress,
@@ -175,9 +187,10 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   void setFilter(ResearchSourceKind? kind) =>
       state = kind == null ? state.copyWith(clearFilter: true) : state.copyWith(filter: kind);
 
-  void openReading(String sourceId, {String? paragraphId}) => state = state.copyWith(
+  void openReading(String sourceId, {String? paragraphId, int? version}) => state = state.copyWith(
     readingSourceId: sourceId,
     focusParagraphId: paragraphId,
+    readingVersion: version,
     tab: ResearchTab.sources,
     clearNote: true,
   );
@@ -263,10 +276,21 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
     await updateDrafts(sessionId, (d) => d.copyWith(doneAt: ref.read(clockProvider)()));
   }
 
-  Future<ResearchBlock?> run(String sessionId) async {
+  final _runs = <String, Future<ResearchBlock?>>{};
+
+  Future<ResearchBlock?> run(String sessionId) => _runs[sessionId] ??= _runOnce(sessionId).whenComplete(() {
+    _runs.remove(sessionId);
+  });
+
+  Future<void> saveVideoLink(String sessionId, Uri url) => _session(sessionId).saveVideoLink(url);
+
+  Future<ResearchBlock?> _runOnce(String sessionId) async {
     _lastRequest[sessionId] = () => run(sessionId);
     final block = await _run(sessionId);
-    if (block == null) await _finished(sessionId);
+    if (block == null) {
+      await updateDrafts(sessionId, (d) => d.copyWith(later: false));
+      await _finished(sessionId);
+    }
     if (ref.mounted) {
       state = state.copyWith(
         blocked: block == null ? ({...state.blocked}..remove(sessionId)) : {...state.blocked, sessionId: block},
@@ -279,9 +303,14 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
     _stopped.remove(sessionId);
     final current = await _state(sessionId);
     final drafts = current.drafts;
-    if (drafts.later) await updateDrafts(sessionId, (d) => d.copyWith(later: false));
+
     final session = _session(sessionId);
     final settings = ref.read(researchSettingsProvider);
+    // Until an authorized transcript adapter exists, video-only work is discovery.
+    if (drafts.kinds.length == 1 && drafts.kinds.contains(ResearchSourceKind.video)) {
+      if (ref.mounted && state.sessionId == sessionId) state = state.copyWith(tab: ResearchTab.sources);
+      return null;
+    }
     try {
       switch (drafts.method) {
         case ResearchMethod.search:
@@ -372,7 +401,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
   /// Paragraphs of the newest version of [source], within [budget] characters.
   Future<List<ResearchDocument>> _documents(ResearchSource source, int budget) async {
-    final version = source.versions.lastOrNull;
+    final version = source.kind == 'video' ? null : source.versions.lastOrNull;
     if (version == null) return const [];
     final markdown = await ref
         .read(researchSnapshotRepositoryProvider)
@@ -448,7 +477,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   /// A short AI summary of a source's kept text, shown apart from the text.
   /// Written on request only; stored with the session.
   Future<ResearchBlock?> summarize(String sessionId, ResearchSource source, {required String language}) async {
-    final version = source.versions.lastOrNull;
+    final version = source.kind == 'video' ? null : source.versions.lastOrNull;
     if (version == null) return null;
     final key = '${source.id}@${version.version}';
     if (state.summarizing.contains(key)) return null;

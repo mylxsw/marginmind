@@ -1140,5 +1140,9 @@
   "researchCache": "Web cache",
   "researchClearCache": "Clear Cache",
   "researchCacheCleared": "Web cache cleared",
-  "researchInterruptedShort": "Interrupted"
+  "researchInterruptedShort": "Interrupted",
+  "researchAddReview": "Add to review",
+  "researchSaveVideo": "Save video link…",
+  "researchVideoUrl": "Video URL",
+  "researchInvalidVideo": "Enter a YouTube or Bilibili video URL."
 }

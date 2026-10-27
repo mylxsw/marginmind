@@ -133,6 +133,37 @@ void main() {
     );
   }
 
+  testWidgets('later resumes once with its saved anchor; missing AI keeps it pending', (tester) async {
+    await open(tester, prefs: const {});
+    final futureId = panel.later(launch(ResearchMethod.web));
+    await _settle(tester);
+    final id = await futureId;
+    await _settle(tester);
+    final before = state(id).session.anchor!.toJson();
+    final first = panel.run(id);
+    final second = panel.run(id);
+    expect(identical(first, second), isTrue);
+    await _settle(tester);
+    expect(await first, ResearchBlock.noWeb);
+    await _settle(tester);
+    expect(state(id).drafts.later, isTrue);
+    expect(state(id).session.anchor!.toJson(), before);
+    expect(ai.requests, isEmpty);
+  });
+
+  testWidgets('video-only discovery does not ask AI to summarize unavailable transcripts', (tester) async {
+    await open(tester);
+    final id = await panel.start(launch(ResearchMethod.web, kinds: {ResearchSourceKind.video}));
+    await _settle(tester);
+    expect(ai.requests, isEmpty);
+    expect(container.read(researchPanelProvider('demo-1')).tab, ResearchTab.sources);
+    await panel.saveVideoLink(id, Uri.parse('https://youtu.be/dQw4w9WgXcQ'));
+    await _settle(tester);
+    final source = state(id).sources.single;
+    expect(await panel.summarize(id, source, language: 'English'), isNull);
+    expect(ai.requests, isEmpty);
+  });
+
   testWidgets('search, read, choose, answer from sources, summarize, clips and drafts', (tester) async {
     await open(tester);
     final id = await panel.start(launch(ResearchMethod.search));

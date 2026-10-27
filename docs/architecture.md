@@ -137,3 +137,13 @@ macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Con
 ### 扫描 PDF 文字识别（GUL-521）
 
 `mm_platform` 的 `VisionPdfOcr` 通过方法通道调用 Runner 的 `PdfOcrChannel`。后台串行队列逐页使用 Vision、Core Graphics 和 Core Text 生成带隐藏文本层的 `documents/<hash>.ocr.pdf`，原 PDF 不变。副本由约定文件名发现，沿用 format 7，不新增模型字段。应用层 `readerOcrProvider(sourcePath)` 管理进度、取消和副本重载；阅读器打开副本后复用 pdfrx 的选字、搜索、摘录和高亮坐标。坐标、取消语义和资源上限见 [验证记录](evidence/gul-521/README.md)。
+
+### 研究笔记复习（P2-R4）
+
+复用 format 7 的 `Card(kind: research, researchNoteId: …)` 与 `suspended`，
+每条笔记首次加入复习时建立一个 `research-review:<noteId>` 卡片，作为唯一 FSRS 载体。
+该卡片没有 MapNode 或 NoteAttachment，不计入可见卡片数；多个脑图关联仍共用同一排期。
+详情开关默认关闭，关闭后保留 ReviewState / MemoryState / ReviewLog，重新开启继续原排期。
+PDF-only 笔记可进入整图/学习集复习；分支与标签筛选通过可见研究卡匹配，不混入无关分支。
+题面取 ResearchNote.question，答案实时投影正文及固定版本的引用。删除笔记删除载体，撤销
+恢复载体和已有排期；复制新笔记默认不加入复习。无需新增持久化字段或升级格式。

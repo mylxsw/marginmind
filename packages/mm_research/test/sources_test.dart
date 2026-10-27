@@ -20,6 +20,33 @@ void main() {
     policy: UrlPolicy(lookup: (_) async => [InternetAddress('8.8.8.8')]),
   );
   final url = Uri.parse('https://example.com/article');
+  test('video identity rejects fake hosts and search pages and preserves Bilibili parts', () {
+    final now = DateTime(2026);
+    for (final link in [
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://m.youtube.com/shorts/dQw4w9WgXcQ',
+    ]) {
+      expect(videoSource(Uri.parse(link), now).canonicalUrl, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    }
+    expect(videoSource(Uri.parse('https://www.bilibili.com/video/BV1xx411c7mD?p=2'), now).url, contains('p=2'));
+    expect(videoSource(Uri.parse('https://bilibili.com/video/av123'), now).videoId, 'av123');
+    for (final link in [
+      'https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ',
+      'https://youtube.com/results?search_query=x',
+      'https://youtu.be/',
+      'file:///video',
+      'https://bilibili.com/video/invalid',
+      'https://youtube.com/watch?v=bad',
+    ]) {
+      expect(() => videoSource(Uri.parse(link), now), throwsA(isA<ResearchFailure>()));
+    }
+    final hit = sourceFromHit(SearchHit(url: Uri.parse('https://youtu.be/dQw4w9WgXcQ'), title: 'Video'), now);
+    expect(hit.kind, 'video');
+    expect(hit.title, 'Video');
+    expect(hit.readState, 'noTranscript');
+  });
+
   test('OpenAlex query, metadata, abstract inversion and optional bearer credential', () async {
     final search = OpenAlexSearch(
       apiKey: 'test-key',

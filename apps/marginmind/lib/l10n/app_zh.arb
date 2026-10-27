@@ -637,5 +637,9 @@
   "researchCache": "网页缓存",
   "researchClearCache": "清理缓存",
   "researchCacheCleared": "已清理网页缓存",
-  "researchInterruptedShort": "已中断"
+  "researchInterruptedShort": "已中断",
+  "researchAddReview": "加入复习",
+  "researchSaveVideo": "保存视频链接…",
+  "researchVideoUrl": "视频链接",
+  "researchInvalidVideo": "请输入 YouTube 或 B 站视频链接。"
 }
