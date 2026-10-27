@@ -698,6 +698,87 @@ body.demo-min #desk{padding-right:58px}
 .st-row label{color:var(--label2)}
 .st2 .sw-models{flex:1;min-height:0}
 .st2 .sw-mrow{padding:9px 12px}
+/* ---------- Settings, visual pass: grouped inset form like macOS System Settings ---------- */
+.setwin.st2{width:680px;height:640px;background:var(--win)}
+.st-top{background:var(--win);border-bottom:1px solid var(--sep);padding:10px 0 8px}
+.st-tabs button{width:72px;padding:6px 0 5px;gap:3px;font-size:11px}
+.st-tabs button .i.l{width:22px;height:22px}
+.st-tabs button.on{background:var(--fill4);color:var(--label)}
+.st-tabs button.on .i{color:var(--accent)}
+.st-body{overflow:auto;background:var(--canvas)}
+.st-page{width:520px;margin:0 auto;padding:22px 0 40px}
+.st-hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:22px}
+.st-hero-i{width:56px;height:56px;border-radius:14px;background:linear-gradient(160deg,#9B8CFF,#5E5CE6 55%,#4A3FD1);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(94,92,230,.32),inset 0 1px 0 rgba(255,255,255,.35)}
+.st-hero-i .i.l{width:28px;height:28px;stroke-width:1.5}
+.st-hero b{font-size:17px;font-weight:600;letter-spacing:.01em}
+.st-group,.st-card{background:var(--card);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),0 1px 2px rgba(0,0,0,.04);margin-bottom:10px;overflow:hidden}
+.dark .st-group,.dark .st-card{background:rgba(255,255,255,.05);box-shadow:0 0 0 .5px rgba(255,255,255,.08)}
+.st-h{font-size:12px;font-weight:600;color:var(--label2);margin:22px 12px 7px}
+.st-r{display:flex;align-items:center;gap:12px;min-height:40px;padding:0 14px;font-size:13px;position:relative}
+.st-r+.st-r::before{content:"";position:absolute;left:14px;right:0;top:0;height:1px;background:var(--sep)}
+.st-r>span:first-child{flex:none;min-width:72px}
+.st-in{flex:1;min-width:0;border:0;background:none;outline:none;text-align:right;font:inherit;font-size:13px;color:var(--label);padding:6px 0}
+.st-in::placeholder{color:var(--label2);opacity:.7}
+.st-in:focus{color:var(--label)}
+.st-key{flex:1;display:flex;align-items:center;gap:4px;min-width:0}
+.st-key .ib{width:24px;height:24px;color:var(--label2)}
+.st-pop{margin-left:auto;font:inherit;font-size:13px;border:0;border-radius:6px;padding:3px 24px 3px 8px;background:var(--fill4) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4'%3E%3Cpath d='M7 9l5-5 5 5M7 15l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 7px center;appearance:none;-webkit-appearance:none;color:var(--label);outline:none}
+.st-svc{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:default}
+.st-svc:hover{background:var(--hover)}
+.st-svc .i{color:var(--label2)}
+.st-svc-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.st-svc-t b{font-size:13px;font-weight:500}
+.st-svc-t span{font-size:11.5px;color:var(--label2);display:flex;align-items:center;gap:4px}
+.st-bad{color:var(--err) !important}
+.st-card.open .st-svc{border-bottom:1px solid var(--sep)}
+.st-card .st-rows{margin:0}
+.st-sub{font-size:11px;font-weight:600;color:var(--label2);padding:14px 14px 4px;border-top:1px solid var(--sep)}
+.st-m .st-mn{flex:1;min-width:0;outline:none;border-radius:4px}
+.st-m .st-mn[contenteditable=true]{box-shadow:0 0 0 2px var(--accent);padding:0 4px}
+.st-def{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--accent)}
+.st-link{font-size:12px;color:var(--accent);padding:2px 4px;border-radius:5px}
+.st-link:hover{background:var(--accentTint)}
+.st-link.danger{color:var(--err)}
+.st-link.danger:hover{background:rgba(255,59,48,.1)}
+.st-m .st-link{opacity:0}
+.st-m:hover .st-link{opacity:1}
+.st-m .sw-mdel{width:22px;height:22px;color:var(--label2);opacity:0}
+.st-m:hover .sw-mdel{opacity:1}
+.st-add{color:var(--accent);gap:8px;cursor:default}
+.st-add:hover{background:var(--hover)}
+.st-foot{display:flex;align-items:center;padding:8px 10px;border-top:1px solid var(--sep);background:var(--fill4)}
+.st-foot .grow{flex:1}
+.st-addsvc{display:flex;align-items:center;gap:6px;margin:4px 6px;font-size:13px;color:var(--accent);padding:6px 8px;border-radius:8px}
+.st-addsvc:hover{background:var(--accentTint)}
+.plogo2{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;font-weight:700;font-size:14px;color:#fff;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.12)}
+.plogo2.big{width:40px;height:40px;border-radius:10px;font-size:18px}
+.plogo2 .i{color:#fff}
+.logo-anthropic{background:#D97757;font-family:Georgia,serif}
+.logo-openai{background:#111}
+.logo-compat{background:linear-gradient(160deg,#6E7B91,#3F4A5C)}
+.logo-gemini{background:linear-gradient(135deg,#4E8CF7,#9A6CF0 60%,#E3699B)}
+.logo-ollama{background:#fff;color:#111 !important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.logo-ollama .i{color:#111}
+.st-provpick{display:grid;grid-template-columns:repeat(2,140px);gap:6px;padding:8px}
+.st-provpick button{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 6px 10px;border-radius:10px;font-size:12px}
+.st-provpick button:hover{background:var(--hover)}
+.st-sheet{width:460px;border-radius:14px}
+.st-sheet-h{display:flex;align-items:center;gap:12px;padding:16px 18px 10px}
+.st-sheet-h div{display:flex;flex-direction:column;line-height:1.35}
+.st-sheet-h b{font-size:14px}
+.st-sheet-h div span{font-size:12px;color:var(--label2)}
+.st-search{display:flex;align-items:center;gap:6px;margin:0 18px 8px;height:30px;padding:0 10px;border-radius:8px;background:var(--fill4);color:var(--label2)}
+.st-search input{flex:1;border:0;background:none;outline:none;font:inherit;font-size:13px;color:var(--label)}
+.st-picks{margin:0 12px;max-height:320px;min-height:0;flex:none;overflow:auto}
+.st-pick{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px;font-size:13px}
+.st-pick:hover{background:var(--hover)}
+.st-pick.have{opacity:.55}
+.st-chk{width:18px;height:18px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--line);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.st-pick.on .st-chk{background:var(--accent);box-shadow:none}
+.st-muted{font-size:11.5px;color:var(--label2)}
+.st-err{display:flex;gap:6px;align-items:center;color:var(--err);font-size:12.5px;padding:10px 8px}
+.st-sheet-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 16px}
+
 .mmenu .capi{opacity:.7}
 .mi:hover .capi{color:#fff}
 .as-acts{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none}
@@ -2161,7 +2242,7 @@ function modelMenu() {
 let SW = null; // { tab, prov, fetch: {q, picked:Set, state}, err, reveal, custom }
 function settingsWindow(_page, provId) {
   closeFloating();
-  SW = { tab: 'assistant', prov: provId || S.providers[0]?.id, fetch: null, err: null, reveal: false, custom: false };
+  SW = { tab: 'assistant', prov: provId || null, fetch: null, err: null, reveal: false, custom: false };
   $$('.setwin-scrim', layer).forEach(e => e.remove());
   const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin st2" id="setwin"></div>';
   layer.appendChild(sc); paintSettings();
@@ -2231,7 +2312,8 @@ function settingsClick(e) {
   const t = e.target, p = S.providers.find(x => x.id === SW.prov);
   if (t.classList.contains('setwin-scrim') || t.closest('[data-sw="close"]')) { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; paintRow(); return; }
   const tb = t.closest('[data-swtab]'); if (tb) { SW.tab = tb.dataset.swtab; return paintSettings(); }
-  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = pv.dataset.swprov; SW.custom = false; return paintSettings(); }
+  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = SW.prov === pv.dataset.swprov ? null : pv.dataset.swprov; SW.custom = false; SW.reveal = false; return paintSettings(); }
+  const sd = t.closest('[data-swsetdef]'); if (sd && p) { S.defaults.chat = mkey(p, p.models[+sd.dataset.swsetdef]); return paintSettings(); }
   const md = t.closest('[data-swmdel]'); if (md) { const m = p.models[+md.dataset.swmdel]; p.models.splice(+md.dataset.swmdel, 1); if (S.defaults.chat === mkey(p, m)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
   const mm = t.closest('[data-swmanual]'); if (mm && SW.fetch) { const id = mm.dataset.swmanual; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
   const pk = t.closest('[data-swpick]');
@@ -2257,16 +2339,8 @@ function settingsClick(e) {
     if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key;
     SW.fetch = null; paintSettings(); return hud(`已添加 ${added.length} 个模型`);
   }
-  if (a === 'addProv') {
-    const m = document.createElement('div'); m.className = 'pop menu'; m.style.zIndex = 120;
-    m.innerHTML = Object.entries(PROTOS).map(([k, x]) => `<div class="mi" data-newproto="${k}"><span class="grow">${x.n}</span></div>`).join('');
-    placePop(m, winRect(t.closest('[data-sw]')), 'above');
-    m.addEventListener('click', ev => { const k = ev.target.closest('[data-newproto]')?.dataset.newproto; if (!k) return; m.remove();
-      const np = { id: uid('p'), name: PROTOS[k].n, proto: k, base: PROTOS[k].base, key: '', status: 'idle', on: true, models: [], catalog: seedProviders().find(x => x.proto === k)?.catalog || [] };
-      S.providers.push(np); SW.prov = np.id; SW.custom = false; paintSettings(); setTimeout(() => ($('#setwin [data-swf="key"]') || $('#setwin [data-swf="base"]'))?.focus(), 30); });
-    return;
-  }
-  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = S.providers[0]?.id; if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  if (a === 'addProv') return addProviderPicker(t.closest('[data-sw]'));
+  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = null; if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
 }
 function settingsInput(e) {
   const t = e.target, p = S.providers.find(x => x.id === SW?.prov);
@@ -2292,6 +2366,71 @@ function titleFor(text, ctx, P) {
   const term = sel && sel.quote.length <= 12 ? sel.quote : null;
   if (term && /他|她|它|这个|这段|这句|这里/.test(text)) return text.replace(/他|她|它|这个|这段|这句|这里/, term).replace(/[？?。]$/, '').slice(0, 24);
   return P.title;
+}
+
+
+/* ---------- Visual pass: macOS System Settings grouped-form style ---------- */
+const LOGO = { anthropic: ['logo-anthropic', 'A'], openai: ['logo-compat', null], gemini: ['logo-gemini', null], ollama: ['logo-ollama', null] };
+function logoHtml(p, big) {
+  const cls = p.proto === 'openai' && /api\.openai\.com/.test(p.base) ? 'logo-openai' : LOGO[p.proto][0];
+  const glyph = p.proto === 'gemini' ? ic('spark', big ? 'l' : 's') : p.proto === 'ollama' ? ic('lock', big ? 'l' : 's') : esc((p.name || '?').slice(0, 1).toUpperCase());
+  return `<span class="plogo2 ${cls} ${big ? 'big' : ''}">${glyph}</span>`;
+}
+function swAssistant() {
+  const em = enabledModels();
+  const card = p => {
+    const open = SW.prov === p.id;
+    const needsBase = p.proto === 'openai' || p.proto === 'ollama' || SW.custom || p.base !== PROTOS[p.proto].base;
+    const sub = p.status === 'err' ? `<span class="st-bad">${ic('warn', 'xs')}${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:10px;height:10px;color:var(--label2)"></span>' : `<span>${p.models.length ? p.models.length + ' 个模型' : '还没有模型'}</span>`;
+    return `<div class="st-card ${open ? 'open' : ''}">
+      <div class="st-svc" data-swprov="${p.id}">${logoHtml(p)}<div class="st-svc-t"><b>${esc(p.name)}</b>${sub}</div>${ic(open ? 'cd' : 'cr', 's')}</div>
+      ${open ? `<div class="st-rows">
+        <div class="st-r"><span>名称</span><input class="st-in" data-swf="name" value="${esc(p.name)}"></div>
+        ${needsBase ? `<div class="st-r"><span>地址</span><input class="st-in" data-swf="base" value="${esc(p.base)}" placeholder="${PROTOS[p.proto].base}"></div>` : ''}
+        ${PROTOS[p.proto].key ? `<div class="st-r"><span>API Key</span><div class="st-key"><input class="st-in" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}" placeholder="粘贴 Key"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button></div></div>` : ''}
+        ${builtinSearch(p) ? '' : `<div class="st-r"><span>网页搜索</span><input class="st-in" data-swsx value="${esc(S.searxng)}" placeholder="SearXNG 地址（可不填）"></div>`}
+      </div>
+      <div class="st-sub">模型</div>
+      <div class="st-rows">${p.models.map((m, i) => `<div class="st-r st-m" title="${esc(m.id)}"><span class="st-mn" data-swmname="${i}">${esc(m.name)}</span>${mkey(p, m) === S.defaults.chat ? `<span class="st-def">${ic('check', 'xs')}默认</span>` : `<button class="st-link" data-swsetdef="${i}">设为默认</button>`}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('minus', 's')}</button></div>`).join('')}
+        <div class="st-r st-add" data-sw="fetch">${ic('plus', 's')}<span>添加模型…</span></div></div>
+      <div class="st-foot">${needsBase ? '' : '<button class="st-link" data-sw="custom">使用自定义地址</button>'}<span class="grow"></span><button class="st-link danger" data-sw="delProv">移除服务</button></div>` : ''}
+    </div>`;
+  };
+  return `<div class="st-page">
+    <div class="st-hero"><span class="st-hero-i">${ic('spark', 'l')}</span><b>助手</b></div>
+    <div class="st-group"><div class="st-r"><span>默认模型</span><select class="st-pop" data-swdef="chat">${em.map(x => `<option value="${x.key}" ${S.defaults.chat === x.key ? 'selected' : ''}>${esc(x.m.name)}</option>`).join('') || '<option>—</option>'}</select></div></div>
+    <div class="st-h">服务</div>
+    ${S.providers.map(card).join('')}
+    <button class="st-addsvc" data-sw="addProv">${ic('plus', 's')}添加服务</button>
+  </div>`;
+}
+function swFetchSheet() {
+  const p = S.providers.find(x => x.id === SW.prov), F = SW.fetch;
+  const have = new Set(p.models.map(m => m.id));
+  const q = F.q.trim().toLowerCase();
+  const rows = p.catalog.filter(([id, n]) => !/embedding|whisper|tts|dall-e/i.test(id) && (!q || (id + n).toLowerCase().includes(q)));
+  const nPick = [...F.picked].filter(id => !have.has(id)).length;
+  const row = (id, label, attr) => { const added = have.has(id), on = added || F.picked.has(id); return `<div class="st-pick ${added ? 'have' : ''} ${on ? 'on' : ''}" ${attr} title="${esc(id)}"><span class="st-chk">${on ? ic('check', 'xs') : ''}</span><span class="grow">${label}</span>${added ? '<span class="st-muted">已添加</span>' : ''}</div>`; };
+  const manual = q && !p.catalog.some(([id]) => id.toLowerCase() === q) ? row(F.q.trim(), `添加“<b>${esc(F.q.trim())}</b>”`, `data-swmanual="${esc(F.q.trim())}"`) : '';
+  return `<div class="sw-fetch-scrim"><div class="sw-fetch st-sheet">
+    <div class="st-sheet-h">${logoHtml(p, true)}<div><b>添加模型</b><span>${esc(p.name)}</span></div></div>
+    <label class="st-search">${ic('search', 's')}<input data-swq placeholder="搜索，或输入模型 ID" value="${esc(F.q)}"></label>
+    <div class="sw-flist st-picks">${F.state === 'busy' ? '<div class="empty"><span class="spin" style="color:var(--agent)"></span></div>'
+      : (F.state === 'err' ? `<div class="st-err">${ic('warn', 's')}${esc(F.err)}</div>` : rows.map(([id, n]) => row(id, esc(n), `data-swpick="${esc(id)}"`)).join('')) + manual}</div>
+    <div class="st-sheet-f"><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加${nPick ? ' ' + nPick + ' 个' : ''}</button></div></div></div>`;
+}
+// Provider picker: tiles, not a bare text menu.
+function addProviderPicker(anchor) {
+  const m = document.createElement('div'); m.className = 'pop st-provpick'; m.style.zIndex = 120;
+  const tiles = [['anthropic', 'Anthropic', 'logo-anthropic', 'A'], ['openai', 'OpenAI 兼容', 'logo-compat', 'O'], ['gemini', 'Google Gemini', 'logo-gemini', ic('spark', 's')], ['ollama', 'Ollama（本机）', 'logo-ollama', ic('lock', 's')]];
+  m.innerHTML = tiles.map(([k, n, c, g]) => `<button data-newproto="${k}"><span class="plogo2 ${c} big">${g}</span><span>${n}</span></button>`).join('');
+  placePop(m, winRect(anchor), 'above');
+  m.addEventListener('click', ev => {
+    const k = ev.target.closest('[data-newproto]')?.dataset.newproto; if (!k) return; m.remove();
+    const np = { id: uid('p'), name: PROTOS[k].n.replace('（本机）', ''), proto: k, base: PROTOS[k].base, key: '', status: 'idle', on: true, models: [], catalog: seedProviders().find(x => x.proto === k)?.catalog || [] };
+    S.providers.push(np); SW.prov = np.id; SW.custom = false; paintSettings();
+    setTimeout(() => ($('#setwin [data-swf="key"]') || $('#setwin [data-swf="base"]'))?.focus(), 30);
+  });
 }
 
 if (!S.providers) S.providers = seedProviders();
