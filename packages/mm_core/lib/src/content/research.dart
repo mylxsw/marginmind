@@ -238,6 +238,7 @@ class ResearchNote {
     this.textFormat = TextFormat.plain,
     this.question = '',
     this.sessionId,
+    this.conversationId,
     List<EvidenceRef> citations = const [],
     this.origin = NoteOrigin.user,
     this.edited = false,
@@ -251,6 +252,7 @@ class ResearchNote {
   final TextFormat textFormat;
   final String question;
   final String? sessionId;
+  final String? conversationId;
   final List<EvidenceRef> citations;
   final NoteOrigin origin;
   final bool edited;
@@ -266,6 +268,7 @@ class ResearchNote {
     textFormat: textFormat ?? this.textFormat,
     question: question,
     sessionId: sessionId,
+    conversationId: conversationId,
     citations: citations,
     origin: origin,
     edited: true,
@@ -280,6 +283,7 @@ class ResearchNote {
     'textFormat': textFormat.name,
     'question': question,
     if (sessionId != null) 'sessionId': sessionId,
+    if (conversationId != null) 'conversationId': conversationId,
     'citations': [for (final c in citations) c.toJson()],
     'origin': origin.name,
     'edited': edited,
@@ -294,6 +298,7 @@ class ResearchNote {
     textFormat: TextFormat.values.byName(j['textFormat'] as String? ?? 'plain'),
     question: j['question'] as String? ?? '',
     sessionId: j['sessionId'] as String?,
+    conversationId: j['conversationId'] as String?,
     citations: [for (final c in j['citations'] as List? ?? []) EvidenceRef.fromJson((c as Map).cast())],
     origin: NoteOrigin.values.byName(j['origin'] as String),
     edited: j['edited'] as bool? ?? false,

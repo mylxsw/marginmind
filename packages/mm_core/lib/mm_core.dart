@@ -25,3 +25,6 @@ export 'src/study_set/study_set_repository.dart';
 export 'src/content/research.dart';
 export 'src/content/research_repository.dart';
 export 'src/research/ports.dart';
+
+export 'src/assistant/ports.dart';
+export 'src/assistant/proposals.dart';
