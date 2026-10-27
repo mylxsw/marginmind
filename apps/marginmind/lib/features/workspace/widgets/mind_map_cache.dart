@@ -245,7 +245,11 @@ class MindMapRenderCache {
       _measurements[key] = cached;
       return cached;
     }
-    final merged = _baseStyle.merge(style);
+    // The in-place editor sets its style without the ambient one
+    // (MMInlineTextField), so a note being edited is measured the same way.
+    final merged = (source ? const TextStyle(inherit: false, textBaseline: TextBaseline.alphabetic) : _baseStyle).merge(
+      style,
+    );
     final shown = text.isEmpty ? ' ' : text;
     final painter = TextPainter(
       text: note == null
