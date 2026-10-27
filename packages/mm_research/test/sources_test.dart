@@ -64,7 +64,10 @@ void main() {
         return http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json; charset=utf-8'});
       }),
     );
-    expect(await titles(200, {'title': ' Never Gonna Give You Up '}).lookup(youtube, CancellationToken()), 'Never Gonna Give You Up');
+    expect(
+      await titles(200, {'title': ' Never Gonna Give You Up '}).lookup(youtube, CancellationToken()),
+      'Never Gonna Give You Up',
+    );
     expect(seen.last.host, 'www.youtube.com');
     expect(seen.last.path, '/oembed');
     expect(seen.last.queryParameters['url'], youtube.canonicalUrl);
@@ -80,7 +83,14 @@ void main() {
     expect(await titles(200, {'title': '  '}).lookup(youtube, CancellationToken()), isNull);
     expect(await titles(404, {}).lookup(youtube, CancellationToken()), isNull);
     final calls = seen.length;
-    final web = ResearchSource(id: 'w', url: 'https://e.com', canonicalUrl: 'https://e.com/', kind: 'web', title: 'W', fetchedAt: now);
+    final web = ResearchSource(
+      id: 'w',
+      url: 'https://e.com',
+      canonicalUrl: 'https://e.com/',
+      kind: 'web',
+      title: 'W',
+      fetchedAt: now,
+    );
     expect(await titles(200, {'title': 'x'}).lookup(web, CancellationToken()), isNull);
     expect(seen.length, calls);
   });

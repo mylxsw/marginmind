@@ -192,8 +192,23 @@ C04 不阻塞研究注解：研究首版的注解是绑定选区的笔记标记�
 
 | ID | 状态 | PR / commit | 验证 | 剩余限制 |
 | --- | --- | --- | --- | --- |
-| P2-C03 | 已实现，待合并（GUL-521） | 见 GUL-521 PR | [Vision 中英文、坐标、取消、300 页及真机截图](evidence/gul-521/README.md) | macOS 本机识别；取消在当前页完成后生效 |
-| P2-C04 | 已实现，待合并（GUL-518） | 见 GUL-518 PR | `mm_pdf` 坐标往返（缩放、滚动、重开）、撤销与文字选择测试；macOS 真机截图（含放大前后） | 不做局部擦除、压感和笔迹选择 / 移动（C09） |
+| P2-C01 | 已发布 v0.8.0 | [#47](https://github.com/mylxsw/marginmind/pull/47) | [GUL-516 记录](evidence/gul-516/README.md)；v0.8 真机复验 | ⌘I / ⌥空格 待物理键盘复验 |
+| P2-C02 | 已发布 v0.8.0 | [#50](https://github.com/mylxsw/marginmind/pull/50) | [GUL-517 记录](evidence/gul-517/README.md)；v0.8 真机粘贴、复习 | 拖入与选择文件本轮未重复 |
+| P2-C03 | 已发布 v0.8.0 | [#51](https://github.com/mylxsw/marginmind/pull/51) | [GUL-521 记录](evidence/gul-521/README.md) | macOS 本机识别；取消在当前页完成后生效 |
+| P2-C04 | 已发布 v0.8.0 | [#48](https://github.com/mylxsw/marginmind/pull/48) | `mm_pdf` 坐标往返、撤销与文字选择测试；v0.8 真机画笔 | 不做局部擦除、压感和笔迹选择 / 移动（C09）；⇧⌘M 待物理键盘 |
+| P2-C05 | 已发布 v0.8.0 | [#52](https://github.com/mylxsw/marginmind/pull/52) | [GUL-523 记录](evidence/gul-523/README.md)；v0.8 真机 PNG 导出 | 超大图按尺寸上限提示 |
+| P2-C06 | 已发布 v0.8.0 | [#53](https://github.com/mylxsw/marginmind/pull/53) | GUL-522 组件测试与真机记录 | — |
+| P2-C07 | 已发布 v0.8.0 | [#53](https://github.com/mylxsw/marginmind/pull/53) | GUL-522 组件测试与真机记录 | 只有加粗、斜体、列表；⌘B 待物理键盘 |
+| P2-C08 ～ C10 | 未开始 | — | — | 后置 |
+| P2-R01 | 已发布 v0.8.0 | [#54](https://github.com/mylxsw/marginmind/pull/54) | [GUL-520 记录](evidence/gul-520/README.md)；v0.8 场景 1～3 | ⇧⌘E / ⌃⌘R 待物理键盘 |
+| P2-R02 | 已发布 v0.8.0 | [#47](https://github.com/mylxsw/marginmind/pull/47)、[#54](https://github.com/mylxsw/marginmind/pull/54) | 同上 | — |
+| P2-R03 | 已发布 v0.8.0 | [#49](https://github.com/mylxsw/marginmind/pull/49)、[#55](https://github.com/mylxsw/marginmind/pull/55) | OpenAlex 真实检索；视频链接、图片与外部搜索（[GUL-524](evidence/gul-524/README.md)） | 视频走外部站点搜索，用户保存链接；没有字幕，不做视频总结或时间戳摘录；标题取自 oEmbed / B 站接口，取不到显示网址 |
+| P2-R04 | 已发布 v0.8.0 | [#49](https://github.com/mylxsw/marginmind/pull/49) | 真实网页正文提取、快照版本 | 付费墙和脚本渲染页面可能读不全，可粘贴正文 |
+| P2-R05 | 已发布 v0.8.0 | [#45](https://github.com/mylxsw/marginmind/pull/45)、[#49](https://github.com/mylxsw/marginmind/pull/49)、[#54](https://github.com/mylxsw/marginmind/pull/54) | 流式适配器测试；v0.8 不联网 / 基于资料回答 | 联网研究需要 Anthropic 或 OpenAI；兼容接口只能问 AI 和基于资料回答；本次没有真实 Key |
+| P2-R06 | 已发布 v0.8.0 | [#46](https://github.com/mylxsw/marginmind/pull/46)、[#54](https://github.com/mylxsw/marginmind/pull/54) | 格式 7 迁移测试；v0.8 两处同步、重启定位 | — |
+| P2-R07 | 已发布 v0.8.0 | [#54](https://github.com/mylxsw/marginmind/pull/54)、[#55](https://github.com/mylxsw/marginmind/pull/55) | 中断恢复、稍后研究、研究笔记复习 | — |
+
+v0.8.0 最终验收见 [真机验收](macos-acceptance.md)“v0.8.0”一节；验收中修复的视频标题与追问 ⌘↩ 在 GUL-526。
 
 ## 7. 给接手 agent 的执行说明
 
