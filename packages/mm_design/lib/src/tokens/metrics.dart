@@ -35,7 +35,7 @@ abstract final class MMSizes {
   static const double mapExportPreviewHeight = 180;
 
   /// Keep the excerpt-target hint clear of the map view controls.
-  static const double mapViewControlsReservedWidth = 260;
+  static const double mapViewControlsReservedWidth = 380;
   static const double readerSidebarWidth = 240;
   static const double readerSidebarMinWidth = 180;
   static const double readerSidebarMaxWidth = 360;

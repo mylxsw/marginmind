@@ -1228,4 +1228,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportSource => 'Source';
+
+  @override
+  String get formatBold => 'Bold';
+
+  @override
+  String get formatItalic => 'Italic';
+
+  @override
+  String get formatBulletList => 'Bulleted List';
+
+  @override
+  String get formatNumberList => 'Numbered List';
+
+  @override
+  String get densityCompact => 'Compact';
+
+  @override
+  String get densityFull => 'Full';
+
+  @override
+  String get cardWidthHandle => 'Card Width';
+
+  @override
+  String get resetCardWidth => 'Reset Width';
 }

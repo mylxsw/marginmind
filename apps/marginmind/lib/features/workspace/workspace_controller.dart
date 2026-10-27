@@ -1305,16 +1305,47 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> setSuspended(String cardId, {required bool suspended}) =>
       _update((c) => _editor.setSuspended(c, cardId, suspended: suspended));
 
-  Future<void> rename(String cardId, String title) => _update((c) => _editor.rename(c, cardId, title));
+  /// Sets a card's title; with [format], a note's text format too (one undo
+  /// step).
+  Future<void> rename(String cardId, String title, [TextFormat? format]) => _update((c) {
+    final renamed = _editor.rename(c, cardId, title);
+    final card = renamed.card(cardId);
+    return format == null || card == null || card.textFormat == format
+        ? renamed
+        : _editor.setCardTextFormat(renamed, cardId, format);
+  });
+
+  /// Whether [title] / [format] would change [card].
+  static bool _changes(Card card, String title, TextFormat? format) =>
+      title != card.title || (format != null && format != card.textFormat);
 
   /// A title typed in the details panel, with the in-place editor's rules:
   /// trimmed; only excerpts and images may be left untitled.
-  Future<void> setTitle(String cardId, String text) async {
+  Future<void> setTitle(String cardId, String text, [TextFormat? format]) async {
     final card = content.card(cardId);
     final title = text.trim();
-    if (card == null || title == card.title) return;
+    if (card == null || !_changes(card, title, format)) return;
     if (title.isEmpty && card.kind != CardKind.excerpt && card.kind != CardKind.image) return;
-    await rename(cardId, title);
+    await rename(cardId, title, format);
+  }
+
+  // ---- card width and map density (P2-C06) --------------------------------------
+
+  /// Sets the width of [cardId] in the active map (kept within
+  /// [MapNode.minWidth]..[MapNode.maxWidth]); null restores the default width.
+  Future<void> setCardWidth(String cardId, double? width) async {
+    final node = content.node(cardId, mapId: state.activeMapId);
+    if (node == null || _editing != null || _creating) return;
+    final next = width?.clamp(MapNode.minWidth, MapNode.maxWidth).roundToDouble();
+    if (next == node.width) return;
+    await _update((c) => _editor.setCardWidth(c, cardId, next));
+  }
+
+  /// How much each card of the active map shows. The text itself is never
+  /// changed by it.
+  Future<void> setMapDensity(MapDensity density) async {
+    if (content.map(state.activeMapId)?.density == density) return;
+    await _update((c) => _editor.setMapDensity(c, density));
   }
 
   // ---- in-place editing -------------------------------------------------------
@@ -1422,7 +1453,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Enter or clicking elsewhere. An empty title keeps the old one (an
   /// excerpt's is cleared), or drops a node created for this edit.
-  Future<void> finishEditing(String text) async {
+  Future<void> finishEditing(String text, [TextFormat? format]) async {
     final session = _editing;
     if (session == null) return;
     _editing = null;
@@ -1432,16 +1463,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         await _dropCreated(session);
       } else if (session.created) {
         try {
-          if (title != content.card(session.cardId)?.title) await rename(session.cardId, title);
+          if (content.card(session.cardId) case final card? when _changes(card, title, format)) {
+            await rename(session.cardId, title, format);
+          }
         } finally {
           await commitTransaction();
         }
       } else if (content.card(session.cardId) case final card?
           when (title.isNotEmpty || card.kind == CardKind.excerpt || card.kind == CardKind.image) &&
-              title != card.title) {
+              _changes(card, title, format)) {
         // An excerpt's title is optional: clearing it shows the quote (or
         // the image's default label) again.
-        await rename(session.cardId, title);
+        await rename(session.cardId, title, format);
       }
     } finally {
       _closeEditor();

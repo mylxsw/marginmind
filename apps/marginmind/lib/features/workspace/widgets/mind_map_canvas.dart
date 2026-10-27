@@ -12,6 +12,7 @@ import 'package:mm_layout/mm_layout.dart';
 
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/note_text.dart';
 import '../../../app/app_commands.dart';
 import 'card_field.dart';
 import 'map_drop.dart';
@@ -48,6 +49,12 @@ Matrix4 zoomMapAt(Matrix4 m, Offset focal, double factor) {
     ..translateByDouble(-focal.dx, -focal.dy, 0, 1)
     ..multiply(m);
 }
+
+/// The card width handle's hit area, centered on the card's edge.
+const _resizeHandleWidth = 10.0;
+
+/// Height of the note format bar, to decide whether it fits above a note.
+const _formatBarHeight = 30.0;
 
 /// Mouse wheel ticks scroll 20 logical pixels; ⌘ + wheel zooms by
 /// e^(-delta / this) per event, like InteractiveViewer.
@@ -109,7 +116,12 @@ class MindMapCanvas extends StatefulWidget {
     this.expandedCardIds = const {},
     this.onToggleExpanded,
     this.onOpenDetails,
+    this.onResize,
   });
+
+  /// The selected excerpt, image or research note was resized (P2-C06) by
+  /// its handle; null width when the handle is double-clicked (default).
+  final void Function(String cardId, double? width)? onResize;
 
   /// Cards shown with their whole text; the others are cut to a preview.
   final Set<String> expandedCardIds;
@@ -171,7 +183,7 @@ class MindMapCanvas extends StatefulWidget {
   final String? editingCardId;
 
   /// Enter or clicking elsewhere, with the typed text.
-  final ValueChanged<String>? onEditDone;
+  final CardEditDone? onEditDone;
 
   /// Esc.
   final VoidCallback? onEditCancel;
@@ -250,6 +262,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// Trackpad pinch: the gesture's scale at the last update.
   double? _pinchScale;
 
+  /// A card being resized by its handle: its id and width while dragged,
+  /// kept after the drag until the saved width arrives with the content.
+  (String, double)? _resize;
+  ({double pointer, double width})? _resizeStart;
+
   @override
   String? get editingCardId => widget.editingCardId;
   @override
@@ -257,7 +274,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   @override
   FocusNode get hostFocus => widget.focusNode;
   @override
-  ValueChanged<String>? get onFieldDone => widget.onEditDone;
+  CardEditDone? get onFieldDone => widget.onEditDone;
   @override
   VoidCallback? get onFieldCancel => widget.onEditCancel;
   @override
@@ -444,6 +461,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     super.didUpdateWidget(oldWidget);
     syncField();
     _syncMarkField();
+    if (_resizeStart == null && !identical(widget.content, oldWidget.content)) _resize = null;
     if (widget.connectingFromId == null) _hover = null;
     typed = null;
     // The tree can change under a drag (undo, another window); the drop
@@ -967,6 +985,73 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     );
   }
 
+  /// The handle on the outer edge of the selected excerpt, image or research
+  /// note: dragging it sets the card's width, a double click restores the
+  /// default.
+  Widget? _resizeHandle(TreeLayoutResult result, AppLocalizations l) {
+    final id = widget.selectedCardId;
+    if (widget.onResize == null || id == null || field?.id == id || _dragging != null) return null;
+    if (widget.selectedCardIds.length > 1 || _cache._specs[id]?.resizable != true) return null;
+    final rect = result.rects[id];
+    if (rect == null) return null;
+    final shown = _shown(id, rect);
+    final left = result.leftSide.contains(id);
+    final c = context.mmColors;
+    return Positioned(
+      key: const ValueKey('card-width-handle'),
+      left: (left ? shown.left : shown.right) - _resizeHandleWidth / 2,
+      top: shown.top + MMSpacing.s,
+      width: _resizeHandleWidth,
+      height: math.max(0, shown.height - MMSpacing.s * 2),
+      child: Semantics(
+        label: l.cardWidthHandle,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.resizeLeftRight,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            // Measured from where the button went down: the edge stays under the pointer.
+            dragStartBehavior: DragStartBehavior.down,
+            onDoubleTap: () {
+              setState(() => _resize = null);
+              widget.onResize!(id, null);
+            },
+            onHorizontalDragStart: (d) {
+              _resizeStart = (pointer: d.globalPosition.dx, width: shown.width);
+              setState(() => _resize = (id, shown.width));
+            },
+            onHorizontalDragUpdate: (d) {
+              final start = _resizeStart;
+              if (start == null) return;
+              // The pointer moves in screen pixels; the card in map points.
+              final delta = (d.globalPosition.dx - start.pointer) / mapScale(widget.transformation.value);
+              final width = (start.width + (left ? -delta : delta)).clamp(MapNode.minWidth, MapNode.maxWidth);
+              if (width != _resize?.$2) setState(() => _resize = (id, width.roundToDouble()));
+            },
+            onHorizontalDragEnd: (_) => _endResize(),
+            onHorizontalDragCancel: _endResize,
+            child: Center(
+              child: Container(
+                width: 3,
+                height: math.min(22, math.max(0, shown.height - MMSpacing.s * 2)),
+                decoration: BoxDecoration(
+                  color: c.accent.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _endResize() {
+    final resize = _resize;
+    if (_resizeStart == null) return;
+    _resizeStart = null;
+    if (resize != null) widget.onResize!(resize.$1, resize.$2);
+  }
+
   final _nodeWidgets = <String, ({Object signature, Widget child})>{};
 
   Widget _nodeWidget(String id, _NodeSpec spec, AppLocalizations l) {
@@ -990,6 +1075,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       l.cardSuspended,
       spec.truncated,
       spec.expanded,
+      spec.format,
+      spec.maxLines,
       widget.onToggleExpanded != null,
       widget.onOpenDetails != null,
       l.expandCardText,
@@ -1069,6 +1156,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final field = this.field;
     final result = _cache.update(
       draft: field == null ? null : (field.id, field.controller.text),
+      draftFormat: field?.note?.format,
+      widthDraft: _resize,
       markDraft: _markField == null ? null : (_markField!.id, _markField!.controller.text),
       content: widget.content,
       mapId: widget.mapId,
@@ -1430,6 +1519,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           top: shown.center.dy - 9,
                                           child: foldButtons[id]!,
                                         ),
+                                ?_resizeHandle(result, l),
                               ],
                             );
                           },
@@ -1439,6 +1529,34 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
+              if (field?.note case final note? when specs[field!.id]?.kind == _Kind.note)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([widget.transformation, _motion]),
+                    builder: (context, _) {
+                      final rect = result.rects[field.id];
+                      if (rect == null) return const SizedBox.shrink();
+                      final shown = _shown(field.id, rect);
+                      final m = widget.transformation.value;
+                      final top = MatrixUtils.transformPoint(m, shown.topLeft);
+                      final bottom = MatrixUtils.transformPoint(m, shown.bottomLeft);
+                      // Above the note, or below it when there is no room.
+                      final above = top.dy >= _formatBarHeight + MMSpacing.s;
+                      return Stack(
+                        children: [
+                          Positioned(
+                            left: math.max(MMSpacing.xs, top.dx),
+                            top: above ? top.dy - MMSpacing.s : bottom.dy + MMSpacing.s,
+                            child: FractionalTranslation(
+                              translation: Offset(0, above ? -1 : 0),
+                              child: NoteFormatBar(controller: note),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               Positioned.fill(
                 child: AnimatedBuilder(
                   animation: Listenable.merge([widget.transformation, _motion, _hovered]),
@@ -1550,9 +1668,7 @@ class _NodeView extends StatelessWidget {
         children: [
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
           const SizedBox(width: 7),
-          Expanded(
-            child: editor ?? Text(spec.title, style: t.body.copyWith(height: 19 / 13)),
-          ),
+          Expanded(child: editor ?? Text.rich(noteSpan(spec.title, spec.format, t.body.copyWith(height: 19 / 13)))),
         ],
       ),
       // The excerpt is the card: a title row only when there is a title.
@@ -1580,9 +1696,12 @@ class _NodeView extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            if (spec.kind != _Kind.image || spec.imageHeight > 0) const SizedBox(height: 6),
           ],
-          if (spec.kind == _Kind.image)
+          // A compact map leaves the picture out.
+          if (spec.kind == _Kind.image && spec.imageHeight == 0)
+            const SizedBox.shrink()
+          else if (spec.kind == _Kind.image)
             SizedBox(
               height: spec.imageHeight,
               child: ClipRRect(
@@ -1599,7 +1718,7 @@ class _NodeView extends StatelessWidget {
               ),
               child: Text(
                 spec.quote ?? '',
-                maxLines: spec.expanded ? null : _NodeSpec.maxQuoteLines,
+                maxLines: spec.expanded ? null : spec.maxLines,
                 overflow: spec.expanded ? null : TextOverflow.ellipsis,
                 style: t.readingExcerpt,
               ),

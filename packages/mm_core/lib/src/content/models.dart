@@ -323,7 +323,13 @@ class MapNode {
 
   /// Children are hidden in the map view.
   final bool collapsed;
+
+  /// The card's width in this map (P2-C06); null is the default width.
   final double? width;
+
+  /// The range a card can be resized to.
+  static const minWidth = 200.0;
+  static const maxWidth = 480.0;
 
   MapNode copyWith({
     String? parentId,

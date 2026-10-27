@@ -1186,4 +1186,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exportSource => '出处';
+
+  @override
+  String get formatBold => '加粗';
+
+  @override
+  String get formatItalic => '斜体';
+
+  @override
+  String get formatBulletList => '无序列表';
+
+  @override
+  String get formatNumberList => '有序列表';
+
+  @override
+  String get densityCompact => '紧凑';
+
+  @override
+  String get densityFull => '完整';
+
+  @override
+  String get cardWidthHandle => '卡片宽度';
+
+  @override
+  String get resetCardWidth => '恢复默认宽度';
 }

@@ -13,9 +13,15 @@ const _summaryLabelWidth = 200.0;
 /// Per-canvas cache. Immutable content makes unchanged UI rebuilds O(1).
 /// Geometry is compared separately so metadata and equal-size text edits
 /// can refresh node views without relaying out or repainting the edges.
+///
+/// Measurements are keyed by text, style and the width the text wraps in
+/// (which follows the card's width, P2-C06), plus how a note is drawn;
+/// clipped previews also by their line count, which follows the map's
+/// density. A card resized or a density switched so only ever measures the
+/// texts whose key changed, and switching back reads the old results.
 class MindMapRenderCache {
   static const measurementCapacity = 2048;
-  final _measurements = <(String, TextStyle, double), ({Size size, int lines})>{};
+  final _measurements = <_MeasureKey, ({Size size, int lines})>{};
   StudySetContent? _content;
   String? _title;
   String? _mapId;
@@ -26,6 +32,8 @@ class MindMapRenderCache {
   Locale? _locale;
   TextDirection _direction = TextDirection.ltr;
   (String, String)? _draft;
+  TextFormat? _draftFormat;
+  (String, double)? _widthDraft;
   (String, String)? _markDraft;
   Set<String> _expanded = const {};
   TreeLayoutResult? _layout;
@@ -64,6 +72,14 @@ class MindMapRenderCache {
     /// of the stored title so the layout follows the text field.
     (String, String)? draft,
 
+    /// The format of [draft] when it differs from the card's (a note
+    /// formatted while it is edited).
+    TextFormat? draftFormat,
+
+    /// A card being resized (card id, width): measured at that width in
+    /// place of the stored one.
+    (String, double)? widthDraft,
+
     /// Likewise for the label of a relation or summary (id, text).
     (String, String)? markDraft,
 
@@ -82,6 +98,8 @@ class MindMapRenderCache {
         _title == rootTitle &&
         _mapId == mapId &&
         _draft == draft &&
+        _draftFormat == draftFormat &&
+        _widthDraft == widthDraft &&
         _markDraft == markDraft &&
         setEquals(_expanded, expanded) &&
         identical(_localizations, localizations)) {
@@ -100,6 +118,8 @@ class MindMapRenderCache {
     _title = rootTitle;
     _mapId = mapId;
     _draft = draft;
+    _draftFormat = draftFormat;
+    _widthDraft = widthDraft;
     _markDraft = markDraft;
     _expanded = Set.of(expanded);
     _localizations = localizations;
@@ -108,6 +128,7 @@ class MindMapRenderCache {
     final cards = {for (final card in content.cards) card.id: card};
     final annotations = {for (final a in content.annotations) a.id: a};
     final documents = {for (final d in content.documents) d.id: d};
+    final compact = (content.map(mapId)?.density ?? MapDensity.full) != MapDensity.full;
     final children = <String?, List<MapNode>>{};
     for (final node in content.nodes) {
       if (node.mapId != mapId) continue;
@@ -142,13 +163,15 @@ class MindMapRenderCache {
                 card.id,
                 id,
                 _NodeSpec.forCard(
-                  draft?.$1 == card.id ? card.copyWith(title: draft!.$2) : card,
+                  draft?.$1 == card.id ? card.copyWith(title: draft!.$2, textFormat: draftFormat) : card,
                   annotations[card.annotationId],
                   documents[annotations[card.annotationId]?.documentId],
                   localizations,
                   this,
                   editing: draft?.$1 == card.id,
                   expanded: expanded.contains(card.id),
+                  width: widthDraft?.$1 == card.id ? widthDraft!.$2 : node.width,
+                  compact: compact,
                 ),
                 collapsed: node.collapsed,
               ),
@@ -207,15 +230,29 @@ class MindMapRenderCache {
     );
   }
 
-  ({Size size, int lines}) _measure(String text, TextStyle style, double width) {
-    final key = (text, style, width);
+  /// [text] laid out in [width]. With [note] it is a note's text in that
+  /// format, drawn as shown, or with [source] as edited (the markup shown).
+  ({Size size, int lines}) _measure(
+    String text,
+    TextStyle style,
+    double width, {
+    TextFormat? note,
+    bool source = false,
+  }) {
+    final key = (text: text, style: style, width: width, note: note, source: source);
     final cached = _measurements.remove(key);
     if (cached != null) {
       _measurements[key] = cached;
       return cached;
     }
+    final merged = _baseStyle.merge(style);
+    final shown = text.isEmpty ? ' ' : text;
     final painter = TextPainter(
-      text: TextSpan(text: text.isEmpty ? ' ' : text, style: _baseStyle.merge(style)),
+      text: note == null
+          ? TextSpan(text: shown, style: merged)
+          : source
+          ? noteSourceSpan(shown, note, merged)
+          : noteSpan(shown, note, merged),
       textDirection: _direction,
       textScaler: _textScaler,
       locale: _locale,
@@ -265,6 +302,8 @@ class MindMapRenderCache {
   }
 }
 
+typedef _MeasureKey = ({String text, TextStyle style, double width, TextFormat? note, bool source});
+
 enum _Kind { root, topic, excerpt, note, image }
 
 /// What a node shows, and its measured size (layout needs sizes up front).
@@ -282,6 +321,9 @@ class _NodeSpec {
     this.suspended = false,
     this.truncated = false,
     this.expanded = false,
+    this.format = TextFormat.plain,
+    this.maxLines = maxQuoteLines,
+    this.resizable = false,
   }) : label = label ?? title;
 
   final _Kind kind;
@@ -293,36 +335,52 @@ class _NodeSpec {
   /// mark (the node itself is named by its content).
   final String label;
 
-  /// The quote as shown: at most [maxQuoteLines] lines, ending with an
-  /// ellipsis when cut. The source ([meta]) is shown on hover or selection.
+  /// The quote as shown: at most [maxLines] lines, ending with an ellipsis
+  /// when cut. The source ([meta]) is shown on hover or selection.
   final String? quote;
   final String? meta;
   final MMAnnotationColor? color;
   final Size size;
 
   /// Image cards: package file name and the picture's height, from the
-  /// area's aspect ratio (layout needs it before the file is decoded).
+  /// area's aspect ratio (layout needs it before the file is decoded). No
+  /// picture in a compact map.
   final String? image;
   final double imageHeight;
 
   /// Kept out of review: drawn faded.
   final bool suspended;
 
-  /// The card's preview cuts its text (quote past [maxQuoteLines] lines, or
-  /// a title past one line): it offers to show the whole text.
+  /// The card's preview cuts its text (quote past [maxLines] lines, or a
+  /// title past one line): it offers to show the whole text.
   final bool truncated;
 
   /// The whole text is shown (only ever set on a [truncated] card).
   final bool expanded;
 
+  /// A note's text format: Markdown is shown formatted.
+  final TextFormat format;
+
+  /// Lines of the quote in the preview: fewer in a compact map.
+  final int maxLines;
+
+  /// Excerpts, images and research notes can be made wider or narrower.
+  final bool resizable;
+
   static const excerptWidth = 240.0;
   static const maxQuoteLines = 4;
-  static const _excerptTextWidth = excerptWidth - 12 - 38 - 16;
-  static const imageWidth = excerptWidth - 12 - 38;
+  static const compactQuoteLines = 2;
 
-  /// Title text beside the color dot (9) and its gap (7).
-  static const titleTextWidth = imageWidth - 16;
+  /// Card padding left and right of the text (12 + 38) and the quote's own
+  /// padding (16).
+  static const _cardInset = 12.0 + 38;
+  static const _quoteInset = 16.0;
   static final titleStyle = MMTypography.headline.copyWith(height: 17 / 13);
+  static final noteStyle = MMTypography.body.copyWith(height: 19 / 13);
+
+  /// Widest an unsized note grows, and a note's padding and pen icon.
+  static const _noteWidth = 230.0;
+  static const _noteInset = 48.0;
 
   /// "Show full text" / "Show less" below a cut card: gap and line height.
   static const toggleGap = MMSpacing.xs;
@@ -348,12 +406,20 @@ class _NodeSpec {
     MindMapRenderCache cache, {
     bool editing = false,
     bool expanded = false,
+
+    /// The card's width in this map (excerpts, images and research notes);
+    /// null for the default.
+    double? width,
+    bool compact = false,
   }) {
     // Excerpts and images show a title row only when they have a title (or
     // one is being typed).
     final titled = card.title.isNotEmpty || editing;
     final titleRow = titled ? cache._textScaler.scale(17) + 6 : 0;
     final source = doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}';
+    final cardWidth = (width ?? excerptWidth).clamp(MapNode.minWidth, MapNode.maxWidth).toDouble();
+    // Title text beside the color dot (9) and its gap (7).
+    final titleWidth = cardWidth - _cardInset - 16;
     switch (card.kind) {
       case CardKind.topic:
         final s = cache._measure(card.title, MMTypography.headline, 220 - 28).size;
@@ -366,22 +432,58 @@ class _NodeSpec {
           Size(s.width + 32, s.height + 18),
           suspended: card.suspended,
         );
-      case CardKind.research:
       case CardKind.note:
-        final s = cache._measure(card.title, MMTypography.body.copyWith(height: 19 / 13), 230 - 44).size;
+        // A note is measured as it is drawn: formatted, or with its markup
+        // while it is edited.
+        final s = cache
+            ._measure(card.title, noteStyle, _noteWidth - _noteInset, note: card.textFormat, source: editing)
+            .size;
         return _NodeSpec._(
           _Kind.note,
           card.title,
           null,
           null,
           null,
-          Size(s.width + 48, s.height + 16),
+          Size(s.width + _noteInset, s.height + 16),
           suspended: card.suspended,
+          format: card.textFormat,
+        );
+      case CardKind.research:
+        // A compact map shows a research note's first line only.
+        final textWidth = (width == null ? _noteWidth : cardWidth) - _noteInset;
+        final shown = compact && !editing ? cache._clip(card.title, noteStyle, textWidth, 1) : card.title;
+        final s = cache._measure(shown, noteStyle, textWidth).size;
+        return _NodeSpec._(
+          _Kind.note,
+          shown,
+          null,
+          null,
+          null,
+          Size(width == null ? s.width + _noteInset : cardWidth, s.height + 16),
+          label: card.title,
+          suspended: card.suspended,
+          resizable: true,
         );
       case CardKind.image:
+        final label = card.title.isEmpty ? l.imageExcerpt : card.title;
+        if (compact && !editing) {
+          // The title row alone, named by its label when untitled.
+          final height = 11 + cache._textScaler.scale(17) + 11 + 2;
+          return _NodeSpec._(
+            _Kind.image,
+            label,
+            null,
+            source,
+            MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
+            Size(cardWidth, height.toDouble()),
+            label: label,
+            suspended: card.suspended,
+            resizable: true,
+          );
+        }
         final r = a?.rects.firstOrNull;
         final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
-        final imageHeight = (imageWidth * aspect).clamp(36.0, 200.0).roundToDouble();
+        final imageHeight = ((cardWidth - _cardInset) * aspect).clamp(36.0, 200.0).roundToDouble();
         final height = 11 + titleRow + imageHeight + 11 + 2;
         return _NodeSpec._(
           _Kind.image,
@@ -389,24 +491,25 @@ class _NodeSpec {
           null,
           source,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
-          Size(excerptWidth, height.toDouble()),
+          Size(cardWidth, height.toDouble()),
           image: card.imageFileName,
           imageHeight: imageHeight,
-          label: card.title.isEmpty ? l.imageExcerpt : card.title,
+          label: label,
           suspended: card.suspended,
+          resizable: true,
         );
       case CardKind.excerpt:
+        final maxLines = compact ? compactQuoteLines : maxQuoteLines;
+        final textWidth = cardWidth - _cardInset - _quoteInset;
         final full = a?.quote ?? '';
-        final clipped = cache._clip(full, MMTypography.readingExcerpt, _excerptTextWidth, maxQuoteLines);
+        final clipped = cache._clip(full, MMTypography.readingExcerpt, textWidth, maxLines);
         // While the title is typed the field keeps one line, so the card
         // shows its preview.
-        final titleLines = card.title.isEmpty || editing
-            ? 1
-            : cache._measure(card.title, titleStyle, titleTextWidth).lines;
+        final titleLines = card.title.isEmpty || editing ? 1 : cache._measure(card.title, titleStyle, titleWidth).lines;
         final truncated = !editing && (clipped != full || titleLines > 1);
         final open = truncated && expanded;
         final quote = open ? full : clipped;
-        final lines = cache._measure(quote, MMTypography.readingExcerpt, _excerptTextWidth).lines;
+        final lines = cache._measure(quote, MMTypography.readingExcerpt, textWidth).lines;
         final scale = cache._textScaler.scale;
         final shownTitle = titled ? (open ? titleLines : 1) * scale(17) + 6 : 0;
         final toggle = truncated ? toggleGap + scale(toggleLineHeight) : 0;
@@ -417,11 +520,13 @@ class _NodeSpec {
           quote,
           source,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
-          Size(excerptWidth, height.toDouble()),
+          Size(cardWidth, height.toDouble()),
           label: card.title.isEmpty ? (clipped.isEmpty ? l.untitledExcerpt : clipped) : card.title,
           suspended: card.suspended,
           truncated: truncated,
           expanded: open,
+          maxLines: maxLines,
+          resizable: true,
         );
     }
   }

@@ -148,6 +148,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           ),
           if (content.annotation(card.annotationId ?? '') != null)
             MMMenuItem(l.revealSource, () => controller.revealCard(card.id), shortcut: '⌘L'),
+          if (node?.width != null) MMMenuItem(l.resetCardWidth, () => controller.setCardWidth(card.id, null)),
           const MMMenuDivider(),
         ],
         if (branchDue || suspendable) ...[
@@ -343,6 +344,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     expandedCardIds: state.expandedCardIds,
                     onToggleExpanded: controller.toggleExpanded,
                     onOpenDetails: controller.showDetails,
+                    onResize: controller.setCardWidth,
                   )
                 : OutlineView(
                     key: ValueKey(state.activeMapId),
@@ -435,56 +437,73 @@ class _MapPaneState extends ConsumerState<MapPane> {
             Positioned(
               right: 12,
               bottom: 12,
-              child: MMGlass(
-                borderRadius: BorderRadius.circular(16),
-                padding: const EdgeInsets.all(3),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MMIconButton(
-                      icon: MMIcons.image,
-                      tooltip: l.insertImage,
-                      onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  MMSegmentedControl<MapDensity>(
+                    key: const ValueKey('map-density'),
+                    value: content.map(state.activeMapId)?.density == MapDensity.full
+                        ? MapDensity.full
+                        : MapDensity.compact,
+                    onChanged: controller.setMapDensity,
+                    segments: [
+                      MMSegment(value: MapDensity.compact, label: l.densityCompact),
+                      MMSegment(value: MapDensity.full, label: l.densityFull),
+                    ],
+                  ),
+                  const SizedBox(width: MMSpacing.s),
+                  MMGlass(
+                    borderRadius: BorderRadius.circular(16),
+                    padding: const EdgeInsets.all(3),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MMIconButton(
+                          icon: MMIcons.image,
+                          tooltip: l.insertImage,
+                          onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
+                        ),
+                        const MMToolbarDivider(),
+                        MMIconButton(
+                          icon: MMIcons.fitMap,
+                          tooltip: l.fitMap,
+                          onPressed: () => _viewCommand(MindMapCommand.fit),
+                        ),
+                        MMIconButton(
+                          icon: MMIcons.locate,
+                          tooltip: l.centerCurrentNode,
+                          onPressed: () => _viewCommand(MindMapCommand.center),
+                        ),
+                        const MMToolbarDivider(),
+                        MMIconButton(
+                          icon: MMIcons.zoomOut,
+                          tooltip: l.zoomOut,
+                          size: 26,
+                          iconSize: 13,
+                          color: c.label,
+                          onPressed: () => _zoom(1 / 1.25),
+                        ),
+                        SizedBox(
+                          width: 44,
+                          child: MMInteractive(
+                            tooltip: l.pdfActualSize,
+                            semanticLabel: l.pdfActualSize,
+                            onTap: () => _zoom(1 / mapScale(_transform.value)),
+                            builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
+                          ),
+                        ),
+                        MMIconButton(
+                          icon: MMIcons.zoomIn,
+                          tooltip: l.zoomIn,
+                          size: 26,
+                          iconSize: 13,
+                          color: c.label,
+                          onPressed: () => _zoom(1.25),
+                        ),
+                      ],
                     ),
-                    const MMToolbarDivider(),
-                    MMIconButton(
-                      icon: MMIcons.fitMap,
-                      tooltip: l.fitMap,
-                      onPressed: () => _viewCommand(MindMapCommand.fit),
-                    ),
-                    MMIconButton(
-                      icon: MMIcons.locate,
-                      tooltip: l.centerCurrentNode,
-                      onPressed: () => _viewCommand(MindMapCommand.center),
-                    ),
-                    const MMToolbarDivider(),
-                    MMIconButton(
-                      icon: MMIcons.zoomOut,
-                      tooltip: l.zoomOut,
-                      size: 26,
-                      iconSize: 13,
-                      color: c.label,
-                      onPressed: () => _zoom(1 / 1.25),
-                    ),
-                    SizedBox(
-                      width: 44,
-                      child: MMInteractive(
-                        tooltip: l.pdfActualSize,
-                        semanticLabel: l.pdfActualSize,
-                        onTap: () => _zoom(1 / mapScale(_transform.value)),
-                        builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
-                      ),
-                    ),
-                    MMIconButton(
-                      icon: MMIcons.zoomIn,
-                      tooltip: l.zoomIn,
-                      size: 26,
-                      iconSize: 13,
-                      color: c.label,
-                      onPressed: () => _zoom(1.25),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
         ],

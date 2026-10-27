@@ -494,7 +494,7 @@ void main() {
                     transformation: transform,
                     focusNode: focus,
                     editingCardId: editing,
-                    onEditDone: (text) => log?.add('done:$text'),
+                    onEditDone: (text, _) => log?.add('done:$text'),
                     onEditCancel: () => log?.add('cancel'),
                     onSelect: (_) {},
                     onReveal: (_) {},

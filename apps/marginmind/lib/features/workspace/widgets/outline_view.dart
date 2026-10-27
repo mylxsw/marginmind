@@ -60,7 +60,7 @@ class OutlineView extends StatefulWidget {
 
   /// Card whose title (a note's text) is shown as a text field.
   final String? editingCardId;
-  final ValueChanged<String>? onEditDone;
+  final CardEditDone? onEditDone;
   final VoidCallback? onEditCancel;
 
   @override
@@ -83,7 +83,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
   @override
   FocusNode get hostFocus => widget.focusNode;
   @override
-  ValueChanged<String>? get onFieldDone => widget.onEditDone;
+  CardEditDone? get onFieldDone => widget.onEditDone;
   @override
   VoidCallback? get onFieldCancel => widget.onEditCancel;
   @override
@@ -268,7 +268,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
                 ? (card.title.isEmpty ? (annotation?.quote ?? '') : card.title)
                 : isImage && card.title.isEmpty && f?.id != card.id
                 ? l.imageExcerpt
-                : card.title,
+                : notePlainText(card.title, card.textFormat),
             sub: isExcerpt && (card.title.isNotEmpty || f?.id == card.id) ? annotation?.quote : null,
             meta: annotation == null ? null : l.pageNumber(annotation.page),
             dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,

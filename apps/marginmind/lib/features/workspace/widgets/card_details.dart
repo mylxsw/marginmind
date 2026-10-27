@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/note_text.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'right_panel.dart';
@@ -74,10 +75,12 @@ class CardDetails extends ConsumerWidget {
       _DetailsTitle(
         key: ValueKey('details-title-${card.id}'),
         title: card.title,
+        format: card.textFormat,
         note: card.kind == CardKind.note || card.kind == CardKind.research,
         image: card.kind == CardKind.image,
+        formatted: card.kind == CardKind.note,
         optional: card.kind == CardKind.excerpt || card.kind == CardKind.image,
-        onCommit: (text) => controller.setTitle(card.id, text),
+        onCommit: (text, format) => controller.setTitle(card.id, text, format),
       ),
       if (card.kind == CardKind.excerpt && annotation != null)
         Container(
@@ -229,9 +232,16 @@ class _DetailsTitle extends StatefulWidget {
     required this.optional,
     this.image = false,
     required this.onCommit,
+    this.format = TextFormat.plain,
+    this.formatted = false,
   });
 
   final String title;
+  final TextFormat format;
+
+  /// A note takes basic formatting (P2-C07): a format bar shows while it
+  /// is edited.
+  final bool formatted;
 
   /// Whether the title may be cleared (excerpts and images show their
   /// content instead); a cleared required title comes back.
@@ -240,14 +250,28 @@ class _DetailsTitle extends StatefulWidget {
 
   /// A note's text: body style, ⇧Enter for a new line.
   final bool note;
-  final Future<void> Function(String text) onCommit;
+  final Future<void> Function(String text, TextFormat format) onCommit;
 
   @override
   State<_DetailsTitle> createState() => _DetailsTitleState();
 }
 
 class _DetailsTitleState extends State<_DetailsTitle> {
-  late final _controller = TextEditingController(text: widget.title);
+  late final _controller = widget.formatted
+      ? NoteFormatController(text: widget.title, format: widget.format)
+      : TextEditingController(text: widget.title);
+
+  TextFormat get _format => switch (_controller) {
+    final NoteFormatController note => note.format,
+    _ => widget.format,
+  };
+
+  /// Puts the stored text (and format) back in the field.
+  void _reset() {
+    if (_controller case final NoteFormatController note) note.format = widget.format;
+    _controller.text = widget.title;
+  }
+
   final _focus = FocusNode(debugLabel: 'DetailsTitle');
 
   /// The field has had the keyboard since its text was last saved or reset.
@@ -274,19 +298,20 @@ class _DetailsTitleState extends State<_DetailsTitle> {
   void didUpdateWidget(_DetailsTitle oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Undo, the map's own editor or another window changed the title.
-    if (!_focus.hasFocus && widget.title != _controller.text) _controller.text = widget.title;
+    if (!_focus.hasFocus && (widget.title != _controller.text || widget.format != _format)) _reset();
   }
 
-  /// Whether [text] would change the stored title.
-  bool _changes(String text) => text.trim() != widget.title && (widget.optional || text.trim().isNotEmpty);
+  /// Whether [text] in [format] would change the stored title.
+  bool _changes(String text, TextFormat format) =>
+      (text.trim() != widget.title || format != widget.format) && (widget.optional || text.trim().isNotEmpty);
 
   void _commit() {
     _editing = false;
     final text = _controller.text;
-    if (_changes(text)) {
-      unawaited(widget.onCommit(text));
-    } else if (text != widget.title) {
-      _controller.text = widget.title;
+    if (_changes(text, _format)) {
+      unawaited(widget.onCommit(text, _format));
+    } else if (text != widget.title || _format != widget.format) {
+      _reset();
     }
   }
 
@@ -294,8 +319,9 @@ class _DetailsTitleState extends State<_DetailsTitle> {
   void dispose() {
     // Moving to another card or closing the panel keeps what was typed.
     final text = _controller.text;
+    final format = _format;
     final commit = widget.onCommit;
-    if (_editing && _changes(text)) Future.microtask(() => commit(text));
+    if (_editing && _changes(text, format)) Future.microtask(() => commit(text, format));
     _focus.dispose();
     _controller.dispose();
     super.dispose();
@@ -306,7 +332,7 @@ class _DetailsTitleState extends State<_DetailsTitle> {
     final t = context.mmText;
     final c = context.mmColors;
     final style = widget.note ? t.body.copyWith(height: 19 / 13) : t.title3;
-    return Container(
+    final field = Container(
       padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs, vertical: MMSpacing.xxs),
       decoration: BoxDecoration(
         color: _focus.hasFocus ? c.quaternaryFill : null,
@@ -330,12 +356,21 @@ class _DetailsTitleState extends State<_DetailsTitle> {
             onSubmitted: _focus.unfocus,
             onCancel: () {
               _editing = false;
-              _controller.text = widget.title;
+              _reset();
               _focus.unfocus();
             },
           ),
         ],
       ),
+    );
+    final controller = _controller;
+    if (controller is! NoteFormatController) return field;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_focus.hasFocus) ...[NoteFormatBar(controller: controller), const SizedBox(height: MMSpacing.xs)],
+        NoteFormatScope(controller: controller, child: field),
+      ],
     );
   }
 }

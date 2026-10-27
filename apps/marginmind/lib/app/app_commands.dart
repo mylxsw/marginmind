@@ -147,6 +147,23 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   AppShortcuts.toggleCardText: MindMapCommand.expand,
 };
 
+/// Note formatting (P2-C07), acting on the note being edited.
+enum NoteFormatCommand { bold, italic, bullets, numbers }
+
+class NoteFormatIntent extends Intent {
+  const NoteFormatIntent(this.command);
+  final NoteFormatCommand command;
+}
+
+/// Handled by the focused note field itself. ⌘I is "Card details" in the
+/// menu bar, which is disabled while a text field has the keyboard, so the
+/// menu items below carry no key equivalents: two items sharing ⌘I could
+/// shadow each other.
+Map<SingleActivator, NoteFormatCommand> get noteFormatShortcuts => {
+  primaryShortcut(LogicalKeyboardKey.keyB): NoteFormatCommand.bold,
+  primaryShortcut(LogicalKeyboardKey.keyI): NoteFormatCommand.italic,
+};
+
 /// Reader zoom commands resolve through the focused reader.
 enum ReaderZoomCommand { zoomIn, zoomOut, actualSize, fitWidth, fitPage }
 
@@ -205,6 +222,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
   late bool _textFocused;
   bool _mapFocused = false;
   bool _readerFocused = false;
+  bool _noteFocused = false;
 
   bool get _isTextFocused =>
       FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -224,11 +242,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final focus = FocusManager.instance.primaryFocus?.context;
     final mapFocused = focus != null && Actions.maybeFind<MindMapIntent>(focus) != null;
     final readerFocused = focus != null && Actions.maybeFind<ReaderNavIntent>(focus) != null;
-    if (textFocused == _textFocused && mapFocused == _mapFocused && readerFocused == _readerFocused) return;
+    final noteFocused = focus != null && Actions.maybeFind<NoteFormatIntent>(focus) != null;
+    if (textFocused == _textFocused &&
+        mapFocused == _mapFocused &&
+        readerFocused == _readerFocused &&
+        noteFocused == _noteFocused) {
+      return;
+    }
     setState(() {
       _textFocused = textFocused;
       _mapFocused = mapFocused;
       _readerFocused = readerFocused;
+      _noteFocused = noteFocused;
     });
   }
 
@@ -432,6 +457,24 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               .firstOrNull,
         ),
     ]);
+    for (final (command, label) in [
+      (NoteFormatCommand.bold, l.formatBold),
+      (NoteFormatCommand.italic, l.formatItalic),
+      (NoteFormatCommand.bullets, l.formatBulletList),
+      (NoteFormatCommand.numbers, l.formatNumberList),
+    ]) {
+      edit.add(
+        AppCommand(
+          label,
+          _noteFocused
+              ? () {
+                  final focus = FocusManager.instance.primaryFocus?.context;
+                  if (focus != null) Actions.maybeInvoke(focus, NoteFormatIntent(command));
+                }
+              : null,
+        ),
+      );
+    }
     final hasLogs = ref.watch(
       studySetsProvider.select(
         (s) => s.value?.any((x) => x.reviewLogCount > 0 && (workspaceId == null || x.id == workspaceId)) ?? false,
