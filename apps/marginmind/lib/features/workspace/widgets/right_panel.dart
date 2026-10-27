@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
-import '../../research/widgets/research_panel.dart';
+import '../../assistant/widgets/assistant_panel.dart';
 import '../workspace_controller.dart';
 import 'card_details.dart';
 
-/// The right panel: research or the selected card's details, one at a time.
+/// The right panel: the assistant or the selected card's details, one at a time.
 /// Esc closes it unless a field inside uses the key first.
 ///
 /// It appears and goes at once, like the split view's layouts: while its
@@ -35,7 +35,7 @@ class RightPanelView extends ConsumerWidget {
           ),
           child: switch (panel) {
             RightPanel.details => CardDetails(studySetId: studySetId),
-            RightPanel.research || null => ResearchPanel(studySetId: studySetId, onClose: controller.closePanel),
+            RightPanel.assistant || null => AssistantPanel(studySetId: studySetId),
           },
         ),
       ),
@@ -45,7 +45,14 @@ class RightPanelView extends ConsumerWidget {
 
 /// The panel's top row: what it shows, in [color], and a close button.
 class RightPanelHeader extends StatelessWidget {
-  const RightPanelHeader({super.key, required this.icon, required this.title, required this.onClose, this.color});
+  const RightPanelHeader({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.onClose,
+    this.color,
+    this.actions = const [],
+  });
 
   final IconData icon;
   final String title;
@@ -53,6 +60,9 @@ class RightPanelHeader extends StatelessWidget {
 
   /// Defaults to the secondary label color.
   final Color? color;
+
+  /// Shown before the close button.
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +87,7 @@ class RightPanelHeader extends StatelessWidget {
               style: t.subheadline.copyWith(color: tint),
             ),
           ),
+          ...actions,
           MMIconButton(icon: MMIcons.close, tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
         ],
       ),

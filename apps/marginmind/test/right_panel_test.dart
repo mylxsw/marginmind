@@ -174,11 +174,11 @@ void main() {
 
     testWidgets('origin decides which pane steps aside; switching content keeps the restore point', (tester) async {
       final app = await _open(tester);
-      app.controller.openPanel(RightPanel.research, origin: PanelOrigin.reader);
+      app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.primary, reason: 'from the source: the map steps aside');
-      expect(_inPanel(find.text('Select text or a map node to research')), findsOneWidget);
-      expect(_inPanel(find.text('Research')), findsOneWidget);
+      expect(_inPanel(find.text('Connect an AI service')), findsOneWidget);
+      expect(_inPanel(find.text('Assistant')), findsOneWidget);
 
       // Another content in the open panel does not move the panes again.
       app.controller.selectCard(_excerptId);
@@ -186,28 +186,28 @@ void main() {
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.primary);
       expect(_inPanel(find.text('Excerpt')), findsOneWidget);
-      app.controller.toggleResearchPanel();
+      app.controller.toggleAssistantPanel();
       await tester.pumpAndSettle();
-      expect(_state(app.container).panel, RightPanel.research);
-      app.controller.toggleResearchPanel();
+      expect(_state(app.container).panel, RightPanel.assistant);
+      app.controller.toggleAssistantPanel();
       await tester.pumpAndSettle();
       expect(_state(app.container).panel, isNull);
       expect(_state(app.container).layout, MMSplitMode.split);
 
       // From the toolbar, and outside split layout, the panes stay as they are.
-      app.controller.openPanel(RightPanel.research);
+      app.controller.openPanel(RightPanel.assistant);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.split);
       // A research started from a pane while the panel is open beside both
       // still puts the other pane aside; closing restores the split.
-      app.controller.openPanel(RightPanel.research, origin: PanelOrigin.map);
+      app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.map);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.secondary);
       app.controller.closePanel();
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.split);
       app.controller.setLayout(MMSplitMode.secondary);
-      app.controller.openPanel(RightPanel.research, origin: PanelOrigin.reader);
+      app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.secondary);
       // Layout changes while open are undone on close, like the sidebar.
@@ -251,15 +251,15 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('dark appearance renders the panel with research and details', (tester) async {
-      final app = await _open(tester, overrides: [researchAvailableProvider.overrideWithValue(true)]);
+    testWidgets('dark appearance renders the panel with the assistant and details', (tester) async {
+      final app = await _open(tester);
       await app.container.read(settingsProvider.notifier).setAppearance(AppearancePreference.dark);
       await tester.pumpAndSettle();
-      app.controller.toggleResearchPanel();
+      app.controller.toggleAssistantPanel();
       await tester.pumpAndSettle();
       final colors = MMColors.dark;
-      final header = tester.widget<Text>(_inPanel(find.text('Research')));
-      expect(header.style!.color, colors.research);
+      final header = tester.widget<Text>(_inPanel(find.text('Assistant')));
+      expect(header.style!.color, colors.label);
       expect(tester.takeException(), isNull);
       app.controller.selectCard(_excerptId);
       app.controller.showDetails();
@@ -271,24 +271,25 @@ void main() {
   });
 
   group('commands', () {
-    testWidgets('research entry points stay hidden when research is turned off', (tester) async {
+    testWidgets('the assistant does not depend on research being available', (tester) async {
       final app = await _open(tester, overrides: [researchAvailableProvider.overrideWithValue(false)]);
       expect(find.byTooltip(RegExp('^Research')), findsNothing);
-      await _press(tester, AppShortcuts.researchPanel);
-      expect(_state(app.container).panel, isNull);
+      expect(find.byKey(const ValueKey('toolbar-assistant')), findsOneWidget);
+      await _press(tester, AppShortcuts.assistantPanel);
+      expect(_state(app.container).panel, RightPanel.assistant);
     });
 
-    testWidgets('with research available the toolbar button and shortcut toggle the panel', (tester) async {
-      final app = await _open(tester, overrides: [researchAvailableProvider.overrideWithValue(true)]);
-      final button = find.byTooltip('Research（${describeShortcut(AppShortcuts.researchPanel)}）');
+    testWidgets('the toolbar button and shortcut toggle the assistant panel', (tester) async {
+      final app = await _open(tester);
+      final button = find.byTooltip('Assistant（${describeShortcut(AppShortcuts.assistantPanel)}）');
       expect(button, findsOneWidget);
       await tester.tap(button);
       await tester.pumpAndSettle();
-      expect(_state(app.container).panel, RightPanel.research);
-      await _press(tester, AppShortcuts.researchPanel);
+      expect(_state(app.container).panel, RightPanel.assistant);
+      await _press(tester, AppShortcuts.assistantPanel);
       expect(_state(app.container).panel, isNull);
-      await _press(tester, AppShortcuts.researchPanel);
-      expect(_state(app.container).panel, RightPanel.research);
+      await _press(tester, AppShortcuts.assistantPanel);
+      expect(_state(app.container).panel, RightPanel.assistant);
     });
 
     test('new shortcuts avoid the commands they sit beside', () {
@@ -300,12 +301,12 @@ void main() {
           AppShortcuts.toggleSidebar,
           ...mindMapShortcuts.entries.where((e) => e.value != MindMapCommand.expand).map((e) => e.key),
         ];
-        for (final shortcut in [AppShortcuts.researchPanel, AppShortcuts.cardDetails, AppShortcuts.toggleCardText]) {
+        for (final shortcut in [AppShortcuts.assistantPanel, AppShortcuts.cardDetails, AppShortcuts.toggleCardText]) {
           expect(taken.map(describeShortcut), isNot(contains(describeShortcut(shortcut))), reason: '$platform');
         }
       }
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-      expect(describeShortcut(AppShortcuts.researchPanel), '⌃⌘R');
+      expect(describeShortcut(AppShortcuts.assistantPanel), '⌃⌘R');
       expect(describeShortcut(AppShortcuts.cardDetails), '⌘I');
       expect(describeShortcut(AppShortcuts.toggleCardText), '⌥Space');
       debugDefaultTargetPlatformOverride = null;

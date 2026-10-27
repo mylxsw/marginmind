@@ -8,10 +8,8 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../features/library/library_controller.dart';
 import '../features/library/new_study_set.dart';
-import '../features/research/research_entry.dart';
-import '../features/research/widgets/research_widgets.dart';
+import '../features/assistant/assistant_entry.dart';
 import '../features/research/research_controller.dart';
-import '../features/research/widgets/video_link_sheet.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
@@ -83,7 +81,7 @@ abstract final class AppShortcuts {
   /// ⌃⌘R, beside ⌃⌘S for the sidebar (⌘R, ⇧⌘R and ⌥⌘R are taken). Where
   /// Ctrl is the primary modifier, Ctrl+R, Ctrl+Shift+R and Ctrl+Alt+R are
   /// taken by the same commands, so it takes all three modifiers.
-  static SingleActivator get researchPanel => defaultTargetPlatform == TargetPlatform.macOS
+  static SingleActivator get assistantPanel => defaultTargetPlatform == TargetPlatform.macOS
       ? primaryShortcut(LogicalKeyboardKey.keyR, control: true)
       : primaryShortcut(LogicalKeyboardKey.keyR, shift: true, alt: true);
 
@@ -94,9 +92,9 @@ abstract final class AppShortcuts {
   /// Space edits the selected node; ⌥Space only changes how much it shows.
   static SingleActivator get toggleCardText => const SingleActivator(LogicalKeyboardKey.space, alt: true);
 
-  /// ⇧⌘E: research the selected text or node (E for Explore; ⌘E and ⌥⌘E
+  /// ⇧⌘E: ask the assistant about the selected text or node (⌘E and ⌥⌘E
   /// stay free for excerpting to the map).
-  static SingleActivator get researchSelection => primaryShortcut(LogicalKeyboardKey.keyE, shift: true);
+  static SingleActivator get askAssistant => primaryShortcut(LogicalKeyboardKey.keyE, shift: true);
 
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
   static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
@@ -188,7 +186,7 @@ Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight, research }
+enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight, assistant }
 
 class ReaderSelectionIntent extends Intent {
   const ReaderSelectionIntent(this.command);
@@ -199,7 +197,7 @@ Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
   const SingleActivator(LogicalKeyboardKey.keyE): const ReaderSelectionIntent(ReaderSelectionCommand.excerpt),
   const SingleActivator(LogicalKeyboardKey.keyH): const ReaderSelectionIntent(ReaderSelectionCommand.highlight),
   primaryShortcut(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.copy),
-  const SingleActivator(LogicalKeyboardKey.keyR): const ReaderSelectionIntent(ReaderSelectionCommand.research),
+  const SingleActivator(LogicalKeyboardKey.keyA): const ReaderSelectionIntent(ReaderSelectionCommand.assistant),
 };
 
 /// Page navigation keys that only act while the reader has the keyboard
@@ -486,10 +484,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       );
     }
     // ⇧⌘E: the selected text (or highlight) in the reader, else the selected node.
-    if (ref.watch(researchAvailableProvider) && inWorkspace) {
-      final researchPanel = ref.watch(researchPanelProvider(workspaceId));
-      final noteId = workspaceState!.panel == RightPanel.research
-          ? researchPanel.noteId
+    if (inWorkspace) {
+      final noteId = workspaceState!.panel == RightPanel.assistant
+          ? ref.watch(researchPanelProvider(workspaceId).select((s) => s.noteId))
           : workspace!.content
                 .card(
                   workspaceState.panel == RightPanel.details
@@ -499,39 +496,23 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                 ?.researchNoteId;
       edit.add(
         AppCommand(
-          l.researchDelete,
-          researchPanel.sessionId != null && workspaceState.panel == RightPanel.research
-              ? () => deleteResearchSession(context, ref, workspaceId, researchPanel.sessionId!)
-              : null,
-        ),
-      );
-      edit.add(
-        AppCommand(
-          l.researchSaveVideo,
-          researchPanel.sessionId == null || workspaceState.panel != RightPanel.research
-              ? null
-              : () => showVideoLinkSheet(context, workspaceId, researchPanel.sessionId!),
-        ),
-      );
-      edit.add(
-        AppCommand(
           '${noteId != null && workspace!.content.researchReviewEnabled(noteId) ? "✓ " : ""}${l.researchAddReview}',
           noteId == null
               ? null
               : () => workspace!.setResearchReview(noteId, enabled: !workspace.content.researchReviewEnabled(noteId)),
         ),
       );
-      final researchText = selectionOpen || (highlightOpen && highlightText);
-      final researchCard = editable && !_textFocused && selected != null ? selected : null;
+      final selectionText = selectionOpen || (highlightOpen && highlightText);
+      final askCard = editable && !_textFocused && selected != null ? selected : null;
       edit.add(
         AppCommand(
-          l.researchSelectionEllipsis,
-          researchText
-              ? () => invokeSelection(ReaderSelectionCommand.research)
-              : researchCard != null
-              ? () => researchNode(context, ref, studySetId: workspaceId, cardId: researchCard)
+          l.askAssistantEllipsis,
+          selectionText
+              ? () => invokeSelection(ReaderSelectionCommand.assistant)
+              : askCard != null
+              ? () => askAboutNode(ref, workspaceId, askCard)
               : null,
-          shortcut: AppShortcuts.researchSelection,
+          shortcut: AppShortcuts.askAssistant,
         ),
       );
     }
@@ -763,15 +744,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.read(workspaceProvider(workspaceId).notifier).toggleSidebar,
           shortcut: AppShortcuts.toggleSidebar,
         ),
-        if (ref.watch(researchAvailableProvider))
-          AppCommand(l.researchHistory, ref.read(researchPanelProvider(workspaceId).notifier).showStart),
-        // Research can be turned off as a whole (researchAvailableProvider).
-        if (ref.watch(researchAvailableProvider))
-          AppCommand(
-            workspaceState!.panel == RightPanel.research ? l.hideResearchPanel : l.showResearchPanel,
-            workspace.toggleResearchPanel,
-            shortcut: AppShortcuts.researchPanel,
-          ),
+        AppCommand(
+          workspaceState!.panel == RightPanel.assistant ? l.hideAssistant : l.showAssistant,
+          () => toggleAssistant(ref, workspaceId),
+          shortcut: AppShortcuts.assistantPanel,
+        ),
       ],
       if (inWorkspace) ...[
         AppCommand(

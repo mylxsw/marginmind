@@ -4,9 +4,9 @@
 
 ## UI 接入
 
-在学习集面板的 ProviderScope 中 override `assistantDependenciesProvider`，然后监听 `assistantControllerProvider`。依赖包含 studySetId、AssistantModel、StateStorage、AssistantRunFactory、MapEditExecutor、NoteSaver 和联网初值。默认 provider 故意不绑定磁盘或学习集，避免误用全局权限。
+GUL-530 起由 `AssistantScope`（`features/assistant/widgets/assistant_panel.dart`）在学习集窗口外层建立 ProviderScope，override `assistantDependenciesProvider` 与 `assistantControllerProvider`；窗口存在期间对话一直存活，关闭面板或切换文档不中断生成。依赖由 `assistantDependenciesForProvider(studySetId)` 组合：对话存储 `assistantArchiveProvider`（文件仓库用 `ConversationStorage`，内存仓库用 `MemoryConversationArchive`）、`assistantMapEditExecutorProvider` / `assistantNoteSaverProvider`（默认是不声称成功的占位实现，GUL-531 override）、`assistantNetworkProvider`（默认 null，GUL-532 提供）、`assistantMapRevisionProvider`（默认 0，执行器负责校验）。读取端口为 `WorkspaceReader`：选区原文来自本轮问题的 ContextItem（`displayText` 即原句），重启后也能重读；脑图根节点 ID 为 `__root__`，与画布一致，`mapParents` 把顶层节点挂在它下面。
 
-`assistantRunFactory`（`features/assistant/assistant_settings.dart`）读取当前供应商的钥匙串 Key，创建受控客户端。调用方提供绑定学习集的 reader、目标脑图 ID、当前 revision/parents 快照函数及联网适配器。`parents` 必须仅包含授权编辑的目标脑图节点；不存在的父节点、跨脑图 ID 与移动循环会被拒绝。整图/分支端口必须自行验证学习集归属和返回的后代关系，不能把搜索范围扩展到其他学习集。
+窗口外的入口（菜单栏、选区工具条、节点菜单、卡片详情）只调用 `askAssistant` / `askAboutPassage` / `askAboutNode`：写入 `assistantUiProvider`（附带的上下文、待发送问题、聚焦请求、来源抽屉），由窗口内的宿主发送。对 GUL-528 契约的向后兼容扩展：`AssistantController.rename`、`ConversationStorage.list`、`AssistantSettingsController.saved/select/models`。
 
 | 模型 | 字段与含义 |
 | --- | --- |

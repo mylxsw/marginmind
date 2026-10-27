@@ -78,4 +78,16 @@ void main() {
     expect(note.sessionId, 'legacy');
     expect(note.toJson()['conversationId'], 'conv');
   });
+  test('list returns saved conversation IDs only', () async {
+    expect(await storage.list(), isEmpty);
+    await storage.save(AgentState(sessionId: 'one'));
+    await storage.save(AgentState(sessionId: 'two'));
+    final conversations = Directory('${dir.path}/conversations');
+    await File('${conversations.path}/note.txt').writeAsString('x');
+    await File('${conversations.path}/bad name.json').writeAsString('{}');
+    await Link('${conversations.path}/link.json').create('${conversations.path}/one.json');
+    expect((await storage.list())..sort(), ['one', 'two']);
+    await storage.delete('one');
+    expect(await storage.list(), ['two']);
+  });
 }

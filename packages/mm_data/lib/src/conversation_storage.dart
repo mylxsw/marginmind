@@ -19,7 +19,7 @@ class ConversationStorage implements StateStorage {
   }
 
   Future<File> _file(String id) async {
-    if (!RegExp(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$').hasMatch(id)) {
+    if (!_id.hasMatch(id)) {
       throw const FormatException('Invalid conversation ID');
     }
     final root = await studySetDirectory.resolveSymbolicLinks();
@@ -66,6 +66,21 @@ class ConversationStorage implements StateStorage {
     final file = await _file(sessionId);
     if (await file.exists()) await file.delete();
   });
+
+  /// IDs of the saved conversations, in no particular order. Names that are
+  /// not valid IDs, temporary files and links are skipped.
+  Future<List<String>> list() => _serial(() async {
+    final root = await studySetDirectory.resolveSymbolicLinks();
+    final dir = Directory(p.join(root, 'conversations'));
+    if (await FileSystemEntity.type(dir.path, followLinks: false) != FileSystemEntityType.directory) return const [];
+    return [
+      await for (final entry in dir.list(followLinks: false))
+        if (entry is File && entry.path.endsWith('.json'))
+          if (p.basenameWithoutExtension(entry.path) case final id when _id.hasMatch(id)) id,
+    ];
+  });
+  static final _id = RegExp(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$');
+
   @override
   Future<bool> exist(String sessionId) => _serial(() async => (await _file(sessionId)).exists());
 }

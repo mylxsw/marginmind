@@ -18,7 +18,7 @@ export '../../settings/app_settings.dart' show AnnotationTool;
 enum MapViewMode { map, outline }
 
 /// What the right panel shows. One panel, one content at a time.
-enum RightPanel { research, details }
+enum RightPanel { assistant, details }
 
 /// Where the right panel was opened from: in split layout the other pane
 /// steps aside (the map for the source, the source for the map).
@@ -723,11 +723,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   String? _existing(String? cardId) =>
       cardId != null && content.node(cardId, mapId: state.activeMapId) != null ? cardId : null;
 
-  /// ⌃⌘R: opens the research panel, switches the panel to research, or
-  /// closes it when research is already showing.
-  void toggleResearchPanel() {
-    if (state.panel == RightPanel.research) return closePanel();
-    openPanel(RightPanel.research);
+  /// ⌃⌘R: opens the assistant panel, switches the panel to the assistant,
+  /// or closes it when the assistant is already showing.
+  void toggleAssistantPanel() {
+    if (state.panel == RightPanel.assistant) return closePanel();
+    openPanel(RightPanel.assistant);
   }
 
   /// Shows [cardId] (default: the selected card) in the details panel, opened

@@ -3679,6 +3679,792 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error code: {code}'**
   String researchDiagnosticCode(String code);
+
+  /// No description provided for @assistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant'**
+  String get assistant;
+
+  /// No description provided for @askAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Assistant'**
+  String get askAssistant;
+
+  /// No description provided for @askAssistantEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Assistant…'**
+  String get askAssistantEllipsis;
+
+  /// No description provided for @showAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Assistant'**
+  String get showAssistant;
+
+  /// No description provided for @hideAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Assistant'**
+  String get hideAssistant;
+
+  /// No description provided for @assistantNewConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New Conversation'**
+  String get assistantNewConversation;
+
+  /// No description provided for @assistantSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Assistant Settings'**
+  String get assistantSettings;
+
+  /// No description provided for @assistantHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get assistantHistory;
+
+  /// No description provided for @assistantConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get assistantConversations;
+
+  /// No description provided for @assistantNoConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get assistantNoConversations;
+
+  /// No description provided for @assistantPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask…'**
+  String get assistantPlaceholder;
+
+  /// No description provided for @assistantConnectFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect an AI service first'**
+  String get assistantConnectFirst;
+
+  /// No description provided for @assistantMention.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get assistantMention;
+
+  /// No description provided for @assistantCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get assistantCommands;
+
+  /// No description provided for @assistantOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get assistantOnline;
+
+  /// No description provided for @assistantOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get assistantOffline;
+
+  /// No description provided for @assistantSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get assistantSend;
+
+  /// No description provided for @assistantStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get assistantStop;
+
+  /// No description provided for @assistantModelSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to {name}'**
+  String assistantModelSwitched(String name);
+
+  /// No description provided for @assistantLocalModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local · {name}'**
+  String assistantLocalModel(String name);
+
+  /// No description provided for @assistantSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
+  String assistantSteps(int count);
+
+  /// No description provided for @assistantStepsOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'online'**
+  String get assistantStepsOnline;
+
+  /// No description provided for @assistantStepsOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'offline'**
+  String get assistantStepsOffline;
+
+  /// No description provided for @assistantToolReadSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the selection'**
+  String get assistantToolReadSelection;
+
+  /// No description provided for @assistantToolReadPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading pages'**
+  String get assistantToolReadPages;
+
+  /// No description provided for @assistantToolSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching the study set'**
+  String get assistantToolSearch;
+
+  /// No description provided for @assistantToolReadBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the branch'**
+  String get assistantToolReadBranch;
+
+  /// No description provided for @assistantToolWebSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching the web'**
+  String get assistantToolWebSearch;
+
+  /// No description provided for @assistantToolPapers.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding papers'**
+  String get assistantToolPapers;
+
+  /// No description provided for @assistantToolFetch.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading a page'**
+  String get assistantToolFetch;
+
+  /// No description provided for @assistantToolPropose.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing changes'**
+  String get assistantToolPropose;
+
+  /// No description provided for @assistantToolSkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing an approach'**
+  String get assistantToolSkills;
+
+  /// No description provided for @assistantToolOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get assistantToolOther;
+
+  /// No description provided for @assistantNotOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked online'**
+  String get assistantNotOnline;
+
+  /// No description provided for @assistantSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Note'**
+  String get assistantSaveNote;
+
+  /// No description provided for @assistantSavedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as Note'**
+  String get assistantSavedNote;
+
+  /// No description provided for @assistantLocate.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get assistantLocate;
+
+  /// No description provided for @assistantRegenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get assistantRegenerate;
+
+  /// No description provided for @assistantErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network unavailable'**
+  String get assistantErrorNetwork;
+
+  /// No description provided for @assistantErrorKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid API key'**
+  String get assistantErrorKey;
+
+  /// No description provided for @assistantErrorService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service temporarily unavailable'**
+  String get assistantErrorService;
+
+  /// No description provided for @assistantErrorBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Over this answer\'s limit'**
+  String get assistantErrorBudget;
+
+  /// No description provided for @assistantErrorRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The model declined to answer'**
+  String get assistantErrorRefused;
+
+  /// No description provided for @assistantErrorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Request failed'**
+  String get assistantErrorFailed;
+
+  /// No description provided for @assistantStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get assistantStopped;
+
+  /// No description provided for @assistantInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not finished when the app quit'**
+  String get assistantInterrupted;
+
+  /// No description provided for @assistantRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get assistantRetry;
+
+  /// No description provided for @assistantUseLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Local Model'**
+  String get assistantUseLocal;
+
+  /// No description provided for @assistantOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get assistantOpenSettings;
+
+  /// No description provided for @assistantContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get assistantContinue;
+
+  /// No description provided for @assistantProposalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map changes'**
+  String get assistantProposalTitle;
+
+  /// No description provided for @assistantProposalApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied'**
+  String get assistantProposalApplied;
+
+  /// No description provided for @assistantProposalDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get assistantProposalDismissed;
+
+  /// No description provided for @assistantDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get assistantDismiss;
+
+  /// No description provided for @assistantApply.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Apply 1 Change} other{Apply {count} Changes}}'**
+  String assistantApply(int count);
+
+  /// No description provided for @assistantShowInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in Map'**
+  String get assistantShowInMap;
+
+  /// No description provided for @assistantReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Again'**
+  String get assistantReopen;
+
+  /// No description provided for @assistantTargetDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Target deleted'**
+  String get assistantTargetDeleted;
+
+  /// No description provided for @assistantAppliedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Applied 1 change} other{Applied {count} changes}}'**
+  String assistantAppliedHud(int count);
+
+  /// No description provided for @assistantPutInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Put in map under “{title}”'**
+  String assistantPutInMap(String title);
+
+  /// No description provided for @assistantAttachToSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach beside this sentence on page {page}'**
+  String assistantAttachToSource(int page);
+
+  /// No description provided for @assistantNoteDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get assistantNoteDefault;
+
+  /// No description provided for @assistantNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Note title'**
+  String get assistantNoteTitle;
+
+  /// No description provided for @assistantBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get assistantBack;
+
+  /// No description provided for @assistantKindWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get assistantKindWeb;
+
+  /// No description provided for @assistantKindPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get assistantKindPaper;
+
+  /// No description provided for @assistantKindVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get assistantKindVideo;
+
+  /// No description provided for @assistantOpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Browser'**
+  String get assistantOpenInBrowser;
+
+  /// No description provided for @assistantMapContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Map · {title}'**
+  String assistantMapContext(String title);
+
+  /// No description provided for @assistantBranchContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch · {title}'**
+  String assistantBranchContext(String title);
+
+  /// No description provided for @assistantPageContext.
+  ///
+  /// In en, this message translates to:
+  /// **'{document} · p. {page}'**
+  String assistantPageContext(String document, int page);
+
+  /// No description provided for @assistantDocumentContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole · {document}'**
+  String assistantDocumentContext(String document);
+
+  /// No description provided for @assistantWholeMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole map'**
+  String get assistantWholeMap;
+
+  /// No description provided for @assistantAutoContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached automatically'**
+  String get assistantAutoContext;
+
+  /// No description provided for @assistantRemoveContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get assistantRemoveContext;
+
+  /// No description provided for @assistantCurrentPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String assistantCurrentPage(int page);
+
+  /// No description provided for @assistantSkillExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain'**
+  String get assistantSkillExplain;
+
+  /// No description provided for @assistantSkillTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get assistantSkillTranslate;
+
+  /// No description provided for @assistantSkillVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get assistantSkillVerify;
+
+  /// No description provided for @assistantSkillSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize'**
+  String get assistantSkillSummarize;
+
+  /// No description provided for @assistantSkillQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Make Review Questions'**
+  String get assistantSkillQuiz;
+
+  /// No description provided for @assistantSkillQuizShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get assistantSkillQuizShort;
+
+  /// No description provided for @assistantSkillOrganize.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize into Map'**
+  String get assistantSkillOrganize;
+
+  /// No description provided for @assistantSkillOrganizeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize'**
+  String get assistantSkillOrganizeShort;
+
+  /// No description provided for @assistantSkillPapers.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Papers'**
+  String get assistantSkillPapers;
+
+  /// No description provided for @assistantSkillVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Videos'**
+  String get assistantSkillVideos;
+
+  /// No description provided for @assistantPromptExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain this'**
+  String get assistantPromptExplain;
+
+  /// No description provided for @assistantPromptTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate this'**
+  String get assistantPromptTranslate;
+
+  /// No description provided for @assistantPromptVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Check whether this is right'**
+  String get assistantPromptVerify;
+
+  /// No description provided for @assistantPromptSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize the key points'**
+  String get assistantPromptSummarize;
+
+  /// No description provided for @assistantPromptQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a few review questions about this'**
+  String get assistantPromptQuiz;
+
+  /// No description provided for @assistantPromptOrganize.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize this into the map'**
+  String get assistantPromptOrganize;
+
+  /// No description provided for @assistantPromptPapers.
+  ///
+  /// In en, this message translates to:
+  /// **'Find related papers'**
+  String get assistantPromptPapers;
+
+  /// No description provided for @assistantPromptVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Find related videos'**
+  String get assistantPromptVideos;
+
+  /// No description provided for @assistantSuggestSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize page {page}'**
+  String assistantSuggestSummarize(int page);
+
+  /// No description provided for @assistantSuggestExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain “{title}”'**
+  String assistantSuggestExplain(String title);
+
+  /// No description provided for @assistantSuggestVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Check a claim on page {page}'**
+  String assistantSuggestVerify(int page);
+
+  /// No description provided for @assistantSuggestTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate the selection'**
+  String get assistantSuggestTranslate;
+
+  /// No description provided for @assistantSuggestQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Make review questions for “{title}”'**
+  String assistantSuggestQuiz(String title);
+
+  /// No description provided for @assistantSuggestOrganize.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize this section into the map'**
+  String get assistantSuggestOrganize;
+
+  /// No description provided for @assistantConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect an AI service'**
+  String get assistantConnectTitle;
+
+  /// No description provided for @assistantPasteKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste API key'**
+  String get assistantPasteKey;
+
+  /// No description provided for @assistantModelField.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get assistantModelField;
+
+  /// No description provided for @assistantEndpointField.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get assistantEndpointField;
+
+  /// No description provided for @assistantConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get assistantConnect;
+
+  /// No description provided for @assistantKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid key'**
+  String get assistantKeyInvalid;
+
+  /// No description provided for @assistantCannotConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the service'**
+  String get assistantCannotConnect;
+
+  /// No description provided for @assistantServiceClaude.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude'**
+  String get assistantServiceClaude;
+
+  /// No description provided for @assistantServiceOpenAI.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI'**
+  String get assistantServiceOpenAI;
+
+  /// No description provided for @assistantServiceCompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible'**
+  String get assistantServiceCompatible;
+
+  /// No description provided for @assistantServiceOllama.
+  ///
+  /// In en, this message translates to:
+  /// **'Local · Ollama'**
+  String get assistantServiceOllama;
+
+  /// No description provided for @assistantService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get assistantService;
+
+  /// No description provided for @assistantLocalSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Local model'**
+  String get assistantLocalSetting;
+
+  /// No description provided for @assistantQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 question} other{{count} questions}}'**
+  String assistantQuestions(int count);
+
+  /// No description provided for @assistantHasNote.
+  ///
+  /// In en, this message translates to:
+  /// **'has notes'**
+  String get assistantHasNote;
+
+  /// No description provided for @assistantRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Answering'**
+  String get assistantRunning;
+
+  /// No description provided for @assistantUnfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfinished'**
+  String get assistantUnfinished;
+
+  /// No description provided for @assistantFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get assistantFailed;
+
+  /// No description provided for @assistantDeleteEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete…'**
+  String get assistantDeleteEllipsis;
+
+  /// No description provided for @assistantDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this conversation?'**
+  String get assistantDeleteTitle;
+
+  /// No description provided for @assistantDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved notes are kept.'**
+  String get assistantDeleteMessage;
+
+  /// No description provided for @assistantRenameConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Conversation'**
+  String get assistantRenameConversation;
+
+  /// No description provided for @assistantExplainTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain This Topic'**
+  String get assistantExplainTopic;
+
+  /// No description provided for @assistantExplainCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain This Card'**
+  String get assistantExplainCard;
+
+  /// No description provided for @assistantOrganizeBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize This Branch…'**
+  String get assistantOrganizeBranch;
+
+  /// No description provided for @assistantQuizBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Make Review Questions for This Branch…'**
+  String get assistantQuizBranch;
+
+  /// No description provided for @assistantVerifyCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify This Card'**
+  String get assistantVerifyCard;
+
+  /// No description provided for @assistantAskWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask About It…'**
+  String get assistantAskWith;
+
+  /// No description provided for @assistantAnchorGone.
+  ///
+  /// In en, this message translates to:
+  /// **'The original place was deleted'**
+  String get assistantAnchorGone;
+
+  /// No description provided for @assistantOpenConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Conversation'**
+  String get assistantOpenConversation;
+
+  /// No description provided for @assistantAskMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask More'**
+  String get assistantAskMore;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

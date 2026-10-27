@@ -1968,4 +1968,431 @@ class AppLocalizationsZh extends AppLocalizations {
   String researchDiagnosticCode(String code) {
     return '错误代码：$code';
   }
+
+  @override
+  String get assistant => '助手';
+
+  @override
+  String get askAssistant => '问助手';
+
+  @override
+  String get askAssistantEllipsis => '问助手…';
+
+  @override
+  String get showAssistant => '显示助手';
+
+  @override
+  String get hideAssistant => '隐藏助手';
+
+  @override
+  String get assistantNewConversation => '新对话';
+
+  @override
+  String get assistantSettings => '助手设置';
+
+  @override
+  String get assistantHistory => '对话记录';
+
+  @override
+  String get assistantConversations => '对话';
+
+  @override
+  String get assistantNoConversations => '还没有对话';
+
+  @override
+  String get assistantPlaceholder => '提问…';
+
+  @override
+  String get assistantConnectFirst => '先连接 AI 服务';
+
+  @override
+  String get assistantMention => '引用';
+
+  @override
+  String get assistantCommands => '快捷指令';
+
+  @override
+  String get assistantOnline => '联网';
+
+  @override
+  String get assistantOffline => '不联网';
+
+  @override
+  String get assistantSend => '发送';
+
+  @override
+  String get assistantStop => '停止';
+
+  @override
+  String assistantModelSwitched(String name) {
+    return '已切换到 $name';
+  }
+
+  @override
+  String assistantLocalModel(String name) {
+    return '本机 · $name';
+  }
+
+  @override
+  String assistantSteps(int count) {
+    return '用了 $count 步';
+  }
+
+  @override
+  String get assistantStepsOnline => '已联网';
+
+  @override
+  String get assistantStepsOffline => '未联网';
+
+  @override
+  String get assistantToolReadSelection => '读取所选内容';
+
+  @override
+  String get assistantToolReadPages => '读取原文';
+
+  @override
+  String get assistantToolSearch => '检索学习集';
+
+  @override
+  String get assistantToolReadBranch => '读取脑图分支';
+
+  @override
+  String get assistantToolWebSearch => '联网搜索';
+
+  @override
+  String get assistantToolPapers => '查找论文';
+
+  @override
+  String get assistantToolFetch => '读取网页';
+
+  @override
+  String get assistantToolPropose => '整理修改';
+
+  @override
+  String get assistantToolSkills => '选择方式';
+
+  @override
+  String get assistantToolOther => '处理中';
+
+  @override
+  String get assistantNotOnline => '未联网';
+
+  @override
+  String get assistantSaveNote => '存为笔记';
+
+  @override
+  String get assistantSavedNote => '已存为笔记';
+
+  @override
+  String get assistantLocate => '定位';
+
+  @override
+  String get assistantRegenerate => '重新生成';
+
+  @override
+  String get assistantErrorNetwork => '网络不可用';
+
+  @override
+  String get assistantErrorKey => 'API Key 无效';
+
+  @override
+  String get assistantErrorService => '服务暂时不可用';
+
+  @override
+  String get assistantErrorBudget => '超出本次上限';
+
+  @override
+  String get assistantErrorRefused => '模型拒绝回答';
+
+  @override
+  String get assistantErrorFailed => '请求失败';
+
+  @override
+  String get assistantStopped => '已停止';
+
+  @override
+  String get assistantInterrupted => '上次退出时没有完成';
+
+  @override
+  String get assistantRetry => '重试';
+
+  @override
+  String get assistantUseLocal => '改用本机模型';
+
+  @override
+  String get assistantOpenSettings => '打开设置';
+
+  @override
+  String get assistantContinue => '继续';
+
+  @override
+  String get assistantProposalTitle => '修改脑图';
+
+  @override
+  String get assistantProposalApplied => '已应用';
+
+  @override
+  String get assistantProposalDismissed => '已忽略';
+
+  @override
+  String get assistantDismiss => '不用了';
+
+  @override
+  String assistantApply(int count) {
+    return '应用 $count 处';
+  }
+
+  @override
+  String get assistantShowInMap => '在脑图中查看';
+
+  @override
+  String get assistantReopen => '重新查看';
+
+  @override
+  String get assistantTargetDeleted => '目标已删除';
+
+  @override
+  String assistantAppliedHud(int count) {
+    return '已应用 $count 处修改';
+  }
+
+  @override
+  String assistantPutInMap(String title) {
+    return '放进脑图「$title」';
+  }
+
+  @override
+  String assistantAttachToSource(int page) {
+    return '附到原文第 $page 页的这句话旁';
+  }
+
+  @override
+  String get assistantNoteDefault => '笔记';
+
+  @override
+  String get assistantNoteTitle => '笔记标题';
+
+  @override
+  String get assistantBack => '返回';
+
+  @override
+  String get assistantKindWeb => '网页';
+
+  @override
+  String get assistantKindPaper => '论文';
+
+  @override
+  String get assistantKindVideo => '视频';
+
+  @override
+  String get assistantOpenInBrowser => '在浏览器打开';
+
+  @override
+  String assistantMapContext(String title) {
+    return '脑图 · $title';
+  }
+
+  @override
+  String assistantBranchContext(String title) {
+    return '分支 · $title';
+  }
+
+  @override
+  String assistantPageContext(String document, int page) {
+    return '$document · 第 $page 页';
+  }
+
+  @override
+  String assistantDocumentContext(String document) {
+    return '整本 · $document';
+  }
+
+  @override
+  String get assistantWholeMap => '整张脑图';
+
+  @override
+  String get assistantAutoContext => '自动附带';
+
+  @override
+  String get assistantRemoveContext => '移除';
+
+  @override
+  String assistantCurrentPage(int page) {
+    return '第 $page 页';
+  }
+
+  @override
+  String get assistantSkillExplain => '解释';
+
+  @override
+  String get assistantSkillTranslate => '翻译';
+
+  @override
+  String get assistantSkillVerify => '查证';
+
+  @override
+  String get assistantSkillSummarize => '总结';
+
+  @override
+  String get assistantSkillQuiz => '出复习题';
+
+  @override
+  String get assistantSkillQuizShort => '出题';
+
+  @override
+  String get assistantSkillOrganize => '整理进脑图';
+
+  @override
+  String get assistantSkillOrganizeShort => '整理';
+
+  @override
+  String get assistantSkillPapers => '找论文';
+
+  @override
+  String get assistantSkillVideos => '找视频';
+
+  @override
+  String get assistantPromptExplain => '解释一下这段话';
+
+  @override
+  String get assistantPromptTranslate => '翻译这段话';
+
+  @override
+  String get assistantPromptVerify => '查证这个说法';
+
+  @override
+  String get assistantPromptSummarize => '总结这部分的要点';
+
+  @override
+  String get assistantPromptQuiz => '为这部分出几道复习题';
+
+  @override
+  String get assistantPromptOrganize => '把这部分整理进脑图';
+
+  @override
+  String get assistantPromptPapers => '找相关的论文';
+
+  @override
+  String get assistantPromptVideos => '找相关的视频';
+
+  @override
+  String assistantSuggestSummarize(int page) {
+    return '总结第 $page 页';
+  }
+
+  @override
+  String assistantSuggestExplain(String title) {
+    return '解释「$title」';
+  }
+
+  @override
+  String assistantSuggestVerify(int page) {
+    return '查证第 $page 页的一个说法';
+  }
+
+  @override
+  String get assistantSuggestTranslate => '翻译所选内容';
+
+  @override
+  String assistantSuggestQuiz(String title) {
+    return '为「$title」出复习题';
+  }
+
+  @override
+  String get assistantSuggestOrganize => '把当前一节整理进脑图';
+
+  @override
+  String get assistantConnectTitle => '连接一个 AI 服务';
+
+  @override
+  String get assistantPasteKey => '粘贴 API Key';
+
+  @override
+  String get assistantModelField => '模型';
+
+  @override
+  String get assistantEndpointField => '地址';
+
+  @override
+  String get assistantConnect => '连接';
+
+  @override
+  String get assistantKeyInvalid => 'Key 无效';
+
+  @override
+  String get assistantCannotConnect => '连不上服务';
+
+  @override
+  String get assistantServiceClaude => 'Claude';
+
+  @override
+  String get assistantServiceOpenAI => 'OpenAI';
+
+  @override
+  String get assistantServiceCompatible => '兼容服务';
+
+  @override
+  String get assistantServiceOllama => '本机 · Ollama';
+
+  @override
+  String get assistantService => '服务';
+
+  @override
+  String get assistantLocalSetting => '本机模型';
+
+  @override
+  String assistantQuestions(int count) {
+    return '$count 个问题';
+  }
+
+  @override
+  String get assistantHasNote => '有笔记';
+
+  @override
+  String get assistantRunning => '生成中';
+
+  @override
+  String get assistantUnfinished => '未完成';
+
+  @override
+  String get assistantFailed => '失败';
+
+  @override
+  String get assistantDeleteEllipsis => '删除…';
+
+  @override
+  String get assistantDeleteTitle => '删除这个对话？';
+
+  @override
+  String get assistantDeleteMessage => '已存的笔记会保留。';
+
+  @override
+  String get assistantRenameConversation => '重命名对话';
+
+  @override
+  String get assistantExplainTopic => '解释这个主题';
+
+  @override
+  String get assistantExplainCard => '解释这张卡片';
+
+  @override
+  String get assistantOrganizeBranch => '整理这个分支…';
+
+  @override
+  String get assistantQuizBranch => '为这个分支出复习题…';
+
+  @override
+  String get assistantVerifyCard => '查证这张卡片';
+
+  @override
+  String get assistantAskWith => '带上它自由提问…';
+
+  @override
+  String get assistantAnchorGone => '原位置已删除';
+
+  @override
+  String get assistantOpenConversation => '打开原对话';
+
+  @override
+  String get assistantAskMore => '继续问';
 }
