@@ -65,7 +65,8 @@ typedef AssistantApp = ({
 });
 
 /// The app with demo-1 open and an assistant whose model answers from
-/// [client]. Without [key] the assistant is not configured.
+/// [client]. Without [key] the assistant is not configured. With
+/// [realWrites] proposals go through the workspace, so undo reaches them.
 Future<AssistantApp> openAssistantApp(
   WidgetTester tester, {
   sdk.LLMClient? client,
@@ -76,6 +77,7 @@ Future<AssistantApp> openAssistantApp(
   List<Override> overrides = const [],
   AssistantConnectionTester? connect,
   MemoryConversationArchive? archive,
+  bool realWrites = false,
 }) async {
   final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
   final store = archive ?? MemoryConversationArchive();
@@ -93,7 +95,7 @@ Future<AssistantApp> openAssistantApp(
     overrides: [
       assistantSecretsProvider.overrideWithValue(secrets),
       assistantArchiveProvider.overrideWith((ref, id) => store.archive),
-      assistantMapEditExecutorProvider.overrideWith((ref, id) => executor),
+      if (!realWrites) assistantMapEditExecutorProvider.overrideWith((ref, id) => executor),
       assistantNoteSaverProvider.overrideWith((ref, id) => notes),
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页的正文'),
       assistantConnectionTesterProvider.overrideWithValue(connect ?? (model, key) async => null),
@@ -105,7 +107,7 @@ Future<AssistantApp> openAssistantApp(
             studySetId: id,
             model: settings.configuration,
             storage: store,
-            executor: executor,
+            executor: realWrites ? ref.watch(assistantMapEditExecutorProvider(id)) : executor,
             notes: notes,
             online: settings.online,
             runFactory: (state, conversation, question) async {
@@ -127,7 +129,7 @@ Future<AssistantApp> openAssistantApp(
                 ),
                 scope: scopeFromContexts(id, question.contexts),
                 mapId: mapId,
-                baseRevision: executor.revision,
+                baseRevision: realWrites ? assistantMapRevision(workspace.content, mapId) : executor.revision,
                 parents: mapParents(workspace.content, mapId),
                 primaryDocumentId: question.contexts.map((c) => c.documentId).whereType<String>().firstOrNull,
                 online: conversation.online,

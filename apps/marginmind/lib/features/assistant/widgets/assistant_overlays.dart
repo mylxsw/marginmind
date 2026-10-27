@@ -656,12 +656,7 @@ class _AssistantSettingsSheetState extends ConsumerState<AssistantSettingsSheet>
           if (_settings.provider != AssistantProvider.ollama)
             MMFormRow(
               label: 'API Key',
-              child: MMTextField(
-                controller: _key,
-                obscureText: true,
-                placeholder: l.assistantPasteKey,
-                semanticLabel: 'API Key',
-              ),
+              child: MMTextField(controller: _key, obscureText: true, semanticLabel: 'API Key'),
             ),
           if (_settings.provider == AssistantProvider.compatible || _settings.provider == AssistantProvider.ollama)
             MMFormRow(

@@ -44,6 +44,7 @@ class _AssistantScopeState extends ConsumerState<AssistantScope> {
     overrides: [
       assistantDependenciesProvider.overrideWithValue(_dependencies),
       assistantControllerProvider.overrideWith(AssistantController.new),
+      assistantBackgroundProvider.overrideWith(AssistantBackground.new),
     ],
     child: _AssistantHost(studySetId: widget.studySetId, child: widget.child),
   );
@@ -64,6 +65,16 @@ class _AssistantHost extends ConsumerWidget {
     ) {
       if (previous != next) ref.invalidate(assistantConversationsProvider(studySetId));
     });
+    ref.listen(assistantBackgroundProvider.select((c) => (c?.id, c?.title, c?.messages.length)), (previous, next) {
+      if (previous != next) ref.invalidate(assistantConversationsProvider(studySetId));
+    });
+    // Undo and redo take a proposal's receipt away or bring it back.
+    ref.listen(
+      workspaceProvider(studySetId).select((s) => s.content?.assistantReceipts.map((r) => r.proposalId).join('\n')),
+      (previous, next) {
+        if (previous != next) unawaited(ref.read(assistantControllerProvider.notifier).syncReceipts());
+      },
+    );
     // Kept loaded, so a question asked as the panel opens is not dropped.
     ref.listen(assistantConfiguredProvider, (_, _) {});
     ref.listen(assistantUiProvider(studySetId).select((s) => s.request), (_, request) async {

@@ -18,10 +18,11 @@ import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 
-/// The saved conversations with the live one in place of its copy.
+/// The saved conversations with the live ones in place of their copies.
 List<ConversationSummary> conversationsOf(WidgetRef ref, String studySetId) => mergeLive(
   ref.watch(assistantConversationsProvider(studySetId)).value ?? const [],
   ref.watch(assistantControllerProvider),
+  background: ref.watch(assistantBackgroundProvider),
 );
 
 /// Shows [id] in the panel (from [origin]); the open conversation stays as it is.
@@ -86,9 +87,8 @@ Future<void> renameConversation(BuildContext context, WidgetRef ref, String stud
   final title = await showRenameSheet(context, title: context.l10n.assistantRenameConversation, initial: s.title);
   if (title == null || title.trim().isEmpty) return;
   try {
-    if (ref.read(assistantControllerProvider).id == s.id) {
-      await ref.read(assistantControllerProvider.notifier).rename(title);
-    } else {
+    // A live conversation would write its old title back.
+    if (!await ref.read(assistantControllerProvider.notifier).rename(title, conversationId: s.id)) {
       await renameSavedConversation(ref.read(assistantArchiveProvider(studySetId)), s.id, title);
     }
   } catch (_) {
@@ -107,10 +107,11 @@ Future<void> deleteConversation(BuildContext context, WidgetRef ref, String stud
   );
   if (!ok) return;
   try {
-    // The open conversation is replaced first, so nothing writes it back.
-    if (ref.read(assistantControllerProvider).id == s.id) {
-      await ref.read(assistantControllerProvider.notifier).newConversation();
-    }
+    // Its answer stops and the open conversation is replaced first, so
+    // nothing writes it back.
+    final controller = ref.read(assistantControllerProvider.notifier);
+    await controller.stopConversation(s.id);
+    if (ref.read(assistantControllerProvider).id == s.id) await controller.newConversation();
     await ref.read(assistantArchiveProvider(studySetId)).storage.delete(s.id);
   } catch (_) {
     if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.warning);

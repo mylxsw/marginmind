@@ -207,6 +207,13 @@ void main() {
         ('50-0', ConversationState.failed),
       ]);
       expect(mergeLive([saved], conversation('new', const [])), [saved]);
+      // The conversation answering out of view is live too, in place of its copy.
+      final empty = conversation('new', const []);
+      final background = mergeLive([saved, failed], empty, background: live);
+      expect(background.map((s) => (s.id, s.state)), [
+        ('100-0', ConversationState.running),
+        ('50-0', ConversationState.failed),
+      ]);
       expect(ConversationSummary.of(conversation('x', const [])).stamp, 0);
     });
 

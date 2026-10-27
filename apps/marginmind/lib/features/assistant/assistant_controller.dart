@@ -54,50 +54,114 @@ final assistantControllerProvider = NotifierProvider.autoDispose<AssistantContro
   AssistantController.new,
 );
 
+/// The conversation answering out of view, while another one is open; null
+/// when the open conversation is the one running (or nothing runs). Override
+/// it in the same scope as [assistantControllerProvider].
+final assistantBackgroundProvider = NotifierProvider.autoDispose<AssistantBackground, Conversation?>(
+  AssistantBackground.new,
+);
+
+class AssistantBackground extends Notifier<Conversation?> {
+  @override
+  Conversation? build() => null;
+
+  void set(Conversation? value) {
+    if (ref.mounted) state = value;
+  }
+}
+
+/// One conversation and its agent state; a run, when it is answering.
+class _Session {
+  _Session(this.agent, this.view);
+  sdk.AgentState agent;
+  Conversation view;
+  AssistantRun? run;
+  Future<void>? running;
+  int epoch = 0;
+}
+
 class AssistantController extends Notifier<Conversation> {
   late AssistantDependencies _deps;
-  late sdk.AgentState _agentState;
-  AssistantRun? _run;
-  Future<void>? _running;
+
+  /// The conversation the panel shows.
+  late _Session _open;
+
+  /// The conversation answering (at most one per study set): the open one,
+  /// or one the user left, which keeps answering out of view.
+  _Session? _busy;
   bool _disposed = false;
-  int _epoch = 0, _sequence = 0;
+  int _sequence = 0;
   final _applying = <String, Future<void>>{};
   String _id() => '${DateTime.now().microsecondsSinceEpoch}-${_sequence++}';
   @override
   Conversation build() {
     _deps = ref.read(assistantDependenciesProvider);
-    _agentState = sdk.AgentState(sessionId: _id());
+    // Lives (and resets) with the controller.
+    ref.listen(assistantBackgroundProvider, (_, _) {});
+    final agent = sdk.AgentState(sessionId: _id());
     ref.onDispose(() {
       _disposed = true;
-      _epoch++;
-      _run?.stop();
+      for (final s in {_open, ?_busy}) {
+        s.epoch++;
+        s.run?.stop();
+      }
     });
-    return Conversation(
-      id: _agentState.sessionId,
-      studySetId: _deps.studySetId,
-      model: _deps.model,
-      online: _deps.online,
+    _open = _Session(
+      agent,
+      Conversation(id: agent.sessionId, studySetId: _deps.studySetId, model: _deps.model, online: _deps.online),
     );
+    return _open.view;
   }
 
-  Future<void> _persist() {
-    _agentState.metadata['assistant.view'] = state.toJson();
-    _agentState.metadata['assistant.proposalViews'] = [
-      for (final m in state.messages)
+  /// Whether an answer is being written in any conversation of the study set.
+  bool get busy => _busy != null;
+
+  void _publishBackground() {
+    final busy = _busy;
+    ref.read(assistantBackgroundProvider.notifier).set(busy == null || identical(busy, _open) ? null : busy.view);
+  }
+
+  void _set(_Session session, Conversation next) {
+    session.view = next;
+    if (_disposed) return;
+    if (identical(session, _open)) {
+      state = next;
+    } else if (identical(session, _busy)) {
+      _publishBackground();
+    }
+  }
+
+  Future<void> _persist([_Session? session]) {
+    final s = session ?? _open;
+    s.agent.metadata['assistant.view'] = s.view.toJson();
+    s.agent.metadata['assistant.proposalViews'] = [
+      for (final m in s.view.messages)
         for (final p in m.proposals) p.toJson(),
     ];
-    _agentState.lastError = null; // SDK diagnostic strings may contain provider data.
-    return _deps.storage.save(_agentState);
+    s.agent.lastError = null; // SDK diagnostic strings may contain provider data.
+    return _deps.storage.save(s.agent);
   }
 
-  void _replace(Message next) {
-    state = state.copyWith(messages: [for (final m in state.messages) m.id == next.id ? next : m]);
+  void _replace(_Session session, Message next) {
+    _set(session, session.view.copyWith(messages: [for (final m in session.view.messages) m.id == next.id ? next : m]));
   }
 
-  Message _message(String id) => state.messages.firstWhere((m) => m.id == id);
-  Future<void> send(String text, {List<ContextItem> contexts = const [], String? skill}) {
-    if (state.readOnly) throw StateError('Legacy conversation is read only');
-    if (_running != null || _disposed) throw StateError('Assistant is busy');
+  Message _message(String id, [_Session? session]) => (session ?? _open).view.messages.firstWhere((m) => m.id == id);
+  Future<void> send(String text, {List<ContextItem> contexts = const [], String? skill}) =>
+      _start(text, contexts: contexts, skill: skill);
+
+  /// Asks [text] in the open conversation. With [replacing] (an answer and
+  /// its question) the new pair takes their place instead of following the
+  /// conversation; the old answer stays in the saved state only.
+  Future<void> _start(
+    String text, {
+    List<ContextItem> contexts = const [],
+    String? skill,
+    (Message, Message)? replacing,
+  }) {
+    final session = _open;
+    if (session.view.readOnly) throw StateError('Legacy conversation is read only');
+    if (_busy != null || _disposed) throw StateError('Assistant is busy');
     if (text.trim().isEmpty || text.length > 60000) throw const FormatException('Invalid question');
     final requestId = _id();
     final question = Message(
@@ -109,33 +173,53 @@ class AssistantController extends Notifier<Conversation> {
       skill: skill,
     );
     final answer = Message(id: _id(), requestId: requestId, role: MessageRole.agent, status: MessageStatus.running);
-    state = state.copyWith(
-      title: state.title.isEmpty ? text.substring(0, text.length.clamp(0, 80)) : state.title,
-      messages: [...state.messages, question, answer],
+    final view = session.view;
+    final List<Message> messages;
+    if (replacing case (final oldQuestion, final oldAnswer)) {
+      final replaced = session.agent.metadata.putIfAbsent('assistant.replaced', () => <dynamic>[]) as List;
+      replaced.add(oldAnswer.toJson());
+      messages = [
+        for (final m in view.messages)
+          if (m.id == oldQuestion.id) question else if (m.id == oldAnswer.id) answer else m,
+      ];
+    } else {
+      messages = [...view.messages, question, answer];
+    }
+    _set(
+      session,
+      view.copyWith(
+        title: view.title.isEmpty ? text.substring(0, text.length.clamp(0, 80)) : view.title,
+        messages: messages,
+      ),
     );
-    final epoch = ++_epoch;
-    final future = _send(question, answer.id, epoch);
-    _running = future;
+    final epoch = ++session.epoch;
+    _busy = session;
+    final future = _send(session, question, answer.id, epoch);
+    session.running = future;
     return future.whenComplete(() {
-      if (identical(_running, future)) _running = null;
+      if (identical(session.running, future)) session.running = null;
+      if (identical(_busy, session) && session.running == null) {
+        _busy = null;
+        if (!_disposed) _publishBackground();
+      }
     });
   }
 
-  Future<void> _send(Message question, String answerId, int epoch) async {
-    bool active() => !_disposed && epoch == _epoch;
+  Future<void> _send(_Session session, Message question, String answerId, int epoch) async {
+    bool active() => !_disposed && epoch == session.epoch;
     var segmentStart = 0;
     try {
-      await _persist(); // Do not contact provider if question cannot be saved.
+      await _persist(session); // Do not contact provider if question cannot be saved.
       if (!active()) return;
-      final run = await _deps.runFactory(_agentState, state, question);
+      final run = await _deps.runFactory(session.agent, session.view, question);
       if (!active()) {
         run.stop();
         return;
       }
-      _run = run;
+      session.run = run;
       await for (final event in run.run(question.text)) {
         if (!active()) break;
-        var answer = _message(answerId);
+        var answer = _message(answerId, session);
         switch (event.eventType) {
           case sdk.StreamingEventType.beforeCallModel:
             segmentStart = answer.text.length;
@@ -171,87 +255,116 @@ class AssistantController extends Notifier<Conversation> {
             (t) => {'web_search', 'search_papers', 'fetch_source'}.contains(t.toolName) && t.status == TraceStatus.done,
           ),
         );
-        _replace(answer);
-        final reads = _agentState.metadata.putIfAbsent('assistant.reads', () => <String, dynamic>{}) as Map;
+        _replace(session, answer);
+        final reads = session.agent.metadata.putIfAbsent('assistant.reads', () => <String, dynamic>{}) as Map;
         reads[question.requestId] = run.citations.items.map((c) => c.toJson()).toList();
-        await _persist();
+        await _persist(session);
       }
-      if (active()) _replace(_message(answerId).copyWith(status: MessageStatus.done));
+      if (active()) _replace(session, _message(answerId, session).copyWith(status: MessageStatus.done));
     } catch (error) {
       if (active()) {
         final kind = error is ResearchFailure ? error.kind : ResearchFailureKind.unavailable;
         _replace(
-          _message(answerId).copyWith(
+          session,
+          _message(answerId, session).copyWith(
             status: kind == ResearchFailureKind.cancelled ? MessageStatus.stopped : MessageStatus.error,
             errorKind: kind,
           ),
         );
       }
     } finally {
-      _run?.stop();
-      _run = null;
+      session.run?.stop();
+      session.run = null;
       if (active()) {
-        _agentState.isRunning = false;
-        await _persist();
+        session.agent.isRunning = false;
+        await _persist(session);
       }
     }
   }
 
-  Future<void> stop() async {
-    final running = _running;
+  /// Stops the open conversation's answer; one answering out of view goes on.
+  Future<void> stop() => _stop(_open);
+
+  /// Stops the answer of conversation [id], open or not.
+  Future<void> stopConversation(String id) async {
+    final busy = _busy;
+    if (busy != null && busy.view.id == id) await _stop(busy);
+  }
+
+  Future<void> _stop(_Session session) async {
+    final running = session.running;
     if (running == null) return;
-    _epoch++;
-    _run?.stop();
-    state = state.copyWith(
-      messages: [
-        for (final m in state.messages)
-          m.status == MessageStatus.running ? m.copyWith(status: MessageStatus.stopped) : m,
-      ],
+    session.epoch++;
+    session.run?.stop();
+    _set(
+      session,
+      session.view.copyWith(
+        messages: [
+          for (final m in session.view.messages)
+            m.status == MessageStatus.running ? m.copyWith(status: MessageStatus.stopped) : m,
+        ],
+      ),
     );
     await running;
-    _running = null;
-    _agentState.isRunning = false;
-    await _persist();
+    session.running = null;
+    if (identical(_busy, session)) {
+      _busy = null;
+      if (!_disposed) _publishBackground();
+    }
+    session.agent.isRunning = false;
+    await _persist(session);
   }
 
+  /// Asks the question of [messageId] again; the new answer replaces it.
   Future<void> retry(String messageId) async {
     final old = _message(messageId);
-    final question = state.messages.firstWhere((m) => m.requestId == old.requestId && m.role == MessageRole.user);
-    await send(question.text, contexts: question.contexts, skill: question.skill);
+    if (old.role != MessageRole.agent) throw StateError('Not an answer');
+    final question = _open.view.messages.firstWhere((m) => m.requestId == old.requestId && m.role == MessageRole.user);
+    await _start(question.text, contexts: question.contexts, skill: question.skill, replacing: (question, old));
   }
 
+  /// Opens an empty conversation. An answer being written goes on out of view.
   Future<void> newConversation() async {
-    await stop();
     await Future.wait(_applying.values.toList());
-    _agentState = sdk.AgentState(sessionId: _id());
-    state = Conversation(
-      id: _agentState.sessionId,
-      studySetId: _deps.studySetId,
-      model: state.readOnly ? _deps.model : state.model,
-      online: state.readOnly ? _deps.online : state.online,
+    final agent = sdk.AgentState(sessionId: _id());
+    final previous = _open.view;
+    _show(
+      _Session(
+        agent,
+        Conversation(
+          id: agent.sessionId,
+          studySetId: _deps.studySetId,
+          model: previous.readOnly ? _deps.model : previous.model,
+          online: previous.readOnly ? _deps.online : previous.online,
+        ),
+      ),
     );
     await _persist();
   }
 
+  void _show(_Session session) {
+    _open = session;
+    state = session.view;
+    _publishBackground();
+  }
+
+  /// Opens saved conversation [id]; the one answering is shown as it is now.
   Future<void> openConversation(String id) async {
-    await stop();
     await Future.wait(_applying.values.toList());
+    if (_open.view.id == id) return;
+    final busy = _busy;
+    if (busy != null && busy.view.id == id) return _show(busy);
     final loaded = await _deps.storage.loadOrCreate(id, null);
     final data = loaded.metadata['assistant.view'];
     var view = data == null
-        ? Conversation(id: id, studySetId: _deps.studySetId, model: state.model)
+        ? Conversation(id: id, studySetId: _deps.studySetId, model: _open.view.model)
         : Conversation.fromJson(Map<String, dynamic>.from(data));
     if (view.id != id || view.studySetId != _deps.studySetId) throw const FormatException('Wrong study set');
     final messages = <Message>[];
     for (final m in view.messages) {
       final proposals = <ProposalView>[];
       for (final p in m.proposals) {
-        final receipt = await _deps.executor.receipt(p.proposal.id);
-        proposals.add(
-          receipt == null
-              ? p
-              : p.copyWith(status: ProposalStatus.applied, receipt: receipt, selected: receipt.operationIds.toSet()),
-        );
+        proposals.add(_reconciled(p, await _deps.executor.receipt(p.proposal.id)));
       }
       messages.add(
         m.copyWith(
@@ -261,42 +374,101 @@ class AssistantController extends Notifier<Conversation> {
       );
     }
     view = view.copyWith(messages: messages);
-    _agentState = loaded..isRunning = false;
-    state = view;
+    if (_disposed || (_busy?.view.id == id)) return;
+    _show(_Session(loaded..isRunning = false, view));
     await _persist();
   }
 
-  /// Renames the open conversation (UI extension; does not stop a run).
-  Future<void> rename(String title) async {
+  /// [p] as its committed [receipt] says: applied while there is one, back to
+  /// pending (with what was applied still checked) once it was undone.
+  static ProposalView _reconciled(ProposalView p, MapEditReceipt? receipt) {
+    if (receipt != null) {
+      return p.status == ProposalStatus.applied && p.receipt?.revision == receipt.revision
+          ? p
+          : p.copyWith(status: ProposalStatus.applied, receipt: receipt, selected: receipt.operationIds.toSet());
+    }
+    if (p.status != ProposalStatus.applied) return p;
+    final selected = p.selected.isEmpty ? null : p.selected;
+    return ProposalView(proposal: p.proposal, selected: selected);
+  }
+
+  /// Brings the proposal cards in line with the committed receipts, after an
+  /// undo or redo changed them: an undone proposal is pending again and can
+  /// be applied again.
+  Future<void> syncReceipts() => _syncing = _syncing.then((_) => _syncReceipts()).catchError((Object _) {});
+  Future<void> _syncing = Future.value();
+
+  Future<void> _syncReceipts() async {
+    for (final session in {_open, ?_busy}) {
+      for (final m in session.view.messages) {
+        for (final p in m.proposals) {
+          if (p.status == ProposalStatus.dismissed || _applying.containsKey(p.proposal.id)) continue;
+          final receipt = await _deps.executor.receipt(p.proposal.id);
+          if (_disposed) return;
+          if (_applying.containsKey(p.proposal.id)) continue;
+          final current = _findProposal(session, p.proposal.id);
+          if (current == null) continue;
+          final next = _reconciled(current, receipt);
+          if (!identical(next, current)) await _updateProposal(next, session);
+        }
+      }
+    }
+  }
+
+  /// Returns an applied proposal whose change was undone to pending, so it
+  /// can be checked and applied again. Fails while its receipt still stands.
+  Future<void> revertProposal(String id) async {
+    if (_open.view.readOnly) throw StateError('Legacy conversation is read only');
+    final p = _proposal(id);
+    if (p.status != ProposalStatus.applied || _applying.containsKey(id)) throw StateError('Proposal is not applied');
+    if (await _deps.executor.receipt(id) != null) throw StateError('Proposal is still applied');
+    final current = _findProposal(_open, id);
+    if (current == null || current.status != ProposalStatus.applied) return;
+    await _updateProposal(_reconciled(current, null));
+  }
+
+  /// Renames the open conversation, or with [conversationId] the one
+  /// answering out of view (UI extension; does not stop a run). Returns false
+  /// when [conversationId] is neither: its file is renamed elsewhere.
+  Future<bool> rename(String title, {String? conversationId}) async {
     final value = title.trim();
     if (value.isEmpty || value.length > 200) throw const FormatException('Invalid title');
-    state = state.copyWith(title: value);
-    await _persist();
+    final session = [_open, ?_busy].where((s) => s.view.id == (conversationId ?? _open.view.id)).firstOrNull;
+    if (session == null) return false;
+    _set(session, session.view.copyWith(title: value));
+    await _persist(session);
+    return true;
   }
 
   Future<void> switchModel(AssistantModel model) async {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
     await stop();
-    state = state.copyWith(model: model);
+    _set(_open, _open.view.copyWith(model: model));
     await _persist();
   }
 
   Future<void> setOnline(bool enabled) async {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
     await stop();
-    state = state.copyWith(online: enabled);
+    _set(_open, _open.view.copyWith(online: enabled));
     await _persist();
   }
 
-  ProposalView _proposal(String id) => state.messages.expand((m) => m.proposals).firstWhere((p) => p.proposal.id == id);
-  Future<void> _updateProposal(ProposalView next) async {
-    state = state.copyWith(
-      messages: [
-        for (final m in state.messages)
-          m.copyWith(proposals: [for (final p in m.proposals) p.proposal.id == next.proposal.id ? next : p]),
-      ],
+  ProposalView _proposal(String id) => _findProposal(_open, id) ?? (throw StateError('No such proposal'));
+  static ProposalView? _findProposal(_Session session, String id) =>
+      session.view.messages.expand((m) => m.proposals).where((p) => p.proposal.id == id).firstOrNull;
+  Future<void> _updateProposal(ProposalView next, [_Session? session]) async {
+    final s = session ?? _open;
+    _set(
+      s,
+      s.view.copyWith(
+        messages: [
+          for (final m in s.view.messages)
+            m.copyWith(proposals: [for (final p in m.proposals) p.proposal.id == next.proposal.id ? next : p]),
+        ],
+      ),
     );
-    await _persist();
+    await _persist(s);
   }
 
   Future<void> selectOperation(String proposalId, String opId, bool selected) async {
@@ -345,12 +517,15 @@ class AssistantController extends Notifier<Conversation> {
   );
   Future<void> _apply(String id) async {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
+    final session = _open;
     final p = _proposal(id);
     if (p.status != ProposalStatus.pending) throw StateError('Proposal is not pending');
     final receipt = await _deps.executor.receipt(id) ?? await _deps.executor.apply(p.proposal, p.selected);
-    if (!_disposed) {
+    final current = _findProposal(session, id);
+    if (!_disposed && current != null) {
       await _updateProposal(
-        p.copyWith(status: ProposalStatus.applied, receipt: receipt, selected: receipt.operationIds.toSet()),
+        current.copyWith(status: ProposalStatus.applied, receipt: receipt, selected: receipt.operationIds.toSet()),
+        session,
       );
     }
   }
@@ -377,6 +552,7 @@ class AssistantController extends Notifier<Conversation> {
     if (m.role != MessageRole.agent || m.status == MessageStatus.running || m.text.isEmpty) {
       throw StateError('No answer to save');
     }
+    final session = _open;
     final conversationId = state.id;
     final id = await _deps.notes.save(
       conversationId: conversationId,
@@ -384,9 +560,9 @@ class AssistantController extends Notifier<Conversation> {
       body: m.text,
       request: request,
     );
-    if (!_disposed && state.id == conversationId) {
-      _replace(_message(messageId).copyWith(noteId: id));
-      await _persist();
+    if (!_disposed && session.view.messages.any((m) => m.id == messageId)) {
+      _replace(session, _message(messageId, session).copyWith(noteId: id));
+      await _persist(session);
     }
   }
 }

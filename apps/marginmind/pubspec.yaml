@@ -41,6 +41,7 @@ dependencies:
 
 dev_dependencies:
   window_manager: ^0.5.1
+  dio: ^5.9.0
   vm_service: ^15.0.0
   flutter_test:
     sdk: flutter
