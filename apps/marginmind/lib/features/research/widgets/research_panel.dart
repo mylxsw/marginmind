@@ -13,6 +13,7 @@ import '../research_answer.dart';
 import '../research_controller.dart';
 import '../research_drafts.dart';
 import '../research_intents.dart';
+import '../research_origin.dart';
 import '../research_providers.dart';
 import '../research_settings.dart';
 import 'research_note_view.dart';
@@ -498,9 +499,8 @@ class _RunLine extends ConsumerWidget {
               [
                 if (session.status == 'done')
                   l.researchDoneAt(
-                    DateFormat.Hm(
-                      Localizations.localeOf(context).toLanguageTag(),
-                    ).format(value.drafts.doneAt ?? session.updatedAt),
+                    DateFormat.Hm(Localizations.localeOf(context).toLanguageTag())
+                        .format(value.drafts.doneAt ?? session.updatedAt),
                   ),
                 if (method == ResearchMethod.web) l.researchUsedSources(_usedSources(value).length),
               ].join(' · '),

@@ -2311,6 +2311,1266 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset Width'**
   String get resetCardWidth;
+
+  /// No description provided for @detailsResearchNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Note'**
+  String get detailsResearchNote;
+
+  /// No description provided for @researchSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Selection'**
+  String get researchSelection;
+
+  /// No description provided for @researchSelectionEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Selection…'**
+  String get researchSelectionEllipsis;
+
+  /// No description provided for @researchNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Node'**
+  String get researchNode;
+
+  /// No description provided for @researchNodeMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Research “{title}”'**
+  String researchNodeMenu(String title);
+
+  /// No description provided for @researchIntentExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain'**
+  String get researchIntentExplain;
+
+  /// No description provided for @researchIntentInterpret.
+  ///
+  /// In en, this message translates to:
+  /// **'Interpret'**
+  String get researchIntentInterpret;
+
+  /// No description provided for @researchIntentVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get researchIntentVerify;
+
+  /// No description provided for @researchIntentVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos / Diagrams'**
+  String get researchIntentVideo;
+
+  /// No description provided for @researchIntentPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Papers'**
+  String get researchIntentPaper;
+
+  /// No description provided for @researchIntentDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Research'**
+  String get researchIntentDeep;
+
+  /// No description provided for @researchIntentTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get researchIntentTranslate;
+
+  /// No description provided for @researchRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get researchRecommended;
+
+  /// No description provided for @researchQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get researchQuestion;
+
+  /// No description provided for @researchQuestionPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to find out?'**
+  String get researchQuestionPlaceholder;
+
+  /// No description provided for @researchQuestionExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'What does “{term}” mean? Give an example from the context.'**
+  String researchQuestionExplain(String term);
+
+  /// No description provided for @researchQuestionInterpret.
+  ///
+  /// In en, this message translates to:
+  /// **'What are this passage\'s claim, reasoning and assumptions?'**
+  String get researchQuestionInterpret;
+
+  /// No description provided for @researchQuestionVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Is this claim supported? Are there counterexamples or limits?'**
+  String get researchQuestionVerify;
+
+  /// No description provided for @researchQuestionVerifyQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'“{quote}” — is this reliable? Are there counterexamples or limits?'**
+  String researchQuestionVerifyQuote(String quote);
+
+  /// No description provided for @researchQuestionVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a clear video or diagram explaining “{term}”'**
+  String researchQuestionVideo(String term);
+
+  /// No description provided for @researchQuestionPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'What are the key studies on “{term}”? Their findings and limits?'**
+  String researchQuestionPaper(String term);
+
+  /// No description provided for @researchQuestionTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate this passage and explain its terms.'**
+  String get researchQuestionTranslate;
+
+  /// No description provided for @researchKeywords.
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords'**
+  String get researchKeywords;
+
+  /// No description provided for @researchAddKeyword.
+  ///
+  /// In en, this message translates to:
+  /// **'Add keyword'**
+  String get researchAddKeyword;
+
+  /// No description provided for @researchSourcesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get researchSourcesLabel;
+
+  /// No description provided for @researchKindWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get researchKindWeb;
+
+  /// No description provided for @researchKindPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Papers'**
+  String get researchKindPaper;
+
+  /// No description provided for @researchKindVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get researchKindVideo;
+
+  /// No description provided for @researchKindImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get researchKindImage;
+
+  /// No description provided for @researchMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get researchMethod;
+
+  /// No description provided for @researchMethodSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Only'**
+  String get researchMethodSearch;
+
+  /// No description provided for @researchMethodOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get researchMethodOffline;
+
+  /// No description provided for @researchMethodWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web Research'**
+  String get researchMethodWeb;
+
+  /// No description provided for @researchMethodSearchNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI, no AI cost.'**
+  String get researchMethodSearchNote;
+
+  /// No description provided for @researchMethodOfflineNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends only the context below; no web search.'**
+  String get researchMethodOfflineNote;
+
+  /// No description provided for @researchMethodWebNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {searches} searches and {pages} pages.'**
+  String researchMethodWebNote(int searches, int pages);
+
+  /// No description provided for @researchSetUpAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Up AI…'**
+  String get researchSetUpAi;
+
+  /// No description provided for @researchNoAi.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI service set up'**
+  String get researchNoAi;
+
+  /// No description provided for @researchNoAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI service set up'**
+  String get researchNoAiTitle;
+
+  /// No description provided for @researchNoWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'This service can\'t search the web'**
+  String get researchNoWeb;
+
+  /// No description provided for @researchContextSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to AI: {parts} (about {count} characters)'**
+  String researchContextSummary(String parts, int count);
+
+  /// No description provided for @researchContextSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection'**
+  String get researchContextSelection;
+
+  /// No description provided for @researchContextBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous passage'**
+  String get researchContextBefore;
+
+  /// No description provided for @researchContextAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Next passage'**
+  String get researchContextAfter;
+
+  /// No description provided for @researchContextChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter'**
+  String get researchContextChapter;
+
+  /// No description provided for @researchContextNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Node'**
+  String get researchContextNode;
+
+  /// No description provided for @researchContextPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get researchContextPath;
+
+  /// No description provided for @researchContextChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards below'**
+  String get researchContextChildren;
+
+  /// No description provided for @researchRunningChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'A research is running'**
+  String get researchRunningChoice;
+
+  /// No description provided for @researchAsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Research'**
+  String get researchAsNew;
+
+  /// No description provided for @researchJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Current Question'**
+  String get researchJoin;
+
+  /// No description provided for @researchLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Later'**
+  String get researchLater;
+
+  /// No description provided for @researchStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Research'**
+  String get researchStart;
+
+  /// No description provided for @researchNeedQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a question first'**
+  String get researchNeedQuestion;
+
+  /// No description provided for @researchSavedForLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Research Later'**
+  String get researchSavedForLater;
+
+  /// No description provided for @researchJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to the current research'**
+  String get researchJoined;
+
+  /// No description provided for @researchSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Research Settings'**
+  String get researchSettings;
+
+  /// No description provided for @researchBackToOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Where It Started'**
+  String get researchBackToOrigin;
+
+  /// No description provided for @researchOriginGone.
+  ///
+  /// In en, this message translates to:
+  /// **'The original place was deleted'**
+  String get researchOriginGone;
+
+  /// No description provided for @researchStageSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching'**
+  String get researchStageSearch;
+
+  /// No description provided for @researchStageAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Answering'**
+  String get researchStageAnswer;
+
+  /// No description provided for @researchStageWebAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching and answering'**
+  String get researchStageWebAnswer;
+
+  /// No description provided for @researchStageRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading sources {done}/{total}'**
+  String researchStageRead(int done, int total);
+
+  /// No description provided for @researchRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get researchRetry;
+
+  /// No description provided for @researchRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Again'**
+  String get researchRestart;
+
+  /// No description provided for @researchCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get researchCancelled;
+
+  /// No description provided for @researchInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted when the app quit'**
+  String get researchInterrupted;
+
+  /// No description provided for @researchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get researchFailed;
+
+  /// No description provided for @researchRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get researchRunning;
+
+  /// No description provided for @researchDoneAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished {time}'**
+  String researchDoneAt(String time);
+
+  /// No description provided for @researchUsedSources.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 source used} other{{count} sources used}}'**
+  String researchUsedSources(int count);
+
+  /// No description provided for @researchErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get researchErrorTimeout;
+
+  /// No description provided for @researchErrorUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach the service'**
+  String get researchErrorUnavailable;
+
+  /// No description provided for @researchErrorAuthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'The API key was rejected'**
+  String get researchErrorAuthentication;
+
+  /// No description provided for @researchErrorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests; try again later'**
+  String get researchErrorRateLimited;
+
+  /// No description provided for @researchErrorBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the limit'**
+  String get researchErrorBudget;
+
+  /// No description provided for @researchErrorRefusal.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI declined to answer'**
+  String get researchErrorRefusal;
+
+  /// No description provided for @researchErrorUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported by this service'**
+  String get researchErrorUnsupported;
+
+  /// No description provided for @researchErrorInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was not accepted'**
+  String get researchErrorInvalid;
+
+  /// No description provided for @researchErrorProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'The answer was incomplete'**
+  String get researchErrorProtocol;
+
+  /// No description provided for @researchTabAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get researchTabAnswer;
+
+  /// No description provided for @researchTabSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get researchTabSources;
+
+  /// No description provided for @researchTabSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken'**
+  String get researchTabSaved;
+
+  /// No description provided for @researchBadgeWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web research · {count, plural, =1{1 source used} other{{count} sources used}}'**
+  String researchBadgeWeb(int count);
+
+  /// No description provided for @researchBadgeOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · no external sources, so no citations'**
+  String get researchBadgeOffline;
+
+  /// No description provided for @researchBadgeSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the {count, plural, =1{source} other{{count} sources}} you chose; no web search'**
+  String researchBadgeSources(int count);
+
+  /// No description provided for @researchViewSources.
+  ///
+  /// In en, this message translates to:
+  /// **'View Sources'**
+  String get researchViewSources;
+
+  /// No description provided for @researchNoSourceBasis.
+  ///
+  /// In en, this message translates to:
+  /// **'no source'**
+  String get researchNoSourceBasis;
+
+  /// No description provided for @researchEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'edited'**
+  String get researchEdited;
+
+  /// No description provided for @researchQuoteFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Source [{number}] · original text'**
+  String researchQuoteFrom(int number);
+
+  /// No description provided for @researchEditPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get researchEditPoint;
+
+  /// No description provided for @researchAskPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get researchAskPoint;
+
+  /// No description provided for @researchSavePoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get researchSavePoint;
+
+  /// No description provided for @researchAskAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About “{point}”: '**
+  String researchAskAbout(String point);
+
+  /// No description provided for @researchFailedSources.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 source} other{{count} sources}} could not be read and are not evidence.'**
+  String researchFailedSources(int count);
+
+  /// No description provided for @researchChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String researchChecked(int count);
+
+  /// No description provided for @researchClearChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect'**
+  String get researchClearChecked;
+
+  /// No description provided for @researchSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Research Note…'**
+  String get researchSaveNote;
+
+  /// No description provided for @researchNoAnswerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search only: no answer'**
+  String get researchNoAnswerSearch;
+
+  /// No description provided for @researchNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer yet'**
+  String get researchNoAnswer;
+
+  /// No description provided for @researchAnswerFromChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer from {count, plural, =1{1 Chosen Source} other{{count} Chosen Sources}}'**
+  String researchAnswerFromChosen(int count);
+
+  /// No description provided for @researchAnswering.
+  ///
+  /// In en, this message translates to:
+  /// **'Answering…'**
+  String get researchAnswering;
+
+  /// No description provided for @researchFollowUpPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a follow-up…'**
+  String get researchFollowUpPlaceholder;
+
+  /// No description provided for @researchCanUseWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get researchCanUseWeb;
+
+  /// No description provided for @researchOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get researchOffline;
+
+  /// No description provided for @researchSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get researchSend;
+
+  /// No description provided for @researchFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get researchFilterAll;
+
+  /// No description provided for @researchReadUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Not read'**
+  String get researchReadUnread;
+
+  /// No description provided for @researchReadSnippet.
+  ///
+  /// In en, this message translates to:
+  /// **'Search snippet'**
+  String get researchReadSnippet;
+
+  /// No description provided for @researchReadAbstract.
+  ///
+  /// In en, this message translates to:
+  /// **'Abstract only'**
+  String get researchReadAbstract;
+
+  /// No description provided for @researchReadFullText.
+  ///
+  /// In en, this message translates to:
+  /// **'Full text'**
+  String get researchReadFullText;
+
+  /// No description provided for @researchReadTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript'**
+  String get researchReadTranscript;
+
+  /// No description provided for @researchReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read'**
+  String get researchReadFailed;
+
+  /// No description provided for @researchReadNoTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcript'**
+  String get researchReadNoTranscript;
+
+  /// No description provided for @researchOpenAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Open access'**
+  String get researchOpenAccess;
+
+  /// No description provided for @researchSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get researchSubscription;
+
+  /// No description provided for @researchUsedInAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Used in answer'**
+  String get researchUsedInAnswer;
+
+  /// No description provided for @researchMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 reprint merged} other{{count} reprints merged}}, not counted separately'**
+  String researchMerged(int count);
+
+  /// No description provided for @researchRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get researchRead;
+
+  /// No description provided for @researchWhyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get researchWhyFailed;
+
+  /// No description provided for @researchChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Sources'**
+  String get researchChoose;
+
+  /// No description provided for @researchChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get researchChosen;
+
+  /// No description provided for @researchPasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Pasted by you'**
+  String get researchPasted;
+
+  /// No description provided for @researchExternalSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search “{query}” on {site}'**
+  String researchExternalSearch(String site, String query);
+
+  /// No description provided for @researchExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'External'**
+  String get researchExternal;
+
+  /// No description provided for @researchSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching: {keywords}'**
+  String researchSearching(String keywords);
+
+  /// No description provided for @researchNoSources.
+  ///
+  /// In en, this message translates to:
+  /// **'No sources'**
+  String get researchNoSources;
+
+  /// No description provided for @researchOfflineNoSources.
+  ///
+  /// In en, this message translates to:
+  /// **'This research did not search the web'**
+  String get researchOfflineNoSources;
+
+  /// No description provided for @researchOpenPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Page'**
+  String get researchOpenPage;
+
+  /// No description provided for @researchFetchedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetched {date}'**
+  String researchFetchedAt(String date);
+
+  /// No description provided for @researchAiSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'AI summary · not the source'**
+  String get researchAiSummary;
+
+  /// No description provided for @researchSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Summary'**
+  String get researchSummarize;
+
+  /// No description provided for @researchClipEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Take as Evidence'**
+  String get researchClipEvidence;
+
+  /// No description provided for @researchWriteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Note…'**
+  String get researchWriteNote;
+
+  /// No description provided for @researchClipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken ({count})'**
+  String researchClipped(int count);
+
+  /// No description provided for @researchCantRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read the text'**
+  String get researchCantRead;
+
+  /// No description provided for @researchReadLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'The page needs a sign-in. Sign-ins and paywalls are not bypassed.'**
+  String get researchReadLogin;
+
+  /// No description provided for @researchReadTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The page took too long.'**
+  String get researchReadTimeout;
+
+  /// No description provided for @researchReadUnparseable.
+  ///
+  /// In en, this message translates to:
+  /// **'No article text was found.'**
+  String get researchReadUnparseable;
+
+  /// No description provided for @researchReadUnsafe.
+  ///
+  /// In en, this message translates to:
+  /// **'This address is not allowed.'**
+  String get researchReadUnsafe;
+
+  /// No description provided for @researchReadUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a web page.'**
+  String get researchReadUnsupported;
+
+  /// No description provided for @researchReadEncoding.
+  ///
+  /// In en, this message translates to:
+  /// **'The page\'s text encoding is not supported.'**
+  String get researchReadEncoding;
+
+  /// No description provided for @researchReadUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the page.'**
+  String get researchReadUnavailable;
+
+  /// No description provided for @researchPasteText.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste Text…'**
+  String get researchPasteText;
+
+  /// No description provided for @researchSaveLinkOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Link Only'**
+  String get researchSaveLinkOnly;
+
+  /// No description provided for @researchReadAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Again'**
+  String get researchReadAgain;
+
+  /// No description provided for @researchAbstractOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the abstract was read; answers don\'t treat it as read in full.'**
+  String get researchAbstractOnly;
+
+  /// No description provided for @researchOpenPublisher.
+  ///
+  /// In en, this message translates to:
+  /// **'Publisher Page'**
+  String get researchOpenPublisher;
+
+  /// No description provided for @researchPasteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste Text'**
+  String get researchPasteTitle;
+
+  /// No description provided for @researchClipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence (draft)'**
+  String get researchClipsTitle;
+
+  /// No description provided for @researchSavedNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved research notes'**
+  String get researchSavedNotes;
+
+  /// No description provided for @researchNoteFromClips.
+  ///
+  /// In en, this message translates to:
+  /// **'Write Note from Evidence…'**
+  String get researchNoteFromClips;
+
+  /// No description provided for @researchNothingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing taken yet'**
+  String get researchNothingSaved;
+
+  /// No description provided for @researchInSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source · p. {page}'**
+  String researchInSource(int page);
+
+  /// No description provided for @researchInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map · {title}'**
+  String researchInMap(String title);
+
+  /// No description provided for @researchCitations.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 citation} other{{count} citations}}'**
+  String researchCitations(int count);
+
+  /// No description provided for @researchContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get researchContinue;
+
+  /// No description provided for @researchSaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Research Note'**
+  String get researchSaveTitle;
+
+  /// No description provided for @researchNoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get researchNoteTitle;
+
+  /// No description provided for @researchNoteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get researchNoteBody;
+
+  /// No description provided for @researchNoteDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Research note'**
+  String get researchNoteDefaultTitle;
+
+  /// No description provided for @researchCitationsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Citations ({count})'**
+  String researchCitationsLabel(int count);
+
+  /// No description provided for @researchNoExternalBasis.
+  ///
+  /// In en, this message translates to:
+  /// **'No external source'**
+  String get researchNoExternalBasis;
+
+  /// No description provided for @researchSaveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to'**
+  String get researchSaveTo;
+
+  /// No description provided for @researchDestBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Source and Map'**
+  String get researchDestBoth;
+
+  /// No description provided for @researchDestSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Only'**
+  String get researchDestSource;
+
+  /// No description provided for @researchDestMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map Only'**
+  String get researchDestMap;
+
+  /// No description provided for @researchDestNoSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Started from a node: no place in the source'**
+  String get researchDestNoSource;
+
+  /// No description provided for @researchAttachUnder.
+  ///
+  /// In en, this message translates to:
+  /// **'In the map under'**
+  String get researchAttachUnder;
+
+  /// No description provided for @researchSplitPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Split the {count} points into child cards'**
+  String researchSplitPoints(int count);
+
+  /// No description provided for @researchSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get researchSaving;
+
+  /// No description provided for @researchSavedBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to the source and the map'**
+  String get researchSavedBoth;
+
+  /// No description provided for @researchSavedSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to the source'**
+  String get researchSavedSource;
+
+  /// No description provided for @researchSavedMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to the map'**
+  String get researchSavedMap;
+
+  /// No description provided for @researchShowInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in Map'**
+  String get researchShowInMap;
+
+  /// No description provided for @researchCardKind.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Research note} =1{Research note · 1 source} other{Research note · {count} sources}}'**
+  String researchCardKind(int count);
+
+  /// No description provided for @researchCardOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Full note and citations'**
+  String get researchCardOpen;
+
+  /// No description provided for @researchNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Research note: {title}'**
+  String researchNoteLabel(String title);
+
+  /// No description provided for @researchLocateInMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate in Map'**
+  String get researchLocateInMap;
+
+  /// No description provided for @researchOpenResearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Research'**
+  String get researchOpenResearch;
+
+  /// No description provided for @researchPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in'**
+  String get researchPlaces;
+
+  /// No description provided for @researchPlaceSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{document} · p. {page}'**
+  String researchPlaceSource(String document, int page);
+
+  /// No description provided for @researchLocate.
+  ///
+  /// In en, this message translates to:
+  /// **'Locate'**
+  String get researchLocate;
+
+  /// No description provided for @researchDetach.
+  ///
+  /// In en, this message translates to:
+  /// **'Detach'**
+  String get researchDetach;
+
+  /// No description provided for @researchNotInSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Not attached to the source'**
+  String get researchNotInSource;
+
+  /// No description provided for @researchNoteGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This note was deleted'**
+  String get researchNoteGone;
+
+  /// No description provided for @researchDeleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Research Note…'**
+  String get researchDeleteNote;
+
+  /// No description provided for @researchDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this research note?'**
+  String get researchDeleteTitle;
+
+  /// No description provided for @researchDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{marks, plural, =0{} =1{Its source mark goes too. } other{Its {marks} source marks go too. }}{cards, plural, =0{} =1{Its map card goes too.} other{Its {cards} map cards go too.}}'**
+  String researchDeleteMessage(int marks, int cards);
+
+  /// No description provided for @researchService.
+  ///
+  /// In en, this message translates to:
+  /// **'AI service'**
+  String get researchService;
+
+  /// No description provided for @researchServiceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get researchServiceNone;
+
+  /// No description provided for @researchServiceCompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible'**
+  String get researchServiceCompatible;
+
+  /// No description provided for @researchServiceIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the model to finish setting up this service'**
+  String get researchServiceIncomplete;
+
+  /// No description provided for @researchApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get researchApiKey;
+
+  /// No description provided for @researchKeySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved in the Keychain'**
+  String get researchKeySaved;
+
+  /// No description provided for @researchKeyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save to the Keychain'**
+  String get researchKeyFailed;
+
+  /// No description provided for @researchModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get researchModel;
+
+  /// No description provided for @researchEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get researchEndpoint;
+
+  /// No description provided for @researchPaperSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper search'**
+  String get researchPaperSearch;
+
+  /// No description provided for @researchLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Web research limits'**
+  String get researchLimits;
+
+  /// No description provided for @researchLimitSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 search} other{{count} searches}}'**
+  String researchLimitSearches(int count);
+
+  /// No description provided for @researchLimitPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 page} other{{count} pages}}'**
+  String researchLimitPages(int count);
+
+  /// No description provided for @researchLimitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String researchLimitMinutes(int count);
+
+  /// No description provided for @researchPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get researchPrivacy;
+
+  /// No description provided for @researchShowContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Show what will be sent before starting'**
+  String get researchShowContext;
+
+  /// No description provided for @researchBlockPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Block local and private addresses'**
+  String get researchBlockPrivate;
+
+  /// No description provided for @researchCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Web cache'**
+  String get researchCache;
+
+  /// No description provided for @researchClearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Cache'**
+  String get researchClearCache;
+
+  /// No description provided for @researchCacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Web cache cleared'**
+  String get researchCacheCleared;
+
+  /// No description provided for @researchInterruptedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get researchInterruptedShort;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

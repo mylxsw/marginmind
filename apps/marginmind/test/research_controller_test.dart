@@ -71,7 +71,12 @@ void main() {
         yield _e(
           r,
           AiEventKind.citation,
-          citation: ResearchCitation(sourceId: d.sourceId, version: d.version, paragraphId: d.paragraphId, quote: d.text),
+          citation: ResearchCitation(
+            sourceId: d.sourceId,
+            version: d.version,
+            paragraphId: d.paragraphId,
+            quote: d.text,
+          ),
         );
         yield _e(r, AiEventKind.text, text: '- From the chosen source [source:0]\n');
       } else {
@@ -257,13 +262,24 @@ void main() {
     await workspace.locateNoteCard('n1');
     expect(container.read(workspaceProvider('demo-1')).selectedCardId, saved.cardId);
     expect(await workspace.revealAnchor(SourceAnchor(target: target)), isTrue);
-    expect(await workspace.revealAnchor(SourceAnchor(target: CardTarget(cardId: topic.id), mapId: MindMap.defaultId)), isTrue);
+    expect(
+      await workspace.revealAnchor(
+        SourceAnchor(
+          target: CardTarget(cardId: topic.id),
+          mapId: MindMap.defaultId,
+        ),
+      ),
+      isTrue,
+    );
     expect(container.read(workspaceProvider('demo-1')).selectedCardId, topic.id);
     expect(await workspace.revealAnchor(const SourceAnchor(target: CardTarget(cardId: 'gone'))), isFalse);
     expect(
       await workspace.revealAnchor(
         SourceAnchor(
-          target: PdfTarget(documentId: 'gone', pages: const [AnnotationPage(page: 1, rects: [])]),
+          target: PdfTarget(
+            documentId: 'gone',
+            pages: const [AnnotationPage(page: 1, rects: [])],
+          ),
         ),
       ),
       isFalse,
