@@ -100,7 +100,12 @@ class VideoTitles {
           .expand((e) => e)
           .toList();
       final json = jsonDecode(utf8.decode(bytes)) as Map;
-      final title = bilibili ? (json['code'] == 0 ? (json['data'] as Map?)?['title'] : null) : json['title'];
+      final data = json['data'];
+      final title = !bilibili
+          ? json['title']
+          : json['code'] == 0 && data is Map
+          ? data['title']
+          : null;
       return title is String && title.trim().isNotEmpty ? title.trim() : null;
     } catch (_) {
       return null;
