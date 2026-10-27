@@ -1020,14 +1020,22 @@ class _SaveBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (count > 0) ...[
-            Expanded(
-              child: Text(l.researchChecked(count), maxLines: 1, overflow: TextOverflow.ellipsis, style: t.callout),
+          // The save button keeps its full label; the count and "clear"
+          // share what is left.
+          Expanded(
+            child: Row(
+              children: [
+                if (count > 0) ...[
+                  Flexible(
+                    child: Text(l.researchChecked(count), maxLines: 1, overflow: TextOverflow.ellipsis, style: t.callout),
+                  ),
+                  Flexible(
+                    child: MMButton(label: l.researchClearChecked, variant: MMButtonVariant.plain, onPressed: onClear),
+                  ),
+                ],
+              ],
             ),
-            MMButton(label: l.researchClearChecked, variant: MMButtonVariant.plain, onPressed: onClear),
-            const SizedBox(width: MMSpacing.s),
-          ] else
-            const Spacer(),
+          ),
           MMButton(
             key: const ValueKey('research-save-note'),
             label: l.researchSaveNote,
