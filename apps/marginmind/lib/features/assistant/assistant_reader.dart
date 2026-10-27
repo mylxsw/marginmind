@@ -126,10 +126,10 @@ class WorkspaceReader implements StudySetReader {
   }
 }
 
-/// The target map's nodes and their parents, for proposals: top-level nodes
-/// hang under [assistantRootId].
+/// The target map's nodes and their parents, for proposals. The map's root
+/// is the map ID itself (the writes contract): top-level nodes hang under it.
 Map<String, String?> mapParents(StudySetContent content, String mapId) => {
-  assistantRootId: null,
+  mapId: null,
   for (final n in content.nodes)
-    if (n.mapId == mapId) n.cardId: n.parentId ?? assistantRootId,
+    if (n.mapId == mapId) n.cardId: n.parentId ?? mapId,
 };

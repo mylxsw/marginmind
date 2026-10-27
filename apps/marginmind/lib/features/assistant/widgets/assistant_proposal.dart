@@ -13,9 +13,10 @@ import '../assistant_controller.dart';
 import '../assistant_reader.dart';
 import '../assistant_scope.dart';
 
-/// Whether [ref] (a node, or `new:` an earlier item) still exists in the map.
+/// Whether [ref] (a node, the map's root — its ID — or `new:` an earlier
+/// item) still exists in the map.
 bool _exists(StudySetContent content, String mapId, String? ref) =>
-    ref == null || ref.startsWith('new:') || ref == assistantRootId || content.node(ref, mapId: mapId) != null;
+    ref == null || ref.startsWith('new:') || ref == mapId || content.node(ref, mapId: mapId) != null;
 
 /// Items whose target was deleted since the proposal was made.
 Set<String> staleOperations(StudySetContent content, MapEditProposal proposal) => {
@@ -25,10 +26,10 @@ Set<String> staleOperations(StudySetContent content, MapEditProposal proposal) =
 
 /// The map nodes an item points at, outlined while it is hovered: the node
 /// itself, or the parent a new node goes under.
-Set<String> previewTargets(MapEditOperation op) {
+Set<String> previewTargets(MapEditProposal proposal, MapEditOperation op) {
   final id = op.nodeId ?? op.parentId;
   if (id == null || id.startsWith('new:')) return const {};
-  return {id};
+  return {id == proposal.mapId ? assistantRootId : id};
 }
 
 /// Changes the assistant proposes to the map: each item can be left out, and
@@ -127,7 +128,8 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
     final stale = view.status == ProposalStatus.pending ? staleOperations(content, p) : const <String>{};
     final chosen = view.selected.difference(stale);
     final controller = ref.read(assistantControllerProvider.notifier);
-    final pending = view.status == ProposalStatus.pending;
+    final conversationReadOnly = ref.watch(assistantControllerProvider.select((c) => c.readOnly));
+    final pending = view.status == ProposalStatus.pending && !conversationReadOnly;
     final mapShown = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.layout)) != MMSplitMode.primary;
 
     String titleOf(MapEditOperation op) =>
@@ -141,9 +143,7 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
         final earlier = p.operations.where((o) => o.id == parent.substring(4)).firstOrNull;
         return earlier == null ? null : '→ ${titleOf(earlier)}';
       }
-      final title = parent == assistantRootId
-          ? (content.map(p.mapId)?.title ?? '')
-          : researchCardTitle(content, parent);
+      final title = parent == p.mapId ? (content.map(p.mapId)?.title ?? '') : researchCardTitle(content, parent);
       return title.isEmpty ? null : '→ $title';
     }
 
@@ -197,7 +197,7 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
                         ? (v) => _run(() => controller.selectOperation(p.id, op.id, v))
                         : null,
                     onHover: pending && mapShown
-                        ? (on) => on ? _preview.show(previewTargets(op)) : _preview.clear()
+                        ? (on) => on ? _preview.show(previewTargets(p, op)) : _preview.clear()
                         : null,
                   ),
                 Container(
@@ -211,6 +211,7 @@ class _ProposalCardState extends ConsumerState<ProposalCard> {
                     spacing: MMSpacing.s,
                     runSpacing: MMSpacing.s,
                     children: switch (view.status) {
+                      _ when conversationReadOnly && view.status != ProposalStatus.applied => const <Widget>[],
                       ProposalStatus.pending => [
                         MMButton(
                           key: const ValueKey('proposal-dismiss'),

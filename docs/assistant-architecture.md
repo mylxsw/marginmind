@@ -4,7 +4,7 @@
 
 ## UI 接入
 
-GUL-530 起由 `AssistantScope`（`features/assistant/widgets/assistant_panel.dart`）在学习集窗口外层建立 ProviderScope，override `assistantDependenciesProvider` 与 `assistantControllerProvider`；窗口存在期间对话一直存活，关闭面板或切换文档不中断生成。依赖由 `assistantDependenciesForProvider(studySetId)` 组合：对话存储 `assistantArchiveProvider`（文件仓库用 `ConversationStorage`，内存仓库用 `MemoryConversationArchive`）、`assistantMapEditExecutorProvider` / `assistantNoteSaverProvider`（默认是不声称成功的占位实现，GUL-531 override）、`assistantNetworkProvider`（默认 null，GUL-532 提供）、`assistantMapRevisionProvider`（默认 0，执行器负责校验）。读取端口为 `WorkspaceReader`：选区原文来自本轮问题的 ContextItem（`displayText` 即原句），重启后也能重读；脑图根节点 ID 为 `__root__`，与画布一致，`mapParents` 把顶层节点挂在它下面。
+GUL-530 起由 `AssistantScope`（`features/assistant/widgets/assistant_panel.dart`）在学习集窗口外层建立 ProviderScope，override `assistantDependenciesProvider` 与 `assistantControllerProvider`；窗口存在期间对话一直存活，关闭面板或切换文档不中断生成（切换对话仍按控制器契约先停止旧运行）。依赖由 `assistantDependenciesForProvider(studySetId)` 组合：对话存储 `assistantArchiveProvider`（文件仓库用 `ConversationStorage`，内存仓库用 `MemoryConversationArchive`）、GUL-531 的 executor / NoteSaver、`assistantNetworkProvider`（默认 null，GUL-532 提供）；revision 与 parents 取自同一个 content 快照（`assistantMapRevision`、`mapParents`，根节点为 mapId）。读取端口为 `WorkspaceReader`：选区原文来自本轮问题的 ContextItem（`displayText` 即原句），重启后也能重读；上下文与读取里的脑图根节点 ID 为 `__root__`，与画布一致。对话列表首次加载前执行一次 `LegacyConversationMigration`；只读对话不显示输入区，回答只保留复制。
 
 窗口外的入口（菜单栏、选区工具条、节点菜单、卡片详情）只调用 `askAssistant` / `askAboutPassage` / `askAboutNode`：写入 `assistantUiProvider`（附带的上下文、待发送问题、聚焦请求、来源抽屉），由窗口内的宿主发送。对 GUL-528 契约的向后兼容扩展：`AssistantController.rename`、`ConversationStorage.list`、`AssistantSettingsController.saved/select/models`。
 

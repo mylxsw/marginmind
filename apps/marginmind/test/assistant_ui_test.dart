@@ -122,7 +122,7 @@ void main() {
     await tester.pumpAndSettle();
     final request = app.notes.requests.values.single;
     expect(request.mapId, MindMap.defaultId);
-    expect(request.parentId, '__root__');
+    expect(request.parentId, isNull);
     expect(request.anchor, isNull);
     expect(find.byKey(ValueKey('assistant-saved-${c.messages.last.id}')), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
@@ -620,5 +620,34 @@ void main() {
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.last.status, MessageStatus.error);
     expect(find.text('请求失败'), findsOneWidget);
+  });
+
+  testWidgets('a migrated research conversation is read only: no input, copy only', (tester) async {
+    final archive = MemoryConversationArchive();
+    final state = sdk.AgentState(sessionId: 'legacy-1');
+    state.metadata['assistant.view'] = Conversation(
+      id: 'legacy-1',
+      studySetId: 'demo-1',
+      title: '旧研究',
+      readOnly: true,
+      model: const AssistantModel(provider: AssistantProvider.claude, model: 'm', endpoint: 'https://x/v1/messages'),
+      messages: [
+        Message(id: '5-1', requestId: 'r', role: MessageRole.user, text: '旧问题'),
+        Message(id: '5-2', requestId: 'r', role: MessageRole.agent, text: '旧回答'),
+      ],
+    ).toJson();
+    await archive.save(state);
+    await openAssistantApp(tester, archive: archive);
+    await tester.tap(find.byKey(const ValueKey('sidebar-conversation-legacy-1')));
+    await pumpFor(tester, 20);
+    expect(find.text('旧回答'), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-copy-5-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-save-5-2')), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-regenerate-5-2')), findsNothing);
+    // A new conversation brings the input back.
+    await tester.tap(find.byKey(const ValueKey('assistant-new')));
+    await pumpFor(tester, 20);
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
   });
 }

@@ -8,6 +8,7 @@ import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
+import 'package:marginmind/features/assistant/assistant_writes.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_overlays.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_assistant/mm_assistant.dart';

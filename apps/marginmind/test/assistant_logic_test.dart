@@ -170,8 +170,8 @@ void main() {
       expect(await reader.readBranch(MindMap.defaultId, assistantRootId, scope, cancel), hasLength(3));
       expect(await reader.readBranch(MindMap.defaultId, 'gone', scope, cancel), isEmpty);
       expect(reader.readBranch('other', topic, scope, cancel), throwsA(isA<ResearchFailure>()));
-      expect(mapParents(content, MindMap.defaultId)[topic], assistantRootId);
-      expect(mapParents(content, MindMap.defaultId)[assistantRootId], isNull);
+      expect(mapParents(content, MindMap.defaultId)[topic], MindMap.defaultId);
+      expect(mapParents(content, MindMap.defaultId)[MindMap.defaultId], isNull);
     });
   });
 
@@ -249,28 +249,7 @@ void main() {
       final container = ProviderContainer(overrides: overrides);
       addTearDown(container.dispose);
       expect(container.read(assistantArchiveProvider('demo-1')).storage, isA<MemoryConversationArchive>());
-      expect(container.read(assistantMapRevisionProvider('demo-1'))('main'), 0);
       expect(container.read(assistantNetworkProvider), isNull);
-      final executor = container.read(assistantMapEditExecutorProvider('demo-1'));
-      expect(await executor.receipt('p'), isNull);
-      expect(
-        executor.apply(
-          MapEditProposal(id: 'p', studySetId: 's', mapId: 'm', baseRevision: 0, operations: const []),
-          {},
-        ),
-        throwsA(isA<ResearchFailure>()),
-      );
-      expect(
-        container
-            .read(assistantNoteSaverProvider('demo-1'))
-            .save(
-              conversationId: 'c',
-              messageId: 'm',
-              body: 'b',
-              request: const SaveNoteRequest(title: 't'),
-            ),
-        throwsA(isA<ResearchFailure>()),
-      );
     });
   });
 
@@ -339,8 +318,8 @@ void main() {
       expect(notePlace(c, 'main', [node(topic)], 'R').parentId, topic);
       expect(notePlace(c, 'main', [node(excerpt)], 'R').parentId, topic);
       expect(notePlace(c, 'main', [node(assistantRootId)], 'R').title, 'R');
-      expect(notePlace(c, 'main', [node('gone')], 'R').parentId, assistantRootId);
-      expect(notePlace(c, 'main', const [], 'R').parentId, assistantRootId);
+      expect(notePlace(c, 'main', [node('gone')], 'R').parentId, isNull);
+      expect(notePlace(c, 'main', const [], 'R').parentId, isNull);
       expect(noteTitleFrom('解释：锚定效应'), '锚定效应');
       expect(noteTitleFrom('Explain: anchoring'), 'anchoring');
       expect(noteTitleFrom('没有前缀'), '没有前缀');
@@ -358,13 +337,15 @@ void main() {
           MapEditOperation(id: 'a', kind: MapEditKind.addTopic, parentId: topic, title: 'A'),
           const MapEditOperation(id: 'b', kind: MapEditKind.addNote, parentId: 'new:a', title: 'B', body: 'x'),
           const MapEditOperation(id: 'c', kind: MapEditKind.rename, nodeId: 'gone', title: 'C'),
-          const MapEditOperation(id: 'd', kind: MapEditKind.addTopic, parentId: assistantRootId, title: 'D'),
+          const MapEditOperation(id: 'd', kind: MapEditKind.addTopic, parentId: MindMap.defaultId, title: 'D'),
         ],
       );
       expect(staleOperations(c, p), {'c'});
-      expect(previewTargets(p.operations[0]), {topic});
-      expect(previewTargets(p.operations[1]), isEmpty);
-      expect(previewTargets(p.operations[2]), {'gone'});
+      expect(previewTargets(p, p.operations[0]), {topic});
+      expect(previewTargets(p, p.operations[1]), isEmpty);
+      expect(previewTargets(p, p.operations[2]), {'gone'});
+      // The map's root is outlined as the canvas root.
+      expect(previewTargets(p, p.operations[3]), {assistantRootId});
     });
   });
 

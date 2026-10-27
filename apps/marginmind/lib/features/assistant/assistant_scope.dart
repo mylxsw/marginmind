@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_assistant/mm_assistant.dart' show LegacyConversationMigration;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -14,6 +15,7 @@ import '../workspace/workspace_controller.dart';
 import 'assistant_controller.dart';
 import 'assistant_reader.dart';
 import 'assistant_settings.dart';
+import 'assistant_writes.dart';
 
 // ---- composition -------------------------------------------------------------------
 
@@ -52,44 +54,8 @@ final assistantArchiveProvider = Provider.family<AssistantArchive, String>((ref,
   return AssistantArchive(storage: storage, ids: storage.list);
 });
 
-/// Applies proposals. A placeholder until the real executor is bound (GUL-531):
-/// it never claims a change it did not make.
-class UnavailableMapEditExecutor implements MapEditExecutor {
-  const UnavailableMapEditExecutor();
-  @override
-  Future<MapEditReceipt> apply(MapEditProposal proposal, Set<String> selectedIds) =>
-      Future.error(const ResearchFailure(ResearchFailureKind.unavailable));
-  @override
-  Future<MapEditReceipt?> receipt(String proposalId) async => null;
-}
-
-/// Saves answers as AI notes. A placeholder until GUL-531 binds the real one.
-class UnavailableNoteSaver implements NoteSaver {
-  const UnavailableNoteSaver();
-  @override
-  Future<String> save({
-    required String conversationId,
-    required String messageId,
-    required String body,
-    required SaveNoteRequest request,
-  }) => Future.error(const ResearchFailure(ResearchFailureKind.unavailable));
-}
-
-final assistantMapEditExecutorProvider = Provider.family<MapEditExecutor, String>(
-  (ref, studySetId) => const UnavailableMapEditExecutor(),
-);
-final assistantNoteSaverProvider = Provider.family<NoteSaver, String>(
-  (ref, studySetId) => const UnavailableNoteSaver(),
-);
-
 /// Network tools; null until bound (GUL-532), so runs never claim to be online.
 final assistantNetworkProvider = Provider<AssistantNetwork?>((ref) => null);
-
-/// The revision a proposal is based on, per map. The executor checks it.
-final assistantMapRevisionProvider = Provider.family<int Function(String mapId), String>(
-  (ref, studySetId) =>
-      (_) => 0,
-);
 
 /// Text of a page of a PDF file, for the reader.
 final assistantPageTextProvider = Provider<Future<String?> Function(String path, int page)>(
@@ -110,6 +76,8 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     runFactory: (agent, conversation, question) {
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
       final mapId = ref.read(workspaceProvider(studySetId)).activeMapId;
+      // Revision and parents come from one snapshot, as the executor checks both.
+      final snapshot = workspace.content;
       return assistantRunFactory(
         secrets: ref.read(assistantSecretsProvider),
         reader: WorkspaceReader(
@@ -119,8 +87,8 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
           pageText: ref.read(assistantPageTextProvider),
         ),
         mapId: mapId,
-        revision: () => ref.read(assistantMapRevisionProvider(studySetId))(mapId),
-        parents: () => mapParents(workspace.content, mapId),
+        revision: () => assistantMapRevision(snapshot, mapId),
+        parents: () => mapParents(snapshot, mapId),
         network: ref.read(assistantNetworkProvider),
       )(agent, conversation, question);
     },
@@ -302,11 +270,30 @@ class ConversationSummary {
   static int _stamp(String id) => int.tryParse(id.split('-').first) ?? 0;
 }
 
+/// Old research sessions become read-only conversations, once per study set
+/// and window session. Their files stay as they are.
+final assistantLegacyMigrationProvider = FutureProvider.family<void, String>((ref, studySetId) async {
+  final repository = ref.watch(contentRepositoryProvider);
+  if (repository is! ResearchSessionRepository) return;
+  await LegacyConversationMigration(
+    studySetId: studySetId,
+    sessions: repository as ResearchSessionRepository,
+    content: repository,
+    storage: ref.watch(assistantArchiveProvider(studySetId)).storage,
+    model: ref.read(assistantSettingsProvider).configuration,
+  ).migrate();
+});
+
 /// Saved conversations, newest first. Unreadable files are left out.
 final assistantConversationsProvider = FutureProvider.family<List<ConversationSummary>, String>((
   ref,
   studySetId,
 ) async {
+  try {
+    await ref.watch(assistantLegacyMigrationProvider(studySetId).future);
+  } catch (_) {
+    // A session that cannot be migrated is retried next time; the rest list.
+  }
   final archive = ref.watch(assistantArchiveProvider(studySetId));
   final out = <ConversationSummary>[];
   for (final id in await archive.ids()) {

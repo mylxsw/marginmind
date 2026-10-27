@@ -214,8 +214,8 @@ class _KeyboardPopupState<T> extends State<_KeyboardPopup<T>> {
 // ---- save as note ---------------------------------------------------------------------------------
 
 /// Where a note goes in the map: a topic (or the root) it is about, else
-/// the parent of the card it is about, else the root.
-({String mapId, String parentId, String title}) notePlace(
+/// the parent of the card it is about, else the root (no parent).
+({String mapId, String? parentId, String title}) notePlace(
   StudySetContent content,
   String activeMapId,
   List<ContextItem> contexts,
@@ -225,7 +225,8 @@ class _KeyboardPopupState<T> extends State<_KeyboardPopup<T>> {
       .where((c) => (c.kind == ContextKind.node || c.kind == ContextKind.branch) && c.nodeId != null)
       .firstOrNull;
   final mapId = node?.mapId ?? activeMapId;
-  final root = (mapId: mapId, parentId: assistantRootId, title: rootTitle);
+  final String? noParent = null;
+  final root = (mapId: mapId, parentId: noParent, title: rootTitle);
   if (node == null || node.nodeId == assistantRootId) return root;
   final card = content.card(node.nodeId!);
   final mapNode = content.node(node.nodeId!, mapId: mapId);
@@ -308,7 +309,7 @@ class _SaveNotePopoverState extends ConsumerState<SaveNotePopover> {
     return null;
   }
 
-  Future<void> _save(({String mapId, String parentId, String title}) place) async {
+  Future<void> _save(({String mapId, String? parentId, String title}) place) async {
     final anchor = _anchor;
     final inSource = anchor != null && _inSource;
     if (_saving || (!_inMap && !inSource)) return;

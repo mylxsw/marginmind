@@ -550,6 +550,13 @@ class _Tail extends ConsumerWidget {
       tooltip: l.assistantRegenerate,
       onPressed: retry,
     );
+    // Migrated research: the answer can be copied, nothing else.
+    if (ref.watch(assistantControllerProvider.select((c) => c.readOnly))) {
+      return Padding(
+        padding: const EdgeInsets.only(top: MMSpacing.xxs),
+        child: Row(children: [copy]),
+      );
+    }
     if (m.status == MessageStatus.done || m.status == MessageStatus.stopped) {
       return Padding(
         padding: const EdgeInsets.only(top: MMSpacing.xxs),

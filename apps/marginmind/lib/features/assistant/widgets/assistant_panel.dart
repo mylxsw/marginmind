@@ -153,7 +153,9 @@ class AssistantPanel extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Expanded(child: body),
-                    if (!ui.history) AssistantComposer(studySetId: studySetId, configured: configured),
+                    // A migrated research conversation is read only: no input.
+                    if (!ui.history && !conversation.readOnly)
+                      AssistantComposer(studySetId: studySetId, configured: configured),
                   ],
                 ),
                 if (source != null)
