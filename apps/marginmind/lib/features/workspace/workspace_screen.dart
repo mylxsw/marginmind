@@ -175,7 +175,6 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   MMToolbarButton(
                     key: const ValueKey('toolbar-assistant'),
                     icon: MMIcons.ai,
-                    label: l.assistant,
                     tint: context.mmColors.research,
                     tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
                     selected: state.panel == RightPanel.assistant,

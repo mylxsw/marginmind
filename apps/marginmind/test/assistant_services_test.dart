@@ -106,8 +106,9 @@ void main() {
     await actions.saveKey('one', 'secret-one');
     await actions.saveKey('two', 'secret-two');
     await actions.setDefault(const ModelReference('two', 'model'));
-    expect(c.read(assistantSettingsProvider).serviceId, 'two');
-    expect(c.read(assistantSettingsProvider.notifier).models().length, 3);
+    expect(c.read(assistantDefaultModelProvider)!.serviceId, 'two');
+    expect((await c.read(assistantServicesProvider.future)).enabledModels.length, 3);
+    expect(await c.read(assistantConfiguredProvider.future), isTrue);
     await actions.setEnabled('two', false);
     expect((await c.read(assistantServicesProvider.future)).defaultModel!.serviceId, 'legacy-claude');
     await actions.upsertModel('one', const ServiceModel(id: 'mini', tools: ToolCapability.unsupported));
@@ -120,20 +121,18 @@ void main() {
     expect(secrets.values[AssistantServicesStore.account('two')], 'secret-two');
     await expectLater(actions.setDefault(const ModelReference('missing', 'model')), throwsArgumentError);
     await actions.setEnabled('two', true); // A rejected queued mutation does not poison later writes.
-    await c
-        .read(assistantSettingsProvider.notifier)
-        .configure(
-          const AssistantSettings(
-            provider: AssistantProvider.responses,
-            model: 'gpt',
-            endpoint: 'https://api.openai.com/v1/responses',
-          ),
-        );
-    await c.read(assistantSettingsProvider.notifier).saveKey('legacy-key');
-    expect((await c.read(assistantServicesProvider.future)).defaultModel!.serviceId, 'legacy-responses');
-    expect(secrets.values[AssistantServicesStore.account('legacy-responses')], 'legacy-key');
-    await c.read(assistantSettingsProvider.notifier).select(AssistantProvider.compatible);
-    expect(c.read(assistantSettingsProvider).serviceId, 'two');
+    // Removing the migrated service also removes the key of the old settings.
+    secrets.values['openai'] = 'legacy-key';
+    await actions.upsert(
+      AssistantService(
+        id: 'legacy-responses',
+        protocol: ServiceProtocol.openai,
+        name: 'OpenAI',
+        endpoint: 'https://api.openai.com/v1/responses',
+        responses: true,
+        models: [const ServiceModel(id: 'gpt')],
+      ),
+    );
     await actions.remove('legacy-responses');
     expect(secrets.values.containsKey('openai'), false);
   });
@@ -169,6 +168,55 @@ void main() {
     second.result.complete(const ServiceModel(id: 'other'));
     await expectLater(pending, throwsStateError);
   });
+  test('new services, endpoints, and the configured state', () async {
+    final service = newAssistantService(ServiceProtocol.openai, 'OpenAI', ['service-1']);
+    expect(service.responses, isTrue);
+    expect(service.endpoint, 'https://api.openai.com/v1');
+    final proxy = serviceWithEndpoint(service, 'https://proxy.example/v1');
+    expect(proxy.responses, isFalse);
+    expect(proxy.id, service.id);
+    expect(serviceWithEndpoint(proxy, 'https://api.openai.com/v1').responses, isTrue);
+    // A legacy Responses proxy keeps its protocol when its address changes.
+    final legacy = AssistantService(
+      id: 'legacy-responses',
+      protocol: ServiceProtocol.openai,
+      name: 'x',
+      endpoint: 'https://a.example/v1/responses',
+      responses: true,
+    );
+    expect(serviceWithEndpoint(legacy, 'https://b.example/v1/responses').responses, isTrue);
+    final anthropic = serviceWithEndpoint(
+      newAssistantService(ServiceProtocol.anthropic, 'A', const []),
+      'https://other.example',
+    );
+    expect(anthropic.responses, isFalse);
+    expect(newAssistantService(ServiceProtocol.ollama, 'O', const []).localEnabled, isTrue);
+    expect(serviceEndpointOptional(ServiceProtocol.gemini), isTrue);
+    expect(serviceEndpointOptional(ServiceProtocol.openai), isFalse);
+    for (final p in ServiceProtocol.values) {
+      expect(Uri.parse(defaultServiceEndpoint(p)).host, isNotEmpty);
+    }
+    expect(legacyAssistantAccount(AssistantProvider.responses), 'openai');
+    expect(legacyAssistantModel(AssistantProvider.claude), 'claude-opus-5-5');
+
+    SharedPreferences.setMockInitialValues({'assistant.provider': 'ollama', 'assistant.model.ollama': 'llama'});
+    final prefs = await SharedPreferences.getInstance(), secrets = Secrets();
+    final c = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assistantSecretsProvider.overrideWithValue(secrets),
+      ],
+    );
+    addTearDown(c.dispose);
+    // Ollama not yet allowed: nothing to answer with.
+    expect(await c.read(assistantConfiguredProvider.future), isFalse);
+    final ollama = (await c.read(assistantServicesProvider.future)).services.firstWhere((s) => s.id == 'legacy-ollama');
+    await c.read(assistantServicesProvider.notifier).upsert(ollama.copyWith(localEnabled: true));
+    await c.read(assistantServicesProvider.notifier).setDefault(const ModelReference('legacy-ollama', 'llama'));
+    expect(await c.read(assistantConfiguredProvider.future), isTrue);
+    expect(assistantOnlineKey('s'), 'assistant.online.s');
+  });
+
   test('search selection and Cloudflare secrets persist independently', () async {
     SharedPreferences.setMockInitialValues({'assistant.searxng': 'http://localhost:8888/search'});
     final prefs = await SharedPreferences.getInstance(), secrets = Secrets();

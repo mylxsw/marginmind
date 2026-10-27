@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_assistant/mm_assistant.dart' hide AssistantSkill;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -16,12 +17,17 @@ import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
+import '../../../settings/settings_window.dart';
+import '../assistant_services.dart';
 import '../assistant_settings.dart';
+import '../settings/model_settings.dart' show serviceTitle;
 import 'assistant_conversations.dart';
 import 'assistant_composer.dart';
 import 'assistant_markdown.dart' show sourceNumbers;
 import 'assistant_messages.dart';
+import 'assistant_model_menu.dart' show sameModel;
 import 'assistant_overlays.dart';
+import 'service_logo.dart';
 
 /// Gives a study set window its assistant: the conversation lives as long as
 /// the window, so closing the panel or switching documents never stops an
@@ -77,6 +83,14 @@ class _AssistantHost extends ConsumerWidget {
     );
     // Kept loaded, so a question asked as the panel opens is not dropped.
     ref.listen(assistantConfiguredProvider, (_, _) {});
+    // An empty conversation follows the default model (it loads after the
+    // window opens, and may change in settings); used ones keep theirs.
+    ref.listen(assistantDefaultModelProvider, (previous, next) {
+      final open = ref.read(assistantControllerProvider);
+      if (next == null || open.readOnly || open.messages.isNotEmpty) return;
+      if (sameModel(open.model, next) && open.model.endpoint == next.endpoint) return;
+      unawaited(ref.read(assistantControllerProvider.notifier).switchModel(next).catchError((Object _) {}));
+    });
     ref.listen(assistantUiProvider(studySetId).select((s) => s.request), (_, request) async {
       if (request == null) return;
       ref.read(assistantUiProvider(studySetId).notifier).handled(request.id);
@@ -227,48 +241,51 @@ class AssistantHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Flexible(
-            child: MMInteractive(
-              key: const ValueKey('assistant-title'),
-              onTap: () {
-                ref.read(researchPanelProvider(studySetId).notifier).closeNote();
-                ui.showHistory(!history);
-              },
-              semanticLabel: shown,
-              semanticValue: l.assistantHistory,
-              builder: (context, s) => AnimatedContainer(
-                duration: MMMotion.quick,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: s.hovered ? c.hover : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
-                      child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
-                    ),
-                    const SizedBox(width: MMSpacing.s),
-                    Flexible(
-                      child: Text(
-                        shown,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.headline.copyWith(color: c.label),
+          // The title takes the free width, so the buttons sit at the right edge.
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: MMInteractive(
+                key: const ValueKey('assistant-title'),
+                onTap: () {
+                  ref.read(researchPanelProvider(studySetId).notifier).closeNote();
+                  ui.showHistory(!history);
+                },
+                semanticLabel: shown,
+                semanticValue: l.assistantHistory,
+                builder: (context, s) => AnimatedContainer(
+                  duration: MMMotion.quick,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: s.hovered ? c.hover : Colors.transparent,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
+                        child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
                       ),
-                    ),
-                    const SizedBox(width: MMSpacing.xs),
-                    Icon(history ? MMIcons.chevronUp : MMIcons.chevronDown, size: 11, color: c.icon),
-                  ],
+                      const SizedBox(width: MMSpacing.s),
+                      Flexible(
+                        child: Text(
+                          shown,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.headline.copyWith(color: c.label),
+                        ),
+                      ),
+                      const SizedBox(width: MMSpacing.xs),
+                      Icon(history ? MMIcons.chevronUp : MMIcons.chevronDown, size: 11, color: c.icon),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-          const Spacer(),
           MMIconButton(
             key: const ValueKey('assistant-new'),
             icon: MMIcons.add,
@@ -280,8 +297,8 @@ class AssistantHeader extends ConsumerWidget {
             key: const ValueKey('assistant-settings'),
             icon: MMIcons.settings,
             iconSize: 13,
-            tooltip: l.assistantSettings,
-            onPressed: () => showAssistantSettings(context, ref),
+            tooltip: AppShortcuts.tip(l.settingsTitle, AppShortcuts.settings),
+            onPressed: () => showSettings(context, tab: SettingsTab.models),
           ),
           MMIconButton(
             key: const ValueKey('assistant-close'),
@@ -409,7 +426,8 @@ class _Suggestion extends StatelessWidget {
   }
 }
 
-/// No AI service yet: pick one and paste its key, right in the panel.
+/// No AI service yet: pick one and paste its key, right in the panel. The
+/// service is added (with one model, made the default) once it answers.
 class ConnectCard extends ConsumerStatefulWidget {
   const ConnectCard({super.key});
 
@@ -418,79 +436,79 @@ class ConnectCard extends ConsumerStatefulWidget {
 }
 
 class _ConnectCardState extends ConsumerState<ConnectCard> {
-  late AssistantProvider _service;
+  ServiceProtocol _protocol = ServiceProtocol.anthropic;
   final _key = TextEditingController();
-  final _model = TextEditingController();
-  final _endpoint = TextEditingController();
+  final _endpoint = TextEditingController(text: defaultServiceEndpoint(ServiceProtocol.ollama));
+  final _cancel = CancellationToken();
   bool _connecting = false;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    final current = ref.read(assistantSettingsProvider).provider;
-    _service = connectableServices.contains(current) ? current : AssistantProvider.claude;
-    final saved = ref.read(assistantSettingsProvider.notifier).saved(_service);
-    _model.text = saved.model;
-    _endpoint.text = saved.endpoint;
-  }
-
-  @override
   void dispose() {
+    _cancel.cancel();
     _key.dispose();
-    _model.dispose();
     _endpoint.dispose();
     super.dispose();
   }
 
-  void _pick(AssistantProvider p) {
-    final saved = ref.read(assistantSettingsProvider.notifier).saved(p);
-    setState(() {
-      _service = p;
-      _key.clear();
-      _model.text = saved.model;
-      _endpoint.text = saved.endpoint;
-      _error = null;
-    });
-  }
+  bool get _local => _protocol == ServiceProtocol.ollama;
+
+  void _pick(ServiceProtocol p) => setState(() {
+    _protocol = p;
+    _key.clear();
+    _error = null;
+  });
 
   Future<void> _connect() async {
     final l = context.l10n;
-    final key = _service == AssistantProvider.ollama ? '' : _key.text.trim();
-    if (_connecting || (_service != AssistantProvider.ollama && key.isEmpty) || _model.text.trim().isEmpty) return;
+    final key = _local ? '' : _key.text.trim();
+    if (_connecting || (!_local && key.isEmpty) || (_local && _endpoint.text.trim().isEmpty)) return;
     setState(() {
       _connecting = true;
       _error = null;
     });
-    final notifier = ref.read(assistantSettingsProvider.notifier);
-    final current = ref.read(assistantSettingsProvider);
-    final settings = AssistantSettings(
-      provider: _service,
-      model: _model.text.trim(),
-      endpoint: _endpoint.text.trim(),
-      online: current.online,
-      localEnabled: current.localEnabled || _service == AssistantProvider.ollama,
-      searxngEndpoint: current.searxngEndpoint,
-    );
-    final failure = await ref.read(assistantConnectionTesterProvider)(settings.configuration, key);
-    if (!mounted) return;
-    if (failure != null) {
-      setState(() {
-        _connecting = false;
-        _error = switch (failure) {
-          ResearchFailureKind.authentication => l.assistantKeyInvalid,
-          ResearchFailureKind.invalidRequest || ResearchFailureKind.unsafeUrl => l.assistantConnectionInvalid,
-          ResearchFailureKind.timeout => l.assistantConnectionTimeout,
-          ResearchFailureKind.rateLimited => l.researchErrorRateLimited,
-          _ => l.assistantCannotConnect,
-        };
-      });
-      return;
+    final controller = ref.read(assistantServicesProvider.notifier);
+    final catalog = ref.read(serviceCatalogProvider);
+    try {
+      final value = await ref.read(assistantServicesProvider.future);
+      // A service of this kind without a key (from older settings) is reused.
+      var service =
+          value.services.where((s) => s.protocol == _protocol).firstOrNull ??
+          newAssistantService(_protocol, serviceTitle(l, _protocol), value.services.map((s) => s.id));
+      service = service.copyWith(enabled: true, localEnabled: _local || service.localEnabled);
+      if (_local) service = serviceWithEndpoint(service, _endpoint.text.trim());
+      final status = await catalog.check(service, key, cancellation: _cancel);
+      if (status != ConnectionStatus.ok) {
+        return _fail(
+          status == ConnectionStatus.authFailed
+              ? l.assistantErrorKey
+              : (_local ? l.assistantNoOllama : l.assistantCannotConnect),
+        );
+      }
+      var model = service.models.where((m) => m.enabled).firstOrNull;
+      model ??= preferredModel(_protocol, await catalog.list(service, key, cancellation: _cancel));
+      if (model == null) return _fail(l.assistantNoModels);
+      await controller.upsert(service);
+      if (!_local) await controller.saveKey(service.id, key);
+      if (!service.models.any((m) => m.id == model!.id && m.enabled)) {
+        await controller.addDiscoveredModel(service.id, model.copyWith(enabled: true), cancellation: _cancel);
+      }
+      await controller.setDefault(ModelReference(service.id, model.id));
+    } on ResearchFailure catch (e) {
+      if (e.kind == ResearchFailureKind.cancelled) return;
+      return _fail(e.kind == ResearchFailureKind.authentication ? l.assistantErrorKey : l.assistantCannotConnect);
+    } catch (_) {
+      return _fail(l.assistantErrorFailed);
     }
-    await notifier.configure(settings);
-    if (_service != AssistantProvider.ollama) await notifier.saveKey(key);
-    await ref.read(assistantControllerProvider.notifier).switchModel(settings.configuration);
     if (mounted) setState(() => _connecting = false);
+  }
+
+  void _fail(String reason) {
+    if (!mounted) return;
+    setState(() {
+      _connecting = false;
+      _error = reason;
+    });
   }
 
   @override
@@ -498,6 +516,12 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final tiles = [
+      (ServiceProtocol.anthropic, ServiceBrand.anthropic, 'Anthropic'),
+      (ServiceProtocol.openai, ServiceBrand.openai, 'OpenAI'),
+      (ServiceProtocol.gemini, ServiceBrand.gemini, 'Gemini'),
+      (ServiceProtocol.ollama, ServiceBrand.ollama, l.assistantServiceOllama),
+    ];
     return Container(
       key: const ValueKey('assistant-connect'),
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -523,34 +547,34 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
               spacing: 6,
               runSpacing: 6,
               children: [
-                for (final p in connectableServices)
+                for (final (p, brand, name) in tiles)
                   SizedBox(
                     width: (box.maxWidth - 6) / 2,
                     child: MMInteractive(
                       key: ValueKey('connect-${p.name}'),
                       onTap: () => _pick(p),
-                      selected: p == _service,
-                      semanticLabel: serviceName(l, p),
-                      semanticValue: p == _service ? '✓' : null,
+                      selected: p == _protocol,
+                      semanticLabel: name,
+                      semanticValue: p == _protocol ? '✓' : null,
                       builder: (context, s) => AnimatedContainer(
                         duration: MMMotion.quick,
                         height: 30,
                         padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
                         decoration: BoxDecoration(
-                          color: p == _service ? c.researchTint : (s.hovered ? c.hover : Colors.transparent),
+                          color: p == _protocol ? c.researchTint : (s.hovered ? c.hover : Colors.transparent),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: p == _service ? c.research : c.separator,
-                            width: p == _service ? 1.5 : 1,
+                            color: p == _protocol ? c.research : c.separator,
+                            width: p == _protocol ? 1.5 : 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Icon(MMIcons.ai, size: 12, color: p == _service ? c.research : c.icon),
+                            ServiceLogo(brand: brand, name: name, size: 16),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                serviceName(l, p),
+                                name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: t.callout.copyWith(color: c.label),
@@ -565,36 +589,26 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
             ),
           ),
           const SizedBox(height: 10),
-          if (_service != AssistantProvider.claude) ...[
-            MMTextField(
-              key: const ValueKey('connect-model'),
-              controller: _model,
-              placeholder: l.assistantModelField,
-              semanticLabel: l.assistantModelField,
-            ),
-            const SizedBox(height: 6),
-          ],
-          if (_service == AssistantProvider.compatible || _service == AssistantProvider.ollama) ...[
-            MMTextField(
-              controller: _endpoint,
-              placeholder: l.assistantEndpointField,
-              semanticLabel: l.assistantEndpointField,
-            ),
-            const SizedBox(height: 6),
-          ],
           Row(
             children: [
-              if (_service != AssistantProvider.ollama)
-                Expanded(
-                  child: MMTextField(
-                    key: const ValueKey('connect-key'),
-                    controller: _key,
-                    obscureText: true,
-                    placeholder: l.assistantPasteKey,
-                    semanticLabel: l.assistantPasteKey,
-                    onSubmitted: (_) => _connect(),
-                  ),
-                ),
+              Expanded(
+                child: _local
+                    ? MMTextField(
+                        key: const ValueKey('connect-endpoint'),
+                        controller: _endpoint,
+                        placeholder: defaultServiceEndpoint(ServiceProtocol.ollama),
+                        semanticLabel: l.settingsAddress,
+                        onSubmitted: (_) => _connect(),
+                      )
+                    : MMTextField(
+                        key: const ValueKey('connect-key'),
+                        controller: _key,
+                        obscureText: true,
+                        placeholder: l.assistantPasteKey,
+                        semanticLabel: l.assistantPasteKey,
+                        onSubmitted: (_) => _connect(),
+                      ),
+              ),
               const SizedBox(width: MMSpacing.s),
               if (_connecting)
                 SizedBox(
@@ -623,4 +637,19 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
       ),
     );
   }
+}
+
+/// The model a first connection starts with: the service's everyday model
+/// when it lists one, else the first it lists.
+ServiceModel? preferredModel(ServiceProtocol protocol, List<ServiceModel> models) {
+  final patterns = switch (protocol) {
+    ServiceProtocol.anthropic => [RegExp('sonnet'), RegExp('opus')],
+    ServiceProtocol.openai => [RegExp(r'^gpt-[\d.]+$'), RegExp(r'^gpt')],
+    ServiceProtocol.gemini => [RegExp(r'pro$'), RegExp('flash')],
+    ServiceProtocol.ollama => <RegExp>[],
+  };
+  for (final p in patterns) {
+    if (models.where((m) => p.hasMatch(m.id)).firstOrNull case final m?) return m;
+  }
+  return models.firstOrNull;
 }

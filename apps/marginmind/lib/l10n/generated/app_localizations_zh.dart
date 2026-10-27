@@ -1454,9 +1454,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get researchErrorAuthentication => 'API Key 无效';
 
   @override
-  String get researchErrorRateLimited => '请求过多，请稍后重试';
-
-  @override
   String get researchErrorBudget => '已达到上限';
 
   @override
@@ -1988,9 +1985,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantNewConversation => '新对话';
 
   @override
-  String get assistantSettings => '助手设置';
-
-  @override
   String get assistantHistory => '对话记录';
 
   @override
@@ -2022,27 +2016,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantStop => '停止';
-
-  @override
-  String assistantModelSwitched(String name) {
-    return '已切换到 $name';
-  }
-
-  @override
-  String assistantLocalModel(String name) {
-    return '本机 · $name';
-  }
-
-  @override
-  String assistantSteps(int count) {
-    return '用了 $count 步';
-  }
-
-  @override
-  String get assistantStepsOnline => '已联网';
-
-  @override
-  String get assistantStepsOffline => '未联网';
 
   @override
   String get assistantToolReadSelection => '读取所选内容';
@@ -2096,7 +2069,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantErrorKey => 'API Key 无效';
 
   @override
-  String get assistantErrorService => '服务不可用';
+  String get assistantErrorService => '服务暂时不可用';
 
   @override
   String get assistantErrorBudget => '超出本次上限';
@@ -2202,7 +2175,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String assistantPageContext(String document, int page) {
-    return '$document · 第 $page 页';
+    return '第 $page 页 · $document';
   }
 
   @override
@@ -2311,43 +2284,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantPasteKey => '粘贴 API Key';
 
   @override
-  String get assistantModelField => '模型';
-
-  @override
-  String get assistantEndpointField => '地址';
-
-  @override
   String get assistantConnect => '连接';
-
-  @override
-  String get assistantKeyInvalid => 'Key 无效';
 
   @override
   String get assistantCannotConnect => '连不上服务';
 
   @override
-  String get assistantConnectionInvalid => '请检查模型名称和服务地址；远程服务需使用 HTTPS';
-
-  @override
-  String get assistantConnectionTimeout => '连接超时，请检查网络后重试';
-
-  @override
-  String get assistantServiceClaude => 'Claude';
-
-  @override
-  String get assistantServiceOpenAI => 'OpenAI';
-
-  @override
-  String get assistantServiceCompatible => '兼容服务';
-
-  @override
   String get assistantServiceOllama => '本机 · Ollama';
-
-  @override
-  String get assistantService => '服务';
-
-  @override
-  String get assistantLocalSetting => '本机模型';
 
   @override
   String assistantQuestions(int count) {
@@ -2406,5 +2349,175 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantAskMore => '继续问';
 
   @override
-  String get assistantSearxngInvalid => '请输入有效的 HTTP 或 HTTPS 端点';
+  String get settingsGeneral => '通用';
+
+  @override
+  String get settingsReading => '阅读';
+
+  @override
+  String get settingsModels => '模型';
+
+  @override
+  String get settingsWebSearch => '网页搜索';
+
+  @override
+  String get settingsDefaultModel => '默认模型';
+
+  @override
+  String get settingsServices => '服务';
+
+  @override
+  String settingsServiceModels(int count) {
+    return '已启用 $count 个模型';
+  }
+
+  @override
+  String get settingsServiceNoModels => '还没有模型';
+
+  @override
+  String get settingsServiceOff => '已停用';
+
+  @override
+  String get settingsName => '名称';
+
+  @override
+  String get settingsAddress => '地址';
+
+  @override
+  String get settingsShowKey => '显示';
+
+  @override
+  String get settingsHideKey => '隐藏';
+
+  @override
+  String get settingsSetDefault => '设为默认';
+
+  @override
+  String get settingsIsDefault => '默认';
+
+  @override
+  String get settingsRemoveModel => '移除';
+
+  @override
+  String get settingsAddModel => '添加模型…';
+
+  @override
+  String get settingsCustomAddress => '使用自定义地址';
+
+  @override
+  String get settingsRemoveService => '移除服务';
+
+  @override
+  String settingsRemoveServiceTitle(String name) {
+    return '移除“$name”？';
+  }
+
+  @override
+  String get settingsRemoveServiceMessage => '它的 API Key 会一并删除，对话会保留。';
+
+  @override
+  String get settingsAddService => '添加服务';
+
+  @override
+  String get settingsAddModelTitle => '添加模型';
+
+  @override
+  String get settingsSearchModels => '搜索，或输入模型 ID';
+
+  @override
+  String get settingsAdded => '已添加';
+
+  @override
+  String settingsAddManual(String id) {
+    return '添加“$id”';
+  }
+
+  @override
+  String get settingsAdd => '添加';
+
+  @override
+  String settingsAddCount(int count) {
+    return '添加 $count 个';
+  }
+
+  @override
+  String get settingsOpenAiCompatible => 'OpenAI 兼容';
+
+  @override
+  String get settingsOllamaLocal => 'Ollama（本机）';
+
+  @override
+  String get settingsSearchService => '搜索服务';
+
+  @override
+  String get settingsSearchModel => '模型自带搜索';
+
+  @override
+  String get settingsAccountId => '账户 ID';
+
+  @override
+  String get settingsTokenInvalid => 'API Token 无效';
+
+  @override
+  String get settingsSearchUnreachable => '连不上搜索服务';
+
+  @override
+  String settingsNoBuiltinSearch(String model) {
+    return '$model 不带搜索，联网时请改用其他搜索服务';
+  }
+
+  @override
+  String get assistantManageModels => '管理模型…';
+
+  @override
+  String get assistantModel => '模型';
+
+  @override
+  String get assistantNoOllama => '找不到本机 Ollama';
+
+  @override
+  String get assistantNoModels => '这个服务没有可用的对话模型';
+
+  @override
+  String get assistantThinking => '思考中…';
+
+  @override
+  String assistantWorkedFor(int seconds) {
+    return '处理了 $seconds 秒';
+  }
+
+  @override
+  String assistantToolFailures(int count) {
+    return '工具调用失败 $count 次';
+  }
+
+  @override
+  String get assistantAnswerWithoutTools => '不用工具重答';
+
+  @override
+  String get assistantSwitchModel => '换个模型';
+
+  @override
+  String get assistantCopyDiagnostics => '复制诊断信息';
+
+  @override
+  String get assistantDetails => '详情';
+
+  @override
+  String get assistantDiagnosticModel => '模型';
+
+  @override
+  String get assistantDiagnosticHost => '地址';
+
+  @override
+  String get assistantDiagnosticStatus => 'HTTP 状态码';
+
+  @override
+  String get assistantDiagnosticTools => '失败的工具';
+
+  @override
+  String get assistantDiagnosticReason => '停止原因';
+
+  @override
+  String get assistantDiagnosticRequest => '请求 ID';
 }

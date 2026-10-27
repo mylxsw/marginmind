@@ -86,7 +86,7 @@ class MMToolbarButton extends StatelessWidget {
   }) : assert(icon != null || label != null);
 
   /// A feature color for icon and label (research), in place of the label
-  /// color; selection still uses the accent.
+  /// color, also while selected (the open assistant).
   final Color? tint;
 
   /// Null for a text-only button (e.g. "Done"); [label] is then required.
@@ -108,7 +108,7 @@ class MMToolbarButton extends StatelessWidget {
       tooltip: tooltip,
       semanticLabel: tooltip,
       builder: (context, s) {
-        final fg = !s.enabled ? c.label.withValues(alpha: 0.3) : (selected ? c.accent : (tint ?? c.label));
+        final fg = !s.enabled ? c.label.withValues(alpha: 0.3) : (selected ? (tint ?? c.accent) : (tint ?? c.label));
         final bg = selected
             ? c.accentTint
             : s.pressed

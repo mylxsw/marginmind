@@ -68,14 +68,14 @@ final assistantPageTextProvider = Provider<Future<String?> Function(String path,
 /// The dependencies a study set's assistant runs with. The window overrides
 /// [assistantDependenciesProvider] with this value in its ProviderScope.
 final assistantDependenciesForProvider = Provider.family<AssistantDependencies, String>((ref, studySetId) {
-  final settings = ref.read(assistantSettingsProvider);
   return AssistantDependencies(
     studySetId: studySetId,
-    model: settings.configuration,
+    model: unconfiguredAssistantModel,
+    defaultModel: () => ref.read(assistantDefaultModelProvider),
     storage: ref.watch(assistantArchiveProvider(studySetId)).storage,
     executor: ref.watch(assistantMapEditExecutorProvider(studySetId)),
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
-    online: settings.online,
+    online: assistantOnlineDefault(ref, studySetId),
     generateTitle: (current, question) async {
       final store = ref.read(assistantServicesStoreProvider);
       final resolved = await store.resolve(current);
@@ -297,7 +297,7 @@ final assistantLegacyMigrationProvider = FutureProvider.family<void, String>((re
     sessions: repository as ResearchSessionRepository,
     content: repository,
     storage: ref.watch(assistantArchiveProvider(studySetId)).storage,
-    model: ref.read(assistantSettingsProvider).configuration,
+    model: ref.read(assistantDefaultModelProvider) ?? unconfiguredAssistantModel,
   ).migrate();
 });
 

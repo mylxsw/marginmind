@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/interactive.dart';
+import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import 'glass.dart';
 
@@ -11,9 +12,13 @@ sealed class MMMenuEntry {
 }
 
 class MMMenuItem extends MMMenuEntry {
-  const MMMenuItem(this.label, this.onSelected, {this.destructive = false, this.shortcut});
+  const MMMenuItem(this.label, this.onSelected, {this.destructive = false, this.shortcut, this.checked});
 
   final String label;
+
+  /// Non-null leaves a check column: true shows the mark (pop-up buttons,
+  /// the model menu).
+  final bool? checked;
 
   /// Null disables the item.
   final VoidCallback? onSelected;
@@ -39,7 +44,12 @@ class MMMenuHeader extends MMMenuEntry {
 /// Shows a macOS-style context menu at [position] (global coordinates).
 /// Clicking outside or pressing Esc closes it; choosing an item closes it
 /// and then runs the item's callback.
-Future<void> showMMMenu(BuildContext context, {required Offset position, required List<MMMenuEntry> entries}) async {
+Future<void> showMMMenu(
+  BuildContext context, {
+  required Offset position,
+  required List<MMMenuEntry> entries,
+  double minWidth = 190,
+}) async {
   final selected = await showGeneralDialog<VoidCallback>(
     context: context,
     barrierDismissible: true,
@@ -52,7 +62,7 @@ Future<void> showMMMenu(BuildContext context, {required Offset position, require
         autofocus: true,
         child: CustomSingleChildLayout(
           delegate: _MenuLayout(position),
-          child: _Menu(entries: entries),
+          child: _Menu(entries: entries, minWidth: minWidth),
         ),
       ),
     ),
@@ -84,9 +94,10 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 }
 
 class _Menu extends StatelessWidget {
-  const _Menu({required this.entries});
+  const _Menu({required this.entries, required this.minWidth});
 
   final List<MMMenuEntry> entries;
+  final double minWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +105,7 @@ class _Menu extends StatelessWidget {
     return Material(
       type: MaterialType.transparency,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 190, maxWidth: 300),
+        constraints: BoxConstraints(minWidth: minWidth, maxWidth: minWidth < 300 ? 300 : minWidth),
         child: MMGlass(
           borderRadius: BorderRadius.circular(12),
           padding: const EdgeInsets.all(5),
@@ -162,6 +173,8 @@ class _MenuRow extends StatelessWidget {
           ),
           child: Row(
             children: [
+              if (item.checked != null)
+                SizedBox(width: 20, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
               Expanded(
                 child: Text(
                   item.label,

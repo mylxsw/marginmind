@@ -1,14 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 
 import '../../../packages/mm_assistant/test/support.dart';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Secrets implements SecretStore {
   final values = <String, String>{};
@@ -27,43 +24,6 @@ class Secrets implements SecretStore {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test('settings default online; keys only in service-specific secret store', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final secrets = Secrets();
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        assistantSecretsProvider.overrideWithValue(secrets),
-      ],
-    );
-    addTearDown(container.dispose);
-    expect(container.read(assistantSettingsProvider).online, true);
-    expect(container.read(assistantSettingsProvider).localEnabled, false);
-    final controller = container.read(assistantSettingsProvider.notifier);
-    await controller.saveKey('claude-key');
-    expect(secrets.values['anthropic'], 'claude-key');
-    for (final provider in AssistantProvider.values) {
-      await controller.configure(
-        AssistantSettings(
-          provider: provider,
-          model: 'model',
-          endpoint: 'https://example.com',
-          online: false,
-          localEnabled: true,
-          searxngEndpoint: 'https://search.example.com',
-        ),
-      );
-      await controller.saveKey('key-${provider.name}');
-      expect(container.read(assistantSettingsProvider).configuration.provider, provider);
-      container.invalidate(assistantSettingsProvider);
-      expect(container.read(assistantSettingsProvider).online, false);
-    }
-    expect(prefs.getKeys().any((k) => k.contains('key')), false);
-    await container.read(assistantSettingsProvider.notifier).saveKey('');
-    expect(secrets.values.containsKey('assistant.gemini'), false);
-    expect(AssistantSettingsController.account(AssistantProvider.responses), 'openai');
-  });
   test('composition reads correct key, rejects missing credentials and closes invalid runs', () async {
     final secrets = Secrets();
     final factory = assistantRunFactory(
@@ -88,6 +48,20 @@ void main() {
     final run = await factory(sdk.AgentState(sessionId: 'c'), conversation, question);
     run.stop();
     expect(run.cancel.isCancelled, true);
+    // A conversation asked to answer without tools gets a run without them.
+    final plain = await factory(
+      sdk.AgentState(sessionId: 'c'),
+      conversation.copyWith(
+        model: const AssistantModel(
+          provider: AssistantProvider.claude,
+          model: 'm',
+          endpoint: 'https://api.anthropic.com/v1/messages',
+          supportsTools: false,
+        ),
+      ),
+      question,
+    );
+    plain.stop();
     await expectLater(
       factory(
         sdk.AgentState(sessionId: 'c'),

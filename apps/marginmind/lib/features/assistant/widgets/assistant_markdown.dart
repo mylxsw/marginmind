@@ -1,97 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:mm_design/mm_design.dart';
 
 import '../assistant_controller.dart';
 
-/// A block of an answer: the Markdown the assistant writes (paragraphs,
-/// lists, small headings, conclusion boxes).
-sealed class AnswerBlock {
-  const AnswerBlock(this.text);
-  final String text;
-}
+/// `[page:N]` / `[source:N]`: a citation chip, never a link.
+class _CitationSyntax extends md.InlineSyntax {
+  _CitationSyntax() : super(r'\[(?:page|source):\d+\]');
 
-class ParagraphBlock extends AnswerBlock {
-  const ParagraphBlock(super.text);
-}
-
-class HeadingBlock extends AnswerBlock {
-  const HeadingBlock(super.text);
-}
-
-class ListItemBlock extends AnswerBlock {
-  const ListItemBlock(super.text, {this.marker = '•'});
-  final String marker;
-}
-
-/// A `>` quote: the verdict of a check, shown boxed.
-class ConclusionBlock extends AnswerBlock {
-  const ConclusionBlock(super.text);
-}
-
-final _heading = RegExp(r'^#{1,6}\s+(.*)$');
-final _bullet = RegExp(r'^\s*[-*+]\s+(.*)$');
-final _numbered = RegExp(r'^\s*(\d+)[.)]\s+(.*)$');
-final _quote = RegExp(r'^>\s?(.*)$');
-
-/// Splits [text] into blocks. Anything else is a paragraph; lines of one
-/// paragraph keep their breaks.
-List<AnswerBlock> parseAnswer(String text) {
-  final blocks = <AnswerBlock>[];
-  final paragraph = <String>[];
-  final quote = <String>[];
-  void flush() {
-    if (paragraph.isNotEmpty) blocks.add(ParagraphBlock(paragraph.join('\n')));
-    if (quote.isNotEmpty) blocks.add(ConclusionBlock(quote.join('\n')));
-    paragraph.clear();
-    quote.clear();
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.empty('cite')..attributes['marker'] = match[0]!);
+    return true;
   }
+}
 
-  for (final line in text.split('\n')) {
-    if (line.trim().isEmpty) {
-      flush();
-    } else if (_quote.firstMatch(line) case final m?) {
-      if (paragraph.isNotEmpty) flush();
-      quote.add(m[1]!);
-    } else if (_heading.firstMatch(line) case final m?) {
-      flush();
-      blocks.add(HeadingBlock(m[1]!));
-    } else if (_bullet.firstMatch(line) case final m?) {
-      flush();
-      blocks.add(ListItemBlock(m[1]!));
-    } else if (_numbered.firstMatch(line) case final m?) {
-      flush();
-      blocks.add(ListItemBlock(m[2]!, marker: '${m[1]}.'));
-    } else {
-      if (quote.isNotEmpty) flush();
-      paragraph.add(line);
-    }
+/// `**…**` that CommonMark leaves open in Chinese: a closing `**` after
+/// full-width punctuation and before a character (`**一句话：**这句…`) is not
+/// right-flanking. Only spans that end in such punctuation are taken here;
+/// everything else follows the standard rules.
+class _CjkStrongSyntax extends md.InlineSyntax {
+  _CjkStrongSyntax() : super(r'\*\*(?=\S)([^*\n]*?[\u3000-\u303f\uff01-\uff60])\*\*', startCharacter: 0x2a);
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element('strong', md.InlineParser(match[1]!, parser.document).parse()));
+    return true;
   }
-  flush();
-  return blocks;
 }
 
-/// A piece of inline text.
-sealed class Inline {
-  const Inline();
-}
-
-class TextRun extends Inline {
-  const TextRun(this.text, {this.bold = false, this.italic = false, this.url});
-  final String text;
-  final bool bold, italic;
-  final Uri? url;
-}
-
-/// A citation the answer may show: [label] is "p.42" or "1".
-class CitationRun extends Inline {
-  const CitationRun(this.citation, this.label);
-  final Citation citation;
-  final String label;
-}
-
-final _inline = RegExp(
-  r'\*\*(.+?)\*\*|(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?!\w)|\[([^\]\n]+)\]\(([^)\s]+)\)|\[(page|source):(\d+)\]',
+/// GitHub-flavored Markdown (tables, strikethrough) plus citations. HTML in
+/// an answer stays text.
+md.Document _document() => md.Document(
+  extensionSet: md.ExtensionSet.gitHubFlavored,
+  inlineSyntaxes: [_CitationSyntax(), _CjkStrongSyntax()],
+  encodeHtml: false,
+  withDefaultBlockSyntaxes: true,
 );
+
+/// The blocks of [text].
+List<md.Node> parseMarkdown(String text) => _document().parse(text);
+
+/// Inline content of [text] only (bold, links, citations): how a block that
+/// is still being written is shown.
+List<md.Node> parseMarkdownInline(String text) => _document().parseInline(text);
+
+/// Splits an answer being written into finished blocks and the open one:
+/// the cut is the last blank line outside a code fence.
+(String done, String open) splitStreaming(String text) {
+  var cut = 0, fence = false, at = 0;
+  for (final line in text.split('\n')) {
+    final start = at;
+    at += line.length + 1;
+    if (line.trimLeft().startsWith('```')) {
+      fence = !fence;
+      if (fence) cut = start; // An open fence is not finished yet.
+      continue;
+    }
+    if (!fence && line.trim().isEmpty && at <= text.length) cut = at;
+  }
+  if (fence) return (text.substring(0, cut), text.substring(cut));
+  return (text.substring(0, cut.clamp(0, text.length)), text.substring(cut.clamp(0, text.length)));
+}
 
 /// Numbers external sources 1, 2… by their first citation in [text].
 Map<String, int> sourceNumbers(String text, List<Citation> citations) {
@@ -102,36 +72,6 @@ Map<String, int> sourceNumbers(String text, List<Citation> citations) {
     if (c != null && c.external) numbers.putIfAbsent(c.sourceId!, () => numbers.length + 1);
   }
   return numbers;
-}
-
-/// Inline runs of [text]. Citation markers that are not in [citations] are
-/// dropped without a trace.
-List<Inline> parseInline(String text, List<Citation> citations, Map<String, int> numbers) {
-  final byMarker = {for (final c in citations) c.marker: c};
-  final out = <Inline>[];
-  var at = 0;
-  for (final m in _inline.allMatches(text)) {
-    if (m.start > at) out.add(TextRun(text.substring(at, m.start)));
-    at = m.end;
-    if (m[1] != null) {
-      out.add(TextRun(m[1]!, bold: true));
-    } else if (m[2] != null) {
-      out.add(TextRun(m[2]!, italic: true));
-    } else if (m[3] != null) {
-      final url = Uri.tryParse(m[4]!);
-      out.add(TextRun(m[3]!, url: url != null && (url.scheme == 'https' || url.scheme == 'http') ? url : null));
-    } else {
-      final c = byMarker[m[0]];
-      if (c == null) continue;
-      if (c.external) {
-        out.add(CitationRun(c, '${numbers[c.sourceId] ?? '?'}'));
-      } else if (c.page != null) {
-        out.add(CitationRun(c, 'p.${c.page}'));
-      }
-    }
-  }
-  if (at < text.length) out.add(TextRun(text.substring(at)));
-  return out;
 }
 
 /// The Markdown an answer is copied as: page markers become "p.N", source
@@ -155,9 +95,16 @@ String copyableAnswer(String text, List<Citation> citations) {
 /// bracket until it closes.
 String visibleWhileStreaming(String text) => text.replaceFirst(RegExp(r'\[[a-z]*:?\d*$'), '');
 
-/// The answer's body. [onPage] jumps to a page in the source; [onSource]
-/// opens an external source.
-class AnswerBody extends StatelessWidget {
+/// Whether a check's verdict is qualified (“partly reliable”): its box is
+/// then the caution color.
+bool qualifiedVerdict(String text) =>
+    RegExp(r'部分|不可靠|存疑|有误|partly|partially|unreliable|uncertain|mislead', caseSensitive: false).hasMatch(text);
+
+/// The answer's body: Markdown laid out like a reading answer (headings,
+/// lists, quotes of the source in the reading face, tables, rules), with
+/// citation chips. While [cursor] is on, finished blocks are laid out and
+/// the one being written shows its inline text.
+class AnswerBody extends StatefulWidget {
   const AnswerBody({
     super.key,
     required this.text,
@@ -166,6 +113,7 @@ class AnswerBody extends StatelessWidget {
     this.onLink,
     this.tooltipFor,
     this.cursor = false,
+    this.conclusion = false,
   });
 
   final String text;
@@ -174,110 +122,326 @@ class AnswerBody extends StatelessWidget {
   final ValueChanged<Uri>? onLink;
   final String Function(Citation citation)? tooltipFor;
 
-  /// Shows the blinking cursor after the last block (still being written).
+  /// Shows the blinking cursor after the text (still being written).
   final bool cursor;
+
+  /// The first paragraph is a check's verdict: shown boxed.
+  final bool conclusion;
+
+  @override
+  State<AnswerBody> createState() => _AnswerBodyState();
+}
+
+class _AnswerBodyState extends State<AnswerBody> {
+  String? _parsed;
+  List<md.Node> _blocks = const [];
+
+  /// Finished blocks are parsed once; streaming only re-reads the open one.
+  List<md.Node> _blocksOf(String text) {
+    if (text != _parsed) {
+      _parsed = text;
+      _blocks = text.trim().isEmpty ? const [] : parseMarkdown(text);
+    }
+    return _blocks;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final c = context.mmColors;
-    final t = context.mmText;
-    final shown = cursor ? visibleWhileStreaming(text) : text;
-    final numbers = sourceNumbers(shown, citations);
-    final blocks = parseAnswer(shown);
-    // Merged onto the inherited style: rich text keeps the system family.
-    final base = DefaultTextStyle.of(context).style;
-    final body = base.merge(t.body.copyWith(height: 22 / 13, color: c.label));
-    InlineSpan spans(String value, TextStyle style, {bool last = false}) => TextSpan(
-      style: style,
-      children: [
-        for (final run in parseInline(value, citations, numbers))
-          switch (run) {
-            TextRun(:final text, :final url?) => WidgetSpan(
-              alignment: PlaceholderAlignment.baseline,
-              baseline: TextBaseline.alphabetic,
-              child: MMInteractive(
-                onTap: onLink == null ? null : () => onLink!(url),
-                tooltip: url.toString(),
-                semanticLabel: text,
-                canRequestFocus: false,
-                cursor: SystemMouseCursors.click,
-                builder: (context, s) => Text(
-                  text,
-                  style: style.copyWith(color: c.accent, decoration: s.hovered ? TextDecoration.underline : null),
-                ),
-              ),
-            ),
-            TextRun(:final text, :final bold, :final italic) => TextSpan(
-              text: text,
-              style: TextStyle(fontWeight: bold ? FontWeight.w600 : null, fontStyle: italic ? FontStyle.italic : null),
-            ),
-            CitationRun(:final citation, :final label) => WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: CitationChip(
-                  label: label,
-                  external: citation.external,
-                  tooltip: tooltipFor?.call(citation) ?? label,
-                  onPressed: () => onCitation(citation),
-                ),
-              ),
-            ),
-          },
-        if (last && cursor) const WidgetSpan(alignment: PlaceholderAlignment.middle, child: StreamingCursor()),
-      ],
-    );
-
-    if (blocks.isEmpty) {
-      return cursor ? const Align(alignment: Alignment.centerLeft, child: StreamingCursor()) : const SizedBox.shrink();
+    final shown = widget.cursor ? visibleWhileStreaming(widget.text) : widget.text;
+    final (done, open) = widget.cursor ? splitStreaming(shown) : (shown, '');
+    final numbers = sourceNumbers(shown, widget.citations);
+    final renderer = _Renderer(context, widget, numbers);
+    final blocks = _blocksOf(done);
+    final children = renderer.blocks(blocks, conclusion: widget.conclusion);
+    if (widget.cursor) {
+      children.add(
+        Text.rich(
+          TextSpan(
+            style: renderer.body,
+            children: [
+              if (open.trim().isNotEmpty) renderer.inline(parseMarkdownInline(open.trim()), renderer.body),
+              const WidgetSpan(alignment: PlaceholderAlignment.middle, child: StreamingCursor()),
+            ],
+          ),
+        ),
+      );
     }
+    if (children.isEmpty) return const SizedBox.shrink();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+  }
+}
+
+/// Lays out Markdown nodes with the panel's tokens.
+class _Renderer {
+  _Renderer(this.context, this.widget, this.numbers)
+    : c = context.mmColors,
+      t = context.mmText,
+      base = DefaultTextStyle.of(context).style {
+    // Merged onto the inherited style: rich text keeps the system family.
+    body = base.merge(t.body.copyWith(height: 1.75, color: c.label));
+  }
+
+  final BuildContext context;
+  final AnswerBody widget;
+  final Map<String, int> numbers;
+  final MMColors c;
+  final MMTextStyles t;
+  final TextStyle base;
+  late final TextStyle body;
+  late final byMarker = {for (final x in widget.citations) x.marker: x};
+
+  TextStyle get heading => base.merge(t.body.copyWith(fontSize: 13.5, fontWeight: FontWeight.w600, color: c.label));
+  TextStyle get quote => base.merge(t.readingExcerpt.copyWith(fontSize: 12.5, color: c.excerptText));
+
+  List<Widget> blocks(List<md.Node> nodes, {bool conclusion = false, TextStyle? style}) {
+    final out = <Widget>[];
+    var verdict = conclusion;
+    for (final (i, node) in nodes.indexed) {
+      final first = i == 0;
+      final last = i == nodes.length - 1;
+      if (node is! md.Element) {
+        out.add(_paragraph([node], style ?? body, last: last));
+        continue;
+      }
+      if (verdict && node.tag == 'p') {
+        verdict = false;
+        out.add(_verdict(node, last: last));
+        continue;
+      }
+      out.add(block(node, first: first, last: last, style: style));
+    }
+    return out;
+  }
+
+  Widget _paragraph(List<md.Node> nodes, TextStyle style, {required bool last}) => Padding(
+    padding: EdgeInsets.only(bottom: last ? 0 : 10),
+    child: Text.rich(inline(nodes, style)),
+  );
+
+  Widget _verdict(md.Element p, {required bool last}) {
+    final tint = qualifiedVerdict(p.textContent) ? c.caution : c.positive;
+    return Container(
+      key: const ValueKey('answer-verdict'),
+      margin: EdgeInsets.only(bottom: last ? 0 : 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: tint == c.caution ? .12 : .10),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text.rich(inline(p.children ?? const [], body)),
+    );
+  }
+
+  Widget block(md.Element e, {required bool first, required bool last, TextStyle? style}) {
+    final text = style ?? body;
+    switch (e.tag) {
+      case 'h1' || 'h2' || 'h3' || 'h4' || 'h5' || 'h6':
+        return Padding(
+          padding: EdgeInsets.only(top: first ? 0 : 16, bottom: 6),
+          child: Semantics(header: true, child: Text.rich(inline(e.children ?? const [], heading))),
+        );
+      case 'ul' || 'ol':
+        return Padding(
+          padding: EdgeInsets.only(bottom: last ? 0 : 10),
+          child: _list(e, text, depth: 0),
+        );
+      case 'blockquote':
+        return Container(
+          margin: EdgeInsets.only(bottom: last ? 0 : 10),
+          padding: const EdgeInsets.only(left: 10),
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: c.separator, width: 2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: blocks(e.children ?? const [], style: quote),
+          ),
+        );
+      case 'table':
+        return Padding(
+          padding: EdgeInsets.only(bottom: last ? 0 : 10),
+          child: _table(e),
+        );
+      case 'hr':
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),
+          child: Container(height: 1, color: c.separator),
+        );
+      case 'pre':
+        return Container(
+          margin: EdgeInsets.only(bottom: last ? 0 : 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
+          decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(8)),
+          child: Text(e.textContent.trimRight(), style: t.mono.copyWith(color: c.label)),
+        );
+      default: // p, and anything without its own layout
+        return _paragraph(e.children ?? const [], text, last: last);
+    }
+  }
+
+  Widget _list(md.Element list, TextStyle style, {required int depth}) {
+    final ordered = list.tag == 'ol';
+    final start = int.tryParse(list.attributes['start'] ?? '') ?? 1;
+    final items = (list.children ?? const []).whereType<md.Element>().where((e) => e.tag == 'li').toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final (i, block) in blocks.indexed)
+        for (final (i, item) in items.indexed)
           Padding(
-            padding: EdgeInsets.only(
-              top: block is HeadingBlock ? (i == 0 ? 0 : 10) : 0,
-              bottom: switch (block) {
-                HeadingBlock() => MMSpacing.xs,
-                ListItemBlock() => MMSpacing.xxs,
-                _ => MMSpacing.s,
-              },
+            padding: EdgeInsets.only(top: i == 0 ? 0 : MMSpacing.xs),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: Text(
+                    ordered ? '${start + i}.' : (depth == 0 ? '•' : '◦'),
+                    style: style.copyWith(color: c.secondaryLabel),
+                  ),
+                ),
+                Expanded(child: _item(item, style, depth: depth)),
+              ],
             ),
-            child: switch (block) {
-              HeadingBlock() => Text.rich(
-                spans(
-                  block.text,
-                  base.merge(t.callout.copyWith(fontWeight: FontWeight.w600, color: c.secondaryLabel)),
-                  last: i == blocks.length - 1,
-                ),
-              ),
-              ListItemBlock(:final marker) => Padding(
-                padding: const EdgeInsets.only(left: MMSpacing.xs),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      child: Text(marker, style: body.copyWith(color: c.secondaryLabel)),
-                    ),
-                    Expanded(child: Text.rich(spans(block.text, body, last: i == blocks.length - 1))),
-                  ],
-                ),
-              ),
-              ConclusionBlock() => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
-                decoration: BoxDecoration(
-                  color: c.positive.withValues(alpha: .10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text.rich(spans(block.text, body, last: i == blocks.length - 1)),
-              ),
-              ParagraphBlock() => Text.rich(spans(block.text, body, last: i == blocks.length - 1)),
-            },
           ),
       ],
     );
+  }
+
+  /// A list item: its text, then nested lists (up to two levels shown as
+  /// such) or paragraphs of a loose list.
+  Widget _item(md.Element item, TextStyle style, {required int depth}) {
+    final parts = <Widget>[];
+    final run = <md.Node>[];
+    void flush() {
+      if (run.isEmpty) return;
+      parts.add(Text.rich(inline(List.of(run), style)));
+      run.clear();
+    }
+
+    for (final child in item.children ?? const <md.Node>[]) {
+      if (child is md.Element && (child.tag == 'ul' || child.tag == 'ol')) {
+        flush();
+        parts.add(
+          Padding(
+            padding: const EdgeInsets.only(top: MMSpacing.xs),
+            child: _list(child, style, depth: depth + 1),
+          ),
+        );
+      } else if (child is md.Element && child.tag == 'p') {
+        flush();
+        run.addAll(child.children ?? const []);
+        flush();
+      } else {
+        run.add(child);
+      }
+    }
+    flush();
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: parts);
+  }
+
+  Widget _table(md.Element table) {
+    final rows = <(bool, List<md.Element>)>[];
+    void collect(md.Element e) {
+      for (final child in (e.children ?? const <md.Node>[]).whereType<md.Element>()) {
+        if (child.tag == 'tr') {
+          final cells = (child.children ?? const <md.Node>[]).whereType<md.Element>().toList();
+          rows.add((cells.any((x) => x.tag == 'th'), cells));
+        } else {
+          collect(child);
+        }
+      }
+    }
+
+    collect(table);
+    if (rows.isEmpty) return const SizedBox.shrink();
+    final columns = rows.map((r) => r.$2.length).reduce((a, b) => a > b ? a : b);
+    final cell = base.merge(t.footnote.copyWith(fontSize: 12, height: 1.5, color: c.label));
+    final head = cell.copyWith(fontWeight: FontWeight.w600, color: c.secondaryLabel);
+    return Table(
+      key: const ValueKey('answer-table'),
+      defaultVerticalAlignment: TableCellVerticalAlignment.top,
+      border: TableBorder(horizontalInside: BorderSide(color: c.separator)),
+      children: [
+        for (final (header, cells) in rows)
+          TableRow(
+            children: [
+              for (var i = 0; i < columns; i++)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 6, 10, 6),
+                  child: i < cells.length
+                      ? Text.rich(inline(cells[i].children ?? const [], header ? head : cell))
+                      : const SizedBox.shrink(),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  InlineSpan inline(List<md.Node> nodes, TextStyle style) =>
+      TextSpan(style: style, children: [for (final n in nodes) _span(n, style)]);
+
+  InlineSpan _span(md.Node node, TextStyle style) {
+    if (node is md.Text) return TextSpan(text: node.text);
+    if (node is! md.Element) return TextSpan(text: node.textContent);
+    final children = node.children ?? const <md.Node>[];
+    switch (node.tag) {
+      case 'strong':
+        return inline(children, style.copyWith(fontWeight: FontWeight.w600));
+      case 'em':
+        return inline(children, style.copyWith(fontStyle: FontStyle.italic));
+      case 'del':
+        return inline(children, style.copyWith(decoration: TextDecoration.lineThrough));
+      case 'code':
+        return TextSpan(
+          text: node.textContent,
+          style: t.mono.copyWith(color: c.label, backgroundColor: c.quaternaryFill),
+        );
+      case 'br':
+        return const TextSpan(text: '\n');
+      case 'a':
+        final url = Uri.tryParse(node.attributes['href'] ?? '');
+        if (url == null || (url.scheme != 'https' && url.scheme != 'http')) return inline(children, style);
+        final label = node.textContent;
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: MMInteractive(
+            onTap: widget.onLink == null ? null : () => widget.onLink!(url),
+            tooltip: url.toString(),
+            semanticLabel: label,
+            canRequestFocus: false,
+            cursor: SystemMouseCursors.click,
+            builder: (context, s) => Text(
+              label,
+              style: style.copyWith(color: c.accent, decoration: s.hovered ? TextDecoration.underline : null),
+            ),
+          ),
+        );
+      case 'cite':
+        // Markers not registered for this answer are dropped without a trace.
+        final citation = byMarker[node.attributes['marker']];
+        final String? label = citation == null
+            ? null
+            : citation.external
+            ? '${numbers[citation.sourceId] ?? '?'}'
+            : (citation.page == null ? null : 'p.${citation.page}');
+        if (citation == null || label == null) return const TextSpan(text: '');
+        return WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            child: CitationChip(
+              label: label,
+              external: citation.external,
+              tooltip: widget.tooltipFor?.call(citation) ?? label,
+              onPressed: () => widget.onCitation(citation),
+            ),
+          ),
+        );
+      default:
+        return inline(children, style);
+    }
   }
 }
 

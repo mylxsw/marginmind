@@ -2,20 +2,17 @@ import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marginmind/app/providers.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
-import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_markdown.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_overlays.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_proposal.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'assistant_support.dart';
 import 'helpers.dart';
 
 const _model = AssistantModel(provider: AssistantProvider.claude, model: 'm', endpoint: 'https://x/v1/messages');
@@ -31,30 +28,43 @@ const _paper = Citation(marker: '[source:2]', sourceId: 's2', version: 1, url: '
 
 void main() {
   group('answer text', () {
-    test('blocks: headings, lists, conclusion boxes and paragraphs', () {
-      final blocks = parseAnswer('## 结论\n> 部分可靠\n> 需要限定\n第一行\n第二行\n\n- 甲\n2. 乙\n\n尾');
-      expect(blocks.map((b) => b.runtimeType.toString()), [
-        'HeadingBlock',
-        'ConclusionBlock',
-        'ParagraphBlock',
-        'ListItemBlock',
-        'ListItemBlock',
-        'ParagraphBlock',
-      ]);
-      expect(blocks[1].text, '部分可靠\n需要限定');
-      expect(blocks[2].text, '第一行\n第二行');
-      expect((blocks[4] as ListItemBlock).marker, '2.');
+    test('markdown: headings, quotes, lists, tables, rules and citations', () {
+      final nodes = parseMarkdown(
+        '### 结论\n\n> 原句\n\n- 甲\n  - 乙\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n---\n\n见 [page:3]',
+      );
+      final tags = [for (final n in nodes) (n as dynamic).tag as String];
+      expect(tags, ['h3', 'blockquote', 'ul', 'table', 'hr', 'p']);
+      final cite = (nodes.last as dynamic).children.last;
+      expect(cite.tag, 'cite');
+      expect(cite.attributes['marker'], '[page:3]');
+      // A marker is a citation even where a link could start.
+      expect(parseMarkdownInline('[source:1](x)').first.textContent, isEmpty);
     });
 
-    test('inline: emphasis, links, valid citations only', () {
-      const text = '**粗** *斜* [站点](https://a.org) [坏](javascript:x) [page:3] [page:9] [source:1] [source:7]';
-      final runs = parseInline(text, const [_local, _web], sourceNumbers(text, const [_local, _web]));
-      final textRuns = runs.whereType<TextRun>().toList();
-      expect(textRuns.firstWhere((r) => r.bold).text, '粗');
-      expect(textRuns.firstWhere((r) => r.italic).text, '斜');
-      expect(textRuns.firstWhere((r) => r.text == '站点').url, Uri.parse('https://a.org'));
-      expect(textRuns.firstWhere((r) => r.text == '坏').url, isNull);
-      expect(runs.whereType<CitationRun>().map((r) => r.label), ['p.3', '1']);
+    test('bold ending in full-width punctuation closes before Chinese text', () {
+      final nodes = parseMarkdownInline('**一句话：**这是结论，**重点**也粗。');
+      final strong = [
+        for (final n in nodes)
+          if (n is md.Element && n.tag == 'strong') n.textContent,
+      ];
+      expect(strong, ['一句话：', '重点']);
+      expect(nodes.map((n) => n.textContent).join(), '一句话：这是结论，重点也粗。');
+      expect(parseMarkdownInline('a ** b ** c').whereType<md.Element>(), isEmpty);
+    });
+
+    test('streaming splits finished blocks from the open one', () {
+      expect(splitStreaming('一段\n\n二'), ('一段\n\n', '二'));
+      expect(splitStreaming('一段'), ('', '一段'));
+      expect(splitStreaming('一段\n\n'), ('一段\n\n', ''));
+      // A blank line inside an open code fence is not a cut.
+      expect(splitStreaming('甲\n\n```\na\n\nb'), ('甲\n\n', '```\na\n\nb'));
+      expect(splitStreaming('```\na\n```\n\n乙'), ('```\na\n```\n\n', '乙'));
+    });
+
+    test('a qualified verdict is told apart', () {
+      expect(qualifiedVerdict('**部分可靠**：需要限定'), isTrue);
+      expect(qualifiedVerdict('Partly true'), isTrue);
+      expect(qualifiedVerdict('**可靠**'), isFalse);
     });
 
     test('sources are numbered by first citation; copies carry footnotes', () {
@@ -353,35 +363,6 @@ void main() {
       expect(previewTargets(p, p.operations[2]), {'gone'});
       // The map's root is outlined as the canvas root.
       expect(previewTargets(p, p.operations[3]), {assistantRootId});
-    });
-  });
-
-  group('settings', () {
-    test('saved per service, the model menu, and whether it is configured', () async {
-      SharedPreferences.setMockInitialValues({'assistant.model.responses': 'gpt', 'assistant.model.ollama': 'llama'});
-      final prefs = await SharedPreferences.getInstance();
-      final secrets = FakeSecrets();
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          assistantSecretsProvider.overrideWithValue(secrets),
-        ],
-      );
-      addTearDown(container.dispose);
-      final notifier = container.read(assistantSettingsProvider.notifier);
-      expect(container.read(assistantSettingsProvider).model, 'claude-opus-5-5');
-      expect(await container.read(assistantConfiguredProvider.future), isFalse);
-      await notifier.saveKey('k');
-      expect(await container.read(assistantConfiguredProvider.future), isTrue);
-      expect(notifier.models().map((m) => m.provider), [AssistantProvider.claude, AssistantProvider.responses]);
-      await notifier.select(AssistantProvider.responses);
-      expect(container.read(assistantSettingsProvider).model, 'gpt');
-      expect(container.read(assistantSettingsProvider).endpoint, 'https://api.openai.com/v1/responses');
-      expect(await container.read(assistantConfiguredProvider.future), isFalse);
-      expect(notifier.saved(AssistantProvider.compatible).model, '');
-      // Refused before any request: no model.
-      const invalid = AssistantModel(provider: AssistantProvider.claude, model: '', endpoint: 'https://x/v1/messages');
-      expect(await container.read(assistantConnectionTesterProvider)(invalid, 'k'), ResearchFailureKind.invalidRequest);
     });
   });
 

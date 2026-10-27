@@ -11,8 +11,10 @@ import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
+import '../../../app/providers.dart';
 import '../assistant_settings.dart';
 import 'assistant_messages.dart' show contextIcon, contextLabel;
+import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
 import 'dashed_border.dart';
 
@@ -192,25 +194,10 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     if (mounted) _focus.requestFocus();
   }
 
-  Future<void> _models(BuildContext button) async {
-    final notifier = ref.read(assistantSettingsProvider.notifier);
-    final current = ref.read(assistantControllerProvider).model;
-    final models = notifier.models();
-    String name(AssistantModel m) => m.provider == AssistantProvider.ollama ? _l.assistantLocalModel(m.model) : m.model;
-    final chosen = await showPopupMenu<Object>(
-      context,
-      anchor: boundsOf(button),
-      items: [
-        for (final m in models)
-          PopupItem<Object>(m, name(m), checked: m.provider == current.provider && m.model == current.model),
-        PopupItem<Object>(#settings, _l.settings, checked: false),
-      ],
-    );
-    if (!mounted || chosen == null) return;
-    if (chosen is! AssistantModel) return showAssistantSettings(context, ref);
-    await notifier.select(chosen.provider);
-    await ref.read(assistantControllerProvider.notifier).switchModel(chosen);
-    if (mounted) MMHud.show(context, _l.assistantModelSwitched(name(chosen)));
+  /// The toggle is remembered for the study set's next conversations.
+  Future<void> _setOnline(bool online) async {
+    await ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(widget.studySetId), online);
+    await ref.read(assistantControllerProvider.notifier).setOnline(online);
   }
 
   @override
@@ -386,24 +373,18 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             color: conversation.online ? c.research : c.secondaryLabel,
                             tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
                             selected: conversation.online,
-                            onPressed: configured
-                                ? () => unawaited(
-                                    ref.read(assistantControllerProvider.notifier).setOnline(!conversation.online),
-                                  )
-                                : null,
+                            onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
                           ),
                           const Spacer(),
                           if (configured)
                             Builder(
                               builder: (button) => _BarButton(
                                 key: const ValueKey('assistant-model'),
-                                label: conversation.model.provider == AssistantProvider.ollama
-                                    ? l.assistantLocalModel(conversation.model.model)
-                                    : conversation.model.model,
+                                label: conversationModelLabel(ref, conversation.model),
                                 trailing: MMIcons.chevronDown,
-                                tooltip: conversation.model.model,
+                                tooltip: l.assistantModel,
                                 maxLabel: 120,
-                                onPressed: () => _models(button),
+                                onPressed: () => showModelMenu(context, ref, boundsOf(button)),
                               ),
                             ),
                           const SizedBox(width: MMSpacing.xs),

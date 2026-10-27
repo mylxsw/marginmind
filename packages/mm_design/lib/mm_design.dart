@@ -31,6 +31,7 @@ export 'src/widgets/menu.dart';
 export 'src/widgets/progress_bar.dart';
 export 'src/widgets/search_field.dart';
 export 'src/widgets/segmented_control.dart';
+export 'src/widgets/settings_form.dart';
 export 'src/widgets/sheet.dart';
 export 'src/widgets/sidebar.dart';
 export 'src/widgets/split_view.dart';

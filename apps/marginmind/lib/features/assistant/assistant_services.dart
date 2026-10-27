@@ -26,8 +26,8 @@ class AssistantServicesStore {
     final selected = prefs.getString('assistant.provider') ?? 'claude';
     for (final p in AssistantProvider.values) {
       final storedModel = prefs.getString('assistant.model.${p.name}') ?? '';
-      final model = storedModel.isEmpty ? AssistantSettingsController.defaultModel(p) : storedModel;
-      final key = await secrets.read(AssistantSettingsController.account(p));
+      final model = storedModel.isEmpty ? legacyAssistantModel(p) : storedModel;
+      final key = await secrets.read(legacyAssistantAccount(p));
       final endpoint =
           prefs.getString('assistant.endpoint.${p.name}') ??
           switch (p) {
@@ -123,7 +123,6 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
       final result = await operation(value);
       await ref.read(assistantServicesStoreProvider).save(result);
       state = AsyncData(result);
-      ref.invalidate(assistantSettingsProvider);
     });
     _tail = next.catchError((Object _) {});
     return next;
@@ -138,8 +137,9 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     final service = _service(v, id);
     await ref.read(assistantSecretsProvider).delete(AssistantServicesStore.account(id));
     if (id == AssistantServicesStore.legacyId(service.provider)) {
-      await ref.read(assistantSecretsProvider).delete(AssistantSettingsController.account(service.provider));
+      await ref.read(assistantSecretsProvider).delete(legacyAssistantAccount(service.provider));
     }
+    ref.read(assistantKeysProvider.notifier).changed();
     return v.remove(id);
   });
   Future<void> saveKey(String id, String key) => _change((v) async {
@@ -150,6 +150,7 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     } else {
       await secrets.write(account, key.trim());
     }
+    ref.read(assistantKeysProvider.notifier).changed();
     return v;
   });
   Future<void> upsertModel(String id, ServiceModel model) => _change((v) async {
@@ -230,3 +231,54 @@ class WebSearchSettingsController extends Notifier<WebSearchSettings> {
     if (backend == WebSearchBackend.cloudflare && accountId != null) await put(cloudflareAccount, accountId);
   }
 }
+
+/// The address a new service starts with. OpenAI-compatible services start
+/// at OpenAI's own API; most then change it.
+String defaultServiceEndpoint(ServiceProtocol protocol) => switch (protocol) {
+  ServiceProtocol.anthropic => 'https://api.anthropic.com',
+  ServiceProtocol.openai => 'https://api.openai.com/v1',
+  ServiceProtocol.gemini => 'https://generativelanguage.googleapis.com',
+  ServiceProtocol.ollama => 'http://localhost:11434',
+};
+
+/// Whether the address can be left at its default (Anthropic, Gemini): the
+/// settings hide it until “Use Custom Address”.
+bool serviceEndpointOptional(ServiceProtocol protocol) =>
+    protocol == ServiceProtocol.anthropic || protocol == ServiceProtocol.gemini;
+
+bool _openAiHost(String endpoint) => Uri.tryParse(endpoint.trim())?.host == 'api.openai.com';
+
+/// A service added from the settings tiles, with an ID no other service has.
+/// Adding Ollama is the explicit permission to use this Mac's server.
+AssistantService newAssistantService(ServiceProtocol protocol, String name, Iterable<String> taken) {
+  final ids = taken.toSet();
+  var n = DateTime.now().microsecondsSinceEpoch;
+  while (ids.contains('service-$n')) {
+    n++;
+  }
+  final endpoint = defaultServiceEndpoint(protocol);
+  return AssistantService(
+    id: 'service-$n',
+    protocol: protocol,
+    name: name,
+    endpoint: endpoint,
+    localEnabled: protocol == ServiceProtocol.ollama,
+    responses: protocol == ServiceProtocol.openai && _openAiHost(endpoint),
+  );
+}
+
+/// [service] at [endpoint]. OpenAI's own API is called through Responses
+/// (it can search the web); other OpenAI-compatible ones through Chat
+/// Completions. The service keeps its ID, models and key.
+AssistantService serviceWithEndpoint(AssistantService service, String endpoint) => AssistantService(
+  id: service.id,
+  protocol: service.protocol,
+  name: service.name,
+  endpoint: endpoint,
+  enabled: service.enabled,
+  localEnabled: service.localEnabled,
+  responses: service.protocol != ServiceProtocol.openai
+      ? service.responses
+      : _openAiHost(endpoint) || (service.responses && !_openAiHost(service.endpoint)),
+  models: service.models,
+);

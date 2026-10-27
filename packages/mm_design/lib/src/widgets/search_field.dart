@@ -143,6 +143,8 @@ class MMTextField extends StatefulWidget {
     this.minLines,
     this.obscureText = false,
     this.style,
+    this.plain = false,
+    this.textAlign = TextAlign.start,
   });
 
   final TextEditingController? controller;
@@ -163,6 +165,10 @@ class MMTextField extends StatefulWidget {
 
   /// Defaults to body text.
   final TextStyle? style;
+
+  /// No fill and no focus ring: a value inside a settings row.
+  final bool plain;
+  final TextAlign textAlign;
 
   @override
   State<MMTextField> createState() => _MMTextFieldState();
@@ -210,14 +216,16 @@ class _MMTextFieldState extends State<MMTextField> {
       child: Container(
         height: widget.maxLines == 1 ? MMSizes.field : null,
         constraints: const BoxConstraints(minHeight: MMSizes.field),
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: widget.maxLines == 1 ? 0 : 6),
+        padding: EdgeInsets.symmetric(horizontal: widget.plain ? 0 : 10, vertical: widget.maxLines == 1 ? 0 : 6),
         alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: c.quaternaryFill,
-          borderRadius: BorderRadius.circular(MMRadii.field),
-          border: Border.all(color: focused ? c.accent : Colors.transparent, width: 1),
-          boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
-        ),
+        decoration: widget.plain
+            ? null
+            : BoxDecoration(
+                color: c.quaternaryFill,
+                borderRadius: BorderRadius.circular(MMRadii.field),
+                border: Border.all(color: focused ? c.accent : Colors.transparent, width: 1),
+                boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
+              ),
         child: Material(
           type: MaterialType.transparency,
           child: TextField(
@@ -230,6 +238,7 @@ class _MMTextFieldState extends State<MMTextField> {
             maxLines: widget.maxLines,
             minLines: widget.minLines,
             obscureText: widget.obscureText,
+            textAlign: widget.textAlign,
             keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
             cursorWidth: 1.5,
             cursorHeight: 15,

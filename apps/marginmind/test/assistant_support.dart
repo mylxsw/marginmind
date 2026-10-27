@@ -7,6 +7,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
+import 'package:marginmind/features/assistant/assistant_services.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_writes.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_overlays.dart';
@@ -29,6 +30,38 @@ class FakeSecrets implements SecretStore {
   Future<void> write(String name, String value) async => values[name] = value;
   @override
   Future<void> delete(String name) async => values.remove(name);
+}
+
+/// A model catalog without network: every service answers with [status]
+/// and lists [models]; probing marks tools as supported.
+class FakeCatalog extends ServiceCatalog {
+  FakeCatalog({this.status = ConnectionStatus.ok, List<ServiceModel>? models, this.listFailure})
+    : models =
+          models ??
+          const [ServiceModel(id: 'claude-sonnet-5-5', name: 'Claude Sonnet'), ServiceModel(id: 'claude-haiku-5-5')];
+  ConnectionStatus status;
+  List<ServiceModel> models;
+  ResearchFailure? listFailure;
+  final checked = <(String, String)>[];
+  @override
+  Future<ConnectionStatus> check(AssistantService service, String key, {CancellationToken? cancellation}) async {
+    checked.add((service.endpoint, key));
+    return status;
+  }
+
+  @override
+  Future<List<ServiceModel>> list(AssistantService service, String key, {CancellationToken? cancellation}) async {
+    if (listFailure != null) throw listFailure!;
+    return models;
+  }
+
+  @override
+  Future<ServiceModel> probe(
+    AssistantService service,
+    ServiceModel model,
+    String key, {
+    CancellationToken? cancellation,
+  }) async => model.copyWith(tools: ToolCapability.supported);
 }
 
 class FakeLinks extends ExternalLinks {
@@ -75,7 +108,7 @@ Future<AssistantApp> openAssistantApp(
   Size size = const Size(1400, 900),
   Map<String, Object> prefs = const {},
   List<Override> overrides = const [],
-  AssistantConnectionTester? connect,
+  FakeCatalog? catalog,
   MemoryConversationArchive? archive,
   bool realWrites = false,
 }) async {
@@ -98,18 +131,18 @@ Future<AssistantApp> openAssistantApp(
       if (!realWrites) assistantMapEditExecutorProvider.overrideWith((ref, id) => executor),
       assistantNoteSaverProvider.overrideWith((ref, id) => notes),
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页的正文'),
-      assistantConnectionTesterProvider.overrideWithValue(connect ?? (model, key) async => null),
+      serviceCatalogProvider.overrideWithValue(catalog ?? FakeCatalog()),
       assistantLinksProvider.overrideWithValue(links),
       if (!realFactory)
         assistantDependenciesForProvider.overrideWith((ref, id) {
-          final settings = ref.read(assistantSettingsProvider);
           return AssistantDependencies(
             studySetId: id,
-            model: settings.configuration,
+            model: unconfiguredAssistantModel,
+            defaultModel: () => ref.read(assistantDefaultModelProvider),
             storage: store,
             executor: realWrites ? ref.watch(assistantMapEditExecutorProvider(id)) : executor,
             notes: notes,
-            online: settings.online,
+            online: assistantOnlineDefault(ref, id),
             runFactory: (state, conversation, question) async {
               final workspace = ref.read(workspaceProvider(id).notifier);
               final mapId = ref.read(workspaceProvider(id)).activeMapId;

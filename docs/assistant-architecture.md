@@ -159,7 +159,7 @@ metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessi
 
 首次读取复制所有旧服务配置和 Key，包括未选中的服务；密钥复制成功后才提交版本化 JSON。失败不写完成标记，旧字段和旧 Key 不动，可重试。新配置存在时不再重迁移，因此删除服务不会被旧偏好恢复。旧对话不改写：缺少 serviceId 时按 `legacy-<provider>` 解析；发送及标题生成重新检查服务/模型启用状态。删除、停用或移除模型后旧内容仍可阅读，发送失败要求重新选择模型。
 
-旧 `AssistantSettingsController` 保留作为现有页面适配层，迁移后写入同步新服务数据；GUL-537 完成设置页和菜单接入后负责删除该适配层。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
+旧 `AssistantSettingsController` 适配层已在 GUL-537 删除（见下文）。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
 
 模型列表按协议使用 models/tags，Anthropic/Gemini 支持分页（最多 20 页并拒绝重复游标）。过滤明确非对话 ID 和能力字段；未知兼容模型保留，允许手动添加。工具能力 `unknown/supported/unsupported`：优先用能力字段，否则一次最小带工具请求；不执行返回的工具，不把鉴权、超时、限流和其他参数错误当作不支持。仅明确工具不支持的 400 错误记为 unsupported。unknown 在运行时按支持处理，由 GUL-536 的连续错误兜底。
 
@@ -170,3 +170,12 @@ API 依据：[Cloudflare](https://developers.cloudflare.com/web-search/how-to-us
 列表操作的所有分页及 Ollama `/api/show` 能力查询共享一份 90 秒/2 MiB 预算，最多 1000 条候选；Ollama tags 未返回能力时通过 show 过滤非 completion 模型并取得 tools 能力。服务探测期间地址改变则拒绝保存过时结果。旧设置页暂不新增 Gemini 选项，以避免旧的四段控件溢出；新设置页直接使用四种 ServiceProtocol（包含 Gemini），不使用旧 connectableServices。
 
 翻译回合通过 `AssistantServicesStore.resolve(..., quick: true)` 选择同服务小模型；普通对话仍使用选中的模型，对话菜单中的选择不被翻译临时改写。缺省 Claude 模型的空字符串按旧设置规则恢复，避免迁移后原本可用的缺省配置变为空清单。
+
+## 第二轮界面（GUL-537）
+
+- **设置**：`settings/settings_window.dart` 的 `showSettings(context, tab:)`（通用 / 阅读 / 模型 / 网页搜索）取代旧的设置面板和助手设置面板。“模型”页 `features/assistant/settings/model_settings.dart` 只通过 `assistantServicesProvider` 读写；“网页搜索”页 `web_search_settings.dart` 只通过 `webSearchSettingsProvider`，检查走可替换的 `webSearchCheckerProvider`（默认 `checkWebSearch`）。服务卡片在名称、地址、Key 停顿 0.7 秒后保存，地址或 Key 保存后用 `serviceCatalogProvider.check` 检查，新的输入会取消上一次检查并丢弃过时结果。
+- **适配层已删除**：`assistantSettingsProvider`、`AssistantSettings`、`assistantConnectionTesterProvider` 不再存在。`assistant_settings.dart` 只保留钥匙串、`legacyAssistantAccount/legacyAssistantModel`（迁移和无 serviceId 的旧对话用）、`assistantDefaultModelProvider`（`AssistantServices.configuration`）、`assistantConfiguredProvider`（有默认模型，且其服务有 Key 或为已授权的 Ollama）和 `assistantRunFactory`。服务 Key 变化通过 `assistantKeysProvider` 通知。
+- **默认模型与对话模型**：`AssistantDependencies.defaultModel` 是读取当前默认模型的回调；控制器创建首个对话和 `newConversation` 时使用它（没有时退回 `model`，即未配置占位）。窗口宿主订阅 `assistantDefaultModelProvider`：服务异步加载完成或默认模型改变时，只让**还没有消息**的对话跟随；用过的对话保留自己的模型。模型菜单（`widgets/assistant_model_menu.dart`）只调用 `switchModel`，不改默认模型。
+- **联网开关按学习集记住**：输入框的开关写入 `assistant.online.<studySetId>`，新窗口的第一个对话由 `assistantOnlineDefault` 读取（旧的全局 `assistant.online` 作后备）。
+- **不用工具重答**：`AssistantController.retry(id, tools: false)` 把本轮传给 runFactory 的对话模型设为 `supportsTools: false`（不持久化）；`assistantRunFactory` 以 `config.supportsTools && conversation.model.supportsTools` 决定是否发送工具。
+- **消息**：过程时间线 `ActivityTimeline` 直接用 `Message.activity`、`elapsedSeconds`；错误块的“详情 / 复制诊断信息”只用 `Message.diagnostics` 的白名单字段（模型、服务名、主机、HTTP 状态码、失败工具与次数、停止原因、请求 ID）。正文用 `markdown` 包解析（GitHub 扩展 + 引用语法），流式时以代码块外最后一个空行为界：之前的块解析一次后缓存，之后的未完成块只解析行内格式。中文里以全角标点结尾的 `**…**`（如 `**一句话：**这句…`）在 CommonMark 下不闭合，`_CjkStrongSyntax` 通过 markdown 包的扩展接口只处理这一种情况。
