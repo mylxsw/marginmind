@@ -484,11 +484,7 @@ class _EvidenceQuoteState extends State<EvidenceQuote> {
               if (widget.onOpen == null)
                 text
               else
-                MMInteractive(
-                  onTap: widget.onOpen,
-                  semanticLabel: widget.quote,
-                  builder: (context, s) => text,
-                ),
+                MMInteractive(onTap: widget.onOpen, semanticLabel: widget.quote, builder: (context, s) => text),
               if (long || widget.caption != null)
                 Padding(
                   padding: const EdgeInsets.only(top: MMSpacing.xxs),

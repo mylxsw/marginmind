@@ -12,9 +12,11 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: Scaffold(
-        body: SizedBox(
-          width: 320,
-          child: EvidenceQuote(quote: quote, caption: 'From source 1', onOpen: onOpen),
+        body: SingleChildScrollView(
+          child: SizedBox(
+            width: 320,
+            child: EvidenceQuote(quote: quote, caption: 'From source 1', onOpen: onOpen),
+          ),
         ),
       ),
     ),
@@ -31,6 +33,7 @@ void main() {
     await tester.tap(find.text('Expand'));
     await tester.pump();
     expect(quoteText(tester, long).maxLines, isNull);
+    await tester.ensureVisible(find.text('Collapse'));
     await tester.tap(find.text('Collapse'));
     await tester.pump();
     expect(quoteText(tester, long).maxLines, EvidenceQuote.maxLines);
