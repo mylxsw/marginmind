@@ -3595,6 +3595,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a YouTube or Bilibili video URL.'**
   String get researchInvalidVideo;
+
+  /// No description provided for @researchViewMore.
+  ///
+  /// In en, this message translates to:
+  /// **'View more'**
+  String get researchViewMore;
+
+  /// No description provided for @researchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Research history'**
+  String get researchHistory;
+
+  /// No description provided for @researchDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete research'**
+  String get researchDelete;
+
+  /// No description provided for @researchErrorUnsafeUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Address blocked by network validation'**
+  String get researchErrorUnsafeUrl;
+
+  /// No description provided for @researchErrorTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not establish a secure connection'**
+  String get researchErrorTls;
+
+  /// No description provided for @researchFixAuthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your API key, model permissions and account balance, then retry.'**
+  String get researchFixAuthentication;
+
+  /// No description provided for @researchFixRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the endpoint, model name and supported API protocol. Compatible services accept a base URL (such as https://example.com/v1) or a full chat/completions URL.'**
+  String get researchFixRequest;
+
+  /// No description provided for @researchFixUnsafeUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the endpoint and proxy DNS settings. Web fetching blocks private addresses; proxy fake-IP addresses are supported only for explicitly configured HTTPS AI endpoints.'**
+  String get researchFixUnsafeUrl;
+
+  /// No description provided for @researchFixTls.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the system clock, server certificate and proxy settings. Certificate failures are not retried automatically.'**
+  String get researchFixTls;
+
+  /// No description provided for @researchFixRateLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The provider limited requests or account usage. Bounded retries were attempted; wait before retrying or check your balance and quota.'**
+  String get researchFixRateLimit;
+
+  /// No description provided for @researchFixConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your network, proxy and provider status, or increase the research time limit. Temporary connection failures get bounded retries; once the deadline expires or output starts, retry manually.'**
+  String get researchFixConnection;
+
+  /// No description provided for @researchFixProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'The response was incomplete or used a different API format. Check streaming support. Existing output is preserved; retry manually.'**
+  String get researchFixProtocol;
+
+  /// No description provided for @researchFixBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'A research input or output limit was reached. Narrow the question, select fewer sources or adjust research settings.'**
+  String get researchFixBudget;
+
+  /// No description provided for @researchDiagnosticCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Error code: {code}'**
+  String researchDiagnosticCode(String code);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

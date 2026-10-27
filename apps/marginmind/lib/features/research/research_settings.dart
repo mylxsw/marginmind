@@ -48,7 +48,15 @@ class ResearchSettings {
     if (uri == null || !uri.hasAuthority || !(uri.scheme == 'https' || (uri.scheme == 'http' && _local(uri)))) {
       return null;
     }
-    return uri;
+    if (uri.userInfo.isNotEmpty || uri.hasQuery || uri.hasFragment) return null;
+    final path = uri.path.replaceFirst(RegExp(r'/+$'), '');
+    return uri.replace(
+      path: path.isEmpty
+          ? '/v1/chat/completions'
+          : path.endsWith('/v1')
+          ? '$path/chat/completions'
+          : path,
+    );
   }
 
   static bool _local(Uri uri) => uri.host == 'localhost' || uri.host == '127.0.0.1' || uri.host == '::1';

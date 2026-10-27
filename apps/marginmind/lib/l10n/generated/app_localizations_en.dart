@@ -2012,4 +2012,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get researchInvalidVideo => 'Enter a YouTube or Bilibili video URL.';
+
+  @override
+  String get researchViewMore => 'View more';
+
+  @override
+  String get researchHistory => 'Research history';
+
+  @override
+  String get researchDelete => 'Delete research';
+
+  @override
+  String get researchErrorUnsafeUrl => 'Address blocked by network validation';
+
+  @override
+  String get researchErrorTls => 'Could not establish a secure connection';
+
+  @override
+  String get researchFixAuthentication => 'Check your API key, model permissions and account balance, then retry.';
+
+  @override
+  String get researchFixRequest =>
+      'Check the endpoint, model name and supported API protocol. Compatible services accept a base URL (such as https://example.com/v1) or a full chat/completions URL.';
+
+  @override
+  String get researchFixUnsafeUrl =>
+      'Check the endpoint and proxy DNS settings. Web fetching blocks private addresses; proxy fake-IP addresses are supported only for explicitly configured HTTPS AI endpoints.';
+
+  @override
+  String get researchFixTls =>
+      'Check the system clock, server certificate and proxy settings. Certificate failures are not retried automatically.';
+
+  @override
+  String get researchFixRateLimit =>
+      'The provider limited requests or account usage. Bounded retries were attempted; wait before retrying or check your balance and quota.';
+
+  @override
+  String get researchFixConnection =>
+      'Check your network, proxy and provider status, or increase the research time limit. Temporary connection failures get bounded retries; once the deadline expires or output starts, retry manually.';
+
+  @override
+  String get researchFixProtocol =>
+      'The response was incomplete or used a different API format. Check streaming support. Existing output is preserved; retry manually.';
+
+  @override
+  String get researchFixBudget =>
+      'A research input or output limit was reached. Narrow the question, select fewer sources or adjust research settings.';
+
+  @override
+  String researchDiagnosticCode(String code) {
+    return 'Error code: $code';
+  }
 }

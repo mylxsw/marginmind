@@ -1923,4 +1923,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get researchInvalidVideo => '请输入 YouTube 或 B 站视频链接。';
+
+  @override
+  String get researchViewMore => '查看更多';
+
+  @override
+  String get researchHistory => '历史研究';
+
+  @override
+  String get researchDelete => '删除研究';
+
+  @override
+  String get researchErrorUnsafeUrl => '接口地址被网络检查拦截';
+
+  @override
+  String get researchErrorTls => '无法建立安全连接';
+
+  @override
+  String get researchFixAuthentication => '请检查 API Key 是否有效、是否有此模型的使用权限，以及账户额度。修改后再重试。';
+
+  @override
+  String get researchFixRequest =>
+      '请检查接口地址、模型名称，以及服务商是否支持当前请求方式。兼容接口可填写基础地址（如 https://example.com/v1）或完整的 chat/completions 地址。';
+
+  @override
+  String get researchFixUnsafeUrl => '请检查接口地址和代理的 DNS 设置。网页抓取不允许访问私有地址；只有明确配置的 HTTPS AI 接口支持代理虚拟地址。';
+
+  @override
+  String get researchFixTls => '请检查系统时间、服务端证书和代理设置。证书验证失败不会自动重试。';
+
+  @override
+  String get researchFixRateLimit => '服务商限制了请求频率或账户额度。已有限重试；请稍后再试，或检查账户余额和配额。';
+
+  @override
+  String get researchFixConnection => '请检查网络、代理和服务商状态，必要时增加研究时长。临时连接故障会有限重试；总时长用尽或回答已开始输出后，需要手动重试。';
+
+  @override
+  String get researchFixProtocol => '服务商返回的内容不完整或与所选接口格式不符。请确认接口支持流式回答；已有内容会保留，可手动重试。';
+
+  @override
+  String get researchFixBudget => '已达到研究的内容或输出上限。请缩小问题范围、减少所选资料，或调整研究设置。';
+
+  @override
+  String researchDiagnosticCode(String code) {
+    return '错误代码：$code';
+  }
 }

@@ -59,10 +59,29 @@ void main() {
         _ => OpenAiCompatibleProvider(
           endpoint: Uri.parse('https://provider.example/v1/chat/completions'),
           model: 'test-model',
+          apiKey: 'TEST_KEY',
           http: transport,
         ),
       };
     }
+
+    test('$protocol stream error is classified and redacted before truncation', () async {
+      final p = provider(
+        sse([
+          {
+            'error': {'type': 'authentication_error', 'message': '${'x' * 597}TEST_KEY invalid'},
+          },
+        ]),
+      );
+      await expectLater(
+        p.generate(request(mode: ResearchMode.offline), CancellationToken()).toList(),
+        throwsA(
+          isA<ResearchFailure>()
+              .having((e) => e.kind, 'kind', ResearchFailureKind.authentication)
+              .having((e) => e.message?.contains('TES'), 'no partial key', false),
+        ),
+      );
+    });
 
     test('$protocol fixture handles fragmented Unicode, citations and request attribution', () async {
       final p = provider(File('test/fixtures/$protocol.sse').readAsStringSync());

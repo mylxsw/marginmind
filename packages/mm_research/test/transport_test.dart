@@ -61,6 +61,78 @@ void main() {
       throwsA(failure(ResearchFailureKind.unsafeUrl)),
     );
   });
+  test('fake IP is allowed only for the exact configured HTTPS provider hostname', () async {
+    final endpoint = Uri.parse('https://provider.example/v1/chat/completions');
+    final policy = UrlPolicy(providerEndpoint: endpoint, lookup: (_) async => [InternetAddress('198.18.47.104')]);
+    expect(await policy.validate(endpoint), hasLength(1));
+    for (final other in [endpoint.resolve('/article'), Uri.parse('https://other.example/v1/chat/completions')]) {
+      await expectLater(policy.validate(other), throwsA(failure(ResearchFailureKind.unsafeUrl)));
+    }
+    for (final address in ['127.0.0.1', '192.168.0.1', '169.254.169.254']) {
+      await expectLater(
+        UrlPolicy(providerEndpoint: endpoint, lookup: (_) async => [InternetAddress(address)]).validate(endpoint),
+        throwsA(failure(ResearchFailureKind.unsafeUrl)),
+      );
+    }
+    final numeric = Uri.parse('https://198.18.47.104/v1/chat/completions');
+    await expectLater(
+      UrlPolicy(providerEndpoint: numeric).validate(numeric),
+      throwsA(failure(ResearchFailureKind.unsafeUrl)),
+    );
+  });
+  test('HTTP diagnostic preserves status and redacts the exact credential', () async {
+    var calls = 0;
+    final transport = ResearchHttp(
+      policy: publicPolicy(),
+      clientFactory: () => MockClient((_) async {
+        calls++;
+        return http.Response(
+          jsonEncode({
+            'error': {'message': 'Invalid key custom-secret-value for model'},
+          }),
+          401,
+        );
+      }),
+    );
+    await expectLater(
+      transport
+          .send(url, cancellation: CancellationToken(), headers: {'authorization': 'Bearer custom-secret-value'})
+          .toList(),
+      throwsA(
+        isA<ResearchFailure>()
+            .having((e) => e.statusCode, 'status', 401)
+            .having((e) => e.message, 'message', 'Invalid key [redacted] for model'),
+      ),
+    );
+    expect(calls, 1);
+  });
+  test('connection failures retry before headers but not after streaming begins', () async {
+    var calls = 0;
+    final transport = ResearchHttp(
+      policy: publicPolicy(),
+      retryDelay: Duration.zero,
+      clientFactory: () => MockClient((_) async {
+        if (++calls < 3) throw const SocketException('connection reset');
+        return http.Response('ok', 200);
+      }),
+    );
+    expect(await transport.send(url, cancellation: CancellationToken()).toList(), isNotEmpty);
+    expect(calls, 3);
+    calls = 0;
+    final streaming = ResearchHttp(
+      policy: publicPolicy(),
+      retryDelay: Duration.zero,
+      clientFactory: () => MockClient.streaming((_, _) async {
+        calls++;
+        return http.StreamedResponse(Stream<List<int>>.error(const SocketException('reset')), 200);
+      }),
+    );
+    await expectLater(
+      streaming.send(url, cancellation: CancellationToken()).toList(),
+      throwsA(failure(ResearchFailureKind.unavailable)),
+    );
+    expect(calls, 1);
+  });
   test('local provider exception is exact and does not admit private LAN', () async {
     final local = Uri.parse('http://127.0.0.1:11434/v1/chat/completions');
     expect(await UrlPolicy(localEndpoint: local).validate(local), hasLength(1));
@@ -71,7 +143,7 @@ void main() {
     final lan = Uri.parse('http://192.168.1.1/v1/chat/completions');
     await expectLater(UrlPolicy(localEndpoint: lan).validate(lan), throwsA(failure(ResearchFailureKind.unsafeUrl)));
   });
-  for (final status in [429, 500, 503]) {
+  for (final status in [408, 429, 500, 503]) {
     test('retries $status before streaming, bounded attempts', () async {
       var calls = 0;
       final transport = ResearchHttp(

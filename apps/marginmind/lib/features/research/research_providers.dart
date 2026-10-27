@@ -108,6 +108,7 @@ class ResearchSessionController extends AsyncNotifier<ResearchSessionState> {
     followUp: followUp,
     budget: budget,
   );
+  Future<void> disposeEngine() async => (await _ready).dispose();
   Future<void> cancel() async => (await _ready).cancel();
   Future<void> search(String query) async => (await _ready).search(ref.read(researchSearchProvider), query);
   Future<void> readSources(List<String> ids) async =>

@@ -1144,5 +1144,26 @@
   "researchAddReview": "Add to review",
   "researchSaveVideo": "Save video link…",
   "researchVideoUrl": "Video URL",
-  "researchInvalidVideo": "Enter a YouTube or Bilibili video URL."
+  "researchInvalidVideo": "Enter a YouTube or Bilibili video URL.",
+  "researchViewMore": "View more",
+  "researchHistory": "Research history",
+  "researchDelete": "Delete research",
+  "researchErrorUnsafeUrl": "Address blocked by network validation",
+  "researchErrorTls": "Could not establish a secure connection",
+  "researchFixAuthentication": "Check your API key, model permissions and account balance, then retry.",
+  "researchFixRequest": "Check the endpoint, model name and supported API protocol. Compatible services accept a base URL (such as https://example.com/v1) or a full chat/completions URL.",
+  "researchFixUnsafeUrl": "Check the endpoint and proxy DNS settings. Web fetching blocks private addresses; proxy fake-IP addresses are supported only for explicitly configured HTTPS AI endpoints.",
+  "researchFixTls": "Check the system clock, server certificate and proxy settings. Certificate failures are not retried automatically.",
+  "researchFixRateLimit": "The provider limited requests or account usage. Bounded retries were attempted; wait before retrying or check your balance and quota.",
+  "researchFixConnection": "Check your network, proxy and provider status, or increase the research time limit. Temporary connection failures get bounded retries; once the deadline expires or output starts, retry manually.",
+  "researchFixProtocol": "The response was incomplete or used a different API format. Check streaming support. Existing output is preserved; retry manually.",
+  "researchFixBudget": "A research input or output limit was reached. Narrow the question, select fewer sources or adjust research settings.",
+  "researchDiagnosticCode": "Error code: {code}",
+  "@researchDiagnosticCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  }
 }

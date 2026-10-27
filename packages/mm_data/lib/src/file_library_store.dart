@@ -293,6 +293,18 @@ class FileLibraryStore
   }
 
   @override
+  Future<void> deleteResearchSession(String studySetId, String sessionId) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    _safeResearchId(sessionId);
+    await _queueWrite(studySetId, () async {
+      _require(studySetId);
+      final file = File(resolveFile(studySetId, 'research/sessions/$sessionId.json'));
+      if (await file.exists()) await file.delete();
+    });
+  }
+
+  @override
   Future<void> saveResearchSession(String studySetId, ResearchSession session) async {
     await _ensureLoaded();
     _require(studySetId);

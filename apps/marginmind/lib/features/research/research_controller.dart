@@ -142,6 +142,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   final String studySetId;
   final _draftWrites = <String, Future<void>>{};
   final _stopped = <String>{};
+  final _deleting = <String>{};
 
   /// The last request each session made from this window, for Retry.
   final _lastRequest = <String, Future<ResearchBlock?> Function()>{};
@@ -270,7 +271,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
   /// Records when a request finished well, for the run line.
   Future<void> _finished(String sessionId) async {
-    if (!ref.mounted) return;
+    if (!ref.mounted || _deleting.contains(sessionId)) return;
     final value = await _state(sessionId);
     if (value.session.status != 'done') return;
     await updateDrafts(sessionId, (d) => d.copyWith(doneAt: ref.read(clockProvider)()));
@@ -278,9 +279,11 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
   final _runs = <String, Future<ResearchBlock?>>{};
 
-  Future<ResearchBlock?> run(String sessionId) => _runs[sessionId] ??= _runOnce(sessionId).whenComplete(() {
-    _runs.remove(sessionId);
-  });
+  Future<ResearchBlock?> run(String sessionId) => _deleting.contains(sessionId)
+      ? Future.value()
+      : _runs[sessionId] ??= _runOnce(sessionId).whenComplete(() {
+          _runs.remove(sessionId);
+        });
 
   Future<void> saveVideoLink(String sessionId, Uri url) => _session(sessionId).saveVideoLink(url);
 
@@ -302,6 +305,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   Future<ResearchBlock?> _run(String sessionId) async {
     _stopped.remove(sessionId);
     final current = await _state(sessionId);
+    if (_deleting.contains(sessionId)) return null;
     final drafts = current.drafts;
 
     final session = _session(sessionId);
@@ -324,6 +328,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
           final web = drafts.method == ResearchMethod.web;
           if (web && !settings.webAvailable) return ResearchBlock.noWeb;
           final provider = await ref.read(researchAiFactoryProvider)();
+          if (_deleting.contains(sessionId)) return null;
           if (provider == null) return ResearchBlock.noAi;
           _progress(sessionId, const ResearchProgress(ResearchStage.answer));
           await session.answer(
@@ -344,6 +349,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   /// After a web answer: reads the cited pages here, so their quotes are
   /// checked against text we keep and can be saved as evidence.
   Future<void> _readCited(String sessionId, int limit) async {
+    if (_deleting.contains(sessionId)) return;
     final value = await _state(sessionId);
     if (value.session.status != 'done') return;
     final cited = {
@@ -472,6 +478,26 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
   Future<void> paste(String sessionId, String sourceId, String text) => _session(sessionId).pasteSource(sourceId, text);
 
+  Future<void> delete(String sessionId) async {
+    if (!_deleting.add(sessionId)) return;
+    try {
+      await cancel(sessionId);
+      await _runs[sessionId];
+      await _draftWrites[sessionId];
+      await _session(sessionId).disposeEngine();
+      await ref.read(researchSessionRepositoryProvider).deleteResearchSession(studySetId, sessionId);
+      _lastRequest.remove(sessionId);
+      _draftWrites.remove(sessionId);
+      if (state.sessionId == sessionId) showStart();
+      state = state.copyWith(blocked: {...state.blocked}..remove(sessionId));
+      ref.invalidate(researchSessionsProvider(studySetId));
+      ref.invalidate(researchSessionProvider(_key(sessionId)));
+    } catch (_) {
+      _deleting.remove(sessionId);
+      rethrow;
+    }
+  }
+
   Future<void> rename(String sessionId, String question) => _session(sessionId).rename(question);
 
   /// A short AI summary of a source's kept text, shown apart from the text.
@@ -521,6 +547,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   /// Changes the panel's drafts of a session. Changes are applied one after
   /// another, each to the result of the one before.
   Future<void> updateDrafts(String sessionId, ResearchDrafts Function(ResearchDrafts) change) {
+    if (_deleting.contains(sessionId)) return Future.value();
     final previous = _draftWrites[sessionId] ?? Future.value();
     final next = previous.then((_) async {
       final current = await _state(sessionId);

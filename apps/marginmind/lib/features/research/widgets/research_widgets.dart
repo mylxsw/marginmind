@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../research_controller.dart';
+
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_research/mm_research.dart';
 
@@ -91,7 +95,9 @@ String researchError(AppLocalizations l, String? code) => switch (code) {
   'unsupported' || 'client_tool' => l.researchErrorUnsupported,
   'invalidRequest' || 'missing_snapshot' || 'invalid_paragraph' => l.researchErrorInvalid,
   'protocol' || 'truncated' || 'incomplete_stream' => l.researchErrorProtocol,
-  'unavailable' || 'secret_store' => l.researchErrorUnavailable,
+  'unsafeUrl' => l.researchErrorUnsafeUrl,
+  'tls' => l.researchErrorTls,
+  'connection' || 'unavailable' || 'secret_store' => l.researchErrorUnavailable,
   _ => l.somethingWentWrong,
 };
 
@@ -518,5 +524,51 @@ class _EvidenceQuoteState extends State<EvidenceQuote> {
         },
       ),
     );
+  }
+}
+
+String researchErrorDetails(AppLocalizations l, ResearchSessionState value) => [
+  switch (value.error) {
+    'authentication' => l.researchFixAuthentication,
+    'invalidRequest' => l.researchFixRequest,
+    'unsafeUrl' => l.researchFixUnsafeUrl,
+    'tls' => l.researchFixTls,
+    'rateLimited' => l.researchFixRateLimit,
+    'timeout' || 'unavailable' || 'connection' => l.researchFixConnection,
+    'protocol' || 'truncated' || 'incomplete_stream' => l.researchFixProtocol,
+    'budget' => l.researchFixBudget,
+    _ => l.researchFixRequest,
+  },
+  if (value.errorStatus != null) 'HTTP ${value.errorStatus}',
+  if (value.errorMessage != null) value.errorMessage!,
+  if (value.error != null) l.researchDiagnosticCode(value.error!),
+].join('\n\n');
+
+void showResearchSessionMenu(
+  BuildContext context,
+  WidgetRef ref,
+  String studySetId,
+  String sessionId,
+  Offset position,
+) {
+  showMMMenu(
+    context,
+    position: position,
+    entries: [
+      MMMenuItem(
+        context.l10n.researchDelete,
+        () => deleteResearchSession(context, ref, studySetId, sessionId),
+        destructive: true,
+      ),
+    ],
+  );
+}
+
+Future<void> deleteResearchSession(BuildContext context, WidgetRef ref, String studySetId, String sessionId) async {
+  final controller = ref.read(researchPanelProvider(studySetId).notifier);
+  try {
+    await controller.delete(sessionId);
+  } catch (_) {
+    if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
   }
 }

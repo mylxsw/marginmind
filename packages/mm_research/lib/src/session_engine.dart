@@ -52,6 +52,8 @@ class ResearchSessionState {
   Map<String, Object?> get metadata => (data['metadata'] as Map? ?? {}).cast<String, Object?>();
   String get answer => session.history.lastOrNull?['answer'] as String? ?? '';
   String? get error => data['error'] as String?;
+  String? get errorMessage => data['errorMessage'] as String?;
+  int? get errorStatus => data['errorStatus'] as int?;
 }
 
 class ResearchSessionEngine {
@@ -151,7 +153,7 @@ class ResearchSessionEngine {
               {...turn, 'requestId': requestId, 'answer': ''},
             ],
         }),
-        {'error': null},
+        {'error': null, 'errorMessage': null, 'errorStatus': null},
       ),
       token: token,
     );
@@ -178,7 +180,11 @@ class ResearchSessionEngine {
                         ? 'cancelled'
                         : 'failed',
                   }),
-                  {'error': failure},
+                  {
+                    'error': failure,
+                    'errorMessage': error is ResearchFailure ? error.message : null,
+                    'errorStatus': error is ResearchFailure ? error.statusCode : null,
+                  },
                 )
               : s,
         );
@@ -654,6 +660,7 @@ class ResearchSessionEngine {
   }
 
   Future<void> dispose() async {
+    if (_disposed) return;
     await cancel();
     _disposed = true;
     await _changes.close();

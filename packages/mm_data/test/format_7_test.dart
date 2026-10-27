@@ -42,6 +42,24 @@ void main() {
     expect((jsonDecode(await file.readAsString()) as Map)['format'], 7);
   });
 
+  test('deleting a research session persists and preserves snapshots', () async {
+    final store = FileLibraryStore(root);
+    final now = DateTime.utc(2026);
+    await store.saveResearchSession(
+      'legacy',
+      ResearchSession(id: 'delete-me', question: 'Question', createdAt: now, updatedAt: now),
+    );
+    final snapshot = await store.writeResearchSnapshot('legacy', 'saved evidence');
+    await store.deleteResearchSession('legacy', 'delete-me');
+    await store.deleteResearchSession('legacy', 'delete-me');
+    final reopened = FileLibraryStore(root);
+    expect(await reopened.listResearchSessions('legacy'), isEmpty);
+    expect(await reopened.readResearchSnapshot('legacy', snapshot), 'saved evidence');
+    await expectLater(store.deleteResearchSession('legacy', '../escape'), throwsA(anything));
+    await store.dispose();
+    await reopened.dispose();
+  });
+
   test('fixed format 6 preserves all prior fields and 365 daily due counts', () async {
     final original = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
     final before = StudySetContent.fromJson((original['content'] as Map).cast());

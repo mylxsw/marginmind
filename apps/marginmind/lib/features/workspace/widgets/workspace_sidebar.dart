@@ -12,6 +12,7 @@ import '../../../shared/l10n.dart';
 import '../../research/research_controller.dart';
 import '../../research/research_drafts.dart';
 import '../../research/research_providers.dart';
+import '../../research/widgets/research_widgets.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -147,26 +148,27 @@ class WorkspaceSidebar extends ConsumerWidget {
     final researchPanelOpen = ref.watch(provider.select((s) => s.panel == RightPanel.research));
     final later = sessions.where((s) => s.status == 'draft' && ResearchDrafts.of(s).later).length;
     final research = [
-      for (final s in sessions)
-        if (!(s.status == 'draft' && ResearchDrafts.of(s).later) && matches(s.question))
-          MMSidebarItem(
-            key: ValueKey('sidebar-research-${s.id}'),
-            icon: MMIcons.research,
-            iconColor: c.research,
-            label: s.question,
-            selected: researchPanelOpen && panel.$1 == s.id,
-            trailing: switch (s.status) {
-              _ when panel.$2.contains(s.id) || s.status == 'running' => MMPill(l.researchRunning, color: c.research),
-              'failed' => MMPill(l.researchFailed, color: c.critical),
-              'cancelled' => MMPill(l.researchCancelled),
-              'interrupted' => MMPill(l.researchInterruptedShort, color: c.caution),
-              _ => switch (content?.researchNotes.where((n) => n.sessionId == s.id).length ?? 0) {
-                0 => null,
-                final n => MMCount(n),
-              },
+      for (final s
+          in sessions.where((s) => !(s.status == 'draft' && ResearchDrafts.of(s).later) && matches(s.question)).take(3))
+        MMSidebarItem(
+          key: ValueKey('sidebar-research-${s.id}'),
+          icon: MMIcons.research,
+          iconColor: c.research,
+          label: s.question,
+          selected: researchPanelOpen && panel.$1 == s.id,
+          trailing: switch (s.status) {
+            _ when panel.$2.contains(s.id) || s.status == 'running' => MMPill(l.researchRunning, color: c.research),
+            'failed' => MMPill(l.researchFailed, color: c.critical),
+            'cancelled' => MMPill(l.researchCancelled),
+            'interrupted' => MMPill(l.researchInterruptedShort, color: c.caution),
+            _ => switch (content?.researchNotes.where((n) => n.sessionId == s.id).length ?? 0) {
+              0 => null,
+              final n => MMCount(n),
             },
-            onTap: () => ref.read(researchPanelProvider(studySetId).notifier).show(s.id),
-          ),
+          },
+          onTap: () => ref.read(researchPanelProvider(studySetId).notifier).show(s.id),
+          onContextMenu: (position) => showResearchSessionMenu(context, ref, studySetId, s.id, position),
+        ),
       if (later > 0 && matches(l.researchLater))
         MMSidebarItem(
           key: const ValueKey('sidebar-research-later'),
@@ -254,7 +256,13 @@ class WorkspaceSidebar extends ConsumerWidget {
             children: maps,
           ),
         if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
-        if (research.isNotEmpty) MMSidebarSection(title: l.research, children: research),
+        if (sessions.isNotEmpty)
+          _ResearchSection(
+            title: l.research,
+            more: l.researchViewMore,
+            onMore: ref.read(researchPanelProvider(studySetId).notifier).showStart,
+            children: research,
+          ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],
     );
@@ -303,4 +311,34 @@ class WorkspaceSidebar extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _ResearchSection extends StatefulWidget {
+  const _ResearchSection({required this.title, required this.more, required this.onMore, required this.children});
+  final String title, more;
+  final VoidCallback onMore;
+  final List<Widget> children;
+  @override
+  State<_ResearchSection> createState() => _ResearchSectionState();
+}
+
+class _ResearchSectionState extends State<_ResearchSection> {
+  bool hovered = false;
+  bool focused = false;
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+    onEnter: (_) => setState(() => hovered = true),
+    onExit: (_) => setState(() => hovered = false),
+    child: Focus(
+      onFocusChange: (value) => setState(() => focused = value),
+      child: MMSidebarSection(
+        title: widget.title,
+        trailing: Opacity(
+          opacity: hovered || focused ? 1 : 0,
+          child: MMButton(label: widget.more, onPressed: widget.onMore),
+        ),
+        children: widget.children,
+      ),
+    ),
+  );
 }

@@ -6,9 +6,14 @@ typedef AddressLookup = Future<List<InternetAddress>> Function(String host);
 
 /// Web URLs and provider credentials never share the localhost exception.
 class UrlPolicy {
-  UrlPolicy({AddressLookup? lookup, this.localEndpoint}) : lookup = lookup ?? InternetAddress.lookup;
+  UrlPolicy({AddressLookup? lookup, this.localEndpoint, this.providerEndpoint})
+    : lookup = lookup ?? InternetAddress.lookup;
   final AddressLookup lookup;
   final Uri? localEndpoint;
+
+  /// Only an explicitly configured HTTPS provider may use a proxy fake-IP.
+  /// Web/source URLs never receive this exception. TLS still verifies the host.
+  final Uri? providerEndpoint;
 
   static bool publicAddress(InternetAddress address) {
     final b = address.rawAddress;
@@ -49,7 +54,11 @@ class UrlPolicy {
     final addresses = parsed == null ? await lookup(host) : [parsed];
     final local = localEndpoint;
     final allowLoopback = local != null && url.origin == local.origin && url.path == local.path;
-    if (addresses.isEmpty || addresses.any((a) => !publicAddress(a) && !(allowLoopback && a.isLoopback))) {
+    final allowFake = providerEndpoint == url && url.scheme == 'https' && parsed == null;
+    bool fake(InternetAddress a) =>
+        a.rawAddress.length == 4 && a.rawAddress[0] == 198 && (a.rawAddress[1] == 18 || a.rawAddress[1] == 19);
+    if (addresses.isEmpty ||
+        addresses.any((a) => !publicAddress(a) && !(allowLoopback && a.isLoopback) && !(allowFake && fake(a)))) {
       throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
     }
     return addresses;

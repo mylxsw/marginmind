@@ -9,6 +9,7 @@ import 'package:mm_platform/mm_platform.dart';
 import '../features/library/library_controller.dart';
 import '../features/library/new_study_set.dart';
 import '../features/research/research_entry.dart';
+import '../features/research/widgets/research_widgets.dart';
 import '../features/research/research_controller.dart';
 import '../features/research/widgets/video_link_sheet.dart';
 import '../features/workspace/widgets/notices.dart';
@@ -498,6 +499,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                 ?.researchNoteId;
       edit.add(
         AppCommand(
+          l.researchDelete,
+          researchPanel.sessionId != null && workspaceState.panel == RightPanel.research
+              ? () => deleteResearchSession(context, ref, workspaceId, researchPanel.sessionId!)
+              : null,
+        ),
+      );
+      edit.add(
+        AppCommand(
           l.researchSaveVideo,
           researchPanel.sessionId == null || workspaceState.panel != RightPanel.research
               ? null
@@ -754,6 +763,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.read(workspaceProvider(workspaceId).notifier).toggleSidebar,
           shortcut: AppShortcuts.toggleSidebar,
         ),
+        if (ref.watch(researchAvailableProvider))
+          AppCommand(l.researchHistory, ref.read(researchPanelProvider(workspaceId).notifier).showStart),
         // Research can be turned off as a whole (researchAvailableProvider).
         if (ref.watch(researchAvailableProvider))
           AppCommand(

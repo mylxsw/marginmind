@@ -17,9 +17,11 @@ enum ResearchFailureKind {
   unsupported,
 }
 
-/// Contains only a stable code, never a provider response body or credentials.
+/// Structured diagnostic fields; message must be bounded and redacted by the transport.
 class ResearchFailure implements Exception {
-  const ResearchFailure(this.kind, [this.code]);
+  const ResearchFailure(this.kind, [this.code, this.message, this.statusCode]);
+  final String? message;
+  final int? statusCode;
   final ResearchFailureKind kind;
   final String? code;
   @override

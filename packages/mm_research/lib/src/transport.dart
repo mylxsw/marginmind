@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
@@ -86,15 +87,31 @@ class ResearchHttp {
       var redirects = 0;
       var attempt = 0;
       while (true) {
-        await guarded(policy.validate(target));
-        final request = http.AbortableRequest(method, target, abortTrigger: abort.future)
-          ..followRedirects = false
-          ..headers.addAll(forwardedHeaders);
-        if (body != null) {
-          request.headers['content-type'] = 'application/json';
-          request.body = jsonEncode(body);
+        http.StreamedResponse response;
+        try {
+          await guarded(policy.validate(target));
+          final request = http.AbortableRequest(method, target, abortTrigger: abort.future)
+            ..followRedirects = false
+            ..headers.addAll(forwardedHeaders);
+          if (body != null) {
+            request.headers['content-type'] = 'application/json';
+            request.body = jsonEncode(body);
+          }
+          response = await guarded(client.send(request));
+        } on ResearchFailure {
+          rethrow;
+        } catch (error) {
+          cancellation.check();
+          if (timedOut) throw const ResearchFailure(ResearchFailureKind.timeout);
+          if (error is HandshakeException) {
+            throw const ResearchFailure(ResearchFailureKind.unavailable, 'tls');
+          }
+          if (attempt >= maxRetries) {
+            throw const ResearchFailure(ResearchFailureKind.unavailable, 'connection');
+          }
+          await guarded(Future<void>.delayed(retryDelay * (1 << attempt++)));
+          continue;
         }
-        final response = await guarded(client.send(request));
         if (response.statusCode >= 300 && response.statusCode < 400) {
           // Never forward API keys, authorization, or POST payloads on redirects.
           if (method != 'GET' ||
@@ -108,7 +125,8 @@ class ResearchHttp {
           target = target.resolve(response.headers['location']!);
           continue;
         }
-        if ((response.statusCode == 429 || response.statusCode >= 500) && attempt < maxRetries) {
+        if ((response.statusCode == 408 || response.statusCode == 429 || response.statusCode >= 500) &&
+            attempt < maxRetries) {
           await response.stream.listen(null).cancel();
           final seconds = int.tryParse(response.headers['retry-after'] ?? '');
           final delay = seconds != null ? Duration(seconds: seconds.clamp(0, 30)) : retryDelay * (1 << attempt);
@@ -117,12 +135,29 @@ class ResearchHttp {
           continue;
         }
         if (response.statusCode != 200) {
-          throw ResearchFailure(switch (response.statusCode) {
-            401 || 403 => ResearchFailureKind.authentication,
-            429 => ResearchFailureKind.rateLimited,
-            >= 500 => ResearchFailureKind.unavailable,
-            _ => ResearchFailureKind.invalidRequest,
-          });
+          // Read only a small diagnostic body, under the same cancellation/deadline.
+          final bytes = <int>[];
+          final iterator = StreamIterator(response.stream);
+          try {
+            while (bytes.length < 8192 && await guarded(iterator.moveNext())) {
+              bytes.addAll(iterator.current.take(8192 - bytes.length));
+            }
+          } finally {
+            await iterator.cancel();
+          }
+          final message = providerErrorMessage(utf8.decode(bytes, allowMalformed: true), secrets: headers.values);
+          throw ResearchFailure(
+            switch (response.statusCode) {
+              401 || 403 => ResearchFailureKind.authentication,
+              408 => ResearchFailureKind.timeout,
+              429 => ResearchFailureKind.rateLimited,
+              >= 500 => ResearchFailureKind.unavailable,
+              _ => ResearchFailureKind.invalidRequest,
+            },
+            null,
+            message,
+            response.statusCode,
+          );
         }
         onResponse?.call(target, response.headers);
         final length = response.contentLength;
@@ -175,4 +210,32 @@ Stream<Map<String, dynamic>> decodeEvents(Stream<List<int>> bytes) async* {
     }
   }
   if (data.isNotEmpty) throw const FormatException('Truncated SSE frame');
+}
+
+/// Extract only the provider's error message, never arbitrary HTML or payloads.
+String? providerErrorMessage(String body, {Iterable<String> secrets = const []}) {
+  try {
+    final value = jsonDecode(body);
+    if (value is! Map) return null;
+    final error = value['error'];
+    final raw = error is Map
+        ? error['message']
+        : error is String
+        ? error
+        : value['message'];
+    if (raw is! String) return null;
+    var message = raw;
+    for (final secret in secrets) {
+      for (final token in [secret, secret.replaceFirst(RegExp(r'^Bearer\s+', caseSensitive: false), '')]) {
+        if (token.isNotEmpty) message = message.replaceAll(token, '[redacted]');
+      }
+    }
+    message = message
+        .replaceAll(RegExp(r'(?:sk-|sk_)[a-zA-Z0-9_-]+'), '[redacted]')
+        .replaceAll(RegExp(r'[\x00-\x1f\x7f]'), ' ')
+        .trim();
+    return message.isEmpty ? null : message.substring(0, message.length.clamp(0, 600));
+  } catch (_) {
+    return null;
+  }
 }

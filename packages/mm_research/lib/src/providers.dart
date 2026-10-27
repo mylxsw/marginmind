@@ -14,7 +14,7 @@ class AnthropicProvider extends _Provider {
         Uri.parse('https://api.anthropic.com/v1/messages'),
         apiKey,
         model,
-        http ?? ResearchHttp(),
+        http ?? ResearchHttp(policy: UrlPolicy(providerEndpoint: Uri.parse('https://api.anthropic.com/v1/messages'))),
       );
 }
 
@@ -25,7 +25,7 @@ class OpenAiResponsesProvider extends _Provider {
         Uri.parse('https://api.openai.com/v1/responses'),
         apiKey,
         model,
-        http ?? ResearchHttp(),
+        http ?? ResearchHttp(policy: UrlPolicy(providerEndpoint: Uri.parse('https://api.openai.com/v1/responses'))),
       );
 }
 
@@ -43,7 +43,10 @@ class OpenAiCompatibleProvider extends _Provider {
          endpoint,
          apiKey,
          model,
-         http ?? ResearchHttp(policy: UrlPolicy(localEndpoint: allowLocalhost ? endpoint : null)),
+         http ??
+             ResearchHttp(
+               policy: UrlPolicy(localEndpoint: allowLocalhost ? endpoint : null, providerEndpoint: endpoint),
+             ),
        );
 }
 
@@ -163,7 +166,7 @@ abstract class _Provider implements AiProvider {
   Stream<AiEvent> generate(AiRequest request, CancellationToken cancellation) async* {
     cancellation.check();
     final body = payload(request);
-    final state = _ResponseState(request);
+    final state = _ResponseState(request, apiKey);
     final headers = protocol == _Protocol.anthropic
         ? {'x-api-key': apiKey, 'anthropic-version': '2023-06-01'}
         : {if (apiKey.isNotEmpty) 'authorization': 'Bearer $apiKey'};
@@ -203,8 +206,13 @@ abstract class _Provider implements AiProvider {
         }
       }
       yield state.event(AiEventKind.completed);
-    } on ResearchFailure {
-      rethrow;
+    } on ResearchFailure catch (error) {
+      throw ResearchFailure(
+        error.kind,
+        error.code,
+        error.message == null ? null : providerErrorMessage(jsonEncode({'message': error.message}), secrets: [apiKey]),
+        error.statusCode,
+      );
     } catch (_) {
       throw const ResearchFailure(ResearchFailureKind.protocol);
     }
@@ -212,8 +220,9 @@ abstract class _Provider implements AiProvider {
 }
 
 class _ResponseState {
-  _ResponseState(this.request) : counter = BudgetCounter(request.budget);
+  _ResponseState(this.request, this.apiKey) : counter = BudgetCounter(request.budget);
   final AiRequest request;
+  final String apiKey;
   final BudgetCounter counter;
   final text = StringBuffer();
   bool completed = false;
@@ -331,7 +340,18 @@ class _ResponseState {
 
   Iterable<AiEvent> consume(_Protocol protocol, Map<String, dynamic> e) sync* {
     if (e['error'] != null || e['type'] == 'error' || e['type'] == 'response.failed') {
-      throw const ResearchFailure(ResearchFailureKind.unavailable);
+      final error = e['error'] ?? (e['response'] is Map ? e['response']['error'] : null);
+      final type = error is Map ? (error['type'] ?? error['code']) : null;
+      throw ResearchFailure(
+        switch (type) {
+          'authentication_error' || 'invalid_api_key' || 'permission_error' => ResearchFailureKind.authentication,
+          'rate_limit_error' || 'rate_limit_exceeded' => ResearchFailureKind.rateLimited,
+          'invalid_request_error' || 'model_not_found' => ResearchFailureKind.invalidRequest,
+          _ => ResearchFailureKind.unavailable,
+        },
+        null,
+        providerErrorMessage(jsonEncode({'error': error}), secrets: [apiKey]),
+      );
     }
     if (protocol == _Protocol.compatible) {
       if (e['type'] == 'done') {

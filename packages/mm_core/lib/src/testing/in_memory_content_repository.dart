@@ -64,6 +64,11 @@ class InMemoryStudySetContentRepository
       if (entry.key.$1 == studySetId) entry.value.reconcile(await load(studySetId)),
   ];
 
+  @override
+  Future<void> deleteResearchSession(String studySetId, String sessionId) async {
+    _sessions.remove((studySetId, sessionId));
+  }
+
   final _snapshots = <(String, String), String>{};
 
   @override

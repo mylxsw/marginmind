@@ -225,6 +225,19 @@ void main() {
     expect(local.copyWith(endpoint: 'https://api.example.com/v1').aiConfigured, isFalse);
     expect(local.copyWith(endpoint: 'https://api.example.com/v1', keySaved: true).aiConfigured, isTrue);
     expect(local.copyWith(endpoint: 'not a url').endpointUri, isNull);
+    for (final base in [
+      'https://api.example.com',
+      'https://api.example.com/',
+      'https://api.example.com/v1',
+      'https://api.example.com/v1/',
+    ]) {
+      expect(local.copyWith(endpoint: base).endpointUri.toString(), 'https://api.example.com/v1/chat/completions');
+    }
+    expect(
+      local.copyWith(endpoint: 'https://api.example.com/custom/chat/completions').endpointUri!.path,
+      '/custom/chat/completions',
+    );
+    expect(local.copyWith(endpoint: 'https://user:password@api.example.com/v1').endpointUri, isNull);
     final budget = const ResearchSettings(searches: 4, pages: 6, minutes: 3).budget;
     expect((budget.searches, budget.pages, budget.duration), (4, 6, const Duration(minutes: 3)));
   });

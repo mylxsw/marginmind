@@ -35,7 +35,10 @@ class ResearchPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final panel = ref.watch(researchPanelProvider(studySetId));
-    final header = _PanelHeader(onClose: onClose);
+    final header = _PanelHeader(
+      onClose: onClose,
+      onHistory: ref.read(researchPanelProvider(studySetId).notifier).showStart,
+    );
     if (panel.noteId case final noteId?) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,7 +70,8 @@ class ResearchPanel extends ConsumerWidget {
 }
 
 class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({required this.onClose});
+  final VoidCallback onHistory;
+  const _PanelHeader({required this.onClose, required this.onHistory});
 
   final VoidCallback onClose;
 
@@ -88,6 +92,7 @@ class _PanelHeader extends StatelessWidget {
           Expanded(
             child: Text(l.research, style: context.mmText.subheadline.copyWith(color: c.research)),
           ),
+          MMIconButton(icon: MMIcons.later, tooltip: l.researchHistory, onPressed: onHistory),
           MMIconButton(
             icon: MMIcons.settings,
             tooltip: l.researchSettings,
@@ -125,10 +130,22 @@ class _StartPage extends ConsumerWidget {
         Icon(MMIcons.research, size: 32, color: c.research),
         const SizedBox(height: MMSpacing.m),
         Text(
-          l.researchEmptyTitle,
+          sessions.isEmpty ? l.researchEmptyTitle : l.researchHistory,
           textAlign: TextAlign.center,
           style: t.headline.copyWith(color: c.secondaryLabel),
         ),
+        if (sessions.isNotEmpty) ...[
+          const SizedBox(height: MMSpacing.l),
+          for (final s in sessions.where((s) => !(s.status == 'draft' && ResearchDrafts.of(s).later)))
+            MMSidebarItem(
+              key: ValueKey('history-${s.id}'),
+              icon: MMIcons.research,
+              label: s.question,
+              trailing: Text(DateFormat.yMd(l.localeName).add_Hm().format(s.updatedAt.toLocal()), style: t.footnote),
+              onTap: () => panel.show(s.id),
+              onContextMenu: (position) => showResearchSessionMenu(context, ref, studySetId, s.id, position),
+            ),
+        ],
         if (later.isNotEmpty) ...[
           const SizedBox(height: MMSpacing.xxl),
           ResearchFieldLabel(l.researchLater),
@@ -136,6 +153,14 @@ class _StartPage extends ConsumerWidget {
             _Card(
               key: ValueKey('later-${s.id}'),
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: MMIconButton(
+                    icon: MMIcons.trash,
+                    tooltip: l.researchDelete,
+                    onPressed: () => deleteResearchSession(context, ref, studySetId, s.id),
+                  ),
+                ),
                 Text(s.question, style: t.headline),
                 const SizedBox(height: MMSpacing.s),
                 Align(
@@ -622,7 +647,14 @@ class _AnswerView extends ConsumerWidget {
         );
       }
       if (session.status == 'failed') {
-        return MMEmptyState(icon: MMIcons.offline, title: researchError(l, value.error));
+        return SingleChildScrollView(
+          child: MMEmptyState(
+            icon: MMIcons.warning,
+            title: researchError(l, value.error),
+            message: researchErrorDetails(l, value),
+            actions: [MMButton(label: l.researchSettings, onPressed: () => showResearchSettingsSheet(context))],
+          ),
+        );
       }
       if (drafts.method == ResearchMethod.search || session.history.isEmpty) {
         final chosen = drafts.chosen.where((id) => value.sources.any((s) => s.id == id && s.versions.isNotEmpty));
@@ -667,6 +699,7 @@ class _AnswerView extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.m, MMSpacing.l, MMSpacing.l),
             children: [
+              if (session.status == 'failed') SelectableText(researchErrorDetails(l, value), style: t.bodySecondary),
               _ModeBadge(
                 method: last.method,
                 count: last.method == 'sources' ? _turnSources(session.history[last.index]).length : used.length,
