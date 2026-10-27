@@ -65,6 +65,10 @@ abstract final class MMIcons {
   static const IconData addTopic = CupertinoIcons.plus_rectangle; // plus.rectangle
   static const IconData copy = CupertinoIcons.doc_on_doc; // doc.on.doc
   static const IconData addNote = CupertinoIcons.square_pencil; // square.and.pencil
+  static const IconData bold = CupertinoIcons.bold; // bold
+  static const IconData italic = CupertinoIcons.italic; // italic
+  static const IconData bulletList = CupertinoIcons.list_bullet; // list.bullet
+  static const IconData numberList = CupertinoIcons.list_number; // list.number
   static const IconData zoomIn = CupertinoIcons.plus;
   static const IconData zoomOut = CupertinoIcons.minus;
   static const IconData import = CupertinoIcons.tray_arrow_down; // square.and.arrow.down

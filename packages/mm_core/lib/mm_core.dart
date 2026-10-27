@@ -10,6 +10,7 @@ export 'src/content/excerpt_lines.dart';
 export 'src/content/map_export.dart';
 export 'src/content/map_clipboard.dart';
 export 'src/content/models.dart';
+export 'src/content/note_format.dart';
 export 'src/content/review.dart';
 export 'src/content/review_face.dart';
 export 'src/content/review_stats.dart';

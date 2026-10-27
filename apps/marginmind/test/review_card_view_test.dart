@@ -56,7 +56,11 @@ void main() {
     var revealed = 0;
     final face = ReviewFace(
       front: const ReviewFront(path: ['Biology'], prompt: ReviewPrompt.title, title: 'What are the phases?'),
-      back: const ReviewBack(quote: 'Four phases.', notes: ['First note', 'Second note'], source: source),
+      back: const ReviewBack(
+        quote: 'Four phases.',
+        notes: [ReviewNote('First note'), ReviewNote('Second note')],
+        source: source,
+      ),
     );
     await pump(tester, face);
     expect(find.text('What are the phases?'), findsOneWidget);
@@ -90,7 +94,7 @@ void main() {
       tester,
       const ReviewFace(
         front: front,
-        back: ReviewBack(notes: ['Only the note']),
+        back: ReviewBack(notes: [ReviewNote('Only the note')]),
       ),
       revealed: true,
     );

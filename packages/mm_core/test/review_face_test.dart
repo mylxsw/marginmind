@@ -219,7 +219,7 @@ void main() {
       final (c4, _) = e.addNote(c3, text: 'Second note', parentId: card.id);
       expect(n1.kind, CardKind.note);
       final face = buildReviewFace(card, c4, pageText: page);
-      expect(face.back.notes, ['First note', 'Second note']);
+      expect(face.back.notes, const [ReviewNote('First note'), ReviewNote('Second note')]);
     });
 
     test('mapId selects the branch path', () {
@@ -278,7 +278,7 @@ void main() {
       expect(face.front.prompt, ReviewPrompt.title);
       expect(face.front.title, 'Phases?');
       expect(face.front.path, ['Biology', 'Cells', 'Phases?']);
-      expect(face.back.notes, ['Prophase first']);
+      expect(face.back.notes, const [ReviewNote('Prophase first')]);
       expect(face.back.source, isNull);
     });
 
@@ -300,7 +300,7 @@ void main() {
     test("a note's own child notes follow it", () {
       final (c, note) = e.addNote(StudySetContent.empty, text: 'Parent note');
       final (c1, _) = e.addNote(c, text: 'Child', parentId: note.id);
-      expect(buildReviewFace(note, c1).back.notes, ['Parent note', 'Child']);
+      expect(buildReviewFace(note, c1).back.notes, const [ReviewNote('Parent note'), ReviewNote('Child')]);
     });
   });
 

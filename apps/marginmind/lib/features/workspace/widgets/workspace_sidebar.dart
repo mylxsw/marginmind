@@ -127,7 +127,9 @@ class WorkspaceSidebar extends ConsumerWidget {
             CardKind.excerpt || CardKind.image => MMIcons.highlight,
             CardKind.note || CardKind.research => MMIcons.addNote,
           },
-          label: card.title.isNotEmpty ? card.title : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
+          label: card.title.isNotEmpty
+              ? notePlainText(card.title, card.textFormat)
+              : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
           selected: card.id == state.selectedCardId,
           onTap: () => content!.annotation(card.annotationId ?? '') != null
               ? controller.revealCard(card.id)

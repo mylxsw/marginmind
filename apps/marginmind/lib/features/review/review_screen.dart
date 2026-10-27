@@ -12,6 +12,7 @@ import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
+import '../../shared/note_text.dart';
 import '../workspace/workspace_controller.dart';
 import 'review_controller.dart';
 
@@ -289,7 +290,8 @@ class ReviewCardView extends StatelessWidget {
           ),
           child: SelectableText(back.quote, style: t.readingExcerpt.copyWith(fontSize: 16, height: 1.6)),
         ),
-      for (final note in back.notes) SelectableText(note, style: t.body.copyWith(fontSize: 16, height: 1.6)),
+      for (final note in back.notes)
+        NoteText(note.text, note.format, style: t.body.copyWith(fontSize: 16, height: 1.6), selectable: true),
     ];
 
     return Container(

@@ -4,6 +4,8 @@ import 'package:meta/meta.dart';
 
 import 'excerpt_lines.dart';
 import 'models.dart';
+import 'note_format.dart';
+import 'research.dart';
 import 'study_set_content.dart';
 
 /// What the front of a review card shows besides the branch path.
@@ -89,6 +91,25 @@ class ReviewFront {
       Object.hash(Object.hashAll(path), prompt, title, before, after, maskLength, page, Object.hashAll(areas));
 }
 
+/// A note on the back of a review card, in its stored format: review shows
+/// it formatted like the map does.
+@immutable
+class ReviewNote {
+  const ReviewNote(this.text, [this.format = TextFormat.plain]);
+
+  final String text;
+  final TextFormat format;
+
+  @override
+  bool operator ==(Object other) => other is ReviewNote && other.text == text && other.format == format;
+
+  @override
+  int get hashCode => Object.hash(text, format);
+
+  @override
+  String toString() => 'ReviewNote("$text", ${format.name})';
+}
+
 @immutable
 class ReviewBack {
   const ReviewBack({this.quote = '', this.colorIndex = 0, this.imageFileName, this.notes = const [], this.source});
@@ -102,7 +123,7 @@ class ReviewBack {
 
   /// Notes hanging under the card in the map, in map order. For a note
   /// card the first entry is its own text.
-  final List<String> notes;
+  final List<ReviewNote> notes;
   final ReviewSource? source;
 
   @override
@@ -170,14 +191,14 @@ ReviewFace buildReviewFace(
   final notes = [
     for (final n in content.childrenOf(card.id, mapId: mapId))
       if (content.card(n.cardId) case final c? when c.kind == CardKind.note && c.title.trim().isNotEmpty)
-        c.title.trim(),
+        ReviewNote(c.title.trim(), c.textFormat),
   ];
   final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
 
   if (card.kind == CardKind.note) {
     final parentId = content.node(card.id, mapId: mapId)?.parentId;
     final parent = parentId == null ? null : content.card(parentId);
-    var parentTitle = parent?.title.trim() ?? '';
+    var parentTitle = parent == null ? '' : notePlainText(parent.title, parent.textFormat).trim();
     if (parentTitle.isEmpty && parent != null) {
       final a = parent.annotationId == null ? null : content.annotation(parent.annotationId!);
       parentTitle = a == null ? '' : a.quote.trim();
@@ -190,7 +211,7 @@ ReviewFace buildReviewFace(
         prompt: parentTitle.isEmpty ? ReviewPrompt.none : ReviewPrompt.title,
         title: parentTitle,
       ),
-      back: ReviewBack(notes: [card.title.trim(), ...notes]),
+      back: ReviewBack(notes: [ReviewNote(card.title.trim(), card.textFormat), ...notes]),
     );
   }
 

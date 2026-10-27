@@ -375,5 +375,13 @@
   "@exportPixels": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
   "@exportCentimeters": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
   "exportResearchNote": "研究笔记",
-  "exportSource": "出处"
+  "exportSource": "出处",
+"formatBold": "加粗",
+  "formatItalic": "斜体",
+  "formatBulletList": "无序列表",
+  "formatNumberList": "有序列表",
+  "densityCompact": "紧凑",
+  "densityFull": "完整",
+  "cardWidthHandle": "卡片宽度",
+  "resetCardWidth": "恢复默认宽度"
 }

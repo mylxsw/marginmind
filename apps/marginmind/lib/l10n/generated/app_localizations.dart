@@ -2263,6 +2263,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Source'**
   String get exportSource;
+
+  /// No description provided for @formatBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get formatBold;
+
+  /// No description provided for @formatItalic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get formatItalic;
+
+  /// No description provided for @formatBulletList.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulleted List'**
+  String get formatBulletList;
+
+  /// No description provided for @formatNumberList.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered List'**
+  String get formatNumberList;
+
+  /// No description provided for @densityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get densityCompact;
+
+  /// No description provided for @densityFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get densityFull;
+
+  /// No description provided for @cardWidthHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Card Width'**
+  String get cardWidthHandle;
+
+  /// No description provided for @resetCardWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Width'**
+  String get resetCardWidth;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

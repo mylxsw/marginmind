@@ -3,6 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
+import '../../../shared/note_text.dart';
+
+/// The text typed into a card's field, and its format (a note may have
+/// turned into Markdown while it was edited).
+typedef CardEditDone = void Function(String text, TextFormat format);
+
 /// A card's text open for editing. [ended] is set as soon as the edit is
 /// confirmed or cancelled; the field stays on screen until the caller
 /// clears the editing card, so the saved text replaces it without a flash
@@ -14,6 +20,18 @@ class CardField {
   final TextEditingController controller;
   final FocusNode focus;
   bool ended = false;
+
+  /// The format of the text as typed: a note's controller tracks it.
+  TextFormat get format => switch (controller) {
+    final NoteFormatController note => note.format,
+    _ => TextFormat.plain,
+  };
+
+  /// Set for a note: its formatting controller.
+  NoteFormatController? get note => switch (controller) {
+    final NoteFormatController note => note,
+    _ => null,
+  };
 
   /// The card has been shown; until then the content may lag behind the
   /// write that created it.
@@ -49,7 +67,7 @@ mixin CardFieldHost<T extends StatefulWidget> on State<T> {
 
   /// Takes keyboard focus back after Enter / Esc.
   FocusNode get hostFocus;
-  ValueChanged<String>? get onFieldDone;
+  CardEditDone? get onFieldDone;
   VoidCallback? get onFieldCancel;
 
   /// The field for [id] has just been focused.
@@ -67,11 +85,16 @@ mixin CardFieldHost<T extends StatefulWidget> on State<T> {
     final replacement = typed;
     typed = null;
     if (id == null) return;
-    final text = replacement ?? fieldContent.card(id)?.title ?? '';
-    final controller = TextEditingController(text: text)
-      ..selection = replacement == null
-          ? TextSelection(baseOffset: 0, extentOffset: text.length)
-          : TextSelection.collapsed(offset: text.length);
+    final card = fieldContent.card(id);
+    final text = replacement ?? card?.title ?? '';
+    // Notes take basic formatting (P2-C07); other titles stay plain.
+    final controller =
+        (card?.kind == CardKind.note
+              ? NoteFormatController(text: text, format: card!.textFormat)
+              : TextEditingController(text: text))
+          ..selection = replacement == null
+              ? TextSelection(baseOffset: 0, extentOffset: text.length)
+              : TextSelection.collapsed(offset: text.length);
     controller.addListener(() {
       if (mounted) setState(() {});
     });
@@ -99,7 +122,7 @@ mixin CardFieldHost<T extends StatefulWidget> on State<T> {
     f.ended = true;
     if (refocus) hostFocus.requestFocus();
     if (commit) {
-      onFieldDone?.call(f.controller.text);
+      onFieldDone?.call(f.controller.text, f.format);
     } else {
       onFieldCancel?.call();
     }
@@ -123,23 +146,27 @@ mixin CardFieldHost<T extends StatefulWidget> on State<T> {
     if (f != null && !f.ended) {
       final done = onFieldDone;
       final text = f.controller.text;
-      if (done != null) Future.microtask(() => done(text));
+      final format = f.format;
+      if (done != null) Future.microtask(() => done(text, format));
     }
     f?.dispose();
   }
 
   /// The text field for [f], styled like the text it replaces. Notes take
-  /// ⇧Enter as a line break.
-  Widget fieldEditor(CardField f, {required TextStyle style, required CardKind kind, String? label, int? maxLines}) =>
-      MMInlineTextField(
-        controller: f.controller,
-        focusNode: f.focus,
-        style: style,
-        multiline: kind == CardKind.note,
-        maxLines: maxLines,
-        semanticLabel: label,
-        onSubmitted: () => endField(f, commit: true, refocus: true),
-        onCancel: () => endField(f, commit: false, refocus: true),
-        onTapOutside: () => endField(f, commit: true, refocus: false),
-      );
+  /// ⇧Enter as a line break and the formatting keys.
+  Widget fieldEditor(CardField f, {required TextStyle style, required CardKind kind, String? label, int? maxLines}) {
+    final field = MMInlineTextField(
+      controller: f.controller,
+      focusNode: f.focus,
+      style: style,
+      multiline: kind == CardKind.note,
+      maxLines: maxLines,
+      semanticLabel: label,
+      onSubmitted: () => endField(f, commit: true, refocus: true),
+      onCancel: () => endField(f, commit: false, refocus: true),
+      onTapOutside: () => endField(f, commit: true, refocus: false),
+    );
+    final note = f.note;
+    return note == null ? field : NoteFormatScope(controller: note, child: field);
+  }
 }

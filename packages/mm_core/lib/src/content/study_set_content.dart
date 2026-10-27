@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'note_format.dart';
 import 'research.dart';
 import 'review.dart';
 
@@ -203,7 +204,7 @@ class StudySetContent {
     while (parent != null && seen.add(parent)) {
       final card = this.card(parent);
       if (card == null) break;
-      titles.insert(0, card.title);
+      titles.insert(0, notePlainText(card.title, card.textFormat));
       parent = node(parent, mapId: mapId)?.parentId;
     }
     return titles;

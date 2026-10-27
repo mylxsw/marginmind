@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'models.dart';
+import 'note_format.dart';
 import 'research.dart';
 import 'study_set_content.dart';
 
@@ -59,14 +60,19 @@ class MapExporter {
   late final _relations = content.relationsOf(mapId);
 
   /// Nested Markdown list under a level-1 heading. Topics are bold,
-  /// excerpts are quoted with their source, notes are plain text.
+  /// excerpts are quoted with their source, notes are plain text; a
+  /// formatted note keeps its Markdown, one line per note line.
   String markdown() {
     final out = StringBuffer('# ${_oneLine(rootTitle)}\n\n');
     void walk(String? parentId, int depth) {
       for (final n in content.childrenOf(parentId, mapId: mapId)) {
         final card = content.card(n.cardId);
         if (card == null) continue;
-        out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
+        if (card.kind == CardKind.note && card.textFormat == TextFormat.markdown) {
+          _markdownNote(out, card.title, depth);
+        } else {
+          out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
+        }
         if (card.kind == CardKind.research) {
           for (final line in _researchBody(card).split('\n')) {
             out.writeln('${'  ' * (depth + 1)}$line');
@@ -93,12 +99,29 @@ class MapExporter {
     return out.toString();
   }
 
+  /// A formatted note as written: its first line is the list item, later
+  /// lines continue it. A line break between two text lines stays a break.
+  void _markdownNote(StringBuffer out, String text, int depth) {
+    final lines = text.trim().split('\n');
+    final blocks = NoteDocument.parse(text.trim(), TextFormat.markdown).blocks;
+    for (var i = 0; i < lines.length; i++) {
+      final paragraphFollows =
+          blocks[i].kind == NoteBlockKind.paragraph &&
+          i + 1 < lines.length &&
+          blocks[i + 1].kind == NoteBlockKind.paragraph &&
+          lines[i].trim().isNotEmpty &&
+          lines[i + 1].trim().isNotEmpty;
+      final line = '${lines[i].trimRight()}${paragraphFollows ? r'\' : ''}';
+      out.writeln(i == 0 ? '${'  ' * depth}- $line' : (line.isEmpty ? '' : '${'  ' * (depth + 1)}$line'));
+    }
+  }
+
   /// How a card is referred to in a relation: its title, else its quote or
   /// image file.
   String _name(String cardId) {
     final card = content.card(cardId);
     if (card == null) return '';
-    if (card.title.trim().isNotEmpty) return _oneLine(card.title);
+    if (card.title.trim().isNotEmpty) return _oneLine(notePlainText(card.title, card.textFormat));
     return _oneLine(content.annotation(card.annotationId ?? '')?.quote ?? card.imageFileName ?? '');
   }
 
@@ -220,6 +243,8 @@ class MapExporter {
       final text = card.title.trim().isNotEmpty ? card.title : (card.imageFileName ?? '');
       return 'text="${_xml(text)}"${doc == null ? '' : ' _note="${_xml(_source(doc, a!.page))}"'}';
     }
+    // Formatting has no place in OPML: a note's text without its markup.
+    if (card.kind == CardKind.note) return 'text="${_xml(notePlainText(card.title, card.textFormat))}"';
     if (card.kind != CardKind.excerpt) return 'text="${_xml(card.title)}"';
     final a = content.annotation(card.annotationId ?? '');
     final doc = a == null ? null : content.document(a.documentId);

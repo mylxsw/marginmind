@@ -78,7 +78,10 @@ class MapExportScene extends CustomPainter {
         if (doc != null) source(doc, a!.page),
       ].where((s) => s.isNotEmpty).join('\n');
       nodes[n.cardId] = _ExportNode(
-        note == null ? card.title : '$researchLabel · ${note.title}',
+        note != null
+            ? '$researchLabel · ${note.title}'
+            // A formatted note is drawn as its text, without the markup (P2-C07).
+            : notePlainText(card.title, card.textFormat),
         body,
         card.kind == CardKind.topic ? MMTypography.headline : MMTypography.body,
         card.kind == CardKind.research ? colors.researchTint : colors.card,

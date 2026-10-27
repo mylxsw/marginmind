@@ -597,5 +597,13 @@
   "@exportPixels": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
   "@exportCentimeters": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
   "exportResearchNote": "Research note",
-  "exportSource": "Source"
+  "exportSource": "Source",
+"formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatBulletList": "Bulleted List",
+  "formatNumberList": "Numbered List",
+  "densityCompact": "Compact",
+  "densityFull": "Full",
+  "cardWidthHandle": "Card Width",
+  "resetCardWidth": "Reset Width"
 }
