@@ -1160,6 +1160,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ocrCancel => 'Cancel Text Recognition';
 
   @override
+  String get exportTitle => 'Export Map';
+
+  @override
   String get exportMap => 'Export Map…';
 
   @override

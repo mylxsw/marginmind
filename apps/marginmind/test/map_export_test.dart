@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_export_scene.dart';
 import 'package:marginmind/features/workspace/widgets/map_export_sheet.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
+import 'package:marginmind/l10n/generated/app_localizations_zh.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -43,6 +44,12 @@ MapExportScene scene(StudySetContent c, {bool transparent = false}) => MapExport
 );
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Chinese sheet title omits ellipsis while menu and save action retain it', () {
+    final l = AppLocalizationsZh();
+    expect(l.exportTitle, '导出脑图');
+    expect(l.exportMap, '导出脑图…');
+    expect(l.exportAction, '导出…');
+  });
   testWidgets('File menu opens unified export; node menu preselects its branch', (tester) async {
     await openFirstSet(tester);
     Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
@@ -58,6 +65,7 @@ void main() {
     menus.singleWhere((i) => i.label == 'Export Map…').onSelected!();
     await tester.pumpAndSettle();
     expect(tester.widget<MapExportSheet>(find.byType(MapExportSheet)).initialBranch, isFalse);
+    expect(tester.widget<MMSheet>(find.byType(MMSheet)).title, 'Export Map');
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton);

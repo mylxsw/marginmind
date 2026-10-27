@@ -2132,6 +2132,12 @@ abstract class AppLocalizations {
   /// **'Cancel Text Recognition'**
   String get ocrCancel;
 
+  /// No description provided for @exportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Map'**
+  String get exportTitle;
+
   /// No description provided for @exportMap.
   ///
   /// In en, this message translates to:

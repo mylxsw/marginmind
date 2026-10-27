@@ -352,6 +352,7 @@
   "@ocrInvalidRange": {"placeholders": {"count": {"type": "int"}}},
   "ocrThisPage": "识别本页",
   "ocrCancel": "取消文字识别",
+  "exportTitle": "导出脑图",
   "exportMap": "导出脑图…",
   "exportBranch": "导出此分支…",
   "exportAction": "导出…",

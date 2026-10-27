@@ -574,6 +574,7 @@
   "@ocrInvalidRange": {"placeholders": {"count": {"type": "int"}}},
   "ocrThisPage": "Recognize This Page",
   "ocrCancel": "Cancel Text Recognition",
+  "exportTitle": "Export Map",
   "exportMap": "Export Map…",
   "exportBranch": "Export This Branch…",
   "exportAction": "Export…",

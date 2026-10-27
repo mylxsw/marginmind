@@ -1118,6 +1118,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ocrCancel => '取消文字识别';
 
   @override
+  String get exportTitle => '导出脑图';
+
+  @override
   String get exportMap => '导出脑图…';
 
   @override

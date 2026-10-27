@@ -214,7 +214,7 @@ class _MapExportSheetState extends State<MapExportSheet> {
     return PopScope(
       canPop: !_busy,
       child: MMSheet(
-        title: l.exportMap,
+        title: l.exportTitle,
         actions: [
           MMButton(label: l.cancel, onPressed: _busy ? null : () => Navigator.of(context).pop()),
           MMButton(
