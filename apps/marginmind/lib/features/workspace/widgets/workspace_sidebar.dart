@@ -9,6 +9,9 @@ import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../research/research_controller.dart';
+import '../../research/research_drafts.dart';
+import '../../research/research_providers.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -136,7 +139,44 @@ class WorkspaceSidebar extends ConsumerWidget {
               : controller.selectCard(card.id),
         ),
     ];
-    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
+    // Research: sessions newest first, with their state or saved notes, and
+    // what was kept for later.
+    final researchOn = ref.watch(researchAvailableProvider);
+    final sessions = researchOn ? ref.watch(researchSessionsProvider(studySetId)).value ?? const [] : const [];
+    final panel = ref.watch(researchPanelProvider(studySetId).select((p) => (p.sessionId, p.progress.keys.toSet())));
+    final researchPanelOpen = ref.watch(provider.select((s) => s.panel == RightPanel.research));
+    final later = sessions.where((s) => s.status == 'draft' && ResearchDrafts.of(s).later).length;
+    final research = [
+      for (final s in sessions)
+        if (!(s.status == 'draft' && ResearchDrafts.of(s).later) && matches(s.question))
+          MMSidebarItem(
+            key: ValueKey('sidebar-research-${s.id}'),
+            icon: MMIcons.research,
+            iconColor: c.research,
+            label: s.question,
+            selected: researchPanelOpen && panel.$1 == s.id,
+            trailing: switch (s.status) {
+              _ when panel.$2.contains(s.id) || s.status == 'running' => MMPill(l.researchRunning, color: c.research),
+              'failed' => MMPill(l.researchFailed, color: c.critical),
+              'cancelled' => MMPill(l.researchCancelled),
+              'interrupted' => MMPill(l.researchInterruptedShort, color: c.caution),
+              _ => switch (content?.researchNotes.where((n) => n.sessionId == s.id).length ?? 0) {
+                0 => null,
+                final n => MMCount(n),
+              },
+            },
+            onTap: () => ref.read(researchPanelProvider(studySetId).notifier).show(s.id),
+          ),
+      if (later > 0 && matches(l.researchLater))
+        MMSidebarItem(
+          key: const ValueKey('sidebar-research-later'),
+          icon: MMIcons.later,
+          label: l.researchLater,
+          trailing: MMCount(later),
+          onTap: ref.read(researchPanelProvider(studySetId).notifier).showStart,
+        ),
+    ];
+    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty && research.isEmpty;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -214,6 +254,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             children: maps,
           ),
         if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
+        if (research.isNotEmpty) MMSidebarSection(title: l.research, children: research),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],
     );

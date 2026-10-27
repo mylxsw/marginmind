@@ -19,6 +19,12 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     HighlightDeletedNotice() => l.highlightDeletedHud,
     UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
     DocumentRemovedNotice() => l.documentRemovedHud,
+    ResearchNoteSavedNotice(:final cardId, :final inSource) =>
+      cardId != null && inSource
+          ? l.researchSavedBoth
+          : cardId != null
+          ? l.researchSavedMap
+          : l.researchSavedSource,
     ImportedNotice(:final count, :final failed) =>
       failed.isNotEmpty ? l.importFailed(failed.first) : l.importedHud(count),
   };

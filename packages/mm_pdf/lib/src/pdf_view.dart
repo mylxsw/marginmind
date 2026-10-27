@@ -26,6 +26,8 @@ class MMPdfHighlight {
     this.underline,
     this.emphasized = false,
     this.framed = false,
+    this.dashed = false,
+    this.marker,
   });
 
   final String id;
@@ -44,6 +46,13 @@ class MMPdfHighlight {
   /// An area excerpt: outlined in [underline] (or [color]) instead of
   /// covering the figure with a fill.
   final bool framed;
+
+  /// [underline] is drawn dashed: text a note is attached to, not excerpted.
+  final bool dashed;
+
+  /// A round mark in the page's right margin beside the first rect, filled
+  /// with this color; tapping it is tapping the highlight.
+  final Color? marker;
 }
 
 /// A rectangle dragged with the area tool, clamped to the page it started on.
@@ -202,6 +211,10 @@ class MMPdfViewController extends ChangeNotifier {
   /// the page cannot be rendered.
   Future<Uint8List?> captureArea(int page, PageRect rect, {double scale = 3, int maxPixels = 3000}) async =>
       _state?._capture(page, rect, scale, maxPixels);
+
+  /// The text of [page] in reading order, or null when the view is not ready
+  /// or the page has no text layer.
+  Future<String?> pageText(int page) async => _state?._pageText(page);
 
   // ---- search -----------------------------------------------------------------
 
@@ -984,6 +997,16 @@ class _MMPdfViewState extends State<MMPdfView> {
     widget.controller._reportReady(_pageCount, [for (final node in nodes) convert(node)]);
   }
 
+  Future<String?> _pageText(int pageNumber) async {
+    if (!_ready || pageNumber < 1 || pageNumber > _controller.document.pages.length) return null;
+    try {
+      final text = (await _controller.document.pages[pageNumber - 1].loadStructuredText()).fullText;
+      return text.trim().isEmpty ? null : text;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Rendered pixels of [rect] on [pageNumber], encoded as PNG.
   Future<Uint8List?> _capture(int pageNumber, PageRect rect, double scale, int maxPixels) async {
     if (!_ready || pageNumber < 1 || pageNumber > _controller.document.pages.length) return null;
@@ -1181,6 +1204,26 @@ class _MMPdfViewState extends State<MMPdfView> {
       _overlayCache[page.pageNumber] = cached;
       return cached.$4;
     }
+    bool tap(MMPdfHighlight h) {
+      // With the pen out, a click on a highlight is drawing.
+      if (widget.ink != null) return false;
+      // Cancel a pending text-selection commit from this click.
+      _selectionEpoch++;
+      final bounds = h.rects
+          .map(
+            (r) => _controller.calcRectForRectInsidePage(
+              pageNumber: h.page,
+              rect: PdfRect(r.left, r.top, r.right, r.bottom),
+            ),
+          )
+          .reduce((a, b) => a.expandToInclude(b));
+      widget.onHighlightTap?.call(
+        h.id,
+        Rect.fromPoints(_controller.documentToLocal(bounds.topLeft), _controller.documentToLocal(bounds.bottomRight)),
+      );
+      return true;
+    }
+
     final overlays = <Widget>[
       for (final h in highlights)
         for (final r in h.rects)
@@ -1190,39 +1233,55 @@ class _MMPdfViewState extends State<MMPdfView> {
               return Positioned.fromRect(
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
-                  onTap: (_) {
-                    // With the pen out, a click on a highlight is drawing.
-                    if (widget.ink != null) return false;
-                    // Cancel a pending text-selection commit from this click.
-                    _selectionEpoch++;
-                    final bounds = h.rects
-                        .map(
-                          (r) => _controller.calcRectForRectInsidePage(
-                            pageNumber: h.page,
-                            rect: PdfRect(r.left, r.top, r.right, r.bottom),
+                  onTap: (_) => tap(h),
+                  child: IgnorePointer(
+                    child: h.dashed && !h.emphasized
+                        ? CustomPaint(
+                            painter: _DashedUnderlinePainter(h.underline ?? h.color),
+                            child: ColoredBox(color: h.color),
+                          )
+                        : DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
+                              borderRadius: BorderRadius.circular(2),
+                              border: h.emphasized
+                                  ? Border.all(color: widget.emphasisColor, width: 2)
+                                  : h.framed
+                                  ? Border.all(color: h.underline ?? h.color, width: 2)
+                                  : (h.underline == null
+                                        ? null
+                                        : Border(bottom: BorderSide(color: h.underline!, width: 2))),
+                            ),
                           ),
-                        )
-                        .reduce((a, b) => a.expandToInclude(b));
-                    widget.onHighlightTap?.call(
-                      h.id,
-                      Rect.fromPoints(
-                        _controller.documentToLocal(bounds.topLeft),
-                        _controller.documentToLocal(bounds.bottomRight),
-                      ),
-                    );
-                    return true;
-                  },
+                  ),
+                ),
+              );
+            },
+          ),
+      for (final h in highlights)
+        if (h.marker != null && h.rects.isNotEmpty)
+          Builder(
+            builder: (context) {
+              final first = h.rects.first;
+              final rect = PdfRect(
+                first.left,
+                first.top,
+                first.right,
+                first.bottom,
+              ).toRect(page: page, scaledPageSize: scaled);
+              final size = (scaled.width * 0.03).clamp(14.0, 22.0);
+              return Positioned(
+                key: ValueKey('pdf-marker-${h.id}'),
+                left: scaled.width - size * 1.6,
+                top: rect.center.dy - size / 2,
+                width: size,
+                height: size,
+                child: PdfOverlayInteractionRegion(
+                  onTap: (_) => tap(h),
                   child: IgnorePointer(
                     child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
-                        borderRadius: BorderRadius.circular(2),
-                        border: h.emphasized
-                            ? Border.all(color: widget.emphasisColor, width: 2)
-                            : h.framed
-                            ? Border.all(color: h.underline ?? h.color, width: 2)
-                            : (h.underline == null ? null : Border(bottom: BorderSide(color: h.underline!, width: 2))),
-                      ),
+                      decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
+                      child: Icon(Icons.sticky_note_2_outlined, size: size * 0.62, color: Colors.white),
                     ),
                   ),
                 ),
@@ -1459,6 +1518,8 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
         x.underline != y.underline ||
         x.emphasized != y.emphasized ||
         x.framed != y.framed ||
+        x.dashed != y.dashed ||
+        x.marker != y.marker ||
         x.rects.length != y.rects.length) {
       return false;
     }
@@ -1468,6 +1529,27 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
     }
   }
   return true;
+}
+
+/// A 1.5pt dashed line along the bottom edge.
+class _DashedUnderlinePainter extends CustomPainter {
+  const _DashedUnderlinePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5;
+    final y = size.height - 0.75;
+    for (var x = 0.0; x < size.width; x += 6) {
+      canvas.drawLine(Offset(x, y), Offset(math.min(x + 3.5, size.width), y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedUnderlinePainter old) => old.color != color;
 }
 
 bool _sameStrokes(List<InkStroke> a, List<InkStroke> b) {

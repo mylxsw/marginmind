@@ -129,6 +129,10 @@ class MindMapRenderCache {
     final annotations = {for (final a in content.annotations) a.id: a};
     final documents = {for (final d in content.documents) d.id: d};
     final compact = (content.map(mapId)?.density ?? MapDensity.full) != MapDensity.full;
+    final notes = {for (final n in content.researchNotes) n.id: n};
+    final evidence = {for (final e in content.evidence) e.id: e};
+    int sourceCount(ResearchNote note) =>
+        {for (final ref in note.citations) ?evidence[ref.evidenceId]?.sourceId}.length;
     final children = <String?, List<MapNode>>{};
     for (final node in content.nodes) {
       if (node.mapId != mapId) continue;
@@ -172,6 +176,8 @@ class MindMapRenderCache {
                   expanded: expanded.contains(card.id),
                   width: widthDraft?.$1 == card.id ? widthDraft!.$2 : node.width,
                   compact: compact,
+                  note: notes[card.researchNoteId],
+                  sourceCount: notes[card.researchNoteId] == null ? 0 : sourceCount(notes[card.researchNoteId]!),
                 ),
                 collapsed: node.collapsed,
               ),
@@ -308,7 +314,7 @@ class MindMapRenderCache {
 
 typedef _MeasureKey = ({String text, TextStyle style, double width, TextFormat? note, bool source});
 
-enum _Kind { root, topic, excerpt, note, image }
+enum _Kind { root, topic, excerpt, note, image, research }
 
 /// What a node shows, and its measured size (layout needs sizes up front).
 class _NodeSpec {
@@ -390,6 +396,13 @@ class _NodeSpec {
   static const toggleGap = MMSpacing.xs;
   static const toggleLineHeight = 14.0;
 
+  /// A research note card: kind line, title (two lines at most), body
+  /// preview (two lines at most) and the way to the whole note.
+  static const researchInset = 15.0 + 12.0;
+  static const researchTitleLines = 2;
+  static const researchBodyLines = 2;
+  static final researchBodyStyle = MMTypography.callout.copyWith(fontWeight: FontWeight.w400, height: 16 / 12);
+
   factory _NodeSpec.root(String title, MindMapRenderCache cache) {
     final w = cache._measure(title, MMTypography.title3, 360).size.width;
     return _NodeSpec._(
@@ -415,6 +428,8 @@ class _NodeSpec {
     /// null for the default.
     double? width,
     bool compact = false,
+    ResearchNote? note,
+    int sourceCount = 0,
   }) {
     // Excerpts and images show a title row only when they have a title (or
     // one is being typed).
@@ -435,6 +450,36 @@ class _NodeSpec {
           null,
           Size(s.width + 32, s.height + 18),
           suspended: card.suspended,
+        );
+      case CardKind.research when note != null:
+        // The card's width is the user's; a compact map shows the title
+        // line and the way to the note only.
+        final scale = cache._textScaler.scale;
+        final textWidth = cardWidth - researchInset;
+        final title = cache._clip(note.title, titleStyle, textWidth, compact ? 1 : researchTitleLines);
+        final body = compact ? '' : cache._clip(note.body.trim(), researchBodyStyle, textWidth, researchBodyLines);
+        final titleLines = cache._measure(title, titleStyle, textWidth).lines;
+        final bodyLines = body.isEmpty ? 0 : cache._measure(body, researchBodyStyle, textWidth).lines;
+        final height =
+            10 +
+            scale(14) +
+            MMSpacing.xs +
+            titleLines * scale(17) +
+            (bodyLines == 0 ? 0 : MMSpacing.xxs + bodyLines * scale(16)) +
+            MMSpacing.s -
+            MMSpacing.xxs +
+            scale(toggleLineHeight) +
+            10;
+        return _NodeSpec._(
+          _Kind.research,
+          title,
+          body,
+          l.researchCardKind(sourceCount),
+          null,
+          Size(cardWidth, height.ceilToDouble()),
+          label: note.title,
+          suspended: card.suspended,
+          resizable: true,
         );
       case CardKind.note:
         // A note is measured as it is drawn: formatted, or with its markup

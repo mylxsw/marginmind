@@ -19,6 +19,7 @@ export 'src/tokens/metrics.dart';
 export 'src/tokens/motion.dart';
 export 'src/tokens/typography.dart';
 export 'src/widgets/buttons.dart';
+export 'src/widgets/choice.dart';
 export 'src/widgets/color_picker.dart';
 export 'src/widgets/empty_state.dart';
 export 'src/widgets/floating_toolbar.dart';

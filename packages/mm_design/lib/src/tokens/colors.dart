@@ -30,6 +30,9 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.onAccent,
     required this.research,
     required this.researchTint,
+    required this.positive,
+    required this.caution,
+    required this.critical,
     required this.glass,
     required this.glassOpaque,
     required this.glassHighlight,
@@ -100,6 +103,13 @@ class MMColors extends ThemeExtension<MMColors> {
   /// [research] at 12% / 20%: research card wash, selected research controls.
   final Color researchTint;
 
+  /// Status text on a 12% wash of itself: done / partial / failed (e.g. a
+  /// source's reading state). Apple's increased-contrast system green,
+  /// orange and red, so the text reads at 4.5:1.
+  final Color positive;
+  final Color caution;
+  final Color critical;
+
   /// Floating control glass.
   final Color glass;
   final Color glassOpaque;
@@ -142,6 +152,9 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF5E5CE6),
     researchTint: Color(0x1F5E5CE6),
+    positive: Color(0xFF248A3D),
+    caution: Color(0xFFC93400),
+    critical: Color(0xFFD70015),
     glass: Color(0xC7FFFFFF),
     glassOpaque: Color(0xFFFFFFFF),
     glassHighlight: Color(0xF2FFFFFF),
@@ -184,6 +197,9 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF7D7AFF),
     researchTint: Color(0x337D7AFF),
+    positive: Color(0xFF30D158),
+    caution: Color(0xFFFF9F0A),
+    critical: Color(0xFFFF453A),
     glass: Color(0xC7323235),
     glassOpaque: Color(0xFF323235),
     glassHighlight: Color(0x24FFFFFF),
@@ -233,6 +249,9 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: onAccent,
       research: research,
       researchTint: researchTint,
+      positive: positive,
+      caution: caution,
+      critical: critical,
       glass: glass,
       glassOpaque: glassOpaque,
       glassHighlight: glassHighlight,
@@ -278,6 +297,9 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: c(onAccent, other.onAccent),
       research: c(research, other.research),
       researchTint: c(researchTint, other.researchTint),
+      positive: c(positive, other.positive),
+      caution: c(caution, other.caution),
+      critical: c(critical, other.critical),
       glass: c(glass, other.glass),
       glassOpaque: c(glassOpaque, other.glassOpaque),
       glassHighlight: c(glassHighlight, other.glassHighlight),

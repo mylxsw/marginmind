@@ -177,6 +177,29 @@ void main() {
     expect(() => editor.saveResearchNote(c, note(), evidence: [changedEvidence]), throwsArgumentError);
   });
 
+  test('editing a note changes it everywhere it is shown, keeping its citations', () {
+    var later = time;
+    final edits = StudySetEditor(newId: () => 'x', now: () => later = later.add(const Duration(minutes: 1)));
+    final c = saved();
+    expect(identical(edits.editResearchNote(c, 'missing', title: 'x'), c), isTrue);
+    expect(identical(edits.editResearchNote(c, 'note', title: '  Finding <1> '), c), isTrue);
+    expect(identical(edits.editResearchNote(c, 'note', title: '   '), c), isTrue);
+    expect(identical(edits.editResearchNote(c, 'note'), c), isTrue);
+    final titled = edits.editResearchNote(c, 'note', title: ' New title ');
+    final n = titled.researchNote('note')!;
+    expect(n.title, 'New title');
+    expect(n.body, note().body);
+    expect(n.edited, isTrue);
+    expect(n.citations.single.evidenceId, 'e');
+    expect(n.updatedAt.isAfter(time), isTrue);
+    final both = edits.editResearchNote(titled, 'note', title: 'T', body: '');
+    expect((both.researchNote('note')!.title, both.researchNote('note')!.body), ('T', ''));
+    // The map card and the source attachment still refer to this one note.
+    expect(both.cards.single.researchNoteId, 'note');
+    expect(both.noteAttachments.every((a) => a.noteId == 'note'), isTrue);
+    expect(StudySetEditor.restore(c, both).researchNote('note')!.title, 'Finding <1>');
+  });
+
   test('deleting PDF and nodes retains notes/evidence and clears their targets/ink', () {
     var c = saved();
     c = editor.addInkStroke(

@@ -5,6 +5,8 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
+import '../../../app/providers.dart';
+import '../../research/research_entry.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -92,6 +94,19 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               await controller.locateHighlightCard(annotationId);
             case ReaderSelectionCommand.deleteHighlight:
               notice = await controller.deleteHighlight(annotationId);
+            case ReaderSelectionCommand.research:
+              if (annotation.quote.isEmpty) return;
+              await researchPassage(
+                Navigator.of(context).context,
+                ref,
+                studySetId: widget.studySetId,
+                documentId: annotation.documentId,
+                pages: annotation.pages,
+                quote: annotation.quote,
+                anchor: globalBounds(context),
+                beforeShow: _dismiss,
+              );
+              return;
             case ReaderSelectionCommand.highlight:
             case ReaderSelectionCommand.note:
               return;
@@ -104,6 +119,20 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
       if (pending is! PendingSelection ||
           command == ReaderSelectionCommand.locateCard ||
           command == ReaderSelectionCommand.deleteHighlight) {
+        return;
+      }
+      if (command == ReaderSelectionCommand.research) {
+        // The launcher keeps the passage; the selection is done.
+        await researchPassage(
+          Navigator.of(context).context,
+          ref,
+          studySetId: widget.studySetId,
+          documentId: pending.documentId,
+          pages: pending.selection.pages,
+          quote: pending.selection.text,
+          anchor: globalBounds(context),
+          beforeShow: _dismiss,
+        );
         return;
       }
       if (command == ReaderSelectionCommand.note) {
@@ -146,6 +175,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         content!.node(existingCard.id, mapId: ref.watch(workspaceProvider(widget.studySetId)).activeMapId) != null;
     // An area excerpt has no text to copy.
     final isArea = annotation != null && annotation.quote.isEmpty;
+    final research = ref.watch(researchAvailableProvider);
+    final c = context.mmColors;
     return TapRegion(
       onTapOutside: (_) {
         if (!_busy) _dismiss();
@@ -196,6 +227,17 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     onPressed: () =>
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
+                  if (research && !isArea) ...[
+                    const MMToolbarDivider(),
+                    MMToolbarButton(
+                      key: const ValueKey('selection-research'),
+                      icon: MMIcons.research,
+                      label: l.research,
+                      tint: c.research,
+                      tooltip: '${l.research}（R）',
+                      onPressed: () => _run(ReaderSelectionCommand.research),
+                    ),
+                  ],
                 ],
               ),
             ),

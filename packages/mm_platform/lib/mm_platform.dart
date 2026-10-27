@@ -14,3 +14,4 @@ export 'src/article_parser.dart';
 
 export 'src/pdf_ocr.dart';
 export 'src/map_export.dart';
+export 'src/external_link.dart';

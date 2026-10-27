@@ -51,6 +51,28 @@ class PendingHighlight extends PendingAction {
   final Rect viewportRect;
 }
 
+/// A research note's mark in the source was clicked: its card pops up.
+class PendingResearchNote extends PendingAction {
+  const PendingResearchNote(this.attachmentId, [this.viewportRect = Rect.zero]);
+
+  final String attachmentId;
+  final Rect viewportRect;
+}
+
+/// The id a research note's attachment is drawn under in the source, so
+/// clicks on it can be told from clicks on highlights.
+String noteMarkId(String attachmentId) => 'note:$attachmentId';
+
+/// What a research note was saved to, for the HUD: [cardId] when the map
+/// got a card, [inSource] when the source got a mark.
+class ResearchNoteSavedNotice extends WorkspaceNotice {
+  const ResearchNoteSavedNotice({required this.noteId, this.cardId, required this.inSource});
+
+  final String noteId;
+  final String? cardId;
+  final bool inSource;
+}
+
 /// Ask the source pane to scroll to a highlight.
 class RevealRequest {
   const RevealRequest(this.documentId, this.page, this.rects, this.nonce);
@@ -1010,10 +1032,149 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void dismissPending() => state = state.copyWith(clearPending: true);
 
-  /// A highlight on the page was clicked.
+  /// A highlight (or a research note's mark) on the page was clicked.
   void tapHighlight(String annotationId, [Rect viewportRect = Rect.zero]) {
+    if (annotationId.startsWith('note:')) {
+      final attachmentId = annotationId.substring(5);
+      if (!content.noteAttachments.any((a) => a.id == attachmentId)) return;
+      state = state.copyWith(pending: PendingResearchNote(attachmentId, viewportRect));
+      return;
+    }
     if (content.annotation(annotationId) == null) return;
     state = state.copyWith(pending: PendingHighlight(annotationId, viewportRect));
+  }
+
+  // ---- research notes -----------------------------------------------------------
+
+  /// Saves a research note with its attachments as one undo step. The note
+  /// id comes from the caller, so a repeated save of the same note is
+  /// ignored instead of creating a second note or card. [cardParentId] puts
+  /// a card in the active map (null: under the root); [splitPoints] become
+  /// note cards under it.
+  Future<ResearchNoteSavedNotice?> saveResearchNote(
+    ResearchNote note, {
+    PdfTarget? source,
+    bool toMap = false,
+    String? cardParentId,
+    List<String> splitPoints = const [],
+    List<Evidence> evidence = const [],
+    List<ResearchSource> sources = const [],
+  }) async {
+    if (content.researchNote(note.id) != null) return null;
+    String? cardId;
+    var saved = false;
+    await _update((c) {
+      if (c.researchNote(note.id) != null) return c;
+      final editor = _editor;
+      final parent = cardParentId != null && c.node(cardParentId, mapId: state.activeMapId) != null
+          ? cardParentId
+          : null;
+      var next = editor.saveResearchNote(
+        c,
+        note,
+        targets: [?source],
+        evidence: evidence,
+        sources: sources,
+        createCard: toMap,
+        parentId: parent,
+      );
+      if (toMap) {
+        cardId = next.cards.lastWhere((card) => card.researchNoteId == note.id).id;
+        for (final point in splitPoints) {
+          next = editor.addNote(next, text: point, parentId: cardId).$1;
+        }
+        next = _expandAncestors(next, cardId!);
+      }
+      saved = true;
+      return next;
+    });
+    if (!saved || !ref.mounted) return null;
+    if (cardId != null) {
+      state = state.copyWith(selectedCardId: cardId);
+      _flash(cardId: cardId);
+    }
+    return ResearchNoteSavedNotice(noteId: note.id, cardId: cardId, inSource: source != null);
+  }
+
+  /// A note's title or text, edited from the details: the map card and the
+  /// source's mark show the same note. One undo step.
+  Future<void> editResearchNote(String noteId, {String? title, String? body}) =>
+      _update((c) => _editor.editResearchNote(c, noteId, title: title, body: body));
+
+  /// Removes one place the note is shown; the note and its citations stay.
+  Future<void> detachResearchNote(String attachmentId) async {
+    await _update((c) => _editor.detachNote(c, attachmentId));
+    if (ref.mounted && state.pending is PendingResearchNote) state = state.copyWith(clearPending: true);
+  }
+
+  /// Deletes a note with its marks and cards; one undo step brings all back.
+  Future<void> deleteResearchNote(String noteId) async {
+    await _update((c) => _editor.deleteNote(c, noteId));
+    if (ref.mounted) state = state.copyWith(clearPending: true);
+  }
+
+  /// Shows the note's place in the source (the first one).
+  void revealNoteInSource(String noteId) {
+    final target = content.noteAttachments
+        .where((a) => a.noteId == noteId)
+        .map((a) => a.target)
+        .whereType<PdfTarget>()
+        .where((t) => content.document(t.documentId) != null)
+        .firstOrNull;
+    if (target == null) return;
+    _revealPdf(target);
+  }
+
+  /// Selects and centers the note's card in the active map (the map comes
+  /// back if it was put aside).
+  Future<void> locateNoteCard(String noteId) async {
+    final card = content.cards
+        .where((c) => c.researchNoteId == noteId && content.node(c.id, mapId: state.activeMapId) != null)
+        .firstOrNull;
+    if (card == null) return;
+    await _update((c) => _expandAncestors(c, card.id), undoable: false);
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      selectedCardId: card.id,
+      locateCardTick: state.locateCardTick + 1,
+      clearPending: true,
+      mapView: MapViewMode.map,
+      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+    );
+    _flash(cardId: card.id);
+  }
+
+  /// Back to where a research started: the page and sentence, or the node.
+  /// False when that place no longer exists.
+  Future<bool> revealAnchor(SourceAnchor anchor) async {
+    switch (anchor.target) {
+      case PdfTarget target when content.document(target.documentId) != null:
+        _revealPdf(target);
+        return true;
+      case CardTarget(:final cardId):
+        final mapId = anchor.mapId ?? state.activeMapId;
+        if (content.node(cardId, mapId: mapId) == null) return false;
+        if (mapId != state.activeMapId) await selectMap(mapId);
+        if (!ref.mounted) return false;
+        await _update((c) => _expandAncestors(c, cardId), undoable: false);
+        if (!ref.mounted) return false;
+        state = state.copyWith(
+          selectedCardId: cardId,
+          locateCardTick: state.locateCardTick + 1,
+          mapView: MapViewMode.map,
+          layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+        );
+        _flash(cardId: cardId);
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  void _revealPdf(PdfTarget target) {
+    final page = target.pages.first;
+    openDocument(target.documentId);
+    state = state.copyWith(reveal: RevealRequest(target.documentId, page.page, page.rects, ++_revealNonce));
   }
 
   Future<void> locateHighlightCard(String annotationId) async {
@@ -1359,6 +1520,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// written until [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
     if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
+    // A research card shows its note: the note is edited in the details.
+    if (content.card(cardId)!.kind == CardKind.research) return showDetails(cardId);
     _editing = _EditSession(cardId, created: false, previousSelection: state.selectedCardId);
     state = state.copyWith(selectedCardId: cardId, editingCardId: cardId, layout: _layoutShowingMap);
   }
@@ -1773,6 +1936,9 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       identical(a.summaries, b.summaries) &&
       identical(a.bookmarks, b.bookmarks) &&
       identical(a.inkStrokes, b.inkStrokes) &&
+      identical(a.researchNotes, b.researchNotes) &&
+      identical(a.noteAttachments, b.noteAttachments) &&
+      identical(a.evidence, b.evidence) &&
       a.documents.length == b.documents.length &&
       Iterable.generate(a.documents.length).every((i) => sameDocument(a.documents[i], b.documents[i]));
   return ref.watch(

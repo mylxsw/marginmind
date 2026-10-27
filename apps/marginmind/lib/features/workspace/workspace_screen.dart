@@ -165,7 +165,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
                 ],
               ),
-              // Registered now, shown once research is wired in.
+              // Research can be turned off as a whole (researchAvailableProvider).
               if (ref.watch(researchAvailableProvider))
                 MMToolbarGroup(
                   children: [

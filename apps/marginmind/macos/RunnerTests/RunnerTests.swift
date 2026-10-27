@@ -126,6 +126,20 @@ class RunnerTests: XCTestCase {
     XCTAssertNotNil(invoke("unknown", ["account": account]))
   }
 
+  func testExternalLinksOpenOnlyWebPages() {
+    XCTAssertEqual(ExternalLinkChannel.url(from: ["url": "https://example.com/a?b=1"])?.host, "example.com")
+    XCTAssertNotNil(ExternalLinkChannel.url(from: ["url": "HTTP://example.com"]))
+    for rejected in ["file:///etc/hosts", "javascript:alert(1)", "marginmind://x", "https://", "not a url"] {
+      XCTAssertNil(ExternalLinkChannel.url(from: ["url": rejected]), rejected)
+    }
+    XCTAssertNil(ExternalLinkChannel.url(from: nil))
+    var value: Any?
+    ExternalLinkChannel.handle(FlutterMethodCall(methodName: "open", arguments: ["url": "file:///tmp"])) { value = $0 }
+    XCTAssertNotNil(value as? FlutterError)
+    ExternalLinkChannel.handle(FlutterMethodCall(methodName: "other", arguments: nil)) { value = $0 }
+    XCTAssertTrue((value as AnyObject) === FlutterMethodNotImplemented)
+  }
+
   func testReleaseRendererWorkaroundIsPackaged() {
     XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "FLTEnableImpeller") as? Bool, false)
   }

@@ -73,4 +73,24 @@ abstract final class MMIcons {
   static const IconData zoomOut = CupertinoIcons.minus;
   static const IconData import = CupertinoIcons.tray_arrow_down; // square.and.arrow.down
   static const IconData library = CupertinoIcons.square_grid_2x2;
+
+  // Research: intents, modes, sources and their states.
+  static const IconData explain = CupertinoIcons.lightbulb; // lightbulb
+  static const IconData interpret = CupertinoIcons.book; // book
+  static const IconData verify = CupertinoIcons.checkmark_seal; // checkmark.seal
+  static const IconData video = CupertinoIcons.play_rectangle; // play.rectangle
+  static const IconData paper = CupertinoIcons.doc_richtext; // doc.richtext
+  static const IconData translate = CupertinoIcons.textformat_abc; // character.book.closed
+  static const IconData web = CupertinoIcons.globe; // globe
+  static const IconData offline = CupertinoIcons.wifi_slash; // wifi.slash
+  static const IconData later = CupertinoIcons.clock; // clock
+  static const IconData history = CupertinoIcons.arrow_counterclockwise; // clock.arrow.circlepath
+  static const IconData lock = CupertinoIcons.lock; // lock
+  static const IconData link = CupertinoIcons.link; // link
+  static const IconData openExternal = CupertinoIcons.arrow_up_right_square; // arrow.up.right.square
+  static const IconData warning = CupertinoIcons.exclamationmark_triangle; // exclamationmark.triangle
+  static const IconData check = CupertinoIcons.checkmark; // checkmark
+  static const IconData stop = CupertinoIcons.stop_fill; // stop.fill
+  static const IconData send = CupertinoIcons.arrow_up; // arrow.up
+  static const IconData evidence = CupertinoIcons.quote_bubble; // quote.bubble
 }

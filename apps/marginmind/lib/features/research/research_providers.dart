@@ -80,6 +80,10 @@ class ResearchSessionController extends AsyncNotifier<ResearchSessionState> {
     return engine.state;
   }
 
+  /// The latest state, including writes whose change events have not been
+  /// delivered yet: what the next request will be based on.
+  Future<ResearchSessionState> get current async => (await _ready).state;
+
   Future<ResearchSessionEngine> get _ready async {
     await future;
     return _engine!;
@@ -107,6 +111,8 @@ class ResearchSessionController extends AsyncNotifier<ResearchSessionState> {
   Future<void> readSources(List<String> ids) async =>
       (await _ready).readSources(ref.read(researchExtractorProvider), ids);
   Future<void> updateDrafts(List<Map<String, Object?>> drafts) async => (await _ready).updateDrafts(drafts);
+  Future<void> rename(String question) async => (await _ready).rename(question);
+  Future<void> pasteSource(String sourceId, String text) async => (await _ready).pasteSource(sourceId, text);
 }
 
 /// Explicit creation captures origin once; changing the reader selection later

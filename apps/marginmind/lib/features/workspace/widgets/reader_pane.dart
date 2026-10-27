@@ -11,6 +11,7 @@ import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../../../settings/app_settings.dart';
+import '../../research/widgets/research_note_popover.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
@@ -473,14 +474,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                       anchor: switch (pending) {
                                         PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                                         PendingHighlight(:final viewportRect) => viewportRect,
+                                        PendingResearchNote(:final viewportRect) => viewportRect,
                                       },
-                                      child: SelectionToolbar(
-                                        key: ObjectKey(pending),
-                                        studySetId: widget.studySetId,
-                                        pending: pending,
-                                        pdf: _pdf,
-                                        rootTitle: rootTitle,
-                                      ),
+                                      child: pending is PendingResearchNote
+                                          ? ResearchNotePopover(
+                                              key: ObjectKey(pending),
+                                              studySetId: widget.studySetId,
+                                              attachmentId: pending.attachmentId,
+                                            )
+                                          : SelectionToolbar(
+                                              key: ObjectKey(pending),
+                                              studySetId: widget.studySetId,
+                                              pending: pending,
+                                              pdf: _pdf,
+                                              rootTitle: rootTitle,
+                                            ),
                                     ),
                                   ),
                                 Positioned(
@@ -605,6 +613,24 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               framed: card?.kind == CardKind.image,
             );
           }(),
+      // Research notes attached here: a dashed underline and a mark in the
+      // margin, both opening the note.
+      for (final a in content.noteAttachments)
+        if (a.target case PdfTarget(documentId: final doc, :final pages) when doc == documentId)
+          for (final (i, page) in pages.indexed)
+            MMPdfHighlight(
+              id: noteMarkId(a.id),
+              page: page.page,
+              rects: page.rects,
+              color: Colors.transparent,
+              underline: context.mmColors.research,
+              dashed: true,
+              marker: i == 0 ? context.mmColors.research : null,
+              emphasized: switch (state.pending) {
+                PendingResearchNote(:final attachmentId) => attachmentId == a.id,
+                _ => false,
+              },
+            ),
     ];
   }
 }

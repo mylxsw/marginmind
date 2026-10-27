@@ -268,6 +268,8 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
                 ? (card.title.isEmpty ? (annotation?.quote ?? '') : card.title)
                 : isImage && card.title.isEmpty && f?.id != card.id
                 ? l.imageExcerpt
+                : card.kind == CardKind.research
+                ? l.researchNoteLabel(content.researchNote(card.researchNoteId ?? '')?.title ?? '')
                 : notePlainText(card.title, card.textFormat),
             sub: isExcerpt && (card.title.isNotEmpty || f?.id == card.id) ? annotation?.quote : null,
             meta: annotation == null ? null : l.pageNumber(annotation.page),
