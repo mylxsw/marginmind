@@ -834,12 +834,16 @@ class _Tail extends ConsumerWidget {
     MMHud.show(context, l.copiedHud);
   }
 
-  static AssistantModel? _localModel(WidgetRef ref) => ref
-      .read(assistantServicesProvider)
-      .value
-      ?.enabledModels
-      .where((m) => m.provider == AssistantProvider.ollama && m.localEnabled)
-      .firstOrNull;
+  /// The first local model, unless the conversation already uses one.
+  static AssistantModel? _localModel(WidgetRef ref) {
+    if (ref.read(assistantControllerProvider).model.provider == AssistantProvider.ollama) return null;
+    return ref
+        .read(assistantServicesProvider)
+        .value
+        ?.enabledModels
+        .where((m) => m.provider == AssistantProvider.ollama && m.localEnabled)
+        .firstOrNull;
+  }
 }
 
 /// The facts of a failed answer, for details and bug reports: model and

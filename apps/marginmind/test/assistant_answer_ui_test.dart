@@ -286,6 +286,43 @@ void main() {
       expect(conversationOf(tester).messages, hasLength(2));
     });
 
+    testWidgets('a conversation already on the local model is not offered it again', (tester) async {
+      final archive = MemoryConversationArchive();
+      final state = sdk.AgentState(sessionId: 'local-1');
+      state.metadata['assistant.view'] = Conversation(
+        id: 'local-1',
+        studySetId: 'demo-1',
+        title: '本机',
+        model: const AssistantModel(
+          provider: AssistantProvider.ollama,
+          model: 'llama',
+          endpoint: 'http://localhost:11434',
+          localEnabled: true,
+          serviceId: 'legacy-ollama',
+        ),
+        messages: [
+          Message(id: '1000-1', requestId: 'r', role: MessageRole.user, text: '问'),
+          Message(
+            id: '1000-2',
+            requestId: 'r',
+            role: MessageRole.agent,
+            status: MessageStatus.error,
+            errorKind: ResearchFailureKind.network,
+          ),
+        ],
+      ).toJson();
+      await archive.save(state);
+      await openAssistantApp(
+        tester,
+        archive: archive,
+        prefs: {'assistant.model.ollama': 'llama', 'assistant.localEnabled': true},
+      );
+      await tester.tap(find.byKey(const ValueKey('sidebar-conversation-local-1')));
+      await pumpFor(tester, 20);
+      expect(find.text('网络不可用'), findsOneWidget);
+      expect(find.text('改用本机模型'), findsNothing);
+    });
+
     testWidgets('“Organize into the map” asks again with the same context; hidden on organize answers', (tester) async {
       final app = await openAssistantApp(tester, client: ScriptClient([answer('解释'), answer('整理好了')]));
       await app.workspace.onSelectionCommitted(

@@ -15,11 +15,25 @@ class _CitationSyntax extends md.InlineSyntax {
   }
 }
 
+/// `**…**` that CommonMark leaves open in Chinese: a closing `**` after
+/// full-width punctuation and before a character (`**一句话：**这句…`) is not
+/// right-flanking. Only spans that end in such punctuation are taken here;
+/// everything else follows the standard rules.
+class _CjkStrongSyntax extends md.InlineSyntax {
+  _CjkStrongSyntax() : super(r'\*\*(?=\S)([^*\n]*?[\u3000-\u303f\uff01-\uff60])\*\*', startCharacter: 0x2a);
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element('strong', md.InlineParser(match[1]!, parser.document).parse()));
+    return true;
+  }
+}
+
 /// GitHub-flavored Markdown (tables, strikethrough) plus citations. HTML in
 /// an answer stays text.
 md.Document _document() => md.Document(
   extensionSet: md.ExtensionSet.gitHubFlavored,
-  inlineSyntaxes: [_CitationSyntax()],
+  inlineSyntaxes: [_CitationSyntax(), _CjkStrongSyntax()],
   encodeHtml: false,
   withDefaultBlockSyntaxes: true,
 );

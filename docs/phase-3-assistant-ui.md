@@ -97,7 +97,7 @@
 | --- | --- |
 | 高度 | 44（`toolbarGroupHeight + MMSpacing.s`，与 `RightPanelHeader` 一致），底部 1pt `separator`，左 16、右 8 |
 | 标题按钮 | 徽标 22×22（圆角 7，`research` 底、白色 `MMIcons.ai` 13）+ 对话标题（`headline`，单行省略）+ 下拉 chevron 11。整块可点，悬停 `hover`，圆角 7 |
-| 右侧 | `MMIconButton` ×3（28 / 图标 13）：新对话 `MMIcons.add`、设置 `MMIcons.settings`（tooltip“设置（⌘,）”）、关闭 `MMIcons.close`（tooltip “关闭（⌃⌘R）”）。三个按钮作为一组，用 `Spacer` 推到**最右侧**，贴右内边距 8；标题按钮用 `Flexible`（`FlexFit.loose`），不能让按钮组停在中间 |
+| 右侧 | `MMIconButton` ×3（28 / 图标 13）：新对话 `MMIcons.add`、设置 `MMIcons.settings`（tooltip“设置（⌘,）”）、关闭 `MMIcons.close`（tooltip “关闭（⌃⌘R）”）。三个按钮作为一组贴在**最右侧**，贴右内边距 8。标题按钮放在 `Expanded` + 左对齐的 `Align` 里占满剩余宽度（GUL-537：`Flexible` + `Spacer` 会平分空余宽度，标题短时按钮组停在中间，widget 测试断言关闭按钮贴右边） |
 | 标题文字 | 空对话和未配置时为“助手”。首条消息后按**主题**命名，不直接用原问题：选区是短词（≤ 12 字）且问题含代词（他 / 她 / 它 / 这个 / 这段 / 这里）时，把代词换成选区（“他是谁”→“伊梅尔特是谁”）；其他情况用同一服务里更快的小模型（没有时用当前模型）生成 ≤ 24 字的短标题，生成前先用截断的问题占位。对话记录里可重命名 |
 | 点标题 | 消息区换成对话记录（见 2.13），再点一次或选中一条返回 |
 
@@ -122,10 +122,10 @@
 | 引用原文 | `>` 渲染为左侧 2pt `separator` 竖线 + 10 内边距，`readingExcerpt` 12.5（宋体）、`excerptText`，与“自己的话”区分（沿用设计原则 3） |
 | 表格 | 对比类内容用表格：`footnote` 12，表头 `secondaryLabel` 600，行间 1pt `separator`，无外框 |
 | 分隔线 | `---` 渲染为 1pt `separator`，上下 12 |
-| 结论框 | 查证类：内边距 8×10、圆角 10，`positive` 10% 底（“部分可靠”用 `caution` 12%） |
+| 结论框 | 查证类：内边距 8×10、圆角 10，`positive` 10% 底（“部分可靠”用 `caution` 12%）。GUL-537：查证回答的第一个段落即结论（提示词要求先一句加粗结论）；含“部分 / 不可靠 / 存疑 / 有误”或英文对应词时用 `caution` |
 | 其他 | 粗斜体、行内代码、链接（外开浏览器，经 `UrlPolicy`）。生成中正文末尾显示光标（0.2）。可选中复制 |
 
-Markdown 解析用成熟库（`markdown` 包 + 自定义 `MarkdownStyleSheet`），不要自写正则；流式时按块（段落、列表、表格、引用）增量渲染，未闭合的块先按纯文本显示。
+Markdown 解析用成熟库（`markdown` 包，GitHub 风格扩展 + `[page:N]` / `[source:N]` 的引用语法；排版按本表的令牌自己渲染，不引入额外 UI 包），不要自写正则；流式时按块（段落、列表、表格、引用）增量渲染，未闭合的块先按纯文本显示。
 
 **引用 chip**（正文内联）：
 
@@ -357,6 +357,15 @@ Markdown 解析用成熟库（`markdown` 包 + 自定义 `MarkdownStyleSheet`）
 | 按需字段 | Cloudflare → “账户 ID”+“API Token”（Token 需要 Workers AI 与 AI Gateway 的读取权限）；SearXNG → “地址”（如 `http://localhost:8080`）；Tavily / Brave Search → “API Key”。字段修改后自动检查，失败时在卡片末行右对齐显示原因（“API Key 无效”“连不上搜索服务”） |
 | 不可用提示 | 选“模型自带搜索”而默认模型不带搜索时，卡片下方一行 `caution` 提示：“X 不带搜索，联网时请改用其他搜索服务”。这是唯一的说明文字，因为缺了它联网会悄悄失效 |
 | 后端 | 搜索服务实现统一的 `web_search` 后端接口（ADR 0002）：模型自带搜索复用供应商检索，Cloudflare 走 `POST https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/websearch/`（`Authorization: Bearer <token>`，请求体 `{query, limit, options: {gateway: {id: "default"}}}`，provider 用默认值，结果取 `items[].url / title / description`），SearXNG / Tavily / Brave 走各自 API；论文检索（OpenAlex）固定开启，不需要配置 |
+
+**实现说明（GUL-537）**：
+
+- 设置“窗口”实现为窗口大小（680×640，窗口矮时随之变矮）的表单面板（`showSettings`，`lib/settings/settings_window.dart`）：Flutter 桌面版没有稳定的多窗口，单独开原生窗口代价大；面板同样是 ⌘, 打开、Esc 关闭、四个图标标签页。以后有多窗口时只需替换外壳。
+- 服务图标用各家官方标志（Simple Icons，CC0）：`tool/brand_logos.py` 把 SVG 路径转成 `service_marks.g.dart` 里的 `Path`，不引入 SVG 依赖。品牌底色（Anthropic `#D97757`、OpenAI 黑、Gemini 白底渐变星、Ollama 白底）属于标志本身，是令牌规则的例外，只在 `service_logo.dart` 里。OpenAI 兼容服务的地址是 `api.openai.com` 时显示 OpenAI 标志并走 Responses（可用模型自带搜索），否则显示首字母并走 Chat Completions。
+- 新建服务的磁贴是 Anthropic / OpenAI 兼容 / Google Gemini / Ollama（本机）四个；添加 Ollama 即视为允许使用本机服务。名称、地址、Key 停顿 0.7 秒后保存，地址或 Key 保存后再检查连接。
+- 移除服务前确认一次（会同时删除 Key，对话保留）。
+- 输入框下的“未配置”卡片复用同类型的旧服务（迁移来的、还没有 Key 的服务），连接成功后选一个常用模型（Anthropic 优先 Sonnet、OpenAI 优先 `gpt-N`、Gemini 优先 Pro，否则第一个）设为默认。
+- 应用目前没有网络状态来源，2.10 的“断网时云端模型行禁用”暂未实现，断网仍由错误块“改用本机模型”处理。
 
 **不放进设置的东西**：
 

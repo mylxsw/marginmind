@@ -2,6 +2,7 @@ import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
@@ -38,6 +39,17 @@ void main() {
       expect(cite.attributes['marker'], '[page:3]');
       // A marker is a citation even where a link could start.
       expect(parseMarkdownInline('[source:1](x)').first.textContent, isEmpty);
+    });
+
+    test('bold ending in full-width punctuation closes before Chinese text', () {
+      final nodes = parseMarkdownInline('**一句话：**这是结论，**重点**也粗。');
+      final strong = [
+        for (final n in nodes)
+          if (n is md.Element && n.tag == 'strong') n.textContent,
+      ];
+      expect(strong, ['一句话：', '重点']);
+      expect(nodes.map((n) => n.textContent).join(), '一句话：这是结论，重点也粗。');
+      expect(parseMarkdownInline('a ** b ** c').whereType<md.Element>(), isEmpty);
     });
 
     test('streaming splits finished blocks from the open one', () {
