@@ -485,8 +485,38 @@ body.demo-min #desk{padding-right:58px}
 .tstep .ti{width:14px;display:flex;justify-content:center;flex:none}
 .tstep .tx{flex:1;min-width:0}
 .tstep .tm{font-size:10.5px;opacity:.7}
-.ans{line-height:1.7;font-size:13px}
-.ans p{margin:0 0 8px}.ans ul,.ans ol{margin:0 0 8px;padding-left:20px}.ans li{margin:2px 0}
+.act{margin:0 0 10px}
+.act.trace{background:none;border-radius:0;overflow:visible}
+.act-h{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--label2);cursor:pointer;padding:2px 0;border-radius:6px}
+.act-h:hover{color:var(--label)}
+.act-h .warnc{color:var(--warn)}
+.act.live .act-h{cursor:default}
+.shimmer{background:linear-gradient(90deg,var(--label2) 0%,var(--label2) 40%,var(--label) 50%,var(--label2) 60%,var(--label2) 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 1.6s linear infinite}
+@keyframes shim{from{background-position:110% 0}to{background-position:-110% 0}}
+.act-b{display:none;margin:6px 0 2px 5px;padding-left:12px;border-left:1px solid var(--sep)}
+.act.open .act-b,.act.live .act-b{display:block}
+.act-say{font-size:12.5px;line-height:1.65;color:var(--label);margin:4px 0 6px}
+.act-do{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--label2);margin:3px 0}
+.act-do .ai{width:14px;flex:none;display:flex;justify-content:center;margin-top:2px}
+.act-do.now{color:var(--agent)}
+.act-do.fail{color:var(--err)}
+.act-do .x{font-variant-numeric:tabular-nums;opacity:.8;margin-left:4px}
+.act-do small{display:block;color:var(--label2);font-family:var(--mono);font-size:10.5px}
+.ans{line-height:1.75;font-size:13px}
+.ans h4{font-size:13.5px;font-weight:600;margin:16px 0 6px}
+.ans h4:first-child{margin-top:0}
+.ans blockquote{margin:6px 0 10px;padding:2px 0 2px 10px;border-left:2px solid var(--sep);font-family:var(--serif);color:var(--excerpt);font-size:12.5px;line-height:1.75}
+.ans table{border-collapse:collapse;width:100%;margin:6px 0 10px;font-size:12px}
+.ans th,.ans td{border-bottom:1px solid var(--sep);padding:5px 6px;text-align:left;vertical-align:top}
+.ans th{color:var(--label2);font-weight:600}
+.ans hr{border:0;border-top:1px solid var(--sep);margin:12px 0}
+.msg-err .det{margin-top:6px;font-size:11.5px;color:var(--label2);display:none}
+.msg-err.open .det{display:block}
+.msg-err .det div{display:flex;gap:8px;padding:1px 0}
+.msg-err .det span:first-child{width:56px;flex:none}
+.msg-err .det code{font-family:var(--mono);font-size:10.5px}
+.msg-err .dt{color:var(--label2);font-size:11.5px;cursor:pointer;margin-left:6px;font-weight:400}
+.ans p{margin:0 0 10px}.ans ul,.ans ol{margin:0 0 10px;padding-left:20px}.ans li{margin:4px 0}
 .ans h5{font-size:12px;margin:10px 0 4px;color:var(--label2)}
 .ans .verdict{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:rgba(52,199,89,.10);margin:0 0 10px;line-height:1.55}
 .ans .verdict.mid{background:rgba(255,149,0,.12)}
@@ -597,6 +627,173 @@ body.demo-min #desk{padding-right:58px}
 .rnav .rrow .tbtn{height:22px;min-width:22px;padding:0}
 .rnav .track{flex:1;height:1px;background:var(--line);position:relative}
 .rnav .track i{position:absolute;left:0;top:0;height:1px;background:var(--label2)}
+/* ---------- Settings window (⌘,) — a separate macOS window, not a sheet ---------- */
+.setwin-scrim{position:absolute;inset:0;z-index:100;background:rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;animation:fade 160ms}
+.setwin{position:relative;width:880px;max-width:calc(100% - 60px);height:600px;max-height:calc(100% - 50px);background:var(--win);border-radius:14px;box-shadow:0 0 0 .5px var(--hair),0 30px 80px rgba(0,0,0,.35);display:flex;overflow:hidden;animation:drop 220ms cubic-bezier(.2,0,0,1)}
+.sw-side{width:200px;flex:none;background:var(--sidebar);padding:10px 8px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--sep)}
+.sw-side .lights{margin-bottom:10px}
+.sw-side .lights span:first-child{cursor:pointer}
+.sw-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.sw-title{height:48px;flex:none;display:flex;align-items:center;padding:0 20px;font-weight:600;font-size:14px;border-bottom:1px solid var(--sep)}
+.sw-body{flex:1;min-height:0;overflow:auto}
+.sw-models{display:flex;height:100%}
+.sw-plist{width:200px;flex:none;border-right:1px solid var(--sep);padding:8px;display:flex;flex-direction:column;gap:2px}
+.sw-plist .row{height:34px}
+.sw-plist-foot{margin-top:auto;display:flex;gap:2px;border-top:1px solid var(--sep);padding-top:6px}
+.plogo{width:22px;height:22px;border-radius:6px;background:var(--fill);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+.pdot{width:7px;height:7px;border-radius:4px;background:var(--ok);flex:none}
+.pdot.idle,.pdot.off{background:var(--fill)}.pdot.err{background:var(--err)}.pdot.busy{background:var(--warn)}
+.sw-pdetail{flex:1;min-width:0;overflow:auto;padding:16px 20px 20px}
+.sw-ph{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sw-name{font:inherit;font-size:16px;font-weight:600;border:0;background:none;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;width:200px}
+.sw-name:focus{background:var(--fill4);box-shadow:0 0 0 2px var(--accentTint)}
+.sw-grid,.sw-form{display:grid;grid-template-columns:96px 1fr;gap:10px 12px;align-items:center;font-size:12.5px}
+.sw-form{padding:20px 24px;grid-template-columns:120px minmax(0,360px)}
+.sw-grid label,.sw-form label{color:var(--label2);text-align:right}
+.sw-key{display:flex;gap:6px;align-items:center}
+.sw-key .ta{flex:1}
+.sw-kc{color:var(--label2);display:flex}
+.sw-actions{display:flex;gap:8px;align-items:center}
+.sw-err{color:var(--err);font-size:11.5px}
+.sw-sec{display:flex;align-items:center;gap:6px;margin:20px 0 8px;font-size:12px;font-weight:600;color:var(--label2)}
+.sw-sec .grow{flex:1}
+.sw-mlist{border-radius:10px;box-shadow:inset 0 0 0 1px var(--sep);overflow:hidden}
+.sw-mrow,.sw-frow{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--sep)}
+.sw-mrow:first-child,.sw-frow:first-child{border-top:0}
+.sw-mrow .grow,.sw-frow .grow{flex:1;min-width:0}
+.sw-mrow.off .sw-mn,.sw-mrow.off .capi{opacity:.45}
+.sw-mn{font-size:13px;font-weight:500;outline:none;border-radius:4px}
+.sw-mn[contenteditable=true]{background:var(--card);box-shadow:0 0 0 2px var(--accent);padding:0 4px}
+.sw-mid{font-family:var(--mono);font-size:10.5px;color:var(--label2);margin-top:1px}
+.capi{display:inline-flex;gap:5px;color:var(--label2)}
+.sw-ctx{font-size:11px;color:var(--label2);width:38px;text-align:right;font-variant-numeric:tabular-nums}
+.sw-mdel{opacity:0;width:22px;height:22px}
+.sw-mrow:hover .sw-mdel{opacity:1}
+.sw-mempty{padding:24px;display:flex;justify-content:center}
+.sw-fetch-scrim{position:absolute;inset:0;background:rgba(0,0,0,.18);display:flex;align-items:flex-start;justify-content:center;z-index:5}
+.sw-fetch{margin-top:48px;width:520px;max-height:calc(100% - 80px);background:var(--win);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),var(--sheetShadow);display:flex;flex-direction:column;overflow:hidden;animation:drop 200ms}
+.sw-fh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--sep)}
+.sw-fh .grow{flex:1}
+.sw-flist{overflow:auto;flex:1;min-height:120px}
+.sw-frow{cursor:default}
+.sw-frow:hover{background:var(--hover)}
+.sw-frow.have{opacity:.5}
+.sw-frow .cbx{margin:0}
+.sw-steps{display:flex;gap:16px;align-items:center}
+.stepper{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 3px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--sep)}
+.stepper button{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.stepper button:hover{background:var(--hover)}
+.stepper b{min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.sw{display:inline-block;vertical-align:middle}
+.mmenu{min-width:220px}
+.setwin.st2{flex-direction:column;width:760px;height:560px}
+.st-top{flex:none;display:flex;flex-direction:column;align-items:center;background:var(--sidebar);border-bottom:1px solid var(--sep);padding:10px 0 6px;position:relative}
+.st-top .lights{position:absolute;left:14px;top:12px}
+.st-tabs{display:flex;gap:4px}
+.st-tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;width:68px;padding:5px 0;border-radius:8px;font-size:11.5px;color:var(--label2)}
+.st-tabs button:hover{background:var(--hover)}
+.st-tabs button.on{background:var(--sel);color:var(--accent)}
+.st-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.st-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--sep);font-size:12.5px}
+.st-row label{color:var(--label2)}
+.st2 .sw-models{flex:1;min-height:0}
+.st2 .sw-mrow{padding:9px 12px}
+/* ---------- Settings, visual pass: grouped inset form like macOS System Settings ---------- */
+.setwin.st2{width:680px;height:640px;background:var(--win)}
+.st-top{background:var(--win);border-bottom:1px solid var(--sep);padding:10px 0 8px}
+.st-tabs button{width:72px;padding:6px 0 5px;gap:3px;font-size:11px}
+.st-tabs button .i.l{width:22px;height:22px}
+.st-tabs button.on{background:var(--fill4);color:var(--label)}
+.st-tabs button.on .i{color:var(--accent)}
+.st-body{overflow:auto;background:var(--canvas)}
+.st-page{width:520px;margin:0 auto;padding:22px 0 40px}
+.st-hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:22px}
+.st-hero-i{width:56px;height:56px;border-radius:14px;background:linear-gradient(160deg,#9B8CFF,#5E5CE6 55%,#4A3FD1);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(94,92,230,.32),inset 0 1px 0 rgba(255,255,255,.35)}
+.st-hero-i .i.l{width:28px;height:28px;stroke-width:1.5}
+.st-hero b{font-size:17px;font-weight:600;letter-spacing:.01em}
+.st-group,.st-card{background:var(--card);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),0 1px 2px rgba(0,0,0,.04);margin-bottom:10px;overflow:hidden}
+.dark .st-group,.dark .st-card{background:rgba(255,255,255,.05);box-shadow:0 0 0 .5px rgba(255,255,255,.08)}
+.st-h{font-size:12px;font-weight:600;color:var(--label2);margin:22px 12px 7px}
+.st-r{display:flex;align-items:center;gap:12px;min-height:40px;padding:0 14px;font-size:13px;position:relative}
+.st-r+.st-r::before{content:"";position:absolute;left:14px;right:0;top:0;height:1px;background:var(--sep)}
+.st-r>span:first-child{flex:none;min-width:72px}
+.st-in{flex:1;min-width:0;border:0;background:none;outline:none;text-align:right;font:inherit;font-size:13px;color:var(--label);padding:6px 0}
+.st-in::placeholder{color:var(--label2);opacity:.7}
+.st-in:focus{color:var(--label)}
+.st-key{flex:1;display:flex;align-items:center;gap:4px;min-width:0}
+.st-key .ib{width:24px;height:24px;color:var(--label2)}
+.st-pop{margin-left:auto;font:inherit;font-size:13px;border:0;border-radius:6px;padding:3px 24px 3px 8px;background:var(--fill4) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4'%3E%3Cpath d='M7 9l5-5 5 5M7 15l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 7px center;appearance:none;-webkit-appearance:none;color:var(--label);outline:none}
+.st-svc{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:default}
+.st-svc:hover{background:var(--hover)}
+.st-svc .i{color:var(--label2)}
+.st-svc-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.st-svc-t b{font-size:13px;font-weight:500}
+.st-svc-t span{font-size:11.5px;color:var(--label2);display:flex;align-items:center;gap:4px}
+.st-bad{color:var(--err) !important}
+.st-card.open .st-svc{border-bottom:1px solid var(--sep)}
+.st-card .st-rows{margin:0}
+.st-sub{font-size:11px;font-weight:600;color:var(--label2);padding:14px 14px 4px;border-top:1px solid var(--sep)}
+.st-m .st-mn{flex:1;min-width:0;outline:none;border-radius:4px}
+.st-m .st-mn[contenteditable=true]{box-shadow:0 0 0 2px var(--accent);padding:0 4px}
+.st-def{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--accent)}
+.st-link{font-size:12px;color:var(--accent);padding:2px 4px;border-radius:5px}
+.st-link:hover{background:var(--accentTint)}
+.st-link.danger{color:var(--err)}
+.st-link.danger:hover{background:rgba(255,59,48,.1)}
+.st-m .st-link{opacity:0}
+.st-m:hover .st-link{opacity:1}
+.st-m .sw-mdel{width:22px;height:22px;color:var(--label2);opacity:0}
+.st-m:hover .sw-mdel{opacity:1}
+.st-add{color:var(--accent);gap:8px;cursor:default}
+.st-add:hover{background:var(--hover)}
+.st-foot{display:flex;align-items:center;padding:8px 10px;border-top:1px solid var(--sep);background:var(--fill4)}
+.st-foot .grow{flex:1}
+.st-addsvc{display:flex;align-items:center;gap:6px;margin:4px 6px;font-size:13px;color:var(--accent);padding:6px 8px;border-radius:8px}
+.st-addsvc:hover{background:var(--accentTint)}
+.plogo2{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;font-weight:700;font-size:14px;color:#fff;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.12)}
+.plogo2.big{width:40px;height:40px;border-radius:10px;font-size:18px}
+.plogo2 .i{color:#fff}
+.logo-anthropic{background:#D97757;font-family:Georgia,serif}
+.logo-openai{background:#111}
+.logo-compat{background:linear-gradient(160deg,#6E7B91,#3F4A5C)}
+.logo-gemini{background:linear-gradient(135deg,#4E8CF7,#9A6CF0 60%,#E3699B)}
+.logo-ollama{background:#fff;color:#111 !important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.logo-ollama .i{color:#111}
+.st-provpick{display:grid;grid-template-columns:repeat(2,140px);gap:6px;padding:8px}
+.st-provpick button{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 6px 10px;border-radius:10px;font-size:12px}
+.st-provpick button:hover{background:var(--hover)}
+.st-sheet{width:460px;border-radius:14px}
+.st-sheet-h{display:flex;align-items:center;gap:12px;padding:16px 18px 10px}
+.st-sheet-h div{display:flex;flex-direction:column;line-height:1.35}
+.st-sheet-h b{font-size:14px}
+.st-sheet-h div span{font-size:12px;color:var(--label2)}
+.st-search{display:flex;align-items:center;gap:6px;margin:0 18px 8px;height:30px;padding:0 10px;border-radius:8px;background:var(--fill4);color:var(--label2)}
+.st-search input{flex:1;border:0;background:none;outline:none;font:inherit;font-size:13px;color:var(--label)}
+.st-picks{margin:0 12px;max-height:320px;min-height:0;flex:none;overflow:auto}
+.st-pick{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;border-radius:7px;font-size:13px}
+.st-pick:hover{background:var(--hover)}
+.st-pick.have{opacity:.55}
+.st-chk{width:18px;height:18px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--line);display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.st-pick.on .st-chk{background:var(--accent);box-shadow:none}
+.st-muted{font-size:11.5px;color:var(--label2)}
+.st-err{display:flex;gap:6px;align-items:center;color:var(--err);font-size:12.5px;padding:10px 8px}
+.st-sheet-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 16px}
+.st-svc .sw{margin-right:2px}
+.st-svc.off .plogo2,.st-svc.off b{opacity:.5}
+.st-m.off .st-mn{color:var(--label2)}
+.st-m .sw{flex:none}
+.st-hero-g{background:linear-gradient(160deg,#5AC8FA,#0A84FF 60%,#0060DF);box-shadow:0 6px 16px rgba(10,132,255,.3),inset 0 1px 0 rgba(255,255,255,.35)}
+.st-seg{margin-left:auto;display:flex;padding:2px;border-radius:7px;background:var(--fill4)}
+.st-seg button{height:24px;padding:0 10px;border-radius:5px;font-size:12px;color:var(--label2);white-space:nowrap}
+.st-seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.st-r>span.st-mn:first-child{flex:1;min-width:0}
+.st-r .st-bad{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px}
+.st-note{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--warn);margin:2px 14px 0}
+
+
+.mmenu .capi{opacity:.7}
+.mi:hover .capi{color:#fff}
+.as-acts{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none}
 </style>
 </head>
 <body>
@@ -676,6 +873,7 @@ body.demo-min #desk{padding-right:58px}
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4v4.5H15"/></symbol>
 <symbol id="i-cardplus" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M12 9v6M9 12h6"/></symbol>
 <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
 </defs>
 </svg>
 
@@ -713,7 +911,7 @@ body.demo-min #desk{padding-right:58px}
         <button data-layout="map" title="脑图（⌘3）"><svg class="i s"><use href="#i-map"/></svg></button>
       </div>
       <div class="capsule">
-        <button class="tbtn research" id="researchToggle" data-act="togglePanel" data-tip><svg class="i"><use href="#i-spark"/></svg><span class="lbl">助手</span><span class="tip">助手（⌃⌘R）</span></button>
+        <button class="tbtn research" id="researchToggle" data-act="togglePanel" data-tip><svg class="i"><use href="#i-spark"/></svg><span class="tip">助手（⌃⌘R）</span></button>
       </div>
     </div>
 
@@ -817,7 +1015,7 @@ const now = () => { const d = new Date(); return `${d.getHours()}:${String(d.get
 const PAGE42 = `
 <div class="run-head"><span>第 3 章　判断与启发</span><span>认知科学入门</span></div>
 <h3>3.2　锚定效应</h3>
-<p>当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。特沃斯基和卡尼曼把这种现象称为<span class="hl y" data-hl="h1">锚定效应</span>。</p>
+<p>当人们需要估计一个未知的数量时，往往会先想到某个数字，再从它出发进行调整。问题在于，这种调整通常是不充分的：最初出现的数字——哪怕与问题毫无关系——会把最终的估计“拉”向自己。<span id="s-tversky">特沃斯基</span>和卡尼曼把这种现象称为<span class="hl y" data-hl="h1">锚定效应</span>。</p>
 <p>在一项经典实验中，研究者先转动一个动过手脚的幸运轮，让它停在 10 或 65，然后请被试估计联合国中非洲国家所占的比例。看到 10 的人给出的估计中位数是 25%，看到 65 的人则是 45%。<span id="s-claim">一个明显随机的数字，竟能让估计相差将近一倍。</span></p>
 <p>锚定并不局限于实验室。<span class="hl g" data-hl="h2">房地产经纪人在看过不同的挂牌价之后，对同一套房子的估价出现了显著差异，而他们大多否认自己受到了挂牌价的影响。</span>法官在量刑时、谈判者在出价时，也会被首先提出的数字所牵引。</p>
 <p>关于锚定为什么会发生，目前有两种主要解释。<span id="s-mech">一种认为它来自“调整不足”：人们从锚出发，调整到一个似乎合理的范围边缘就停下了；另一种认为它是一种“选择性通达”：锚激活了与之相容的信息，使人更容易想到支持锚值的证据。</span>两种机制可能在不同情境下各自起作用。</p>
@@ -881,7 +1079,7 @@ function freshState() {
     zoom: 1, pan: { x: 30, y: 0 }, density: 'full', selected: null, expanded: new Set(), widths: {},
     nodes: initialNodes(), panel: { open: false, mode: 'chat', detailId: null, list: false },
     chats: [], chat: null, props: {}, comp: { text: '', items: [], autoOff: false, web: true, slash: null },
-    model: 'Claude Sonnet', local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
+    providers: null, defaults: { chat: 'p1|claude-sonnet-4-5' }, searchBy: 'model', searxng: '', limits: { searches: 3, pages: 5 }, ctxPrefs: { page: true, node: true, title: 'auto' }, local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
     notes: {}, anchors: [], undo: [], scene: null,
   };
 }
@@ -1152,7 +1350,7 @@ function showFtb(hlEl) {
       : `<button class="tbtn" data-ftb="hl" data-tip>${ic('hl')}<span class="tip">仅高亮（H）</span></button>`)
     + `<button class="tbtn" data-ftb="copy" data-tip>${ic('copy')}<span class="tip">复制（⌘C）</span></button>`
     + (isHl ? '' : `<button class="tbtn" data-ftb="note" data-tip>${ic('note')}<span class="tip">摘录并添加笔记</span></button>`)
-    + `<span class="tdiv"></span><button class="tbtn research" data-ftb="ask" data-tip>${ic('spark')}<span class="lbl">问助手</span><span class="kbd">A</span><span class="tip">问助手（⇧⌘E）</span></button>`;
+    + `<span class="tdiv"></span><button class="tbtn research" data-ftb="ask" data-tip>${ic('spark')}<span class="tip">问助手（A · ⇧⌘E）</span></button>`;
   placePop(f, pendingSel.rect, 'above');
 }
 function excerpt(color) {
@@ -1409,6 +1607,7 @@ const SOURCES = {
   3: { kind: 'web', title: '锚定效应：从幸运轮实验到现实决策', site: 'psychspace.example.org · 2024-03', paras: ['锚定效应最早由特沃斯基和卡尼曼在 1974 年系统描述。', '<mark>在房地产经纪人的现场研究中，挂牌价高 12% 的一组给出的评估价平均高出约 10%，而大多数经纪人表示自己“没有参考挂牌价”。</mark>', '“考虑相反的情况”是目前证据最充分的减弱方法之一。'] },
   4: { kind: 'paper', title: 'Explaining the enigmatic anchoring effect: mechanisms of selective accessibility', site: 'J. Pers. Soc. Psychol. · 1997 · Mussweiler & Strack', paras: ['<mark>Anchoring effects are the result of the selective accessibility of anchor-consistent knowledge.</mark>'] },
   5: { kind: 'paper', title: 'The anchoring-and-adjustment heuristic: why the adjustments are insufficient', site: 'Psychological Science · 2006 · Epley & Gilovich', paras: ['<mark>Adjustments from self-generated anchors tend to be insufficient because people stop adjusting once a plausible value is reached.</mark>'] },
+  7: { kind: 'web', title: 'Amos Tversky — 生平与主要研究', site: 'encyclopedia.example.org · 2025-02', paras: ['<mark>阿莫斯·特沃斯基（1937–1996），以色列裔美国认知心理学家，与丹尼尔·卡尼曼合作研究不确定性下的判断与决策。</mark>', '<mark>卡尼曼 2002 年获诺贝尔经济学奖时，特沃斯基已去世，未能共同获奖。</mark>'] },
   6: { kind: 'video', title: '锚定效应 5 分钟图解（中文字幕）', site: '视频 · 5:12 · 有字幕', paras: ['（视频字幕摘要）先展示幸运轮，再让观众估计……'] },
 };
 const KIND_IC = { web: 'globe', paper: 'paper', video: 'play', image: 'image' };
@@ -1431,7 +1630,7 @@ function ctxLabel(it) {
   if (it.type === 'sel') return `“${it.quote.slice(0, 22)}${it.quote.length > 22 ? '…' : ''}”`;
   if (it.type === 'node') return `脑图 · ${(nodeById(it.id)?.title || nodeById(it.id)?.quote || '节点').slice(0, 14)}`;
   if (it.type === 'branch') return `分支 · ${nodeById(it.id)?.title || ''}`;
-  if (it.type === 'page') return `${DOCS[it.doc].name.replace('.pdf', '')} · 第 ${it.page} 页`;
+  if (it.type === 'page') return `第 ${it.page} 页 · ${DOCS[it.doc].name.replace('.pdf', '')}`;
   if (it.type === 'doc') return `整本 · ${DOCS[it.doc].name}`;
   if (it.type === 'map') return '整张主脑图';
   return '';
@@ -1441,8 +1640,8 @@ function ctxIcon(it) { return { sel: 'hl', node: 'map', branch: 'map', page: 'do
 function autoCtx() {
   const L = S.layout, out = [];
   const n = S.selected && nodeById(S.selected);
-  if (n && L !== 'reader' && !S.comp.items.some(x => x.id === n.id)) out.push({ type: 'node', id: n.id, auto: true });
-  if (L !== 'map' && !S.comp.items.some(x => x.type === 'sel')) out.push({ type: 'page', doc: S.doc, page: DOCS[S.doc].pages[0].no, auto: true });
+  if (n && S.ctxPrefs.node && L !== 'reader' && !S.comp.items.some(x => x.id === n.id)) out.push({ type: 'node', id: n.id, auto: true });
+  if (S.ctxPrefs.page && L !== 'map' && !S.comp.items.some(x => x.type === 'sel')) out.push({ type: 'page', doc: S.doc, page: DOCS[S.doc].pages[0].no, auto: true });
   return S.comp.autoOff ? [] : out;
 }
 
@@ -1458,6 +1657,9 @@ function detectSkill(text) {
   if (/视频|图解|动画/.test(t)) return 'video';
   if (/总结|概括|要点/.test(t)) return 'summarize';
   if (/避免|减弱|怎么办|应对|克服/.test(t)) return 'debias';
+  if (t === '__flaky') return 'flaky';
+  if (t === '__broken') return 'broken';
+  if (/是谁|谁是|什么人/.test(t)) return 'who';
   if (/解释|是什么|什么意思|讲讲|举.*例/.test(t)) return 'explain';
   return 'chat';
 }
@@ -1476,9 +1678,26 @@ function planFor(text, ctx) {
     : sub.kind === 'node' ? ['map', `读取分支「${sub.text}」：${S.nodes.filter(n => n.parent === sub.node?.id).length} 个子节点`] : ['doc', '读取第 42 页正文'];
   const term = /锚|anchor/i.test(sub.text) || sub.kind === 'page' ? '锚定效应' : /可得/.test(sub.text) ? '可得性启发' : sub.text.slice(0, 12);
   const P = { skill, web: false, steps: [readStep], cites: [], prop: null, title: text.slice(0, 24) };
-  if (skill === 'explain' || skill === 'chat') {
+  if (text === '__fallback') {
+    P.steps = [['say', '这次不调用工具，直接根据你选的内容和本页原文回答。']];
+    P.answer = `<p><b>一句话：</b>这段讲的是数字化转型里“哪些能力可以外包、哪些必须自己掌握”。</p><h4>要点</h4><ul><li>核心竞争力不能外包，只有非核心业务才适合外包。</li><li>外包要建立在双方紧密关联、高度信任的基础上。</li><li>开发编程、软件实施、维护支持这类服务属于非核心能力，可以外包。</li></ul>`;
+    P.title = '解释：业务外包的原则';
+  } else if (skill === 'flaky') {
+    P.steps = [['say', '先读你选的这段，再结合前后文解释。'], ['fail', '读取所选内容失败', 3, '模型请求了不存在的工具 read_selction'], ['say', '工具调用连续出错，改为直接根据已附带的原文回答。']];
+    P.answer = planFor('__fallback', ctx).answer;
+    P.title = '解释：业务外包的原则';
+  } else if (skill === 'broken') {
+    P.steps = [['say', '先读你选的这段。'], ['fail', '读取所选内容失败', 8, '模型请求了不存在的工具 read_selction'], ['abort', [['模型', modelLabel(currentModelKey()) + ' · ' + (findModel(currentModelKey())?.p.name || '')], ['失败', '连续 8 次调用不存在的工具 read_selction'], ['已停止', '达到单轮工具调用上限（20 次）']]]];
+    P.answer = ''; P.title = '解释：业务外包的原则';
+  } else if (skill === 'who') {
+    P.web = true; P.cites = [7];
+    P.steps.splice(1, 0, ['say', '书里没写他是谁，联网查一下。']);
+    P.steps.push(['globe', '联网搜索：Amos Tversky'], ['read', '阅读 1 个来源']);
+    P.answer = `<p><b>阿莫斯·特沃斯基</b>（Amos Tversky，1937–1996），认知心理学家，和卡尼曼一起研究不确定性下的判断 ${C(7)}。</p><ul><li>书里提到他，是因为锚定效应出自两人的研究 ${L42}。</li><li>卡尼曼 2002 年获诺贝尔经济学奖时，他已去世 ${C(7)}。</li></ul>`;
+    P.title = '特沃斯基是谁';
+  } else if (skill === 'explain' || skill === 'chat') {
     P.answer = sub.kind === 'sel' && /调整不足|选择性通达/.test(sub.text)
-      ? `<p>这段话在说：锚定为什么会发生，有两种互补的解释 ${LMECH}。</p><ul><li><b>调整不足</b>：从锚出发往合理方向调，调到“差不多”就停了——停得太早。像从 65 往下估，估到 50 觉得“可以了”。</li><li><b>选择性通达</b>：锚让你优先想起和它一致的信息。听到 65，脑子里先冒出“非洲国家很多”的证据。</li></ul><p><b>区别</b>：前者是<i>调整过程</i>出了问题，后者是<i>回忆内容</i>被带偏。作者认为两者可能在不同情境下各自起作用。</p>`
+      ? `<p><b>一句话：</b>这段在回答“锚定为什么会发生”，给出了两种互补的解释 ${LMECH}。</p><h4>1. 调整不足</h4><p>从锚出发往合理方向调，调到“差不多”就停了——停得太早。</p><blockquote>从 65 往下估，估到 50 觉得“可以了”，于是停在一个偏高的位置。</blockquote><h4>2. 选择性通达</h4><p>锚让你优先想起和它一致的信息，判断被回忆的内容带偏。</p><blockquote>听到 65，脑子里先冒出“非洲国家很多”的证据。</blockquote><h4>两者的区别</h4><table><tr><th></th><th>出问题的环节</th><th>典型场景</th></tr><tr><td>调整不足</td><td>调整过程</td><td>自己先想出一个数</td></tr><tr><td>选择性通达</td><td>回忆内容</td><td>别人给出一个数</td></tr></table>`
       : term === '可得性启发'
       ? `<p><b>可得性启发</b>：判断一件事有多常见时，人们用“想起来有多容易”来代替“实际有多频繁”。</p><ul><li>飞机失事报道多、画面强烈 → 很容易想起 → 高估风险。</li><li>车祸天天发生却少上新闻 → 想不起来 → 低估风险。</li></ul><p><b>和锚定的区别</b>：锚定是被一个<i>起点数字</i>拉偏；可得性是被<i>容易想起的例子</i>拉偏。</p>`
       : `<p><b>锚定效应</b>：估计一个未知数时，人们先抓住一个起点（“锚”），再从它出发调整——但往往调整得不够，结果被锚“拉”了过去 ${L42}。</p><p>原文的例子很典型：</p><ul><li>幸运轮停在 <b>10</b> 的人，估计中位数是 25%；停在 <b>65</b> 的人是 45% ${LCLAIM}。</li><li>关键在于：锚<b>明显是随机的</b>，影响依然存在。</li></ul><p><b>生活里的例子</b>：商品先标“原价 999”，再卖 399，你会觉得便宜——999 就是锚。</p><p><b>一句话记住</b>：先听到的数字，会悄悄变成你的参照系。</p>`;
@@ -1488,6 +1707,7 @@ function planFor(text, ctx) {
     P.title = '翻译所选内容';
   } else if (skill === 'verify') {
     P.web = true; P.cites = [1, 2, 3];
+    P.steps.splice(1, 0, ['say', '先看原文给的数字，再找原始论文和复现研究核对。']);
     P.steps.push(['globe', '联网搜索：anchoring wheel of fortune Tversky Kahneman 1974'], ['paper', '检索论文：anchoring replication Many Labs（OpenAlex）'], ['read', '阅读 3 个来源，核对原文数字']);
     P.answer = `<div class="verdict">${ic('check', 's')}<span><b>基本可靠</b>　数字与原始论文一致，并且被大规模复现过；但“将近一倍”只适用于这道题，不能推广为普遍幅度。</span></div><ul><li>原始实验：锚值 10 与 65 两组的估计中位数分别是 25% 和 45% ${C(1)}，与书中 ${LCLAIM} 一致。</li><li>36 个实验室的复现中，锚定是<b>最稳定</b>的效应之一，但效应量随题目差异很大 ${C(2)}。</li><li>现场研究里，专业人士（房产经纪人、法官）同样受影响 ${C(3)}。</li></ul><h5>建议这样记</h5><p>“随机的锚也能显著拉偏估计（经典实验约 25% vs 45%）；效应稳定，但幅度视情境而定。”</p>`;
     P.title = '查证：随机数字能让估计差一倍？';
@@ -1542,22 +1762,26 @@ function send(text, opts = {}) {
   if (!text) return;
   let c = activeChat(); if (!c || opts.fresh) c = newChat();
   if (c.msgs.some(m => m.status === 'running')) return hud('上一条还在生成，可以先停止');
-  const P = planFor(text, items);
-  if (!c.msgs.length) c.title = P.title;
+  const P = planFor(opts.plan || text, items);
+  if (!c.msgs.length) c.title = titleFor(text, items, P);
+  c.model = c.model || S.defaults.chat; syncLocal();
   c.msgs.push({ role: 'user', text, ctx: items.map(x => ({ ...x })) });
-  const m = { role: 'agent', id: uid('m'), skill: P.skill, steps: [], html: '', status: 'running', web: P.web, cites: P.cites, plan: P, ctx: items };
+  const m = { role: 'agent', id: uid('m'), skill: P.skill, steps: [], html: '', status: 'running', web: P.web, cites: P.cites, plan: P, planKey: opts.plan, ctx: items };
   c.msgs.push(m); c.at = now();
   S.comp.items = []; S.comp.text = ''; S.comp.autoOff = false; S.comp.slash = null;
   if (!S.panel.open || S.panel.mode !== 'chat') { S.panel.mode = 'chat'; openPanel('toolbar'); }
   renderPanel(); renderSessions(); run(c, m);
 }
 function run(c, m) {
-  const P = m.plan; clearRun(m); m.status = 'running'; m.err = null; m.steps = []; m.html = '';
+  const P = m.plan; clearRun(m); m.status = 'running'; m.err = null; m.diag = null; m.steps = []; m.html = ''; m.t0 = Date.now(); m.t1 = null;
   const T = (ms, fn) => (runT[m.id] = runT[m.id] || []).push(setTimeout(() => { if (m.status !== 'running') return; fn(); paintMsgs(); renderSessions(); }, ms));
   // Offline with a cloud model: fail honestly, offer a local model instead of pretending.
-  if (!S.net && !S.local) { T(700, () => { m.status = 'error'; m.err = 'net'; }); return; }
+  if (!S.net && !S.local) { T(700, () => { m.status = 'error'; m.err = 'net'; m.diag = [['服务', findModel(currentModelKey())?.p.name || ''], ['地址', (findModel(currentModelKey())?.p.base || '').replace(/^https?:\/\//, '')], ['原因', '连接超时（30 秒）']]; m.t1 = Date.now(); }); return; }
   let t = 300;
   P.steps.forEach((s, i) => {
+    if (s[0] === 'say') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ say: s[1] }); }); t += 500; return; }
+    if (s[0] === 'fail') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ i: 'x', t: s[1], sub: s[3], n: s[2], state: 'fail' }); }); t += 900; return; }
+    if (s[0] === 'abort') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.status = 'error'; m.err = 'tool'; m.diag = s[1]; m.t1 = Date.now(); }); t += 10; return; }
     const skip = !S.net && ['globe', 'paper', 'play'].includes(s[0]);
     T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ i: s[0], t: s[1] + (skip ? ' — 已跳过（当前断网）' : ''), state: skip ? 'skip' : 'now' }); });
     t += skip ? 300 : 650 + i * 120;
@@ -1565,10 +1789,10 @@ function run(c, m) {
   T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); });
   let answer = P.answer;
   if (!S.net && P.web) { answer = `<p class="offnote">${ic('wifioff', 'xs')}断网，未联网核对</p>` + answer.replace(/<span class="cite" [^>]*>\d<\/span>/g, ''); m.cites = []; m.web = false; }
-  const blocks = answer.match(/<(p|ul|ol|div|h5)[\s\S]*?<\/\1>/g) || [answer];
+  const blocks = answer.match(/<(p|ul|ol|div|h4|h5|blockquote|table)[\s\S]*?<\/\1>/g) || [answer];
   blocks.forEach((b, i) => T(t + 200 + i * 280, () => { m.html += b; }));
   T(t + 300 + blocks.length * 280, () => {
-    m.status = 'done';
+    m.status = 'done'; m.t1 = Date.now();
     if (P.prop) { const id = uid('p'); S.props[id] = { ...P.prop, id, status: 'pending', off: [] }; m.prop = id; }
   });
 }
@@ -1581,9 +1805,9 @@ function renderPanel() {
   const c = activeChat();
   rp.innerHTML = `<div class="as-head">
       <button class="as-title" data-act="chatList" title="对话记录">${'<span class="as-badge">' + ic('spark', 's') + '</span>'}<span class="t">${esc(c && S.ai ? c.title : '助手')}</span>${ic('cd', 'xs')}</button>
-      <button class="ib" data-act="newChat" title="新对话">${ic('plus', 's')}</button>
-      <button class="ib" data-act="settings" title="助手设置">${ic('gear', 's')}</button>
-      <button class="ib" data-act="togglePanel" title="关闭（⌃⌘R）">${ic('x', 's')}</button></div>
+      <div class="as-acts"><button class="ib" data-act="newChat" title="新对话">${ic('plus', 's')}</button>
+      <button class="ib" data-act="settings" title="设置（⌘,）">${ic('gear', 's')}</button>
+      <button class="ib" data-act="togglePanel" title="关闭（⌃⌘R）">${ic('x', 's')}</button></div></div>
     <div class="as-body" id="asBody"></div>
     <div class="as-foot" id="asFoot">
       <div id="asCtx"></div>
@@ -1628,17 +1852,23 @@ function agentHtml(m) {
   const live = m.status === 'running';
   const doneN = m.steps.filter(s => s.state !== 'now').length;
   const cur = m.steps.find(s => s.state === 'now');
-  const trace = m.steps.length ? `<div class="trace ${live ? 'live' : ''} ${m.traceOpen ? 'open' : ''}" data-trace="${m.id}">
-      <div class="trace-h">${live ? '<span class="spin" style="color:var(--agent)"></span>' : ic('check', 'xs')}<span class="grow">${live ? esc(cur ? cur.t : '正在组织回答…') : `用了 ${doneN} 步${m.web ? ' · 已联网' : ' · 未联网'}`}</span>${live ? '' : ic(m.traceOpen ? 'cu' : 'cd', 'xs')}</div>
-      <div class="trace-b">${m.steps.map(s => `<div class="tstep ${s.state}"><span class="ti">${s.state === 'now' ? '<span class="spin" style="width:10px;height:10px"></span>' : ic(s.i, 'xs')}</span><span class="tx">${esc(s.t)}</span></div>`).join('')}</div></div>` : '';
+  const fails = m.steps.filter(s => s.state === 'fail').reduce((a, s) => a + (s.n || 1), 0);
+  const secs = Math.max(1, Math.round(((m.t1 || Date.now()) - (m.t0 || Date.now())) / 1000));
+  const trace = m.steps.length ? `<div class="act trace ${live ? 'live' : ''} ${m.traceOpen ? 'open' : ''}" data-trace="${m.id}">
+      <div class="act-h trace-h">${live ? `<span class="shimmer">${esc(cur ? cur.t : '正在组织回答')}</span>` : `<span>处理了 ${secs} 秒</span>${fails ? `<span class="warnc">· 工具调用失败 ${fails} 次</span>` : ''}${ic(m.traceOpen ? 'cd' : 'cr', 'xs')}`}</div>
+      <div class="act-b">${m.steps.map(s => s.say ? `<div class="act-say">${esc(s.say)}</div>`
+        : `<div class="act-do ${s.state}"><span class="ai">${s.state === 'now' ? '<span class="spin" style="width:10px;height:10px"></span>' : s.state === 'fail' ? ic('x', 'xs') : ic(s.i, 'xs')}</span><span>${esc(s.t)}${s.n > 1 ? `<span class="x">×${s.n}</span>` : ''}${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</span></div>`).join('')}</div></div>` : '';
   const srcs = m.status === 'done' && m.cites?.length ? `<div class="srcrow">${m.cites.map(i => `<span class="srcchip" data-cite="${i}"><span class="n">${i}</span>${ic(KIND_IC[SOURCES[i].kind], 'xs')}<span class="t">${esc(SOURCES[i].title)}</span></span>`).join('')}</div>` : '';
   let tail = '';
-  if (m.status === 'error') tail = `<div class="msg-err">${ic('wifioff', 's')}<div class="grow"><b>网络不可用</b></div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重试</span></button><button class="tbtn" data-mact="local" data-mid="${m.id}">${ic('lock', 'xs')}<span class="lbl">改用本机模型</span></button></div>`;
+  const det = m.diag ? `<span class="dt" data-errdet="${m.id}">${m.errOpen ? '收起' : '详情'}</span><div class="det">${m.diag.map(([k, v]) => `<div><span>${esc(k)}</span><code>${esc(v)}</code></div>`).join('')}</div>` : '';
+  if (m.status === 'error' && m.err === 'tool') tail = `<div class="msg-err ${m.errOpen ? 'open' : ''}">${ic('warn', 's')}<div class="grow"><b>模型没能正确调用工具</b>${det}</div></div><div class="macts"><button class="tbtn pri" data-mact="notools" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">不用工具重答</span></button><button class="tbtn" data-act="modelMenu">${ic('spark', 'xs')}<span class="lbl">换个模型</span></button><button class="tbtn" data-mact="diag" data-mid="${m.id}" title="复制诊断信息">${ic('copy', 'xs')}</button></div>`;
+  else if (m.status === 'error') tail = `<div class="msg-err ${m.errOpen ? 'open' : ''}">${ic('wifioff', 's')}<div class="grow"><b>网络不可用</b>${det}</div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重试</span></button><button class="tbtn" data-mact="local" data-mid="${m.id}">${ic('lock', 'xs')}<span class="lbl">改用本机模型</span></button><button class="tbtn" data-mact="diag" data-mid="${m.id}" title="复制诊断信息">${ic('copy', 'xs')}</button></div>`;
   else if (m.status === 'interrupted') tail = `<div class="msg-err" style="background:rgba(255,149,0,.10)">${ic('clock', 's')}<div class="grow"><b>上次退出时没有完成</b></div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">继续</span></button></div>`;
   else if (m.status === 'stopped') tail = `<div class="macts"><span class="note" style="padding:0 6px">已停止</span><button class="tbtn" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重新生成</span></button></div>`;
   else if (m.status === 'done') tail = `${m.prop ? propHtml(S.props[m.prop]) : ''}<div class="macts">
       ${m.saved && S.notes[m.saved] ? `<span class="savedtag">${ic('check', 'xs')}已存为笔记</span><button class="tbtn" data-mact="locate" data-mid="${m.id}">${ic('goto', 'xs')}<span class="lbl">定位</span></button>`
       : m.prop ? '' : `<button class="tbtn pri" data-mact="save" data-mid="${m.id}">${ic('cardplus', 'xs')}<span class="lbl">存为笔记</span></button>`}
+      ${m.prop || m.skill === 'organize' ? '' : `<button class="tbtn" data-mact="organize" data-mid="${m.id}" title="整理进脑图">${ic('wand', 'xs')}</button>`}
       <button class="tbtn" data-mact="copy" data-mid="${m.id}" title="复制">${ic('copy', 'xs')}</button>
       <button class="tbtn" data-mact="retry" data-mid="${m.id}" title="重新生成">${ic('refresh', 'xs')}</button></div>`;
   return `<div class="msg agent" data-mid="${m.id}">${trace}<div class="ans">${m.html}${live && m.html ? '<span class="caret"></span>' : ''}</div>${srcs}${tail}</div>`;
@@ -1672,7 +1902,7 @@ function paintRow() {
     <button class="tbtn" data-act="slashMenu" title="快捷指令（/）">${ic('slash', 's')}</button>
     <button class="tbtn web ${webOn ? 'on' : ''}" data-act="toggleWeb" title="${S.net ? '联网' : '当前断网'}">${ic(S.net ? 'globe' : 'wifioff', 's')}<span class="lbl">${!S.net ? '断网' : S.comp.web ? '联网' : '不联网'}</span></button>
     <span class="grow"></span>
-    <button class="tbtn" data-act="modelMenu" title="切换模型"><span class="lbl">${esc(S.local ? '本机 · qwen3' : S.model)}</span>${ic('cd', 'xs')}</button>
+    <button class="tbtn" data-act="modelMenu" title="切换模型"><span class="lbl">${esc(modelLabel(currentModelKey()))}</span>${ic('cd', 'xs')}</button>
     ${running ? `<button class="sendb2 stop" data-act="stopRun" title="停止（Esc）">${ic('stop', 'xs')}</button>` : `<button class="sendb2" data-act="sendMsg" ${S.ai ? '' : 'disabled'} title="发送（↩）">${ic('up', 's')}</button>`}`;
 }
 function paintChatList() {
@@ -1811,14 +2041,6 @@ function atMenu() {
   placePop(m, winRect($('[data-act="atMenu"]')), 'above');
   m.addEventListener('click', e => { const a = e.target.closest('[data-at]'); if (!a) return; const it = opts.find(o => o[0] === a.dataset.at)[3]; S.comp.items.push(it); m.remove(); paintComposer(); $('#asInput').focus(); });
 }
-function modelMenu() {
-  closeFloating(true);
-  const ms = ['Claude Sonnet', 'GPT', 'Gemini', '通义千问', '本机 · qwen3'];
-  const m = document.createElement('div'); m.className = 'pop menu';
-  m.innerHTML = ms.map(n => `<div class="mi" data-model="${n}">${(S.local ? '本机 · qwen3' : S.model) === n ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${n}</span></div>`).join('');
-  placePop(m, winRect($('[data-act="modelMenu"]')), 'above');
-  m.addEventListener('click', e => { const a = e.target.closest('[data-model]'); if (!a) return; const n = a.dataset.model; S.local = n.startsWith('本机'); if (!S.local) S.model = n; m.remove(); paintRow(); hud(S.local ? '已切换到本机模型' : `已切换到 ${n}`); });
-}
 
 /* ---------- Panel events ---------- */
 rp.addEventListener('input', e => {
@@ -1864,6 +2086,7 @@ rp.addEventListener('click', e => {
   const cd = t.closest('[data-ctxdel]'); if (cd) { S.comp.items.splice(+cd.dataset.ctxdel, 1); return paintComposer(); }
   if (t.closest('[data-ctxauto]')) { S.comp.autoOff = !S.comp.autoOff; return paintComposer(); }
   const sl = t.closest('[data-slash]'); if (sl) return pickSlash(sl.dataset.slash);
+  const ed = t.closest('[data-errdet]'); if (ed) { const m = activeChat().msgs.find(x => x.id === ed.dataset.errdet); m.errOpen = !m.errOpen; return paintMsgs(); }
   const tr = t.closest('.trace-h'); if (tr) { const m = activeChat().msgs.find(x => x.id === tr.parentElement.dataset.trace); if (m.status !== 'running') { m.traceOpen = !m.traceOpen; paintMsgs(); } return; }
   const cg = t.closest('[data-ctxgo]'); if (cg) { const o = JSON.parse(cg.dataset.ctxgo); if (o.type === 'sel') { if (o.anchor) gotoLocalAnchor(o.anchor); else gotoLocal('s-claim'); } else if (o.id) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(o.id); flashNode(o.id); } return; }
   const lc = t.closest('[data-lcite]'); if (lc) return gotoLocal(lc.dataset.lcite);
@@ -1885,8 +2108,11 @@ rp.addEventListener('click', e => {
     const c = activeChat(), m = c.msgs.find(x => x.id === ma.dataset.mid), k = ma.dataset.mact;
     if (k === 'save') saveAnswer(m, ma);
     if (k === 'copy') hud('已复制');
-    if (k === 'retry') { m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
-    if (k === 'local') { S.local = true; m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
+    if (k === 'organize') { S.comp.items = m.ctx.filter(x => !x.auto); send('把这部分整理进脑图'); }
+    if (k === 'diag') hud('诊断信息已复制（不含 Key 和正文）');
+    if (k === 'notools') { m.plan = planFor('__fallback', m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); }
+    if (k === 'retry') { m.plan = planFor(m.planKey || c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
+    if (k === 'local') { c.model = localDefault(); syncLocal(); m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
     if (k === 'locate') { const note = S.notes[m.saved]; if (note?.att.node) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(note.att.node); flashNode(note.att.node); } }
   }
 });
@@ -1936,7 +2162,7 @@ function showDetail(id) { S.panel.mode = 'detail'; S.panel.detailId = id; if (!S
 function renderDetail() {
   const n = nodeById(S.panel.detailId);
   if (!n) { S.panel.mode = 'chat'; return renderPanel(); }
-  const head = (k, icon) => `<div class="as-head"><span class="rp-kind detail" style="flex:1">${ic(icon, 's')}${k}</span><button class="btn sm plain" data-act="askAbout">${ic('spark', 'xs')}问助手</button><button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div>`;
+  const head = (k, icon) => `<div class="as-head"><span class="rp-kind detail" style="flex:1">${ic(icon, 's')}${k}</span><button class="ib" data-act="askAbout" title="问助手">${ic('spark', 's')}</button><button class="ib" data-act="togglePanel">${ic('x', 's')}</button></div>`;
   const review = `<div class="insp-sec"><h4>复习</h4><div class="kv"><span>状态</span><span>下次复习 10 月 29 日 · 已复习 3 次</span></div></div>`;
   let body = '';
   if (n.kind === 'ex') body = head('摘录卡片', 'doc') + `<div class="rp-body"><div class="insp-sec"><div class="insp-title" contenteditable="true" data-edit="title">${esc(n.title) || '<span style="color:var(--label2)">添加标题</span>'}</div></div>
@@ -1971,19 +2197,293 @@ function markerPop(aid, el) {
 }
 
 /* ---------------- Settings ---------------- */
-function settingsSheet() {
-  closeFloating();
-  const sc = document.createElement('div'); sc.className = 'scrim';
-  sc.innerHTML = `<div class="sheet" style="width:560px"><h3>助手设置</h3>
-    <div class="fld"><label>AI 服务与模型</label><div style="display:flex;gap:8px"><select class="ta" style="flex:1"><option>${S.ai ? '示例：Claude（Anthropic）' : '未设置'}</option><option>示例：OpenAI / OpenAI 兼容</option><option>示例：Gemini</option><option>示例：通义千问 / Kimi / 智谱</option><option>本机：Ollama</option></select><input class="ta" style="flex:1" type="password" value="${S.ai ? 'sk-demo-xxxxxxxx' : ''}" placeholder="API Key"></div></div>
-    <div class="fld"><label>联网</label><div class="cbx on"><i>${ic('check', 'xs')}</i>需要时搜索网页和论文</div><div class="cbx on"><i>${ic('check', 'xs')}</i>阻止访问本机和内网地址</div></div>
-    <div class="fld"><label>修改学习集</label><div class="cbx on"><i>${ic('check', 'xs')}</i>改动脑图前先预览</div></div>
-    <div class="fld"><label>上下文</label><div class="cbx on"><i>${ic('check', 'xs')}</i>自动附带正在看的页面和选中的卡片</div></div>
-    <div class="fld"><label>每次回答的上限</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="ta">最多 <b>12</b> 步工具调用</div><div class="ta">最长 <b>3</b> 分钟</div></div></div>
-    <div class="sfoot"><button class="btn pri" data-act="closeSheet">完成</button></div></div>`;
-  layer.appendChild(sc);
-  sc.addEventListener('click', e => { if (e.target === sc) sc.remove(); const c = e.target.closest('.cbx'); if (c) c.classList.toggle('on'); });
+
+
+/* ---------------- Models: providers → my models → per-task defaults ----------------
+   A provider is an endpoint speaking one protocol. Its model list is fetched from the
+   protocol's list endpoint (OpenAI /v1/models, Anthropic /v1/models, Gemini models.list,
+   Ollama /api/tags); the user adds the ones they want to "my models". Only enabled models
+   appear in the composer. Each conversation remembers the model it was switched to. */
+const PROTOS = {
+  openai: { n: 'OpenAI 兼容', base: 'https://api.openai.com/v1', list: 'GET /models', key: true },
+  anthropic: { n: 'Anthropic', base: 'https://api.anthropic.com', list: 'GET /v1/models', key: true },
+  gemini: { n: 'Google Gemini', base: 'https://generativelanguage.googleapis.com', list: 'GET /v1beta/models', key: true },
+  ollama: { n: 'Ollama', base: 'http://localhost:11434', list: 'GET /api/tags', key: false },
+};
+const CAPS = { tools: ['wand', '工具调用'], vision: ['image', '图片输入'], web: ['globe', '内置搜索'], think: ['bulb', '推理'] };
+function seedProviders() {
+  return [
+    { id: 'p1', name: 'Anthropic', proto: 'anthropic', base: 'https://api.anthropic.com', key: 'sk-ant-demo', status: 'ok', on: true,
+      models: [{ id: 'claude-sonnet-4-5', name: 'Claude Sonnet', caps: ['tools', 'vision', 'web'], ctx: '200K', on: true }, { id: 'claude-haiku-4-5', name: 'Claude Haiku', caps: ['tools', 'vision'], ctx: '200K', on: true }],
+      catalog: [['claude-opus-4-1', 'Claude Opus', ['tools', 'vision', 'web', 'think'], '200K'], ['claude-sonnet-4-5', 'Claude Sonnet', ['tools', 'vision', 'web'], '200K'], ['claude-haiku-4-5', 'Claude Haiku', ['tools', 'vision'], '200K']] },
+    { id: 'p2', name: 'Squirrel', proto: 'openai', base: 'https://squirrel.aicode.cc/v1', key: 'sk-demo', status: 'ok', on: true,
+      models: [{ id: 'coding/auto', name: 'Coding Auto', caps: ['tools'], ctx: '128K', on: true }],
+      catalog: [['coding/auto', 'Coding Auto', ['tools'], '128K'], ['gpt-5', 'GPT-5', ['tools', 'vision', 'think'], '400K'], ['gpt-5-mini', 'GPT-5 mini', ['tools', 'vision'], '400K'], ['deepseek-v3.2', 'DeepSeek V3.2', ['tools'], '128K'], ['deepseek-r1', 'DeepSeek R1', ['think'], '64K'], ['qwen3-max', 'Qwen3 Max', ['tools'], '256K'], ['kimi-k2', 'Kimi K2', ['tools'], '256K'], ['glm-4.6', 'GLM-4.6', ['tools'], '200K'], ['text-embedding-3-small', 'text-embedding-3-small', [], '8K']] },
+    { id: 'p3', name: '本机', proto: 'ollama', base: 'http://localhost:11434', key: '', status: 'ok', on: true,
+      models: [{ id: 'qwen3:8b', name: 'Qwen3 8B', caps: ['tools'], ctx: '40K', on: true }],
+      catalog: [['qwen3:8b', 'qwen3:8b', ['tools'], '40K'], ['llama3.2:3b', 'llama3.2:3b', ['tools'], '128K'], ['gemma3:12b', 'gemma3:12b', ['vision'], '128K']] },
+  ];
 }
+const mkey = (p, m) => `${p.id}|${m.id}`;
+function findModel(key) { const [pid, mid] = (key || '').split('|'); const p = S.providers.find(x => x.id === pid); const m = p?.models.find(x => x.id === mid); return p && m ? { p, m } : null; }
+function enabledModels() { return S.providers.filter(p => p.on && p.status === 'ok').flatMap(p => p.models.filter(m => m.on).map(m => ({ p, m, key: mkey(p, m) }))); }
+function currentModelKey() { const c = activeChat(); const k = c?.model || S.defaults.chat; return findModel(k) ? k : enabledModels()[0]?.key; }
+function modelLabel(key) { const f = findModel(key); return f ? f.m.name : '选择模型'; }
+function syncLocal() { const f = findModel(currentModelKey()); S.local = f?.p.proto === 'ollama'; }
+
+function modelMenu() {
+  closeFloating(true);
+  const cur = currentModelKey();
+  const groups = S.providers.filter(p => p.on && p.status === 'ok' && p.models.some(m => m.on));
+  const m = document.createElement('div'); m.className = 'pop menu mmenu';
+  m.innerHTML = groups.map(p => `<div class="mh">${esc(p.name)}</div>` + p.models.filter(x => x.on).map(x => `<div class="mi" data-model="${mkey(p, x)}">${mkey(p, x) === cur ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${esc(x.name)}</span></div>`).join('')).join('<div class="msep"></div>')
+    + `<div class="msep"></div><div class="mi" data-model="__manage">${ic('gear', 's ii')}<span class="grow">管理模型…</span><span class="kbd">⌘,</span></div>`;
+  placePop(m, winRect($('[data-act="modelMenu"]')), 'above');
+  m.addEventListener('click', e => {
+    const a = e.target.closest('[data-model]'); if (!a) return; m.remove();
+    if (a.dataset.model === '__manage') return settingsWindow('models');
+    const c = activeChat() || newChat(); c.model = a.dataset.model; syncLocal(); paintRow(); renderSessions();
+  });
+}
+
+/* ---------------- Settings (⌘,): the app's one Settings window; the assistant is one tab ----------------
+   Only what a reader understands and actually needs to choose: which services, their key, which
+   models to keep, and the default model. Everything else is decided by the app or lives where the
+   user already is (web toggle and context chips in the composer, titles and deletion in the
+   conversation list, budgets and network policy fixed in code). */
+let SW = null; // { tab, prov, fetch: {q, picked:Set, state}, err, reveal, custom }
+function settingsWindow(_page, provId) {
+  closeFloating();
+  SW = { tab: _page === 'search' ? 'search' : 'models', prov: provId || null, fetch: null, err: null, reveal: false, custom: false };
+  $$('.setwin-scrim', layer).forEach(e => e.remove());
+  const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin st2" id="setwin"></div>';
+  layer.appendChild(sc); paintSettings();
+  sc.addEventListener('click', settingsClick); sc.addEventListener('input', settingsInput);
+}
+function settingsSheet() { settingsWindow(); }
+const builtinSearch = p => p.proto === 'anthropic' || p.proto === 'gemini' || (p.proto === 'openai' && /api\.openai\.com/.test(p.base));
+function localDefault() { const x = enabledModels().find(e => e.p.proto === 'ollama'); return x?.key; }
+function paintSettings() {
+  const w = $('#setwin'); if (!w) return;
+  const tabs = [['general', '通用', 'gear'], ['reading', '阅读', 'read'], ['models', '模型', 'spark'], ['search', '网页搜索', 'globe']];
+  w.innerHTML = `<div class="st-top"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+      <div class="st-tabs">${tabs.map(([k, n, i]) => `<button class="${SW.tab === k ? 'on' : ''}" data-swtab="${k}">${ic(i, 'l')}<span>${n}</span></button>`).join('')}</div></div>
+    <div class="st-body">${SW.tab === 'models' ? swAssistant() : SW.tab === 'search' ? swSearch() : `<div class="empty" style="padding-top:120px">${SW.tab === 'general' ? '通用' : '阅读'}（现有设置）</div>`}</div>
+    ${SW.fetch ? swFetchSheet() : ''}`;
+}
+function swAssistant() {
+  const p = S.providers.find(x => x.id === SW.prov);
+  const em = enabledModels();
+  const head = `<div class="st-row"><label>默认模型</label><select class="ta" data-swdef="chat" style="width:260px">${em.map(x => `<option value="${x.key}" ${S.defaults.chat === x.key ? 'selected' : ''}>${esc(x.m.name)}</option>`).join('') || '<option>—</option>'}</select></div>`;
+  const list = `<div class="sw-plist">${S.providers.map(x => `<div class="row ${x.id === SW.prov ? 'on' : ''}" data-swprov="${x.id}"><span class="plogo">${esc(x.name.slice(0, 1))}</span><span class="t">${esc(x.name)}</span>${x.status === 'err' ? '<span class="pdot err"></span>' : ''}</div>`).join('')}
+    <div class="sw-plist-foot"><button class="ib" data-sw="addProv" title="添加服务">${ic('plus', 's')}</button><button class="ib" data-sw="delProv" title="移除服务" ${p ? '' : 'disabled'}>${ic('minus', 's')}</button></div></div>`;
+  if (!p) return head + `<div class="sw-models">${list}<div class="sw-pdetail"><div class="empty"><button class="btn ag" data-sw="addProv">添加服务</button></div></div></div>`;
+  const needsBase = p.proto === 'openai' || p.proto === 'ollama' || SW.custom || p.base !== PROTOS[p.proto].base;
+  const st = p.status === 'ok' ? '' : p.status === 'err' ? `<span class="sw-err">${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:11px;height:11px;color:var(--label2)"></span>' : '';
+  return head + `<div class="sw-models">${list}<div class="sw-pdetail">
+    <div class="sw-ph"><input class="sw-name" data-swf="name" value="${esc(p.name)}">${st}</div>
+    <div class="sw-grid">
+      ${needsBase ? `<label>地址</label><input class="ta" data-swf="base" value="${esc(p.base)}" placeholder="${PROTOS[p.proto].base}">` : ''}
+      ${PROTOS[p.proto].key ? `<label>API Key</label><div class="sw-key"><input class="ta" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button></div>` : ''}
+      ${needsBase ? '' : `<span></span><span><button class="btn sm plain" data-sw="custom" style="padding:0">自定义地址</button></span>`}
+      ${builtinSearch(p) ? '' : `<label>网页搜索</label><input class="ta" data-swsx value="${esc(S.searxng)}" placeholder="SearXNG 地址">`}
+    </div>
+    <div class="sw-sec"><span class="grow">模型</span><button class="btn sm" data-sw="fetch">${ic('plus', 'xs')}添加模型</button></div>
+    <div class="sw-mlist">${p.models.length ? p.models.map((m, i) => `<div class="sw-mrow" title="${esc(m.id)}"><div class="grow"><div class="sw-mn" data-swmname="${i}">${esc(m.name)}</div></div>${mkey(p, m) === S.defaults.chat ? '<span class="pill">默认</span>' : ''}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('trash', 'xs')}</button></div>`).join('')
+      : `<div class="sw-mempty"><button class="btn sm ag" data-sw="fetch">${ic('plus', 'xs')}添加模型</button></div>`}</div>
+  </div></div>`;
+}
+function swFetchSheet() {
+  const p = S.providers.find(x => x.id === SW.prov), F = SW.fetch;
+  const have = new Set(p.models.map(m => m.id));
+  const q = F.q.trim().toLowerCase();
+  // Chat models only: embeddings and the like are never offered.
+  const rows = p.catalog.filter(([id, n, caps]) => !/embedding|whisper|tts|dall-e/i.test(id) && (!q || (id + n).toLowerCase().includes(q)));
+  const nPick = [...F.picked].filter(id => !have.has(id)).length;
+  const manual = q && !p.catalog.some(([id]) => id.toLowerCase() === q) ? `<div class="sw-frow" data-swmanual="${esc(F.q.trim())}"><span class="cbx ${F.picked.has(F.q.trim()) ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">添加“${esc(F.q.trim())}”</div></div></div>` : '';
+  return `<div class="sw-fetch-scrim"><div class="sw-fetch">
+    <div class="sw-fh"><b>添加模型</b><span class="grow"></span><label class="side-search" style="margin:0;width:220px">${ic('search', 's')}<input data-swq placeholder="搜索或输入模型 ID" value="${esc(F.q)}"></label></div>
+    <div class="sw-flist">${F.state === 'busy' ? '<div class="empty"><span class="spin" style="color:var(--agent)"></span></div>'
+      : F.state === 'err' ? `<div class="empty">${esc(F.err)}</div>${manual}`
+      : rows.map(([id, n]) => { const on = have.has(id) || F.picked.has(id); return `<div class="sw-frow ${have.has(id) ? 'have' : ''}" data-swpick="${esc(id)}" title="${esc(id)}"><span class="cbx ${on ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">${esc(n)}</div></div></div>`; }).join('') + manual}</div>
+    <div class="sfoot" style="margin-top:0;padding:10px 14px;border-top:1px solid var(--sep)"><span class="grow"></span><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加${nPick ? ' ' + nPick + ' 个' : ''}</button></div></div></div>`;
+}
+let swCheckT = null;
+function autoCheck(p) {
+  clearTimeout(swCheckT);
+  if (PROTOS[p.proto].key && !p.key) { p.status = 'idle'; return; }
+  p.status = 'busy';
+  swCheckT = setTimeout(() => {
+    if (!S.net && p.proto !== 'ollama') { p.status = 'err'; p.err = '连不上服务'; }
+    else if (PROTOS[p.proto].key && p.key.length < 6) { p.status = 'err'; p.err = 'API Key 无效'; }
+    else { p.status = 'ok'; p.err = null; }
+    if (SW) { const a = document.activeElement, sel = a?.dataset?.swf, pos = a?.selectionStart; paintSettings(); if (sel) { const el = $(`#setwin [data-swf="${sel}"]`); el?.focus(); el?.setSelectionRange?.(pos, pos); } }
+  }, 700);
+}
+function settingsClick(e) {
+  const t = e.target, p = S.providers.find(x => x.id === SW.prov);
+  if (t.classList.contains('setwin-scrim') || t.closest('[data-sw="close"]')) { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; paintRow(); return; }
+  const tb = t.closest('[data-swtab]'); if (tb) { SW.tab = tb.dataset.swtab; return paintSettings(); }
+  const pon = t.closest('[data-swpon]'); if (pon) { const x = S.providers.find(y => y.id === pon.dataset.swpon); x.on = !x.on; if (!findModel(S.defaults.chat) || !enabledModels().some(e => e.key === S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const mon = t.closest('[data-swmon]'); if (mon && p) { const m = p.models[+mon.dataset.swmon]; m.on = !m.on; if (!enabledModels().some(e => e.key === S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const eng = t.closest('[data-sweng]'); if (eng) { S.search.engine = eng.dataset.sweng; S.search.status = 'idle'; return paintSettings(); }
+  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = SW.prov === pv.dataset.swprov ? null : pv.dataset.swprov; SW.custom = false; SW.reveal = false; return paintSettings(); }
+  const sd = t.closest('[data-swsetdef]'); if (sd && p) { S.defaults.chat = mkey(p, p.models[+sd.dataset.swsetdef]); return paintSettings(); }
+  const md = t.closest('[data-swmdel]'); if (md) { const m = p.models[+md.dataset.swmdel]; p.models.splice(+md.dataset.swmdel, 1); if (S.defaults.chat === mkey(p, m)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const mm = t.closest('[data-swmanual]'); if (mm && SW.fetch) { const id = mm.dataset.swmanual; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
+  const pk = t.closest('[data-swpick]');
+  if (pk && SW.fetch && !pk.classList.contains('have')) { const id = pk.dataset.swpick; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
+  const a = t.closest('[data-sw]')?.dataset.sw; if (!a) return;
+  if (a === 'reveal') { SW.reveal = !SW.reveal; return paintSettings(); }
+  if (a === 'custom') { SW.custom = true; paintSettings(); return $('#setwin [data-swf="base"]')?.focus(); }
+  if (a === 'fetch') {
+    SW.fetch = { q: '', picked: new Set(), state: 'busy' }; paintSettings();
+    return setTimeout(() => {
+      if (!SW?.fetch) return;
+      if (PROTOS[p.proto].key && !p.key) { SW.fetch.state = 'err'; SW.fetch.err = '先填写 API Key'; }
+      else if (!S.net && p.proto !== 'ollama') { SW.fetch.state = 'err'; SW.fetch.err = '连不上服务，可直接输入模型 ID'; }
+      else { SW.fetch.state = 'ok'; p.status = 'ok'; }
+      paintSettings(); $('#setwin [data-swq]')?.focus();
+    }, 600);
+  }
+  if (a === 'fetchClose') { SW.fetch = null; return paintSettings(); }
+  if (a === 'fetchAdd') {
+    const have = new Set(p.models.map(m => m.id));
+    const added = [...SW.fetch.picked].filter(id => !have.has(id));
+    added.forEach(id => { const c = p.catalog.find(x => x[0] === id); p.models.push({ id, name: c ? c[1] : id, caps: c ? c[2] : ['tools'], ctx: c ? c[3] : '', on: true }); });
+    if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key;
+    SW.fetch = null; paintSettings(); return hud(`已添加 ${added.length} 个模型`);
+  }
+  if (a === 'addProv') return addProviderPicker(t.closest('[data-sw]'));
+  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = null; if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+}
+function settingsInput(e) {
+  const t = e.target, p = S.providers.find(x => x.id === SW?.prov);
+  if (t.dataset.swf && p) { p[t.dataset.swf] = t.value; if (t.dataset.swf === 'name') $$(`[data-swprov="${p.id}"] .t`).forEach(x => x.textContent = t.value); else autoCheck(p); return; }
+  if (t.matches('[data-swq]')) { SW.fetch.q = t.value; const pos = t.selectionStart; paintSettings(); const q = $('#setwin [data-swq]'); q.focus(); q.setSelectionRange(pos, pos); return; }
+  if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return paintSettings(); }
+  if (t.matches('[data-swsx]')) { S.searxng = t.value; S.search.addr = t.value; searchCheck(); return; }
+  if (t.matches('[data-swengsel]')) { S.search.engine = t.value; S.search.status = 'idle'; return paintSettings(); }
+  if (t.matches('[data-swsacct]')) { S.search.acct = t.value; searchCheck(); return; }
+  if (t.matches('[data-swskey]')) { S.search.key = t.value; searchCheck(); return; }
+}
+document.addEventListener('dblclick', e => {
+  const n = e.target.closest('[data-swmname]'); if (!n || !SW) return;
+  const p = S.providers.find(x => x.id === SW.prov), m = p.models[+n.dataset.swmname];
+  n.contentEditable = true; n.focus(); document.execCommand('selectAll');
+  n.onblur = () => { n.contentEditable = false; m.name = n.textContent.trim() || m.id; paintSettings(); };
+  n.onkeydown = k => { if (k.key === 'Enter') { k.preventDefault(); n.blur(); } k.stopPropagation(); };
+});
+document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); settingsWindow(SW?.page || 'models'); } if (e.key === 'Escape' && SW) { if (SW.fetch) { SW.fetch = null; paintSettings(); } else { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; } e.stopImmediatePropagation(); } }, true);
+
+/* ---------- Conversation titles: name the subject, not the pronoun ---------- */
+function titleFor(text, ctx, P) {
+  if (P.skill === 'flaky' || P.skill === 'broken' || text === '__fallback') return P.title;
+  if (S.ctxPrefs.title === 'first') return text.slice(0, 24);
+  const sel = ctx.find(x => x.type === 'sel');
+  const term = sel && sel.quote.length <= 12 ? sel.quote : null;
+  if (term && /他|她|它|这个|这段|这句|这里/.test(text)) return text.replace(/他|她|它|这个|这段|这句|这里/, term).replace(/[？?。]$/, '').slice(0, 24);
+  return P.title;
+}
+
+
+/* ---------- Visual pass: macOS System Settings grouped-form style ---------- */
+const LOGO = { anthropic: ['logo-anthropic', 'A'], openai: ['logo-compat', null], gemini: ['logo-gemini', null], ollama: ['logo-ollama', null] };
+function logoHtml(p, big) {
+  const cls = p.proto === 'openai' && /api\.openai\.com/.test(p.base) ? 'logo-openai' : LOGO[p.proto][0];
+  const glyph = p.proto === 'gemini' ? ic('spark', big ? 'l' : 's') : p.proto === 'ollama' ? ic('lock', big ? 'l' : 's') : esc((p.name || '?').slice(0, 1).toUpperCase());
+  return `<span class="plogo2 ${cls} ${big ? 'big' : ''}">${glyph}</span>`;
+}
+function swAssistant() {
+  const em = enabledModels();
+  const card = p => {
+    const open = SW.prov === p.id;
+    const needsBase = p.proto === 'openai' || p.proto === 'ollama' || SW.custom || p.base !== PROTOS[p.proto].base;
+    const nOn = p.models.filter(m => m.on).length;
+    const sub = !p.on ? '<span>已停用</span>' : p.status === 'err' ? `<span class="st-bad">${ic('warn', 'xs')}${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:10px;height:10px;color:var(--label2)"></span>' : `<span>${p.models.length ? `已启用 ${nOn} 个模型` : '还没有模型'}</span>`;
+    return `<div class="st-card ${open ? 'open' : ''}">
+      <div class="st-svc ${p.on ? '' : 'off'}" data-swprov="${p.id}">${logoHtml(p)}<div class="st-svc-t"><b>${esc(p.name)}</b>${sub}</div><span class="sw ${p.on ? 'on' : ''}" data-swpon="${p.id}" title="${p.on ? '停用' : '启用'}"></span>${ic(open ? 'cd' : 'cr', 's')}</div>
+      ${open ? `<div class="st-rows">
+        <div class="st-r"><span>名称</span><input class="st-in" data-swf="name" value="${esc(p.name)}"></div>
+        ${needsBase ? `<div class="st-r"><span>地址</span><input class="st-in" data-swf="base" value="${esc(p.base)}" placeholder="${PROTOS[p.proto].base}"></div>` : ''}
+        ${PROTOS[p.proto].key ? `<div class="st-r"><span>API Key</span><div class="st-key"><input class="st-in" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}" placeholder="粘贴 Key"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button></div></div>` : ''}
+      </div>
+      <div class="st-sub">模型</div>
+      <div class="st-rows">${p.models.map((m, i) => `<div class="st-r st-m ${m.on ? '' : 'off'}" title="${esc(m.id)}"><span class="st-mn" data-swmname="${i}">${esc(m.name)}</span>${mkey(p, m) === S.defaults.chat ? `<span class="st-def">${ic('check', 'xs')}默认</span>` : `<button class="st-link" data-swsetdef="${i}">设为默认</button>`}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('minus', 's')}</button><span class="sw ${m.on ? 'on' : ''}" data-swmon="${i}"></span></div>`).join('')}
+        <div class="st-r st-add" data-sw="fetch">${ic('plus', 's')}<span>添加模型…</span></div></div>
+      <div class="st-foot">${needsBase ? '' : '<button class="st-link" data-sw="custom">使用自定义地址</button>'}<span class="grow"></span><button class="st-link danger" data-sw="delProv">移除服务</button></div>` : ''}
+    </div>`;
+  };
+  return `<div class="st-page">
+    <div class="st-hero"><span class="st-hero-i">${ic('spark', 'l')}</span><b>模型</b></div>
+    <div class="st-group"><div class="st-r"><span>默认模型</span><select class="st-pop" data-swdef="chat">${em.map(x => `<option value="${x.key}" ${S.defaults.chat === x.key ? 'selected' : ''}>${esc(x.m.name)}</option>`).join('') || '<option>—</option>'}</select></div></div>
+    <div class="st-h">服务</div>
+    ${S.providers.map(card).join('')}
+    <button class="st-addsvc" data-sw="addProv">${ic('plus', 's')}添加服务</button>
+  </div>`;
+}
+function swFetchSheet() {
+  const p = S.providers.find(x => x.id === SW.prov), F = SW.fetch;
+  const have = new Set(p.models.map(m => m.id));
+  const q = F.q.trim().toLowerCase();
+  const rows = p.catalog.filter(([id, n]) => !/embedding|whisper|tts|dall-e/i.test(id) && (!q || (id + n).toLowerCase().includes(q)));
+  const nPick = [...F.picked].filter(id => !have.has(id)).length;
+  const row = (id, label, attr) => { const added = have.has(id), on = added || F.picked.has(id); return `<div class="st-pick ${added ? 'have' : ''} ${on ? 'on' : ''}" ${attr} title="${esc(id)}"><span class="st-chk">${on ? ic('check', 'xs') : ''}</span><span class="grow">${label}</span>${added ? '<span class="st-muted">已添加</span>' : ''}</div>`; };
+  const manual = q && !p.catalog.some(([id]) => id.toLowerCase() === q) ? row(F.q.trim(), `添加“<b>${esc(F.q.trim())}</b>”`, `data-swmanual="${esc(F.q.trim())}"`) : '';
+  return `<div class="sw-fetch-scrim"><div class="sw-fetch st-sheet">
+    <div class="st-sheet-h">${logoHtml(p, true)}<div><b>添加模型</b><span>${esc(p.name)}</span></div></div>
+    <label class="st-search">${ic('search', 's')}<input data-swq placeholder="搜索，或输入模型 ID" value="${esc(F.q)}"></label>
+    <div class="sw-flist st-picks">${F.state === 'busy' ? '<div class="empty"><span class="spin" style="color:var(--agent)"></span></div>'
+      : (F.state === 'err' ? `<div class="st-err">${ic('warn', 's')}${esc(F.err)}</div>` : rows.map(([id, n]) => row(id, esc(n), `data-swpick="${esc(id)}"`)).join('')) + manual}</div>
+    <div class="st-sheet-f"><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加${nPick ? ' ' + nPick + ' 个' : ''}</button></div></div></div>`;
+}
+// Provider picker: tiles, not a bare text menu.
+function addProviderPicker(anchor) {
+  const m = document.createElement('div'); m.className = 'pop st-provpick'; m.style.zIndex = 120;
+  const tiles = [['anthropic', 'Anthropic', 'logo-anthropic', 'A'], ['openai', 'OpenAI 兼容', 'logo-compat', 'O'], ['gemini', 'Google Gemini', 'logo-gemini', ic('spark', 's')], ['ollama', 'Ollama（本机）', 'logo-ollama', ic('lock', 's')]];
+  m.innerHTML = tiles.map(([k, n, c, g]) => `<button data-newproto="${k}"><span class="plogo2 ${c} big">${g}</span><span>${n}</span></button>`).join('');
+  placePop(m, winRect(anchor), 'above');
+  m.addEventListener('click', ev => {
+    const k = ev.target.closest('[data-newproto]')?.dataset.newproto; if (!k) return; m.remove();
+    const np = { id: uid('p'), name: PROTOS[k].n.replace('（本机）', ''), proto: k, base: PROTOS[k].base, key: '', status: 'idle', on: true, models: [], catalog: seedProviders().find(x => x.proto === k)?.catalog || [] };
+    S.providers.push(np); SW.prov = np.id; SW.custom = false; paintSettings();
+    setTimeout(() => ($('#setwin [data-swf="key"]') || $('#setwin [data-swf="base"]'))?.focus(), 30);
+  });
+}
+
+
+/* ---------- 网页搜索: its own page, independent of which model answers ---------- */
+const ENGINES = [['model', '模型自带搜索'], ['cloudflare', 'Cloudflare'], ['searxng', 'SearXNG'], ['tavily', 'Tavily'], ['brave', 'Brave Search']];
+let swSearchT = null;
+function searchCheck() {
+  clearTimeout(swSearchT); const E = S.search;
+  if ((E.engine === 'searxng' && !E.addr) || ((E.engine === 'tavily' || E.engine === 'brave') && !E.key) || (E.engine === 'cloudflare' && (!E.key || !E.acct))) { E.status = 'idle'; return; }
+  E.status = 'busy';
+  swSearchT = setTimeout(() => {
+    E.status = !S.net ? 'err' : (E.engine !== 'searxng' && E.key.length < 6) ? 'err' : 'ok';
+    E.err = !S.net ? '连不上搜索服务' : E.engine === 'cloudflare' ? 'API Token 无效或缺少 Workers AI 权限' : 'API Key 无效';
+    if (SW?.tab === 'search') { const a = document.activeElement, k = a?.dataset && Object.keys(a.dataset)[0], pos = a?.selectionStart; paintSettings(); if (k) { const el = $(`#setwin [data-${k}]`); el?.focus(); el?.setSelectionRange?.(pos, pos); } }
+  }, 700);
+}
+function swSearch() {
+  const E = S.search, def = findModel(S.defaults.chat);
+  const noBuiltin = E.engine === 'model' && def && !builtinSearch(def.p);
+  const st = E.status === 'err' ? `<div class="st-r" style="justify-content:flex-end"><span class="st-bad">${ic('warn', 'xs')}${esc(E.err)}</span></div>` : '';
+  return `<div class="st-page">
+    <div class="st-hero"><span class="st-hero-i st-hero-g">${ic('globe', 'l')}</span><b>网页搜索</b></div>
+    <div class="st-group">
+      <div class="st-r"><span>搜索服务</span><select class="st-pop" data-swengsel>${ENGINES.map(([k, n]) => `<option value="${k}" ${E.engine === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      ${E.engine === 'searxng' ? `<div class="st-r"><span>地址</span><input class="st-in" data-swsx value="${esc(E.addr)}" placeholder="http://localhost:8080"></div>` : ''}
+      ${E.engine === 'cloudflare' ? `<div class="st-r"><span>账户 ID</span><input class="st-in" data-swsacct value="${esc(E.acct || '')}" placeholder="Cloudflare 账户 ID"></div>` : ''}
+      ${E.engine === 'tavily' || E.engine === 'brave' || E.engine === 'cloudflare' ? `<div class="st-r"><span>${E.engine === 'cloudflare' ? 'API Token' : 'API Key'}</span><input class="st-in" type="password" data-swskey value="${esc(E.key)}" placeholder="${E.engine === 'cloudflare' ? '粘贴 Token' : '粘贴 Key'}"></div>` : ''}
+      ${st}
+    </div>
+    ${noBuiltin ? `<div class="st-note">${ic('info', 'xs')}${esc(def.m.name)} 不带搜索，联网时请改用其他搜索服务</div>` : ''}
+  </div>`;
+}
+
+if (!S.providers) S.providers = seedProviders();
+if (!S.search) S.search = { engine: 'model', addr: '', key: '', status: 'idle' };
 
 /* ---------------- Export (P2-C05) ---------------- */
 function exportSheet(branchId) {
@@ -2187,7 +2687,7 @@ document.addEventListener('click', e => {
   const a = t.closest('[data-act]');
   if (a && ACTS[a.dataset.act]) { ACTS[a.dataset.act](a); return; }
   // Click elsewhere closes floating UI (not sheets)
-  if (!t.closest('.pop,.ftb,.sheet,#demo,.clip-tb,.hud')) { $$('.pop,.ftb,.clip-tb', layer).forEach(e => e.remove()); S._hlTarget = null; }
+  if (!t.closest('.pop,.ftb,.sheet,#demo,.clip-tb,.hud,.setwin-scrim')) { $$('.pop,.ftb,.clip-tb', layer).forEach(e => e.remove()); S._hlTarget = null; }
 });
 
 /* ---------------- Keyboard ---------------- */
@@ -2242,7 +2742,12 @@ const SCENES = [
   { k: 'c05', t: '脑图导出', d: 'PNG / PDF / Markdown / OPML', go() { toDoc0('map'); exportSheet(); }, g: '导出面板中切换格式；AI 笔记会带着来源一起导出。' },
   { k: 'c07', t: '笔记基础格式', d: '加粗、斜体、列表', go() { toDoc0('map'); selectNode('n1'); setTimeout(() => editNote(nodeById('n1')), 760); }, g: '用上方小工具条或 <b>⌘B / ⌘I</b> 设置格式。Esc 完成。' },
   { k: 'review', t: '复习（含助手生成的问答卡）', d: '图片卡、笔记卡、问答卡统一按 FSRS 排期', go() { openReview(); }, g: '先做场景 4 再来，会看到助手出的题也在复习里。' },
-  { k: 'settings', t: '助手设置', d: '一个服务即可用；修改前预览默认开启', go() { settingsSheet(); }, g: '设置只保留必要项：服务与 Key、联网、修改前预览、上下文、上限。' },
+  { k: 'flaky', t: '工具调用出错时的处理过程', d: '过程像 Codex 一样边说边做；失败分组显示原因；自动改为直接回答', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__flaky' }); }, g: '回答上方是 <b>处理了 N 秒 · 工具调用失败 3 次</b>，点开能看到每一步：说明性的话和动作交替出现，失败的那一行写明原因（模型请求了不存在的工具）。连续出错后自动改为不用工具，答案照常给出。' },
+  { k: 'broken', t: '工具调用彻底失败', d: '错误不再笼统写“网络不可用”；详情可展开、可复制；给出能走通的下一步', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__broken' }); }, g: '错误块写明 <b>模型没能正确调用工具</b>，点 <b>详情</b> 看模型、失败原因和停止原因；<b>不用工具重答</b> 直接根据附带的原文回答，<b>换个模型</b> 打开模型菜单，复制按钮复制诊断信息（不含 Key 和正文）。' },
+  { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
+  { k: 'models', t: '设置 · 模型', d: '只管大语言模型：服务、Key、启用哪些模型、默认模型', go() { settingsWindow('models', 'p2'); }, g: '应用设置（⌘,）里 <b>模型</b> 一页：每个服务一张卡片，右侧开关启用 / 停用整个服务；展开后填地址和 API Key，模型逐个用开关启用，<b>添加模型…</b> 自动拉取该服务的模型列表。' },
+  { k: 'search', t: '设置 · 网页搜索', d: '和模型分开：选搜索服务，按需填地址或 Key', go() { settingsWindow('search'); }, g: '<b>网页搜索</b> 单独一页：模型自带搜索、Cloudflare、SearXNG、Tavily、Brave Search 五选一；Cloudflare 填账户 ID 和 API Token，SearXNG 填地址，Tavily / Brave 填 API Key。默认模型不带搜索时会提示改用其他搜索服务。' },
+  { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已添加的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，只有名字。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
 ];
 const coachTimers = [];
 function later(fn, ms) { coachTimers.push(setTimeout(fn, ms)); }
@@ -2278,7 +2783,7 @@ $('#demo').addEventListener('click', e => {
   const env = e.target.closest('[data-env] button'); if (env) return setEnv(env.parentElement.dataset.env, env.dataset.v);
   const d = e.target.closest('[data-demo]');
   if (d?.dataset.demo === 'min') { $('#demo').classList.toggle('min'); document.body.classList.toggle('demo-min'); setTimeout(layoutMap, 340); return; }
-  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
+  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); S.providers = seedProviders(); S.search = { engine: 'model', addr: '', key: '', status: 'idle' }; seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
 });
 
 /* ---------------- Boot ---------------- */

@@ -1,7 +1,7 @@
 # 三期：助手（Agent）设计方案
 
 > 建立日期：2026-10-27（GUL-527）。状态：**方案已确认，进入开发**（GUL-527 拆分执行）。
-> 配套高保真原型：[`design/prototype/phase-3-assistant.html`](../design/prototype/phase-3-assistant.html)。它是单个文件，没有依赖，用浏览器直接打开即可。右侧的“演示控制台”可以跳到 16 个场景，也可以切换无 AI、断网、深色和窄窗口。
+> 配套高保真原型：[`design/prototype/phase-3-assistant.html`](../design/prototype/phase-3-assistant.html)。它是单个文件，没有依赖，用浏览器直接打开即可。右侧的“演示控制台”可以跳到 21 个场景，也可以切换无 AI、断网、深色和窄窗口。
 > 界面规格（组件尺寸、令牌、入口、删除清单）：[`phase-3-assistant-ui.md`](phase-3-assistant-ui.md)。
 > 依据：二期原型 [`phase-2.html`](../design/prototype/phase-2.html)、当前 `main` 的代码（v0.8.0）、应用截图，以及 [dart_agent_core](https://github.com/memex-lab/dart_agent_core) 2.1.8 的源码。本文不做工时评估。
 
