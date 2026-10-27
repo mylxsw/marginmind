@@ -1,0 +1,361 @@
+# 三期助手：界面规格
+
+> 建立日期：2026-10-27（GUL-529）。上位文档：[`phase-3-assistant.md`](phase-3-assistant.md)（第 8 节已定决定、第 9 节文案原则）。
+> 交互目标：原型 [`design/prototype/phase-3-assistant.html`](../design/prototype/phase-3-assistant.html)（已按第 9 节精简文案）。
+> 视觉以 macOS 原生质感和 `mm_design` 令牌为准，原型的 CSS 数值只作参考；工具栏、PDF 编辑、脑图交互以现有应用为准。
+
+本文写给实现者：每个组件给出尺寸（pt）、令牌、状态、键盘和动效。没有写到的细节沿用 [`design-system.md`](design-system.md)。
+“批次”列对应上位文档第 6 节（A 框架落地 / B 替换研究入口 / C 写操作 / D 联网与来源）。
+
+---
+
+## 0. 通用约定
+
+### 0.1 令牌
+
+| 用途 | 令牌 |
+| --- | --- |
+| 助手主色（徽标、主按钮、当前步骤、提议卡、快捷操作） | `MMColors.research`，浅底 `researchTint`。不新增颜色；`research` 本来就是固定色，与选中色 `accent` 区分 |
+| 浅描边（快捷操作、提议卡、建议按钮悬停） | `research` 16% 不透明度（`research.withValues(alpha: .16)`），只在本文列出的位置用 |
+| 用户气泡、本地引用 `p.N`、选区 chip | `accentTint` / `accent` |
+| 正文 / 次要文字 / 图标 | `label` / `secondaryLabel` / `icon` |
+| 浅底块（步骤条、来源 chip、引用块） | `quaternaryFill`，悬停 `fill` |
+| 状态 | 完成 `positive`、未完成 `caution`、失败 `critical`；底色为自身 8–12% |
+| 分隔线 | `separator`（1pt） |
+| 浮层（菜单、存为笔记） | `MMGlass` + `glassShadow`，圆角 14 |
+
+| 字号 | 令牌 |
+| --- | --- |
+| 对话标题、提议卡标题 | `headline`（13 / 600） |
+| 正文、输入框、气泡 | `body`（13）；回答正文行高 22，输入框行高 20 |
+| 按钮文字、chip、步骤 | `callout`（12 / 500）；步骤用 `callout` 的 400 字重 |
+| 元信息、页脚、计数 | `footnote`（11） |
+| 原文引用（引用块、来源抽屉正文） | `readingExcerpt`（宋体 13 / 20）；引用块缩到 12 |
+| 来源抽屉标题 | `title3`（15 / 600） |
+
+间距只用 `MMSpacing`（2 / 4 / 8 / 12 / 16 / 20 / 28）。圆角：面板内卡片 `MMRadii.card`（12），chip 8，胶囊 = 高度 / 2。
+
+### 0.2 动效
+
+| 动作 | 时长 / 曲线 |
+| --- | --- |
+| 悬停、按下、颜色 | `MMMotion.quick` + `quickCurve` |
+| 步骤条展开 / 收起、提议项勾选 | `MMMotion.standard` + `standardCurve` |
+| 来源抽屉滑入（从右 24pt + 淡入） | `MMMotion.standard` + `layoutCurve` |
+| 面板开关 | 不做动画，与现有 `RightPanelView` 一致（宽度动画会让旁边的分栏经过窄窗口回退） |
+| 跳回原文、脑图新节点 | 闪烁 `MMMotion.flash`（1600ms），复用现有高亮闪烁 |
+| 生成中光标 | 7×14 竖条，`research`，1s 闪烁两态 |
+| 新消息 | 列表贴底时自动滚到底；用户上滚超过 80pt 后不再跟随 |
+
+“减弱动态效果”打开时：抽屉直接出现，光标不闪，闪烁改为 1600ms 的静态底色。
+
+### 0.3 图标
+
+沿用 `MMIcons`：助手 `ai`、解释 `explain`、翻译 `translate`、查证 `verify`、出复习题 `review`、找论文 `paper`、找视频 `video`、联网 `web`、断网 `offline`、发送 `send`、停止 `stop`、复制 `copy`、重新生成 `history`、存为笔记 `addTopic`、跳回 `revealSource`、外开 `openExternal`。
+
+需要新增（都是 Cupertino 已有的图标）：
+
+| 名称 | CupertinoIcons | 用途 |
+| --- | --- | --- |
+| `summarize` | `text_alignleft` | 快捷操作“总结”、/总结 |
+| `organize` | `wand_stars` | 快捷操作“整理进脑图”、提议卡标题 |
+| `mention` | `at` | 输入区 `@` |
+| `command` | `slash_circle` | 输入区 `/` |
+| `conversation` | `chat_bubble` | 侧栏对话、对话记录 |
+
+`MMIcons.research`（`doc_text_search`）在批次 B 后不再用于入口。
+
+### 0.4 文案
+
+遵守上位文档第 9 节：组件里不放副标题、提示条、按钮旁说明、输入区说明行。图标按钮必须有 tooltip（无障碍需要），tooltip 只写名称和快捷键。
+只保留缺了用户就会做错事的文字：失败原因、“未联网”标记、确认按钮上的数量。
+
+---
+
+## 1. 面板与 `RightPanel`
+
+- **同一个槽位。** 助手占用现有右侧面板，`enum RightPanel { research, details }` 改为 `{ assistant, details }`。助手和卡片详情一次只显示一个，互相切换时面板不关闭。
+- **宽度。** 沿用 `resolveWorkspaceLayout`：放得下侧栏和当前分栏时 400（`MMSizes.rightPanelWidth`），否则先收起侧栏、面板 360（`rightPanelNarrowWidth`），剩下的空间按 `MMSplitView.effectiveMode` 回退。助手不另设宽度，也不可拖动。
+- **打开来源（`PanelOrigin`）。** 选区、高亮、原文标记、`p.N` 引用 → `reader`；节点菜单、卡片详情、提议卡“在脑图中查看” → `map`；工具栏、⌃⌘R、侧栏对话 → `toolbar`。分栏时按来源收起另一侧，关闭面板恢复第一次打开前的布局（现有 `openPanel` / `closePanel` 逻辑不改）。
+- **跨栏跳转。** 点 `p.N` 或引用块时，若原文被收起就切回分栏；应用提议、定位笔记时，若脑图被收起也切回分栏。
+- **结构（自上而下）：** 标题栏 44 → 消息区（可滚动，填满）→ 输入区（贴底）。面板底色 `windowBackground`，左侧 1pt `separator`，与现有一致。
+- **对话归属。** 每个学习集一组对话，面板显示当前对话。生成在后台继续：关闭面板、切换对话、切换文档都不中断，结果只写回发起它的对话。
+- **Esc 顺序（面板内焦点）：** 关闭打开的菜单 / 浮层 → 关闭来源抽屉 → 停止正在生成的回答 → 关闭面板。输入框里的 Esc 先关闭 `/` 菜单，再按上面顺序继续。
+
+| 批次 | 内容 |
+| --- | --- |
+| A | 槽位、宽度、Esc、后台运行 |
+| B | 各入口的 `PanelOrigin` |
+
+---
+
+## 2. 组件
+
+### 2.1 标题栏 `AssistantHeader`
+
+| 项 | 规格 |
+| --- | --- |
+| 高度 | 44（`toolbarGroupHeight + MMSpacing.s`，与 `RightPanelHeader` 一致），底部 1pt `separator`，左 16、右 8 |
+| 标题按钮 | 徽标 22×22（圆角 7，`research` 底、白色 `MMIcons.ai` 13）+ 对话标题（`headline`，单行省略）+ 下拉 chevron 11。整块可点，悬停 `hover`，圆角 7 |
+| 右侧 | `MMIconButton` ×3（28 / 图标 13）：新对话 `MMIcons.add`、设置 `MMIcons.settings`、关闭 `MMIcons.close`（tooltip “关闭（⌃⌘R）”） |
+| 标题文字 | 空对话和未配置时为“助手”；首条消息后取助手生成的短标题（≤ 24 字） |
+| 点标题 | 消息区换成对话记录（见 2.13），再点一次或选中一条返回 |
+
+### 2.2 用户消息 `UserMessage`
+
+- 右对齐，最大宽度 88%，消息间距 16。
+- **引用块**（附带的上下文，在气泡上方，间距 4）：内边距 6×9、圆角 10、`quaternaryFill`，悬停 `fill`。选区显示原句（`readingExcerpt` 12、`excerptText`、最多 2 行），其他类型显示标签（`callout`、`secondaryLabel`），左侧图标 12。自动附带的“当前页面”不显示；自动附带的节点显示。点击：选区 → 跳回原文并闪烁锚点；节点 → 选中并闪烁节点。锚点已不存在时 HUD“原位置已删除”。
+- **气泡**：内边距 8×12，圆角 14（右下 4），`accentTint` 底，`body` 行高 20，保留换行，可选中复制。
+
+### 2.3 助手消息 `AgentMessage`
+
+依次为：步骤条 → 正文 → 来源行 → 提议卡 → 尾部（操作行或状态块）。整条左对齐、满宽。
+
+**正文**：`body` 行高 22；段落间距 8；列表缩进 20、项间距 2；小标题 `callout` 600 + `secondaryLabel`，上 10 下 4；结论框（查证类）内边距 8×10、圆角 10，`positive` 10% 底（“部分可靠”用 `caution` 12%）。Markdown 只支持段落、列表、粗斜体、小标题、链接（链接外开浏览器，经 `UrlPolicy`）。生成中正文末尾显示光标（0.2）。可选中复制。
+
+**引用 chip**（正文内联）：
+
+| 类型 | 规格 |
+| --- | --- |
+| 本地 `p.N` | 高 15、最小宽 16、左右 4、圆角 4、`footnote` 10 / 600；`accentTint` 底 `accent` 字，悬停 `accent` 底 `onAccent` 字。点击跳回原文对应位置并闪烁。tooltip “文档名 · 第 N 页” |
+| 外部 `[n]` | 同尺寸；`fill` 底 `secondaryLabel` 字，悬停 `research` 底 `onAccent` 字。点击打开来源抽屉。tooltip 为来源标题 |
+
+不合法的编号（第 5.4 节引用校验）在渲染前丢弃，不显示占位。
+
+**来源行**（回答完成后、有外部引用时）：chip 高 24、圆角 12、`quaternaryFill`、`callout`、`secondaryLabel`；左侧 16 的编号圆（`card` 底 + 0.5pt `separator`）+ 类型图标 12（网页 `web`、论文 `paper`、视频 `video`）+ 标题（最大 190 省略）。间距 6，可换行。悬停 `fill` / `label`。点击打开来源抽屉。
+
+**“未联网”标记**：联网关闭或断网时，正文第一行显示一行 `footnote` + 图标 12（`info` / `offline`），文字只有“未联网”或“断网，未联网核对”。同时去掉外部引用。
+
+**操作行**（完成态）：按钮高 26、圆角 8、图标 12、`callout`，间距 2。
+
+| 按钮 | 规格 |
+| --- | --- |
+| 存为笔记 | 图标 `addTopic` + 文字，`research` 色，悬停 `researchTint`。已存后换成 `positive` 的“✓ 已存为笔记”+ “定位”按钮 |
+| 复制 | 仅图标 `copy`，tooltip“复制”。复制 Markdown，`[n]` 转成文末脚注 |
+| 重新生成 | 仅图标 `history`，tooltip“重新生成”。用同一问题和上下文重跑，替换本条 |
+
+有提议卡的消息不显示“存为笔记”（结果已经在脑图里）。
+
+### 2.4 步骤条 `TraceBar`
+
+| 项 | 规格 |
+| --- | --- |
+| 容器 | 圆角 10、`quaternaryFill`，下边距 8 |
+| 标题行 | 高 28，内边距 6×10，`callout` 400、`secondaryLabel` |
+| 生成中 | 标题行左侧 12 的转圈（`research`），文字为当前步骤；步骤列表展开且不可收起 |
+| 完成 | 左侧 `check` 12，文字“用了 N 步 · 已联网”或“· 未联网”，右侧 chevron 12；默认收起，点击展开 / 收起 |
+| 步骤行 | 高约 20，图标列 14，`callout` 400、`secondaryLabel`；当前步骤 `research` + 10 的转圈；已跳过的步骤后缀“— 已跳过（断网）” |
+| 映射 | 上位文档 5.4：`functionCallRequest` 新增一行（工具名转人话，例如“联网搜索：…”“读取第 42 页”），`functionCallResult` 打勾 |
+| 无工具调用 | 不显示步骤条 |
+
+### 2.5 提议卡 `ProposalCard`（批次 C）
+
+| 项 | 规格 |
+| --- | --- |
+| 容器 | 圆角 12，`card` 底 + 顶部 `researchTint` 渐隐（80% 处透明），1pt `research` 16% 描边，上 6 下 8 |
+| 标题行 | 内边距 9/12/6，`organize` 图标 14 + 标题（`callout` 600，`research`）；右侧状态 `MMPill`：已应用（`positive`）、已忽略（默认） |
+| 条目 | 内边距 6×12，悬停 `hover`。`MMCheckbox` 15（`research`）→ 操作符（`mono` 11 / 700，宽 12：`+` `positive`、`→` `accent`、`✎` `caution`）→ 标题（`body`）+ 可选的一行补充（`footnote`、`secondaryLabel`，只写位置或内容，例如“→ 实验与现实证据”“答：25% 与 45%”）。取消勾选的条目 50% 透明并加删除线 |
+| 页脚 | 上方 1pt `separator`，内边距 8/12/10，按钮靠右，间距 8。待确认：“不用了”（`MMButton.secondary`）+“应用 N 处”（`MMButton.primary`，`color: research`，N=0 时禁用）。已应用：“在脑图中查看”+“撤销”。已忽略：“重新查看” |
+| 悬停预览 | 鼠标在待确认的条目上时，脑图对应节点（新增项取父节点）加 2pt `research` 虚线框（外扩 3），不在视口内时平移过去；离开卡片后清除。脑图被收起时不预览 |
+| 应用 | 一个撤销事务执行所有勾选项；原文单栏时切回分栏；新增 / 改动的节点闪烁；HUD“已应用 N 处修改”+“撤销” |
+| 撤销 | 卡片的“撤销”和 ⌘Z 等价，撤销后卡片回到待确认 |
+| 失效 | 目标节点已被删除的条目自动取消勾选并显示 `critical` 的“目标已删除”，不能再勾选 |
+| 键盘 | 条目可 Tab 聚焦，空格切换勾选；“应用 N 处”是卡片内默认按钮，焦点在卡片内时 ↩ 触发 |
+
+助手不提议删除和修改原文（`PolicyHook` 拒绝），界面不需要删除类条目。
+
+### 2.6 存为笔记弹层 `SaveNotePopover`（批次 B）
+
+| 项 | 规格 |
+| --- | --- |
+| 容器 | 宽 300，内边距 12×14，`MMGlass` 圆角 14；用 `floating_placement` 放在按钮上方，放不下放下方 |
+| 内容 | 标题“存为笔记”（`headline`）→ 标题输入框（`MMTextField`，高 28，预填对话标题去掉“解释：”等前缀，打开时全选）→ 两个 `MMCheckbox`：“放进脑图「父节点」”（默认勾选）、“附到原文第 N 页的这句话旁”（只在上下文有选区时出现，默认勾选）→ 页脚“取消”+“保存”（primary，`research`） |
+| 父节点 | 上下文是主题 / 根 → 它本身；是卡片 → 它的父节点；没有节点 → 当前页最近一次摘录所在主题，再没有就根节点 |
+| 校验 | 两个位置都没勾选时“保存”禁用；标题为空时用“笔记” |
+| 键盘 | 打开即聚焦标题；↩ 保存；Esc 取消 |
+| 结果 | 一次撤销事务写入 `ResearchNote`（带 `conversationId`）、脑图卡片、原文标记；HUD“已存为笔记”+“撤销”；操作行换成已存状态；新卡片闪烁 |
+
+### 2.7 来源抽屉 `SourceDrawer`（批次 D）
+
+| 项 | 规格 |
+| --- | --- |
+| 容器 | 覆盖面板的消息区和输入区（标题栏之下），`windowBackground` 底；滑入见 0.2 |
+| 顶栏 | 高 44，底部 1pt `separator`：返回 `MMIconButton`（`chevronLeft`，tooltip“返回”）→ `MMPill`“[n] 论文 / 网页 / 视频”→ 弹性空白 → “在浏览器打开”（`MMButton.plain` + `openExternal`） |
+| 正文 | 内边距 12×16：标题 `title3` → 元信息 `footnote`“站点 · 年份 · 抓取于 日期” → 快照段落（`readingExcerpt`）。被引用的段落 `researchTint` 底、圆角 4、左右外扩 6；打开时滚动到第一处 |
+| 视频 | 正文为字幕摘录；没有字幕的视频不出现在来源里 |
+| 关闭 | 返回按钮、Esc |
+| 打开浏览器 | 经 `UrlPolicy` 和 `ExternalLinks` |
+
+### 2.8 输入区 `Composer`
+
+整体：上方 1pt `separator`，内边距 8/10/10，自上而下为上下文条、快捷操作行、输入框。
+
+**上下文条**（批次 B）：chip 高 24、圆角 8、内边距左 8 右 4、间距 5、可换行；图标 12 + 标签（`callout`，最大宽 220 省略）+ 移除按钮 18×18（圆角 5，`close` 10）。
+
+| 类型 | 样式 | 标签 |
+| --- | --- | --- |
+| 选区 | `accentTint` / `accent`，图标 `highlight` | “原句前 22 字…” |
+| 节点 / 分支 | `researchTint` / `research`，图标 `mindMap` | “脑图 · 标题”“分支 · 标题” |
+| 页面 / 整本 / 整张脑图（`@` 添加） | 同节点 | “文档名 · 第 N 页”“整本 · 文档名”“整张脑图” |
+| 自动附带（正在看的页面、选中的卡片） | 透明底 + 1pt `separator` 虚线描边，`secondaryLabel` | 同上；tooltip“自动附带” |
+
+点自动 chip 的 × 只对下一条消息生效（chip 变成删除线状态，再点恢复）；发送后自动附带恢复。手动 chip 发送后清空。原文单栏不附带脑图节点，脑图单栏不附带页面。
+
+**快捷操作行**（批次 B）：只在上下文里有选区或节点时出现。胶囊高 24、圆角 12、内边距 0×9、1pt `research` 16% 描边、`research` 字、图标 12，间距 5，可换行。6 个：解释 / 翻译 / 查证 / 总结 / 出复习题 / 整理进脑图。点击立即发送对应的话（例如“解释一下这段话”），不进入输入框。
+
+**输入框**：
+
+| 项 | 规格 |
+| --- | --- |
+| 容器 | 圆角 14、`card` 底、1pt `separator` 内描边；获得焦点时 1pt `research` 描边 + 3pt `researchTint` 外圈（`quick`） |
+| 文本 | 内边距 8/8/6/12；`body` 行高 20；高度 40 起、随内容增长、最高 140 后滚动 |
+| 占位 | “提问…”；未配置时“先连接 AI 服务”且禁用 |
+| 键盘 | ↩ 发送；⇧↩ 换行；输入法组字中（`TextEditingValue.composing` 有效）↩ 只上屏不发送；行首输入 `/` 打开指令菜单；输入 `@` 打开引用菜单（`@` 不留在文本里）；生成中 Esc 停止 |
+
+**底部一行**（输入框内，高 26）：
+
+| 控件 | 规格 |
+| --- | --- |
+| `@` | 26×26、圆角 8、图标 14，tooltip“引用（@）”，打开引用菜单 |
+| `/` | 同上，tooltip“快捷指令（/）”，打开指令菜单 |
+| 联网开关 | 26 高、圆角 8、图标 14 + 文字（`callout`）。开：`web` +“联网”，`research` 色；关：`web` +“不联网”，`secondaryLabel`；断网：`offline` +“断网”，禁用。默认开（决定 2），按学习集记住。关闭时不注册联网工具 |
+| 弹性空白 | — |
+| 模型按钮 | 26 高、圆角 8，模型名（`callout`，最大 120 省略）+ `chevronDown` 10，打开模型菜单 |
+| 发送 / 停止 | 28 圆形。发送：`research` 底、`onAccent` 的 `send` 14；文本为空或未配置时 35% 不透明并禁用；tooltip“发送（↩）”。生成中变停止：`label` 底、`windowBackground` 色 `stop` 10；tooltip“停止（Esc）” |
+
+### 2.9 `/` 菜单与 `@` 菜单
+
+两者都用 `MMGlass` 浮层（圆角 14、内边距 5），行高 26、圆角 6、图标 14 + 文字 `body`，悬停 / 键盘选中为 `accent` 底 `onAccent` 字。不加标题和说明。
+
+| 菜单 | 规格 |
+| --- | --- |
+| `/`（批次 B） | 贴在输入区上方，左右各缩进 10。8 项：/解释 /翻译 /查证 /总结 /出题 /整理 /找论文 /找视频（后两项批次 D）。按 `/` 后的文字过滤，无匹配时关闭。↑↓ 移动，↩ / Tab 选中，Esc 关闭。选中时：有上下文 → 直接发送该指令；没有 → 输入框填入“/指令 ”等待补充 |
+| `@`（批次 B，整本检索批次 E 增强） | 在 `@` 按钮上方弹出。项：当前页（“第 N 页”）、各文档整本、当前脑图的一级分支、整张脑图。点击添加为上下文 chip，焦点回到输入框。↑↓ / ↩ / Esc 同上 |
+
+### 2.10 模型菜单
+
+`MMGlass` 浮层，在模型按钮上方。每行：勾选位（当前模型 `check` 14，否则留空 14）+ 模型名。只列设置里已配置的模型，本机模型名前加“本机 · ”。选中后 HUD“已切换到 名称”。最后一项“设置…”打开助手设置。批次 A 只有一个供应商时仍显示菜单（只有一项 + 设置）。
+
+### 2.11 空态（已配置、无消息）
+
+消息区顶部（内边距同消息区）只放 5 个建议按钮，纵向间距 6：每个内边距 8×10、圆角 10、1pt `separator` 内描边，图标 16（`research`）+ 文字（`body`，可两行）。悬停 `researchTint` 底 + `research` 16% 描边。不加标题、介绍、副标题和快捷键提示。
+
+建议按当前状态生成：总结当前页、解释选中的主题（没有就取当前页最近的主题）、查证当前页的一个说法（需要联网；联网关闭时换成“翻译所选内容”）、为该主题出复习题、把当前一节整理进脑图。点击直接发送，并附带对应上下文。
+
+### 2.12 未配置
+
+消息区顶部一张卡片：外边距 10×2、内边距 14、圆角 14、`card` 底、1pt `separator`。
+
+| 项 | 规格 |
+| --- | --- |
+| 标题 | `ai` 14 +“连接一个 AI 服务”（`headline`），下边距 10 |
+| 服务 | 2 列网格，间距 6，每项高 30、圆角 8、1pt `separator`、图标 12 + 名称 `callout`；选中 1.5pt `research` 描边 + `researchTint` 底。批次 A 只列已接入的服务；“本机 · Ollama”在批次 D 加入 |
+| 凭据 | `MMTextField`（密码样式，占位“粘贴 API Key”）+“连接”（primary，`research`），间距 8。选 Ollama 时输入框换成地址（默认 `http://localhost:11434`），不需要 Key |
+| 连接中 | 按钮变转圈并禁用 |
+| 失败 | 输入框下方一行 `footnote` `critical`：失败原因（“Key 无效”“连不上服务”“找不到本机 Ollama”）。只写原因，下一步就是改输入后再点连接 |
+| 成功 | 卡片消失，显示空态；Key 存钥匙串 |
+| 其他 | 输入框禁用（2.8）；上下文条和快捷操作行不显示 |
+
+### 2.13 对话记录（标题下拉）
+
+消息区换成列表，标题“对话记录”（`subheadline`、`secondaryLabel`）。每行内边距 8×10、圆角 10，悬停 `hover`、当前 `selectedRow`：图标 `conversation` 14 + 标题（`body` 500）+ 元信息（`footnote`：“时间 · N 个问题 · 有笔记”）+ 右侧状态 pill（同侧栏）。右键：重命名、删除…（删除确认说明会保留已存的笔记）。没有对话时显示“还没有对话”。
+
+### 2.14 错误与特殊状态（消息尾部）
+
+状态块：内边距 9×10、圆角 10，图标 14 + 一行粗体原因；下方是操作行（2.3 的按钮样式，主操作 `research` 色）。不写解释性句子。
+
+| 状态 | 底色 | 原因文字 | 操作 |
+| --- | --- | --- | --- |
+| 网络不可用（云端模型） | `critical` 8% | 网络不可用 | 重试；改用本机模型（批次 D，配置了本机模型时才出现） |
+| Key 无效（401 / 403） | `critical` 8% | API Key 无效 | 打开设置 |
+| 请求过多 / 服务不可用（429 / 5xx 重试耗尽） | `critical` 8% | 服务暂时不可用 | 重试 |
+| 超时 / 预算耗尽 | `caution` 10% | 超出本次上限 | 继续（显式重发） |
+| 拒答 | `caution` 10% | 模型拒绝回答 | 重新生成 |
+| 协议 / 其他错误 | `critical` 8% | 请求失败 | 重试 |
+| 用户停止 | 无块 | 操作行左侧 `footnote`“已停止” | 重新生成；保留已生成的部分 |
+| 上次退出时中断 | `caution` 10% | 上次退出时没有完成 | 继续（不自动重发） |
+
+错误分类沿用 ADR 0001 的 `ResearchFailureKind`，不显示供应商原始报错。重试只由用户触发。
+
+### 2.15 侧栏“对话”分组（批次 B）
+
+替换现有“研究”分组（见第 4 节）。分组标题“对话”右侧 `add` 20×20 按钮（新对话）。最多列 5 个最近的对话：`MMSidebarItem`，图标 `conversation`（`research` 色），标签为对话标题，当前打开的对话为选中态。尾部：生成中 `MMPill` 带 9 的转圈（`research`）、未完成 `MMPill`“未完成”（`caution`）、失败 `MMPill`“失败”（`critical`）、否则有笔记时 `MMCount`。点击打开面板（`toolbar` 来源）并切到该对话。右键同 2.13。没有对话时一行“问助手…”，尾部显示 ⌃⌘R。侧栏搜索框同时匹配对话标题。
+
+### 2.16 助手设置
+
+`MMSheet`，宽 560。字段：服务与模型（选择 + Key，Key 存钥匙串）、联网（需要时搜索网页和论文 / 阻止访问本机和内网地址）、修改学习集（改动脑图前先预览）、上下文（自动附带正在看的页面和选中的卡片）、每次回答的上限（工具步数、时长）。不加副标题和字段说明。现有研究设置（`ResearchSettings`）的服务、模型、地址、上限迁移过来；“显示将发送的上下文”删除（上下文 chip 已经可见）。
+
+---
+
+## 3. 入口清单
+
+| 入口 | 位置与样式 | 行为 | 批次 |
+| --- | --- | --- | --- |
+| 选区工具条“问助手” | `selection_toolbar.dart` 现“研究”按钮的位置（复制之后，分隔线后最右）：`MMIcons.ai` + 文字“问助手”，`research` 色，`ValueKey('selection-assistant')`，tooltip“问助手（⇧⌘E）”。框选（图片）区域不显示 | 固定锚点后把选区加入上下文 → 打开面板（`reader`）→ 聚焦输入框，出现快捷操作行。不再弹启动卡 | B |
+| 高亮工具条“问助手” | 同上，出现在已有高亮的工具条 | 同上，沿用这条高亮的锚点 | B |
+| 节点右键菜单 | `map_pane.dart` 现“研究「…」”分组的位置，`MMMenuHeader`“问助手”+ 条目：解释这个主题 / 解释这张卡片（⇧⌘E）、整理这个分支…（主题和根）、为这个分支出复习题…（主题和根）、查证这张卡片（摘录卡）、带上它自由提问… | 前四项把节点加入上下文并立即发送；“自由提问”只加入上下文并聚焦输入框；未配置时打开面板到未配置页。面板来源 `map` | B（整理、出题为 C） |
+| 卡片详情“问助手” | `card_details.dart` 标题栏，关闭按钮左侧：`MMButton.plain` + `ai` 图标 | 面板从详情切到助手，卡片加入上下文，聚焦输入框 | B |
+| 窗口工具栏“助手” | `workspace_screen.dart` 替换研究按钮：`MMToolbarButton`，`MMIcons.ai` + 文字“助手”，打开时选中态（`research` 色），tooltip“助手（⌃⌘R）” | 打开 / 关闭面板（`toolbar`），打开时聚焦输入框。不再受“研究可用”开关控制：未配置时显示未配置页 | A |
+| 侧栏“对话” | 2.15 | 打开对应对话；`+` 新对话 | B |
+| 原文中的 AI 笔记标记 | 现有 `ResearchNotePopover`，按钮“继续问” | 打开笔记所属对话并滚到那条回答 | B |
+| AI 笔记详情“打开原对话” | `ResearchNoteView` | 同上 | B |
+
+**快捷键**
+
+| 键 | 作用 | 说明 |
+| --- | --- | --- |
+| ⇧⌘E | 问助手：有选区或高亮工具条时带选区；否则带选中的节点；都没有时菜单项禁用 | 沿用 `AppShortcuts.researchSelection`，改名 `askAssistant` |
+| ⌃⌘R（非 macOS ⇧⌥Ctrl+R） | 打开 / 关闭助手面板 | 沿用 `researchPanel`，改名 `assistantPanel` |
+| A | 选区 / 高亮工具条显示时：问助手 | 替换 `readerSelectionShortcuts` 里的 R（R 不再绑定） |
+| ↩ / ⇧↩ | 发送 / 换行 | 输入框内 |
+| Esc | 见第 1 节顺序 | |
+| ⌘Z | 撤销应用的提议或存的笔记 | 走工作区撤销栈 |
+
+新对话不设快捷键：⇧⌘N 已是“添加主题”。
+
+**菜单栏**：编辑菜单“研究所选内容…”改为“问助手…”（⇧⌘E）；显示菜单“显示 / 隐藏研究面板”改为“显示 / 隐藏助手”（⌃⌘R）；“研究记录”“删除研究”“保存视频链接”删除；AI 笔记的“加入复习”保留。
+
+---
+
+## 4. 删除旧研究界面
+
+只删界面。`mm_research` 的 `UrlPolicy`、安全传输、OpenAlex、正文提取、快照和 `ResearchNote` 实体保留（上位文档 5.2）。删除在批次 B 完成，那之前研究入口和助手并存（批次 A）。
+
+| 旧元素 | 位置 | 处理 |
+| --- | --- | --- |
+| 启动卡（意图网格 + 推荐标记、问题、方式三选一、关键词、来源类型 chip、上下文开关列表、“稍后研究”“作为新研究 / 加入当前问题”） | `widgets/research_launcher.dart`（`ResearchLauncher`、`_IntentGrid`、`_ContextBox`、`_ContextPartRow`）、`research_entry.dart` 的 `showResearchLauncher` 调用 | 删除，入口直接进对话 |
+| 意图 / 方式 / 来源类型模型 | `research_intents.dart`（`ResearchIntent`、`ResearchMethod`、`ResearchSourceKind`、推荐与关键词） | 删除；快捷操作和 Skills 取代 |
+| 上下文可选部件 | `research_origin.dart` 的 `ResearchContextKind` / `ResearchContextPart` | 删除开关；**保留**选区锚点与页面几何的捕获（`pdfOrigin` 的锚定部分），供上下文 chip 和存为笔记用 |
+| 研究面板起始页、来源卡、可编辑问题、运行行 | `research_panel.dart`：`_StartPage`、`_OriginCard`、`_QuestionField`、`_RunLine` | 删除；空态、引用块、步骤条取代 |
+| 解答 / 资料 / 已摘取三个标签 | `research_panel.dart`：`_Tabs`、`_AnswerView`、`_ModeBadge`、`_PointRow`、`_PointAction`、`_SavedView`、`_Card`、`_AttachmentChip`、`_Placeholder` | 删除；单条消息取代 |
+| 勾选要点 → 保存栏 | `research_panel.dart`：`_SaveBar` | 删除 |
+| 旧追问输入框 | `research_panel.dart`：`_Composer`、`_ComposerDraft` | 删除；`Composer` 取代 |
+| 保存表单（位置、父节点、拆分子节点） | `widgets/save_note_sheet.dart` | 删除；`SaveNotePopover` 取代 |
+| 资料列表 | `widgets/research_sources.dart` | 删除；来源行 + 来源抽屉取代 |
+| 阅读视图（划选摘取证据、粘贴正文、AI 摘要） | `widgets/research_reading.dart`（`ResearchReading`、`_SummaryBox`、`_PasteSheet`） | 删除；来源抽屉取代（逐句摘取后置到批次 E） |
+| 保存视频链接 | `widgets/video_link_sheet.dart` | 删除；视频作为来源出现 |
+| 研究专用控件 | `widgets/research_widgets.dart`：`ResearchFieldLabel`、`ResearchRadio`、`ResearchChip`、`ResearchMethodPicker`、`ResearchNotice`、`showResearchSessionMenu`、`deleteResearchSession` | 删除；`CiteBadge`、`EvidenceQuote` **保留**（AI 笔记详情在用） |
+| 研究草稿 | `research_drafts.dart`（稍后、勾选、改写、摘取、所选资料、补充上下文、摘要） | 删除；对话状态存在 `ConversationStorage` |
+| 研究设置面板 | `widgets/research_settings_sheet.dart` | 替换为助手设置（2.16） |
+| 工具栏“研究”按钮 | `workspace_screen.dart` | 替换为“助手” |
+| 选区 / 高亮工具条“研究”（R） | `selection_toolbar.dart`、`ReaderSelectionCommand.research` | 替换为“问助手”（A） |
+| 节点菜单“研究「…」”分组 | `map_pane.dart` | 替换为“问助手”分组 |
+| 侧栏“研究”分组（会话、“稍后研究”行） | `workspace_sidebar.dart` | 替换为“对话”分组 |
+| 菜单栏研究命令 | `app_commands.dart`（研究记录、删除研究、保存视频、研究所选内容、显示 / 隐藏研究面板） | 见第 3 节 |
+| `RightPanel.research` | `workspace_controller.dart`、`right_panel.dart` | 改为 `RightPanel.assistant` |
+| 文案 | `app_zh.arb` / `app_en.arb` 中只被上述元素使用的 `research*` 键 | 随元素删除；界面上“研究笔记”改称“AI 笔记” |
+| 文档 | `docs/research-ui.md` | 批次 B 完成后标为已废弃，指向本文 |
+
+**保留并改名的界面**：`ResearchNoteView`（AI 笔记详情）、`ResearchNotePopover`（原文标记弹出卡）、脑图上的研究卡片（显示“AI 笔记”），以及它们的复习开关和双向关联。
+
+---
+
+## 5. 验收要点（给各批次的 widget 测试）
+
+- 面板：400 / 360 两种宽度；从选区打开收起脑图、从节点打开收起原文、关闭后恢复；Esc 顺序。
+- 消息：流式增量、步骤条生成中不可收起 / 完成后折叠、非法引用编号被丢弃、`p.N` 跳回原文、`[n]` 打开抽屉。
+- 输入：输入法组字时 ↩ 不发送；`/` 过滤与键盘选择；`@` 添加 chip；自动 chip 只对一条消息失效；空文本发送禁用。
+- 提议卡：取消勾选后数量变化、0 项禁用、应用一步撤销、目标删除后的条目失效、悬停预览。
+- 存为笔记：两个位置都不勾时禁用、只有选区上下文时出现“附到原文”、一次撤销、操作行变成已存。
+- 状态：未配置、各类错误的原因与操作、停止保留部分回答、中断不自动重发。
+- 文案：组件里没有副标题、提示条、说明行（测试里断言这些文字不存在）。
