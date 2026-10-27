@@ -1095,6 +1095,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// A note's title or text, edited from the details: the map card and the
   /// source's mark show the same note. One undo step.
+  Future<void> setResearchReview(String noteId, {required bool enabled}) =>
+      _update((c) => _editor.setResearchReview(c, noteId, enabled: enabled));
+
   Future<void> editResearchNote(String noteId, {String? title, String? body}) =>
       _update((c) => _editor.editResearchNote(c, noteId, title: title, body: body));
 

@@ -13,6 +13,8 @@ import '../research_drafts.dart';
 import '../research_intents.dart';
 import '../research_settings.dart';
 import 'research_widgets.dart';
+import 'video_link_sheet.dart';
+import 'save_note_sheet.dart';
 
 /// Searches of other sites, opened in the browser. Their results are never
 /// read or counted as sources.
@@ -44,7 +46,7 @@ class ResearchSources extends ConsumerWidget {
     final drafts = value.drafts;
     final controller = ref.read(researchPanelProvider(studySetId).notifier);
     final running = panel.progress.containsKey(session.id) || session.status == 'running';
-    final query = drafts.keywords.isNotEmpty ? drafts.keywords.first : session.question;
+    final query = drafts.keywords.isNotEmpty ? drafts.keywords.join(' ') : session.question;
     final external = externalSearches(drafts.kinds, query);
     final kinds = {for (final s in value.sources) sourceKind(s.kind)};
     final shown = [
@@ -86,6 +88,15 @@ class ResearchSources extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(MMSpacing.l),
       children: [
+        if (drafts.kinds.contains(ResearchSourceKind.video))
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: MMButton(
+              key: const ValueKey('save-video-link'),
+              label: l.researchSaveVideo,
+              onPressed: () => showVideoLinkSheet(context, studySetId, session.id),
+            ),
+          ),
         if (kinds.length > 1)
           Padding(
             padding: const EdgeInsets.only(bottom: MMSpacing.m),
@@ -249,7 +260,14 @@ class _SourceItem extends ConsumerWidget {
                   busy: reading && source.versions.isEmpty && !failed,
                   onTap: () => unawaited(openReading()),
                 ),
-              if (source.versions.isNotEmpty)
+              if (kind == ResearchSourceKind.video)
+                _SmallButton(
+                  icon: MMIcons.add,
+                  label: l.researchSaveLinkOnly,
+                  onTap: () =>
+                      showSaveNoteSheet(context, studySetId: studySetId, sessionId: sessionId, linkOnly: source),
+                ),
+              if (source.versions.isNotEmpty && kind != ResearchSourceKind.video)
                 _SmallButton(
                   key: ValueKey('choose-${source.id}'),
                   icon: chosen ? MMIcons.check : MMIcons.add,

@@ -244,6 +244,7 @@ class _Session extends ConsumerWidget {
                   value: value,
                   sourceId: reading,
                   focusParagraphId: panel.focusParagraphId,
+                  version: panel.readingVersion,
                 )
               : switch (panel.tab) {
                   ResearchTab.answer => _AnswerView(studySetId: studySetId, value: value, panel: panel),
@@ -904,6 +905,10 @@ class _PointRowState extends ConsumerState<_PointRow> {
                                   onTap: () => controller.openReading(
                                     cite.sourceId,
                                     paragraphId: evidenceParagraph(value.evidence, cite),
+                                    version: value.evidence
+                                        .where((e) => e.id == cite.evidenceId)
+                                        .firstOrNull
+                                        ?.sourceVersion,
                                   ),
                                 ),
                               ),
@@ -926,7 +931,11 @@ class _PointRowState extends ConsumerState<_PointRow> {
                       key: ValueKey('quote-${point.key}'),
                       quote: quote.quote,
                       caption: l.researchQuoteFrom(value.numberOf(quote.sourceId)),
-                      onOpen: () => controller.openReading(quote.sourceId, paragraphId: quote.locator.paragraphId),
+                      onOpen: () => controller.openReading(
+                        quote.sourceId,
+                        paragraphId: quote.locator.paragraphId,
+                        version: quote.sourceVersion,
+                      ),
                     ),
                   ],
                   if (_hovered && editing == null)

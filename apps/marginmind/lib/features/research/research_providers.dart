@@ -112,6 +112,7 @@ class ResearchSessionController extends AsyncNotifier<ResearchSessionState> {
       (await _ready).readSources(ref.read(researchExtractorProvider), ids);
   Future<void> updateDrafts(List<Map<String, Object?>> drafts) async => (await _ready).updateDrafts(drafts);
   Future<void> rename(String question) async => (await _ready).rename(question);
+  Future<void> saveVideoLink(Uri url) async => (await _ready).saveVideoLink(url);
   Future<void> pasteSource(String sourceId, String text) async => (await _ready).pasteSource(sourceId, text);
 }
 

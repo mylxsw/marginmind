@@ -9,6 +9,8 @@ import 'package:mm_platform/mm_platform.dart';
 import '../features/library/library_controller.dart';
 import '../features/library/new_study_set.dart';
 import '../features/research/research_entry.dart';
+import '../features/research/research_controller.dart';
+import '../features/research/widgets/video_link_sheet.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
@@ -484,6 +486,32 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     }
     // ⇧⌘E: the selected text (or highlight) in the reader, else the selected node.
     if (ref.watch(researchAvailableProvider) && inWorkspace) {
+      final researchPanel = ref.watch(researchPanelProvider(workspaceId));
+      final noteId = workspaceState!.panel == RightPanel.research
+          ? researchPanel.noteId
+          : workspace!.content
+                .card(
+                  workspaceState.panel == RightPanel.details
+                      ? workspaceState.detailsCardId ?? ''
+                      : workspaceState.selectedCardId ?? '',
+                )
+                ?.researchNoteId;
+      edit.add(
+        AppCommand(
+          l.researchSaveVideo,
+          researchPanel.sessionId == null || workspaceState.panel != RightPanel.research
+              ? null
+              : () => showVideoLinkSheet(context, workspaceId, researchPanel.sessionId!),
+        ),
+      );
+      edit.add(
+        AppCommand(
+          '${noteId != null && workspace!.content.researchReviewEnabled(noteId) ? "✓ " : ""}${l.researchAddReview}',
+          noteId == null
+              ? null
+              : () => workspace!.setResearchReview(noteId, enabled: !workspace.content.researchReviewEnabled(noteId)),
+        ),
+      );
       final researchText = selectionOpen || (highlightOpen && highlightText);
       final researchCard = editable && !_textFocused && selected != null ? selected : null;
       edit.add(

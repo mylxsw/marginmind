@@ -117,7 +117,7 @@ class ResearchNoteView extends ConsumerWidget {
                           Text(
                             [
                               Uri.tryParse(s.url)?.host ?? '',
-                              l.researchFetchedAt(DateFormat.yMd(locale).format(s.fetchedAt)),
+
                               if (evidence.any(
                                 (e) => e.sourceId == s.id && e.acquisition == EvidenceAcquisition.userPaste,
                               ))
@@ -136,7 +136,11 @@ class ResearchNoteView extends ConsumerWidget {
                                       ? null
                                       : () => panel
                                           ..show(note.sessionId!, tab: ResearchTab.sources)
-                                          ..openReading(e.sourceId, paragraphId: e.locator.paragraphId),
+                                          ..openReading(
+                                            e.sourceId,
+                                            paragraphId: e.locator.paragraphId,
+                                            version: e.sourceVersion,
+                                          ),
                                 ),
                               ),
                         ],
@@ -146,6 +150,19 @@ class ResearchNoteView extends ConsumerWidget {
                 ),
               ),
         ]),
+        const SizedBox(height: MMSpacing.l),
+        Row(
+          children: [
+            MMSwitch(
+              key: const ValueKey('research-review-toggle'),
+              semanticLabel: l.researchAddReview,
+              value: content.researchReviewEnabled(note.id),
+              onChanged: (value) => workspace.setResearchReview(note.id, enabled: value),
+            ),
+            const SizedBox(width: MMSpacing.s),
+            Text(l.researchAddReview, style: t.body),
+          ],
+        ),
         const SizedBox(height: MMSpacing.l),
         section(l.researchPlaces, [
           if (!attachments.any((a) => a.target is PdfTarget))
@@ -207,7 +224,11 @@ class ResearchNoteView extends ConsumerWidget {
               icon: MMIcons.trash,
               onPressed: () async {
                 final marks = attachments.where((a) => a.target is PdfTarget).length;
-                final cards = content.cards.where((card) => card.researchNoteId == note.id).length;
+                final cards = content.cards
+                    .where(
+                      (card) => card.researchNoteId == note.id && card.id != StudySetContent.researchReviewId(note.id),
+                    )
+                    .length;
                 final ok = await showConfirmSheet(
                   context,
                   title: l.researchDeleteTitle,

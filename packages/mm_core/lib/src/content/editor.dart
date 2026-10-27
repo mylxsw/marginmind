@@ -936,6 +936,20 @@ class StudySetEditor {
     );
   }
 
+  /// Opt-in uses existing Card/FSRS fields without changing format 7.
+  StudySetContent setResearchReview(StudySetContent c, String noteId, {required bool enabled}) {
+    if (c.researchNote(noteId) == null) return c;
+    final id = StudySetContent.researchReviewId(noteId);
+    if (c.card(id) != null) return setSuspended(c, id, suspended: !enabled);
+    if (!enabled) return c;
+    return c.copyWith(
+      cards: [
+        ...c.cards,
+        Card(id: id, kind: CardKind.research, researchNoteId: noteId, createdAt: now()),
+      ],
+    );
+  }
+
   StudySetContent setSuspended(StudySetContent c, String cardId, {required bool suspended}) {
     final card = c.card(cardId);
     if (card == null || card.suspended == suspended) return c;

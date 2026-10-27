@@ -13,6 +13,7 @@ import 'package:marginmind/features/research/research_drafts.dart';
 import 'package:marginmind/features/research/research_providers.dart';
 import 'package:marginmind/features/research/research_settings.dart';
 import 'package:marginmind/features/research/widgets/research_launcher.dart';
+import 'package:marginmind/features/research/widgets/video_link_sheet.dart';
 import 'package:marginmind/features/research/widgets/research_note_popover.dart';
 import 'package:marginmind/features/research/widgets/research_note_view.dart';
 import 'package:marginmind/features/research/widgets/research_widgets.dart';
@@ -264,6 +265,126 @@ final _panel = find.byType(RightPanelView);
 Finder _inPanel(Finder finder) => find.descendant(of: _panel, matching: finder);
 
 void main() {
+  testWidgets('historical citations open their own snapshot, returning to a source opens latest', (tester) async {
+    final app = await _open(tester, prefs: const {});
+    final now = DateTime(2026);
+    final oldText = markdownArticle(ReadableHtml(url: _page, title: 'Old', html: '<p>Old retained evidence.</p>'));
+    final newText = markdownArticle(ReadableHtml(url: _page, title: 'New', html: '<p>New changed page.</p>'));
+    final oldFile = await app.repository.writeResearchSnapshot('demo-1', encodeSnapshot(oldText.paragraphs));
+    final newFile = await app.repository.writeResearchSnapshot('demo-1', encodeSnapshot(newText.paragraphs));
+    final source = ResearchSource(
+      id: 'versioned',
+      url: _page.toString(),
+      canonicalUrl: _page.toString(),
+      kind: 'web',
+      title: 'Page',
+      fetchedAt: now,
+      readState: 'fullText',
+      versions: [
+        SourceVersion(version: 1, snapshotFile: oldFile, hash: 'old'),
+        SourceVersion(version: 2, snapshotFile: newFile, hash: 'new'),
+      ],
+    );
+    await app.repository.saveResearchSession(
+      'demo-1',
+      ResearchSession(
+        id: 'versioned-session',
+        question: 'Question',
+        status: 'done',
+        createdAt: now,
+        updatedAt: now,
+        drafts: [
+          {
+            'type': 'engine',
+            'sources': [source.toJson()],
+            'metadata': {
+              'versioned': {
+                'versions': {
+                  '1': {'readState': 'abstractOnly', 'fetchedAt': now.toIso8601String()},
+                },
+              },
+            },
+          },
+        ],
+      ),
+    );
+    app.panel.show('versioned-session');
+    app.panel.openReading('versioned', version: 1, paragraphId: oldText.paragraphs.keys.first);
+    await _settle(tester);
+    expect(find.text('Old retained evidence.'), findsOneWidget);
+    expect(find.text('New changed page.'), findsNothing);
+    expect(find.text('v1'), findsOneWidget);
+    app.panel.openReading('versioned');
+    await _settle(tester);
+    expect(find.text('New changed page.'), findsOneWidget);
+    expect(find.text('Old retained evidence.'), findsNothing);
+    expect(app.container.read(researchPanelProvider('demo-1')).readingVersion, isNull);
+  });
+
+  testWidgets('PDF-only note opts into review without creating a visible card; undo restores opt-out', (tester) async {
+    final app = await _open(tester);
+    final now = DateTime(2026);
+    await app.workspace.saveResearchNote(
+      ResearchNote(
+        id: 'review-note',
+        title: 'Conclusion',
+        question: 'Why?',
+        body: 'Answer',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      source: PdfTarget(
+        documentId: _docId,
+        pages: const [
+          AnnotationPage(page: 24, rects: [_rect]),
+        ],
+        quote: _claim,
+      ),
+    );
+    app.panel.showNote('review-note');
+    await _settle(tester);
+    final count = app.workspace.content.nodes.length;
+    final toggle = find.byKey(const ValueKey('research-review-toggle'));
+    expect(tester.widget<MMSwitch>(toggle).value, isFalse);
+    await _tap(tester, toggle);
+    await _settle(tester);
+    expect(app.workspace.content.researchReviewEnabled('review-note'), isTrue);
+    expect(app.workspace.content.nodes.length, count);
+    await app.workspace.undo();
+    await _settle(tester);
+    expect(tester.widget<MMSwitch>(toggle).value, isFalse);
+  });
+
+  testWidgets('video link sheet validates URLs, saves without extraction, and exposes external searches', (
+    tester,
+  ) async {
+    final app = await _open(tester, prefs: const {});
+    await _openLauncher(tester, app.workspace, _claim);
+    await _tap(tester, find.text('Research Later'));
+    await _settle(tester);
+    final session = (await app.repository.listResearchSessions('demo-1')).single;
+    app.panel.show(session.id, tab: ResearchTab.sources);
+    await _settle(tester);
+    unawaited(showVideoLinkSheet(tester.element(_panel), 'demo-1', session.id));
+    await _settle(tester);
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('video-url')), matching: find.byType(TextField)),
+      'https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ',
+    );
+    await _tap(tester, find.byKey(const ValueKey('video-save')));
+    expect(find.text('Enter a YouTube or Bilibili video URL.'), findsOneWidget);
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('video-url')), matching: find.byType(TextField)),
+      'https://youtu.be/dQw4w9WgXcQ',
+    );
+    await _tap(tester, find.byKey(const ValueKey('video-save')));
+    await _settle(tester);
+    expect(_session(app, session.id).sources.single.readState, 'noTranscript');
+    expect(find.byKey(const ValueKey('video-url')), findsNothing);
+    expect(find.textContaining('dQw4w9WgXcQ'), findsWidgets);
+    await settleHud(tester);
+  });
+
   group('launcher', () {
     testWidgets('from a passage: suggested intent, question, keywords, method and what will be sent', (tester) async {
       final app = await _open(tester, ai: _Ai(_webAnswer));
@@ -668,7 +789,8 @@ void main() {
   });
 
   testWidgets('later research waits in the sidebar and the start page, and continues', (tester) async {
-    final app = await _open(tester, ai: _Ai(_offlineAnswer));
+    final ai = _Ai(_offlineAnswer);
+    final app = await _open(tester, ai: ai);
     await _openLauncher(tester, app.workspace, _other);
     await _tap(tester, find.byKey(const ValueKey('intent-explain')));
     await _tap(tester, find.text('Research Later'));
@@ -677,12 +799,17 @@ void main() {
     final later = (await app.repository.listResearchSessions('demo-1')).single;
     expect(later.status, 'draft');
     expect(ResearchDrafts.of(later).later, isTrue);
+    expect(ai.requests, isEmpty);
+    final anchor = later.anchor!.toJson();
+    await _select(tester, app.workspace, _claim);
     await _tap(tester, find.byKey(const ValueKey('sidebar-research-later')));
     expect(find.byKey(ValueKey('later-${later.id}')), findsOneWidget);
     await _tap(tester, find.text('Continue'));
     await _settle(tester);
     expect(find.text('锚定指最先接触的信息成为参照。'), findsOneWidget);
     expect(ResearchDrafts.of((await app.repository.listResearchSessions('demo-1')).single).later, isFalse);
+    expect((await app.repository.listResearchSessions('demo-1')).single.anchor!.toJson(), anchor);
+    expect(ai.requests, hasLength(1));
     await settleHud(tester);
   });
 

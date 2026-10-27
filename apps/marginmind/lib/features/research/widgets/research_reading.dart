@@ -73,12 +73,14 @@ class ResearchReading extends ConsumerStatefulWidget {
     required this.value,
     required this.sourceId,
     this.focusParagraphId,
+    this.version,
   });
 
   final String studySetId;
   final ResearchSessionState value;
   final String sourceId;
   final String? focusParagraphId;
+  final int? version;
 
   @override
   ConsumerState<ResearchReading> createState() => _ResearchReadingState();
@@ -92,7 +94,18 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
   /// The selected passage: paragraph and text.
   (String, String)? _selection;
 
-  ResearchSource? get _source => widget.value.sources.where((s) => s.id == widget.sourceId).firstOrNull;
+  ResearchSource? get _source {
+    final source = widget.value.sources.where((s) => s.id == widget.sourceId).firstOrNull;
+    if (source == null || widget.version == null) return source;
+    final versionMeta = ((widget.value.metadata[source.id] as Map?)?['versions'] as Map?)?['${widget.version}'] as Map?;
+    return ResearchSource.fromJson({
+      ...source.toJson(),
+      'readState':
+          versionMeta?['readState'] ??
+          (source.versions.lastOrNull?.version == widget.version ? source.readState : 'unread'),
+      'fetchedAt': versionMeta?['fetchedAt'] ?? source.fetchedAt.toIso8601String(),
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -107,9 +120,20 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
     if (old.focusParagraphId != widget.focusParagraphId) _scrollToFocus();
   }
 
+  SourceVersion? get _version => widget.version == null
+      ? _source?.versions.lastOrNull
+      : _source?.versions.where((v) => v.version == widget.version).firstOrNull;
+
   void _load() {
-    final file = _source?.versions.lastOrNull?.snapshotFile;
-    if (file == null || file == _file) return;
+    final file = _version?.snapshotFile;
+    if (file == null) {
+      _file = null;
+      _blocks = null;
+      return;
+    }
+    if (file == _file) return;
+    _selection = null;
+    _keys.clear();
     _file = file;
     _blocks = ref
         .read(researchSnapshotRepositoryProvider)
@@ -131,7 +155,7 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
 
   Evidence _evidence(String paragraphId, String quote) {
     final source = _source!;
-    final version = source.versions.last.version;
+    final version = _version!.version;
     final pasted = widget.value.pastedVersions(source.id).contains(version);
     return Evidence(
       id: sha256.convert(utf8.encode(jsonEncode(['clip', source.id, version, paragraphId, quote]))).toString(),
@@ -231,7 +255,7 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
       researchPanelProvider(widget.studySetId).select((s) => s.progress[sessionId]?.stage == ResearchStage.read),
     );
     final Widget body;
-    if (source.versions.isEmpty) {
+    if (_version == null) {
       final failed = source.readState == ResearchReadState.failed.name;
       body = MMEmptyState(
         icon: failed ? MMIcons.warning : MMIcons.interpret,
@@ -240,14 +264,15 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
         actions: [
           if (reading)
             SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2, color: c.research))
-          else
+          else if (source.kind != 'video')
             MMButton(
               key: const ValueKey('reading-read'),
               label: failed ? l.researchReadAgain : l.researchRead,
               onPressed: () => controller.read(source.id, sessionId: sessionId),
             ),
-          if (failed) ...[
-            MMButton(key: const ValueKey('reading-paste'), label: l.researchPasteText, onPressed: _paste),
+          if (failed || source.kind == 'video') ...[
+            if (source.kind != 'video')
+              MMButton(key: const ValueKey('reading-paste'), label: l.researchPasteText, onPressed: _paste),
             MMButton(
               key: const ValueKey('reading-link-only'),
               label: l.researchSaveLinkOnly,
@@ -258,7 +283,7 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
         ],
       );
     } else {
-      final summaryKey = '${source.id}@${source.versions.last.version}';
+      final summaryKey = '${source.id}@${_version!.version}';
       final summary = widget.value.drafts.summaries[summaryKey];
       final summarizing = ref.watch(
         researchPanelProvider(widget.studySetId).select((s) => s.summarizing.contains(summaryKey)),
@@ -283,15 +308,25 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (url != null) Text(url.host, style: t.footnote.copyWith(color: c.secondaryLabel)),
-                  MMPill(state, color: stateColor),
-                  if (widget.value.pastedVersions(source.id).contains(source.versions.last.version))
-                    MMPill(l.researchPasted),
+                  if (widget.version == null || source.readState != 'unread') MMPill(state, color: stateColor),
+                  if (widget.value.pastedVersions(source.id).contains(_version!.version)) MMPill(l.researchPasted),
                   Text(
-                    l.researchFetchedAt(DateFormat.yMd(locale).add_Hm().format(source.fetchedAt)),
+                    widget.version == null
+                        ? l.researchFetchedAt(DateFormat.yMd(locale).add_Hm().format(source.fetchedAt))
+                        : 'v${widget.version}',
                     style: t.footnote.copyWith(color: c.secondaryLabel),
                   ),
                 ],
               ),
+              if (widget.version == null && source.kind != 'video')
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: MMButton(
+                    label: l.researchReadAgain,
+                    variant: MMButtonVariant.plain,
+                    onPressed: reading ? null : () => controller.read(source.id, sessionId: sessionId),
+                  ),
+                ),
               if (source.readState == ResearchReadState.abstractOnly.name) ...[
                 const SizedBox(height: MMSpacing.s),
                 ResearchNotice(
@@ -300,7 +335,7 @@ class _ResearchReadingState extends ConsumerState<ResearchReading> {
                   onAction: url == null ? null : () => links.open(url),
                 ),
               ],
-              if (ai) ...[
+              if (ai && widget.version == null && source.kind != 'video') ...[
                 const SizedBox(height: MMSpacing.m),
                 _SummaryBox(summary: summary, busy: summarizing, onSummarize: _summarize),
               ],

@@ -209,6 +209,9 @@ class ResearchSessionEngine {
           for (final document in selected) {
             final source = state.sources.where((s) => s.id == document.sourceId).firstOrNull;
             final version = source?.versions.where((v) => v.version == document.version).firstOrNull;
+            if (source?.kind == 'video') {
+              throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'no_transcript');
+            }
             if (version == null) throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'missing_snapshot');
             final markdown = await token.bind(snapshots.readResearchSnapshot(studySetId, version.snapshotFile));
             if (snapshotParagraphs(markdown)[document.paragraphId] != document.text) {
@@ -438,7 +441,7 @@ class ResearchSessionEngine {
       for (final id in ids) {
         token.check();
         final source = state.sources.where((s) => s.id == id).firstOrNull;
-        if (source == null) continue;
+        if (source == null || source.kind == 'video') continue;
         final child = CancellationToken();
         token.whenCancelled.then((_) => child.cancel());
         try {
@@ -487,15 +490,13 @@ class ResearchSessionEngine {
             final targetId = old.id;
             final hash = sha256.convert(utf8.encode(markdown)).toString();
             final versions = [...old.versions];
-            if (!versions.any((v) => v.hash == hash)) {
-              versions.add(
-                SourceVersion(
-                  version: versions.fold<int>(0, (n, v) => n > v.version ? n : v.version) + 1,
-                  snapshotFile: file,
-                  hash: hash,
-                ),
-              );
-            }
+            versions.add(
+              SourceVersion(
+                version: versions.fold<int>(0, (n, v) => n > v.version ? n : v.version) + 1,
+                snapshotFile: file,
+                hash: hash,
+              ),
+            );
             sources[index] = ResearchSource.fromJson({
               ...old.toJson(),
               'title': content.title,
@@ -504,9 +505,19 @@ class ResearchSessionEngine {
               'fetchedAt': now().toIso8601String(),
               'versions': versions.map((v) => v.toJson()).toList(),
             });
-            metadata[targetId] = {...(metadata[targetId] as Map? ?? {}), 'error': null};
+            metadata[targetId] = {
+              ...(metadata[targetId] as Map? ?? {}),
+              'error': null,
+              'versions': {
+                ...((metadata[targetId] as Map?)?['versions'] as Map? ?? {}),
+                '${versions.last.version}': {
+                  'fetchedAt': now().toIso8601String(),
+                  'readState': ResearchReadState.fullText.name,
+                },
+              },
+            };
             final evidence = [...current.evidence];
-            final version = versions.firstWhere((v) => v.hash == hash).version;
+            final version = versions.last.version;
             for (final quote in ((metadata[targetId] as Map?)?['candidateQuotes'] as List? ?? []).cast<String>()) {
               for (final paragraph in content.paragraphs.entries) {
                 if (quote.isEmpty || !paragraph.value.contains(quote)) continue;
@@ -559,6 +570,19 @@ class ResearchSessionEngine {
           child.cancel();
         }
       }
+    });
+  }
+
+  /// Link-only sources never produce snapshots or evidence.
+  Future<void> saveVideoLink(Uri url) {
+    final source = videoSource(url, now());
+    return _write((s) {
+      final current = ResearchSessionState(s);
+      final sources = [...current.sources];
+      mergeSource(sources, source);
+      return _data(patchSession(s, {'sourceIds': sources.map((s) => s.id).toList()}), {
+        'sources': sources.map((s) => s.toJson()).toList(),
+      });
     });
   }
 

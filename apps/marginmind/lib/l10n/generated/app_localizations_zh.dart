@@ -1911,4 +1911,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get researchInterruptedShort => '已中断';
+
+  @override
+  String get researchAddReview => '加入复习';
+
+  @override
+  String get researchSaveVideo => '保存视频链接…';
+
+  @override
+  String get researchVideoUrl => '视频链接';
+
+  @override
+  String get researchInvalidVideo => '请输入 YouTube 或 B 站视频链接。';
 }

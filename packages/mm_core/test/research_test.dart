@@ -66,6 +66,54 @@ void main() {
     createCard: true,
   );
 
+  test('PDF-only research review is opt-in, persisted, undoable and keeps FSRS history', () {
+    var c = editor.saveResearchNote(base(), note(), targets: [pdf], evidence: [evidence], sources: [source]);
+    expect(c.researchReviewEnabled('note'), isFalse);
+    expect(c.reviewQueue(time).where((c) => c.kind == CardKind.research), isEmpty);
+    final before = c;
+    c = editor.setResearchReview(c, 'note', enabled: true);
+    final carrier = StudySetContent.researchReviewId('note');
+    expect(c.node(carrier), isNull);
+    expect(c.noteAttachments.length, before.noteAttachments.length);
+    expect(c.cardCount, before.cardCount);
+    expect(c.reviewQueue(time).where((c) => c.kind == CardKind.research).map((c) => c.id), [carrier]);
+    expect(c.reviewQueue(time, mapId: MindMap.defaultId).map((c) => c.id), contains(carrier));
+    expect(c.reviewQueue(time, branchId: 'missing').map((c) => c.id), isNot(contains(carrier)));
+    c = editor.setResearchReview(c, 'note', enabled: true);
+    expect(c.cards.where((c) => c.id == carrier), hasLength(1));
+    final face = buildReviewFace(c.card(carrier)!, c);
+    expect(face.front.title, 'why?');
+    expect(face.back.notes.first.text, note().body);
+    expect(face.back.notes.last.text, contains('captured'));
+    expect(face.back.notes.last.text, contains('v1'));
+    c = editor.rate(c, carrier, Rating.good);
+    final schedule = c.reviewOf(carrier)!.toJson();
+    c = editor.setResearchReview(c, 'note', enabled: false);
+    expect(c.reviewQueue(time.add(const Duration(days: 30))).map((c) => c.id), isNot(contains(carrier)));
+    c = editor.setResearchReview(c, 'note', enabled: true);
+    expect(c.reviewOf(carrier)!.toJson(), schedule);
+    final decoded = StudySetContent.fromJson(jsonDecode(jsonEncode(c.toJson())));
+    expect(decoded.researchReviewEnabled('note'), isTrue);
+    expect(decoded.reviewOf(carrier)!.toJson(), schedule);
+    expect(editor.deleteNote(c, 'note').card(carrier), isNull);
+    expect(editor.setResearchReview(c, 'missing', enabled: true), same(c));
+  });
+
+  test('multiple visible research cards share one review and respect branch scope', () {
+    var c = saved();
+    c = editor.saveResearchNote(c, note(), createCard: true);
+    c = editor.saveResearchNote(c, note(), createCard: true);
+    c = editor.setResearchReview(c, 'note', enabled: true);
+    final visible = c.nodes.first.cardId;
+    final carrier = StudySetContent.researchReviewId('note');
+    expect(c.reviewQueue(time).where((v) => v.kind == CardKind.research), hasLength(1));
+    expect(c.reviewQueue(time, branchId: visible).map((v) => v.id), contains(carrier));
+    expect(c.reviewQueue(time, mapId: 'other').map((v) => v.id), isNot(contains(carrier)));
+    c = editor.setTags(c, visible, ['Research']);
+    expect(c.reviewQueue(time, tag: 'research').map((v) => v.id), contains(carrier));
+    expect(c.reviewQueue(time, tag: 'other').map((v) => v.id), isNot(contains(carrier)));
+  });
+
   test('format 7 entities round trip with optional and locator variants', () {
     var c = saved();
     final card = c.cards.single;

@@ -195,6 +195,25 @@ ReviewFace buildReviewFace(
   ];
   final annotation = card.annotationId == null ? null : content.annotation(card.annotationId!);
 
+  if (card.kind == CardKind.research) {
+    final note = content.researchNote(card.researchNoteId ?? '');
+    final citations = <ReviewNote>[];
+    for (final ref in note?.citations ?? <EvidenceRef>[]) {
+      final evidence = content.evidence.where((e) => e.id == ref.evidenceId).firstOrNull;
+      if (evidence == null) continue;
+      final source = content.researchSources.where((s) => s.id == evidence.sourceId).firstOrNull;
+      citations.add(
+        ReviewNote(
+          '[${citations.length + 1}] ${source?.title ?? evidence.sourceId} · v${evidence.sourceVersion}\n${evidence.quote}\n${source?.url ?? ""}',
+        ),
+      );
+    }
+    return ReviewFace(
+      front: ReviewFront(path: path, prompt: ReviewPrompt.title, title: note?.question ?? ''),
+      back: ReviewBack(notes: [if (note != null) ReviewNote(note.body, note.textFormat), ...citations]),
+    );
+  }
+
   if (card.kind == CardKind.note) {
     final parentId = content.node(card.id, mapId: mapId)?.parentId;
     final parent = parentId == null ? null : content.card(parentId);

@@ -120,20 +120,29 @@ class StudySetContent {
   }
 
   /// Excerpts and notes (topics are structure, not cards to review).
-  int get cardCount => cards.where((c) => c.kind != CardKind.topic).length;
+  int get cardCount =>
+      cards.where((c) => c.kind != CardKind.topic && c.id != researchReviewId(c.researchNoteId ?? '')).length;
 
   int get excerptCount => cards.where((c) => c.kind == CardKind.excerpt).length;
 
   ReviewState? reviewOf(String cardId) => reviews.where((r) => r.cardId == cardId).firstOrNull;
 
+  /// A single persisted carrier per note; it has no map node or attachment.
+  static String researchReviewId(String noteId) => 'research-review:$noteId';
+
+  bool researchReviewEnabled(String noteId) => card(researchReviewId(noteId))?.suspended == false;
+
   /// Cards that can be reviewed: excerpts and non-empty notes on the map.
   Iterable<Card> get reviewableCards => cards.where(
     (c) =>
-        nodes.any((n) => n.cardId == c.id) &&
+        (nodes.any((n) => n.cardId == c.id) ||
+            (c.kind == CardKind.research && c.id == researchReviewId(c.researchNoteId ?? ''))) &&
         switch (c.kind) {
           CardKind.excerpt => annotation(c.annotationId ?? '') != null,
           CardKind.note => c.title.trim().isNotEmpty,
-          CardKind.topic || CardKind.research => false,
+          CardKind.topic => false,
+          CardKind.research =>
+            c.id == researchReviewId(c.researchNoteId ?? '') && researchNote(c.researchNoteId ?? '') != null,
           CardKind.image => c.imageFileName != null,
         },
   );
@@ -152,9 +161,15 @@ class StudySetContent {
     final fresh = <Card>[];
     for (final c in reviewableCards) {
       if (c.suspended) continue;
-      if (mapId != null && node(c.id, mapId: mapId) == null) continue;
-      if (branch != null && !branch.contains(c.id)) continue;
-      if (wanted != null && !c.tags.any((t) => t.toLowerCase() == wanted)) continue;
+      final related = c.kind == CardKind.research
+          ? cards.where((v) => v.researchNoteId == c.researchNoteId && v.id != c.id).toList()
+          : [c];
+      final mapped = related.where((v) => nodes.any((n) => n.cardId == v.id)).toList();
+      // PDF-only notes participate in whole-map review, never an unrelated branch.
+      if (mapId != null && mapped.isNotEmpty && !mapped.any((v) => node(v.id, mapId: mapId) != null)) continue;
+      if (mapId != null && c.kind != CardKind.research && node(c.id, mapId: mapId) == null) continue;
+      if (branch != null && !related.any((v) => branch.contains(v.id))) continue;
+      if (wanted != null && !related.any((v) => v.tags.any((t) => t.toLowerCase() == wanted))) continue;
       final r = byId[c.id];
       if (r == null) {
         fresh.add(c);

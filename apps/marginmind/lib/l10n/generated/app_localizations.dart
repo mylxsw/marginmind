@@ -3571,6 +3571,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Interrupted'**
   String get researchInterruptedShort;
+
+  /// No description provided for @researchAddReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to review'**
+  String get researchAddReview;
+
+  /// No description provided for @researchSaveVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save video link…'**
+  String get researchSaveVideo;
+
+  /// No description provided for @researchVideoUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Video URL'**
+  String get researchVideoUrl;
+
+  /// No description provided for @researchInvalidVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a YouTube or Bilibili video URL.'**
+  String get researchInvalidVideo;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2000,4 +2000,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get researchInterruptedShort => 'Interrupted';
+
+  @override
+  String get researchAddReview => 'Add to review';
+
+  @override
+  String get researchSaveVideo => 'Save video link…';
+
+  @override
+  String get researchVideoUrl => 'Video URL';
+
+  @override
+  String get researchInvalidVideo => 'Enter a YouTube or Bilibili video URL.';
 }
