@@ -1210,4 +1210,705 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get resetCardWidth => '恢复默认宽度';
+
+  @override
+  String get detailsResearchNote => '研究笔记';
+
+  @override
+  String get researchSelection => '研究所选内容';
+
+  @override
+  String get researchSelectionEllipsis => '研究所选内容…';
+
+  @override
+  String get researchNode => '研究节点';
+
+  @override
+  String researchNodeMenu(String title) {
+    return '研究「$title」';
+  }
+
+  @override
+  String get researchIntentExplain => '解释概念';
+
+  @override
+  String get researchIntentInterpret => '解读这段';
+
+  @override
+  String get researchIntentVerify => '查证观点';
+
+  @override
+  String get researchIntentVideo => '找视频 / 图解';
+
+  @override
+  String get researchIntentPaper => '找论文';
+
+  @override
+  String get researchIntentDeep => '深入研究';
+
+  @override
+  String get researchIntentTranslate => '翻译并解释';
+
+  @override
+  String get researchRecommended => '推荐';
+
+  @override
+  String get researchQuestion => '问题';
+
+  @override
+  String get researchQuestionPlaceholder => '写下你想弄清的问题';
+
+  @override
+  String researchQuestionExplain(String term) {
+    return '「$term」是什么意思？请结合上下文举一个例子。';
+  }
+
+  @override
+  String get researchQuestionInterpret => '这段话的论点、推理过程和隐含前提分别是什么？';
+
+  @override
+  String get researchQuestionVerify => '这段话中的结论有依据吗？有没有反例或适用条件？';
+
+  @override
+  String researchQuestionVerifyQuote(String quote) {
+    return '“$quote”——这个说法可靠吗？有没有反例或适用条件？';
+  }
+
+  @override
+  String researchQuestionVideo(String term) {
+    return '找一个直观讲解「$term」的视频或图解';
+  }
+
+  @override
+  String researchQuestionPaper(String term) {
+    return '关于「$term」有哪些代表性研究？结论和局限是什么？';
+  }
+
+  @override
+  String get researchQuestionTranslate => '翻译这段话，并解释其中的术语。';
+
+  @override
+  String get researchKeywords => '搜索关键词';
+
+  @override
+  String get researchAddKeyword => '添加关键词';
+
+  @override
+  String get researchSourcesLabel => '来源';
+
+  @override
+  String get researchKindWeb => '网页';
+
+  @override
+  String get researchKindPaper => '论文';
+
+  @override
+  String get researchKindVideo => '视频';
+
+  @override
+  String get researchKindImage => '图片';
+
+  @override
+  String get researchMethod => '方式';
+
+  @override
+  String get researchMethodSearch => '只搜索';
+
+  @override
+  String get researchMethodOffline => '问 AI（不联网）';
+
+  @override
+  String get researchMethodWeb => '联网研究';
+
+  @override
+  String get researchMethodSearchNote => '不调用 AI，不产生 AI 费用';
+
+  @override
+  String get researchMethodOfflineNote => '只发送所选内容和上下文，不联网';
+
+  @override
+  String researchMethodWebNote(int searches, int pages) {
+    return '最多 $searches 次搜索、读取 $pages 个页面';
+  }
+
+  @override
+  String get researchSetUpAi => '设置 AI 服务…';
+
+  @override
+  String get researchNoAi => '未设置 AI 服务';
+
+  @override
+  String get researchNoAiTitle => '还没有设置 AI 服务';
+
+  @override
+  String get researchNoWeb => '当前服务不支持联网';
+
+  @override
+  String researchContextSummary(String parts, int count) {
+    return '将发送给 AI：$parts（约 $count 字）';
+  }
+
+  @override
+  String get researchContextSelection => '所选内容';
+
+  @override
+  String get researchContextBefore => '前一段';
+
+  @override
+  String get researchContextAfter => '后一段';
+
+  @override
+  String get researchContextChapter => '章节标题';
+
+  @override
+  String get researchContextNode => '节点';
+
+  @override
+  String get researchContextPath => '上级路径';
+
+  @override
+  String get researchContextChildren => '子节点内容';
+
+  @override
+  String get researchRunningChoice => '有一项研究正在进行';
+
+  @override
+  String get researchAsNew => '作为新研究';
+
+  @override
+  String get researchJoin => '加入当前问题';
+
+  @override
+  String get researchLater => '稍后研究';
+
+  @override
+  String get researchStart => '开始研究';
+
+  @override
+  String get researchNeedQuestion => '先写下要研究的问题';
+
+  @override
+  String get researchSavedForLater => '已加入稍后研究';
+
+  @override
+  String get researchJoined => '已加入当前研究';
+
+  @override
+  String get researchSettings => '研究设置';
+
+  @override
+  String get researchBackToOrigin => '回到起点';
+
+  @override
+  String get researchOriginGone => '原位置已删除';
+
+  @override
+  String get researchStageSearch => '检索资料';
+
+  @override
+  String get researchStageAnswer => '生成解答';
+
+  @override
+  String get researchStageWebAnswer => '检索并生成解答';
+
+  @override
+  String researchStageRead(int done, int total) {
+    return '读取资料 $done/$total';
+  }
+
+  @override
+  String get researchRetry => '重试';
+
+  @override
+  String get researchRestart => '重新开始';
+
+  @override
+  String get researchCancelled => '已取消';
+
+  @override
+  String get researchInterrupted => '上次退出时中断';
+
+  @override
+  String get researchFailed => '失败';
+
+  @override
+  String get researchRunning => '进行中';
+
+  @override
+  String researchDoneAt(String time) {
+    return '$time 完成';
+  }
+
+  @override
+  String researchUsedSources(int count) {
+    return '使用 $count 个来源';
+  }
+
+  @override
+  String get researchErrorTimeout => '超时';
+
+  @override
+  String get researchErrorUnavailable => '无法连接服务';
+
+  @override
+  String get researchErrorAuthentication => 'API Key 无效';
+
+  @override
+  String get researchErrorRateLimited => '请求过多，请稍后重试';
+
+  @override
+  String get researchErrorBudget => '已达到上限';
+
+  @override
+  String get researchErrorRefusal => 'AI 拒绝回答';
+
+  @override
+  String get researchErrorUnsupported => '当前服务不支持';
+
+  @override
+  String get researchErrorInvalid => '请求无效';
+
+  @override
+  String get researchErrorProtocol => '回答不完整';
+
+  @override
+  String get researchTabAnswer => '解答';
+
+  @override
+  String get researchTabSources => '资料';
+
+  @override
+  String get researchTabSaved => '已摘取';
+
+  @override
+  String researchBadgeWeb(int count) {
+    return '联网研究 · 实际使用了 $count 个来源';
+  }
+
+  @override
+  String get researchBadgeOffline => '未联网 · 没有外部来源，因此不附引用';
+
+  @override
+  String researchBadgeSources(int count) {
+    return '只基于你选的 $count 份资料，没有联网搜索';
+  }
+
+  @override
+  String get researchViewSources => '查看资料';
+
+  @override
+  String get researchNoSourceBasis => '无来源依据';
+
+  @override
+  String get researchEdited => '你修改过';
+
+  @override
+  String researchQuoteFrom(int number) {
+    return '来源 [$number] · 原文摘录，未改写';
+  }
+
+  @override
+  String get researchEditPoint => '编辑';
+
+  @override
+  String get researchAskPoint => '追问';
+
+  @override
+  String get researchSavePoint => '保存';
+
+  @override
+  String researchAskAbout(String point) {
+    return '关于「$point」：';
+  }
+
+  @override
+  String researchFailedSources(int count) {
+    return '$count 个来源读取失败';
+  }
+
+  @override
+  String researchChecked(int count) {
+    return '已选 $count 条要点';
+  }
+
+  @override
+  String get researchClearChecked => '取消选择';
+
+  @override
+  String get researchSaveNote => '保存为研究笔记…';
+
+  @override
+  String get researchNoAnswerSearch => '“只搜索”不生成解答';
+
+  @override
+  String get researchNoAnswer => '还没有解答';
+
+  @override
+  String researchAnswerFromChosen(int count) {
+    return '基于所选 $count 份资料回答';
+  }
+
+  @override
+  String get researchAnswering => '正在生成解答…';
+
+  @override
+  String get researchFollowUpPlaceholder => '追问，或补充你的想法…';
+
+  @override
+  String get researchCanUseWeb => '可联网';
+
+  @override
+  String get researchOffline => '不联网';
+
+  @override
+  String get researchSend => '发送';
+
+  @override
+  String get researchFilterAll => '全部';
+
+  @override
+  String get researchReadUnread => '未读取';
+
+  @override
+  String get researchReadSnippet => '仅搜索简介';
+
+  @override
+  String get researchReadAbstract => '仅摘要';
+
+  @override
+  String get researchReadFullText => '已提取正文';
+
+  @override
+  String get researchReadTranscript => '已取得字幕';
+
+  @override
+  String get researchReadFailed => '读取失败';
+
+  @override
+  String get researchReadNoTranscript => '无字幕';
+
+  @override
+  String get researchOpenAccess => '开放获取';
+
+  @override
+  String get researchSubscription => '需订阅';
+
+  @override
+  String get researchUsedInAnswer => '用于解答';
+
+  @override
+  String researchMerged(int count) {
+    return '另有 $count 处转载已合并，不计为独立证据';
+  }
+
+  @override
+  String get researchRead => '阅读';
+
+  @override
+  String get researchWhyFailed => '查看原因';
+
+  @override
+  String get researchChoose => '加入资料';
+
+  @override
+  String get researchChosen => '已加入资料';
+
+  @override
+  String get researchPasted => '用户粘贴';
+
+  @override
+  String researchExternalSearch(String site, String query) {
+    return '在 $site 中搜索「$query」';
+  }
+
+  @override
+  String get researchExternal => '外部搜索';
+
+  @override
+  String researchSearching(String keywords) {
+    return '正在检索：$keywords';
+  }
+
+  @override
+  String get researchNoSources => '暂无资料';
+
+  @override
+  String get researchOfflineNoSources => '这项研究没有联网';
+
+  @override
+  String get researchOpenPage => '打开原网页';
+
+  @override
+  String researchFetchedAt(String date) {
+    return '抓取于 $date';
+  }
+
+  @override
+  String get researchAiSummary => 'AI 摘要 · 不是原文';
+
+  @override
+  String get researchSummarize => 'AI 摘要';
+
+  @override
+  String get researchClipEvidence => '摘取为证据';
+
+  @override
+  String get researchWriteNote => '直接写成笔记…';
+
+  @override
+  String researchClipped(int count) {
+    return '已摘取（$count）';
+  }
+
+  @override
+  String get researchCantRead => '无法提取正文';
+
+  @override
+  String get researchReadLogin => '页面需要登录';
+
+  @override
+  String get researchReadTimeout => '页面加载超时。';
+
+  @override
+  String get researchReadUnparseable => '没有找到正文。';
+
+  @override
+  String get researchReadUnsafe => '不允许访问这个地址。';
+
+  @override
+  String get researchReadUnsupported => '不是网页。';
+
+  @override
+  String get researchReadEncoding => '不支持这个网页的文字编码。';
+
+  @override
+  String get researchReadUnavailable => '无法访问该网页。';
+
+  @override
+  String get researchPasteText => '粘贴正文…';
+
+  @override
+  String get researchSaveLinkOnly => '只保存链接';
+
+  @override
+  String get researchReadAgain => '重新读取';
+
+  @override
+  String get researchAbstractOnly => '只读到摘要';
+
+  @override
+  String get researchOpenPublisher => '出版商页面';
+
+  @override
+  String get researchPasteTitle => '粘贴正文';
+
+  @override
+  String get researchClipsTitle => '摘取的证据（草稿）';
+
+  @override
+  String get researchSavedNotes => '已保存的研究笔记';
+
+  @override
+  String get researchNoteFromClips => '用这些证据写研究笔记…';
+
+  @override
+  String get researchNothingSaved => '还没有摘取内容';
+
+  @override
+  String researchInSource(int page) {
+    return '原文 · 第 $page 页';
+  }
+
+  @override
+  String researchInMap(String title) {
+    return '脑图 · $title';
+  }
+
+  @override
+  String researchCitations(int count) {
+    return '$count 个引用';
+  }
+
+  @override
+  String get researchContinue => '继续研究';
+
+  @override
+  String get researchSaveTitle => '保存研究笔记';
+
+  @override
+  String get researchNoteTitle => '标题';
+
+  @override
+  String get researchNoteBody => '内容';
+
+  @override
+  String get researchNoteDefaultTitle => '研究笔记';
+
+  @override
+  String researchCitationsLabel(int count) {
+    return '引用（$count）';
+  }
+
+  @override
+  String get researchNoExternalBasis => '无外部依据';
+
+  @override
+  String get researchSaveTo => '保存到';
+
+  @override
+  String get researchDestBoth => '原文和脑图';
+
+  @override
+  String get researchDestSource => '只附到原文';
+
+  @override
+  String get researchDestMap => '只加入脑图';
+
+  @override
+  String get researchDestNoSource => '从节点发起，没有原文位置';
+
+  @override
+  String get researchAttachUnder => '挂在脑图的';
+
+  @override
+  String researchSplitPoints(int count) {
+    return '把 $count 条要点拆成子节点';
+  }
+
+  @override
+  String get researchSaving => '保存中';
+
+  @override
+  String get researchSavedBoth => '已保存到原文和脑图';
+
+  @override
+  String get researchSavedSource => '已保存到原文';
+
+  @override
+  String get researchSavedMap => '已保存到脑图';
+
+  @override
+  String get researchShowInMap => '在脑图中查看';
+
+  @override
+  String researchCardKind(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '研究笔记 · $count 个来源', zero: '研究笔记');
+    return '$_temp0';
+  }
+
+  @override
+  String get researchCardOpen => '查看全文与引用';
+
+  @override
+  String researchNoteLabel(String title) {
+    return '研究笔记：$title';
+  }
+
+  @override
+  String get researchLocateInMap => '在脑图中定位';
+
+  @override
+  String get researchOpenResearch => '打开研究';
+
+  @override
+  String get researchPlaces => '关联位置';
+
+  @override
+  String researchPlaceSource(String document, int page) {
+    return '$document 第 $page 页';
+  }
+
+  @override
+  String get researchLocate => '定位';
+
+  @override
+  String get researchDetach => '解除';
+
+  @override
+  String get researchNotInSource => '未附到原文';
+
+  @override
+  String get researchNoteGone => '这条研究笔记已删除';
+
+  @override
+  String get researchDeleteNote => '删除研究笔记…';
+
+  @override
+  String get researchDeleteTitle => '删除这条研究笔记？';
+
+  @override
+  String researchDeleteMessage(int marks, int cards) {
+    String _temp0 = intl.Intl.pluralLogic(marks, locale: localeName, other: '原文上的 $marks 处标记会一并移除。', zero: '');
+    String _temp1 = intl.Intl.pluralLogic(cards, locale: localeName, other: '脑图上的 $cards 张卡片会一并删除。', zero: '');
+    return '$_temp0$_temp1';
+  }
+
+  @override
+  String get researchService => 'AI 服务';
+
+  @override
+  String get researchServiceNone => '未设置';
+
+  @override
+  String get researchServiceCompatible => '兼容接口';
+
+  @override
+  String get researchServiceIncomplete => '填写模型后才能使用这个服务';
+
+  @override
+  String get researchApiKey => 'API Key';
+
+  @override
+  String get researchKeySaved => '已保存在钥匙串';
+
+  @override
+  String get researchKeyFailed => '无法保存到钥匙串';
+
+  @override
+  String get researchModel => '模型';
+
+  @override
+  String get researchEndpoint => '接口地址';
+
+  @override
+  String get researchPaperSearch => '论文检索';
+
+  @override
+  String get researchLimits => '联网研究上限';
+
+  @override
+  String researchLimitSearches(int count) {
+    return '搜索 $count 次';
+  }
+
+  @override
+  String researchLimitPages(int count) {
+    return '读取 $count 个页面';
+  }
+
+  @override
+  String researchLimitMinutes(int count) {
+    return '最长 $count 分钟';
+  }
+
+  @override
+  String get researchPrivacy => '隐私';
+
+  @override
+  String get researchShowContext => '开始研究前显示将要发送的上下文';
+
+  @override
+  String get researchBlockPrivate => '阻止访问本机和内网地址';
+
+  @override
+  String get researchCache => '网页缓存';
+
+  @override
+  String get researchClearCache => '清理缓存';
+
+  @override
+  String get researchCacheCleared => '已清理网页缓存';
+
+  @override
+  String get researchInterruptedShort => '已中断';
 }

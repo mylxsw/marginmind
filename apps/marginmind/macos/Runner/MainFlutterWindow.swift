@@ -9,6 +9,7 @@ class MainFlutterWindow: NSWindow {
   private var secretStore: SecretStoreChannel?
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
+  private var externalLink: ExternalLinkChannel?
   private var toolbarVisibilityBeforeFullScreen: Bool?
   private var chromeDelegate: WindowChromeDelegate?
 
@@ -103,6 +104,7 @@ class MainFlutterWindow: NSWindow {
     pdfOcr = PdfOcrChannel(messenger: flutterViewController.engine.binaryMessenger)
     secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
+    externalLink = ExternalLinkChannel(messenger: flutterViewController.engine.binaryMessenger)
 
     let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
       binaryMessenger: flutterViewController.engine.binaryMessenger)
@@ -268,6 +270,32 @@ final class SystemAppearanceChannel: NSObject {
         | (channel(accent.greenComponent) << 8) | channel(accent.blueComponent)
     }
     return values
+  }
+}
+
+/// Opens http(s) pages in the default browser; any other scheme is refused.
+final class ExternalLinkChannel {
+  private let channel: FlutterMethodChannel
+
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(name: "marginmind/external_link", binaryMessenger: messenger)
+    channel.setMethodCallHandler(Self.handle)
+  }
+
+  static func url(from arguments: Any?) -> URL? {
+    guard let args = arguments as? [String: String], let text = args["url"],
+          let url = URL(string: text), let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https", let host = url.host, !host.isEmpty else { return nil }
+    return url
+  }
+
+  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "open" else { result(FlutterMethodNotImplemented); return }
+    guard let url = url(from: call.arguments) else {
+      result(FlutterError(code: "invalid_arguments", message: nil, details: nil))
+      return
+    }
+    result(NSWorkspace.shared.open(url))
   }
 }
 

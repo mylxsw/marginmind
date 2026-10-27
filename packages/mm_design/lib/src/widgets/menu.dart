@@ -29,6 +29,13 @@ class MMMenuDivider extends MMMenuEntry {
   const MMMenuDivider();
 }
 
+/// A group title in secondary text, e.g. "Research “Anchoring”". Not selectable.
+class MMMenuHeader extends MMMenuEntry {
+  const MMMenuHeader(this.label);
+
+  final String label;
+}
+
 /// Shows a macOS-style context menu at [position] (global coordinates).
 /// Clicking outside or pressing Esc closes it; choosing an item closes it
 /// and then runs the item's callback.
@@ -103,6 +110,15 @@ class _Menu extends StatelessWidget {
                     MMMenuDivider() => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       child: Container(height: 0.5, color: c.separator),
+                    ),
+                    MMMenuHeader(:final label) => Padding(
+                      padding: const EdgeInsets.fromLTRB(9, 4, 9, 2),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.mmText.subheadline.copyWith(color: c.secondaryLabel),
+                      ),
                     ),
                   },
               ],

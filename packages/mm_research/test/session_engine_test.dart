@@ -473,4 +473,92 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('citations record where they fall in the answer, with the cited paragraph', () async {
+    final page = Uri.parse('https://example.com/a');
+    await ask(
+      Provider((r, t) async* {
+        yield event(r, AiEventKind.text, text: '- first\n');
+        yield event(
+          r,
+          AiEventKind.source,
+          citation: ResearchCitation(url: page, title: 'A'),
+        );
+        yield event(
+          r,
+          AiEventKind.citation,
+          citation: ResearchCitation(url: page, title: 'A', quote: 'q'),
+        );
+        yield event(
+          r,
+          AiEventKind.citation,
+          citation: ResearchCitation(url: page, title: 'A', start: 2),
+        );
+        yield event(r, AiEventKind.text, text: '- second\n');
+        yield event(r, AiEventKind.completed);
+      }),
+    );
+    final cites = (engine.state.session.history.last['cites'] as List).cast<Map>();
+    final source = engine.state.sources.single.id;
+    expect(cites.map((c) => (c['source'], c['at'])), [(source, 8), (source, 2)]);
+
+    await engine.readSources(
+      Extractor((url) async => markdownArticle(ReadableHtml(url: url, title: 'A', html: '<p>real quote</p>'))),
+      [source],
+    );
+    final paragraph = snapshotParagraphs(
+      await repository.readResearchSnapshot('set', engine.state.sources.single.versions.single.snapshotFile),
+    ).keys.single;
+    final doc = ResearchDocument(sourceId: source, version: 1, paragraphId: paragraph, title: 'A', text: 'real quote');
+    await ask(
+      Provider((r, t) async* {
+        yield event(
+          r,
+          AiEventKind.citation,
+          citation: ResearchCitation(sourceId: source, version: 1, paragraphId: paragraph, quote: 'real'),
+        );
+        yield event(r, AiEventKind.text, text: 'answer');
+        yield event(r, AiEventKind.completed);
+      }),
+      mode: ResearchMode.sources,
+      documents: [doc],
+    );
+    final cite = (engine.state.session.history.last['cites'] as List).single as Map;
+    expect(cite['paragraph'], paragraph);
+    expect(cite['evidence'], engine.state.evidence.firstWhere((e) => e.quote == 'real').id);
+    expect(cite['at'], 0);
+  });
+
+  test('the question can be rewritten; pasted text becomes a marked version of a failed source', () async {
+    await engine.rename('  a better question  ');
+    expect(engine.state.session.question, 'a better question');
+    await expectLater(engine.rename('   '), throwsArgumentError);
+
+    await engine.search(Search([SearchHit(url: Uri.parse('https://example.com/login'), title: 'Login')]), 'q');
+    final id = engine.state.sources.single.id;
+    await engine.readSources(
+      Extractor((url) async => throw const ResearchFailure(ResearchFailureKind.unavailable, 'login_required')),
+      [id],
+    );
+    expect(engine.state.sources.single.readState, 'failed');
+    await expectLater(engine.pasteSource(id, '  \n\n '), throwsArgumentError);
+    await expectLater(engine.pasteSource('missing', 'text'), throwsArgumentError);
+    await engine.pasteSource(id, 'First <b>paragraph</b>.\n\nSecond paragraph.');
+    var source = engine.state.sources.single;
+    expect(source.readState, 'fullText');
+    expect(source.versions.single.version, 1);
+    expect((engine.state.metadata[id] as Map)['pasted'], [1]);
+    expect((engine.state.metadata[id] as Map)['error'], isNull);
+    final paragraphs = snapshotParagraphs(
+      await repository.readResearchSnapshot('set', source.versions.single.snapshotFile),
+    );
+    expect(paragraphs.values, ['First \\<b\\>paragraph\\</b\\>.', 'Second paragraph.']);
+    // The same text again is the same version.
+    await engine.pasteSource(id, 'First <b>paragraph</b>.\n\nSecond paragraph.');
+    source = engine.state.sources.single;
+    expect(source.versions, hasLength(1));
+    await engine.pasteSource(id, 'Other text.');
+    expect(engine.state.sources.single.versions.map((v) => v.version), [1, 2]);
+    expect((engine.state.metadata[id] as Map)['pasted'], [1, 2]);
+  });
 }

@@ -10,6 +10,10 @@ import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/card_image.dart';
+import '../../research/research_entry.dart';
+import '../../research/research_intents.dart';
+import '../../research/research_origin.dart';
+import '../../research/widgets/research_widgets.dart';
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
@@ -125,10 +129,36 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final branchDue = card != null && hasChildren && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
     final suspendable = card != null && (card.suspended || card.kind != CardKind.topic);
 
+    final researchTitle = card == null ? '' : nodeOrigin(content, card.id, mapId, rootTitle: '').text;
     showMMMenu(
       context,
       position: position,
       entries: [
+        // Research the node with an intent; the launcher opens on it.
+        if (card != null && researchTitle.isNotEmpty && ref.read(researchAvailableProvider)) ...[
+          MMMenuHeader(
+            l.researchNodeMenu(
+              researchTitle.runes.length > 12
+                  ? '${String.fromCharCodes(researchTitle.runes.take(12))}…'
+                  : researchTitle,
+            ),
+          ),
+          for (final intent in ResearchIntent.values)
+            if (intent != ResearchIntent.translate)
+              MMMenuItem(
+                intentLabel(l, intent),
+                () => researchNode(
+                  context,
+                  ref,
+                  studySetId: widget.studySetId,
+                  cardId: card.id,
+                  intent: intent,
+                  anchor: Rect.fromLTWH(position.dx, position.dy, 1, 1),
+                ),
+                shortcut: intent == ResearchIntent.explain ? describeShortcut(AppShortcuts.researchSelection) : null,
+              ),
+          const MMMenuDivider(),
+        ],
         if (card != null) ...[
           MMMenuItem(l.exportBranch, () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id)),
           MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),

@@ -198,7 +198,14 @@ void main() {
       app.controller.openPanel(RightPanel.research);
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.split);
+      // A research started from a pane while the panel is open beside both
+      // still puts the other pane aside; closing restores the split.
+      app.controller.openPanel(RightPanel.research, origin: PanelOrigin.map);
+      await tester.pumpAndSettle();
+      expect(_state(app.container).layout, MMSplitMode.secondary);
       app.controller.closePanel();
+      await tester.pumpAndSettle();
+      expect(_state(app.container).layout, MMSplitMode.split);
       app.controller.setLayout(MMSplitMode.secondary);
       app.controller.openPanel(RightPanel.research, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
@@ -264,8 +271,8 @@ void main() {
   });
 
   group('commands', () {
-    testWidgets('research entry points stay hidden until research is available', (tester) async {
-      final app = await _open(tester);
+    testWidgets('research entry points stay hidden when research is turned off', (tester) async {
+      final app = await _open(tester, overrides: [researchAvailableProvider.overrideWithValue(false)]);
       expect(find.byTooltip(RegExp('^Research')), findsNothing);
       await _press(tester, AppShortcuts.researchPanel);
       expect(_state(app.container).panel, isNull);
@@ -516,7 +523,7 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('a research card shows like a note until the research flow brings its own details', (tester) async {
+    testWidgets('a research card without its note keeps a plain header', (tester) async {
       final base = demoContent();
       final content = base.copyWith(
         cards: [
@@ -531,8 +538,7 @@ void main() {
       final app = await _open(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
       app.controller.showDetails('r1');
       await tester.pumpAndSettle();
-      expect(_inPanel(find.text('Note')), findsOneWidget);
-      expect(tester.widget<MMInlineTextField>(titleField()).multiline, isTrue);
+      expect(_inPanel(find.text('Research Note')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await settleHud(tester);
     });

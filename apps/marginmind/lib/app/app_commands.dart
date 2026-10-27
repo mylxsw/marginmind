@@ -8,6 +8,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../features/library/library_controller.dart';
 import '../features/library/new_study_set.dart';
+import '../features/research/research_entry.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
@@ -89,6 +90,10 @@ abstract final class AppShortcuts {
 
   /// Space edits the selected node; ⌥Space only changes how much it shows.
   static SingleActivator get toggleCardText => const SingleActivator(LogicalKeyboardKey.space, alt: true);
+
+  /// ⇧⌘E: research the selected text or node (E for Explore; ⌘E and ⌥⌘E
+  /// stay free for excerpting to the map).
+  static SingleActivator get researchSelection => primaryShortcut(LogicalKeyboardKey.keyE, shift: true);
 
   static SingleActivator get toggleAnnotationTool => primaryShortcut(LogicalKeyboardKey.keyH, shift: true);
   static SingleActivator get toggleAreaTool => primaryShortcut(LogicalKeyboardKey.keyR, shift: true);
@@ -180,7 +185,7 @@ Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight }
+enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight, research }
 
 class ReaderSelectionIntent extends Intent {
   const ReaderSelectionIntent(this.command);
@@ -191,6 +196,7 @@ Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
   const SingleActivator(LogicalKeyboardKey.keyE): const ReaderSelectionIntent(ReaderSelectionCommand.excerpt),
   const SingleActivator(LogicalKeyboardKey.keyH): const ReaderSelectionIntent(ReaderSelectionCommand.highlight),
   primaryShortcut(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.copy),
+  const SingleActivator(LogicalKeyboardKey.keyR): const ReaderSelectionIntent(ReaderSelectionCommand.research),
 };
 
 /// Page navigation keys that only act while the reader has the keyboard
@@ -476,6 +482,22 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
+    // ⇧⌘E: the selected text (or highlight) in the reader, else the selected node.
+    if (ref.watch(researchAvailableProvider) && inWorkspace) {
+      final researchText = selectionOpen || (highlightOpen && highlightText);
+      final researchCard = editable && !_textFocused && selected != null ? selected : null;
+      edit.add(
+        AppCommand(
+          l.researchSelectionEllipsis,
+          researchText
+              ? () => invokeSelection(ReaderSelectionCommand.research)
+              : researchCard != null
+              ? () => researchNode(context, ref, studySetId: workspaceId, cardId: researchCard)
+              : null,
+          shortcut: AppShortcuts.researchSelection,
+        ),
+      );
+    }
     final hasLogs = ref.watch(
       studySetsProvider.select(
         (s) => s.value?.any((x) => x.reviewLogCount > 0 && (workspaceId == null || x.id == workspaceId)) ?? false,
@@ -704,7 +726,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.read(workspaceProvider(workspaceId).notifier).toggleSidebar,
           shortcut: AppShortcuts.toggleSidebar,
         ),
-        // Registered now; shown once research is wired in.
+        // Research can be turned off as a whole (researchAvailableProvider).
         if (ref.watch(researchAvailableProvider))
           AppCommand(
             workspaceState!.panel == RightPanel.research ? l.hideResearchPanel : l.showResearchPanel,

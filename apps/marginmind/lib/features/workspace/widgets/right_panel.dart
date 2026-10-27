@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../research/widgets/research_panel.dart';
 import '../workspace_controller.dart';
 import 'card_details.dart';
 
@@ -34,7 +35,7 @@ class RightPanelView extends ConsumerWidget {
           ),
           child: switch (panel) {
             RightPanel.details => CardDetails(studySetId: studySetId),
-            RightPanel.research || null => ResearchPanel(onClose: controller.closePanel),
+            RightPanel.research || null => ResearchPanel(studySetId: studySetId, onClose: controller.closePanel),
           },
         ),
       ),
@@ -79,45 +80,6 @@ class RightPanelHeader extends StatelessWidget {
           MMIconButton(icon: MMIcons.close, tooltip: context.l10n.closePanel, iconSize: 13, onPressed: onClose),
         ],
       ),
-    );
-  }
-}
-
-/// Research: for now the shell and its empty state. Sessions, the launcher
-/// and saving arrive with the research flow.
-class ResearchPanel extends StatelessWidget {
-  const ResearchPanel({super.key, required this.onClose});
-
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        RightPanelHeader(icon: MMIcons.research, title: l.research, color: c.research, onClose: onClose),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(MMSpacing.xl),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(MMIcons.research, size: 32, color: c.research),
-                  const SizedBox(height: MMSpacing.m),
-                  Text(
-                    l.researchEmptyTitle,
-                    textAlign: TextAlign.center,
-                    style: context.mmText.headline.copyWith(color: c.secondaryLabel),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

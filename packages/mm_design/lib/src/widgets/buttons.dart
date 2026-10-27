@@ -24,6 +24,7 @@ class MMButton extends StatelessWidget {
     this.variant = MMButtonVariant.secondary,
     this.icon,
     this.autofocus = false,
+    this.color,
   });
 
   final String label;
@@ -31,6 +32,10 @@ class MMButton extends StatelessWidget {
   final MMButtonVariant variant;
   final IconData? icon;
   final bool autofocus;
+
+  /// A primary button's fill in place of the accent, for a feature color
+  /// (research). Other variants ignore it.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +47,7 @@ class MMButton extends StatelessWidget {
       semanticLabel: label,
       builder: (context, s) {
         final (Color bg, Color fg) = switch (variant) {
-          MMButtonVariant.primary => (c.accentFill, c.onAccent),
+          MMButtonVariant.primary => (color ?? c.accentFill, c.onAccent),
           MMButtonVariant.secondary => (c.fill, c.label),
           MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, c.label),
         };
@@ -56,7 +61,9 @@ class MMButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: Color.alphaBlend(pressedOverlay, bg),
               borderRadius: BorderRadius.circular(15),
-              boxShadow: s.focused ? [BoxShadow(color: c.accent.withValues(alpha: 0.5), spreadRadius: 3)] : null,
+              boxShadow: s.focused
+                  ? [BoxShadow(color: (color ?? c.accent).withValues(alpha: 0.5), spreadRadius: 3)]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

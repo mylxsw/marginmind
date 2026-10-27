@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/note_text.dart';
+import '../../research/widgets/research_note_view.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'right_panel.dart';
@@ -39,12 +40,24 @@ class CardDetails extends ConsumerWidget {
     final (icon, kindLabel) = switch (card?.kind) {
       CardKind.excerpt => (MMIcons.document, l.detailsExcerpt),
       CardKind.image => (MMIcons.areaSelect, l.detailsImage),
-      // Research notes get their own details with the research flow.
-      CardKind.note || CardKind.research => (MMIcons.addNote, l.detailsNote),
+      CardKind.research => (MMIcons.research, l.detailsResearchNote),
+      CardKind.note => (MMIcons.addNote, l.detailsNote),
       CardKind.topic || null => (MMIcons.mindMap, l.detailsTopic),
     };
     final header = RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel);
     if (card == null) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [header]);
+    // A research card shows its note: the same note the source's mark opens.
+    if (card.kind == CardKind.research && card.researchNoteId != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          RightPanelHeader(icon: icon, title: kindLabel, color: c.research, onClose: controller.closePanel),
+          Expanded(
+            child: ResearchNoteView(studySetId: studySetId, noteId: card.researchNoteId!),
+          ),
+        ],
+      );
+    }
 
     final color = MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0);
     final reviewable = card.suspended || card.kind != CardKind.topic;
@@ -76,7 +89,7 @@ class CardDetails extends ConsumerWidget {
         key: ValueKey('details-title-${card.id}'),
         title: card.title,
         format: card.textFormat,
-        note: card.kind == CardKind.note || card.kind == CardKind.research,
+        note: card.kind == CardKind.note,
         image: card.kind == CardKind.image,
         formatted: card.kind == CardKind.note,
         optional: card.kind == CardKind.excerpt || card.kind == CardKind.image,

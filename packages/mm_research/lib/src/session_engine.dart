@@ -244,7 +244,7 @@ class ResearchSessionEngine {
               }
               if ((event.kind == AiEventKind.source || event.kind == AiEventKind.citation) &&
                   mode != ResearchMode.offline) {
-                next = _citation(next, event.citation, mode, selected);
+                next = _citation(next, event.citation, mode, selected, cite: event.kind == AiEventKind.citation);
               }
               if (event.kind == AiEventKind.toolError) {
                 next = _data(next, {'toolError': 'source_failed'});
@@ -291,16 +291,22 @@ class ResearchSessionEngine {
     return mergeSource(sources, incoming);
   }
 
+  /// [cite] records where the citation falls in the answer (`turn.cites`):
+  /// the provider's answer offset when it has one, else the answer length so
+  /// far (a cited block streams right after its citations). The UI ties
+  /// citations to answer points with it; sources alone are never cited.
   ResearchSession _citation(
     ResearchSession session,
     ResearchCitation? citation,
     ResearchMode mode,
-    List<ResearchDocument> documents,
-  ) {
+    List<ResearchDocument> documents, {
+    bool cite = false,
+  }) {
     if (citation == null) return session;
     final value = ResearchSessionState(session);
     final sources = [...value.sources];
     final metadata = {...value.metadata};
+    final cited = <Map<String, Object?>>[];
     if (mode == ResearchMode.web && citation.url != null) {
       ResearchSource source;
       try {
@@ -308,6 +314,7 @@ class ResearchSessionEngine {
       } on ResearchFailure {
         return session;
       }
+      cited.add({'source': source.id});
       if (citation.quote != null && citation.quote!.isNotEmpty) {
         final previous = (metadata[source.id] as Map? ?? {}).cast<String, Object?>();
         metadata[source.id] = {
@@ -329,6 +336,7 @@ class ResearchSessionEngine {
       final quote = citation.quote ?? d.text;
       if (quote.isEmpty || !d.text.contains(quote)) continue;
       final key = sha256.convert(utf8.encode(jsonEncode([d.sourceId, d.version, d.paragraphId, quote]))).toString();
+      cited.add({'source': d.sourceId, 'evidence': key, 'paragraph': d.paragraphId});
       if (evidence.any((e) => e.id == key)) continue;
       evidence.add(
         Evidence(
@@ -342,7 +350,22 @@ class ResearchSessionEngine {
         ),
       );
     }
-    return _data(patchSession(session, {'sourceIds': sources.map((s) => s.id).toList()}), {
+    var turns = session.history;
+    if (cite && cited.isNotEmpty && turns.isNotEmpty) {
+      final turn = turns.last;
+      final at = citation.start ?? (turn['answer'] as String? ?? '').length;
+      turns = [
+        ...turns.take(turns.length - 1),
+        {
+          ...turn,
+          'cites': [
+            ...turn['cites'] as List? ?? const [],
+            for (final c in cited) {...c, 'at': at},
+          ],
+        },
+      ];
+    }
+    return _data(patchSession(session, {'sourceIds': sources.map((s) => s.id).toList(), 'history': turns}), {
       'sources': sources.map((s) => s.toJson()).toList(),
       'evidence': evidence.map((e) => e.toJson()).toList(),
       'metadata': metadata,
@@ -536,6 +559,68 @@ class ResearchSessionEngine {
           child.cancel();
         }
       }
+    });
+  }
+
+  /// The question as the user rewrote it; later requests ask it.
+  Future<void> rename(String question) async {
+    final text = question.trim();
+    if (text.isEmpty) throw ArgumentError.value(question, 'question');
+    await recovery.ready;
+    await _write((s) => patchSession(s, {'question': text}));
+  }
+
+  /// Text the user pasted for a source that could not be read: a new
+  /// snapshot version recorded in `metadata[sourceId].pasted`, so evidence
+  /// from it is marked as user-supplied rather than extracted.
+  Future<void> pasteSource(String sourceId, String text) async {
+    final blocks = [
+      for (final block in text.split(RegExp(r'\n\s*\n')))
+        if (block.trim().isNotEmpty) block.trim(),
+    ];
+    if (blocks.isEmpty) throw ArgumentError.value(text, 'text');
+    await recovery.ready;
+    final source = state.sources.where((s) => s.id == sourceId).firstOrNull;
+    if (source == null) throw ArgumentError.value(sourceId, 'sourceId');
+    final content = markdownArticle(
+      ReadableHtml(
+        url: Uri.parse(source.url),
+        title: source.title,
+        html: blocks.map((b) => '<p>${htmlEscape.convert(b)}</p>').join(),
+      ),
+    );
+    final markdown = encodeSnapshot(content.paragraphs);
+    final file = await snapshots.writeResearchSnapshot(studySetId, markdown);
+    final hash = sha256.convert(utf8.encode(markdown)).toString();
+    await _write((s) {
+      final current = ResearchSessionState(s);
+      final sources = [...current.sources];
+      final index = sources.indexWhere((e) => e.id == sourceId);
+      if (index < 0) return s;
+      final versions = [...sources[index].versions];
+      var version = versions.where((v) => v.hash == hash).firstOrNull;
+      if (version == null) {
+        version = SourceVersion(
+          version: versions.fold<int>(0, (n, v) => n > v.version ? n : v.version) + 1,
+          snapshotFile: file,
+          hash: hash,
+        );
+        versions.add(version);
+      }
+      sources[index] = ResearchSource.fromJson({
+        ...sources[index].toJson(),
+        'readState': ResearchReadState.fullText.name,
+        'fetchedAt': now().toIso8601String(),
+        'versions': versions.map((v) => v.toJson()).toList(),
+      });
+      final metadata = {...current.metadata};
+      final previous = (metadata[sourceId] as Map? ?? {}).cast<String, Object?>();
+      metadata[sourceId] = {
+        ...previous,
+        'error': null,
+        'pasted': {...(previous['pasted'] as List? ?? []), version.version}.toList(),
+      };
+      return _data(s, {'sources': sources.map((e) => e.toJson()).toList(), 'metadata': metadata});
     });
   }
 

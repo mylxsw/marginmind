@@ -466,7 +466,13 @@
   "renameMap": "Rename Mind Map…",
   "deleteMap": "Delete Mind Map",
   "addToNamedMap": "Add to “{title}”",
-  "@addToNamedMap": {"placeholders": {"title": {"type": "String"}}},
+  "@addToNamedMap": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "cardTags": "Tags…",
   "sectionTags": "Tags",
   "addTag": "Add Tag",
@@ -479,7 +485,13 @@
   "deleteRelation": "Delete Relationship",
   "deleteSummary": "Delete Summary",
   "exportSummary": "Summary: {label}",
-  "@exportSummary": {"placeholders": {"label": {"type": "String"}}},
+  "@exportSummary": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "exportRelations": "Relationships",
   "readerThumbnails": "Thumbnails",
   "readerOutline": "Table of Contents",
@@ -496,7 +508,16 @@
   "findPrevious": "Find Previous",
   "noResults": "No Results",
   "matchOf": "{current} / {total}",
-  "@matchOf": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
+  "@matchOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "pageNumberField": "Page Number",
   "goBack": "Back",
   "firstPage": "First Page",
@@ -509,7 +530,6 @@
   "noAnnotations": "No Annotations",
   "expandSection": "Expand",
   "collapseSection": "Collapse",
-  "pdfFiles": "PDF documents",
   "pdfActualSize": "Actual Size",
   "pdfFitWidth": "Fit Width",
   "pdfFitPage": "Fit Page",
@@ -540,10 +560,26 @@
   "detailsTopic": "Topic",
   "addTitle": "Add Title",
   "revealSourcePage": "Reveal in Source · Page {page}",
-  "@revealSourcePage": {"placeholders": {"page": {"type": "int"}}},
+  "@revealSourcePage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
   "reviewStatusNew": "Not reviewed yet",
   "reviewStatusScheduled": "Next {date} · {count, plural, =1{reviewed once} other{reviewed {count} times}}",
-  "@reviewStatusScheduled": {"placeholders": {"date": {"type": "DateTime", "format": "MMMd"}, "count": {"type": "int"}}},
+  "@reviewStatusScheduled": {
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "MMMd"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "insertImage": "Insert Image…",
   "imageFiles": "PNG / JPEG Images",
   "imageQuestion": "Question",
@@ -559,7 +595,16 @@
   "ocrCancelled": "Cancelled · Completed pages kept",
   "ocrFailed": "Recognition failed · Try again",
   "ocrProgress": "Recognizing text {done}/{total}",
-  "@ocrProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@ocrProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "ocrScope": "Pages",
   "ocrAllPages": "All pages",
   "ocrCurrentPage": "Current page",
@@ -571,7 +616,13 @@
   "ocrFirstPage": "First page",
   "ocrLastPage": "Last page",
   "ocrInvalidRange": "Enter a range from 1 to {count}",
-  "@ocrInvalidRange": {"placeholders": {"count": {"type": "int"}}},
+  "@ocrInvalidRange": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "ocrThisPage": "Recognize This Page",
   "ocrCancel": "Cancel Text Recognition",
   "exportTitle": "Export Map",
@@ -594,16 +645,500 @@
   "exportRetry": "Retry",
   "exportPixels": "{width} × {height} pixels",
   "exportCentimeters": "{width} × {height} cm",
-  "@exportPixels": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
-  "@exportCentimeters": {"placeholders": {"width": {"type": "String"}, "height": {"type": "String"}}},
+  "@exportPixels": {
+    "placeholders": {
+      "width": {
+        "type": "String"
+      },
+      "height": {
+        "type": "String"
+      }
+    }
+  },
+  "@exportCentimeters": {
+    "placeholders": {
+      "width": {
+        "type": "String"
+      },
+      "height": {
+        "type": "String"
+      }
+    }
+  },
   "exportResearchNote": "Research note",
   "exportSource": "Source",
-"formatBold": "Bold",
+  "formatBold": "Bold",
   "formatItalic": "Italic",
   "formatBulletList": "Bulleted List",
   "formatNumberList": "Numbered List",
   "densityCompact": "Compact",
   "densityFull": "Full",
   "cardWidthHandle": "Card Width",
-  "resetCardWidth": "Reset Width"
+  "resetCardWidth": "Reset Width",
+  "detailsResearchNote": "Research Note",
+  "researchSelection": "Research Selection",
+  "researchSelectionEllipsis": "Research Selection…",
+  "researchNode": "Research Node",
+  "researchNodeMenu": "Research “{title}”",
+  "@researchNodeMenu": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "researchIntentExplain": "Explain",
+  "researchIntentInterpret": "Interpret",
+  "researchIntentVerify": "Verify",
+  "researchIntentVideo": "Videos / Diagrams",
+  "researchIntentPaper": "Find Papers",
+  "researchIntentDeep": "Deep Research",
+  "researchIntentTranslate": "Translate",
+  "researchRecommended": "Suggested",
+  "researchQuestion": "Question",
+  "researchQuestionPlaceholder": "What do you want to find out?",
+  "researchQuestionExplain": "What does “{term}” mean? Give an example from the context.",
+  "@researchQuestionExplain": {
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "researchQuestionInterpret": "What are this passage's claim, reasoning and assumptions?",
+  "researchQuestionVerify": "Is this claim supported? Are there counterexamples or limits?",
+  "researchQuestionVerifyQuote": "“{quote}” — is this reliable? Are there counterexamples or limits?",
+  "@researchQuestionVerifyQuote": {
+    "placeholders": {
+      "quote": {
+        "type": "String"
+      }
+    }
+  },
+  "researchQuestionVideo": "Find a clear video or diagram explaining “{term}”",
+  "@researchQuestionVideo": {
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "researchQuestionPaper": "What are the key studies on “{term}”? Their findings and limits?",
+  "@researchQuestionPaper": {
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "researchQuestionTranslate": "Translate this passage and explain its terms.",
+  "researchKeywords": "Keywords",
+  "researchAddKeyword": "Add keyword",
+  "researchSourcesLabel": "Sources",
+  "researchKindWeb": "Web",
+  "researchKindPaper": "Papers",
+  "researchKindVideo": "Videos",
+  "researchKindImage": "Images",
+  "researchMethod": "Method",
+  "researchMethodSearch": "Search Only",
+  "researchMethodOffline": "Ask AI",
+  "researchMethodWeb": "Web Research",
+  "researchMethodSearchNote": "No AI, no AI cost",
+  "researchMethodOfflineNote": "Sends only the selection and its context; no web search",
+  "researchMethodWebNote": "Up to {searches} searches and {pages} pages",
+  "@researchMethodWebNote": {
+    "placeholders": {
+      "searches": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "researchSetUpAi": "Set Up AI…",
+  "researchNoAi": "No AI service set up",
+  "researchNoAiTitle": "No AI service set up",
+  "researchNoWeb": "This service can't search the web",
+  "researchContextSummary": "Sent to AI: {parts} (about {count} characters)",
+  "@researchContextSummary": {
+    "placeholders": {
+      "parts": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchContextSelection": "Selection",
+  "researchContextBefore": "Previous passage",
+  "researchContextAfter": "Next passage",
+  "researchContextChapter": "Chapter",
+  "researchContextNode": "Node",
+  "researchContextPath": "Path",
+  "researchContextChildren": "Cards below",
+  "researchRunningChoice": "A research is running",
+  "researchAsNew": "New Research",
+  "researchJoin": "Add to Current Question",
+  "researchLater": "Research Later",
+  "researchStart": "Start Research",
+  "researchNeedQuestion": "Write a question first",
+  "researchSavedForLater": "Saved to Research Later",
+  "researchJoined": "Added to the current research",
+  "researchSettings": "Research Settings",
+  "researchBackToOrigin": "Back to Where It Started",
+  "researchOriginGone": "The original place was deleted",
+  "researchStageSearch": "Searching",
+  "researchStageAnswer": "Answering",
+  "researchStageWebAnswer": "Searching and answering",
+  "researchStageRead": "Reading sources {done}/{total}",
+  "@researchStageRead": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "researchRetry": "Retry",
+  "researchRestart": "Start Again",
+  "researchCancelled": "Cancelled",
+  "researchInterrupted": "Interrupted when the app quit",
+  "researchFailed": "Failed",
+  "researchRunning": "Running",
+  "researchDoneAt": "Finished {time}",
+  "@researchDoneAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "researchUsedSources": "{count, plural, =1{1 source used} other{{count} sources used}}",
+  "@researchUsedSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchErrorTimeout": "Timed out",
+  "researchErrorUnavailable": "Can't reach the service",
+  "researchErrorAuthentication": "The API key was rejected",
+  "researchErrorRateLimited": "Too many requests; try again later",
+  "researchErrorBudget": "Reached the limit",
+  "researchErrorRefusal": "The AI declined to answer",
+  "researchErrorUnsupported": "Not supported by this service",
+  "researchErrorInvalid": "The request was not accepted",
+  "researchErrorProtocol": "The answer was incomplete",
+  "researchTabAnswer": "Answer",
+  "researchTabSources": "Sources",
+  "researchTabSaved": "Taken",
+  "researchBadgeWeb": "Web research · {count, plural, =1{1 source used} other{{count} sources used}}",
+  "@researchBadgeWeb": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchBadgeOffline": "Offline · no external sources, so no citations",
+  "researchBadgeSources": "Only the {count, plural, =1{source} other{{count} sources}} you chose; no web search",
+  "@researchBadgeSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchViewSources": "View Sources",
+  "researchNoSourceBasis": "no source",
+  "researchEdited": "edited",
+  "researchQuoteFrom": "Source [{number}] · original text",
+  "@researchQuoteFrom": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "researchEditPoint": "Edit",
+  "researchAskPoint": "Ask",
+  "researchSavePoint": "Save",
+  "researchAskAbout": "About “{point}”: ",
+  "@researchAskAbout": {
+    "placeholders": {
+      "point": {
+        "type": "String"
+      }
+    }
+  },
+  "researchFailedSources": "{count, plural, =1{1 source} other{{count} sources}} couldn't be read",
+  "@researchFailedSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchChecked": "{count} selected",
+  "@researchChecked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchClearChecked": "Deselect",
+  "researchSaveNote": "Save as Research Note…",
+  "researchNoAnswerSearch": "Search only: no answer",
+  "researchNoAnswer": "No answer yet",
+  "researchAnswerFromChosen": "Answer from {count, plural, =1{1 Chosen Source} other{{count} Chosen Sources}}",
+  "@researchAnswerFromChosen": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchAnswering": "Answering…",
+  "researchFollowUpPlaceholder": "Ask a follow-up…",
+  "researchCanUseWeb": "Web",
+  "researchOffline": "Offline",
+  "researchSend": "Send",
+  "researchFilterAll": "All",
+  "researchReadUnread": "Not read",
+  "researchReadSnippet": "Search snippet",
+  "researchReadAbstract": "Abstract only",
+  "researchReadFullText": "Full text",
+  "researchReadTranscript": "Transcript",
+  "researchReadFailed": "Couldn't read",
+  "researchReadNoTranscript": "No transcript",
+  "researchOpenAccess": "Open access",
+  "researchSubscription": "Subscription",
+  "researchUsedInAnswer": "Used in answer",
+  "researchMerged": "{count, plural, =1{1 reprint merged} other{{count} reprints merged}}, not counted separately",
+  "@researchMerged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchRead": "Read",
+  "researchWhyFailed": "Why",
+  "researchChoose": "Add to Sources",
+  "researchChosen": "Added",
+  "researchPasted": "Pasted by you",
+  "researchExternalSearch": "Search “{query}” on {site}",
+  "@researchExternalSearch": {
+    "placeholders": {
+      "site": {
+        "type": "String"
+      },
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "researchExternal": "External",
+  "researchSearching": "Searching: {keywords}",
+  "@researchSearching": {
+    "placeholders": {
+      "keywords": {
+        "type": "String"
+      }
+    }
+  },
+  "researchNoSources": "No sources",
+  "researchOfflineNoSources": "This research did not search the web",
+  "researchOpenPage": "Open Page",
+  "researchFetchedAt": "Fetched {date}",
+  "@researchFetchedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "researchAiSummary": "AI summary · not the source",
+  "researchSummarize": "AI Summary",
+  "researchClipEvidence": "Take as Evidence",
+  "researchWriteNote": "Write Note…",
+  "researchClipped": "Taken ({count})",
+  "@researchClipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchCantRead": "Couldn't read the text",
+  "researchReadLogin": "The page needs a sign-in",
+  "researchReadTimeout": "The page took too long.",
+  "researchReadUnparseable": "No article text was found.",
+  "researchReadUnsafe": "This address is not allowed.",
+  "researchReadUnsupported": "This is not a web page.",
+  "researchReadEncoding": "The page's text encoding is not supported.",
+  "researchReadUnavailable": "Couldn't reach the page.",
+  "researchPasteText": "Paste Text…",
+  "researchSaveLinkOnly": "Save Link Only",
+  "researchReadAgain": "Read Again",
+  "researchAbstractOnly": "Only the abstract was read",
+  "researchOpenPublisher": "Publisher Page",
+  "researchPasteTitle": "Paste Text",
+  "researchClipsTitle": "Evidence (draft)",
+  "researchSavedNotes": "Saved research notes",
+  "researchNoteFromClips": "Write Note from Evidence…",
+  "researchNothingSaved": "Nothing taken yet",
+  "researchInSource": "Source · p. {page}",
+  "@researchInSource": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "researchInMap": "Map · {title}",
+  "@researchInMap": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "researchCitations": "{count, plural, =1{1 citation} other{{count} citations}}",
+  "@researchCitations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchContinue": "Continue",
+  "researchSaveTitle": "Save Research Note",
+  "researchNoteTitle": "Title",
+  "researchNoteBody": "Text",
+  "researchNoteDefaultTitle": "Research note",
+  "researchCitationsLabel": "Citations ({count})",
+  "@researchCitationsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchNoExternalBasis": "No external source",
+  "researchSaveTo": "Save to",
+  "researchDestBoth": "Source and Map",
+  "researchDestSource": "Source Only",
+  "researchDestMap": "Map Only",
+  "researchDestNoSource": "Started from a node: no place in the source",
+  "researchAttachUnder": "In the map under",
+  "researchSplitPoints": "Split the {count} points into child cards",
+  "@researchSplitPoints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchSaving": "Saving",
+  "researchSavedBoth": "Saved to the source and the map",
+  "researchSavedSource": "Saved to the source",
+  "researchSavedMap": "Saved to the map",
+  "researchShowInMap": "Show in Map",
+  "researchCardKind": "{count, plural, =0{Research note} =1{Research note · 1 source} other{Research note · {count} sources}}",
+  "@researchCardKind": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchCardOpen": "Full note and citations",
+  "researchNoteLabel": "Research note: {title}",
+  "@researchNoteLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "researchLocateInMap": "Locate in Map",
+  "researchOpenResearch": "Open Research",
+  "researchPlaces": "Shown in",
+  "researchPlaceSource": "{document} · p. {page}",
+  "@researchPlaceSource": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "researchLocate": "Locate",
+  "researchDetach": "Detach",
+  "researchNotInSource": "Not attached to the source",
+  "researchNoteGone": "This note was deleted",
+  "researchDeleteNote": "Delete Research Note…",
+  "researchDeleteTitle": "Delete this research note?",
+  "researchDeleteMessage": "{marks, plural, =0{} =1{Its source mark goes too. } other{Its {marks} source marks go too. }}{cards, plural, =0{} =1{Its map card goes too.} other{Its {cards} map cards go too.}}",
+  "@researchDeleteMessage": {
+    "placeholders": {
+      "marks": {
+        "type": "int"
+      },
+      "cards": {
+        "type": "int"
+      }
+    }
+  },
+  "researchService": "AI service",
+  "researchServiceNone": "None",
+  "researchServiceCompatible": "Compatible",
+  "researchServiceIncomplete": "Add the model to finish setting up this service",
+  "researchApiKey": "API key",
+  "researchKeySaved": "Saved in the Keychain",
+  "researchKeyFailed": "Couldn't save to the Keychain",
+  "researchModel": "Model",
+  "researchEndpoint": "Address",
+  "researchPaperSearch": "Paper search",
+  "researchLimits": "Web research limits",
+  "researchLimitSearches": "{count, plural, =1{1 search} other{{count} searches}}",
+  "@researchLimitSearches": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchLimitPages": "{count, plural, =1{1 page} other{{count} pages}}",
+  "@researchLimitPages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchLimitMinutes": "{count} min",
+  "@researchLimitMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "researchPrivacy": "Privacy",
+  "researchShowContext": "Show what will be sent before starting",
+  "researchBlockPrivate": "Block local and private addresses",
+  "researchCache": "Web cache",
+  "researchClearCache": "Clear Cache",
+  "researchCacheCleared": "Web cache cleared",
+  "researchInterruptedShort": "Interrupted"
 }

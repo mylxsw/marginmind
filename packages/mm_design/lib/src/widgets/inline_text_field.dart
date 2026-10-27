@@ -81,7 +81,10 @@ class MMInlineTextField extends StatelessWidget {
       canRequestFocus: false,
       skipTraversal: true,
       onKeyEvent: _onKey,
+      // Its own node: the text field role must not merge into the enclosing
+      // panel or card, which would hide their other controls.
       child: Semantics(
+        container: true,
         label: semanticLabel,
         textField: true,
         child: Material(

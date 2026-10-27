@@ -1116,9 +1116,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 },
                 onDoubleTap: id == rootNodeId
                     ? null
-                    : spec.kind == _Kind.excerpt && widget.onOpenDetails != null
+                    : (spec.kind == _Kind.excerpt || spec.kind == _Kind.research) && widget.onOpenDetails != null
                     ? () => widget.onOpenDetails!(id)
                     : () => widget.onRename(id),
+                onOpenNote: spec.kind == _Kind.research && widget.onOpenDetails != null
+                    ? () {
+                        widget.focusNode.requestFocus();
+                        widget.onSelect(id);
+                        widget.onOpenDetails!(id);
+                      }
+                    : null,
                 onToggleExpanded: widget.onToggleExpanded == null
                     ? null
                     : () {
@@ -1126,7 +1133,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         widget.onSelect(id);
                         widget.onToggleExpanded!(id);
                       },
-                expandLabel: l.expandCardText,
+                expandLabel: spec.kind == _Kind.research ? l.researchCardOpen : l.expandCardText,
                 collapseLabel: l.collapseCardText,
                 onSecondaryTapUp: widget.onContextMenu == null
                     ? null
@@ -1615,7 +1622,11 @@ class _NodeView extends StatelessWidget {
     this.onToggleExpanded,
     this.expandLabel = '',
     this.collapseLabel = '',
+    this.onOpenNote,
   });
+
+  /// A research card's "whole note and citations" link.
+  final VoidCallback? onOpenNote;
 
   /// Shows a cut card's whole text, or its preview again.
   final VoidCallback? onToggleExpanded;
@@ -1652,6 +1663,7 @@ class _NodeView extends StatelessWidget {
       _Kind.topic => (Color.alphaBlend(c.fill, c.canvas), 12.0, const <BoxShadow>[]),
       _Kind.excerpt || _Kind.image => (c.card, 12.0, c.cardShadow),
       _Kind.note => (Color.alphaBlend(c.quaternaryFill, c.canvas), 12.0, const <BoxShadow>[]),
+      _Kind.research => (c.card, 12.0, c.cardShadow),
     };
 
     final Widget content = switch (spec.kind) {
@@ -1669,6 +1681,35 @@ class _NodeView extends StatelessWidget {
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
           const SizedBox(width: 7),
           Expanded(child: editor ?? Text.rich(noteSpan(spec.title, spec.format, t.body.copyWith(height: 19 / 13)))),
+        ],
+      ),
+      // One note, also attached to the source: the map shows its title and
+      // the start of its text; the whole note opens in the details.
+      _Kind.research => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(MMIcons.research, size: 11, color: c.research),
+              const SizedBox(width: MMSpacing.xs),
+              Expanded(
+                child: Text(
+                  spec.meta ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.subheadline.copyWith(color: c.research, height: 14 / 11),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MMSpacing.xs),
+          Text(spec.title, style: _NodeSpec.titleStyle),
+          if (spec.quote?.isNotEmpty ?? false) ...[
+            const SizedBox(height: MMSpacing.xxs),
+            Text(spec.quote!, style: _NodeSpec.researchBodyStyle.copyWith(color: c.secondaryLabel)),
+          ],
+          const SizedBox(height: MMSpacing.s - MMSpacing.xxs),
+          _ExpandToggle(expanded: false, label: expandLabel, onTap: onOpenNote, color: c.research),
         ],
       ),
       // The excerpt is the card: a title row only when there is a title.
@@ -1742,7 +1783,7 @@ class _NodeView extends StatelessWidget {
     // A card's content is laid out at its new size at once while the card
     // grows or shrinks to it (expanding, a title row appearing): it is
     // revealed from the top rather than squeezed.
-    final sized = spec.kind == _Kind.excerpt || spec.kind == _Kind.image
+    final sized = spec.kind == _Kind.excerpt || spec.kind == _Kind.image || spec.kind == _Kind.research
         ? ClipRect(
             child: OverflowBox(
               alignment: AlignmentDirectional.topStart,
@@ -1760,6 +1801,7 @@ class _NodeView extends StatelessWidget {
       _Kind.topic => const EdgeInsets.symmetric(horizontal: 14),
       _Kind.excerpt || _Kind.image => const EdgeInsets.fromLTRB(12, 11, 38, 11),
       _Kind.note => const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      _Kind.research => const EdgeInsets.fromLTRB(15, 10, 12, 10),
     };
 
     if (editor != null) return _decorated(c, bg, radius, shadow, ring, body, padding);
@@ -1810,6 +1852,17 @@ class _NodeView extends StatelessWidget {
       // so it receives clicks.
       child: Stack(
         children: [
+          if (spec.kind == _Kind.research)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.horizontal(left: Radius.circular(radius)),
+                child: ColoredBox(color: c.research),
+              ),
+            ),
           Positioned.fill(
             child: Padding(padding: padding, child: body),
           ),
@@ -1911,15 +1964,20 @@ class _AddChildButton extends StatelessWidget {
 
 /// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.
 class _ExpandToggle extends StatelessWidget {
-  const _ExpandToggle({required this.expanded, required this.label, required this.onTap});
+  const _ExpandToggle({required this.expanded, required this.label, required this.onTap, this.color});
 
   final bool expanded;
   final String label;
   final VoidCallback? onTap;
 
+  /// Accent by default; a research card's link is in the research color and
+  /// points on (to the details) instead of down.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final tint = color ?? c.accent;
     final height = MediaQuery.textScalerOf(context).scale(_NodeSpec.toggleLineHeight);
     return MMInteractive(
       onTap: onTap,
@@ -1931,16 +1989,24 @@ class _ExpandToggle extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: context.mmText.footnote.copyWith(
-                color: c.accent,
-                decoration: state.hovered ? TextDecoration.underline : null,
-                decorationColor: c.accent,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.mmText.footnote.copyWith(
+                  color: tint,
+                  decoration: state.hovered ? TextDecoration.underline : null,
+                  decorationColor: tint,
+                ),
               ),
             ),
             const SizedBox(width: MMSpacing.xxs),
-            Icon(expanded ? MMIcons.chevronUp : MMIcons.chevronDown, size: 9, color: c.accent),
+            Icon(
+              color != null ? MMIcons.chevronRight : (expanded ? MMIcons.chevronUp : MMIcons.chevronDown),
+              size: 9,
+              color: tint,
+            ),
           ],
         ),
       ),

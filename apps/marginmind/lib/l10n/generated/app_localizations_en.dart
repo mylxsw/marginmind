@@ -1252,4 +1252,752 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetCardWidth => 'Reset Width';
+
+  @override
+  String get detailsResearchNote => 'Research Note';
+
+  @override
+  String get researchSelection => 'Research Selection';
+
+  @override
+  String get researchSelectionEllipsis => 'Research Selection…';
+
+  @override
+  String get researchNode => 'Research Node';
+
+  @override
+  String researchNodeMenu(String title) {
+    return 'Research “$title”';
+  }
+
+  @override
+  String get researchIntentExplain => 'Explain';
+
+  @override
+  String get researchIntentInterpret => 'Interpret';
+
+  @override
+  String get researchIntentVerify => 'Verify';
+
+  @override
+  String get researchIntentVideo => 'Videos / Diagrams';
+
+  @override
+  String get researchIntentPaper => 'Find Papers';
+
+  @override
+  String get researchIntentDeep => 'Deep Research';
+
+  @override
+  String get researchIntentTranslate => 'Translate';
+
+  @override
+  String get researchRecommended => 'Suggested';
+
+  @override
+  String get researchQuestion => 'Question';
+
+  @override
+  String get researchQuestionPlaceholder => 'What do you want to find out?';
+
+  @override
+  String researchQuestionExplain(String term) {
+    return 'What does “$term” mean? Give an example from the context.';
+  }
+
+  @override
+  String get researchQuestionInterpret => 'What are this passage\'s claim, reasoning and assumptions?';
+
+  @override
+  String get researchQuestionVerify => 'Is this claim supported? Are there counterexamples or limits?';
+
+  @override
+  String researchQuestionVerifyQuote(String quote) {
+    return '“$quote” — is this reliable? Are there counterexamples or limits?';
+  }
+
+  @override
+  String researchQuestionVideo(String term) {
+    return 'Find a clear video or diagram explaining “$term”';
+  }
+
+  @override
+  String researchQuestionPaper(String term) {
+    return 'What are the key studies on “$term”? Their findings and limits?';
+  }
+
+  @override
+  String get researchQuestionTranslate => 'Translate this passage and explain its terms.';
+
+  @override
+  String get researchKeywords => 'Keywords';
+
+  @override
+  String get researchAddKeyword => 'Add keyword';
+
+  @override
+  String get researchSourcesLabel => 'Sources';
+
+  @override
+  String get researchKindWeb => 'Web';
+
+  @override
+  String get researchKindPaper => 'Papers';
+
+  @override
+  String get researchKindVideo => 'Videos';
+
+  @override
+  String get researchKindImage => 'Images';
+
+  @override
+  String get researchMethod => 'Method';
+
+  @override
+  String get researchMethodSearch => 'Search Only';
+
+  @override
+  String get researchMethodOffline => 'Ask AI';
+
+  @override
+  String get researchMethodWeb => 'Web Research';
+
+  @override
+  String get researchMethodSearchNote => 'No AI, no AI cost';
+
+  @override
+  String get researchMethodOfflineNote => 'Sends only the selection and its context; no web search';
+
+  @override
+  String researchMethodWebNote(int searches, int pages) {
+    return 'Up to $searches searches and $pages pages';
+  }
+
+  @override
+  String get researchSetUpAi => 'Set Up AI…';
+
+  @override
+  String get researchNoAi => 'No AI service set up';
+
+  @override
+  String get researchNoAiTitle => 'No AI service set up';
+
+  @override
+  String get researchNoWeb => 'This service can\'t search the web';
+
+  @override
+  String researchContextSummary(String parts, int count) {
+    return 'Sent to AI: $parts (about $count characters)';
+  }
+
+  @override
+  String get researchContextSelection => 'Selection';
+
+  @override
+  String get researchContextBefore => 'Previous passage';
+
+  @override
+  String get researchContextAfter => 'Next passage';
+
+  @override
+  String get researchContextChapter => 'Chapter';
+
+  @override
+  String get researchContextNode => 'Node';
+
+  @override
+  String get researchContextPath => 'Path';
+
+  @override
+  String get researchContextChildren => 'Cards below';
+
+  @override
+  String get researchRunningChoice => 'A research is running';
+
+  @override
+  String get researchAsNew => 'New Research';
+
+  @override
+  String get researchJoin => 'Add to Current Question';
+
+  @override
+  String get researchLater => 'Research Later';
+
+  @override
+  String get researchStart => 'Start Research';
+
+  @override
+  String get researchNeedQuestion => 'Write a question first';
+
+  @override
+  String get researchSavedForLater => 'Saved to Research Later';
+
+  @override
+  String get researchJoined => 'Added to the current research';
+
+  @override
+  String get researchSettings => 'Research Settings';
+
+  @override
+  String get researchBackToOrigin => 'Back to Where It Started';
+
+  @override
+  String get researchOriginGone => 'The original place was deleted';
+
+  @override
+  String get researchStageSearch => 'Searching';
+
+  @override
+  String get researchStageAnswer => 'Answering';
+
+  @override
+  String get researchStageWebAnswer => 'Searching and answering';
+
+  @override
+  String researchStageRead(int done, int total) {
+    return 'Reading sources $done/$total';
+  }
+
+  @override
+  String get researchRetry => 'Retry';
+
+  @override
+  String get researchRestart => 'Start Again';
+
+  @override
+  String get researchCancelled => 'Cancelled';
+
+  @override
+  String get researchInterrupted => 'Interrupted when the app quit';
+
+  @override
+  String get researchFailed => 'Failed';
+
+  @override
+  String get researchRunning => 'Running';
+
+  @override
+  String researchDoneAt(String time) {
+    return 'Finished $time';
+  }
+
+  @override
+  String researchUsedSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sources used',
+      one: '1 source used',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get researchErrorTimeout => 'Timed out';
+
+  @override
+  String get researchErrorUnavailable => 'Can\'t reach the service';
+
+  @override
+  String get researchErrorAuthentication => 'The API key was rejected';
+
+  @override
+  String get researchErrorRateLimited => 'Too many requests; try again later';
+
+  @override
+  String get researchErrorBudget => 'Reached the limit';
+
+  @override
+  String get researchErrorRefusal => 'The AI declined to answer';
+
+  @override
+  String get researchErrorUnsupported => 'Not supported by this service';
+
+  @override
+  String get researchErrorInvalid => 'The request was not accepted';
+
+  @override
+  String get researchErrorProtocol => 'The answer was incomplete';
+
+  @override
+  String get researchTabAnswer => 'Answer';
+
+  @override
+  String get researchTabSources => 'Sources';
+
+  @override
+  String get researchTabSaved => 'Taken';
+
+  @override
+  String researchBadgeWeb(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sources used',
+      one: '1 source used',
+    );
+    return 'Web research · $_temp0';
+  }
+
+  @override
+  String get researchBadgeOffline => 'Offline · no external sources, so no citations';
+
+  @override
+  String researchBadgeSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count sources', one: 'source');
+    return 'Only the $_temp0 you chose; no web search';
+  }
+
+  @override
+  String get researchViewSources => 'View Sources';
+
+  @override
+  String get researchNoSourceBasis => 'no source';
+
+  @override
+  String get researchEdited => 'edited';
+
+  @override
+  String researchQuoteFrom(int number) {
+    return 'Source [$number] · original text';
+  }
+
+  @override
+  String get researchEditPoint => 'Edit';
+
+  @override
+  String get researchAskPoint => 'Ask';
+
+  @override
+  String get researchSavePoint => 'Save';
+
+  @override
+  String researchAskAbout(String point) {
+    return 'About “$point”: ';
+  }
+
+  @override
+  String researchFailedSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count sources', one: '1 source');
+    return '$_temp0 couldn\'t be read';
+  }
+
+  @override
+  String researchChecked(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get researchClearChecked => 'Deselect';
+
+  @override
+  String get researchSaveNote => 'Save as Research Note…';
+
+  @override
+  String get researchNoAnswerSearch => 'Search only: no answer';
+
+  @override
+  String get researchNoAnswer => 'No answer yet';
+
+  @override
+  String researchAnswerFromChosen(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Chosen Sources',
+      one: '1 Chosen Source',
+    );
+    return 'Answer from $_temp0';
+  }
+
+  @override
+  String get researchAnswering => 'Answering…';
+
+  @override
+  String get researchFollowUpPlaceholder => 'Ask a follow-up…';
+
+  @override
+  String get researchCanUseWeb => 'Web';
+
+  @override
+  String get researchOffline => 'Offline';
+
+  @override
+  String get researchSend => 'Send';
+
+  @override
+  String get researchFilterAll => 'All';
+
+  @override
+  String get researchReadUnread => 'Not read';
+
+  @override
+  String get researchReadSnippet => 'Search snippet';
+
+  @override
+  String get researchReadAbstract => 'Abstract only';
+
+  @override
+  String get researchReadFullText => 'Full text';
+
+  @override
+  String get researchReadTranscript => 'Transcript';
+
+  @override
+  String get researchReadFailed => 'Couldn\'t read';
+
+  @override
+  String get researchReadNoTranscript => 'No transcript';
+
+  @override
+  String get researchOpenAccess => 'Open access';
+
+  @override
+  String get researchSubscription => 'Subscription';
+
+  @override
+  String get researchUsedInAnswer => 'Used in answer';
+
+  @override
+  String researchMerged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reprints merged',
+      one: '1 reprint merged',
+    );
+    return '$_temp0, not counted separately';
+  }
+
+  @override
+  String get researchRead => 'Read';
+
+  @override
+  String get researchWhyFailed => 'Why';
+
+  @override
+  String get researchChoose => 'Add to Sources';
+
+  @override
+  String get researchChosen => 'Added';
+
+  @override
+  String get researchPasted => 'Pasted by you';
+
+  @override
+  String researchExternalSearch(String site, String query) {
+    return 'Search “$query” on $site';
+  }
+
+  @override
+  String get researchExternal => 'External';
+
+  @override
+  String researchSearching(String keywords) {
+    return 'Searching: $keywords';
+  }
+
+  @override
+  String get researchNoSources => 'No sources';
+
+  @override
+  String get researchOfflineNoSources => 'This research did not search the web';
+
+  @override
+  String get researchOpenPage => 'Open Page';
+
+  @override
+  String researchFetchedAt(String date) {
+    return 'Fetched $date';
+  }
+
+  @override
+  String get researchAiSummary => 'AI summary · not the source';
+
+  @override
+  String get researchSummarize => 'AI Summary';
+
+  @override
+  String get researchClipEvidence => 'Take as Evidence';
+
+  @override
+  String get researchWriteNote => 'Write Note…';
+
+  @override
+  String researchClipped(int count) {
+    return 'Taken ($count)';
+  }
+
+  @override
+  String get researchCantRead => 'Couldn\'t read the text';
+
+  @override
+  String get researchReadLogin => 'The page needs a sign-in';
+
+  @override
+  String get researchReadTimeout => 'The page took too long.';
+
+  @override
+  String get researchReadUnparseable => 'No article text was found.';
+
+  @override
+  String get researchReadUnsafe => 'This address is not allowed.';
+
+  @override
+  String get researchReadUnsupported => 'This is not a web page.';
+
+  @override
+  String get researchReadEncoding => 'The page\'s text encoding is not supported.';
+
+  @override
+  String get researchReadUnavailable => 'Couldn\'t reach the page.';
+
+  @override
+  String get researchPasteText => 'Paste Text…';
+
+  @override
+  String get researchSaveLinkOnly => 'Save Link Only';
+
+  @override
+  String get researchReadAgain => 'Read Again';
+
+  @override
+  String get researchAbstractOnly => 'Only the abstract was read';
+
+  @override
+  String get researchOpenPublisher => 'Publisher Page';
+
+  @override
+  String get researchPasteTitle => 'Paste Text';
+
+  @override
+  String get researchClipsTitle => 'Evidence (draft)';
+
+  @override
+  String get researchSavedNotes => 'Saved research notes';
+
+  @override
+  String get researchNoteFromClips => 'Write Note from Evidence…';
+
+  @override
+  String get researchNothingSaved => 'Nothing taken yet';
+
+  @override
+  String researchInSource(int page) {
+    return 'Source · p. $page';
+  }
+
+  @override
+  String researchInMap(String title) {
+    return 'Map · $title';
+  }
+
+  @override
+  String researchCitations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count citations', one: '1 citation');
+    return '$_temp0';
+  }
+
+  @override
+  String get researchContinue => 'Continue';
+
+  @override
+  String get researchSaveTitle => 'Save Research Note';
+
+  @override
+  String get researchNoteTitle => 'Title';
+
+  @override
+  String get researchNoteBody => 'Text';
+
+  @override
+  String get researchNoteDefaultTitle => 'Research note';
+
+  @override
+  String researchCitationsLabel(int count) {
+    return 'Citations ($count)';
+  }
+
+  @override
+  String get researchNoExternalBasis => 'No external source';
+
+  @override
+  String get researchSaveTo => 'Save to';
+
+  @override
+  String get researchDestBoth => 'Source and Map';
+
+  @override
+  String get researchDestSource => 'Source Only';
+
+  @override
+  String get researchDestMap => 'Map Only';
+
+  @override
+  String get researchDestNoSource => 'Started from a node: no place in the source';
+
+  @override
+  String get researchAttachUnder => 'In the map under';
+
+  @override
+  String researchSplitPoints(int count) {
+    return 'Split the $count points into child cards';
+  }
+
+  @override
+  String get researchSaving => 'Saving';
+
+  @override
+  String get researchSavedBoth => 'Saved to the source and the map';
+
+  @override
+  String get researchSavedSource => 'Saved to the source';
+
+  @override
+  String get researchSavedMap => 'Saved to the map';
+
+  @override
+  String get researchShowInMap => 'Show in Map';
+
+  @override
+  String researchCardKind(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Research note · $count sources',
+      one: 'Research note · 1 source',
+      zero: 'Research note',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get researchCardOpen => 'Full note and citations';
+
+  @override
+  String researchNoteLabel(String title) {
+    return 'Research note: $title';
+  }
+
+  @override
+  String get researchLocateInMap => 'Locate in Map';
+
+  @override
+  String get researchOpenResearch => 'Open Research';
+
+  @override
+  String get researchPlaces => 'Shown in';
+
+  @override
+  String researchPlaceSource(String document, int page) {
+    return '$document · p. $page';
+  }
+
+  @override
+  String get researchLocate => 'Locate';
+
+  @override
+  String get researchDetach => 'Detach';
+
+  @override
+  String get researchNotInSource => 'Not attached to the source';
+
+  @override
+  String get researchNoteGone => 'This note was deleted';
+
+  @override
+  String get researchDeleteNote => 'Delete Research Note…';
+
+  @override
+  String get researchDeleteTitle => 'Delete this research note?';
+
+  @override
+  String researchDeleteMessage(int marks, int cards) {
+    String _temp0 = intl.Intl.pluralLogic(
+      marks,
+      locale: localeName,
+      other: 'Its $marks source marks go too. ',
+      one: 'Its source mark goes too. ',
+      zero: '',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      cards,
+      locale: localeName,
+      other: 'Its $cards map cards go too.',
+      one: 'Its map card goes too.',
+      zero: '',
+    );
+    return '$_temp0$_temp1';
+  }
+
+  @override
+  String get researchService => 'AI service';
+
+  @override
+  String get researchServiceNone => 'None';
+
+  @override
+  String get researchServiceCompatible => 'Compatible';
+
+  @override
+  String get researchServiceIncomplete => 'Add the model to finish setting up this service';
+
+  @override
+  String get researchApiKey => 'API key';
+
+  @override
+  String get researchKeySaved => 'Saved in the Keychain';
+
+  @override
+  String get researchKeyFailed => 'Couldn\'t save to the Keychain';
+
+  @override
+  String get researchModel => 'Model';
+
+  @override
+  String get researchEndpoint => 'Address';
+
+  @override
+  String get researchPaperSearch => 'Paper search';
+
+  @override
+  String get researchLimits => 'Web research limits';
+
+  @override
+  String researchLimitSearches(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count searches', one: '1 search');
+    return '$_temp0';
+  }
+
+  @override
+  String researchLimitPages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count pages', one: '1 page');
+    return '$_temp0';
+  }
+
+  @override
+  String researchLimitMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get researchPrivacy => 'Privacy';
+
+  @override
+  String get researchShowContext => 'Show what will be sent before starting';
+
+  @override
+  String get researchBlockPrivate => 'Block local and private addresses';
+
+  @override
+  String get researchCache => 'Web cache';
+
+  @override
+  String get researchClearCache => 'Clear Cache';
+
+  @override
+  String get researchCacheCleared => 'Web cache cleared';
+
+  @override
+  String get researchInterruptedShort => 'Interrupted';
 }

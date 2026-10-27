@@ -138,6 +138,11 @@ class MMTextField extends StatefulWidget {
     this.onSubmitted,
     this.autofocus = false,
     this.semanticLabel,
+    this.focusNode,
+    this.maxLines = 1,
+    this.minLines,
+    this.obscureText = false,
+    this.style,
   });
 
   final TextEditingController? controller;
@@ -146,23 +151,48 @@ class MMTextField extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final bool autofocus;
   final String? semanticLabel;
+  final FocusNode? focusNode;
+
+  /// More than one line grows the field with its text up to [maxLines]
+  /// (null: no limit); Return then starts a new line.
+  final int? maxLines;
+  final int? minLines;
+
+  /// A password or API key: the text is hidden.
+  final bool obscureText;
+
+  /// Defaults to body text.
+  final TextStyle? style;
 
   @override
   State<MMTextField> createState() => _MMTextFieldState();
 }
 
 class _MMTextFieldState extends State<MMTextField> {
-  final _focus = FocusNode();
+  FocusNode? _ownFocus;
+  FocusNode get _focus => widget.focusNode ?? (_ownFocus ??= FocusNode());
 
   @override
   void initState() {
     super.initState();
-    _focus.addListener(() => setState(() {}));
+    _focus.addListener(_changed);
   }
 
   @override
+  void didUpdateWidget(MMTextField old) {
+    super.didUpdateWidget(old);
+    if (old.focusNode != widget.focusNode) {
+      (old.focusNode ?? _ownFocus)?.removeListener(_changed);
+      _focus.addListener(_changed);
+    }
+  }
+
+  void _changed() => setState(() {});
+
+  @override
   void dispose() {
-    _focus.dispose();
+    _focus.removeListener(_changed);
+    _ownFocus?.dispose();
     super.dispose();
   }
 
@@ -171,12 +201,16 @@ class _MMTextFieldState extends State<MMTextField> {
     final c = context.mmColors;
     final t = context.mmText;
     final focused = _focus.hasFocus;
+    // Its own node: the text field role must not merge into the enclosing
+    // panel, which would hide the panel's other controls.
     return Semantics(
+      container: true,
       label: widget.semanticLabel,
       textField: true,
       child: Container(
-        height: MMSizes.field,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: widget.maxLines == 1 ? MMSizes.field : null,
+        constraints: const BoxConstraints(minHeight: MMSizes.field),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: widget.maxLines == 1 ? 0 : 6),
         alignment: Alignment.centerLeft,
         decoration: BoxDecoration(
           color: c.quaternaryFill,
@@ -192,7 +226,11 @@ class _MMTextFieldState extends State<MMTextField> {
             autofocus: widget.autofocus,
             onChanged: widget.onChanged,
             onSubmitted: widget.onSubmitted,
-            style: t.body,
+            style: widget.style ?? t.body,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
+            obscureText: widget.obscureText,
+            keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
             cursorWidth: 1.5,
             cursorHeight: 15,
             decoration: InputDecoration.collapsed(hintText: widget.placeholder, hintStyle: t.bodySecondary),

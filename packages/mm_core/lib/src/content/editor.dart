@@ -167,6 +167,25 @@ class StudySetEditor {
     );
   }
 
+  /// One note shown in the source and the map: editing it here changes both.
+  /// Citations are kept; an unchanged or emptied title is ignored.
+  StudySetContent editResearchNote(StudySetContent c, String noteId, {String? title, String? body}) {
+    final note = c.researchNote(noteId);
+    final nextTitle = title?.trim();
+    if (note == null) return c;
+    final changesTitle = nextTitle != null && nextTitle.isNotEmpty && nextTitle != note.title;
+    final changesBody = body != null && body != note.body;
+    if (!changesTitle && !changesBody) return c;
+    return c.copyWith(
+      researchNotes: [
+        for (final n in c.researchNotes)
+          n.id == noteId
+              ? n.copyWith(title: changesTitle ? nextTitle : null, body: changesBody ? body : null, updatedAt: now())
+              : n,
+      ],
+    );
+  }
+
   StudySetContent setNoteFormat(StudySetContent c, String noteId, TextFormat format) => c.copyWith(
     researchNotes: [
       for (final n in c.researchNotes) n.id == noteId ? n.copyWith(textFormat: format, updatedAt: now()) : n,
