@@ -808,8 +808,9 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
     final l = context.l10n;
     final navigator = Navigator.of(context);
     navigator.pop();
-    if (failed && navigator.context.mounted)
+    if (failed && navigator.context.mounted) {
       MMHud.show(navigator.context, l.assistantErrorFailed, icon: MMIcons.warning);
+    }
   }
 
   @override
