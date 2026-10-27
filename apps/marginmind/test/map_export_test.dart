@@ -103,6 +103,29 @@ void main() {
     expect(MapRasterPlan(const Size(100, 100), 2).reduced, isFalse);
     expect(MapRasterPlan(const Size(9000, 100), 1).large, isTrue);
   });
+  test('a formatted note is drawn without its markup; a plain one keeps its stars', () {
+    final now = DateTime.utc(2026);
+    final c = StudySetContent(
+      cards: [
+        Card(
+          id: 'm',
+          kind: CardKind.note,
+          title: '**Key** idea\n- one',
+          textFormat: TextFormat.markdown,
+          createdAt: now,
+        ),
+        Card(id: 'p', kind: CardKind.note, title: '2 * 3 * 4', createdAt: now),
+      ],
+      nodes: const [
+        MapNode(cardId: 'm', order: 0),
+        MapNode(cardId: 'p', order: 1),
+      ],
+    );
+    final texts = scene(c).commands.where((c) => c['type'] == 'text').map((c) => c['text']).toList();
+    expect(texts, containsAll(['Key idea', '• one', '2 * 3 * 4']));
+    expect(texts.any((t) => (t as String).contains('**')), isFalse);
+  });
+
   test('full text and research bodies do not use ellipses', () {
     final now = DateTime.utc(2026);
     final note = ResearchNote(
