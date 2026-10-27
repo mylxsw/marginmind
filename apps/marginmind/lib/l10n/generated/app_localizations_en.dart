@@ -2063,4 +2063,445 @@ class AppLocalizationsEn extends AppLocalizations {
   String researchDiagnosticCode(String code) {
     return 'Error code: $code';
   }
+
+  @override
+  String get assistant => 'Assistant';
+
+  @override
+  String get askAssistant => 'Ask Assistant';
+
+  @override
+  String get askAssistantEllipsis => 'Ask Assistant…';
+
+  @override
+  String get showAssistant => 'Show Assistant';
+
+  @override
+  String get hideAssistant => 'Hide Assistant';
+
+  @override
+  String get assistantNewConversation => 'New Conversation';
+
+  @override
+  String get assistantSettings => 'Assistant Settings';
+
+  @override
+  String get assistantHistory => 'Conversations';
+
+  @override
+  String get assistantConversations => 'Conversations';
+
+  @override
+  String get assistantNoConversations => 'No conversations yet';
+
+  @override
+  String get assistantPlaceholder => 'Ask…';
+
+  @override
+  String get assistantConnectFirst => 'Connect an AI service first';
+
+  @override
+  String get assistantMention => 'Reference';
+
+  @override
+  String get assistantCommands => 'Commands';
+
+  @override
+  String get assistantOnline => 'Online';
+
+  @override
+  String get assistantOffline => 'Offline';
+
+  @override
+  String get assistantSend => 'Send';
+
+  @override
+  String get assistantStop => 'Stop';
+
+  @override
+  String assistantModelSwitched(String name) {
+    return 'Switched to $name';
+  }
+
+  @override
+  String assistantLocalModel(String name) {
+    return 'Local · $name';
+  }
+
+  @override
+  String assistantSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count steps', one: '1 step');
+    return '$_temp0';
+  }
+
+  @override
+  String get assistantStepsOnline => 'online';
+
+  @override
+  String get assistantStepsOffline => 'offline';
+
+  @override
+  String get assistantToolReadSelection => 'Reading the selection';
+
+  @override
+  String get assistantToolReadPages => 'Reading pages';
+
+  @override
+  String get assistantToolSearch => 'Searching the study set';
+
+  @override
+  String get assistantToolReadBranch => 'Reading the branch';
+
+  @override
+  String get assistantToolWebSearch => 'Searching the web';
+
+  @override
+  String get assistantToolPapers => 'Finding papers';
+
+  @override
+  String get assistantToolFetch => 'Reading a page';
+
+  @override
+  String get assistantToolPropose => 'Preparing changes';
+
+  @override
+  String get assistantToolSkills => 'Choosing an approach';
+
+  @override
+  String get assistantToolOther => 'Working';
+
+  @override
+  String get assistantNotOnline => 'Not checked online';
+
+  @override
+  String get assistantSaveNote => 'Save as Note';
+
+  @override
+  String get assistantSavedNote => 'Saved as Note';
+
+  @override
+  String get assistantLocate => 'Show';
+
+  @override
+  String get assistantRegenerate => 'Regenerate';
+
+  @override
+  String get assistantErrorNetwork => 'Network unavailable';
+
+  @override
+  String get assistantErrorKey => 'Invalid API key';
+
+  @override
+  String get assistantErrorService => 'Service temporarily unavailable';
+
+  @override
+  String get assistantErrorBudget => 'Over this answer\'s limit';
+
+  @override
+  String get assistantErrorRefused => 'The model declined to answer';
+
+  @override
+  String get assistantErrorFailed => 'Request failed';
+
+  @override
+  String get assistantStopped => 'Stopped';
+
+  @override
+  String get assistantInterrupted => 'Not finished when the app quit';
+
+  @override
+  String get assistantRetry => 'Retry';
+
+  @override
+  String get assistantUseLocal => 'Use Local Model';
+
+  @override
+  String get assistantOpenSettings => 'Open Settings';
+
+  @override
+  String get assistantContinue => 'Continue';
+
+  @override
+  String get assistantProposalTitle => 'Map changes';
+
+  @override
+  String get assistantProposalApplied => 'Applied';
+
+  @override
+  String get assistantProposalDismissed => 'Dismissed';
+
+  @override
+  String get assistantDismiss => 'Dismiss';
+
+  @override
+  String assistantApply(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Apply $count Changes',
+      one: 'Apply 1 Change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get assistantShowInMap => 'Show in Map';
+
+  @override
+  String get assistantReopen => 'Review Again';
+
+  @override
+  String get assistantTargetDeleted => 'Target deleted';
+
+  @override
+  String assistantAppliedHud(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Applied $count changes',
+      one: 'Applied 1 change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String assistantPutInMap(String title) {
+    return 'Put in map under “$title”';
+  }
+
+  @override
+  String assistantAttachToSource(int page) {
+    return 'Attach beside this sentence on page $page';
+  }
+
+  @override
+  String get assistantNoteDefault => 'Note';
+
+  @override
+  String get assistantNoteTitle => 'Note title';
+
+  @override
+  String get assistantBack => 'Back';
+
+  @override
+  String get assistantKindWeb => 'Web';
+
+  @override
+  String get assistantKindPaper => 'Paper';
+
+  @override
+  String get assistantKindVideo => 'Video';
+
+  @override
+  String get assistantOpenInBrowser => 'Open in Browser';
+
+  @override
+  String assistantMapContext(String title) {
+    return 'Map · $title';
+  }
+
+  @override
+  String assistantBranchContext(String title) {
+    return 'Branch · $title';
+  }
+
+  @override
+  String assistantPageContext(String document, int page) {
+    return '$document · p. $page';
+  }
+
+  @override
+  String assistantDocumentContext(String document) {
+    return 'Whole · $document';
+  }
+
+  @override
+  String get assistantWholeMap => 'Whole map';
+
+  @override
+  String get assistantAutoContext => 'Attached automatically';
+
+  @override
+  String get assistantRemoveContext => 'Remove';
+
+  @override
+  String assistantCurrentPage(int page) {
+    return 'Page $page';
+  }
+
+  @override
+  String get assistantSkillExplain => 'Explain';
+
+  @override
+  String get assistantSkillTranslate => 'Translate';
+
+  @override
+  String get assistantSkillVerify => 'Verify';
+
+  @override
+  String get assistantSkillSummarize => 'Summarize';
+
+  @override
+  String get assistantSkillQuiz => 'Make Review Questions';
+
+  @override
+  String get assistantSkillQuizShort => 'Quiz';
+
+  @override
+  String get assistantSkillOrganize => 'Organize into Map';
+
+  @override
+  String get assistantSkillOrganizeShort => 'Organize';
+
+  @override
+  String get assistantSkillPapers => 'Find Papers';
+
+  @override
+  String get assistantSkillVideos => 'Find Videos';
+
+  @override
+  String get assistantPromptExplain => 'Explain this';
+
+  @override
+  String get assistantPromptTranslate => 'Translate this';
+
+  @override
+  String get assistantPromptVerify => 'Check whether this is right';
+
+  @override
+  String get assistantPromptSummarize => 'Summarize the key points';
+
+  @override
+  String get assistantPromptQuiz => 'Make a few review questions about this';
+
+  @override
+  String get assistantPromptOrganize => 'Organize this into the map';
+
+  @override
+  String get assistantPromptPapers => 'Find related papers';
+
+  @override
+  String get assistantPromptVideos => 'Find related videos';
+
+  @override
+  String assistantSuggestSummarize(int page) {
+    return 'Summarize page $page';
+  }
+
+  @override
+  String assistantSuggestExplain(String title) {
+    return 'Explain “$title”';
+  }
+
+  @override
+  String assistantSuggestVerify(int page) {
+    return 'Check a claim on page $page';
+  }
+
+  @override
+  String get assistantSuggestTranslate => 'Translate the selection';
+
+  @override
+  String assistantSuggestQuiz(String title) {
+    return 'Make review questions for “$title”';
+  }
+
+  @override
+  String get assistantSuggestOrganize => 'Organize this section into the map';
+
+  @override
+  String get assistantConnectTitle => 'Connect an AI service';
+
+  @override
+  String get assistantPasteKey => 'Paste API key';
+
+  @override
+  String get assistantModelField => 'Model';
+
+  @override
+  String get assistantEndpointField => 'Endpoint';
+
+  @override
+  String get assistantConnect => 'Connect';
+
+  @override
+  String get assistantKeyInvalid => 'Invalid key';
+
+  @override
+  String get assistantCannotConnect => 'Cannot reach the service';
+
+  @override
+  String get assistantServiceClaude => 'Claude';
+
+  @override
+  String get assistantServiceOpenAI => 'OpenAI';
+
+  @override
+  String get assistantServiceCompatible => 'Compatible';
+
+  @override
+  String get assistantServiceOllama => 'Local · Ollama';
+
+  @override
+  String get assistantService => 'Service';
+
+  @override
+  String get assistantLocalSetting => 'Local model';
+
+  @override
+  String assistantQuestions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count questions', one: '1 question');
+    return '$_temp0';
+  }
+
+  @override
+  String get assistantHasNote => 'has notes';
+
+  @override
+  String get assistantRunning => 'Answering';
+
+  @override
+  String get assistantUnfinished => 'Unfinished';
+
+  @override
+  String get assistantFailed => 'Failed';
+
+  @override
+  String get assistantDeleteEllipsis => 'Delete…';
+
+  @override
+  String get assistantDeleteTitle => 'Delete this conversation?';
+
+  @override
+  String get assistantDeleteMessage => 'Saved notes are kept.';
+
+  @override
+  String get assistantRenameConversation => 'Rename Conversation';
+
+  @override
+  String get assistantExplainTopic => 'Explain This Topic';
+
+  @override
+  String get assistantExplainCard => 'Explain This Card';
+
+  @override
+  String get assistantOrganizeBranch => 'Organize This Branch…';
+
+  @override
+  String get assistantQuizBranch => 'Make Review Questions for This Branch…';
+
+  @override
+  String get assistantVerifyCard => 'Verify This Card';
+
+  @override
+  String get assistantAskWith => 'Ask About It…';
+
+  @override
+  String get assistantAnchorGone => 'The original place was deleted';
+
+  @override
+  String get assistantOpenConversation => 'Open Conversation';
+
+  @override
+  String get assistantAskMore => 'Ask More';
 }

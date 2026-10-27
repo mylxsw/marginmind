@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/note_text.dart';
+import '../../assistant/assistant_entry.dart';
 import '../../research/widgets/research_note_view.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -44,14 +45,31 @@ class CardDetails extends ConsumerWidget {
       CardKind.note => (MMIcons.addNote, l.detailsNote),
       CardKind.topic || null => (MMIcons.mindMap, l.detailsTopic),
     };
-    final header = RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel);
+    final ask = card == null
+        ? const <Widget>[]
+        : [
+            MMButton(
+              key: const ValueKey('details-ask-assistant'),
+              label: l.askAssistant,
+              icon: MMIcons.ai,
+              variant: MMButtonVariant.plain,
+              onPressed: () => askAboutNode(ref, studySetId, card.id),
+            ),
+          ];
+    final header = RightPanelHeader(icon: icon, title: kindLabel, onClose: controller.closePanel, actions: ask);
     if (card == null) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [header]);
     // A research card shows its note: the same note the source's mark opens.
     if (card.kind == CardKind.research && card.researchNoteId != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          RightPanelHeader(icon: icon, title: kindLabel, color: c.research, onClose: controller.closePanel),
+          RightPanelHeader(
+            icon: icon,
+            title: kindLabel,
+            color: c.research,
+            onClose: controller.closePanel,
+            actions: ask,
+          ),
           Expanded(
             child: ResearchNoteView(studySetId: studySetId, noteId: card.researchNoteId!),
           ),

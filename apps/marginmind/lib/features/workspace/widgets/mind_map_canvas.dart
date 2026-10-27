@@ -14,6 +14,7 @@ import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/note_text.dart';
 import '../../../app/app_commands.dart';
+import '../../assistant/widgets/dashed_border.dart';
 import 'card_field.dart';
 import 'map_drop.dart';
 import 'mind_map_geometry.dart';
@@ -114,6 +115,7 @@ class MindMapCanvas extends StatefulWidget {
     this.onCancelConnect,
     this.onMarkContextMenu,
     this.excerptTargetId,
+    this.previewCardIds = const {},
     this.expandedCardIds = const {},
     this.onToggleExpanded,
     this.onOpenDetails,
@@ -137,6 +139,10 @@ class MindMapCanvas extends StatefulWidget {
   /// The node new excerpts are added under ([rootNodeId] for the root),
   /// marked on the map; null shows no mark.
   final String? excerptTargetId;
+
+  /// Nodes a proposal being hovered would change: outlined with a dashed
+  /// line and brought into view.
+  final Set<String> previewCardIds;
 
   /// False until the content has been read from disk; the first fit waits
   /// for it so it measures the real tree.
@@ -471,6 +477,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (_dragging != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _updateDrop();
+      });
+    }
+    if (!setEquals(widget.previewCardIds, oldWidget.previewCardIds) && widget.previewCardIds.isNotEmpty) {
+      final id = widget.previewCardIds.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ensureVisible(id);
       });
     }
     if (widget.locateCardTick > 0 &&
@@ -1415,6 +1427,23 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                       key: ValueKey(e.key),
                                       rect: _drawn(e.key, e.value),
                                       child: nodes[e.key]!,
+                                    ),
+                                for (final id in widget.previewCardIds)
+                                  if (result.rects[id] case final rect?)
+                                    Positioned.fromRect(
+                                      rect: _drawn(id, rect).inflate(3),
+                                      child: IgnorePointer(
+                                        child: CustomPaint(
+                                          key: ValueKey('map-preview-$id'),
+                                          painter: DashedBorderPainter(
+                                            color: c.research,
+                                            radius: MMRadii.card + 3,
+                                            width: 2,
+                                            dash: 5,
+                                            gap: 3,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                 for (final e in result.summaries.entries)
                                   if (e.value.label.width > 0)

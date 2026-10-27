@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -135,38 +134,6 @@ void main() {
     );
   }
 
-  testWidgets('sidebar keeps three sessions and history opens and deletes older research', (tester) async {
-    await open(tester);
-    final ids = <String>[];
-    for (var i = 0; i < 5; i++) {
-      ids.add(await panel.start(launch(ResearchMethod.offline)));
-      await _settle(tester);
-      await container
-          .read(researchSessionRepositoryProvider)
-          .saveResearchSession(
-            'demo-1',
-            patchSession(state(ids.last).session, {'updatedAt': testNow.add(Duration(seconds: i)).toIso8601String()}),
-          );
-    }
-    container.invalidate(researchSessionsProvider('demo-1'));
-    await _settle(tester);
-    for (final id in ids.take(2)) {
-      expect(find.byKey(ValueKey('sidebar-research-$id')), findsNothing);
-    }
-    for (final id in ids.skip(2)) {
-      expect(find.byKey(ValueKey('sidebar-research-$id')), findsOneWidget);
-    }
-    panel.showStart();
-    await _settle(tester);
-    expect(find.byKey(ValueKey('history-${ids.first}')), findsOneWidget);
-    await tester.tap(find.byKey(ValueKey('history-${ids.first}')), buttons: kSecondaryMouseButton);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete research').last);
-    await _settle(tester);
-    expect(find.byKey(ValueKey('history-${ids.first}')), findsNothing);
-    expect(await container.read(researchSessionRepositoryProvider).loadResearchSession('demo-1', ids.first), isNull);
-  });
-
   testWidgets('delete cancels a pending answer without recreating its session', (tester) async {
     await open(tester);
     final output = StreamController<AiEvent>();
@@ -180,20 +147,6 @@ void main() {
     await _settle(tester);
     expect(await container.read(researchSessionRepositoryProvider).loadResearchSession('demo-1', id), isNull);
     expect(container.read(researchPanelProvider('demo-1')).sessionId, isNull);
-  });
-
-  testWidgets('failed research shows provider diagnostics and a fix', (tester) async {
-    await open(tester);
-    ai = _Ai(
-      (r) => Stream.error(const ResearchFailure(ResearchFailureKind.authentication, null, 'Model access denied', 403)),
-    );
-    final id = await panel.start(launch(ResearchMethod.offline));
-    await _settle(tester);
-    expect(state(id).errorStatus, 403);
-    expect(state(id).errorMessage, 'Model access denied');
-    expect(find.textContaining('HTTP 403'), findsOneWidget);
-    expect(find.textContaining('Model access denied'), findsOneWidget);
-    expect(find.textContaining('model permissions'), findsOneWidget);
   });
 
   testWidgets('later resumes once with its saved anchor; missing AI keeps it pending', (tester) async {

@@ -174,13 +174,13 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
       clearFilter: sessionId != state.sessionId,
       clearNote: true,
     );
-    _workspace.openPanel(RightPanel.research, origin: origin);
+    _workspace.openPanel(RightPanel.assistant, origin: origin);
   }
 
   /// The panel's start page: later research and nothing selected.
   void showStart() {
     state = state.copyWith(clearSession: true, closeReading: true, clearNote: true);
-    _workspace.openPanel(RightPanel.research);
+    _workspace.openPanel(RightPanel.assistant);
   }
 
   void setTab(ResearchTab tab) => state = state.copyWith(tab: tab, closeReading: true);
@@ -201,7 +201,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   /// A saved note, with its citations and places, in the panel.
   void showNote(String noteId, {PanelOrigin origin = PanelOrigin.toolbar}) {
     state = state.copyWith(noteId: noteId);
-    _workspace.openPanel(RightPanel.research, origin: origin);
+    _workspace.openPanel(RightPanel.assistant, origin: origin);
   }
 
   void closeNote() => state = state.copyWith(clearNote: true);

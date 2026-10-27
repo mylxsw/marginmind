@@ -11,6 +11,8 @@ import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
 import '../../settings/app_settings.dart';
 import '../../shared/pdf_drop.dart';
+import '../assistant/assistant_entry.dart';
+import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
 import 'widgets/notices.dart';
@@ -77,38 +79,41 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
-    return CardImageScope(
-      resolve: controller.imagePath,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Preserve independent sidebar choices. Narrow windows temporarily
-          // hide the sidebar beside the right panel and show one content
-          // pane; the toolbar reflects the visible layout.
-          final shown = resolveWorkspaceLayout(
-            windowWidth: constraints.maxWidth,
-            sidebarVisible: state.sidebarVisible,
-            layout: state.layout,
-            panelOpen: state.panel != null,
-            minReader: minReader,
-          );
-          final collapsed = state.sidebarVisible && !shown.sidebarVisible;
-          if (collapsed != state.sidebarAutoCollapsed) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) controller.setSidebarAutoCollapsed(collapsed);
-            });
-          }
-          return _scaffold(
-            context,
-            state,
-            controller,
-            doc,
-            setTitle,
-            shown.sidebarVisible,
-            shown.mode,
-            minReader,
-            shown.panelWidth,
-          );
-        },
+    return AssistantScope(
+      studySetId: widget.studySetId,
+      child: CardImageScope(
+        resolve: controller.imagePath,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Preserve independent sidebar choices. Narrow windows temporarily
+            // hide the sidebar beside the right panel and show one content
+            // pane; the toolbar reflects the visible layout.
+            final shown = resolveWorkspaceLayout(
+              windowWidth: constraints.maxWidth,
+              sidebarVisible: state.sidebarVisible,
+              layout: state.layout,
+              panelOpen: state.panel != null,
+              minReader: minReader,
+            );
+            final collapsed = state.sidebarVisible && !shown.sidebarVisible;
+            if (collapsed != state.sidebarAutoCollapsed) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) controller.setSidebarAutoCollapsed(collapsed);
+              });
+            }
+            return _scaffold(
+              context,
+              state,
+              controller,
+              doc,
+              setTitle,
+              shown.sidebarVisible,
+              shown.mode,
+              minReader,
+              shown.panelWidth,
+            );
+          },
+        ),
       ),
     );
   }
@@ -165,18 +170,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   ),
                 ],
               ),
-              // Research can be turned off as a whole (researchAvailableProvider).
-              if (ref.watch(researchAvailableProvider))
-                MMToolbarGroup(
-                  children: [
-                    MMToolbarButton(
-                      icon: MMIcons.research,
-                      tooltip: AppShortcuts.tip(l.research, AppShortcuts.researchPanel),
-                      selected: state.panel == RightPanel.research,
-                      onPressed: controller.toggleResearchPanel,
-                    ),
-                  ],
-                ),
+              MMToolbarGroup(
+                children: [
+                  MMToolbarButton(
+                    key: const ValueKey('toolbar-assistant'),
+                    icon: MMIcons.ai,
+                    label: l.assistant,
+                    tint: context.mmColors.research,
+                    tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                    selected: state.panel == RightPanel.assistant,
+                    onPressed: () => toggleAssistant(ref, widget.studySetId),
+                  ),
+                ],
+              ),
             ],
           );
         },

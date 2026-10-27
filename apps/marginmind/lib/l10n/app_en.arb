@@ -1165,5 +1165,258 @@
         "type": "String"
       }
     }
-  }
+  },
+  "assistant": "Assistant",
+  "askAssistant": "Ask Assistant",
+  "askAssistantEllipsis": "Ask Assistant…",
+  "showAssistant": "Show Assistant",
+  "hideAssistant": "Hide Assistant",
+  "assistantNewConversation": "New Conversation",
+  "assistantSettings": "Assistant Settings",
+  "assistantHistory": "Conversations",
+  "assistantConversations": "Conversations",
+  "assistantNoConversations": "No conversations yet",
+  "assistantPlaceholder": "Ask…",
+  "assistantConnectFirst": "Connect an AI service first",
+  "assistantMention": "Reference",
+  "assistantCommands": "Commands",
+  "assistantOnline": "Online",
+  "assistantOffline": "Offline",
+  "assistantSend": "Send",
+  "assistantStop": "Stop",
+  "assistantModelSwitched": "Switched to {name}",
+  "@assistantModelSwitched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantLocalModel": "Local · {name}",
+  "@assistantLocalModel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantSteps": "{count, plural, =1{1 step} other{{count} steps}}",
+  "@assistantSteps": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantStepsOnline": "online",
+  "assistantStepsOffline": "offline",
+  "assistantToolReadSelection": "Reading the selection",
+  "assistantToolReadPages": "Reading pages",
+  "assistantToolSearch": "Searching the study set",
+  "assistantToolReadBranch": "Reading the branch",
+  "assistantToolWebSearch": "Searching the web",
+  "assistantToolPapers": "Finding papers",
+  "assistantToolFetch": "Reading a page",
+  "assistantToolPropose": "Preparing changes",
+  "assistantToolSkills": "Choosing an approach",
+  "assistantToolOther": "Working",
+  "assistantNotOnline": "Not checked online",
+  "assistantSaveNote": "Save as Note",
+  "assistantSavedNote": "Saved as Note",
+  "assistantLocate": "Show",
+  "assistantRegenerate": "Regenerate",
+  "assistantErrorNetwork": "Network unavailable",
+  "assistantErrorKey": "Invalid API key",
+  "assistantErrorService": "Service temporarily unavailable",
+  "assistantErrorBudget": "Over this answer's limit",
+  "assistantErrorRefused": "The model declined to answer",
+  "assistantErrorFailed": "Request failed",
+  "assistantStopped": "Stopped",
+  "assistantInterrupted": "Not finished when the app quit",
+  "assistantRetry": "Retry",
+  "assistantUseLocal": "Use Local Model",
+  "assistantOpenSettings": "Open Settings",
+  "assistantContinue": "Continue",
+  "assistantProposalTitle": "Map changes",
+  "assistantProposalApplied": "Applied",
+  "assistantProposalDismissed": "Dismissed",
+  "assistantDismiss": "Dismiss",
+  "assistantApply": "{count, plural, =1{Apply 1 Change} other{Apply {count} Changes}}",
+  "@assistantApply": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantShowInMap": "Show in Map",
+  "assistantReopen": "Review Again",
+  "assistantTargetDeleted": "Target deleted",
+  "assistantAppliedHud": "{count, plural, =1{Applied 1 change} other{Applied {count} changes}}",
+  "@assistantAppliedHud": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantPutInMap": "Put in map under “{title}”",
+  "@assistantPutInMap": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantAttachToSource": "Attach beside this sentence on page {page}",
+  "@assistantAttachToSource": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantNoteDefault": "Note",
+  "assistantNoteTitle": "Note title",
+  "assistantBack": "Back",
+  "assistantKindWeb": "Web",
+  "assistantKindPaper": "Paper",
+  "assistantKindVideo": "Video",
+  "assistantOpenInBrowser": "Open in Browser",
+  "assistantMapContext": "Map · {title}",
+  "@assistantMapContext": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantBranchContext": "Branch · {title}",
+  "@assistantBranchContext": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantPageContext": "{document} · p. {page}",
+  "@assistantPageContext": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantDocumentContext": "Whole · {document}",
+  "@assistantDocumentContext": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantWholeMap": "Whole map",
+  "assistantAutoContext": "Attached automatically",
+  "assistantRemoveContext": "Remove",
+  "assistantCurrentPage": "Page {page}",
+  "@assistantCurrentPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantSkillExplain": "Explain",
+  "assistantSkillTranslate": "Translate",
+  "assistantSkillVerify": "Verify",
+  "assistantSkillSummarize": "Summarize",
+  "assistantSkillQuiz": "Make Review Questions",
+  "assistantSkillQuizShort": "Quiz",
+  "assistantSkillOrganize": "Organize into Map",
+  "assistantSkillOrganizeShort": "Organize",
+  "assistantSkillPapers": "Find Papers",
+  "assistantSkillVideos": "Find Videos",
+  "assistantPromptExplain": "Explain this",
+  "assistantPromptTranslate": "Translate this",
+  "assistantPromptVerify": "Check whether this is right",
+  "assistantPromptSummarize": "Summarize the key points",
+  "assistantPromptQuiz": "Make a few review questions about this",
+  "assistantPromptOrganize": "Organize this into the map",
+  "assistantPromptPapers": "Find related papers",
+  "assistantPromptVideos": "Find related videos",
+  "assistantSuggestSummarize": "Summarize page {page}",
+  "@assistantSuggestSummarize": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantSuggestExplain": "Explain “{title}”",
+  "@assistantSuggestExplain": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantSuggestVerify": "Check a claim on page {page}",
+  "@assistantSuggestVerify": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantSuggestTranslate": "Translate the selection",
+  "assistantSuggestQuiz": "Make review questions for “{title}”",
+  "@assistantSuggestQuiz": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantSuggestOrganize": "Organize this section into the map",
+  "assistantConnectTitle": "Connect an AI service",
+  "assistantPasteKey": "Paste API key",
+  "assistantModelField": "Model",
+  "assistantEndpointField": "Endpoint",
+  "assistantConnect": "Connect",
+  "assistantKeyInvalid": "Invalid key",
+  "assistantCannotConnect": "Cannot reach the service",
+  "assistantServiceClaude": "Claude",
+  "assistantServiceOpenAI": "OpenAI",
+  "assistantServiceCompatible": "Compatible",
+  "assistantServiceOllama": "Local · Ollama",
+  "assistantService": "Service",
+  "assistantLocalSetting": "Local model",
+  "assistantQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
+  "@assistantQuestions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantHasNote": "has notes",
+  "assistantRunning": "Answering",
+  "assistantUnfinished": "Unfinished",
+  "assistantFailed": "Failed",
+  "assistantDeleteEllipsis": "Delete…",
+  "assistantDeleteTitle": "Delete this conversation?",
+  "assistantDeleteMessage": "Saved notes are kept.",
+  "assistantRenameConversation": "Rename Conversation",
+  "assistantExplainTopic": "Explain This Topic",
+  "assistantExplainCard": "Explain This Card",
+  "assistantOrganizeBranch": "Organize This Branch…",
+  "assistantQuizBranch": "Make Review Questions for This Branch…",
+  "assistantVerifyCard": "Verify This Card",
+  "assistantAskWith": "Ask About It…",
+  "assistantAnchorGone": "The original place was deleted",
+  "assistantOpenConversation": "Open Conversation",
+  "assistantAskMore": "Ask More"
 }

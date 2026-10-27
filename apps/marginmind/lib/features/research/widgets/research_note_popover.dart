@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../assistant/widgets/assistant_conversations.dart' show openConversation;
 import '../../workspace/workspace_controller.dart';
 import '../research_controller.dart';
 
@@ -91,13 +92,14 @@ class ResearchNotePopover extends ConsumerWidget {
                         panel.showNote(note.id, origin: PanelOrigin.reader);
                       },
                     ),
-                    if (note.sessionId != null)
+                    if (note.conversationId case final conversation?)
                       MMButton(
-                        label: l.researchOpenResearch,
+                        key: const ValueKey('popover-ask-more'),
+                        label: l.assistantAskMore,
                         variant: MMButtonVariant.plain,
                         onPressed: () {
                           workspace.dismissPending();
-                          panel.show(note.sessionId!, origin: PanelOrigin.reader, tab: ResearchTab.saved);
+                          openConversation(ref, studySetId, conversation);
                         },
                       ),
                   ],

@@ -10,10 +10,9 @@ import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/card_image.dart';
-import '../../research/research_entry.dart';
-import '../../research/research_intents.dart';
-import '../../research/research_origin.dart';
-import '../../research/widgets/research_widgets.dart';
+import '../../assistant/assistant_entry.dart';
+import '../../assistant/assistant_scope.dart' show assistantPreviewProvider;
+import '../../research/research_origin.dart' show researchCardTitle;
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
@@ -129,34 +128,28 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final branchDue = card != null && hasChildren && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
     final suspendable = card != null && (card.suspended || card.kind != CardKind.topic);
 
-    final researchTitle = card == null ? '' : nodeOrigin(content, card.id, mapId, rootTitle: '').text;
+    final askTitle = card == null ? '' : researchCardTitle(content, card.id);
+    final topic = card?.kind == CardKind.topic;
+    void ask(AssistantSkill? skill, {bool branch = false}) =>
+        askAboutNode(ref, widget.studySetId, card!.id, branch: branch, text: skill?.prompt(l), skill: skill?.name);
     showMMMenu(
       context,
       position: position,
       entries: [
-        // Research the node with an intent; the launcher opens on it.
-        if (card != null && researchTitle.isNotEmpty && ref.read(researchAvailableProvider)) ...[
-          MMMenuHeader(
-            l.researchNodeMenu(
-              researchTitle.runes.length > 12
-                  ? '${String.fromCharCodes(researchTitle.runes.take(12))}…'
-                  : researchTitle,
-            ),
+        // Ask the assistant about the node: sent at once, or attached to ask freely.
+        if (card != null && askTitle.isNotEmpty) ...[
+          MMMenuHeader(l.askAssistant),
+          MMMenuItem(
+            topic ? l.assistantExplainTopic : l.assistantExplainCard,
+            () => ask(AssistantSkill.explain),
+            shortcut: describeShortcut(AppShortcuts.askAssistant),
           ),
-          for (final intent in ResearchIntent.values)
-            if (intent != ResearchIntent.translate)
-              MMMenuItem(
-                intentLabel(l, intent),
-                () => researchNode(
-                  context,
-                  ref,
-                  studySetId: widget.studySetId,
-                  cardId: card.id,
-                  intent: intent,
-                  anchor: Rect.fromLTWH(position.dx, position.dy, 1, 1),
-                ),
-                shortcut: intent == ResearchIntent.explain ? describeShortcut(AppShortcuts.researchSelection) : null,
-              ),
+          if (topic) ...[
+            MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
+            MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+          ],
+          if (card.kind == CardKind.excerpt) MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify)),
+          MMMenuItem(l.assistantAskWith, () => ask(null)),
           const MMMenuDivider(),
         ],
         if (card != null) ...[
@@ -373,6 +366,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onCancelConnect: controller.cancelConnecting,
                     onMarkContextMenu: _showMarkMenu,
                     excerptTargetId: excerptTargetId,
+                    previewCardIds: ref.watch(assistantPreviewProvider(widget.studySetId)),
                     expandedCardIds: state.expandedCardIds,
                     onToggleExpanded: controller.toggleExpanded,
                     onOpenDetails: controller.showDetails,

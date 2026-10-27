@@ -7,9 +7,9 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../assistant/widgets/assistant_conversations.dart' show openConversation;
 import '../../workspace/widgets/notices.dart';
 import '../../workspace/workspace_controller.dart';
-import '../research_controller.dart';
 import 'research_widgets.dart';
 
 /// A research note in full (design 4.6 "after saving"): its title and text,
@@ -57,7 +57,6 @@ class ResearchNoteView extends ConsumerWidget {
         if (evidence.any((e) => e.sourceId == s.id)) s,
     ];
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final panel = ref.read(researchPanelProvider(studySetId).notifier);
 
     Widget section(String label, List<Widget> children) =>
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [ResearchFieldLabel(label), ...children]);
@@ -132,15 +131,8 @@ class ResearchNoteView extends ConsumerWidget {
                                 child: EvidenceQuote(
                                   key: ValueKey('note-quote-${e.id}'),
                                   quote: e.quote,
-                                  onOpen: note.sessionId == null
-                                      ? null
-                                      : () => panel
-                                          ..show(note.sessionId!, tab: ResearchTab.sources)
-                                          ..openReading(
-                                            e.sourceId,
-                                            paragraphId: e.locator.paragraphId,
-                                            version: e.sourceVersion,
-                                          ),
+                                  // Old research sessions open again once they are migrated.
+                                  onOpen: null,
                                 ),
                               ),
                         ],
@@ -212,11 +204,12 @@ class ResearchNoteView extends ConsumerWidget {
           spacing: MMSpacing.s,
           runSpacing: MMSpacing.s,
           children: [
-            if (note.sessionId != null)
+            if (note.conversationId case final conversation?)
               MMButton(
-                label: l.researchOpenResearch,
-                icon: MMIcons.research,
-                onPressed: () => panel.show(note.sessionId!, tab: ResearchTab.saved),
+                key: const ValueKey('note-open-conversation'),
+                label: l.assistantOpenConversation,
+                icon: MMIcons.conversation,
+                onPressed: () => openConversation(ref, studySetId, conversation),
               ),
             MMButton(
               key: const ValueKey('delete-note'),

@@ -266,6 +266,14 @@ class AssistantController extends Notifier<Conversation> {
     await _persist();
   }
 
+  /// Renames the open conversation (UI extension; does not stop a run).
+  Future<void> rename(String title) async {
+    final value = title.trim();
+    if (value.isEmpty || value.length > 200) throw const FormatException('Invalid title');
+    state = state.copyWith(title: value);
+    await _persist();
+  }
+
   Future<void> switchModel(AssistantModel model) async {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
     await stop();

@@ -1,3 +1,4 @@
+import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -34,9 +35,18 @@ class AssistantSettingsController extends Notifier<AssistantSettings> {
     final provider =
         AssistantProvider.values.where((p) => p.name == prefs.getString('assistant.provider')).firstOrNull ??
         AssistantProvider.claude;
+    return saved(provider);
+  }
+
+  /// The settings saved for [provider], whether or not it is the current one.
+  AssistantSettings saved(AssistantProvider provider) {
+    final prefs = ref.read(sharedPreferencesProvider);
     return AssistantSettings(
       provider: provider,
-      model: prefs.getString('assistant.model.${provider.name}') ?? '',
+      model: switch (prefs.getString('assistant.model.${provider.name}') ?? '') {
+        '' => defaultModel(provider),
+        final m => m,
+      },
       endpoint:
           prefs.getString('assistant.endpoint.${provider.name}') ??
           switch (provider) {
@@ -49,6 +59,30 @@ class AssistantSettingsController extends Notifier<AssistantSettings> {
       localEnabled: prefs.getBool('assistant.localEnabled') ?? false,
       searxngEndpoint: prefs.getString('assistant.searxng') ?? '',
     );
+  }
+
+  /// The model to use when none was typed: only Claude has a default.
+  static String defaultModel(AssistantProvider provider) =>
+      provider == AssistantProvider.claude ? 'claude-opus-5-5' : '';
+
+  /// Switches to [provider] with the model and endpoint saved for it.
+  Future<void> select(AssistantProvider provider) async {
+    await ref.read(sharedPreferencesProvider).setString('assistant.provider', provider.name);
+    state = saved(provider);
+  }
+
+  /// Models the model menu lists: the current one and every other service
+  /// with a saved model. The local model only while it is allowed.
+  List<AssistantModel> models() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return [
+      for (final p in AssistantProvider.values)
+        if (p == state.provider)
+          state.configuration
+        else if ((prefs.getString('assistant.model.${p.name}') ?? '').isNotEmpty &&
+            (p != AssistantProvider.ollama || state.localEnabled))
+          saved(p).configuration,
+    ];
   }
 
   Future<void> configure(AssistantSettings settings) async {
@@ -75,8 +109,50 @@ class AssistantSettingsController extends Notifier<AssistantSettings> {
     } else {
       await store.write(name, key.trim());
     }
+    ref.read(_assistantKeysProvider.notifier).changed();
   }
 }
+
+/// Whether the current service can be used: a model, and a key unless it is
+/// the local model. Refreshed when settings change or a key is saved.
+final assistantConfiguredProvider = FutureProvider<bool>((ref) async {
+  ref.watch(_assistantKeysProvider);
+  final settings = ref.watch(assistantSettingsProvider);
+  if (settings.model.trim().isEmpty) return false;
+  if (settings.provider == AssistantProvider.ollama) return settings.localEnabled;
+  final key = await ref.watch(assistantSecretsProvider).read(AssistantSettingsController.account(settings.provider));
+  return key != null && key.isNotEmpty;
+});
+
+/// Bumped whenever a key is saved or removed.
+final _assistantKeysProvider = NotifierProvider<_AssistantKeys, int>(_AssistantKeys.new);
+
+class _AssistantKeys extends Notifier<int> {
+  @override
+  int build() => 0;
+  void changed() => state++;
+}
+
+/// Checks a service before it is saved: null when it answers, else why not.
+typedef AssistantConnectionTester = Future<ResearchFailureKind?> Function(AssistantModel model, String key);
+
+/// One tiny request through the same bounded transport as real runs.
+final assistantConnectionTesterProvider = Provider<AssistantConnectionTester>(
+  (ref) => (model, key) async {
+    AssistantConnection? connection;
+    try {
+      connection = connectAssistant(model, key);
+      await connection.client.generate([
+        sdk.UserMessage.text('ping'),
+      ], modelConfig: sdk.ModelConfig(model: model.model, maxTokens: 1, extra: {'store': false}));
+      return null;
+    } catch (e) {
+      return assistantFailureKind(e);
+    } finally {
+      connection?.close();
+    }
+  },
+);
 
 /// Application composition point. Reader, graph snapshot and network adapters
 /// are injected by the owning study-set surface; no global filesystem authority.
