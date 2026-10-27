@@ -33,15 +33,15 @@
 
 | 截图 | 内容 |
 | --- | --- |
-| `m2-library-migrated` | 迁移后的资料库 |
-| `13-research-settings` | 研究设置：AI 服务、论文检索、上限、隐私、网页缓存 |
+| [m2-library-migrated](m2-library-migrated.jpg) | 迁移后的资料库 |
+| [13-research-settings](13-research-settings.jpg) | 研究设置：AI 服务、论文检索、上限、隐私、网页缓存 |
 | `01a-launcher` ～ `01g-relaunch` | 场景 1：选区 → 查证 → 真实论文搜索 → 基于资料回答 → 保存到原文和脑图 → 详情改标题，原文浮层同步 → 重启后仍在 |
 | `02a-offline-answer`、`02b-node-save` | 场景 2：节点解释标“未联网 · 不附引用”，保存只能加入脑图，默认不进复习 |
 | `03a-switch-choice`、`03c-followup-own-session` | 场景 3：进行中再发起时可选“作为新研究 / 加入当前问题”；慢请求的追问落在原会话 |
-| `05-image-paste` | C02：粘贴图片成为节点下的图片卡 |
-| `07-ink` | C04：画笔工具条与自由线 |
-| `08-export-dialog` | C05：PNG / PDF / Markdown / OPML、范围、外观、清晰度 |
-| `11a-no-ai-launcher` | 场景 11：未设置 AI 时只能“只搜索”，提示去设置 |
+| [05-image-paste](05-image-paste.jpg) | C02：粘贴图片成为节点下的图片卡 |
+| [07-ink](07-ink.jpg) | C04：画笔工具条与自由线 |
+| [08-export-dialog](08-export-dialog.jpg) | C05：PNG / PDF / Markdown / OPML、范围、外观、清晰度 |
+| [11a-no-ai-launcher](11a-no-ai-launcher.jpg) | 场景 11：未设置 AI 时只能“只搜索”，提示去设置 |
 | `12a-review-image`、`12b-review-research-note` | 场景 12：图片卡背面显示图片；研究笔记卡以问题为题面 |
-| `p2-sandbox-empty` | 沙盒签名包首次启动，独立容器为空 |
-| `fix-video-title` | 修复后：B 站链接显示视频标题；YouTube 在这台机器的网络下直连不通，退回显示网址 |
+| [p2-sandbox-empty](p2-sandbox-empty.jpg) | 沙盒签名包首次启动，独立容器为空 |
+| [fix-video-title](fix-video-title.jpg) | 修复后：B 站链接显示视频标题；YouTube 在这台机器的网络下直连不通，退回显示网址 |
