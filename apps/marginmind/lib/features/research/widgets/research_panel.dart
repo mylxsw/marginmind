@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:mm_core/mm_core.dart';
@@ -1155,14 +1156,25 @@ class _ComposerState extends ConsumerState<_Composer> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: MMTextField(
-                  key: const ValueKey('research-followup'),
-                  controller: _controller,
-                  focusNode: _focus,
-                  maxLines: 4,
-                  minLines: 1,
-                  placeholder: l.researchFollowUpPlaceholder,
-                  semanticLabel: l.researchFollowUpPlaceholder,
+                // Return adds a line; ⌘↩ sends, as it starts research in the launcher.
+                child: CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.enter, meta: true): () {
+                      if (!busy) unawaited(_send());
+                    },
+                    const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+                      if (!busy) unawaited(_send());
+                    },
+                  },
+                  child: MMTextField(
+                    key: const ValueKey('research-followup'),
+                    controller: _controller,
+                    focusNode: _focus,
+                    maxLines: 4,
+                    minLines: 1,
+                    placeholder: l.researchFollowUpPlaceholder,
+                    semanticLabel: l.researchFollowUpPlaceholder,
+                  ),
                 ),
               ),
               const SizedBox(width: MMSpacing.s),

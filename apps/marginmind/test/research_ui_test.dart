@@ -174,6 +174,7 @@ Future<_App> _open(
       if (fakeAi) researchAiFactoryProvider.overrideWithValue(() async => ai),
       researchExtractorProvider.overrideWithValue(extractor ?? _Extractor()),
       researchSearchProvider.overrideWithValue(search ?? _Search()),
+      researchVideoTitlesProvider.overrideWithValue(null),
       researchSecretStoreProvider.overrideWithValue(secrets ?? _Secrets()),
       ...overrides,
     ],
@@ -780,6 +781,17 @@ void main() {
     await _settle(tester);
     expect(ai.requests.last.question, contains('我改过的要点'));
     expect(_session(app, id).session.history, hasLength(turn + 2));
+    // ⌘↩ sends from the follow-up field, as it starts research in the launcher.
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('research-followup')), matching: find.byType(TextField)),
+      '再举一个例子',
+    );
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await _settle(tester);
+    expect(ai.requests.last.question, contains('再举一个例子'));
+    expect(_session(app, id).session.history, hasLength(turn + 3));
     await gesture.removePointer();
 
     // The old research opens from the sidebar with its retry.

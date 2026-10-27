@@ -67,7 +67,7 @@ class _SaveNoteSheetState extends ConsumerState<SaveNoteSheet> {
   late final List<String> _texts = [
     for (final p in widget.points) _value.drafts.edits[p.key] ?? p.text,
     for (final c in widget.clips) '“${c.evidence.quote}”',
-    if (widget.linkOnly case final s?) '${s.title}\n${s.url}',
+    if (widget.linkOnly case final s?) s.title == s.url ? s.url : '${s.title}\n${s.url}',
   ];
   late final String _defaultBody = _texts.join('\n');
   late final _title = TextEditingController(text: _defaultTitle());

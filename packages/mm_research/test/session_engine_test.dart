@@ -35,6 +35,17 @@ class Search implements SearchProvider {
   Future<List<SearchHit>> search(SearchRequest request, CancellationToken cancellation) async => hits;
 }
 
+class Titles extends VideoTitles {
+  Titles(this.title);
+  String? title;
+  int calls = 0;
+  @override
+  Future<String?> lookup(ResearchSource source, CancellationToken cancellation) async {
+    calls++;
+    return title;
+  }
+}
+
 class Extractor implements ContentExtractor {
   Extractor(this.read);
   final Future<ExtractedContent> Function(Uri) read;
@@ -95,6 +106,27 @@ void main() {
     documents: documents,
     budget: ResearchBudget(duration: duration),
   );
+
+  test('a saved video link shows its title, or its link until a later save finds one', () async {
+    final titles = Titles(null);
+    final titled = ResearchSessionEngine(
+      studySetId: 'set',
+      session: session('session', 'draft'),
+      repository: repository,
+      snapshots: repository,
+      recovery: recovery,
+      newRequestId: () => 'r',
+      now: () => now,
+      videoTitles: titles,
+    );
+    addTearDown(titled.dispose);
+    await titled.saveVideoLink(Uri.parse('https://youtu.be/dQw4w9WgXcQ'));
+    expect(titled.state.sources.single.title, 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    titles.title = 'Never Gonna Give You Up';
+    await titled.saveVideoLink(Uri.parse('https://www.youtube.com/watch?v=dQw4w9WgXcQ'));
+    expect(titled.state.sources.single.title, 'Never Gonna Give You Up');
+    expect(titles.calls, 2);
+  });
 
   test('video links survive restart, deduplicate and never reach extraction', () async {
     await engine.saveVideoLink(Uri.parse('https://youtu.be/dQw4w9WgXcQ'));
