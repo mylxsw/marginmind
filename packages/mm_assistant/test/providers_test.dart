@@ -38,12 +38,80 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
   localEnabled: provider == AssistantProvider.ollama,
 );
 void main() {
+  test('compatible base URLs and full endpoints generate at the same exact route', () async {
+    for (final address in [
+      'https://squirrel.aicode.cc/v1',
+      'https://squirrel.aicode.cc/v1/',
+      ' https://squirrel.aicode.cc/v1/chat/completions/ ',
+      'https://squirrel.aicode.cc',
+    ]) {
+      final adapter = Adapter((options, _) {
+        expect(options.uri.toString(), 'https://squirrel.aicode.cc/v1/chat/completions');
+        expect(options.headers['Authorization'], 'Bearer test-key');
+        return ResponseBody.fromString(
+          jsonEncode({
+            'id': 'probe',
+            'choices': [
+              {
+                'message': {'role': 'assistant', 'content': 'OK'},
+                'finish_reason': 'stop',
+              },
+            ],
+          }),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+      final connection = connectAssistant(
+        AssistantModel(provider: AssistantProvider.compatible, model: 'coding/auto', endpoint: address),
+        'test-key',
+        adapter: adapter,
+      );
+      try {
+        final reply = await connection.client.generate([
+          UserMessage.text('ping'),
+        ], modelConfig: ModelConfig(model: 'coding/auto', maxTokens: 1));
+        expect(reply.textOutput, 'OK');
+        expect(adapter.calls, 1);
+        // Normalizing a base must not broaden the allowed request route.
+        await expectLater(connection.dio.post('https://squirrel.aicode.cc/v1/models'), throwsA(isA<DioException>()));
+        expect(adapter.calls, 1);
+      } finally {
+        connection.close();
+      }
+    }
+  });
+
+  test('base URL normalization preserves custom routing prefixes', () async {
+    const route = 'https://example.com/gateway/v1/chat/completions';
+    final adapter = Adapter((options, _) {
+      expect(options.uri.toString(), route);
+      return ResponseBody.fromString('ok', 200);
+    });
+    final connection = connectAssistant(
+      const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'm',
+        endpoint: 'https://example.com/gateway/v1/',
+      ),
+      'test-key',
+      adapter: adapter,
+    );
+    try {
+      await connection.dio.post(route);
+    } finally {
+      connection.close();
+    }
+  });
+
   test('Ollama generates through the real pinned loopback transport without a key', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final config = AssistantModel(
       provider: AssistantProvider.ollama,
       model: 'local-model',
-      endpoint: 'http://127.0.0.1:${server.port}/v1/chat/completions',
+      endpoint: 'http://127.0.0.1:${server.port}/v1/',
       localEnabled: true,
     );
     final connection = connectAssistant(config, '');
@@ -180,9 +248,38 @@ void main() {
         endpoint: 'http://example.com/v1/chat/completions',
       ),
       const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'm',
+        endpoint: 'https://example.com/v1?key=secret',
+      ),
+      const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'm',
+        endpoint: 'https://user:pass@example.com/v1',
+      ),
+      const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'm',
+        endpoint: 'https://example.com/v1#fragment',
+      ),
+      const AssistantModel(provider: AssistantProvider.compatible, model: 'm', endpoint: 'https://[bad'),
+      const AssistantModel(provider: AssistantProvider.compatible, model: 'm', endpoint: 'https:/v1'),
+      const AssistantModel(
         provider: AssistantProvider.responses,
         model: '',
         endpoint: 'https://api.openai.com/v1/responses',
+      ),
+      const AssistantModel(
+        provider: AssistantProvider.ollama,
+        model: 'm',
+        endpoint: 'http://192.168.1.2/v1',
+        localEnabled: true,
+      ),
+      const AssistantModel(
+        provider: AssistantProvider.ollama,
+        model: 'm',
+        endpoint: 'ftp://localhost/v1',
+        localEnabled: true,
       ),
       const AssistantModel(
         provider: AssistantProvider.ollama,
@@ -201,7 +298,14 @@ void main() {
   });
   test('error classification never returns raw provider diagnostic', () {
     for (final pair in [
+      (400, ResearchFailureKind.invalidRequest),
+      (404, ResearchFailureKind.invalidRequest),
+      (405, ResearchFailureKind.invalidRequest),
+      (422, ResearchFailureKind.invalidRequest),
       (401, ResearchFailureKind.authentication),
+      (403, ResearchFailureKind.authentication),
+      (408, ResearchFailureKind.timeout),
+      (504, ResearchFailureKind.timeout),
       (429, ResearchFailureKind.rateLimited),
       (500, ResearchFailureKind.unavailable),
     ]) {
@@ -217,6 +321,16 @@ void main() {
       );
     }
     expect(assistantFailureKind(StateError('secret')), ResearchFailureKind.unavailable);
+    for (final type in [
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.sendTimeout,
+      DioExceptionType.receiveTimeout,
+    ]) {
+      expect(
+        assistantFailureKind(DioException(requestOptions: RequestOptions(), type: type)),
+        ResearchFailureKind.timeout,
+      );
+    }
   });
   test('partial response stream errors are never retried', () async {
     Stream<Uint8List> broken() async* {

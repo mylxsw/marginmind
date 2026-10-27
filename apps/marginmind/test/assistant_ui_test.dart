@@ -359,6 +359,31 @@ void main() {
     expect(find.text('提问…'), findsOneWidget);
   });
 
+  testWidgets('connection errors distinguish configuration, timeout and rate limits', (tester) async {
+    var failure = ResearchFailureKind.invalidRequest;
+    final app = await openAssistantApp(tester, key: false, connect: (_, _) async => failure);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('connect-key')), matching: find.byType(EditableText)),
+      'test-key',
+    );
+    for (final pair in [
+      (ResearchFailureKind.invalidRequest, '请检查模型名称和服务地址；远程服务需使用 HTTPS'),
+      (ResearchFailureKind.unsafeUrl, '请检查模型名称和服务地址；远程服务需使用 HTTPS'),
+      (ResearchFailureKind.timeout, '连接超时，请检查网络后重试'),
+      (ResearchFailureKind.rateLimited, '请求过多，请稍后重试'),
+      (ResearchFailureKind.unavailable, '连不上服务'),
+    ]) {
+      failure = pair.$1;
+      await tester.tap(find.byKey(const ValueKey('connect-button')));
+      await tester.pumpAndSettle();
+      expect(find.text(pair.$2), findsOneWidget);
+      expect(app.secrets.values, isEmpty);
+      expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
+    }
+  });
+
   testWidgets('failure states name the reason and the next step', (tester) async {
     final app = await openAssistantApp(tester);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));

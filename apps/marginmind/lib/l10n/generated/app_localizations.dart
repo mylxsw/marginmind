@@ -4322,6 +4322,18 @@ abstract class AppLocalizations {
   /// **'Cannot reach the service'**
   String get assistantCannotConnect;
 
+  /// No description provided for @assistantConnectionInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the model name and service URL; remote services require HTTPS'**
+  String get assistantConnectionInvalid;
+
+  /// No description provided for @assistantConnectionTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection timed out; check your network and try again'**
+  String get assistantConnectionTimeout;
+
   /// No description provided for @assistantServiceClaude.
   ///
   /// In en, this message translates to:

@@ -2323,6 +2323,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantCannotConnect => '连不上服务';
 
   @override
+  String get assistantConnectionInvalid => '请检查模型名称和服务地址；远程服务需使用 HTTPS';
+
+  @override
+  String get assistantConnectionTimeout => '连接超时，请检查网络后重试';
+
+  @override
   String get assistantServiceClaude => 'Claude';
 
   @override

@@ -770,6 +770,8 @@
   "assistantConnect": "连接",
   "assistantKeyInvalid": "Key 无效",
   "assistantCannotConnect": "连不上服务",
+  "assistantConnectionInvalid": "请检查模型名称和服务地址；远程服务需使用 HTTPS",
+  "assistantConnectionTimeout": "连接超时，请检查网络后重试",
   "assistantServiceClaude": "Claude",
   "assistantServiceOpenAI": "OpenAI",
   "assistantServiceCompatible": "兼容服务",

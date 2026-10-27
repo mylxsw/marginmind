@@ -42,7 +42,8 @@ class AssistantConnection {
   void close() => dio.close(force: true);
 }
 
-/// Safe adapter receives the complete configured endpoint; SDKs receive its base.
+/// Compatible/Ollama accept a base URL or a complete chat endpoint.
+/// The safe adapter pins the resolved endpoint; SDKs receive its base.
 /// Retries only received 429/5xx, never network exceptions or partial streams.
 AssistantConnection connectAssistant(
   AssistantModel config,
@@ -51,20 +52,34 @@ AssistantConnection connectAssistant(
   HttpClientAdapter? adapter,
 }) {
   suppressAssistantDiagnostics();
-  final endpoint = Uri.parse(config.endpoint);
+  final Uri configured;
+  try {
+    configured = Uri.parse(config.endpoint.trim());
+  } on FormatException {
+    throw const ResearchFailure(ResearchFailureKind.invalidRequest);
+  }
   final suffix = switch (config.provider) {
     AssistantProvider.claude => '/v1/messages',
     AssistantProvider.responses => '/responses',
     _ => '/chat/completions',
   };
   if (config.model.trim().isEmpty ||
-      endpoint.userInfo.isNotEmpty ||
-      endpoint.hasQuery ||
-      endpoint.hasFragment ||
-      !endpoint.path.endsWith(suffix) ||
-      (config.provider == AssistantProvider.ollama ? !config.localEnabled : endpoint.scheme != 'https')) {
+      configured.host.isEmpty ||
+      configured.userInfo.isNotEmpty ||
+      configured.hasQuery ||
+      configured.hasFragment ||
+      (config.provider == AssistantProvider.ollama
+          ? !config.localEnabled || !{'http', 'https'}.contains(configured.scheme)
+          : configured.scheme != 'https')) {
     throw const ResearchFailure(ResearchFailureKind.invalidRequest);
   }
+  var path = configured.path.replaceFirst(RegExp(r'/+$'), '');
+  if (config.provider == AssistantProvider.compatible || config.provider == AssistantProvider.ollama) {
+    if (path.isEmpty) path = '/v1';
+    if (!path.endsWith(suffix)) path += suffix;
+  }
+  if (!path.endsWith(suffix)) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
+  final endpoint = configured.replace(path: path);
   if (config.provider == AssistantProvider.ollama &&
       !{'localhost', '127.0.0.1', '::1', '[::1]'}.contains(endpoint.host)) {
     throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
@@ -74,7 +89,8 @@ AssistantConnection connectAssistant(
     providerEndpoint: endpoint,
   );
   final dio = Dio(BaseOptions(followRedirects: false, maxRedirects: 0));
-  final base = config.endpoint.substring(0, config.endpoint.length - suffix.length);
+  final address = endpoint.toString();
+  final base = address.substring(0, address.length - suffix.length);
   final client = switch (config.provider) {
     AssistantProvider.claude => ClaudeClient(
       apiKey: key,

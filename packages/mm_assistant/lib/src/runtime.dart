@@ -225,9 +225,17 @@ ResearchFailureKind assistantFailureKind(Object error) {
   if (error is DioException) {
     if (error.error is ResearchFailure) return (error.error as ResearchFailure).kind;
     return switch (error.response?.statusCode) {
+      400 || 404 || 405 || 422 => ResearchFailureKind.invalidRequest,
       401 || 403 => ResearchFailureKind.authentication,
+      408 || 504 => ResearchFailureKind.timeout,
       429 => ResearchFailureKind.rateLimited,
-      _ => error.type == DioExceptionType.cancel ? ResearchFailureKind.cancelled : ResearchFailureKind.unavailable,
+      _ => switch (error.type) {
+        DioExceptionType.cancel => ResearchFailureKind.cancelled,
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout => ResearchFailureKind.timeout,
+        _ => ResearchFailureKind.unavailable,
+      },
     };
   }
   return ResearchFailureKind.unavailable;

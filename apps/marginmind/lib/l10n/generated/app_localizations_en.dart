@@ -2431,6 +2431,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantCannotConnect => 'Cannot reach the service';
 
   @override
+  String get assistantConnectionInvalid => 'Check the model name and service URL; remote services require HTTPS';
+
+  @override
+  String get assistantConnectionTimeout => 'Connection timed out; check your network and try again';
+
+  @override
   String get assistantServiceClaude => 'Claude';
 
   @override

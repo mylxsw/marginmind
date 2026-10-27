@@ -477,7 +477,13 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     if (failure != null) {
       setState(() {
         _connecting = false;
-        _error = failure == ResearchFailureKind.authentication ? l.assistantKeyInvalid : l.assistantCannotConnect;
+        _error = switch (failure) {
+          ResearchFailureKind.authentication => l.assistantKeyInvalid,
+          ResearchFailureKind.invalidRequest || ResearchFailureKind.unsafeUrl => l.assistantConnectionInvalid,
+          ResearchFailureKind.timeout => l.assistantConnectionTimeout,
+          ResearchFailureKind.rateLimited => l.researchErrorRateLimited,
+          _ => l.assistantCannotConnect,
+        };
       });
       return;
     }

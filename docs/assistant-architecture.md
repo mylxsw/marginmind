@@ -69,6 +69,8 @@ GUL-531 实现 `MapEditExecutor.apply(proposal, selectedIds)`：事务内重验�
 
 设置存 SharedPreferences，按供应商保留模型和 endpoint；联网默认 true，本机模型默认 false，另有 searxngEndpoint。Key 只在 Keychain SecretStore：claude→anthropic，responses→openai，compatible→compatible，ollama→assistant.ollama；复用现有研究 Key，不把 Key 写入对话或 preferences。切换设置时 UI 应调用控制器 switchModel/setOnline，使当前会话同步。
 
+兼容服务和 Ollama 的地址支持基础地址（如 `https://example.com/v1`）或完整的 `/chat/completions` 地址，忽略首尾空格和末尾斜杠；仅填写域名时使用 `/v1/chat/completions`，自定义路径前缀保留。连接检查与实际对话共用解析与传输，仍将请求限制在解析后的单一接口，禁止重定向、携带用户信息或查询参数的地址；远程仍要求 HTTPS，本机仍须显式启用且仅允许 loopback。连接卡分别提示配置无效、Key 无效、超时和限流，不展示供应商原始响应或凭据。
+
 ## 验证与限制
 
 使用假 LLM、SDK generate 模式 RecordingLLMClient/严格 ReplayLLMClient（SDK 2.1.8 不记录流模式），每 Skill 三例；另测真实 runStream 映射、停止、恢复、提议与存储边界。未使用真实账号，不宣称供应商联网验证通过。
