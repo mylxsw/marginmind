@@ -4465,6 +4465,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask More'**
   String get assistantAskMore;
+
+  /// No description provided for @assistantSearxngInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid HTTP or HTTPS endpoint'**
+  String get assistantSearxngInvalid;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

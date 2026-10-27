@@ -493,7 +493,22 @@ void main() {
       of: find.byKey(const ValueKey('settings-searxng')),
       matching: find.byType(EditableText),
     );
-    await tester.enterText(searx, 'https://search.example/search');
+    for (final invalid in ['localhost:8080/search', 'file:///search', 'http://user:pass@localhost', 'http://[::1']) {
+      await tester.enterText(searx, invalid);
+      await tester.pumpAndSettle();
+      final error = find.text('请输入有效的 HTTP 或 HTTPS 端点');
+      expect(error, findsOneWidget);
+      expect(tester.getTopLeft(error).dy, greaterThan(tester.getBottomLeft(searx).dy));
+      final save = tester.widget<MMButton>(find.byKey(const ValueKey('assistant-settings-save')));
+      expect(save.onPressed, isNull);
+      expect(app.container.read(assistantSettingsProvider).searxngEndpoint, isEmpty);
+    }
+    await tester.enterText(searx, '');
+    await tester.pumpAndSettle();
+    expect(find.text('请输入有效的 HTTP 或 HTTPS 端点'), findsNothing);
+    await tester.enterText(searx, 'http://192.168.1.42:8080/search');
+    await tester.pumpAndSettle();
+    expect(find.text('请输入有效的 HTTP 或 HTTPS 端点'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
@@ -501,7 +516,7 @@ void main() {
     await tester.pumpAndSettle();
     final settings = app.container.read(assistantSettingsProvider);
     expect(settings.localEnabled, true);
-    expect(settings.searxngEndpoint, 'https://search.example/search');
+    expect(settings.searxngEndpoint, 'http://192.168.1.42:8080/search');
     expect(settings.model, 'llama3.2');
   });
 

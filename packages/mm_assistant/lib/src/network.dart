@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
@@ -15,9 +17,12 @@ class SnapshotAssistantNetwork implements AssistantNetwork {
     required this.extractor,
     this.limits = const ResearchBudget(),
     DateTime Function()? now,
-  }) : now = now ?? DateTime.now,
+    UrlPolicy? resultPolicy,
+  }) : resultPolicy = resultPolicy ?? UrlPolicy(),
+       now = now ?? DateTime.now,
        counter = BudgetCounter(limits);
 
+  final UrlPolicy resultPolicy;
   final String studySetId;
   final ResearchSnapshotRepository snapshots;
   final SearchProvider discovery, paperSearch;
@@ -29,12 +34,26 @@ class SnapshotAssistantNetwork implements AssistantNetwork {
   @override
   Future<List<AssistantSearchResult>> search(String keywords, CancellationToken cancel) async {
     _query(keywords, cancel);
+    final deadline = DateTime.now().add(limits.duration);
     final hits = await cancel.bind(discovery.search(SearchRequest(keywords, limit: 10), cancel));
     cancel.check();
-    return [
-      for (final hit in hits.take(10))
-        if (_publicSyntax(hit.url)) AssistantSearchResult(hit.title, hit.url, hit.snippet),
-    ];
+    final results = <AssistantSearchResult>[];
+    for (final hit in hits.take(10)) {
+      cancel.check();
+      try {
+        await cancel.bind(resultPolicy.validate(hit.url.removeFragment()).timeout(deadline.difference(DateTime.now())));
+      } on ResearchFailure catch (error) {
+        if (error.kind != ResearchFailureKind.unsafeUrl) rethrow;
+        continue;
+      } on SocketException {
+        continue;
+      } on TimeoutException {
+        throw const ResearchFailure(ResearchFailureKind.timeout);
+      }
+      results.add(AssistantSearchResult(hit.title, hit.url, hit.snippet));
+    }
+    cancel.check();
+    return results;
   }
 
   @override
@@ -198,11 +217,25 @@ class SearxngSearch implements SearchProvider {
   SearxngSearch({required this.endpoint, required this.http});
   final String endpoint;
   final ResearchHttp http;
+
+  /// Shared by settings validation and the request transport.
+  static Uri parseEndpoint(String endpoint) {
+    if (endpoint.isEmpty) throw const ResearchFailure(ResearchFailureKind.unavailable);
+    try {
+      final url = Uri.parse(endpoint);
+      UrlPolicy.syntax(url);
+      if (RegExp(r'\s|\\').hasMatch(endpoint) || url.port < 1 || url.port > 65535) {
+        throw const FormatException('Invalid endpoint');
+      }
+      return url;
+    } on FormatException {
+      throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
+    }
+  }
+
   @override
   Future<List<SearchHit>> search(SearchRequest request, CancellationToken cancellation) async {
-    if (endpoint.isEmpty) throw const ResearchFailure(ResearchFailureKind.unavailable);
-    final url = Uri.parse(endpoint);
-    UrlPolicy.syntax(url);
+    final url = parseEndpoint(endpoint);
     final bytes = await http
         .send(
           url.replace(queryParameters: {...url.queryParameters, 'q': request.query, 'format': 'json'}),
@@ -228,7 +261,8 @@ class SearxngSearch implements SearchProvider {
 }
 
 /// Provider API credentials are used only by the provider search transport;
-/// webpages, OpenAlex and SearXNG have their own public-only transport.
+/// webpages and OpenAlex share a public-only transport. SearXNG has an
+/// isolated exception for its explicitly configured origin.
 AssistantNetwork productionAssistantNetwork({
   required String studySetId,
   required ResearchSnapshotRepository snapshots,
@@ -252,7 +286,16 @@ AssistantNetwork productionAssistantNetwork({
     AssistantProvider.responses => ProviderWebSearch(
       OpenAiResponsesProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
     ),
-    _ => SearxngSearch(endpoint: searxngEndpoint, http: http),
+    _ => SearxngSearch(
+      endpoint: searxngEndpoint,
+      http: AssistantNetworkHttp(
+        policy: UrlPolicy(
+          privateEndpoint: searxngEndpoint.isEmpty ? null : SearxngSearch.parseEndpoint(searxngEndpoint),
+        ),
+        sharedCounter: http.counter,
+        sharedDeadline: http.deadline,
+      ),
+    ),
   };
   return SnapshotAssistantNetwork(
     studySetId: studySetId,

@@ -75,6 +75,7 @@ void main() {
   late Extractor extractor;
   SnapshotAssistantNetwork network({ResearchBudget limits = const ResearchBudget()}) => SnapshotAssistantNetwork(
     studySetId: 'set',
+    resultPolicy: UrlPolicy(lookup: (_) async => [InternetAddress('8.8.8.8')]),
     snapshots: snapshots,
     discovery: search,
     paperSearch: search,

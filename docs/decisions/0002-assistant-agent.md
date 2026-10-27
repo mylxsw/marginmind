@@ -16,6 +16,8 @@ API 使用 UrlPolicy 的已验证数值 IP 连接、原主机 TLS 校验、禁�
 
 统一客户端 web_search 只发现候选 URL：Claude/Responses 的真实后端将复用 mm_research 的供应商搜索，仅取标题/URL/摘要，丢弃结论和供应商引用；compatible/Ollama 走可配置 SearXNG，没配置则 unavailable。第一批正式接入必须提供前两者的默认可用路径，不能把“服务未配置”作为其默认产品行为。
 
+用户显式配置的 SearXNG 仅对同一 origin（scheme、host、port）放行本机与局域网地址；该例外不传给 fetch_source、OpenAlex 或其他请求，搜索结果仍按公网地址策略校验并丢弃内网 URL。
+
 证据独立来自 fetch_source 的本地安全抓取、已提交快照及段落编号；OpenAlex 元数据也可引用，但不得假称全文。接口与 MemoryAssistantNetwork 由 GUL-528 提供；GUL-532 接入真实搜索、抓取和快照后端。联网关闭不注册联网工具且 Policy 二次拒绝，无隐式供应商回退。
 
 page 标记绑定本轮主文档；其他文档为本地 source。只接受本轮真实读过的页/快照登记，流式缓冲未闭合标记，最终再次校验。外部内容是数据，不得扩大读取授权。
