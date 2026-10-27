@@ -6,7 +6,7 @@
 
 | 类 | 内容 |
 | --- | --- |
-| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 套用系统强调色。研究专用色 `research`（浅色 `#5E5CE6`、深色 `#7D7AFF`）与 `researchTint`（12% / 20%）固定，不随系统强调色变化。 |
+| `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 套用系统强调色。研究专用色 `research`（浅色 `#5E5CE6`、深色 `#7D7AFF`）与 `researchTint`（12% / 20%）固定，不随系统强调色变化。状态色 `positive` / `caution` / `critical`（浅色 `#248A3D` / `#C93400` / `#D70015`，深色 `#30D158` / `#FF9F0A` / `#FF453A`，即系统绿 / 橙 / 红的高对比版本）用于状态文字，底色取自身 12%（如资料的读取状态）。 |
 | `MMAnnotationColor` | 六种标注色（系统黄/绿/蓝/粉/橙/紫）。数据只存索引；`highlight`（32%）、`underline`（90%）、`cardTint`（14%）。 |
 | `MMInkColor` / `MMInkWidth` | 画笔的六色（红/橙/黄/绿/蓝/墨黑，`stroke` 为 90% 不透明）与三档粗细（1.5 / 2.5 / 4，单位 PDF 点，随页面缩放）。数据只存颜色索引和点数。 |
 | `MMTypography` / `MMTextStyles` | macOS 文本样式：title3 15、headline 13 semibold、body 13、callout 12、subheadline 11 semibold、footnote 11；阅读用宋体 16.5/32，摘录 13/20。 |
@@ -31,11 +31,12 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMToolbar` / `MMToolbarGroup` / `MMToolbarButton` / `MMToolbarDivider` / `MMToolbarSearchField` | 统一工具栏与玻璃胶囊按钮组；空白处拖动窗口、双击缩放。 |
 | `MMSplitView` | 两栏 + 可拖动分隔线（8pt 热区、双击复位），隐藏的面板保持挂载，但不保留键盘焦点；窗口太窄时自动只显示主面板。 |
 | `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
-| `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。 |
-| `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。 |
+| `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。主要按钮可用 `color` 换成功能色（研究用 `research`）；`MMToolbarButton` 对应的是 `tint`。 |
+| `MMCheckbox` / `MMSwitch` / `MMPill` | 复选框（整行可点）、小开关、状态标签（文字为给定颜色，底为其 12%；不给颜色时为中性）。 |
+| `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。`MMTextField` 可多行（`maxLines` / `minLines`，随内容长高）、隐藏输入（`obscureText`，用于 API Key）并接收外部 `focusNode`。 |
 | `MMInlineTextField` | 原地编辑用的无边框文本框，随所在位置换行（`maxLines: 1` 时保持单行）；Enter 提交、Esc 取消，输入法组合期间这两个键交给输入法；`multiline` 时 ⇧Enter 换行。 |
 | `showMMSheet` / `MMSheet` | 从工具栏下方落下的表单面板，Esc 取消。 |
-| `MMHudHost` / `MMHud.show` | 窗口底部的提示胶囊。 |
+| `MMHudHost` / `MMHud.show` | 窗口底部的提示胶囊。可带一个 `action`（如“撤销”“在脑图中查看”），只有带操作的胶囊接收点击。 |
 | `MMFloatingToolbarSwatch` / `MMFloatingToolbarStrokeWidth` | 浮动工具条里的任意颜色点（`MMFloatingToolbarColor` 基于它）和粗细点（点的直径 = 粗细 × 2 + 2，选中为强调色底）。`MMToolbarButton` 可只有文字（`icon: null` + `label`），用于“完成”。 |
 | `MMFloatingToolbar` / `MMFloatingToolbarColor` / `MMFloatingToolbarLayout` | 选区旁的横向玻璃工具条：图标按钮（`MMToolbarButton`）+ 颜色点，每项都有提示文字，Tab / 方向键移动焦点。定位用纯函数 `placeFloatingToolbar`：优先放在选区上方，空间不够放下方，左右超出时向内收，始终完整可见；锚点变化时跟随。 |
 | `MMGlass` | 玻璃材质（模糊 + 半透明 + 描边 + 外阴影），“降低透明度”时自动变为不透明。 |
@@ -62,9 +63,15 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 ### 右侧面板与卡片全文（P2-A3 / C01）
 
-工作区右侧只有一个面板，显示“研究”或“卡片详情”其中一种，宽 `MMSizes.rightPanelWidth`（400）。在分栏布局下，从原文打开时收起脑图，从脑图打开时收起原文；窗口放不下侧栏、面板和当前内容时，先收起侧栏并把面板改为 `MMSizes.rightPanelNarrowWidth`（360），再按 `MMSplitView` 的规则收起一栏（`resolveWorkspaceLayout`）。关闭后恢复打开前的布局和侧栏；两栏一直挂载，缩放和位置不变，详情关闭后键盘焦点回到原节点。面板立即出现和消失，不做宽度动画，避免两栏在动画中途经过窄窗口回退。研究面板标题使用 `research` 色；研究入口（⌃⌘R、工具栏按钮）已注册，研究流程接通前不显示。
+工作区右侧只有一个面板，显示“研究”或“卡片详情”其中一种，宽 `MMSizes.rightPanelWidth`（400）。在分栏布局下，从原文打开时收起脑图，从脑图打开时收起原文；窗口放不下侧栏、面板和当前内容时，先收起侧栏并把面板改为 `MMSizes.rightPanelNarrowWidth`（360），再按 `MMSplitView` 的规则收起一栏（`resolveWorkspaceLayout`）。关闭后恢复打开前的布局和侧栏；两栏一直挂载，缩放和位置不变，详情关闭后键盘焦点回到原节点。面板立即出现和消失，不做宽度动画，避免两栏在动画中途经过窄窗口回退。研究面板标题使用 `research` 色。
 
 被截断的摘录卡片（原文超过 4 行或标题超过 1 行）底部显示“展开全文 / 收起”，原地展开，相邻节点让位；⌥空格 切换选中卡片。展开状态只属于本次视图，不写入文件，并作为 `MindMapRenderCache` 的测量键之一。⌘I、双击摘录或右键“显示详情”打开卡片详情：可编辑标题（笔记为正文）、完整原文、回到原文、复制、标签和复习状态。
+
+### 研究（P2-R3）
+
+研究的入口、按钮和选中状态一律用 `research` / `researchTint`，与选择用的强调色分开。启动卡是锚在选区或节点旁的卡片（宽 440，`MMRadii.sheet - 6`），意图为四列网格，推荐项带紫色角标；方式是三等分的分段控件，不可用的方式置灰。研究面板从上到下是起点卡、可原地修改的问题、进度行（运行中显示阶段与“取消”，失败显示原因与“重试”）、三个视图（解答 / 资料 / 已摘取）和追问框；勾选的要点、引用编号（`researchTint` 底的小号数字）与原文摘录（衬线体、`research` 竖线）都在解答视图里。资料的读取状态用 `MMPill` 加状态色：已提取正文、已取得字幕为 `positive`，仅摘要、无字幕为 `caution`，读取失败为 `critical`，其余中性。
+
+保存后，原文中被关联的文字画 1.5pt 的 `research` 虚线下划线（`MMPdfHighlight.dashed`），页面右侧边距出现 `research` 圆形标记（`marker`），点击弹出研究笔记卡片；脑图中的研究笔记卡片左侧为 3pt `research` 竖线，第一行“研究笔记 · N 个来源”，标题最多两行、正文最多两行（紧凑显示时只留标题一行），底部“查看全文与引用 ›”。右键菜单用 `MMMenuHeader` 给出“研究「节点」”分组。
 
 ### 脑图导出（P2-C05）
 

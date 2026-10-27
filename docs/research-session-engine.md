@@ -16,6 +16,9 @@
 | `.notifier.search(query)` | 仅 OpenAlex 检索，不调用 AI |
 | `.notifier.readSources(ids)` | 显式读取；可仅重试一个失败来源 |
 | `.notifier.cancel()` / `updateDrafts(drafts)` | 保留已接收结果；保存勾选/编辑草稿 |
+| `.notifier.current` | 引擎的最新状态（含尚未广播给监听者的写入）；发起下一个请求前读它，不读 provider 的已发布值 |
+| `.notifier.rename(question)` | 用户改写问题；后续请求使用新问题 |
+| `.notifier.pasteSource(sourceId, text)` | 读取失败时用户粘贴正文：生成新快照版本，记入 `metadata[sourceId].pasted`，由它摘取的证据标为 `userPaste` |
 | `researchCacheProvider` | 可选原始 HTML 缓存；设置清理调用 `clear()` |
 | `externalSearchLink(query)` | 浏览器搜索动作；不是资料，不读取结果、不进入引用 |
 
@@ -29,6 +32,10 @@ AI provider 由调用方在已配置密钥后注入，控制器不读密钥、�
 保存笔记仍通过 P2-A2 的 `StudySetEditor.saveResearchNote` 和工作区更新流程：
 传入 `state.sources`、`state.evidence` 中实际使用的项，复用同一个笔记 ID 即为重复保存。
 本任务不添加菜单入口，也不绕过工作区撤销历史直接写正式笔记。
+
+每轮问答的 `history[i].cites` 记录引用落在回答中的位置：`{source, evidence?, paragraph?, at}`。
+`at` 取供应商给出的回答偏移，没有时取引用到达时回答的长度（被引用的文本块紧随其后）。
+界面据此把引用归到要点；回答中有 `[source:N]` 标记时以标记为准。只有来源事件（未被引用）不记录。
 
 ## 状态、归属与恢复
 
