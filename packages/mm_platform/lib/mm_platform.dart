@@ -13,3 +13,4 @@ export 'src/secret_store.dart';
 export 'src/article_parser.dart';
 
 export 'src/pdf_ocr.dart';
+export 'src/map_export.dart';

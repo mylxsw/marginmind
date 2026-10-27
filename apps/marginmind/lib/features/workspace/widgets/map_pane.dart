@@ -13,6 +13,7 @@ import '../../../shared/card_image.dart';
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
+import 'map_export_sheet.dart';
 import 'outline_view.dart';
 
 /// Map pane: the mind map (or outline) plus floating glass controls — map
@@ -129,6 +130,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       position: position,
       entries: [
         if (card != null) ...[
+          MMMenuItem(l.exportBranch, () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id)),
           MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),
           MMMenuItem(
             l.showCardDetails,

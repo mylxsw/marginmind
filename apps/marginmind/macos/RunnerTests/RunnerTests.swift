@@ -4,11 +4,81 @@ import XCTest
 import CoreText
 import PDFKit
 import Network
+import PDFKit
 
 @testable import MarginMind
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testMapExportChannelValidationAndAllVectorCommands() async throws {
+    func invoke(_ method: String, _ arguments: [String: Any]) async -> Any? {
+      await withCheckedContinuation { continuation in
+        MapExportChannel.handle(FlutterMethodCall(methodName: method, arguments: arguments)) {
+          continuation.resume(returning: $0)
+        }
+      }
+    }
+    let invalid = await invoke("pdf", [:])
+    XCTAssertEqual((invalid as? FlutterError)?.code, "invalid_scene")
+    let bitmap = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+      bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+      colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+    let image = FlutterStandardTypedData(bytes: try XCTUnwrap(bitmap.representation(using: .png, properties: [:])))
+    let commands: [[String: Any]] = [
+      ["type": "box", "rect": [0.0, 0.0, 300.0, 200.0], "radius": 12.0, "color": 0xFFFFFFFF],
+      ["type": "curve", "points": [0.0, 0.0, 20.0, 20.0, 40.0, 20.0, 50.0, 50.0], "color": 0xFF000000, "dashed": true],
+      ["type": "curve", "points": [0.0, 0.0, 20.0, 20.0, 40.0, 20.0, 50.0, 50.0], "color": 0xFF000000, "dashed": false],
+      ["type": "text", "text": "全路径 Export", "fontSize": 13.0, "x": 10.0, "y": 10.0, "color": 0xFF000000, "bold": true],
+      ["type": "image", "bytes": image, "x": 50.0, "y": 50.0, "width": 20.0, "height": 20.0]
+    ]
+    let pdf = await invoke("pdf", ["width": 300.0, "height": 200.0, "commands": commands])
+    let bytes = try XCTUnwrap((pdf as? FlutterStandardTypedData)?.data)
+    XCTAssertTrue(try XCTUnwrap(PDFDocument(data: bytes)?.string).contains("全路径"))
+    let png = await invoke("png", ["width": 2, "height": 2, "tiles": [["x": 0, "y": 0, "bytes": image]]])
+    XCTAssertNotNil(png as? FlutterStandardTypedData)
+    let unsupported = await invoke("unknown", ["width": 1, "height": 1])
+    XCTAssertNotNil(unsupported)
+    let failed = await invoke("pdf", ["width": 1, "height": 1, "commands": [["type": "unknown"]]])
+    XCTAssertEqual((failed as? FlutterError)?.code, "export_failed")
+  }
+
+  func testMapExportVectorTextAndPNGTilePositions() throws {
+    var commands: [[String: Any]] = []
+    for i in 0..<500 {
+      let y = Double(i * 22 + 20)
+      let command: [String: Any] = ["type": "text", "text": "Node \(i) 中文", "x": 20.0, "y": y,
+        "width": 400.0, "fontSize": 13.0, "color": 0xFF000000, "serif": i % 2 == 0, "bold": false]
+      commands.append(command)
+    }
+    let bytes = try MapExportChannel.pdf(["width": 500.0, "height": 11100.0, "commands": commands])
+    let pdf = try XCTUnwrap(PDFDocument(data: bytes))
+    XCTAssertEqual(pdf.pageCount, 1)
+    let text = try XCTUnwrap(pdf.string)
+    XCTAssertTrue(text.contains("Node 0"))
+    XCTAssertTrue(text.contains("Node 499"))
+    XCTAssertTrue(text.contains("中文"))
+    XCTAssertEqual(pdf.page(at: 0)?.bounds(for: .mediaBox).height, 11100)
+    func tile(_ color: NSColor) throws -> FlutterStandardTypedData {
+      let bitmap = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+        colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+      let context = try XCTUnwrap(NSGraphicsContext(bitmapImageRep: bitmap))
+      context.cgContext.setFillColor(color.cgColor)
+      context.cgContext.fill(CGRect(x: 0, y: 0, width: 2, height: 2))
+      return FlutterStandardTypedData(bytes: try XCTUnwrap(bitmap.representation(using: .png, properties: [:])))
+    }
+    let png = try MapExportChannel.png(["width": 4, "height": 4, "tiles": [
+      ["x": 0, "y": 0, "bytes": try tile(.red)], ["x": 2, "y": 2, "bytes": try tile(.blue)]
+    ]])
+    let bitmap = try XCTUnwrap(NSBitmapImageRep(data: png))
+    XCTAssertEqual(bitmap.pixelsWide, 4)
+    XCTAssertGreaterThan(try XCTUnwrap(bitmap.colorAt(x: 0, y: 0)).redComponent, 0.9)
+    XCTAssertGreaterThan(try XCTUnwrap(bitmap.colorAt(x: 3, y: 3)).blueComponent, 0.9)
+    XCTAssertEqual(try XCTUnwrap(bitmap.colorAt(x: 3, y: 0)).alphaComponent, 0)
+    XCTAssertThrowsError(try MapExportChannel.png(["width": 20000, "height": 1, "tiles": []]))
+    XCTAssertThrowsError(try MapExportChannel.pdf(["width": 0, "height": 1, "commands": []]))
+  }
+
   func testImageClipboardReadsPNGJPEGFinderAndTIFF() throws {
     let board = NSPasteboard.withUniqueName()
     defer { board.releaseGlobally() }

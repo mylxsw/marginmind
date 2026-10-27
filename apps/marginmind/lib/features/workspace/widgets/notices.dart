@@ -1,12 +1,7 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/pdf_picker.dart';
 import '../../../shared/image_picker.dart';
@@ -54,39 +49,6 @@ Future<void> showMapRenameSheet(BuildContext context, WidgetRef ref, String stud
     initial: map.title.isEmpty ? context.l10n.mainMap : map.title,
   );
   if (title != null && context.mounted) await controller.renameMap(mapId, title);
-}
-
-/// Formats [ExportFormat] the active map can be saved as.
-enum ExportFormat { markdown, opml }
-
-/// Asks where to save, then writes the active map as Markdown or OPML.
-Future<void> exportMap(BuildContext context, WidgetRef ref, String studySetId, ExportFormat format) async {
-  final l = context.l10n;
-  final controller = ref.read(workspaceProvider(studySetId).notifier);
-  final mapTitle = controller.content.map(ref.read(workspaceProvider(studySetId)).activeMapId)?.title ?? '';
-  final title = mapTitle.isEmpty ? (ref.read(studySetProvider(studySetId))?.title ?? l.appName) : mapTitle;
-  final opml = format == ExportFormat.opml;
-  final ext = opml ? 'opml' : 'md';
-  final text = controller.export(
-    opml: opml,
-    rootTitle: title,
-    source: (doc, page) => '${doc.title} · ${l.pageNumber(page)}',
-    summary: (label) => label.isEmpty ? l.newSummaryLabel : l.exportSummary(label),
-    relationsTitle: l.exportRelations,
-  );
-  final location = await getSaveLocation(
-    suggestedName: '${title.replaceAll(RegExp(r'[/:\\]'), '-')}.$ext',
-    acceptedTypeGroups: [
-      XTypeGroup(label: opml ? 'OPML' : 'Markdown', extensions: [ext]),
-    ],
-  );
-  if (location == null) return;
-  try {
-    await File(location.path).writeAsString(text, encoding: utf8);
-    if (context.mounted) MMHud.show(context, l.exportedHud);
-  } catch (_) {
-    if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);
-  }
 }
 
 /// Two-button confirmation sheet; resolves to true when confirmed.

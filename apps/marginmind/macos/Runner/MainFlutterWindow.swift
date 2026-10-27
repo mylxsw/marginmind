@@ -3,6 +3,7 @@ import FlutterMacOS
 import Security
 
 class MainFlutterWindow: NSWindow {
+  private var mapExport: MapExportChannel?
   private var articleParser: ArticleParserChannel?
   private var pdfOcr: PdfOcrChannel?
   private var secretStore: SecretStoreChannel?
@@ -97,6 +98,7 @@ class MainFlutterWindow: NSWindow {
 
     installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
+    mapExport = MapExportChannel(messenger: flutterViewController.engine.binaryMessenger)
     articleParser = ArticleParserChannel(messenger: flutterViewController.engine.binaryMessenger)
     pdfOcr = PdfOcrChannel(messenger: flutterViewController.engine.binaryMessenger)
     secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
