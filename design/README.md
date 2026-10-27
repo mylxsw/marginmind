@@ -47,3 +47,7 @@ PDF 工具栏使用紧凑图标菜单（缩放与适配、阅读外观）；底�
 C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExportPreviewHeight` 180 pt；与 `prototype/phase-2.html` 的导出场景一致。
 
 阅读底部导航：横向 1pt 细进度线，两端无底色箭头，页码单独居中浮在上方的小型半透明标签内。底部热区高 64pt；平时只淡显进度线，鼠标进入底部、键盘聚焦或拖动时显示完整控件。保留页码输入和拖动定位，减少动效/透明度遵循系统设置。浮动工具条与提示避开整个底部导航区域。
+
+## 三期原型：助手
+
+`prototype/phase-3-assistant.html` 在二期原型的基础上，把“研究”简化成对话式“助手”：选中原文或卡片就能直接提问，回答带出处，修改脑图前先给出提议、确认后才应用。原文栏、脑图栏和阅读底部导航都以现有应用为准。这个原型同样是单文件，没有依赖；演示控制台里有 16 个场景。设计说明与 dart_agent_core 接入方案见 [docs/phase-3-assistant.md](../docs/phase-3-assistant.md)。
