@@ -778,6 +778,18 @@ body.demo-min #desk{padding-right:58px}
 .st-muted{font-size:11.5px;color:var(--label2)}
 .st-err{display:flex;gap:6px;align-items:center;color:var(--err);font-size:12.5px;padding:10px 8px}
 .st-sheet-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 16px}
+.st-svc .sw{margin-right:2px}
+.st-svc.off .plogo2,.st-svc.off b{opacity:.5}
+.st-m.off .st-mn{color:var(--label2)}
+.st-m .sw{flex:none}
+.st-hero-g{background:linear-gradient(160deg,#5AC8FA,#0A84FF 60%,#0060DF);box-shadow:0 6px 16px rgba(10,132,255,.3),inset 0 1px 0 rgba(255,255,255,.35)}
+.st-seg{margin-left:auto;display:flex;padding:2px;border-radius:7px;background:var(--fill4)}
+.st-seg button{height:24px;padding:0 10px;border-radius:5px;font-size:12px;color:var(--label2);white-space:nowrap}
+.st-seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.st-r>span.st-mn:first-child{flex:1;min-width:0}
+.st-r .st-bad{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px}
+.st-note{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--warn);margin:2px 14px 0}
+
 
 .mmenu .capi{opacity:.7}
 .mi:hover .capi{color:#fff}
@@ -2242,7 +2254,7 @@ function modelMenu() {
 let SW = null; // { tab, prov, fetch: {q, picked:Set, state}, err, reveal, custom }
 function settingsWindow(_page, provId) {
   closeFloating();
-  SW = { tab: 'assistant', prov: provId || null, fetch: null, err: null, reveal: false, custom: false };
+  SW = { tab: _page === 'search' ? 'search' : 'models', prov: provId || null, fetch: null, err: null, reveal: false, custom: false };
   $$('.setwin-scrim', layer).forEach(e => e.remove());
   const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin st2" id="setwin"></div>';
   layer.appendChild(sc); paintSettings();
@@ -2253,10 +2265,10 @@ const builtinSearch = p => p.proto === 'anthropic' || p.proto === 'gemini' || (p
 function localDefault() { const x = enabledModels().find(e => e.p.proto === 'ollama'); return x?.key; }
 function paintSettings() {
   const w = $('#setwin'); if (!w) return;
-  const tabs = [['general', '通用', 'gear'], ['reading', '阅读', 'read'], ['assistant', '助手', 'spark']];
+  const tabs = [['general', '通用', 'gear'], ['reading', '阅读', 'read'], ['models', '模型', 'spark'], ['search', '网页搜索', 'globe']];
   w.innerHTML = `<div class="st-top"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
       <div class="st-tabs">${tabs.map(([k, n, i]) => `<button class="${SW.tab === k ? 'on' : ''}" data-swtab="${k}">${ic(i, 'l')}<span>${n}</span></button>`).join('')}</div></div>
-    <div class="st-body">${SW.tab === 'assistant' ? swAssistant() : `<div class="empty" style="padding-top:120px">${SW.tab === 'general' ? '通用' : '阅读'}（现有设置）</div>`}</div>
+    <div class="st-body">${SW.tab === 'models' ? swAssistant() : SW.tab === 'search' ? swSearch() : `<div class="empty" style="padding-top:120px">${SW.tab === 'general' ? '通用' : '阅读'}（现有设置）</div>`}</div>
     ${SW.fetch ? swFetchSheet() : ''}`;
 }
 function swAssistant() {
@@ -2312,6 +2324,9 @@ function settingsClick(e) {
   const t = e.target, p = S.providers.find(x => x.id === SW.prov);
   if (t.classList.contains('setwin-scrim') || t.closest('[data-sw="close"]')) { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; paintRow(); return; }
   const tb = t.closest('[data-swtab]'); if (tb) { SW.tab = tb.dataset.swtab; return paintSettings(); }
+  const pon = t.closest('[data-swpon]'); if (pon) { const x = S.providers.find(y => y.id === pon.dataset.swpon); x.on = !x.on; if (!findModel(S.defaults.chat) || !enabledModels().some(e => e.key === S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const mon = t.closest('[data-swmon]'); if (mon && p) { const m = p.models[+mon.dataset.swmon]; m.on = !m.on; if (!enabledModels().some(e => e.key === S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const eng = t.closest('[data-sweng]'); if (eng) { S.search.engine = eng.dataset.sweng; S.search.status = 'idle'; return paintSettings(); }
   const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = SW.prov === pv.dataset.swprov ? null : pv.dataset.swprov; SW.custom = false; SW.reveal = false; return paintSettings(); }
   const sd = t.closest('[data-swsetdef]'); if (sd && p) { S.defaults.chat = mkey(p, p.models[+sd.dataset.swsetdef]); return paintSettings(); }
   const md = t.closest('[data-swmdel]'); if (md) { const m = p.models[+md.dataset.swmdel]; p.models.splice(+md.dataset.swmdel, 1); if (S.defaults.chat === mkey(p, m)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
@@ -2347,7 +2362,9 @@ function settingsInput(e) {
   if (t.dataset.swf && p) { p[t.dataset.swf] = t.value; if (t.dataset.swf === 'name') $$(`[data-swprov="${p.id}"] .t`).forEach(x => x.textContent = t.value); else autoCheck(p); return; }
   if (t.matches('[data-swq]')) { SW.fetch.q = t.value; const pos = t.selectionStart; paintSettings(); const q = $('#setwin [data-swq]'); q.focus(); q.setSelectionRange(pos, pos); return; }
   if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return paintSettings(); }
-  if (t.matches('[data-swsx]')) { S.searxng = t.value; }
+  if (t.matches('[data-swsx]')) { S.searxng = t.value; S.search.addr = t.value; searchCheck(); return; }
+  if (t.matches('[data-swengsel]')) { S.search.engine = t.value; S.search.status = 'idle'; return paintSettings(); }
+  if (t.matches('[data-swskey]')) { S.search.key = t.value; searchCheck(); return; }
 }
 document.addEventListener('dblclick', e => {
   const n = e.target.closest('[data-swmname]'); if (!n || !SW) return;
@@ -2381,23 +2398,23 @@ function swAssistant() {
   const card = p => {
     const open = SW.prov === p.id;
     const needsBase = p.proto === 'openai' || p.proto === 'ollama' || SW.custom || p.base !== PROTOS[p.proto].base;
-    const sub = p.status === 'err' ? `<span class="st-bad">${ic('warn', 'xs')}${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:10px;height:10px;color:var(--label2)"></span>' : `<span>${p.models.length ? p.models.length + ' 个模型' : '还没有模型'}</span>`;
+    const nOn = p.models.filter(m => m.on).length;
+    const sub = !p.on ? '<span>已停用</span>' : p.status === 'err' ? `<span class="st-bad">${ic('warn', 'xs')}${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:10px;height:10px;color:var(--label2)"></span>' : `<span>${p.models.length ? `已启用 ${nOn} 个模型` : '还没有模型'}</span>`;
     return `<div class="st-card ${open ? 'open' : ''}">
-      <div class="st-svc" data-swprov="${p.id}">${logoHtml(p)}<div class="st-svc-t"><b>${esc(p.name)}</b>${sub}</div>${ic(open ? 'cd' : 'cr', 's')}</div>
+      <div class="st-svc ${p.on ? '' : 'off'}" data-swprov="${p.id}">${logoHtml(p)}<div class="st-svc-t"><b>${esc(p.name)}</b>${sub}</div><span class="sw ${p.on ? 'on' : ''}" data-swpon="${p.id}" title="${p.on ? '停用' : '启用'}"></span>${ic(open ? 'cd' : 'cr', 's')}</div>
       ${open ? `<div class="st-rows">
         <div class="st-r"><span>名称</span><input class="st-in" data-swf="name" value="${esc(p.name)}"></div>
         ${needsBase ? `<div class="st-r"><span>地址</span><input class="st-in" data-swf="base" value="${esc(p.base)}" placeholder="${PROTOS[p.proto].base}"></div>` : ''}
         ${PROTOS[p.proto].key ? `<div class="st-r"><span>API Key</span><div class="st-key"><input class="st-in" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}" placeholder="粘贴 Key"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button></div></div>` : ''}
-        ${builtinSearch(p) ? '' : `<div class="st-r"><span>网页搜索</span><input class="st-in" data-swsx value="${esc(S.searxng)}" placeholder="SearXNG 地址（可不填）"></div>`}
       </div>
       <div class="st-sub">模型</div>
-      <div class="st-rows">${p.models.map((m, i) => `<div class="st-r st-m" title="${esc(m.id)}"><span class="st-mn" data-swmname="${i}">${esc(m.name)}</span>${mkey(p, m) === S.defaults.chat ? `<span class="st-def">${ic('check', 'xs')}默认</span>` : `<button class="st-link" data-swsetdef="${i}">设为默认</button>`}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('minus', 's')}</button></div>`).join('')}
+      <div class="st-rows">${p.models.map((m, i) => `<div class="st-r st-m ${m.on ? '' : 'off'}" title="${esc(m.id)}"><span class="st-mn" data-swmname="${i}">${esc(m.name)}</span>${mkey(p, m) === S.defaults.chat ? `<span class="st-def">${ic('check', 'xs')}默认</span>` : `<button class="st-link" data-swsetdef="${i}">设为默认</button>`}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('minus', 's')}</button><span class="sw ${m.on ? 'on' : ''}" data-swmon="${i}"></span></div>`).join('')}
         <div class="st-r st-add" data-sw="fetch">${ic('plus', 's')}<span>添加模型…</span></div></div>
       <div class="st-foot">${needsBase ? '' : '<button class="st-link" data-sw="custom">使用自定义地址</button>'}<span class="grow"></span><button class="st-link danger" data-sw="delProv">移除服务</button></div>` : ''}
     </div>`;
   };
   return `<div class="st-page">
-    <div class="st-hero"><span class="st-hero-i">${ic('spark', 'l')}</span><b>助手</b></div>
+    <div class="st-hero"><span class="st-hero-i">${ic('spark', 'l')}</span><b>模型</b></div>
     <div class="st-group"><div class="st-r"><span>默认模型</span><select class="st-pop" data-swdef="chat">${em.map(x => `<option value="${x.key}" ${S.defaults.chat === x.key ? 'selected' : ''}>${esc(x.m.name)}</option>`).join('') || '<option>—</option>'}</select></div></div>
     <div class="st-h">服务</div>
     ${S.providers.map(card).join('')}
@@ -2433,7 +2450,38 @@ function addProviderPicker(anchor) {
   });
 }
 
+
+/* ---------- 网页搜索: its own page, independent of which model answers ---------- */
+const ENGINES = [['model', '模型自带搜索'], ['searxng', 'SearXNG'], ['tavily', 'Tavily'], ['brave', 'Brave Search']];
+let swSearchT = null;
+function searchCheck() {
+  clearTimeout(swSearchT); const E = S.search;
+  if ((E.engine === 'searxng' && !E.addr) || ((E.engine === 'tavily' || E.engine === 'brave') && !E.key)) { E.status = 'idle'; return; }
+  E.status = 'busy';
+  swSearchT = setTimeout(() => {
+    E.status = !S.net ? 'err' : (E.engine !== 'searxng' && E.key.length < 6) ? 'err' : 'ok';
+    E.err = !S.net ? '连不上搜索服务' : 'API Key 无效';
+    if (SW?.tab === 'search') { const a = document.activeElement, k = a?.dataset && Object.keys(a.dataset)[0], pos = a?.selectionStart; paintSettings(); if (k) { const el = $(`#setwin [data-${k}]`); el?.focus(); el?.setSelectionRange?.(pos, pos); } }
+  }, 700);
+}
+function swSearch() {
+  const E = S.search, def = findModel(S.defaults.chat);
+  const noBuiltin = E.engine === 'model' && def && !builtinSearch(def.p);
+  const st = E.status === 'err' ? `<div class="st-r" style="justify-content:flex-end"><span class="st-bad">${ic('warn', 'xs')}${esc(E.err)}</span></div>` : '';
+  return `<div class="st-page">
+    <div class="st-hero"><span class="st-hero-i st-hero-g">${ic('globe', 'l')}</span><b>网页搜索</b></div>
+    <div class="st-group">
+      <div class="st-r"><span>搜索服务</span><select class="st-pop" data-swengsel>${ENGINES.map(([k, n]) => `<option value="${k}" ${E.engine === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      ${E.engine === 'searxng' ? `<div class="st-r"><span>地址</span><input class="st-in" data-swsx value="${esc(E.addr)}" placeholder="http://localhost:8080"></div>` : ''}
+      ${E.engine === 'tavily' || E.engine === 'brave' ? `<div class="st-r"><span>API Key</span><input class="st-in" type="password" data-swskey value="${esc(E.key)}" placeholder="粘贴 Key"></div>` : ''}
+      ${st}
+    </div>
+    ${noBuiltin ? `<div class="st-note">${ic('info', 'xs')}${esc(def.m.name)} 不带搜索，联网时请改用其他搜索服务</div>` : ''}
+  </div>`;
+}
+
 if (!S.providers) S.providers = seedProviders();
+if (!S.search) S.search = { engine: 'model', addr: '', key: '', status: 'idle' };
 
 /* ---------------- Export (P2-C05) ---------------- */
 function exportSheet(branchId) {
@@ -2695,7 +2743,8 @@ const SCENES = [
   { k: 'flaky', t: '工具调用出错时的处理过程', d: '过程像 Codex 一样边说边做；失败分组显示原因；自动改为直接回答', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__flaky' }); }, g: '回答上方是 <b>处理了 N 秒 · 工具调用失败 3 次</b>，点开能看到每一步：说明性的话和动作交替出现，失败的那一行写明原因（模型请求了不存在的工具）。连续出错后自动改为不用工具，答案照常给出。' },
   { k: 'broken', t: '工具调用彻底失败', d: '错误不再笼统写“网络不可用”；详情可展开、可复制；给出能走通的下一步', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__broken' }); }, g: '错误块写明 <b>模型没能正确调用工具</b>，点 <b>详情</b> 看模型、失败原因和停止原因；<b>不用工具重答</b> 直接根据附带的原文回答，<b>换个模型</b> 打开模型菜单，复制按钮复制诊断信息（不含 Key 和正文）。' },
   { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
-  { k: 'models', t: '设置 · 助手', d: '应用设置里的一页：服务、Key、模型、默认模型', go() { settingsWindow('assistant', 'p2'); setTimeout(() => $('#setwin [data-sw="fetch"]')?.click(), 500); }, g: '助手只是应用设置（⌘,）里的一个标签页。顶部选默认模型；左边是服务，右边只有地址（需要时）和 API Key，连接状态自动检查。<b>添加模型</b> 会自动拉取该服务的模型列表，搜不到时可以直接输入模型 ID。' },
+  { k: 'models', t: '设置 · 模型', d: '只管大语言模型：服务、Key、启用哪些模型、默认模型', go() { settingsWindow('models', 'p2'); }, g: '应用设置（⌘,）里 <b>模型</b> 一页：每个服务一张卡片，右侧开关启用 / 停用整个服务；展开后填地址和 API Key，模型逐个用开关启用，<b>添加模型…</b> 自动拉取该服务的模型列表。' },
+  { k: 'search', t: '设置 · 网页搜索', d: '和模型分开：选搜索服务，按需填地址或 Key', go() { settingsWindow('search'); }, g: '<b>网页搜索</b> 单独一页：模型自带搜索、SearXNG、Tavily、Brave Search 四选一；SearXNG 填地址，Tavily / Brave 填 API Key。默认模型不带搜索时会提示改用其他搜索服务。' },
   { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已添加的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，只有名字。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
 ];
 const coachTimers = [];
@@ -2732,7 +2781,7 @@ $('#demo').addEventListener('click', e => {
   const env = e.target.closest('[data-env] button'); if (env) return setEnv(env.parentElement.dataset.env, env.dataset.v);
   const d = e.target.closest('[data-demo]');
   if (d?.dataset.demo === 'min') { $('#demo').classList.toggle('min'); document.body.classList.toggle('demo-min'); setTimeout(layoutMap, 340); return; }
-  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); S.providers = seedProviders(); seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
+  if (d?.dataset.demo === 'reset') { Object.values(runT).flat().forEach(clearTimeout); clearTimeout(S.ocr.timer); DOCS[0].pages[0].html = PAGE42; DOCS[0].pages[1].html = PAGE43; DOCS[1].pages[0].html = SCAN; const keep = { ai: S.ai, net: S.net, theme: S.theme, narrow: S.narrow }; S = Object.assign(freshState(), keep); S.providers = seedProviders(); S.search = { engine: 'model', addr: '', key: '', status: 'idle' }; seedChats(); closeFloating(); $('#scanCount').textContent = '未识别'; renderOcrCaps(); renderAll(); renderScenes(); hud('演示数据已重置'); }
 });
 
 /* ---------------- Boot ---------------- */
