@@ -27,3 +27,7 @@ macrun.toml
 /apps/marginmind/assets/sample/benchmark.pdf
 
 /apps/marginmind/assets/sample/workspace-images.pdf
+
+# Python bytecode
+__pycache__/
+*.pyc
