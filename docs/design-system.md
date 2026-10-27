@@ -76,3 +76,5 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 ### 脑图导出（P2-C05）
 
 统一导出表单使用 `MMSizes.mapExportSheetWidth`（560 pt）和 `MMSizes.mapExportPreviewHeight`（180 pt），格式、范围、外观和倍率沿用分段控件。预览和导出使用完整内容，不继承选择、缩放、折叠或编辑状态。透明背景保留卡片底色；研究笔记沿用 `research` / `researchTint`。
+
+阅读底部导航：进度条并入页码胶囊，与翻页按钮同排；取消通栏底板。进度条宽度使用 `MMSizes.readerProgressWidth`（96），轨道 2pt、滑块半径 4pt，保留 26pt 高的交互区域。鼠标进入阅读区时显示，拖动期间保持可见；底板使用主题玻璃色且不加阴影，减少透明度模式保留不透明回退。

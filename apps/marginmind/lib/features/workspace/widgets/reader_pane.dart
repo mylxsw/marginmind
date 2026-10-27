@@ -503,30 +503,26 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                               readingPagesProvider(widget.studySetId).select((p) => p[doc.id]),
                                             ) ??
                                             doc.lastPage;
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            _PagePill(
-                                              page: _scrubPage?.round() ?? page,
-                                              editRequests: _pageFieldRequests,
-                                              pageCount: doc.pageCount,
-                                              onJump: (page) {
-                                                dismissSelection();
-                                                _pdf.jumpToPage(page);
-                                              },
-                                              onPrevious: () {
-                                                dismissSelection();
-                                                _pdf.goToPage((page) - 1);
-                                              },
-                                              onNext: () {
-                                                dismissSelection();
-                                                _pdf.goToPage((page) + 1);
-                                              },
-                                            ),
-                                            if ((_hoveringPdf || _scrubPage != null) && doc.pageCount > 1)
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xl),
-                                                child: MMGlass(
+                                        return _PagePill(
+                                          page: _scrubPage?.round() ?? page,
+                                          editRequests: _pageFieldRequests,
+                                          pageCount: doc.pageCount,
+                                          onJump: (page) {
+                                            dismissSelection();
+                                            _pdf.jumpToPage(page);
+                                          },
+                                          onPrevious: () {
+                                            dismissSelection();
+                                            _pdf.goToPage((page) - 1);
+                                          },
+                                          onNext: () {
+                                            dismissSelection();
+                                            _pdf.goToPage((page) + 1);
+                                          },
+                                          progress: (_hoveringPdf || _scrubPage != null) && doc.pageCount > 1
+                                              ? SizedBox(
+                                                  width: MMSizes.readerProgressWidth,
+                                                  height: MMSizes.field - MMSpacing.xxs,
                                                   child: SliderTheme(
                                                     data: SliderTheme.of(context).copyWith(
                                                       activeTrackColor: c.secondaryLabel.withValues(alpha: .65),
@@ -543,6 +539,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                                     ),
                                                     child: Slider(
                                                       key: const ValueKey('reader-page-progress'),
+                                                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
                                                       min: 1,
                                                       max: doc.pageCount.toDouble(),
                                                       value: (_scrubPage ?? page.toDouble()).clamp(
@@ -566,9 +563,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                                       },
                                                     ),
                                                   ),
-                                                ),
-                                              ),
-                                          ],
+                                                )
+                                              : null,
                                         );
                                       },
                                     ),
@@ -642,7 +638,7 @@ final _inkColors = [for (final c in MMInkColor.values) c.stroke];
 /// together.
 const _pagePillBottom = 16.0;
 const _pagePillHeight = 32.0;
-const _pagePillSize = Size(200, _pagePillHeight);
+const _pagePillSize = Size(200 + MMSizes.readerProgressWidth, _pagePillHeight);
 
 /// How far the page pill reaches up from the window's bottom edge; the HUD
 /// stays above it.
@@ -747,6 +743,7 @@ class _PagePill extends StatelessWidget {
     required this.onJump,
     required this.onPrevious,
     required this.onNext,
+    this.progress,
   });
 
   final int page;
@@ -755,6 +752,7 @@ class _PagePill extends StatelessWidget {
   final ValueChanged<int> onJump;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final Widget? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -762,7 +760,7 @@ class _PagePill extends StatelessWidget {
     final c = context.mmColors;
     return MMGlass(
       borderRadius: BorderRadius.circular(MMRadii.capsule),
-      color: c.glassOpaque,
+      color: c.glass,
       blurSigma: 0,
       shadows: const [],
       padding: const EdgeInsets.all(3),
@@ -781,6 +779,7 @@ class _PagePill extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: _PageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
           ),
+          ?progress,
           MMIconButton(
             icon: MMIcons.chevronRight,
             tooltip: l.nextPage,

@@ -63,6 +63,9 @@ abstract final class MMSizes {
   static const double segmented = 28;
   static const double readerMinWidth = 420;
 
+  /// Compact page scrubber inside the reader navigation capsule.
+  static const double readerProgressWidth = 96;
+
   /// Right panel shared by research and card details; narrower when the
   /// window cannot also fit the sidebar beside the content.
   static const double rightPanelWidth = 400;

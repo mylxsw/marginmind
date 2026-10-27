@@ -45,3 +45,5 @@ PDF 工具栏使用紧凑图标菜单（缩放与适配、阅读外观）；底�
 `prototype/phase-2.html` 是二期（内容增强与阅读研究）完成后的交互原型，**单文件、无依赖，浏览器直接打开即可**，与上面的画板不同，不需要 Design 画布的运行时。右侧“演示控制台”可以跳到 13 个场景，并切换“无 AI / 断网 / 深色 / 窄窗口”。设计说明与开发方案见 [docs/phase-2-design.md](../docs/phase-2-design.md)。原型中的资料与 AI 回答都是演示数据。
 
 C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExportPreviewHeight` 180 pt；与 `prototype/phase-2.html` 的导出场景一致。
+
+阅读底部导航：进度条并入页码胶囊，与翻页按钮同排；取消通栏底板。进度条宽度使用 `MMSizes.readerProgressWidth`（96），轨道 2pt、滑块半径 4pt，保留 26pt 高的交互区域。鼠标进入阅读区时显示，拖动期间保持可见；底板使用主题玻璃色且不加阴影，减少透明度模式保留不透明回退。
