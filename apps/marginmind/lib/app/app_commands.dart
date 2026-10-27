@@ -155,10 +155,10 @@ class NoteFormatIntent extends Intent {
   final NoteFormatCommand command;
 }
 
-/// Handled by the focused note field itself. ⌘I is "Card details" in the
-/// menu bar, which is disabled while a text field has the keyboard, so the
-/// menu items below carry no key equivalents: two items sharing ⌘I could
-/// shadow each other.
+/// ⌘B / ⌘I. On macOS the menu bar takes ⌘ keys before the focused field, so
+/// the Edit menu's Bold and Italic carry them; elsewhere the note field
+/// handles them itself. ⌘I is also "Card details", which is disabled while a
+/// text field has the keyboard, so only one of the two is ever enabled.
 Map<SingleActivator, NoteFormatCommand> get noteFormatShortcuts => {
   primaryShortcut(LogicalKeyboardKey.keyB): NoteFormatCommand.bold,
   primaryShortcut(LogicalKeyboardKey.keyI): NoteFormatCommand.italic,
@@ -472,6 +472,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   if (focus != null) Actions.maybeInvoke(focus, NoteFormatIntent(command));
                 }
               : null,
+          shortcut: noteFormatShortcuts.entries.where((e) => e.value == command).map((e) => e.key).firstOrNull,
         ),
       );
     }
