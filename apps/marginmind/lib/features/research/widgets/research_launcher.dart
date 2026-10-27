@@ -420,15 +420,19 @@ class _ResearchLauncherState extends ConsumerState<ResearchLauncher> {
                 const SizedBox(height: MMSpacing.l),
                 Row(
                   children: [
-                    if (!_join)
-                      Flexible(
-                        child: MMButton(label: l.researchLater, icon: MMIcons.later, onPressed: _later),
+                    // Each side keeps its natural width when it fits; a
+                    // narrow card shortens labels rather than overflowing.
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: _join
+                            ? const SizedBox.shrink()
+                            : MMButton(label: l.researchLater, icon: MMIcons.later, onPressed: _later),
                       ),
-                    const Spacer(),
+                    ),
                     Text('⌘↩', style: t.footnote.copyWith(color: c.secondaryLabel)),
                     const SizedBox(width: MMSpacing.s),
                     Flexible(
-                      flex: 2,
                       child: MMButton(
                         key: const ValueKey('launcher-start'),
                         label: _join ? l.researchJoin : l.researchStart,

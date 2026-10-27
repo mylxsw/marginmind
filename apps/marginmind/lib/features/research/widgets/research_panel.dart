@@ -442,11 +442,14 @@ class _RunLine extends ConsumerWidget {
     final blocked = ref.watch(researchPanelProvider(studySetId).select((s) => s.blocked[session.id]));
     final method = value.drafts.method;
     final running = progress != null || session.status == 'running';
-    Widget button(String label, VoidCallback onPressed, {IconData? icon, Key? key}) => Flexible(
-      child: MMButton(key: key, label: label, icon: icon, variant: MMButtonVariant.secondary, onPressed: onPressed),
+    Widget button(String label, VoidCallback onPressed, {IconData? icon, Key? key}) =>
+        MMButton(key: key, label: label, icon: icon, variant: MMButtonVariant.secondary, onPressed: onPressed);
+    // The state on the left, the next step on the right.
+    Widget state(Widget pill) => Expanded(
+      child: Align(alignment: AlignmentDirectional.centerStart, child: pill),
     );
     Future<void> retry() async {
-      final block = await panel.run(session.id);
+      final block = await panel.retry(session.id);
       if (block != null && context.mounted) _showBlock(context, block);
     }
 
@@ -468,32 +471,25 @@ class _RunLine extends ConsumerWidget {
       ];
     } else if (blocked != null) {
       children = [
-        Flexible(child: MMPill(blocked == ResearchBlock.noWeb ? l.researchNoWeb : l.researchNoAi, color: c.caution)),
-        const Spacer(),
+        state(MMPill(blocked == ResearchBlock.noWeb ? l.researchNoWeb : l.researchNoAi, color: c.caution)),
         button(l.researchSetUpAi, () => showResearchSettingsSheet(context)),
       ];
     } else {
       children = switch (session.status) {
         'failed' => [
-          Flexible(
-            child: MMPill(researchError(l, value.error), color: c.critical, icon: MMIcons.warning),
-          ),
-          const Spacer(),
+          state(MMPill(researchError(l, value.error), color: c.critical, icon: MMIcons.warning)),
           button(l.researchRetry, retry, key: const ValueKey('research-retry')),
         ],
         'cancelled' => [
-          Flexible(child: MMPill(l.researchCancelled)),
-          const Spacer(),
+          state(MMPill(l.researchCancelled)),
           button(l.researchRestart, retry, key: const ValueKey('research-retry')),
         ],
         'interrupted' => [
-          Flexible(child: MMPill(l.researchInterrupted, color: c.caution)),
-          const Spacer(),
+          state(MMPill(l.researchInterrupted, color: c.caution)),
           button(l.researchRetry, retry, key: const ValueKey('research-retry')),
         ],
         'draft' when value.drafts.later => [
-          Flexible(child: MMPill(l.researchLater, icon: MMIcons.later)),
-          const Spacer(),
+          state(MMPill(l.researchLater, icon: MMIcons.later)),
           button(l.researchStart, retry, key: const ValueKey('research-retry')),
         ],
         _ => [
@@ -510,7 +506,9 @@ class _RunLine extends ConsumerWidget {
               [
                 if (session.status == 'done')
                   l.researchDoneAt(
-                    DateFormat.Hm(Localizations.localeOf(context).toLanguageTag()).format(session.updatedAt),
+                    DateFormat.Hm(
+                      Localizations.localeOf(context).toLanguageTag(),
+                    ).format(value.drafts.doneAt ?? session.updatedAt),
                   ),
                 if (method == ResearchMethod.web) l.researchUsedSources(_usedSources(value).length),
               ].join(' · '),

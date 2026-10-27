@@ -148,6 +148,11 @@ void main() {
     expect(ai.requests.single.documents.map((d) => d.text), ['Kept text one.', 'Kept text two.']);
     expect(state(id).answer, contains('From the chosen source'));
     expect(state(id).evidence, isNotEmpty);
+    expect(state(id).drafts.doneAt, testNow);
+    // Retry repeats the last request, not the session's search.
+    await panel.retry(id);
+    await _settle(tester);
+    expect(ai.requests.map((r) => r.mode), [ResearchMode.sources, ResearchMode.sources]);
 
     // A summary is kept apart, on request, per source version.
     await panel.summarize(id, state(id).sources.single, language: 'English');
@@ -180,7 +185,7 @@ void main() {
 
     // Follow-ups carry the joined context; panel views switch as asked.
     await panel.followUp(id, '  ');
-    expect(ai.requests, hasLength(2));
+    expect(ai.requests, hasLength(3));
     await panel.followUp(id, 'And then?');
     await _settle(tester);
     expect(ai.requests.last.context, contains('more context'));

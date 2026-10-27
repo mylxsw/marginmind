@@ -239,10 +239,11 @@ class ResearchChip extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final fg = selected ? c.onAccent : c.label;
+    final bg = selected ? c.research : c.quaternaryFill;
     final chip = Container(
       height: 24,
       padding: EdgeInsets.only(left: MMSpacing.s + 2, right: onRemove == null ? MMSpacing.s + 2 : MMSpacing.xxs),
-      decoration: BoxDecoration(color: selected ? c.label : c.quaternaryFill, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

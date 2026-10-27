@@ -149,6 +149,40 @@ void main() {
     expect(focus.hasFocus, isTrue);
   });
 
+  testWidgets('a text field keeps its role to itself, so controls beside it stay reachable', (tester) async {
+    final handle = tester.ensureSemantics();
+    final controller = TextEditingController();
+    final focus = FocusNode();
+    addTearDown(controller.dispose);
+    addTearDown(focus.dispose);
+    await tester.pumpWidget(
+      harness(
+        SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MMButton(label: 'Go', onPressed: () {}),
+              const MMTextField(semanticLabel: 'Name'),
+              MMInlineTextField(
+                controller: controller,
+                focusNode: focus,
+                style: const TextStyle(fontSize: 13),
+                semanticLabel: 'Title',
+                onSubmitted: () {},
+                onCancel: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSemantics(find.byType(Column)), isNot(containsSemantics(isTextField: true)));
+    expect(tester.getSemantics(find.byType(MMTextField)), containsSemantics(isTextField: true, label: 'Name'));
+    expect(find.bySemanticsLabel('Go'), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('a primary button and toolbar button can wear a feature color', (tester) async {
     const research = Color(0xFF5E5CE6);
     await tester.pumpWidget(

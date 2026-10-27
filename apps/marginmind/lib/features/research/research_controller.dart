@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
 
+import '../../app/providers.dart';
 import '../workspace/workspace_controller.dart';
 import 'research_answer.dart';
 import 'research_drafts.dart';
@@ -122,6 +123,9 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   final _draftWrites = <String, Future<void>>{};
   final _stopped = <String>{};
 
+  /// The last request each session made from this window, for Retry.
+  final _lastRequest = <String, Future<ResearchBlock?> Function()>{};
+
   @override
   ResearchPanelState build() => const ResearchPanelState();
 
@@ -236,8 +240,22 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   /// Runs (or runs again) the session's question with its method. Results
   /// are kept as they arrive; a failure is recorded on the session. Returns
   /// why it could not start, if it could not.
+  /// Retry: the request that failed or was cancelled (an answer from
+  /// sources, a follow-up), or the session's own run.
+  Future<ResearchBlock?> retry(String sessionId) => (_lastRequest[sessionId] ?? () => run(sessionId))();
+
+  /// Records when a request finished well, for the run line.
+  Future<void> _finished(String sessionId) async {
+    if (!ref.mounted) return;
+    final value = await _state(sessionId);
+    if (value.session.status != 'done') return;
+    await updateDrafts(sessionId, (d) => d.copyWith(doneAt: ref.read(clockProvider)()));
+  }
+
   Future<ResearchBlock?> run(String sessionId) async {
+    _lastRequest[sessionId] = () => run(sessionId);
     final block = await _run(sessionId);
+    if (block == null) await _finished(sessionId);
     if (ref.mounted) {
       state = state.copyWith(
         blocked: block == null ? ({...state.blocked}..remove(sessionId)) : {...state.blocked, sessionId: block},
@@ -315,6 +333,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
   Future<ResearchBlock?> followUp(String sessionId, String question) async {
     final text = question.trim();
     if (text.isEmpty) return null;
+    _lastRequest[sessionId] = () => followUp(sessionId, text);
     final current = await _state(sessionId);
     final drafts = current.drafts;
     final settings = ref.read(researchSettingsProvider);
@@ -336,6 +355,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
     } finally {
       _progress(sessionId, null);
     }
+    await _finished(sessionId);
     return null;
   }
 
@@ -366,6 +386,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
 
   /// Answers from the chosen sources only (their kept text, nothing else).
   Future<ResearchBlock?> answerFromChosen(String sessionId) async {
+    _lastRequest[sessionId] = () => answerFromChosen(sessionId);
     final current = await _state(sessionId);
     final drafts = current.drafts;
     final settings = ref.read(researchSettingsProvider);
@@ -395,6 +416,7 @@ class ResearchPanelController extends Notifier<ResearchPanelState> {
     } finally {
       _progress(sessionId, null);
     }
+    await _finished(sessionId);
     return null;
   }
 

@@ -43,6 +43,7 @@ class ResearchDrafts {
     this.chosen = const {},
     this.extra = const [],
     this.summaries = const {},
+    this.doneAt,
   });
 
   static const type = 'ui';
@@ -71,6 +72,9 @@ class ResearchDrafts {
   /// AI summaries by `sourceId@version`.
   final Map<String, String> summaries;
 
+  /// When the last request finished (later draft changes do not move it).
+  final DateTime? doneAt;
+
   static ResearchDrafts of(ResearchSession session) {
     final json = session.drafts.where((d) => d['type'] == type).firstOrNull;
     if (json == null) return const ResearchDrafts();
@@ -94,6 +98,7 @@ class ResearchDrafts {
       chosen: strings(json['chosen']).toSet(),
       extra: strings(json['extra']),
       summaries: map(json['summaries']),
+      doneAt: DateTime.tryParse(json['doneAt'] as String? ?? ''),
     );
   }
 
@@ -110,6 +115,7 @@ class ResearchDrafts {
     'chosen': chosen.toList(),
     'extra': extra,
     'summaries': summaries,
+    if (doneAt != null) 'doneAt': doneAt!.toIso8601String(),
   };
 
   ResearchDrafts copyWith({
@@ -124,6 +130,7 @@ class ResearchDrafts {
     Set<String>? chosen,
     List<String>? extra,
     Map<String, String>? summaries,
+    DateTime? doneAt,
   }) => ResearchDrafts(
     method: method ?? this.method,
     keywords: keywords ?? this.keywords,
@@ -136,6 +143,7 @@ class ResearchDrafts {
     chosen: chosen ?? this.chosen,
     extra: extra ?? this.extra,
     summaries: summaries ?? this.summaries,
+    doneAt: doneAt ?? this.doneAt,
   );
 }
 

@@ -201,7 +201,10 @@ class _MMTextFieldState extends State<MMTextField> {
     final c = context.mmColors;
     final t = context.mmText;
     final focused = _focus.hasFocus;
+    // Its own node: the text field role must not merge into the enclosing
+    // panel, which would hide the panel's other controls.
     return Semantics(
+      container: true,
       label: widget.semanticLabel,
       textField: true,
       child: Container(
