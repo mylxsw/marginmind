@@ -177,8 +177,8 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSemantics(find.byType(Column)), isNot(containsSemantics(isTextField: true)));
-    expect(tester.getSemantics(find.byType(MMTextField)), containsSemantics(isTextField: true, label: 'Name'));
+    expect(tester.getSemantics(find.byType(Column)), isNot(isSemantics(isTextField: true)));
+    expect(tester.getSemantics(find.byType(MMTextField)), isSemantics(isTextField: true, label: 'Name'));
     expect(find.bySemanticsLabel('Go'), findsOneWidget);
     handle.dispose();
   });
