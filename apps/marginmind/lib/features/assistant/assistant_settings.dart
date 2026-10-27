@@ -174,6 +174,9 @@ AssistantRunFactory assistantRunFactory({
     return createAssistantRun(
       client: connection.client,
       model: config.model,
+      supportsTools: config.supportsTools,
+      serviceHost: Uri.parse(config.endpoint).host,
+      attachedContext: question.contexts.map((c) => c.displayText).toList(),
       state: agent,
       requestId: question.requestId,
       reader: reader,

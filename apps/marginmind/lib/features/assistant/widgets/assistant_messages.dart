@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_assistant/mm_assistant.dart' show PolicyHook;
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
@@ -327,7 +328,7 @@ class AgentMessage extends ConsumerWidget {
 }
 
 /// Text and icon for a tool call in the step list.
-String stepLabel(AppLocalizations l, String tool) => switch (tool) {
+String stepLabel(AppLocalizations l, String tool) => switch (PolicyHook.normalizeName(tool)) {
   'read_selection' => l.assistantToolReadSelection,
   'read_pages' => l.assistantToolReadPages,
   'search_study_set' => l.assistantToolSearch,
@@ -337,7 +338,7 @@ String stepLabel(AppLocalizations l, String tool) => switch (tool) {
   'fetch_source' => l.assistantToolFetch,
   'propose_map_edits' => l.assistantToolPropose,
   'activate_skills' || 'deactivate_skills' => l.assistantToolSkills,
-  _ => l.assistantToolOther,
+  _ => tool,
 };
 
 /// The steps an answer took: open while it is being written, then folded
@@ -365,7 +366,7 @@ class _TraceBarState extends State<TraceBar> {
     final current = m.traces.lastWhere((s) => s.status == TraceStatus.running, orElse: () => m.traces.last);
     final style = t.callout.copyWith(fontWeight: FontWeight.w400, color: c.secondaryLabel);
     final title = running
-        ? stepLabel(l, current.toolName)
+        ? (current.narration ?? stepLabel(l, current.toolName))
         : '${l.assistantSteps(m.traces.length)} · ${m.online ? l.assistantStepsOnline : l.assistantStepsOffline}';
     Widget spinner(double size) => SizedBox(
       width: size,
@@ -408,9 +409,9 @@ class _TraceBarState extends State<TraceBar> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        for (final step in m.traces)
-                          SizedBox(
-                            height: 20,
+                        for (final step in m.activity)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
                             child: Row(
                               children: [
                                 SizedBox(
@@ -424,9 +425,8 @@ class _TraceBarState extends State<TraceBar> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    stepLabel(l, step.toolName),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    step.narration ??
+                                        '${stepLabel(l, step.toolName)}${step.count > 1 ? ' ×${step.count}' : ''}${step.reason == null ? '' : '\n${step.reason}'}',
                                     style: style.copyWith(
                                       color: step.status == TraceStatus.running ? c.research : c.secondaryLabel,
                                     ),
@@ -616,7 +616,7 @@ class _Tail extends ConsumerWidget {
             ),
           ],
         ),
-        ResearchFailureKind.rateLimited => (
+        ResearchFailureKind.rateLimited || ResearchFailureKind.unavailable => (
           l.assistantErrorService,
           false,
           [_ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry)],
@@ -626,8 +626,13 @@ class _Tail extends ConsumerWidget {
           true,
           [_ActionButton(label: l.assistantContinue, color: c.research, onPressed: retry)],
         ),
+        ResearchFailureKind.toolProtocol || ResearchFailureKind.loop => (
+          l.assistantErrorToolProtocol,
+          true,
+          [_ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry)],
+        ),
         ResearchFailureKind.refusal => (l.assistantErrorRefused, true, [regenerate]),
-        ResearchFailureKind.unavailable => (
+        ResearchFailureKind.network => (
           l.assistantErrorNetwork,
           false,
           [

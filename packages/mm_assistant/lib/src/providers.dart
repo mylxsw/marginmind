@@ -17,21 +17,25 @@ class AssistantModel {
     required this.model,
     required this.endpoint,
     this.localEnabled = false,
+    this.supportsTools = true,
   });
   final AssistantProvider provider;
   final String model, endpoint;
   final bool localEnabled;
+  final bool supportsTools;
   Map<String, dynamic> toJson() => {
     'provider': provider.name,
     'model': model,
     'endpoint': endpoint,
     'localEnabled': localEnabled,
+    'supportsTools': supportsTools,
   };
   factory AssistantModel.fromJson(Map<String, dynamic> j) => AssistantModel(
     provider: AssistantProvider.values.byName(j['provider']),
     model: j['model'],
     endpoint: j['endpoint'],
     localEnabled: j['localEnabled'] ?? false,
+    supportsTools: j['supportsTools'] ?? true,
   );
 }
 

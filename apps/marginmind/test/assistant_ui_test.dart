@@ -672,7 +672,7 @@ void main() {
       model: const AssistantModel(provider: AssistantProvider.claude, model: 'm', endpoint: 'https://x/v1/messages'),
       messages: [
         Message(id: '8-0', requestId: 'r1', role: MessageRole.user, text: '问', skill: 'verify'),
-        failed(ResearchFailureKind.unavailable),
+        failed(ResearchFailureKind.network),
         failed(ResearchFailureKind.rateLimited),
         failed(ResearchFailureKind.budget),
         failed(ResearchFailureKind.refusal),
@@ -689,7 +689,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('sidebar-conversation-errors-1')));
     await pumpFor(tester, 20);
-    for (final reason in ['网络不可用', '服务暂时不可用', '超出本次上限', '模型拒绝回答', '请求失败']) {
+    for (final reason in ['网络不可用', '服务不可用', '超出本次上限', '模型拒绝回答', '请求失败']) {
       expect(find.text(reason), findsOneWidget, reason: reason);
     }
     expect(find.text('改用本机模型'), findsOneWidget);

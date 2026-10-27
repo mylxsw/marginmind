@@ -165,8 +165,14 @@ class AssistantTools {
 
 class AssistantSkill extends Skill {
   AssistantSkill(String name, String prompt, List<Tool> tools)
-    : super(name: name, description: prompt, systemPrompt: prompt, tools: tools);
+    : super(name: name, description: prompt, systemPrompt: '$prompt\n$assistantAnswerStyle', tools: tools);
 }
+
+const assistantAnswerStyle =
+    '先一句加粗结论，再用小标题或列表组织 2–3 个要点；对比用表格，引用原文用 >。'
+    '解释或是谁类默认约 150 字以内。引用 [page:N] / [source:N] 只放句末标点前，不把 p.N 当名词。'
+    '联网时涉及书外事实必须先 web_search 再 fetch_source；不联网时不补充书外事实，只说明未联网核对。'
+    '结尾不反问“需要我……吗”。说明和正文都使用用户提问的语言，不输出英文元话语。';
 
 const skillPrompts = {
   'explain': '解释：先读选区或相关页面，区分原文和你的解释。',

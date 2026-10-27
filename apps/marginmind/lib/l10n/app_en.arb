@@ -1230,6 +1230,7 @@
   "assistantErrorService": "Service temporarily unavailable",
   "assistantErrorBudget": "Over this answer's limit",
   "assistantErrorRefused": "The model declined to answer",
+  "assistantErrorToolProtocol": "The model could not call tools correctly",
   "assistantErrorFailed": "Request failed",
   "assistantStopped": "Stopped",
   "assistantInterrupted": "Not finished when the app quit",

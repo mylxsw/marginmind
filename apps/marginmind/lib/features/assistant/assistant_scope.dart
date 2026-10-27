@@ -4,7 +4,8 @@ import 'dart:io';
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_assistant/mm_assistant.dart' show LegacyConversationMigration;
+import 'package:mm_assistant/mm_assistant.dart'
+    show LegacyConversationMigration, assistantTitleModel, connectAssistant, generateAssistantTitle;
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -74,6 +75,16 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     executor: ref.watch(assistantMapEditExecutorProvider(studySetId)),
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
     online: settings.online,
+    generateTitle: (current, question) async {
+      final model = assistantTitleModel(current, ref.read(assistantSettingsProvider.notifier).models());
+      final key = await ref.read(assistantSecretsProvider).read(AssistantSettingsController.account(model.provider));
+      final connection = connectAssistant(model, key ?? '');
+      try {
+        return await generateAssistantTitle(connection.client, model.model, question);
+      } finally {
+        connection.close();
+      }
+    },
     runFactory: (agent, conversation, question) async {
       final network = ref.read(assistantNetworkProvider) ?? await assistantNetworkFor(ref, studySetId, conversation);
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
