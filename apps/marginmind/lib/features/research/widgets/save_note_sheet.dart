@@ -12,6 +12,7 @@ import '../../workspace/workspace_controller.dart';
 import '../research_answer.dart';
 import '../research_controller.dart';
 import '../research_drafts.dart';
+import '../research_origin.dart';
 import '../research_providers.dart';
 import 'research_widgets.dart';
 
@@ -162,7 +163,7 @@ class _SaveNoteSheetState extends ConsumerState<SaveNoteSheet> {
     var id = cardId;
     final seen = <String>{};
     while (id != null && seen.add(id)) {
-      titles.insert(0, content.card(id)?.title ?? '');
+      titles.insert(0, researchCardTitle(content, id));
       id = content.node(id, mapId: mapId)?.parentId;
     }
     return [root, ...titles].join(' › ');

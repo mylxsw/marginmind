@@ -275,6 +275,29 @@ void main() {
     expect(children.text, contains('遗忘曲线'));
   });
 
+  test('card titles: topic, excerpt and research cards by what they show', () {
+    final time = DateTime.utc(2026, 10, 27);
+    var content = demoContent();
+    final topic = content.cards.firstWhere((c) => c.title == '遗忘的规律');
+    expect(researchCardTitle(content, topic.id), '遗忘的规律');
+    expect(researchCardTitle(content, 'missing'), isEmpty);
+    content = StudySetEditor(newId: () => 'card', now: () => time).saveResearchNote(
+      content,
+      ResearchNote(
+        id: 'note',
+        title: '复习间隔',
+        body: '',
+        question: 'q',
+        citations: const [],
+        origin: NoteOrigin.ai,
+        createdAt: time,
+        updatedAt: time,
+      ),
+      createCard: true,
+    );
+    expect(researchCardTitle(content, 'card'), '复习间隔');
+  });
+
   test('reading blocks: headings, code, tables, lists and escapes', () {
     expect(ReadingBlock.parse('a', '## Results').heading, 2);
     expect(ReadingBlock.parse('a', '## Results').text, 'Results');

@@ -1051,7 +1051,7 @@
   "researchSavedSource": "Saved to the source",
   "researchSavedMap": "Saved to the map",
   "researchShowInMap": "Show in Map",
-  "researchCardKind": "Research note · {count, plural, =1{1 source} other{{count} sources}}",
+  "researchCardKind": "{count, plural, =0{Research note} =1{Research note · 1 source} other{Research note · {count} sources}}",
   "@researchCardKind": {
     "placeholders": {
       "count": {
@@ -1088,7 +1088,7 @@
   "researchNoteGone": "This note was deleted",
   "researchDeleteNote": "Delete Research Note…",
   "researchDeleteTitle": "Delete this research note?",
-  "researchDeleteMessage": "Its {marks, plural, =1{source mark} other{{marks} source marks}} and {cards, plural, =1{map card} other{{cards} map cards}} go too.",
+  "researchDeleteMessage": "{marks, plural, =0{} =1{Its source mark goes too. } other{Its {marks} source marks go too. }}{cards, plural, =0{} =1{Its map card goes too.} other{Its {cards} map cards go too.}}",
   "@researchDeleteMessage": {
     "placeholders": {
       "marks": {

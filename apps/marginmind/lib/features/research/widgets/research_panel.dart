@@ -281,7 +281,7 @@ class _OriginCard extends ConsumerWidget {
         false,
       ),
       CardTarget(:final cardId) => (
-        _cardTitle(content, cardId),
+        researchCardTitle(content, cardId),
         content.node(cardId, mapId: anchor.mapId ?? MindMap.defaultId) == null
             ? l.researchOriginGone
             : (content.map(anchor.mapId ?? MindMap.defaultId)?.title.isNotEmpty ?? false)
@@ -341,14 +341,6 @@ class _OriginCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static String _cardTitle(StudySetContent content, String cardId) {
-    final card = content.card(cardId);
-    if (card == null) return '';
-    if (card.kind == CardKind.research) return content.researchNote(card.researchNoteId ?? '')?.title ?? '';
-    if (card.title.isEmpty) return content.annotation(card.annotationId ?? '')?.quote ?? '';
-    return card.title;
   }
 }
 
@@ -938,7 +930,7 @@ class _PointRowState extends ConsumerState<_PointRow> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(quote.quote, style: t.readingExcerpt),
+                          Text(quote.quote, maxLines: 4, overflow: TextOverflow.ellipsis, style: t.readingExcerpt),
                           const SizedBox(height: MMSpacing.xxs),
                           Text(
                             l.researchQuoteFrom(value.numberOf(quote.sourceId)),
@@ -1029,23 +1021,19 @@ class _SaveBar extends StatelessWidget {
       child: Row(
         children: [
           if (count > 0) ...[
-            Flexible(
+            Expanded(
               child: Text(l.researchChecked(count), maxLines: 1, overflow: TextOverflow.ellipsis, style: t.callout),
             ),
-            Flexible(
-              child: MMButton(label: l.researchClearChecked, variant: MMButtonVariant.plain, onPressed: onClear),
-            ),
-          ],
-          const Spacer(),
-          Flexible(
-            flex: 3,
-            child: MMButton(
-              key: const ValueKey('research-save-note'),
-              label: l.researchSaveNote,
-              variant: MMButtonVariant.primary,
-              color: c.research,
-              onPressed: onSave,
-            ),
+            MMButton(label: l.researchClearChecked, variant: MMButtonVariant.plain, onPressed: onClear),
+            const SizedBox(width: MMSpacing.s),
+          ] else
+            const Spacer(),
+          MMButton(
+            key: const ValueKey('research-save-note'),
+            label: l.researchSaveNote,
+            variant: MMButtonVariant.primary,
+            color: c.research,
+            onPressed: onSave,
           ),
         ],
       ),

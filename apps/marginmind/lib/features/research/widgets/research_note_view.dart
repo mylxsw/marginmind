@@ -212,7 +212,7 @@ class ResearchNoteView extends ConsumerWidget {
                 final ok = await showConfirmSheet(
                   context,
                   title: l.researchDeleteTitle,
-                  message: l.researchDeleteMessage(marks, cards),
+                  message: l.researchDeleteMessage(marks, cards).trim(),
                   confirmLabel: l.delete,
                 );
                 if (!ok) return;
