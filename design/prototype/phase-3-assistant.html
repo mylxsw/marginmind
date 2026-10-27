@@ -685,7 +685,19 @@ body.demo-min #desk{padding-right:58px}
 .stepper button:hover{background:var(--hover)}
 .stepper b{min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
 .sw{display:inline-block;vertical-align:middle}
-.mmenu{min-width:240px}
+.mmenu{min-width:220px}
+.setwin.st2{flex-direction:column;width:760px;height:560px}
+.st-top{flex:none;display:flex;flex-direction:column;align-items:center;background:var(--sidebar);border-bottom:1px solid var(--sep);padding:10px 0 6px;position:relative}
+.st-top .lights{position:absolute;left:14px;top:12px}
+.st-tabs{display:flex;gap:4px}
+.st-tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;width:68px;padding:5px 0;border-radius:8px;font-size:11.5px;color:var(--label2)}
+.st-tabs button:hover{background:var(--hover)}
+.st-tabs button.on{background:var(--sel);color:var(--accent)}
+.st-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.st-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--sep);font-size:12.5px}
+.st-row label{color:var(--label2)}
+.st2 .sw-models{flex:1;min-height:0}
+.st2 .sw-mrow{padding:9px 12px}
 .mmenu .capi{opacity:.7}
 .mi:hover .capi{color:#fff}
 .as-acts{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none}
@@ -974,7 +986,7 @@ function freshState() {
     zoom: 1, pan: { x: 30, y: 0 }, density: 'full', selected: null, expanded: new Set(), widths: {},
     nodes: initialNodes(), panel: { open: false, mode: 'chat', detailId: null, list: false },
     chats: [], chat: null, props: {}, comp: { text: '', items: [], autoOff: false, web: true, slash: null },
-    providers: null, defaults: { chat: 'p1|claude-sonnet-4-5', quick: 'p1|claude-haiku-4-5', org: 'p1|claude-sonnet-4-5', offline: 'p3|qwen3:8b' }, searchBy: 'model', searxng: '', limits: { searches: 3, pages: 5 }, ctxPrefs: { page: true, node: true, title: 'auto' }, local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
+    providers: null, defaults: { chat: 'p1|claude-sonnet-4-5' }, searchBy: 'model', searxng: '', limits: { searches: 3, pages: 5 }, ctxPrefs: { page: true, node: true, title: 'auto' }, local: false, rtheme: 'white', sync: true, view: 'map', hlColor: 'y',
     notes: {}, anchors: [], undo: [], scene: null,
   };
 }
@@ -2007,7 +2019,7 @@ rp.addEventListener('click', e => {
     if (k === 'diag') hud('诊断信息已复制（不含 Key 和正文）');
     if (k === 'notools') { m.plan = planFor('__fallback', m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); }
     if (k === 'retry') { m.plan = planFor(m.planKey || c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
-    if (k === 'local') { c.model = S.defaults.offline; syncLocal(); m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
+    if (k === 'local') { c.model = localDefault(); syncLocal(); m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
     if (k === 'locate') { const note = S.notes[m.saved]; if (note?.att.node) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(note.att.node); flashNode(note.att.node); } }
   }
 });
@@ -2131,7 +2143,7 @@ function modelMenu() {
   const cur = currentModelKey();
   const groups = S.providers.filter(p => p.on && p.status === 'ok' && p.models.some(m => m.on));
   const m = document.createElement('div'); m.className = 'pop menu mmenu';
-  m.innerHTML = groups.map(p => `<div class="mh">${esc(p.name)}</div>` + p.models.filter(x => x.on).map(x => `<div class="mi" data-model="${mkey(p, x)}">${mkey(p, x) === cur ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${esc(x.name)}</span><span class="capi">${x.caps.filter(c => c !== 'tools').map(c => ic(CAPS[c][0], 'xs')).join('')}</span></div>`).join('')).join('<div class="msep"></div>')
+  m.innerHTML = groups.map(p => `<div class="mh">${esc(p.name)}</div>` + p.models.filter(x => x.on).map(x => `<div class="mi" data-model="${mkey(p, x)}">${mkey(p, x) === cur ? ic('check', 's ii') : '<span style="width:14px"></span>'}<span class="grow">${esc(x.name)}</span></div>`).join('')).join('<div class="msep"></div>')
     + `<div class="msep"></div><div class="mi" data-model="__manage">${ic('gear', 's ii')}<span class="grow">管理模型…</span><span class="kbd">⌘,</span></div>`;
   placePop(m, winRect($('[data-act="modelMenu"]')), 'above');
   m.addEventListener('click', e => {
@@ -2141,155 +2153,126 @@ function modelMenu() {
   });
 }
 
-/* ---------------- Settings window (⌘,) ---------------- */
-const SET_PAGES = [['models', '模型服务', 'spark'], ['defaults', '默认模型', 'cards'], ['web', '联网', 'globe'], ['context', '上下文与隐私', 'lock'], ['chats', '对话', 'chat']];
-let SW = null; // { page, prov, fetch: {open, q, picked:Set, state}, err }
-function settingsWindow(page, provId) {
+/* ---------------- Settings (⌘,): the app's one Settings window; the assistant is one tab ----------------
+   Only what a reader understands and actually needs to choose: which services, their key, which
+   models to keep, and the default model. Everything else is decided by the app or lives where the
+   user already is (web toggle and context chips in the composer, titles and deletion in the
+   conversation list, budgets and network policy fixed in code). */
+let SW = null; // { tab, prov, fetch: {q, picked:Set, state}, err, reveal, custom }
+function settingsWindow(_page, provId) {
   closeFloating();
-  SW = { page: page || 'models', prov: provId || S.providers[0]?.id, fetch: null, err: null, reveal: false };
+  SW = { tab: 'assistant', prov: provId || S.providers[0]?.id, fetch: null, err: null, reveal: false, custom: false };
   $$('.setwin-scrim', layer).forEach(e => e.remove());
-  const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin" id="setwin"></div>';
+  const sc = document.createElement('div'); sc.className = 'setwin-scrim'; sc.innerHTML = '<div class="setwin st2" id="setwin"></div>';
   layer.appendChild(sc); paintSettings();
   sc.addEventListener('click', settingsClick); sc.addEventListener('input', settingsInput);
 }
-function settingsSheet() { settingsWindow('models'); }
+function settingsSheet() { settingsWindow(); }
+const builtinSearch = p => p.proto === 'anthropic' || p.proto === 'gemini' || (p.proto === 'openai' && /api\.openai\.com/.test(p.base));
+function localDefault() { const x = enabledModels().find(e => e.p.proto === 'ollama'); return x?.key; }
 function paintSettings() {
   const w = $('#setwin'); if (!w) return;
-  const pg = SET_PAGES.find(x => x[0] === SW.page);
-  w.innerHTML = `<div class="sw-side"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
-      ${SET_PAGES.map(([k, n, i]) => `<div class="row ${SW.page === k ? 'on' : ''}" data-swpage="${k}">${ic(i, 'ri')}<span class="t">${n}</span></div>`).join('')}</div>
-    <div class="sw-main"><div class="sw-title">${pg[1]}</div><div class="sw-body">${({ models: swModels, defaults: swDefaults, web: swWeb, context: swContext, chats: swChats })[SW.page]()}</div></div>
+  const tabs = [['general', '通用', 'gear'], ['reading', '阅读', 'read'], ['assistant', '助手', 'spark']];
+  w.innerHTML = `<div class="st-top"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+      <div class="st-tabs">${tabs.map(([k, n, i]) => `<button class="${SW.tab === k ? 'on' : ''}" data-swtab="${k}">${ic(i, 'l')}<span>${n}</span></button>`).join('')}</div></div>
+    <div class="st-body">${SW.tab === 'assistant' ? swAssistant() : `<div class="empty" style="padding-top:120px">${SW.tab === 'general' ? '通用' : '阅读'}（现有设置）</div>`}</div>
     ${SW.fetch ? swFetchSheet() : ''}`;
 }
-const swToggle = (k, on, dis) => `<span class="sw ${on ? 'on' : ''} ${dis ? 'dis' : ''}" data-swt="${k}"></span>`;
-function provDot(p) { return `<span class="pdot ${!p.on ? 'off' : p.status}"></span>`; }
-function swModels() {
+function swAssistant() {
   const p = S.providers.find(x => x.id === SW.prov);
-  const list = `<div class="sw-plist">${S.providers.map(x => `<div class="row ${x.id === SW.prov ? 'on' : ''}" data-swprov="${x.id}"><span class="plogo">${esc(x.name.slice(0, 1))}</span><span class="t">${esc(x.name)}</span>${provDot(x)}</div>`).join('')}
+  const em = enabledModels();
+  const head = `<div class="st-row"><label>默认模型</label><select class="ta" data-swdef="chat" style="width:260px">${em.map(x => `<option value="${x.key}" ${S.defaults.chat === x.key ? 'selected' : ''}>${esc(x.m.name)}</option>`).join('') || '<option>—</option>'}</select></div>`;
+  const list = `<div class="sw-plist">${S.providers.map(x => `<div class="row ${x.id === SW.prov ? 'on' : ''}" data-swprov="${x.id}"><span class="plogo">${esc(x.name.slice(0, 1))}</span><span class="t">${esc(x.name)}</span>${x.status === 'err' ? '<span class="pdot err"></span>' : ''}</div>`).join('')}
     <div class="sw-plist-foot"><button class="ib" data-sw="addProv" title="添加服务">${ic('plus', 's')}</button><button class="ib" data-sw="delProv" title="移除服务" ${p ? '' : 'disabled'}>${ic('minus', 's')}</button></div></div>`;
-  if (!p) return `<div class="sw-models">${list}<div class="sw-pdetail"><div class="empty"><span class="ei">${ic('spark', 'l')}</span><button class="btn ag" data-sw="addProv">添加服务</button></div></div></div>`;
-  const P = PROTOS[p.proto];
-  const st = !p.on ? '' : p.status === 'ok' ? `<span class="pill ok">${ic('check', 'xs')}已连接</span>` : p.status === 'err' ? `<span class="pill err">${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="pill"><span class="spin" style="width:9px;height:9px"></span></span>' : '<span class="pill">未连接</span>';
-  return `<div class="sw-models">${list}<div class="sw-pdetail">
-    <div class="sw-ph"><input class="sw-name" data-swf="name" value="${esc(p.name)}">${st}<span class="grow"></span>${swToggle('provOn', p.on)}</div>
+  if (!p) return head + `<div class="sw-models">${list}<div class="sw-pdetail"><div class="empty"><button class="btn ag" data-sw="addProv">添加服务</button></div></div></div>`;
+  const needsBase = p.proto === 'openai' || p.proto === 'ollama' || SW.custom || p.base !== PROTOS[p.proto].base;
+  const st = p.status === 'ok' ? '' : p.status === 'err' ? `<span class="sw-err">${esc(p.err || '连接失败')}</span>` : p.status === 'busy' ? '<span class="spin" style="width:11px;height:11px;color:var(--label2)"></span>' : '';
+  return head + `<div class="sw-models">${list}<div class="sw-pdetail">
+    <div class="sw-ph"><input class="sw-name" data-swf="name" value="${esc(p.name)}">${st}</div>
     <div class="sw-grid">
-      <label>协议</label><div class="seg sm">${Object.entries(PROTOS).map(([k, x]) => `<button data-swproto="${k}" class="${p.proto === k ? 'on' : ''}">${x.n}</button>`).join('')}</div>
-      <label>地址</label><input class="ta" data-swf="base" value="${esc(p.base)}" placeholder="${P.base}">
-      ${P.key ? `<label>API Key</label><div class="sw-key"><input class="ta" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button><span class="sw-kc" title="保存在钥匙串">${ic('lock', 'xs')}</span></div>` : ''}
-      <span></span><div class="sw-actions"><button class="btn sm" data-sw="check">检查连接</button>${SW.err ? `<span class="sw-err">${esc(SW.err)}</span>` : ''}</div>
+      ${needsBase ? `<label>地址</label><input class="ta" data-swf="base" value="${esc(p.base)}" placeholder="${PROTOS[p.proto].base}">` : ''}
+      ${PROTOS[p.proto].key ? `<label>API Key</label><div class="sw-key"><input class="ta" data-swf="key" type="${SW.reveal ? 'text' : 'password'}" value="${esc(p.key)}"><button class="ib" data-sw="reveal" title="${SW.reveal ? '隐藏' : '显示'}">${ic('eye', 's')}</button></div>` : ''}
+      ${needsBase ? '' : `<span></span><span><button class="btn sm plain" data-sw="custom" style="padding:0">自定义地址</button></span>`}
+      ${builtinSearch(p) ? '' : `<label>网页搜索</label><input class="ta" data-swsx value="${esc(S.searxng)}" placeholder="SearXNG 地址">`}
     </div>
-    <div class="sw-sec"><span class="grow">模型</span><button class="btn sm" data-sw="manual">${ic('plus', 'xs')}手动添加</button><button class="btn sm ag" data-sw="fetch">${ic('refresh', 'xs')}获取模型列表</button></div>
-    <div class="sw-mlist">${p.models.length ? p.models.map((m, i) => `<div class="sw-mrow ${m.on ? '' : 'off'}" data-mi="${i}">
-        <div class="grow"><div class="sw-mn" data-swmname="${i}" title="双击重命名">${esc(m.name)}</div><div class="sw-mid">${esc(m.id)}</div></div>
-        <span class="capi">${m.caps.map(c => `<span title="${CAPS[c][1]}">${ic(CAPS[c][0], 'xs')}</span>`).join('')}</span><span class="sw-ctx">${m.ctx}</span>
-        <button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('trash', 'xs')}</button>${swToggle('m' + i, m.on)}</div>`).join('') : `<div class="sw-mempty"><button class="btn sm ag" data-sw="fetch">${ic('refresh', 'xs')}获取模型列表</button></div>`}</div>
+    <div class="sw-sec"><span class="grow">模型</span><button class="btn sm" data-sw="fetch">${ic('plus', 'xs')}添加模型</button></div>
+    <div class="sw-mlist">${p.models.length ? p.models.map((m, i) => `<div class="sw-mrow" title="${esc(m.id)}"><div class="grow"><div class="sw-mn" data-swmname="${i}">${esc(m.name)}</div></div>${mkey(p, m) === S.defaults.chat ? '<span class="pill">默认</span>' : ''}<button class="ib sw-mdel" data-swmdel="${i}" title="移除">${ic('trash', 'xs')}</button></div>`).join('')
+      : `<div class="sw-mempty"><button class="btn sm ag" data-sw="fetch">${ic('plus', 'xs')}添加模型</button></div>`}</div>
   </div></div>`;
 }
 function swFetchSheet() {
   const p = S.providers.find(x => x.id === SW.prov), F = SW.fetch;
   const have = new Set(p.models.map(m => m.id));
-  const rows = p.catalog.filter(([id, n]) => !F.q || (id + n).toLowerCase().includes(F.q.toLowerCase()));
+  const q = F.q.trim().toLowerCase();
+  // Chat models only: embeddings and the like are never offered.
+  const rows = p.catalog.filter(([id, n, caps]) => !/embedding|whisper|tts|dall-e/i.test(id) && (!q || (id + n).toLowerCase().includes(q)));
   const nPick = [...F.picked].filter(id => !have.has(id)).length;
+  const manual = q && !p.catalog.some(([id]) => id.toLowerCase() === q) ? `<div class="sw-frow" data-swmanual="${esc(F.q.trim())}"><span class="cbx ${F.picked.has(F.q.trim()) ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">添加“${esc(F.q.trim())}”</div></div></div>` : '';
   return `<div class="sw-fetch-scrim"><div class="sw-fetch">
-    <div class="sw-fh"><b>${esc(p.name)}</b><span class="note">${PROTOS[p.proto].list}</span><span class="grow"></span><label class="side-search" style="margin:0;width:200px">${ic('search', 's')}<input data-swq placeholder="搜索" value="${esc(F.q)}"></label></div>
+    <div class="sw-fh"><b>添加模型</b><span class="grow"></span><label class="side-search" style="margin:0;width:220px">${ic('search', 's')}<input data-swq placeholder="搜索或输入模型 ID" value="${esc(F.q)}"></label></div>
     <div class="sw-flist">${F.state === 'busy' ? '<div class="empty"><span class="spin" style="color:var(--agent)"></span></div>'
-      : rows.map(([id, n, caps, ctx]) => { const on = have.has(id) || F.picked.has(id); return `<div class="sw-frow ${have.has(id) ? 'have' : ''}" data-swpick="${esc(id)}"><span class="cbx ${on ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">${esc(n)}</div><div class="sw-mid">${esc(id)}</div></div><span class="capi">${caps.map(c => `<span title="${CAPS[c][1]}">${ic(CAPS[c][0], 'xs')}</span>`).join('')}</span><span class="sw-ctx">${ctx}</span></div>`; }).join('')}</div>
-    <div class="sfoot" style="margin-top:0;padding:10px 14px;border-top:1px solid var(--sep)"><button class="btn sm plain" data-sw="pickAll">全选</button><span class="grow"></span><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加 ${nPick || ''} 个</button></div></div></div>`;
+      : F.state === 'err' ? `<div class="empty">${esc(F.err)}</div>${manual}`
+      : rows.map(([id, n]) => { const on = have.has(id) || F.picked.has(id); return `<div class="sw-frow ${have.has(id) ? 'have' : ''}" data-swpick="${esc(id)}" title="${esc(id)}"><span class="cbx ${on ? 'on' : ''}"><i>${ic('check', 'xs')}</i></span><div class="grow"><div class="sw-mn">${esc(n)}</div></div></div>`; }).join('') + manual}</div>
+    <div class="sfoot" style="margin-top:0;padding:10px 14px;border-top:1px solid var(--sep)"><span class="grow"></span><button class="btn" data-sw="fetchClose">取消</button><button class="btn ag" data-sw="fetchAdd" ${nPick ? '' : 'disabled'}>添加${nPick ? ' ' + nPick + ' 个' : ''}</button></div></div></div>`;
 }
-function modelSelect(k) {
-  const em = enabledModels();
-  return `<select class="ta" data-swdef="${k}">${em.map(x => `<option value="${x.key}" ${S.defaults[k] === x.key ? 'selected' : ''}>${esc(x.p.name)} · ${esc(x.m.name)}</option>`).join('')}</select>`;
-}
-function swDefaults() {
-  return `<div class="sw-form">
-    <label>对话</label>${modelSelect('chat')}
-    <label>翻译与标题</label>${modelSelect('quick')}
-    <label>整理与出题</label>${modelSelect('org')}
-    <label>断网时</label>${modelSelect('offline')}</div>`;
-}
-function swWeb() {
-  return `<div class="sw-form">
-    <label>默认联网</label><div>${swToggle('webDefault', S.comp.web)}</div>
-    <label>检索</label><div class="seg sm" style="width:max-content"><button data-swsearch="model" class="${S.searchBy === 'model' ? 'on' : ''}">模型自带搜索</button><button data-swsearch="searxng" class="${S.searchBy === 'searxng' ? 'on' : ''}">SearXNG</button></div>
-    ${S.searchBy === 'searxng' ? `<label>SearXNG 地址</label><input class="ta" data-swsx value="${esc(S.searxng)}" placeholder="http://localhost:8080">` : ''}
-    <label>每次最多</label><div class="sw-steps"><span>${stepper('searches', S.limits.searches)} 次搜索</span><span>${stepper('pages', S.limits.pages)} 个网页</span></div>
-    <label>内网地址</label><div>${swToggle('blockLan', true, true)}</div></div>`;
-}
-const stepper = (k, v) => `<span class="stepper"><button data-swstep="${k}" data-d="-1">${ic('minus', 'xs')}</button><b>${v}</b><button data-swstep="${k}" data-d="1">${ic('plus', 'xs')}</button></span>`;
-function swContext() {
-  return `<div class="sw-form">
-    <label>正在看的页面</label><div>${swToggle('autoPage', S.ctxPrefs.page)}</div>
-    <label>选中的卡片</label><div>${swToggle('autoNode', S.ctxPrefs.node)}</div>
-    <label>对话标题</label><div class="seg sm" style="width:max-content"><button data-swtitle="auto" class="${S.ctxPrefs.title === 'auto' ? 'on' : ''}">自动生成</button><button data-swtitle="first" class="${S.ctxPrefs.title === 'first' ? 'on' : ''}">第一个问题</button></div></div>`;
-}
-function swChats() {
-  const n = S.chats.length;
-  return `<div class="sw-form">
-    <label>保存位置</label><div>本学习集</div>
-    <label>对话</label><div>${n} 个</div>
-    <label></label><div><button class="btn sm" style="color:var(--err)" data-sw="clearChats" ${n ? '' : 'disabled'}>删除全部对话…</button></div></div>`;
+let swCheckT = null;
+function autoCheck(p) {
+  clearTimeout(swCheckT);
+  if (PROTOS[p.proto].key && !p.key) { p.status = 'idle'; return; }
+  p.status = 'busy';
+  swCheckT = setTimeout(() => {
+    if (!S.net && p.proto !== 'ollama') { p.status = 'err'; p.err = '连不上服务'; }
+    else if (PROTOS[p.proto].key && p.key.length < 6) { p.status = 'err'; p.err = 'API Key 无效'; }
+    else { p.status = 'ok'; p.err = null; }
+    if (SW) { const a = document.activeElement, sel = a?.dataset?.swf, pos = a?.selectionStart; paintSettings(); if (sel) { const el = $(`#setwin [data-swf="${sel}"]`); el?.focus(); el?.setSelectionRange?.(pos, pos); } }
+  }, 700);
 }
 function settingsClick(e) {
   const t = e.target, p = S.providers.find(x => x.id === SW.prov);
   if (t.classList.contains('setwin-scrim') || t.closest('[data-sw="close"]')) { $$('.setwin-scrim', layer).forEach(x => x.remove()); SW = null; paintRow(); return; }
-  const pg = t.closest('[data-swpage]'); if (pg) { SW.page = pg.dataset.swpage; SW.err = null; return paintSettings(); }
-  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = pv.dataset.swprov; SW.err = null; return paintSettings(); }
-  const pr = t.closest('[data-swproto]'); if (pr && p) { p.proto = pr.dataset.swproto; p.base = PROTOS[p.proto].base; p.status = 'idle'; return paintSettings(); }
-  const tg = t.closest('[data-swt]');
-  if (tg && !tg.classList.contains('dis')) {
-    const k = tg.dataset.swt;
-    if (k === 'provOn') p.on = !p.on;
-    else if (k[0] === 'm' && /^m\d+$/.test(k)) { const m = p.models[+k.slice(1)]; m.on = !m.on; }
-    else if (k === 'webDefault') S.comp.web = !S.comp.web;
-    else if (k === 'autoPage') S.ctxPrefs.page = !S.ctxPrefs.page;
-    else if (k === 'autoNode') S.ctxPrefs.node = !S.ctxPrefs.node;
-    return paintSettings();
-  }
-  const sr = t.closest('[data-swsearch]'); if (sr) { S.searchBy = sr.dataset.swsearch; return paintSettings(); }
-  const ti = t.closest('[data-swtitle]'); if (ti) { S.ctxPrefs.title = ti.dataset.swtitle; return paintSettings(); }
-  const stp = t.closest('[data-swstep]'); if (stp) { const k = stp.dataset.swstep; S.limits[k] = Math.max(1, Math.min(20, S.limits[k] + +stp.dataset.d)); return paintSettings(); }
-  const md = t.closest('[data-swmdel]'); if (md) { p.models.splice(+md.dataset.swmdel, 1); return paintSettings(); }
+  const tb = t.closest('[data-swtab]'); if (tb) { SW.tab = tb.dataset.swtab; return paintSettings(); }
+  const pv = t.closest('[data-swprov]'); if (pv) { SW.prov = pv.dataset.swprov; SW.custom = false; return paintSettings(); }
+  const md = t.closest('[data-swmdel]'); if (md) { const m = p.models[+md.dataset.swmdel]; p.models.splice(+md.dataset.swmdel, 1); if (S.defaults.chat === mkey(p, m)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
+  const mm = t.closest('[data-swmanual]'); if (mm && SW.fetch) { const id = mm.dataset.swmanual; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
   const pk = t.closest('[data-swpick]');
   if (pk && SW.fetch && !pk.classList.contains('have')) { const id = pk.dataset.swpick; SW.fetch.picked.has(id) ? SW.fetch.picked.delete(id) : SW.fetch.picked.add(id); return paintSettings(); }
   const a = t.closest('[data-sw]')?.dataset.sw; if (!a) return;
   if (a === 'reveal') { SW.reveal = !SW.reveal; return paintSettings(); }
-  if (a === 'check') {
-    if (PROTOS[p.proto].key && !p.key) { SW.err = '缺少 API Key'; return paintSettings(); }
-    p.status = 'busy'; SW.err = null; paintSettings();
-    return setTimeout(() => { if (!S.net && p.proto !== 'ollama') { p.status = 'err'; p.err = '连不上服务'; } else { p.status = 'ok'; p.err = null; } if (SW) paintSettings(); }, 700);
-  }
+  if (a === 'custom') { SW.custom = true; paintSettings(); return $('#setwin [data-swf="base"]')?.focus(); }
   if (a === 'fetch') {
-    if (PROTOS[p.proto].key && !p.key) { SW.err = '缺少 API Key'; return paintSettings(); }
-    if (!S.net && p.proto !== 'ollama') { SW.err = '连不上服务'; return paintSettings(); }
-    SW.err = null; SW.fetch = { q: '', picked: new Set(), state: 'busy' }; paintSettings();
-    return setTimeout(() => { if (SW?.fetch) { SW.fetch.state = 'ok'; p.status = 'ok'; paintSettings(); } }, 600);
+    SW.fetch = { q: '', picked: new Set(), state: 'busy' }; paintSettings();
+    return setTimeout(() => {
+      if (!SW?.fetch) return;
+      if (PROTOS[p.proto].key && !p.key) { SW.fetch.state = 'err'; SW.fetch.err = '先填写 API Key'; }
+      else if (!S.net && p.proto !== 'ollama') { SW.fetch.state = 'err'; SW.fetch.err = '连不上服务，可直接输入模型 ID'; }
+      else { SW.fetch.state = 'ok'; p.status = 'ok'; }
+      paintSettings(); $('#setwin [data-swq]')?.focus();
+    }, 600);
   }
-  if (a === 'pickAll') { const have = new Set(p.models.map(m => m.id)); p.catalog.forEach(([id]) => { if (!have.has(id)) SW.fetch.picked.add(id); }); return paintSettings(); }
   if (a === 'fetchClose') { SW.fetch = null; return paintSettings(); }
   if (a === 'fetchAdd') {
     const have = new Set(p.models.map(m => m.id));
-    p.catalog.filter(([id]) => SW.fetch.picked.has(id) && !have.has(id)).forEach(([id, n, caps, ctx]) => p.models.push({ id, name: n, caps, ctx, on: true }));
-    const added = [...SW.fetch.picked].filter(id => !have.has(id)).length;
-    SW.fetch = null; paintSettings(); return hud(`已添加 ${added} 个模型`);
+    const added = [...SW.fetch.picked].filter(id => !have.has(id));
+    added.forEach(id => { const c = p.catalog.find(x => x[0] === id); p.models.push({ id, name: c ? c[1] : id, caps: c ? c[2] : ['tools'], ctx: c ? c[3] : '', on: true }); });
+    if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key;
+    SW.fetch = null; paintSettings(); return hud(`已添加 ${added.length} 个模型`);
   }
-  if (a === 'manual') { const id = prompt('模型 ID'); if (id && id.trim()) { p.models.push({ id: id.trim(), name: id.trim(), caps: [], ctx: '—', on: true }); paintSettings(); } return; }
   if (a === 'addProv') {
     const m = document.createElement('div'); m.className = 'pop menu'; m.style.zIndex = 120;
     m.innerHTML = Object.entries(PROTOS).map(([k, x]) => `<div class="mi" data-newproto="${k}"><span class="grow">${x.n}</span></div>`).join('');
     placePop(m, winRect(t.closest('[data-sw]')), 'above');
     m.addEventListener('click', ev => { const k = ev.target.closest('[data-newproto]')?.dataset.newproto; if (!k) return; m.remove();
       const np = { id: uid('p'), name: PROTOS[k].n, proto: k, base: PROTOS[k].base, key: '', status: 'idle', on: true, models: [], catalog: seedProviders().find(x => x.proto === k)?.catalog || [] };
-      S.providers.push(np); SW.prov = np.id; SW.page = 'models'; paintSettings(); setTimeout(() => $('#setwin [data-swf="key"]')?.focus() || $('#setwin [data-swf="base"]')?.focus(), 30); });
+      S.providers.push(np); SW.prov = np.id; SW.custom = false; paintSettings(); setTimeout(() => ($('#setwin [data-swf="key"]') || $('#setwin [data-swf="base"]'))?.focus(), 30); });
     return;
   }
-  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = S.providers[0]?.id; return paintSettings(); }
-  if (a === 'clearChats') { S.chats = []; S.chat = null; renderSessions(); renderPanel(); return paintSettings(); }
+  if (a === 'delProv' && p) { S.providers = S.providers.filter(x => x !== p); SW.prov = S.providers[0]?.id; if (!findModel(S.defaults.chat)) S.defaults.chat = enabledModels()[0]?.key; return paintSettings(); }
 }
 function settingsInput(e) {
   const t = e.target, p = S.providers.find(x => x.id === SW?.prov);
-  if (t.dataset.swf && p) { p[t.dataset.swf] = t.value; if (t.dataset.swf !== 'name') p.status = 'idle'; else $$(`[data-swprov="${p.id}"] .t`).forEach(x => x.textContent = t.value); return; }
+  if (t.dataset.swf && p) { p[t.dataset.swf] = t.value; if (t.dataset.swf === 'name') $$(`[data-swprov="${p.id}"] .t`).forEach(x => x.textContent = t.value); else autoCheck(p); return; }
   if (t.matches('[data-swq]')) { SW.fetch.q = t.value; const pos = t.selectionStart; paintSettings(); const q = $('#setwin [data-swq]'); q.focus(); q.setSelectionRange(pos, pos); return; }
-  if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return; }
+  if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return paintSettings(); }
   if (t.matches('[data-swsx]')) { S.searxng = t.value; }
 }
 document.addEventListener('dblclick', e => {
@@ -2573,8 +2556,8 @@ const SCENES = [
   { k: 'flaky', t: '工具调用出错时的处理过程', d: '过程像 Codex 一样边说边做；失败分组显示原因；自动改为直接回答', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__flaky' }); }, g: '回答上方是 <b>处理了 N 秒 · 工具调用失败 3 次</b>，点开能看到每一步：说明性的话和动作交替出现，失败的那一行写明原因（模型请求了不存在的工具）。连续出错后自动改为不用工具，答案照常给出。' },
   { k: 'broken', t: '工具调用彻底失败', d: '错误不再笼统写“网络不可用”；详情可展开、可复制；给出能走通的下一步', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__broken' }); }, g: '错误块写明 <b>模型没能正确调用工具</b>，点 <b>详情</b> 看模型、失败原因和停止原因；<b>不用工具重答</b> 直接根据附带的原文回答，<b>换个模型</b> 打开模型菜单，复制按钮复制诊断信息（不含 Key 和正文）。' },
   { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
-  { k: 'models', t: '设置 · 模型服务', d: '按协议获取模型列表，勾选加入；不同任务用不同模型', go() { settingsWindow('models', 'p2'); setTimeout(() => $('#setwin [data-sw="fetch"]')?.click(), 500); }, g: '左侧是服务，右侧是协议、地址和 Key。点 <b>获取模型列表</b> 会按协议请求（OpenAI 兼容是 <code>GET /models</code>），勾选后加入“我的模型”；开关控制它是否出现在输入框的模型菜单里。<b>默认模型</b> 一页给对话、翻译与标题、整理与出题分别指定模型。' },
-  { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已启用的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，图标标出图片输入、内置搜索、推理能力。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
+  { k: 'models', t: '设置 · 助手', d: '应用设置里的一页：服务、Key、模型、默认模型', go() { settingsWindow('assistant', 'p2'); setTimeout(() => $('#setwin [data-sw="fetch"]')?.click(), 500); }, g: '助手只是应用设置（⌘,）里的一个标签页。顶部选默认模型；左边是服务，右边只有地址（需要时）和 API Key，连接状态自动检查。<b>添加模型</b> 会自动拉取该服务的模型列表，搜不到时可以直接输入模型 ID。' },
+  { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已添加的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，只有名字。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
 ];
 const coachTimers = [];
 function later(fn, ms) { coachTimers.push(setTimeout(fn, ms)); }
