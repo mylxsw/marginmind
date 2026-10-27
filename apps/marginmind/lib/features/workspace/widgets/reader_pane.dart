@@ -38,7 +38,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   /// Counts the menu's "Go to Page…" requests; the page field opens on each.
   int _pageFieldRequests = 0;
-  bool _hoveringPdf = false;
+  bool _hoveringNavigation = false;
+  bool _navigationFocused = false;
+
+  bool get _navigationVisible => _hoveringNavigation || _navigationFocused || _scrubPage != null;
   double? _scrubPage;
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));
@@ -344,8 +347,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         ),
                       Expanded(
                         child: MouseRegion(
-                          onEnter: (_) => setState(() => _hoveringPdf = true),
-                          onExit: (_) => setState(() => _hoveringPdf = false),
                           child: Listener(
                             onPointerSignal: (_) => dismissSelection(),
                             onPointerPanZoomStart: (_) => dismissSelection(),
@@ -494,79 +495,90 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                 Positioned(
                                   left: 0,
                                   right: 0,
-                                  bottom: 16,
-                                  child: Center(
-                                    child: Consumer(
-                                      builder: (context, ref, _) {
-                                        final page =
-                                            ref.watch(
-                                              readingPagesProvider(widget.studySetId).select((p) => p[doc.id]),
-                                            ) ??
-                                            doc.lastPage;
-                                        return _PagePill(
-                                          page: _scrubPage?.round() ?? page,
-                                          editRequests: _pageFieldRequests,
-                                          pageCount: doc.pageCount,
-                                          onJump: (page) {
-                                            dismissSelection();
-                                            _pdf.jumpToPage(page);
-                                          },
-                                          onPrevious: () {
-                                            dismissSelection();
-                                            _pdf.goToPage((page) - 1);
-                                          },
-                                          onNext: () {
-                                            dismissSelection();
-                                            _pdf.goToPage((page) + 1);
-                                          },
-                                          progress: (_hoveringPdf || _scrubPage != null) && doc.pageCount > 1
-                                              ? SizedBox(
-                                                  width: MMSizes.readerProgressWidth,
-                                                  height: MMSizes.field - MMSpacing.xxs,
-                                                  child: SliderTheme(
-                                                    data: SliderTheme.of(context).copyWith(
-                                                      activeTrackColor: c.secondaryLabel.withValues(alpha: .65),
-                                                      inactiveTrackColor: c.secondaryLabel.withValues(alpha: .2),
-                                                      thumbColor: c.secondaryLabel,
-                                                      overlayColor: c.secondaryLabel.withValues(alpha: .1),
-                                                      trackHeight: MMSpacing.xxs,
-                                                      thumbShape: const RoundSliderThumbShape(
-                                                        enabledThumbRadius: MMSpacing.xs,
-                                                        elevation: 0,
-                                                        pressedElevation: 0,
+                                  bottom: _pagePillBottom,
+                                  child: MouseRegion(
+                                    key: const ValueKey('reader-page-navigation'),
+                                    onEnter: (_) => setState(() => _hoveringNavigation = true),
+                                    onExit: (_) => setState(() => _hoveringNavigation = false),
+                                    child: Focus(
+                                      onFocusChange: (focused) => setState(() => _navigationFocused = focused),
+                                      child: Consumer(
+                                        builder: (context, ref, _) {
+                                          final page =
+                                              ref.watch(
+                                                readingPagesProvider(widget.studySetId).select((p) => p[doc.id]),
+                                              ) ??
+                                              doc.lastPage;
+                                          return _PagePill(
+                                            visible: _navigationVisible,
+                                            page: _scrubPage?.round() ?? page,
+                                            editRequests: _pageFieldRequests,
+                                            pageCount: doc.pageCount,
+                                            onJump: (page) {
+                                              dismissSelection();
+                                              _pdf.jumpToPage(page);
+                                            },
+                                            onPrevious: () {
+                                              dismissSelection();
+                                              _pdf.goToPage((page) - 1);
+                                            },
+                                            onNext: () {
+                                              dismissSelection();
+                                              _pdf.goToPage((page) + 1);
+                                            },
+                                            progress: doc.pageCount > 1
+                                                ? SizedBox(
+                                                    height: MMSizes.field - MMSpacing.xxs,
+                                                    child: SliderTheme(
+                                                      data: SliderTheme.of(context).copyWith(
+                                                        activeTrackColor: c.secondaryLabel.withValues(
+                                                          alpha: _navigationVisible ? .65 : .3,
+                                                        ),
+                                                        inactiveTrackColor: c.secondaryLabel.withValues(
+                                                          alpha: _navigationVisible ? .2 : .12,
+                                                        ),
+                                                        thumbColor: c.secondaryLabel,
+                                                        overlayColor: c.secondaryLabel.withValues(alpha: .1),
+                                                        trackHeight: MMSizes.readerProgressTrack,
+                                                        trackShape: const RectangularSliderTrackShape(),
+                                                        thumbShape: RoundSliderThumbShape(
+                                                          enabledThumbRadius: _navigationVisible ? MMSpacing.xs : 0,
+                                                          elevation: 0,
+                                                          pressedElevation: 0,
+                                                        ),
+                                                        showValueIndicator: ShowValueIndicator.never,
                                                       ),
-                                                      showValueIndicator: ShowValueIndicator.never,
-                                                    ),
-                                                    child: Slider(
-                                                      key: const ValueKey('reader-page-progress'),
-                                                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
-                                                      min: 1,
-                                                      max: doc.pageCount.toDouble(),
-                                                      value: (_scrubPage ?? page.toDouble()).clamp(
-                                                        1,
-                                                        doc.pageCount.toDouble(),
+                                                      child: Slider(
+                                                        key: const ValueKey('reader-page-progress'),
+                                                        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+                                                        min: 1,
+                                                        max: doc.pageCount.toDouble(),
+                                                        value: (_scrubPage ?? page.toDouble()).clamp(
+                                                          1,
+                                                          doc.pageCount.toDouble(),
+                                                        ),
+                                                        label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
+                                                        semanticFormatterCallback: (v) =>
+                                                            '${v.round()} / ${doc.pageCount}',
+                                                        onChangeStart: (v) {
+                                                          dismissSelection();
+                                                          setState(() => _scrubPage = v);
+                                                        },
+                                                        onChanged: (v) {
+                                                          setState(() => _scrubPage = v);
+                                                          _pdf.scrubToPage(v.round());
+                                                        },
+                                                        onChangeEnd: (v) {
+                                                          _pdf.scrubToPage(v.round());
+                                                          setState(() => _scrubPage = null);
+                                                        },
                                                       ),
-                                                      label: '${_scrubPage?.round() ?? page} / ${doc.pageCount}',
-                                                      semanticFormatterCallback: (v) =>
-                                                          '${v.round()} / ${doc.pageCount}',
-                                                      onChangeStart: (v) {
-                                                        dismissSelection();
-                                                        setState(() => _scrubPage = v);
-                                                      },
-                                                      onChanged: (v) {
-                                                        setState(() => _scrubPage = v);
-                                                        _pdf.scrubToPage(v.round());
-                                                      },
-                                                      onChangeEnd: (v) {
-                                                        _pdf.scrubToPage(v.round());
-                                                        setState(() => _scrubPage = null);
-                                                      },
                                                     ),
-                                                  ),
-                                                )
-                                              : null,
-                                        );
-                                      },
+                                                  )
+                                                : null,
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -633,23 +645,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
 final _inkColors = [for (final c in MMInkColor.values) c.stroke];
 
-/// Space the page pill takes at the bottom of the reader; floating toolbars
-/// keep clear of it. An estimate that is wider than `_PagePill`; change both
-/// together.
+/// Full-width navigation area reserved for floating toolbars and HUDs.
 const _pagePillBottom = 16.0;
-const _pagePillHeight = 32.0;
-const _pagePillSize = Size(200 + MMSizes.readerProgressWidth, _pagePillHeight);
+const _pagePillHeight = MMSizes.readerNavigationHeight;
 
 /// How far the page pill reaches up from the window's bottom edge; the HUD
 /// stays above it.
 const pagePillClearance = _pagePillBottom + _pagePillHeight;
 
-Rect _pagePillArea(Size viewport) => Rect.fromLTWH(
-  (viewport.width - _pagePillSize.width) / 2,
-  viewport.height - _pagePillBottom - _pagePillSize.height,
-  _pagePillSize.width,
-  _pagePillSize.height,
-);
+Rect _pagePillArea(Size viewport) =>
+    Rect.fromLTWH(0, viewport.height - _pagePillBottom - _pagePillHeight, viewport.width, _pagePillHeight);
 
 /// "n / N" that turns into a field on click: type a page, Enter jumps.
 class _PageField extends StatefulWidget {
@@ -744,6 +749,7 @@ class _PagePill extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     this.progress,
+    required this.visible,
   });
 
   final int page;
@@ -753,42 +759,63 @@ class _PagePill extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final Widget? progress;
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    return MMGlass(
-      borderRadius: BorderRadius.circular(MMRadii.capsule),
-      color: c.glass,
-      blurSigma: 0,
-      shadows: const [],
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          MMIconButton(
-            icon: MMIcons.chevronLeft,
-            tooltip: l.previousPage,
-            size: 26,
-            iconSize: 13,
-            color: c.label,
-            onPressed: page > 1 ? onPrevious : null,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _PageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
-          ),
-          ?progress,
-          MMIconButton(
-            icon: MMIcons.chevronRight,
-            tooltip: l.nextPage,
-            size: 26,
-            iconSize: 13,
-            color: c.label,
-            onPressed: page < pageCount ? onNext : null,
-          ),
-        ],
+    Widget reveal(Widget child) => AnimatedOpacity(
+      opacity: visible ? 1 : 0,
+      duration: MMAppearance.duration(context, MMMotion.quick),
+      child: child,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+      child: SizedBox(
+        height: MMSizes.readerNavigationHeight,
+        child: Column(
+          children: [
+            reveal(
+              Container(
+                key: const ValueKey('reader-page-badge'),
+                height: MMSizes.field,
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xs),
+                decoration: BoxDecoration(
+                  color: MMAppearance.reduceTransparencyOf(context) ? c.glassOpaque : c.glass.withValues(alpha: .35),
+                  borderRadius: BorderRadius.circular(MMRadii.capsule),
+                ),
+                child: _PageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+              ),
+            ),
+            const SizedBox(height: MMSpacing.s),
+            Row(
+              children: [
+                reveal(
+                  MMIconButton(
+                    icon: MMIcons.chevronLeft,
+                    tooltip: l.previousPage,
+                    size: MMSizes.field,
+                    iconSize: MMSpacing.l,
+                    color: c.secondaryLabel,
+                    onPressed: page > 1 ? onPrevious : null,
+                  ),
+                ),
+                Expanded(child: progress ?? const SizedBox.shrink()),
+                reveal(
+                  MMIconButton(
+                    icon: MMIcons.chevronRight,
+                    tooltip: l.nextPage,
+                    size: MMSizes.field,
+                    iconSize: MMSpacing.l,
+                    color: c.secondaryLabel,
+                    onPressed: page < pageCount ? onNext : null,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
