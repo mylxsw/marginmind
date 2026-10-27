@@ -48,11 +48,12 @@ class CardDetails extends ConsumerWidget {
     final ask = card == null
         ? const <Widget>[]
         : [
-            MMButton(
+            MMIconButton(
               key: const ValueKey('details-ask-assistant'),
-              label: l.askAssistant,
               icon: MMIcons.ai,
-              variant: MMButtonVariant.plain,
+              iconSize: 14,
+              color: context.mmColors.research,
+              tooltip: l.askAssistant,
               onPressed: () => askAboutNode(ref, studySetId, card.id),
             ),
           ];

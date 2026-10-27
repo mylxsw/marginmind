@@ -95,6 +95,11 @@ abstract final class MMIcons {
   static const IconData evidence = CupertinoIcons.quote_bubble; // quote.bubble
   static const IconData summarize = CupertinoIcons.text_alignleft; // text.alignleft
   static const IconData organize = CupertinoIcons.wand_stars; // wand.and.stars
+  static const IconData eye = CupertinoIcons.eye; // eye
+  static const IconData eyeSlash = CupertinoIcons.eye_slash; // eye.slash
+  static const IconData remove = CupertinoIcons.minus_circle; // minus.circle
+  static const IconData chevronUpDown = CupertinoIcons.chevron_up_chevron_down; // chevron.up.chevron.down
+  static const IconData reading = CupertinoIcons.book; // book
   static const IconData mention = CupertinoIcons.at; // at
   static const IconData command = CupertinoIcons.slash_circle; // slash.circle
   static const IconData conversation = CupertinoIcons.chat_bubble; // bubble.left

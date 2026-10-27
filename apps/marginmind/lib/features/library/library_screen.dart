@@ -8,7 +8,7 @@ import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
 import '../../app/providers.dart';
-import '../../settings/settings_sheet.dart';
+import '../../settings/settings_window.dart';
 import '../../shared/l10n.dart';
 import '../../shared/pdf_drop.dart';
 import '../workspace/widgets/notices.dart';
@@ -189,7 +189,7 @@ class _LibrarySidebar extends ConsumerWidget {
           MMIconButton(
             icon: MMIcons.settings,
             tooltip: AppShortcuts.tip(l.settingsTitle, AppShortcuts.settings),
-            onPressed: () => showSettingsSheet(context),
+            onPressed: () => showSettings(context),
           ),
         ],
       ),

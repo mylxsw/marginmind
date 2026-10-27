@@ -2310,7 +2310,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String assistantPageContext(String document, int page) {
-    return '$document · p. $page';
+    return 'p. $page · $document';
   }
 
   @override
@@ -2516,4 +2516,184 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantSearxngInvalid => 'Enter a valid HTTP or HTTPS endpoint';
+
+  @override
+  String get settingsGeneral => 'General';
+
+  @override
+  String get settingsReading => 'Reading';
+
+  @override
+  String get settingsModels => 'Models';
+
+  @override
+  String get settingsWebSearch => 'Web Search';
+
+  @override
+  String get settingsDefaultModel => 'Default Model';
+
+  @override
+  String get settingsServices => 'Services';
+
+  @override
+  String settingsServiceModels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count models on', one: '1 model on');
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsServiceNoModels => 'No models yet';
+
+  @override
+  String get settingsServiceOff => 'Off';
+
+  @override
+  String get settingsName => 'Name';
+
+  @override
+  String get settingsAddress => 'Address';
+
+  @override
+  String get settingsShowKey => 'Show';
+
+  @override
+  String get settingsHideKey => 'Hide';
+
+  @override
+  String get settingsSetDefault => 'Make Default';
+
+  @override
+  String get settingsIsDefault => 'Default';
+
+  @override
+  String get settingsRemoveModel => 'Remove';
+
+  @override
+  String get settingsAddModel => 'Add Models…';
+
+  @override
+  String get settingsCustomAddress => 'Use Custom Address';
+
+  @override
+  String get settingsRemoveService => 'Remove Service';
+
+  @override
+  String settingsRemoveServiceTitle(String name) {
+    return 'Remove “$name”?';
+  }
+
+  @override
+  String get settingsRemoveServiceMessage => 'Its API key is deleted too. Conversations stay.';
+
+  @override
+  String get settingsAddService => 'Add Service';
+
+  @override
+  String get settingsAddModelTitle => 'Add Models';
+
+  @override
+  String get settingsSearchModels => 'Search, or enter a model ID';
+
+  @override
+  String get settingsAdded => 'Added';
+
+  @override
+  String settingsAddManual(String id) {
+    return 'Add “$id”';
+  }
+
+  @override
+  String get settingsAdd => 'Add';
+
+  @override
+  String settingsAddCount(int count) {
+    return 'Add $count';
+  }
+
+  @override
+  String get settingsOpenAiCompatible => 'OpenAI Compatible';
+
+  @override
+  String get settingsOllamaLocal => 'Ollama (Local)';
+
+  @override
+  String get settingsSearchService => 'Search Service';
+
+  @override
+  String get settingsSearchModel => 'Model’s Own Search';
+
+  @override
+  String get settingsAccountId => 'Account ID';
+
+  @override
+  String get settingsTokenInvalid => 'Invalid API token';
+
+  @override
+  String get settingsSearchUnreachable => 'Cannot reach the search service';
+
+  @override
+  String settingsNoBuiltinSearch(String model) {
+    return '$model can’t search the web. Choose another search service to answer online.';
+  }
+
+  @override
+  String get assistantManageModels => 'Manage Models…';
+
+  @override
+  String get assistantModel => 'Model';
+
+  @override
+  String get assistantNoOllama => 'Ollama isn’t running on this Mac';
+
+  @override
+  String get assistantNoModels => 'The service lists no chat models';
+
+  @override
+  String get assistantThinking => 'Thinking…';
+
+  @override
+  String assistantWorkedFor(int seconds) {
+    return 'Worked for $seconds s';
+  }
+
+  @override
+  String assistantToolFailures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tool calls failed',
+      one: '1 tool call failed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get assistantAnswerWithoutTools => 'Answer Without Tools';
+
+  @override
+  String get assistantSwitchModel => 'Switch Model';
+
+  @override
+  String get assistantCopyDiagnostics => 'Copy Diagnostics';
+
+  @override
+  String get assistantDetails => 'Details';
+
+  @override
+  String get assistantDiagnosticModel => 'Model';
+
+  @override
+  String get assistantDiagnosticHost => 'Host';
+
+  @override
+  String get assistantDiagnosticStatus => 'HTTP status';
+
+  @override
+  String get assistantDiagnosticTools => 'Failed tools';
+
+  @override
+  String get assistantDiagnosticReason => 'Stopped because';
+
+  @override
+  String get assistantDiagnosticRequest => 'Request ID';
 }

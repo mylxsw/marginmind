@@ -4109,7 +4109,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantPageContext.
   ///
   /// In en, this message translates to:
-  /// **'{document} · p. {page}'**
+  /// **'p. {page} · {document}'**
   String assistantPageContext(String document, int page);
 
   /// No description provided for @assistantDocumentContext.
@@ -4489,6 +4489,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid HTTP or HTTPS endpoint'**
   String get assistantSearxngInvalid;
+
+  /// No description provided for @settingsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
+
+  /// No description provided for @settingsReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get settingsReading;
+
+  /// No description provided for @settingsModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get settingsModels;
+
+  /// No description provided for @settingsWebSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Web Search'**
+  String get settingsWebSearch;
+
+  /// No description provided for @settingsDefaultModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Model'**
+  String get settingsDefaultModel;
+
+  /// No description provided for @settingsServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get settingsServices;
+
+  /// No description provided for @settingsServiceModels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model on} other{{count} models on}}'**
+  String settingsServiceModels(int count);
+
+  /// No description provided for @settingsServiceNoModels.
+  ///
+  /// In en, this message translates to:
+  /// **'No models yet'**
+  String get settingsServiceNoModels;
+
+  /// No description provided for @settingsServiceOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get settingsServiceOff;
+
+  /// No description provided for @settingsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get settingsName;
+
+  /// No description provided for @settingsAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get settingsAddress;
+
+  /// No description provided for @settingsShowKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get settingsShowKey;
+
+  /// No description provided for @settingsHideKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get settingsHideKey;
+
+  /// No description provided for @settingsSetDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Make Default'**
+  String get settingsSetDefault;
+
+  /// No description provided for @settingsIsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get settingsIsDefault;
+
+  /// No description provided for @settingsRemoveModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get settingsRemoveModel;
+
+  /// No description provided for @settingsAddModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Models…'**
+  String get settingsAddModel;
+
+  /// No description provided for @settingsCustomAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Custom Address'**
+  String get settingsCustomAddress;
+
+  /// No description provided for @settingsRemoveService.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Service'**
+  String get settingsRemoveService;
+
+  /// No description provided for @settingsRemoveServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove “{name}”?'**
+  String settingsRemoveServiceTitle(String name);
+
+  /// No description provided for @settingsRemoveServiceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Its API key is deleted too. Conversations stay.'**
+  String get settingsRemoveServiceMessage;
+
+  /// No description provided for @settingsAddService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Service'**
+  String get settingsAddService;
+
+  /// No description provided for @settingsAddModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Models'**
+  String get settingsAddModelTitle;
+
+  /// No description provided for @settingsSearchModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Search, or enter a model ID'**
+  String get settingsSearchModels;
+
+  /// No description provided for @settingsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get settingsAdded;
+
+  /// No description provided for @settingsAddManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Add “{id}”'**
+  String settingsAddManual(String id);
+
+  /// No description provided for @settingsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get settingsAdd;
+
+  /// No description provided for @settingsAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {count}'**
+  String settingsAddCount(int count);
+
+  /// No description provided for @settingsOpenAiCompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI Compatible'**
+  String get settingsOpenAiCompatible;
+
+  /// No description provided for @settingsOllamaLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama (Local)'**
+  String get settingsOllamaLocal;
+
+  /// No description provided for @settingsSearchService.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Service'**
+  String get settingsSearchService;
+
+  /// No description provided for @settingsSearchModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model’s Own Search'**
+  String get settingsSearchModel;
+
+  /// No description provided for @settingsAccountId.
+  ///
+  /// In en, this message translates to:
+  /// **'Account ID'**
+  String get settingsAccountId;
+
+  /// No description provided for @settingsTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid API token'**
+  String get settingsTokenInvalid;
+
+  /// No description provided for @settingsSearchUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the search service'**
+  String get settingsSearchUnreachable;
+
+  /// No description provided for @settingsNoBuiltinSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'{model} can’t search the web. Choose another search service to answer online.'**
+  String settingsNoBuiltinSearch(String model);
+
+  /// No description provided for @assistantManageModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Models…'**
+  String get assistantManageModels;
+
+  /// No description provided for @assistantModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get assistantModel;
+
+  /// No description provided for @assistantNoOllama.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama isn’t running on this Mac'**
+  String get assistantNoOllama;
+
+  /// No description provided for @assistantNoModels.
+  ///
+  /// In en, this message translates to:
+  /// **'The service lists no chat models'**
+  String get assistantNoModels;
+
+  /// No description provided for @assistantThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get assistantThinking;
+
+  /// No description provided for @assistantWorkedFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked for {seconds} s'**
+  String assistantWorkedFor(int seconds);
+
+  /// No description provided for @assistantToolFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 tool call failed} other{{count} tool calls failed}}'**
+  String assistantToolFailures(int count);
+
+  /// No description provided for @assistantAnswerWithoutTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer Without Tools'**
+  String get assistantAnswerWithoutTools;
+
+  /// No description provided for @assistantSwitchModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Model'**
+  String get assistantSwitchModel;
+
+  /// No description provided for @assistantCopyDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Diagnostics'**
+  String get assistantCopyDiagnostics;
+
+  /// No description provided for @assistantDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get assistantDetails;
+
+  /// No description provided for @assistantDiagnosticModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get assistantDiagnosticModel;
+
+  /// No description provided for @assistantDiagnosticHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get assistantDiagnosticHost;
+
+  /// No description provided for @assistantDiagnosticStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP status'**
+  String get assistantDiagnosticStatus;
+
+  /// No description provided for @assistantDiagnosticTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed tools'**
+  String get assistantDiagnosticTools;
+
+  /// No description provided for @assistantDiagnosticReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped because'**
+  String get assistantDiagnosticReason;
+
+  /// No description provided for @assistantDiagnosticRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request ID'**
+  String get assistantDiagnosticRequest;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

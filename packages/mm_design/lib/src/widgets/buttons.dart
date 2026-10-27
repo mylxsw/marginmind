@@ -34,7 +34,8 @@ class MMButton extends StatelessWidget {
   final bool autofocus;
 
   /// A primary button's fill in place of the accent, for a feature color
-  /// (research). Other variants ignore it.
+  /// (research); a plain button's text (accent links, destructive actions).
+  /// Secondary buttons ignore it.
   final Color? color;
 
   @override
@@ -49,7 +50,7 @@ class MMButton extends StatelessWidget {
         final (Color bg, Color fg) = switch (variant) {
           MMButtonVariant.primary => (color ?? c.accentFill, c.onAccent),
           MMButtonVariant.secondary => (c.fill, c.label),
-          MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, c.label),
+          MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, color ?? c.label),
         };
         final pressedOverlay = s.pressed ? Colors.black.withValues(alpha: 0.12) : Colors.transparent;
         return AnimatedOpacity(

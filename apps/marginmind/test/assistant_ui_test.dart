@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
-import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_markdown.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -87,9 +86,9 @@ void main() {
     expect(find.text('p.99'), findsNothing);
     expect(find.textContaining('[page:'), findsNothing);
     // Steps folded after the answer; open on click.
-    expect(find.textContaining('用了 1 步'), findsOneWidget);
+    expect(find.textContaining('处理了'), findsOneWidget);
     expect(find.text('读取所选内容'), findsNothing);
-    await tester.tap(find.textContaining('用了 1 步'));
+    await tester.tap(find.textContaining('处理了'));
     await tester.pumpAndSettle();
     expect(find.text('读取所选内容'), findsOneWidget);
     // p.24 goes back to the passage.
@@ -327,63 +326,6 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('scene 6: not configured, connect in the panel; a wrong key says so', (tester) async {
-    var attempts = 0;
-    final app = await openAssistantApp(
-      tester,
-      key: false,
-      connect: (model, key) async => attempts++ == 0 ? ResearchFailureKind.authentication : null,
-    );
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
-    expect(find.text('先连接 AI 服务'), findsOneWidget);
-    expect(find.byKey(const ValueKey('quick-explain')), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('connect-responses')));
-    await tester.pump();
-    expect(find.text('模型'), findsWidgets);
-    await tester.tap(find.byKey(const ValueKey('connect-claude')));
-    await tester.pump();
-    await tester.enterText(
-      find.descendant(of: find.byKey(const ValueKey('connect-key')), matching: find.byType(EditableText)),
-      'bad',
-    );
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('Key 无效'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
-    expect(app.secrets.values['anthropic'], 'bad');
-    expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
-    expect(find.text('提问…'), findsOneWidget);
-  });
-
-  testWidgets('connection errors distinguish configuration, timeout and rate limits', (tester) async {
-    var failure = ResearchFailureKind.invalidRequest;
-    final app = await openAssistantApp(tester, key: false, connect: (_, _) async => failure);
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(of: find.byKey(const ValueKey('connect-key')), matching: find.byType(EditableText)),
-      'test-key',
-    );
-    for (final pair in [
-      (ResearchFailureKind.invalidRequest, '请检查模型名称和服务地址；远程服务需使用 HTTPS'),
-      (ResearchFailureKind.unsafeUrl, '请检查模型名称和服务地址；远程服务需使用 HTTPS'),
-      (ResearchFailureKind.timeout, '连接超时，请检查网络后重试'),
-      (ResearchFailureKind.rateLimited, '请求过多，请稍后重试'),
-      (ResearchFailureKind.unavailable, '连不上服务'),
-    ]) {
-      failure = pair.$1;
-      await tester.tap(find.byKey(const ValueKey('connect-button')));
-      await tester.pumpAndSettle();
-      expect(find.text(pair.$2), findsOneWidget);
-      expect(app.secrets.values, isEmpty);
-      expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
-    }
-  });
-
   testWidgets('failure states name the reason and the next step', (tester) async {
     final app = await openAssistantApp(tester);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
@@ -396,8 +338,8 @@ void main() {
     expect(find.text('API Key 无效'), findsOneWidget);
     await tester.tap(find.text('打开设置'));
     await tester.pumpAndSettle();
-    expect(find.text('助手设置'), findsOneWidget);
-    await tester.tap(find.text('取消'));
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
     app.secrets.values['anthropic'] = 'k';
     await _type(tester, '再问一次');
@@ -483,99 +425,6 @@ void main() {
     expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
   });
 
-  testWidgets('Ollama connects without a key and settings retain the local model and SearXNG', (tester) async {
-    AssistantModel? checked;
-    final app = await openAssistantApp(
-      tester,
-      key: false,
-      connect: (model, key) async {
-        expect(key, isEmpty);
-        checked = model;
-        return null;
-      },
-    );
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(of: find.byKey(const ValueKey('connect-key')), matching: find.byType(EditableText)),
-      'unused-cloud-key',
-    );
-    await tester.tap(find.byKey(const ValueKey('connect-ollama')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('connect-key')), findsNothing);
-    final model = find.descendant(of: find.byKey(const ValueKey('connect-model')), matching: find.byType(EditableText));
-    await tester.enterText(model, 'llama3.2');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await pumpFor(tester, 20);
-    expect(checked!.provider, AssistantProvider.ollama);
-    expect(checked!.localEnabled, true);
-    expect(checked!.endpoint, 'http://localhost:11434/v1/chat/completions');
-    expect(app.secrets.values, isEmpty);
-    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
-    await tester.pumpAndSettle();
-    expect(find.text('API Key'), findsNothing);
-    final searx = find.descendant(
-      of: find.byKey(const ValueKey('settings-searxng')),
-      matching: find.byType(EditableText),
-    );
-    for (final invalid in ['localhost:8080/search', 'file:///search', 'http://user:pass@localhost', 'http://[::1']) {
-      await tester.enterText(searx, invalid);
-      await tester.pumpAndSettle();
-      final error = find.text('请输入有效的 HTTP 或 HTTPS 端点');
-      expect(error, findsOneWidget);
-      expect(tester.getTopLeft(error).dy, greaterThan(tester.getBottomLeft(searx).dy));
-      final save = tester.widget<MMButton>(find.byKey(const ValueKey('assistant-settings-save')));
-      expect(save.onPressed, isNull);
-      expect(app.container.read(assistantSettingsProvider).searxngEndpoint, isEmpty);
-    }
-    await tester.enterText(searx, '');
-    await tester.pumpAndSettle();
-    expect(find.text('请输入有效的 HTTP 或 HTTPS 端点'), findsNothing);
-    await tester.enterText(searx, 'http://192.168.1.42:8080/search');
-    await tester.pumpAndSettle();
-    expect(find.text('请输入有效的 HTTP 或 HTTPS 端点'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('settings-local-enabled')));
-    await tester.tap(find.byKey(const ValueKey('assistant-settings-save')));
-    await tester.pumpAndSettle();
-    final settings = app.container.read(assistantSettingsProvider);
-    expect(settings.localEnabled, true);
-    expect(settings.searxngEndpoint, 'http://192.168.1.42:8080/search');
-    expect(settings.model, 'llama3.2');
-  });
-
-  testWidgets('settings sheet switches the service and the conversation follows', (tester) async {
-    final app = await openAssistantApp(tester, prefs: {'assistant.model.claude': 'claude-opus-5-5'});
-    app.secrets.values['openai'] = 'k';
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('OpenAI'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(of: find.byKey(const ValueKey('settings-model')), matching: find.byType(EditableText)),
-      'gpt-test',
-    );
-    await tester.tap(find.byKey(const ValueKey('assistant-settings-save')));
-    await tester.pumpAndSettle();
-    expect(conversationOf(tester).model.provider, AssistantProvider.responses);
-    expect(conversationOf(tester).model.model, 'gpt-test');
-    // The model menu lists both services and switches back.
-    await tester.tap(find.byKey(const ValueKey('assistant-model')));
-    await tester.pumpAndSettle();
-    expect(find.text('claude-opus-5-5'), findsOneWidget);
-    await tester.tap(find.text('claude-opus-5-5'));
-    await tester.pumpAndSettle();
-    expect(conversationOf(tester).model.provider, AssistantProvider.claude);
-    await tester.tap(find.byKey(const ValueKey('assistant-online')));
-    await tester.pumpAndSettle();
-    expect(conversationOf(tester).online, isFalse);
-    expect(find.text('不联网'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 3));
-  });
-
   testWidgets('narrow window and dark appearance keep the panel usable', (tester) async {
     final app = await openAssistantApp(tester, size: const Size(1000, 700), prefs: {'settings.appearance': 'dark'});
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
@@ -623,7 +472,9 @@ void main() {
     final app = await openAssistantApp(tester, archive: archive);
     await tester.tap(find.byKey(const ValueKey('sidebar-conversation-web-1')));
     await pumpFor(tester, 20);
-    expect(find.textContaining('已联网'), findsOneWidget);
+    // The process: worked for a while, one tool call failed.
+    expect(find.textContaining('处理了'), findsOneWidget);
+    expect(find.text(' · 工具调用失败 1 次'), findsOneWidget);
     expect(find.text('未联网'), findsNothing);
     expect(find.text('快照标题'), findsOneWidget);
     // The link opens in the browser.
@@ -689,7 +540,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('sidebar-conversation-errors-1')));
     await pumpFor(tester, 20);
-    for (final reason in ['网络不可用', '服务不可用', '超出本次上限', '模型拒绝回答', '请求失败']) {
+    for (final reason in ['网络不可用', '服务暂时不可用', '超出本次上限', '模型拒绝回答', '请求失败']) {
       expect(find.text(reason), findsOneWidget, reason: reason);
     }
     expect(find.text('改用本机模型'), findsOneWidget);

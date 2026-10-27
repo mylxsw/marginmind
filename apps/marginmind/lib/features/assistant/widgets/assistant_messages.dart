@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
-import 'package:mm_assistant/mm_assistant.dart' show PolicyHook;
+import 'package:mm_assistant/mm_assistant.dart' show PolicyHook, AssistantModel, AssistantProvider;
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
@@ -13,8 +13,10 @@ import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
-import '../assistant_settings.dart';
+import '../../../settings/settings_window.dart';
+import '../assistant_services.dart';
 import 'assistant_markdown.dart';
+import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
 import 'assistant_proposal.dart';
 
@@ -296,7 +298,8 @@ class AgentMessage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (m.traces.isNotEmpty) TraceBar(key: ValueKey('trace-${m.id}'), message: m),
+        if (m.traces.isNotEmpty || (running && m.text.isEmpty) || (m.startedAt != null && m.endedAt != null))
+          ActivityTimeline(key: ValueKey('trace-${m.id}'), message: m),
         if (notOnline)
           Padding(
             padding: const EdgeInsets.only(bottom: MMSpacing.xs),
@@ -312,6 +315,7 @@ class AgentMessage extends ConsumerWidget {
           text: m.text,
           citations: m.citations,
           cursor: running,
+          conclusion: skill == AssistantSkill.verify,
           tooltipFor: tooltip,
           onLink: (url) => ref.read(assistantLinksProvider).open(url),
           onCitation: (x) => x.external
@@ -327,7 +331,8 @@ class AgentMessage extends ConsumerWidget {
   }
 }
 
-/// Text and icon for a tool call in the step list.
+/// The name of a tool call in the process: what it did, in words; an
+/// unknown tool by its own name.
 String stepLabel(AppLocalizations l, String tool) => switch (PolicyHook.normalizeName(tool)) {
   'read_selection' => l.assistantToolReadSelection,
   'read_pages' => l.assistantToolReadPages,
@@ -341,18 +346,28 @@ String stepLabel(AppLocalizations l, String tool) => switch (PolicyHook.normaliz
   _ => tool,
 };
 
-/// The steps an answer took: open while it is being written, then folded
-/// into one line that opens on click.
-class TraceBar extends StatefulWidget {
-  const TraceBar({super.key, required this.message});
+IconData stepIcon(String tool) => switch (PolicyHook.normalizeName(tool)) {
+  'read_selection' => MMIcons.highlight,
+  'read_pages' || 'search_study_set' => MMIcons.document,
+  'read_branch' || 'propose_map_edits' => MMIcons.mindMap,
+  'web_search' || 'fetch_source' => MMIcons.web,
+  'search_papers' => MMIcons.paper,
+  _ => MMIcons.ai,
+};
+
+/// How an answer was worked out: what the model said between its steps and
+/// what it did, in turn. Open while it is written (the current step
+/// shimmers); then one line, “Worked for N s”, that opens on click.
+class ActivityTimeline extends StatefulWidget {
+  const ActivityTimeline({super.key, required this.message});
 
   final Message message;
 
   @override
-  State<TraceBar> createState() => _TraceBarState();
+  State<ActivityTimeline> createState() => _ActivityTimelineState();
 }
 
-class _TraceBarState extends State<TraceBar> {
+class _ActivityTimelineState extends State<ActivityTimeline> {
   bool _open = false;
 
   @override
@@ -362,86 +377,189 @@ class _TraceBarState extends State<TraceBar> {
     final l = context.l10n;
     final m = widget.message;
     final running = m.status == MessageStatus.running;
-    final open = running || _open;
-    final current = m.traces.lastWhere((s) => s.status == TraceStatus.running, orElse: () => m.traces.last);
-    final style = t.callout.copyWith(fontWeight: FontWeight.w400, color: c.secondaryLabel);
+    final steps = m.activity;
+    final failures = steps
+        .where((s) => s.narration == null && s.status == TraceStatus.error)
+        .fold(0, (n, s) => n + s.count);
+    final expandable = steps.isNotEmpty;
+    final open = expandable && (running || _open);
+    final style = t.callout.copyWith(fontWeight: FontWeight.w400);
+    final current = steps.lastOrNull;
     final title = running
-        ? (current.narration ?? stepLabel(l, current.toolName))
-        : '${l.assistantSteps(m.traces.length)} · ${m.online ? l.assistantStepsOnline : l.assistantStepsOffline}';
-    Widget spinner(double size) => SizedBox(
-      width: size,
-      height: size,
-      child: CupertinoActivityIndicator(radius: size / 2, color: c.research),
-    );
-    return Container(
-      margin: const EdgeInsets.only(bottom: MMSpacing.s),
-      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(10)),
+        ? (current == null
+              ? l.assistantThinking
+              : current.narration ?? stepLabel(l, current.toolName))
+        : l.assistantWorkedFor(m.elapsedSeconds < 1 ? 1 : m.elapsedSeconds);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MMSpacing.s),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           MMInteractive(
-            onTap: running ? null : () => setState(() => _open = !_open),
-            enabled: true,
+            key: ValueKey('timeline-${m.id}'),
+            onTap: running || !expandable ? null : () => setState(() => _open = !_open),
             semanticLabel: title,
-            semanticValue: running ? null : (open ? '▾' : '▸'),
-            builder: (context, s) => Container(
-              height: 28,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
+            semanticValue: running || !expandable ? null : (open ? '▾' : '▸'),
+            builder: (context, s) {
+              final fg = s.hovered ? c.label : c.secondaryLabel;
+              return Row(
                 children: [
-                  if (running) spinner(12) else Icon(MMIcons.check, size: 12, color: c.secondaryLabel),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
+                  Flexible(
+                    child: running
+                        ? Shimmer(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: style.copyWith(color: c.secondaryLabel),
+                            ),
+                          )
+                        : Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: style.copyWith(color: fg)),
                   ),
-                  if (!running) Icon(open ? MMIcons.chevronUp : MMIcons.chevronDown, size: 12, color: c.icon),
+                  if (failures > 0)
+                    Text(
+                      ' · ${l.assistantToolFailures(failures)}',
+                      key: const ValueKey('timeline-failures'),
+                      style: style.copyWith(color: c.caution),
+                    ),
+                  if (!running && expandable) ...[
+                    const SizedBox(width: 2),
+                    Icon(open ? MMIcons.chevronDown : MMIcons.chevronRight, size: 11, color: fg),
+                  ],
                 ],
-              ),
-            ),
+              );
+            },
           ),
           AnimatedSize(
             duration: MMAppearance.duration(context, MMMotion.standard),
             curve: MMMotion.standardCurve,
             alignment: Alignment.topCenter,
             child: open
-                ? Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+                ? Container(
+                    margin: const EdgeInsets.only(top: 6, left: 3),
+                    padding: const EdgeInsets.only(left: MMSpacing.m),
+                    decoration: BoxDecoration(
+                      border: Border(left: BorderSide(color: c.separator)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (final step in m.activity)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 14,
-                                  child: switch (step.status) {
-                                    TraceStatus.running => spinner(10),
-                                    TraceStatus.done => Icon(MMIcons.check, size: 11, color: c.secondaryLabel),
-                                    TraceStatus.error => Icon(MMIcons.close, size: 11, color: c.critical),
-                                  },
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    step.narration ??
-                                        '${stepLabel(l, step.toolName)}${step.count > 1 ? ' ×${step.count}' : ''}${step.reason == null ? '' : '\n${step.reason}'}',
-                                    style: style.copyWith(
-                                      color: step.status == TraceStatus.running ? c.research : c.secondaryLabel,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                      children: [for (final step in steps) _TimelineRow(step: step)],
                     ),
                   )
                 : const SizedBox(width: double.infinity),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({required this.step});
+
+  final TraceStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final t = context.mmText;
+    final l = context.l10n;
+    if (step.narration case final words?) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Text(words, style: t.callout.copyWith(fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.65, color: c.label)),
+      );
+    }
+    final failed = step.status == TraceStatus.error;
+    final label = '${stepLabel(l, step.toolName)}${step.count > 1 ? ' ×${step.count}' : ''}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: SizedBox(
+              width: 14,
+              child: switch (step.status) {
+                TraceStatus.running => CupertinoActivityIndicator(radius: 5, color: c.research),
+                TraceStatus.done => Icon(stepIcon(step.toolName), size: 13, color: c.secondaryLabel),
+                TraceStatus.error => Icon(MMIcons.close, size: 12, color: c.critical),
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: t.callout.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: failed ? c.critical : c.secondaryLabel,
+                  ),
+                ),
+                if (failed && step.reason != null)
+                  Text(step.reason!, style: t.mono.copyWith(fontSize: 10.5, color: c.secondaryLabel)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A light sweeping across [child] while work is under way; still when
+/// motion is reduced.
+class Shimmer extends StatefulWidget {
+  const Shimmer({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
+  late final _sweep = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MMAppearance.reduceMotionOf(context)) {
+      _sweep.stop();
+    } else if (!_sweep.isAnimating) {
+      _sweep.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sweep.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_sweep.isAnimating) return widget.child;
+    final light = context.mmColors.label;
+    return AnimatedBuilder(
+      animation: _sweep,
+      builder: (context, child) => ShaderMask(
+        blendMode: BlendMode.srcATop,
+        shaderCallback: (rect) {
+          final x = -1.0 + 3 * _sweep.value;
+          return LinearGradient(
+            begin: Alignment(x - .6, 0),
+            end: Alignment(x + .6, 0),
+            colors: [Colors.transparent, light.withValues(alpha: .9), Colors.transparent],
+          ).createShader(rect);
+        },
+        child: child,
+      ),
+      child: widget.child,
     );
   }
 }
@@ -558,6 +676,8 @@ class _Tail extends ConsumerWidget {
       );
     }
     if (m.status == MessageStatus.done || m.status == MessageStatus.stopped) {
+      // An answer that already is (or proposes) map edits needs no second pass.
+      final organizes = m.text.isNotEmpty && m.proposals.isEmpty && question.skill != AssistantSkill.organize.name;
       return Padding(
         padding: const EdgeInsets.only(top: MMSpacing.xxs),
         child: Row(
@@ -592,17 +712,35 @@ class _Tail extends ConsumerWidget {
                 ),
               ],
             copy,
+            if (organizes)
+              _ActionButton(
+                key: ValueKey('assistant-organize-${m.id}'),
+                icon: MMIcons.organize,
+                tooltip: l.assistantSkillOrganize,
+                onPressed: controller.busy
+                    ? null
+                    : () => unawaited(
+                        controller
+                            .send(
+                              AssistantSkill.organize.prompt(l),
+                              contexts: question.contexts,
+                              skill: AssistantSkill.organize.name,
+                            )
+                            .catchError((Object _) {}),
+                      ),
+              ),
             regenerate,
           ],
         ),
       );
     }
     final kind = m.errorKind;
+    final primary = c.research;
     final (String reason, bool caution, List<Widget> actions) = switch (m.status) {
       MessageStatus.interrupted => (
         l.assistantInterrupted,
         true,
-        [_ActionButton(label: l.assistantContinue, color: c.research, onPressed: retry)],
+        [_ActionButton(label: l.assistantContinue, color: primary, onPressed: retry)],
       ),
       _ => switch (kind) {
         ResearchFailureKind.authentication => (
@@ -610,35 +748,56 @@ class _Tail extends ConsumerWidget {
           false,
           [
             _ActionButton(
+              key: const ValueKey('assistant-open-settings'),
               label: l.assistantOpenSettings,
-              color: c.research,
-              onPressed: () => showAssistantSettings(context, ref),
+              color: primary,
+              onPressed: () => showSettings(context, tab: SettingsTab.models),
             ),
           ],
         ),
         ResearchFailureKind.rateLimited || ResearchFailureKind.unavailable => (
           l.assistantErrorService,
           false,
-          [_ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry)],
+          [_ActionButton(label: l.assistantRetry, color: primary, onPressed: retry)],
         ),
         ResearchFailureKind.timeout || ResearchFailureKind.budget => (
           l.assistantErrorBudget,
           true,
-          [_ActionButton(label: l.assistantContinue, color: c.research, onPressed: retry)],
+          [_ActionButton(label: l.assistantContinue, color: primary, onPressed: retry)],
         ),
         ResearchFailureKind.toolProtocol || ResearchFailureKind.loop => (
           l.assistantErrorToolProtocol,
           true,
-          [_ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry)],
+          [
+            _ActionButton(
+              key: ValueKey('assistant-no-tools-${m.id}'),
+              label: l.assistantAnswerWithoutTools,
+              color: primary,
+              onPressed: () => unawaited(controller.retry(m.id, tools: false).catchError((Object _) {})),
+            ),
+            Builder(
+              builder: (button) => _ActionButton(
+                key: ValueKey('assistant-switch-model-${m.id}'),
+                label: l.assistantSwitchModel,
+                onPressed: () => showModelMenu(button, ref, boundsOf(button)),
+              ),
+            ),
+            _ActionButton(
+              key: ValueKey('assistant-copy-diagnostics-${m.id}'),
+              label: l.assistantCopyDiagnostics,
+              onPressed: () => _copyDiagnostics(context, ref, m),
+            ),
+          ],
         ),
         ResearchFailureKind.refusal => (l.assistantErrorRefused, true, [regenerate]),
         ResearchFailureKind.network => (
           l.assistantErrorNetwork,
           false,
           [
-            _ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry),
+            _ActionButton(label: l.assistantRetry, color: primary, onPressed: retry),
             if (_localModel(ref) case final local?)
               _ActionButton(
+                key: ValueKey('assistant-use-local-${m.id}'),
                 label: l.assistantUseLocal,
                 onPressed: () async {
                   await controller.switchModel(local);
@@ -651,17 +810,102 @@ class _Tail extends ConsumerWidget {
         _ => (
           l.assistantErrorFailed,
           false,
-          [_ActionButton(label: l.assistantRetry, color: c.research, onPressed: retry)],
+          [_ActionButton(label: l.assistantRetry, color: primary, onPressed: retry)],
         ),
       },
     };
-    final tint = caution ? c.caution : c.critical;
-    return Container(
+    return _StatusBlock(
       key: ValueKey('assistant-status-${m.id}'),
+      message: m,
+      reason: reason,
+      caution: caution,
+      actions: actions,
+      details: m.status == MessageStatus.error ? diagnosticRows(l, ref, m) : const [],
+      onCopy: () => _copyDiagnostics(context, ref, m),
+    );
+  }
+
+  static void _copyDiagnostics(BuildContext context, WidgetRef ref, Message m) {
+    final l = context.l10n;
+    unawaited(Clipboard.setData(ClipboardData(text: diagnosticText(diagnosticRows(l, ref, m)))));
+    MMHud.show(context, l.copiedHud);
+  }
+
+  static AssistantModel? _localModel(WidgetRef ref) => ref
+      .read(assistantServicesProvider)
+      .value
+      ?.enabledModels
+      .where((m) => m.provider == AssistantProvider.ollama && m.localEnabled)
+      .firstOrNull;
+}
+
+/// The facts of a failed answer, for details and bug reports: model and
+/// service, host, HTTP status, failed tools, why it stopped, request ID.
+/// Never the key, the question, the source text or a provider's message.
+List<(String, String)> diagnosticRows(AppLocalizations l, WidgetRef ref, Message m) {
+  final d = m.diagnostics;
+  if (d == null) return const [];
+  final service = ref
+      .read(assistantServicesProvider)
+      .value
+      ?.services
+      .where((s) => Uri.tryParse(s.endpoint)?.host == d.host)
+      .firstOrNull;
+  final failed = <String, int>{};
+  for (final tool in d.tools) {
+    if (tool.status == TraceStatus.error) failed[tool.toolName] = (failed[tool.toolName] ?? 0) + tool.count;
+  }
+  return [
+    (l.assistantDiagnosticModel, [d.model, ?service?.name].join(' · ')),
+    if (d.host.isNotEmpty) (l.assistantDiagnosticHost, d.host),
+    if (d.httpStatus != null) (l.assistantDiagnosticStatus, '${d.httpStatus}'),
+    if (failed.isNotEmpty)
+      (l.assistantDiagnosticTools, [for (final e in failed.entries) '${e.key} ×${e.value}'].join(', ')),
+    if (d.failure ?? m.errorKind?.name case final why?) (l.assistantDiagnosticReason, why),
+    (l.assistantDiagnosticRequest, d.requestId),
+  ];
+}
+
+String diagnosticText(List<(String, String)> rows) => [for (final (k, v) in rows) '$k: $v'].join('\n');
+
+/// The block an answer ends with when it failed: the reason in bold, its
+/// details on request, and what can be done next.
+class _StatusBlock extends StatefulWidget {
+  const _StatusBlock({
+    super.key,
+    required this.message,
+    required this.reason,
+    required this.caution,
+    required this.actions,
+    required this.details,
+    required this.onCopy,
+  });
+
+  final Message message;
+  final String reason;
+  final bool caution;
+  final List<Widget> actions;
+  final List<(String, String)> details;
+  final VoidCallback onCopy;
+
+  @override
+  State<_StatusBlock> createState() => _StatusBlockState();
+}
+
+class _StatusBlockState extends State<_StatusBlock> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final t = context.mmText;
+    final l = context.l10n;
+    final tint = widget.caution ? c.caution : c.critical;
+    return Container(
       margin: const EdgeInsets.only(top: MMSpacing.xs),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: tint.withValues(alpha: caution ? .10 : .08),
+        color: tint.withValues(alpha: widget.caution ? .10 : .08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -673,24 +917,70 @@ class _Tail extends ConsumerWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  reason,
+                  widget.reason,
                   style: t.callout.copyWith(fontWeight: FontWeight.w600, color: c.label),
                 ),
               ),
+              if (widget.details.isNotEmpty)
+                MMInteractive(
+                  key: ValueKey('assistant-details-${widget.message.id}'),
+                  onTap: () => setState(() => _open = !_open),
+                  semanticLabel: l.assistantDetails,
+                  semanticValue: _open ? '▾' : '▸',
+                  builder: (context, s) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(l.assistantDetails, style: t.footnote.copyWith(color: s.hovered ? c.label : c.secondaryLabel)),
+                      const SizedBox(width: 2),
+                      Icon(_open ? MMIcons.chevronDown : MMIcons.chevronRight, size: 10, color: c.secondaryLabel),
+                    ],
+                  ),
+                ),
             ],
           ),
+          if (_open && widget.details.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Table(
+                    key: const ValueKey('assistant-details-table'),
+                    columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+                    children: [
+                      for (final (k, v) in widget.details)
+                        TableRow(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: MMSpacing.m, bottom: 2),
+                              child: Text(k, style: t.footnote.copyWith(color: c.secondaryLabel)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(v, style: t.mono.copyWith(fontSize: 11, color: c.label)),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _ActionButton(
+                      key: ValueKey('assistant-copy-details-${widget.message.id}'),
+                      icon: MMIcons.copy,
+                      label: l.assistantCopyDiagnostics,
+                      onPressed: widget.onCopy,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 6),
-          Wrap(spacing: 2, children: actions),
+          Wrap(spacing: 2, children: widget.actions),
         ],
       ),
     );
   }
-
-  static AssistantModel? _localModel(WidgetRef ref) => ref
-      .read(assistantSettingsProvider.notifier)
-      .models()
-      .where((m) => m.provider == AssistantProvider.ollama && m.localEnabled && m.model.trim().isNotEmpty)
-      .firstOrNull;
 }
 
 /// A 26pt button of an answer's action row.

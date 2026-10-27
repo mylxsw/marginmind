@@ -15,7 +15,7 @@ import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
-import '../settings/settings_sheet.dart';
+import '../settings/settings_window.dart';
 import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
 import 'navigation.dart';
@@ -334,7 +334,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                 null,
           ),
         );
-    final settings = AppCommand(l.settings, () => showSettingsSheet(context), shortcut: AppShortcuts.settings);
+    final settings = AppCommand(l.settings, () => showSettings(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
       AppCommand(

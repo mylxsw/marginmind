@@ -1300,7 +1300,7 @@
       }
     }
   },
-  "assistantPageContext": "{document} · p. {page}",
+  "assistantPageContext": "p. {page} · {document}",
   "@assistantPageContext": {
     "placeholders": {
       "document": {
@@ -1422,5 +1422,107 @@
   "assistantAnchorGone": "The original place was deleted",
   "assistantOpenConversation": "Open Conversation",
   "assistantAskMore": "Ask More",
-  "assistantSearxngInvalid": "Enter a valid HTTP or HTTPS endpoint"
+  "assistantSearxngInvalid": "Enter a valid HTTP or HTTPS endpoint",
+  "settingsGeneral": "General",
+  "settingsReading": "Reading",
+  "settingsModels": "Models",
+  "settingsWebSearch": "Web Search",
+  "settingsDefaultModel": "Default Model",
+  "settingsServices": "Services",
+  "settingsServiceModels": "{count, plural, =1{1 model on} other{{count} models on}}",
+  "@settingsServiceModels": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsServiceNoModels": "No models yet",
+  "settingsServiceOff": "Off",
+  "settingsName": "Name",
+  "settingsAddress": "Address",
+  "settingsShowKey": "Show",
+  "settingsHideKey": "Hide",
+  "settingsSetDefault": "Make Default",
+  "settingsIsDefault": "Default",
+  "settingsRemoveModel": "Remove",
+  "settingsAddModel": "Add Models…",
+  "settingsCustomAddress": "Use Custom Address",
+  "settingsRemoveService": "Remove Service",
+  "settingsRemoveServiceTitle": "Remove “{name}”?",
+  "@settingsRemoveServiceTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsRemoveServiceMessage": "Its API key is deleted too. Conversations stay.",
+  "settingsAddService": "Add Service",
+  "settingsAddModelTitle": "Add Models",
+  "settingsSearchModels": "Search, or enter a model ID",
+  "settingsAdded": "Added",
+  "settingsAddManual": "Add “{id}”",
+  "@settingsAddManual": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAdd": "Add",
+  "settingsAddCount": "Add {count}",
+  "@settingsAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsOpenAiCompatible": "OpenAI Compatible",
+  "settingsOllamaLocal": "Ollama (Local)",
+  "settingsSearchService": "Search Service",
+  "settingsSearchModel": "Model’s Own Search",
+  "settingsAccountId": "Account ID",
+  "settingsTokenInvalid": "Invalid API token",
+  "settingsSearchUnreachable": "Cannot reach the search service",
+  "settingsNoBuiltinSearch": "{model} can’t search the web. Choose another search service to answer online.",
+  "@settingsNoBuiltinSearch": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "assistantManageModels": "Manage Models…",
+  "assistantModel": "Model",
+  "assistantNoOllama": "Ollama isn’t running on this Mac",
+  "assistantNoModels": "The service lists no chat models",
+  "assistantThinking": "Thinking…",
+  "assistantWorkedFor": "Worked for {seconds} s",
+  "@assistantWorkedFor": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantToolFailures": "{count, plural, =1{1 tool call failed} other{{count} tool calls failed}}",
+  "@assistantToolFailures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantAnswerWithoutTools": "Answer Without Tools",
+  "assistantSwitchModel": "Switch Model",
+  "assistantCopyDiagnostics": "Copy Diagnostics",
+  "assistantDetails": "Details",
+  "assistantDiagnosticModel": "Model",
+  "assistantDiagnosticHost": "Host",
+  "assistantDiagnosticStatus": "HTTP status",
+  "assistantDiagnosticTools": "Failed tools",
+  "assistantDiagnosticReason": "Stopped because",
+  "assistantDiagnosticRequest": "Request ID"
 }

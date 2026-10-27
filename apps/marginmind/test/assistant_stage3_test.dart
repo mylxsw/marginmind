@@ -161,17 +161,24 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('the settings sheet has only what is needed', (tester) async {
+  testWidgets('settings have only what is needed (2.16 “not in settings”)', (tester) async {
     final app = await openAssistantApp(tester);
     app.workspace.openPanel(RightPanel.assistant);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('助手设置'));
+    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
     await tester.pumpAndSettle();
-    expect(find.text('助手设置'), findsWidgets);
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
     expect(find.text('API Key'), findsOneWidget);
-    // No placeholder repeating the label, no switch that cannot be turned off.
-    expect(find.text('粘贴 API Key'), findsNothing);
-    expect(find.text('改动脑图前先预览'), findsNothing);
-    expect(find.text('联网'), findsWidgets);
+    // Checked automatically; no protocol switch, capabilities or per-task models.
+    for (final absent in ['检查连接', '已连接', '协议', '上下文长度', '工具调用', '翻译模型', '默认联网', '改动脑图前先预览']) {
+      expect(find.text(absent), findsNothing, reason: absent);
+    }
+    await tester.tap(find.byKey(const ValueKey('settings-tab-webSearch')));
+    await tester.pumpAndSettle();
+    for (final absent in ['搜索次数上限', '内网拦截', '默认联网']) {
+      expect(find.text(absent), findsNothing, reason: absent);
+    }
   });
 }

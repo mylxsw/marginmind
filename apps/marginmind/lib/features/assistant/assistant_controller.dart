@@ -38,9 +38,16 @@ class AssistantDependencies {
     required this.notes,
     this.online = true,
     this.generateTitle,
+    this.defaultModel,
   });
   final String studySetId;
+
+  /// The model when [defaultModel] has none (nothing set up yet).
   final AssistantModel model;
+
+  /// The current default model of new conversations, read when one opens.
+  final AssistantModel? Function()? defaultModel;
+  AssistantModel get initialModel => defaultModel?.call() ?? model;
   final sdk.StateStorage storage;
   final AssistantRunFactory runFactory;
   final MapEditExecutor executor;
@@ -111,7 +118,7 @@ class AssistantController extends Notifier<Conversation> {
     });
     _open = _Session(
       agent,
-      Conversation(id: agent.sessionId, studySetId: _deps.studySetId, model: _deps.model, online: _deps.online),
+      Conversation(id: agent.sessionId, studySetId: _deps.studySetId, model: _deps.initialModel, online: _deps.online),
     );
     return _open.view;
   }
@@ -161,6 +168,7 @@ class AssistantController extends Notifier<Conversation> {
     List<ContextItem> contexts = const [],
     String? skill,
     (Message, Message)? replacing,
+    bool tools = true,
   }) {
     final session = _open;
     if (session.view.readOnly) throw StateError('Legacy conversation is read only');
@@ -203,7 +211,7 @@ class AssistantController extends Notifier<Conversation> {
     );
     final epoch = ++session.epoch;
     _busy = session;
-    final future = _send(session, question, answer.id, epoch);
+    final future = _send(session, question, answer.id, epoch, tools: tools);
     session.running = future;
     return future.whenComplete(() {
       if (identical(session.running, future)) session.running = null;
@@ -214,7 +222,7 @@ class AssistantController extends Notifier<Conversation> {
     });
   }
 
-  Future<void> _send(_Session session, Message question, String answerId, int epoch) async {
+  Future<void> _send(_Session session, Message question, String answerId, int epoch, {bool tools = true}) async {
     bool active() => !_disposed && epoch == session.epoch;
     var segmentStart = 0;
     var fallbackRecorded = false;
@@ -232,7 +240,12 @@ class AssistantController extends Notifier<Conversation> {
     try {
       await _persist(session); // Do not contact provider if question cannot be saved.
       if (!active()) return;
-      final run = await _deps.runFactory(session.agent, session.view, question);
+      final view = session.view;
+      final run = await _deps.runFactory(
+        session.agent,
+        tools ? view : view.copyWith(model: _withoutTools(view.model)),
+        question,
+      );
       if (!active()) {
         run.stop();
         return;
@@ -419,12 +432,28 @@ class AssistantController extends Notifier<Conversation> {
     await _persist(session);
   }
 
+  static AssistantModel _withoutTools(AssistantModel m) => AssistantModel(
+    provider: m.provider,
+    model: m.model,
+    endpoint: m.endpoint,
+    localEnabled: m.localEnabled,
+    serviceId: m.serviceId,
+    supportsTools: false,
+  );
+
   /// Asks the question of [messageId] again; the new answer replaces it.
-  Future<void> retry(String messageId) async {
+  /// Without [tools] the model answers from the attached context only.
+  Future<void> retry(String messageId, {bool tools = true}) async {
     final old = _message(messageId);
     if (old.role != MessageRole.agent) throw StateError('Not an answer');
     final question = _open.view.messages.firstWhere((m) => m.requestId == old.requestId && m.role == MessageRole.user);
-    await _start(question.text, contexts: question.contexts, skill: question.skill, replacing: (question, old));
+    await _start(
+      question.text,
+      contexts: question.contexts,
+      skill: question.skill,
+      replacing: (question, old),
+      tools: tools,
+    );
   }
 
   /// Opens an empty conversation. An answer being written goes on out of view.
@@ -438,7 +467,7 @@ class AssistantController extends Notifier<Conversation> {
         Conversation(
           id: agent.sessionId,
           studySetId: _deps.studySetId,
-          model: previous.readOnly ? _deps.model : previous.model,
+          model: _deps.defaultModel?.call() ?? (previous.readOnly ? _deps.model : previous.model),
           online: previous.readOnly ? _deps.online : previous.online,
         ),
       ),

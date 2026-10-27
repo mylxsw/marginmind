@@ -228,9 +228,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     MMToolbarButton(
                       key: const ValueKey('selection-assistant'),
                       icon: MMIcons.ai,
-                      label: l.askAssistant,
                       tint: c.research,
-                      tooltip: '${l.askAssistant}（${describeShortcut(AppShortcuts.askAssistant)}）',
+                      tooltip: '${l.askAssistant}（A · ${describeShortcut(AppShortcuts.askAssistant)}）',
                       onPressed: () => _run(ReaderSelectionCommand.assistant),
                     ),
                   ],
