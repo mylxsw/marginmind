@@ -27,6 +27,7 @@ AssistantModel assistantTitleModel(AssistantModel current, List<AssistantModel> 
     available
         .where(
           (m) =>
+              m.serviceId == current.serviceId &&
               m.provider == current.provider &&
               m.endpoint == current.endpoint &&
               RegExp(r'haiku|mini|flash|small', caseSensitive: false).hasMatch(m.model),

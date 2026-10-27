@@ -39,3 +39,13 @@ page 标记绑定本轮主文档；其他文档为本地 source。只接受本�
 实际可达探针相对基线 .app 增加 6,364,200 字节（4.73%），App.framework 增加 951,093 字节（2.08%）；相对依赖组 AOT 增加 918,400 字节。当前增量可接受，保留上游固定版本，不引入 third_party 裁剪维护成本。不能把第二组的 tree shaking 结果当作完整接入成本。
 
 真实账号联调未执行；确定性录制来自假客户端。框架录制器不支持 stream 录制，因此 record/replay 用 generate 模式，流式路径另测。继承 ADR 0001 的远端计费、TLS 握手取消限制。完整命令和覆盖率在 PR 与交付评论记录。
+
+## GUL-535：多服务、模型发现与搜索后端
+
+模型配置按稳定 serviceId 隔离钥匙串凭据；搜索选择与凭据独立于模型。新增协议操作仍使用 UrlPolicy 的 IP 固定、TLS 主机校验、禁代理和有界传输，不将服务授权传给网页抓取。每个列表/探测操作构造精确 endpoint；分页只接受游标值，不接受供应商提供的下一页 URL。Ollama 仍仅显式授权 loopback，SearXNG 的内网例外仅限配置 origin。带凭据的 GET 同样禁止重定向，敏感头名单包含 x-goog-api-key 和 x-subscription-token。
+
+Gemini 使用固定 SDK 的原生 GeminiClient，通过 Dio 将两个确切的 generateContent/streamGenerateContent 请求映射到用户配置的 HTTPS `/v1beta` 地址；模型 ID 限单路径段，额外路径拒绝。SDK 重试关闭、日志关闭，沿用有界字节数、期限和收到 429/5xx 后的有限重试。流式格式按 SDK 使用 JSON 数组，非 SSE。
+
+模型能力用三态持久化。探测成功表示接口接受工具 schema，不代表模型一定可靠调用；不支持仅由明确的能力字段或明确工具不支持错误确定。unknown 不禁止工具，保留运行时失败兜底。
+
+统一 web_search 现在允许独立选择模型自带、Cloudflare、SearXNG、Tavily、Brave；模型自带仅 Claude/Responses/Gemini 支持，其余明确不可用。替代上文旧的 compatible/Ollama 自动走 SearXNG 规则。模型生成正文、搜索供应商答案和摘要都不登记证据，证据边界仍为 fetch_source 的本地快照。三个新增搜索 API 的凭据只去各自固定官方 endpoint；Cloudflare accountId 禁路径分隔符，账户 ID 和 Token 均只存钥匙串。详见架构文档的迁移与 UI 接入契约。

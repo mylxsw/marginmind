@@ -142,3 +142,31 @@ metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessi
 界面完整的时间线视觉和详情/复制交互由第二轮消息 UI 任务消费上述数据；本任务为现有过程列表补上说明、计数与拒绝原因。
 
 录制回归使用确定性假模型及兼容接口响应样本（`coding/auto`），不代表真实服务账号联调。
+
+## 多服务与独立搜索设置（GUL-535）
+
+`mm_assistant/src/services.dart` 是新设置页的数据契约：`AssistantServices` 包含有序服务、模型和默认 `(serviceId, modelId)`；服务协议为 `openai / anthropic / gemini / ollama`。OpenAI 的 `responses` 标记保留旧 Responses 调用方式。服务 ID 创建后不可更换，协议不支持原地切换。集合不可变，重复 ID 拒绝；默认失效时按服务顺序、模型顺序选择首个启用项，没有则为空。Ollama 必须另有显式本机授权。
+
+应用层 `features/assistant/assistant_services.dart` 提供：
+
+- `assistantServicesProvider`（AsyncNotifier）：`upsert/remove/setEnabled/setDefault/saveKey`；模型编辑 `upsertModel/removeModel/setModelEnabled`；从列表或手动 ID 新增均使用 `addDiscoveredModel`，它先探测工具能力再保存。
+- `enabledAssistantModelsProvider`：按服务 ID 分组的已启用模型；显示名和服务名从 `AssistantServices` 获取。
+- `serviceCatalogProvider`：`list(service, key)`、`probe(service, model, key)`、`check(service, key)`；支持 CancellationToken。检查返回 `ok/authFailed/unreachable`，取消抛 cancelled；UI 负责 0.7 秒防抖、取消前一次及丢弃过时结果。
+- `webSearchSettingsProvider`：`configure` 和 `saveKey`；`checkWebSearch(webSearchProvider(...))` 检查当前选定后端。测试查询只发送固定关键词，不含文档内容。
+- `quickModelFor(service, current)`：仅在同服务已启用模型内选择已知小模型名称（haiku/mini/flash/small），否则使用当前模型。标题生成也校验服务 ID，不能跨同地址的两个账号借用模型。
+
+持久化键为 `assistant.services.v1` 和 `assistant.search.v1`，不含凭据。服务 Key 使用 `assistant.service.<id>`；搜索 Key 使用 `assistant.search.<backend>`，Cloudflare 账户 ID 单独使用 `assistant.search.cloudflare.account`。服务操作串行化，失败不阻塞后续操作。删除服务同时删除新 Key；迁移服务另清理其旧供应商 Key，其他服务只引用自己的独立 Key。Keychain 与 preferences 无跨存储事务：删除若中途失败，保留服务配置并向调用方报错，可重试，可能需要重新输入已删除的 Key。
+
+首次读取复制所有旧服务配置和 Key，包括未选中的服务；密钥复制成功后才提交版本化 JSON。失败不写完成标记，旧字段和旧 Key 不动，可重试。新配置存在时不再重迁移，因此删除服务不会被旧偏好恢复。旧对话不改写：缺少 serviceId 时按 `legacy-<provider>` 解析；发送及标题生成重新检查服务/模型启用状态。删除、停用或移除模型后旧内容仍可阅读，发送失败要求重新选择模型。
+
+旧 `AssistantSettingsController` 保留作为现有页面适配层，迁移后写入同步新服务数据；GUL-537 完成设置页和菜单接入后负责删除该适配层。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
+
+模型列表按协议使用 models/tags，Anthropic/Gemini 支持分页（最多 20 页并拒绝重复游标）。过滤明确非对话 ID 和能力字段；未知兼容模型保留，允许手动添加。工具能力 `unknown/supported/unsupported`：优先用能力字段，否则一次最小带工具请求；不执行返回的工具，不把鉴权、超时、限流和其他参数错误当作不支持。仅明确工具不支持的 400 错误记为 unsupported。unknown 在运行时按支持处理，由 GUL-536 的连续错误兜底。
+
+搜索后端独立选择 model/Cloudflare/SearXNG/Tavily/Brave。model 复用 Claude/Responses 搜索并增加 Gemini grounding URL 解析；不支持原生搜索的兼容服务明确 unavailable，无隐式回退。迁移时若旧 SearXNG 地址非空则选它，否则默认 model。该选择只迁移一次，后续不随模型切换。所有答案、原始网页内容和供应商引用均不作为证据；仅提取 URL、标题、摘要，后续由 fetch_source 抓取快照。
+
+API 依据：[Cloudflare](https://developers.cloudflare.com/web-search/how-to-use/)、[Tavily](https://docs.tavily.com/documentation/api-reference/endpoint/search)、[Brave](https://api-dashboard.search.brave.com/app/documentation/web-search/get-started)、[Gemini Models](https://ai.google.dev/api/models)、[Ollama](https://docs.ollama.com/api/tags)。Cloudflare Token 需 Workers AI 与 AI Gateway 读取权限，gateway 固定 default。未进行真实账号计费调用，验证使用 fake HTTP 与已有本机测试服务。
+
+列表操作的所有分页及 Ollama `/api/show` 能力查询共享一份 90 秒/2 MiB 预算，最多 1000 条候选；Ollama tags 未返回能力时通过 show 过滤非 completion 模型并取得 tools 能力。服务探测期间地址改变则拒绝保存过时结果。旧设置页暂不新增 Gemini 选项，以避免旧的四段控件溢出；新设置页直接使用四种 ServiceProtocol（包含 Gemini），不使用旧 connectableServices。
+
+翻译回合通过 `AssistantServicesStore.resolve(..., quick: true)` 选择同服务小模型；普通对话仍使用选中的模型，对话菜单中的选择不被翻译临时改写。缺省 Claude 模型的空字符串按旧设置规则恢复，避免迁移后原本可用的缺省配置变为空清单。

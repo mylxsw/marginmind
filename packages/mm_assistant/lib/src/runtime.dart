@@ -280,6 +280,7 @@ void suppressAssistantDiagnostics() {
     'ClaudeClient',
     'ResponsesClient',
     'OpenAIClient',
+    'GeminiClient',
     'DefaultLoopDetector',
     'Skill',
   ]) {

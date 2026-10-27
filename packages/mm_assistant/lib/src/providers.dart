@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dart_agent_core/dart_agent_core.dart';
@@ -9,7 +10,7 @@ import 'package:mm_research/mm_research.dart';
 
 import 'runtime.dart';
 
-enum AssistantProvider { claude, responses, compatible, ollama }
+enum AssistantProvider { claude, responses, compatible, ollama, gemini }
 
 class AssistantModel {
   const AssistantModel({
@@ -18,17 +19,20 @@ class AssistantModel {
     required this.endpoint,
     this.localEnabled = false,
     this.supportsTools = true,
+    this.serviceId,
   });
   final AssistantProvider provider;
   final String model, endpoint;
   final bool localEnabled;
   final bool supportsTools;
+  final String? serviceId;
   Map<String, dynamic> toJson() => {
     'provider': provider.name,
     'model': model,
     'endpoint': endpoint,
     'localEnabled': localEnabled,
     'supportsTools': supportsTools,
+    if (serviceId != null) 'serviceId': serviceId,
   };
   factory AssistantModel.fromJson(Map<String, dynamic> j) => AssistantModel(
     provider: AssistantProvider.values.byName(j['provider']),
@@ -36,6 +40,7 @@ class AssistantModel {
     endpoint: j['endpoint'],
     localEnabled: j['localEnabled'] ?? false,
     supportsTools: j['supportsTools'] ?? true,
+    serviceId: j['serviceId'],
   );
 }
 
@@ -65,9 +70,11 @@ AssistantConnection connectAssistant(
   final suffix = switch (config.provider) {
     AssistantProvider.claude => '/v1/messages',
     AssistantProvider.responses => '/responses',
+    AssistantProvider.gemini => '/v1beta',
     _ => '/chat/completions',
   };
   if (config.model.trim().isEmpty ||
+      (config.provider == AssistantProvider.gemini && !RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(config.model)) ||
       configured.host.isEmpty ||
       configured.userInfo.isNotEmpty ||
       configured.hasQuery ||
@@ -82,20 +89,34 @@ AssistantConnection connectAssistant(
     if (path.isEmpty) path = '/v1';
     if (!path.endsWith(suffix)) path += suffix;
   }
+  if (config.provider == AssistantProvider.claude && !path.endsWith('/messages')) {
+    path = path.endsWith('/v1') ? '$path/messages' : '$path/v1/messages';
+  }
+  if (config.provider == AssistantProvider.responses && !path.endsWith('/responses')) {
+    path = path.isEmpty ? '/v1/responses' : '$path/responses';
+  }
+  if (config.provider == AssistantProvider.gemini && path.isEmpty) path = '/v1beta';
   if (!path.endsWith(suffix)) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
   final endpoint = configured.replace(path: path);
   if (config.provider == AssistantProvider.ollama &&
       !{'localhost', '127.0.0.1', '::1', '[::1]'}.contains(endpoint.host)) {
     throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
   }
-  final policy = UrlPolicy(
-    localEndpoint: config.provider == AssistantProvider.ollama ? endpoint : null,
-    providerEndpoint: endpoint,
-  );
+  final geminiEndpoints = {
+    for (final action in ['generateContent', 'streamGenerateContent'])
+      endpoint.replace(path: '${endpoint.path}/models/${config.model}:$action'),
+  };
+  final policy = config.provider == AssistantProvider.gemini
+      ? _ExactProviderPolicy(geminiEndpoints)
+      : UrlPolicy(
+          localEndpoint: config.provider == AssistantProvider.ollama ? endpoint : null,
+          providerEndpoint: endpoint,
+        );
   final dio = Dio(BaseOptions(followRedirects: false, maxRedirects: 0));
   final address = endpoint.toString();
   final base = address.substring(0, address.length - suffix.length);
   final client = switch (config.provider) {
+    AssistantProvider.gemini => GeminiClient(apiKey: key, client: dio, maxRetries: 0, timeout: budget.duration),
     AssistantProvider.claude => ClaudeClient(
       apiKey: key,
       baseUrl: base,
@@ -122,7 +143,21 @@ AssistantConnection connectAssistant(
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (options.uri != endpoint || DateTime.now().isAfter(deadline)) {
+        var allowed = options.uri == endpoint;
+        if (config.provider == AssistantProvider.gemini) {
+          final native = Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent',
+          );
+          final stream = Uri.parse(
+            'https://generativelanguage.googleapis.com/v1beta/models/${config.model}:streamGenerateContent',
+          );
+          allowed = options.uri == native || options.uri == stream || geminiEndpoints.contains(options.uri);
+          if (allowed) {
+            final action = options.uri.path.endsWith(':generateContent') ? 'generateContent' : 'streamGenerateContent';
+            options.path = endpoint.replace(path: '${endpoint.path}/models/${config.model}:$action').toString();
+          }
+        }
+        if (!allowed || DateTime.now().isAfter(deadline)) {
           handler.reject(
             DioException(requestOptions: options, error: const ResearchFailure(ResearchFailureKind.invalidRequest)),
           );
@@ -184,4 +219,15 @@ class _BoundedAdapter implements HttpClientAdapter {
 
   @override
   void close({bool force = false}) => inner.close(force: force);
+}
+
+/// Each native Gemini operation gets its own provider-only fake-IP exception.
+class _ExactProviderPolicy extends UrlPolicy {
+  _ExactProviderPolicy(this.endpoints);
+  final Set<Uri> endpoints;
+  @override
+  Future<List<InternetAddress>> validate(Uri url) {
+    if (!endpoints.contains(url)) throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
+    return UrlPolicy(providerEndpoint: url).validate(url);
+  }
 }

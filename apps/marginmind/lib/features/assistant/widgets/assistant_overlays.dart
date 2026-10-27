@@ -523,10 +523,17 @@ String serviceName(AppLocalizations l, AssistantProvider p) => switch (p) {
   AssistantProvider.responses => l.assistantServiceOpenAI,
   AssistantProvider.compatible => l.assistantServiceCompatible,
   AssistantProvider.ollama => 'Ollama',
+  AssistantProvider.gemini => 'Gemini',
 };
 
 /// Services supported by the bounded assistant transport.
-const connectableServices = AssistantProvider.values;
+// Legacy sheet stays at four choices until GUL-537 replaces it with service cards.
+const connectableServices = [
+  AssistantProvider.claude,
+  AssistantProvider.responses,
+  AssistantProvider.compatible,
+  AssistantProvider.ollama,
+];
 
 /// The assistant's settings sheet: service, model, key and network.
 Future<void> showAssistantSettings(BuildContext context, WidgetRef ref) =>
