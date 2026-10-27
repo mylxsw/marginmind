@@ -274,7 +274,9 @@ void main() {
       );
       expect(_question(tester), startsWith('“一个明显随机的数字，竟能让估计相差将近一倍”'));
       expect(tester.widget<MMInteractive>(find.byKey(const ValueKey('method-web'))).selected, isTrue);
-      expect(find.text('Up to 3 searches and 5 pages.'), findsOneWidget);
+      // What a method does is a hover hint, not a line of text.
+      expect(find.text('Up to 3 searches and 5 pages'), findsNothing);
+      expect(find.byTooltip('Up to 3 searches and 5 pages'), findsOneWidget);
       // Keywords are the term, never the whole passage; they can be edited.
       expect(find.widgetWithText(ResearchChip, _claim), findsNothing);
       await tester.enterText(
