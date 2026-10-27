@@ -61,7 +61,7 @@ void main() {
     }
     expect(prefs.getKeys().any((k) => k.contains('key')), false);
     await container.read(assistantSettingsProvider.notifier).saveKey('');
-    expect(secrets.values.containsKey('assistant.ollama'), false);
+    expect(secrets.values.containsKey('assistant.gemini'), false);
     expect(AssistantSettingsController.account(AssistantProvider.responses), 'openai');
   });
   test('composition reads correct key, rejects missing credentials and closes invalid runs', () async {

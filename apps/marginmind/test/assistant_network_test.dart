@@ -18,7 +18,11 @@ class NoSnapshots implements StudySetContentRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test('composition uses this conversation model and current SearXNG; offline has no backend', () async {
-    SharedPreferences.setMockInitialValues({'assistant.searxng': 'https://search.example/search'});
+    SharedPreferences.setMockInitialValues({
+      'assistant.searxng': 'https://search.example/search',
+      'assistant.localEnabled': true,
+      for (final p in AssistantProvider.values) 'assistant.model.${p.name}': 'm',
+    });
     final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer(
       overrides: [
@@ -36,12 +40,7 @@ void main() {
       );
       final p = Provider((ref) => assistantNetworkFor(ref, 's', conversation));
       final n = await container.read(p) as SnapshotAssistantNetwork;
-      expect(
-        n.discovery,
-        provider == AssistantProvider.claude || provider == AssistantProvider.responses
-            ? isA<ProviderWebSearch>()
-            : isA<SearxngSearch>(),
-      );
+      expect(n.discovery, isA<SearxngSearch>());
       if (n.discovery case final SearxngSearch s) expect(s.endpoint, 'https://search.example/search');
       final offline = Provider((ref) => assistantNetworkFor(ref, 's', conversation.copyWith(online: false)));
       expect(await container.read(offline), isNull);

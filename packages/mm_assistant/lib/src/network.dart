@@ -6,6 +6,8 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
 
 import 'providers.dart';
+import 'services.dart';
+import 'web_search.dart';
 
 /// A fresh instance belongs to one request. Discovery never registers evidence.
 class SnapshotAssistantNetwork implements AssistantNetwork {
@@ -270,6 +272,9 @@ AssistantNetwork productionAssistantNetwork({
   required AssistantModel model,
   required String key,
   String searxngEndpoint = '',
+  WebSearchSettings? searchSettings,
+  String searchKey = '',
+  String searchAccountId = '',
   ResearchDocumentCache? cache,
 }) {
   final http = AssistantNetworkHttp();
@@ -279,24 +284,44 @@ AssistantNetwork productionAssistantNetwork({
     sharedCounter: http.counter,
     sharedDeadline: http.deadline,
   );
-  final SearchProvider discovery = switch (model.provider) {
-    AssistantProvider.claude => ProviderWebSearch(
-      AnthropicProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
-    ),
-    AssistantProvider.responses => ProviderWebSearch(
-      OpenAiResponsesProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
-    ),
-    _ => SearxngSearch(
-      endpoint: searxngEndpoint,
-      http: AssistantNetworkHttp(
-        policy: UrlPolicy(
-          privateEndpoint: searxngEndpoint.isEmpty ? null : SearxngSearch.parseEndpoint(searxngEndpoint),
-        ),
-        sharedCounter: http.counter,
-        sharedDeadline: http.deadline,
-      ),
-    ),
-  };
+  final SearchProvider discovery = searchSettings != null
+      ? webSearchProvider(
+          settings: searchSettings,
+          searxngHttp: searchSettings.backend == WebSearchBackend.searxng
+              ? AssistantNetworkHttp(
+                  policy: UrlPolicy(privateEndpoint: SearxngSearch.parseEndpoint(searchSettings.endpoint)),
+                  sharedCounter: http.counter,
+                  sharedDeadline: http.deadline,
+                )
+              : null,
+          model: model,
+          modelKey: key,
+          key: searchKey,
+          accountId: searchAccountId,
+          httpFactory: (url, local) => AssistantNetworkHttp(
+            policy: UrlPolicy(providerEndpoint: url),
+            sharedCounter: http.counter,
+            sharedDeadline: http.deadline,
+          ),
+        )
+      : switch (model.provider) {
+          AssistantProvider.claude => ProviderWebSearch(
+            AnthropicProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
+          ),
+          AssistantProvider.responses => ProviderWebSearch(
+            OpenAiResponsesProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
+          ),
+          _ => SearxngSearch(
+            endpoint: searxngEndpoint,
+            http: AssistantNetworkHttp(
+              policy: UrlPolicy(
+                privateEndpoint: searxngEndpoint.isEmpty ? null : SearxngSearch.parseEndpoint(searxngEndpoint),
+              ),
+              sharedCounter: http.counter,
+              sharedDeadline: http.deadline,
+            ),
+          ),
+        };
   return SnapshotAssistantNetwork(
     studySetId: studySetId,
     snapshots: snapshots,

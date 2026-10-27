@@ -38,6 +38,7 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
     AssistantProvider.responses => 'https://api.openai.com/v1/responses',
     AssistantProvider.compatible => 'https://example.com/v1/chat/completions',
     AssistantProvider.ollama => 'http://localhost:11434/v1/chat/completions',
+    AssistantProvider.gemini => 'https://generativelanguage.googleapis.com/v1beta',
   },
   localEnabled: provider == AssistantProvider.ollama,
 );
@@ -228,7 +229,7 @@ void main() {
     }
   });
 
-  for (final provider in AssistantProvider.values) {
+  for (final provider in AssistantProvider.values.where((p) => p != AssistantProvider.gemini)) {
     test('$provider builds correct SDK and exact endpoint with no SDK retries', () async {
       final adapter = Adapter((o, n) {
         expect(o.uri.toString(), config(provider).endpoint);

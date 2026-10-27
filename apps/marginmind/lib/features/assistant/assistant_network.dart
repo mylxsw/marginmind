@@ -5,6 +5,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/providers.dart';
 import 'assistant_settings.dart';
+import 'assistant_services.dart';
 
 final assistantWebCacheProvider = Provider<ResearchDocumentCache?>((ref) => null);
 final assistantArticleParserProvider = Provider<HtmlArticleParser>((ref) => WebKitArticleParser());
@@ -14,19 +15,23 @@ Future<AssistantNetwork?> assistantNetworkFor(Ref ref, String studySetId, Conver
   if (!conversation.online) return null;
   final repository = ref.read(contentRepositoryProvider);
   if (repository is! ResearchSnapshotRepository) return null;
-  final settings = ref.read(assistantSettingsProvider);
+  final model = await ref.read(assistantServicesStoreProvider).resolve(conversation.model);
+  final settings = ref.read(webSearchSettingsProvider);
+  final secrets = ref.read(assistantSecretsProvider);
+  final searchKey = await secrets.read(WebSearchSettingsController.account(settings.backend));
+  final account = await secrets.read(WebSearchSettingsController.cloudflareAccount);
   final parser = ref.read(assistantArticleParserProvider);
   final cache = ref.read(assistantWebCacheProvider);
-  final key = await ref
-      .read(assistantSecretsProvider)
-      .read(AssistantSettingsController.account(conversation.model.provider));
+  final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));
   return productionAssistantNetwork(
     studySetId: studySetId,
     snapshots: repository as ResearchSnapshotRepository,
     parser: parser,
-    model: conversation.model,
+    model: model,
     key: key ?? '',
-    searxngEndpoint: settings.searxngEndpoint,
+    searchSettings: settings,
+    searchKey: searchKey ?? '',
+    searchAccountId: account ?? '',
     cache: cache,
   );
 }

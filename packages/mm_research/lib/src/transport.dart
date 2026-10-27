@@ -80,6 +80,8 @@ class ResearchHttp {
         'authorization',
         'proxy-authorization',
         'x-api-key',
+        'x-goog-api-key',
+        'x-subscription-token',
         'api-key',
         'cookie',
         'cookie2',

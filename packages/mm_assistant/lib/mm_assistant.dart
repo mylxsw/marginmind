@@ -13,3 +13,9 @@ export 'src/legacy_migration.dart';
 export 'src/network.dart';
 
 export 'src/titles.dart';
+
+export 'src/services.dart';
+
+export 'src/service_catalog.dart';
+
+export 'src/web_search.dart';

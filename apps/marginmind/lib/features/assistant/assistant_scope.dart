@@ -17,6 +17,7 @@ import 'assistant_controller.dart';
 import 'assistant_network.dart';
 import 'assistant_reader.dart';
 import 'assistant_settings.dart';
+import 'assistant_services.dart';
 import 'assistant_writes.dart';
 
 // ---- composition -------------------------------------------------------------------
@@ -76,8 +77,10 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     notes: ref.watch(assistantNoteSaverProvider(studySetId)),
     online: settings.online,
     generateTitle: (current, question) async {
-      final model = assistantTitleModel(current, ref.read(assistantSettingsProvider.notifier).models());
-      final key = await ref.read(assistantSecretsProvider).read(AssistantSettingsController.account(model.provider));
+      final store = ref.read(assistantServicesStoreProvider);
+      final resolved = await store.resolve(current);
+      final model = assistantTitleModel(resolved, (await store.load()).enabledModels);
+      final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));
       final connection = connectAssistant(model, key ?? '');
       try {
         return await generateAssistantTitle(connection.client, model.model, question);
@@ -93,6 +96,7 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
       final snapshot = workspace.content;
       return assistantRunFactory(
         secrets: ref.read(assistantSecretsProvider),
+        services: ref.read(assistantServicesStoreProvider),
         reader: WorkspaceReader(
           content: () => workspace.content,
           contexts: question.contexts,
