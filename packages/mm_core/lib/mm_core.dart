@@ -28,3 +28,5 @@ export 'src/research/ports.dart';
 
 export 'src/assistant/ports.dart';
 export 'src/assistant/proposals.dart';
+
+export 'src/assistant/writes.dart';

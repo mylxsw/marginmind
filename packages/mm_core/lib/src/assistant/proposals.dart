@@ -101,12 +101,16 @@ class MapEditReceipt {
     required this.undoHandle,
     required List<String> operationIds,
     required List<String> nodeIds,
-  }) : operationIds = List.unmodifiable(operationIds),
+    Map<String, String> skipped = const {},
+  }) : skipped = Map.unmodifiable(skipped),
+       operationIds = List.unmodifiable(operationIds),
        nodeIds = List.unmodifiable(nodeIds);
+  final Map<String, String> skipped;
   final String proposalId, undoHandle;
   final int revision;
   final List<String> operationIds, nodeIds;
   Map<String, Object?> toJson() => {
+    'skipped': skipped,
     'proposalId': proposalId,
     'revision': revision,
     'undoHandle': undoHandle,
@@ -114,6 +118,7 @@ class MapEditReceipt {
     'nodeIds': nodeIds,
   };
   factory MapEditReceipt.fromJson(Map<String, dynamic> j) => MapEditReceipt(
+    skipped: Map<String, String>.from(j['skipped'] ?? {}),
     proposalId: j['proposalId'],
     revision: j['revision'],
     undoHandle: j['undoHandle'],

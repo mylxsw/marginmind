@@ -190,12 +190,25 @@ class FileLibraryStore
   @override
   Future<StudySetContent> update(String studySetId, StudySetContent Function(StudySetContent) change) async {
     await _ensureLoaded();
-    final record = _require(studySetId);
-    final next = change(record.content);
-    _sets[studySetId] = record.copyWith(content: next);
-    _contentChanges.add(studySetId);
-    _libraryChanges.add(null);
-    await _persist(studySetId, syncSessions: !identical(record.content.researchNotes, next.researchNotes));
+    late StudySetContent next;
+    await _queueWrite(studySetId, () async {
+      final record = _require(studySetId);
+      next = change(record.content);
+      final dir = Directory(_packagePath(studySetId));
+      await dir.create(recursive: true);
+      await _atomicWrite(
+        File(p.join(dir.path, 'studyset.json')),
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
+      );
+      // Publish only after durable commit. A failed write leaves no receipt,
+      // graph mutation or misleading successful retry in memory.
+      _sets[studySetId] = _require(studySetId).copyWith(content: next);
+      _contentChanges.add(studySetId);
+      _libraryChanges.add(null);
+      if (!identical(record.content.researchNotes, next.researchNotes)) {
+        await _syncResearchSessions(studySetId, next);
+      }
+    });
     return next;
   }
 

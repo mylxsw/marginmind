@@ -281,6 +281,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           s.selectedCardIds,
           s.mapView,
           s.flashCardId,
+          s.flashCardIds,
           s.locateCardTick,
           s.editingCardId,
           s.selectedMarkId,
@@ -333,6 +334,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     flashCardId: state.flashCardId,
+                    flashCardIds: state.flashCardIds,
                     locateCardTick: state.locateCardTick > _handledLocateTick ? state.locateCardTick : 0,
                     onLocated: (tick) {
                       if (tick > _handledLocateTick) _handledLocateTick = tick;

@@ -208,6 +208,7 @@ class Card {
     required this.id,
     required this.kind,
     this.title = '',
+    this.body = '',
     this.annotationId,
     this.imageFileName,
     this.researchNoteId,
@@ -224,6 +225,9 @@ class Card {
   /// Topic name, note text, or an optional title for an excerpt.
   final String title;
 
+  /// Optional note body; when set, review uses title as question and body as answer.
+  final String body;
+
   /// Set for excerpts.
   final String? annotationId;
 
@@ -239,10 +243,11 @@ class Card {
   /// Shared across maps; a suspended card stays out of every review queue.
   final bool suspended;
 
-  Card copyWith({String? title, List<String>? tags, bool? suspended, TextFormat? textFormat}) => Card(
+  Card copyWith({String? title, String? body, List<String>? tags, bool? suspended, TextFormat? textFormat}) => Card(
     id: id,
     kind: kind,
     title: title ?? this.title,
+    body: body ?? this.body,
     tags: tags == null ? this.tags : List.unmodifiable(tags),
     suspended: suspended ?? this.suspended,
     annotationId: annotationId,
@@ -257,6 +262,7 @@ class Card {
     'id': id,
     'kind': kind.name,
     'title': title,
+    if (body.isNotEmpty) 'body': body,
     if (annotationId != null) 'annotationId': annotationId,
     if (imageFileName != null) 'imageFileName': imageFileName,
     if (researchNoteId != null) 'researchNoteId': researchNoteId,
@@ -271,6 +277,7 @@ class Card {
     id: j['id'] as String,
     kind: CardKind.values.byName(j['kind'] as String),
     title: (j['title'] as String?) ?? '',
+    body: j['body'] as String? ?? '',
     annotationId: j['annotationId'] as String?,
     imageFileName: j['imageFileName'] as String?,
     researchNoteId: j['researchNoteId'] as String?,

@@ -79,6 +79,7 @@ class MindMapCanvas extends StatefulWidget {
     required this.rootTitle,
     required this.selectedCardId,
     required this.flashCardId,
+    this.flashCardIds = const {},
     this.locateCardTick = 0,
     this.onLocated,
     required this.transformation,
@@ -149,6 +150,7 @@ class MindMapCanvas extends StatefulWidget {
   final ValueChanged<String>? onToggleSelection;
   final ValueChanged<Set<String>>? onSelectMany;
   final String? flashCardId;
+  final Set<String> flashCardIds;
 
   /// Changes for each explicit location, including repeated requests for one card.
   final int locateCardTick;
@@ -1066,7 +1068,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.imageHeight,
       spec.suspended,
       widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
-      id == widget.flashCardId,
+      id == widget.flashCardId || widget.flashCardIds.contains(id),
       _dragging?.contains(id) ?? false,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
       mapScale(widget.transformation.value),
@@ -1099,7 +1101,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               _NodeView(
                 spec: spec,
                 selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
-                flashing: id == widget.flashCardId,
+                flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
                 onPressStart: () => _tapModifiers[id] = _additive,
                 onTap: () {
                   widget.focusNode.requestFocus();

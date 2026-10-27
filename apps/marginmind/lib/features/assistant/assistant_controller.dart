@@ -96,6 +96,7 @@ class AssistantController extends Notifier<Conversation> {
 
   Message _message(String id) => state.messages.firstWhere((m) => m.id == id);
   Future<void> send(String text, {List<ContextItem> contexts = const [], String? skill}) {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     if (_running != null || _disposed) throw StateError('Assistant is busy');
     if (text.trim().isEmpty || text.length > 60000) throw const FormatException('Invalid question');
     final requestId = _id();
@@ -226,8 +227,8 @@ class AssistantController extends Notifier<Conversation> {
     state = Conversation(
       id: _agentState.sessionId,
       studySetId: _deps.studySetId,
-      model: state.model,
-      online: state.online,
+      model: state.readOnly ? _deps.model : state.model,
+      online: state.readOnly ? _deps.online : state.online,
     );
     await _persist();
   }
@@ -266,12 +267,14 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Future<void> switchModel(AssistantModel model) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     await stop();
     state = state.copyWith(model: model);
     await _persist();
   }
 
   Future<void> setOnline(bool enabled) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     await stop();
     state = state.copyWith(online: enabled);
     await _persist();
@@ -289,6 +292,7 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Future<void> selectOperation(String proposalId, String opId, bool selected) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     if (_applying.containsKey(proposalId)) throw StateError('Proposal is being applied');
     final p = _proposal(proposalId);
     if (p.status != ProposalStatus.pending || !p.proposal.operations.any((o) => o.id == opId)) {
@@ -332,6 +336,7 @@ class AssistantController extends Notifier<Conversation> {
     }),
   );
   Future<void> _apply(String id) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     final p = _proposal(id);
     if (p.status != ProposalStatus.pending) throw StateError('Proposal is not pending');
     final receipt = await _deps.executor.receipt(id) ?? await _deps.executor.apply(p.proposal, p.selected);
@@ -343,6 +348,7 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Future<void> dismissProposal(String id) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     final p = _proposal(id);
     if (p.status != ProposalStatus.pending || _applying.containsKey(id)) {
       throw StateError('Proposal cannot be dismissed');
@@ -351,12 +357,14 @@ class AssistantController extends Notifier<Conversation> {
   }
 
   Future<void> reopenProposal(String id) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     final p = _proposal(id);
     if (p.status != ProposalStatus.dismissed) throw StateError('Proposal cannot be reopened');
     await _updateProposal(p.copyWith(status: ProposalStatus.pending));
   }
 
   Future<void> saveNote(String messageId, SaveNoteRequest request) async {
+    if (state.readOnly) throw StateError('Legacy conversation is read only');
     final m = _message(messageId);
     if (m.role != MessageRole.agent || m.status == MessageStatus.running || m.text.isEmpty) {
       throw StateError('No answer to save');

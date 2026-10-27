@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import '../assistant/proposals.dart';
 import 'note_format.dart';
 import 'research.dart';
 import 'review.dart';
@@ -11,6 +12,7 @@ import 'review.dart';
 @immutable
 class StudySetContent {
   const StudySetContent({
+    this.assistantReceipts = const [],
     this.documents = const [],
     this.annotations = const [],
     this.cards = const [],
@@ -31,6 +33,7 @@ class StudySetContent {
 
   static const empty = StudySetContent();
 
+  final List<MapEditReceipt> assistantReceipts;
   final List<Document> documents;
   final List<Annotation> annotations;
   final List<Card> cards;
@@ -250,7 +253,7 @@ class StudySetContent {
         if (c == null) continue;
         final a = c.annotationId == null ? null : annotation(c.annotationId!);
         final tagged = tag == null || c.tags.any((t) => t.toLowerCase() == tag.toLowerCase());
-        if (tagged && (q.isEmpty || hit(c.title) || hit(a?.quote) || c.tags.any(hit))) result.add(c);
+        if (tagged && (q.isEmpty || hit(c.title) || hit(c.body) || hit(a?.quote) || c.tags.any(hit))) result.add(c);
         walk(c.id);
       }
     }
@@ -260,6 +263,7 @@ class StudySetContent {
   }
 
   StudySetContent copyWith({
+    List<MapEditReceipt>? assistantReceipts,
     List<Document>? documents,
     List<Annotation>? annotations,
     List<Card>? cards,
@@ -278,6 +282,7 @@ class StudySetContent {
     List<Bookmark>? bookmarks,
   }) {
     return StudySetContent(
+      assistantReceipts: assistantReceipts ?? this.assistantReceipts,
       documents: documents ?? this.documents,
       annotations: annotations ?? this.annotations,
       cards: cards ?? this.cards,
@@ -298,6 +303,7 @@ class StudySetContent {
   }
 
   Map<String, Object?> toJson() => {
+    'assistantReceipts': [for (final r in assistantReceipts) r.toJson()],
     'documents': [for (final d in documents) d.toJson()],
     'annotations': [for (final a in annotations) a.toJson()],
     'cards': [for (final c in cards) c.toJson()],
@@ -321,6 +327,7 @@ class StudySetContent {
       for (final e in (j[key] as List?) ?? const []) f((e as Map).cast()),
     ];
     return StudySetContent(
+      assistantReceipts: list('assistantReceipts', (j) => MapEditReceipt.fromJson(j.cast<String, dynamic>())),
       documents: list('documents', Document.fromJson),
       annotations: list('annotations', Annotation.fromJson),
       cards: list('cards', Card.fromJson),

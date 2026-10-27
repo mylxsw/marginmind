@@ -73,6 +73,11 @@ class MapExporter {
         } else {
           out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
         }
+        if (card.body.isNotEmpty) {
+          for (final line in card.body.split('\n')) {
+            out.writeln('${'  ' * (depth + 1)}$line');
+          }
+        }
         if (card.kind == CardKind.research) {
           for (final line in _researchBody(card).split('\n')) {
             out.writeln('${'  ' * (depth + 1)}$line');
@@ -244,7 +249,10 @@ class MapExporter {
       return 'text="${_xml(text)}"${doc == null ? '' : ' _note="${_xml(_source(doc, a!.page))}"'}';
     }
     // Formatting has no place in OPML: a note's text without its markup.
-    if (card.kind == CardKind.note) return 'text="${_xml(notePlainText(card.title, card.textFormat))}"';
+    if (card.kind == CardKind.note) {
+      final body = card.body.isEmpty ? '' : ' _note="${_xml(notePlainText(card.body, card.textFormat))}"';
+      return 'text="${_xml(notePlainText(card.title, card.textFormat))}"$body';
+    }
     if (card.kind != CardKind.excerpt) return 'text="${_xml(card.title)}"';
     final a = content.annotation(card.annotationId ?? '');
     final doc = a == null ? null : content.document(a.documentId);

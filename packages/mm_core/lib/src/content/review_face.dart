@@ -215,6 +215,12 @@ ReviewFace buildReviewFace(
   }
 
   if (card.kind == CardKind.note) {
+    if (card.body.isNotEmpty) {
+      return ReviewFace(
+        front: ReviewFront(path: path, prompt: ReviewPrompt.title, title: card.title),
+        back: ReviewBack(notes: [ReviewNote(card.body, card.textFormat), ...notes]),
+      );
+    }
     final parentId = content.node(card.id, mapId: mapId)?.parentId;
     final parent = parentId == null ? null : content.card(parentId);
     var parentTitle = parent == null ? '' : notePlainText(parent.title, parent.textFormat).trim();

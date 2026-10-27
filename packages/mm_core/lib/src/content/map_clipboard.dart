@@ -10,6 +10,7 @@ class OutlineEntry {
     this.depth,
     this.title, {
     this.kind = CardKind.topic,
+    this.body = '',
     this.annotation,
     this.imageFileName,
     this.imagePath,
@@ -37,6 +38,7 @@ class OutlineEntry {
   final List<String> tags;
   final int depth;
   final String title;
+  final String body;
   final CardKind kind;
   final Annotation? annotation;
   final String? imageFileName;
@@ -101,6 +103,7 @@ abstract final class MapClipboard {
               level,
               card.title,
               kind: card.kind,
+              body: card.body,
               width: node.width,
               textFormat: card.textFormat,
               imageOrigin: card.imageOrigin,
@@ -199,6 +202,7 @@ abstract final class MapClipboard {
           'pdfAttachments': [for (final v in e.pdfAttachments) v.toJson()],
           'snapshots': e.snapshots,
           'title': e.title,
+          if (e.body.isNotEmpty) 'body': e.body,
           'kind': e.kind.name,
           'collapsed': e.collapsed,
           if (e.tags.isNotEmpty) 'tags': e.tags,
@@ -242,6 +246,7 @@ abstract final class MapClipboard {
               for (final v in e['pdfAttachments'] as List? ?? []) NoteAttachment.fromJson((v as Map).cast()),
             ],
             snapshots: ((e['snapshots'] as Map?) ?? {}).cast<String, String>(),
+            body: e['body'] as String? ?? '',
             kind: CardKind.values.byName(e['kind'] as String),
             tags: List.unmodifiable(((e['tags'] as List?) ?? const []).cast<String>()),
             imageFileName: e['imageFileName'] as String?,
