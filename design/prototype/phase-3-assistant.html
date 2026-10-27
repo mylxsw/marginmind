@@ -485,8 +485,38 @@ body.demo-min #desk{padding-right:58px}
 .tstep .ti{width:14px;display:flex;justify-content:center;flex:none}
 .tstep .tx{flex:1;min-width:0}
 .tstep .tm{font-size:10.5px;opacity:.7}
-.ans{line-height:1.7;font-size:13px}
-.ans p{margin:0 0 8px}.ans ul,.ans ol{margin:0 0 8px;padding-left:20px}.ans li{margin:2px 0}
+.act{margin:0 0 10px}
+.act.trace{background:none;border-radius:0;overflow:visible}
+.act-h{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--label2);cursor:pointer;padding:2px 0;border-radius:6px}
+.act-h:hover{color:var(--label)}
+.act-h .warnc{color:var(--warn)}
+.act.live .act-h{cursor:default}
+.shimmer{background:linear-gradient(90deg,var(--label2) 0%,var(--label2) 40%,var(--label) 50%,var(--label2) 60%,var(--label2) 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 1.6s linear infinite}
+@keyframes shim{from{background-position:110% 0}to{background-position:-110% 0}}
+.act-b{display:none;margin:6px 0 2px 5px;padding-left:12px;border-left:1px solid var(--sep)}
+.act.open .act-b,.act.live .act-b{display:block}
+.act-say{font-size:12.5px;line-height:1.65;color:var(--label);margin:4px 0 6px}
+.act-do{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--label2);margin:3px 0}
+.act-do .ai{width:14px;flex:none;display:flex;justify-content:center;margin-top:2px}
+.act-do.now{color:var(--agent)}
+.act-do.fail{color:var(--err)}
+.act-do .x{font-variant-numeric:tabular-nums;opacity:.8;margin-left:4px}
+.act-do small{display:block;color:var(--label2);font-family:var(--mono);font-size:10.5px}
+.ans{line-height:1.75;font-size:13px}
+.ans h4{font-size:13.5px;font-weight:600;margin:16px 0 6px}
+.ans h4:first-child{margin-top:0}
+.ans blockquote{margin:6px 0 10px;padding:2px 0 2px 10px;border-left:2px solid var(--sep);font-family:var(--serif);color:var(--excerpt);font-size:12.5px;line-height:1.75}
+.ans table{border-collapse:collapse;width:100%;margin:6px 0 10px;font-size:12px}
+.ans th,.ans td{border-bottom:1px solid var(--sep);padding:5px 6px;text-align:left;vertical-align:top}
+.ans th{color:var(--label2);font-weight:600}
+.ans hr{border:0;border-top:1px solid var(--sep);margin:12px 0}
+.msg-err .det{margin-top:6px;font-size:11.5px;color:var(--label2);display:none}
+.msg-err.open .det{display:block}
+.msg-err .det div{display:flex;gap:8px;padding:1px 0}
+.msg-err .det span:first-child{width:56px;flex:none}
+.msg-err .det code{font-family:var(--mono);font-size:10.5px}
+.msg-err .dt{color:var(--label2);font-size:11.5px;cursor:pointer;margin-left:6px;font-weight:400}
+.ans p{margin:0 0 10px}.ans ul,.ans ol{margin:0 0 10px;padding-left:20px}.ans li{margin:4px 0}
 .ans h5{font-size:12px;margin:10px 0 4px;color:var(--label2)}
 .ans .verdict{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:rgba(52,199,89,.10);margin:0 0 10px;line-height:1.55}
 .ans .verdict.mid{background:rgba(255,149,0,.12)}
@@ -1522,6 +1552,8 @@ function detectSkill(text) {
   if (/视频|图解|动画/.test(t)) return 'video';
   if (/总结|概括|要点/.test(t)) return 'summarize';
   if (/避免|减弱|怎么办|应对|克服/.test(t)) return 'debias';
+  if (t === '__flaky') return 'flaky';
+  if (t === '__broken') return 'broken';
   if (/是谁|谁是|什么人/.test(t)) return 'who';
   if (/解释|是什么|什么意思|讲讲|举.*例/.test(t)) return 'explain';
   return 'chat';
@@ -1541,14 +1573,26 @@ function planFor(text, ctx) {
     : sub.kind === 'node' ? ['map', `读取分支「${sub.text}」：${S.nodes.filter(n => n.parent === sub.node?.id).length} 个子节点`] : ['doc', '读取第 42 页正文'];
   const term = /锚|anchor/i.test(sub.text) || sub.kind === 'page' ? '锚定效应' : /可得/.test(sub.text) ? '可得性启发' : sub.text.slice(0, 12);
   const P = { skill, web: false, steps: [readStep], cites: [], prop: null, title: text.slice(0, 24) };
-  if (skill === 'who') {
+  if (text === '__fallback') {
+    P.steps = [['say', '这次不调用工具，直接根据你选的内容和本页原文回答。']];
+    P.answer = `<p><b>一句话：</b>这段讲的是数字化转型里“哪些能力可以外包、哪些必须自己掌握”。</p><h4>要点</h4><ul><li>核心竞争力不能外包，只有非核心业务才适合外包。</li><li>外包要建立在双方紧密关联、高度信任的基础上。</li><li>开发编程、软件实施、维护支持这类服务属于非核心能力，可以外包。</li></ul>`;
+    P.title = '解释：业务外包的原则';
+  } else if (skill === 'flaky') {
+    P.steps = [['say', '先读你选的这段，再结合前后文解释。'], ['fail', '读取所选内容失败', 3, '模型请求了不存在的工具 read_selction'], ['say', '工具调用连续出错，改为直接根据已附带的原文回答。']];
+    P.answer = planFor('__fallback', ctx).answer;
+    P.title = '解释：业务外包的原则';
+  } else if (skill === 'broken') {
+    P.steps = [['say', '先读你选的这段。'], ['fail', '读取所选内容失败', 8, '模型请求了不存在的工具 read_selction'], ['abort', [['模型', modelLabel(currentModelKey()) + ' · ' + (findModel(currentModelKey())?.p.name || '')], ['失败', '连续 8 次调用不存在的工具 read_selction'], ['已停止', '达到单轮工具调用上限（20 次）']]]];
+    P.answer = ''; P.title = '解释：业务外包的原则';
+  } else if (skill === 'who') {
     P.web = true; P.cites = [7];
+    P.steps.splice(1, 0, ['say', '书里没写他是谁，联网查一下。']);
     P.steps.push(['globe', '联网搜索：Amos Tversky'], ['read', '阅读 1 个来源']);
     P.answer = `<p><b>阿莫斯·特沃斯基</b>（Amos Tversky，1937–1996），认知心理学家，和卡尼曼一起研究不确定性下的判断 ${C(7)}。</p><ul><li>书里提到他，是因为锚定效应出自两人的研究 ${L42}。</li><li>卡尼曼 2002 年获诺贝尔经济学奖时，他已去世 ${C(7)}。</li></ul>`;
     P.title = '特沃斯基是谁';
   } else if (skill === 'explain' || skill === 'chat') {
     P.answer = sub.kind === 'sel' && /调整不足|选择性通达/.test(sub.text)
-      ? `<p>这段话在说：锚定为什么会发生，有两种互补的解释 ${LMECH}。</p><ul><li><b>调整不足</b>：从锚出发往合理方向调，调到“差不多”就停了——停得太早。像从 65 往下估，估到 50 觉得“可以了”。</li><li><b>选择性通达</b>：锚让你优先想起和它一致的信息。听到 65，脑子里先冒出“非洲国家很多”的证据。</li></ul><p><b>区别</b>：前者是<i>调整过程</i>出了问题，后者是<i>回忆内容</i>被带偏。作者认为两者可能在不同情境下各自起作用。</p>`
+      ? `<p><b>一句话：</b>这段在回答“锚定为什么会发生”，给出了两种互补的解释 ${LMECH}。</p><h4>1. 调整不足</h4><p>从锚出发往合理方向调，调到“差不多”就停了——停得太早。</p><blockquote>从 65 往下估，估到 50 觉得“可以了”，于是停在一个偏高的位置。</blockquote><h4>2. 选择性通达</h4><p>锚让你优先想起和它一致的信息，判断被回忆的内容带偏。</p><blockquote>听到 65，脑子里先冒出“非洲国家很多”的证据。</blockquote><h4>两者的区别</h4><table><tr><th></th><th>出问题的环节</th><th>典型场景</th></tr><tr><td>调整不足</td><td>调整过程</td><td>自己先想出一个数</td></tr><tr><td>选择性通达</td><td>回忆内容</td><td>别人给出一个数</td></tr></table>`
       : term === '可得性启发'
       ? `<p><b>可得性启发</b>：判断一件事有多常见时，人们用“想起来有多容易”来代替“实际有多频繁”。</p><ul><li>飞机失事报道多、画面强烈 → 很容易想起 → 高估风险。</li><li>车祸天天发生却少上新闻 → 想不起来 → 低估风险。</li></ul><p><b>和锚定的区别</b>：锚定是被一个<i>起点数字</i>拉偏；可得性是被<i>容易想起的例子</i>拉偏。</p>`
       : `<p><b>锚定效应</b>：估计一个未知数时，人们先抓住一个起点（“锚”），再从它出发调整——但往往调整得不够，结果被锚“拉”了过去 ${L42}。</p><p>原文的例子很典型：</p><ul><li>幸运轮停在 <b>10</b> 的人，估计中位数是 25%；停在 <b>65</b> 的人是 45% ${LCLAIM}。</li><li>关键在于：锚<b>明显是随机的</b>，影响依然存在。</li></ul><p><b>生活里的例子</b>：商品先标“原价 999”，再卖 399，你会觉得便宜——999 就是锚。</p><p><b>一句话记住</b>：先听到的数字，会悄悄变成你的参照系。</p>`;
@@ -1558,6 +1602,7 @@ function planFor(text, ctx) {
     P.title = '翻译所选内容';
   } else if (skill === 'verify') {
     P.web = true; P.cites = [1, 2, 3];
+    P.steps.splice(1, 0, ['say', '先看原文给的数字，再找原始论文和复现研究核对。']);
     P.steps.push(['globe', '联网搜索：anchoring wheel of fortune Tversky Kahneman 1974'], ['paper', '检索论文：anchoring replication Many Labs（OpenAlex）'], ['read', '阅读 3 个来源，核对原文数字']);
     P.answer = `<div class="verdict">${ic('check', 's')}<span><b>基本可靠</b>　数字与原始论文一致，并且被大规模复现过；但“将近一倍”只适用于这道题，不能推广为普遍幅度。</span></div><ul><li>原始实验：锚值 10 与 65 两组的估计中位数分别是 25% 和 45% ${C(1)}，与书中 ${LCLAIM} 一致。</li><li>36 个实验室的复现中，锚定是<b>最稳定</b>的效应之一，但效应量随题目差异很大 ${C(2)}。</li><li>现场研究里，专业人士（房产经纪人、法官）同样受影响 ${C(3)}。</li></ul><h5>建议这样记</h5><p>“随机的锚也能显著拉偏估计（经典实验约 25% vs 45%）；效应稳定，但幅度视情境而定。”</p>`;
     P.title = '查证：随机数字能让估计差一倍？';
@@ -1612,23 +1657,26 @@ function send(text, opts = {}) {
   if (!text) return;
   let c = activeChat(); if (!c || opts.fresh) c = newChat();
   if (c.msgs.some(m => m.status === 'running')) return hud('上一条还在生成，可以先停止');
-  const P = planFor(text, items);
+  const P = planFor(opts.plan || text, items);
   if (!c.msgs.length) c.title = titleFor(text, items, P);
   c.model = c.model || S.defaults.chat; syncLocal();
   c.msgs.push({ role: 'user', text, ctx: items.map(x => ({ ...x })) });
-  const m = { role: 'agent', id: uid('m'), skill: P.skill, steps: [], html: '', status: 'running', web: P.web, cites: P.cites, plan: P, ctx: items };
+  const m = { role: 'agent', id: uid('m'), skill: P.skill, steps: [], html: '', status: 'running', web: P.web, cites: P.cites, plan: P, planKey: opts.plan, ctx: items };
   c.msgs.push(m); c.at = now();
   S.comp.items = []; S.comp.text = ''; S.comp.autoOff = false; S.comp.slash = null;
   if (!S.panel.open || S.panel.mode !== 'chat') { S.panel.mode = 'chat'; openPanel('toolbar'); }
   renderPanel(); renderSessions(); run(c, m);
 }
 function run(c, m) {
-  const P = m.plan; clearRun(m); m.status = 'running'; m.err = null; m.steps = []; m.html = '';
+  const P = m.plan; clearRun(m); m.status = 'running'; m.err = null; m.diag = null; m.steps = []; m.html = ''; m.t0 = Date.now(); m.t1 = null;
   const T = (ms, fn) => (runT[m.id] = runT[m.id] || []).push(setTimeout(() => { if (m.status !== 'running') return; fn(); paintMsgs(); renderSessions(); }, ms));
   // Offline with a cloud model: fail honestly, offer a local model instead of pretending.
-  if (!S.net && !S.local) { T(700, () => { m.status = 'error'; m.err = 'net'; }); return; }
+  if (!S.net && !S.local) { T(700, () => { m.status = 'error'; m.err = 'net'; m.diag = [['服务', findModel(currentModelKey())?.p.name || ''], ['地址', (findModel(currentModelKey())?.p.base || '').replace(/^https?:\/\//, '')], ['原因', '连接超时（30 秒）']]; m.t1 = Date.now(); }); return; }
   let t = 300;
   P.steps.forEach((s, i) => {
+    if (s[0] === 'say') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ say: s[1] }); }); t += 500; return; }
+    if (s[0] === 'fail') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ i: 'x', t: s[1], sub: s[3], n: s[2], state: 'fail' }); }); t += 900; return; }
+    if (s[0] === 'abort') { T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.status = 'error'; m.err = 'tool'; m.diag = s[1]; m.t1 = Date.now(); }); t += 10; return; }
     const skip = !S.net && ['globe', 'paper', 'play'].includes(s[0]);
     T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); m.steps.push({ i: s[0], t: s[1] + (skip ? ' — 已跳过（当前断网）' : ''), state: skip ? 'skip' : 'now' }); });
     t += skip ? 300 : 650 + i * 120;
@@ -1636,10 +1684,10 @@ function run(c, m) {
   T(t, () => { m.steps.forEach(x => x.state = x.state === 'now' ? 'done' : x.state); });
   let answer = P.answer;
   if (!S.net && P.web) { answer = `<p class="offnote">${ic('wifioff', 'xs')}断网，未联网核对</p>` + answer.replace(/<span class="cite" [^>]*>\d<\/span>/g, ''); m.cites = []; m.web = false; }
-  const blocks = answer.match(/<(p|ul|ol|div|h5)[\s\S]*?<\/\1>/g) || [answer];
+  const blocks = answer.match(/<(p|ul|ol|div|h4|h5|blockquote|table)[\s\S]*?<\/\1>/g) || [answer];
   blocks.forEach((b, i) => T(t + 200 + i * 280, () => { m.html += b; }));
   T(t + 300 + blocks.length * 280, () => {
-    m.status = 'done';
+    m.status = 'done'; m.t1 = Date.now();
     if (P.prop) { const id = uid('p'); S.props[id] = { ...P.prop, id, status: 'pending', off: [] }; m.prop = id; }
   });
 }
@@ -1699,12 +1747,17 @@ function agentHtml(m) {
   const live = m.status === 'running';
   const doneN = m.steps.filter(s => s.state !== 'now').length;
   const cur = m.steps.find(s => s.state === 'now');
-  const trace = m.steps.length ? `<div class="trace ${live ? 'live' : ''} ${m.traceOpen ? 'open' : ''}" data-trace="${m.id}">
-      <div class="trace-h">${live ? '<span class="spin" style="color:var(--agent)"></span>' : ic('check', 'xs')}<span class="grow">${live ? esc(cur ? cur.t : '正在组织回答…') : `用了 ${doneN} 步${m.web ? ' · 已联网' : ' · 未联网'}`}</span>${live ? '' : ic(m.traceOpen ? 'cu' : 'cd', 'xs')}</div>
-      <div class="trace-b">${m.steps.map(s => `<div class="tstep ${s.state}"><span class="ti">${s.state === 'now' ? '<span class="spin" style="width:10px;height:10px"></span>' : ic(s.i, 'xs')}</span><span class="tx">${esc(s.t)}</span></div>`).join('')}</div></div>` : '';
+  const fails = m.steps.filter(s => s.state === 'fail').reduce((a, s) => a + (s.n || 1), 0);
+  const secs = Math.max(1, Math.round(((m.t1 || Date.now()) - (m.t0 || Date.now())) / 1000));
+  const trace = m.steps.length ? `<div class="act trace ${live ? 'live' : ''} ${m.traceOpen ? 'open' : ''}" data-trace="${m.id}">
+      <div class="act-h trace-h">${live ? `<span class="shimmer">${esc(cur ? cur.t : '正在组织回答')}</span>` : `<span>处理了 ${secs} 秒</span>${fails ? `<span class="warnc">· 工具调用失败 ${fails} 次</span>` : ''}${ic(m.traceOpen ? 'cd' : 'cr', 'xs')}`}</div>
+      <div class="act-b">${m.steps.map(s => s.say ? `<div class="act-say">${esc(s.say)}</div>`
+        : `<div class="act-do ${s.state}"><span class="ai">${s.state === 'now' ? '<span class="spin" style="width:10px;height:10px"></span>' : s.state === 'fail' ? ic('x', 'xs') : ic(s.i, 'xs')}</span><span>${esc(s.t)}${s.n > 1 ? `<span class="x">×${s.n}</span>` : ''}${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</span></div>`).join('')}</div></div>` : '';
   const srcs = m.status === 'done' && m.cites?.length ? `<div class="srcrow">${m.cites.map(i => `<span class="srcchip" data-cite="${i}"><span class="n">${i}</span>${ic(KIND_IC[SOURCES[i].kind], 'xs')}<span class="t">${esc(SOURCES[i].title)}</span></span>`).join('')}</div>` : '';
   let tail = '';
-  if (m.status === 'error') tail = `<div class="msg-err">${ic('wifioff', 's')}<div class="grow"><b>网络不可用</b></div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重试</span></button><button class="tbtn" data-mact="local" data-mid="${m.id}">${ic('lock', 'xs')}<span class="lbl">改用本机模型</span></button></div>`;
+  const det = m.diag ? `<span class="dt" data-errdet="${m.id}">${m.errOpen ? '收起' : '详情'}</span><div class="det">${m.diag.map(([k, v]) => `<div><span>${esc(k)}</span><code>${esc(v)}</code></div>`).join('')}</div>` : '';
+  if (m.status === 'error' && m.err === 'tool') tail = `<div class="msg-err ${m.errOpen ? 'open' : ''}">${ic('warn', 's')}<div class="grow"><b>模型没能正确调用工具</b>${det}</div></div><div class="macts"><button class="tbtn pri" data-mact="notools" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">不用工具重答</span></button><button class="tbtn" data-act="modelMenu">${ic('spark', 'xs')}<span class="lbl">换个模型</span></button><button class="tbtn" data-mact="diag" data-mid="${m.id}" title="复制诊断信息">${ic('copy', 'xs')}</button></div>`;
+  else if (m.status === 'error') tail = `<div class="msg-err ${m.errOpen ? 'open' : ''}">${ic('wifioff', 's')}<div class="grow"><b>网络不可用</b>${det}</div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重试</span></button><button class="tbtn" data-mact="local" data-mid="${m.id}">${ic('lock', 'xs')}<span class="lbl">改用本机模型</span></button><button class="tbtn" data-mact="diag" data-mid="${m.id}" title="复制诊断信息">${ic('copy', 'xs')}</button></div>`;
   else if (m.status === 'interrupted') tail = `<div class="msg-err" style="background:rgba(255,149,0,.10)">${ic('clock', 's')}<div class="grow"><b>上次退出时没有完成</b></div></div><div class="macts"><button class="tbtn pri" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">继续</span></button></div>`;
   else if (m.status === 'stopped') tail = `<div class="macts"><span class="note" style="padding:0 6px">已停止</span><button class="tbtn" data-mact="retry" data-mid="${m.id}">${ic('refresh', 'xs')}<span class="lbl">重新生成</span></button></div>`;
   else if (m.status === 'done') tail = `${m.prop ? propHtml(S.props[m.prop]) : ''}<div class="macts">
@@ -1928,6 +1981,7 @@ rp.addEventListener('click', e => {
   const cd = t.closest('[data-ctxdel]'); if (cd) { S.comp.items.splice(+cd.dataset.ctxdel, 1); return paintComposer(); }
   if (t.closest('[data-ctxauto]')) { S.comp.autoOff = !S.comp.autoOff; return paintComposer(); }
   const sl = t.closest('[data-slash]'); if (sl) return pickSlash(sl.dataset.slash);
+  const ed = t.closest('[data-errdet]'); if (ed) { const m = activeChat().msgs.find(x => x.id === ed.dataset.errdet); m.errOpen = !m.errOpen; return paintMsgs(); }
   const tr = t.closest('.trace-h'); if (tr) { const m = activeChat().msgs.find(x => x.id === tr.parentElement.dataset.trace); if (m.status !== 'running') { m.traceOpen = !m.traceOpen; paintMsgs(); } return; }
   const cg = t.closest('[data-ctxgo]'); if (cg) { const o = JSON.parse(cg.dataset.ctxgo); if (o.type === 'sel') { if (o.anchor) gotoLocalAnchor(o.anchor); else gotoLocal('s-claim'); } else if (o.id) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(o.id); flashNode(o.id); } return; }
   const lc = t.closest('[data-lcite]'); if (lc) return gotoLocal(lc.dataset.lcite);
@@ -1950,7 +2004,9 @@ rp.addEventListener('click', e => {
     if (k === 'save') saveAnswer(m, ma);
     if (k === 'copy') hud('已复制');
     if (k === 'organize') { S.comp.items = m.ctx.filter(x => !x.auto); send('把这部分整理进脑图'); }
-    if (k === 'retry') { m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
+    if (k === 'diag') hud('诊断信息已复制（不含 Key 和正文）');
+    if (k === 'notools') { m.plan = planFor('__fallback', m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); }
+    if (k === 'retry') { m.plan = planFor(m.planKey || c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = m.plan.web; m.cites = m.plan.cites; m.prop = null; run(c, m); paintMsgs(); paintRow(); }
     if (k === 'local') { c.model = S.defaults.offline; syncLocal(); m.plan = planFor(c.msgs[c.msgs.indexOf(m) - 1].text, m.ctx); m.web = false; m.cites = []; run(c, m); paintMsgs(); paintRow(); hud('已切换到本机模型'); }
     if (k === 'locate') { const note = S.notes[m.saved]; if (note?.att.node) { if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); } selectNode(note.att.node); flashNode(note.att.node); } }
   }
@@ -2247,6 +2303,7 @@ document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.ke
 
 /* ---------- Conversation titles: name the subject, not the pronoun ---------- */
 function titleFor(text, ctx, P) {
+  if (P.skill === 'flaky' || P.skill === 'broken' || text === '__fallback') return P.title;
   if (S.ctxPrefs.title === 'first') return text.slice(0, 24);
   const sel = ctx.find(x => x.type === 'sel');
   const term = sel && sel.quote.length <= 12 ? sel.quote : null;
@@ -2513,6 +2570,8 @@ const SCENES = [
   { k: 'c05', t: '脑图导出', d: 'PNG / PDF / Markdown / OPML', go() { toDoc0('map'); exportSheet(); }, g: '导出面板中切换格式；AI 笔记会带着来源一起导出。' },
   { k: 'c07', t: '笔记基础格式', d: '加粗、斜体、列表', go() { toDoc0('map'); selectNode('n1'); setTimeout(() => editNote(nodeById('n1')), 760); }, g: '用上方小工具条或 <b>⌘B / ⌘I</b> 设置格式。Esc 完成。' },
   { k: 'review', t: '复习（含助手生成的问答卡）', d: '图片卡、笔记卡、问答卡统一按 FSRS 排期', go() { openReview(); }, g: '先做场景 4 再来，会看到助手出的题也在复习里。' },
+  { k: 'flaky', t: '工具调用出错时的处理过程', d: '过程像 Codex 一样边说边做；失败分组显示原因；自动改为直接回答', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__flaky' }); }, g: '回答上方是 <b>处理了 N 秒 · 工具调用失败 3 次</b>，点开能看到每一步：说明性的话和动作交替出现，失败的那一行写明原因（模型请求了不存在的工具）。连续出错后自动改为不用工具，答案照常给出。' },
+  { k: 'broken', t: '工具调用彻底失败', d: '错误不再笼统写“网络不可用”；详情可展开、可复制；给出能走通的下一步', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '作为核心竞争力的业务能力不能被外包', doc: 0, page: 42, anchor: null }]; send('解释一下这段话', { plan: '__broken' }); }, g: '错误块写明 <b>模型没能正确调用工具</b>，点 <b>详情</b> 看模型、失败原因和停止原因；<b>不用工具重答</b> 直接根据附带的原文回答，<b>换个模型</b> 打开模型菜单，复制按钮复制诊断信息（不含 Key 和正文）。' },
   { k: 'who', t: '选中人名问“他是谁”', d: '标题写主题；联网核对；引用放句末；三行讲完', go() { toDoc0('split'); S.chat = null; S.comp.items = [{ type: 'sel', quote: '特沃斯基', doc: 0, page: 42, anchor: null }]; send('他是谁'); }, g: '对话标题自动写成 <b>特沃斯基是谁</b>，不是“他是谁”。联网开着，书外的事实先检索再说，引用都放在句末。回答下方的 <b>魔杖</b> 一键整理进脑图。' },
   { k: 'models', t: '设置 · 模型服务', d: '按协议获取模型列表，勾选加入；不同任务用不同模型', go() { settingsWindow('models', 'p2'); setTimeout(() => $('#setwin [data-sw="fetch"]')?.click(), 500); }, g: '左侧是服务，右侧是协议、地址和 Key。点 <b>获取模型列表</b> 会按协议请求（OpenAI 兼容是 <code>GET /models</code>），勾选后加入“我的模型”；开关控制它是否出现在输入框的模型菜单里。<b>默认模型</b> 一页给对话、翻译与标题、整理与出题分别指定模型。' },
   { k: 'switch-model', t: '对话中切换模型', d: '按服务分组，只列已启用的模型；每个对话记住自己的模型', go() { toDoc0('split'); if (!S.panel.open) ACTS.togglePanel(); setTimeout(() => $('[data-act="modelMenu"]')?.click(), 450); }, g: '模型菜单按服务分组，图标标出图片输入、内置搜索、推理能力。最后一项 <b>管理模型…</b>（⌘,）打开设置。' },
