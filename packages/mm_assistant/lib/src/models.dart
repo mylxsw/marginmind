@@ -77,12 +77,27 @@ enum MessageStatus { running, done, stopped, error, interrupted }
 enum TraceStatus { running, done, error }
 
 class TraceStep {
-  const TraceStep(this.id, this.toolName, this.status);
+  const TraceStep(this.id, this.toolName, this.status, {this.reason, this.narration, this.count = 1});
   final String id, toolName;
   final TraceStatus status;
-  Map<String, dynamic> toJson() => {'id': id, 'toolName': toolName, 'status': status.name};
-  factory TraceStep.fromJson(Map<String, dynamic> j) =>
-      TraceStep(j['id'], j['toolName'], TraceStatus.values.byName(j['status']));
+  final String? reason, narration;
+  final int count;
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'toolName': toolName,
+    'status': status.name,
+    'reason': reason,
+    'narration': narration,
+    'count': count,
+  };
+  factory TraceStep.fromJson(Map<String, dynamic> j) => TraceStep(
+    j['id'],
+    j['toolName'],
+    TraceStatus.values.byName(j['status']),
+    reason: j['reason'],
+    narration: j['narration'],
+    count: j['count'] ?? 1,
+  );
 }
 
 enum ProposalStatus { pending, applied, dismissed }
@@ -114,6 +129,47 @@ class ProposalView {
   );
 }
 
+/// Explicit allowlist for UI details/copy. Never copies provider messages or arguments.
+class AssistantDiagnostics {
+  AssistantDiagnostics({
+    required this.requestId,
+    required this.model,
+    required this.host,
+    this.failure,
+    this.httpStatus,
+    this.fallback = false,
+    List<TraceStep> tools = const [],
+  }) : tools = List.unmodifiable(tools);
+  final String requestId, model, host;
+  final String? failure;
+  final int? httpStatus;
+  final bool fallback;
+  final List<TraceStep> tools;
+  Map<String, dynamic> toJson() => {
+    'requestId': requestId,
+    'model': model,
+    'host': host,
+    'failure': failure,
+    'httpStatus': httpStatus,
+    'fallback': fallback,
+    'tools': [
+      for (final t in tools) {'name': t.toolName, 'result': t.status.name, 'reason': t.reason},
+    ],
+  };
+  factory AssistantDiagnostics.fromJson(Map<String, dynamic> j) => AssistantDiagnostics(
+    requestId: j['requestId'],
+    model: j['model'],
+    host: j['host'],
+    failure: j['failure'],
+    httpStatus: j['httpStatus'],
+    fallback: j['fallback'] ?? false,
+    tools: [
+      for (final t in j['tools'] as List? ?? [])
+        TraceStep('', t['name'], TraceStatus.values.byName(t['result']), reason: t['reason']),
+    ],
+  );
+}
+
 class Message {
   Message({
     required this.id,
@@ -129,6 +185,9 @@ class Message {
     this.skill,
     this.noteId,
     this.online = false,
+    this.startedAt,
+    this.endedAt,
+    this.diagnostics,
   }) : contexts = List.unmodifiable(contexts),
        traces = List.unmodifiable(traces),
        citations = List.unmodifiable(citations),
@@ -143,6 +202,34 @@ class Message {
   final List<ProposalView> proposals;
   final String? skill, noteId;
   final bool online;
+  final DateTime? startedAt, endedAt;
+  final AssistantDiagnostics? diagnostics;
+  int get elapsedSeconds =>
+      startedAt == null ? 0 : ((endedAt ?? DateTime.now()).difference(startedAt!).inMilliseconds / 1000).ceil();
+  List<TraceStep> get activity {
+    final out = <TraceStep>[];
+    for (final t in traces) {
+      final last = out.lastOrNull;
+      if (t.narration == null &&
+          last != null &&
+          last.narration == null &&
+          last.toolName == t.toolName &&
+          last.status == t.status &&
+          last.reason == t.reason) {
+        out[out.length - 1] = TraceStep(
+          last.id,
+          last.toolName,
+          last.status,
+          reason: last.reason,
+          count: last.count + t.count,
+        );
+      } else {
+        out.add(t);
+      }
+    }
+    return List.unmodifiable(out);
+  }
+
   Message copyWith({
     String? text,
     MessageStatus? status,
@@ -152,6 +239,8 @@ class Message {
     List<ProposalView>? proposals,
     String? noteId,
     bool? online,
+    DateTime? endedAt,
+    AssistantDiagnostics? diagnostics,
   }) => Message(
     id: id,
     requestId: requestId,
@@ -166,6 +255,9 @@ class Message {
     skill: skill,
     noteId: noteId ?? this.noteId,
     online: online ?? this.online,
+    startedAt: startedAt,
+    endedAt: endedAt ?? this.endedAt,
+    diagnostics: diagnostics ?? this.diagnostics,
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -181,6 +273,9 @@ class Message {
     'skill': skill,
     'noteId': noteId,
     'online': online,
+    'diagnostics': diagnostics?.toJson(),
+    'startedAt': startedAt?.toIso8601String(),
+    'endedAt': endedAt?.toIso8601String(),
   };
   factory Message.fromJson(Map<String, dynamic> j) => Message(
     id: j['id'],
@@ -196,6 +291,11 @@ class Message {
     skill: j['skill'],
     noteId: j['noteId'],
     online: j['online'] ?? false,
+    diagnostics: j['diagnostics'] == null
+        ? null
+        : AssistantDiagnostics.fromJson(Map<String, dynamic>.from(j['diagnostics'])),
+    startedAt: DateTime.tryParse(j['startedAt'] ?? ''),
+    endedAt: DateTime.tryParse(j['endedAt'] ?? ''),
   );
 }
 

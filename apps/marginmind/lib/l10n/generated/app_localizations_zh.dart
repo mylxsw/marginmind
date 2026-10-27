@@ -2096,13 +2096,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantErrorKey => 'API Key 无效';
 
   @override
-  String get assistantErrorService => '服务暂时不可用';
+  String get assistantErrorService => '服务不可用';
 
   @override
   String get assistantErrorBudget => '超出本次上限';
 
   @override
   String get assistantErrorRefused => '模型拒绝回答';
+
+  @override
+  String get assistantErrorToolProtocol => '模型没能正确调用工具';
 
   @override
   String get assistantErrorFailed => '请求失败';

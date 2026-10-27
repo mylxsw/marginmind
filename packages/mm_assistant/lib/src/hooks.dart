@@ -12,20 +12,35 @@ class RunBudget {
   final int maxCalls, maxModels;
   int calls = 0, models = 0, searches = 0, pages = 0, bytes = 0, outputTokens = 0;
   void reserve({int readPages = 0, bool search = false}) {
-    if (++calls > maxCalls || (pages += readPages) > limits.pages || (search && ++searches > limits.searches)) {
+    if (++calls > maxCalls) throw const ResearchFailure(ResearchFailureKind.loop);
+    if ((pages += readPages) > limits.pages || (search && ++searches > limits.searches)) {
       throw const ResearchFailure(ResearchFailureKind.budget);
     }
   }
 }
 
 class PolicyHook extends AgentHook {
-  PolicyHook({required this.allowed, required this.budget, required this.online, UrlPolicy? urls})
-    : urls = urls ?? UrlPolicy();
+  PolicyHook({
+    required this.allowed,
+    required this.budget,
+    required this.online,
+    this.toolsEnabled = true,
+    this.requestId,
+    UrlPolicy? urls,
+  }) : urls = urls ?? UrlPolicy();
   final Set<String> allowed;
   final RunBudget budget;
   final bool online;
   final UrlPolicy urls;
   bool _awaitingResponse = false;
+  bool toolsEnabled;
+  final String? requestId;
+  String? _lastFailure;
+  int _failures = 0, _attempts = 0;
+  final _entries = <String, Map<String, dynamic>>{};
+  static String normalizeName(String name) => name.trim().split('.').last.toLowerCase().replaceAll('-', '_');
+  static String diagnosticName(String name) =>
+      name.length <= 100 && RegExp(r'^[a-zA-Z0-9_.-]+$').hasMatch(name) ? name : '<invalid>';
   @override
   ModelCallHookResult beforeModelCall(ModelCallHookContext context) {
     if (_awaitingResponse) return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.protocol));
@@ -44,6 +59,13 @@ class PolicyHook extends AgentHook {
     return ModelCallHookResult.proceed(
       request: context.request.copyWith(
         modelConfig: ModelConfig(model: config.model, maxTokens: remaining, extra: config.extra),
+        tools: toolsEnabled ? null : [],
+        clearToolChoice: !toolsEnabled,
+        systemMessage: toolsEnabled
+            ? null
+            : SystemMessage(
+                '${context.request.systemMessage?.content ?? ""}\n工具已关闭。仅用已附带的上下文和已读取的内容直接回答；不足时明确说明，不补充书外事实。',
+              ),
       ),
     );
   }
@@ -81,27 +103,94 @@ class PolicyHook extends AgentHook {
 
   @override
   Future<ToolCallHookResult> beforeToolCall(ToolCallHookContext context) async {
-    final name = context.call.name;
-    if (!allowed.contains(name) || (!online && {'web_search', 'search_papers', 'fetch_source'}.contains(name))) {
-      return const ToolCallHookResult.deny(reason: 'Tool is not authorized');
+    final raw = context.call;
+    final name = normalizeName(raw.name);
+    final entry = <String, dynamic>{'name': diagnosticName(raw.name), 'result': 'running', 'reason': null};
+    _entries[raw.id] = entry;
+    final diagnostics = (context.state.metadata['assistant.diagnostics'] as Map?)?[requestId] as Map?;
+    (diagnostics?['tools'] as List?)?.add(entry);
+    ToolCallHookResult deny(String reason) {
+      entry['result'] = 'error';
+      entry['reason'] = reason;
+      return ToolCallHookResult.deny(reason: reason, content: [TextPart(reason)], metadata: {'reason': reason});
     }
+
+    ToolCallHookResult abort(ResearchFailureKind kind) {
+      entry['result'] = 'error';
+      entry['reason'] = kind.name;
+      return ToolCallHookResult.abort(error: ResearchFailure(kind));
+    }
+
+    if (++_attempts > budget.maxCalls) return abort(ResearchFailureKind.loop);
+    if (!toolsEnabled) return abort(ResearchFailureKind.toolProtocol);
+    if (!allowed.contains(name)) return deny('不存在的工具 ${diagnosticName(raw.name)}');
+    if (!online && {'web_search', 'search_papers', 'fetch_source'}.contains(name)) return deny('已被策略拒绝：联网已关闭');
     try {
-      final args = jsonDecode(context.call.arguments) as Map<String, dynamic>;
+      final decoded = jsonDecode(raw.arguments);
+      if (decoded is! Map<String, dynamic>) return deny('参数应为 JSON 对象');
+      final args = Map<String, dynamic>.of(decoded);
+      for (final key in ['from', 'to', 'limit']) {
+        if (!args.containsKey(key)) continue;
+        if (args[key] is String) args[key] = int.tryParse((args[key] as String).trim()) ?? args[key];
+        if (args[key] is! int) return deny('参数 $key 应为整数');
+      }
+      if (name == 'read_pages') {
+        for (final key in ['from', 'to']) {
+          if (args[key] is! int) return deny('参数 $key 应为整数');
+        }
+      }
+      final tool = context.availableTools.where((t) => t.name == name).firstOrNull;
+      final properties = tool?.parameters['properties'] as Map? ?? {};
+      for (final key in tool?.parameters['required'] as List? ?? []) {
+        if (!args.containsKey(key)) return deny('缺少参数 $key');
+      }
+      for (final key in properties.keys) {
+        if (args.containsKey(key) && (properties[key] as Map)['type'] == 'string' && args[key] is! String) {
+          return deny('参数 $key 应为字符串');
+        }
+      }
       final pages = switch (name) {
         'read_pages' => (args['to'] as int) - (args['from'] as int) + 1,
         'fetch_source' => 1,
         _ => 0,
       };
-      if (pages < 0) return const ToolCallHookResult.deny(reason: 'Invalid page range');
+      if (name == 'read_pages' && ((args['from'] as int) < 1 || pages < 1)) return deny('参数页码范围无效');
       budget.reserve(readPages: pages, search: {'web_search', 'search_papers', 'search_study_set'}.contains(name));
       if (name == 'fetch_source') await urls.validate(Uri.parse(args['url'] as String));
-      return const ToolCallHookResult.proceed();
+      return ToolCallHookResult.proceed(FunctionCall(id: raw.id, name: name, arguments: jsonEncode(args)));
     } on ResearchFailure catch (e) {
-      if (e.kind == ResearchFailureKind.budget) return ToolCallHookResult.abort(error: e);
-      return const ToolCallHookResult.deny(reason: 'Unsafe URL');
+      if ({ResearchFailureKind.budget, ResearchFailureKind.loop}.contains(e.kind)) {
+        return abort(e.kind);
+      }
+      return deny('已被策略拒绝：不安全的地址');
     } catch (_) {
-      return const ToolCallHookResult.deny(reason: 'Invalid arguments');
+      return deny('参数格式错误：应为 JSON 对象');
     }
+  }
+
+  @override
+  ToolResultHookResult afterToolCall(ToolResultHookContext context) {
+    final result = context.result;
+    // Only our own bounded reasons enter diagnostics; never provider text or arguments.
+    final reason = result.isError ? (result.metadata?['reason'] as String? ?? '工具拒绝了无效或未授权的请求') : null;
+    final diagnostics = (context.state.metadata['assistant.diagnostics'] as Map?)?[requestId] as Map?;
+    final entry = _entries.remove(result.id);
+    if (entry != null) {
+      entry['result'] = result.isError ? 'error' : 'done';
+      entry['reason'] = reason;
+    }
+    if (reason == null) {
+      _lastFailure = null;
+      _failures = 0;
+    } else {
+      _failures = reason == _lastFailure ? _failures + 1 : 1;
+      _lastFailure = reason;
+      if (_failures >= 3) {
+        toolsEnabled = false;
+        diagnostics?['fallback'] = true;
+      }
+    }
+    return const ToolResultHookResult.proceed();
   }
 }
 

@@ -3938,6 +3938,12 @@ abstract class AppLocalizations {
   /// **'The model declined to answer'**
   String get assistantErrorRefused;
 
+  /// No description provided for @assistantErrorToolProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'The model could not call tools correctly'**
+  String get assistantErrorToolProtocol;
+
   /// No description provided for @assistantErrorFailed.
   ///
   /// In en, this message translates to:

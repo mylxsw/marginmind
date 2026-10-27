@@ -47,6 +47,7 @@ void main() {
   late ProviderSubscription<Conversation> subscription;
   var factories = 0;
   AssistantRunFactory? factory;
+  Future<String> Function()? titleGenerator;
   setUp(() {
     storage = MemoryStorage();
     executor = MemoryMapEditExecutor(studySetId: 'set', mapId: 'map', parents: {'root': null});
@@ -54,6 +55,7 @@ void main() {
     client = ScriptClient([answer('hello'), answer('again')]);
     factories = 0;
     factory = null;
+    titleGenerator = null;
     container = ProviderContainer(
       overrides: [
         assistantDependenciesProvider.overrideWithValue(
@@ -63,6 +65,7 @@ void main() {
             storage: storage,
             executor: executor,
             notes: notes,
+            generateTitle: (_, _) async => titleGenerator == null ? '' : await titleGenerator!(),
             runFactory: (s, c, q) async {
               factories++;
               if (factory != null) return factory!(s, c, q);
@@ -92,6 +95,98 @@ void main() {
     container.dispose();
   });
   Conversation view() => container.read(assistantControllerProvider);
+  test('tool narration never enters body; timestamps and raw failures survive persistence', () async {
+    client = ScriptClient([
+      sdk.ModelMessage(
+        model: 'coding/auto',
+        textOutput: 'Let me read the selection.',
+        stopReason: 'tool_calls',
+        functionCalls: [
+          sdk.FunctionCall(id: 'read', name: 'functions.READ-SELECTION', arguments: '{"selectionId":"sel"}'),
+        ],
+      ),
+      answer('**结论：这是选区的解释。**\n- 一个要点。'),
+    ]);
+    await controller.send(
+      '解释它',
+      contexts: [const ContextItem(id: 'sel', kind: ContextKind.selection, displayText: '术语')],
+    );
+    final result = view().messages.last;
+    expect(result.text, '**结论：这是选区的解释。**\n- 一个要点。');
+    expect(result.text, isNot(contains('Let me')));
+    expect(result.traces.last.toolName, 'functions.READ-SELECTION');
+    expect(result.startedAt, isNotNull);
+    expect(result.endedAt, isNotNull);
+    expect(view().title, '解释术语');
+    final saved = await storage.loadOrCreate(view().id, null);
+    expect(saved.metadata['assistant.diagnostics'], isNotNull);
+  });
+  test('factory failures use shared classification instead of network fallback', () async {
+    factory = (_, _, _) async => throw const ResearchFailure(ResearchFailureKind.toolProtocol);
+    await controller.send('question');
+    expect(view().messages.last.errorKind, ResearchFailureKind.toolProtocol);
+    expect(view().messages.last.endedAt, isNotNull);
+  });
+  test('generated title is persisted; failed generation keeps placeholder', () async {
+    titleGenerator = () async => '主题标题';
+    await controller.send('很长的问题');
+    expect(view().title, '主题标题');
+    await controller.newConversation();
+    titleGenerator = () async => throw StateError('title service');
+    await controller.send('备用标题');
+    expect(view().title, '备用标题');
+  });
+  test('a manual rename made during title generation wins', () async {
+    final pending = Completer<String>();
+    final started = Completer<void>();
+    titleGenerator = () {
+      started.complete();
+      return pending.future;
+    };
+    final sending = controller.send('question');
+    await started.future;
+    await controller.rename('用户标题');
+    pending.complete('自动标题');
+    await sending;
+    expect(view().title, '用户标题');
+  });
+  test('three unknown tools produce an ordered, merged failure activity and safe diagnostics', () async {
+    client = ScriptClient([for (var i = 0; i < 3; i++) call('unknown', '{}', id: 'bad$i'), answer('**直接回答。**')]);
+    await controller.send('解释上下文');
+    final result = view().messages.last;
+    expect(result.activity.first.count, 3);
+    expect(result.activity.first.reason, '不存在的工具 unknown');
+    expect(result.activity.last.narration, contains('已关闭本轮工具'));
+    expect(result.diagnostics!.tools, hasLength(3));
+    expect(result.diagnostics!.fallback, true);
+    final saved = Conversation.fromJson((await storage.loadOrCreate(view().id, null)).metadata['assistant.view']);
+    expect(saved.messages.last.diagnostics!.tools.first.toolName, 'unknown');
+  });
+  test('narrations stay between actions and a repeated tool id does not rewrite prior actions', () async {
+    client = ScriptClient([
+      for (final narration in ['先读取所选内容。', '再读取以确认。'])
+        sdk.ModelMessage(
+          model: 'fake',
+          textOutput: narration,
+          stopReason: 'tool_calls',
+          functionCalls: [sdk.FunctionCall(id: 'same', name: 'read_selection', arguments: '{"selectionId":"sel"}')],
+        ),
+      answer('**最终回答。**'),
+    ]);
+    await controller.send(
+      '解释选区',
+      contexts: [const ContextItem(id: 'sel', kind: ContextKind.selection, displayText: '术语')],
+    );
+    final result = view().messages.last;
+    expect(result.text, '**最终回答。**');
+    expect(result.activity.map((t) => t.narration ?? t.toolName), [
+      '先读取所选内容。',
+      'read_selection',
+      '再读取以确认。',
+      'read_selection',
+    ]);
+    expect(result.traces.where((t) => t.narration == null).map((t) => t.status), everyElement(TraceStatus.done));
+  });
   test('legacy conversations reject mutations without contacting the provider', () async {
     final legacy = Conversation(
       id: 'legacy',

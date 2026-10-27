@@ -2201,6 +2201,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantErrorRefused => 'The model declined to answer';
 
   @override
+  String get assistantErrorToolProtocol => 'The model could not call tools correctly';
+
+  @override
   String get assistantErrorFailed => 'Request failed';
 
   @override

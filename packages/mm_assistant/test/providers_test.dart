@@ -4,6 +4,10 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:dart_agent_core/dart_agent_core.dart' hide MessageRole;
+import 'package:dart_agent_core/eval.dart';
+
+import 'support.dart' show Reader;
+
 import 'package:dio/dio.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -38,6 +42,80 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
   localEnabled: provider == AssistantProvider.ollama,
 );
 void main() {
+  test('coding/auto wire response recording replays malformed tools and direct fallback', () async {
+    final adapter = Adapter((options, number) {
+      final data = options.data is String ? jsonDecode(options.data) : options.data;
+      expect(data['model'], 'coding/auto');
+      if (number == 4) expect(data['tools'] ?? [], isEmpty);
+      return ResponseBody.fromString(
+        jsonEncode({
+          'id': 'recorded-$number',
+          'model': 'coding/auto',
+          'choices': [
+            {
+              'index': 0,
+              'message': {
+                'role': 'assistant',
+                'content': number < 4 ? 'Let me look that up.' : '**结论：仅依据上下文。**\n- 原文要点。',
+                if (number < 4)
+                  'tool_calls': [
+                    {
+                      'id': 'tool-$number',
+                      'type': 'function',
+                      'function': {'name': 'functions.read_selction', 'arguments': '{}'},
+                    },
+                  ],
+              },
+              'finish_reason': number < 4 ? 'tool_calls' : 'stop',
+            },
+          ],
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    });
+    final connection = connectAssistant(
+      const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'coding/auto',
+        endpoint: 'https://example.com/v1',
+      ),
+      'test-key',
+      adapter: adapter,
+    );
+    final store = InMemoryRecordingStore();
+    try {
+      for (final client in [
+        RecordingLLMClient(inner: connection.client, store: store),
+        ReplayLLMClient(store: store),
+      ]) {
+        final state = AgentState(sessionId: 'wire');
+        final run = createAssistantRun(
+          client: client,
+          model: 'coding/auto',
+          state: state,
+          requestId: 'wire-request',
+          reader: Reader(),
+          scope: ReadScope(studySetId: 's'),
+          mapId: 'm',
+          baseRevision: 0,
+          parents: {},
+        );
+        final events = await run.agent.runStream([UserMessage.text('解释上下文')], useStream: false).toList();
+        expect((state.metadata['assistant.diagnostics'] as Map)['wire-request']['fallback'], true);
+        expect(
+          (events.lastWhere((e) => e.eventType == StreamingEventType.fullModelMessage).data as ModelMessage).textOutput,
+          startsWith('**结论：'),
+        );
+      }
+      expect(adapter.calls, 4);
+    } finally {
+      connection.close();
+    }
+  });
+
   test('compatible base URLs and full endpoints generate at the same exact route', () async {
     for (final address in [
       'https://squirrel.aicode.cc/v1',

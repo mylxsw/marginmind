@@ -19,7 +19,8 @@ export 'package:mm_assistant/mm_assistant.dart'
         ProposalView,
         ProposalStatus,
         AssistantModel,
-        AssistantProvider;
+        AssistantProvider,
+        AssistantDiagnostics;
 
 typedef AssistantRunFactory = Future<AssistantRun> Function(
   sdk.AgentState state,
@@ -36,6 +37,7 @@ class AssistantDependencies {
     required this.executor,
     required this.notes,
     this.online = true,
+    this.generateTitle,
   });
   final String studySetId;
   final AssistantModel model;
@@ -44,6 +46,7 @@ class AssistantDependencies {
   final MapEditExecutor executor;
   final NoteSaver notes;
   final bool online;
+  final Future<String> Function(AssistantModel model, String question)? generateTitle;
 }
 
 /// Override per study-set panel scope. There is deliberately no UI binding yet.
@@ -172,7 +175,13 @@ class AssistantController extends Notifier<Conversation> {
       contexts: contexts,
       skill: skill,
     );
-    final answer = Message(id: _id(), requestId: requestId, role: MessageRole.agent, status: MessageStatus.running);
+    final answer = Message(
+      id: _id(),
+      requestId: requestId,
+      role: MessageRole.agent,
+      status: MessageStatus.running,
+      startedAt: DateTime.now(),
+    );
     final view = session.view;
     final List<Message> messages;
     if (replacing case (final oldQuestion, final oldAnswer)) {
@@ -188,7 +197,7 @@ class AssistantController extends Notifier<Conversation> {
     _set(
       session,
       view.copyWith(
-        title: view.title.isEmpty ? text.substring(0, text.length.clamp(0, 80)) : view.title,
+        title: view.title.isEmpty ? assistantTitlePlaceholder(text, contexts) : view.title,
         messages: messages,
       ),
     );
@@ -208,6 +217,18 @@ class AssistantController extends Notifier<Conversation> {
   Future<void> _send(_Session session, Message question, String answerId, int epoch) async {
     bool active() => !_disposed && epoch == session.epoch;
     var segmentStart = 0;
+    var fallbackRecorded = false;
+    final allDiagnostics =
+        session.agent.metadata.putIfAbsent('assistant.diagnostics', () => <String, dynamic>{}) as Map;
+    allDiagnostics[question.requestId] = {
+      'requestId': question.requestId,
+      'model': session.view.model.model,
+      'host': Uri.tryParse(session.view.model.endpoint)?.host ?? '',
+      'tools': <dynamic>[],
+    };
+    AssistantDiagnostics diagnosticView() =>
+        AssistantDiagnostics.fromJson(Map<String, dynamic>.from(allDiagnostics[question.requestId]));
+    _replace(session, _message(answerId, session).copyWith(diagnostics: diagnosticView()));
     try {
       await _persist(session); // Do not contact provider if question cannot be saved.
       if (!active()) return;
@@ -232,16 +253,32 @@ class AssistantController extends Notifier<Conversation> {
           case sdk.StreamingEventType.functionCallRequest:
             final calls = event.data as List<sdk.FunctionCall>;
             answer = answer.copyWith(
-              traces: [...answer.traces, for (final call in calls) TraceStep(call.id, call.name, TraceStatus.running)],
+              text: '',
+              traces: [
+                ...answer.traces,
+                if (answer.text.trim().isNotEmpty &&
+                    (!RegExp(r'[\u4e00-\u9fff]').hasMatch(question.text) ||
+                        RegExp(r'[\u4e00-\u9fff]').hasMatch(answer.text)))
+                  TraceStep('narration-${answer.traces.length}', '', TraceStatus.done, narration: answer.text.trim()),
+                for (final call in calls) TraceStep(call.id, call.name, TraceStatus.running),
+              ],
             );
+            segmentStart = 0;
           case sdk.StreamingEventType.functionCallResult:
             final results = (event.data as sdk.FunctionExecutionResultMessage).results;
             final byId = {for (final r in results) r.id: r};
             answer = answer.copyWith(
               traces: [
                 for (final t in answer.traces)
-                  byId.containsKey(t.id)
-                      ? TraceStep(t.id, t.toolName, byId[t.id]!.isError ? TraceStatus.error : TraceStatus.done)
+                  byId.containsKey(t.id) && t.status == TraceStatus.running && t.narration == null
+                      ? TraceStep(
+                          t.id,
+                          t.toolName,
+                          byId[t.id]!.isError ? TraceStatus.error : TraceStatus.done,
+                          reason: byId[t.id]!.isError
+                              ? (byId[t.id]!.metadata?['reason'] as String? ?? '工具拒绝了无效或未授权的请求')
+                              : null,
+                        )
                       : t,
               ],
               proposals: run.proposals.proposals.values.map((p) => ProposalView(proposal: p)).toList(),
@@ -249,10 +286,31 @@ class AssistantController extends Notifier<Conversation> {
           case sdk.StreamingEventType.modelRetrying:
             throw const ResearchFailure(ResearchFailureKind.protocol);
         }
+        final diagnostics = (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] as Map?;
+        if (!fallbackRecorded && diagnostics?['fallback'] == true) {
+          fallbackRecorded = true;
+          final english = !RegExp(r'[\u4e00-\u9fff]').hasMatch(question.text);
+          answer = answer.copyWith(
+            traces: [
+              ...answer.traces,
+              TraceStep(
+                'fallback',
+                '',
+                TraceStatus.done,
+                narration: english
+                    ? 'Tools failed three times. Answering from the attached context.'
+                    : '工具连续失败三次，已关闭本轮工具，改用附带的上下文回答。',
+              ),
+            ],
+          );
+        }
         answer = answer.copyWith(
+          diagnostics: diagnosticView(),
           citations: run.citations.used(answer.text),
           online: answer.traces.any(
-            (t) => {'web_search', 'search_papers', 'fetch_source'}.contains(t.toolName) && t.status == TraceStatus.done,
+            (t) =>
+                {'web_search', 'search_papers', 'fetch_source'}.contains(PolicyHook.normalizeName(t.toolName)) &&
+                t.status == TraceStatus.done,
           ),
         );
         _replace(session, answer);
@@ -260,15 +318,33 @@ class AssistantController extends Notifier<Conversation> {
         reads[question.requestId] = run.citations.items.map((c) => c.toJson()).toList();
         await _persist(session);
       }
-      if (active()) _replace(session, _message(answerId, session).copyWith(status: MessageStatus.done));
+      if (active()) {
+        _replace(session, _message(answerId, session).copyWith(status: MessageStatus.done, endedAt: DateTime.now()));
+      }
     } catch (error) {
       if (active()) {
-        final kind = error is ResearchFailure ? error.kind : ResearchFailureKind.unavailable;
+        final kind = assistantFailureKind(error);
+        final diagnostics = (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] as Map?;
+        diagnostics?['failure'] = kind.name;
+        final status = assistantFailureStatus(error);
+        if (status != null) diagnostics?['httpStatus'] = status;
+        for (final tool in diagnostics?['tools'] as List? ?? []) {
+          if (tool['result'] == 'running') {
+            tool['result'] = 'error';
+            tool['reason'] = kind.name;
+          }
+        }
         _replace(
           session,
           _message(answerId, session).copyWith(
             status: kind == ResearchFailureKind.cancelled ? MessageStatus.stopped : MessageStatus.error,
             errorKind: kind,
+            diagnostics: diagnosticView(),
+            traces: [
+              for (final t in _message(answerId, session).traces)
+                t.status == TraceStatus.running ? TraceStep(t.id, t.toolName, TraceStatus.error, reason: kind.name) : t,
+            ],
+            endedAt: DateTime.now(),
           ),
         );
       }
@@ -276,6 +352,21 @@ class AssistantController extends Notifier<Conversation> {
       session.run?.stop();
       session.run = null;
       if (active()) {
+        if (_message(answerId, session).status == MessageStatus.done &&
+            session.view.messages.where((m) => m.role == MessageRole.user).length == 1 &&
+            assistantSelectionTitle(question.text, question.contexts) == null &&
+            session.view.title == assistantTitlePlaceholder(question.text, question.contexts) &&
+            _deps.generateTitle != null) {
+          final placeholder = session.view.title;
+          try {
+            final title = await _deps.generateTitle!(session.view.model, question.text);
+            if (active() && session.view.title == placeholder && title.trim().isNotEmpty) {
+              _set(session, session.view.copyWith(title: assistantTitlePlaceholder(title, const [])));
+            }
+          } catch (_) {
+            /* A title failure keeps the question placeholder. */
+          }
+        }
         session.agent.isRunning = false;
         await _persist(session);
       }
@@ -296,15 +387,28 @@ class AssistantController extends Notifier<Conversation> {
     if (running == null) return;
     session.epoch++;
     session.run?.stop();
-    _set(
-      session,
-      session.view.copyWith(
-        messages: [
-          for (final m in session.view.messages)
-            m.status == MessageStatus.running ? m.copyWith(status: MessageStatus.stopped) : m,
+    Message stopped(Message m) {
+      if (m.status != MessageStatus.running) return m;
+      final diagnostic = (session.agent.metadata['assistant.diagnostics'] as Map?)?[m.requestId] as Map?;
+      diagnostic?['failure'] = ResearchFailureKind.cancelled.name;
+      for (final tool in diagnostic?['tools'] as List? ?? []) {
+        if (tool['result'] == 'running') {
+          tool['result'] = 'error';
+          tool['reason'] = 'cancelled';
+        }
+      }
+      return m.copyWith(
+        status: MessageStatus.stopped,
+        endedAt: DateTime.now(),
+        diagnostics: diagnostic == null ? null : AssistantDiagnostics.fromJson(Map<String, dynamic>.from(diagnostic)),
+        traces: [
+          for (final t in m.traces)
+            t.status == TraceStatus.running ? TraceStep(t.id, t.toolName, TraceStatus.error, reason: 'cancelled') : t,
         ],
-      ),
-    );
+      );
+    }
+
+    _set(session, session.view.copyWith(messages: session.view.messages.map(stopped).toList()));
     await running;
     session.running = null;
     if (identical(_busy, session)) {
