@@ -1027,7 +1027,12 @@ class _SaveBar extends StatelessWidget {
               children: [
                 if (count > 0) ...[
                   Flexible(
-                    child: Text(l.researchChecked(count), maxLines: 1, overflow: TextOverflow.ellipsis, style: t.callout),
+                    child: Text(
+                      l.researchChecked(count),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.callout,
+                    ),
                   ),
                   Flexible(
                     child: MMButton(label: l.researchClearChecked, variant: MMButtonVariant.plain, onPressed: onClear),
