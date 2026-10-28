@@ -1,0 +1,15 @@
+#!/bin/bash
+# usage: run_probe.sh <udid> <label>; runs on the Mac worker inside the scratch clone.
+export PATH=$HOME/fvm/default/bin:/opt/homebrew/bin:$PATH
+UDID=$1; LABEL=$2; cd ~/macrun-work/mm-gul538/apps/marginmind
+mkdir -p /tmp/gul538 integration_test; rm -f /tmp/gul538/marker
+cp ~/macrun-work/gul538-probe/probe_test.dart integration_test/probe_test.dart
+grep -q integration_test pubspec.yaml || sed -i '' 's/^dev_dependencies:/dev_dependencies:\
+  integration_test:\
+    sdk: flutter/' pubspec.yaml
+xcrun simctl boot $UDID 2>/dev/null; xcrun simctl bootstatus $UDID -b >/dev/null
+xcrun simctl uninstall $UDID dev.marginmind.marginmind 2>/dev/null
+( last=""; for i in $(seq 1 900); do m=$(cat /tmp/gul538/marker 2>/dev/null); if [ -n "$m" ] && [ "$m" != "$last" ]; then [ "$m" = done ] && break; sleep 2; xcrun simctl io $UDID screenshot /tmp/gul538/$LABEL-$m.png >/dev/null 2>&1; last=$m; fi; sleep 0.5; done ) &
+W=$!
+flutter test integration_test/probe_test.dart -d $UDID --no-pub 2>&1 | grep -E "PROBE|SHOT|passed|failed|Error|rror:" | head -60
+wait $W; ls /tmp/gul538
