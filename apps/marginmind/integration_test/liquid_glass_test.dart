@@ -78,7 +78,10 @@ void main() {
       final pdf = find.byType(MMPdfView);
       // A quick fling scrolls; a slow drag would select text.
       await tester.fling(pdf, const Offset(0, -300), 2000);
-      await idle(tester, 3);
+      await idle(tester, 2);
+      // A touch drag can start a text selection: a tap clears it.
+      await tester.tapAt(tester.getCenter(pdf));
+      await idle(tester, 2);
       await capture(tester, '$name-reader');
       if (appearance == AppearancePreference.light) {
         await binding.watchPerformance(() async {
