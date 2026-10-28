@@ -397,7 +397,9 @@ void main() {
     testWidgets('library on a phone: drawer sidebar and a narrow toolbar', (tester) async {
       final container = await pumpDevice(tester, iphone);
       expect(find.byIcon(MMIcons.list), findsNothing);
-      expect(tester.getSize(find.byType(MMToolbarSearchField)).width, MMSizes.compactSearchWidth);
+      final search = tester.getRect(find.byType(MMToolbarSearchField));
+      expect(search.width, iphone.size.width - 2 * MMSpacing.l);
+      expect(search.top, greaterThanOrEqualTo(tester.getRect(find.byType(MMToolbar)).bottom));
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       expect(find.text('Starred').hitTestable(), findsOneWidget);
