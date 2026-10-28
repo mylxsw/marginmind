@@ -1469,7 +1469,7 @@
     }
   },
   "assistantAnswerWithoutTools": "Answer Without Tools",
-  "assistantSwitchModel": "Switch Model",
+  "assistantSwitchModel": "Switch Model and Retry",
   "assistantCopyDiagnostics": "Copy Diagnostics",
   "assistantDetails": "Details",
   "assistantDiagnosticModel": "Model",

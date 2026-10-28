@@ -2490,7 +2490,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantAnswerWithoutTools => '不用工具重答';
 
   @override
-  String get assistantSwitchModel => '换个模型';
+  String get assistantSwitchModel => '换模型重试';
 
   @override
   String get assistantCopyDiagnostics => '复制诊断信息';

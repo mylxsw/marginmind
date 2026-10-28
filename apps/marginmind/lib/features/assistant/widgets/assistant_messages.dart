@@ -782,7 +782,7 @@ class _Tail extends ConsumerWidget {
               builder: (button) => _ActionButton(
                 key: ValueKey('assistant-switch-model-${m.id}'),
                 label: l.assistantSwitchModel,
-                onPressed: () => showModelMenu(button, ref, boundsOf(button)),
+                onPressed: () => showModelMenu(button, ref, boundsOf(button), retryMessageId: m.id),
               ),
             ),
             _ActionButton(

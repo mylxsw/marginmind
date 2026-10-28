@@ -23,12 +23,14 @@ bool sameModel(AssistantModel a, AssistantModel b) =>
     (a.serviceId == null || b.serviceId == null ? a.provider == b.provider : a.serviceId == b.serviceId);
 
 /// The model menu above [anchor]: enabled models grouped by service, names
-/// only, then “Manage Models…”. A choice changes this conversation only.
-Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor) async {
+/// only, then “Manage Models…”. A choice changes this conversation only,
+/// and retries [retryMessageId] when opened from an answer's recovery action.
+Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {String? retryMessageId}) async {
   final l = context.l10n;
   final services = await ref.read(assistantServicesProvider.future);
   if (!context.mounted) return;
-  final current = ref.read(assistantControllerProvider).model;
+  final conversation = ref.read(assistantControllerProvider);
+  final current = conversation.model;
   final controller = ref.read(assistantControllerProvider.notifier);
   final groups = [
     for (final s in services.services)
@@ -43,11 +45,10 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor) asy
         if (i > 0) const MMMenuDivider(),
         MMMenuHeader(service.name),
         for (final m in models)
-          MMMenuItem(
-            modelLabel(services, m),
-            () => unawaited(controller.switchModel(m).catchError((Object _) {})),
-            checked: sameModel(m, current),
-          ),
+          MMMenuItem(modelLabel(services, m), () {
+            if (!context.mounted || ref.read(assistantControllerProvider).id != conversation.id) return;
+            unawaited(controller.switchModel(m, retryMessageId: retryMessageId).catchError((Object _) {}));
+          }, checked: sameModel(m, current)),
       ],
       if (groups.isNotEmpty) const MMMenuDivider(),
       MMMenuItem(

@@ -823,7 +823,7 @@
   "assistantWorkedFor": "处理了 {seconds} 秒",
   "assistantToolFailures": "工具调用失败 {count} 次",
   "assistantAnswerWithoutTools": "不用工具重答",
-  "assistantSwitchModel": "换个模型",
+  "assistantSwitchModel": "换模型重试",
   "assistantCopyDiagnostics": "复制诊断信息",
   "assistantDetails": "详情",
   "assistantDiagnosticModel": "模型",

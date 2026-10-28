@@ -147,6 +147,78 @@ void main() {
     expect(view().model.supportsTools, isTrue);
   });
 
+  test('switching from a failed answer retries its question, context and skill with the new model', () async {
+    const context = ContextItem(id: 'sel', kind: ContextKind.selection, displayText: '原文');
+    const replacement = AssistantModel(
+      provider: AssistantProvider.responses,
+      model: 'replacement',
+      endpoint: 'https://example.com/v1/responses',
+      serviceId: 'other-service',
+    );
+    final seen = <(AssistantModel, Message, bool)>[];
+    factory = (s, c, q) async {
+      seen.add((c.model, q, c.online));
+      if (seen.length == 1) throw const ResearchFailure(ResearchFailureKind.toolProtocol);
+      return createAssistantRun(
+        client: client,
+        model: c.model.model,
+        state: s,
+        requestId: q.requestId,
+        reader: Reader(),
+        scope: scopeFromContexts('set', q.contexts),
+        mapId: 'map',
+        baseRevision: executor.revision,
+        parents: executor.parents,
+      );
+    };
+    await controller.setOnline(false);
+    await controller.send('解释原文', contexts: [context], skill: 'explain');
+    final id = view().id;
+    final old = view().messages.last;
+    expect(old.status, MessageStatus.error);
+
+    await controller.switchModel(replacement, retryMessageId: old.id);
+
+    expect(seen, hasLength(2));
+    expect(seen.last.$1, replacement);
+    expect(seen.last.$2.text, '解释原文');
+    expect(seen.last.$2.contexts.single.id, context.id);
+    expect(seen.last.$2.skill, 'explain');
+    expect(seen.last.$3, isFalse);
+    expect(view().id, id);
+    expect(view().messages, hasLength(2));
+    expect(view().messages.last.status, MessageStatus.done);
+    expect(view().messages.last.requestId, isNot(old.requestId));
+    final saved = (await storage.loadOrCreate(id, null)).metadata;
+    expect((saved['assistant.replaced'] as List).single['id'], old.id);
+    final persisted = Conversation.fromJson(Map<String, dynamic>.from(saved['assistant.view'] as Map));
+    expect(persisted.model.model, replacement.model);
+    expect(persisted.messages.last.status, MessageStatus.done);
+  });
+
+  test('a failed model recovery stays retryable and does not retry in a loop', () async {
+    factory = (s, c, q) async => throw const ResearchFailure(ResearchFailureKind.toolProtocol);
+    await controller.send('question');
+    final old = view().messages.last;
+    await controller.switchModel(model, retryMessageId: old.id);
+    expect(factories, 2);
+    expect(view().messages, hasLength(2));
+    expect(view().messages.last.status, MessageStatus.error);
+    expect(view().messages.last.id, isNot(old.id));
+    expect(controller.busy, isFalse);
+  });
+
+  test('a failed model save does not start recovery or replace the failed answer', () async {
+    factory = (s, c, q) async => throw const ResearchFailure(ResearchFailureKind.toolProtocol);
+    await controller.send('question');
+    final old = view().messages.last;
+    storage.fail = true;
+    await expectLater(controller.switchModel(model, retryMessageId: old.id), throwsStateError);
+    expect(factories, 1);
+    expect(view().messages.last.id, old.id);
+    expect(controller.busy, isFalse);
+  });
+
   test('new conversations start with the current default model', () async {
     AssistantModel? current;
     final c = ProviderContainer(
@@ -293,6 +365,7 @@ void main() {
       ),
     );
     expect(view().model.model, 'other');
+    expect(factories, 2); // An ordinary model change does not regenerate a completed answer.
     final id = view().id;
     await controller.newConversation();
     expect(view().messages, isEmpty);

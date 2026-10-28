@@ -207,6 +207,61 @@ void main() {
   });
 
   group('in the panel', () {
+    testWidgets('choosing a model from a failed answer immediately retries without typing', (tester) async {
+      final archive = MemoryConversationArchive();
+      final state = sdk.AgentState(sessionId: 'switch-retry');
+      state.metadata['assistant.view'] = Conversation(
+        id: state.sessionId,
+        studySetId: 'demo-1',
+        title: '解释',
+        model: const AssistantModel(
+          provider: AssistantProvider.claude,
+          model: 'broken-model',
+          endpoint: 'https://api.anthropic.com/v1/messages',
+        ),
+        messages: [
+          Message(
+            id: 'question',
+            requestId: 'request',
+            role: MessageRole.user,
+            text: '解释这段话',
+            skill: 'explain',
+            contexts: const [ContextItem(id: 'selection', kind: ContextKind.selection, displayText: _selection)],
+          ),
+          Message(
+            id: 'failure',
+            requestId: 'request',
+            role: MessageRole.agent,
+            status: MessageStatus.error,
+            errorKind: ResearchFailureKind.toolProtocol,
+          ),
+        ],
+      ).toJson();
+      await archive.save(state);
+      final client = ScriptClient([answer('换模型后的回答')]);
+      await openAssistantApp(tester, archive: archive, client: client);
+      await tester.tap(find.byKey(const ValueKey('sidebar-conversation-switch-retry')));
+      await pumpFor(tester, 20);
+      await tester.enterText(find.byKey(const ValueKey('assistant-input')), '还没发送的草稿');
+      await tester.tap(find.byKey(const ValueKey('assistant-switch-model-failure')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('claude-opus-5-5').last);
+      await pumpFor(tester, 20);
+
+      final conversation = conversationOf(tester);
+      expect(client.calls, 1);
+      expect(conversation.id, state.sessionId);
+      expect(conversation.model.model, 'claude-opus-5-5');
+      expect(conversation.messages, hasLength(2));
+      expect(conversation.messages.first.text, '解释这段话');
+      expect(conversation.messages.first.contexts.single.displayText, _selection);
+      expect(conversation.messages.first.skill, 'explain');
+      expect(conversation.messages.last.status, MessageStatus.done);
+      expect(conversation.messages.last.text, '换模型后的回答');
+      expect(tester.widget<TextField>(find.byKey(const ValueKey('assistant-input'))).controller!.text, '还没发送的草稿');
+      expect(find.text('模型没能正确调用工具'), findsNothing);
+    });
+
     testWidgets('a tool failure: details, copied diagnostics, answer without tools, switch model', (tester) async {
       final archive = MemoryConversationArchive();
       final state = sdk.AgentState(sessionId: 'tools-1');
@@ -255,7 +310,7 @@ void main() {
       await pumpFor(tester, 20);
       expect(find.text('模型没能正确调用工具'), findsOneWidget);
       expect(find.text('不用工具重答'), findsOneWidget);
-      expect(find.text('换个模型'), findsOneWidget);
+      expect(find.text('换模型重试'), findsOneWidget);
       expect(find.text('复制诊断信息'), findsOneWidget);
       expect(find.byKey(const ValueKey('assistant-details-table')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('assistant-details-1000-2')));

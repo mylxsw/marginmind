@@ -2605,7 +2605,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantAnswerWithoutTools => 'Answer Without Tools';
 
   @override
-  String get assistantSwitchModel => 'Switch Model';
+  String get assistantSwitchModel => 'Switch Model and Retry';
 
   @override
   String get assistantCopyDiagnostics => 'Copy Diagnostics';

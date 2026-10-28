@@ -573,11 +573,22 @@ class AssistantController extends Notifier<Conversation> {
     return true;
   }
 
-  Future<void> switchModel(AssistantModel model) async {
+  /// Changes the conversation's model. From an answer's recovery action,
+  /// [retryMessageId] also re-asks that answer's original question.
+  Future<void> switchModel(AssistantModel model, {String? retryMessageId}) async {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
-    await stop();
-    _set(_open, _open.view.copyWith(model: model));
-    await _persist();
+    final session = _open;
+    if (retryMessageId != null) {
+      if (_busy != null) throw StateError('Assistant is busy');
+      if (_message(retryMessageId, session).role != MessageRole.agent) throw StateError('Not an answer');
+    }
+    await _stop(session);
+    if (_disposed || !identical(session, _open)) return;
+    _set(session, session.view.copyWith(model: model));
+    await _persist(session);
+    if (retryMessageId != null && !_disposed && identical(session, _open)) {
+      await retry(retryMessageId);
+    }
   }
 
   Future<void> setOnline(bool enabled) async {

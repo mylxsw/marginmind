@@ -4643,7 +4643,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantSwitchModel.
   ///
   /// In en, this message translates to:
-  /// **'Switch Model'**
+  /// **'Switch Model and Retry'**
   String get assistantSwitchModel;
 
   /// No description provided for @assistantCopyDiagnostics.
