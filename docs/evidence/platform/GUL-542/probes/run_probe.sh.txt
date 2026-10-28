@@ -19,7 +19,7 @@ watch() {
     case "$line" in
       *SHOT:done*) echo "$line" ;;
       *SHOT:*) n=${line##*SHOT:}; n=${n%%[[:space:]]*}; $1 "$OUT/$2-$n.png"; echo "shot $2-$n" ;;
-      *ADBBACK:*) adb shell input keyevent 4; echo "$line" ;;
+      *ADBBACK:*) adb shell input keyevent 4 < /dev/null; echo "$line" ;;
       *PROBE*|*passed*|*failed*|*rror*) echo "$line" ;;
     esac
   done
@@ -53,7 +53,7 @@ android)
   fi
   adb uninstall dev.marginmind.marginmind >/dev/null 2>&1
   cd $W/apps/marginmind
-  android_shot() { adb exec-out screencap -p > "$1"; }
+  android_shot() { adb exec-out screencap -p > "$1" < /dev/null; }
   flutter test integration_test/probe_test.dart -d $(adb devices | grep emulator | cut -f1 | head -1) 2>&1 | watch android_shot pixel8
   ;;
 esac
