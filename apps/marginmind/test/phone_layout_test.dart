@@ -304,9 +304,16 @@ void main() {
     testWidgets('${phone.name}: an excerpt stays on the source and offers View once', (tester) async {
       final container = await openStudySet(tester, phone);
       final context = tester.element(find.byType(ReaderPane));
-      showNotice(context, const ExcerptedNotice('遗忘的规律', cardId: 'c4'), rootTitle: 'Root');
+      // A long target ends in an ellipsis; View stays in reach.
+      showNotice(
+        context,
+        const ExcerptedNotice('Sample: Forgetting & Spaced Repetition, chapter two', cardId: 'c4'),
+        rootTitle: 'Root',
+      );
       await tester.pump();
+      expect(tester.takeException(), isNull);
       expect(find.text('View'), findsOneWidget);
+      expect(tester.getRect(find.text('View')).right, lessThan(phone.size.width));
       expect(container.read(workspaceProvider('demo-1')).layout, isNot(MMSplitMode.secondary));
       // Above the tabs.
       expect(tester.getRect(find.text('View')).bottom, lessThan(tester.getRect(find.byType(MMTabBar)).top));
