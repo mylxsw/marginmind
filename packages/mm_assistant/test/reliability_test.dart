@@ -57,6 +57,17 @@ void main() {
       expect(client.calls, 4);
     }
   });
+  test('different consecutive tool failures also switch to a direct answer', () async {
+    final client = ScriptClient([
+      for (var n = 1; n <= 3; n++) call('read_selection' * (n + 1), '{}', id: 'bad$n'),
+      answer('依据上下文直接解释。'),
+    ]);
+    final state = AgentState(sessionId: 'varied-failures');
+    await makeRun(client, state: state).run('解释').toList();
+    expect(client.calls, 4);
+    expect(client.toolRequests.last, isEmpty);
+    expect(client.requests.last.first.toJson().toString(), contains('工具已关闭'));
+  });
   test('normalizes function prefix, case, hyphens and integer strings before execution', () async {
     final fake = ScriptClient([
       call('functions.READ-PAGES', '{"documentId":"doc","from":"1","to":"2"}'),

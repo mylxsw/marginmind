@@ -43,6 +43,100 @@ AssistantModel config(AssistantProvider provider) => AssistantModel(
   localEnabled: provider == AssistantProvider.ollama,
 );
 void main() {
+  for (final provider in [AssistantProvider.compatible, AssistantProvider.ollama]) {
+    test('$provider streams repeated, fragmented and cumulative tool names through execution', () async {
+      for (final names in [
+        ['read_selection', 'read_selection', 'read_selection'],
+        ['read_', 'select', 'ion'],
+        ['read_', 'read_select', 'read_selection'],
+        ['read_selection', '', ''],
+      ]) {
+        final adapter = Adapter((options, number) {
+          final request = options.data is String ? jsonDecode(options.data) : options.data;
+          expect(request['stream'], true);
+          if (number == 2) {
+            final messages = request['messages'] as List;
+            final call = messages.firstWhere((m) => m['tool_calls'] != null)['tool_calls'][0];
+            expect(call['function']['name'], 'read_selection');
+            expect(jsonDecode(call['function']['arguments']), {'selectionId': 'sel'});
+            expect(messages.last['role'], 'tool');
+            expect(messages.last['content'], contains('selection'));
+          }
+          final frames = number == 1
+              ? [
+                  for (var i = 0; i < names.length; i++)
+                    {
+                      'tool_calls': [
+                        {
+                          'index': 0,
+                          'id': 'selection-call',
+                          'type': 'function',
+                          'function': {
+                            'name': names[i],
+                            'arguments': ['{"selectionId":', '"sel"', '}'][i],
+                          },
+                        },
+                      ],
+                    },
+                ]
+              : [
+                  {'content': '选区解释完成。'},
+                ];
+          final wire = [
+            ': keepalive',
+            for (final delta in frames)
+              'data: ${jsonEncode({
+                'choices': [
+                  {'index': 0, 'delta': delta, 'finish_reason': null},
+                ],
+              })}\r\n',
+            'data: ${jsonEncode({
+              'choices': [
+                {'index': 0, 'delta': {}, 'finish_reason': number == 1 ? 'tool_calls' : 'stop'},
+              ],
+            })}\r\n',
+            'data: [DONE]\r\n',
+          ].join('\r\n');
+          // Split at every byte, including inside Chinese UTF-8 characters.
+          return ResponseBody(
+            Stream.fromIterable(utf8.encode(wire).map((byte) => Uint8List.fromList([byte]))),
+            200,
+            headers: {
+              Headers.contentTypeHeader: ['text/event-stream'],
+            },
+          );
+        });
+        final connection = connectAssistant(config(provider), 'test-key', adapter: adapter);
+        final state = AgentState(sessionId: 'stream');
+        final run = createAssistantRun(
+          client: connection.client,
+          model: 'model',
+          state: state,
+          requestId: 'r',
+          reader: Reader(),
+          scope: ReadScope(studySetId: 's', selections: {'sel'}),
+          mapId: 'm',
+          baseRevision: 0,
+          parents: {},
+        );
+        try {
+          final events = await run.run('解释选区').toList();
+          final result =
+              events.singleWhere((e) => e.eventType == StreamingEventType.functionCallResult).data
+                  as FunctionExecutionResultMessage;
+          expect(result.results.single.isError, false);
+          final answer =
+              events.lastWhere((e) => e.eventType == StreamingEventType.fullModelMessage).data as ModelMessage;
+          expect(answer.textOutput, '选区解释完成。');
+          expect(adapter.calls, 2);
+          expect((state.metadata['assistant.diagnostics'] as Map)['r']['fallback'], isNot(true));
+        } finally {
+          connection.close();
+        }
+      }
+    });
+  }
+
   test('coding/auto wire response recording replays malformed tools and direct fallback', () async {
     final adapter = Adapter((options, number) {
       final data = options.data is String ? jsonDecode(options.data) : options.data;

@@ -171,52 +171,48 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('origin decides which pane steps aside; switching content keeps the restore point', (tester) async {
+    testWidgets('assistant preserves panes from every origin and keeps manual layout changes', (tester) async {
       final app = await _open(tester);
+      for (final origin in PanelOrigin.values) {
+        app.controller.openPanel(RightPanel.assistant, origin: origin);
+        await tester.pumpAndSettle();
+        expect(_state(app.container).layout, MMSplitMode.split);
+        expect(find.byType(MindMapCanvas), findsOneWidget);
+        expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
+        expect(_inPanel(find.text('Connect an AI service')), findsOneWidget);
+        app.controller.closePanel();
+        await tester.pumpAndSettle();
+      }
+
+      app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
+      app.controller.setLayout(MMSplitMode.secondary);
+      app.controller.closePanel();
+      await tester.pumpAndSettle();
+      expect(_state(app.container).layout, MMSplitMode.secondary, reason: 'manual choice survives closing');
       app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.primary, reason: 'from the source: the map steps aside');
-      expect(_inPanel(find.text('Connect an AI service')), findsOneWidget);
-      expect(_inPanel(find.text('Assistant')), findsOneWidget);
-
-      // Another content in the open panel does not move the panes again.
-      app.controller.selectCard(_excerptId);
-      app.controller.showDetails();
+      expect(_state(app.container).layout, MMSplitMode.secondary);
+      app.controller.setLayout(MMSplitMode.primary);
+      app.controller.closePanel();
       await tester.pumpAndSettle();
       expect(_state(app.container).layout, MMSplitMode.primary);
-      expect(_inPanel(find.text('Excerpt')), findsOneWidget);
-      app.controller.toggleAssistantPanel();
-      await tester.pumpAndSettle();
-      expect(_state(app.container).panel, RightPanel.assistant);
-      app.controller.toggleAssistantPanel();
-      await tester.pumpAndSettle();
-      expect(_state(app.container).panel, isNull);
-      expect(_state(app.container).layout, MMSplitMode.split);
-
-      // From the toolbar, and outside split layout, the panes stay as they are.
-      app.controller.openPanel(RightPanel.assistant);
-      await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.split);
-      // A research started from a pane while the panel is open beside both
-      // still puts the other pane aside; closing restores the split.
-      app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.map);
-      await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.secondary);
       app.controller.closePanel();
-      await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.split);
-      app.controller.setLayout(MMSplitMode.secondary);
+      await settleHud(tester);
+    });
+
+    testWidgets('assistant keeps both panes visible in a narrow window', (tester) async {
+      final app = await _open(tester, size: const Size(1000, 720));
       app.controller.openPanel(RightPanel.assistant, origin: PanelOrigin.reader);
       await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.secondary);
-      // Layout changes while open are undone on close, like the sidebar.
-      app.controller.setLayout(MMSplitMode.primary);
-      app.controller.toggleSidebar();
+      expect(_state(app.container).layout, MMSplitMode.split);
+      expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
+      expect(find.byType(MindMapCanvas), findsOneWidget);
+      expect(find.byKey(const ValueKey('pdf-placeholder-c1')), findsOneWidget);
+      expect(tester.getSize(find.byType(MindMapCanvas)).width, greaterThan(0));
+      expect(tester.takeException(), isNull);
       app.controller.closePanel();
       await tester.pumpAndSettle();
-      expect(_state(app.container).layout, MMSplitMode.secondary);
-      expect(_state(app.container).sidebarVisible, isTrue);
-      app.controller.closePanel(); // Closing twice is harmless.
+      expect(_state(app.container).layout, MMSplitMode.split);
       await settleHud(tester);
     });
 

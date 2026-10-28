@@ -25,27 +25,30 @@ class ReaderAnnotationTools extends StatelessWidget {
       selected: state.tool == value,
       onPressed: () => controller.setTool(value),
     );
-    return MMToolbarGroup(
-      children: [
-        tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
-        tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
-        tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-        tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
-        const MMToolbarDivider(),
-        MMColorMenuButton(
-          selected: state.color,
-          labelOf: l.colorName,
-          tooltip: l.annotationColor,
-          onChanged: controller.setColor,
-        ),
-        const MMToolbarDivider(),
-        MMToolbarButton(
-          icon: MMIcons.syncToMap,
-          tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
-          selected: state.syncToMap,
-          onPressed: controller.toggleSyncToMap,
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: MMToolbarGroup(
+        children: [
+          tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
+          tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
+          tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
+          tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
+          const MMToolbarDivider(),
+          MMColorMenuButton(
+            selected: state.color,
+            labelOf: l.colorName,
+            tooltip: l.annotationColor,
+            onChanged: controller.setColor,
+          ),
+          const MMToolbarDivider(),
+          MMToolbarButton(
+            icon: MMIcons.syncToMap,
+            tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
+            selected: state.syncToMap,
+            onPressed: controller.toggleSyncToMap,
+          ),
+        ],
+      ),
     );
   }
 }

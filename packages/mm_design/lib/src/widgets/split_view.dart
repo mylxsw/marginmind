@@ -28,6 +28,7 @@ class MMSplitView extends StatelessWidget {
     this.onFractionChanged,
     this.minPrimaryWidth = MMSizes.readerMinWidth,
     this.minSecondaryWidth = MMSizes.mapMinWidth,
+    this.collapseWhenNarrow = true,
   });
 
   final Widget primary;
@@ -41,6 +42,9 @@ class MMSplitView extends StatelessWidget {
   final ValueChanged<double>? onFractionChanged;
   final double minPrimaryWidth;
   final double minSecondaryWidth;
+
+  /// If false, share the available space instead of hiding the map.
+  final bool collapseWhenNarrow;
 
   /// The mode actually shown at [width].
   static MMSplitMode effectiveMode(MMSplitMode mode, double width, double minPrimary, double minSecondary) {
@@ -81,11 +85,16 @@ class MMSplitView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        final m = effectiveMode(mode, w, minPrimaryWidth, minSecondaryWidth);
+        final m = collapseWhenNarrow ? effectiveMode(mode, w, minPrimaryWidth, minSecondaryWidth) : mode;
         final showP = m != MMSplitMode.secondary;
         final showS = m != MMSplitMode.primary;
         final split = showP && showS;
-        final pw = split ? primaryWidth(w, fraction, minPrimaryWidth, minSecondaryWidth) : w;
+        final scale = !collapseWhenNarrow && w < minPrimaryWidth + minSecondaryWidth + 1
+            ? ((w - 1) / (minPrimaryWidth + minSecondaryWidth)).clamp(0.0, 1.0)
+            : 1.0;
+        final minPrimary = minPrimaryWidth * scale;
+        final minSecondary = minSecondaryWidth * scale;
+        final pw = split ? primaryWidth(w, fraction, minPrimary, minSecondary) : w;
 
         return Stack(
           children: [
@@ -121,7 +130,7 @@ class MMSplitView extends StatelessWidget {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onHorizontalDragUpdate: (d) {
-                      final next = primaryWidth(w, (pw + d.delta.dx) / w, minPrimaryWidth, minSecondaryWidth);
+                      final next = primaryWidth(w, (pw + d.delta.dx) / w, minPrimary, minSecondary);
                       onFractionChanged!(next / w);
                     },
                     onDoubleTap: () => onFractionChanged!(0.5),

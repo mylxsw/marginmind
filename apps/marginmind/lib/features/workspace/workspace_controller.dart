@@ -689,12 +689,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   _PanelRestore? _panelRestore;
 
   /// Opens the right panel on [content]. The first opening remembers the
-  /// layout and sidebar; in split layout the pane the user did not start
-  /// from steps aside, also when the panel is already open (closing still
-  /// restores what the first opening found).
+  /// layout and sidebar. Only details may put the other pane aside;
+  /// asking the assistant leaves the user's pane choices alone.
   void openPanel(RightPanel content, {PanelOrigin origin = PanelOrigin.toolbar}) {
     if (state.panel == null) _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
-    final layout = state.layout != MMSplitMode.split
+    final layout = content == RightPanel.assistant || state.layout != MMSplitMode.split
         ? null
         : switch (origin) {
             PanelOrigin.reader => MMSplitMode.primary,
@@ -793,7 +792,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void closeFind() => state = state.copyWith(findVisible: false);
 
-  void setLayout(MMSplitMode layout) => state = state.copyWith(layout: layout);
+  void setLayout(MMSplitMode layout) {
+    if (state.panel == RightPanel.assistant && _panelRestore != null) {
+      _panelRestore = (layout: layout, sidebarVisible: _panelRestore!.sidebarVisible);
+    }
+    state = state.copyWith(layout: layout);
+  }
 
   void setSplitFraction(double value) => state = state.copyWith(splitFraction: value.clamp(0.1, 0.9));
 

@@ -35,7 +35,6 @@ class PolicyHook extends AgentHook {
   bool _awaitingResponse = false;
   bool toolsEnabled;
   final String? requestId;
-  String? _lastFailure;
   int _failures = 0, _attempts = 0;
   final _entries = <String, Map<String, dynamic>>{};
   static String normalizeName(String name) => name.trim().split('.').last.toLowerCase().replaceAll('-', '_');
@@ -180,12 +179,9 @@ class PolicyHook extends AgentHook {
       entry['reason'] = reason;
     }
     if (reason == null) {
-      _lastFailure = null;
       _failures = 0;
     } else {
-      _failures = reason == _lastFailure ? _failures + 1 : 1;
-      _lastFailure = reason;
-      if (_failures >= 3) {
+      if (++_failures >= 3) {
         toolsEnabled = false;
         diagnostics?['fallback'] = true;
       }

@@ -7,20 +7,24 @@ import 'package:mm_design/mm_design.dart';
 /// the panes of [layout] still fit beside it. A narrower window collapses the
 /// sidebar first and gives the panel 360; whatever is left follows
 /// [MMSplitView.effectiveMode], so a split that still does not fit shows the
-/// source alone. Nothing here changes the user's choices: closing the panel
-/// or widening the window brings everything back.
+/// source alone. With [preservePanes], the assistant instead shares the
+/// available width between the chosen panes, leaving visibility to the user.
+/// Nothing here changes the user's saved choices.
 ({bool sidebarVisible, MMSplitMode mode, double panelWidth}) resolveWorkspaceLayout({
   required double windowWidth,
   required bool sidebarVisible,
   required MMSplitMode layout,
   required bool panelOpen,
+  bool preservePanes = false,
   double minReader = MMSizes.readerMinWidth,
   double minMap = MMSizes.mapMinWidth,
 }) {
   const sidebar = MMSizes.sidebarWidth + MMSizes.sidebarInset;
   ({bool sidebarVisible, MMSplitMode mode, double panelWidth}) fit(bool showSidebar, double panel) => (
     sidebarVisible: showSidebar,
-    mode: MMSplitView.effectiveMode(layout, windowWidth - (showSidebar ? sidebar : 0) - panel, minReader, minMap),
+    mode: preservePanes
+        ? layout
+        : MMSplitView.effectiveMode(layout, windowWidth - (showSidebar ? sidebar : 0) - panel, minReader, minMap),
     panelWidth: panel,
   );
   if (!panelOpen) return fit(sidebarVisible, 0);

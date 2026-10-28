@@ -67,7 +67,8 @@ void main() {
     await pumpFor(tester);
     // Panel opens beside the source, the passage is attached, no launcher.
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
-    expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
+    expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
+    expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
     expect(find.byKey(ValueKey('context-chip-${_selectionId()}')), findsOneWidget);
     for (final s in AssistantSkill.values.take(6)) {
       expect(find.byKey(ValueKey('quick-${s.name}')), findsOneWidget);
@@ -81,7 +82,7 @@ void main() {
     // Manual chips are cleared by sending.
     expect(find.byKey(ValueKey('context-chip-${_selectionId()}')), findsNothing);
     // The quote block above the question, the answer, a valid p.24 chip only.
-    expect(find.text(_claim), findsOneWidget);
+    expect(find.descendant(of: find.byType(AssistantPanel), matching: find.text(_claim)), findsOneWidget);
     expect(find.text('p.24'), findsOneWidget);
     expect(find.text('p.99'), findsNothing);
     expect(find.textContaining('[page:'), findsNothing);
@@ -133,7 +134,7 @@ void main() {
     final topic = _cardId(app.workspace, '遗忘的规律');
     expect(find.text('问助手'), findsNothing);
     await _nodeMenu(tester, '遗忘的规律', '解释这个主题');
-    expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
+    expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
     final c = conversationOf(tester);
     expect(c.messages.first.contexts.first.kind, ContextKind.node);
     expect(c.messages.first.contexts.first.displayText, '遗忘的规律');

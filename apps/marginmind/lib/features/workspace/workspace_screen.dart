@@ -93,6 +93,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               sidebarVisible: state.sidebarVisible,
               layout: state.layout,
               panelOpen: state.panel != null,
+              preservePanes: state.panel == RightPanel.assistant,
               minReader: minReader,
             );
             final collapsed = state.sidebarVisible && !shown.sidebarVisible;
@@ -198,6 +199,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               splitLabel: l.layoutSplit,
               fraction: state.splitFraction,
               minPrimaryWidth: minReader,
+              collapseWhenNarrow: state.panel != RightPanel.assistant,
               onFractionChanged: controller.setSplitFraction,
               primary: PdfDropTarget(
                 label: l.dropToImport,

@@ -420,41 +420,60 @@ class _MapPaneState extends ConsumerState<MapPane> {
             left: MMSpacing.m,
             right: MMSpacing.m,
             top: MMSpacing.s,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    mapTitle.isEmpty ? l.mainMap : mapTitle,
-                    style: t.headline,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                MMSegmentedControl<MapViewMode>(
-                  value: state.mapView,
-                  onChanged: controller.setMapView,
-                  segments: [
-                    MMSegment(value: MapViewMode.map, label: l.mapView),
-                    MMSegment(value: MapViewMode.outline, label: l.outlineView),
-                  ],
-                ),
-                const SizedBox(width: MMSpacing.s),
-                MMToolbarGroup(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final title = Text(
+                  mapTitle.isEmpty ? l.mainMap : mapTitle,
+                  style: t.headline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+                final controls = Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
-                    MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
-                    MMToolbarButton(
-                      icon: MMIcons.trash,
-                      tooltip: l.removeFromMap,
-                      onPressed: state.selectedMarkId != null
-                          ? controller.removeSelectedMark
-                          : state.selectedCardId == null
-                          ? null
-                          : remove,
+                    MMSegmentedControl<MapViewMode>(
+                      value: state.mapView,
+                      onChanged: controller.setMapView,
+                      segments: [
+                        MMSegment(value: MapViewMode.map, label: l.mapView),
+                        MMSegment(value: MapViewMode.outline, label: l.outlineView),
+                      ],
+                    ),
+                    const SizedBox(width: MMSpacing.s),
+                    MMToolbarGroup(
+                      children: [
+                        MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
+                        MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
+                        MMToolbarButton(
+                          icon: MMIcons.trash,
+                          tooltip: l.removeFromMap,
+                          onPressed: state.selectedMarkId != null
+                              ? controller.removeSelectedMark
+                              : state.selectedCardId == null
+                              ? null
+                              : remove,
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
+                );
+                if (constraints.maxWidth < MMSizes.mapMinWidth) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      title,
+                      const SizedBox(height: MMSpacing.xs),
+                      SingleChildScrollView(scrollDirection: Axis.horizontal, child: controls),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: title),
+                    controls,
+                  ],
+                );
+              },
             ),
           ),
           if (state.mapView == MapViewMode.map && excerptTargetId != null)
@@ -475,75 +494,83 @@ class _MapPaneState extends ConsumerState<MapPane> {
             ),
           if (state.mapView == MapViewMode.map)
             Positioned(
-              right: 12,
-              bottom: 12,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  MMSegmentedControl<MapDensity>(
-                    key: const ValueKey('map-density'),
-                    value: content.map(state.activeMapId)?.density == MapDensity.full
-                        ? MapDensity.full
-                        : MapDensity.compact,
-                    onChanged: controller.setMapDensity,
-                    segments: [
-                      MMSegment(value: MapDensity.compact, label: l.densityCompact),
-                      MMSegment(value: MapDensity.full, label: l.densityFull),
+              left: MMSpacing.m,
+              right: MMSpacing.m,
+              bottom: MMSpacing.m,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  reverse: true,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      MMSegmentedControl<MapDensity>(
+                        key: const ValueKey('map-density'),
+                        value: content.map(state.activeMapId)?.density == MapDensity.full
+                            ? MapDensity.full
+                            : MapDensity.compact,
+                        onChanged: controller.setMapDensity,
+                        segments: [
+                          MMSegment(value: MapDensity.compact, label: l.densityCompact),
+                          MMSegment(value: MapDensity.full, label: l.densityFull),
+                        ],
+                      ),
+                      const SizedBox(width: MMSpacing.s),
+                      MMGlass(
+                        borderRadius: BorderRadius.circular(16),
+                        padding: const EdgeInsets.all(3),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            MMIconButton(
+                              icon: MMIcons.image,
+                              tooltip: l.insertImage,
+                              onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
+                            ),
+                            const MMToolbarDivider(),
+                            MMIconButton(
+                              icon: MMIcons.fitMap,
+                              tooltip: l.fitMap,
+                              onPressed: () => _viewCommand(MindMapCommand.fit),
+                            ),
+                            MMIconButton(
+                              icon: MMIcons.locate,
+                              tooltip: l.centerCurrentNode,
+                              onPressed: () => _viewCommand(MindMapCommand.center),
+                            ),
+                            const MMToolbarDivider(),
+                            MMIconButton(
+                              icon: MMIcons.zoomOut,
+                              tooltip: l.zoomOut,
+                              size: 26,
+                              iconSize: 13,
+                              color: c.label,
+                              onPressed: () => _zoom(1 / 1.25),
+                            ),
+                            SizedBox(
+                              width: 44,
+                              child: MMInteractive(
+                                tooltip: l.pdfActualSize,
+                                semanticLabel: l.pdfActualSize,
+                                onTap: () => _zoom(1 / mapScale(_transform.value)),
+                                builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
+                              ),
+                            ),
+                            MMIconButton(
+                              icon: MMIcons.zoomIn,
+                              tooltip: l.zoomIn,
+                              size: 26,
+                              iconSize: 13,
+                              color: c.label,
+                              onPressed: () => _zoom(1.25),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(width: MMSpacing.s),
-                  MMGlass(
-                    borderRadius: BorderRadius.circular(16),
-                    padding: const EdgeInsets.all(3),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        MMIconButton(
-                          icon: MMIcons.image,
-                          tooltip: l.insertImage,
-                          onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
-                        ),
-                        const MMToolbarDivider(),
-                        MMIconButton(
-                          icon: MMIcons.fitMap,
-                          tooltip: l.fitMap,
-                          onPressed: () => _viewCommand(MindMapCommand.fit),
-                        ),
-                        MMIconButton(
-                          icon: MMIcons.locate,
-                          tooltip: l.centerCurrentNode,
-                          onPressed: () => _viewCommand(MindMapCommand.center),
-                        ),
-                        const MMToolbarDivider(),
-                        MMIconButton(
-                          icon: MMIcons.zoomOut,
-                          tooltip: l.zoomOut,
-                          size: 26,
-                          iconSize: 13,
-                          color: c.label,
-                          onPressed: () => _zoom(1 / 1.25),
-                        ),
-                        SizedBox(
-                          width: 44,
-                          child: MMInteractive(
-                            tooltip: l.pdfActualSize,
-                            semanticLabel: l.pdfActualSize,
-                            onTap: () => _zoom(1 / mapScale(_transform.value)),
-                            builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
-                          ),
-                        ),
-                        MMIconButton(
-                          icon: MMIcons.zoomIn,
-                          tooltip: l.zoomIn,
-                          size: 26,
-                          iconSize: 13,
-                          color: c.label,
-                          onPressed: () => _zoom(1.25),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
         ],

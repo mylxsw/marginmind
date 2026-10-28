@@ -9,6 +9,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
 
 import 'runtime.dart';
+import 'compatible_stream.dart';
 
 enum AssistantProvider { claude, responses, compatible, ollama, gemini }
 
@@ -138,6 +139,7 @@ AssistantConnection connectAssistant(
   dio.httpClientAdapter = _BoundedAdapter(
     adapter ?? IOHttpClientAdapter(createHttpClient: () => policy.createClient()),
     budget.responseBytes,
+    normalizeNames: config.provider == AssistantProvider.compatible || config.provider == AssistantProvider.ollama,
   );
   final deadline = DateTime.now().add(budget.duration);
   dio.interceptors.add(
@@ -198,9 +200,10 @@ AssistantConnection connectAssistant(
 }
 
 class _BoundedAdapter implements HttpClientAdapter {
-  _BoundedAdapter(this.inner, this.maximum);
+  _BoundedAdapter(this.inner, this.maximum, {this.normalizeNames = false});
   final HttpClientAdapter inner;
   final int maximum;
+  final bool normalizeNames;
   int bytes = 0;
   @override
   Future<ResponseBody> fetch(
@@ -214,6 +217,9 @@ class _BoundedAdapter implements HttpClientAdapter {
       if (bytes > maximum) throw const ResearchFailure(ResearchFailureKind.budget);
       return chunk;
     });
+    if (normalizeNames && response.statusCode == 200 && options.responseType == ResponseType.stream) {
+      response.stream = normalizeCompatibleToolNames(response.stream);
+    }
     return response;
   }
 
