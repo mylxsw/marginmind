@@ -1369,8 +1369,7 @@
     }
   },
   "assistantSuggestOrganize": "Organize this section into the map",
-  "assistantSavedKeyUnavailable": "The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.",
-  "assistantRetrySavedKey": "Retry reading key",
+  "assistantSavedKeyUnavailable": "Could not read the API key. Enter it again and save.",
   "assistantKeySaveUnavailable": "The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.",
   "assistantPasteKey": "Paste API key",
   "assistantCannotConnect": "Cannot reach the service",

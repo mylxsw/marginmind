@@ -209,22 +209,30 @@ void main() {
     expect(reloaded.services.first.name, 'Renamed');
   }, semanticsEnabled: false);
 
-  testWidgets('a blocked key read in the model sheet is not a provider rejection', (tester) async {
+  testWidgets('an unreadable key directs users to replace and save it, without read-retry buttons', (tester) async {
     final secrets = UnavailableKeyStore()..blockWrites = false;
     final catalog = FakeCatalog();
-    await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    final app = await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
     await _openModels(tester);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
+    expect(find.text('无法读取 API Key，请重新填写并保存。'), findsOneWidget);
+    expect(find.byKey(const ValueKey('service-key-retry')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('service-add-model')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('暂时无法读取已保存的 API Key'), findsWidgets);
     expect(find.text('API Key 无效'), findsNothing);
+    expect(find.byKey(const ValueKey('add-model-key-retry')), findsNothing);
     expect(catalog.listed, isEmpty);
-    secrets.blockReads = false;
-    await tester.tap(find.byKey(const ValueKey('add-model-key-retry')));
+    // Return to the service form and make the change that enables recovery.
+    await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
-    expect(catalog.listed.single.$2, 'test-key');
+    secrets.blockReads = false;
+    await _enter(tester, 'service-key', 'replacement-key');
+    await _save(tester);
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    expect(catalog.listed.single.$2, 'replacement-key');
     expect(find.text('Claude Sonnet'), findsOneWidget);
   });
 

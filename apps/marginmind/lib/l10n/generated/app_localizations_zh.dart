@@ -2304,10 +2304,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantSuggestOrganize => '把当前一节整理进脑图';
 
   @override
-  String get assistantSavedKeyUnavailable => '暂时无法读取已保存的 API Key。这不代表 Key 无效。可重试读取，或重新填写该服务的 Key；阅读不受影响。';
-
-  @override
-  String get assistantRetrySavedKey => '重试读取';
+  String get assistantSavedKeyUnavailable => '无法读取 API Key，请重新填写并保存。';
 
   @override
   String get assistantKeySaveUnavailable => '暂时无法保存 API Key。输入内容仍保留在此处，可稍后重试；这不代表 Key 无效。';

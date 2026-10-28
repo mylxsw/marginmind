@@ -588,15 +588,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             failed: _saveFailed,
             onSave: _saveAndCheck,
           ),
-          if (_keyUnavailable) ...[
-            Text(_l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
-            MMButton(
-              key: const ValueKey('service-key-retry'),
-              label: l.assistantRetrySavedKey,
-              variant: MMButtonVariant.plain,
-              onPressed: _loadKey,
-            ),
-          ],
+          if (_keyUnavailable) Text(l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
           if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
             MMButton(
               key: const ValueKey('service-custom-address'),
@@ -828,7 +820,7 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
   final _picked = <String>[];
   List<ServiceModel>? _models;
   String? _error;
-  bool _adding = false, _keyUnavailable = false;
+  bool _adding = false;
 
   @override
   void initState() {
@@ -854,7 +846,6 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
     setState(() {
       _models = null;
       _error = null;
-      _keyUnavailable = false;
     });
     final l = context.l10n;
     try {
@@ -867,7 +858,6 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
       if (!mounted || e.kind == ResearchFailureKind.cancelled) return;
       setState(() {
         _models = const [];
-        _keyUnavailable = e.code == 'secret_store';
         _error = e.code == 'secret_store'
             ? l.assistantSavedKeyUnavailable
             : e.kind == ResearchFailureKind.authentication
@@ -1033,16 +1023,6 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
                                   child: Text(_error!, style: t.callout.copyWith(color: c.critical)),
                                 ),
                               ],
-                            ),
-                          ),
-                        if (_keyUnavailable)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: MMButton(
-                              key: const ValueKey('add-model-key-retry'),
-                              label: l.assistantRetrySavedKey,
-                              variant: MMButtonVariant.plain,
-                              onPressed: _load,
                             ),
                           ),
                         for (final m in rows) pick(m.id, m.displayName),

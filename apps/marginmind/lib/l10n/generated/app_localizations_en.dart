@@ -2418,11 +2418,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantSuggestOrganize => 'Organize this section into the map';
 
   @override
-  String get assistantSavedKeyUnavailable =>
-      'The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.';
-
-  @override
-  String get assistantRetrySavedKey => 'Retry reading key';
+  String get assistantSavedKeyUnavailable => 'Could not read the API key. Enter it again and save.';
 
   @override
   String get assistantKeySaveUnavailable =>

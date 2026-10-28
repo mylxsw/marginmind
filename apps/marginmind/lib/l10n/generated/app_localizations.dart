@@ -4295,14 +4295,8 @@ abstract class AppLocalizations {
   /// No description provided for @assistantSavedKeyUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.'**
+  /// **'Could not read the API key. Enter it again and save.'**
   String get assistantSavedKeyUnavailable;
-
-  /// No description provided for @assistantRetrySavedKey.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry reading key'**
-  String get assistantRetrySavedKey;
 
   /// No description provided for @assistantKeySaveUnavailable.
   ///
