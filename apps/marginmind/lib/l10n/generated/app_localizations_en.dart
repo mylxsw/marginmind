@@ -2746,4 +2746,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceKeyPlaceholder => 'Paste credential';
+
+  @override
+  String get voiceAppIdPlaceholder => 'Enter App ID';
 }
