@@ -37,13 +37,15 @@ void main() {
   final provider = workspaceProvider('demo-1');
 
   group('window title (U-R5)', () {
-    testWidgets('title is the document, subtitle only the page, no tab bar for one document', (tester) async {
+    testWidgets('title is the document on one line without a page subtitle or single-document tab bar', (tester) async {
       final container = await openSet(tester);
       expect(container.read(provider).openDocumentIds, hasLength(1));
       final bar = toolbar(tester);
       expect(bar.title, '学习的底层逻辑');
-      expect(bar.subtitle, 'Page ${container.read(provider).content?.document('c1')?.lastPage ?? 1}');
-      expect(bar.subtitle, isNot(contains('认知科学入门')));
+      expect(bar.subtitle, isNull);
+      final title = tester.widget<Text>(find.descendant(of: find.byType(MMToolbar), matching: find.text(bar.title)));
+      expect(title.maxLines, 1);
+      expect(title.overflow, TextOverflow.ellipsis);
       // The reader pane has no tab bar, so the document name is not repeated.
       expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('学习的底层逻辑')), findsNothing);
     });

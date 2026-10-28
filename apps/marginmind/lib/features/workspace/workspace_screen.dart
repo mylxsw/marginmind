@@ -137,55 +137,47 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
       sidebar: WorkspaceSidebar(studySetId: widget.studySetId, searchFocus: _searchFocus),
-      toolbar: Consumer(
-        builder: (context, ref, _) {
-          final page = doc == null
-              ? null
-              : (ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage);
-          return MMToolbar(
-            title: doc?.title ?? setTitle,
-            subtitle: doc == null ? null : l.pageNumber(page!),
-            leading: sidebarVisible
-                ? null
-                : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
-            actions: [
-              MMToolbarGroup(
-                children: [
-                  MMToolbarButton(
-                    icon: MMIcons.layoutReader,
-                    tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-                    selected: layout == MMSplitMode.primary,
-                    onPressed: () => controller.setLayout(MMSplitMode.primary),
-                  ),
-                  MMToolbarButton(
-                    icon: MMIcons.layoutSplit,
-                    tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                    selected: layout == MMSplitMode.split,
-                    onPressed: () => controller.setLayout(MMSplitMode.split),
-                  ),
-                  MMToolbarButton(
-                    icon: MMIcons.layoutMap,
-                    tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-                    selected: layout == MMSplitMode.secondary,
-                    onPressed: () => controller.setLayout(MMSplitMode.secondary),
-                  ),
-                ],
+      toolbar: MMToolbar(
+        title: doc?.title ?? setTitle,
+        leading: sidebarVisible
+            ? null
+            : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
+        actions: [
+          MMToolbarGroup(
+            children: [
+              MMToolbarButton(
+                icon: MMIcons.layoutReader,
+                tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+                selected: layout == MMSplitMode.primary,
+                onPressed: () => controller.setLayout(MMSplitMode.primary),
               ),
-              MMToolbarGroup(
-                children: [
-                  MMToolbarButton(
-                    key: const ValueKey('toolbar-assistant'),
-                    icon: MMIcons.ai,
-                    tint: context.mmColors.research,
-                    tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                    selected: state.panel == RightPanel.assistant,
-                    onPressed: () => toggleAssistant(ref, widget.studySetId),
-                  ),
-                ],
+              MMToolbarButton(
+                icon: MMIcons.layoutSplit,
+                tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                selected: layout == MMSplitMode.split,
+                onPressed: () => controller.setLayout(MMSplitMode.split),
+              ),
+              MMToolbarButton(
+                icon: MMIcons.layoutMap,
+                tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+                selected: layout == MMSplitMode.secondary,
+                onPressed: () => controller.setLayout(MMSplitMode.secondary),
               ),
             ],
-          );
-        },
+          ),
+          MMToolbarGroup(
+            children: [
+              MMToolbarButton(
+                key: const ValueKey('toolbar-assistant'),
+                icon: MMIcons.ai,
+                tint: context.mmColors.research,
+                tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                selected: state.panel == RightPanel.assistant,
+                onPressed: () => toggleAssistant(ref, widget.studySetId),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
