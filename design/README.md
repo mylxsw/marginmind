@@ -51,3 +51,7 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 ## 三期原型：助手
 
 `prototype/phase-3-assistant.html` 在二期原型的基础上，把“研究”简化成对话式“助手”：选中原文或卡片就能直接提问，回答带出处，修改脑图前先给出提议、确认后才应用。原文栏、脑图栏和阅读底部导航都以现有应用为准。这个原型同样是单文件，没有依赖；演示控制台里有 21 个场景。设计说明与 dart_agent_core 接入方案见 [docs/phase-3-assistant.md](../docs/phase-3-assistant.md)。
+
+## 三期原型：阅读增强
+
+`prototype/phase-3-reading.html` 在助手原型的基础上补齐三项阅读能力：**裁边**（一键裁掉白边让文字更大，可按所有页 / 奇偶页 / 单页微调，不改原 PDF）、**页边批注**（选中一句直接在页边写，空间不够时收成页边标记，可一键加入脑图）、**对照阅读**（两份文档同步滚动，没有译本时可以 AI 逐段对照）。单文件、无依赖；演示控制台前 9 个场景是本期内容，后面保留助手原型的全部场景。设计说明、空间分配规则与数据模型见 [docs/phase-3-reading.md](../docs/phase-3-reading.md)。
