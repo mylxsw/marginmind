@@ -86,13 +86,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(LibraryScreen), findsOneWidget);
 
-      // The bar sits on the home indicator inset, below the content.
-      final bar = tester.getRect(find.byType(MMTabBar));
-      expect(bar.bottom, phone.size.height);
-      expect(
-        bar.height,
-        (phone.platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar) + phone.safe.bottom,
-      );
+      // The bar floats above the home indicator inset, over the content.
+      final bar = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
+      expect(bar.bottom, phone.size.height - phone.safe.bottom);
+      expect(bar.height, phone.platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar);
 
       nav.openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -102,7 +99,9 @@ void main() {
       expect(find.byType(ReaderPane), findsOneWidget);
       // The tabs replace the Source | Map switch.
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
-      expect(tester.getRect(find.byType(ReaderPane)).bottom, lessThanOrEqualTo(bar.top));
+      // The pages run on beneath the bar; the page navigation stays above it.
+      expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height);
+      expect(tester.getRect(find.byKey(const ValueKey('reader-page-navigation'))).bottom, lessThanOrEqualTo(bar.top));
 
       await tester.tap(tab(PhoneTab.map));
       await tester.pumpAndSettle();

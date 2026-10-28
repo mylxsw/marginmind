@@ -59,6 +59,8 @@ class StudySetCard extends StatelessWidget {
                     left: 8,
                     bottom: 8,
                     child: MMGlass(
+                      // Glass stays off content on touch platforms: a card's badge only tints.
+                      blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
                       borderRadius: BorderRadius.circular(10),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       child: Text(l.dueBadge(set.dueCount), style: t.subheadline.copyWith(color: c.label)),
@@ -117,6 +119,7 @@ class _StarButton extends StatelessWidget {
       tooltip: starred ? l.unstar : l.star,
       semanticLabel: starred ? l.unstar : l.star,
       builder: (context, s) => MMGlass(
+        blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
         borderRadius: BorderRadius.circular(13),
         child: SizedBox(
           width: 26,

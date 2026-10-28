@@ -326,11 +326,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
       if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
     }
 
+    // The map runs on beneath a touch window's glass chrome; its controls
+    // and the outline keep clear of it.
+    final chrome = MMChromeInsets.of(context);
+    final outline = state.mapView != MapViewMode.map;
     return ColoredBox(
       color: state.mapView == MapViewMode.map ? c.canvas : c.windowBackground,
       child: Stack(
         children: [
           Positioned.fill(
+            top: outline ? chrome.top : 0,
+            bottom: outline ? chrome.bottom : 0,
             child: state.mapView == MapViewMode.map
                 ? MindMapCanvas(
                     key: ValueKey(state.activeMapId),
@@ -411,7 +417,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: 72,
+              bottom: 72 + chrome.bottom,
               child: IgnorePointer(
                 child: Text(l.mapEmptyTitle, textAlign: TextAlign.center, style: t.headline),
               ),
@@ -419,7 +425,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           Positioned(
             left: MMSpacing.m,
             right: MMSpacing.m,
-            top: MMSpacing.s,
+            top: MMSpacing.s + chrome.top,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final title = Text(
@@ -479,7 +485,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           if (state.mapView == MapViewMode.map && excerptTargetId != null)
             Positioned(
               left: MMSpacing.m,
-              bottom: MMSpacing.m,
+              bottom: MMSpacing.m + chrome.bottom,
               right: MMSizes.mapViewControlsReservedWidth,
               child: IgnorePointer(
                 child: Text(
@@ -496,7 +502,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             Positioned(
               left: MMSpacing.m,
               right: MMSpacing.m,
-              bottom: MMSpacing.m,
+              bottom: MMSpacing.m + chrome.bottom,
               child: Align(
                 alignment: Alignment.centerRight,
                 child: SingleChildScrollView(

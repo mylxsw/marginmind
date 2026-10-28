@@ -75,7 +75,12 @@ void main() {
         final height = platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar;
         expect(rect.height, height + 30);
         expect(MMTabBar.heightOf(tester.element(find.byType(MMTabBar))), height + 30);
-        expect(tester.getSize(find.byKey(const ValueKey('mm-tab-0'))).width, closeTo(400 / 3, 0.01));
+        // A capsule floating above the home indicator, inset from the sides.
+        final capsule = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
+        expect(capsule, Rect.fromLTRB(MMSizes.tabBarMargin, 800 - 30 - height, 400 - MMSizes.tabBarMargin, 800 - 30));
+        expect(tester.getSize(find.byKey(const ValueKey('mm-tab-0'))).width, closeTo((capsule.width - 8) / 3, 0.01));
+        // Android's hit areas stay at least 48 dp.
+        expect(tester.getSize(find.byKey(const ValueKey('mm-tab-0'))).height, greaterThanOrEqualTo(48));
         await tester.tap(find.text('Library'));
         await tester.tap(find.text('Review'));
         expect(taps, [0]);
@@ -346,13 +351,14 @@ void main() {
   });
 
   group('MMWindowScaffold', () {
-    testWidgets('shows the bottom bar below the content until the keyboard rises; the sheet covers both', (
+    testWidgets('floats the bottom bar over the content until the keyboard rises; the sheet covers both', (
       tester,
     ) async {
       await _phone(
         tester,
         const MMWindowBottomBar(
           bar: SizedBox(key: ValueKey('bar'), height: 60),
+          extent: 60,
           child: MMWindowScaffold(
             toolbar: SizedBox(height: 40),
             body: SizedBox.expand(key: ValueKey('body')),
@@ -363,8 +369,10 @@ void main() {
       final body = tester.getRect(find.byKey(const ValueKey('body')));
       final bar = tester.getRect(find.byKey(const ValueKey('bar')));
       expect(bar.bottom, 800);
-      // The bar takes the home indicator inset: the body ends on it.
+      // A body that does not extend is laid out between the glass toolbar
+      // and the bar's extent.
       expect(body.bottom, bar.top);
+      expect(body.top, 40 + MMSizes.toolbarHeight);
       expect(tester.getRect(find.byKey(const ValueKey('sheet'))), const Rect.fromLTWH(0, 0, 400, 800));
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pump();

@@ -87,11 +87,13 @@ abstract final class MMSizes {
   /// Width of the "Source | Map" switch in a compact window.
   static const double paneSwitchMaxWidth = 360;
 
-  /// Bottom tab bar of a phone, above the home indicator inset. Android's
-  /// bar is taller and highlights the selected icon with a pill.
-  static const double tabBar = 49;
+  /// A phone's floating glass tab bar: capsule height (Android's is taller
+  /// for its 48 dp hit areas), its gap to the screen sides and the smallest
+  /// gap to the bottom edge when there is no home indicator inset.
+  static const double tabBar = 60;
   static const double tabBarAndroid = 64;
-  static const Size tabBarPill = Size(56, 30);
+  static const double tabBarMargin = 16;
+  static const double tabBarBottomGap = 12;
 
   /// Bottom sheets of a compact window: the medium height as a fraction of
   /// the space below the safe area top, and the drag handle strip.

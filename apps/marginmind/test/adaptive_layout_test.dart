@@ -243,7 +243,12 @@ void main() {
       expect(reader.width, ipadPortrait.size.width);
       // The toolbar starts below the status bar.
       expect(tester.getRect(find.byType(MMToolbar)).top, ipadPortrait.safe.top);
-      expect(tester.getRect(find.byType(MapPane)).bottom, ipadPortrait.size.height - ipadPortrait.safe.bottom);
+      // The map runs on beneath the home indicator; its controls keep clear.
+      expect(tester.getRect(find.byType(MapPane)).bottom, ipadPortrait.size.height);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('map-density'))).bottom,
+        lessThanOrEqualTo(ipadPortrait.size.height - ipadPortrait.safe.bottom),
+      );
 
       // The divider is a 44 pt target that moves vertically and resets on double tap.
       final divider = find.bySemanticsLabel('Divider');
@@ -352,7 +357,11 @@ void main() {
       expect(state().layout, MMSplitMode.secondary);
       expect(find.byType(MapPane).hitTestable(), findsOneWidget);
       expect(rectOf(tester, MapPane).width, iphone.size.width);
-      expect(rectOf(tester, MapPane).bottom, iphone.size.height - iphone.safe.bottom);
+      expect(rectOf(tester, MapPane).bottom, iphone.size.height);
+      expect(
+        tester.getRect(find.byKey(const ValueKey('map-density'))).bottom,
+        lessThanOrEqualTo(iphone.size.height - iphone.safe.bottom),
+      );
       await tester.tap(find.descendant(of: pane, matching: find.text('Source')));
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.primary);

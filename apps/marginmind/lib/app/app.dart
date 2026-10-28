@@ -151,6 +151,7 @@ class AppShell extends ConsumerWidget {
       StatsRoute(:final studySetId) => StatsScreen(key: ValueKey('stats-$studySetId'), studySetId: studySetId),
       GalleryRoute() => const GalleryScreen(),
     };
+    final tabs = showsPhoneTabs(context);
     final switcher = AnimatedSwitcher(
       duration: MMAppearance.duration(context, MMMotion.standard),
       child: KeyedSubtree(key: ValueKey(route.runtimeType), child: screen),
@@ -161,7 +162,11 @@ class AppShell extends ConsumerWidget {
         child: Material(
           type: MaterialType.transparency,
           // Always in the tree, so rotating a phone keeps the screen's state.
-          child: MMWindowBottomBar(bar: showsPhoneTabs(context) ? const PhoneTabBar() : null, child: switcher),
+          child: MMWindowBottomBar(
+            bar: tabs ? const PhoneTabBar() : null,
+            extent: tabs ? MMTabBar.heightOf(context) : 0,
+            child: switcher,
+          ),
         ),
       ),
     );
