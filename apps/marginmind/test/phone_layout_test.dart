@@ -8,6 +8,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/phone_tabs.dart';
 import 'package:marginmind/features/library/library_screen.dart';
 import 'package:marginmind/features/review/review_screen.dart';
+import 'package:marginmind/features/workspace/widgets/map_export_sheet.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
@@ -321,6 +322,24 @@ void main() {
       showNotice(tester.element(find.byType(MapPane)), const ExcerptedNotice(null, cardId: 'c4'), rootTitle: 'Root');
       await tester.pump();
       expect(find.text('View'), findsNothing);
+      await settleHud(tester);
+    }, variant: variant);
+
+    testWidgets('${phone.name}: map export opens as a bottom sheet that fits the width', (tester) async {
+      final container = await openStudySet(tester, phone);
+      await tester.tap(tab(PhoneTab.map));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(MapPane));
+      showMapExportSheet(context, context as WidgetRef, 'demo-1');
+      await tester.pumpAndSettle();
+      expect(find.byType(MapExportSheet), findsOneWidget);
+      final sheet = tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet')));
+      expect(sheet.width, phone.size.width);
+      expect(sheet.bottom, phone.size.height);
+      expect(tester.takeException(), isNull);
+      await systemBack(tester);
+      expect(find.byType(MapExportSheet), findsNothing);
+      expect(container.read(navigationProvider), isA<WorkspaceRoute>());
       await settleHud(tester);
     }, variant: variant);
 
