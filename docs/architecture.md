@@ -21,7 +21,7 @@ apps/marginmind ──► mm_design    (令牌、主题、组件)
 | `mm_core` | 实体（`StudySet`、`Folder`）、仓库端口（`StudySetRepository`）、纯查询（`LibraryQuery`）。`testing.dart` 提供内存实现和示例数据。 | 仅 Dart 标准库与 `meta` |
 | `mm_research` | Anthropic Messages、OpenAI Responses、兼容 Chat Completions；SSE、引用候选、预算、安全 HTTP。协议与持久化实体分离。 | `mm_core`、`http`（纯 Dart） |
 | `mm_design` | 设计令牌、`MMTheme`、所有可复用组件。不含业务概念，不含文案。 | Flutter、`cupertino_icons` |
-| `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置。 | Flutter、`mm_core`、`window_manager`、`macos_window_utils` |
+| `mm_platform` | 原生窗口（透明标题栏、红绿灯位置、拖动、缩放）、平台快捷键、系统强调色与辅助功能设置、麦克风 PCM 音频流。 | Flutter、`mm_core`、`window_manager`、`macos_window_utils`、`record` |
 | `mm_data` | `FileLibraryStore`：同时实现 `StudySetRepository` 和 `StudySetContentRepository`。每个学习集一个 `.mmset` 文件夹（`studyset.json` + `documents/` + `images/`），写入先写临时文件再改名，同一学习集的写入串行。 | `mm_core`、`crypto`、`path` |
 | `mm_pdf` | `MMPdfView`（渲染、选字、可点击的高亮叠加、笔迹层、`reveal` 定位）和 `MMPdfEngine`（初始化、读取页数）。其余代码不直接引用 pdfrx。 | Flutter、`pdfrx`、`mm_core`（`PageRect`） |
 | `mm_layout` | `TreeLayout`：向右生长的树，父节点在子树块中垂直居中；`balanced: true` 时中心主题的分支按子树高度分到左右两侧（前一部分在右，其余在左并镜像生长），左侧节点记在 `leftSide`。输入节点尺寸（及概要标签尺寸），输出矩形、连线和概要位置。 | 仅 `meta` |

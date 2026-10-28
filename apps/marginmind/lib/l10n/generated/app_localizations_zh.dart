@@ -2529,4 +2529,88 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantDiagnosticRequest => '请求 ID';
+
+  @override
+  String get settingsVoice => '语音输入';
+
+  @override
+  String get voiceService => '语音服务商';
+
+  @override
+  String get voiceDisabled => '未启用';
+
+  @override
+  String get voiceDoubao => '豆包实时语音识别 2.0';
+
+  @override
+  String get voiceAliyun => '阿里云实时语音识别';
+
+  @override
+  String get voiceAuthentication => '鉴权方式';
+
+  @override
+  String get voiceResource => '资源类型';
+
+  @override
+  String get voiceDuration => '2.0 小时版';
+
+  @override
+  String get voiceConcurrent => '2.0 并发版';
+
+  @override
+  String get voicePrivacy => '录音会发送给所选服务商进行识别，密钥保存在本机钥匙串。';
+
+  @override
+  String get voiceTest => '测试连接';
+
+  @override
+  String get voiceSave => '保存';
+
+  @override
+  String get voiceTestPassed => '连接正常';
+
+  @override
+  String get voiceSaved => '已保存';
+
+  @override
+  String get voiceSaveError => '保存失败，请检查钥匙串访问权限。';
+
+  @override
+  String get voiceKeyError => '无法读取密钥，请检查钥匙串访问权限。';
+
+  @override
+  String get voiceConfigurationError => '请在语音设置中补全服务配置和密钥。';
+
+  @override
+  String get voiceConnectionError => '语音服务连接失败，请检查网络、密钥及服务是否已开通。';
+
+  @override
+  String get voicePermissionError => '未获得麦克风权限，请在系统设置中允许访问。';
+
+  @override
+  String get voiceRecordingError => '麦克风录音中断，请检查设备后重试。';
+
+  @override
+  String get voiceTimeoutError => '语音服务响应超时，请重试。';
+
+  @override
+  String get voiceEmptyError => '没有识别到语音，请再试一次。';
+
+  @override
+  String get voiceConnecting => '正在连接语音服务…';
+
+  @override
+  String get voiceListening => '正在聆听，点击结束';
+
+  @override
+  String get voiceFinishing => '正在确认识别结果…';
+
+  @override
+  String get voiceCancel => '取消语音输入';
+
+  @override
+  String get voiceFinish => '结束录音';
+
+  @override
+  String get voiceKeyPlaceholder => '粘贴密钥';
 }

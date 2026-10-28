@@ -6,6 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../app/app_commands.dart';
+import '../../../settings/settings_window.dart';
+import '../../voice/voice_controller.dart';
+import '../../voice/voice_settings.dart';
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
@@ -37,10 +41,15 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   final _mentionButton = GlobalKey();
   int _slashAt = 0;
   String _previous = '';
+  late final VoiceController _voice;
+  TextEditingValue? _voiceDraft;
+  String _voiceText = '';
+  bool _applyingVoice = false;
 
   @override
   void initState() {
     super.initState();
+    _voice = ref.read(voiceControllerFactoryProvider)()..addListener(_voiceChanged);
     _text.addListener(_changed);
     _focus.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,6 +60,9 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   @override
   void didUpdateWidget(AssistantComposer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.studySetId != widget.studySetId || (oldWidget.configured && !widget.configured)) {
+      _cancelVoice();
+    }
     if (!oldWidget.configured && widget.configured) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && widget.configured) _focus.requestFocus();
@@ -60,12 +72,70 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
 
   @override
   void dispose() {
+    _voice.removeListener(_voiceChanged);
+    _voice.dispose();
     _text.dispose();
     _focus.dispose();
     super.dispose();
   }
 
   AppLocalizations get _l => context.l10n;
+
+  void _voiceChanged() {
+    if (!mounted) return;
+    final draft = _voiceDraft;
+    if (draft != null && _voice.text != _voiceText) {
+      _voiceText = _voice.text;
+      final selection = draft.selection.isValid ? draft.selection : TextSelection.collapsed(offset: draft.text.length);
+      final value = draft.text.replaceRange(selection.start, selection.end, _voiceText);
+      _applyingVoice = true;
+      _text.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: selection.start + _voiceText.length),
+      );
+      _applyingVoice = false;
+    }
+    setState(() {});
+    if (!_voice.active && ref.read(workspaceProvider(widget.studySetId)).panel == RightPanel.assistant) {
+      _focus.requestFocus();
+    }
+  }
+
+  Future<void> _toggleVoice() async {
+    if (_voice.phase == VoicePhase.recording) {
+      await _voice.finish();
+      return;
+    }
+    if (_voice.active) return;
+    final settings = ref.read(voiceSettingsProvider);
+    if (settings.provider == VoiceProvider.none) {
+      await showSettings(context, tab: SettingsTab.voice);
+      return;
+    }
+    _voiceDraft = _text.value;
+    _voiceText = '';
+    if (_slash.isShowing) _slash.hide();
+    final secrets = ref.read(assistantSecretsProvider);
+    await _voice.start(settings, () => voiceKey(secrets, settings));
+  }
+
+  void _cancelVoice() {
+    if (!_voice.active) return;
+    final draft = _voiceDraft;
+    _voiceDraft = null;
+    unawaited(_voice.cancel());
+    if (draft != null) _text.value = draft;
+  }
+
+  String? get _voiceError => switch (_voice.error) {
+    null => null,
+    VoiceError.permission => _l.voicePermissionError,
+    VoiceError.configuration => _l.voiceConfigurationError,
+    VoiceError.connection => _l.voiceConnectionError,
+    VoiceError.recording => _l.voiceRecordingError,
+    VoiceError.timeout => _l.voiceTimeoutError,
+    VoiceError.empty => _l.voiceEmptyError,
+  };
 
   /// `/` commands matching what follows the slash at the start of the input.
   List<AssistantSkill> get _commands {
@@ -81,7 +151,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   void _changed() {
     final value = _text.text;
     // A typed "@" opens the reference menu and does not stay in the text.
-    if (value.length == _previous.length + 1 && !_text.value.composing.isValid) {
+    if (!_applyingVoice && value.length == _previous.length + 1 && !_text.value.composing.isValid) {
       final at = _text.selection.baseOffset - 1;
       if (at >= 0 && at < value.length && value[at] == '@') {
         _previous = value.replaceRange(at, at + 1, '');
@@ -94,7 +164,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
       }
     }
     _previous = value;
-    final commands = _commands;
+    final commands = _voice.active ? const <AssistantSkill>[] : _commands;
     if (commands.isEmpty) {
       if (_slash.isShowing) _slash.hide();
     } else {
@@ -108,6 +178,16 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return KeyEventResult.ignored;
     final key = event.logicalKey;
     final shift = HardwareKeyboard.instance.isShiftPressed;
+    if (_voice.active) {
+      if (key == LogicalKeyboardKey.escape) {
+        _cancelVoice();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.enter && !shift) {
+        unawaited(_voice.finish());
+        return KeyEventResult.handled;
+      }
+    }
     final commands = _slash.isShowing ? _commands : const <AssistantSkill>[];
     if (commands.isNotEmpty) {
       if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.arrowUp) {
@@ -141,7 +221,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   }
 
   void _send([String? text, String? skill]) {
-    if (!widget.configured) return;
+    if (!widget.configured || _voice.active) return;
     final value = text ?? _text.text;
     if (value.trim().isEmpty || ref.read(assistantControllerProvider.notifier).busy) return;
     assistantSend(ref, widget.studySetId, _l, value, skill: skill);
@@ -233,6 +313,13 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final conversation = ref.watch(assistantControllerProvider);
     final running = conversation.running;
     final uiNotifier = ref.read(assistantUiProvider(widget.studySetId).notifier);
+    ref.listen(assistantControllerProvider.select((s) => s.id), (_, _) => _cancelVoice());
+    ref.listen(workspaceProvider(widget.studySetId).select((s) => s.panel), (_, panel) {
+      if (panel != RightPanel.assistant && _voice.active) {
+        _voiceDraft = null;
+        unawaited(_voice.cancel());
+      }
+    });
     ref.listen(assistantUiProvider(widget.studySetId).select((s) => s.focusTick), (_, _) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focus.requestFocus();
@@ -253,10 +340,10 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     );
     // One answer at a time per study set: another conversation is answering.
     final elsewhere = ref.watch(assistantBackgroundProvider) != null;
-    final canSend = configured && !elsewhere && _text.text.trim().isNotEmpty;
+    final canSend = configured && !elsewhere && !_voice.active && _text.text.trim().isNotEmpty;
     final commands = _slash.isShowing ? _commands : const <AssistantSkill>[];
 
-    return CompositedTransformTarget(
+    final composer = CompositedTransformTarget(
       link: _link,
       child: OverlayPortal(
         controller: _slash,
@@ -300,7 +387,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                           key: ValueKey('quick-${s.name}'),
                           label: s.label(l),
                           icon: s.icon,
-                          onPressed: running || elsewhere ? null : () => _send(s.prompt(l), s.name),
+                          onPressed: running || elsewhere || _voice.active ? null : () => _send(s.prompt(l), s.name),
                         ),
                       Builder(
                         builder: (button) => _QuickAction(
@@ -308,7 +395,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                           label: l.assistantMoreActions,
                           icon: MMIcons.chevronDown,
                           trailing: true,
-                          onPressed: running || elsewhere ? null : () => _moreActions(button),
+                          onPressed: running || elsewhere || _voice.active ? null : () => _moreActions(button),
                         ),
                       ),
                     ],
@@ -326,6 +413,43 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (_voice.active || _voiceError != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 6, 6, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  _voice.active
+                                      ? switch (_voice.phase) {
+                                          VoicePhase.connecting => l.voiceConnecting,
+                                          VoicePhase.recording => l.voiceListening,
+                                          _ => l.voiceFinishing,
+                                        }
+                                      : _voiceError!,
+                                  key: const ValueKey('assistant-voice-status'),
+                                  style: t.footnote.copyWith(color: _voice.active ? c.secondaryLabel : c.critical),
+                                ),
+                              ),
+                            ),
+                            if (_voice.active)
+                              _BarButton(
+                                key: const ValueKey('assistant-voice-cancel'),
+                                icon: MMIcons.close,
+                                tooltip: l.voiceCancel,
+                                onPressed: _cancelVoice,
+                              ),
+                            if (!_voice.active && _voice.error != VoiceError.empty)
+                              _BarButton(
+                                icon: MMIcons.settings,
+                                tooltip: l.settingsVoice,
+                                onPressed: () => unawaited(showSettings(context, tab: SettingsTab.voice)),
+                              ),
+                          ],
+                        ),
+                      ),
                     if (configured && chips.isNotEmpty)
                       AssistantContextSummary(
                         key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
@@ -348,6 +472,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               controller: _text,
                               focusNode: _focus,
                               enabled: configured,
+                              readOnly: _voice.active,
                               minLines: 1,
                               maxLines: null,
                               keyboardType: TextInputType.multiline,
@@ -371,13 +496,13 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             key: _mentionButton,
                             icon: MMIcons.mention,
                             tooltip: '${l.assistantMention}（@）',
-                            onPressed: configured ? _mention : null,
+                            onPressed: configured && !_voice.active ? _mention : null,
                           ),
                           _BarButton(
                             key: const ValueKey('assistant-slash'),
                             icon: MMIcons.command,
                             tooltip: '${l.assistantCommands}（/）',
-                            onPressed: configured
+                            onPressed: configured && !_voice.active
                                 ? () {
                                     _text.value = const TextEditingValue(
                                       text: '/',
@@ -409,6 +534,15 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               ),
                             ),
                           const SizedBox(width: MMSpacing.xs),
+                          _BarButton(
+                            key: const ValueKey('assistant-voice'),
+                            icon: _voice.phase == VoicePhase.recording ? MMIcons.stop : MMIcons.microphone,
+                            tooltip: _voice.phase == VoicePhase.recording ? l.voiceFinish : l.settingsVoice,
+                            color: _voice.active ? c.research : null,
+                            onPressed: configured && (!_voice.active || _voice.phase == VoicePhase.recording)
+                                ? () => unawaited(_toggleVoice())
+                                : null,
+                          ),
                           _SendButton(
                             running: running,
                             enabled: canSend,
@@ -425,6 +559,17 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
           ),
         ),
       ),
+    );
+    return Actions(
+      actions: {
+        VoiceInputIntent: CallbackAction<VoiceInputIntent>(
+          onInvoke: (_) {
+            if (widget.configured) unawaited(_toggleVoice());
+            return null;
+          },
+        ),
+      },
+      child: composer,
     );
   }
 }

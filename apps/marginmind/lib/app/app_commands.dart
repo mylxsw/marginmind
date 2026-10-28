@@ -209,6 +209,11 @@ class ReaderNavIntent extends Intent {
   final ReaderNavCommand command;
 }
 
+/// Dictation belongs to the focused assistant composer.
+class VoiceInputIntent extends Intent {
+  const VoiceInputIntent();
+}
+
 Map<ShortcutActivator, ReaderNavIntent> get readerNavShortcuts => {
   const SingleActivator(LogicalKeyboardKey.home): const ReaderNavIntent(ReaderNavCommand.firstPage),
   const SingleActivator(LogicalKeyboardKey.end): const ReaderNavIntent(ReaderNavCommand.lastPage),
@@ -230,6 +235,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
   bool _mapFocused = false;
   bool _readerFocused = false;
   bool _noteFocused = false;
+  bool _voiceFocused = false;
 
   bool get _isTextFocused =>
       FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
@@ -250,10 +256,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final mapFocused = focus != null && Actions.maybeFind<MindMapIntent>(focus) != null;
     final readerFocused = focus != null && Actions.maybeFind<ReaderNavIntent>(focus) != null;
     final noteFocused = focus != null && Actions.maybeFind<NoteFormatIntent>(focus) != null;
+    final voiceFocused = focus != null && Actions.maybeFind<VoiceInputIntent>(focus) != null;
     if (textFocused == _textFocused &&
         mapFocused == _mapFocused &&
         readerFocused == _readerFocused &&
-        noteFocused == _noteFocused) {
+        noteFocused == _noteFocused &&
+        voiceFocused == _voiceFocused) {
       return;
     }
     setState(() {
@@ -261,6 +269,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       _mapFocused = mapFocused;
       _readerFocused = readerFocused;
       _noteFocused = noteFocused;
+      _voiceFocused = voiceFocused;
     });
   }
 
@@ -439,6 +448,15 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ? sharedHighlightCard
         : null;
     edit.addAll([
+      AppCommand(
+        l.settingsVoice,
+        _voiceFocused && workspaceState?.panel == RightPanel.assistant
+            ? () {
+                final focus = FocusManager.instance.primaryFocus?.context;
+                if (focus != null) Actions.maybeInvoke(focus, const VoiceInputIntent());
+              }
+            : null,
+      ),
       for (final entry in {
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,

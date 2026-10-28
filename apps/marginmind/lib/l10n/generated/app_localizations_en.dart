@@ -2651,4 +2651,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantDiagnosticRequest => 'Request ID';
+
+  @override
+  String get settingsVoice => 'Voice Input';
+
+  @override
+  String get voiceService => 'Speech provider';
+
+  @override
+  String get voiceDisabled => 'Disabled';
+
+  @override
+  String get voiceDoubao => 'Doubao Realtime ASR 2.0';
+
+  @override
+  String get voiceAliyun => 'Alibaba Cloud Realtime ASR';
+
+  @override
+  String get voiceAuthentication => 'Authentication';
+
+  @override
+  String get voiceResource => 'Resource type';
+
+  @override
+  String get voiceDuration => '2.0 Duration';
+
+  @override
+  String get voiceConcurrent => '2.0 Concurrent';
+
+  @override
+  String get voicePrivacy => 'Audio is sent to your selected provider. Credentials are stored in this Mac’s Keychain.';
+
+  @override
+  String get voiceTest => 'Test Connection';
+
+  @override
+  String get voiceSave => 'Save';
+
+  @override
+  String get voiceTestPassed => 'Connection successful';
+
+  @override
+  String get voiceSaved => 'Saved';
+
+  @override
+  String get voiceSaveError => 'Could not save. Check Keychain access.';
+
+  @override
+  String get voiceKeyError => 'Could not read credentials. Check Keychain access.';
+
+  @override
+  String get voiceConfigurationError => 'Complete your speech service settings and credentials.';
+
+  @override
+  String get voiceConnectionError => 'Could not connect. Check your network, credentials and service activation.';
+
+  @override
+  String get voicePermissionError => 'Microphone access denied. Allow access in System Settings.';
+
+  @override
+  String get voiceRecordingError => 'Recording interrupted. Check your microphone and try again.';
+
+  @override
+  String get voiceTimeoutError => 'The speech service timed out. Try again.';
+
+  @override
+  String get voiceEmptyError => 'No speech recognized. Try again.';
+
+  @override
+  String get voiceConnecting => 'Connecting to speech service…';
+
+  @override
+  String get voiceListening => 'Listening. Click to finish.';
+
+  @override
+  String get voiceFinishing => 'Finalizing transcription…';
+
+  @override
+  String get voiceCancel => 'Cancel voice input';
+
+  @override
+  String get voiceFinish => 'Finish Recording';
+
+  @override
+  String get voiceKeyPlaceholder => 'Paste credential';
 }

@@ -8,10 +8,11 @@ import 'package:mm_design/mm_design.dart';
 import '../app/navigation.dart';
 import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/settings/web_search_settings.dart';
+import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
 import 'app_settings.dart';
 
-enum SettingsTab { general, reading, models, webSearch }
+enum SettingsTab { general, reading, models, webSearch, voice }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
@@ -61,6 +62,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
       (SettingsTab.models, MMIcons.ai, l.settingsModels),
       (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
+      (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
     final screen = MediaQuery.sizeOf(context);
@@ -133,6 +135,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
                       SettingsTab.reading => const _ReadingPage(),
                       SettingsTab.models => const ModelSettingsPage(),
                       SettingsTab.webSearch => const WebSearchSettingsPage(),
+                      SettingsTab.voice => const VoiceSettingsPage(),
                     },
                   ),
                 ],

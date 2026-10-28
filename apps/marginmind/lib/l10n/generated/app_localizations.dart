@@ -4717,6 +4717,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request ID'**
   String get assistantDiagnosticRequest;
+
+  /// No description provided for @settingsVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Input'**
+  String get settingsVoice;
+
+  /// No description provided for @voiceService.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech provider'**
+  String get voiceService;
+
+  /// No description provided for @voiceDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get voiceDisabled;
+
+  /// No description provided for @voiceDoubao.
+  ///
+  /// In en, this message translates to:
+  /// **'Doubao Realtime ASR 2.0'**
+  String get voiceDoubao;
+
+  /// No description provided for @voiceAliyun.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Cloud Realtime ASR'**
+  String get voiceAliyun;
+
+  /// No description provided for @voiceAuthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get voiceAuthentication;
+
+  /// No description provided for @voiceResource.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource type'**
+  String get voiceResource;
+
+  /// No description provided for @voiceDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'2.0 Duration'**
+  String get voiceDuration;
+
+  /// No description provided for @voiceConcurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'2.0 Concurrent'**
+  String get voiceConcurrent;
+
+  /// No description provided for @voicePrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio is sent to your selected provider. Credentials are stored in this Mac’s Keychain.'**
+  String get voicePrivacy;
+
+  /// No description provided for @voiceTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Connection'**
+  String get voiceTest;
+
+  /// No description provided for @voiceSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get voiceSave;
+
+  /// No description provided for @voiceTestPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection successful'**
+  String get voiceTestPassed;
+
+  /// No description provided for @voiceSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get voiceSaved;
+
+  /// No description provided for @voiceSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Check Keychain access.'**
+  String get voiceSaveError;
+
+  /// No description provided for @voiceKeyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read credentials. Check Keychain access.'**
+  String get voiceKeyError;
+
+  /// No description provided for @voiceConfigurationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your speech service settings and credentials.'**
+  String get voiceConfigurationError;
+
+  /// No description provided for @voiceConnectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect. Check your network, credentials and service activation.'**
+  String get voiceConnectionError;
+
+  /// No description provided for @voicePermissionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access denied. Allow access in System Settings.'**
+  String get voicePermissionError;
+
+  /// No description provided for @voiceRecordingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording interrupted. Check your microphone and try again.'**
+  String get voiceRecordingError;
+
+  /// No description provided for @voiceTimeoutError.
+  ///
+  /// In en, this message translates to:
+  /// **'The speech service timed out. Try again.'**
+  String get voiceTimeoutError;
+
+  /// No description provided for @voiceEmptyError.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech recognized. Try again.'**
+  String get voiceEmptyError;
+
+  /// No description provided for @voiceConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to speech service…'**
+  String get voiceConnecting;
+
+  /// No description provided for @voiceListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening. Click to finish.'**
+  String get voiceListening;
+
+  /// No description provided for @voiceFinishing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalizing transcription…'**
+  String get voiceFinishing;
+
+  /// No description provided for @voiceCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel voice input'**
+  String get voiceCancel;
+
+  /// No description provided for @voiceFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Recording'**
+  String get voiceFinish;
+
+  /// No description provided for @voiceKeyPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste credential'**
+  String get voiceKeyPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
