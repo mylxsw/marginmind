@@ -155,22 +155,18 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     final l = context.l10n;
     final settings = ref.watch(webSearchSettingsProvider);
     final backend = settings.backend;
-    final field = t.body.copyWith(color: c.label);
     MMSettingsRow input(
       String label,
       TextEditingController controller,
       String key, {
-      String? hint,
+      required String hint,
       bool secret = false,
     }) => MMSettingsRow(
       label: label,
-      trailing: MMTextField(
+      trailing: MMTextField.settings(
         key: ValueKey(key),
         controller: controller,
-        plain: true,
         obscureText: secret,
-        textAlign: TextAlign.right,
-        style: field,
         placeholder: hint,
         semanticLabel: label,
         onChanged: _changed,
@@ -201,8 +197,8 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
             if (backend == WebSearchBackend.searxng)
               input(l.settingsAddress, _endpoint, 'search-endpoint', hint: 'http://localhost:8080'),
             if (backend == WebSearchBackend.cloudflare) ...[
-              input(l.settingsAccountId, _account, 'search-account'),
-              input('API Token', _key, 'search-key', hint: l.assistantPasteKey, secret: true),
+              input(l.settingsAccountId, _account, 'search-account', hint: l.settingsAccountIdPlaceholder),
+              input('API Token', _key, 'search-key', hint: l.settingsApiTokenPlaceholder, secret: true),
             ],
             if (backend == WebSearchBackend.tavily || backend == WebSearchBackend.brave)
               input('API Key', _key, 'search-key', hint: l.assistantPasteKey, secret: true),

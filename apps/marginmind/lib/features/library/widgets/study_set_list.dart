@@ -158,7 +158,7 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    return GestureDetector(
+    return MMContextMenuRegion(
       onSecondaryTapUp: onContextMenu == null
           ? null
           : (d) {

@@ -145,13 +145,37 @@ class MMTextField extends StatefulWidget {
     this.style,
     this.plain = false,
     this.textAlign = TextAlign.start,
-  });
+    this.enabled = true,
+  }) : _settings = false;
+
+  /// A settings value: bounded width, focus-only outline, right-aligned text,
+  /// and a required empty-state hint. Identifiers are never autocorrected.
+  const MMTextField.settings({
+    super.key,
+    required this.placeholder,
+    required this.semanticLabel,
+    this.controller,
+    this.focusNode,
+    this.onChanged,
+    this.onSubmitted,
+    this.autofocus = false,
+    this.obscureText = false,
+    this.enabled = true,
+    this.style,
+  }) : plain = false,
+       textAlign = TextAlign.right,
+       maxLines = 1,
+       minLines = null,
+       _settings = true;
 
   final TextEditingController? controller;
   final String? placeholder;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final bool autofocus;
+  final bool enabled;
+  final bool _settings;
+
   final String? semanticLabel;
   final FocusNode? focusNode;
 
@@ -166,7 +190,7 @@ class MMTextField extends StatefulWidget {
   /// Defaults to body text.
   final TextStyle? style;
 
-  /// No fill and no focus ring: a value inside a settings row.
+  /// No fill and no focus ring, for unadorned inline values.
   final bool plain;
   final TextAlign textAlign;
 
@@ -206,46 +230,51 @@ class _MMTextFieldState extends State<MMTextField> {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final focused = _focus.hasFocus;
-    // Its own node: the text field role must not merge into the enclosing
-    // panel, which would hide the panel's other controls.
-    return Semantics(
-      container: true,
-      label: widget.semanticLabel,
-      textField: true,
-      child: Container(
-        height: widget.maxLines == 1 ? MMSizes.field : null,
-        constraints: const BoxConstraints(minHeight: MMSizes.field),
-        padding: EdgeInsets.symmetric(horizontal: widget.plain ? 0 : 10, vertical: widget.maxLines == 1 ? 0 : 6),
-        alignment: Alignment.centerLeft,
-        decoration: widget.plain
-            ? null
-            : BoxDecoration(
-                color: c.quaternaryFill,
-                borderRadius: BorderRadius.circular(MMRadii.field),
-                border: Border.all(color: focused ? c.accent : Colors.transparent, width: 1),
-                boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
-              ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: TextField(
-            controller: widget.controller,
-            focusNode: _focus,
-            autofocus: widget.autofocus,
-            onChanged: widget.onChanged,
-            onSubmitted: widget.onSubmitted,
-            style: widget.style ?? t.body,
-            maxLines: widget.maxLines,
-            minLines: widget.minLines,
-            obscureText: widget.obscureText,
-            textAlign: widget.textAlign,
-            keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
-            cursorWidth: 1.5,
-            cursorHeight: 15,
-            decoration: InputDecoration.collapsed(hintText: widget.placeholder, hintStyle: t.bodySecondary),
-          ),
-        ),
+    final focused = _focus.hasFocus && widget.enabled;
+    // Keep the input's role separate from surrounding controls.
+    final input = Material(
+      type: MaterialType.transparency,
+      child: TextField(
+        controller: widget.controller,
+        focusNode: _focus,
+        autofocus: widget.autofocus,
+        enabled: widget.enabled,
+        autocorrect: !widget._settings,
+        enableSuggestions: !widget._settings,
+        onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
+        style: widget.style ?? t.body,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        obscureText: widget.obscureText,
+        textAlign: widget.textAlign,
+        keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
+        cursorWidth: 1.5,
+        cursorHeight: 15,
+        decoration: InputDecoration.collapsed(hintText: widget.placeholder, hintStyle: t.bodySecondary),
       ),
     );
+    final field = Container(
+      height: widget.maxLines == 1 ? MMSizes.field : null,
+      constraints: BoxConstraints(
+        minHeight: MMSizes.field,
+        maxWidth: widget._settings ? MMSizes.settingsFieldWidth : double.infinity,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: widget.plain ? 0 : (widget._settings ? MMSpacing.s : 10),
+        vertical: widget.maxLines == 1 ? 0 : 6,
+      ),
+      alignment: Alignment.centerLeft,
+      decoration: widget.plain
+          ? null
+          : BoxDecoration(
+              color: widget._settings && !focused ? Colors.transparent : c.quaternaryFill,
+              borderRadius: BorderRadius.circular(MMRadii.field),
+              border: Border.all(color: focused ? c.accent : Colors.transparent),
+              boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
+            ),
+      child: input,
+    );
+    return Semantics(container: true, label: widget.semanticLabel, textField: true, child: field);
   }
 }

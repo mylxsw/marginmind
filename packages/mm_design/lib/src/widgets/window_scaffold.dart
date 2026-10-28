@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/appearance.dart';
+import '../foundation/input_mode.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'menu.dart';
 
 /// Window-level hooks the platform layer provides: window dragging, title
 /// bar double-click, and how much the toolbar must leave for the window
@@ -107,32 +109,45 @@ class MMWindowScaffold extends StatelessWidget {
       ],
     );
     final safe = MediaQuery.paddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
 
-    return ColoredBox(
-      color: c.windowBackground,
-      child: MMWindowChrome(
-        toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-        onDragStart: onDragStart,
-        onTitleDoubleTap: onTitleDoubleTap,
-        child: sidebarOverlay
-            // The drawer's scrim covers the whole window, insets included.
-            ? Stack(
-                children: [
-                  Positioned.fill(
-                    child: SafeArea(
-                      child: ExcludeFocus(excluding: open, child: content),
-                    ),
-                  ),
-                  if (sidebar != null)
-                    MMDrawer(
-                      open: open,
-                      width: fullWidth + safe.left,
-                      onDismiss: onSidebarDismiss,
-                      child: SafeArea(right: false, child: sidebar!),
-                    ),
-                ],
-              )
-            : SafeArea(child: row),
+    return MMInputMode(
+      child: MMContextMenuHost(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: keyboard),
+          // Above the keyboard the home indicator inset no longer applies.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeBottom: keyboard > 0,
+            child: ColoredBox(
+              color: c.windowBackground,
+              child: MMWindowChrome(
+                toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+                onDragStart: onDragStart,
+                onTitleDoubleTap: onTitleDoubleTap,
+                child: sidebarOverlay
+                    // The drawer's scrim covers the whole window, insets included.
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: SafeArea(
+                              child: ExcludeFocus(excluding: open, child: content),
+                            ),
+                          ),
+                          if (sidebar != null)
+                            MMDrawer(
+                              open: open,
+                              width: fullWidth + safe.left,
+                              onDismiss: onSidebarDismiss,
+                              child: SafeArea(right: false, child: sidebar!),
+                            ),
+                        ],
+                      )
+                    : SafeArea(child: row),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

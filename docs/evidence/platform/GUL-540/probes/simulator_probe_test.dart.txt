@@ -1,0 +1,102 @@
+// GUL-540 scratch probe (not committed): drive the real app on a simulator,
+// write SHOT markers for external `simctl io screenshot`, and collect layout
+// errors in portrait and landscape.
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:marginmind/main.dart' as app;
+
+Future<void> idle(WidgetTester t, int seconds) async {
+  for (var i = 0; i < seconds * 10; i++) {
+    await t.pump(const Duration(milliseconds: 100));
+  }
+}
+
+void _mark(String name) {
+  try {
+    File('/tmp/gul540/marker').writeAsStringSync(name);
+  } on FileSystemException {
+    // Not on a simulator.
+  }
+}
+
+Future<void> shot(WidgetTester t, String name) async {
+  // ignore: avoid_print
+  print('SHOT:$name');
+  _mark(name);
+  await idle(t, 5);
+}
+
+Future<void> tapIf(WidgetTester t, Finder f) async {
+  if (f.evaluate().isEmpty) {
+    // ignore: avoid_print
+    print('PROBE missing $f');
+    return;
+  }
+  await t.tap(f.first, warnIfMissed: false);
+  await idle(t, 2);
+}
+
+Finder either(Finder a, Finder b) => a.evaluate().isNotEmpty ? a : b;
+
+Future<void> scenes(WidgetTester t, String o) async {
+  final size = t.view.physicalSize / t.view.devicePixelRatio;
+  final pad = MediaQueryData.fromView(t.view).padding;
+  // ignore: avoid_print
+  print('PROBE $o logical=$size safeArea=$pad');
+  await shot(t, '$o-workspace');
+  final mapTab = either(find.text('脑图'), find.text('Map'));
+  final readTab = either(find.text('阅读'), find.text('Source'));
+  if (mapTab.evaluate().isNotEmpty && readTab.evaluate().isNotEmpty) {
+    await tapIf(t, mapTab);
+    await shot(t, '$o-map');
+    await tapIf(t, readTab);
+  }
+  await tapIf(t, either(find.byTooltip('显示侧栏'), find.byTooltip('Show Sidebar')));
+  await shot(t, '$o-drawer');
+  await t.tapAt(Offset(size.width - 30, size.height / 2));
+  await idle(t, 2);
+  await tapIf(t, find.byKey(const ValueKey('toolbar-assistant')));
+  await shot(t, '$o-assistant');
+  await tapIf(t, find.byKey(const ValueKey('toolbar-assistant')));
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('probe', (t) async {
+    final errors = <String>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = (d) => errors.add(d.exceptionAsString().split('\n').first);
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    app.main();
+    await idle(t, 6);
+    await shot(t, 'portrait-library');
+    final sample = find.text('打开示例学习集');
+    final sampleEn = find.text('Open Sample Study Set');
+    if (sample.evaluate().isNotEmpty) {
+      await tapIf(t, sample);
+    } else if (sampleEn.evaluate().isNotEmpty) {
+      await tapIf(t, sampleEn);
+    } else {
+      await tapIf(t, find.textContaining('MarginMind'));
+    }
+    await idle(t, 6);
+    await scenes(t, 'portrait');
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
+    await idle(t, 4);
+    await scenes(t, 'landscape');
+    FlutterError.onError = previous;
+    final counts = <String, int>{};
+    for (final e in errors) {
+      counts[e] = (counts[e] ?? 0) + 1;
+    }
+    // ignore: avoid_print
+    print('PROBE errors=${errors.length}');
+    // ignore: avoid_print
+    counts.forEach((k, v) => print('PROBE error x$v: $k'));
+    _mark('done');
+  });
+}

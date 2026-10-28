@@ -41,7 +41,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   bool _hoveringNavigation = false;
   bool _navigationFocused = false;
 
-  bool get _navigationVisible => _hoveringNavigation || _navigationFocused || _scrubPage != null;
+  bool get _navigationVisible =>
+      MMInputMode.touchOf(context) || _hoveringNavigation || _navigationFocused || _scrubPage != null;
   double? _scrubPage;
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));
@@ -239,7 +240,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
     return Wrap(
       spacing: MMSpacing.s,
-      runSpacing: MMSpacing.s,
+      runSpacing: MMSpacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         navigation,
@@ -357,7 +358,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           ),
         if (doc != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
             child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
           ),
         if (ocr != null)

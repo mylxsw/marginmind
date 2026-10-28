@@ -137,25 +137,22 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
   Widget build(BuildContext context) {
     final l = context.l10n, c = context.mmColors;
     final enabled = !_busy && !_loading;
-    Widget input(String label, TextEditingController controller, String id, {bool secret = false}) => MMSettingsRow(
+    Widget input(
+      String label,
+      TextEditingController controller,
+      String id, {
+      required String placeholder,
+      bool secret = false,
+    }) => MMSettingsRow(
       label: label,
-      trailing: SizedBox(
-        width: 245,
-        child: TextField(
-          key: ValueKey(id),
-          controller: controller,
-          enabled: enabled,
-          obscureText: secret,
-          autocorrect: false,
-          enableSuggestions: false,
-          style: context.mmText.body,
-          onChanged: _changed,
-          decoration: InputDecoration(
-            isDense: true,
-            border: InputBorder.none,
-            hintText: secret ? l.voiceKeyPlaceholder : null,
-          ),
-        ),
+      trailing: MMTextField.settings(
+        key: ValueKey(id),
+        controller: controller,
+        enabled: enabled,
+        obscureText: secret,
+        semanticLabel: label,
+        placeholder: placeholder,
+        onChanged: _changed,
       ),
     );
     return SettingsPage(
@@ -202,8 +199,14 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                         }),
                 ),
               ),
-              if (!_apiKey) input('App ID', _appId, 'voice-app-id'),
-              input(_apiKey ? 'API Key' : 'Access Token', _key, 'voice-key', secret: true),
+              if (!_apiKey) input('App ID', _appId, 'voice-app-id', placeholder: l.voiceAppIdPlaceholder),
+              input(
+                _apiKey ? 'API Key' : 'Access Token',
+                _key,
+                'voice-key',
+                placeholder: l.voiceKeyPlaceholder,
+                secret: true,
+              ),
               MMSettingsRow(
                 label: l.voiceResource,
                 trailing: MMPopUpButton<String>(
@@ -223,7 +226,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
               ),
             ],
             if (_provider == VoiceProvider.aliyun) ...[
-              input('API Key', _key, 'voice-key', secret: true),
+              input('API Key', _key, 'voice-key', placeholder: l.voiceKeyPlaceholder, secret: true),
               MMSettingsRow(
                 label: l.assistantModel,
                 trailing: MMPopUpButton<String>(
@@ -241,7 +244,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                         }),
                 ),
               ),
-              input(l.settingsAddress, _endpoint, 'voice-endpoint'),
+              input(l.settingsAddress, _endpoint, 'voice-endpoint', placeholder: const VoiceSettings().endpoint),
             ],
           ],
         ),

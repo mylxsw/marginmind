@@ -33,10 +33,10 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
 | `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。主要按钮可用 `color` 换成功能色（研究用 `research`），纯文本按钮的 `color` 是文字色（设置里的 `accent` 链接、`critical` 的“移除服务”）；`MMToolbarButton` 对应的是 `tint`，选中时也保持 `tint`（打开的助手）。 |
 | `MMCheckbox` / `MMSwitch` / `MMPill` | 复选框（整行可点）、小开关、状态标签（文字为给定颜色，底为其 12%；不给颜色时为中性）。 |
-| `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。`MMTextField` 可多行（`maxLines` / `minLines`，随内容长高）、隐藏输入（`obscureText`，用于 API Key）并接收外部 `focusNode`；`plain` 去掉底色和焦点环、配合 `textAlign` 用作设置行里右对齐的值。 |
+| `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。`MMTextField` 可多行（`maxLines` / `minLines`，随内容长高）、隐藏输入（`obscureText`，用于 API Key）并接收外部 `focusNode`；`plain` 用于无底色和焦点环的原地值。设置页统一用 `MMTextField.settings`：高 28、最大宽度 `MMSizes.settingsFieldWidth`（245，窄窗口随可用空间缩小）、右对齐、8pt 内边距，平时无底色和边框，只在聚焦时显示淡底、强调色边框和焦点环；必须提供空值提示和辅助功能名称，关闭自动纠错与输入建议。密钥始终隐藏，不显示明文切换按钮。 |
 | `MMInlineTextField` | 原地编辑用的无边框文本框，随所在位置换行（`maxLines: 1` 时保持单行）；Enter 提交、Esc 取消，输入法组合期间这两个键交给输入法；`multiline` 时 ⇧Enter 换行。 |
 | `showMMSheet` / `MMSheet` | 从工具栏下方落下的表单面板，Esc 取消。 |
-| `MMSettingsGroup` / `MMSettingsRow` / `MMSettingsHeader` / `MMPopUpButton` | macOS 系统设置式分组表单（GUL-537）：卡片 `card` 底、圆角 12、0.5pt `hairline` 描边，深色为白 5% 底 + 白 8% 描边；行高 40、左标签右值、行间分隔线从 14 开始；可选 `quaternaryFill` 底栏。`MMPopUpButton` 是弹出按钮（`quaternaryFill`、圆角 6、上下双箭头），菜单里勾选当前值。 |
+| `MMSettingsGroup` / `MMSettingsRow` / `MMSettingsHeader` / `MMPopUpButton` | macOS 系统设置式分组表单（GUL-537）：卡片 `card` 底、圆角 12、0.5pt `hairline` 描边，深色为白 5% 底 + 白 8% 描边；行高 40、左标签右值、行间分隔线从 14 开始；可选 `quaternaryFill` 底栏。`MMPopUpButton` 是弹出按钮（`quaternaryFill`、圆角 6、上下双箭头），菜单里勾选当前值。模型服务展开后，标题栏提供带提示的删除图标，保留删除确认；“模型”标题右侧用加号打开添加弹窗，不另占一行。 |
 | `showMMMenu` / `MMMenuItem` / `MMMenuHeader` | 右键菜单与下拉菜单。`MMMenuItem.checked` 非空时留出勾选列；`minWidth` 用于和按钮同宽（模型菜单 220）。 |
 | `MMHudHost` / `MMHud.show` | 窗口底部的提示胶囊。可带一个 `action`（如“撤销”“在脑图中查看”），只有带操作的胶囊接收点击。 |
 | `MMFloatingToolbarSwatch` / `MMFloatingToolbarStrokeWidth` | 浮动工具条里的任意颜色点（`MMFloatingToolbarColor` 基于它）和粗细点（点的直径 = 粗细 × 2 + 2，选中为强调色底）。`MMToolbarButton` 可只有文字（`icon: null` + `label`），用于“完成”。 |

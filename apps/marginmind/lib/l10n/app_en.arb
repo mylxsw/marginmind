@@ -1368,6 +1368,9 @@
     }
   },
   "assistantSuggestOrganize": "Organize this section into the map",
+  "assistantSavedKeyUnavailable": "The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.",
+  "assistantRetrySavedKey": "Retry reading key",
+  "assistantKeySaveUnavailable": "The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.",
   "assistantConnectTitle": "Connect an AI service",
   "assistantPasteKey": "Paste API key",
   "assistantConnect": "Connect",
@@ -1519,5 +1522,10 @@
   "voiceFinishing": "Finalizing transcription…",
   "voiceCancel": "Cancel voice input",
   "voiceFinish": "Finish Recording",
-  "voiceKeyPlaceholder": "Paste credential"
+  "voiceKeyPlaceholder": "Paste credential",
+  "mapMultiSelect": "Multiple Selection",
+  "voiceAppIdPlaceholder": "Enter App ID",
+  "settingsNamePlaceholder": "Enter service name",
+  "settingsAccountIdPlaceholder": "Enter Account ID",
+  "settingsApiTokenPlaceholder": "Paste API Token"
 }

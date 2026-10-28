@@ -204,7 +204,11 @@ void main() {
     final id = container.read(workspaceProvider('demo-1')).activeMapId;
     expect(controller.content.map(id)!.title, 'Second');
     expect(find.text('遗忘的规律'), findsNothing);
-    await tester.tap(find.byKey(ValueKey('sidebar-map-$id')), buttons: kSecondaryMouseButton);
+    await tester.tap(
+      find.byKey(ValueKey('sidebar-map-$id')),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename Mind Map…'));
     await tester.pumpAndSettle();
@@ -217,7 +221,11 @@ void main() {
     expect(find.text('遗忘的规律'), findsOneWidget);
     await tester.tap(find.byKey(ValueKey('sidebar-map-$id')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(ValueKey('sidebar-map-$id')), buttons: kSecondaryMouseButton);
+    await tester.tap(
+      find.byKey(ValueKey('sidebar-map-$id')),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete Mind Map'));
     await tester.pumpAndSettle();
@@ -258,7 +266,7 @@ void main() {
     final id = container.read(workspaceProvider('demo-1')).activeMapId;
     await controller.selectMap(MindMap.defaultId);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton);
+    await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add to “Second”'));
     await tester.pumpAndSettle();

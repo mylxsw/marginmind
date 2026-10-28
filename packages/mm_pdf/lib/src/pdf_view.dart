@@ -1094,7 +1094,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   Future<void> _commitSelection() async {
-    if (widget.areaSelecting || widget.ink != null) return;
+    if ((widget.areaSelecting || widget.ink != null) && _textPointerKind != PointerDeviceKind.touch) return;
     final epoch = ++_selectionEpoch;
     // pdfrx settles the selection a frame after the pointer is released.
     await Future<void>.delayed(const Duration(milliseconds: 120));
@@ -1325,7 +1325,6 @@ class _MMPdfViewState extends State<MMPdfView> {
                   PointerDeviceKind.mouse,
                   PointerDeviceKind.stylus,
                   PointerDeviceKind.invertedStylus,
-                  PointerDeviceKind.touch,
                 },
                 onPanStart: _areaStart,
                 onPanUpdate: _areaUpdate,
@@ -1348,7 +1347,6 @@ class _MMPdfViewState extends State<MMPdfView> {
                   PointerDeviceKind.mouse,
                   PointerDeviceKind.stylus,
                   PointerDeviceKind.invertedStylus,
-                  PointerDeviceKind.touch,
                 },
                 // The eraser bites on pointer down, so a click erases too;
                 // a click then ends as a cancelled drag.
@@ -1403,6 +1401,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   Offset? _textDragStart;
+  PointerDeviceKind? _textPointerKind;
 
   Future<void> _textPointerUp(PointerUpEvent event) async {
     final start = _textDragStart;
@@ -1434,6 +1433,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     return Listener(
       onPointerDown: (event) {
         _textDragStart = event.localPosition;
+        _textPointerKind = event.kind;
         _selectionEpoch++;
         if (_cleanSelection != null) setState(() => _cleanSelection = null);
       },
@@ -1478,7 +1478,9 @@ class _MMPdfViewState extends State<MMPdfView> {
           pageBackgroundPaintCallbacks: [_beginPagePaint],
           pagePaintCallbacks: [_paintMatches, _endPagePaint],
           textSelectionParams: PdfTextSelectionParams(
-            enabled: !widget.areaSelecting && widget.ink == null,
+            // Tool overlays claim mouse/Pencil drags. Keep pdfrx's touch
+            // long-press selection and handles available underneath them.
+            enabled: true,
             showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;

@@ -15,6 +15,7 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../settings/settings_window.dart';
 import '../assistant_services.dart';
+import '../assistant_settings.dart';
 import 'assistant_markdown.dart';
 import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
@@ -746,6 +747,24 @@ class _Tail extends ConsumerWidget {
         [_ActionButton(label: l.assistantContinue, color: primary, onPressed: retry)],
       ),
       _ => switch (kind) {
+        _ when m.diagnostics?.failure == 'secret_store' => (
+          l.assistantSavedKeyUnavailable,
+          false,
+          [
+            _ActionButton(
+              label: l.assistantRetrySavedKey,
+              color: primary,
+              onPressed: () {
+                ref.read(assistantKeysProvider.notifier).changed();
+                retry();
+              },
+            ),
+            _ActionButton(
+              label: l.assistantOpenSettings,
+              onPressed: () => showSettings(context, tab: SettingsTab.models),
+            ),
+          ],
+        ),
         ResearchFailureKind.authentication => (
           l.assistantErrorKey,
           false,

@@ -118,4 +118,74 @@ void main() {
     );
     expect(box.decoration, isNull);
   });
+
+  for (final brightness in Brightness.values) {
+    testWidgets('settings input remains usable when narrowed and cannot focus while disabled ($brightness)', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      final focus = FocusNode();
+      addTearDown(controller.dispose);
+      addTearDown(focus.dispose);
+      late StateSetter update;
+      var enabled = true;
+      var width = 500.0;
+      await tester.pumpWidget(
+        harness(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return SizedBox(
+                width: width,
+                child: MMSettingsGroup(
+                  children: [
+                    MMSettingsRow(
+                      label: 'Account ID',
+                      trailing: MMTextField.settings(
+                        controller: controller,
+                        focusNode: focus,
+                        enabled: enabled,
+                        placeholder: 'Enter Account ID',
+                        semanticLabel: 'Account ID',
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          brightness: brightness,
+        ),
+      );
+      final input = find.byType(MMTextField);
+      BoxDecoration decoration() =>
+          tester.widget<Container>(find.descendant(of: input, matching: find.byType(Container)).first).decoration!
+              as BoxDecoration;
+      expect(find.text('Enter Account ID'), findsOneWidget);
+      expect(decoration().color, Colors.transparent);
+      expect(decoration().border, Border.all(color: Colors.transparent));
+      expect(tester.getSize(input).width, MMSizes.settingsFieldWidth);
+      update(() => width = 240);
+      await tester.pump();
+      expect(tester.getSize(input).width, lessThan(MMSizes.settingsFieldWidth));
+      await tester.tap(input);
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      expect(
+        decoration().color,
+        brightness == Brightness.light ? MMColors.light.quaternaryFill : MMColors.dark.quaternaryFill,
+      );
+      expect(decoration().border, Border.all(color: tester.element(input).mmColors.accent));
+      await tester.enterText(input, 'account-123');
+      expect(controller.text, 'account-123');
+      update(() => enabled = false);
+      await tester.pump();
+      await tester.tap(input, warnIfMissed: false);
+      await tester.pump();
+      expect(focus.hasFocus, isFalse);
+      expect(decoration().color, Colors.transparent);
+      expect(controller.text, 'account-123');
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

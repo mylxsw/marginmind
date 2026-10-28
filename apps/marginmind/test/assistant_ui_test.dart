@@ -28,6 +28,15 @@ class _LockedSecrets extends FakeSecrets {
   Future<String?> read(String name) async => throw const ResearchFailure(ResearchFailureKind.authentication);
 }
 
+class _ToggleKeyStore extends FakeSecrets {
+  bool blocked = false;
+  @override
+  Future<String?> read(String account) async {
+    if (blocked) throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+    return super.read(account);
+  }
+}
+
 Future<void> _selectText(WidgetTester tester, WorkspaceController workspace) async {
   await workspace.onSelectionCommitted(
     'c1',
@@ -47,7 +56,13 @@ Future<void> _type(WidgetTester tester, String text) async {
 
 /// Right-clicks the node titled [title] and picks [item] from its menu.
 Future<void> _nodeMenu(WidgetTester tester, String title, String item) async {
-  await tester.tap(find.text(title).last, buttons: kSecondaryButton);
+  final click = await tester.startGesture(
+    tester.getCenter(find.text(title).last),
+    buttons: kSecondaryButton,
+    kind: PointerDeviceKind.mouse,
+  );
+  await click.up();
+  await click.removePointer();
   await tester.pumpAndSettle();
   await tester.tap(find.text(item));
   await pumpFor(tester, 20);
@@ -61,6 +76,31 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool shift = f
 }
 
 void main() {
+  testWidgets('storage becoming inaccessible during a question is not reported as an invalid API key', (tester) async {
+    final secrets = _ToggleKeyStore();
+    await openAssistantApp(tester, secretStore: secrets);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    secrets.blocked = true;
+    await _type(tester, '解释这段内容');
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester, 20);
+    expect(conversationOf(tester).messages.last.diagnostics?.failure, 'secret_store');
+    expect(find.textContaining('暂时无法读取已保存的 API Key'), findsOneWidget);
+    expect(find.text('API Key 无效'), findsNothing);
+    await tester.tap(find.text('重试读取'));
+    await pumpFor(tester, 20);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
+    secrets.blocked = false;
+    await tester.enterText(find.byKey(const ValueKey('connect-key')), 'test-key');
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+    await tester.tap(find.text('重试读取'));
+    await pumpFor(tester, 20);
+    expect(conversationOf(tester).messages.last.status, MessageStatus.done);
+  });
+
   testWidgets('locked credentials leave the reader and assistant connection form usable', (tester) async {
     final app = await openAssistantApp(tester, secretStore: _LockedSecrets());
     expect(app.workspace.content.documents, isNotEmpty);
@@ -423,54 +463,81 @@ void main() {
     expect(conversationOf(tester).messages.last.text, '完整');
   });
 
-  testWidgets('history: list, open, rename and delete; new conversation; Esc closes the panel', (tester) async {
-    // Wide enough for the sidebar beside the panel.
-    final app = await openAssistantApp(
+  for (final touch in [false, true]) {
+    testWidgets('[$touch] history: list, open, rename and delete; new conversation; Esc closes the panel', (
       tester,
-      client: ScriptClient([answer('一'), answer('二')]),
-      size: const Size(1800, 900),
-    );
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    await _type(tester, '第一个问题');
-    await _press(tester, LogicalKeyboardKey.enter);
-    await pumpFor(tester, 20);
-    final first = conversationOf(tester).id;
-    expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('assistant-new')));
-    await pumpFor(tester, 20);
-    expect(conversationOf(tester).messages, isEmpty);
-    await tester.tap(find.byKey(const ValueKey('assistant-title')));
-    await pumpFor(tester);
-    expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
-    expect(find.textContaining('1 个问题'), findsOneWidget);
-    await tester.tap(find.byKey(ValueKey('history-$first')));
-    await pumpFor(tester, 20);
-    expect(conversationOf(tester).id, first);
-    // Rename and delete through the row's menu.
-    await tester.tap(find.byKey(ValueKey('sidebar-conversation-$first')), buttons: kSecondaryButton);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('重命名…'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText).last, '改过的名字');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-    expect(conversationOf(tester).title, '改过的名字');
-    await tester.tap(find.byKey(ValueKey('sidebar-conversation-$first')), buttons: kSecondaryButton);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('删除…'));
-    await tester.pumpAndSettle();
-    expect(find.text('已存的笔记会保留。'), findsOneWidget);
-    await tester.tap(find.text('删除').last);
-    await pumpFor(tester, 20);
-    expect(app.archive.files.containsKey(first), isFalse);
-    expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsNothing);
-    // Esc in the panel closes it when nothing else is open.
-    await tester.tap(find.byKey(const ValueKey('assistant-input')));
-    await _press(tester, LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
-    expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
-  });
+    ) async {
+      // Wide enough for the sidebar beside the panel.
+      final app = await openAssistantApp(
+        tester,
+        client: ScriptClient([answer('一'), answer('二')]),
+        size: const Size(1800, 900),
+      );
+      await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+      await tester.pumpAndSettle();
+      await _type(tester, '第一个问题');
+      await _press(tester, LogicalKeyboardKey.enter);
+      await pumpFor(tester, 20);
+      final first = conversationOf(tester).id;
+      expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('assistant-new')));
+      await pumpFor(tester, 20);
+      expect(conversationOf(tester).messages, isEmpty);
+      await tester.tap(find.byKey(const ValueKey('assistant-title')));
+      await pumpFor(tester);
+      expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
+      expect(find.textContaining('1 个问题'), findsOneWidget);
+      if (touch) {
+        await tester.longPress(find.byKey(ValueKey('history-$first')));
+        await tester.pumpAndSettle();
+        expect(find.text('重命名…'), findsOneWidget);
+        await _press(tester, LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.byKey(ValueKey('history-$first')));
+      await pumpFor(tester, 20);
+      expect(conversationOf(tester).id, first);
+      // Rename and delete through the row's menu.
+      if (touch) {
+        await tester.longPress(find.byKey(ValueKey('sidebar-conversation-$first')));
+      } else {
+        await tester.tap(
+          find.byKey(ValueKey('sidebar-conversation-$first')),
+          buttons: kSecondaryButton,
+          kind: PointerDeviceKind.mouse,
+        );
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('重命名…'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText).last, '改过的名字');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(conversationOf(tester).title, '改过的名字');
+      if (touch) {
+        await tester.longPress(find.byKey(ValueKey('sidebar-conversation-$first')));
+      } else {
+        await tester.tap(
+          find.byKey(ValueKey('sidebar-conversation-$first')),
+          buttons: kSecondaryButton,
+          kind: PointerDeviceKind.mouse,
+        );
+      }
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('删除…'));
+      await tester.pumpAndSettle();
+      expect(find.text('已存的笔记会保留。'), findsOneWidget);
+      await tester.tap(find.text('删除').last);
+      await pumpFor(tester, 20);
+      expect(app.archive.files.containsKey(first), isFalse);
+      expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsNothing);
+      // Esc in the panel closes it when nothing else is open.
+      await tester.tap(find.byKey(const ValueKey('assistant-input')));
+      await _press(tester, LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
+    });
+  }
 
   testWidgets('narrow window and dark appearance keep the panel usable', (tester) async {
     final app = await openAssistantApp(tester, size: const Size(1000, 700), prefs: {'settings.appearance': 'dark'});

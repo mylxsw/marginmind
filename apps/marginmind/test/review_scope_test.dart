@@ -37,7 +37,7 @@ void main() {
 
   Future<void> openNodeMenu(WidgetTester tester, String text) async {
     await showWholeMap(tester);
-    await tester.tap(find.text(text), buttons: kSecondaryMouseButton);
+    await tester.tap(find.text(text), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
   }
 
@@ -137,13 +137,21 @@ void main() {
     await tester.pumpAndSettle();
 
     // Nothing to review under a tag carried only by a topic: no menu.
-    await tester.tap(find.byKey(const ValueKey('sidebar-tag-Plan')), buttons: kSecondaryMouseButton);
+    await tester.tap(
+      find.byKey(const ValueKey('sidebar-tag-Plan')),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     expect(find.text('Review Tag'), findsNothing);
 
     await controller.setSuspended(note.id, suspended: true);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('sidebar-tag-Memory')), buttons: kSecondaryMouseButton);
+    await tester.tap(
+      find.byKey(const ValueKey('sidebar-tag-Memory')),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Review Tag'));
     await tester.pumpAndSettle();

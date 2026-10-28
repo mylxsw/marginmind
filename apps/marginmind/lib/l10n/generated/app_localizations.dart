@@ -4286,6 +4286,24 @@ abstract class AppLocalizations {
   /// **'Organize this section into the map'**
   String get assistantSuggestOrganize;
 
+  /// No description provided for @assistantSavedKeyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.'**
+  String get assistantSavedKeyUnavailable;
+
+  /// No description provided for @assistantRetrySavedKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry reading key'**
+  String get assistantRetrySavedKey;
+
+  /// No description provided for @assistantKeySaveUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.'**
+  String get assistantKeySaveUnavailable;
+
   /// No description provided for @assistantConnectTitle.
   ///
   /// In en, this message translates to:
@@ -4903,6 +4921,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste credential'**
   String get voiceKeyPlaceholder;
+
+  /// No description provided for @mapMultiSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple Selection'**
+  String get mapMultiSelect;
+
+  /// No description provided for @voiceAppIdPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter App ID'**
+  String get voiceAppIdPlaceholder;
+
+  /// No description provided for @settingsNamePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter service name'**
+  String get settingsNamePlaceholder;
+
+  /// No description provided for @settingsAccountIdPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Account ID'**
+  String get settingsAccountIdPlaceholder;
+
+  /// No description provided for @settingsApiTokenPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste API Token'**
+  String get settingsApiTokenPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

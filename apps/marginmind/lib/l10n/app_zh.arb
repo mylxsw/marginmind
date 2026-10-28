@@ -764,6 +764,9 @@
   "assistantSuggestTranslate": "翻译所选内容",
   "assistantSuggestQuiz": "为「{title}」出复习题",
   "assistantSuggestOrganize": "把当前一节整理进脑图",
+  "assistantSavedKeyUnavailable": "暂时无法读取已保存的 API Key。这不代表 Key 无效。可重试读取，或重新填写该服务的 Key；阅读不受影响。",
+  "assistantRetrySavedKey": "重试读取",
+  "assistantKeySaveUnavailable": "暂时无法保存 API Key。输入内容仍保留在此处，可稍后重试；这不代表 Key 无效。",
   "assistantConnectTitle": "连接一个 AI 服务",
   "assistantPasteKey": "粘贴 API Key",
   "assistantConnect": "连接",
@@ -866,5 +869,10 @@
   "voiceFinishing": "正在确认识别结果…",
   "voiceCancel": "取消语音输入",
   "voiceFinish": "结束录音",
-  "voiceKeyPlaceholder": "粘贴密钥"
+  "voiceKeyPlaceholder": "粘贴密钥",
+  "mapMultiSelect": "多选",
+  "voiceAppIdPlaceholder": "填写 App ID",
+  "settingsNamePlaceholder": "填写服务名称",
+  "settingsAccountIdPlaceholder": "填写账户 ID",
+  "settingsApiTokenPlaceholder": "粘贴 API Token"
 }

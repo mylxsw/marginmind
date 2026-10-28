@@ -8,6 +8,7 @@ import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'context_menu_region.dart';
 import 'window_scaffold.dart';
 
 /// Floating glass sidebar (macOS 26): inset 8 from the window edges,
@@ -171,7 +172,7 @@ class MMSidebarItem extends StatelessWidget {
       ),
     );
     if (onContextMenu == null) return item;
-    return GestureDetector(onSecondaryTapUp: (d) => onContextMenu!(d.globalPosition), child: item);
+    return MMContextMenuRegion(onSecondaryTapUp: (d) => onContextMenu!(d.globalPosition), child: item);
   }
 }
 
