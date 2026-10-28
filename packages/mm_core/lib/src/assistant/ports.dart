@@ -1,7 +1,7 @@
 import '../research/ports.dart';
 
-/// Explicit visible context is the only source of read authority. An empty
-/// scope authorizes nothing; auto context has exactly the same authority.
+/// Read authority comes from the host's study-set document catalog and context
+/// locators. An empty scope authorizes nothing; document grants cover all pages.
 class ReadScope {
   ReadScope({
     required this.studySetId,

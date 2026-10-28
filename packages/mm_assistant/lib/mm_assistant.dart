@@ -7,6 +7,7 @@ export 'src/fakes.dart';
 export 'src/runtime.dart';
 export 'src/providers.dart';
 export 'src/models.dart';
+export 'src/permissions.dart';
 
 export 'src/legacy_migration.dart';
 

@@ -29,6 +29,25 @@ void main() {
     final empty = scopeFromContexts('set', []);
     expect(empty.allowsPage('doc', 1), false);
   });
+  test('study-set documents stay readable beyond the focused page and without contexts', () {
+    final documents = {'doc', 'other-doc'};
+    final scope = scopeFromContexts('set', const [
+      ContextItem(id: 'sel', kind: ContextKind.selection, displayText: '术语', documentId: 'doc', page: 194),
+      ContextItem(id: 'page', kind: ContextKind.page, displayText: '书名', documentId: 'doc', page: 194, auto: true),
+    ], documentIds: documents);
+    documents.add('outside');
+    for (final page in [1, 193, 194, 195, 300]) {
+      expect(scope.allowsPage('doc', page), true);
+    }
+    expect(scope.allowsPage('other-doc', 1), true);
+    expect(scope.allowsPage('outside', 1), false);
+    expect(scope.allowsPage('doc', 0), false);
+    expect(scope.selections, {'sel'});
+    expect(scope.allowsBranch('map', 'node'), false);
+    final withoutFocus = scopeFromContexts('set', [], documentIds: ['doc']);
+    expect(withoutFocus.allowsPage('doc', 194), true);
+    expect(() => scope.documents.add('outside'), throwsUnsupportedError);
+  });
   test('view roundtrip retains status, citation and receipt without exposing mutable lists', () {
     final p = MapEditProposal(
       id: 'p',

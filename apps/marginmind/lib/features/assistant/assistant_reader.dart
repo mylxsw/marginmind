@@ -11,7 +11,7 @@ const assistantRootId = '__root__';
 /// text comes from the question's own contexts, so a conversation reopened
 /// after a restart reads exactly what the user attached. Every method checks
 /// [ReadScope] again; the tools check it first.
-class WorkspaceReader implements StudySetReader {
+class WorkspaceReader implements StudySetReader, ReadPermissionResolver {
   WorkspaceReader({required this.content, required this.contexts, required this.filePath, required this.pageText});
 
   final StudySetContent Function() content;
@@ -20,6 +20,50 @@ class WorkspaceReader implements StudySetReader {
   final Future<String?> Function(String path, int page) pageText;
 
   static const maxBranchNodes = 200;
+
+  @override
+  ReadPermissionRequest? describeReadPermission(String tool, Map<String, dynamic> arguments) {
+    final c = content();
+    switch (tool) {
+      case 'read_pages':
+        final document = c.document(arguments['documentId'] as String);
+        final from = arguments['from'] as int, to = arguments['to'] as int;
+        if (document == null || from < 1 || to < from || to > document.pageCount) return null;
+        return ReadPermissionRequest(
+          kind: ReadPermissionKind.pages,
+          title: document.title,
+          targetId: document.id,
+          documentId: document.id,
+          from: from,
+          to: to,
+        );
+      case 'read_selection':
+        final item = contexts
+            .where((item) => item.id == arguments['selectionId'] && item.kind == ContextKind.selection)
+            .firstOrNull;
+        if (item == null || item.documentId == null || c.document(item.documentId!) == null) return null;
+        return ReadPermissionRequest(
+          kind: ReadPermissionKind.selection,
+          title: item.displayText,
+          targetId: item.id,
+          documentId: item.documentId,
+          from: item.page,
+          to: item.page,
+        );
+      case 'read_branch':
+        final map = c.map(arguments['mapId'] as String);
+        final nodeId = arguments['nodeId'] as String;
+        if (map == null || (nodeId != assistantRootId && c.node(nodeId, mapId: map.id) == null)) return null;
+        return ReadPermissionRequest(
+          kind: nodeId == assistantRootId ? ReadPermissionKind.map : ReadPermissionKind.branch,
+          title: nodeId == assistantRootId ? map.title : researchCardTitle(c, nodeId),
+          targetId: nodeId,
+          mapId: map.id,
+        );
+      default:
+        return null;
+    }
+  }
 
   @override
   Future<List<ReadPage>> readSelection(String selectionId, ReadScope scope, CancellationToken cancel) async {

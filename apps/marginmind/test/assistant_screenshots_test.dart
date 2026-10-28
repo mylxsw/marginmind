@@ -199,6 +199,24 @@ void main() {
     await _loadFonts();
   });
   final mac = TargetPlatformVariant.only(TargetPlatform.macOS);
+  testWidgets(
+    'read permission narrow',
+    (tester) async {
+      final client = ScriptClient([call('read_branch', '{"mapId":"main","nodeId":"__root__"}'), answer('已读取。')]);
+      await openAssistantApp(tester, client: client, size: const Size(1000, 760));
+      await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+      await tester.pumpAndSettle();
+      final controller = assistantOf(tester);
+      final execution = controller.send('帮我结合脑图整理一下内容');
+      await pumpFor(tester);
+      expect(find.text('需要你的授权'), findsOneWidget);
+      await _save(tester, 'assistant-read-permission-narrow', overlays: true);
+      await controller.stop();
+      await execution;
+    },
+    skip: skip,
+    variant: mac,
+  );
   testWidgets('light', (tester) => _shoot(tester, 'assistant-light'), skip: skip, variant: mac);
   testWidgets('dark', (tester) => _shoot(tester, 'assistant-dark', dark: true), skip: skip, variant: mac);
   testWidgets(

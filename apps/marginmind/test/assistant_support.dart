@@ -185,7 +185,11 @@ Future<AssistantApp> openAssistantApp(
                   filePath: workspace.filePath,
                   pageText: (path, page) async => '第 $page 页的正文',
                 ),
-                scope: scopeFromContexts(id, question.contexts),
+                scope: scopeFromContexts(
+                  id,
+                  question.contexts,
+                  documentIds: workspace.content.documents.map((document) => document.id),
+                ),
                 mapId: mapId,
                 baseRevision: realWrites ? assistantMapRevision(workspace.content, mapId) : executor.revision,
                 parents: mapParents(workspace.content, mapId),

@@ -3,6 +3,7 @@ import 'package:mm_core/mm_core.dart';
 
 import 'citations.dart';
 import 'hooks.dart';
+import 'permissions.dart';
 
 const mapEditProposalInstructions = '''Submit edits for user confirmation. Never executes writes.
 Each operation has a unique id and ONLY the fields listed for its kind:
@@ -23,13 +24,15 @@ class AssistantTools {
     required this.citations,
     required this.budget,
     this.network,
+    this.permissions,
   });
   final StudySetReader reader;
-  final ReadScope scope;
+  ReadScope scope;
   final CancellationToken cancel;
   final CitationRegistry citations;
   final RunBudget budget;
   final AssistantNetwork? network;
+  final AssistantPermissions? permissions;
   static const readNames = {'read_selection', 'read_pages', 'search_study_set', 'read_branch'};
   String str(Map<String, dynamic> a, String k, {int max = 200}) {
     final v = a[k];
@@ -43,7 +46,7 @@ class AssistantTools {
     switch (name) {
       case 'read_selection':
         final id = str(a, 'selectionId');
-        if (!scope.selections.contains(id)) throw const FormatException('Selection not authorized');
+        if (!scope.selections.contains(id)) await _authorize(name, a);
         final pages = await cancel.bind(reader.readSelection(id, scope, cancel));
         budget.pages += pages.length;
         if (budget.pages > budget.limits.pages) throw const ResearchFailure(ResearchFailureKind.budget);
@@ -51,12 +54,10 @@ class AssistantTools {
       case 'read_pages':
         final doc = str(a, 'documentId');
         final from = a['from'] as int, to = a['to'] as int;
-        if (from < 1 ||
-            to < from ||
-            to - from >= budget.limits.pages ||
-            [for (var p = from; p <= to; p++) p].any((p) => !scope.allowsPage(doc, p))) {
-          throw const FormatException('Pages not authorized');
+        if (from < 1 || to < from || to - from >= budget.limits.pages) {
+          throw const FormatException('Invalid page range');
         }
+        if ([for (var p = from; p <= to; p++) p].any((p) => !scope.allowsPage(doc, p))) await _authorize(name, a);
         final pages = await cancel.bind(reader.readPages(doc, from, to, scope, cancel));
         if (pages.length > to - from + 1 || pages.any((p) => p.documentId != doc || p.page < from || p.page > to)) {
           throw const FormatException('Invalid reader result');
@@ -72,7 +73,7 @@ class AssistantTools {
         ];
       case 'read_branch':
         final map = str(a, 'mapId'), node = str(a, 'nodeId');
-        if (!scope.allowsBranch(map, node)) throw const FormatException('Branch not authorized');
+        if (!scope.allowsBranch(map, node)) await _authorize(name, a);
         final nodes = await cancel.bind(reader.readBranch(map, node, scope, cancel));
         if (nodes.length > 200) throw const ResearchFailure(ResearchFailureKind.budget);
         out = [for (final n in nodes) n.toJson()];
@@ -87,6 +88,17 @@ class AssistantTools {
     }
     cancel.check();
     return out;
+  }
+
+  Future<void> _authorize(String name, Map<String, dynamic> arguments) async {
+    final request = switch (reader) {
+      ReadPermissionResolver resolver => resolver.describeReadPermission(name, arguments),
+      _ => null,
+    };
+    if (request == null || permissions == null) throw const FormatException('Invalid or unavailable read target');
+    if (!await permissions!.request(request)) throw const ReadPermissionDenied();
+    cancel.check();
+    scope = request.grant(scope);
   }
 
   AssistantNetwork get _network {
@@ -114,7 +126,9 @@ class AssistantTools {
     _tool('read_selection', {'selectionId': 'string'}),
     _tool('read_pages', {'documentId': 'string', 'from': 'integer', 'to': 'integer'}),
     _tool('search_study_set', {'query': 'string'}),
-    if (scope.maps.isNotEmpty || scope.branches.values.any((nodes) => nodes.isNotEmpty))
+    if (scope.maps.isNotEmpty ||
+        scope.branches.values.any((nodes) => nodes.isNotEmpty) ||
+        (permissions != null && reader is ReadPermissionResolver))
       _tool('read_branch', {'mapId': 'string', 'nodeId': 'string'}),
     if (citations.online) ...[
       _tool('web_search', {'query': 'string'}),
@@ -151,7 +165,11 @@ class AssistantTools {
   ];
   Tool _tool(String name, Map<String, String> fields) => Tool(
     name: name,
-    description: name,
+    description: switch (name) {
+      'read_pages' => 'Read document pages using documentId and inclusive 1-based from/to. If extra read permission is needed, the tool waits for the user to allow or deny it.',
+      'read_branch' => 'Read a mind-map branch using mapId and nodeId (__root__ for the map root). The tool asks the user before reading an additional branch.',
+      _ => name,
+    },
     parameters: {
       'type': 'object',
       'properties': fields.map((k, v) => MapEntry(k, {'type': v})),
@@ -162,12 +180,28 @@ class AssistantTools {
     executable: (Map<String, dynamic> a) async {
       try {
         return await execute(name, a);
+      } on ReadPermissionRequired {
+        return AgentToolResult(
+          content: TextPart(
+            'Read permission is required, but no user decision handler is available. Use already available content.',
+          ),
+          metadata: {'failure': 'permissionRequired', 'reason': '读取此内容需要用户授权'},
+        );
+      } on ReadPermissionDenied {
+        return AgentToolResult(
+          content: TextPart(
+            'User declined permission. Continue with already available content; do not repeat this request.',
+          ),
+          metadata: {'failure': 'permissionDenied', 'reason': '用户未允许读取此内容'},
+        );
       } on ResearchFailure catch (e) {
         return AgentToolResult(content: TextPart(e.kind.name), metadata: {'failure': e.kind.name});
       } catch (_) {
         return AgentToolResult(
-          content: TextPart('Invalid or unauthorized request'),
-          metadata: {'failure': 'invalidRequest'},
+          content: TextPart(
+            'Invalid arguments or unavailable target. Check the supplied resource IDs and page ranges.',
+          ),
+          metadata: {'failure': 'invalidRequest', 'reason': '工具参数无效或读取目标不存在'},
         );
       }
     },
@@ -193,7 +227,7 @@ const skillPrompts = {
   'summarize': '总结：摘要只覆盖实际读取的范围。',
   'quiz': '出题：基于原文生成复习卡提议，不能直接写入。',
   'organize':
-      '整理：先读取已授权的原文；仅在已授权脑图或分支时读取分支。没有分支读取权限时，依据当前可编辑脑图及节点父子关系生成新增内容的提议，不读取未授权分支。保留用户内容，通过 propose_map_edits 提议修改脑图。',
+      '整理：先读取原文。需要读取额外脑图分支时可调用 read_branch 请求用户授权；拒绝后使用已读内容及当前可编辑脑图的节点父子关系生成提议。保留用户内容，通过 propose_map_edits 提议修改脑图。',
   'papers': '找论文：使用 OpenAlex 元数据，元数据不等于论文全文。',
   'videos': '找视频：只给具体视频链接，没有字幕不能声称看过视频。',
 };

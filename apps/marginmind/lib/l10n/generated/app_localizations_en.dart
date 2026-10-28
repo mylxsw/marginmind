@@ -2125,6 +2125,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantStop => 'Stop';
 
   @override
+  String get assistantPermissionTitle => 'Your permission is needed';
+
+  @override
+  String get assistantPermissionWaiting => 'Waiting for permission';
+
+  @override
+  String get assistantPermissionExplain =>
+      'The assistant wants to read this content for context to answer your question.';
+
+  @override
+  String get assistantPermissionScope => 'Applies to this answer only. Content is read after you allow it.';
+
+  @override
+  String get assistantPermissionAllow => 'Allow for this answer';
+
+  @override
+  String get assistantPermissionDeny => 'Deny';
+
+  @override
+  String get assistantPermissionAllowed => 'Allowed for this answer';
+
+  @override
+  String get assistantPermissionDenied => 'Denied';
+
+  @override
+  String get assistantPermissionCancelled => 'Request cancelled';
+
+  @override
+  String assistantPermissionPages(String document, int from, int to) {
+    return '$document · pages $from–$to';
+  }
+
+  @override
+  String assistantPermissionSelection(String title) {
+    return 'Selected text · $title';
+  }
+
+  @override
+  String assistantPermissionBranch(String title) {
+    return 'Map branch · $title';
+  }
+
+  @override
   String get assistantToolReadSelection => 'Reading the selection';
 
   @override

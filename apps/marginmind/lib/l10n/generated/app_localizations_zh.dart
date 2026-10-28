@@ -2030,6 +2030,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantStop => '停止';
 
   @override
+  String get assistantPermissionTitle => '需要你的授权';
+
+  @override
+  String get assistantPermissionWaiting => '等待授权';
+
+  @override
+  String get assistantPermissionExplain => '助手想读取以下内容，以补充回答所需的上下文。';
+
+  @override
+  String get assistantPermissionScope => '仅本轮生效，允许后才会读取。';
+
+  @override
+  String get assistantPermissionAllow => '本轮允许';
+
+  @override
+  String get assistantPermissionDeny => '拒绝';
+
+  @override
+  String get assistantPermissionAllowed => '本轮已允许';
+
+  @override
+  String get assistantPermissionDenied => '已拒绝';
+
+  @override
+  String get assistantPermissionCancelled => '请求已取消';
+
+  @override
+  String assistantPermissionPages(String document, int from, int to) {
+    return '$document · 第 $from–$to 页';
+  }
+
+  @override
+  String assistantPermissionSelection(String title) {
+    return '所选文字 · $title';
+  }
+
+  @override
+  String assistantPermissionBranch(String title) {
+    return '脑图分支 · $title';
+  }
+
+  @override
   String get assistantToolReadSelection => '读取所选内容';
 
   @override

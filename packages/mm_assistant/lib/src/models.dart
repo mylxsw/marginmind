@@ -1,6 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 import 'citations.dart';
+import 'permissions.dart';
 import 'providers.dart';
 
 enum ContextKind { selection, node, branch, page, document, map }
@@ -43,9 +44,12 @@ class ContextItem {
   );
 }
 
-ReadScope scopeFromContexts(String studySetId, List<ContextItem> contexts) {
+/// The host supplies the study set's document IDs independently of the question's
+/// focus. Selections and pages locate the question, without restricting document
+/// reads to those pages. Callers without a document catalog retain scoped reads.
+ReadScope scopeFromContexts(String studySetId, List<ContextItem> contexts, {Iterable<String> documentIds = const []}) {
   final pages = <String, Set<int>>{}, branches = <String, Set<String>>{};
-  final docs = <String>{}, maps = <String>{}, selections = <String>{};
+  final docs = documentIds.toSet(), maps = <String>{}, selections = <String>{};
   for (final c in contexts) {
     switch (c.kind) {
       case ContextKind.selection:
@@ -74,7 +78,7 @@ enum MessageRole { user, agent }
 
 enum MessageStatus { running, done, stopped, error, interrupted }
 
-enum TraceStatus { running, done, error }
+enum TraceStatus { running, done, error, denied }
 
 class TraceStep {
   const TraceStep(this.id, this.toolName, this.status, {this.reason, this.narration, this.count = 1});
@@ -182,6 +186,7 @@ class Message {
     List<TraceStep> traces = const [],
     List<Citation> citations = const [],
     List<ProposalView> proposals = const [],
+    List<ReadPermissionView> permissions = const [],
     this.skill,
     this.noteId,
     this.online = false,
@@ -191,7 +196,8 @@ class Message {
   }) : contexts = List.unmodifiable(contexts),
        traces = List.unmodifiable(traces),
        citations = List.unmodifiable(citations),
-       proposals = List.unmodifiable(proposals);
+       proposals = List.unmodifiable(proposals),
+       permissions = List.unmodifiable(permissions);
   final String id, requestId, text;
   final MessageRole role;
   final MessageStatus status;
@@ -200,6 +206,8 @@ class Message {
   final List<TraceStep> traces;
   final List<Citation> citations;
   final List<ProposalView> proposals;
+  final List<ReadPermissionView> permissions;
+  bool get waitingForPermission => permissions.any((permission) => permission.status == ReadPermissionStatus.pending);
   final String? skill, noteId;
   final bool online;
   final DateTime? startedAt, endedAt;
@@ -237,6 +245,7 @@ class Message {
     List<TraceStep>? traces,
     List<Citation>? citations,
     List<ProposalView>? proposals,
+    List<ReadPermissionView>? permissions,
     String? noteId,
     bool? online,
     DateTime? endedAt,
@@ -252,6 +261,7 @@ class Message {
     traces: traces ?? this.traces,
     citations: citations ?? this.citations,
     proposals: proposals ?? this.proposals,
+    permissions: permissions ?? this.permissions,
     skill: skill,
     noteId: noteId ?? this.noteId,
     online: online ?? this.online,
@@ -270,6 +280,7 @@ class Message {
     'traces': traces.map((t) => t.toJson()).toList(),
     'citations': citations.map((c) => c.toJson()).toList(),
     'proposals': proposals.map((p) => p.toJson()).toList(),
+    'permissions': permissions.map((p) => p.toJson()).toList(),
     'skill': skill,
     'noteId': noteId,
     'online': online,
@@ -288,6 +299,9 @@ class Message {
     traces: [for (final v in j['traces']) TraceStep.fromJson(Map<String, dynamic>.from(v))],
     citations: [for (final v in j['citations']) Citation.fromJson(Map<String, dynamic>.from(v))],
     proposals: [for (final v in j['proposals']) ProposalView.fromJson(Map<String, dynamic>.from(v))],
+    permissions: [
+      for (final v in j['permissions'] as List? ?? []) ReadPermissionView.fromJson(Map<String, dynamic>.from(v)),
+    ],
     skill: j['skill'],
     noteId: j['noteId'],
     online: j['online'] ?? false,

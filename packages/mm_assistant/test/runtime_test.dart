@@ -110,6 +110,40 @@ void main() {
     expect(client.requests.last.whereType<FunctionExecutionResultMessage>().single.results.single.isError, true);
     expect(run.proposals.proposals, hasLength(1));
   });
+  test('focused selection can read surrounding pages in its study-set document', () async {
+    final client = ScriptClient([
+      call('read_pages', '{"documentId":"doc","from":193,"to":195}', id: 'surrounding'),
+      answer('上下文解释 [page:193] [page:194] [page:195] [page:196]'),
+    ]);
+    final state = AgentState(sessionId: 'surrounding-pages');
+    final run = createAssistantRun(
+      client: client,
+      model: 'fake',
+      state: state,
+      requestId: 'request',
+      reader: Reader(),
+      scope: scopeFromContexts(
+        'set',
+        const [ContextItem(id: 'sel', kind: ContextKind.selection, displayText: '术语', documentId: 'doc', page: 194)],
+        documentIds: ['doc'],
+      ),
+      mapId: 'map',
+      baseRevision: 0,
+      parents: {'root': null},
+      primaryDocumentId: 'doc',
+      online: false,
+    );
+    final events = await run.run('解释一下这段话').toList();
+    final result =
+        events.firstWhere((e) => e.eventType == StreamingEventType.functionCallResult).data
+            as FunctionExecutionResultMessage;
+    expect(result.results.single.isError, false);
+    expect(run.citations.items.map((c) => c.page), [193, 194, 195]);
+    final last = events.lastWhere((e) => e.eventType == StreamingEventType.fullModelMessage).data as ModelMessage;
+    expect(last.textOutput, '上下文解释 [page:193] [page:194] [page:195] ');
+    expect(run.budget.pages, 3);
+    expect((state.metadata['assistant.diagnostics'] as Map)['request']['tools'].single['result'], 'done');
+  });
   test('four readers are scoped and register only actual page evidence', () async {
     final registry = CitationRegistry(primaryDocumentId: 'doc', online: false);
     final cancellation = CancellationToken();

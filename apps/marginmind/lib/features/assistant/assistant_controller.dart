@@ -21,6 +21,8 @@ export 'package:mm_assistant/mm_assistant.dart'
         AssistantModel,
         AssistantProvider,
         AssistantDiagnostics;
+export 'package:mm_assistant/mm_assistant.dart'
+    show ReadPermissionRequest, ReadPermissionView, ReadPermissionKind, ReadPermissionStatus;
 
 typedef AssistantRunFactory = Future<AssistantRun> Function(
   sdk.AgentState state,
@@ -88,6 +90,7 @@ class _Session {
   AssistantRun? run;
   Future<void>? running;
   int epoch = 0;
+  final permissions = <String, Completer<bool>>{};
 }
 
 class AssistantController extends Notifier<Conversation> {
@@ -114,6 +117,7 @@ class AssistantController extends Notifier<Conversation> {
       for (final s in {_open, ?_busy}) {
         s.epoch++;
         s.run?.stop();
+        _cancelPermissions(s);
       }
     });
     _open = _Session(
@@ -251,6 +255,25 @@ class AssistantController extends Notifier<Conversation> {
         return;
       }
       session.run = run;
+      run.permissions.onRequest = (request) async {
+        if (!active()) return false;
+        final decision = Completer<bool>();
+        session.permissions[request.id] = decision;
+        _replace(
+          session,
+          _message(
+            answerId,
+            session,
+          ).copyWith(permissions: [..._message(answerId, session).permissions, ReadPermissionView(request)]),
+        );
+        try {
+          await _persist(session);
+          if (!active()) return false;
+          return await decision.future;
+        } finally {
+          session.permissions.remove(request.id);
+        }
+      };
       await for (final event in run.run(question.text)) {
         if (!active()) break;
         var answer = _message(answerId, session);
@@ -287,7 +310,11 @@ class AssistantController extends Notifier<Conversation> {
                       ? TraceStep(
                           t.id,
                           t.toolName,
-                          byId[t.id]!.isError ? TraceStatus.error : TraceStatus.done,
+                          byId[t.id]!.metadata?['failure'] == 'permissionDenied'
+                              ? TraceStatus.denied
+                              : byId[t.id]!.isError
+                              ? TraceStatus.error
+                              : TraceStatus.done,
                           reason: byId[t.id]!.isError
                               ? (byId[t.id]!.metadata?['reason'] as String? ?? '工具拒绝了无效或未授权的请求')
                               : null,
@@ -362,6 +389,7 @@ class AssistantController extends Notifier<Conversation> {
         );
       }
     } finally {
+      _cancelPermissions(session);
       session.run?.stop();
       session.run = null;
       if (active()) {
@@ -389,6 +417,58 @@ class AssistantController extends Notifier<Conversation> {
   /// Stops the open conversation's answer; one answering out of view goes on.
   Future<void> stop() => _stop(_open);
 
+  /// A live decision belongs to this answer's run. Persist it before unblocking
+  /// the tool, and ignore stale buttons, restored history and double clicks.
+  Future<void> resolveReadPermission(String messageId, String permissionId, {required bool allow}) async {
+    final session = _open;
+    final message = _message(messageId, session);
+    final decision = session.permissions[permissionId];
+    if (message.status != MessageStatus.running ||
+        session.run?.cancel.isCancelled != false ||
+        decision == null ||
+        decision.isCompleted) {
+      return;
+    }
+    final view = message.permissions.where((p) => p.request.id == permissionId).firstOrNull;
+    if (view == null || view.status != ReadPermissionStatus.pending) return;
+    void update(ReadPermissionStatus status) {
+      final current = _message(messageId, session);
+      _replace(
+        session,
+        current.copyWith(
+          permissions: [for (final p in current.permissions) p.request.id == permissionId ? p.withStatus(status) : p],
+        ),
+      );
+    }
+
+    update(allow ? ReadPermissionStatus.allowed : ReadPermissionStatus.denied);
+    try {
+      await _persist(session);
+      if (!decision.isCompleted) decision.complete(allow);
+    } catch (_) {
+      if (session.run?.cancel.isCancelled == false) update(ReadPermissionStatus.pending);
+      rethrow;
+    }
+  }
+
+  void _cancelPermissions(_Session session) {
+    for (final decision in session.permissions.values) {
+      if (!decision.isCompleted) decision.complete(false);
+    }
+    for (final message in session.view.messages) {
+      if (!message.waitingForPermission) continue;
+      _replace(
+        session,
+        message.copyWith(
+          permissions: [
+            for (final p in message.permissions)
+              p.status == ReadPermissionStatus.pending ? p.withStatus(ReadPermissionStatus.cancelled) : p,
+          ],
+        ),
+      );
+    }
+  }
+
   /// Stops the answer of conversation [id], open or not.
   Future<void> stopConversation(String id) async {
     final busy = _busy;
@@ -400,6 +480,7 @@ class AssistantController extends Notifier<Conversation> {
     if (running == null) return;
     session.epoch++;
     session.run?.stop();
+    _cancelPermissions(session);
     Message stopped(Message m) {
       if (m.status != MessageStatus.running) return m;
       final diagnostic = (session.agent.metadata['assistant.diagnostics'] as Map?)?[m.requestId] as Map?;
@@ -503,6 +584,10 @@ class AssistantController extends Notifier<Conversation> {
         m.copyWith(
           status: m.status == MessageStatus.running ? MessageStatus.interrupted : m.status,
           proposals: proposals,
+          permissions: [
+            for (final p in m.permissions)
+              p.status == ReadPermissionStatus.pending ? p.withStatus(ReadPermissionStatus.cancelled) : p,
+          ],
         ),
       );
     }

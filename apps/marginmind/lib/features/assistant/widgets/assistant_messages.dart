@@ -19,6 +19,7 @@ import 'assistant_markdown.dart';
 import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
 import 'assistant_proposal.dart';
+import 'assistant_permission.dart';
 
 /// The conversation: questions and answers, following new text while the
 /// list is at its end.
@@ -300,6 +301,8 @@ class AgentMessage extends ConsumerWidget {
       children: [
         if (m.traces.isNotEmpty || (running && m.text.isEmpty) || (m.startedAt != null && m.endedAt != null))
           ActivityTimeline(key: ValueKey('trace-${m.id}'), message: m),
+        for (final permission in m.permissions)
+          ReadPermissionCard(key: ValueKey(permission.request.id), messageId: m.id, view: permission),
         if (notOnline)
           Padding(
             padding: const EdgeInsets.only(bottom: MMSpacing.xs),
@@ -314,7 +317,7 @@ class AgentMessage extends ConsumerWidget {
         AnswerBody(
           text: m.text,
           citations: m.citations,
-          cursor: running,
+          cursor: running && !m.waitingForPermission,
           conclusion: skill == AssistantSkill.verify,
           tooltipFor: tooltip,
           onLink: (url) => ref.read(assistantLinksProvider).open(url),
@@ -385,7 +388,10 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
     final open = expandable && (running || _open);
     final style = t.callout.copyWith(fontWeight: FontWeight.w400);
     final current = steps.lastOrNull;
-    final title = running
+    final waiting = running && m.waitingForPermission;
+    final title = waiting
+        ? l.assistantPermissionWaiting
+        : running
         ? (current == null ? l.assistantThinking : current.narration ?? stepLabel(l, current.toolName))
         : l.assistantWorkedFor(m.elapsedSeconds < 1 ? 1 : m.elapsedSeconds);
     return Padding(
@@ -403,7 +409,7 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
               return Row(
                 children: [
                   Flexible(
-                    child: running
+                    child: running && !waiting
                         ? Shimmer(
                             child: Text(
                               title,
@@ -446,7 +452,7 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [for (final step in steps) _TimelineRow(step: step)],
+                      children: [for (final step in steps) _TimelineRow(step: step, waiting: waiting)],
                     ),
                   )
                 : const SizedBox(width: double.infinity),
@@ -458,9 +464,10 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
 }
 
 class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.step});
+  const _TimelineRow({required this.step, this.waiting = false});
 
   final TraceStep step;
+  final bool waiting;
 
   @override
   Widget build(BuildContext context) {
@@ -488,9 +495,13 @@ class _TimelineRow extends StatelessWidget {
             child: SizedBox(
               width: 14,
               child: switch (step.status) {
-                TraceStatus.running => CupertinoActivityIndicator(radius: 5, color: c.research),
+                TraceStatus.running =>
+                  waiting
+                      ? Icon(MMIcons.info, size: 13, color: c.research)
+                      : CupertinoActivityIndicator(radius: 5, color: c.research),
                 TraceStatus.done => Icon(stepIcon(step.toolName), size: 13, color: c.secondaryLabel),
                 TraceStatus.error => Icon(MMIcons.close, size: 12, color: c.critical),
+                TraceStatus.denied => Icon(MMIcons.close, size: 12, color: c.secondaryLabel),
               },
             ),
           ),
@@ -503,7 +514,7 @@ class _TimelineRow extends StatelessWidget {
                   label,
                   style: t.callout.copyWith(fontWeight: FontWeight.w400, color: failed ? c.critical : c.secondaryLabel),
                 ),
-                if (failed && step.reason != null)
+                if ((failed || step.status == TraceStatus.denied) && step.reason != null)
                   Text(step.reason!, style: t.mono.copyWith(fontSize: 10.5, color: c.secondaryLabel)),
               ],
             ),

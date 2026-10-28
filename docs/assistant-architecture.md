@@ -35,9 +35,11 @@ saveNote(messageId, SaveNoteRequest(title: title, mapId: mapId, parentId: parent
 
 ## 读取、联网与 Skills
 
-`scopeFromContexts` 只从显式可见上下文派生 ReadScope；auto 不增加权限。选区授权 selectionId；页授权指定 documentId/page；整本授权有界读取和检索；节点/分支授权相应节点；整图授权该图。Reader 接口每次带 ReadScope 和 CancellationToken，不能接受路径。
+宿主把当前学习集的全部 documentId 传给 `scopeFromContexts`，整份文档均可按需读取和检索，不要求用户逐页附加或授权。选区和当前页用于定位问题、确定主引用文档，不再限制这些文档的可读页码；模型同时收到文档 ID、标题和总页数目录。节点/分支仍授权相应节点；整图授权该图。Reader 每次带 ReadScope 和 CancellationToken，只从当前学习集解析文档，不能接受路径或读取其他学习集。未传文档目录的底层调用仍支持按上下文限定范围。
 
 常驻读工具为 read_selection、read_pages、search_study_set、read_branch。单次分支最多 200 个节点、检索最多 20 项；页读取受整轮 5 页预算。`search_study_set` 只返回有界定位，不登记页面证据。读取成功返回的正文才登记引用。
+
+额外读取权限由用户决定：`WorkspaceReader` 先确认目标确实存在于当前学习集，再由读工具暂停执行并展示对话内授权卡，列明文档及页码、选区、脑图或分支。用户可选择“本轮允许”或“拒绝”；允许仅扩展本次运行的相应读取范围，不改全局设置，重复读取已允许的范围不再询问。等待决定时暂停执行超时计时；拒绝返回给模型并使用已有资料继续，同一请求不重复询问，且不计为工具故障。参数错误、缺失目标、其他学习集和不安全地址不进入授权流程。授权请求及决定随消息保存；停止、退出和重启恢复时，待决定请求取消，旧按钮不能恢复执行。脑图写入仍通过独立修改提议确认。
 
 8 个内存 Skill 的名字：explain、translate、verify、summarize、quiz、organize、papers、videos。`skill` 可显式激活，或由模型通过 activate_skills 激活。解释/翻译/总结只有读工具；出题/整理增加提议；查证/论文/视频增加联网工具。动态激活不能绕过联网开关、Policy 或 ReadScope。没有文件系统 Skill、脚本、MCP、规划、子 Agent 或隐式模型诊断。
 

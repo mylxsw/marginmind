@@ -3800,6 +3800,78 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get assistantStop;
 
+  /// No description provided for @assistantPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your permission is needed'**
+  String get assistantPermissionTitle;
+
+  /// No description provided for @assistantPermissionWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for permission'**
+  String get assistantPermissionWaiting;
+
+  /// No description provided for @assistantPermissionExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant wants to read this content for context to answer your question.'**
+  String get assistantPermissionExplain;
+
+  /// No description provided for @assistantPermissionScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to this answer only. Content is read after you allow it.'**
+  String get assistantPermissionScope;
+
+  /// No description provided for @assistantPermissionAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow for this answer'**
+  String get assistantPermissionAllow;
+
+  /// No description provided for @assistantPermissionDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get assistantPermissionDeny;
+
+  /// No description provided for @assistantPermissionAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed for this answer'**
+  String get assistantPermissionAllowed;
+
+  /// No description provided for @assistantPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get assistantPermissionDenied;
+
+  /// No description provided for @assistantPermissionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Request cancelled'**
+  String get assistantPermissionCancelled;
+
+  /// No description provided for @assistantPermissionPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{document} · pages {from}–{to}'**
+  String assistantPermissionPages(String document, int from, int to);
+
+  /// No description provided for @assistantPermissionSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected text · {title}'**
+  String assistantPermissionSelection(String title);
+
+  /// No description provided for @assistantPermissionBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Map branch · {title}'**
+  String assistantPermissionBranch(String title);
+
   /// No description provided for @assistantToolReadSelection.
   ///
   /// In en, this message translates to:

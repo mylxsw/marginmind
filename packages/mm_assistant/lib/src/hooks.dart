@@ -177,15 +177,20 @@ class PolicyHook extends AgentHook {
   @override
   ToolResultHookResult afterToolCall(ToolResultHookContext context) {
     final result = context.result;
+    final declined = result.metadata?['failure'] == 'permissionDenied';
     // Only our own bounded reasons enter diagnostics; never provider text or arguments.
     final reason = result.isError ? (result.metadata?['reason'] as String? ?? '工具拒绝了无效或未授权的请求') : null;
     final diagnostics = (context.state.metadata['assistant.diagnostics'] as Map?)?[requestId] as Map?;
     final entry = _entries.remove(result.id);
     if (entry != null) {
-      entry['result'] = result.isError ? 'error' : 'done';
+      entry['result'] = declined
+          ? 'denied'
+          : result.isError
+          ? 'error'
+          : 'done';
       entry['reason'] = reason;
     }
-    if (reason == null) {
+    if (reason == null || declined) {
       _failures = 0;
     } else {
       if (++_failures >= 3) {

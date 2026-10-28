@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -91,6 +93,7 @@ final assistantConfiguredProvider = FutureProvider<bool>(
 AssistantRunFactory assistantRunFactory({
   required SecretStore secrets,
   required StudySetReader reader,
+  required List<Document> documents,
   required String mapId,
   required int Function() revision,
   required Map<String, String?> Function() parents,
@@ -112,11 +115,20 @@ AssistantRunFactory assistantRunFactory({
       // “Answer without tools” turns them off for one request.
       supportsTools: config.supportsTools && conversation.model.supportsTools,
       serviceHost: Uri.parse(config.endpoint).host,
-      attachedContext: question.contexts.map((c) => c.displayText).toList(),
+      attachedContext: [
+        ...question.contexts.map((c) => c.displayText),
+        '当前学习集文档目录（可按需读取任意页）：${jsonEncode([
+          for (final document in documents) {'documentId': document.id, 'title': document.title, 'pageCount': document.pageCount},
+        ])}',
+      ],
       state: agent,
       requestId: question.requestId,
       reader: reader,
-      scope: scopeFromContexts(conversation.studySetId, question.contexts),
+      scope: scopeFromContexts(
+        conversation.studySetId,
+        question.contexts,
+        documentIds: documents.map((document) => document.id),
+      ),
       mapId: mapId,
       baseRevision: revision(),
       parents: parents(),
