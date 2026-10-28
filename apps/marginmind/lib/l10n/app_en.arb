@@ -284,6 +284,7 @@
       }
     }
   },
+  "excerptView": "View",
   "highlightedHud": "Highlighted",
   "copiedHud": "Copied",
   "removedHud": "Removed from the map; the highlight stays in the source",

@@ -6,6 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../app/app.dart';
 import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
+import '../../app/phone_tabs.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
 import '../../shared/l10n.dart';
@@ -107,6 +108,17 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             final height = constraints.maxHeight - safe.vertical;
             final sizeClass = MMSizeClass.resolve(context, Size(width, height));
             controller.panelFloats = sizeClass != MMSizeClass.regular;
+            // A landscape phone is too short to stack the panes.
+            final canSplit =
+                sizeClass != MMSizeClass.medium ||
+                MMSplitView.effectiveMode(
+                      MMSplitMode.split,
+                      height - MMSizes.toolbarHeight,
+                      MMSizes.paneMinHeight,
+                      MMSizes.paneMinHeight,
+                    ) ==
+                    MMSplitMode.split;
+            controller.onePane = sizeClass == MMSizeClass.compact || !canSplit;
             // Preserve independent sidebar choices. Narrow windows temporarily
             // hide the sidebar beside the right panel and show one content
             // pane; the toolbar reflects the visible layout. Touch windows
@@ -127,32 +139,40 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 if (mounted) controller.setSidebarAutoCollapsed(collapsed);
               });
             }
-            return _scaffold(
-              context,
-              state,
-              controller,
-              doc,
-              setTitle,
-              shown.sidebarVisible,
-              shown.mode,
-              minReader,
-              shown.panelWidth,
-              sizeClass,
-              touchPlatform,
-              // A landscape phone is too short to stack the panes.
-              sizeClass != MMSizeClass.medium ||
-                  MMSplitView.effectiveMode(
-                        MMSplitMode.split,
-                        height - MMSizes.toolbarHeight,
-                        MMSizes.paneMinHeight,
-                        MMSizes.paneMinHeight,
-                      ) ==
-                      MMSplitMode.split,
+            return MMBackHandler(
+              onBack: () => _back(controller, touchPlatform),
+              child: _scaffold(
+                context,
+                state,
+                controller,
+                doc,
+                setTitle,
+                shown.sidebarVisible,
+                shown.mode,
+                minReader,
+                shown.panelWidth,
+                sizeClass,
+                touchPlatform,
+                canSplit,
+              ),
             );
           },
         ),
       ),
     );
+  }
+
+  /// System back closes the sidebar drawer, then the right panel.
+  bool _back(WorkspaceController controller, bool touchPlatform) {
+    if (touchPlatform && _drawer) {
+      _setDrawer(false);
+      return true;
+    }
+    if (ref.read(workspaceProvider(widget.studySetId)).panel != null) {
+      controller.closePanel();
+      return true;
+    }
+    return false;
   }
 
   Widget _scaffold(
@@ -172,6 +192,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final l = context.l10n;
     final compact = sizeClass == MMSizeClass.compact;
     final stacked = sizeClass == MMSizeClass.medium;
+    // A phone switches panes with its bottom tabs.
+    final tabs = compact && showsPhoneTabs(context);
     final split = MMSplitView(
       mode: layout,
       onModeChanged: compact || !canSplit ? null : controller.setLayout,
@@ -204,7 +226,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final floating = sizeClass != MMSizeClass.regular;
+    final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
     return MMWindowScaffold(
+      // A compact window has no room beside or over the panes: the panel
+      // rises from the bottom.
+      sheet: compact && panel != null
+          ? MMBottomSheet(
+              key: const ValueKey('workspace-panel-sheet'),
+              expand: true,
+              scrim: true,
+              onDismiss: controller.closePanel,
+              child: panel,
+            )
+          : null,
       sidebarVisible: touchPlatform ? _drawer : sidebarVisible,
       sidebarOverlay: touchPlatform,
       onSidebarDismiss: () => _setDrawer(false),
@@ -261,57 +295,56 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (compact)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(MMSpacing.m, 0, MMSpacing.m, MMSpacing.s),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
-                  child: MMSegmentedControl<MMSplitMode>(
-                    key: const ValueKey('workspace-pane-switch'),
-                    expand: true,
-                    segments: [
-                      MMSegment(value: MMSplitMode.primary, label: l.paneSource),
-                      MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
-                    ],
-                    value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
-                    onChanged: controller.setLayout,
+      body: ExcerptViewScope(
+        showInMap: compact && layout != MMSplitMode.secondary ? controller.showCardInMap : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (compact && !tabs)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(MMSpacing.m, 0, MMSpacing.m, MMSpacing.s),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
+                    child: MMSegmentedControl<MMSplitMode>(
+                      key: const ValueKey('workspace-pane-switch'),
+                      expand: true,
+                      segments: [
+                        MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+                        MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+                      ],
+                      value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+                      onChanged: controller.setLayout,
+                    ),
                   ),
                 ),
               ),
-            ),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: split),
-                      if (state.panel != null && !floating)
-                        SizedBox(
-                          width: panelWidth,
-                          child: RightPanelView(studySetId: widget.studySetId),
-                        ),
-                    ],
+            Expanded(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: split),
+                        if (panel != null && !floating) SizedBox(width: panelWidth, child: panel),
+                      ],
+                    ),
                   ),
-                ),
-                if (state.panel != null && floating)
-                  MMDrawer(
-                    open: true,
-                    end: true,
-                    inset: MMSpacing.s,
-                    width: panelWidth,
-                    onDismiss: controller.closePanel,
-                    child: _FloatingPanel(child: RightPanelView(studySetId: widget.studySetId)),
-                  ),
-              ],
+                  if (panel != null && floating && !compact)
+                    MMDrawer(
+                      open: true,
+                      end: true,
+                      inset: MMSpacing.s,
+                      width: panelWidth,
+                      onDismiss: controller.closePanel,
+                      child: _FloatingPanel(child: panel),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

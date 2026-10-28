@@ -87,6 +87,23 @@ abstract final class MMSizes {
   /// Width of the "Source | Map" switch in a compact window.
   static const double paneSwitchMaxWidth = 360;
 
+  /// Bottom tab bar of a phone, above the home indicator inset. Android's
+  /// bar is taller and highlights the selected icon with a pill.
+  static const double tabBar = 49;
+  static const double tabBarAndroid = 64;
+  static const Size tabBarPill = Size(56, 30);
+
+  /// Bottom sheets of a compact window: the medium height as a fraction of
+  /// the space below the safe area top, and the drag handle strip.
+  static const double bottomSheetMedium = 0.62;
+  static const double bottomSheetHandle = 20;
+
+  /// Review rating button under touch.
+  static const double reviewRatingTouch = 64;
+
+  /// Row of an action sheet (context menu of a compact window).
+  static const double actionSheetRow = 52;
+
   /// Toolbar search field in a compact window.
   static const double compactSearchWidth = 160;
   static const Size windowMinSize = Size(960, 600);

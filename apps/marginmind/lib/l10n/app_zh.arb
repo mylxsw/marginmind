@@ -149,6 +149,7 @@
   "addToMapAction": "加入脑图",
   "deleteHighlight": "删除高亮",
   "excerptedHud": "已摘录到「{target}」",
+  "excerptView": "查看",
   "highlightedHud": "已高亮",
   "copiedHud": "已拷贝",
   "removedHud": "已从脑图移除，原文高亮保留",

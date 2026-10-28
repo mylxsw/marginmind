@@ -65,6 +65,39 @@ class _SettingsWindowState extends State<SettingsWindow> {
       (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
+    final page = switch (_tab) {
+      SettingsTab.general => _GeneralPage(showsGallery: widget.showsGallery),
+      SettingsTab.reading => const _ReadingPage(),
+      SettingsTab.models => const ModelSettingsPage(),
+      SettingsTab.webSearch => const WebSearchSettingsPage(),
+      SettingsTab.voice => const VoiceSettingsPage(),
+    };
+    // A compact window's bottom sheet: the sections switch above the page,
+    // which takes the sheet's full height.
+    if (MMBottomSheet.contains(context)) {
+      return Material(
+        type: MaterialType.transparency,
+        child: SizedBox.expand(
+          key: const ValueKey('settings-window'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(MMSpacing.m, MMSpacing.xs, MMSpacing.m, MMSpacing.s),
+                child: MMSegmentedControl<SettingsTab>(
+                  key: const ValueKey('settings-sections'),
+                  expand: true,
+                  segments: [for (final (tab, _, label) in tabs) MMSegment(value: tab, label: label)],
+                  value: _tab,
+                  onChanged: (tab) => setState(() => _tab = tab),
+                ),
+              ),
+              Expanded(child: page),
+            ],
+          ),
+        ),
+      );
+    }
     final screen = MediaQuery.sizeOf(context);
     const size = SettingsWindow.size, min = SettingsWindow.minSize;
     return Material(
@@ -129,15 +162,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: switch (_tab) {
-                      SettingsTab.general => _GeneralPage(showsGallery: widget.showsGallery),
-                      SettingsTab.reading => const _ReadingPage(),
-                      SettingsTab.models => const ModelSettingsPage(),
-                      SettingsTab.webSearch => const WebSearchSettingsPage(),
-                      SettingsTab.voice => const VoiceSettingsPage(),
-                    },
-                  ),
+                  Expanded(child: page),
                 ],
               ),
             ),

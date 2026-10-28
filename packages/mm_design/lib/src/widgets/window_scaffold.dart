@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
+import '../tokens/colors.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'menu.dart';
@@ -38,6 +39,10 @@ class MMWindowChrome extends InheritedWidget {
 /// the safe area (status bar, home indicator, landscape side insets). With
 /// [sidebarOverlay] the sidebar is a drawer over the content instead of a
 /// column beside it, and tapping outside calls [onSidebarDismiss].
+///
+/// An [MMWindowBottomBar] above puts its bar (a phone's tabs) below the
+/// content while the soft keyboard is down. [sheet] lies over everything,
+/// the bar included, and handles the keyboard itself.
 class MMWindowScaffold extends StatelessWidget {
   const MMWindowScaffold({
     super.key,
@@ -51,6 +56,7 @@ class MMWindowScaffold extends StatelessWidget {
     this.onDragStart,
     this.onTitleDoubleTap,
     this.showsWindowButtons = true,
+    this.sheet,
   });
 
   final Widget toolbar;
@@ -67,6 +73,9 @@ class MMWindowScaffold extends StatelessWidget {
   /// a transparent title bar). When the sidebar hides, the toolbar shifts
   /// right to make room for them.
   final bool showsWindowButtons;
+
+  /// Usually an [MMBottomSheet]; fills the window.
+  final Widget? sheet;
 
   @override
   Widget build(BuildContext context) {
@@ -109,45 +118,88 @@ class MMWindowScaffold extends StatelessWidget {
     );
     final safe = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final bar = keyboard > 0 ? null : MMWindowBottomBar.maybeOf(context);
 
+    // The column and stack stay in the tree whether or not the bar and the
+    // sheet show, so the content keeps its state when they come and go.
     return MMContextMenuHost(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: keyboard),
-        // Above the keyboard the home indicator inset no longer applies.
-        child: MediaQuery.removePadding(
-          context: context,
-          removeBottom: keyboard > 0,
-          child: ColoredBox(
-            color: c.windowBackground,
-            child: MMWindowChrome(
-              toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-              onDragStart: onDragStart,
-              onTitleDoubleTap: onTitleDoubleTap,
-              child: sidebarOverlay
-                  // The drawer's scrim covers the whole window, insets included.
-                  ? Stack(
-                      children: [
-                        Positioned.fill(
-                          child: SafeArea(
-                            child: ExcludeFocus(excluding: open, child: content),
-                          ),
-                        ),
-                        if (sidebar != null)
-                          MMDrawer(
-                            open: open,
-                            width: fullWidth + safe.left,
-                            onDismiss: onSidebarDismiss,
-                            child: SafeArea(right: false, child: sidebar!),
-                          ),
-                      ],
-                    )
-                  : SafeArea(child: row),
-            ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _window(context, c, open, inline, fullWidth, safe, keyboard, bar != null, content, row)),
+              ?bar,
+            ],
           ),
-        ),
+          ?sheet,
+        ],
       ),
     );
   }
+
+  Widget _window(
+    BuildContext context,
+    MMColors c,
+    bool open,
+    bool inline,
+    double fullWidth,
+    EdgeInsets safe,
+    double keyboard,
+    bool bar,
+    Widget content,
+    Widget row,
+  ) => Padding(
+    padding: EdgeInsets.only(bottom: keyboard),
+    // Above the keyboard or a bottom bar the home indicator inset no
+    // longer applies.
+    child: MediaQuery.removePadding(
+      context: context,
+      removeBottom: keyboard > 0 || bar,
+      child: ColoredBox(
+        color: c.windowBackground,
+        child: MMWindowChrome(
+          toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+          onDragStart: onDragStart,
+          onTitleDoubleTap: onTitleDoubleTap,
+          child: sidebarOverlay
+              // The drawer's scrim covers the whole window, insets included.
+              ? Stack(
+                  children: [
+                    Positioned.fill(
+                      child: SafeArea(
+                        child: ExcludeFocus(excluding: open, child: content),
+                      ),
+                    ),
+                    if (sidebar != null)
+                      MMDrawer(
+                        open: open,
+                        width: fullWidth + safe.left,
+                        onDismiss: onSidebarDismiss,
+                        child: SafeArea(right: false, child: sidebar!),
+                      ),
+                  ],
+                )
+              : SafeArea(child: row),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Supplies the bar [MMWindowScaffold]s below show under their content.
+class MMWindowBottomBar extends InheritedWidget {
+  const MMWindowBottomBar({super.key, required this.bar, required super.child});
+
+  /// Null shows none; keeping the scope in the tree either way keeps the
+  /// state of the screens below when the bar comes and goes.
+  final Widget? bar;
+
+  static Widget? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMWindowBottomBar>()?.bar;
+
+  @override
+  bool updateShouldNotify(MMWindowBottomBar oldWidget) => oldWidget.bar != bar;
 }
 
 /// A panel that slides over the content from one edge, above a scrim that

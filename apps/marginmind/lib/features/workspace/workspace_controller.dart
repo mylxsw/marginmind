@@ -90,9 +90,12 @@ sealed class WorkspaceNotice {
 }
 
 class ExcerptedNotice extends WorkspaceNotice {
-  const ExcerptedNotice(this.targetTitle);
+  const ExcerptedNotice(this.targetTitle, {this.cardId});
 
   final String? targetTitle;
+
+  /// The new card, for showing it in the map.
+  final String? cardId;
 }
 
 class HighlightedNotice extends WorkspaceNotice {
@@ -692,6 +695,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// below the regular size class): opening it then leaves the panes alone.
   bool panelFloats = false;
 
+  /// Set by the screen while a touch window shows one pane at a time (a
+  /// split shows the source): bringing the map into view then shows it alone.
+  bool onePane = false;
+
   /// Opens the right panel on [content]. The first opening remembers the
   /// layout and sidebar. Only details may put the other pane aside;
   /// asking the assistant leaves the user's pane choices alone.
@@ -1001,7 +1008,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
-    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
+    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
   Future<HighlightedNotice> highlight(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
@@ -1042,7 +1049,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
-    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
+    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
   // ---- ink ---------------------------------------------------------------------
@@ -1180,7 +1187,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       locateCardTick: state.locateCardTick + 1,
       clearPending: true,
       mapView: MapViewMode.map,
-      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+      layout: _layoutShowingMap,
     );
     _flash(cardId: card.id);
   }
@@ -1203,7 +1210,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           selectedCardId: cardId,
           locateCardTick: state.locateCardTick + 1,
           mapView: MapViewMode.map,
-          layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+          layout: _layoutShowingMap,
         );
         _flash(cardId: cardId);
         return true;
@@ -1227,7 +1234,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       locateCardTick: state.locateCardTick + 1,
       clearPending: true,
       mapView: MapViewMode.map,
-      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+      layout: _layoutShowingMap,
     );
     _flash(cardId: card.id);
   }
@@ -1256,10 +1263,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       mapView: MapViewMode.map,
       clearPending: true,
       selectedCardId: card.id,
-      layout: state.layout == MMSplitMode.primary ? MMSplitMode.split : null,
+      layout: _layoutShowingMap,
     );
     _flash(cardId: card.id);
-    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title);
+    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
   Future<void> recolor(String annotationId, MMAnnotationColor color) async {
@@ -1455,6 +1462,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (annotationId != null) _flash(annotationId: annotationId);
   }
 
+  /// Shows [cardId] on the map alone: a compact window's way from the
+  /// source to a new excerpt.
+  Future<void> showCardInMap(String cardId) async {
+    final shown = await revealAnchor(SourceAnchor(target: CardTarget(cardId: cardId)));
+    if (shown && ref.mounted) setLayout(MMSplitMode.secondary);
+  }
+
   /// Opens the source document of an excerpt and scrolls to it.
   void revealCard(String cardId) {
     final c = content;
@@ -1569,7 +1583,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// A field opens in the map pane: with the reader alone on screen the
   /// pane comes back, so the edit can take focus and be finished.
-  MMSplitMode? get _layoutShowingMap => state.layout == MMSplitMode.primary ? MMSplitMode.split : null;
+  MMSplitMode? get _layoutShowingMap => onePane
+      ? (state.layout == MMSplitMode.secondary ? null : MMSplitMode.secondary)
+      : (state.layout == MMSplitMode.primary ? MMSplitMode.split : null);
 
   /// Adds a topic (see [addTopic]) and starts editing it. Creation and the
   /// typed title commit as one undo step; cancelling leaves no node and no

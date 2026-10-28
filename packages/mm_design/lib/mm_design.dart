@@ -8,6 +8,7 @@ library;
 
 export 'src/foundation/adaptive.dart';
 export 'src/foundation/appearance.dart';
+export 'src/foundation/back_handler.dart';
 export 'src/foundation/floating_placement.dart';
 export 'src/foundation/interactive.dart';
 export 'src/icons/mm_icons.dart';
@@ -33,9 +34,11 @@ export 'src/widgets/progress_bar.dart';
 export 'src/widgets/search_field.dart';
 export 'src/widgets/segmented_control.dart';
 export 'src/widgets/settings_form.dart';
+export 'src/widgets/bottom_sheet.dart';
 export 'src/widgets/sheet.dart';
 export 'src/widgets/sidebar.dart';
 export 'src/widgets/split_view.dart';
+export 'src/widgets/tab_bar.dart';
 export 'src/widgets/toolbar.dart';
 export 'src/widgets/window_scaffold.dart';
 

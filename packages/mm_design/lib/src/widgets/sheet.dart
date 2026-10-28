@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'bottom_sheet.dart';
 
 /// Presents a macOS-style sheet that drops from below the toolbar.
 /// Esc cancels; clicking outside does nothing (sheets are modal to the
-/// window).
+/// window). A compact window shows it as a bottom sheet.
 Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 460}) {
+  if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
   final c = context.mmColors;
   return showGeneralDialog<T>(
     context: context,
@@ -47,8 +50,10 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
 
 /// Presents a window-level dialog centered over a 22% black scrim, such as
 /// Settings. Esc closes; clicking the scrim does nothing. Fades in with a
-/// slight scale (fade only when motion is reduced).
+/// slight scale (fade only when motion is reduced). A compact window shows
+/// it as a bottom sheet.
 Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {
+  if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
   final reduceMotion = MMAppearance.reduceMotionOf(context);
   return showGeneralDialog<T>(
     context: context,
@@ -90,6 +95,35 @@ class MMSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final bottomSheet = MMBottomSheet.contains(context);
+    final column = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 18),
+        // A bottom sheet can be shorter than its content: the body scrolls.
+        if (bottomSheet) Flexible(child: SingleChildScrollView(child: child)) else child,
+        if (actions.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
+            ],
+          ),
+        ],
+      ],
+    );
+    if (bottomSheet) {
+      return Material(
+        type: MaterialType.transparency,
+        child: Padding(padding: const EdgeInsets.fromLTRB(22, 4, 22, 18), child: column),
+      );
+    }
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -100,27 +134,7 @@ class MMSheet extends StatelessWidget {
           border: Border.all(color: c.hairline, width: 0.5),
           boxShadow: c.sheetShadow,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Semantics(
-              header: true,
-              child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(height: 18),
-            child,
-            if (actions.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
-                ],
-              ),
-            ],
-          ],
-        ),
+        child: column,
       ),
     );
   }

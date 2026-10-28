@@ -7,6 +7,22 @@ import '../../../shared/pdf_picker.dart';
 import '../../../shared/image_picker.dart';
 import '../workspace_controller.dart';
 
+/// Offers a way to a new excerpt's card while the map is out of view (a
+/// compact window showing the source): the HUD after excerpting gets a
+/// View action instead of switching panes on its own.
+class ExcerptViewScope extends InheritedWidget {
+  const ExcerptViewScope({super.key, required this.showInMap, required super.child});
+
+  /// Null while the map is in view.
+  final ValueChanged<String>? showInMap;
+
+  static ValueChanged<String>? of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ExcerptViewScope>()?.showInMap;
+
+  @override
+  bool updateShouldNotify(ExcerptViewScope oldWidget) => (oldWidget.showInMap == null) != (showInMap == null);
+}
+
 /// Shows a controller outcome as a HUD, in the current language.
 void showNotice(BuildContext context, WorkspaceNotice? notice, {required String rootTitle}) {
   if (notice == null || !context.mounted) return;
@@ -28,7 +44,14 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
     ImportedNotice(:final count, :final failed) =>
       failed.isNotEmpty ? l.importFailed(failed.first) : l.importedHud(count),
   };
-  MMHud.show(context, text, icon: notice is AreaFailedNotice ? MMIcons.close : MMIcons.success);
+  final cardId = notice is ExcerptedNotice ? notice.cardId : null;
+  final showInMap = cardId == null ? null : ExcerptViewScope.of(context);
+  MMHud.show(
+    context,
+    text,
+    icon: notice is AreaFailedNotice ? MMIcons.close : MMIcons.success,
+    action: showInMap == null ? null : (l.excerptView, () => showInMap(cardId!)),
+  );
 }
 
 /// Opens the system file picker for PDFs and imports the chosen files.

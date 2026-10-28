@@ -514,6 +514,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get excerptView => 'View';
+
+  @override
   String get highlightedHud => 'Highlighted';
 
   @override
