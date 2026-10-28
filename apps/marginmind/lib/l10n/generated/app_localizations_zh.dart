@@ -2655,4 +2655,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantConfigureModels => '配置模型';
+
+  @override
+  String get microphonePermission => '录制音频以转写文字。';
+
+  @override
+  String get localNetworkPermission => '连接你的本地模型服务。';
 }

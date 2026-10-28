@@ -49,5 +49,5 @@ void main() {
       DropDoneDetails(files: [DropItemFile('/tmp/chart.jpg')], localPosition: Offset.zero, globalPosition: Offset.zero),
     );
     expect(images, ['/tmp/chart.PNG', '/tmp/chart.jpg']);
-  });
+  }, variant: TargetPlatformVariant({TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}));
 }

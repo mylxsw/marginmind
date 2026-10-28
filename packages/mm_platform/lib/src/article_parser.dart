@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'capabilities.dart';
+
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -17,6 +19,9 @@ class WebKitArticleParser implements HtmlArticleParser {
   static int _sequence = 0;
   @override
   Future<ReadableHtml> parse(Uri url, String html, CancellationToken cancellation) async {
+    if (!MMPlatformCapabilities.current.articleParser) {
+      throw const ResearchFailure(ResearchFailureKind.unsupported, 'web_content');
+    }
     if (!['http', 'https'].contains(url.scheme) || url.host.isEmpty || url.userInfo.isNotEmpty) {
       throw const ResearchFailure(ResearchFailureKind.unsafeUrl);
     }

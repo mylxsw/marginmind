@@ -42,6 +42,9 @@ MapExportScene scene(StudySetContent c, {bool transparent = false}) => MapExport
   source: (d, p) => '${d.title} $p',
   transparent: transparent,
 );
+void desktopTestWidgets(String description, WidgetTesterCallback callback) =>
+    testWidgets(description, callback, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test('Chinese sheet title omits ellipsis while menu and save action retain it', () {
@@ -50,7 +53,7 @@ void main() {
     expect(l.exportMap, '导出脑图…');
     expect(l.exportAction, '导出…');
   });
-  testWidgets('File menu opens unified export; node menu preselects its branch', (tester) async {
+  desktopTestWidgets('File menu opens unified export; node menu preselects its branch', (tester) async {
     await openFirstSet(tester);
     Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
       for (final item in items) {
@@ -78,7 +81,7 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     await settleHud(tester);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
 
   test('500 nodes are present, text readable, bounds contain every drawing', () {
     final s = scene(exportFixture(500));
@@ -209,7 +212,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('formats, scope, appearance and text exports; cancel keeps form', (tester) async {
+  desktopTestWidgets('formats, scope, appearance and text exports; cancel keeps form', (tester) async {
     String? saved;
     await pumpSheet(
       tester,
@@ -244,7 +247,7 @@ void main() {
     expect(saved, contains('节点 1'));
     expect(tester.takeException(), isNull);
   });
-  testWidgets('PNG and PDF encode snapshots; cancelling save keeps the sheet', (tester) async {
+  desktopTestWidgets('PNG and PDF encode snapshots; cancelling save keeps the sheet', (tester) async {
     const channel = MethodChannel('marginmind/map_export');
     final methods = <String>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
@@ -312,7 +315,9 @@ void main() {
     await expectLater(loadExportImages(content, (n) => '${dir.path}/missing'), throwsA(isA<FileSystemException>()));
   });
 
-  testWidgets('missing image blocks visual export across format switches; another branch can export', (tester) async {
+  desktopTestWidgets('missing image blocks visual export across format switches; another branch can export', (
+    tester,
+  ) async {
     final now = DateTime.utc(2026);
     final content = StudySetContent(
       cards: [
@@ -341,7 +346,7 @@ void main() {
     expect(exportButton().onPressed, isNotNull);
   });
 
-  testWidgets('save failure is retryable', (tester) async {
+  desktopTestWidgets('save failure is retryable', (tester) async {
     await pumpSheet(tester, save: (name, bytes) async => throw const FileSystemException('Denied'));
     await tester.tap(find.text('Markdown'));
     await tester.pumpAndSettle();

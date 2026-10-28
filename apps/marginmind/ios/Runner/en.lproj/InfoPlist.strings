@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "Record audio for transcription.";
+"NSLocalNetworkUsageDescription" = "Connect to your local model service.";

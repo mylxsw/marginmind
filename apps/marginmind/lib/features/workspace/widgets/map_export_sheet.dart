@@ -64,7 +64,7 @@ class MapExportSheet extends StatefulWidget {
 }
 
 class _MapExportSheetState extends State<MapExportSheet> {
-  var _format = MapExportFormat.png;
+  late var _format = MMPlatformCapabilities.current.mapExport ? MapExportFormat.png : MapExportFormat.markdown;
   var _appearance = MapExportAppearance.light;
   var _scale = 2;
   late bool _branch = widget.initialBranch && widget.branchId != null;
@@ -180,6 +180,8 @@ class _MapExportSheetState extends State<MapExportSheet> {
       final bool saved;
       if (widget.save case final save?) {
         saved = await save(name, data);
+      } else if (MMPlatformCapabilities.current.shareFile) {
+        saved = await const MobileFileShare().share(name, data);
       } else {
         final location = await getSaveLocation(
           suggestedName: name,
@@ -235,7 +237,12 @@ class _MapExportSheetState extends State<MapExportSheet> {
                 MMSegmentedControl<MapExportFormat>(
                   expand: fill,
                   segments: [
-                    for (final format in MapExportFormat.values)
+                    for (final format in MapExportFormat.values.where(
+                      (format) =>
+                          MMPlatformCapabilities.current.mapExport ||
+                          format == MapExportFormat.markdown ||
+                          format == MapExportFormat.opml,
+                    ))
                       MMSegment(
                         value: format,
                         label: switch (format) {

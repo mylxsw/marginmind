@@ -20,6 +20,7 @@ void main() {
     final fileName = await store.importFile(set.id, pdf.path);
     expect(File(store.resolveFile(set.id, fileName)).existsSync(), isTrue);
     expect(await store.importFile(set.id, pdf.path), fileName, reason: 'same bytes dedupe');
+    await pdf.delete(); // File-provider temporary copies may disappear after import.
 
     await store.update(set.id, (c) {
       final (c1, doc) = editor.addDocument(c, title: '记忆', fileName: fileName, pageCount: 120);
@@ -45,6 +46,7 @@ void main() {
     expect(sets.single.lastPosition!.page, 12);
     expect(sets.single.dueCount, 1, reason: 'the new excerpt is due');
     final content = await reopened.load(set.id);
+    expect(await File(reopened.resolveFile(set.id, fileName)).readAsBytes(), List.filled(64, 7));
     expect(content.annotations.single.quote, '遗忘曲线');
     expect(content.documents.single.lastReadAt, DateTime(2026, 10, 25));
     await reopened.dispose();

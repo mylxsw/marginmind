@@ -37,10 +37,13 @@ dependencies:
     path: ../../packages/mm_pdf
   mm_platform:
     path: ../../packages/mm_platform
-  desktop_drop: ^0.8.4
+  desktop_drop:
+    path: ../../third_party/desktop_drop
   markdown: ^7.3.1
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   window_manager: ^0.5.1
   dio: ^5.9.0
   vm_service: ^15.0.0
