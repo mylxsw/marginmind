@@ -158,7 +158,12 @@ void main() {
         ),
       );
       final input = find.byType(MMTextField);
+      BoxDecoration decoration() =>
+          tester.widget<Container>(find.descendant(of: input, matching: find.byType(Container)).first).decoration!
+              as BoxDecoration;
       expect(find.text('Enter Account ID'), findsOneWidget);
+      expect(decoration().color, Colors.transparent);
+      expect(decoration().border, Border.all(color: Colors.transparent));
       expect(tester.getSize(input).width, MMSizes.settingsFieldWidth);
       update(() => width = 240);
       await tester.pump();
@@ -166,6 +171,11 @@ void main() {
       await tester.tap(input);
       await tester.pump();
       expect(focus.hasFocus, isTrue);
+      expect(
+        decoration().color,
+        brightness == Brightness.light ? MMColors.light.quaternaryFill : MMColors.dark.quaternaryFill,
+      );
+      expect(decoration().border, Border.all(color: tester.element(input).mmColors.accent));
       await tester.enterText(input, 'account-123');
       expect(controller.text, 'account-123');
       update(() => enabled = false);
@@ -173,29 +183,9 @@ void main() {
       await tester.tap(input, warnIfMissed: false);
       await tester.pump();
       expect(focus.hasFocus, isFalse);
+      expect(decoration().color, Colors.transparent);
       expect(controller.text, 'account-123');
       expect(tester.takeException(), isNull);
     });
   }
-
-  testWidgets('a key reveal action stays accessible inside the input outline', (tester) async {
-    final semantics = tester.ensureSemantics();
-    var reveals = 0;
-    await tester.pumpWidget(
-      harness(
-        MMTextField.settings(
-          placeholder: 'Paste API Key',
-          semanticLabel: 'API Key',
-          obscureText: true,
-          trailing: MMIconButton(icon: MMIcons.eye, size: 22, tooltip: 'Reveal key', onPressed: () => reveals++),
-        ),
-      ),
-    );
-    expect(find.bySemanticsLabel('API Key'), findsOneWidget);
-    expect(find.bySemanticsLabel('Reveal key'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('Reveal key'));
-    expect(reveals, 1);
-    expect(tester.takeException(), isNull);
-    semantics.dispose();
-  });
 }

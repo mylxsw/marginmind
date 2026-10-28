@@ -153,6 +153,11 @@ void main() {
     // The new card is open, OpenAI's own mark shown.
     expect(find.byKey(const ValueKey('service-key')), findsOneWidget);
     expect(find.byKey(const ValueKey('service-logo-openai')), findsWidgets);
+    final addModel = find.byKey(const ValueKey('service-add-model'));
+    final modelHeading = find.byKey(const ValueKey('service-models-heading'));
+    expect(tester.getCenter(addModel).dy, closeTo(tester.getCenter(modelHeading).dy, 1));
+    expect(tester.getRect(addModel).left, greaterThanOrEqualTo(tester.getRect(modelHeading).right));
+    expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('service-remove'))).icon, MMIcons.trash);
 
     await _enter(tester, 'service-key', 'sk-test');
     expect(catalog.checked, isEmpty); // Only after a pause.
@@ -224,7 +229,7 @@ void main() {
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
   }, semanticsEnabled: false);
 
-  testWidgets('a service card: failure reason, reveal, address, rename, remove model, off, remove', (tester) async {
+  testWidgets('a service card: failure reason, hidden key, address, rename, remove model, off, remove', (tester) async {
     final catalog = FakeCatalog(status: ConnectionStatus.authFailed);
     final app = await openAssistantApp(tester, catalog: catalog);
     await _openModels(tester);
@@ -234,6 +239,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('service-option-anthropic')));
     await tester.pumpAndSettle();
     final id = _services(app).services.last.id;
+    expect(find.bySemanticsLabel('移除服务'), findsOneWidget);
     expect(find.byKey(const ValueKey('service-endpoint')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('service-custom-address')));
     await tester.pumpAndSettle();
@@ -244,16 +250,7 @@ void main() {
       find.descendant(of: find.byKey(const ValueKey('service-key')), matching: find.byType(TextField)),
     );
     expect(field.obscureText, isTrue);
-    await tester.tap(find.byKey(const ValueKey('service-reveal')));
-    await tester.pump();
-    expect(
-      tester
-          .widget<TextField>(
-            find.descendant(of: find.byKey(const ValueKey('service-key')), matching: find.byType(TextField)),
-          )
-          .obscureText,
-      isFalse,
-    );
+    expect(find.byKey(const ValueKey('service-reveal')), findsNothing);
     await _afterPause(tester);
     // Failure shows on the card's second line; there is no check button.
     expect(find.byKey(const ValueKey('service-failure')), findsOneWidget);

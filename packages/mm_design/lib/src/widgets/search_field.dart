@@ -146,10 +146,9 @@ class MMTextField extends StatefulWidget {
     this.plain = false,
     this.textAlign = TextAlign.start,
     this.enabled = true,
-    this.trailing,
   }) : _settings = false;
 
-  /// A settings value: bounded width, visible outline, right-aligned text,
+  /// A settings value: bounded width, focus-only outline, right-aligned text,
   /// and a required empty-state hint. Identifiers are never autocorrected.
   const MMTextField.settings({
     super.key,
@@ -163,7 +162,6 @@ class MMTextField extends StatefulWidget {
     this.obscureText = false,
     this.enabled = true,
     this.style,
-    this.trailing,
   }) : plain = false,
        textAlign = TextAlign.right,
        maxLines = 1,
@@ -178,8 +176,6 @@ class MMTextField extends StatefulWidget {
   final bool enabled;
   final bool _settings;
 
-  /// An optional action inside the field's outline, such as revealing a key.
-  final Widget? trailing;
   final String? semanticLabel;
   final FocusNode? focusNode;
 
@@ -235,8 +231,7 @@ class _MMTextFieldState extends State<MMTextField> {
     final c = context.mmColors;
     final t = context.mmText;
     final focused = _focus.hasFocus && widget.enabled;
-    // Keep the input's role separate from both surrounding controls and
-    // an optional action inside the same outline.
+    // Keep the input's role separate from surrounding controls.
     final input = Material(
       type: MaterialType.transparency,
       child: TextField(
@@ -273,29 +268,13 @@ class _MMTextFieldState extends State<MMTextField> {
       decoration: widget.plain
           ? null
           : BoxDecoration(
-              color: c.quaternaryFill,
+              color: widget._settings && !focused ? Colors.transparent : c.quaternaryFill,
               borderRadius: BorderRadius.circular(MMRadii.field),
-              border: Border.all(color: focused ? c.accent : (widget._settings ? c.separator : Colors.transparent)),
+              border: Border.all(color: focused ? c.accent : Colors.transparent),
               boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
             ),
-      child: widget.trailing == null
-          ? input
-          : Row(
-              children: [
-                Expanded(
-                  child: Semantics(container: true, label: widget.semanticLabel, textField: true, child: input),
-                ),
-                const SizedBox(width: MMSpacing.xs),
-                widget.trailing!,
-              ],
-            ),
+      child: input,
     );
-    return Semantics(
-      container: true,
-      label: widget.trailing == null ? widget.semanticLabel : null,
-      textField: widget.trailing == null ? true : null,
-      explicitChildNodes: widget.trailing != null,
-      child: field,
-    );
+    return Semantics(container: true, label: widget.semanticLabel, textField: true, child: field);
   }
 }

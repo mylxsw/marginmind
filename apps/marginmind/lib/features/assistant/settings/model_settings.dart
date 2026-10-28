@@ -274,7 +274,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   final _endpointFocus = FocusNode();
   Timer? _timer;
   CancellationToken? _check;
-  bool _checking = false, _reveal = false, _custom = false;
+  bool _checking = false, _custom = false;
 
   /// Why the last check failed; null when it passed or none ran.
   String? _failure;
@@ -446,7 +446,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     final header = MMInteractive(
       key: ValueKey('service-header-${s.id}'),
       onTap: widget.onToggle,
-      semanticLabel: s.name,
       semanticValue: widget.open ? '▾' : '▸',
       builder: (context, state) => Container(
         height: 52,
@@ -475,6 +474,17 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
               ),
             ),
             const SizedBox(width: MMSpacing.s),
+            if (widget.open) ...[
+              MMIconButton(
+                key: const ValueKey('service-remove'),
+                icon: MMIcons.trash,
+                iconSize: 13,
+                size: MMSizes.field,
+                tooltip: l.settingsRemoveService,
+                onPressed: _remove,
+              ),
+              const SizedBox(width: MMSpacing.s),
+            ],
             MMSwitch(
               key: ValueKey('service-switch-${s.id}'),
               value: s.enabled,
@@ -490,28 +500,20 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     );
     if (!widget.open) return MMSettingsGroup(children: [header]);
     return MMSettingsGroup(
-      footer: Row(
-        children: [
-          if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
-            MMButton(
-              key: const ValueKey('service-custom-address'),
-              label: l.settingsCustomAddress,
-              variant: MMButtonVariant.plain,
-              onPressed: () {
-                setState(() => _custom = true);
-                WidgetsBinding.instance.addPostFrameCallback((_) => _endpointFocus.requestFocus());
-              },
-            ),
-          const Spacer(),
-          MMButton(
-            key: const ValueKey('service-remove'),
-            label: l.settingsRemoveService,
-            variant: MMButtonVariant.plain,
-            color: c.critical,
-            onPressed: _remove,
-          ),
-        ],
-      ),
+      footer: serviceEndpointOptional(s.protocol) && !_showsEndpoint
+          ? Align(
+              alignment: Alignment.centerLeft,
+              child: MMButton(
+                key: const ValueKey('service-custom-address'),
+                label: l.settingsCustomAddress,
+                variant: MMButtonVariant.plain,
+                onPressed: () {
+                  setState(() => _custom = true);
+                  WidgetsBinding.instance.addPostFrameCallback((_) => _endpointFocus.requestFocus());
+                },
+              ),
+            )
+          : null,
       children: [
         header,
         MMSettingsRow(
@@ -543,25 +545,27 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
               key: const ValueKey('service-key'),
               controller: _key,
               focusNode: _keyFocus,
-              obscureText: !_reveal,
+              obscureText: true,
               placeholder: l.assistantPasteKey,
               semanticLabel: 'API Key',
               onChanged: _connectionChanged,
-              trailing: MMIconButton(
-                key: const ValueKey('service-reveal'),
-                icon: _reveal ? MMIcons.eyeSlash : MMIcons.eye,
-                iconSize: 13,
-                size: 22,
-                tooltip: _reveal ? l.settingsHideKey : l.settingsShowKey,
-                onPressed: () => setState(() => _reveal = !_reveal),
-              ),
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, MMSpacing.m, 14, MMSpacing.xs),
-          child: Text(
+        MMSettingsRow(
+          height: MMSpacing.xxxl,
+          leading: Text(
             l.settingsModels,
+            key: const ValueKey('service-models-heading'),
             style: t.subheadline.copyWith(fontWeight: FontWeight.w600, color: c.secondaryLabel),
+          ),
+          trailing: MMIconButton(
+            key: const ValueKey('service-add-model'),
+            icon: MMIcons.add,
+            iconSize: 13,
+            size: MMSizes.field,
+            tooltip: l.settingsAddModel,
+            color: c.accent,
+            onPressed: () => showAddModels(context, s),
           ),
         ),
         for (final m in s.models)
@@ -571,18 +575,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             model: m,
             isDefault: widget.defaultModel?.serviceId == s.id && widget.defaultModel?.modelId == m.id,
           ),
-        MMSettingsRow(
-          key: const ValueKey('service-add-model'),
-          onTap: () => showAddModels(context, s),
-          leading: Row(
-            children: [
-              Icon(MMIcons.add, size: 13, color: c.accent),
-              const SizedBox(width: 6),
-              Text(l.settingsAddModel, style: t.body.copyWith(color: c.accent)),
-            ],
-          ),
-          trailing: const SizedBox.shrink(),
-        ),
       ],
     );
   }
