@@ -2770,4 +2770,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsApiTokenPlaceholder => 'Paste API Token';
+
+  @override
+  String get settingsAutoSave => 'Changes save automatically';
+
+  @override
+  String get settingsAutoSaved => 'Saved automatically';
+
+  @override
+  String get settingsSaveFailed => 'Could not save. Please retry.';
+
+  @override
+  String get settingsRetrySave => 'Retry saving';
+
+  @override
+  String get settingsSaving => 'Saving…';
 }

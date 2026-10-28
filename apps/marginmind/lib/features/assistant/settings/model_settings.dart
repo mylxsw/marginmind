@@ -274,7 +274,14 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   final _endpointFocus = FocusNode();
   Timer? _timer;
   CancellationToken? _check;
-  bool _checking = false, _custom = false;
+  bool _checking = false, _custom = false, _openingModels = false;
+  bool _nameDirty = false, _endpointDirty = false, _keyDirty = false, _keyEdited = false;
+  bool _saved = false, _saveFailed = false, _keyUnavailable = false;
+  int _revision = 0;
+  Future<bool>? _saving;
+  late final AssistantServicesController _controller;
+  late AppLocalizations _l;
+  int _pendingWrites = 0;
 
   /// Why the last check failed; null when it passed or none ran.
   String? _failure;
@@ -284,9 +291,12 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   @override
   void initState() {
     super.initState();
+    _controller = ref.read(assistantServicesProvider.notifier);
     _name.text = widget.service.name;
     _endpoint.text = widget.service.endpoint;
     unawaited(_loadKey());
+    _keyFocus.addListener(_focusChanged);
+    _endpointFocus.addListener(_focusChanged);
     if (widget.focusKey) WidgetsBinding.instance.addPostFrameCallback((_) => _focusFirst());
   }
 
@@ -294,6 +304,12 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   void didUpdateWidget(ServiceCard old) {
     super.didUpdateWidget(old);
     if (widget.focusKey && !old.focusKey) WidgetsBinding.instance.addPostFrameCallback((_) => _focusFirst());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _l = context.l10n;
   }
 
   void _focusFirst() {
@@ -304,9 +320,11 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   Future<void> _loadKey() async {
     try {
       final key = await assistantServiceKey(ref.read(assistantSecretsProvider), _service.id, _service.provider);
-      if (mounted && _key.text.isEmpty && key != null) _key.text = key;
+      if (!mounted) return;
+      if (!_keyEdited && key != null) _key.text = key;
+      setState(() => _keyUnavailable = false);
     } on ResearchFailure {
-      // Leave the field editable when macOS cannot release the saved key.
+      if (mounted) setState(() => _keyUnavailable = true);
     }
   }
 
@@ -314,6 +332,10 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   void dispose() {
     _timer?.cancel();
     _check?.cancel();
+    // Capture edits while the fields and controller are still available.
+    unawaited(_savePending());
+    _keyFocus.removeListener(_focusChanged);
+    _endpointFocus.removeListener(_focusChanged);
     _name.dispose();
     _endpoint.dispose();
     _key.dispose();
@@ -326,48 +348,105 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   bool get _endpointChanged => _service.endpoint.trim() != defaultServiceEndpoint(_service.protocol);
   bool get _needsKey => _service.protocol != ServiceProtocol.ollama;
 
-  /// Saves the name a moment after typing stops.
+  void _focusChanged() {
+    if (!_keyFocus.hasFocus && !_endpointFocus.hasFocus) unawaited(_savePending());
+  }
+
   void _nameChanged(String _) {
-    _timer?.cancel();
-    _timer = Timer(serviceCheckDelay, _saveName);
+    _nameDirty = true;
+    _scheduleSave();
   }
 
-  Future<void> _saveName() async {
-    final name = _name.text.trim();
-    if (name.isEmpty || name == _service.name) return;
-    await ref.read(assistantServicesProvider.notifier).upsert(_service.copyWith(name: name));
+  void _connectionChanged(String _, {bool key = false}) {
+    if (key) {
+      _keyDirty = _keyEdited = true;
+    } else {
+      _endpointDirty = true;
+    }
+    _scheduleSave();
   }
 
-  /// Address or key edited: saved and checked 0.7 seconds after typing stops.
-  void _connectionChanged(String _) {
+  void _scheduleSave() {
+    _revision++;
     _timer?.cancel();
     _check?.cancel();
-    setState(() => _checking = false);
+    setState(() {
+      _checking = false;
+      _saved = _saveFailed = false;
+      _failure = null;
+    });
     _timer = Timer(serviceCheckDelay, () => unawaited(_saveAndCheck()));
   }
 
-  Future<void> _saveAndCheck() async {
-    final controller = ref.read(assistantServicesProvider.notifier);
-    var service = _service;
-    final endpoint = _endpoint.text.trim();
-    try {
-      if (endpoint.isNotEmpty && endpoint != service.endpoint) {
-        service = serviceWithEndpoint(service, endpoint);
-        await controller.upsert(service);
-      }
-      if (_needsKey) {
-        try {
-          await controller.saveKey(service.id, _key.text);
-        } catch (_) {
-          if (mounted) setState(() => _failure = context.l10n.assistantKeySaveUnavailable);
-          return;
+  /// Capture every edited field together. Network checks may be delayed;
+  /// persistence is also flushed before fetching models and when leaving.
+  Future<bool> _savePending() {
+    if (!_nameDirty && !_endpointDirty && !_keyDirty) return _saving ?? Future.value(true);
+    final nameDirty = _nameDirty, endpointDirty = _endpointDirty, keyDirty = _keyDirty;
+    final name = _name.text.trim(), endpoint = _endpoint.text.trim(), key = _key.text;
+    final revision = _revision;
+    final l = _l;
+    _nameDirty = _endpointDirty = _keyDirty = false;
+    _pendingWrites++;
+    final save = _controller.updateDetails(
+      _service.id,
+      name: nameDirty && name.isNotEmpty ? name : null,
+      endpoint: endpointDirty && endpoint.isNotEmpty ? endpoint : null,
+      key: keyDirty ? key : null,
+    );
+    // Delay UI notifications so disposal can safely flush without setState.
+    final result = save.then(
+      (_) {
+        _pendingWrites--;
+        if (mounted && revision == _revision) {
+          setState(() {
+            _saved = true;
+            _saveFailed = false;
+            if (keyDirty) _keyUnavailable = false;
+            _failure = null;
+          });
         }
-      }
-    } catch (_) {
-      if (mounted) setState(() => _failure = context.l10n.assistantErrorFailed);
-      return;
-    }
+        return true;
+      },
+      onError: (Object _) {
+        _pendingWrites--;
+        _nameDirty |= nameDirty;
+        _endpointDirty |= endpointDirty;
+        _keyDirty |= keyDirty;
+        if (mounted && revision == _revision) {
+          setState(() {
+            _saveFailed = true;
+            _failure = keyDirty ? l.assistantKeySaveUnavailable : l.settingsSaveFailed;
+          });
+        }
+        return false;
+      },
+    );
+    _saving = result;
+    return result;
+  }
+
+  Future<void> _saveAndCheck() async {
+    final revision = _revision;
+    if (!await _savePending() || !mounted || revision != _revision) return;
+    final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
     await _runCheck(service);
+  }
+
+  Future<void> _addModels() async {
+    if (_openingModels) return;
+    setState(() => _openingModels = true);
+    _timer?.cancel();
+    _check?.cancel();
+    try {
+      do {
+        if (!await _savePending() || !mounted) return;
+      } while (_nameDirty || _endpointDirty || _keyDirty);
+      final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
+      await showAddModels(context, service);
+    } finally {
+      if (mounted) setState(() => _openingModels = _checking = false);
+    }
   }
 
   Future<void> _runCheck(AssistantService service) async {
@@ -500,20 +579,48 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     );
     if (!widget.open) return MMSettingsGroup(children: [header]);
     return MMSettingsGroup(
-      footer: serviceEndpointOptional(s.protocol) && !_showsEndpoint
-          ? Align(
-              alignment: Alignment.centerLeft,
-              child: MMButton(
-                key: const ValueKey('service-custom-address'),
-                label: l.settingsCustomAddress,
-                variant: MMButtonVariant.plain,
-                onPressed: () {
-                  setState(() => _custom = true);
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _endpointFocus.requestFocus());
-                },
-              ),
-            )
-          : null,
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _saveFailed
+                ? l.settingsSaveFailed
+                : _nameDirty || _endpointDirty || _keyDirty || _pendingWrites > 0
+                ? l.settingsSaving
+                : _saved
+                ? l.settingsAutoSaved
+                : l.settingsAutoSave,
+            key: const ValueKey('service-save-status'),
+            style: t.footnote.copyWith(color: _saveFailed ? c.critical : c.secondaryLabel),
+          ),
+          if (_keyUnavailable) ...[
+            Text(_l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
+            MMButton(
+              key: const ValueKey('service-key-retry'),
+              label: l.assistantRetrySavedKey,
+              variant: MMButtonVariant.plain,
+              onPressed: _loadKey,
+            ),
+          ],
+          if (_saveFailed)
+            MMButton(
+              key: const ValueKey('service-save-retry'),
+              label: l.settingsRetrySave,
+              variant: MMButtonVariant.plain,
+              onPressed: _saveAndCheck,
+            ),
+          if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
+            MMButton(
+              key: const ValueKey('service-custom-address'),
+              label: l.settingsCustomAddress,
+              variant: MMButtonVariant.plain,
+              onPressed: () {
+                setState(() => _custom = true);
+                WidgetsBinding.instance.addPostFrameCallback((_) => _endpointFocus.requestFocus());
+              },
+            ),
+        ],
+      ),
       children: [
         header,
         MMSettingsRow(
@@ -548,7 +655,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
               obscureText: true,
               placeholder: l.assistantPasteKey,
               semanticLabel: 'API Key',
-              onChanged: _connectionChanged,
+              onChanged: (value) => _connectionChanged(value, key: true),
             ),
           ),
         MMSettingsRow(
@@ -565,7 +672,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             size: MMSizes.field,
             tooltip: l.settingsAddModel,
             color: c.accent,
-            onPressed: () => showAddModels(context, s),
+            onPressed: _openingModels ? null : _addModels,
           ),
         ),
         for (final m in s.models)
@@ -730,7 +837,7 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
   final _picked = <String>[];
   List<ServiceModel>? _models;
   String? _error;
-  bool _adding = false;
+  bool _adding = false, _keyUnavailable = false;
 
   @override
   void initState() {
@@ -753,6 +860,11 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
 
   Future<void> _load() async {
     if (!mounted) return;
+    setState(() {
+      _models = null;
+      _error = null;
+      _keyUnavailable = false;
+    });
     final l = context.l10n;
     try {
       final key =
@@ -764,7 +876,12 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
       if (!mounted || e.kind == ResearchFailureKind.cancelled) return;
       setState(() {
         _models = const [];
-        _error = e.kind == ResearchFailureKind.authentication ? l.assistantErrorKey : l.assistantCannotConnect;
+        _keyUnavailable = e.code == 'secret_store';
+        _error = e.code == 'secret_store'
+            ? l.assistantSavedKeyUnavailable
+            : e.kind == ResearchFailureKind.authentication
+            ? l.assistantErrorKey
+            : l.assistantCannotConnect;
       });
     } catch (_) {
       if (mounted) {
@@ -921,8 +1038,20 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
                               children: [
                                 Icon(MMIcons.warning, size: 13, color: c.critical),
                                 const SizedBox(width: 6),
-                                Text(_error!, style: t.callout.copyWith(color: c.critical)),
+                                Expanded(
+                                  child: Text(_error!, style: t.callout.copyWith(color: c.critical)),
+                                ),
                               ],
+                            ),
+                          ),
+                        if (_keyUnavailable)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: MMButton(
+                              key: const ValueKey('add-model-key-retry'),
+                              label: l.assistantRetrySavedKey,
+                              variant: MMButtonVariant.plain,
+                              onPressed: _load,
                             ),
                           ),
                         for (final m in rows) pick(m.id, m.displayName),

@@ -4951,6 +4951,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste API Token'**
   String get settingsApiTokenPlaceholder;
+
+  /// No description provided for @settingsAutoSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes save automatically'**
+  String get settingsAutoSave;
+
+  /// No description provided for @settingsAutoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved automatically'**
+  String get settingsAutoSaved;
+
+  /// No description provided for @settingsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save. Please retry.'**
+  String get settingsSaveFailed;
+
+  /// No description provided for @settingsRetrySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry saving'**
+  String get settingsRetrySave;
+
+  /// No description provided for @settingsSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get settingsSaving;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

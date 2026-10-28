@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
@@ -65,7 +66,111 @@ class UnavailableKeyStore extends FakeSecrets {
   }
 }
 
+class DelayedKeyStore extends FakeSecrets {
+  final started = Completer<void>();
+  final release = Completer<void>();
+  @override
+  Future<void> write(String account, String key) async {
+    if (!started.isCompleted) started.complete();
+    await release.future;
+    await super.write(account, key);
+  }
+}
+
 void main() {
+  testWidgets('model listing waits for an in-flight key save', (tester) async {
+    final secrets = DelayedKeyStore(), catalog = FakeCatalog();
+    await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'replacement-key');
+    await tester.pump(const Duration(milliseconds: 750));
+    expect(secrets.started.isCompleted, isTrue);
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pump();
+    expect(catalog.listed, isEmpty);
+    expect(find.text('正在保存…'), findsOneWidget);
+    secrets.release.complete();
+    await tester.pumpAndSettle();
+    expect(catalog.listed.single.$2, 'replacement-key');
+  });
+
+  testWidgets('failed settings key save prevents fetching and offers retry with the draft', (tester) async {
+    final secrets = UnavailableKeyStore()..blockReads = false;
+    final catalog = FakeCatalog();
+    final app = await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'replacement-key');
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    expect(catalog.listed, isEmpty);
+    expect(find.byKey(const ValueKey('add-models')), findsNothing);
+    expect(find.text('API Key 无效'), findsNothing);
+    expect(find.text('保存失败，请重试'), findsOneWidget);
+    secrets.blockWrites = false;
+    await tester.tap(find.byKey(const ValueKey('service-save-retry')));
+    await tester.pumpAndSettle();
+    expect(find.text('已自动保存'), findsOneWidget);
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    expect(catalog.listed.single.$2, 'replacement-key');
+  });
+
+  testWidgets('fetching models immediately flushes the edited key and address', (tester) async {
+    final catalog = FakeCatalog();
+    final app = await openAssistantApp(tester, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-endpoint', 'https://proxy.example');
+    await _enter(tester, 'service-key', 'replacement-key');
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    expect(catalog.listed.single, ('https://proxy.example', 'replacement-key'));
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
+  });
+
+  testWidgets('rapid edits to different fields all persist, including when settings closes', (tester) async {
+    final app = await openAssistantApp(tester);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'replacement-key');
+    await _enter(tester, 'service-name', 'Renamed');
+    await _afterPause(tester);
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
+    expect(_services(app).services.first.name, 'Renamed');
+    await _enter(tester, 'service-key', 'last-key');
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
+    await tester.pumpAndSettle();
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'last-key');
+    final reloaded = await app.container.read(assistantServicesStoreProvider).load();
+    expect(reloaded.services.first.name, 'Renamed');
+  }, semanticsEnabled: false);
+
+  testWidgets('a blocked key read in the model sheet is not a provider rejection', (tester) async {
+    final secrets = UnavailableKeyStore()..blockWrites = false;
+    final catalog = FakeCatalog();
+    await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('暂时无法读取已保存的 API Key'), findsWidgets);
+    expect(find.text('API Key 无效'), findsNothing);
+    expect(catalog.listed, isEmpty);
+    secrets.blockReads = false;
+    await tester.tap(find.byKey(const ValueKey('add-model-key-retry')));
+    await tester.pumpAndSettle();
+    expect(catalog.listed.single.$2, 'test-key');
+    expect(find.text('Claude Sonnet'), findsOneWidget);
+  });
+
   testWidgets('storage failures never say the provider rejected a valid key and saving can be retried', (tester) async {
     final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
     final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog);

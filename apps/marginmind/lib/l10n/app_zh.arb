@@ -874,5 +874,10 @@
   "voiceAppIdPlaceholder": "填写 App ID",
   "settingsNamePlaceholder": "填写服务名称",
   "settingsAccountIdPlaceholder": "填写账户 ID",
-  "settingsApiTokenPlaceholder": "粘贴 API Token"
+  "settingsApiTokenPlaceholder": "粘贴 API Token",
+  "settingsAutoSave": "修改后自动保存",
+  "settingsAutoSaved": "已自动保存",
+  "settingsSaveFailed": "保存失败，请重试",
+  "settingsRetrySave": "重试保存",
+  "settingsSaving": "正在保存…"
 }

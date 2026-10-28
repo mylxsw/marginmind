@@ -1527,5 +1527,10 @@
   "voiceAppIdPlaceholder": "Enter App ID",
   "settingsNamePlaceholder": "Enter service name",
   "settingsAccountIdPlaceholder": "Enter Account ID",
-  "settingsApiTokenPlaceholder": "Paste API Token"
+  "settingsApiTokenPlaceholder": "Paste API Token",
+  "settingsAutoSave": "Changes save automatically",
+  "settingsAutoSaved": "Saved automatically",
+  "settingsSaveFailed": "Could not save. Please retry.",
+  "settingsRetrySave": "Retry saving",
+  "settingsSaving": "Saving…"
 }
