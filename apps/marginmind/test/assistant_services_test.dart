@@ -173,6 +173,34 @@ void main() {
     await actions.remove('legacy-responses');
     expect(secrets.values.containsKey('openai'), false);
   });
+  test('queued detail edits preserve concurrent model and enabled changes after reloading', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance(), secrets = Secrets();
+    final c = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assistantSecretsProvider.overrideWithValue(secrets),
+      ],
+    );
+    addTearDown(c.dispose);
+    await c.read(assistantServicesProvider.future);
+    final controller = c.read(assistantServicesProvider.notifier);
+    await Future.wait([
+      controller.addModels('legacy-claude', const [ServiceModel(id: 'new-model')]),
+      controller.setEnabled('legacy-claude', false),
+      controller.updateDetails('legacy-claude', name: 'Renamed', endpoint: 'https://proxy.example', key: 'new-key'),
+      controller.updateDetails('legacy-claude', name: 'Final name'),
+    ]);
+    final reloaded = await AssistantServicesStore(prefs, secrets).load();
+    final service = reloaded.services.single;
+    expect(service.name, 'Final name');
+    expect(service.endpoint, 'https://proxy.example');
+    expect(service.enabled, isFalse);
+    expect(service.models.map((m) => m.id), contains('new-model'));
+    expect(await assistantServiceKey(secrets, service.id, service.provider), 'new-key');
+    expect(prefs.getString(AssistantServicesStore.settingsKey), isNot(contains('new-key')));
+  });
+
   test('bulk model saving is local, atomic and preserves catalog capabilities', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance(), secrets = OfflineSecrets();

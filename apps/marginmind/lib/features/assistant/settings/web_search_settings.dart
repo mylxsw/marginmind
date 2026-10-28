@@ -11,7 +11,7 @@ import '../../../settings/settings_window.dart' show SettingsPage;
 import '../../../shared/l10n.dart';
 import '../assistant_services.dart';
 import '../assistant_settings.dart';
-import 'model_settings.dart' show serviceCheckDelay;
+import '../../../settings/settings_save_actions.dart';
 
 /// Checks a search backend; tests replace it to stay off the network.
 typedef WebSearchChecker = Future<ConnectionStatus> Function(
@@ -34,22 +34,29 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
   final _endpoint = TextEditingController();
   final _key = TextEditingController();
   final _account = TextEditingController();
-  Timer? _timer;
   CancellationToken? _check;
-  bool _checking = false;
+  late WebSearchBackend _backend;
+  bool _checking = false, _saving = false, _dirty = false, _saved = false, _saveFailed = false;
+  bool _keyEdited = false, _accountEdited = false;
+  int _load = 0;
   String? _failure;
 
   @override
   void initState() {
     super.initState();
+    _backend = ref.read(webSearchSettingsProvider).backend;
     _endpoint.text = ref.read(webSearchSettingsProvider).endpoint;
     unawaited(_loadSecrets(ref.read(webSearchSettingsProvider).backend));
   }
 
+  void _cancelCheck() {
+    _check?.cancel();
+    _check = null;
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
-    _check?.cancel();
+    _cancelCheck();
     _endpoint.dispose();
     _key.dispose();
     _account.dispose();
@@ -57,6 +64,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
   }
 
   Future<void> _loadSecrets(WebSearchBackend backend) async {
+    final load = ++_load;
     if (backend == WebSearchBackend.none || backend == WebSearchBackend.searxng) return;
     final secrets = ref.read(assistantSecretsProvider);
     try {
@@ -64,34 +72,41 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
       final account = backend == WebSearchBackend.cloudflare
           ? await secrets.read(WebSearchSettingsController.cloudflareAccount)
           : null;
-      if (!mounted || ref.read(webSearchSettingsProvider).backend != backend) return;
-      _key.text = key ?? '';
-      _account.text = account ?? '';
+      if (!mounted || _backend != backend || load != _load) return;
+      if (!_keyEdited) _key.text = key ?? '';
+      if (!_accountEdited) _account.text = account ?? '';
     } on ResearchFailure {
-      // Saved credentials may be unavailable; users can still edit the form.
+      if (mounted && _backend == backend && load == _load) {
+        setState(() => _failure = context.l10n.assistantSavedKeyUnavailable);
+      }
     }
   }
 
   Future<void> _choose(WebSearchBackend backend) async {
-    _timer?.cancel();
-    _check?.cancel();
+    _cancelCheck();
     setState(() {
+      _backend = backend;
       _checking = false;
       _failure = null;
+      _dirty = true;
+      _saved = _saveFailed = false;
+      _keyEdited = _accountEdited = false;
       _key.clear();
       _account.clear();
     });
-    await ref
-        .read(webSearchSettingsProvider.notifier)
-        .configure(WebSearchSettings(backend: backend, endpoint: _endpoint.text.trim()));
     await _loadSecrets(backend);
   }
 
-  void _changed(String _) {
-    _timer?.cancel();
-    _check?.cancel();
-    setState(() => _checking = false);
-    _timer = Timer(serviceCheckDelay, () => unawaited(_saveAndCheck()));
+  void _changed(String field) {
+    _cancelCheck();
+    if (field == 'search-key') _keyEdited = true;
+    if (field == 'search-account') _accountEdited = true;
+    setState(() {
+      _checking = false;
+      _failure = null;
+      _dirty = true;
+      _saved = _saveFailed = false;
+    });
   }
 
   /// Whether every field the backend needs is filled in.
@@ -103,34 +118,51 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
   };
 
   Future<void> _saveAndCheck() async {
+    if (_saving) return;
     final l = context.l10n;
-    final backend = ref.read(webSearchSettingsProvider).backend;
+    final backend = _backend;
+    if (backend != WebSearchBackend.none && !_complete(backend)) {
+      setState(() => _failure = l.settingsRequiredFields);
+      return;
+    }
     final settings = WebSearchSettings(backend: backend, endpoint: _endpoint.text.trim());
+    final key = _key.text.trim(), account = _account.text.trim();
+    _cancelCheck();
+    setState(() {
+      _saving = true;
+      _saveFailed = false;
+      _failure = null;
+    });
     try {
-      await ref.read(webSearchSettingsProvider.notifier).configure(settings);
+      // Verify credentials before publishing the selected search backend.
       if (backend != WebSearchBackend.none && backend != WebSearchBackend.searxng) {
         await ref
             .read(webSearchSettingsProvider.notifier)
-            .saveKey(backend, _key.text, accountId: backend == WebSearchBackend.cloudflare ? _account.text : null);
+            .saveKey(backend, key, accountId: backend == WebSearchBackend.cloudflare ? account : null);
       }
+      await ref.read(webSearchSettingsProvider.notifier).configure(settings);
     } catch (_) {
-      if (mounted) setState(() => _failure = l.assistantErrorFailed);
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveFailed = true;
+          _failure = l.settingsSaveFailed;
+        });
+      }
       return;
     }
     if (!mounted) return;
-    if (!_complete(backend)) {
-      setState(() => _failure = null);
-      return;
-    }
+    setState(() {
+      _saving = false;
+      _dirty = false;
+      _saved = true;
+    });
+    if (!_complete(backend)) return;
     final token = _check = CancellationToken();
     setState(() => _checking = true);
     ConnectionStatus status;
     try {
-      final provider = configuredWebSearchProvider(
-        settings: settings,
-        key: _key.text.trim(),
-        accountId: _account.text.trim(),
-      );
+      final provider = configuredWebSearchProvider(settings: settings, key: key, accountId: account);
       status = await ref.read(webSearchCheckerProvider)(provider, cancellation: token);
     } on ResearchFailure catch (e) {
       if (e.kind == ResearchFailureKind.cancelled) return;
@@ -153,8 +185,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final settings = ref.watch(webSearchSettingsProvider);
-    final backend = settings.backend;
+    final backend = _backend;
     MMSettingsRow input(
       String label,
       TextEditingController controller,
@@ -167,9 +198,10 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
         key: ValueKey(key),
         controller: controller,
         obscureText: secret,
+        enabled: !_saving,
         placeholder: hint,
         semanticLabel: label,
-        onChanged: _changed,
+        onChanged: (_) => _changed(key),
       ),
     );
     return SettingsPage(
@@ -184,7 +216,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
                 key: const ValueKey('search-backend'),
                 value: backend,
                 semanticLabel: l.settingsSearchService,
-                onChanged: (b) => unawaited(_choose(b)),
+                onChanged: _saving ? null : (b) => unawaited(_choose(b)),
                 items: [
                   (WebSearchBackend.none, l.settingsSearchUnconfigured),
                   (WebSearchBackend.cloudflare, 'Cloudflare'),
@@ -213,11 +245,22 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
                         children: [
                           Icon(MMIcons.warning, size: 11, color: c.critical),
                           const SizedBox(width: MMSpacing.xs),
-                          Text(_failure!, style: t.footnote.copyWith(color: c.critical)),
+                          Flexible(
+                            child: Text(_failure!, style: t.footnote.copyWith(color: c.critical)),
+                          ),
                         ],
                       ),
               ),
           ],
+        ),
+        const SizedBox(height: MMSpacing.m),
+        SettingsSaveActions(
+          buttonKey: const ValueKey('search-save'),
+          dirty: _dirty,
+          saving: _saving,
+          saved: _saved,
+          failed: _saveFailed,
+          onSave: _saveAndCheck,
         ),
       ],
     );

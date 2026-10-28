@@ -37,6 +37,16 @@ class FakeSecrets implements SecretStore {
   Future<void> delete(String name) async => values.remove(name);
 }
 
+class UnreadableAfterWriteSecrets extends FakeSecrets {
+  @override
+  Future<String?> read(String account) async {
+    if (account != 'anthropic' && values.containsKey(account)) {
+      throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+    }
+    return super.read(account);
+  }
+}
+
 /// A model catalog without network: every service answers with [status]
 /// and lists [models]; probing marks tools as supported.
 class FakeCatalog extends ServiceCatalog {
@@ -48,6 +58,7 @@ class FakeCatalog extends ServiceCatalog {
   List<ServiceModel> models;
   ResearchFailure? listFailure;
   final checked = <(String, String)>[];
+  final listed = <(String, String)>[];
   int probes = 0;
   @override
   Future<ConnectionStatus> check(AssistantService service, String key, {CancellationToken? cancellation}) async {
@@ -57,6 +68,7 @@ class FakeCatalog extends ServiceCatalog {
 
   @override
   Future<List<ServiceModel>> list(AssistantService service, String key, {CancellationToken? cancellation}) async {
+    listed.add((service.endpoint, key));
     if (listFailure != null) throw listFailure!;
     return models;
   }

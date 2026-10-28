@@ -16,7 +16,7 @@ enum SettingsTab { general, reading, models, webSearch, voice }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
-/// scrolling page. Changes apply at once.
+/// scrolling page. Service forms use explicit Save actions.
 Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, bool? showsGallery}) =>
     showMMDialog<void>(
       context: context,

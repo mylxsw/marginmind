@@ -168,6 +168,65 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(invoke("read") as? String, "preserved")
   }
 
+  func testSuccessfulUpdateOfAnUnreadableItemMigratesToAVerifiedReplacement() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let password = UUID().uuidString
+    var keychain: SecKeychain?
+    let created = password.withCString {
+      SecKeychainCreate(directory.appendingPathComponent("isolated.keychain").path,
+                        UInt32(password.utf8.count), $0, false, nil, &keychain)
+    }
+    XCTAssertEqual(created, errSecSuccess)
+    let isolated = try XCTUnwrap(keychain)
+    defer { SecKeychainDelete(isolated) }
+    let account = "unreadable-" + UUID().uuidString
+    let suite = "marginmind-verified-write-" + UUID().uuidString
+    let references = try XCTUnwrap(UserDefaults(suiteName: suite))
+    defer { references.removePersistentDomain(forName: suite) }
+    // The old ACL permits encryption/updates but only a different application
+    // may decrypt. A successful update does not mean the key can be read.
+    var trusted: SecTrustedApplication?
+    XCTAssertEqual(SecTrustedApplicationCreateFromPath("/usr/bin/true", &trusted), errSecSuccess)
+    var access: SecAccess?
+    XCTAssertEqual(SecAccessCreate("unreadable test item" as CFString,
+                                  [try XCTUnwrap(trusted)] as CFArray, &access), errSecSuccess)
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "io.github.mylxsw.marginmind.research",
+      kSecAttrAccount as String: account,
+      kSecUseKeychain as String: isolated,
+      kSecAttrAccess as String: try XCTUnwrap(access),
+      kSecValueData as String: Data("original-test-key".utf8),
+    ]
+    XCTAssertEqual(SecItemAdd(query as CFDictionary, nil), errSecSuccess)
+    func invoke(_ method: String, value: String? = nil) -> Any? {
+      var arguments = ["account": account]
+      if let value = value { arguments["value"] = value }
+      var result: Any?
+      SecretStoreChannel.handle(FlutterMethodCall(methodName: method, arguments: arguments),
+                                keychain: isolated, references: references) { result = $0 }
+      return result
+    }
+    XCTAssertEqual((invoke("read") as? FlutterError)?.code, "keychain_auth_required")
+    let update: [String: Any] = [kSecValueData as String: Data("updated-test-key".utf8)]
+    let match: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+                               kSecAttrService as String: "io.github.mylxsw.marginmind.research",
+                               kSecAttrAccount as String: account,
+                               kSecMatchSearchList as String: [isolated]]
+    XCTAssertEqual(SecItemUpdate(match as CFDictionary, update as CFDictionary), errSecSuccess)
+    XCTAssertEqual((invoke("read") as? FlutterError)?.code, "keychain_auth_required")
+    XCTAssertNil(invoke("write", value: "replacement-test-key"))
+    XCTAssertNotNil(references.string(forKey: "marginmind.secret-store.reference.v1." + account))
+    XCTAssertEqual(invoke("read") as? String, "replacement-test-key")
+    let reloaded = try XCTUnwrap(UserDefaults(suiteName: suite))
+    var restored: Any?
+    SecretStoreChannel.handle(FlutterMethodCall(methodName: "read", arguments: ["account": account]),
+                              keychain: isolated, references: reloaded) { restored = $0 }
+    XCTAssertEqual(restored as? String, "replacement-test-key")
+  }
+
   func testReplacingAnInaccessibleKeyNeverRequiresChangingItsPermissions() throws {
     let account = "test-" + UUID().uuidString
     let suite = "marginmind-secret-reference-test-" + UUID().uuidString

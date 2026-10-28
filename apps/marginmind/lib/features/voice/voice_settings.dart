@@ -64,7 +64,7 @@ class VoiceSettingsController extends Notifier<VoiceSettings> {
       throw const FormatException('voice configuration');
     }
     if (value.provider != VoiceProvider.none) {
-      await ref.read(assistantSecretsProvider).write(VoiceSettings.account(value.provider), key.trim());
+      await ref.read(assistantSecretsProvider).writeVerified(VoiceSettings.account(value.provider), key.trim());
     }
     final prefs = ref.read(sharedPreferencesProvider);
     if (value.provider == VoiceProvider.doubao) {

@@ -2104,7 +2104,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantPlaceholder => 'Ask…';
 
   @override
-  String get assistantConnectFirst => 'Connect an AI service first';
+  String get assistantConnectFirst => 'Configure a model first';
 
   @override
   String get assistantMention => 'Reference';
@@ -2429,19 +2429,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.';
 
   @override
-  String get assistantConnectTitle => 'Connect an AI service';
-
-  @override
   String get assistantPasteKey => 'Paste API key';
 
   @override
-  String get assistantConnect => 'Connect';
-
-  @override
   String get assistantCannotConnect => 'Cannot reach the service';
-
-  @override
-  String get assistantServiceOllama => 'Local · Ollama';
 
   @override
   String assistantQuestions(int count) {
@@ -2621,12 +2612,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantModel => 'Model';
 
   @override
-  String get assistantNoOllama => 'Ollama isn’t running on this Mac';
-
-  @override
-  String get assistantNoModels => 'The service lists no chat models';
-
-  @override
   String get assistantThinking => 'Thinking…';
 
   @override
@@ -2773,4 +2758,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsApiTokenPlaceholder => 'Paste API Token';
+
+  @override
+  String get settingsSaveFailed => 'Could not save. Please retry.';
+
+  @override
+  String get settingsSaving => 'Saving…';
+
+  @override
+  String get settingsUnsaved => 'Unsaved changes';
+
+  @override
+  String get settingsSaveBeforeModels => 'Save the service settings before fetching models';
+
+  @override
+  String get settingsRequiredFields => 'Complete the required fields before saving';
+
+  @override
+  String get assistantModelSetupTitle => 'Set up the AI assistant';
+
+  @override
+  String get assistantModelSetupHint =>
+      'Add a service, enter its API key, and select a model in Model Settings to start chatting.';
+
+  @override
+  String get assistantConfigureModels => 'Configure Models';
 }

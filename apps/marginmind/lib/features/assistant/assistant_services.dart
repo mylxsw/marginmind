@@ -127,6 +127,17 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
   }
 
   Future<void> upsert(AssistantService service) => _change((v) async => v.upsert(service));
+
+  /// Merge only edited fields into the latest service inside the write queue.
+  /// A pending settings save must not restore stale models or enabled state.
+  Future<void> updateDetails(String id, {String? name, String? endpoint, String? key}) => _change((value) async {
+    var service = _service(value, id);
+    if (key != null) await _writeKey(service, key);
+    if (name != null) service = service.copyWith(name: name);
+    if (endpoint != null) service = serviceWithEndpoint(service, endpoint);
+    return value.upsert(service);
+  });
+
   Future<void> setEnabled(String id, bool enabled) =>
       _change((v) async => v.upsert(_service(v, id).copyWith(enabled: enabled)));
   Future<void> setDefault(ModelReference model) => _change((v) async => v.select(model));
@@ -141,20 +152,23 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     return v.remove(id);
   });
   Future<void> saveKey(String id, String key) => _change((v) async {
-    _service(v, id);
-    final secrets = ref.read(assistantSecretsProvider), account = AssistantServicesStore.account(id);
+    await _writeKey(_service(v, id), key);
+    return v;
+  });
+
+  Future<void> _writeKey(AssistantService service, String key) async {
+    final secrets = ref.read(assistantSecretsProvider), account = AssistantServicesStore.account(service.id);
     if (key.trim().isEmpty) {
       await secrets.delete(account);
-      final service = _service(v, id);
-      if (id == AssistantServicesStore.legacyId(service.provider)) {
+      if (service.id == AssistantServicesStore.legacyId(service.provider)) {
         await secrets.delete(legacyAssistantAccount(service.provider));
       }
     } else {
-      await secrets.write(account, key.trim());
+      await secrets.writeVerified(account, key.trim());
     }
     ref.read(assistantKeysProvider.notifier).changed();
-    return v;
-  });
+  }
+
   Future<void> upsertModel(String id, ServiceModel model) => _change((v) async {
     final service = _service(v, id);
     return v.upsert(
@@ -219,7 +233,7 @@ class WebSearchSettingsController extends Notifier<WebSearchSettings> {
   Future<void> saveKey(WebSearchBackend backend, String key, {String? accountId}) async {
     final secrets = ref.read(assistantSecretsProvider);
     Future<void> put(String name, String value) =>
-        value.trim().isEmpty ? secrets.delete(name) : secrets.write(name, value.trim());
+        value.trim().isEmpty ? secrets.delete(name) : secrets.writeVerified(name, value.trim());
     await put(account(backend), key);
     if (backend == WebSearchBackend.cloudflare && accountId != null) await put(cloudflareAccount, accountId);
   }

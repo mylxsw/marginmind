@@ -179,7 +179,7 @@ void main() {
         expect(_state(app.container).layout, MMSplitMode.split);
         expect(find.byType(MindMapCanvas), findsOneWidget);
         expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
-        expect(_inPanel(find.text('Connect an AI service')), findsOneWidget);
+        expect(_inPanel(find.byKey(const ValueKey('assistant-configure-models'))), findsOneWidget);
         app.controller.closePanel();
         await tester.pumpAndSettle();
       }

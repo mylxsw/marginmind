@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_assistant/mm_assistant.dart' hide AssistantSkill;
-import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../app/app_commands.dart';
@@ -18,16 +15,13 @@ import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../settings/settings_window.dart';
-import '../assistant_services.dart';
 import '../assistant_settings.dart';
-import '../settings/model_settings.dart' show serviceTitle;
 import 'assistant_conversations.dart';
 import 'assistant_composer.dart';
 import 'assistant_markdown.dart' show sourceNumbers;
 import 'assistant_messages.dart';
 import 'assistant_model_menu.dart' show sameModel;
 import 'assistant_overlays.dart';
-import 'service_logo.dart';
 
 /// Gives a study set window its assistant: the conversation lives as long as
 /// the window, so closing the panel or switching documents never stops an
@@ -158,8 +152,7 @@ class AssistantPanel extends ConsumerWidget {
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
     } else if (!configured) {
-      final selectedService = ref.watch(assistantServicesProvider).value?.defaultModel?.serviceId;
-      body = ListView(children: [ConnectCard(key: ValueKey(selectedService))]);
+      body = ListView(children: const [ModelSetupCard()]);
     } else if (conversation.messages.isEmpty) {
       body = AssistantSuggestions(studySetId: studySetId);
     } else {
@@ -427,128 +420,23 @@ class _Suggestion extends StatelessWidget {
   }
 }
 
-/// No AI service yet: pick one and paste its key, right in the panel. The
-/// service is added (with one model, made the default) once it answers.
-class ConnectCard extends ConsumerStatefulWidget {
-  const ConnectCard({super.key});
+/// All model configuration lives in Settings › Models, including recovery.
+class ModelSetupCard extends ConsumerWidget {
+  const ModelSetupCard({super.key});
 
   @override
-  ConsumerState<ConnectCard> createState() => _ConnectCardState();
-}
-
-class _ConnectCardState extends ConsumerState<ConnectCard> {
-  ServiceProtocol _protocol = ServiceProtocol.anthropic;
-  final _key = TextEditingController();
-  final _endpoint = TextEditingController(text: defaultServiceEndpoint(ServiceProtocol.ollama));
-  final _cancel = CancellationToken();
-  bool _connecting = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    final value = ref.read(assistantServicesProvider).value;
-    final selected = value?.services.where((s) => s.id == value.defaultModel?.serviceId).firstOrNull;
-    if (selected != null) {
-      _protocol = selected.protocol;
-      if (_local) _endpoint.text = selected.endpoint;
-    }
-  }
-
-  @override
-  void dispose() {
-    _cancel.cancel();
-    _key.dispose();
-    _endpoint.dispose();
-    super.dispose();
-  }
-
-  bool get _local => _protocol == ServiceProtocol.ollama;
-
-  void _pick(ServiceProtocol p) => setState(() {
-    _protocol = p;
-    _key.clear();
-    _error = null;
-  });
-
-  Future<void> _connect() async {
-    final l = context.l10n;
-    final key = _local ? '' : _key.text.trim();
-    if (_connecting || (!_local && key.isEmpty) || (_local && _endpoint.text.trim().isEmpty)) return;
-    setState(() {
-      _connecting = true;
-      _error = null;
-    });
-    final controller = ref.read(assistantServicesProvider.notifier);
-    final catalog = ref.read(serviceCatalogProvider);
-    try {
-      final value = await ref.read(assistantServicesProvider.future);
-      final selected = value.services.where((s) => s.id == value.defaultModel?.serviceId).firstOrNull;
-      // A service of this kind without a key (from older settings) is reused.
-      var service =
-          (selected?.protocol == _protocol ? selected : null) ??
-          value.services.where((s) => s.protocol == _protocol).firstOrNull ??
-          newAssistantService(_protocol, serviceTitle(l, _protocol), value.services.map((s) => s.id));
-      service = service.copyWith(enabled: true, localEnabled: _local || service.localEnabled);
-      if (_local) service = serviceWithEndpoint(service, _endpoint.text.trim());
-      final status = await catalog.check(service, key, cancellation: _cancel);
-      if (status != ConnectionStatus.ok) {
-        return _fail(
-          status == ConnectionStatus.authFailed
-              ? l.assistantErrorKey
-              : (_local ? l.assistantNoOllama : l.assistantCannotConnect),
-        );
-      }
-      var model = service.models.where((m) => m.enabled).firstOrNull;
-      model ??= preferredModel(_protocol, await catalog.list(service, key, cancellation: _cancel));
-      if (model == null) return _fail(l.assistantNoModels);
-      await controller.upsert(service);
-      if (!_local) {
-        try {
-          await controller.saveKey(service.id, key);
-        } catch (_) {
-          return _fail(l.assistantKeySaveUnavailable);
-        }
-      }
-      if (!service.models.any((m) => m.id == model!.id && m.enabled)) {
-        await controller.addModels(service.id, [model.copyWith(enabled: true)]);
-      }
-      await controller.setDefault(ModelReference(service.id, model.id));
-    } on ResearchFailure catch (e) {
-      if (e.kind == ResearchFailureKind.cancelled) return;
-      return _fail(e.kind == ResearchFailureKind.authentication ? l.assistantErrorKey : l.assistantCannotConnect);
-    } catch (_) {
-      return _fail(l.assistantErrorFailed);
-    }
-    if (mounted) setState(() => _connecting = false);
-  }
-
-  void _fail(String reason) {
-    if (!mounted) return;
-    setState(() {
-      _connecting = false;
-      _error = reason;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final tiles = [
-      (ServiceProtocol.anthropic, ServiceBrand.anthropic, 'Anthropic'),
-      (ServiceProtocol.openai, ServiceBrand.openai, 'OpenAI'),
-      (ServiceProtocol.gemini, ServiceBrand.gemini, 'Gemini'),
-      (ServiceProtocol.ollama, ServiceBrand.ollama, l.assistantServiceOllama),
-    ];
+    final unavailable = ref.watch(assistantCredentialStateProvider).value == AssistantCredentialState.unavailable;
     return Container(
       key: const ValueKey('assistant-connect'),
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.all(MMSpacing.m),
+      padding: const EdgeInsets.all(MMSpacing.l),
       decoration: BoxDecoration(
         color: c.card,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(MMRadii.card),
         border: Border.all(color: c.separator),
       ),
       child: Column(
@@ -556,120 +444,28 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
         children: [
           Row(
             children: [
-              Icon(MMIcons.ai, size: 14, color: c.research),
-              const SizedBox(width: 6),
-              Text(l.assistantConnectTitle, style: t.headline.copyWith(color: c.label)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, box) => Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final (p, brand, name) in tiles)
-                  SizedBox(
-                    width: (box.maxWidth - 6) / 2,
-                    child: MMInteractive(
-                      key: ValueKey('connect-${p.name}'),
-                      onTap: () => _pick(p),
-                      selected: p == _protocol,
-                      semanticLabel: name,
-                      semanticValue: p == _protocol ? '✓' : null,
-                      builder: (context, s) => AnimatedContainer(
-                        duration: MMMotion.quick,
-                        height: 30,
-                        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
-                        decoration: BoxDecoration(
-                          color: p == _protocol ? c.researchTint : (s.hovered ? c.hover : Colors.transparent),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: p == _protocol ? c.research : c.separator,
-                            width: p == _protocol ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            ServiceLogo(brand: brand, name: name, size: 16),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: t.callout.copyWith(color: c.label),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _local
-                    ? MMTextField(
-                        key: const ValueKey('connect-endpoint'),
-                        controller: _endpoint,
-                        placeholder: defaultServiceEndpoint(ServiceProtocol.ollama),
-                        semanticLabel: l.settingsAddress,
-                        onSubmitted: (_) => _connect(),
-                      )
-                    : MMTextField(
-                        key: const ValueKey('connect-key'),
-                        controller: _key,
-                        obscureText: true,
-                        placeholder: l.assistantPasteKey,
-                        semanticLabel: l.assistantPasteKey,
-                        onSubmitted: (_) => _connect(),
-                      ),
-              ),
+              Icon(MMIcons.ai, size: MMSpacing.l, color: c.research),
               const SizedBox(width: MMSpacing.s),
-              if (_connecting)
-                SizedBox(
-                  width: 60,
-                  child: Center(child: CupertinoActivityIndicator(radius: 7, color: c.research)),
-                )
-              else
-                MMButton(
-                  key: const ValueKey('connect-button'),
-                  label: l.assistantConnect,
-                  variant: MMButtonVariant.primary,
-                  color: c.research,
-                  onPressed: _connect,
-                ),
+              Expanded(
+                child: Text(l.assistantModelSetupTitle, style: t.headline.copyWith(color: c.label)),
+              ),
             ],
           ),
-          if (_error != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              _error!,
-              key: const ValueKey('connect-error'),
-              style: t.footnote.copyWith(color: c.critical),
-            ),
-          ],
+          const SizedBox(height: MMSpacing.s),
+          Text(
+            unavailable ? l.assistantSavedKeyUnavailable : l.assistantModelSetupHint,
+            style: t.callout.copyWith(color: c.secondaryLabel),
+          ),
+          const SizedBox(height: MMSpacing.m),
+          MMButton(
+            key: const ValueKey('assistant-configure-models'),
+            label: l.assistantConfigureModels,
+            variant: MMButtonVariant.primary,
+            color: c.research,
+            onPressed: () => showSettings(context, tab: SettingsTab.models),
+          ),
         ],
       ),
     );
   }
-}
-
-/// The model a first connection starts with: the service's everyday model
-/// when it lists one, else the first it lists.
-ServiceModel? preferredModel(ServiceProtocol protocol, List<ServiceModel> models) {
-  final patterns = switch (protocol) {
-    ServiceProtocol.anthropic => [RegExp('sonnet'), RegExp('opus')],
-    ServiceProtocol.openai => [RegExp(r'^gpt-[\d.]+$'), RegExp(r'^gpt')],
-    ServiceProtocol.gemini => [RegExp(r'pro$'), RegExp('flash')],
-    ServiceProtocol.ollama => <RegExp>[],
-  };
-  for (final p in patterns) {
-    if (models.where((m) => p.hasMatch(m.id)).firstOrNull case final m?) return m;
-  }
-  return models.firstOrNull;
 }
