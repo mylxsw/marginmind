@@ -292,6 +292,70 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
+  testWidgets('a bottom inset lets the last page scroll clear of floating chrome', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    final width = ValueNotifier<double>(432);
+    addTearDown(width.dispose);
+    const inset = 90.0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: ValueListenableBuilder<double>(
+            valueListenable: width,
+            builder: (_, value, _) => SizedBox(
+              width: value,
+              height: 550,
+              child: MMPdfView(filePath: 'inset.pdf', controller: controller, bottomInset: inset),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _waitReady(tester, controller);
+    await tester.pumpAndSettle();
+    PdfViewer viewer() => tester.widget<PdfViewer>(find.byType(PdfViewer));
+    final pdf = viewer().controller!;
+    // The margin is in document units: the inset at the zoom that fits the
+    // document (pages and their margins) to the width.
+    expect(viewer().params.boundaryMargin!.bottom, closeTo(inset / (432 / 632), .01));
+
+    final end = controller.jumpToPage(controller.pageCount);
+    await tester.pumpAndSettle();
+    await end;
+    for (var i = 0; i < 20; i++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: tester.getCenter(find.byType(PdfViewer)), scrollDelta: const Offset(0, 2000)),
+      );
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+    final bottom = pdf.documentToLocal(Offset(0, pdf.layout.documentSize.height)).dy;
+    expect(bottom, closeTo(550 - inset, 1));
+
+    // A wider view fits at a larger zoom and needs fewer document units.
+    width.value = 632;
+    await tester.pumpAndSettle();
+    expect(viewer().params.boundaryMargin!.bottom, closeTo(inset / (632 / 632), .01));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  testWidgets('without a bottom inset the viewer keeps its own bounds', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'no-inset.pdf', controller: controller),
+      ),
+    );
+    await _waitReady(tester, controller);
+    expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).params.boundaryMargin, isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
   testWidgets('trackpad pinch keeps the document point under its focal position', (tester) async {
     final controller = MMPdfViewController();
     await tester.pumpWidget(

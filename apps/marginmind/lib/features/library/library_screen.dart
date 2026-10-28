@@ -22,6 +22,9 @@ import 'widgets/study_set_list.dart';
 
 /// The first window: every study set, filters in the sidebar, icon or list
 /// view, search and "new study set" (design canvas artboard 00).
+/// Height of the search strip below a compact window's toolbar.
+const compactSearchHeight = MMSizes.toolbarGroupHeight + MMSpacing.s;
+
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -109,6 +112,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         return true;
       },
       child: MMWindowScaffold(
+        extendBody: true,
         sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
         sidebarOverlay: touchPlatform,
         onSidebarDismiss: () => _setDrawer(false),
@@ -175,29 +179,33 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ),
           ],
         ),
+        // A compact window has no room for search in the toolbar: it sits
+        // below, on the same glass.
+        toolbarBottom: sizeClass == MMSizeClass.compact
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(compactSearchHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: MMToolbarSearchField(
+                      placeholder: l.search,
+                      controller: _search,
+                      focusNode: _searchFocus,
+                      onChanged: controller.setSearch,
+                      width: double.infinity,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         body: PdfDropTarget(
           label: l.dropToCreateSet,
           onDrop: (files) async {
             final notice = await controller.createFromFiles(files);
             if (context.mounted) showNotice(context, notice, rootTitle: '');
           },
-          child: sizeClass == MMSizeClass.compact
-              ? Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
-                      child: MMToolbarSearchField(
-                        placeholder: l.search,
-                        controller: _search,
-                        focusNode: _searchFocus,
-                        onChanged: controller.setSearch,
-                        width: double.infinity,
-                      ),
-                    ),
-                    Expanded(child: body),
-                  ],
-                )
-              : body,
+          child: body,
         ),
       ),
     );
@@ -334,36 +342,44 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
     final l = context.l10n;
     final t = context.mmText;
     final controller = ref.read(libraryViewProvider.notifier);
+    // A touch window's glass chrome lies over the list: its ends scroll clear.
+    final chrome = MMChromeInsets.of(context);
 
     // Dropping PDFs works here too; the drop target's hover state shows it.
     if (sets.isEmpty) {
-      return MMEmptyState(
-        icon: MMIcons.studySet,
-        actions: [
-          MMButton(
-            label: l.newStudySet,
-            variant: MMButtonVariant.primary,
-            onPressed: () => newStudySetFromPdfs(context, ref),
-          ),
-          MMButton(
-            label: l.openSample,
-            onPressed: () async {
-              try {
-                final id = await createSampleStudySet(ref, l);
-                await controller.open(id);
-              } catch (error) {
-                if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);
-              }
-            },
-          ),
-        ],
+      return Padding(
+        padding: chrome,
+        child: MMEmptyState(
+          icon: MMIcons.studySet,
+          actions: [
+            MMButton(
+              label: l.newStudySet,
+              variant: MMButtonVariant.primary,
+              onPressed: () => newStudySetFromPdfs(context, ref),
+            ),
+            MMButton(
+              label: l.openSample,
+              onPressed: () async {
+                try {
+                  final id = await createSampleStudySet(ref, l);
+                  await controller.open(id);
+                } catch (error) {
+                  if (context.mounted) MMHud.show(context, l.somethingWentWrong, icon: MMIcons.close);
+                }
+              },
+            ),
+          ],
+        ),
       );
     }
     if (visible.isEmpty) {
       final search = view.query.search.trim();
-      return MMEmptyState(
-        title: l.noResultTitle,
-        message: search.isNotEmpty ? l.noResultSearch(search) : l.noResultFilter,
+      return Padding(
+        padding: chrome,
+        child: MMEmptyState(
+          title: l.noResultTitle,
+          message: search.isNotEmpty ? l.noResultSearch(search) : l.noResultFilter,
+        ),
       );
     }
 
@@ -442,7 +458,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
               onTap: () => select(null),
               child: CustomScrollView(
                 slivers: [
-                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  SliverToBoxAdapter(child: SizedBox(height: chrome.top + 8)),
                   if (showContinue) ...[
                     _heading(l.libraryContinue, t),
                     SliverPadding(
@@ -464,7 +480,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                   ],
                   if (view.viewMode == LibraryViewMode.grid)
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(23, 0, 23, 48),
+                      padding: EdgeInsets.fromLTRB(23, 0, 23, 48 + chrome.bottom),
                       sliver: SliverGrid(
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 230,
@@ -491,7 +507,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 48),
+                      padding: EdgeInsets.fromLTRB(20, 0, 20, 48 + chrome.bottom),
                       sliver: SliverToBoxAdapter(
                         child: StudySetList(
                           sets: visible,

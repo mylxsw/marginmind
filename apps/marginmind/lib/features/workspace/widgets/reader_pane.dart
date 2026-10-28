@@ -325,13 +325,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     // Keep navigation outside the PDF viewport on short handheld windows.
     // Tall phones, tablets and pointer windows retain their floating controls.
     final dockNavigation = MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500;
+    // A touch window's glass toolbar lies above the reader's controls; the
+    // pages run on beneath the bottom bar and scroll clear of it.
+    final chrome = MMChromeInsets.of(context);
     final provider = workspaceProvider(widget.studySetId);
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
     final source = doc == null ? null : controller.filePath(doc);
     final ocr = source == null || !ref.watch(pdfOcrServiceProvider).supported
         ? null
         : ref.watch(readerOcrProvider(source));
-    return Column(
+    final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (openDocs.length > 1)
@@ -375,28 +378,34 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           ),
         Expanded(
           child: doc == null
-              ? MMEmptyState(
-                  icon: MMIcons.document,
-                  title: l.readerEmptyTitle,
-                  message: l.readerEmptyMessage,
-                  actions: [
-                    MMButton(
-                      label: l.importPdf,
-                      icon: MMIcons.import,
-                      variant: MMButtonVariant.primary,
-                      onPressed: () => pickAndImportDocuments(context, ref, widget.studySetId),
-                    ),
-                  ],
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: chrome.bottom),
+                  child: MMEmptyState(
+                    icon: MMIcons.document,
+                    title: l.readerEmptyTitle,
+                    message: l.readerEmptyMessage,
+                    actions: [
+                      MMButton(
+                        label: l.importPdf,
+                        icon: MMIcons.import,
+                        variant: MMButtonVariant.primary,
+                        onPressed: () => pickAndImportDocuments(context, ref, widget.studySetId),
+                      ),
+                    ],
+                  ),
                 )
               : LayoutBuilder(
                   builder: (context, constraints) => Row(
                     children: [
                       if (state.readerPanelVisible)
-                        _ResizableReaderSidebar(
-                          studySetId: widget.studySetId,
-                          document: doc,
-                          pdf: _pdf,
-                          available: constraints.maxWidth,
+                        Padding(
+                          padding: EdgeInsets.only(bottom: chrome.bottom),
+                          child: _ResizableReaderSidebar(
+                            studySetId: widget.studySetId,
+                            document: doc,
+                            pdf: _pdf,
+                            available: constraints.maxWidth,
+                          ),
                         ),
                       Expanded(
                         child: MouseRegion(
@@ -406,7 +415,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             child: Stack(
                               children: [
                                 Positioned.fill(
-                                  bottom: dockNavigation ? pagePillClearance : 0,
+                                  bottom: dockNavigation ? pagePillClearance + chrome.bottom : 0,
                                   child:
                                       !ref.watch(pdfRenderingEnabledProvider) ||
                                           (ocr != null && ocr.document == null && !ocr.failed)
@@ -429,6 +438,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                               ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
                                           backgroundColor: c.readerBackground,
                                           emphasisColor: c.accent,
+                                          bottomInset: dockNavigation ? 0 : chrome.bottom,
                                           pageColorFilter: style.pageFilter,
                                           highlights: _highlights(content, doc.id, state),
                                           areaSelecting: state.tool == AnnotationTool.area,
@@ -525,7 +535,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                 if (state.pending case final PendingAction pending)
                                   Positioned.fill(
                                     child: MMFloatingToolbarLayout(
-                                      avoid: _pagePillArea,
+                                      avoid: (viewport) => _pagePillArea(viewport, chrome.bottom),
                                       anchor: switch (pending) {
                                         PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                                         PendingHighlight(:final viewportRect) => viewportRect,
@@ -549,7 +559,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                 Positioned(
                                   left: 0,
                                   right: 0,
-                                  bottom: _pagePillBottom,
+                                  bottom: _pagePillBottom + chrome.bottom,
                                   child: MouseRegion(
                                     key: const ValueKey('reader-page-navigation'),
                                     onEnter: (_) => setState(() => _hoveringNavigation = true),
@@ -647,6 +657,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       ],
     );
+    return Padding(
+      padding: EdgeInsets.only(top: chrome.top),
+      child: column,
+    );
   }
 
   List<MMPdfHighlight> _highlights(StudySetContent content, String documentId, WorkspaceState state) {
@@ -707,8 +721,9 @@ const _pagePillHeight = MMSizes.readerNavigationHeight;
 /// stays above it.
 const pagePillClearance = _pagePillBottom + _pagePillHeight;
 
-Rect _pagePillArea(Size viewport) =>
-    Rect.fromLTWH(0, viewport.height - _pagePillBottom - _pagePillHeight, viewport.width, _pagePillHeight);
+/// The navigation area of a [viewport] whose bottom [inset] lies under chrome.
+Rect _pagePillArea(Size viewport, double inset) =>
+    Rect.fromLTWH(0, viewport.height - inset - _pagePillBottom - _pagePillHeight, viewport.width, _pagePillHeight);
 
 /// "n / N" that turns into a field on click: type a page, Enter jumps.
 class _PageField extends StatefulWidget {

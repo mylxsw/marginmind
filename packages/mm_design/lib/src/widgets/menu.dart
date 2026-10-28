@@ -374,7 +374,16 @@ class _ActionSheet extends StatelessWidget {
           MMMenuDivider() => null,
         },
     ].nonNulls.toList();
-    BoxDecoration group() => BoxDecoration(color: c.glassOpaque, borderRadius: BorderRadius.circular(14));
+    final touch = MMInput.of(context).touchPlatform;
+    const radius = BorderRadius.all(Radius.circular(14));
+    // A touch platform's action sheet is mobile glass over the scrim.
+    Widget group(Widget child) => touch
+        ? MMLiquidGlass(borderRadius: radius, color: c.glassOpaque.withValues(alpha: 0.78), child: child)
+        : Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(color: c.glassOpaque, borderRadius: radius),
+            child: child,
+          );
     return Material(
       type: MaterialType.transparency,
       child: SafeArea(
@@ -389,10 +398,8 @@ class _ActionSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Flexible(
-                  child: Container(
-                    clipBehavior: Clip.antiAlias,
-                    decoration: group(),
-                    child: SingleChildScrollView(
+                  child: group(
+                    SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -406,10 +413,8 @@ class _ActionSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: MMSpacing.s),
-                Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: group(),
-                  child: _ActionSheetRow(
+                group(
+                  _ActionSheetRow(
                     label: MaterialLocalizations.of(context).cancelButtonLabel,
                     bold: true,
                     onTap: () => onSelected(null),

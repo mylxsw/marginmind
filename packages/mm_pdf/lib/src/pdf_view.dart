@@ -481,6 +481,7 @@ class MMPdfView extends StatefulWidget {
     this.ink,
     this.onInkDrawn,
     this.onInkErased,
+    this.bottomInset = 0,
   });
 
   final String filePath;
@@ -531,12 +532,35 @@ class MMPdfView extends StatefulWidget {
   /// They stay hidden until [inkStrokes] changes.
   final ValueChanged<Set<String>>? onInkErased;
 
+  /// Height of chrome floating over the bottom of the view, such as a
+  /// phone's glass tab bar: the last page scrolls up clear of it.
+  final double bottomInset;
+
   @override
   State<MMPdfView> createState() => _MMPdfViewState();
 }
 
 class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
+
+  /// Zoom of the document fitted to the view's width, the reading zoom,
+  /// which converts [MMPdfView.bottomInset] to document units; 1 until the
+  /// viewer is ready.
+  double _fitZoom = 1;
+
+  void _updateFitZoom() {
+    if (widget.bottomInset <= 0 || !_controller.isReady) return;
+    final document = _controller.documentSize.width;
+    if (document <= 0) return;
+    final zoom = _controller.viewSize.width / document;
+    if (zoom <= 0 || (zoom - _fitZoom).abs() < 0.001) return;
+    setState(() => _fitZoom = zoom);
+  }
+
+  /// Room below the document for [MMPdfView.bottomInset]; null without one
+  /// keeps pdfrx's own bounds.
+  EdgeInsets? get _boundaryMargin =>
+      widget.bottomInset > 0 ? EdgeInsets.only(bottom: widget.bottomInset / _fitZoom) : null;
 
   /// Created once the viewer is ready: the searcher needs an open document.
   PdfTextSearcher? _searcher;
@@ -1454,6 +1478,9 @@ class _MMPdfViewState extends State<MMPdfView> {
           backgroundColor: widget.backgroundColor,
           pageImageColorFilter: widget.pageColorFilter,
           onViewSizeChanged: (size, previous, controller) {
+            Future.microtask(() {
+              if (mounted) _updateFitZoom();
+            });
             if (previous == null || size.width == previous.width) return;
             final center = controller.value.calcPosition(previous);
             // pdfrx calls this after layout in a microtask. A post-frame
@@ -1471,6 +1498,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             });
           },
           margin: 16,
+          boundaryMargin: _boundaryMargin,
           // Remove pdfrx's default 80% reduction in mouse-wheel movement.
           scrollByMouseWheel: 1,
           // Match PDFium's integer bitmap to the aligned device rectangle.
@@ -1497,6 +1525,9 @@ class _MMPdfViewState extends State<MMPdfView> {
           ),
           onViewerReady: (document, controller) {
             _ready = true;
+            Future.microtask(() {
+              if (mounted) _updateFitZoom();
+            });
             _searcher = PdfTextSearcher(_controller)..addListener(_searchChanged);
             _pageCount = document.pages.length;
             widget.controller._reportReady(_pageCount, const []);

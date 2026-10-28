@@ -5,6 +5,7 @@ import '../theme/mm_theme.dart';
 import '../icons/mm_icons.dart';
 import 'toolbar.dart';
 import '../tokens/metrics.dart';
+import 'window_scaffold.dart';
 
 /// Which panes of an [MMSplitView] are visible.
 enum MMSplitMode { primary, split, secondary }
@@ -105,18 +106,33 @@ class MMSplitView extends StatelessWidget {
         final pw = split ? primaryWidth(w, fraction, minPrimary, minSecondary) : w;
         Widget sized(double extent, Widget child) =>
             vertical ? SizedBox(height: extent, child: child) : SizedBox(width: extent, child: child);
+        // Stacked panes each reach one end of the window's chrome.
+        final stacked = vertical && split;
         final panes = [
           // A hidden pane stays mounted but cannot keep keyboard focus.
           Offstage(
             offstage: !showP,
-            child: ExcludeFocus(excluding: !showP, child: sized(showP ? pw : 0, primary)),
+            child: ExcludeFocus(
+              excluding: !showP,
+              child: sized(
+                showP ? pw : 0,
+                stacked ? MMChromeInsets.remove(context, removeBottom: true, child: primary) : primary,
+              ),
+            ),
           ),
           if (split) sized(1, ColoredBox(color: c.separator)),
           Offstage(
             offstage: !showS,
-            child: ExcludeFocus(excluding: !showS, child: sized(showS ? (split ? w - pw - 1 : w) : 0, secondary)),
+            child: ExcludeFocus(
+              excluding: !showS,
+              child: sized(
+                showS ? (split ? w - pw - 1 : w) : 0,
+                stacked ? MMChromeInsets.remove(context, removeTop: true, child: secondary) : secondary,
+              ),
+            ),
           ),
         ];
+        final chrome = MMChromeInsets.of(context);
         final divider = MouseRegion(
           cursor: vertical ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
           child: GestureDetector(
@@ -146,7 +162,7 @@ class MMSplitView extends StatelessWidget {
                     ? null
                     : MMSpacing.s,
                 right: !split && showP ? MMSpacing.s : null,
-                bottom: MMSizes.toolbarHeight + MMSpacing.m,
+                bottom: MMSizes.toolbarHeight + MMSpacing.m + chrome.bottom,
                 child: _modeButtons(split),
               ),
             // Stacked panes: the switch sits at the right end of the divider,
@@ -155,7 +171,7 @@ class MMSplitView extends StatelessWidget {
               Positioned(
                 right: MMSpacing.s,
                 top: split ? (pw - button.height - 6 - MMSpacing.s).clamp(0.0, w) : null,
-                bottom: split ? null : MMSizes.toolbarHeight + MMSpacing.m,
+                bottom: split ? null : MMSizes.toolbarHeight + MMSpacing.m + chrome.bottom,
                 child: _modeButtons(split),
               ),
           ],
