@@ -34,9 +34,13 @@ Future<void> _enter(WidgetTester tester, String key, String text) async {
   await tester.pump();
 }
 
-/// Lets the 0.7 second pause pass and the check finish.
-Future<void> _afterPause(WidgetTester tester) async {
-  await tester.pump(const Duration(milliseconds: 750));
+/// Saves the visible model or search form and waits for validation.
+Future<void> _save(WidgetTester tester) async {
+  final service = find.byKey(const ValueKey('service-save'));
+  final search = find.byKey(const ValueKey('search-save'));
+  final target = service.evaluate().isNotEmpty ? service : search;
+  await tester.ensureVisible(target);
+  await tester.tap(target);
   await tester.pumpAndSettle();
 }
 
@@ -77,7 +81,53 @@ class DelayedKeyStore extends FakeSecrets {
   }
 }
 
+class DelayedCheckCatalog extends FakeCatalog {
+  final result = Completer<ConnectionStatus>();
+  @override
+  Future<ConnectionStatus> check(AssistantService service, String key, {CancellationToken? cancellation}) =>
+      result.future;
+}
+
 void main() {
+  testWidgets('a check from the previous save cannot label new edits as an invalid key', (tester) async {
+    final catalog = DelayedCheckCatalog();
+    await openAssistantApp(tester, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'first-key');
+    await tester.tap(find.byKey(const ValueKey('service-save')));
+    await tester.pump();
+    await _enter(tester, 'service-key', 'new-draft');
+    catalog.result.complete(ConnectionStatus.authFailed);
+    await tester.pumpAndSettle();
+    expect(find.text('API Key 无效'), findsNothing);
+    expect(find.text('未保存'), findsOneWidget);
+  });
+
+  testWidgets('a write that cannot be read back never says saved or enables search', (tester) async {
+    final secrets = UnreadableAfterWriteSecrets(), catalog = FakeCatalog();
+    final app = await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'unreadable-key');
+    await _save(tester);
+    expect(find.text('保存失败，请重试'), findsOneWidget);
+    expect(find.text('已保存'), findsNothing);
+    expect(catalog.checked, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('settings-tab-webSearch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('search-backend')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tavily').last);
+    await tester.pumpAndSettle();
+    await _enter(tester, 'search-key', 'unreadable-search-key');
+    await _save(tester);
+    expect(find.text('已保存'), findsNothing);
+    expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);
+  });
+
   testWidgets('model listing waits for an in-flight key save', (tester) async {
     final secrets = DelayedKeyStore(), catalog = FakeCatalog();
     await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
@@ -85,13 +135,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
     await _enter(tester, 'service-key', 'replacement-key');
-    await tester.pump(const Duration(milliseconds: 750));
-    expect(secrets.started.isCompleted, isTrue);
-    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.tap(find.byKey(const ValueKey('service-save')));
     await tester.pump();
+    expect(secrets.started.isCompleted, isTrue);
+    expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('service-add-model'))).onPressed, isNull);
     expect(catalog.listed, isEmpty);
     expect(find.text('正在保存…'), findsOneWidget);
     secrets.release.complete();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
     await tester.pumpAndSettle();
     expect(catalog.listed.single.$2, 'replacement-key');
   });
@@ -104,23 +156,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
     await _enter(tester, 'service-key', 'replacement-key');
-    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.tap(find.byKey(const ValueKey('service-save')));
     await tester.pumpAndSettle();
     expect(catalog.listed, isEmpty);
     expect(find.byKey(const ValueKey('add-models')), findsNothing);
     expect(find.text('API Key 无效'), findsNothing);
     expect(find.text('保存失败，请重试'), findsOneWidget);
     secrets.blockWrites = false;
-    await tester.tap(find.byKey(const ValueKey('service-save-retry')));
+    await tester.tap(find.byKey(const ValueKey('service-save')));
     await tester.pumpAndSettle();
-    expect(find.text('已自动保存'), findsOneWidget);
+    expect(find.text('已保存'), findsOneWidget);
     expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
     await tester.tap(find.byKey(const ValueKey('service-add-model')));
     await tester.pumpAndSettle();
     expect(catalog.listed.single.$2, 'replacement-key');
   });
 
-  testWidgets('fetching models immediately flushes the edited key and address', (tester) async {
+  testWidgets('service edits stay unsaved until Save, and fetching uses the saved key and address', (tester) async {
     final catalog = FakeCatalog();
     final app = await openAssistantApp(tester, catalog: catalog);
     await _openModels(tester);
@@ -128,26 +180,32 @@ void main() {
     await tester.pumpAndSettle();
     await _enter(tester, 'service-endpoint', 'https://proxy.example');
     await _enter(tester, 'service-key', 'replacement-key');
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('未保存'), findsOneWidget);
+    expect(catalog.checked, isEmpty);
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], isNull);
+    expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('service-add-model'))).onPressed, isNull);
+    await _save(tester);
     await tester.tap(find.byKey(const ValueKey('service-add-model')));
     await tester.pumpAndSettle();
     expect(catalog.listed.single, ('https://proxy.example', 'replacement-key'));
     expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
   });
 
-  testWidgets('rapid edits to different fields all persist, including when settings closes', (tester) async {
+  testWidgets('Save commits all fields together; closing discards unsaved model drafts', (tester) async {
     final app = await openAssistantApp(tester);
     await _openModels(tester);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();
     await _enter(tester, 'service-key', 'replacement-key');
     await _enter(tester, 'service-name', 'Renamed');
-    await _afterPause(tester);
+    await _save(tester);
     expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
     expect(_services(app).services.first.name, 'Renamed');
     await _enter(tester, 'service-key', 'last-key');
     await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
-    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'last-key');
+    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'replacement-key');
     final reloaded = await app.container.read(assistantServicesStoreProvider).load();
     expect(reloaded.services.first.name, 'Renamed');
   }, semanticsEnabled: false);
@@ -265,8 +323,8 @@ void main() {
     expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('service-remove'))).icon, MMIcons.trash);
 
     await _enter(tester, 'service-key', 'sk-test');
-    expect(catalog.checked, isEmpty); // Only after a pause.
-    await _afterPause(tester);
+    expect(catalog.checked, isEmpty); // Only after Save.
+    await _save(tester);
     expect(catalog.checked.last, ('https://api.openai.com/v1', 'sk-test'));
     expect(app.secrets.values[AssistantServicesStore.account(service.id)], 'sk-test');
     expect(find.byKey(const ValueKey('service-failure')), findsNothing);
@@ -356,23 +414,23 @@ void main() {
     );
     expect(field.obscureText, isTrue);
     expect(find.byKey(const ValueKey('service-reveal')), findsNothing);
-    await _afterPause(tester);
+    await _save(tester);
     // Failure shows on the card's second line; there is no check button.
     expect(find.byKey(const ValueKey('service-failure')), findsOneWidget);
     expect(find.text('API Key 无效'), findsOneWidget);
     expect(_services(app).services.last.endpoint, 'https://proxy.example');
     catalog.status = ConnectionStatus.unreachable;
     await _enter(tester, 'service-key', 'other');
-    await _afterPause(tester);
+    await _save(tester);
     expect(find.text('连不上服务'), findsOneWidget);
     // Clearing the key stops checking and clears the reason.
     await _enter(tester, 'service-key', '');
-    await _afterPause(tester);
+    await _save(tester);
     expect(find.byKey(const ValueKey('service-failure')), findsNothing);
 
     // Rename the service.
     await _enter(tester, 'service-name', '我的代理');
-    await _afterPause(tester);
+    await _save(tester);
     expect(_services(app).services.last.name, '我的代理');
 
     // A model: rename by double click, then remove.
@@ -508,9 +566,9 @@ void main() {
     }
 
     await choose('SearXNG');
-    expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.searxng);
+    expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);
     await _enter(tester, 'search-endpoint', 'http://localhost:8080');
-    await _afterPause(tester);
+    await _save(tester);
     expect(checks, hasLength(1));
     expect(app.container.read(webSearchSettingsProvider).endpoint, 'http://localhost:8080');
     expect(find.text('连不上搜索服务'), findsOneWidget);
@@ -519,11 +577,11 @@ void main() {
     expect(find.text('账户 ID'), findsOneWidget);
     expect(find.text('API Token'), findsOneWidget);
     await _enter(tester, 'search-key', 'token');
-    await _afterPause(tester);
+    await _save(tester);
     expect(checks, hasLength(1)); // The account is still missing.
     status = ConnectionStatus.authFailed;
     await _enter(tester, 'search-account', 'acct');
-    await _afterPause(tester);
+    await _save(tester);
     expect(checks, hasLength(2));
     expect(find.text('API Token 无效'), findsOneWidget);
     expect(app.secrets.values[WebSearchSettingsController.cloudflareAccount], 'acct');
@@ -533,14 +591,14 @@ void main() {
     expect(find.text('API Token 无效'), findsNothing);
     status = ConnectionStatus.ok;
     await _enter(tester, 'search-key', 'tvly');
-    await _afterPause(tester);
+    await _save(tester);
     expect(find.byKey(const ValueKey('search-failure')), findsNothing);
     expect(app.secrets.values[WebSearchSettingsController.account(WebSearchBackend.tavily)], 'tvly');
 
     await choose('Brave Search');
     status = ConnectionStatus.authFailed;
     await _enter(tester, 'search-key', 'brave');
-    await _afterPause(tester);
+    await _save(tester);
     expect(find.text('API Key 无效'), findsOneWidget);
 
     // Switching to a compatible model does not change the service settings.
@@ -556,6 +614,7 @@ void main() {
         .read(assistantServicesProvider.notifier)
         .setDefault(const ModelReference('compat', 'coding/auto'));
     await choose('未配置');
+    await _save(tester);
     expect(find.byKey(const ValueKey('search-unavailable')), findsNothing);
     expect(find.textContaining('不带搜索'), findsNothing);
     expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);

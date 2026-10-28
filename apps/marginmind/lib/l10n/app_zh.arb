@@ -875,9 +875,9 @@
   "settingsNamePlaceholder": "填写服务名称",
   "settingsAccountIdPlaceholder": "填写账户 ID",
   "settingsApiTokenPlaceholder": "粘贴 API Token",
-  "settingsAutoSave": "修改后自动保存",
-  "settingsAutoSaved": "已自动保存",
   "settingsSaveFailed": "保存失败，请重试",
-  "settingsRetrySave": "重试保存",
-  "settingsSaving": "正在保存…"
+  "settingsSaving": "正在保存…",
+  "settingsUnsaved": "未保存",
+  "settingsSaveBeforeModels": "请先保存服务配置，再获取模型",
+  "settingsRequiredFields": "请填写必填项后保存"
 }

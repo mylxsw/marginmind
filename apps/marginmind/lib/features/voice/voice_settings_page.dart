@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../settings/settings_window.dart' show SettingsPage;
+import '../../settings/settings_save_actions.dart';
 import '../../shared/l10n.dart';
 import '../assistant/assistant_settings.dart';
 import 'voice_session.dart';
@@ -39,7 +39,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
   late VoiceProvider _provider;
   late bool _apiKey;
   late String _resource, _model;
-  bool _busy = false, _loading = false;
+  bool _busy = false, _loading = false, _dirty = false, _saved = false, _testing = false;
   String? _status;
   bool _failed = false;
   int _load = 0;
@@ -93,7 +93,11 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
     endpoint: _endpoint.text.trim(),
   );
 
-  void _changed([String? _]) => setState(() => _status = null);
+  void _changed([String? _]) => setState(() {
+    _dirty = true;
+    _saved = false;
+    _status = null;
+  });
 
   Future<void> _perform({bool test = false}) async {
     final l = context.l10n;
@@ -107,6 +111,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
     }
     setState(() {
       _busy = true;
+      _testing = test;
       _status = null;
     });
     try {
@@ -118,6 +123,10 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
       if (mounted) {
         setState(() {
           _failed = false;
+          if (!test) {
+            _dirty = false;
+            _saved = true;
+          }
           _status = test ? l.voiceTestPassed : l.voiceSaved;
         });
       }
@@ -178,6 +187,8 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                         setState(() {
                           _provider = value;
                           _status = null;
+                          _dirty = true;
+                          _saved = false;
                         });
                         unawaited(_loadKey());
                       },
@@ -196,6 +207,8 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                           _apiKey = value;
                           _key.clear();
                           _status = null;
+                          _dirty = true;
+                          _saved = false;
                         }),
                 ),
               ),
@@ -221,6 +234,8 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                       : (value) => setState(() {
                           _resource = value;
                           _status = null;
+                          _dirty = true;
+                          _saved = false;
                         }),
                 ),
               ),
@@ -241,6 +256,8 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                       : (value) => setState(() {
                           _model = value;
                           _status = null;
+                          _dirty = true;
+                          _saved = false;
                         }),
                 ),
               ),
@@ -252,27 +269,22 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
         if (_provider != VoiceProvider.none)
           Text(l.voicePrivacy, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
         const SizedBox(height: MMSpacing.m),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (_busy || _loading) ...[const CupertinoActivityIndicator(radius: 6), const SizedBox(width: MMSpacing.m)],
-            if (_provider != VoiceProvider.none) ...[
-              MMButton(
-                key: const ValueKey('voice-test'),
-                label: l.voiceTest,
-                onPressed: enabled ? () => unawaited(_perform(test: true)) : null,
-              ),
-              const SizedBox(width: MMSpacing.s),
-            ],
-            MMButton(
-              key: const ValueKey('voice-save'),
-              label: l.voiceSave,
-              variant: MMButtonVariant.primary,
-              onPressed: enabled ? () => unawaited(_perform()) : null,
-            ),
-          ],
+        SettingsSaveActions(
+          buttonKey: const ValueKey('voice-save'),
+          dirty: _dirty,
+          saving: _busy && !_testing,
+          saved: _saved,
+          failed: _failed && _status == l.voiceSaveError,
+          onSave: enabled ? () => unawaited(_perform()) : null,
+          secondaryAction: _provider == VoiceProvider.none
+              ? null
+              : MMButton(
+                  key: const ValueKey('voice-test'),
+                  label: l.voiceTest,
+                  onPressed: enabled ? () => unawaited(_perform(test: true)) : null,
+                ),
         ),
-        if (_status != null)
+        if (_status != null && _status != l.voiceSaved)
           Padding(
             padding: const EdgeInsets.only(top: MMSpacing.s),
             child: Text(

@@ -4952,35 +4952,35 @@ abstract class AppLocalizations {
   /// **'Paste API Token'**
   String get settingsApiTokenPlaceholder;
 
-  /// No description provided for @settingsAutoSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Changes save automatically'**
-  String get settingsAutoSave;
-
-  /// No description provided for @settingsAutoSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved automatically'**
-  String get settingsAutoSaved;
-
   /// No description provided for @settingsSaveFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not save. Please retry.'**
   String get settingsSaveFailed;
 
-  /// No description provided for @settingsRetrySave.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry saving'**
-  String get settingsRetrySave;
-
   /// No description provided for @settingsSaving.
   ///
   /// In en, this message translates to:
   /// **'Saving…'**
   String get settingsSaving;
+
+  /// No description provided for @settingsUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get settingsUnsaved;
+
+  /// No description provided for @settingsSaveBeforeModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the service settings before fetching models'**
+  String get settingsSaveBeforeModels;
+
+  /// No description provided for @settingsRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the required fields before saving'**
+  String get settingsRequiredFields;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

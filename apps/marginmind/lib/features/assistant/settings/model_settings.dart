@@ -9,14 +9,12 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/settings_window.dart' show SettingsPage;
+import '../../../settings/settings_save_actions.dart';
 import '../../../shared/l10n.dart';
 import '../../workspace/widgets/notices.dart' show showConfirmSheet;
 import '../assistant_services.dart';
 import '../assistant_settings.dart';
 import '../widgets/service_logo.dart';
-
-/// Pause after typing an address or key before the connection is checked.
-const serviceCheckDelay = Duration(milliseconds: 700);
 
 /// “Model ID” key of a model in pop-ups: unique across services.
 String modelKey(String serviceId, String modelId) => '$serviceId\u0000$modelId';
@@ -272,7 +270,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   final _key = TextEditingController();
   final _keyFocus = FocusNode();
   final _endpointFocus = FocusNode();
-  Timer? _timer;
   CancellationToken? _check;
   bool _checking = false, _custom = false, _openingModels = false;
   bool _nameDirty = false, _endpointDirty = false, _keyDirty = false, _keyEdited = false;
@@ -295,8 +292,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     _name.text = widget.service.name;
     _endpoint.text = widget.service.endpoint;
     unawaited(_loadKey());
-    _keyFocus.addListener(_focusChanged);
-    _endpointFocus.addListener(_focusChanged);
     if (widget.focusKey) WidgetsBinding.instance.addPostFrameCallback((_) => _focusFirst());
   }
 
@@ -328,14 +323,14 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     }
   }
 
+  void _cancelCheck() {
+    _check?.cancel();
+    _check = null;
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
-    _check?.cancel();
-    // Capture edits while the fields and controller are still available.
-    unawaited(_savePending());
-    _keyFocus.removeListener(_focusChanged);
-    _endpointFocus.removeListener(_focusChanged);
+    _cancelCheck();
     _name.dispose();
     _endpoint.dispose();
     _key.dispose();
@@ -348,13 +343,9 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   bool get _endpointChanged => _service.endpoint.trim() != defaultServiceEndpoint(_service.protocol);
   bool get _needsKey => _service.protocol != ServiceProtocol.ollama;
 
-  void _focusChanged() {
-    if (!_keyFocus.hasFocus && !_endpointFocus.hasFocus) unawaited(_savePending());
-  }
-
   void _nameChanged(String _) {
     _nameDirty = true;
-    _scheduleSave();
+    _markChanged();
   }
 
   void _connectionChanged(String _, {bool key = false}) {
@@ -363,23 +354,22 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     } else {
       _endpointDirty = true;
     }
-    _scheduleSave();
+    _markChanged();
   }
 
-  void _scheduleSave() {
+  void _markChanged() {
     _revision++;
-    _timer?.cancel();
-    _check?.cancel();
+    _cancelCheck();
     setState(() {
       _checking = false;
       _saved = _saveFailed = false;
       _failure = null;
     });
-    _timer = Timer(serviceCheckDelay, () => unawaited(_saveAndCheck()));
   }
 
-  /// Capture every edited field together. Network checks may be delayed;
-  /// persistence is also flushed before fetching models and when leaving.
+  bool get _dirty => _nameDirty || _endpointDirty || _keyDirty;
+
+  /// Save only after the explicit action, keeping drafts out of live settings.
   Future<bool> _savePending() {
     if (!_nameDirty && !_endpointDirty && !_keyDirty) return _saving ?? Future.value(true);
     final nameDirty = _nameDirty, endpointDirty = _endpointDirty, keyDirty = _keyDirty;
@@ -427,6 +417,17 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   }
 
   Future<void> _saveAndCheck() async {
+    if (_pendingWrites > 0) return;
+    if (_name.text.trim().isEmpty || _endpoint.text.trim().isEmpty) {
+      setState(() {
+        _saveFailed = true;
+        _failure = context.l10n.settingsRequiredFields;
+      });
+      return;
+    }
+    // Also re-save a loaded key so an explicit save verifies its readability.
+    if (_needsKey && _key.text.trim().isNotEmpty) _keyDirty = true;
+    setState(() {});
     final revision = _revision;
     if (!await _savePending() || !mounted || revision != _revision) return;
     final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
@@ -434,14 +435,10 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   }
 
   Future<void> _addModels() async {
-    if (_openingModels) return;
+    if (_openingModels || _dirty || _pendingWrites > 0) return;
     setState(() => _openingModels = true);
-    _timer?.cancel();
-    _check?.cancel();
+    _cancelCheck();
     try {
-      do {
-        if (!await _savePending() || !mounted) return;
-      } while (_nameDirty || _endpointDirty || _keyDirty);
       final service = ref.read(assistantServicesProvider).value!.services.firstWhere((s) => s.id == _service.id);
       await showAddModels(context, service);
     } finally {
@@ -582,16 +579,14 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
       footer: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _saveFailed
-                ? l.settingsSaveFailed
-                : _nameDirty || _endpointDirty || _keyDirty || _pendingWrites > 0
-                ? l.settingsSaving
-                : _saved
-                ? l.settingsAutoSaved
-                : l.settingsAutoSave,
+          SettingsSaveActions(
             key: const ValueKey('service-save-status'),
-            style: t.footnote.copyWith(color: _saveFailed ? c.critical : c.secondaryLabel),
+            buttonKey: const ValueKey('service-save'),
+            dirty: _dirty,
+            saving: _pendingWrites > 0,
+            saved: _saved,
+            failed: _saveFailed,
+            onSave: _saveAndCheck,
           ),
           if (_keyUnavailable) ...[
             Text(_l.assistantSavedKeyUnavailable, style: t.footnote.copyWith(color: c.critical)),
@@ -602,13 +597,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
               onPressed: _loadKey,
             ),
           ],
-          if (_saveFailed)
-            MMButton(
-              key: const ValueKey('service-save-retry'),
-              label: l.settingsRetrySave,
-              variant: MMButtonVariant.plain,
-              onPressed: _saveAndCheck,
-            ),
           if (serviceEndpointOptional(s.protocol) && !_showsEndpoint)
             MMButton(
               key: const ValueKey('service-custom-address'),
@@ -627,6 +615,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
           label: l.settingsName,
           trailing: MMTextField.settings(
             key: const ValueKey('service-name'),
+            enabled: _pendingWrites == 0,
             controller: _name,
             placeholder: l.settingsNamePlaceholder,
             semanticLabel: l.settingsName,
@@ -638,6 +627,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             label: l.settingsAddress,
             trailing: MMTextField.settings(
               key: const ValueKey('service-endpoint'),
+              enabled: _pendingWrites == 0,
               controller: _endpoint,
               focusNode: _endpointFocus,
               placeholder: defaultServiceEndpoint(s.protocol),
@@ -650,6 +640,7 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             label: 'API Key',
             trailing: MMTextField.settings(
               key: const ValueKey('service-key'),
+              enabled: _pendingWrites == 0,
               controller: _key,
               focusNode: _keyFocus,
               obscureText: true,
@@ -670,9 +661,9 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
             icon: MMIcons.add,
             iconSize: 13,
             size: MMSizes.field,
-            tooltip: l.settingsAddModel,
+            tooltip: _dirty ? l.settingsSaveBeforeModels : l.settingsAddModel,
             color: c.accent,
-            onPressed: _openingModels ? null : _addModels,
+            onPressed: _openingModels || _dirty || _pendingWrites > 0 ? null : _addModels,
           ),
         ),
         for (final m in s.models)

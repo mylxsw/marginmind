@@ -4,8 +4,9 @@ import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/voice/voice_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mm_core/mm_core.dart';
 
-import 'assistant_support.dart' show FakeSecrets;
+import 'assistant_support.dart' show FakeSecrets, UnreadableAfterWriteSecrets;
 
 class LockedSecrets extends FakeSecrets {
   @override
@@ -58,6 +59,24 @@ void main() {
     );
     expect(scope.read(voiceSettingsProvider).provider, VoiceProvider.none);
     expect(prefs.getString('voice.provider'), null);
+  });
+
+  test('a successful write with an unreadable key does not enable voice input', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final scope = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assistantSecretsProvider.overrideWithValue(UnreadableAfterWriteSecrets()),
+      ],
+    );
+    addTearDown(scope.dispose);
+    await expectLater(
+      scope.read(voiceSettingsProvider.notifier).save(const VoiceSettings(provider: VoiceProvider.aliyun), 'key'),
+      throwsA(isA<ResearchFailure>()),
+    );
+    expect(scope.read(voiceSettingsProvider).provider, VoiceProvider.none);
+    expect(prefs.getString('voice.provider'), isNull);
   });
 
   test('rejects plaintext endpoints, unsupported models and incorrect Doubao version', () {

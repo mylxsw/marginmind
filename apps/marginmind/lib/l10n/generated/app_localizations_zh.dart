@@ -2648,17 +2648,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsApiTokenPlaceholder => '粘贴 API Token';
 
   @override
-  String get settingsAutoSave => '修改后自动保存';
-
-  @override
-  String get settingsAutoSaved => '已自动保存';
-
-  @override
   String get settingsSaveFailed => '保存失败，请重试';
 
   @override
-  String get settingsRetrySave => '重试保存';
+  String get settingsSaving => '正在保存…';
 
   @override
-  String get settingsSaving => '正在保存…';
+  String get settingsUnsaved => '未保存';
+
+  @override
+  String get settingsSaveBeforeModels => '请先保存服务配置，再获取模型';
+
+  @override
+  String get settingsRequiredFields => '请填写必填项后保存';
 }

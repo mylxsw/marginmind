@@ -164,7 +164,7 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
         await secrets.delete(legacyAssistantAccount(service.provider));
       }
     } else {
-      await secrets.write(account, key.trim());
+      await secrets.writeVerified(account, key.trim());
     }
     ref.read(assistantKeysProvider.notifier).changed();
   }
@@ -233,7 +233,7 @@ class WebSearchSettingsController extends Notifier<WebSearchSettings> {
   Future<void> saveKey(WebSearchBackend backend, String key, {String? accountId}) async {
     final secrets = ref.read(assistantSecretsProvider);
     Future<void> put(String name, String value) =>
-        value.trim().isEmpty ? secrets.delete(name) : secrets.write(name, value.trim());
+        value.trim().isEmpty ? secrets.delete(name) : secrets.writeVerified(name, value.trim());
     await put(account(backend), key);
     if (backend == WebSearchBackend.cloudflare && accountId != null) await put(cloudflareAccount, accountId);
   }

@@ -192,6 +192,16 @@ abstract interface class SecretStore {
   Future<void> delete(String account);
 }
 
+extension VerifiedSecretStore on SecretStore {
+  /// A successful write alone does not guarantee the credential is readable.
+  Future<void> writeVerified(String account, String value) async {
+    await write(account, value);
+    if (await read(account) != value) {
+      throw const ResearchFailure(ResearchFailureKind.unavailable, 'secret_store');
+    }
+  }
+}
+
 /// Platform returns Readability HTML; Markdown and paragraph IDs belong to research.
 class ReadableHtml {
   const ReadableHtml({required this.url, required this.title, required this.html, this.canonicalUrl});

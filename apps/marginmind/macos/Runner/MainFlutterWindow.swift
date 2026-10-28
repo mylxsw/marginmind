@@ -351,6 +351,15 @@ final class SecretStoreChannel {
       ]
       // Tests use an isolated keychain, never lock or modify the login keychain.
       if let keychain = keychain { query[kSecMatchSearchList as String] = [keychain] }
+      func verify(_ match: [String: Any], expected: Data) -> OSStatus {
+        var readQuery = match
+        readQuery[kSecReturnData as String] = true
+        readQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+        var value: CFTypeRef?
+        let status = SecItemCopyMatching(readQuery as CFDictionary, &value)
+        guard status == errSecSuccess else { return status }
+        return (value as? Data) == expected ? errSecSuccess : errSecDecode
+      }
       var status: OSStatus
       switch call.method {
       case "read":
@@ -366,24 +375,49 @@ final class SecretStoreChannel {
         guard let value = args["value"] else {
           result(FlutterError(code: "invalid_arguments", message: nil, details: nil)); return
         }
-        let values: [String: Any] = [kSecValueData as String: Data(value.utf8)]
-        status = update(query as CFDictionary, values as CFDictionary)
-        if status == errSecItemNotFound || requiresAuthentication(status) {
-          // Never ask for a Mac password to overwrite an inaccessible item.
-          // Save only the key explicitly supplied by the user in a new item;
-          // switch references after success, leaving the old item untouched.
-          let replacement = requiresAuthentication(status) ? "replacement-" + UUID().uuidString : storageAccount
+        let data = Data(value.utf8)
+        let values: [String: Any] = [kSecValueData as String: data]
+        // An inaccessible old item must be left intact, even when its ACL
+        // would permit replacing encrypted data without permitting a read.
+        let readability = verify(query, expected: data)
+        if readability == errSecSuccess || readability == errSecDecode {
+          status = update(query as CFDictionary, values as CFDictionary)
+        } else {
+          status = readability
+        }
+        var needsReplacement = requiresAuthentication(status)
+        if status == errSecSuccess {
+          // Legacy ACLs can allow encryption/updates while refusing decryption.
+          // Never acknowledge "saved" until this process can read the same key.
+          status = verify(query, expected: data)
+          if status == errSecSuccess { result(nil); return }
+          guard requiresAuthentication(status) || status == errSecItemNotFound || status == errSecDecode else { break }
+          needsReplacement = true
+        }
+        if status == errSecItemNotFound || needsReplacement {
+          // Only migrate the explicitly supplied value, never alter an old ACL
+          // or prompt for a Mac password to retrieve an inaccessible credential.
+          let replacement = needsReplacement ? "replacement-" + UUID().uuidString : storageAccount
           var insert = query.merging(values) { _, new in new }
           insert[kSecAttrAccount as String] = replacement
           insert.removeValue(forKey: kSecMatchSearchList as String)
           if let keychain = keychain { insert[kSecUseKeychain as String] = keychain }
           insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
           status = SecItemAdd(insert as CFDictionary, nil)
-          if status == errSecSuccess && replacement != storageAccount {
-            references.set(replacement, forKey: referenceKey)
+          if status == errSecSuccess {
+            var replacementQuery = query
+            replacementQuery[kSecAttrAccount as String] = replacement
+            status = verify(replacementQuery, expected: data)
+            if status == errSecSuccess {
+              // The opaque reference is switched only after the new item is
+              // readable. The old item remains available to its original owner.
+              if replacement != storageAccount { references.set(replacement, forKey: referenceKey) }
+              result(nil); return
+            }
+            // Do not leave a failed candidate referenced or report success.
+            _ = SecItemDelete(replacementQuery as CFDictionary)
           }
         }
-        if status == errSecSuccess { result(nil); return }
       case "delete":
         status = SecItemDelete(query as CFDictionary)
         if status == errSecSuccess || status == errSecItemNotFound { result(nil); return }

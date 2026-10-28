@@ -1528,9 +1528,9 @@
   "settingsNamePlaceholder": "Enter service name",
   "settingsAccountIdPlaceholder": "Enter Account ID",
   "settingsApiTokenPlaceholder": "Paste API Token",
-  "settingsAutoSave": "Changes save automatically",
-  "settingsAutoSaved": "Saved automatically",
   "settingsSaveFailed": "Could not save. Please retry.",
-  "settingsRetrySave": "Retry saving",
-  "settingsSaving": "Saving…"
+  "settingsSaving": "Saving…",
+  "settingsUnsaved": "Unsaved changes",
+  "settingsSaveBeforeModels": "Save the service settings before fetching models",
+  "settingsRequiredFields": "Complete the required fields before saving"
 }
