@@ -13,11 +13,15 @@ class RunBudget {
   final ResearchBudget limits;
   final int maxCalls, maxModels;
   int calls = 0, models = 0, searches = 0, pages = 0, bytes = 0, outputTokens = 0;
+  int get remainingPages => limits.pages - pages;
+  int get remainingSearches => limits.searches - searches;
   void reserve({int readPages = 0, bool search = false}) {
     if (++calls > maxCalls) throw const ResearchFailure(ResearchFailureKind.loop);
-    if ((pages += readPages) > limits.pages || (search && ++searches > limits.searches)) {
+    if (readPages > remainingPages || (search && remainingSearches <= 0)) {
       throw const ResearchFailure(ResearchFailureKind.budget);
     }
+    pages += readPages;
+    if (search) searches++;
   }
 }
 
@@ -67,11 +71,14 @@ class PolicyHook extends AgentHook {
         modelConfig: ModelConfig(model: config.model, maxTokens: remaining, extra: config.extra),
         tools: tools,
         clearToolChoice: !toolsEnabled,
-        systemMessage: toolsEnabled
-            ? null
-            : SystemMessage(
-                '${context.request.systemMessage?.content ?? ""}\n工具已关闭。仅用已附带的上下文和已读取的内容直接回答；不足时明确说明，不补充书外事实。',
-              ),
+        systemMessage: SystemMessage(
+          [
+            context.request.systemMessage?.content ?? '',
+            '本轮剩余读取额度：${budget.remainingPages} 页；剩余搜索次数：${budget.remainingSearches}。'
+                'read_pages 的 from/to 均包含在读取范围内。优先读取选区所在页，按需缩小范围；额度用完后使用已有资料回答，不再请求读取。',
+            if (!toolsEnabled) '工具已关闭。仅用已附带的上下文和已读取的内容直接回答；不足时明确说明，不补充书外事实。',
+          ].join('\n'),
+        ),
       ),
     );
   }
@@ -161,7 +168,19 @@ class PolicyHook extends AgentHook {
         _ => 0,
       };
       if (name == 'read_pages' && ((args['from'] as int) < 1 || pages < 1)) return deny('参数页码范围无效');
-      budget.reserve(readPages: pages, search: {'web_search', 'search_papers', 'search_study_set'}.contains(name));
+      // A range the model can narrow is a recoverable tool error. Do not
+      // consume the remaining allowance or abort the entire answer.
+      if (pages > budget.remainingPages) {
+        return deny(
+          '本次请求读取 $pages 页，但本轮剩余读取额度为 ${budget.remainingPages} 页。'
+          '${budget.remainingPages > 0 ? "请缩小读取范围，优先读取选区所在页。" : "请使用已附带的上下文和已读取的内容直接回答，不再请求读取；资料不足时明确说明。"}',
+        );
+      }
+      final search = {'web_search', 'search_papers', 'search_study_set'}.contains(name);
+      if (search && budget.remainingSearches <= 0) {
+        return deny('本轮搜索额度已用完。请使用已有资料继续回答，不再请求搜索；资料不足时明确说明。');
+      }
+      budget.reserve(readPages: pages, search: search);
       if (name == 'fetch_source') await urls.validate(Uri.parse(args['url'] as String));
       return ToolCallHookResult.proceed(FunctionCall(id: raw.id, name: name, arguments: jsonEncode(args)));
     } on ResearchFailure catch (e) {

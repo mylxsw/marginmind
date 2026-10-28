@@ -237,8 +237,6 @@ void main() {
       await expectLater(run.run('x').toList(), throwsA(isA<ResearchFailure>()));
       expect(client.calls, 1);
     }
-    final client = ScriptClient([call('read_pages', '{"documentId":"doc","from":1,"to":6}')]);
-    await expectLater(makeRun(client).run('x').toList(), throwsA(isA<ResearchFailure>()));
   });
   test('citation buffer spans chunks, strips forged and incomplete markers', () {
     final registry = CitationRegistry(primaryDocumentId: 'doc', online: true)..page(const ReadPage('doc', 2, 'text'));

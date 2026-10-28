@@ -103,6 +103,70 @@ void main() {
     expect(fake.calls, 4);
   });
 
+  test('selection followed by an oversized context read can narrow its range and finish', () async {
+    final client = ScriptClient([
+      call('read_selection', '{"selectionId":"sel"}', id: 'selection'),
+      call('read_pages', '{"documentId":"doc","from":195,"to":199}', id: 'too-wide'),
+      call('read_pages', '{"documentId":"doc","from":196,"to":199}', id: 'narrowed'),
+      answer('根据上下文解释心声社区。[page:197]'),
+    ]);
+    final run = makeRun(client, skill: 'explain', online: false);
+    final events = await run.run('解释心声社区').toList();
+    final results = events
+        .where((event) => event.eventType == StreamingEventType.functionCallResult)
+        .expand((event) => (event.data as FunctionExecutionResultMessage).results)
+        .toList();
+    expect(results.map((result) => result.isError), [false, true, false]);
+    expect(results[1].metadata?['reason'], contains('本次请求读取 5 页'));
+    expect(results[1].metadata?['reason'], contains('剩余读取额度为 4 页'));
+    expect(run.budget.pages, 5);
+    expect(run.budget.calls, 2);
+    expect(run.citations.items.map((citation) => citation.page), [1, 196, 197, 198, 199]);
+    expect(client.requests[1].first.toJson().toString(), contains('本轮剩余读取额度：4 页'));
+    expect(client.requests.last.first.toJson().toString(), contains('本轮剩余读取额度：0 页'));
+    final diagnostics = (run.agent.state.metadata['assistant.diagnostics'] as Map)['request'] as Map;
+    expect(diagnostics['fallback'], isNull);
+    expect((diagnostics['tools'] as List).last['result'], 'done');
+    expect(client.calls, 4);
+  });
+
+  test('repeated reads after exhaustion fall back to an answer without exceeding the allowance', () async {
+    final client = ScriptClient([
+      call('read_pages', '{"documentId":"doc","from":1,"to":5}', id: 'allowed'),
+      for (var i = 0; i < 3; i++) call('read_pages', '{"documentId":"doc","from":6,"to":6}', id: 'exhausted-$i'),
+      answer('依据已有资料回答。[page:1]'),
+    ]);
+    final run = makeRun(client);
+    await run.run('解释').toList();
+    expect(run.budget.pages, 5);
+    expect(run.budget.calls, 1);
+    expect(run.citations.items, hasLength(5));
+    expect(client.toolRequests.last, isEmpty);
+    final diagnostics = (run.agent.state.metadata['assistant.diagnostics'] as Map)['request'] as Map;
+    expect(diagnostics['fallback'], true);
+    final rejected = (diagnostics['tools'] as List).skip(1);
+    expect(rejected.map((tool) => tool['reason']), everyElement(contains('使用已附带的上下文')));
+    expect(client.calls, 5);
+  });
+
+  test('a rejected reservation preserves both page and search allowances', () {
+    final budget = RunBudget(limits: const ResearchBudget(pages: 2, searches: 1));
+    budget.reserve(readPages: 1, search: true);
+    expect(
+      () => budget.reserve(readPages: 1, search: true),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
+    );
+    expect(budget.pages, 1);
+    expect(budget.searches, 1);
+    expect(
+      () => budget.reserve(readPages: 2),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
+    );
+    expect(budget.pages, 1);
+    budget.reserve(readPages: 1);
+    expect(budget.remainingPages, 0);
+  });
+
   test('capability false sends no tools and rejects unsolicited tool calls', () async {
     final client = ScriptClient([answer('direct')]);
     final run = createAssistantRun(

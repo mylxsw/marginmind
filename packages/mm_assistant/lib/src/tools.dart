@@ -166,7 +166,7 @@ class AssistantTools {
   Tool _tool(String name, Map<String, String> fields) => Tool(
     name: name,
     description: switch (name) {
-      'read_pages' => 'Read document pages using documentId and inclusive 1-based from/to. If extra read permission is needed, the tool waits for the user to allow or deny it.',
+      'read_pages' => 'Read document pages using documentId and inclusive 1-based from/to. Stay within the remaining page allowance in the system message; start with the selected page and narrow the range if denied. If extra read permission is needed, the tool waits for the user to allow or deny it.',
       'read_branch' => 'Read a mind-map branch using mapId and nodeId (__root__ for the map root). The tool asks the user before reading an additional branch.',
       _ => name,
     },
