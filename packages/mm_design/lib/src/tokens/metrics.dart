@@ -60,6 +60,9 @@ abstract final class MMSizes {
   /// in the toolbar instead.
   static const double windowButtonsWidth = 78;
   static const double field = 28;
+
+  /// Maximum width of an editable value in a settings row.
+  static const double settingsFieldWidth = 245;
   static const double segmented = 28;
   static const double readerMinWidth = 420;
 

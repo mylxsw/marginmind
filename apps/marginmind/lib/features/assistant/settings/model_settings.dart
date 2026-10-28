@@ -489,7 +489,6 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
       ),
     );
     if (!widget.open) return MMSettingsGroup(children: [header]);
-    final field = t.body.copyWith(color: c.label);
     return MMSettingsGroup(
       footer: Row(
         children: [
@@ -517,12 +516,10 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
         header,
         MMSettingsRow(
           label: l.settingsName,
-          trailing: MMTextField(
+          trailing: MMTextField.settings(
             key: const ValueKey('service-name'),
             controller: _name,
-            plain: true,
-            textAlign: TextAlign.right,
-            style: field,
+            placeholder: l.settingsNamePlaceholder,
             semanticLabel: l.settingsName,
             onChanged: _nameChanged,
           ),
@@ -530,13 +527,10 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
         if (_showsEndpoint)
           MMSettingsRow(
             label: l.settingsAddress,
-            trailing: MMTextField(
+            trailing: MMTextField.settings(
               key: const ValueKey('service-endpoint'),
               controller: _endpoint,
               focusNode: _endpointFocus,
-              plain: true,
-              textAlign: TextAlign.right,
-              style: field,
               placeholder: defaultServiceEndpoint(s.protocol),
               semanticLabel: l.settingsAddress,
               onChanged: _connectionChanged,
@@ -545,32 +539,22 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
         if (_needsKey)
           MMSettingsRow(
             label: 'API Key',
-            trailing: Row(
-              children: [
-                Expanded(
-                  child: MMTextField(
-                    key: const ValueKey('service-key'),
-                    controller: _key,
-                    focusNode: _keyFocus,
-                    plain: true,
-                    obscureText: !_reveal,
-                    textAlign: TextAlign.right,
-                    style: field,
-                    placeholder: l.assistantPasteKey,
-                    semanticLabel: 'API Key',
-                    onChanged: _connectionChanged,
-                  ),
-                ),
-                const SizedBox(width: MMSpacing.xs),
-                MMIconButton(
-                  key: const ValueKey('service-reveal'),
-                  icon: _reveal ? MMIcons.eyeSlash : MMIcons.eye,
-                  iconSize: 13,
-                  size: 22,
-                  tooltip: _reveal ? l.settingsHideKey : l.settingsShowKey,
-                  onPressed: () => setState(() => _reveal = !_reveal),
-                ),
-              ],
+            trailing: MMTextField.settings(
+              key: const ValueKey('service-key'),
+              controller: _key,
+              focusNode: _keyFocus,
+              obscureText: !_reveal,
+              placeholder: l.assistantPasteKey,
+              semanticLabel: 'API Key',
+              onChanged: _connectionChanged,
+              trailing: MMIconButton(
+                key: const ValueKey('service-reveal'),
+                icon: _reveal ? MMIcons.eyeSlash : MMIcons.eye,
+                iconSize: 13,
+                size: 22,
+                tooltip: _reveal ? l.settingsHideKey : l.settingsShowKey,
+                onPressed: () => setState(() => _reveal = !_reveal),
+              ),
             ),
           ),
         Padding(

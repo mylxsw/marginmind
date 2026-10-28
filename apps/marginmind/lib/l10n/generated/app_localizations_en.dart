@@ -2752,4 +2752,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceAppIdPlaceholder => 'Enter App ID';
+
+  @override
+  String get settingsNamePlaceholder => 'Enter service name';
+
+  @override
+  String get settingsAccountIdPlaceholder => 'Enter Account ID';
+
+  @override
+  String get settingsApiTokenPlaceholder => 'Paste API Token';
 }

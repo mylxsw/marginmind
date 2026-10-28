@@ -2628,4 +2628,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get voiceAppIdPlaceholder => '填写 App ID';
+
+  @override
+  String get settingsNamePlaceholder => '填写服务名称';
+
+  @override
+  String get settingsAccountIdPlaceholder => '填写账户 ID';
+
+  @override
+  String get settingsApiTokenPlaceholder => '粘贴 API Token';
 }

@@ -868,5 +868,8 @@
   "voiceFinish": "结束录音",
   "voiceKeyPlaceholder": "粘贴密钥",
   "mapMultiSelect": "多选",
-  "voiceAppIdPlaceholder": "填写 App ID"
+  "voiceAppIdPlaceholder": "填写 App ID",
+  "settingsNamePlaceholder": "填写服务名称",
+  "settingsAccountIdPlaceholder": "填写账户 ID",
+  "settingsApiTokenPlaceholder": "粘贴 API Token"
 }

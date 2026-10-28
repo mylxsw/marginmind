@@ -4915,6 +4915,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter App ID'**
   String get voiceAppIdPlaceholder;
+
+  /// No description provided for @settingsNamePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter service name'**
+  String get settingsNamePlaceholder;
+
+  /// No description provided for @settingsAccountIdPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Account ID'**
+  String get settingsAccountIdPlaceholder;
+
+  /// No description provided for @settingsApiTokenPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste API Token'**
+  String get settingsApiTokenPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -118,4 +118,84 @@ void main() {
     );
     expect(box.decoration, isNull);
   });
+
+  for (final brightness in Brightness.values) {
+    testWidgets('settings input remains usable when narrowed and cannot focus while disabled ($brightness)', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      final focus = FocusNode();
+      addTearDown(controller.dispose);
+      addTearDown(focus.dispose);
+      late StateSetter update;
+      var enabled = true;
+      var width = 500.0;
+      await tester.pumpWidget(
+        harness(
+          StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return SizedBox(
+                width: width,
+                child: MMSettingsGroup(
+                  children: [
+                    MMSettingsRow(
+                      label: 'Account ID',
+                      trailing: MMTextField.settings(
+                        controller: controller,
+                        focusNode: focus,
+                        enabled: enabled,
+                        placeholder: 'Enter Account ID',
+                        semanticLabel: 'Account ID',
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          brightness: brightness,
+        ),
+      );
+      final input = find.byType(MMTextField);
+      expect(find.text('Enter Account ID'), findsOneWidget);
+      expect(tester.getSize(input).width, MMSizes.settingsFieldWidth);
+      update(() => width = 240);
+      await tester.pump();
+      expect(tester.getSize(input).width, lessThan(MMSizes.settingsFieldWidth));
+      await tester.tap(input);
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      await tester.enterText(input, 'account-123');
+      expect(controller.text, 'account-123');
+      update(() => enabled = false);
+      await tester.pump();
+      await tester.tap(input, warnIfMissed: false);
+      await tester.pump();
+      expect(focus.hasFocus, isFalse);
+      expect(controller.text, 'account-123');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a key reveal action stays accessible inside the input outline', (tester) async {
+    final semantics = tester.ensureSemantics();
+    var reveals = 0;
+    await tester.pumpWidget(
+      harness(
+        MMTextField.settings(
+          placeholder: 'Paste API Key',
+          semanticLabel: 'API Key',
+          obscureText: true,
+          trailing: MMIconButton(icon: MMIcons.eye, size: 22, tooltip: 'Reveal key', onPressed: () => reveals++),
+        ),
+      ),
+    );
+    expect(find.bySemanticsLabel('API Key'), findsOneWidget);
+    expect(find.bySemanticsLabel('Reveal key'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Reveal key'));
+    expect(reveals, 1);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
 }

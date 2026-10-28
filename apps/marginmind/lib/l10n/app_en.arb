@@ -1521,5 +1521,8 @@
   "voiceFinish": "Finish Recording",
   "voiceKeyPlaceholder": "Paste credential",
   "mapMultiSelect": "Multiple Selection",
-  "voiceAppIdPlaceholder": "Enter App ID"
+  "voiceAppIdPlaceholder": "Enter App ID",
+  "settingsNamePlaceholder": "Enter service name",
+  "settingsAccountIdPlaceholder": "Enter Account ID",
+  "settingsApiTokenPlaceholder": "Paste API Token"
 }
