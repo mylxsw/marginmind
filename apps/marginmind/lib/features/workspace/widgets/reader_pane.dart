@@ -252,7 +252,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           padding: EdgeInsets.zero,
           style: buttonStyle,
           iconSize: MMSpacing.l,
-          icon: const Icon(MMIcons.fitPage),
+          icon: const Icon(MMIcons.pageZoom),
           onSelected: (value) => _zoom(value as ReaderZoomCommand),
           itemBuilder: (_) => zoomItems,
         ),

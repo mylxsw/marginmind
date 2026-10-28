@@ -193,7 +193,7 @@ class MMPdfViewController extends ChangeNotifier {
   Future<void> fitWidth() async {
     if (!isReady) return;
     final pdf = _state!._controller;
-    await pdf.goTo(pdf.calcMatrixFitWidthForPage(pageNumber: pdf.pageNumber ?? 1));
+    await pdf.goTo(_state!._fitWidthMatrix());
   }
 
   Future<void> fitPage() async {
@@ -542,6 +542,18 @@ class MMPdfView extends StatefulWidget {
 
 class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
+
+  Matrix4 _fitWidthMatrix({double? centerY}) {
+    final size = _controller.viewSize;
+    final width = _controller.documentSize.width;
+    // Layout margins are PDF units and scale with the pages. Subtracting
+    // unscaled margins from the viewport leaves horizontal overflow at zoom > 1.
+    // Fit the whole layout, including wider pages in mixed-size documents.
+    final zoom = size.width / width;
+    final page = _controller.layout.pageLayouts[(_controller.pageNumber ?? 1) - 1];
+    final y = centerY ?? page.top - _controller.params.margin + size.height / (2 * zoom);
+    return _controller.calcMatrixFor(Offset(width / 2, y), zoom: zoom);
+  }
 
   /// Zoom of the document fitted to the view's width, the reading zoom,
   /// which converts [MMPdfView.bottomInset] to document units; 1 until the
@@ -1487,14 +1499,7 @@ class _MMPdfViewState extends State<MMPdfView> {
             // callback here can wait indefinitely for another scheduled frame.
             Future.microtask(() {
               if (!mounted || !_ready || controller.viewSize != size) return;
-              final fit = controller.calcMatrixFitWidthForPage(pageNumber: controller.pageNumber ?? 1);
-              controller.goTo(
-                controller.calcMatrixFor(
-                  Offset(controller.documentSize.width / 2, center.dy),
-                  zoom: fit?.getMaxScaleOnAxis() ?? controller.currentZoom,
-                ),
-                duration: Duration.zero,
-              );
+              controller.goTo(_fitWidthMatrix(centerY: center.dy), duration: Duration.zero);
             });
           },
           margin: 16,

@@ -234,7 +234,7 @@ void main() {
     expect(pdf.currentZoom, lessThan(enlarged));
     await complete(controller.goToPage(2));
     await complete(controller.fitWidth());
-    expect(pdf.currentZoom, closeTo((pdf.viewSize.width - 32) / 600, .001));
+    expect(pdf.currentZoom, closeTo(pdf.viewSize.width / 632, .001));
     await controller.scrubToPage(1);
     await tester.pumpAndSettle();
     expect(controller.currentPage, 1);
@@ -282,11 +282,109 @@ void main() {
       width.value = size;
       // One layout frame must apply the zoom, without another input/frame.
       await tester.pump();
-      expect(pdf.currentZoom, closeTo((size - 32) / 600, .001));
+      expect(pdf.currentZoom, closeTo(size / 632, .001));
       expect(pdf.centerPosition.dy, closeTo(y, 1));
       final page = pdf.layout.pageLayouts[1];
       expect(pdf.documentToLocal(page.topLeft).dx, greaterThanOrEqualTo(0));
       expect(pdf.documentToLocal(page.bottomRight).dx, lessThanOrEqualTo(size));
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  testWidgets('fit width has no horizontal drift from wheel or trackpad at any reader width', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1600, 900);
+    final width = ValueNotifier<double>(1400);
+    addTearDown(width.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Align(
+          alignment: Alignment.topLeft,
+          child: ValueListenableBuilder<double>(
+            valueListenable: width,
+            builder: (_, value, _) => SizedBox(
+              width: value,
+              height: 700,
+              child: MMPdfView(filePath: 'fit-width.pdf', controller: controller),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    await controller.scrubToPage(2);
+    await tester.pumpAndSettle();
+    final fit = controller.fitWidth();
+    await tester.pumpAndSettle();
+    await fit;
+    for (final size in [1400.0, 960.0, 544.0, 1400.0]) {
+      width.value = size;
+      await tester.pumpAndSettle();
+      final x = pdf.value.storage[12];
+      final y = pdf.value.storage[13];
+      final position = tester.getCenter(find.byType(PdfViewer));
+      for (final delta in [const Offset(80, 30), const Offset(-160, 30)]) {
+        await tester.sendEventToBinding(PointerScrollEvent(position: position, scrollDelta: delta));
+        await tester.pumpAndSettle();
+        expect(pdf.value.storage[12], closeTo(x, .01), reason: 'wheel at width $size');
+      }
+      final pan = await tester.createGesture(kind: PointerDeviceKind.trackpad);
+      await pan.panZoomStart(position);
+      await pan.panZoomUpdate(position, pan: const Offset(100, -40));
+      await pan.panZoomEnd();
+      await tester.pumpAndSettle();
+      expect(pdf.value.storage[12], closeTo(x, .01), reason: 'trackpad at width $size');
+      expect(pdf.value.storage[13], lessThan(y), reason: 'vertical reading still scrolls');
+      final page = pdf.layout.pageLayouts[1];
+      expect(pdf.documentToLocal(page.topLeft).dx, greaterThanOrEqualTo(0));
+      expect(pdf.documentToLocal(page.bottomRight).dx, lessThanOrEqualTo(size));
+    }
+    // Deliberately enlarging a page must still allow horizontal navigation.
+    await pdf.setZoom(pdf.centerPosition, pdf.currentZoom * 2, duration: Duration.zero);
+    await tester.pumpAndSettle();
+    final x = pdf.value.storage[12];
+    await tester.sendEventToBinding(
+      PointerScrollEvent(position: tester.getCenter(find.byType(PdfViewer)), scrollDelta: const Offset(100, 0)),
+    );
+    await tester.pumpAndSettle();
+    expect((pdf.value.storage[12] - x).abs(), greaterThan(1));
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  testWidgets('fit width includes landscape pages in a mixed-size document', (tester) async {
+    installTestPdfBackend(pageWidths: [600, 1000, 600]);
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(filePath: 'mixed-sizes.pdf', controller: controller),
+      ),
+    );
+    await _waitReady(tester, controller);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    final fit = controller.fitWidth();
+    await tester.pumpAndSettle();
+    await fit;
+    expect(pdf.currentZoom, closeTo(pdf.viewSize.width / 1032, .001));
+    for (final pageNumber in [1, 2, 3]) {
+      await controller.scrubToPage(pageNumber);
+      await tester.pumpAndSettle();
+      final page = pdf.layout.pageLayouts[pageNumber - 1];
+      expect(pdf.documentToLocal(page.topLeft).dx, greaterThanOrEqualTo(0));
+      expect(pdf.documentToLocal(page.bottomRight).dx, lessThanOrEqualTo(pdf.viewSize.width));
+      final x = pdf.value.storage[12];
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: tester.getCenter(find.byType(PdfViewer)), scrollDelta: const Offset(100, 0)),
+      );
+      await tester.pumpAndSettle();
+      expect(pdf.value.storage[12], closeTo(x, .01));
     }
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));

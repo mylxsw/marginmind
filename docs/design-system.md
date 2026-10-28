@@ -49,7 +49,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMEmptyState` / `MMProgressBar` | 空状态（图标、可选的标题与说明、操作按钮）与细进度条。 |
 | `MMInteractive` | 所有可点击组件共用的悬停 / 按下 / 键盘焦点 / 语义处理（光标保持箭头）。 |
 | `MMAppearance` | 向组件提供“降低透明度”“减少动态效果”。 |
-| `MMIcons` | 图标词表（Cupertino 图标，注释里标了对应的 SF Symbol）。 |
+| `MMIcons` | 图标词表（Cupertino 图标，注释里标了对应的 SF Symbol）。阅读器页面适配入口使用 `pageZoom`（双向缩放箭头），菜单内保留实际大小、适合宽度和适合整页各自的图标。 |
 
 运行应用后按 ⌥⌘G（或在“设置”里点“组件库”）可以在浅色/深色下查看所有令牌和组件。
 

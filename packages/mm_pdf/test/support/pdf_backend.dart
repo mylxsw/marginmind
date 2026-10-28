@@ -4,16 +4,18 @@ import 'dart:typed_data';
 
 import 'package:pdfrx/pdfrx.dart';
 
-void installTestPdfBackend({int pageCount = 3}) {
+void installTestPdfBackend({int pageCount = 3, List<double>? pageWidths}) {
+  assert(pageWidths == null || pageWidths.length == pageCount);
   Pdfrx.cacheDirectoryPath = Directory.systemTemp.path;
-  PdfrxEntryFunctions.instance = _Engine(pageCount);
+  PdfrxEntryFunctions.instance = _Engine(pageCount, pageWidths);
 }
 
 // Deterministic backend: exercise the actual viewer and selection delegate
 // without requiring a native PDFium asset in flutter test or CI.
 class _Engine implements PdfrxEntryFunctions {
-  _Engine(this.pageCount);
+  _Engine(this.pageCount, this.pageWidths);
   final int pageCount;
+  final List<double>? pageWidths;
   @override
   Future<void> init() async {}
   @override
@@ -22,16 +24,17 @@ class _Engine implements PdfrxEntryFunctions {
     PdfPasswordProvider? passwordProvider,
     bool firstAttemptByEmptyPassword = true,
     bool useProgressiveLoading = false,
-  }) async => _Document(pageCount);
+  }) async => _Document(pageCount, pageWidths);
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _Document extends PdfDocument {
-  _Document(this.pageCount) : super(sourceName: 'selection-test.pdf');
+  _Document(this.pageCount, this.pageWidths) : super(sourceName: 'selection-test.pdf');
   final int pageCount;
+  final List<double>? pageWidths;
   @override
-  late List<PdfPage> pages = List.generate(pageCount, (index) => _Page(this, index + 1));
+  late List<PdfPage> pages = List.generate(pageCount, (index) => _Page(this, index + 1, pageWidths?[index] ?? 600));
   @override
   bool get isEncrypted => false;
   @override
@@ -56,7 +59,7 @@ class _Document extends PdfDocument {
 }
 
 class _Page implements PdfPage {
-  _Page(this.document, this.pageNumber);
+  _Page(this.document, this.pageNumber, this.width);
   @override
   final PdfDocument document;
   @override
@@ -64,7 +67,7 @@ class _Page implements PdfPage {
   @override
   bool get isLoaded => true;
   @override
-  double get width => 600;
+  final double width;
   @override
   double get height => 800;
   @override

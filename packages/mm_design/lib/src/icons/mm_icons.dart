@@ -9,6 +9,7 @@ abstract final class MMIcons {
   static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;
   static const IconData fitWidth = CupertinoIcons.arrow_left_right;
   static const IconData fitPage = CupertinoIcons.rectangle;
+  static const IconData pageZoom = CupertinoIcons.resize;
   static const IconData locate = CupertinoIcons.location_circle;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
   static const IconData search = CupertinoIcons.search; // magnifyingglass
