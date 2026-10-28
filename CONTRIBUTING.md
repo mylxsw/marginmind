@@ -8,6 +8,13 @@
 
 仓库是 [Dart pub workspace](https://dart.dev/tools/pub/workspaces)：在根目录执行一次 `flutter pub get` 即可解析所有包。
 
+macOS 日常开发如需保存 AI Key，请先把 `apps/marginmind/macos/Runner/Configs/LocalSigning.xcconfig.example`
+复制为同目录的 `LocalSigning.xcconfig`，填入本机证书指纹和团队 ID。用 `security find-identity -v -p codesigning`
+查看可用证书；这个本机配置不会提交到 Git，`flutter run` 和 `flutter build macos` 都会使用它。
+同一份钥匙串凭据应一直使用同一签名身份；临时签名（ad hoc / Sign to Run Locally）的身份绑定具体构建，
+重新编译后可能无法读取旧 Key。正式分发也需保持签名身份连续。过去临时签名创建的 Key 可能需要一次迁移授权，
+或由用户在稳定签名版本中重新保存；这不应变成日常反复输入系统密码。
+
 项目背景、当前进度和开发计划：[docs/project-plan.md](docs/project-plan.md)。
 
 跨平台开发请先读 [跨平台支持评估与开发方案](docs/platform-support-plan.md)，按任务 ID、依赖和真实平台验收要求接手；不要用 Widget 测试通过代替原生构建与运行验证。

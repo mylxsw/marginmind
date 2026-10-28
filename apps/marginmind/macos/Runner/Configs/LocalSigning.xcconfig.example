@@ -1,0 +1,6 @@
+// Copy to LocalSigning.xcconfig (ignored by Git), then fill in your identity.
+// List available identities: security find-identity -v -p codesigning
+// Use the SAME identity for repeat builds that share Keychain credentials.
+MARGINMIND_CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = YOUR_SIGNING_CERTIFICATE_SHA1
+DEVELOPMENT_TEAM = YOUR_APPLE_TEAM_ID

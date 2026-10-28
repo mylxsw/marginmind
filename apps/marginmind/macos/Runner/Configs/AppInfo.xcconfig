@@ -12,3 +12,8 @@ PRODUCT_BUNDLE_IDENTIFIER = io.github.mylxsw.marginmind
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 MarginMind contributors. Released under the MIT License.
+
+// Keep certificate/team choices local. Without this file CI and unsigned
+// contributors retain the existing signing behavior.
+MARGINMIND_CODE_SIGN_STYLE = Automatic
+#include? "LocalSigning.xcconfig"
