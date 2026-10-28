@@ -3145,7 +3145,7 @@ function paintReadChrome() {
   if (!c.on && !R.cropEdit && !R.cropTip[S.doc] && wideMargins(S.doc) && S.layout !== 'map') {
     const t = document.createElement('div'); t.className = 'crop-tip';
     if (R.cmp) t.style.top = '86px';
-    t.innerHTML = `${ic('crop', 's ci')}<span>页面白边较宽，裁掉后文字可放大约 ${cropGain(S.doc)}%</span><button class="btn sm pri" data-act="cropOn">裁掉白边</button><button class="ib" data-act="cropTipX" title="不用了">${ic('x', 'xs')}</button>`;
+    t.innerHTML = `${ic('crop', 's ci')}<button class="btn sm pri" data-act="cropOn">裁掉白边</button><button class="ib" data-act="cropTipX" title="不用了">${ic('x', 'xs')}</button>`;
     $('#reader').appendChild(t);
   }
 }
@@ -3158,16 +3158,15 @@ ACTS.pageMenu = el => {
   m.innerHTML = [['actual', '实际大小'], ['width', '适合宽度'], ['page', '适合整页']].map(([k, t]) => `<div class="mi" data-pm="${k}"><span class="chk">${fit === k ? ic('check', 'xs') : ''}</span><span class="grow">${t}</span></div>`).join('')
     + `<div class="msep"></div>`
     + `<div class="mi" data-pm="crop"><span class="chk">${c.on ? ic('check', 'xs') : ''}</span><span class="grow">裁掉白边</span><span class="kbd">⌥⌘K</span></div>`
-    + `<div class="mi" data-pm="cropEdit"><span class="chk"></span><span class="grow">调整裁边…</span></div>`
-    + `<div class="note" style="padding:5px 9px 3px 31px">只改变显示，原 PDF、导出和标注位置都不变。</div>`;
+    + `<div class="mi" data-pm="cropEdit"><span class="chk"></span><span class="grow">调整裁边…</span></div>`;
   placePop(m, winRect(el), 'below');
   m.onclick = e => {
     const it = e.target.closest('[data-pm]'); if (!it) return;
     closeFloating(true);
     const k = it.dataset.pm;
     if (k === 'width') { S.readerZoom = 1; rerenderKeep(); }
-    if (k === 'actual') { S.readerZoom = +(1 / fitFactor()).toFixed(3); rerenderKeep(); hud('实际大小'); }
-    if (k === 'page') { S.readerZoom = .62; rerenderKeep(); hud('适合整页'); }
+    if (k === 'actual') { S.readerZoom = +(1 / fitFactor()).toFixed(3); rerenderKeep(); }
+    if (k === 'page') { S.readerZoom = .62; rerenderKeep(); }
     if (k === 'crop') ACTS.cropToggle();
     if (k === 'cropEdit') ACTS.cropEdit();
   };
@@ -3178,10 +3177,10 @@ ACTS.cropToggle = () => {
   if (c.on && c.scope === 'all' && !Object.keys(c.pages).length) c.box = autoBox(S.doc);
   rerenderKeep();
   const undoIt = () => { c.on = before; rerenderKeep(); };
-  hud(c.on ? `已裁掉白边，文字放大约 ${cropGain(S.doc)}%` : '已显示完整页面', '撤销', undoIt);
+  hud(c.on ? '已裁边' : '已取消裁边', '撤销', undoIt);
 };
 ACTS.cropOn = () => { if (!cropOf(S.doc).on) ACTS.cropToggle(); };
-ACTS.cropTipX = () => { RD().cropTip[S.doc] = true; paintReadChrome(); hud('之后可在工具栏「页面」菜单里裁边'); };
+ACTS.cropTipX = () => { RD().cropTip[S.doc] = true; paintReadChrome(); };
 ACTS.cropEdit = () => {
   const R = RD(), c = cropOf(S.doc);
   if (S.tool !== 'select') setTool('select');
@@ -3196,9 +3195,9 @@ function paintCropBar() {
   $$('#reader > .crop-bar, #reader > .crop-warn').forEach(e => e.remove());
   const R = RD(); if (!R.cropEdit) return;
   const c = cropOf(R.cropEdit.doc), bar = document.createElement('div'); bar.className = 'crop-bar';
-  bar.innerHTML = `${ic('crop', 's')}<b>裁边</b><span class="tdiv"></span><span class="note" style="font-size:11.5px">应用到</span>
+  bar.innerHTML = `${ic('crop', 's')}<b>裁边</b><span class="tdiv"></span>
     <div class="seg sm">${[['all', '所有页'], ['oddeven', '奇偶页分开'], ['page', '仅本页']].map(([k, t]) => `<button data-cscope="${k}" class="${c.scope === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <span class="tdiv"></span><button class="btn sm" data-cact="auto" title="按正文范围自动裁，保留你的笔迹">自动</button><button class="btn sm" data-cact="none">不裁</button>
+    <span class="tdiv"></span><button class="btn sm" data-cact="auto">自动</button><button class="btn sm" data-cact="none">不裁</button>
     <span class="tdiv"></span><button class="btn sm" data-cact="cancel">取消</button><button class="btn sm pri" data-cact="done">完成</button>`;
   $('#reader').appendChild(bar);
 }
@@ -3225,7 +3224,7 @@ function drawCropOverlays() {
     $$('.hl,.mn-anchor', clip).forEach(h => { const r = h.getBoundingClientRect(), hx0 = (r.left - pr.left) / z, hx1 = (r.right - pr.left) / z, hy = (r.top - pr.top) / z; if (hx0 < x0 - 1 || hx1 > x1 + 1 || hy < y0 || hy > y1) hidden++; });
   });
   $$('#reader > .crop-warn').forEach(e => e.remove());
-  if (hidden) { const w = document.createElement('div'); w.className = 'crop-warn'; w.innerHTML = `${ic('warn', 's')}有 ${hidden} 处标注落在裁掉的区域：裁边后不显示，但不会删除`; $('#reader').appendChild(w); }
+  if (hidden) { const w = document.createElement('div'); w.className = 'crop-warn'; w.innerHTML = `${ic('warn', 's')}${hidden} 处标注将被隐藏`; $('#reader').appendChild(w); }
 }
 function c_scopeLabel(d, no) { const c = cropOf(d); return c.pages[no] ? ' · 单独设置' : c.scope === 'oddeven' ? (no % 2 ? ' · 奇数页' : ' · 偶数页') : ''; }
 function editTarget(d, no) {
@@ -3257,7 +3256,6 @@ function endCropEdit(apply) {
   const d = R.cropEdit.doc;
   if (!apply) R.crop[d] = JSON.parse(R.cropEdit.saved);
   R.cropEdit = null; paintCropBar(); rerenderKeep();
-  if (apply) hud(cropOf(d).on ? '裁边已应用 · 原 PDF 与导出不受影响' : '已显示完整页面');
 }
 
 /* ---------------- Margin notes ---------------- */
@@ -3265,8 +3263,8 @@ const noteById = id => RD().mnotes.find(n => n.id === id);
 function noteCard(n, editing) {
   if (n.node && !nodeById(n.node)) n.node = null; // the map card was deleted or undone
   return `<div class="mn-card c-${n.color}${editing ? ' editing' : ''}${RD().hot === n.id ? ' hot' : ''}" data-mnid="${n.id}">`
-    + (editing ? `<textarea data-mnta="${n.id}" rows="2" placeholder="写下你的想法…">${esc(n.text)}</textarea>` : `<div class="txt">${esc(n.text)}</div>`)
-    + `<div class="meta">${n.node ? `<span class="inmap" data-mnact="locate">${ic('map', 'xs')}已在脑图</span>` : ''}<span class="grow"></span><span>${editing ? '⌘↩ 完成' : esc(n.at)}</span></div>`
+    + (editing ? `<textarea data-mnta="${n.id}" rows="2">${esc(n.text)}</textarea>` : `<div class="txt">${esc(n.text)}</div>`)
+    + `<div class="meta">${n.node ? `<span class="inmap" data-mnact="locate">${ic('map', 'xs')}已在脑图</span>` : ''}<span class="grow"></span><span>${esc(n.at)}</span></div>`
     + `<div class="acts"><button data-mnact="${n.node ? 'locate' : 'map'}" title="${n.node ? '在脑图中定位' : '加入脑图'}">${ic(n.node ? 'goto' : 'map', 'xs')}</button><button data-mnact="more" title="颜色 / 删除">${ic('more', 'xs')}</button></div></div>`;
 }
 function anchorEl(id, root = $('#readerScroll')) { return root.querySelector(`.page:not([data-virtual]) [data-mn="${id}"]`); }
@@ -3332,7 +3330,7 @@ function setHot(id) {
 function newNote(base) {
   const R = RD(), n = { id: uid('mn'), text: '', color: S.hlColor || 'y', at: now(), node: null, isNew: true, ...base };
   R.mnotes.push(n); R.editNote = n.id;
-  if (!R.margin && !R.cmp) { R.margin = true; if (!R.told.margin) { R.told.margin = true; setTimeout(() => hud('页边批注已打开 · ⌥⌘M 可收起，批注仍会以页边标记显示'), 200); } }
+  if (!R.margin && !R.cmp) R.margin = true;
   rerenderKeep();
   return n;
 }
@@ -3351,7 +3349,7 @@ function noteFromSelection() {
     const [doc, no] = page.dataset.page.split('-').map(Number), r = sel.range.getBoundingClientRect(), pr = page.getBoundingClientRect(), z = pr.width / PAGE_W;
     return newNote({ doc, page: no, y: Math.round((r.top - pr.top) / z + 10) });
   }
-  if (span.closest('.page[data-virtual]')) { hud('译文是生成的，批注请写在原文上'); return; }
+  if (span.closest('.page[data-virtual]')) { return; }
   const id = uid('mn'); span.dataset.mn = id; span.classList.add('mn-anchor');
   const [doc, no] = span.closest('.page').dataset.page.split('-').map(Number);
   persistPageHtml();
@@ -3406,8 +3404,8 @@ function noteToMap(n) {
   S.nodes.push(node); n.node = node.id;
   // Stay in the current view: switching to split could fold the margin the user is working in.
   renderMap(); relayout();
-  if (S.layout === 'reader') hud(`已加入脑图「${nodeById(parent).title}」· ⌘Z 撤销`, '查看', () => locateNode(n));
-  else { flashNode(node.id); hud(`已加入脑图「${nodeById(parent).title}」，之后在页边修改会同步`, '撤销', () => { undo(); relayout(); }); }
+  if (S.layout === 'reader') hud('已加入脑图', '查看', () => locateNode(n));
+  else { flashNode(node.id); hud('已加入脑图', '撤销', () => { undo(); relayout(); }); }
 }
 function noteMore(n, anchor) {
   const m = document.createElement('div'); m.className = 'pop menu'; m.style.width = '200px';
@@ -3423,7 +3421,7 @@ function noteMore(n, anchor) {
   };
 }
 function locateNode(n) {
-  if (!n.node || !nodeById(n.node)) { n.node = null; relayout(); return hud('脑图里的卡片已删除'); }
+  if (!n.node || !nodeById(n.node)) { n.node = null; relayout(); return; }
   if (S.layout === 'reader') { S.layout = 'split'; applyLayout(); setTimeout(() => { selectNode(n.node); flashNode(n.node); }, 360); }
   else { selectNode(n.node); flashNode(n.node); }
 }
@@ -3432,7 +3430,7 @@ function notePop(mk, editId) {
   closeFloating(true);
   const R = RD(), ids = mk.dataset.mnmark.split(','), p = document.createElement('div'); p.className = 'pop mn-pop';
   p.innerHTML = ids.map(id => noteById(id)).filter(Boolean).map(n => noteCard(n, editId === n.id)).join('')
-    + `<div class="row2"><span class="note">${R.cmp ? '对照阅读时批注收在页边标记里' : R.tight ? '空间不够，批注先收在页边标记里' : '页边批注已收起'}</span>${!R.cmp && !R.tight ? `<button class="btn sm" data-act="marginToggle">显示页边</button>` : cropFreesMargin() ? `<button class="btn sm" data-act="cropForMargin">裁掉白边，展开页边</button>` : ''}</div>`;
+    + `<div class="row2"><span class="grow"></span>${!R.cmp && !R.tight ? `<button class="btn sm" data-act="marginToggle">显示页边</button>` : cropFreesMargin() ? `<button class="btn sm" data-act="cropForMargin">裁掉白边，展开页边</button>` : ''}</div>`;
   p.dataset.mark = mk.dataset.mnmark;
   placePop(p, winRect(mk), 'below');
   const ta = p.querySelector('textarea'); if (ta) { autoGrow(ta); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
@@ -3445,10 +3443,8 @@ function cropFreesMargin() {
 ACTS.cropForMargin = () => { closeFloating(true); RD().margin = true; ACTS.cropOn(); };
 ACTS.marginToggle = () => {
   const R = RD();
-  if (R.cmp) return hud('对照阅读时页边批注收在页边标记里');
+  if (R.cmp) return;
   closeFloating(true); R.margin = !R.margin; rerenderKeep();
-  if (R.margin && R.tight) hud('窗口较窄：批注先以页边标记显示，加宽窗口或收起脑图后自动展开');
-  else hud(R.margin ? '页边批注已打开 · 在页边空白处点一下即可写' : '页边批注已收起，批注以页边标记显示');
 };
 
 /* ---------------- Parallel reading ---------------- */
@@ -3459,17 +3455,17 @@ ACTS.compareMenu = el => {
   const R = RD(), d = S.doc, D = DOCS[d], m = document.createElement('div'); m.className = 'pop menu cmp-pick';
   const others = DOCS.map((x, i) => i).filter(i => i !== d);
   const aiOff = !S.ai ? '需要先在设置里连接模型' : !S.net && !S.local ? '当前断网' : (d === 1 ? (S.ocr.state === 'done' ? '演示中没有这份讲义的译文' : '扫描版需先识别文字') : '');
-  m.innerHTML = `<div class="mh">和「${esc(D.name)}」对照阅读</div>`
-    + others.map(i => `<div class="mi ${R.cmp?.doc === i ? 'on' : ''}" data-cmpto="${i}">${ic(DOCS[i].icon, 's ii')}<span class="two grow"><span>${esc(DOCS[i].name)}</span><small>${D.pair === i ? '同一本书的' + (DOCS[i].lang === 'EN' ? '英文原版' : '中文版') + ' · 推荐' : '学习集里的文档'}</small></span><span class="kbd">${DOCS[i].lang}</span></div>`).join('')
-    + `<div class="mi" data-cmpto="import">${ic('plus', 's ii')}<span class="two grow"><span>导入另一份 PDF…</span><small>例如译本、新旧版本、讲义</small></span></div>`
+  m.innerHTML = `<div class="mh">对照阅读</div>`
+    + others.map(i => `<div class="mi ${R.cmp?.doc === i ? 'on' : ''}" data-cmpto="${i}">${ic(DOCS[i].icon, 's ii')}<span class="grow">${esc(DOCS[i].name)}</span>${D.pair === i ? '<span class="pill">推荐</span>' : ''}<span class="kbd">${DOCS[i].lang}</span></div>`).join('')
+    + `<div class="mi" data-cmpto="import">${ic('plus', 's ii')}<span class="grow">导入 PDF…</span></div>`
     + `<div class="msep"></div>`
-    + `<div class="mi res ${aiOff ? 'dis' : ''}" data-cmpto="ai">${ic('trans', 's ii')}<span class="two grow"><span>没有译本？AI 逐段翻译成${tgtLang(d).name}</span><small>${aiOff || '段落一一对应，译文存进学习集，下次直接看'}</small></span></div>`
+    + `<div class="mi res ${aiOff ? 'dis' : ''}" data-cmpto="ai">${ic('trans', 's ii')}<span class="two grow"><span>AI 逐段翻译成${tgtLang(d).name}</span>${aiOff ? `<small>${aiOff}</small>` : ''}</span></div>`
     + (R.cmp ? `<div class="msep"></div><div class="mi" data-cmpto="exit">${ic('x', 's ii')}<span class="grow">退出对照阅读</span><span class="kbd">Esc</span></div>` : '');
   placePop(m, winRect(el), 'below');
   m.onclick = e => {
     const it = e.target.closest('[data-cmpto]'); if (!it || it.classList.contains('dis')) return;
     const v = it.dataset.cmpto; closeFloating(true);
-    if (v === 'import') return hud('选择 PDF 后会先加入学习集，再在右侧打开（演示）');
+    if (v === 'import') return hud('导入（演示）');
     if (v === 'exit') return exitCompare();
     enterCompare(v === 'ai' ? 'ai' : +v);
   };
@@ -3478,7 +3474,7 @@ ACTS.compareMenu = el => {
 function leftDocMenu(anchor) {
   closeFloating(true);
   const m = document.createElement('div'); m.className = 'pop menu'; m.style.width = '260px';
-  m.innerHTML = `<div class="mh">左侧显示</div>` + DOCS.map((D, i) => `<div class="mi" data-ldoc="${i}"><span class="chk">${i === S.doc ? ic('check', 'xs') : ''}</span>${ic(D.icon, 's ii')}<span class="grow">${esc(D.name)}</span><span class="kbd">${D.lang}</span></div>`).join('');
+  m.innerHTML = `` + DOCS.map((D, i) => `<div class="mi" data-ldoc="${i}"><span class="chk">${i === S.doc ? ic('check', 'xs') : ''}</span>${ic(D.icon, 's ii')}<span class="grow">${esc(D.name)}</span><span class="kbd">${D.lang}</span></div>`).join('');
   placePop(m, winRect(anchor), 'below');
   m.onclick = e => { const it = e.target.closest('[data-ldoc]'); if (!it) return; closeFloating(true); if (+it.dataset.ldoc !== S.doc) ACTS.doc({ dataset: { doc: it.dataset.ldoc } }); };
 }
@@ -3492,16 +3488,16 @@ function enterCompare(target) {
   if (S.sideOpen) S.sideOpen = false;
   if (S.layout === 'map') S.layout = 'reader';
   // Two readable columns need ~900pt; below that, step the map aside rather than shrink the text.
-  if (S.layout === 'split' && $('#content').clientWidth * .51 < 900) { S.layout = 'reader'; msg = '脑图先收起，给两栏留出空间 · ⌘2 可随时打开'; }
+  if (S.layout === 'split' && $('#content').clientWidth * .51 < 900) { S.layout = 'reader'; msg = '已收起脑图 · ⌘2'; }
   applyLayout(); renderReader();
   if (target === 'ai') startTranslate();
-  hud(msg || (target === 'ai' ? '正在逐段翻译，先译你正在看的部分' : '两栏同步滚动 · 中间的按钮可解开或重新对齐'));
+  if (msg) hud(msg);
 }
 function exitCompare() {
   const R = RD(); if (!R.cmp) return;
   clearTimeout(R.trTimer); R.cmp = null;
   if (R.cmpSaved) { S.layout = R.cmpSaved.layout; S.sideOpen = R.cmpSaved.side; R.cmpSaved = null; }
-  applyLayout(); renderReader(); hud('已退出对照阅读');
+  applyLayout(); renderReader();
 }
 function compareHtml() {
   const c = RD().cmp;
@@ -3529,7 +3525,7 @@ function trPagesHtml(d) {
   const c = RD().cmp, z = (S.readerZoom * Math.min(MAX_FIT, availW() / PAGE_W)).toFixed(3);
   let k = 0;
   return DOCS[d].pages.map((p, i) => `<div class="pg" data-virtual style="zoom:${z}"><div class="pg-clip" style="width:${PAGE_W}px"><div class="page tr" data-virtual data-page="${d}-${p.no}" style="padding:48px 54px 60px">
-      <div class="tr-head">${ic('spark', 'xs')}AI 译文 · 对应原文第 ${p.no} 页<span class="pill">仅供参考</span></div>
+      
       ${trSource(d, i).map(x => { const on = k < (c.done || 0); return `<${x.tag} data-tri="${k++}" class="${on ? '' : 'pending'}">${esc(x.text)}</${x.tag}>`; }).join('')}
       <div class="pno">${p.no}</div></div></div></div>`).join('');
 }
@@ -3631,7 +3627,7 @@ document.addEventListener('click', e => {
     if (c.scope === 'all') { c.odd = null; c.pages = {}; }
     if (c.scope === 'oddeven' && !c.odd) c.odd = { ...c.box };
     paintCropBar(); drawCropOverlays();
-    return hud({ all: '所有页使用同一个裁边', oddeven: '奇数页和偶数页分别调整（扫描书左右页边距常不同）', page: '只调整你拖动的那一页' }[c.scope]);
+    return;
   }
   const ca = t.closest('[data-cact]');
   if (ca) {
@@ -3646,9 +3642,9 @@ document.addEventListener('click', e => {
   if (cb) {
     stop(); const k = cb.dataset.cmp, c = R.cmp;
     if (k === 'close') return exitCompare();
-    if (k === 'sync') { c.sync = !c.sync; renderReader(); return hud(c.sync ? '同步滚动已开启' : '同步滚动已关闭，两边各自滚动'); }
-    if (k === 'align') { c.aligned++; c.sync = true; const l = $('[data-pgno="L"]').textContent, r = $('[data-pgno="R"]').textContent; renderReader(); return hud(`已对齐：左侧${l} ↔ 右侧${r}，之后按这里同步`); }
-    if (k === 'swap') { const a = S.doc; S.doc = c.doc; c.doc = a; renderReader(); return hud('已左右互换'); }
+    if (k === 'sync') { c.sync = !c.sync; return renderReader(); }
+    if (k === 'align') { c.aligned++; c.sync = true; renderReader(); return hud('已对齐'); }
+    if (k === 'swap') { const a = S.doc; S.doc = c.doc; c.doc = a; return renderReader(); }
     if (k === 'pick') return ACTS.compareMenu(cb);
     if (k === 'pickL') return leftDocMenu(cb);
   }
