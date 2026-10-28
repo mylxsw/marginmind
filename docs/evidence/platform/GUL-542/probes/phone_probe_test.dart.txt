@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -59,6 +60,8 @@ void main() {
     final android = Theme.of(t.element(find.byType(AppShell))).platform == TargetPlatform.android;
     final size = t.view.physicalSize / t.view.devicePixelRatio;
     print('PROBE logical=$size safe=${MediaQueryData.fromView(t.view).padding} tabs=${find.byType(MMTabBar).evaluate().length}');
+    // Device logs reach the host late at first.
+    await idle(t, 4);
     await shot(t, '01-library');
 
     final container = ProviderScope.containerOf(t.element(find.byType(AppShell)));
@@ -91,7 +94,8 @@ void main() {
       ),
       MMAnnotationColor.values.first,
     );
-    if (t.element(find.byType(ReaderPane)).mounted) showNotice(t.element(find.byType(ReaderPane)), notice, rootTitle: '');
+    final setTitle = container.read(studySetProvider(route.studySetId))?.title ?? '';
+    showNotice(t.element(find.byType(ReaderPane)), notice, rootTitle: setTitle);
     await idle(t, 0.2);
     print('PROBE layout after excerpt=${container.read(workspaceProvider(route.studySetId)).layout}');
     print('SHOT:03-excerpt-toast');
@@ -115,20 +119,27 @@ void main() {
 
     await tapKey(t, 'toolbar-assistant');
     await shot(t, '06-assistant-sheet');
-    final field = find.byType(EditableText);
-    if (field.evaluate().isNotEmpty) {
-      await t.tap(field.last, warnIfMissed: false);
-      await idle(t, 2);
-      await shot(t, '07-assistant-keyboard');
-      FocusManager.instance.primaryFocus?.unfocus();
-      await idle(t, 2);
-    }
     await back(t, 'close-assistant', android);
     print('PROBE panel after back=${container.read(workspaceProvider(route.studySetId)).panel}');
 
     controller.showDetails(notice.cardId);
     await idle(t, 2);
-    await shot(t, '08-details-sheet');
+    await shot(t, '07-details-sheet');
+    // Typing a title: the sheet rises to full height on the keyboard.
+    final title = find.descendant(
+      of: find.byKey(const ValueKey('workspace-panel-sheet')),
+      matching: find.byType(EditableText),
+    );
+    if (title.evaluate().isNotEmpty) {
+      await t.tap(title.first, warnIfMissed: false);
+      await idle(t, 2);
+      print('PROBE keyboard=${MediaQuery.viewInsetsOf(t.element(find.byType(AppShell))).bottom}');
+      await shot(t, '08-details-keyboard');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await idle(t, 2);
+    } else {
+      print('PROBE no title field in the details sheet');
+    }
     await back(t, 'close-details', android);
 
     await tapKey(t, 'mm-tab-3');
