@@ -57,6 +57,18 @@ Future<void> screenshot(WidgetTester tester, String name, {Finder? target}) asyn
   image.dispose();
 }
 
+void expectSendButtonFits(WidgetTester tester) {
+  final composer = tester.getRect(find.byKey(const ValueKey('quick-composer')));
+  final surface = tester.getRect(find.byKey(const ValueKey('quick-send-surface')));
+  final button = find.byKey(const ValueKey('quick-send'));
+  final icon = find.descendant(of: button, matching: find.byType(Icon));
+  expect(surface.width, surface.height, reason: 'the send surface stays circular');
+  expect(surface.top - composer.top, closeTo(4, 0.01));
+  expect(composer.bottom - surface.bottom, closeTo(4, 0.01));
+  expect(composer.right - surface.right, closeTo(4, 0.01));
+  expect(tester.getCenter(icon), surface.center, reason: 'the icon stays centered inside the circle');
+}
+
 void main() {
   setUpAll(() async {
     if (_output == null) return;
@@ -110,6 +122,7 @@ void main() {
       expect(client.calls, 0);
       expect(find.byType(AssistantPanel), findsNothing);
       expect(app.container.read(workspaceProvider('demo-1')).pending, same(pending));
+      expectSendButtonFits(tester);
       expect(
         find.descendant(of: find.byType(AssistantQuickActions), matching: find.text('Selected Text')),
         findsNothing,
@@ -142,6 +155,7 @@ void main() {
       expect((app.workspace.content.noteAttachments.single.target as PdfTarget).quote, quote);
       await tester.enterText(find.byKey(const ValueKey('quick-input')), '再简短一点');
       await tester.pump();
+      expectSendButtonFits(tester);
       await screenshot(tester, 'quick-input-${dark ? 'dark' : 'light'}');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await pumpFor(tester, 25);
@@ -229,6 +243,7 @@ void main() {
     await open(tester);
     expect(view(tester).id, id);
     expect(tester.widget<MMIconButton>(find.byKey(const ValueKey('quick-send'))).icon, MMIcons.stop);
+    expectSendButtonFits(tester);
     await tester.tap(find.byKey(const ValueKey('quick-send')));
     await pumpFor(tester);
     expect(view(tester).running, isFalse);

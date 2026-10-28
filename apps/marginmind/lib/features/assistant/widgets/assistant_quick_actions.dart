@@ -412,7 +412,9 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                   children: [
                     Expanded(
                       child: Container(
+                        key: const ValueKey('quick-composer'),
                         height: 36,
+                        padding: const EdgeInsets.all(3),
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
                           border: Border.all(color: c.separator),
@@ -422,7 +424,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                           children: [
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.only(left: 12, right: 6),
+                                padding: const EdgeInsets.only(left: 8, right: 6),
                                 child: TextField(
                                   key: const ValueKey('quick-input'),
                                   controller: _text,
@@ -444,6 +446,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                               ),
                             ),
                             ClipOval(
+                              key: const ValueKey('quick-send-surface'),
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
@@ -451,7 +454,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                 ),
                                 child: MMIconButton(
                                   key: const ValueKey('quick-send'),
-                                  size: 36,
+                                  size: 28,
                                   icon: running ? MMIcons.stop : MMIcons.send,
                                   tooltip: running ? l.assistantStop : l.assistantSend,
                                   color: c.onAccent,
