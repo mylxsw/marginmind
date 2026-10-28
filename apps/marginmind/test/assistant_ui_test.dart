@@ -92,8 +92,18 @@ void main() {
     await pumpFor(tester, 20);
     expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     secrets.blocked = false;
-    await tester.enterText(find.byKey(const ValueKey('connect-key')), 'test-key');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('service-key')), matching: find.byType(EditableText)),
+      'test-key',
+    );
+    await tester.tap(find.byKey(const ValueKey('service-save')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     await tester.tap(find.text('重试读取'));
@@ -101,15 +111,19 @@ void main() {
     expect(conversationOf(tester).messages.last.status, MessageStatus.done);
   });
 
-  testWidgets('locked credentials leave the reader and assistant connection form usable', (tester) async {
+  testWidgets('locked credentials leave the reader and model settings link usable', (tester) async {
     final app = await openAssistantApp(tester, secretStore: _LockedSecrets());
     expect(app.workspace.content.documents, isNotEmpty);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
-    await tester.enterText(find.byKey(const ValueKey('connect-key')), 'replacement-test-key');
-    await tester.pump();
+    expect(find.byKey(const ValueKey('connect-key')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
+    await tester.pumpAndSettle();
     app.container.read(navigationProvider.notifier).showLibrary();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);

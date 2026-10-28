@@ -1178,7 +1178,7 @@
   "assistantConversations": "Conversations",
   "assistantNoConversations": "No conversations yet",
   "assistantPlaceholder": "Ask…",
-  "assistantConnectFirst": "Connect an AI service first",
+  "assistantConnectFirst": "Configure a model first",
   "assistantMention": "Reference",
   "assistantCommands": "Commands",
   "assistantOnline": "Online",
@@ -1371,11 +1371,8 @@
   "assistantSavedKeyUnavailable": "The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.",
   "assistantRetrySavedKey": "Retry reading key",
   "assistantKeySaveUnavailable": "The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.",
-  "assistantConnectTitle": "Connect an AI service",
   "assistantPasteKey": "Paste API key",
-  "assistantConnect": "Connect",
   "assistantCannotConnect": "Cannot reach the service",
-  "assistantServiceOllama": "Local · Ollama",
   "assistantQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
   "@assistantQuestions": {
     "placeholders": {
@@ -1466,8 +1463,6 @@
   "settingsSearchUnreachable": "Cannot reach the search service",
   "assistantManageModels": "Manage Models…",
   "assistantModel": "Model",
-  "assistantNoOllama": "Ollama isn’t running on this Mac",
-  "assistantNoModels": "The service lists no chat models",
   "assistantThinking": "Thinking…",
   "assistantWorkedFor": "Worked for {seconds} s",
   "@assistantWorkedFor": {
@@ -1532,5 +1527,8 @@
   "settingsSaving": "Saving…",
   "settingsUnsaved": "Unsaved changes",
   "settingsSaveBeforeModels": "Save the service settings before fetching models",
-  "settingsRequiredFields": "Complete the required fields before saving"
+  "settingsRequiredFields": "Complete the required fields before saving",
+  "assistantModelSetupTitle": "Set up the AI assistant",
+  "assistantModelSetupHint": "Add a service, enter its API key, and select a model in Model Settings to start chatting.",
+  "assistantConfigureModels": "Configure Models"
 }

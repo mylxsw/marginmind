@@ -9,7 +9,6 @@ import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
 import 'package:marginmind/features/assistant/settings/web_search_settings.dart';
-import 'package:marginmind/features/assistant/widgets/assistant_panel.dart' show preferredModel;
 import 'package:marginmind/features/assistant/widgets/service_logo.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -229,15 +228,22 @@ void main() {
     expect(find.text('Claude Sonnet'), findsOneWidget);
   });
 
-  testWidgets('storage failures never say the provider rejected a valid key and saving can be retried', (tester) async {
+  testWidgets('credential recovery opens Model Settings and uses its save flow', (tester) async {
     final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
     final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog);
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    await _enter(tester, 'connect-key', 'valid-test-key');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    expect(find.byKey(const ValueKey('connect-key')), findsNothing);
+    expect(find.byKey(const ValueKey('connect-anthropic')), findsNothing);
+    expect(catalog.checked, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
     await tester.pumpAndSettle();
-    expect(catalog.checked.single.$2, 'valid-test-key');
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-general')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'valid-test-key');
+    await _save(tester);
     expect(find.textContaining('暂时无法保存 API Key'), findsOneWidget);
     expect(find.text('API Key 无效'), findsNothing);
     expect(await app.container.read(assistantConfiguredProvider.future), isFalse);
@@ -245,14 +251,17 @@ void main() {
     secrets
       ..blockReads = false
       ..blockWrites = false;
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
+    await _save(tester);
+    expect(catalog.checked.single.$2, 'valid-test-key');
     expect(await app.container.read(assistantConfiguredProvider.future), isTrue);
     expect(secrets.values[AssistantServicesStore.account('legacy-claude')], 'valid-test-key');
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
-  });
+    expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
+  }, semanticsEnabled: false);
 
-  testWidgets('credential recovery uses the selected service when multiple services share a protocol', (tester) async {
+  testWidgets('the settings link keeps the selected service when providers are shared', (tester) async {
     AssistantService service(String id, String host) => AssistantService(
       id: id,
       protocol: ServiceProtocol.openai,
@@ -274,12 +283,15 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
+    await tester.pumpAndSettle();
     secrets
       ..blockReads = false
       ..blockWrites = false;
-    await _enter(tester, 'connect-key', 'replacement-test-key');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.tap(find.byKey(const ValueKey('service-header-selected')));
     await tester.pumpAndSettle();
+    await _enter(tester, 'service-key', 'replacement-test-key');
+    await _save(tester);
     expect(catalog.checked.single, ('https://selected.example/v1', 'replacement-test-key'));
     expect(secrets.values[AssistantServicesStore.account('selected')], 'replacement-test-key');
     expect(secrets.values.containsKey(AssistantServicesStore.account('first')), isFalse);
@@ -620,85 +632,51 @@ void main() {
     expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);
   });
 
-  testWidgets('not configured: connect in the panel; failures say why; the old service is reused', (tester) async {
-    final catalog = FakeCatalog(status: ConnectionStatus.authFailed);
-    final app = await openAssistantApp(tester, key: false, catalog: catalog);
+  testWidgets('an unconfigured assistant routes to models and updates after setup', (tester) async {
+    final catalog = FakeCatalog(
+      models: const [
+        ServiceModel(id: 'gpt-5'),
+        ServiceModel(id: 'gpt-5-mini'),
+      ],
+    );
+    final app = await openAssistantApp(
+      tester,
+      key: false,
+      catalog: catalog,
+      prefs: {AssistantServicesStore.settingsKey: jsonEncode(AssistantServices().toJson())},
+    );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
-    expect(find.text('先连接 AI 服务'), findsOneWidget);
-    expect(find.byKey(const ValueKey('quick-explain')), findsNothing);
-    // Nothing to send without a key.
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pump();
-    expect(catalog.checked, isEmpty);
-    await _enter(tester, 'connect-key', 'bad');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('API Key 无效'), findsOneWidget);
-    catalog.status = ConnectionStatus.unreachable;
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
-    expect(find.text('连不上服务'), findsOneWidget);
-    // Ollama: an address instead of a key.
-    await tester.tap(find.byKey(const ValueKey('connect-ollama')));
-    await tester.pumpAndSettle();
+    expect(find.text('先配置模型'), findsOneWidget);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
-    expect(find.byKey(const ValueKey('connect-endpoint')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    expect(find.byKey(const ValueKey('connect-button')), findsNothing);
+    expect(find.byKey(const ValueKey('quick-explain')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
     await tester.pumpAndSettle();
-    expect(find.text('找不到本机 Ollama'), findsOneWidget);
-    catalog
-      ..status = ConnectionStatus.ok
-      ..models = const [];
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
+    expect(catalog.checked, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('settings-add-service')));
     await tester.pumpAndSettle();
-    expect(find.text('这个服务没有可用的对话模型'), findsOneWidget);
-    expect(_services(app).services.where((s) => s.protocol == ServiceProtocol.ollama), isEmpty);
-
-    // Anthropic again: the migrated service without a key gets it.
-    await tester.tap(find.byKey(const ValueKey('connect-anthropic')));
+    await tester.tap(find.byKey(const ValueKey('service-option-openai')));
     await tester.pumpAndSettle();
-    await _enter(tester, 'connect-key', 'good');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await _enter(tester, 'service-key', 'key');
+    await _save(tester);
+    expect(await app.container.read(assistantConfiguredProvider.future), isFalse);
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-model-gpt-5')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('add-models-confirm')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-suggestions')), findsOneWidget);
-    expect(_services(app).services.where((s) => s.protocol == ServiceProtocol.anthropic), hasLength(1));
-    expect(app.secrets.values[AssistantServicesStore.account('legacy-claude')], 'good');
-    expect(find.text('提问…'), findsOneWidget);
-  });
+    expect(conversationOf(tester).model.model, 'gpt-5');
+    expect(_services(app).defaultModel!.modelId, 'gpt-5');
+  }, semanticsEnabled: false);
 
-  testWidgets('connect Gemini: the everyday model is picked from the list', (tester) async {
-    final catalog = FakeCatalog(
-      models: const [
-        ServiceModel(id: 'gemini-2.5-flash'),
-        ServiceModel(id: 'gemini-2.5-pro'),
-      ],
-    );
-    final app = await openAssistantApp(tester, key: false, catalog: catalog);
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('connect-gemini')));
-    await tester.pumpAndSettle();
-    await _enter(tester, 'connect-key', 'g');
-    await tester.tap(find.byKey(const ValueKey('connect-button')));
-    await tester.pumpAndSettle();
-    final gemini = _services(app).services.firstWhere((s) => s.protocol == ServiceProtocol.gemini);
-    expect(_services(app).defaultModel!.serviceId, gemini.id);
-    expect(_services(app).defaultModel!.modelId, 'gemini-2.5-pro');
-    expect(conversationOf(tester).model.serviceId, gemini.id);
-  });
-
-  test('preferred first models and service marks', () {
-    const models = [ServiceModel(id: 'a'), ServiceModel(id: 'claude-opus-5'), ServiceModel(id: 'claude-sonnet-5')];
-    expect(preferredModel(ServiceProtocol.anthropic, models)!.id, 'claude-sonnet-5');
-    expect(
-      preferredModel(ServiceProtocol.openai, const [ServiceModel(id: 'o3'), ServiceModel(id: 'gpt-5')])!.id,
-      'gpt-5',
-    );
-    expect(preferredModel(ServiceProtocol.ollama, const [ServiceModel(id: 'qwen3')])!.id, 'qwen3');
-    expect(preferredModel(ServiceProtocol.gemini, const []), isNull);
+  test('service marks', () {
     expect(serviceBrand(ServiceProtocol.openai, 'https://api.openai.com/v1'), ServiceBrand.openai);
     expect(serviceBrand(ServiceProtocol.openai, 'https://proxy.example/v1'), ServiceBrand.compatible);
     expect(serviceBrand(ServiceProtocol.gemini, ''), ServiceBrand.gemini);

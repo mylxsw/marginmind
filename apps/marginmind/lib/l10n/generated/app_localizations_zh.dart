@@ -2006,7 +2006,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantPlaceholder => '提问…';
 
   @override
-  String get assistantConnectFirst => '先连接 AI 服务';
+  String get assistantConnectFirst => '先配置模型';
 
   @override
   String get assistantMention => '引用';
@@ -2310,19 +2310,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantKeySaveUnavailable => '暂时无法保存 API Key。输入内容仍保留在此处，可稍后重试；这不代表 Key 无效。';
 
   @override
-  String get assistantConnectTitle => '连接一个 AI 服务';
-
-  @override
   String get assistantPasteKey => '粘贴 API Key';
 
   @override
-  String get assistantConnect => '连接';
-
-  @override
   String get assistantCannotConnect => '连不上服务';
-
-  @override
-  String get assistantServiceOllama => '本机 · Ollama';
 
   @override
   String assistantQuestions(int count) {
@@ -2500,12 +2491,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantModel => '模型';
 
   @override
-  String get assistantNoOllama => '找不到本机 Ollama';
-
-  @override
-  String get assistantNoModels => '这个服务没有可用的对话模型';
-
-  @override
   String get assistantThinking => '思考中…';
 
   @override
@@ -2661,4 +2646,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsRequiredFields => '请填写必填项后保存';
+
+  @override
+  String get assistantModelSetupTitle => '配置 AI 助手';
+
+  @override
+  String get assistantModelSetupHint => '在模型设置中添加服务、填写 API Key 并选择模型，完成后即可开始对话。';
+
+  @override
+  String get assistantConfigureModels => '配置模型';
 }

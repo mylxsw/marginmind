@@ -3755,7 +3755,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantConnectFirst.
   ///
   /// In en, this message translates to:
-  /// **'Connect an AI service first'**
+  /// **'Configure a model first'**
   String get assistantConnectFirst;
 
   /// No description provided for @assistantMention.
@@ -4304,35 +4304,17 @@ abstract class AppLocalizations {
   /// **'The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.'**
   String get assistantKeySaveUnavailable;
 
-  /// No description provided for @assistantConnectTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect an AI service'**
-  String get assistantConnectTitle;
-
   /// No description provided for @assistantPasteKey.
   ///
   /// In en, this message translates to:
   /// **'Paste API key'**
   String get assistantPasteKey;
 
-  /// No description provided for @assistantConnect.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect'**
-  String get assistantConnect;
-
   /// No description provided for @assistantCannotConnect.
   ///
   /// In en, this message translates to:
   /// **'Cannot reach the service'**
   String get assistantCannotConnect;
-
-  /// No description provided for @assistantServiceOllama.
-  ///
-  /// In en, this message translates to:
-  /// **'Local · Ollama'**
-  String get assistantServiceOllama;
 
   /// No description provided for @assistantQuestions.
   ///
@@ -4664,18 +4646,6 @@ abstract class AppLocalizations {
   /// **'Model'**
   String get assistantModel;
 
-  /// No description provided for @assistantNoOllama.
-  ///
-  /// In en, this message translates to:
-  /// **'Ollama isn’t running on this Mac'**
-  String get assistantNoOllama;
-
-  /// No description provided for @assistantNoModels.
-  ///
-  /// In en, this message translates to:
-  /// **'The service lists no chat models'**
-  String get assistantNoModels;
-
   /// No description provided for @assistantThinking.
   ///
   /// In en, this message translates to:
@@ -4981,6 +4951,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete the required fields before saving'**
   String get settingsRequiredFields;
+
+  /// No description provided for @assistantModelSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the AI assistant'**
+  String get assistantModelSetupTitle;
+
+  /// No description provided for @assistantModelSetupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a service, enter its API key, and select a model in Model Settings to start chatting.'**
+  String get assistantModelSetupHint;
+
+  /// No description provided for @assistantConfigureModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Models'**
+  String get assistantConfigureModels;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
