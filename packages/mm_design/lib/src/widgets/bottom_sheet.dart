@@ -100,11 +100,18 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
         );
         // Above the keyboard the home indicator inset no longer applies.
         final bottom = SizedBox(height: keyboard > 0 ? 0 : safe.bottom);
-        final body = MediaQuery.removePadding(
+        // The sheet already sits on the keyboard and the insets.
+        final body = MediaQuery.removeViewInsets(
           context: context,
-          removeTop: true,
           removeBottom: true,
-          child: _SheetScope(child: widget.child),
+          child: Builder(
+            builder: (context) => MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              removeBottom: true,
+              child: _SheetScope(child: widget.child),
+            ),
+          ),
         );
         final sheet = DecoratedBox(
           key: const ValueKey('mm-bottom-sheet'),
