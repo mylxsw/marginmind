@@ -80,7 +80,7 @@ a{color:#0066CC}a:hover{color:#004C99}
       <span style="font: 400 15px/20px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #6E6E73">两层结构：内容层（实心）与控件层（玻璃）。</span>
     </div>
     <div style="display: grid; grid-template-columns: 640px minmax(0, 1fr); gap: 24px">
-      <div style="position: relative; height: 360px; border-radius: 20px; overflow: hidden; background: #EDEDF0">
+      <div style="position: relative; height: 360px; border-radius: 20px; overflow: hidden; background: #FFFFFF">
         <div style="position: absolute; left: 150px; top: 36px; width: 340px; height: 360px; padding: 32px 36px; box-sizing: border-box; background: #FFFFFF; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.08); font: 400 15px/30px 'Songti SC', 'Noto Serif SC', serif; color: #1D1D1F; text-indent: 2em">间隔重复利用的正是这一机制：<span style="background: rgba(0,122,255,0.32); box-shadow: inset 0 -2px 0 rgba(0,122,255,0.9); border-radius: 3px; padding: 3px 0">在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更晚。</span>因此，复习间隔可以逐步拉长。</div>
         <div style="position: absolute; left: 16px; top: 16px; bottom: 16px; width: 120px; padding: 14px 12px; box-sizing: border-box; border-radius: 16px; background: rgba(242,242,246,0.86); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.9), 0 0 0 0.5px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06); font: 600 11px/14px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #636366">侧栏材质</div>
         <div style="position: absolute; left: 250px; top: 270px; height: 36px; padding: 0 16px; display: flex; align-items: center; gap: 14px; border-radius: 18px; background: rgba(255,255,255,0.78); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.95), 0 0 0 0.5px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.08); font: 500 13px/1 -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; color: #1D1D1F">浮动玻璃控件 · 透出下面的原文</div>
@@ -217,9 +217,9 @@ a{color:#0066CC}a:hover{color:#004C99}
         <div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
           <div style="flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px"><span>工具栏（标题 + 玻璃胶囊）</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">高 56</span></div>
           <div style="flex: 1; display: flex; min-height: 0">
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #EDEDF0"><span>原文</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 420<br>页面最大 620</span></div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #FFFFFF"><span>原文</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 420<br>页面最大 620</span></div>
             <div style="width: 1px; background: #D2D2D7"></div>
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #FBFBFD"><span>脑图 / 大纲</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 360<br>浮动控件距边 12</span></div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 14px; background: #FFFFFF"><span>脑图 / 大纲</span><span style="font-family: 'SF Mono', ui-monospace, Menlo, monospace; color: #6E6E73">最小 360<br>浮动控件距边 12</span></div>
           </div>
         </div>
       </div>
@@ -267,8 +267,8 @@ class Component extends DCLogic {
       ['fill', 'tertiarySystemFill', 'rgba(120,120,128,.12)', 'rgba(118,118,128,.24)', '主题节点、徽标底'],
       ['fill.quaternary', 'quaternarySystemFill', 'rgba(120,120,128,.08)', 'rgba(118,118,128,.14)', '搜索框、笔记节点、非当前标签'],
       ['bg.window', 'windowBackgroundColor', '#FFFFFF', '#1E1E1F', '窗口与工具栏底'],
-      ['bg.reader', '自定义', '#EDEDF0', '#262628', '原文区背景（页面之外）'],
-      ['bg.canvas', '自定义', '#FBFBFD', '#1C1C1E', '脑图画布'],
+      ['bg.reader', '共用窗口底色', '#FFFFFF', '#1E1E1F', '原文区背景（页面之外）'],
+      ['bg.canvas', '共用窗口底色', '#FFFFFF', '#1E1E1F', '脑图画布'],
       ['bg.card', 'controlBackgroundColor', '#FFFFFF', '#2C2C2E', '摘录卡片、分段控件选中项'],
       ['page', '固定', '#FFFFFF', '#FFFFFF', 'PDF 页面，不随外观变化'],
       ['accent', 'controlAccentColor', '#007AFF', '#0A84FF', '选中环、侧栏图标、开启状态'],

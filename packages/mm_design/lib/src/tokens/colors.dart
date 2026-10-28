@@ -50,7 +50,7 @@ class MMColors extends ThemeExtension<MMColors> {
 
   final Brightness brightness;
 
-  /// windowBackgroundColor — window and toolbar.
+  /// Shared workspace backdrop — window, toolbar, PDF surround and mind map.
   final Color windowBackground;
 
   /// Sidebar glass material.
@@ -59,10 +59,10 @@ class MMColors extends ThemeExtension<MMColors> {
   /// Sidebar when "Reduce transparency" is on.
   final Color sidebarOpaque;
 
-  /// Backdrop around PDF pages (like Preview).
+  /// PDF surround; shares the window backdrop, independent of page colors.
   final Color readerBackground;
 
-  /// Mind map canvas.
+  /// Mind map canvas; shares the window backdrop.
   final Color canvas;
 
   /// controlBackgroundColor — cards, selected segment.
@@ -128,13 +128,17 @@ class MMColors extends ThemeExtension<MMColors> {
   final List<BoxShadow> sidebarShadow;
   final List<BoxShadow> sheetShadow;
 
+  // Keep all workspace surfaces on the same base under floating glass.
+  static const _lightBackground = Color(0xFFFFFFFF);
+  static const _darkBackground = Color(0xFF1E1E1F);
+
   static const light = MMColors(
     brightness: Brightness.light,
-    windowBackground: Color(0xFFFFFFFF),
+    windowBackground: _lightBackground,
     sidebar: Color(0xDBF2F2F6),
     sidebarOpaque: Color(0xFFF2F2F6),
-    readerBackground: Color(0xFFEDEDF0),
-    canvas: Color(0xFFFBFBFD),
+    readerBackground: _lightBackground,
+    canvas: _lightBackground,
     card: Color(0xFFFFFFFF),
     page: Color(0xFFFFFFFF),
     label: Color(0xFF1D1D1F),
@@ -175,11 +179,11 @@ class MMColors extends ThemeExtension<MMColors> {
 
   static const dark = MMColors(
     brightness: Brightness.dark,
-    windowBackground: Color(0xFF1E1E1F),
+    windowBackground: _darkBackground,
     sidebar: Color(0xDB2C2C2F),
     sidebarOpaque: Color(0xFF2C2C2F),
-    readerBackground: Color(0xFF262628),
-    canvas: Color(0xFF1C1C1E),
+    readerBackground: _darkBackground,
+    canvas: _darkBackground,
     card: Color(0xFF2C2C2E),
     page: Color(0xFFFFFFFF),
     label: Color(0xFFF5F5F7),
