@@ -10,6 +10,8 @@
 
 项目背景、当前进度和开发计划：[docs/project-plan.md](docs/project-plan.md)。
 
+跨平台开发请先读 [跨平台支持评估与开发方案](docs/platform-support-plan.md)，按任务 ID、依赖和真实平台验收要求接手；不要用 Widget 测试通过代替原生构建与运行验证。
+
 二期功能开发请先读 [二期需求与执行说明](docs/phase-2-requirements.md)，按需求 ID 和依赖批次接手，并登记验收证据。
 
 ## 约定

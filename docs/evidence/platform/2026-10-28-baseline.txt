@@ -1,0 +1,32 @@
+Platform plan baseline verification — 2026-10-28
+Source commit: 7839b170735e92ca57ce50d28ae67592c6d9b3de
+Host: Ubuntu / Linux aarch64 (not the planned Linux x64 release target)
+Flutter: 3.47.2, framework d3b14c8769, channel [user-branch]
+Dart: 3.13.2
+Executable: /home/ubuntu/flutter-sdk/bin/flutter (not on the default PATH)
+
+1. Repository root: flutter pub get --enforce-lockfile
+Exit: 0
+Got dependencies!
+
+2. apps/marginmind:
+flutter test --no-pub --reporter expanded ../../packages/mm_platform/test test/map_export_test.dart test/reader_ocr_test.dart test/map_selection_clipboard_test.dart test/assistant_services_test.dart test/assistant_settings_test.dart test/assistant_network_test.dart
+Exit: 0
+00:33 +55: All tests passed!
+Scope: includes mocked native channels, platform overrides and fake services.
+No claim of native Windows/Linux/macOS integration or live model verification.
+
+3. packages/mm_data: dart test --reporter expanded
+Exit: 0
+00:02 +39: All tests passed!
+
+4. apps/marginmind: flutter build linux --debug --no-pub
+Exit: 1
+Building Linux application...
+CMake is required for Linux development.
+It is likely available from your distribution (e.g.: apt install cmake), or can be downloaded from https://cmake.org/download/
+
+The Linux build stopped at a missing toolchain prerequisite, before application compilation.
+Not run in this assessment: full analysis/coverage, Windows/macOS native builds,
+Linux release build or real desktop end-to-end workflows, live model API calls.
+No application code or dependency lockfile was changed by this documentation task.

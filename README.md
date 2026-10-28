@@ -114,6 +114,8 @@ dart format --set-exit-if-changed apps packages
 
 更多见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+Windows/Linux、移动端和 Web 的当前支持边界与开发任务见 [跨平台支持评估与开发方案](docs/platform-support-plan.md)。除 macOS 外的平台尚未完成完整应用验收。
+
 ## 路线图
 
 完整的项目背景、已完成工作和后续计划见 [docs/project-plan.md](docs/project-plan.md)。
