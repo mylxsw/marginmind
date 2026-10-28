@@ -1,0 +1,158 @@
+// GUL-542 scratch probe (not committed as a test): drives the real app on a
+// phone simulator / emulator through library → source → excerpt → map →
+// review, printing SHOT:<name> for the host to take a system screenshot and
+// ADBBACK:<name> for the host to press Android's back key.
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:marginmind/app/app.dart';
+import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/workspace/widgets/notices.dart';
+import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/main.dart' as app;
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
+import 'package:mm_pdf/mm_pdf.dart';
+
+// ignore_for_file: avoid_print
+
+Future<void> idle(WidgetTester t, double seconds) async {
+  for (var i = 0; i < seconds * 10; i++) {
+    await t.pump(const Duration(milliseconds: 100));
+  }
+}
+
+Future<void> shot(WidgetTester t, String name) async {
+  await idle(t, 1.5);
+  print('SHOT:$name');
+  await idle(t, 4);
+}
+
+/// Android: the host presses the real back key.
+Future<void> back(WidgetTester t, String name, bool android) async {
+  if (android) {
+    print('ADBBACK:$name');
+    await idle(t, 4);
+  } else {
+    await t.binding.handlePopRoute();
+    await idle(t, 2);
+  }
+}
+
+Future<void> tapKey(WidgetTester t, String key) async {
+  await t.tap(find.byKey(ValueKey(key)).first, warnIfMissed: false);
+  await idle(t, 2);
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('phone loop', (t) async {
+    final errors = <String>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = (d) => errors.add(d.exceptionAsString().split('\n').first);
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    app.main();
+    await idle(t, 6);
+    final android = Theme.of(t.element(find.byType(AppShell))).platform == TargetPlatform.android;
+    final size = t.view.physicalSize / t.view.devicePixelRatio;
+    print('PROBE logical=$size safe=${MediaQueryData.fromView(t.view).padding} tabs=${find.byType(MMTabBar).evaluate().length}');
+    await shot(t, '01-library');
+
+    final container = ProviderScope.containerOf(t.element(find.byType(AppShell)));
+    final sample = find.text('打开示例学习集').evaluate().isNotEmpty ? find.text('打开示例学习集') : find.text('Open Sample Study Set');
+    if (sample.evaluate().isNotEmpty) {
+      await t.tap(sample.first);
+    } else {
+      await t.tap(find.textContaining('MarginMind').first);
+    }
+    await idle(t, 6);
+    final route = container.read(navigationProvider) as WorkspaceRoute;
+    final controller = container.read(workspaceProvider(route.studySetId).notifier);
+    var state = container.read(workspaceProvider(route.studySetId));
+    if (state.activeDocumentId == null) {
+      final content = controller.content;
+      controller.openDocument(content.documents.first.id);
+      await idle(t, 4);
+      state = container.read(workspaceProvider(route.studySetId));
+    }
+    await tapKey(t, 'mm-tab-1');
+    await shot(t, '02-source');
+
+    // A text excerpt of the visible page, as the selection toolbar makes it.
+    final notice = await controller.excerpt(
+      state.activeDocumentId!,
+      const MMPdfSelection(
+        page: 1,
+        rects: [PageRect(72, 120, 300, 40)],
+        text: '摘录：先陡后平的遗忘曲线',
+      ),
+      MMAnnotationColor.values.first,
+    );
+    if (t.element(find.byType(ReaderPane)).mounted) showNotice(t.element(find.byType(ReaderPane)), notice, rootTitle: '');
+    await idle(t, 0.2);
+    print('PROBE layout after excerpt=${container.read(workspaceProvider(route.studySetId)).layout}');
+    print('SHOT:03-excerpt-toast');
+    await idle(t, 1.4);
+    final view = find.text('查看').evaluate().isNotEmpty ? find.text('查看') : find.text('View');
+    await t.tap(view.first, warnIfMissed: false);
+    await idle(t, 3);
+    print('PROBE layout after view=${container.read(workspaceProvider(route.studySetId)).layout}');
+    await shot(t, '04-map');
+
+    final node = find.byKey(ValueKey(notice.cardId!));
+    if (node.evaluate().isNotEmpty) {
+      await t.longPress(node.first);
+      await idle(t, 1);
+      await shot(t, '05-node-action-sheet');
+      await back(t, 'close-action-sheet', android);
+      print('PROBE action sheet after back=${find.byKey(const ValueKey('mm-action-sheet')).evaluate().length}');
+    } else {
+      print('PROBE missing node ${notice.cardId}');
+    }
+
+    await tapKey(t, 'toolbar-assistant');
+    await shot(t, '06-assistant-sheet');
+    final field = find.byType(EditableText);
+    if (field.evaluate().isNotEmpty) {
+      await t.tap(field.last, warnIfMissed: false);
+      await idle(t, 2);
+      await shot(t, '07-assistant-keyboard');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await idle(t, 2);
+    }
+    await back(t, 'close-assistant', android);
+    print('PROBE panel after back=${container.read(workspaceProvider(route.studySetId)).panel}');
+
+    controller.showDetails(notice.cardId);
+    await idle(t, 2);
+    await shot(t, '08-details-sheet');
+    await back(t, 'close-details', android);
+
+    await tapKey(t, 'mm-tab-3');
+    await shot(t, '09-review');
+    await tapKey(t, 'review-card-tap');
+    await shot(t, '10-review-answer');
+    final good = find.byKey(const ValueKey('rate-good'));
+    if (good.evaluate().isNotEmpty) {
+      await t.tap(good);
+      await idle(t, 2);
+    }
+    await back(t, 'review-up', android);
+    print('PROBE route after back from review=${container.read(navigationProvider).runtimeType}');
+    await back(t, 'workspace-up', android);
+    print('PROBE route after back from workspace=${container.read(navigationProvider).runtimeType}');
+    await shot(t, '11-library-after-back');
+
+    FlutterError.onError = previous;
+    final counts = <String, int>{};
+    for (final e in errors) {
+      counts[e] = (counts[e] ?? 0) + 1;
+    }
+    print('PROBE errors=${errors.length}');
+    counts.forEach((k, v) => print('PROBE error x$v: $k'));
+    print('SHOT:done');
+  });
+}
