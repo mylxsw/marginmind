@@ -104,10 +104,13 @@ void main() {
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
     expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
-    expect(find.byKey(ValueKey('context-chip-${_selectionId()}')), findsOneWidget);
-    for (final s in AssistantSkill.values.take(6)) {
+    expect(find.byKey(const ValueKey('assistant-context-summary')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-context-list')), findsNothing);
+    for (final s in [AssistantSkill.explain, AssistantSkill.summarize]) {
       expect(find.byKey(ValueKey('quick-${s.name}')), findsOneWidget);
     }
+    expect(find.byKey(const ValueKey('quick-more')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quick-translate')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('quick-explain')));
     await pumpFor(tester, 20);
     final c = conversationOf(tester);
@@ -179,6 +182,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('details-ask-assistant')));
     await tester.pumpAndSettle();
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
+    await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+    await tester.pumpAndSettle();
     expect(find.byKey(ValueKey('context-chip-node-main-$topic')), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
   });
@@ -225,8 +230,10 @@ void main() {
     expect(first.skill, 'summarize');
     expect(first.contexts.single.auto, isTrue);
     expect(first.contexts.single.kind, ContextKind.page);
-    // × on an automatic chip leaves it out of the next message only.
+    // The reference manager leaves an automatic item out of the next message only.
     final auto = first.contexts.single.id;
+    await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey('context-remove-$auto')));
     await tester.pump();
     await _type(tester, '翻译这一句');
@@ -235,7 +242,8 @@ void main() {
     final second = conversationOf(tester).messages[2];
     expect(second.text, '翻译这一句');
     expect(second.contexts, isEmpty);
-    expect(find.byKey(ValueKey('context-chip-$auto')), findsOneWidget);
+    expect(find.text('引用 1 项'), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-context-list')), findsNothing);
     // Typed "/command text" picks the skill and keeps the text.
     await _type(tester, '/解释 曲线');
     expect(find.byKey(const ValueKey('assistant-slash-menu')), findsNothing);
@@ -245,8 +253,11 @@ void main() {
     expect(find.text('整张脑图'), findsOneWidget);
     await tester.tap(find.text('整张脑图'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('context-chip-map-main')), findsOneWidget);
     expect(find.text('/解释 曲线'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('assistant-input')));
     await _press(tester, LogicalKeyboardKey.enter, shift: true);
     await _press(tester, LogicalKeyboardKey.enter);
     await pumpFor(tester, 20);

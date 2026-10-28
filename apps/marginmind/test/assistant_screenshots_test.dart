@@ -17,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
+import 'package:marginmind/features/assistant/widgets/assistant_composer.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -154,15 +155,29 @@ Future<void> _shoot(WidgetTester tester, String name, {Size size = const Size(14
   await tester.tap(find.byKey(const ValueKey('selection-assistant')));
   await pumpFor(tester, 10);
   await _save(tester, name);
+  await _save(tester, '$name-composer', bounds: tester.getRect(find.byType(AssistantComposer)));
+  await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+  await tester.pumpAndSettle();
+  await _save(tester, '$name-references');
+  await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+  await tester.enterText(find.byKey(const ValueKey('assistant-input')), '这段话和前面的观点有什么关系？');
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('quick-more')), findsNothing);
+  await _save(tester, '$name-typing');
+  await tester.enterText(find.byKey(const ValueKey('assistant-input')), '');
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('quick-more')));
+  await tester.pumpAndSettle();
+  await _save(tester, '$name-more', overlays: true);
   expect(find.byType(MarginMindApp), findsOneWidget);
 }
 
 /// Saves the app, or with [overlays] the whole view including dialogs.
-Future<void> _save(WidgetTester tester, String name, {bool overlays = false}) async {
-  final image = overlays
+Future<void> _save(WidgetTester tester, String name, {bool overlays = false, Rect? bounds}) async {
+  final image = overlays || bounds != null
       ? (await tester.runAsync(() {
           final view = tester.binding.renderViews.first;
-          return (view.debugLayer! as OffsetLayer).toImage(Offset.zero & view.size, pixelRatio: 2);
+          return (view.debugLayer! as OffsetLayer).toImage(bounds ?? Offset.zero & view.size, pixelRatio: 2);
         }))!
       : (await tester.runAsync(
           () => tester.renderObject<RenderRepaintBoundary>(find.byType(RepaintBoundary).first).toImage(pixelRatio: 2),

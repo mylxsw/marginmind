@@ -4094,6 +4094,30 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get assistantRemoveContext;
 
+  /// No description provided for @assistantContextCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No references} =1{1 reference} other{{count} references}}'**
+  String assistantContextCount(int count);
+
+  /// No description provided for @assistantManageContexts.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage references'**
+  String get assistantManageContexts;
+
+  /// No description provided for @assistantSelectionContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected text'**
+  String get assistantSelectionContext;
+
+  /// No description provided for @assistantMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get assistantMoreActions;
+
   /// No description provided for @assistantCurrentPage.
   ///
   /// In en, this message translates to:

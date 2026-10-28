@@ -13,10 +13,9 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../app/providers.dart';
 import '../assistant_settings.dart';
-import 'assistant_messages.dart' show contextIcon, contextLabel;
+import 'assistant_context_summary.dart';
 import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
-import 'dashed_border.dart';
 
 /// The input at the bottom of the panel: attached context, quick actions,
 /// the question, and the online / model / send controls.
@@ -204,6 +203,20 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     if (mounted) _focus.requestFocus();
   }
 
+  Future<void> _moreActions(BuildContext button) async {
+    final chosen = await showPopupMenu<AssistantSkill>(
+      context,
+      anchor: boundsOf(button),
+      items: [
+        for (final s in AssistantSkill.values.take(6))
+          if (s != AssistantSkill.explain && s != AssistantSkill.summarize) PopupItem(s, s.label(_l), icon: s.icon),
+      ],
+    );
+    if (!mounted) return;
+    if (chosen != null) _send(chosen.prompt(_l), chosen.name);
+    _focus.requestFocus();
+  }
+
   /// The toggle is remembered for the study set's next conversations.
   Future<void> _setOnline(bool online) async {
     await ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(widget.studySetId), online);
@@ -277,37 +290,27 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (configured && chips.isNotEmpty)
+              if (configured && quick && _text.text.trim().isEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Wrap(
-                    spacing: 5,
-                    runSpacing: 5,
+                  padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+                  child: Row(
                     children: [
-                      for (final item in chips)
-                        _ContextChip(
-                          key: ValueKey('context-chip-${item.id}'),
-                          item: item,
-                          off: item.auto && ui.suppressed.contains(item.id),
-                          onRemove: () =>
-                              item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
-                        ),
-                    ],
-                  ),
-                ),
-              if (configured && quick)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Wrap(
-                    spacing: 5,
-                    runSpacing: 5,
-                    children: [
-                      for (final s in AssistantSkill.values.take(6))
+                      for (final s in [AssistantSkill.explain, AssistantSkill.summarize])
                         _QuickAction(
                           key: ValueKey('quick-${s.name}'),
-                          skill: s,
-                          onPressed: running ? null : () => _send(s.prompt(l), s.name),
+                          label: s.label(l),
+                          icon: s.icon,
+                          onPressed: running || elsewhere ? null : () => _send(s.prompt(l), s.name),
                         ),
+                      Builder(
+                        builder: (button) => _QuickAction(
+                          key: const ValueKey('quick-more'),
+                          label: l.assistantMoreActions,
+                          icon: MMIcons.chevronDown,
+                          trailing: true,
+                          onPressed: running || elsewhere ? null : () => _moreActions(button),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -323,6 +326,14 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (configured && chips.isNotEmpty)
+                      AssistantContextSummary(
+                        key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
+                        items: chips,
+                        outgoing: outgoing,
+                        onChange: (item) =>
+                            item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
+                      ),
                     ConstrainedBox(
                       constraints: const BoxConstraints(minHeight: 40 - 14, maxHeight: 140),
                       child: Padding(
@@ -418,105 +429,50 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   }
 }
 
-class _ContextChip extends StatelessWidget {
-  const _ContextChip({super.key, required this.item, required this.off, required this.onRemove});
-
-  final ContextItem item;
-
-  /// An automatic chip left out of the next message.
-  final bool off;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.mmColors;
-    final t = context.mmText;
-    final l = context.l10n;
-    final selection = item.kind == ContextKind.selection;
-    final (Color bg, Color fg) = item.auto
-        ? (Colors.transparent, c.secondaryLabel)
-        : selection
-        ? (c.accentTint, c.accent)
-        : (c.researchTint, c.research);
-    var label = contextLabel(l, item);
-    if (selection && label.runes.length > 22) label = '${String.fromCharCodes(label.runes.take(22))}…';
-    final chip = Container(
-      height: 24,
-      padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(contextIcon(item), size: 12, color: fg),
-          const SizedBox(width: MMSpacing.xs),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: t.callout.copyWith(color: fg, decoration: off ? TextDecoration.lineThrough : null),
-            ),
-          ),
-          const SizedBox(width: 2),
-          MMIconButton(
-            key: ValueKey('context-remove-${item.id}'),
-            icon: MMIcons.close,
-            iconSize: 10,
-            size: 18,
-            color: fg,
-            tooltip: l.assistantRemoveContext,
-            onPressed: onRemove,
-          ),
-        ],
-      ),
-    );
-    if (!item.auto) return Semantics(label: label, child: chip);
-    return Tooltip(
-      message: l.assistantAutoContext,
-      child: CustomPaint(
-        foregroundPainter: DashedBorderPainter(color: c.separator, radius: 8),
-        child: Semantics(label: '$label, ${l.assistantAutoContext}', child: chip),
-      ),
-    );
-  }
-}
-
+/// A quiet shortcut: emphasis appears only while pointing at or focusing it.
 class _QuickAction extends StatelessWidget {
-  const _QuickAction({super.key, required this.skill, required this.onPressed});
+  const _QuickAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.trailing = false,
+  });
 
-  final AssistantSkill skill;
+  final String label;
+  final IconData icon;
   final VoidCallback? onPressed;
+  final bool trailing;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final label = skill.label(context.l10n);
     return MMInteractive(
       onTap: onPressed,
       semanticLabel: label,
-      builder: (context, s) => AnimatedOpacity(
-        duration: MMMotion.quick,
-        opacity: s.enabled ? 1 : .4,
-        child: AnimatedContainer(
-          duration: MMMotion.quick,
-          height: 24,
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          decoration: BoxDecoration(
-            color: s.hovered ? c.researchTint : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: c.research.withValues(alpha: .16)),
+      builder: (context, s) {
+        final active = s.hovered || s.focused || s.pressed;
+        final fg = active ? c.research : c.secondaryLabel;
+        return Opacity(
+          opacity: s.enabled ? 1 : .4,
+          child: Container(
+            height: MMSizes.field,
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+            decoration: BoxDecoration(
+              color: active ? c.researchTint : Colors.transparent,
+              borderRadius: BorderRadius.circular(MMRadii.row),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!trailing) ...[Icon(icon, size: MMSpacing.m, color: fg), const SizedBox(width: MMSpacing.xs)],
+                Text(label, style: context.mmText.callout.copyWith(color: fg)),
+                if (trailing) ...[const SizedBox(width: MMSpacing.xs), Icon(icon, size: MMSpacing.m, color: fg)],
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(skill.icon, size: 12, color: c.research),
-              const SizedBox(width: MMSpacing.xs),
-              Text(label, style: context.mmText.callout.copyWith(color: c.research)),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

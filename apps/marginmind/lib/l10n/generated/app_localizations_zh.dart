@@ -2193,6 +2193,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantRemoveContext => '移除';
 
   @override
+  String assistantContextCount(int count) {
+    return '引用 $count 项';
+  }
+
+  @override
+  String get assistantManageContexts => '管理引用';
+
+  @override
+  String get assistantSelectionContext => '所选文字';
+
+  @override
+  String get assistantMoreActions => '更多';
+
+  @override
   String assistantCurrentPage(int page) {
     return '第 $page 页';
   }

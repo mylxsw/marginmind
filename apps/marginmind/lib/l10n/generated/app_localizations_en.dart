@@ -2300,6 +2300,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantRemoveContext => 'Remove';
 
   @override
+  String assistantContextCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count references',
+      one: '1 reference',
+      zero: 'No references',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get assistantManageContexts => 'Manage references';
+
+  @override
+  String get assistantSelectionContext => 'Selected text';
+
+  @override
+  String get assistantMoreActions => 'More';
+
+  @override
   String assistantCurrentPage(int page) {
     return 'Page $page';
   }

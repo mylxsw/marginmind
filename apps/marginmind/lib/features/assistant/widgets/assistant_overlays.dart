@@ -203,11 +203,14 @@ class _KeyboardPopupState<T> extends State<_KeyboardPopup<T>> {
     },
     child: Focus(
       autofocus: true,
-      child: PopupList<T>(
-        items: widget.items,
-        highlighted: _at,
-        onHover: (i) => setState(() => _at = i),
-        onSelected: (v) => Navigator.of(context).pop(v),
+      child: Material(
+        type: MaterialType.transparency,
+        child: PopupList<T>(
+          items: widget.items,
+          highlighted: _at,
+          onHover: (i) => setState(() => _at = i),
+          onSelected: (v) => Navigator.of(context).pop(v),
+        ),
       ),
     ),
   );

@@ -431,8 +431,10 @@ void main() {
       final close = tester.getRect(find.byKey(const ValueKey('assistant-close')));
       expect(close.right, closeTo(panel.right - 8, 1));
       expect(tester.getRect(find.byKey(const ValueKey('assistant-new'))).right, lessThan(close.left + 1));
-      // The page being read is attached, page number first.
+      // The collapsed reference summary keeps the page visible; expand for its document title.
       expect(find.textContaining('第 '), findsWidgets);
+      await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
+      await tester.pumpAndSettle();
       expect(find.textContaining('页 · 学习的底层逻辑'), findsWidgets);
       await tester.pump(const Duration(seconds: 3));
     });

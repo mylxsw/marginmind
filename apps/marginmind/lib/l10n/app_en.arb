@@ -1294,6 +1294,17 @@
   "assistantWholeMap": "Whole map",
   "assistantAutoContext": "Attached automatically",
   "assistantRemoveContext": "Remove",
+  "assistantContextCount": "{count, plural, =0{No references} =1{1 reference} other{{count} references}}",
+  "@assistantContextCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assistantManageContexts": "Manage references",
+  "assistantSelectionContext": "Selected text",
+  "assistantMoreActions": "More",
   "assistantCurrentPage": "Page {page}",
   "@assistantCurrentPage": {
     "placeholders": {
