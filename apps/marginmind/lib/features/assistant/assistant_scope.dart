@@ -137,6 +137,9 @@ class AssistantUi {
     this.focusTick = 0,
     this.request,
     this.anchors = const {},
+    this.quickPassageId,
+    this.quickConversationId,
+    this.quickAction,
   });
 
   /// Context the user attached; cleared by sending.
@@ -157,6 +160,7 @@ class AssistantUi {
 
   /// Where attached selections are in the source, for notes and jumps.
   final Map<String, SourceAnchor> anchors;
+  final String? quickPassageId, quickConversationId, quickAction;
 
   AssistantUi copyWith({
     List<ContextItem>? contexts,
@@ -168,6 +172,10 @@ class AssistantUi {
     AssistantRequest? request,
     bool clearRequest = false,
     Map<String, SourceAnchor>? anchors,
+    String? quickPassageId,
+    String? quickConversationId,
+    String? quickAction,
+    bool clearQuickAction = false,
   }) => AssistantUi(
     contexts: contexts ?? this.contexts,
     suppressed: suppressed ?? this.suppressed,
@@ -176,6 +184,9 @@ class AssistantUi {
     focusTick: focusTick ?? this.focusTick,
     request: clearRequest ? null : (request ?? this.request),
     anchors: anchors ?? this.anchors,
+    quickPassageId: quickPassageId ?? this.quickPassageId,
+    quickConversationId: quickConversationId ?? this.quickConversationId,
+    quickAction: clearQuickAction ? null : (quickAction ?? this.quickAction),
   );
 }
 
@@ -207,6 +218,17 @@ class AssistantUiController extends Notifier<AssistantUi> {
       for (final c in state.contexts)
         if (c.id != id) c,
     ],
+  );
+
+  /// Keep a quick reader answer's source without changing the sidebar draft.
+  void rememberAnchor(String id, SourceAnchor anchor) =>
+      state = state.copyWith(anchors: {...state.anchors, id: anchor});
+
+  void rememberQuickConversation(String passageId, String conversationId, String? action) => state = state.copyWith(
+    quickPassageId: passageId,
+    quickConversationId: conversationId,
+    quickAction: action,
+    clearQuickAction: action == null,
   );
 
   /// Leaves an automatic context out of the next message, or brings it back.

@@ -37,6 +37,8 @@ Future<AssistantApp> _open(WidgetTester tester, {ScriptClient? client, bool dark
   );
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('selection-assistant')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('quick-sidebar')));
   await pumpFor(tester);
   return app;
 }

@@ -273,6 +273,8 @@ class AgentMessage extends ConsumerWidget {
     required this.message,
     required this.question,
     this.last = false,
+    this.compact = false,
+    this.onSource,
   });
 
   final String studySetId;
@@ -281,6 +283,8 @@ class AgentMessage extends ConsumerWidget {
   /// The question this answers; its contexts are what the answer cites.
   final Message question;
   final bool last;
+  final bool compact;
+  final ValueChanged<Citation>? onSource;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -299,7 +303,7 @@ class AgentMessage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (m.traces.isNotEmpty || (running && m.text.isEmpty) || (m.startedAt != null && m.endedAt != null))
+        if ((!compact && (m.traces.isNotEmpty || (m.startedAt != null && m.endedAt != null))) || running)
           ActivityTimeline(key: ValueKey('trace-${m.id}'), message: m),
         for (final permission in m.permissions)
           ReadPermissionCard(key: ValueKey(permission.request.id), messageId: m.id, view: permission),
@@ -316,19 +320,22 @@ class AgentMessage extends ConsumerWidget {
           ),
         AnswerBody(
           text: m.text,
+          fontSize: compact ? 14 : null,
           citations: m.citations,
           cursor: running && !m.waitingForPermission,
           conclusion: skill == AssistantSkill.verify,
           tooltipFor: tooltip,
           onLink: (url) => ref.read(assistantLinksProvider).open(url),
           onCitation: (x) => x.external
-              ? ref.read(assistantUiProvider(studySetId).notifier).openSource(x)
+              ? (onSource ?? ref.read(assistantUiProvider(studySetId).notifier).openSource)(x)
               : revealCitation(context, ref, studySetId, x, question.contexts),
         ),
-        if (!running && numbers.isNotEmpty) SourcesRow(message: m, numbers: numbers, studySetId: studySetId),
+        if (!running && numbers.isNotEmpty)
+          SourcesRow(message: m, numbers: numbers, studySetId: studySetId, onSource: onSource),
         for (final p in m.proposals)
           ProposalCard(key: ValueKey('proposal-${p.proposal.id}'), studySetId: studySetId, view: p),
-        if (!running) _Tail(studySetId: studySetId, message: m, question: question),
+        if (!running && (!compact || (m.status != MessageStatus.done && m.status != MessageStatus.stopped)))
+          _Tail(studySetId: studySetId, message: m, question: question),
       ],
     );
   }
@@ -580,11 +587,12 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
 /// External sources an answer cites, numbered as in its text.
 class SourcesRow extends ConsumerWidget {
-  const SourcesRow({super.key, required this.message, required this.numbers, required this.studySetId});
+  const SourcesRow({super.key, required this.message, required this.numbers, required this.studySetId, this.onSource});
 
   final Message message;
   final Map<String, int> numbers;
   final String studySetId;
+  final ValueChanged<Citation>? onSource;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -603,7 +611,7 @@ class SourcesRow extends ConsumerWidget {
           for (final e in numbers.entries)
             if (first[e.key] case final citation?)
               MMInteractive(
-                onTap: () => ref.read(assistantUiProvider(studySetId).notifier).openSource(citation),
+                onTap: () => (onSource ?? ref.read(assistantUiProvider(studySetId).notifier).openSource)(citation),
                 semanticLabel: '${e.value} ${sourceTitle(citation)}',
                 builder: (context, s) => AnimatedContainer(
                   duration: MMMotion.quick,

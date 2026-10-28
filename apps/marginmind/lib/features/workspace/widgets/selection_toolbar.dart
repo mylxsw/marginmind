@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
-import '../../assistant/assistant_entry.dart';
+import '../../assistant/assistant_scope.dart' show selectionContext;
+import '../../assistant/widgets/assistant_quick_actions.dart';
+import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
@@ -33,6 +37,7 @@ class SelectionToolbar extends ConsumerStatefulWidget {
 class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   final _focus = FocusNode();
   bool _busy = false;
+  bool _quickOpen = false;
 
   @override
   void initState() {
@@ -51,6 +56,38 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   void _dismiss() {
     ref.read(workspaceProvider(widget.studySetId).notifier).dismissPending();
     widget.pdf.clearSelection();
+  }
+
+  Future<void> _ask(String documentId, List<AnnotationPage> pages, String quote) async {
+    if (pages.isEmpty || quote.trim().isEmpty) return;
+    final layout = context.findAncestorRenderObjectOfType<RenderCustomSingleChildLayoutBox>();
+    if (layout == null) return;
+    final origin = layout.localToGlobal(Offset.zero);
+    final selected = switch (widget.pending) {
+      PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
+      PendingHighlight(:final viewportRect) => viewportRect,
+      _ => Rect.zero,
+    };
+    setState(() => _quickOpen = true);
+    final continued = await showAssistantQuickActions(
+      context,
+      studySetId: widget.studySetId,
+      pending: widget.pending,
+      passage: selectionContext(documentId: documentId, page: pages.first.page, quote: quote),
+      source: SourceAnchor(
+        target: PdfTarget(documentId: documentId, pages: pages, quote: quote),
+      ),
+      toolbar: boundsOf(context),
+      selection: selected.shift(origin),
+      viewport: origin & layout.size,
+    );
+    if (!mounted) return;
+    setState(() => _quickOpen = false);
+    if (continued == true) {
+      _dismiss();
+    } else {
+      _focus.requestFocus();
+    }
   }
 
   Future<void> _run(ReaderSelectionCommand command, [MMAnnotationColor? color]) async {
@@ -96,15 +133,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               notice = await controller.deleteHighlight(annotationId);
             case ReaderSelectionCommand.assistant:
               if (annotation.quote.isEmpty) return;
-              // The highlight's own place is the anchor; the toolbar is done.
-              askAboutPassage(
-                ref,
-                widget.studySetId,
-                documentId: annotation.documentId,
-                pages: annotation.pages,
-                quote: annotation.quote,
-              );
-              _dismiss();
+              await _ask(annotation.documentId, annotation.pages, annotation.quote);
               return;
             case ReaderSelectionCommand.highlight:
             case ReaderSelectionCommand.note:
@@ -121,15 +150,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         return;
       }
       if (command == ReaderSelectionCommand.assistant) {
-        // The context keeps the passage and its place; the selection is done.
-        askAboutPassage(
-          ref,
-          widget.studySetId,
-          documentId: pending.documentId,
-          pages: pending.selection.pages,
-          quote: pending.selection.text,
-        );
-        _dismiss();
+        await _ask(pending.documentId, pending.selection.pages, pending.selection.text);
         return;
       }
       if (command == ReaderSelectionCommand.note) {
@@ -229,6 +250,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       key: const ValueKey('selection-assistant'),
                       icon: MMIcons.ai,
                       tint: c.research,
+                      selected: _quickOpen,
                       tooltip: '${l.askAssistant}（A · ${describeShortcut(AppShortcuts.askAssistant)}）',
                       onPressed: () => _run(ReaderSelectionCommand.assistant),
                     ),

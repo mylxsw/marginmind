@@ -389,6 +389,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('selection-assistant')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('quick-sidebar')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('quick-explain')));
       await pumpFor(tester, 20);
       final first = conversationOf(tester).messages.last;

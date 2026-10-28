@@ -154,7 +154,7 @@ Future<AssistantApp> openAssistantApp(
       assistantSecretsProvider.overrideWithValue(secrets),
       assistantArchiveProvider.overrideWith((ref, id) => store.archive),
       if (!realWrites) assistantMapEditExecutorProvider.overrideWith((ref, id) => executor),
-      assistantNoteSaverProvider.overrideWith((ref, id) => notes),
+      if (!realWrites) assistantNoteSaverProvider.overrideWith((ref, id) => notes),
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页的正文'),
       serviceCatalogProvider.overrideWithValue(catalog ?? FakeCatalog()),
       assistantLinksProvider.overrideWithValue(links),
@@ -166,7 +166,7 @@ Future<AssistantApp> openAssistantApp(
             defaultModel: () => ref.read(assistantDefaultModelProvider),
             storage: store,
             executor: realWrites ? ref.watch(assistantMapEditExecutorProvider(id)) : executor,
-            notes: notes,
+            notes: realWrites ? ref.watch(assistantNoteSaverProvider(id)) : notes,
             online: assistantOnlineDefault(ref, id),
             runFactory: (state, conversation, question) async {
               final workspace = ref.read(workspaceProvider(id).notifier);

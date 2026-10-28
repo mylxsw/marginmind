@@ -2836,4 +2836,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantKeyNeedsAttention => 'Re-enter your API key';
+
+  @override
+  String get assistantQuickTitle => 'AI Quick Actions';
+
+  @override
+  String get assistantQuickExplain => 'Explain Passage';
+
+  @override
+  String get assistantQuickExplainHint => 'Understand it in simpler words';
+
+  @override
+  String get assistantQuickTranslateHint => 'Translate into Chinese or another language';
+
+  @override
+  String get assistantQuickSummarize => 'Summarize Key Points';
+
+  @override
+  String get assistantQuickSummarizeHint => 'Extract the main ideas';
+
+  @override
+  String get assistantQuickOutline => 'Create an Outline';
+
+  @override
+  String get assistantQuickOutlineHint => 'Organize ideas and their structure';
+
+  @override
+  String get assistantQuickOutlinePrompt =>
+      'Create a clear text outline of the selected passage, organizing its main ideas and hierarchy. Show the outline in your answer without modifying the mind map.';
+
+  @override
+  String get assistantQuickMore => 'More Actions';
+
+  @override
+  String get assistantQuickMoreHint => 'Verify · Quiz';
+
+  @override
+  String get assistantQuickAsk => 'Or ask a question…';
+
+  @override
+  String get assistantQuickFollowUp => 'Ask more about this passage…';
+
+  @override
+  String get assistantQuickSidebar => 'Continue in Sidebar';
+
+  @override
+  String get assistantQuickBusy => 'Another conversation is answering. You can ask when it finishes.';
+
+  @override
+  String get assistantQuickChanged => 'This conversation has changed. Continue viewing it in the sidebar.';
+
+  @override
+  String get assistantQuickGenerated => 'AI-generated content';
+
+  @override
+  String get assistantQuickSelection => 'Selected Text';
 }

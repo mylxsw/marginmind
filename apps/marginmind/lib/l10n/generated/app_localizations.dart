@@ -5071,6 +5071,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re-enter your API key'**
   String get assistantKeyNeedsAttention;
+
+  /// No description provided for @assistantQuickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Quick Actions'**
+  String get assistantQuickTitle;
+
+  /// No description provided for @assistantQuickExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain Passage'**
+  String get assistantQuickExplain;
+
+  /// No description provided for @assistantQuickExplainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Understand it in simpler words'**
+  String get assistantQuickExplainHint;
+
+  /// No description provided for @assistantQuickTranslateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate into Chinese or another language'**
+  String get assistantQuickTranslateHint;
+
+  /// No description provided for @assistantQuickSummarize.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize Key Points'**
+  String get assistantQuickSummarize;
+
+  /// No description provided for @assistantQuickSummarizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract the main ideas'**
+  String get assistantQuickSummarizeHint;
+
+  /// No description provided for @assistantQuickOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an Outline'**
+  String get assistantQuickOutline;
+
+  /// No description provided for @assistantQuickOutlineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize ideas and their structure'**
+  String get assistantQuickOutlineHint;
+
+  /// No description provided for @assistantQuickOutlinePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a clear text outline of the selected passage, organizing its main ideas and hierarchy. Show the outline in your answer without modifying the mind map.'**
+  String get assistantQuickOutlinePrompt;
+
+  /// No description provided for @assistantQuickMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More Actions'**
+  String get assistantQuickMore;
+
+  /// No description provided for @assistantQuickMoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify · Quiz'**
+  String get assistantQuickMoreHint;
+
+  /// No description provided for @assistantQuickAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Or ask a question…'**
+  String get assistantQuickAsk;
+
+  /// No description provided for @assistantQuickFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask more about this passage…'**
+  String get assistantQuickFollowUp;
+
+  /// No description provided for @assistantQuickSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in Sidebar'**
+  String get assistantQuickSidebar;
+
+  /// No description provided for @assistantQuickBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Another conversation is answering. You can ask when it finishes.'**
+  String get assistantQuickBusy;
+
+  /// No description provided for @assistantQuickChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation has changed. Continue viewing it in the sidebar.'**
+  String get assistantQuickChanged;
+
+  /// No description provided for @assistantQuickGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-generated content'**
+  String get assistantQuickGenerated;
+
+  /// No description provided for @assistantQuickSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected Text'**
+  String get assistantQuickSelection;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

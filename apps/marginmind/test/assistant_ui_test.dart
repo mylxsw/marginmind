@@ -156,7 +156,12 @@ void main() {
     expect(find.byKey(const ValueKey('selection-assistant')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('selection-assistant')));
     await pumpFor(tester);
-    // Panel opens beside the source, the passage is attached, no launcher.
+    expect(find.byKey(const ValueKey('assistant-quick-actions')), findsOneWidget);
+    expect(app.container.read(workspaceProvider('demo-1')).panel, isNot(RightPanel.assistant));
+    expect(client.calls, 0);
+    await tester.tap(find.byKey(const ValueKey('quick-sidebar')));
+    await pumpFor(tester);
+    // The optional sidebar entry carries the same passage.
     expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
     expect(app.container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
     expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
