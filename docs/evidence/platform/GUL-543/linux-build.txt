@@ -1,0 +1,4 @@
+Ubuntu 24.04 ARM64; Flutter 3.47.2 / Dart 3.13.2
+Command: flutter build linux --release
+Result: exit 0
+✓ Built build/linux/arm64/release/bundle/marginmind

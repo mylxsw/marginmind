@@ -68,7 +68,9 @@ abstract final class AppShortcuts {
   static SingleActivator get findPrevious => primaryShortcut(LogicalKeyboardKey.keyG, shift: true);
   static SingleActivator get toggleBookmark => primaryShortcut(LogicalKeyboardKey.keyD);
   static SingleActivator get goToPage => primaryShortcut(LogicalKeyboardKey.keyG, alt: true);
-  static SingleActivator get fullScreen => primaryShortcut(LogicalKeyboardKey.keyF, control: true);
+  static SingleActivator get fullScreen => defaultTargetPlatform == TargetPlatform.macOS
+      ? primaryShortcut(LogicalKeyboardKey.keyF, control: true)
+      : const SingleActivator(LogicalKeyboardKey.f11);
   static SingleActivator get goBack => primaryShortcut(LogicalKeyboardKey.bracketLeft);
   static SingleActivator get firstPage => const SingleActivator(LogicalKeyboardKey.arrowUp, alt: true);
   static SingleActivator get lastPage => const SingleActivator(LogicalKeyboardKey.arrowDown, alt: true);
@@ -101,7 +103,8 @@ abstract final class AppShortcuts {
   static SingleActivator get toggleInkTool => primaryShortcut(LogicalKeyboardKey.keyM, shift: true);
 
   /// "Tooltip (⌘1)".
-  static String tip(String label, SingleActivator shortcut) => '$label（${describeShortcut(shortcut)}）';
+  static String tip(String label, SingleActivator shortcut) =>
+      browserOwnsShortcut(shortcut) ? label : '$label（${describeShortcut(shortcut)}）';
 }
 
 /// Shared by the native menu and the focused canvas.
@@ -525,9 +528,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       edit.add(
         AppCommand(
           l.askAssistantEllipsis,
-          selectionText
+          selectionText && MMPlatformCapabilities.current.assistant
               ? () => invokeSelection(ReaderSelectionCommand.assistant)
-              : askCard != null
+              : askCard != null && MMPlatformCapabilities.current.assistant
               ? () => askAboutNode(ref, workspaceId, askCard)
               : null,
           shortcut: AppShortcuts.askAssistant,
@@ -764,7 +767,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
         AppCommand(
           workspaceState!.panel == RightPanel.assistant ? l.hideAssistant : l.showAssistant,
-          () => toggleAssistant(ref, workspaceId),
+          MMPlatformCapabilities.current.assistant ? () => toggleAssistant(ref, workspaceId) : null,
           shortcut: AppShortcuts.assistantPanel,
         ),
       ],
@@ -897,8 +900,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
 
     return CallbackShortcuts(
       bindings: {
-        for (final c in [settings, ...file, ...edit, ...view, ...go, ...map, ...study, ...help])
-          if (c.shortcut != null && c.onInvoke != null) c.shortcut!: c.onInvoke!,
+        for (final c in [
+          settings,
+          ...file,
+          ...edit,
+          ...view,
+          ...go,
+          ...map,
+          ...study,
+          ...help,
+          if (DesktopWindow.isDesktop) fullScreen,
+        ])
+          if (c.shortcut != null && c.onInvoke != null && !browserOwnsShortcut(c.shortcut!)) c.shortcut!: c.onInvoke!,
       },
       child: Focus(autofocus: true, child: widget.child),
     );

@@ -13,6 +13,8 @@ void main() {
       final mobile = platform == TargetPlatform.iOS || platform == TargetPlatform.android;
       final mac = platform == TargetPlatform.macOS;
       expect(c.mobile, mobile);
+      expect(c.assistant, isTrue);
+      expect(c.externalCredentials, isTrue);
       expect(c.secretStore, mobile || mac);
       expect(c.externalLink, mobile || mac);
       expect(c.shareFile, mobile);
@@ -21,6 +23,8 @@ void main() {
       final web = MMPlatformCapabilities(platform, web: true);
       expect([
         web.mobile,
+        web.assistant,
+        web.externalCredentials,
         web.secretStore,
         web.externalLink,
         web.shareFile,

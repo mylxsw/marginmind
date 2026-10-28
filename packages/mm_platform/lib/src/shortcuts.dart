@@ -26,3 +26,20 @@ String describeShortcut(SingleActivator activator) {
   }
   return [if (activator.control) 'Ctrl', if (activator.alt) 'Alt', if (activator.shift) 'Shift', key].join('+');
 }
+
+/// Keep browser navigation, find and save chords in the browser. Commands
+/// remain available from the app's toolbar and menus.
+bool browserOwnsShortcut(SingleActivator shortcut, {bool isWeb = kIsWeb}) =>
+    isWeb &&
+    (shortcut.control || shortcut.meta) &&
+    !shortcut.alt &&
+    const [
+      LogicalKeyboardKey.keyF,
+      LogicalKeyboardKey.keyS,
+      LogicalKeyboardKey.keyW,
+      LogicalKeyboardKey.keyN,
+      LogicalKeyboardKey.keyO,
+      LogicalKeyboardKey.keyL,
+      LogicalKeyboardKey.keyR,
+      LogicalKeyboardKey.keyD,
+    ].contains(shortcut.trigger);

@@ -1,0 +1,2 @@
+macOS ARM64; Flutter 3.47.2; flutter build macos --debug
+✓ Built build/macos/Build/Products/Debug/MarginMind.app

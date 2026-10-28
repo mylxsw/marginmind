@@ -145,7 +145,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       position: position,
       entries: [
         // Ask the assistant about the node: sent at once, or attached to ask freely.
-        if (card != null && askTitle.isNotEmpty) ...[
+        if (MMPlatformCapabilities.current.assistant && card != null && askTitle.isNotEmpty) ...[
           MMMenuHeader(l.askAssistant),
           MMMenuItem(
             topic ? l.assistantExplainTopic : l.assistantExplainCard,
@@ -160,7 +160,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           MMMenuItem(l.assistantAskWith, () => ask(null)),
           const MMMenuDivider(),
         ],
-        if (card == null) ...[
+        if (MMPlatformCapabilities.current.assistant && card == null) ...[
           MMMenuHeader(l.askAssistant),
           MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
           MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),

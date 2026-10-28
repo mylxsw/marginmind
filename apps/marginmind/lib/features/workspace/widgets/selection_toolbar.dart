@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
-import 'package:mm_platform/mm_platform.dart' show describeShortcut;
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
 import '../../assistant/assistant_entry.dart';
@@ -223,7 +223,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     onPressed: () =>
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
-                  if (!isArea) ...[
+                  if (MMPlatformCapabilities.current.assistant && !isArea) ...[
                     const MMToolbarDivider(),
                     MMToolbarButton(
                       key: const ValueKey('selection-assistant'),

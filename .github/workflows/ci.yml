@@ -49,6 +49,44 @@ jobs:
       - run: xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES
         working-directory: apps/marginmind
 
+  web:
+    name: Build and test browser storage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: dart test --platform chrome test/browser_library_store_test.dart
+        working-directory: packages/mm_data
+      - run: flutter build web --release
+        working-directory: apps/marginmind
+      - run: python3 -m pip install playwright==1.64.1
+      - run: python3 docs/evidence/platform/GUL-543/browser_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-evidence
+          path: docs/evidence/platform/GUL-543/
+
+  linux:
+    name: Build Linux app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libasound2-dev
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build linux --release
+        working-directory: apps/marginmind
+
   ios:
     name: Build iOS simulator
     runs-on: macos-latest

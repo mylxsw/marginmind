@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -182,6 +181,9 @@ class _MapExportSheetState extends State<MapExportSheet> {
         saved = await save(name, data);
       } else if (MMPlatformCapabilities.current.shareFile) {
         saved = await const MobileFileShare().share(name, data);
+      } else if (kIsWeb) {
+        await XFile.fromData(data, name: name, mimeType: 'application/octet-stream').saveTo('');
+        saved = true;
       } else {
         final location = await getSaveLocation(
           suggestedName: name,
@@ -190,7 +192,9 @@ class _MapExportSheetState extends State<MapExportSheet> {
           ],
         );
         saved = location != null;
-        if (location != null) await File(location.path).writeAsBytes(data, flush: true);
+        if (location != null) {
+          await XFile.fromData(data, name: name, mimeType: 'application/octet-stream').saveTo(location.path);
+        }
       }
       if (!mounted) return;
       if (saved) {
