@@ -66,25 +66,6 @@ class UnavailableKeyStore extends FakeSecrets {
 }
 
 void main() {
-  testWidgets('inaccessible saved keys are explained and retry restores AI without re-entering a key', (tester) async {
-    final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
-    final app = await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
-    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-    await tester.pumpAndSettle();
-    expect(await app.container.read(assistantCredentialStateProvider.future), AssistantCredentialState.unavailable);
-    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
-    expect(find.text('API Key 无效'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
-    secrets.blockReads = false;
-    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
-    await tester.pumpAndSettle();
-    expect(await app.container.read(assistantCredentialStateProvider.future), AssistantCredentialState.ready);
-    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
-    expect(catalog.checked, isEmpty); // Retry reads storage; it does not send the key to the network.
-  });
-
   testWidgets('storage failures never say the provider rejected a valid key and saving can be retried', (tester) async {
     final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
     final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog);

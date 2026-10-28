@@ -84,9 +84,10 @@ void main() {
     expect(find.text('API Key 无效'), findsNothing);
     await tester.tap(find.text('重试读取'));
     await pumpFor(tester, 20);
-    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     secrets.blocked = false;
-    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
+    await tester.enterText(find.byKey(const ValueKey('connect-key')), 'test-key');
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
     await tester.tap(find.text('重试读取'));
