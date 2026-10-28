@@ -137,23 +137,48 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
   Widget build(BuildContext context) {
     final l = context.l10n, c = context.mmColors;
     final enabled = !_busy && !_loading;
-    Widget input(String label, TextEditingController controller, String id, {bool secret = false}) => MMSettingsRow(
+    final inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(MMRadii.field),
+      borderSide: BorderSide(color: c.separator),
+    );
+    Widget input(
+      String label,
+      TextEditingController controller,
+      String id, {
+      required String placeholder,
+      bool secret = false,
+    }) => MMSettingsRow(
       label: label,
       trailing: SizedBox(
         width: 245,
-        child: TextField(
-          key: ValueKey(id),
-          controller: controller,
-          enabled: enabled,
-          obscureText: secret,
-          autocorrect: false,
-          enableSuggestions: false,
-          style: context.mmText.body,
-          onChanged: _changed,
-          decoration: InputDecoration(
-            isDense: true,
-            border: InputBorder.none,
-            hintText: secret ? l.voiceKeyPlaceholder : null,
+        height: MMSizes.field,
+        child: Semantics(
+          label: label,
+          child: TextField(
+            key: ValueKey(id),
+            controller: controller,
+            enabled: enabled,
+            obscureText: secret,
+            autocorrect: false,
+            enableSuggestions: false,
+            textAlign: TextAlign.right,
+            textAlignVertical: TextAlignVertical.center,
+            style: context.mmText.body.copyWith(color: c.label),
+            onChanged: _changed,
+            decoration: InputDecoration(
+              isDense: true,
+              visualDensity: VisualDensity.standard,
+              constraints: const BoxConstraints.tightFor(height: MMSizes.field),
+              contentPadding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+              filled: true,
+              fillColor: c.quaternaryFill,
+              border: inputBorder,
+              enabledBorder: inputBorder,
+              disabledBorder: inputBorder,
+              focusedBorder: inputBorder.copyWith(borderSide: BorderSide(color: c.accent)),
+              hintText: placeholder,
+              hintStyle: context.mmText.bodySecondary,
+            ),
           ),
         ),
       ),
@@ -202,8 +227,14 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                         }),
                 ),
               ),
-              if (!_apiKey) input('App ID', _appId, 'voice-app-id'),
-              input(_apiKey ? 'API Key' : 'Access Token', _key, 'voice-key', secret: true),
+              if (!_apiKey) input('App ID', _appId, 'voice-app-id', placeholder: l.voiceAppIdPlaceholder),
+              input(
+                _apiKey ? 'API Key' : 'Access Token',
+                _key,
+                'voice-key',
+                placeholder: l.voiceKeyPlaceholder,
+                secret: true,
+              ),
               MMSettingsRow(
                 label: l.voiceResource,
                 trailing: MMPopUpButton<String>(
@@ -223,7 +254,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
               ),
             ],
             if (_provider == VoiceProvider.aliyun) ...[
-              input('API Key', _key, 'voice-key', secret: true),
+              input('API Key', _key, 'voice-key', placeholder: l.voiceKeyPlaceholder, secret: true),
               MMSettingsRow(
                 label: l.assistantModel,
                 trailing: MMPopUpButton<String>(
@@ -241,7 +272,7 @@ class _VoiceSettingsPageState extends ConsumerState<VoiceSettingsPage> {
                         }),
                 ),
               ),
-              input(l.settingsAddress, _endpoint, 'voice-endpoint'),
+              input(l.settingsAddress, _endpoint, 'voice-endpoint', placeholder: const VoiceSettings().endpoint),
             ],
           ],
         ),

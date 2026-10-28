@@ -149,6 +149,47 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     setUp(installTestPdfBackend);
 
+    // Text selection stays enabled under the tools for touch long press;
+    // a mouse drag must still belong to the tool, as before.
+    for (final tool in [null, MMPdfInkTool.freehand]) {
+      testWidgets('mouse drag over text with tool $tool selects no text', (tester) async {
+        final controller = MMPdfViewController();
+        final selections = <MMPdfSelection>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MMPdfView(
+              filePath: 'pencil-policy.pdf',
+              controller: controller,
+              areaSelecting: tool == null,
+              ink: tool == null ? null : MMPdfInk(tool: tool, colorIndex: 0, width: 2),
+              inkColors: _colors,
+              onInkDrawn: (_) {},
+              onAreaSelected: (_) {},
+              onSelectionCommitted: selections.add,
+            ),
+          ),
+        );
+        await _waitReady(tester, controller);
+        final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+        final atText =
+            tester.getTopLeft(find.byType(MMPdfView)) +
+            pdf.documentToLocal(
+              pdf.calcRectForRectInsidePage(pageNumber: 1, rect: const PdfRect(60, 690, 60, 690)).topLeft,
+            );
+        final mouse = await tester.startGesture(atText, kind: PointerDeviceKind.mouse);
+        for (var i = 0; i < 8; i++) {
+          await mouse.moveBy(const Offset(25, 2));
+          await tester.pump();
+        }
+        await mouse.up();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(pdf.textSelectionDelegate.hasSelectedText, isFalse);
+        expect(selections, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 200));
+      });
+    }
+
     for (final tool in [null, MMPdfInkTool.freehand, MMPdfInkTool.eraser]) {
       testWidgets('Pencil tool $tool lets fingers scroll and select without drawing', (tester) async {
         final controller = MMPdfViewController();

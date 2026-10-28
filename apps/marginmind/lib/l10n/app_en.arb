@@ -1520,5 +1520,6 @@
   "voiceCancel": "Cancel voice input",
   "voiceFinish": "Finish Recording",
   "voiceKeyPlaceholder": "Paste credential",
-  "mapMultiSelect": "Multiple Selection"
+  "mapMultiSelect": "Multiple Selection",
+  "voiceAppIdPlaceholder": "Enter App ID"
 }

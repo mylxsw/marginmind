@@ -216,10 +216,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           ),
         if (doc != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
             child: Wrap(
               spacing: MMSpacing.s,
-              runSpacing: MMSpacing.s,
+              runSpacing: MMSpacing.xs,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 MMToolbarButton(

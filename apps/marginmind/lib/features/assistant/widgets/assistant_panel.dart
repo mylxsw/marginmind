@@ -536,7 +536,6 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final credentials = ref.watch(assistantCredentialStateProvider).value;
     final tiles = [
       (ServiceProtocol.anthropic, ServiceBrand.anthropic, 'Anthropic'),
       (ServiceProtocol.openai, ServiceBrand.openai, 'OpenAI'),
@@ -562,23 +561,6 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
               Text(l.assistantConnectTitle, style: t.headline.copyWith(color: c.label)),
             ],
           ),
-          if (credentials == AssistantCredentialState.unavailable) ...[
-            const SizedBox(height: MMSpacing.s),
-            Text(
-              l.assistantSavedKeyUnavailable,
-              key: const ValueKey('connect-key-unavailable'),
-              style: t.footnote.copyWith(color: c.secondaryLabel),
-            ),
-            const SizedBox(height: MMSpacing.s),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: MMButton(
-                key: const ValueKey('connect-retry-key'),
-                label: l.assistantRetrySavedKey,
-                onPressed: () => ref.read(assistantKeysProvider.notifier).changed(),
-              ),
-            ),
-          ],
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, box) => Wrap(

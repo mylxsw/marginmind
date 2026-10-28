@@ -4909,6 +4909,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Multiple Selection'**
   String get mapMultiSelect;
+
+  /// No description provided for @voiceAppIdPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter App ID'**
+  String get voiceAppIdPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

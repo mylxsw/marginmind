@@ -2749,4 +2749,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapMultiSelect => 'Multiple Selection';
+
+  @override
+  String get voiceAppIdPlaceholder => 'Enter App ID';
 }
