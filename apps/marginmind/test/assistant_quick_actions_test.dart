@@ -110,6 +110,11 @@ void main() {
       expect(client.calls, 0);
       expect(find.byType(AssistantPanel), findsNothing);
       expect(app.container.read(workspaceProvider('demo-1')).pending, same(pending));
+      expect(
+        find.descendant(of: find.byType(AssistantQuickActions), matching: find.text('Selected Text')),
+        findsNothing,
+      );
+      expect(find.descendant(of: find.byType(AssistantQuickActions), matching: find.text(quote)), findsNothing);
       await screenshot(tester, 'quick-actions-${dark ? 'dark' : 'light'}');
       await tester.tap(find.byKey(const ValueKey('quick-action-explain')));
       await pumpFor(tester, 25);

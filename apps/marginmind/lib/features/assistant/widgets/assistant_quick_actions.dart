@@ -57,7 +57,7 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
     final belowSelection = math.max(toolbar.bottom, selection.bottom) + 8;
     final belowToolbar = toolbar.bottom + 8;
     // A tall selection can leave only a sliver for the answer. In that case
-    // anchor to the toolbar and keep the full quote preview inside the card.
+    // anchor to the toolbar so the actions and answer remain usable.
     return bounds.bottom - belowSelection < 400 && bounds.bottom - belowToolbar >= 400 ? belowToolbar : belowSelection;
   }
 
@@ -313,20 +313,6 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(l.assistantQuickSelection, style: t.footnote.copyWith(color: c.secondaryLabel)),
-                Container(
-                  margin: const EdgeInsets.only(top: 5, bottom: 10),
-                  padding: const EdgeInsets.only(left: 10),
-                  decoration: BoxDecoration(
-                    border: Border(left: BorderSide(color: c.secondaryLabel, width: 2)),
-                  ),
-                  child: Text(
-                    widget.passage.displayText,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.body.copyWith(color: c.secondaryLabel, height: 1.5),
-                  ),
-                ),
                 Flexible(
                   child: Scrollbar(
                     controller: _scroll,
