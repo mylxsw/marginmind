@@ -7,14 +7,14 @@ abstract final class MMMapClipboard {
 
   /// Screenshot bytes, or a Finder image URL, copied into the package by callers.
   static Future<({Uint8List? bytes, String? path})?> readImage() async {
-    if (defaultTargetPlatform != TargetPlatform.macOS) return null;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.macOS) return null;
     final data = await channel.invokeMapMethod<String, Object?>('readImage');
     if (data == null || (data['bytes'] == null && data['path'] == null)) return null;
     return (bytes: data['bytes'] as Uint8List?, path: data['path'] as String?);
   }
 
   static Future<void> write({required String text, required String internal}) async {
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
       await channel.invokeMethod<void>('write', {'text': text, 'internal': internal});
     } else {
       await Clipboard.setData(ClipboardData(text: text));
@@ -22,7 +22,7 @@ abstract final class MMMapClipboard {
   }
 
   static Future<({String text, String? internal})> read() async {
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
       final data = await channel.invokeMapMethod<String, String>('read');
       return (text: data?['text'] ?? '', internal: data?['internal']);
     }

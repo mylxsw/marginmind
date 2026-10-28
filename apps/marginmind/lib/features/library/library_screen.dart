@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_platform/mm_platform.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../app/app.dart';
@@ -398,11 +399,11 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
         const SingleActivator(LogicalKeyboardKey.enter): () {
           if (view.selectedId != null) open(view.selectedId!);
         },
-        const SingleActivator(LogicalKeyboardKey.arrowDown, meta: true): () {
+        primaryShortcut(LogicalKeyboardKey.arrowDown): () {
           if (view.selectedId != null) open(view.selectedId!);
         },
         const SingleActivator(LogicalKeyboardKey.escape): () => controller.select(null),
-        const SingleActivator(LogicalKeyboardKey.backspace, meta: true): () {
+        primaryShortcut(LogicalKeyboardKey.backspace): () {
           final s = sets.where((x) => x.id == view.selectedId).firstOrNull;
           if (s != null) confirmDelete(s);
         },

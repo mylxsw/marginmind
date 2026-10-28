@@ -8,6 +8,7 @@ import 'package:mm_platform/mm_platform.dart' show describeShortcut;
 import '../../../app/app_commands.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/platform_support.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -223,7 +224,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     onPressed: () =>
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
-                  if (!isArea) ...[
+                  if (supportsAssistant && !isArea) ...[
                     const MMToolbarDivider(),
                     MMToolbarButton(
                       key: const ValueKey('selection-assistant'),

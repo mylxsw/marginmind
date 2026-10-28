@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../../shared/platform_support.dart';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -111,6 +113,7 @@ void askAssistant(
   String? skill,
   PanelOrigin origin = PanelOrigin.toolbar,
 }) {
+  if (!supportsAssistant) return;
   final ui = ref.read(assistantUiProvider(studySetId).notifier);
   for (final c in contexts) {
     ui.addContext(c, anchor: anchors[c.id]);

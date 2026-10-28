@@ -10,6 +10,7 @@ import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/settings/web_search_settings.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
+import '../shared/platform_support.dart';
 import 'app_settings.dart';
 
 enum SettingsTab { general, reading, models, webSearch, voice }
@@ -43,7 +44,10 @@ class SettingsWindow extends StatefulWidget {
 }
 
 class _SettingsWindowState extends State<SettingsWindow> {
-  late SettingsTab _tab = widget.initialTab;
+  late SettingsTab _tab =
+      supportsExternalCredentials || [SettingsTab.general, SettingsTab.reading].contains(widget.initialTab)
+      ? widget.initialTab
+      : SettingsTab.general;
 
   /// [preferred], shrunk to fit [screen] less the margins; below [min] it
   /// gives up the margins first, and only a smaller window shrinks it more.
@@ -60,9 +64,9 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final tabs = [
       (SettingsTab.general, MMIcons.settings, l.settingsGeneral),
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
-      (SettingsTab.models, MMIcons.ai, l.settingsModels),
-      (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
-      (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
+      if (supportsExternalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
+      if (supportsExternalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
+      if (supportsExternalCredentials) (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
     final page = switch (_tab) {

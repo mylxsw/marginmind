@@ -1,4 +1,7 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -52,7 +55,7 @@ class MemoryConversationArchive implements sdk.StateStorage {
 /// repository does not keep files.
 final assistantArchiveProvider = Provider.family<AssistantArchive, String>((ref, studySetId) {
   final directory = ref.watch(contentRepositoryProvider).resolveFile(studySetId, '');
-  if (!p.isAbsolute(directory)) return MemoryConversationArchive().archive;
+  if (kIsWeb || !p.isAbsolute(directory)) return MemoryConversationArchive().archive;
   final storage = ConversationStorage(Directory(directory));
   return AssistantArchive(storage: storage, ids: storage.list);
 });

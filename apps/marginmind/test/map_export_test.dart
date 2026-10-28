@@ -243,7 +243,7 @@ void main() {
     expect(saved, contains('<opml'));
     expect(saved, contains('节点 1'));
     expect(tester.takeException(), isNull);
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
   testWidgets('PNG and PDF encode snapshots; cancelling save keeps the sheet', (tester) async {
     const channel = MethodChannel('marginmind/map_export');
     final methods = <String>[];
@@ -268,7 +268,7 @@ void main() {
     await tester.tap(find.text('Export…'));
     await tester.pumpAndSettle();
     expect(methods, contains('pdf'));
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   test('image loader decodes complete image and fails explicitly for missing files', () async {
     final dir = Directory.systemTemp.createTempSync('export-images-test');
@@ -339,7 +339,29 @@ void main() {
     await tester.tap(find.text('Current branch'));
     await tester.pumpAndSettle();
     expect(exportButton().onPressed, isNotNull);
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+  testWidgets('Windows and Linux offer only portable text formats', (tester) async {
+    String? exported;
+    await pumpSheet(
+      tester,
+      save: (name, bytes) async {
+        exported = utf8.decode(bytes);
+        return false;
+      },
+    );
+    expect(find.text('PNG'), findsNothing);
+    expect(find.text('PDF'), findsNothing);
+    expect(find.text('Markdown'), findsOneWidget);
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(exported, contains('节点 0'));
+    await tester.tap(find.text('OPML'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(exported, contains('<opml'));
+  }, variant: const TargetPlatformVariant({TargetPlatform.windows, TargetPlatform.linux}));
 
   testWidgets('save failure is retryable', (tester) async {
     await pumpSheet(tester, save: (name, bytes) async => throw const FileSystemException('Denied'));

@@ -13,6 +13,7 @@ import '../../shared/l10n.dart';
 import '../../settings/app_settings.dart';
 import '../../shared/pdf_drop.dart';
 import '../assistant/assistant_entry.dart';
+import '../../shared/platform_support.dart';
 import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
@@ -281,18 +282,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 ),
               ],
             ),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                key: const ValueKey('toolbar-assistant'),
-                icon: MMIcons.ai,
-                tint: context.mmColors.research,
-                tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                selected: state.panel == RightPanel.assistant,
-                onPressed: () => toggleAssistant(ref, widget.studySetId),
-              ),
-            ],
-          ),
+          if (supportsAssistant)
+            MMToolbarGroup(
+              children: [
+                MMToolbarButton(
+                  key: const ValueKey('toolbar-assistant'),
+                  icon: MMIcons.ai,
+                  tint: context.mmColors.research,
+                  tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                  selected: state.panel == RightPanel.assistant,
+                  onPressed: () => toggleAssistant(ref, widget.studySetId),
+                ),
+              ],
+            ),
         ],
       ),
       body: ExcerptViewScope(

@@ -7,6 +7,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/platform_support.dart';
 import '../../research/research_controller.dart' show researchPanelProvider;
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../../research/widgets/research_note_view.dart';
@@ -46,7 +47,7 @@ class _AssistantScopeState extends ConsumerState<AssistantScope> {
       assistantControllerProvider.overrideWith(AssistantController.new),
       assistantBackgroundProvider.overrideWith(AssistantBackground.new),
     ],
-    child: _AssistantHost(studySetId: widget.studySetId, child: widget.child),
+    child: supportsAssistant ? _AssistantHost(studySetId: widget.studySetId, child: widget.child) : widget.child,
   );
 }
 

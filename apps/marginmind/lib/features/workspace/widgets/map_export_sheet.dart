@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -12,6 +11,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/platform_support.dart';
 import 'map_export_scene.dart';
 import '../workspace_controller.dart';
 
@@ -64,7 +64,7 @@ class MapExportSheet extends StatefulWidget {
 }
 
 class _MapExportSheetState extends State<MapExportSheet> {
-  var _format = MapExportFormat.png;
+  late var _format = supportsNativeMapExport ? MapExportFormat.png : MapExportFormat.markdown;
   var _appearance = MapExportAppearance.light;
   var _scale = 2;
   late bool _branch = widget.initialBranch && widget.branchId != null;
@@ -188,7 +188,9 @@ class _MapExportSheetState extends State<MapExportSheet> {
           ],
         );
         saved = location != null;
-        if (location != null) await File(location.path).writeAsBytes(data, flush: true);
+        if (location != null) {
+          await XFile.fromData(data, name: name, mimeType: 'application/octet-stream').saveTo(location.path);
+        }
       }
       if (!mounted) return;
       if (saved) {
@@ -235,7 +237,9 @@ class _MapExportSheetState extends State<MapExportSheet> {
                 MMSegmentedControl<MapExportFormat>(
                   expand: fill,
                   segments: [
-                    for (final format in MapExportFormat.values)
+                    for (final format in MapExportFormat.values.where(
+                      (f) => supportsNativeMapExport || f == MapExportFormat.markdown || f == MapExportFormat.opml,
+                    ))
                       MMSegment(
                         value: format,
                         label: switch (format) {

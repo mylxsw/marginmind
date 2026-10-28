@@ -8,6 +8,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
+import '../../../shared/platform_support.dart';
 import '../../../shared/note_text.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../research/widgets/research_note_view.dart';
@@ -45,7 +46,7 @@ class CardDetails extends ConsumerWidget {
       CardKind.note => (MMIcons.addNote, l.detailsNote),
       CardKind.topic || null => (MMIcons.mindMap, l.detailsTopic),
     };
-    final ask = card == null
+    final ask = !supportsAssistant || card == null
         ? const <Widget>[]
         : [
             MMIconButton(

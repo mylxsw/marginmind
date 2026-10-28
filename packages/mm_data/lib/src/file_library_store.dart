@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
+import 'library_io.dart' if (dart.library.js_interop) 'library_browser_io.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:mm_core/mm_core.dart';
@@ -25,6 +26,8 @@ class FileLibraryStore
   FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator})
     : _clock = clock ?? DateTime.now,
       _newId = idGenerator ?? newId;
+
+  FileLibraryStore.browser() : this(browserRoot());
 
   final Directory root;
   final DateTime Function() _clock;
@@ -279,7 +282,7 @@ class FileLibraryStore
     _require(studySetId);
     final bytes = utf8.encode(markdown);
     final name = 'research/snapshots/${sha256.convert(bytes)}.md';
-    final file = File(resolveFile(studySetId, name));
+    final file = File(_resolvePath(studySetId, name));
     await _queueWrite(studySetId, () async {
       _require(studySetId);
       if (await file.exists()) {
@@ -298,7 +301,7 @@ class FileLibraryStore
     await _ensureLoaded();
     _require(studySetId);
     _safeSnapshot(fileName);
-    final bytes = await File(resolveFile(studySetId, fileName)).readAsBytes();
+    final bytes = await File(_resolvePath(studySetId, fileName)).readAsBytes();
     if ('research/snapshots/${sha256.convert(bytes)}.md' != fileName) {
       throw const FormatException('Snapshot hash mismatch');
     }
@@ -312,7 +315,7 @@ class FileLibraryStore
     _safeResearchId(sessionId);
     await _queueWrite(studySetId, () async {
       _require(studySetId);
-      final file = File(resolveFile(studySetId, 'research/sessions/$sessionId.json'));
+      final file = File(_resolvePath(studySetId, 'research/sessions/$sessionId.json'));
       if (await file.exists()) await file.delete();
     });
   }
@@ -325,7 +328,7 @@ class FileLibraryStore
     await _queueWrite(studySetId, () async {
       final current = session.reconcile(_require(studySetId).content);
       await _atomicWrite(
-        File(resolveFile(studySetId, 'research/sessions/${session.id}.json')),
+        File(_resolvePath(studySetId, 'research/sessions/${session.id}.json')),
         utf8.encode(jsonEncode(current.toJson())),
       );
     });
@@ -337,7 +340,7 @@ class FileLibraryStore
     _require(studySetId);
     _safeResearchId(sessionId);
     await (_writeQueue[studySetId] ?? Future<void>.value());
-    final file = File(resolveFile(studySetId, 'research/sessions/$sessionId.json'));
+    final file = File(_resolvePath(studySetId, 'research/sessions/$sessionId.json'));
     if (!await file.exists()) return null;
     final session = ResearchSession.fromJson((jsonDecode(await file.readAsString()) as Map).cast());
     if (session.id != sessionId) throw const FormatException('Session id mismatch');
@@ -349,7 +352,7 @@ class FileLibraryStore
     await _ensureLoaded();
     _require(studySetId);
     await (_writeQueue[studySetId] ?? Future<void>.value());
-    final directory = Directory(resolveFile(studySetId, 'research/sessions'));
+    final directory = Directory(_resolvePath(studySetId, 'research/sessions'));
     if (!await directory.exists()) return [];
     final sessions = <ResearchSession>[];
     await for (final entity in directory.list(followLinks: false)) {
@@ -362,7 +365,7 @@ class FileLibraryStore
   }
 
   Future<void> _syncResearchSessions(String id, StudySetContent content) async {
-    final dir = Directory(resolveFile(id, 'research/sessions'));
+    final dir = Directory(_resolvePath(id, 'research/sessions'));
     try {
       if (!await dir.exists()) return;
       await for (final file in dir.list()) {
@@ -400,7 +403,9 @@ class FileLibraryStore
   }
 
   @override
-  String resolveFile(String studySetId, String fileName) => p.join(_packagePath(studySetId), fileName);
+  String resolveFile(String studySetId, String fileName) => resourcePath(_resolvePath(studySetId, fileName));
+
+  String _resolvePath(String studySetId, String fileName) => p.join(_packagePath(studySetId), fileName);
 
   // ---- internals -----------------------------------------------------------
 
