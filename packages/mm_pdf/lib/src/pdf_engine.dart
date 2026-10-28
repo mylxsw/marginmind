@@ -1,5 +1,7 @@
 import 'package:pdfrx/pdfrx.dart';
 
+import 'open_document.dart';
+
 /// Document-level operations that do not need a viewer.
 abstract final class MMPdfEngine {
   static bool _initialized = false;
@@ -14,7 +16,7 @@ abstract final class MMPdfEngine {
   /// Reads the page count (and title, if the file has one) of [path].
   /// Throws if the file is not a readable PDF.
   static Future<({int pageCount, String? title})> inspect(String path) async {
-    final doc = await PdfDocument.openFile(path);
+    final doc = await openDocument(path);
     try {
       return (pageCount: doc.pages.length, title: null);
     } finally {
@@ -30,7 +32,7 @@ abstract final class MMPdfEngine {
   static Future<({String text, double height})?> pageContent(String path, int page) async {
     PdfDocument? doc;
     try {
-      doc = await PdfDocument.openFile(path);
+      doc = await openDocument(path);
       if (page < 1 || page > doc.pages.length) return null;
       final pdfPage = doc.pages[page - 1];
       final text = (await pdfPage.loadText())?.fullText;

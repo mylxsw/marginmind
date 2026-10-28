@@ -20,6 +20,6 @@ abstract interface class StudySetContentRepository {
   /// Imports encoded PNG/JPEG [bytes], such as an area captured from a page.
   Future<String> importImageBytes(String studySetId, List<int> bytes);
 
-  /// Absolute path of a stored document file.
+  /// Resource location of a stored file: native absolute path or browser blob URL.
   String resolveFile(String studySetId, String fileName);
 }

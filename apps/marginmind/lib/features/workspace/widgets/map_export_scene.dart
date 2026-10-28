@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:file_selector/file_selector.dart';
+
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -489,7 +490,7 @@ Future<(Map<String, ui.Image>, Map<String, Uint8List>)> loadExportImages(
     final names = content.cards.map((c) => c.imageFileName).whereType<String>().toSet();
     var totalBytes = 0;
     for (final name in names) {
-      final file = File(resolve(name));
+      final file = XFile(resolve(name));
       totalBytes += await file.length();
       if (totalBytes > 128 * 1024 * 1024) throw StateError('Export image budget exceeded');
       final data = await file.readAsBytes();

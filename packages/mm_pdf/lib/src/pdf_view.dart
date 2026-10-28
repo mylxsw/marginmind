@@ -1,4 +1,9 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import 'open_document.dart';
+
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -1439,8 +1444,10 @@ class _MMPdfViewState extends State<MMPdfView> {
       },
       onPointerUp: _textPointerUp,
       onPointerCancel: (_) => _textDragStart = null,
-      child: PdfViewer.file(
-        widget.filePath,
+      child: PdfViewer(
+        kIsWeb
+            ? PdfDocumentRefByLoader((_) => openDocument(widget.filePath), key: PdfDocumentRefKey(widget.filePath))
+            : PdfDocumentRefFile(widget.filePath),
         controller: _controller,
         initialPageNumber: widget.initialPage,
         params: PdfViewerParams(

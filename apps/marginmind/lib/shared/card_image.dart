@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mm_design/mm_design.dart';
@@ -49,10 +50,15 @@ class CardImage extends StatelessWidget {
     final ratio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1;
     // Captures are large; decode at the shown width to keep memory low.
     return LayoutBuilder(
-      builder: (context, box) => Image.file(
-        File(resolve(fileName)),
+      builder: (context, box) => Image(
+        image: kIsWeb
+            ? NetworkImage(resolve(fileName))
+            : ResizeImage.resizeIfNeeded(
+                !fullResolution && box.hasBoundedWidth && box.maxWidth >= 1 ? (box.maxWidth * ratio).ceil() : null,
+                null,
+                FileImage(File(resolve(fileName))),
+              ),
         fit: fit,
-        cacheWidth: !fullResolution && box.hasBoundedWidth && box.maxWidth >= 1 ? (box.maxWidth * ratio).ceil() : null,
         filterQuality: FilterQuality.medium,
         gaplessPlayback: true,
         semanticLabel: semanticLabel,

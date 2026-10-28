@@ -8,6 +8,7 @@ environment:
   sdk: ^3.13.0
 
 dependencies:
+  web: ^1.1.1
   dart_agent_core: 2.1.8
   crypto: ^3.0.6
   meta: ^1.16.0

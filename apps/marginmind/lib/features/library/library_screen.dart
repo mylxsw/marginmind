@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_platform/mm_platform.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../app/app.dart';
@@ -99,6 +100,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       LibrarySort.cardCount => l.sortCards,
     };
 
+    final body = _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now);
+
     return MMBackHandler(
       onBack: () {
         if (!touchPlatform || !_drawer) return false;
@@ -153,13 +156,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ],
               ),
             ],
-            MMToolbarSearchField(
-              placeholder: l.search,
-              controller: _search,
-              focusNode: _searchFocus,
-              onChanged: controller.setSearch,
-              width: sizeClass == MMSizeClass.compact ? MMSizes.compactSearchWidth : 200,
-            ),
+            if (sizeClass != MMSizeClass.compact)
+              MMToolbarSearchField(
+                placeholder: l.search,
+                controller: _search,
+                focusNode: _searchFocus,
+                onChanged: controller.setSearch,
+                width: 200,
+              ),
             MMToolbarGroup(
               children: [
                 MMToolbarButton(
@@ -177,7 +181,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             final notice = await controller.createFromFiles(files);
             if (context.mounted) showNotice(context, notice, rootTitle: '');
           },
-          child: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+          child: sizeClass == MMSizeClass.compact
+              ? Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
+                      child: MMToolbarSearchField(
+                        placeholder: l.search,
+                        controller: _search,
+                        focusNode: _searchFocus,
+                        onChanged: controller.setSearch,
+                        width: double.infinity,
+                      ),
+                    ),
+                    Expanded(child: body),
+                  ],
+                )
+              : body,
         ),
       ),
     );
@@ -398,11 +418,11 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
         const SingleActivator(LogicalKeyboardKey.enter): () {
           if (view.selectedId != null) open(view.selectedId!);
         },
-        const SingleActivator(LogicalKeyboardKey.arrowDown, meta: true): () {
+        primaryShortcut(LogicalKeyboardKey.arrowDown): () {
           if (view.selectedId != null) open(view.selectedId!);
         },
         const SingleActivator(LogicalKeyboardKey.escape): () => controller.select(null),
-        const SingleActivator(LogicalKeyboardKey.backspace, meta: true): () {
+        primaryShortcut(LogicalKeyboardKey.backspace): () {
           final s = sets.where((x) => x.id == view.selectedId).firstOrNull;
           if (s != null) confirmDelete(s);
         },

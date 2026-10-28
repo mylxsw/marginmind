@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../app/navigation.dart';
 import '../features/assistant/settings/model_settings.dart';
@@ -43,7 +44,11 @@ class SettingsWindow extends StatefulWidget {
 }
 
 class _SettingsWindowState extends State<SettingsWindow> {
-  late SettingsTab _tab = widget.initialTab;
+  late SettingsTab _tab =
+      MMPlatformCapabilities.current.externalCredentials ||
+          [SettingsTab.general, SettingsTab.reading].contains(widget.initialTab)
+      ? widget.initialTab
+      : SettingsTab.general;
 
   /// [preferred], shrunk to fit [screen] less the margins; below [min] it
   /// gives up the margins first, and only a smaller window shrinks it more.
@@ -60,9 +65,9 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final tabs = [
       (SettingsTab.general, MMIcons.settings, l.settingsGeneral),
       (SettingsTab.reading, MMIcons.reading, l.settingsReading),
-      (SettingsTab.models, MMIcons.ai, l.settingsModels),
-      (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
-      (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
+      if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.models, MMIcons.ai, l.settingsModels),
+      if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
+      if (MMPlatformCapabilities.current.externalCredentials) (SettingsTab.voice, MMIcons.microphone, l.settingsVoice),
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
     final page = switch (_tab) {

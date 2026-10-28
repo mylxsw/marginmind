@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
@@ -47,7 +48,9 @@ class _AssistantScopeState extends ConsumerState<AssistantScope> {
       assistantControllerProvider.overrideWith(AssistantController.new),
       assistantBackgroundProvider.overrideWith(AssistantBackground.new),
     ],
-    child: _AssistantHost(studySetId: widget.studySetId, child: widget.child),
+    child: MMPlatformCapabilities.current.assistant
+        ? _AssistantHost(studySetId: widget.studySetId, child: widget.child)
+        : widget.child,
   );
 }
 

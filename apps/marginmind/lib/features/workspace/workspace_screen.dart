@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/app.dart';
 import '../../app/app_commands.dart';
@@ -281,18 +282,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 ),
               ],
             ),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                key: const ValueKey('toolbar-assistant'),
-                icon: MMIcons.ai,
-                tint: context.mmColors.research,
-                tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                selected: state.panel == RightPanel.assistant,
-                onPressed: () => toggleAssistant(ref, widget.studySetId),
-              ),
-            ],
-          ),
+          if (MMPlatformCapabilities.current.assistant)
+            MMToolbarGroup(
+              children: [
+                MMToolbarButton(
+                  key: const ValueKey('toolbar-assistant'),
+                  icon: MMIcons.ai,
+                  tint: context.mmColors.research,
+                  tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+                  selected: state.panel == RightPanel.assistant,
+                  onPressed: () => toggleAssistant(ref, widget.studySetId),
+                ),
+              ],
+            ),
         ],
       ),
       body: ExcerptViewScope(

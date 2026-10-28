@@ -346,6 +346,49 @@ void main() {
     expect(exportButton().onPressed, isNotNull);
   });
 
+  testWidgets('Windows and Linux offer only portable text formats', (tester) async {
+    String? exported;
+    await pumpSheet(
+      tester,
+      save: (name, bytes) async {
+        exported = utf8.decode(bytes);
+        return false;
+      },
+    );
+    expect(find.text('PNG'), findsNothing);
+    expect(find.text('PDF'), findsNothing);
+    expect(find.text('Markdown'), findsOneWidget);
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(exported, contains('节点 0'));
+    await tester.tap(find.text('OPML'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(exported, contains('<opml'));
+  }, variant: const TargetPlatformVariant({TargetPlatform.windows, TargetPlatform.linux}));
+
+  testWidgets('mobile text export uses system share and cancellation retains sheet', (tester) async {
+    const channel = MethodChannel('marginmind/file_share');
+    MethodCall? shared;
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      shared = call;
+      return false;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    await pumpSheet(tester);
+    expect(find.text('PNG'), findsNothing);
+    expect(find.text('PDF'), findsNothing);
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(shared!.method, 'share');
+    expect(shared!.arguments['name'], endsWith('.md'));
+    expect(utf8.decode(shared!.arguments['bytes'] as Uint8List), contains('节点 0'));
+    expect(find.byType(MapExportSheet), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: const TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
   desktopTestWidgets('save failure is retryable', (tester) async {
     await pumpSheet(tester, save: (name, bytes) async => throw const FileSystemException('Denied'));
     await tester.tap(find.text('Markdown'));

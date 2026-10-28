@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "browser": "156.0.8078.49",
+  "checks": [
+    "launch",
+    "create/import PDF",
+    "render PDF",
+    "add/rename node",
+    "refresh/reopen",
+    "persisted PDF and node",
+    "Markdown download",
+    "no PNG/PDF encoder options",
+    "no browser errors"
+  ],
+  "errors": []
+}

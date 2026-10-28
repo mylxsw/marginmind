@@ -9,6 +9,8 @@ class MMPlatformCapabilities {
   static MMPlatformCapabilities get current => MMPlatformCapabilities(defaultTargetPlatform, web: kIsWeb);
   bool get mobile => !web && (platform == TargetPlatform.iOS || platform == TargetPlatform.android);
   bool get _mac => !web && platform == TargetPlatform.macOS;
+  bool get assistant => !web;
+  bool get externalCredentials => !web;
   bool get secretStore => _mac || mobile;
   bool get externalLink => _mac || mobile;
   bool get articleParser => _mac;
