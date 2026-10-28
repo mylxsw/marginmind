@@ -155,18 +155,19 @@ class AppShell extends ConsumerWidget {
       duration: MMAppearance.duration(context, MMMotion.standard),
       child: KeyedSubtree(key: ValueKey(route.runtimeType), child: screen),
     );
-    return MMBackScope(
-      child: MMBackHandler(
-        onBack: () => back(ref),
-        child: AppMenus(
-          child: Material(
-            type: MaterialType.transparency,
-            // Always in the tree, so rotating a phone keeps the screen's state.
-            child: MMWindowBottomBar(bar: showsPhoneTabs(context) ? const PhoneTabBar() : null, child: switcher),
-          ),
+    final shell = MMBackHandler(
+      onBack: () => back(ref),
+      child: AppMenus(
+        child: Material(
+          type: MaterialType.transparency,
+          // Always in the tree, so rotating a phone keeps the screen's state.
+          child: MMWindowBottomBar(bar: showsPhoneTabs(context) ? const PhoneTabBar() : null, child: switcher),
         ),
       ),
     );
+    // Only phones and tablets have a system back action; desktops keep the
+    // root route's default pop behavior.
+    return ref.watch(touchPlatformProvider) ? MMBackScope(child: shell) : shell;
   }
 }
 
