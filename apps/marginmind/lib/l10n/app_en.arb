@@ -1519,5 +1519,6 @@
   "voiceFinishing": "Finalizing transcription…",
   "voiceCancel": "Cancel voice input",
   "voiceFinish": "Finish Recording",
-  "voiceKeyPlaceholder": "Paste credential"
+  "voiceKeyPlaceholder": "Paste credential",
+  "mapMultiSelect": "Multiple Selection"
 }

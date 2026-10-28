@@ -420,7 +420,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                         ),
                         delegate: SliverChildBuilderDelegate(childCount: visible.length, (context, i) {
                           final s = visible[i];
-                          return GestureDetector(
+                          return MMContextMenuRegion(
                             onSecondaryTapUp: (d) => showMenu(s.id, d.globalPosition),
                             child: StudySetCard(
                               set: s,

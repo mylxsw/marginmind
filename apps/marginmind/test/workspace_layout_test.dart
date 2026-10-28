@@ -67,11 +67,11 @@ void main() {
     expect(progress, findsOneWidget);
     double thumbRadius() =>
         (SliderTheme.of(tester.element(progress)).thumbShape! as RoundSliderThumbShape).enabledThumbRadius;
-    expect(thumbRadius(), 0);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: Offset.zero);
     await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('pdf-placeholder-c1'))));
     await tester.pumpAndSettle();
+    expect(thumbRadius(), 0);
     expect(thumbRadius(), 0, reason: 'hovering the page body must not reveal navigation');
     await mouse.moveTo(tester.getCenter(progress));
     await tester.pumpAndSettle();

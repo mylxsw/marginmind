@@ -4903,6 +4903,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste credential'**
   String get voiceKeyPlaceholder;
+
+  /// No description provided for @mapMultiSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple Selection'**
+  String get mapMultiSelect;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

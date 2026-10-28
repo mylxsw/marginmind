@@ -180,7 +180,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.content.card(note.id)!.title, 'x');
 
-      await tester.tap(find.text('x'), buttons: kSecondaryButton);
+      await tester.tap(find.text('x'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Edit Note'));
       await tester.pumpAndSettle();
@@ -201,7 +201,7 @@ void main() {
 
     testWidgets('the node menu adds a note in place', (tester) async {
       await openFirstSet(tester);
-      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton);
+      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add Note'));
       await tester.pumpAndSettle();

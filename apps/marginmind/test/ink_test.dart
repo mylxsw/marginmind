@@ -183,7 +183,7 @@ void main() {
     // brings it back, and undoes the stroke itself next.
     await tester.tap(find.byTooltip(l.inkEraser));
     await tester.pump();
-    await tester.tapAt(start);
+    await tester.tapAt(start, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     expect(controller.content.inkStrokes, isEmpty);
     final undo = find.byTooltip(AppShortcuts.tip(l.undo, AppShortcuts.undo));

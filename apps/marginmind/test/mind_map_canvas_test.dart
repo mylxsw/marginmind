@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
@@ -101,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(edges().shouldRepaint(original), isFalse);
     // Drag feedback and hover live inside each node's repaint boundary.
-    final gesture = await tester.startGesture(tester.getCenter(find.text('Node 0 中文')));
+    final gesture = await tester.startGesture(tester.getCenter(find.text('Node 0 中文')), kind: PointerDeviceKind.mouse);
     await gesture.moveBy(const Offset(12, 0));
     await tester.pump();
     await gesture.moveTo(tester.getCenter(find.text('Node 2 中文')));

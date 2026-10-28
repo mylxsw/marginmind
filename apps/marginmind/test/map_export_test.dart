@@ -68,7 +68,7 @@ void main() {
     expect(tester.widget<MMSheet>(find.byType(MMSheet)).title, 'Export Map');
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton);
+    await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Export This Branch…'));
     await tester.pumpAndSettle();

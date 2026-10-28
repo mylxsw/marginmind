@@ -149,6 +149,96 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     setUp(installTestPdfBackend);
 
+    for (final tool in [null, MMPdfInkTool.freehand, MMPdfInkTool.eraser]) {
+      testWidgets('Pencil tool $tool lets fingers scroll and select without drawing', (tester) async {
+        final controller = MMPdfViewController();
+        final drawn = <MMPdfInkDraft>[];
+        final selections = <MMPdfSelection>[];
+        final areas = <MMPdfArea>[];
+        final erased = <Set<String>>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MMPdfView(
+              filePath: 'pencil-policy.pdf',
+              controller: controller,
+              areaSelecting: tool == null,
+              ink: tool == null ? null : MMPdfInk(tool: tool, colorIndex: 0, width: 2),
+              inkColors: _colors,
+              inkStrokes: [
+                _pen('stroke', const [InkPoint(30, 700), InkPoint(180, 700)]),
+              ],
+              onInkDrawn: drawn.add,
+              onInkErased: erased.add,
+              onAreaSelected: areas.add,
+              onSelectionCommitted: selections.add,
+            ),
+          ),
+        );
+        await _waitReady(tester, controller);
+        final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+        final before = pdf.value.clone();
+        final g = await tester.startGesture(const Offset(400, 400), kind: PointerDeviceKind.touch);
+        for (var i = 0; i < 5; i++) {
+          await g.moveBy(const Offset(0, -30));
+          await tester.pump();
+        }
+        await g.up();
+        await tester.pumpAndSettle();
+        expect(pdf.value, isNot(before));
+        expect(drawn, isEmpty);
+        expect(areas, isEmpty);
+        expect(erased, isEmpty);
+        pdf.value = before;
+        await tester.pumpAndSettle();
+        final atText =
+            tester.getTopLeft(find.byType(MMPdfView)) +
+            pdf.documentToLocal(
+              pdf.calcRectForRectInsidePage(pageNumber: 1, rect: const PdfRect(60, 690, 60, 690)).topLeft,
+            );
+        final finger = await tester.startGesture(atText, kind: PointerDeviceKind.touch);
+        await tester.pump(const Duration(milliseconds: 650));
+        await finger.up();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(pdf.textSelectionDelegate.hasSelectedText, isTrue);
+        for (var i = 0; i < 30 && selections.isEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+          await tester.pump();
+        }
+        expect(selections.single.text, isNotEmpty, reason: 'finger selection still reaches the excerpt callback');
+        expect(drawn, isEmpty);
+        expect(areas, isEmpty);
+        expect(erased, isEmpty);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 200));
+      });
+    }
+
+    testWidgets('Pencil draws immediately while fingers leave the ink unchanged', (tester) async {
+      final controller = MMPdfViewController();
+      final drawn = <MMPdfInkDraft>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(
+            filePath: 'stylus.pdf',
+            controller: controller,
+            ink: const MMPdfInk(tool: MMPdfInkTool.freehand, colorIndex: 0, width: 2),
+            inkColors: _colors,
+            onInkDrawn: drawn.add,
+          ),
+        ),
+      );
+      await _waitReady(tester, controller);
+      final g = await tester.startGesture(const Offset(300, 200), kind: PointerDeviceKind.stylus);
+      await g.moveBy(const Offset(40, 30));
+      await tester.pump();
+      await g.moveBy(const Offset(40, 30));
+      await g.up();
+      await tester.pump();
+      expect(drawn, hasLength(1));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 200));
+    });
+
     testWidgets('pen strokes keep page coordinates across zoom, scroll and reopening', (tester) async {
       var controller = MMPdfViewController();
       final drawn = <MMPdfInkDraft>[];
@@ -173,7 +263,7 @@ void main() {
       const pen = MMPdfInk(tool: MMPdfInkTool.freehand, colorIndex: 1, width: 2.5);
       await mount(ink: pen);
       PdfViewerController pdf() => tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
-      expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).params.textSelectionParams!.enabled, isFalse);
+      expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).params.textSelectionParams!.enabled, isTrue);
       Offset at(double x, double y) =>
           tester.getTopLeft(find.byType(MMPdfView)) +
           pdf().documentToLocal(pdf().calcRectForRectInsidePage(pageNumber: 1, rect: PdfRect(x, y, x, y)).topLeft);
@@ -245,7 +335,7 @@ void main() {
         ink: const MMPdfInk(tool: MMPdfInkTool.eraser, colorIndex: 0, width: 2.5),
         strokes: [stored],
       );
-      await tester.tapAt(at(150, 560));
+      await tester.tapAt(at(150, 560), kind: PointerDeviceKind.mouse);
       await tester.pump();
       expect(erased.single, {'s1'});
 
@@ -439,12 +529,12 @@ void main() {
       expect(painterOf(2).strokes, same(unchanged));
 
       // Missing the strokes erases nothing.
-      await tester.tapAt(at(300, 450));
+      await tester.tapAt(at(300, 450), kind: PointerDeviceKind.mouse);
       await tester.pump();
       expect(erased, hasLength(1));
 
       // A failed save un-hides after a while.
-      await tester.tapAt(at(400, 500));
+      await tester.tapAt(at(400, 500), kind: PointerDeviceKind.mouse);
       await tester.pump();
       expect(erased.last, {'c'});
       expect(painterOf(1).hidden.value, {'c'});

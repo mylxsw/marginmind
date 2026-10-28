@@ -2622,4 +2622,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get voiceKeyPlaceholder => '粘贴密钥';
+
+  @override
+  String get mapMultiSelect => '多选';
 }

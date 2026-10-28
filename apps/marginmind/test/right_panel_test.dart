@@ -345,7 +345,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(_state(app.container).panel, isNull);
 
-      await tester.tap(find.text(_quote), buttons: kSecondaryMouseButton);
+      await tester.tap(find.text(_quote), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Show Details'));
       await tester.pumpAndSettle();

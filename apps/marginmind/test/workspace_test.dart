@@ -28,7 +28,7 @@ void main() {
     controller.selectCard('c3');
     await tester.pumpAndSettle();
     Future<void> openTags() async {
-      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton);
+      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tags…'));
       await tester.pumpAndSettle();

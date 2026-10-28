@@ -715,7 +715,7 @@ void main() {
     );
     await _waitReady(tester, controller);
     final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
-    expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).params.textSelectionParams!.enabled, isFalse);
+    expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).params.textSelectionParams!.enabled, isTrue);
     final frame = tester
         .widgetList<DecoratedBox>(find.byType(DecoratedBox))
         .map((b) => b.decoration)
