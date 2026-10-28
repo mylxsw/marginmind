@@ -189,6 +189,8 @@ MarginMind 当前仍以 macOS 为主要交付平台。Windows/Linux 已有原生
 
 这些任务进入独立里程碑。桌面 CP-02 的能力接口和 CP-10 的文件契约应复用；不得因 Flutter 支持某平台就直接把该平台标成可用。
 
+2026-10-28 的移动端 / Web 实测（iPad、iPhone 模拟器，Linux ARM64，Chrome）、问题清单与 iPad 优先的适配方案见 [多平台适配实测](platform-adaptation-audit.md)，交互设计稿见 [`cross-platform.html`](../design/prototype/cross-platform.html)；其中 MOB-02a～02d 是 MOB-02 的细化拆分。
+
 | ID / 依赖 | 具体工作 | 验收与交付 |
 | --- | --- | --- |
 | MOB-01 / CP-02 | 在独立分支补 iOS/Android 工程，锁定 SDK/最低系统/设备矩阵，逐项盘点 pdfrx、拖入、选文件、分享、凭据和助手依赖；只为缺失平台生成工程，保留现有桌面 Runner | iOS 模拟器及真机、Android 模拟器及真机各完成启动与应用沙盒内 PDF 打开；提供构建命令、插件缺口和签名配置说明；未接入功能显示正确能力状态 |

@@ -1,0 +1,20 @@
+#!/bin/bash
+# usage: run_probe_android.sh <avd-name> <label>; Mac worker, scratch clone only.
+T=~/macrun-work/android-tools
+export JAVA_HOME=$T/jdk/Contents/Home ANDROID_HOME=$T/sdk ANDROID_SDK_ROOT=$T/sdk
+export PATH=$HOME/fvm/default/bin:/opt/homebrew/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$JAVA_HOME/bin:$PATH
+AVD=$1; LABEL=$2; OUT=/tmp/gul538; mkdir -p $OUT
+cd ~/macrun-work/mm-gul538/apps/marginmind
+cp ~/macrun-work/gul538-probe/probe_test.dart integration_test/probe_test.dart
+adb start-server >/dev/null 2>&1
+if ! adb devices | grep -q emulator-; then
+  nohup emulator -avd $AVD -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > $OUT/emulator-$AVD.log 2>&1 &
+  echo "emulator pid $!" ; adb wait-for-device; until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do sleep 3; done
+fi
+adb shell wm size; adb shell wm density
+DEV=$(adb devices | awk '/emulator-/{print $1; exit}')
+: > $OUT/$LABEL.log
+( last=""; for i in $(seq 1 1800); do m=$(grep -o 'SHOT:[a-z-]*' $OUT/$LABEL.log | tail -1 | cut -d: -f2); if [ -n "$m" ] && [ "$m" != "$last" ]; then sleep 2; adb -s $DEV exec-out screencap -p > $OUT/$LABEL-$m.png; last=$m; [ "$m" = workspace-landscape ] && break; fi; sleep 0.5; done ) &
+W=$!
+flutter test integration_test/probe_test.dart -d $DEV 2>&1 | tee $OUT/$LABEL.log | grep -E "PROBE|SHOT|passed|failed|rror|FAIL" | head -60
+wait $W; ls -la $OUT | grep $LABEL

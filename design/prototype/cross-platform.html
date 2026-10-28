@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginMind 跨平台适配 · 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii), same as phase-3-assistant.html. */
+:root{
+  --win:#FFFFFF; --sidebar:#F2F2F6; --reader:#EDEDF0; --canvas:#FBFBFD; --card:#FFFFFF; --page:#FFFFFF;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --sel:rgba(0,0,0,.075); --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentFill:#0A66D0; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --glass:rgba(255,255,255,.86); --hair:rgba(0,0,0,.08); --line:rgba(60,60,67,.30); --excerpt:#3A3A3C;
+  --root:#1D1D1F; --onRoot:#fff; --scrim:rgba(0,0,0,.22);
+  --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+  --sheetShadow:0 24px 60px rgba(0,0,0,.25);
+  --research:#5E5CE6; --researchTint:rgba(94,92,230,.10);
+  --ok:#28A745; --warn:#C27C0E; --err:#D70015;
+  --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+}
+.dark{
+  --win:#1E1E1F; --sidebar:#2A2A2D; --reader:#262628; --canvas:#1C1C1E; --card:#2C2C2E; --page:#FFFFFF;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --sel:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.20);
+  --glass:rgba(50,50,53,.88); --hair:rgba(0,0,0,.5); --line:rgba(235,235,245,.26); --excerpt:#D1D1D6;
+  --root:#F5F5F7; --onRoot:#1D1D1F; --scrim:rgba(0,0,0,.4);
+  --cardShadow:0 2px 10px rgba(0,0,0,.35); --sheetShadow:0 24px 60px rgba(0,0,0,.55);
+  --research:#7D7AFF; --researchTint:rgba(125,122,255,.16);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:#1D1D1F;-webkit-font-smoothing:antialiased}
+body{background:#E9EAEE;overflow:hidden;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.i.s{width:14px;height:14px}.i.l{width:20px;height:20px}.i.xl{width:24px;height:24px}
+
+/* ---------- Prototype chrome (outside the device) ---------- */
+#top{flex:none;display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
+#top h1{font-size:14px;margin:0 8px 0 0;font-weight:700;white-space:nowrap}
+.seg{display:inline-flex;background:rgba(120,120,128,.12);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:12px;color:#3a3a3c;white-space:nowrap}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:#000;font-weight:600}
+.seg button .tag{display:inline-block;margin-left:4px;font-size:10px;padding:0 4px;border-radius:4px;background:#FF9500;color:#fff;font-weight:700}
+.grp{display:flex;align-items:center;gap:6px}
+.grp label{font-size:11px;color:#8e8e93}
+#main{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,#f4f6fb,#dfe2ea)}
+#scaler{transform-origin:center center;position:relative}
+#info{flex:none;width:360px;background:#fff;border-left:1px solid rgba(0,0,0,.08);overflow:auto;padding:16px 18px 40px}
+#info h2{font-size:16px;margin:0 0 2px}
+#info .sub{color:#8e8e93;font-size:12px;margin-bottom:12px}
+#info h3{font-size:12px;margin:16px 0 6px;color:#636366;text-transform:uppercase;letter-spacing:.04em}
+#info ul{margin:0;padding-left:18px}
+#info li{margin:4px 0;line-height:1.45}
+#info{overflow-wrap:anywhere}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;border-radius:5px;padding:1px 6px}
+.b-ok{background:rgba(40,167,69,.13);color:#1e7e34}.b-warn{background:rgba(255,149,0,.15);color:#9a5b00}.b-err{background:rgba(215,0,21,.11);color:#b00012}.b-na{background:rgba(120,120,128,.14);color:#636366}
+.issue{border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:8px 10px;margin:6px 0;line-height:1.45}
+.issue b{font-size:12px}.issue code{font-size:11px;background:rgba(120,120,128,.12);padding:0 3px;border-radius:3px}
+.issue .p{float:right}
+.kv{display:grid;grid-template-columns:86px 1fr;gap:3px 8px;font-size:12px}
+.kv div:nth-child(odd){color:#8e8e93}
+#hint{position:absolute;left:16px;bottom:12px;font-size:11px;color:#636366;background:rgba(255,255,255,.8);padding:6px 10px;border-radius:8px;max-width:520px;line-height:1.45}
+
+/* ---------- Device frames ---------- */
+.device{position:relative;background:#111;box-shadow:0 30px 80px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.4)}
+.device.tablet{border-radius:38px;padding:18px}
+.device.phone{border-radius:56px;padding:12px}
+.device.aphone{border-radius:40px;padding:10px}
+.device.desktop{border-radius:12px;padding:0;background:transparent;box-shadow:0 30px 80px rgba(0,0,0,.30),0 0 0 .5px rgba(0,0,0,.35)}
+.device.browser{border-radius:12px;padding:0;background:#dee1e6;box-shadow:0 30px 80px rgba(0,0,0,.28)}
+.screen{position:relative;overflow:hidden;background:var(--win);color:var(--label)}
+.tablet .screen{border-radius:22px}.phone .screen{border-radius:46px}.aphone .screen{border-radius:32px}
+.desktop .screen{border-radius:12px}
+.browser .screen{border-radius:0 0 12px 12px}
+
+/* status bars, home indicator */
+.sbar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:600;z-index:50;pointer-events:none;color:var(--label)}
+.sbar .r{display:flex;gap:6px;align-items:center}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:60}
+.punch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:7px;background:#000;z-index:60}
+.homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;border-radius:3px;background:var(--label);opacity:.85;z-index:60;pointer-events:none}
+.anav{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:108px;height:4px;border-radius:2px;background:var(--label);opacity:.6;z-index:60}
+
+/* desktop title bars */
+.tb-mac .lights{position:absolute;top:18px;left:18px;display:flex;gap:8px;z-index:40}
+.tb-mac .lights span{width:12px;height:12px;border-radius:6px}
+.tb-win{height:32px;display:flex;align-items:center;background:var(--sidebar);border-bottom:1px solid var(--sep);font-size:12px}
+.tb-win .ttl{display:flex;align-items:center;gap:8px;padding-left:12px;flex:1}
+.tb-win .ctl{display:flex;height:100%}
+.tb-win .ctl span{width:46px;display:flex;align-items:center;justify-content:center}
+.tb-win .ctl span:hover{background:var(--hover)}.tb-win .ctl span.x:hover{background:#C42B1C;color:#fff}
+.menubar{height:28px;display:flex;align-items:center;gap:2px;padding:0 6px;background:var(--win);border-bottom:1px solid var(--sep);font-size:12px}
+.menubar span{padding:3px 8px;border-radius:4px}.menubar span:hover{background:var(--hover)}
+.tb-gtk{height:46px;display:flex;align-items:center;padding:0 8px;background:var(--sidebar);border-bottom:1px solid var(--sep);gap:8px}
+.tb-gtk .ttl{flex:1;text-align:center;font-weight:700;font-size:13px}
+.tb-gtk .x{width:24px;height:24px;border-radius:12px;background:var(--fill);display:flex;align-items:center;justify-content:center}
+.chrome-tabs{height:38px;display:flex;align-items:flex-end;padding:0 8px;gap:2px}
+.chrome-tabs .tab{height:32px;background:#fff;border-radius:8px 8px 0 0;padding:0 12px;display:flex;align-items:center;gap:8px;font-size:12px;min-width:200px}
+.chrome-url{height:40px;background:#fff;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #d6d6d6}
+.chrome-url .u{flex:1;height:28px;border-radius:14px;background:#f1f3f4;display:flex;align-items:center;padding:0 12px;font-size:12px;color:#3c4043;gap:6px}
+
+/* ---------- App ---------- */
+.app{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--win)}
+.app .body{flex:1;display:flex;min-height:0;position:relative}
+.side{flex:none;width:236px;margin:8px 0 8px 8px;border-radius:14px;background:var(--sidebar);box-shadow:0 0 0 .5px var(--hair);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:hidden;z-index:5}
+.side.overlay{position:absolute;left:0;top:0;bottom:0;margin:8px;z-index:30;box-shadow:var(--sheetShadow);width:300px;transform:translateX(-110%);transition:transform 260ms cubic-bezier(.2,0,0,1)}
+.side.overlay.open{transform:none}
+.side h6{margin:10px 8px 4px;font-size:11px;color:var(--label3);font-weight:600}
+.srow{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:8px;color:var(--label);font-size:13px}
+.srow .i{color:var(--accent)}
+.srow.on{background:var(--sel);font-weight:600}
+.srow .n{margin-left:auto;color:var(--label3);font-size:12px}
+.touch .srow{height:44px;font-size:15px}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.tbar{flex:none;height:52px;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px}
+.touch .tbar{height:56px}
+.tbar .ttl{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbar .ttl small{display:block;font-weight:400;font-size:11px;color:var(--label3)}
+.tbar .sp{flex:1}
+.tbtn{height:32px;min-width:32px;padding:0 8px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--icon)}
+.tbtn:hover{background:var(--hover)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}
+.touch .tbtn{height:44px;min-width:44px}
+.pill{display:inline-flex;background:var(--fill4);border-radius:10px;padding:2px;box-shadow:0 0 0 .5px var(--hair)}
+.pill .tbtn{height:28px;border-radius:8px}.touch .pill .tbtn{height:38px;min-width:40px}
+.btn{height:30px;padding:0 14px;border-radius:15px;font-weight:600;display:inline-flex;align-items:center;gap:6px;background:var(--fill)}
+.btn.pri{background:var(--accentFill);color:#fff}
+.touch .btn{height:44px;border-radius:22px;padding:0 18px;font-size:15px}
+
+/* library */
+.lib{flex:1;overflow:auto;padding:8px 24px 24px}
+.lib h4{margin:12px 0 10px;font-size:17px}
+.cont{display:flex;align-items:center;gap:12px;background:var(--fill4);border-radius:12px;padding:12px;max-width:380px}
+.cont .cv{width:52px;height:64px;border-radius:8px;background:linear-gradient(#cfe3ff,#9cc6ff);display:flex;align-items:center;justify-content:center}
+.cont .cv i{width:28px;height:36px;background:#fff;border-radius:2px;display:block}
+.prog{height:4px;border-radius:2px;background:var(--fill);margin-top:8px}.prog i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.grid{display:grid;gap:18px}
+.set{display:flex;flex-direction:column;gap:6px;user-select:none}
+.set .cv{aspect-ratio:1.18;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 .5px var(--hair)}
+.set .cv i{width:34%;height:72%;background:#fff;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.12);display:block}
+.set b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.set small{color:var(--label3);font-size:11px}
+.list .set{flex-direction:row;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--sep)}
+.list .set .cv{width:44px;aspect-ratio:.8}
+.list .set .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.list{display:flex;flex-direction:column}
+.touch .set b{font-size:15px}.touch .set small{font-size:12px}
+
+/* workspace */
+.ws{flex:1;display:flex;min-height:0;position:relative}
+.ws.vert{flex-direction:column}
+.pane{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.reader{background:var(--reader)}
+.rtools{flex:none;display:flex;align-items:center;gap:2px;padding:6px 10px}
+.rpage{flex:1;overflow:auto;padding:12px 18px 40px}
+.page{background:var(--page);color:#1d1d1f;margin:0 auto;max-width:560px;padding:44px 48px 56px;box-shadow:0 1px 3px rgba(0,0,0,.12);font-family:var(--serif);line-height:1.9;font-size:14px}
+.page h2{font-size:20px;margin:0 0 4px;font-weight:600}
+.page .meta{font-size:10px;color:#8e8e93;font-family:var(--sans);margin-bottom:18px}
+.page h3{font-size:14px;margin:18px 0 6px}
+.page p{margin:0 0 10px;text-indent:2em;border-radius:3px;transition:background 160ms}
+.page p.hl{background:rgba(255,204,0,.42)}
+.page p.sel{background:rgba(0,122,255,.22)}
+.compact .page{padding:24px 20px 32px;font-size:15px}
+.divider{flex:none;width:1px;background:var(--sep);position:relative}
+.vert .divider{width:auto;height:1px}
+.grab{position:absolute;z-index:6;background:var(--fill);border-radius:3px}
+.divider .grab{top:50%;left:-3px;width:7px;height:44px;transform:translateY(-50%)}
+.vert .divider .grab{left:50%;top:-3px;height:7px;width:44px;transform:translateX(-50%)}
+.map{background:var(--canvas);touch-action:none}
+.mhead{flex:none;display:flex;align-items:center;gap:6px;padding:8px 12px}
+.mhead b{font-size:13px}
+.mapvp{flex:1;position:relative;overflow:hidden;cursor:grab}
+.mapvp.dragging{cursor:grabbing}
+.scene{position:absolute;left:0;top:0;transform-origin:0 0}
+.node{position:absolute;background:var(--card);border-radius:10px;box-shadow:var(--cardShadow);padding:8px 10px;font-size:12px;width:190px;line-height:1.4;user-select:none;border:1.5px solid transparent}
+.node.root{background:var(--root);color:var(--onRoot);font-weight:700;font-size:13px;width:auto;white-space:nowrap;padding:10px 14px;border-radius:12px}
+.node.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentTint),var(--cardShadow)}
+.node .q{font-family:var(--serif);color:var(--excerpt);border-left:3px solid var(--y);padding-left:7px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.node .src{margin-top:5px;font-size:10px;color:var(--label3);display:flex;gap:4px;align-items:center}
+.node.new{animation:pop 520ms cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.touch .node{font-size:13px;width:210px;padding:10px 12px}
+.mctl{position:absolute;right:12px;bottom:12px;display:flex;gap:6px;z-index:4}
+.mctl .pill{background:var(--glass);backdrop-filter:blur(20px)}
+.lp-ring{position:absolute;width:56px;height:56px;border-radius:28px;border:3px solid var(--accent);pointer-events:none;z-index:70;opacity:.0;transform:translate(-50%,-50%) scale(.4)}
+.lp-ring.go{animation:ring 480ms linear forwards}
+@keyframes ring{to{opacity:.8;transform:translate(-50%,-50%) scale(1)}}
+
+/* floating selection toolbar */
+.ftb{position:absolute;z-index:20;display:flex;gap:2px;background:var(--glass);backdrop-filter:blur(24px);border-radius:12px;padding:4px;box-shadow:0 8px 28px rgba(0,0,0,.18),0 0 0 .5px var(--hair)}
+.ftb button{height:32px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--label)}
+.ftb button:hover{background:var(--hover)}
+.ftb .dot{width:14px;height:14px;border-radius:7px}
+.touch .ftb button{height:40px;font-size:14px}
+
+/* menus, sheets */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:80;opacity:0;pointer-events:none;transition:opacity 220ms}
+.scrim.on{opacity:1;pointer-events:auto}
+.menu{position:absolute;z-index:90;min-width:220px;background:var(--glass);backdrop-filter:blur(30px);border-radius:12px;padding:5px;box-shadow:0 12px 40px rgba(0,0,0,.22),0 0 0 .5px var(--hair)}
+.menu .mi{display:flex;align-items:center;gap:10px;height:30px;padding:0 10px;border-radius:7px;font-size:13px;color:var(--label)}
+.menu .mi:hover{background:var(--accent);color:#fff}
+.menu .mi .k{margin-left:auto;color:var(--label3);font-size:12px}
+.menu .mi:hover .k{color:#fff}
+.menu .mi.red{color:var(--err)}
+.menu hr{border:0;border-top:1px solid var(--sep);margin:4px 6px}
+.touch .menu .mi{height:44px;font-size:15px}
+.asheet{position:absolute;left:8px;right:8px;bottom:8px;z-index:90;transform:translateY(110%);transition:transform 300ms cubic-bezier(.2,0,0,1)}
+.asheet.on{transform:none}
+.asheet .grpb{background:var(--glass);backdrop-filter:blur(30px);border-radius:14px;overflow:hidden;margin-top:8px}
+.asheet .grpb .mi{height:56px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent);border-top:1px solid var(--sep)}
+.asheet .grpb .mi:first-child{border-top:0}
+.asheet .grpb .mi.red{color:var(--err)}
+.asheet .grpb .hd{padding:14px;text-align:center;font-size:13px;color:var(--label3)}
+.sheet{position:absolute;z-index:85;background:var(--win);box-shadow:var(--sheetShadow);display:flex;flex-direction:column;transition:transform 320ms cubic-bezier(.2,0,0,1),height 320ms cubic-bezier(.2,0,0,1)}
+.sheet.bottom{left:0;right:0;bottom:0;border-radius:16px 16px 0 0;transform:translateY(105%)}
+.sheet.bottom.on{transform:none}
+.sheet.center{left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;border-radius:14px;transition:all 220ms}
+.sheet.center.on{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+.sheet .handle{width:36px;height:5px;border-radius:3px;background:var(--fill);margin:6px auto 0;flex:none}
+.sheet .sh{display:flex;align-items:center;padding:10px 14px;gap:8px;flex:none}
+.sheet .sh b{flex:1;font-size:15px}
+.sheet .sb{flex:1;overflow:auto;padding:4px 16px 16px}
+.panel{flex:none;width:380px;border-left:1px solid var(--sep);display:flex;flex-direction:column;background:var(--win);z-index:8}
+.panel.float{position:absolute;right:8px;top:8px;bottom:8px;border-radius:14px;border:0;box-shadow:var(--sheetShadow);transform:translateX(115%);transition:transform 300ms cubic-bezier(.2,0,0,1)}
+.panel.float.on{transform:none}
+.msg{margin:10px 0;line-height:1.55}
+.msg.u{margin-left:auto;max-width:80%;background:var(--accentTint);padding:8px 12px;border-radius:14px 14px 4px 14px;width:fit-content}
+.msg.a .cite{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:var(--researchTint);color:var(--research);font-size:10px;font-weight:700;margin:0 2px;vertical-align:1px}
+.prop{border:1px solid var(--sep);border-radius:12px;padding:10px;margin:8px 0;background:var(--fill4)}
+.prop .row{display:flex;gap:8px;margin-top:8px}
+.composer{flex:none;margin:8px 12px 12px;border-radius:16px;box-shadow:0 0 0 1px var(--sep);padding:10px 12px;display:flex;align-items:flex-end;gap:8px;background:var(--win);transition:margin 280ms cubic-bezier(.2,0,0,1)}
+.composer .in{flex:1;min-height:20px;color:var(--label3);outline:none}
+.composer .in:focus{color:var(--label)}
+.send{width:30px;height:30px;border-radius:15px;background:var(--accentFill);color:#fff;display:flex;align-items:center;justify-content:center}
+.kbd{position:absolute;left:0;right:0;bottom:0;z-index:95;background:#D1D3D9;transform:translateY(100%);transition:transform 280ms cubic-bezier(.2,0,0,1);padding:8px 4px 26px}
+.dark .kbd{background:#2b2b2d}
+.kbd.on{transform:none}
+.kbd .kr{display:flex;justify-content:center;gap:5px;margin:6px 0}
+.kbd .kr span{flex:1;max-width:44px;height:42px;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;color:#000;box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.dark .kbd .kr span{background:#58585c;color:#fff}
+.kbd .kr span.w{max-width:none;flex:5}
+.kbd .kr span.g{background:#ABB0BA}
+
+/* tab bar (compact) */
+.tabbar{flex:none;display:flex;border-top:1px solid var(--sep);background:var(--glass);backdrop-filter:blur(20px);z-index:10}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:7px;font-size:10px;color:var(--label3)}
+.tabbar button.on{color:var(--accent)}
+.atabbar{flex:none;display:flex;background:var(--sidebar);z-index:10;height:72px}
+.atabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:10px;font-size:12px;color:var(--label2)}
+.atabbar button .ic{width:56px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center}
+.atabbar button.on{color:var(--label);font-weight:600}.atabbar button.on .ic{background:var(--accentTint);color:var(--accent)}
+.topseg{flex:none;display:flex;justify-content:center;padding:6px 12px}
+.topseg .seg2{display:flex;background:var(--fill);border-radius:9px;padding:2px;width:100%;max-width:360px}
+.topseg .seg2 button{flex:1;height:32px;border-radius:7px;font-size:13px;color:var(--label)}
+.topseg .seg2 button.on{background:var(--win);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+
+/* review */
+.rev{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:18px;background:var(--canvas)}
+.fc{width:min(560px,100%);min-height:280px;background:var(--card);border-radius:18px;box-shadow:var(--cardShadow);padding:28px;display:flex;flex-direction:column;gap:14px;cursor:pointer}
+.fc .q2{font-family:var(--serif);font-size:18px;line-height:1.7}
+.fc .ans{border-top:1px dashed var(--sep);padding-top:14px;line-height:1.7;display:none}
+.fc.show .ans{display:block}
+.rates{display:flex;gap:10px;width:min(560px,100%)}
+.rates button{flex:1;height:48px;border-radius:12px;background:var(--card);box-shadow:0 0 0 1px var(--sep);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.rates button small{font-weight:400;font-size:10px;color:var(--label3)}
+.touch .rates button{height:60px;font-size:15px}
+
+/* toast + banners */
+.toast{position:absolute;left:50%;bottom:24px;transform:translate(-50%,20px);background:rgba(30,30,32,.92);color:#fff;padding:10px 16px;border-radius:20px;font-size:13px;opacity:0;transition:all 240ms;z-index:120;display:flex;gap:10px;align-items:center;white-space:nowrap;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast a{color:#64D2FF;font-weight:600;cursor:pointer}
+.banner{flex:none;display:flex;align-items:center;gap:8px;margin:6px 12px 0;padding:8px 12px;border-radius:10px;background:rgba(255,149,0,.12);color:var(--label);font-size:12px}
+.banner b{color:#B86E00}
+.pencil{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:4px;background:var(--glass);backdrop-filter:blur(24px);border-radius:22px;padding:6px 10px;box-shadow:0 8px 28px rgba(0,0,0,.18),0 0 0 .5px var(--hair);z-index:12;align-items:center}
+.pencil .pt{width:30px;height:42px;border-radius:6px 6px 2px 2px;display:flex;align-items:flex-start;justify-content:center;padding-top:4px}
+.pencil .pt i{display:block;width:12px;height:30px;border-radius:6px 6px 2px 2px}
+.pencil .pt.on{transform:translateY(-6px)}
+
+/* current-state (实测) overlay */
+.real{position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:200}
+.real img{max-width:100%;max-height:100%;display:block}
+.real .none{color:#ddd;text-align:center;line-height:1.7;padding:40px;font-size:15px}
+.real .none b{font-size:20px;color:#fff}
+.real{flex-direction:column}
+.real .shot{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.real .shot img{max-height:100%}
+.real .shot{width:fit-content;margin:0 auto}
+.outline-box{position:absolute;border:2.5px dashed #FF3B30;border-radius:8px;pointer-events:none}
+.num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:11px;background:#D70015;color:#fff;font-size:12px;font-weight:700;flex:none}
+.outline-box .num{position:absolute;left:-11px;top:-11px;box-shadow:0 0 0 2px #fff}
+.legend{flex:none;width:100%;background:rgba(20,20,22,.94);color:#fff;padding:14px 20px 26px;display:flex;flex-direction:column;gap:8px;font-size:15px;line-height:1.45}
+.legend div{display:flex;gap:10px;align-items:flex-start}
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>MarginMind · 跨平台适配原型</h1>
+  <div class="grp"><label>平台</label><div class="seg" id="segPlat"></div></div>
+  <div class="grp"><label>场景</label><div class="seg" id="segScene"></div></div>
+  <div class="grp"><label>视图</label><div class="seg" id="segMode"></div></div>
+  <div class="grp"><label>外观</label><div class="seg" id="segTheme"></div></div>
+</div>
+<div id="main">
+  <div id="stage"><div id="scaler"></div><div id="hint"></div></div>
+  <div id="info"></div>
+</div>
+
+<script>
+/* ======================= Data ======================= */
+const ICON = {
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  star:'<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  cards:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M8 2h8"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  side:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
+  book:'<path d="M3 5.5C5 4.5 8 4.3 11 5.5v14c-3-1.2-6-1-8 0zM21 5.5c-2-1-5-1.2-8 0v14c3-1.2 6-1 8 0z"/>',
+  map:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 11 15.5 7M8.5 13l7 4"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  split:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16"/>',
+  splitv:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 12h18"/>',
+  share:'<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  back:'<path d="m15 5-7 7 7 7"/>', more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>', send:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/>', high:'<path d="m9 11-5 5v4h4l5-5M14 6l4 4-6 6-4-4z"/>',
+  locate:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  child:'<path d="M5 5v8a3 3 0 0 0 3 3h11M15 12l4 4-4 4"/>', edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  export:'<path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  wifi:'<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  fit:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', excerpt:'<path d="M6 4h9l3 3v13H6z"/><path d="M9 10h6M9 14h6"/>',
+};
+const ic = (n, c='') => `<svg class="i ${c}" viewBox="0 0 24 24">${ICON[n]||''}</svg>`;
+
+/* Device definitions. w/h are logical points of the app screen. size: regular | medium | compact. */
+const PLATFORMS = [
+  {id:'mac', name:'macOS', frame:'desktop', chrome:'mac', w:1280, h:800, input:'mouse', mod:'⌘', status:'ok'},
+  {id:'win', name:'Windows', frame:'desktop', chrome:'win', w:1280, h:800, input:'mouse', mod:'Ctrl', status:'na'},
+  {id:'linux', name:'Linux', frame:'desktop', chrome:'gtk', w:1280, h:800, input:'mouse', mod:'Ctrl', status:'warn'},
+  {id:'ipadL', name:'iPad 横屏', frame:'tablet', chrome:'ipados', w:1376, h:1032, input:'touch', mod:'⌘', status:'err', key:true},
+  {id:'ipadP', name:'iPad 竖屏', frame:'tablet', chrome:'ipados', w:1032, h:1376, input:'touch', mod:'⌘', status:'err', key:true},
+  {id:'ipadSV', name:'iPad 分屏 ½', frame:'tablet', chrome:'ipados', w:684, h:1032, input:'touch', mod:'⌘', status:'err', key:true, splitView:true},
+  {id:'ipadMini', name:'iPad mini', frame:'tablet', chrome:'ipados', w:744, h:1133, input:'touch', mod:'⌘', status:'err'},
+  {id:'iphone', name:'iPhone', frame:'phone', chrome:'ios', w:402, h:874, input:'touch', mod:'', status:'err'},
+  {id:'aphone', name:'Android 手机', frame:'aphone', chrome:'android', w:412, h:915, input:'touch', mod:'', status:'err'},
+  {id:'atab', name:'Android 平板', frame:'tablet', chrome:'android', w:1280, h:800, input:'touch', mod:'Ctrl', status:'na'},
+  {id:'web', name:'Web', frame:'browser', chrome:'web', w:1440, h:860, input:'mouse', mod:'Ctrl', status:'err'},
+];
+const SCENES = [
+  {id:'library', name:'资料库'}, {id:'workspace', name:'阅读 + 脑图'}, {id:'assistant', name:'助手'}, {id:'review', name:'复习'}, {id:'export', name:'导出'},
+];
+/* Size class from logical width — the breakpoints proposed for MMSizeClass. */
+function sizeClass(p){ if (p.w < 600) return 'compact'; if (p.w < 1180 || p.h > p.w) return 'medium'; return 'regular'; }
+
+const PARAS = [
+  ['一、记忆是怎样流失的', null],
+  [null, '人在学习新知识之后，记忆并不是匀速流失的。最初的几个小时里遗忘得最快，之后速度逐渐放缓，剩下的部分会保持很长时间。这条先陡后平的曲线，被称为遗忘曲线。'],
+  [null, '遗忘并不完全是坏事。大脑会主动筛掉很少被再次调用的信息，把有限的资源留给更常用的内容。问题在于，我们无法直接告诉大脑哪些内容是重要的，只能通过“再次使用”来表明它值得保留。'],
+  [null, '一个常见的误解是：读得越熟，记得越牢。事实上，流畅地读完一遍带来的熟悉感，并不等于真正记住了。熟悉感只说明我们“认得”这些内容，却不能保证在需要时把它“想起来”。'],
+  ['二、间隔重复', null],
+  [null, '间隔重复利用的正是遗忘的规律：在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更晚。因此，复习间隔可以逐步拉长，从一天、三天，到一周、一个月。'],
+  [null, '如果在刚学完时就反复复习，大脑会觉得这些内容“随手可得”，复习带来的收益很小。适当地等一等，让记忆变得有点模糊，再去把它找回来，效果反而更好。'],
+];
+
+/* Verified status per platform (see docs/platform-adaptation-audit.md). */
+const INFO = {
+  mac:{verdict:['ok','可用 · 主交付平台'], run:'现有 DMG / CI 构建；本轮未重新实机验收（以历史验收为准）。',
+    layout:'Regular：侧栏 236 + 阅读/脑图左右分栏 + 右侧 400 面板；窗口最小 960×600。',
+    input:'鼠标、触控板（双指缩放 / 平移）、⌘ 快捷键、系统菜单栏、右键菜单。',
+    design:['保持现状作为基准；新增的 MMSizeClass 断点不得改变 ≥1180pt 窗口下的任何布局。','同一套命令定义继续生成系统菜单（CP-03）。'],
+    issues:[]},
+  win:{verdict:['na','未实测 · 有工程，缺功能'], run:'本轮无 Windows 主机，未构建。代码层面：Runner 存在；PNG/PDF 导出、结构剪贴板、凭据、正文解析、外链、OCR 没有原生通道（见 platform-support-plan §1.1）。',
+    layout:'与 macOS 相同的 Regular 布局；原生标题栏 + 应用内菜单栏（文件/编辑/视图/脑图/帮助）。',
+    input:'鼠标 + Ctrl 快捷键；触屏笔记本需要与 iPad 同一套触控手势。',
+    design:['标题栏用系统原生（最小化/最大化/关闭在右），内容区工具栏不再为红绿灯预留 78pt。','应用内菜单栏由命令表生成，显示 Ctrl 快捷键；全屏改用 F11，避免与 Ctrl+F 冲突。','导出格式按能力过滤：未实现 PNG/PDF 时不显示或显示“不支持”原因。'],
+    issues:['W1','W2','W3']},
+  linux:{verdict:['warn','可构建可运行 · 缺功能'], run:'本轮在 Ubuntu ARM64 + Xvfb 实测：flutter build linux --debug 成功；启动→打开示例学习集→PDF 与脑图正常渲染。原生能力缺口同 Windows。',
+    layout:'Regular；GTK 标题栏（GNOME 为 CSD headerbar）。',
+    input:'鼠标 + Ctrl；Wayland/X11 剪贴板需分开验证。',
+    design:['同 Windows：应用内菜单、能力过滤、凭据服务缺失时的明确状态（不落明文）。'],
+    issues:['W1','W2','W3']},
+  ipadL:{verdict:['err','可编译可启动 · 不可用'], run:'本轮实测：临时生成 ios/ 工程后 flutter build ios --simulator 成功（Xcode 27.1）；iPad Pro 13" (M5) 模拟器可启动、打开示例学习集、渲染 PDF 与脑图，无布局溢出错误。但：顶部工具栏压在状态栏下；所有右键菜单不可达；脑图单指拖动变成框选、双指无法缩放。横屏截图未取得（模拟器旋转需 GUI 操作，setPreferredOrientations 在支持多任务的 iPad 上被系统忽略）。',
+    layout:'Regular（1376×1032）：保留桌面三栏，但侧栏可收起为浮层；工具栏避开状态栏安全区；助手为右侧浮动面板。',
+    input:'手指：滚动/平移/双指缩放；长按 = 右键菜单；Apple Pencil：直接划选/高亮/手写；外接键盘沿用 ⌘ 快捷键；触控板指针沿用桌面 hover。',
+    design:['阅读区：手指滚动翻页，Pencil 划选即摘录（Scribble 风格），长按文字出系统式选择柄。','脑图：单指拖空白 = 平移；双指 = 缩放；长按节点 = 菜单（带触感反馈），长按后拖动 = 移动节点；框选改为“选择”模式按钮。','所有 hover 才出现的控件（页码导航、折叠按钮）在触控下常显。','命中区最小 44pt；工具栏按钮 44pt。'],
+    issues:['M1','M2','M3','M4','M5','M6','M7','M8','M9']},
+  ipadP:{verdict:['err','可编译可启动 · 不可用'], run:'本轮实测（iPad Pro 13" 竖屏 1032×1376pt，安全区 上32/下20）：工作区仍按桌面三栏排布，阅读区工具栏折成两行，右上布局按钮落在状态栏 Wi-Fi/电量图标下；脑图只剩约 370pt，根节点被截断。',
+    layout:'Medium：阅读在上、脑图在下的上下分栏（可拖动分隔条，可一键全屏任一侧）；侧栏为左侧浮层抽屉；助手为底部/右侧浮层。',
+    input:'同 iPad 横屏。',
+    design:['竖屏优先“上下分栏”：读一段 → 下方脑图立即可见，摘录不需要切换。','分隔条 44pt 命中区，双击恢复 50/50。','侧栏抽屉从左边缘轻扫唤出。'],
+    issues:['M1','M2','M3','M4','M5','M6','M10']},
+  ipadSV:{verdict:['err','未处理分屏'], run:'Split View ½（约 678pt）宽度下现有布局横向溢出（与 iPhone 同类的 RenderFlex overflow）。',
+    layout:'Compact-width on iPad：单面板 + 顶部“阅读 | 脑图”分段切换；侧栏为抽屉；助手为底部 sheet。',
+    input:'同 iPad。拖放：从“文件”App 拖 PDF 进来应可导入（UIDropInteraction）。',
+    design:['不使用底部 Tab（iPad 分屏时保持顶部分段控件，切回全屏无跳变）。','从其他 App 拖入 PDF/图片 → 导入或成为图片卡片。'],
+    issues:['M1','M2','M3','M5','M6','M10','M11']},
+  ipadMini:{verdict:['err','同 iPad'], run:'744×1133 竖屏，按 Medium 处理；横屏 1133 宽按 Medium（不足 1180）。',
+    layout:'Medium：上下分栏；横屏时左右分栏但侧栏强制浮层。', input:'同 iPad。',
+    design:['阅读字号默认 +1 级；节点卡片宽度 210。'], issues:['M1','M2','M3','M10']},
+  iphone:{verdict:['err','可启动 · 布局崩坏'], run:'本轮实测：iPhone 17 Pro 模拟器可启动，但桌面侧栏占满屏幕，工具栏溢出（RIGHT OVERFLOWED 调试条），按钮文字截断，不可用。',
+    layout:'Compact：底部 Tab（资料库 / 阅读 / 脑图 / 复习）；单面板；助手、卡片详情、导出为底部 sheet；菜单为 Action Sheet。',
+    input:'手指；系统返回手势（左缘右滑）；软键盘需要上推输入框。',
+    design:['手机定位为“随身复习 + 轻量摘录”：阅读→摘录→脑图可用但简化；复习是一等入口。','摘录后 toast“已加入脑图 · 查看”，不强制切页。','长按节点出 Action Sheet；底部安全区 34pt。'],
+    issues:['M1','M2','M3','M4','M5','M6','M10','M12']},
+  aphone:{verdict:['err','可启动 · 布局崩坏'], run:'本轮实测：临时生成 android/ 后 assembleDebug 通过（JDK 21 / SDK 36）；Pixel 8 模拟器（API 36，411×914dp）可启动并打开示例学习集，但与 iPhone 相同：桌面侧栏占满屏幕，工具栏溢出 329px，脑图被隐藏。Gradle 警告 desktop_drop 仍使用 KGP。',
+    layout:'同 iPhone 的 Compact 布局；底部导航用 Android 习惯的胶囊高亮；系统返回键关闭 sheet/返回上一级。',
+    input:'手指；系统返回（手势/按钮）；软键盘 adjustResize。',
+    design:['不换成 Material 组件，沿用 mm_design，但导航栏、字体（Noto Sans SC）、涟漪反馈按 Android 习惯。','导入：SAF 文件选择器 → 复制进应用沙盒；导出：系统分享面板。'],
+    issues:['M1','M2','M3','M4','M5','M6','M10','M12','A1','A2']},
+  atab:{verdict:['na','未单独实测'], run:'只跑了 Android 手机 AVD；构建产物相同，平板布局按 iPad 规则推导。',
+    layout:'Regular/Medium 与 iPad 相同规则。', input:'手指、手写笔、外接键盘 Ctrl。',
+    design:['与 iPad 共享同一套平板交互；不单独设计。'], issues:['M1','M2','M3','M4','M5','A1']},
+  web:{verdict:['err','可编译 · 启动即白屏'], run:'本轮实测：临时生成 web/ 后 flutter build web --release 成功；Chrome 打开后白屏，控制台 MissingPluginException（启动链 getApplicationSupportDirectory / dart:io 文件库在浏览器不可用）。',
+    layout:'Regular 桌面布局；顶部常驻“数据保存在此浏览器”提示与备份入口。',
+    input:'鼠标/触控板；浏览器快捷键冲突（Ctrl+F/Ctrl+S/Ctrl+W）需避让。',
+    design:['先做 WEB-01 可行性 ADR：存储（OPFS/IndexedDB）、PDF 字节读取、助手网络（CORS/代理）。','OCR、外部浏览器、凭据等能力在 Web 上显式标记不可用。'],
+    issues:['B1','B2','B3']},
+};
+const ISSUES = {
+  M1:['P0','iOS/Android 没有平台工程','仓库只有 macos/windows/linux。需按 MOB-01 生成 ios/、android/，配置签名、Info.plist（文件访问、UIFileSharingEnabled/LSSupportsOpeningDocumentsInPlace）、最低系统版本。','apps/marginmind/'],
+  M2:['P0','没有任何 SafeArea / 安全区处理','实测 iPad 工具栏与状态栏重叠，iPhone 内容进入刘海与 Home 指示条区域。全仓只有 MMSheet 用了 SafeArea。','mm_design window_scaffold.dart'],
+  M3:['P0','布局只有桌面一套，没有尺寸断点','侧栏 236 + 阅读最小 420 + 脑图最小 360 + 面板 400；最小窗口 960×600。iPhone 实测 RenderFlex 右溢出；iPad 竖屏脑图只剩约 370pt、根节点被截断。需要 Compact/Medium/Regular 三档。','workspace_layout.dart, metrics.dart'],
+  M4:['P0','右键是菜单的唯一入口','节点、关联线、学习集、侧栏、对话列表的菜单都只挂 onSecondaryTapUp；全仓 onLongPress = 0 处。触屏用户无法删除/导出/改名/定位原文。','mind_map_canvas.dart:1152, library_screen.dart:424 等 18 处'],
+  M5:['P0','脑图触控手势错误','实测（touch 指针）：单指拖空白 → 框选全部 4 个节点而非平移；双指捏合 → 缩放不变（scaleEnabled:false，缩放只接 trackpad/滚轮）；节点用 Draggable 立即拖动，单指无法从节点上平移。','mind_map_canvas.dart:1298-1345, 961'],
+  M6:['P1','hover 才可见的控件在触屏上不可见','阅读页码导航仅在 hover/聚焦时显示；折叠按钮 hover 前 0.45 透明度；30 处 MouseRegion。','reader_pane.dart:44, mind_map_canvas.dart:2121'],
+  M7:['P1','Apple Pencil / 手指 选字未区分','pdfrx 选区与区域摘录手势同时接收 touch，手指滚动与划选会冲突；没有 Pencil 优先策略。','mm_pdf pdf_view.dart:1325'],
+  M8:['P1','导出依赖桌面保存对话框','getSaveLocation 在 iOS/Android 不支持（file_selector 1.1.0 平台表）；PNG/PDF 编码只在 macOS 原生通道。移动端需改为系统分享面板。','map_export_sheet.dart:184'],
+  M9:['P1','拖入导入用 desktop_drop','desktop_drop 不支持 iOS/Android；iPad 从“文件”拖入 PDF 需要原生 drop 支持。','shared/pdf_drop.dart'],
+  M10:['P1','软键盘未处理','MMWindowScaffold 没有 viewInsets 处理；助手输入框、节点重命名在手机上会被键盘遮挡。','assistant_composer.dart'],
+  M11:['P2','iPad 多窗口 / 分屏 / Stage Manager','需要声明 UIRequiresFullScreen=false 并测试 678/507pt 等宽度。','Info.plist'],
+  M12:['P1','凭据、OCR、外链等原生通道缺失','KeychainSecretStore / Vision OCR / NSWorkspace 只在 macOS Runner 实现；iOS 可复用大部分 Swift，但需要单独注册。','mm_platform/lib/src/*'],
+  A2:['P2','desktop_drop 使用 Kotlin Gradle Plugin','Gradle 警告未来 Flutter 版本会因此构建失败；移动端不需要它，应按平台条件引入或替换。','apps/marginmind/pubspec.yaml'],
+  A1:['P1','Android 文件与返回键','SAF content:// URI 需复制进沙盒；系统返回需要关闭 sheet / 退出编辑而非直接退出应用（PopScope）。','pdf_picker.dart'],
+  W1:['P0','原生能力通道缺失','PNG/PDF 导出、结构剪贴板、图片粘贴、凭据、正文解析、外链、OCR 均无 Windows/Linux 实现（CP-04～CP-09）。','mm_platform'],
+  W2:['P1','快捷键与菜单','无应用菜单栏；资料库硬编码 meta:true；fullScreen 未注册且与 Ctrl+F 冲突（CP-03）。','app_commands.dart'],
+  W3:['P1','发布与 CI','无 Windows/Linux 构建任务与安装包（CP-11/12）。','.github/workflows'],
+  B1:['P0','启动链依赖 dart:io / path_provider','main.dart 直接 getApplicationSupportDirectory + FileLibraryStore(Directory)；mm_data/mm_research 14 个文件 import dart:io。','main.dart:21'],
+  B2:['P0','助手网络不能照搬','DNS/IP 固定、TLS 策略在浏览器不可用；需要 CORS 或服务端代理（WEB-01/03）。','mm_research transport.dart'],
+  B3:['P1','浏览器快捷键冲突','Ctrl+F/S/W/N 被浏览器占用。','app_commands.dart'],
+};
+
+/* ======================= State ======================= */
+const S = {
+  plat: 'ipadL', scene: 'workspace', mode: 'design', theme: 'light',
+  sideOpen: false, tab: 'map', pane: 'split', mapDraft: null, selNode: null, selPara: null,
+  panel: false, menu: null, sheet: null, kbd: false, flip: false, tool: 'pen', added: [],
+  t: {x: 40, y: 0, s: 1}, splitRatio: .5, viewList: false,
+};
+const plat = () => PLATFORMS.find(p => p.id === S.plat);
+
+/* ======================= Rendering ======================= */
+function seg(el, items, cur, on){
+  el.innerHTML = items.map(([id, label, tag]) => `<button data-id="${id}" class="${id===cur?'on':''}">${label}${tag?`<span class="tag">${tag}</span>`:''}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('button'); if (b) on(b.dataset.id); };
+}
+function renderTop(){
+  seg(document.getElementById('segPlat'), PLATFORMS.map(p => [p.id, p.name, p.key ? '重点' : '']), S.plat, id => { S.plat = id; resetUi(); render(); });
+  seg(document.getElementById('segScene'), SCENES.map(s => [s.id, s.name]), S.scene, id => { S.scene = id; resetUi(); render(); });
+  seg(document.getElementById('segMode'), [['design','目标设计'],['real','现状（实测）']], S.mode, id => { S.mode = id; render(); });
+  seg(document.getElementById('segTheme'), [['light','浅色'],['dark','深色']], S.theme, id => { S.theme = id; render(); });
+}
+function resetUi(){
+  Object.assign(S, {sideOpen:false, menu:null, sheet:null, kbd:false, flip:false, selPara:null, selNode:null});
+  S.panel = S.scene === 'assistant';
+  if (S.scene === 'export') S.sheet = 'export';
+  const sc = sizeClass(plat());
+  S.tab = S.scene === 'review' ? 'review' : S.scene === 'library' ? 'library' : S.scene === 'export' ? 'map' : 'reader';
+  if (S.scene === 'workspace' && sc !== 'compact') S.tab = 'map';
+  S.t = {x: 20, y: 0, s: 1, fit: true};
+}
+
+function insets(p){
+  // Safe-area insets in points: status bar / home indicator per device family.
+  if (p.chrome === 'ipados') return {top: 32, bottom: 20, left: 0, right: 0};
+  if (p.chrome === 'ios') return {top: 62, bottom: 34, left: 0, right: 0};
+  if (p.chrome === 'android') return {top: p.frame === 'aphone' ? 40 : 28, bottom: p.frame === 'aphone' ? 0 : 16, left: 0, right: 0};
+  return {top: 0, bottom: 0, left: 0, right: 0};
+}
+
+function statusBar(p){
+  if (p.chrome === 'ipados') return `<div class="sbar" style="height:32px;font-size:13px;padding:0 24px"><span>9:41&nbsp;&nbsp;10月28日 周三</span><span class="r">${ic('wifi','s')}<span>100%</span><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;display:inline-block;position:relative"><i style="position:absolute;inset:1px;background:currentColor;border-radius:1px"></i></span></span></div><div class="homeind"></div>`;
+  if (p.chrome === 'ios') return `<div class="island"></div><div class="sbar" style="height:54px;padding:6px 34px 0"><span>9:41</span><span class="r">${ic('wifi','s')}<span style="width:24px;height:12px;border:1.5px solid currentColor;border-radius:4px;display:inline-block;position:relative"><i style="position:absolute;inset:1px;background:currentColor;border-radius:2px"></i></span></span></div><div class="homeind"></div>`;
+  if (p.chrome === 'android') return `${p.frame==='aphone'?'<div class="punch"></div>':''}<div class="sbar" style="height:${insets(p).top}px;font-size:13px;font-weight:500;padding:0 22px"><span>9:41</span><span class="r">${ic('wifi','s')}<span>100%</span></span></div><div class="anav"></div>`;
+  return '';
+}
+
+function deviceFrame(p, inner){
+  const scr = `<div class="screen" style="width:${p.w}px;height:${p.h}px">${inner}</div>`;
+  if (p.frame === 'browser') {
+    return `<div class="device browser" style="width:${p.w}px"><div class="chrome-tabs"><div class="tab">${ic('book','s')} MarginMind <span style="margin-left:auto;opacity:.5">${ic('x','s')}</span></div></div>
+      <div class="chrome-url"><span style="opacity:.6">${ic('back','s')}</span><div class="u">${ic('lock','s')} app.marginmind.dev/library</div></div>${scr}</div>`;
+  }
+  if (p.frame === 'desktop') return `<div class="device desktop">${scr}</div>`;
+  if (p.splitView) {
+    // iPad landscape with MarginMind on the left half and Files on the right.
+    return `<div class="device tablet"><div style="display:flex;gap:8px;background:#000;border-radius:22px;overflow:hidden;width:${1376}px;height:${p.h}px">${scr}
+      <div style="flex:1;background:#f2f2f7;border-radius:12px;position:relative;padding:60px 20px;font-family:var(--sans);color:#000">
+        <div style="font-size:28px;font-weight:700;margin-bottom:16px">文件</div>
+        ${['间隔重复研究.pdf','认知心理学 第3章.pdf','截图 2026-10-28.png'].map((f,i)=>`<div draggable="true" data-dragfile="${f}" style="display:flex;align-items:center;gap:12px;padding:12px;background:#fff;border-radius:12px;margin-bottom:8px;cursor:grab"><span style="width:36px;height:44px;border-radius:4px;background:${i==2?'#cde':'#ffd9d4'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#c33">${i==2?'PNG':'PDF'}</span><span>${f}<br><small style="color:#888">按住拖到左侧 MarginMind 导入</small></span></div>`).join('')}
+      </div></div></div>`;
+  }
+  return `<div class="device ${p.frame}">${scr}</div>`;
+}
+
+function desktopChrome(p){
+  if (p.chrome === 'mac') return `<div class="tb-mac"><div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div></div>`;
+  if (p.chrome === 'win') return `<div class="tb-win"><div class="ttl">${ic('book','s')} MarginMind</div><div class="ctl"><span>${ic('minus','s')}</span><span><svg class="i s" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></span><span class="x">${ic('x','s')}</span></div></div>
+    <div class="menubar">${['文件','编辑','视图','脑图','学习','助手','帮助'].map(m=>`<span data-act="winmenu" data-m="${m}">${m}</span>`).join('')}</div>`;
+  if (p.chrome === 'gtk') return `<div class="tb-gtk"><button class="tbtn">${ic('side')}</button><button class="tbtn" data-act="winmenu" data-m="菜单"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="ttl">MarginMind</div><span class="x">${ic('x','s')}</span></div>`;
+  return '';
+}
+
+function sidebar(p, sc){
+  const overlay = sc !== 'regular' || (p.input === 'touch' && S.scene !== 'library');
+  const inWs = S.scene !== 'library';
+  const top = p.chrome === 'mac' ? 30 : 4;
+  const rows = inWs ? `
+      <div class="srow" style="font-weight:700"><span style="width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center">${ic('book','s')}</span>遗忘曲线与间隔重复</div>
+      <h6>脑图</h6><div class="srow on">${ic('map')}主脑图</div>
+      <h6>文档</h6><div class="srow">${ic('doc')}第二章 遗忘曲线<span class="n">2</span></div>
+      <h6>对话</h6><div class="srow" data-act="panel">${ic('spark')}问问助手…</div>
+      <h6>学习</h6><div class="srow" data-act="goto" data-scene="review">${ic('cards')}复习<span class="n">12</span></div>`
+    : `<h6>资料库</h6><div class="srow on">${ic('grid')}全部学习集<span class="n">4</span></div><div class="srow">${ic('clock')}最近</div><div class="srow">${ic('star')}星标</div><div class="srow" data-act="goto" data-scene="review">${ic('cards')}待复习<span class="n">12</span></div>
+      <h6>文件夹</h6><div class="srow">${ic('folder')}认知科学</div><div class="srow">${ic('folder')}未归档</div>`;
+  return `<div class="side ${overlay?'overlay':''} ${S.sideOpen?'open':''}" style="padding-top:${top + (overlay?6:0)}px">
+    <div style="display:flex;justify-content:flex-end;height:28px">${overlay?`<button class="tbtn" data-act="side">${ic('x','s')}</button>`:`<button class="tbtn">${ic('side','s')}</button>`}</div>
+    ${rows}
+    <div style="flex:1"></div><div style="display:flex;justify-content:space-between"><button class="tbtn">${ic('plus','s')}</button><button class="tbtn">${ic('gear','s')}</button></div></div>`;
+}
+
+function library(p, sc){
+  const cols = sc === 'compact' ? 2 : sc === 'medium' ? 3 : 5;
+  const sets = [['遗忘曲线与间隔重复','1 文档 · 14 卡片 · 刚刚','#cfe3ff'],['认知负荷理论','3 文档 · 42 卡片 · 昨天','#ffe0c7'],['费曼学习法笔记','2 文档 · 18 卡片 · 3 天前','#d8f3dc'],['神经科学导论','5 文档 · 96 卡片 · 上周','#eadcff']];
+  const touch = p.input === 'touch';
+  const body = S.viewList
+    ? `<div class="list">${sets.map((s,i)=>`<div class="set" data-act="open" data-ctx="set" data-i="${i}"><div class="cv" style="background:${s[2]}"><i></i></div><div class="t"><b>${s[0]}</b><small>${s[1]}</small></div></div>`).join('')}</div>`
+    : `<div class="grid" style="grid-template-columns:repeat(${cols},1fr)">${sets.map((s,i)=>`<div class="set" data-act="open" data-ctx="set" data-i="${i}"><div class="cv" style="background:${s[2]}"><i></i></div><b>${s[0]}</b><small>${s[1]}</small></div>`).join('')}</div>`;
+  return `<div class="lib">
+    ${p.chrome==='web'?`<div class="banner" style="margin:0 0 8px">${ic('lock','s')}<span><b>数据只保存在此浏览器中。</b>清除站点数据会丢失学习集，建议定期“导出备份（.mmset.zip）”。</span><span style="flex:1"></span><button class="btn" data-act="export">立即备份</button></div>`:''}
+    <h4>继续学习</h4>
+    <div class="cont" data-act="open"><div class="cv"><i></i></div><div style="flex:1;min-width:0"><b>遗忘曲线与间隔重复</b><div style="font-size:12px;color:var(--label3)">上次读到：第二章 · 第 1 页</div><div class="prog"><i style="width:50%"></i></div></div></div>
+    <h4>全部 ${touch?`<small style="font-weight:400;font-size:12px;color:var(--label3)">· 长按学习集查看更多操作</small>`:`<small style="font-weight:400;font-size:12px;color:var(--label3)">· 右键学习集查看更多操作</small>`}</h4>
+    ${body}</div>`;
+}
+
+function libToolbar(p, sc){
+  const lead = sc !== 'regular' ? `<button class="tbtn" data-act="side">${ic('side')}</button>` : '';
+  if (sc === 'compact') return `<div class="tbar">${lead}<div class="ttl" style="font-size:22px">资料库</div><div class="sp"></div><button class="tbtn" data-act="import">${ic('plus')}</button></div>
+    <div style="padding:0 16px 4px"><div style="height:36px;border-radius:10px;background:var(--fill);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--label3)">${ic('search','s')} 搜索学习集</div></div>`;
+  return `<div class="tbar" style="${p.chrome==='mac'&&sc!=='regular'?'padding-left:90px':''}">${lead}<div class="ttl">全部学习集<small>4 个学习集</small></div><div class="sp"></div>
+    <div class="pill"><button class="tbtn ${S.viewList?'':'on'}" data-act="view" data-v="grid">${ic('grid','s')}</button><button class="tbtn ${S.viewList?'on':''}" data-act="view" data-v="list">${ic('list','s')}</button></div>
+    <div style="height:32px;width:${sc==='medium'?150:220}px;border-radius:9px;background:var(--fill4);box-shadow:0 0 0 .5px var(--hair);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--label3)">${ic('search','s')} 搜索</div>
+    <button class="tbtn" data-act="import" title="导入 PDF">${ic('plus')}</button></div>`;
+}
+
+function readerPane(p, sc){
+  const touch = p.input === 'touch';
+  const paras = PARAS.map(([h, t], i) => h ? `<h3>${h}</h3>` : `<p data-act="para" data-i="${i}" class="${S.selPara===i?'sel':''} ${S.added.includes(i)?'hl':''}">${t}</p>`).join('');
+  const pencilHint = touch && p.chrome === 'ipados' ? `<div class="pencil">${[['#1d1d1f','pen'],['#FFCC00','high'],['#34C759','high'],['#007AFF','area']].map(([c,t],i)=>`<div class="pt ${i==1&&S.tool==='pen'?'on':''}"><i style="background:${c}"></i></div>`).join('')}<span style="width:1px;height:28px;background:var(--sep);margin:0 6px"></span><span style="font-size:12px;color:var(--label2);max-width:170px;line-height:1.35">Pencil 划过文字即摘录<br>手指滚动 · 长按选字</span></div>` : '';
+  const nav = sc === 'medium' && !plat().splitView && S.pane === 'split' ? '' : `<div style="position:absolute;left:0;right:0;bottom:${touch && p.chrome==='ipados'?78:10}px;display:flex;justify-content:center;pointer-events:none"><div style="pointer-events:auto;background:var(--glass);backdrop-filter:blur(20px);border-radius:16px;padding:4px 12px;font-size:12px;color:var(--label2);box-shadow:0 0 0 .5px var(--hair)">第 1 / 12 页 ${touch?'· 常显（触屏无 hover）':''}</div></div>`;
+  const single = sc === 'compact' || S.pane !== 'split' || plat().splitView;
+  return `<div class="pane reader" style="flex:${single?1:S.splitRatio}">
+    ${sc==='compact'?'':`<div class="rtools">${['side','minus','plus','fit'].map(n=>`<button class="tbtn">${ic(n,'s')}</button>`).join('')}<span style="width:1px;height:18px;background:var(--sep);margin:0 4px"></span><div class="pill"><button class="tbtn on">${ic('excerpt','s')}</button><button class="tbtn">${ic('high','s')}</button><button class="tbtn">${ic('pen','s')}</button></div><div class="sp" style="flex:1"></div><span style="font-size:11px;color:var(--label3)">${touch?'点按段落模拟选字':'选中文字以摘录'}</span></div>`}
+    <div class="rpage"><div class="page"><h2>第二章　遗忘曲线与间隔重复</h2><div class="meta">MarginMind 示例章节 · 原创文字，可自由使用</div>${paras}</div></div>
+    ${nav}${pencilHint}</div>`;
+}
+
+function mapNodes(sc){
+  const base = [
+    {id:'root', x:40, y:220, root:true, t:'遗忘曲线与间隔重复'},
+    {id:'n1', x:330, y:60, q:'最初的几个小时里遗忘得最快，之后速度逐渐放缓。', src:'p.1'},
+    {id:'n2', x:330, y:190, q:'熟悉感只说明我们“认得”，不能保证需要时“想起来”。', src:'p.1'},
+    {id:'n3', x:330, y:330, t:'间隔重复', topic:true},
+    {id:'n4', x:600, y:300, q:'在快要遗忘的时候复习，每次成功回忆让下一次遗忘更晚。', src:'p.1'},
+  ];
+  S.added.forEach((i, k) => base.push({id:'a'+i, x:600, y:420 + k*110, q:PARAS[i][1].slice(0,44)+'…', src:'p.1', fresh: k === S.added.length-1}));
+  return base;
+}
+function mapPane(p, sc){
+  const touch = p.input === 'touch';
+  const nodes = mapNodes(sc);
+  const pos = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const edges = [['root','n1'],['root','n2'],['root','n3'],['n3','n4'], ...S.added.map(i => ['n3','a'+i])];
+  const path = ([a,b]) => { const A = pos[a], B = pos[b]; const ax = A.x + (A.root?200:(touch?210:190)), ay = A.y + 22, bx = B.x, by = B.y + 22; const mx = (ax+bx)/2; return `<path d="M${ax} ${ay} C${mx} ${ay},${mx} ${by},${bx} ${by}" fill="none" stroke="var(--line)" stroke-width="1.6"/>`; };
+  const nodeHtml = n => n.root
+    ? `<div class="node root ${S.selNode==='root'?'sel':''}" data-node="root" style="left:${n.x}px;top:${n.y}px">${n.t}</div>`
+    : `<div class="node ${S.selNode===n.id?'sel':''} ${n.fresh?'new':''}" data-node="${n.id}" style="left:${n.x}px;top:${n.y}px">${n.topic?`<b>${n.t}</b>`:`<div class="q">${n.q}</div><div class="src">${ic('locate','s')} 第二章 · ${n.src}</div>`}</div>`;
+  const hint = touch ? '单指拖动平移 · 双指缩放 · 长按节点打开菜单 · 长按后拖动移动' : '拖动空白处框选 · 触控板双指平移/缩放 · 右键节点打开菜单';
+  const single = sc === 'compact' || S.pane !== 'split' || p.splitView;
+  return `<div class="pane map" style="flex:${single?1:1-S.splitRatio}">
+    ${sc==='compact'?'':`<div class="mhead"><b>主脑图</b><div style="flex:1"></div><div class="pill"><button class="tbtn on" style="font-size:12px;padding:0 10px">脑图</button><button class="tbtn" style="font-size:12px;padding:0 10px">大纲</button></div>${touch?`<button class="tbtn" data-act="selectmode" title="多选">${ic('grid','s')}</button>`:''}<button class="tbtn" data-act="export" title="导出">${ic(p.input==='touch'?'share':'export','s')}</button></div>`}
+    <div class="mapvp" id="mapvp"><div class="scene" id="scene" style="transform:translate(${S.t.x}px,${S.t.y}px) scale(${S.t.s})">
+      <svg width="1100" height="900" style="position:absolute;left:0;top:0;overflow:visible">${edges.map(path).join('')}</svg>${nodes.map(nodeHtml).join('')}</div>
+      <div style="position:absolute;left:12px;bottom:${sc==='compact'?12:14}px;font-size:11px;color:var(--label3);max-width:60%">${hint}</div>
+      <div class="mctl"><div class="pill"><button class="tbtn" data-act="zoom" data-d="-1">${ic('minus','s')}</button><button class="tbtn" style="font-size:12px;min-width:48px" data-act="zoom" data-d="0">${Math.round(S.t.s*100)}%</button><button class="tbtn" data-act="zoom" data-d="1">${ic('plus','s')}</button></div></div>
+    </div></div>`;
+}
+
+function wsToolbar(p, sc){
+  const touch = p.input === 'touch';
+  const lead = sc !== 'regular' || touch ? `<button class="tbtn" data-act="side">${ic('side')}</button>` : '';
+  if (sc === 'compact') {
+    const title = S.tab === 'map' ? '主脑图' : S.tab === 'review' ? '复习' : '第二章 遗忘曲线';
+    return `<div class="tbar"><button class="tbtn" data-act="goto" data-scene="library">${ic('back')}</button><div class="ttl" style="flex:1;text-align:center">${title}<small>遗忘曲线与间隔重复</small></div><button class="tbtn" data-act="panel" style="color:var(--research)">${ic('spark')}</button><button class="tbtn" data-act="${S.tab==='map'?'export':'more'}">${ic(S.tab==='map'?'share':'more')}</button></div>`;
+  }
+  const layoutBtns = sc === 'medium' && !p.splitView
+    ? `<div class="pill"><button class="tbtn ${S.pane==='reader'?'on':''}" data-act="pane" data-v="reader">${ic('doc','s')}</button><button class="tbtn ${S.pane==='split'?'on':''}" data-act="pane" data-v="split">${ic('splitv','s')}</button><button class="tbtn ${S.pane==='map'?'on':''}" data-act="pane" data-v="map">${ic('map','s')}</button></div>`
+    : sc === 'medium' ? '' : `<div class="pill"><button class="tbtn ${S.pane==='reader'?'on':''}" data-act="pane" data-v="reader">${ic('doc','s')}</button><button class="tbtn ${S.pane==='split'?'on':''}" data-act="pane" data-v="split">${ic('split','s')}</button><button class="tbtn ${S.pane==='map'?'on':''}" data-act="pane" data-v="map">${ic('map','s')}</button></div>`;
+  return `<div class="tbar">${lead}<button class="tbtn" data-act="goto" data-scene="library" title="资料库">${ic('back')}</button><div class="ttl">第二章 遗忘曲线与间隔重复<small>第 1 页 · 14 张卡片</small></div><div class="sp"></div>
+    ${layoutBtns}<button class="tbtn" data-act="goto" data-scene="review">${ic('cards')}${sc==='regular'?'<span style="font-size:12px">复习 12</span>':''}</button><button class="tbtn ${S.panel?'on':''}" data-act="panel" style="color:var(--research)">${ic('spark')}</button></div>`;
+}
+
+function workspace(p, sc){
+  if (sc === 'compact') {
+    const body = S.tab === 'map' ? mapPane(p, sc) : S.tab === 'review' ? review(p, sc) : readerPane(p, sc);
+    return `<div class="ws">${body}</div>`;
+  }
+  if (p.splitView) {
+    // iPad compact width: top segmented control instead of a tab bar.
+    const v = S.tab === 'map' ? 'map' : 'reader';
+    return `<div class="topseg"><div class="seg2"><button class="${v==='reader'?'on':''}" data-act="tab" data-v="reader">阅读</button><button class="${v==='map'?'on':''}" data-act="tab" data-v="map">脑图</button></div></div>
+      <div class="ws">${v==='map'?mapPane(p, 'medium'):readerPane(p, 'medium')}</div>`;
+  }
+  const vert = sc === 'medium';
+  const parts = [];
+  if (S.pane !== 'map') parts.push(readerPane(p, sc));
+  if (S.pane === 'split') parts.push(`<div class="divider" data-act="divider"><div class="grab"></div></div>`);
+  if (S.pane !== 'reader') parts.push(mapPane(p, sc));
+  const panelInline = sc === 'regular' && S.panel && !(p.input === 'touch' && p.w < 1300);
+  return `<div style="flex:1;display:flex;min-height:0"><div class="ws ${vert?'vert':''}">${parts.join('')}</div>${panelInline ? assistantPanel(p, sc, false) : ''}</div>`;
+}
+
+function assistantBody(p){
+  return `<div class="msg u">这一章的核心观点是什么？用我的摘录回答。</div>
+    <div class="msg a">本章有两个核心观点：<br>1. 遗忘先快后慢，熟悉感不等于记住<span class="cite">1</span><span class="cite">2</span>；<br>2. 间隔重复在“快要遗忘”时复习，收益最大<span class="cite">3</span>。</div>
+    <div class="prop"><b style="font-size:12px;color:var(--research)">${ic('spark','s')} 建议：在“间隔重复”下添加 2 张卡片</b><div style="font-size:12px;color:var(--label2);margin-top:6px">· 复习间隔可逐步拉长<br>· 适当等待让记忆变模糊再回忆</div><div class="row"><button class="btn pri" data-act="accept">添加到脑图</button><button class="btn">忽略</button></div></div>`;
+}
+function composer(p){
+  return `<div class="composer" style="${S.kbd ? `margin-bottom:${kbdHeight(p) + 8}px` : ''}"><div class="in" contenteditable="true" data-act="compose">问问关于本学习集的问题…</div><button class="send">${ic('send','s')}</button></div>`;
+}
+function assistantPanel(p, sc, floating){
+  return `<div class="panel ${floating?'float':''} ${floating&&S.panel?'on':''}"><div class="tbar" style="height:48px"><b style="flex:1;color:var(--research)">${ic('spark','s')}</b><b style="flex:8">助手</b><button class="tbtn" data-act="panel">${ic('x','s')}</button></div>
+    <div style="flex:1;overflow:auto;padding:0 14px">${assistantBody(p)}</div>${composer(p)}</div>`;
+}
+function kbdHeight(p){ return p.frame === 'tablet' ? 320 : 290; }
+
+function review(p, sc){
+  const touch = p.input === 'touch';
+  return `<div class="rev"><div style="font-size:12px;color:var(--label3)">今日待复习 12 · 已完成 3</div>
+    <div class="fc ${S.flip?'show':''}" data-act="flip"><div style="font-size:11px;color:var(--label3)">摘录 · 第二章 p.1</div><div class="q2">为什么“读得越熟”不等于“记得越牢”？</div>
+    <div class="ans">流畅阅读带来的熟悉感只说明我们“认得”内容，不能保证需要时把它“想起来”。</div>
+    <div style="margin-top:auto;font-size:12px;color:var(--label3)">${S.flip?'':(touch?'轻点卡片显示答案':'按空格显示答案')}</div></div>
+    <div class="rates" style="${S.flip?'':'visibility:hidden'}">${[['重来','1 分钟','var(--err)'],['困难','10 分钟','var(--o)'],['良好','3 天','var(--g)'],['简单','8 天','var(--accent)']].map(([a,b,c],i)=>`<button data-act="rate" style="color:${c}">${a}<small>${b}${touch?'':` · ${i+1}`}</small></button>`).join('')}</div></div>`;
+}
+
+function tabBar(p){
+  const tabs = [['library','资料库','grid'],['reader','阅读','book'],['map','脑图','map'],['review','复习','cards']];
+  const cur = S.scene === 'library' ? 'library' : S.tab;
+  if (p.chrome === 'android') return `<div class="atabbar" style="padding-bottom:16px">${tabs.map(([id,l,i])=>`<button class="${cur===id?'on':''}" data-act="tab" data-v="${id}"><span class="ic">${ic(i)}</span>${l}</button>`).join('')}</div>`;
+  return `<div class="tabbar" style="height:${49+insets(p).bottom}px">${tabs.map(([id,l,i])=>`<button class="${cur===id?'on':''}" data-act="tab" data-v="${id}">${ic(i,'l')}${l}</button>`).join('')}</div>`;
+}
+
+function overlays(p, sc){
+  const touch = p.input === 'touch';
+  let h = `<div class="scrim ${S.menu||S.sheet||(S.sideOpen&&sc!=='regular')||(S.panel&&needsFloatingPanel(p,sc)&&sc!=='regular')?'on':''}" data-act="dismiss"></div>`;
+  if (S.menu) {
+    const items = S.menu.kind === 'set'
+      ? [['star','加星标'],['edit','重命名'],['folder','移到文件夹…'],['export','导出备份…'],['-'],['trash','删除学习集','red']]
+      : S.menu.kind === 'win'
+      ? [['plus','新建学习集',`${p.mod}+N`],['doc','导入 PDF…',`${p.mod}+O`],['export','导出脑图…',`${p.mod}+Shift+E`],['-'],['gear','设置…',`${p.mod}+,`],['side','切换全屏','F11']]
+      : [['child','添加子节点', touch?'':'Tab'],['edit','重命名', touch?'':'Enter'],['locate','定位原文'],['spark','问助手'],['export','导出分支…'],['-'],['trash','删除','red']];
+    if (sc === 'compact') {
+      h += `<div class="asheet on"><div class="grpb"><div class="hd">${S.menu.kind==='set'?'遗忘曲线与间隔重复':'摘录卡片 · 第二章 p.1'}</div>${items.filter(i=>i[0]!=='-').map(([ii,l,k])=>`<div class="mi ${k==='red'?'red':''}" data-act="menuitem" data-l="${l}">${l}</div>`).join('')}</div><div class="grpb"><div class="mi" data-act="dismiss" style="font-weight:600">取消</div></div></div>`;
+    } else {
+      const x = Math.min(S.menu.x, p.w - 250), y = Math.min(S.menu.y, p.h - items.length * (touch?44:30) - 30);
+      h += `<div class="menu" style="left:${x}px;top:${y}px">${items.map(([ii,l,k])=> ii==='-'?'<hr>':`<div class="mi ${k==='red'?'red':''}" data-act="menuitem" data-l="${l}">${ic(ii,'s')}${l}${k&&k!=='red'?`<span class="k">${k}</span>`:''}</div>`).join('')}</div>`;
+    }
+  }
+  if (S.sheet === 'export' || S.sheet === 'import') h += fileSheet(p, sc);
+  if (S.panel && needsFloatingPanel(p, sc)) {
+    if (sc === 'compact') {
+      h += `<div class="sheet bottom on" style="height:${S.kbd? p.h - insets(p).top - 10 : Math.round(p.h*.62)}px"><div class="handle"></div><div class="sh"><b>${ic('spark','s')} 助手</b><button class="tbtn" data-act="panel">${ic('x','s')}</button></div><div class="sb">${assistantBody(p)}</div>${composer(p)}<div style="height:${S.kbd?0:insets(p).bottom}px"></div></div>`;
+    } else {
+      h += assistantPanel(p, sc, true);
+    }
+  }
+  if (touch) {
+    h += `<div class="kbd ${S.kbd?'on':''}" style="height:${kbdHeight(p)}px">${['qwertyuiop','asdfghjkl','⇧zxcvbnm⌫'].map(r=>`<div class="kr">${[...r].map(c=>`<span class="${'⇧⌫'.includes(c)?'g':''}">${c}</span>`).join('')}</div>`).join('')}<div class="kr"><span class="g" data-act="kbdoff">123</span><span class="g">🌐</span><span class="w">空格</span><span class="g" data-act="kbdoff" style="max-width:90px;flex:2">完成</span></div></div>`;
+  }
+  h += `<div class="toast" id="toast"></div>`;
+  return h;
+}
+function needsFloatingPanel(p, sc){ return sc !== 'regular' || (p.input === 'touch' && p.w < 1300); }
+
+function fileSheet(p, sc){
+  const exp = S.sheet === 'export';
+  const fam = p.chrome === 'ipados' || p.chrome === 'ios' ? 'ios' : p.chrome === 'android' ? 'android' : p.chrome === 'web' ? 'web' : 'desktop';
+  if (fam === 'ios' || fam === 'android') {
+    if (exp) {
+      const apps = fam === 'ios' ? ['隔空投送','信息','邮件','备忘录','存储到“文件”'] : ['附近分享','Gmail','云端硬盘','微信','保存到设备'];
+      return `<div class="sheet ${sc==='compact'?'bottom on':'center on'}" style="${sc==='compact'?'':'width:520px'}"><div class="handle"></div><div class="sh"><b>导出“主脑图”</b><button class="tbtn" data-act="dismiss">${ic('x','s')}</button></div>
+        <div class="sb"><div class="pill" style="display:flex;margin-bottom:12px">${['PNG','PDF','Markdown','OPML'].map((f,i)=>`<button class="tbtn ${i==0?'on':''}" style="flex:1;font-size:13px">${f}</button>`).join('')}</div>
+        <div style="height:150px;border-radius:12px;background:var(--canvas);box-shadow:0 0 0 .5px var(--hair);display:flex;align-items:center;justify-content:center;color:var(--label3)">预览 · 2480×1640</div>
+        <div style="font-size:12px;color:var(--label3);margin:10px 0">${fam==='ios'?'移动端不弹“另存为”，生成文件后交给系统分享面板（UIActivityViewController）。':'移动端不弹“另存为”，生成文件后交给系统分享面板（Intent.ACTION_SEND），或经 SAF 保存。'}</div>
+        <div style="display:flex;gap:14px;overflow:auto;padding:6px 0">${apps.map(a=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;min-width:64px"><span style="width:56px;height:56px;border-radius:14px;background:var(--fill)"></span>${a}</div>`).join('')}</div></div>
+        <div style="height:${insets(p).bottom}px"></div></div>`;
+    }
+    const files = ['间隔重复研究.pdf','认知心理学 第3章.pdf','学习科学综述.pdf'];
+    return `<div class="sheet ${sc==='compact'?'bottom on':'center on'}" style="${sc==='compact'?'height:70%':'width:640px;height:520px'}"><div class="handle"></div>
+      <div class="sh"><button class="tbtn" data-act="dismiss" style="color:var(--accent)">取消</button><b style="text-align:center">${fam==='ios'?'最近项目 · 文件':'选择 PDF · 最近'}</b><button class="tbtn" style="color:var(--accent)" data-act="imported">打开</button></div>
+      <div class="sb">${files.map((f,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--sep)"><span style="width:34px;height:42px;border-radius:4px;background:#ffd9d4;color:#c33;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">PDF</span><span style="flex:1">${f}<br><small style="color:var(--label3)">${fam==='ios'?'iCloud 云盘 · 下载':'下载 · content://…'}</small></span><span style="width:22px;height:22px;border-radius:11px;border:1.5px solid ${i==0?'var(--accent)':'var(--sep)'};background:${i==0?'var(--accent)':'transparent'}"></span></div>`).join('')}
+      <div style="font-size:12px;color:var(--label3);margin-top:12px">选中的文件立即复制进学习集包（.mmset/documents），之后不依赖原文件的访问授权。</div></div></div>`;
+  }
+  if (fam === 'web') {
+    return exp ? `<div class="sheet center on" style="width:460px"><div class="sh"><b>导出 / 备份</b><button class="tbtn" data-act="dismiss">${ic('x','s')}</button></div><div class="sb">浏览器中导出以“下载文件”完成：<br><br>· 学习集备份：遗忘曲线与间隔重复.mmset.zip<br>· 脑图：PNG / PDF / Markdown / OPML<br><br><button class="btn pri" data-act="dismiss">下载</button><div style="font-size:12px;color:var(--label3);margin-top:10px">OCR、外部浏览器打开来源、系统钥匙串在 Web 上不可用，相应入口显示原因。</div></div></div>`
+      : `<div class="sheet center on" style="width:520px;height:300px"><div class="sh"><b>导入 PDF</b><button class="tbtn" data-act="dismiss">${ic('x','s')}</button></div><div class="sb"><div style="height:180px;border:2px dashed var(--sep);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--label2)">${ic('doc','xl')}将 PDF 拖到这里，或 <a style="color:var(--accent)" data-act="imported">选择文件</a><small style="color:var(--label3)">文件保存在浏览器存储（OPFS），刷新后仍在</small></div></div></div>`;
+  }
+  return `<div class="sheet center on" style="width:560px"><div class="sh"><b>${exp?'导出“主脑图”':'导入 PDF'}</b><button class="tbtn" data-act="dismiss">${ic('x','s')}</button></div>
+    <div class="sb">${exp?`<div class="pill" style="display:flex;margin-bottom:12px">${['PNG','PDF','Markdown','OPML'].map((f,i)=>`<button class="tbtn ${i==0?'on':''}" style="flex:1;font-size:12px">${f}${p.id!=='mac'&&i<2?' ⚠︎':''}</button>`).join('')}</div>
+      ${p.id!=='mac'?`<div class="banner" style="margin:0 0 10px"><b>PNG / PDF 暂不支持此系统</b>（缺原生编码器，CP-05）。当前提供 Markdown / OPML。</div>`:''}
+      <div style="height:150px;border-radius:12px;background:var(--canvas);box-shadow:0 0 0 .5px var(--hair);display:flex;align-items:center;justify-content:center;color:var(--label3)">预览</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" data-act="dismiss">取消</button><button class="btn pri" data-act="dismiss">存储为…</button></div>`
+      :`系统文件对话框（${p.id==='mac'?'NSOpenPanel':p.id==='win'?'IFileOpenDialog':'GTK FileChooser / xdg-portal'}），也可直接把 PDF 拖进窗口。<div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" data-act="imported">选择文件…</button></div>`}</div></div>`;
+}
+
+function app(p){
+  const sc = sizeClass(p);
+  const ins = insets(p);
+  const touch = p.input === 'touch';
+  let main;
+  const showTabs = sc === 'compact';
+  const scene = S.scene === 'export' ? 'workspace' : S.scene;
+  if (showTabs && S.tab === 'library' || scene === 'library') {
+    main = libToolbar(p, sc) + library(p, sc);
+  } else if (scene === 'review' && !showTabs) {
+    main = `<div class="tbar"><button class="tbtn" data-act="goto" data-scene="workspace">${ic('back')}</button><div class="ttl">复习 · 遗忘曲线与间隔重复<small>FSRS · 今日 12 张</small></div></div>` + review(p, sc);
+  } else {
+    main = wsToolbar(p, sc) + workspace(p, sc);
+  }
+  const chrome = p.frame === 'desktop' ? desktopChrome(p) : '';
+  const rowTop = p.chrome === 'win' || p.chrome === 'gtk' ? chrome : '';
+  const side = sc === 'compact' ? '' : sidebar(p, sc);
+  const sideInline = side && !side.includes('overlay');
+  return `<div class="app ${touch?'touch':''} ${sc}" style="padding-top:${ins.top}px;padding-bottom:${showTabs?0:ins.bottom}px">
+    ${rowTop}${p.chrome==='mac'?chrome:''}
+    <div class="body">${sideInline?side:''}<div class="main">${main}</div>${!sideInline?side:''}</div>
+    ${showTabs?tabBar(p):''}
+    ${overlays(p, sc)}
+  </div>${statusBar(p)}`;
+}
+
+/* ---------- current-state (实测) view ---------- */
+/* Real captures from this audit (docs/evidence/platform/GUL-538). */
+const EVIDENCE = '../../docs/evidence/platform/GUL-538/';
+const REAL = {
+  ipad_lib: EVIDENCE + 'ipad13-library.jpg', ipad_ws: EVIDENCE + 'ipad13-workspace.jpg',
+  iphone_lib: EVIDENCE + 'iphone17pro-library.jpg', iphone: EVIDENCE + 'iphone17pro-workspace.jpg',
+  linux_lib: EVIDENCE + 'linux-arm64-library.jpg', linux_ws: EVIDENCE + 'linux-arm64-workspace.jpg',
+  web: EVIDENCE + 'web-chrome-blank.jpg',
+  android_lib: EVIDENCE + 'android-pixel8-library.jpg', android: EVIDENCE + 'android-pixel8-workspace.jpg',
+};
+function realView(p){
+  const key = {ipadL:'ipad_ws_landscape', ipadP:'ipad_ws', ipadSV:null, ipadMini:null, iphone:'iphone', linux:'linux_ws', web:'web', mac:null, win:null, aphone:'android', atab:null}[p.id];
+  const libKey = {ipadL:'ipad_lib', ipadP:'ipad_lib', ipadSV:null, ipadMini:null, iphone:'iphone_lib', linux:'linux_lib', web:'web', aphone:'android_lib'}[p.id];
+  const k = S.scene === 'library' && libKey ? libKey : key;
+  const shot = k && REAL[k];
+  const info = INFO[p.id];
+  if (!shot) return `<div class="real"><div class="none"><b>${p.name}：${info.verdict[1]}</b><br><br>${info.run}</div></div>`;
+  const list = REAL_NOTES[k] || [];
+  const boxes = list.map(([x,y,w,h], i) => `<div class="outline-box" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"><span class="num">${i+1}</span></div>`).join('');
+  const legend = list.length ? `<div class="legend">${list.map(([,,,,t], i) => `<div><span class="num">${i+1}</span>${t}</div>`).join('')}</div>` : '';
+  return `<div class="real"><div class="shot"><img src="${shot}">${boxes}</div>${legend}</div>`;
+}
+const REAL_NOTES = {
+  ipad_lib: [[0,0,100,4,'工具栏与状态栏重叠：无 SafeArea'],[1,1,23,98,'桌面侧栏原样出现，触控行高 28pt']],
+  ipad_ws: [[82,0,18,3.5,'布局/助手按钮落在状态栏下'],[24,4,40,6,'阅读工具栏折成两行'],[64,4,36,90,'脑图仅 ~370pt，根节点被截断；触控手势不可用']],
+  ipad_ws_landscape: [[0,0,100,4,'状态栏重叠'],[55,10,44,80,'脑图：单指拖动=框选、双指不缩放、长按无菜单']],
+  iphone_lib: [[0,0,62,100,'236pt 桌面侧栏占满屏幕'],[66,0,34,7,'RIGHT OVERFLOWED：工具栏横向溢出'],[66,50,30,14,'按钮文字截断']],
+  iphone: [[1,1,60,98,'桌面侧栏占 60% 宽度'],[70,0,30,7,'工具栏溢出 345px（RenderFlex）'],[61,35,39,50,'PDF 缩成 ~150pt 宽；脑图被隐藏']],
+  android: [[1,1,58,98,'桌面侧栏占近 60% 宽度'],[68,0,32,7,'工具栏溢出 329px（RenderFlex）'],[60,35,40,50,'PDF 缩成 ~150dp 宽；脑图被隐藏']],
+  android_lib: [[1,1,58,98,'桌面侧栏占满屏幕'],[68,0,32,7,'工具栏横向溢出']],
+  linux_ws: [],
+  linux_lib: [],
+  web: [[20,30,60,30,'白屏：未捕获 MissingPluginException（启动链 path_provider / dart:io 文件库在浏览器不可用）']],
+};
+
+/* ---------- info panel ---------- */
+function renderInfo(){
+  const p = plat(), info = INFO[p.id], sc = sizeClass(p);
+  const v = info.verdict;
+  const cls = {ok:'b-ok', warn:'b-warn', err:'b-err', na:'b-na'}[v[0]];
+  document.getElementById('info').innerHTML = `
+    <h2>${p.name} <span class="badge ${cls}">${v[1]}</span></h2>
+    <div class="sub">${p.w}×${p.h}pt · 尺寸档 <b>${sc === 'regular' ? 'Regular' : sc === 'medium' ? 'Medium' : 'Compact'}</b> · ${p.input === 'touch' ? '触控优先' : '指针优先'}</div>
+    <h3>本轮实测</h3><div style="line-height:1.55">${info.run}</div>
+    <h3>布局规则</h3><div style="line-height:1.55">${info.layout}</div>
+    <h3>输入模型</h3><div style="line-height:1.55">${info.input}</div>
+    <h3>设计要点</h3><ul>${info.design.map(d => `<li>${d}</li>`).join('')}</ul>
+    ${info.issues.length ? `<h3>现存问题（${info.issues.length}）</h3>${info.issues.map(id => { const [pr,t,d,f] = ISSUES[id]; return `<div class="issue"><span class="p badge ${pr==='P0'?'b-err':pr==='P1'?'b-warn':'b-na'}">${pr}</span><b>${id} · ${t}</b><div style="font-size:12px;color:#3a3a3c;margin-top:3px">${d}</div><div style="margin-top:3px"><code>${f}</code></div></div>`; }).join('')}` : ''}
+    <h3>断点（建议新增 MMSizeClass）</h3>
+    <div class="kv"><div>Compact</div><div>&lt; 600pt：手机、iPad 窄分屏 → 底部 Tab / 顶部分段，单面板</div><div>Medium</div><div>600–1179pt 或竖屏：iPad 竖屏、mini、½ 分屏 → 上下分栏，侧栏浮层</div><div>Regular</div><div>≥ 1180pt 横向：桌面、iPad 横屏 → 现有三栏</div></div>`;
+}
+
+function hint(){
+  const p = plat();
+  const t = S.mode === 'real' ? '“现状（实测）”展示本轮在模拟器 / Linux / Chrome 中的真实截图与问题标注；没有截图的平台说明未实测原因。'
+    : p.input === 'touch' ? '可交互：点段落=选字 → 摘录到脑图；脑图单指拖动平移、滚轮/按钮缩放、长按节点（按住 0.5s）打开菜单；点助手图标、输入框会弹出软键盘；侧栏按钮打开抽屉。'
+    : '可交互：点段落=选字 → 摘录；拖动脑图平移、滚轮缩放、右键节点打开菜单；Windows/Linux 顶部菜单可点。';
+  document.getElementById('hint').textContent = t;
+}
+
+function render(){
+  renderTop();
+  const p = plat();
+  const inner = `<div class="${S.theme==='dark'?'dark':''}" style="position:absolute;inset:0;color:var(--label)">${S.mode === 'real' ? realView(p) : app(p)}</div>`;
+  const scaler = document.getElementById('scaler');
+  scaler.innerHTML = deviceFrame(p, inner);
+  fit();
+  renderInfo(); hint();
+  bindMap();
+}
+function fit(){
+  const st = document.getElementById('stage'), sc = document.getElementById('scaler');
+  const d = sc.firstElementChild; if (!d) return;
+  sc.style.transform = 'none';
+  const r = d.getBoundingClientRect();
+  const k = Math.min((st.clientWidth - 40) / r.width, (st.clientHeight - 60) / r.height, 1);
+  sc.style.transform = `scale(${k})`;
+  S.k = k;
+}
+window.addEventListener('resize', fit);
+
+/* ======================= Interaction ======================= */
+function toast(html){
+  const t = document.getElementById('toast'); if (!t) return;
+  t.innerHTML = html; t.classList.add('on');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2600);
+}
+function screenPoint(e){
+  const scr = document.querySelector('.screen').getBoundingClientRect();
+  return {x: (e.clientX - scr.left) / S.k, y: (e.clientY - scr.top) / S.k};
+}
+function sel(){ return window.getSelection && window.getSelection().removeAllRanges(); }
+
+document.getElementById('scaler').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const p = plat(), sc = sizeClass(p);
+  const act = a.dataset.act;
+  if (act === 'para') {
+    const i = +a.dataset.i; S.selPara = S.selPara === i ? null : i; render();
+    if (S.selPara != null) showSelectionToolbar(i);
+    return;
+  }
+  if (act === 'side') { S.sideOpen = !S.sideOpen; render(); return; }
+  if (act === 'dismiss') { S.menu = null; S.sheet = null; S.sideOpen = false; S.kbd = false; if (needsFloatingPanel(p, sc)) S.panel = false; render(); return; }
+  if (act === 'goto') { S.scene = a.dataset.scene; resetUi(); render(); return; }
+  if (act === 'open') { if (pressed.long) return; S.scene = 'workspace'; resetUi(); render(); return; }
+  if (act === 'panel') { S.panel = !S.panel; S.kbd = false; render(); return; }
+  if (act === 'pane') { S.pane = a.dataset.v; render(); return; }
+  if (act === 'tab') { const v = a.dataset.v; if (v === 'library') { S.scene = 'library'; S.tab = 'library'; } else { if (S.scene === 'library') S.scene = 'workspace'; S.tab = v; } S.menu = null; render(); return; }
+  if (act === 'view') { S.viewList = a.dataset.v === 'list'; render(); return; }
+  if (act === 'zoom') { const d = +a.dataset.d; S.t.s = d === 0 ? 1 : Math.max(.4, Math.min(2.5, S.t.s * (d > 0 ? 1.2 : 1/1.2))); render(); return; }
+  if (act === 'flip') { S.flip = !S.flip; render(); return; }
+  if (act === 'rate') { S.flip = false; render(); toast('已记录 · 下一张'); return; }
+  if (act === 'export') { S.sheet = 'export'; render(); return; }
+  if (act === 'import') { S.sheet = 'import'; render(); return; }
+  if (act === 'imported') { S.sheet = null; render(); toast('已导入并复制进学习集'); return; }
+  if (act === 'menuitem') { const l = a.dataset.l; S.menu = null; if (l.startsWith('导出')) S.sheet = 'export'; render(); if (!l.startsWith('导出')) toast(`${l}`); return; }
+  if (act === 'winmenu') { const r = a.getBoundingClientRect(), s = document.querySelector('.screen').getBoundingClientRect(); S.menu = {kind:'win', x:(r.left - s.left)/S.k, y:(r.bottom - s.top)/S.k + 2}; render(); return; }
+  if (act === 'compose') { if (p.input === 'touch' && !S.kbd) { S.kbd = true; render(); const el = document.querySelector('[data-act=compose]'); el && el.focus(); } return; }
+  if (act === 'kbdoff') { S.kbd = false; render(); return; }
+  if (act === 'accept') { S.added.push(6); render(); toast('已添加 1 张卡片 · <a data-act="tab" data-v="map">查看脑图</a>'); return; }
+  if (act === 'selectmode') { toast('多选模式：单指拖动框选，再点一次退出'); return; }
+  if (act === 'more') { S.menu = {kind:'node', x: 0, y: 0}; render(); return; }
+});
+
+function showSelectionToolbar(i){
+  const p = plat(), sc = sizeClass(p);
+  const el = document.querySelector(`p[data-i="${i}"]`); if (!el) return;
+  const scr = document.querySelector('.screen').getBoundingClientRect(), r = el.getBoundingClientRect();
+  const x = (r.left - scr.left) / S.k + 20, y = Math.max(insets(p).top + 60, (r.top - scr.top) / S.k - (p.input === 'touch' ? 54 : 44));
+  const tb = document.createElement('div'); tb.className = 'ftb'; tb.style.left = x + 'px'; tb.style.top = y + 'px';
+  tb.innerHTML = `<button data-x="excerpt">${ic('excerpt','s')}摘录到脑图</button>${['#FFCC00','#34C759','#FF2D55'].map(c=>`<button data-x="hl"><span class="dot" style="background:${c}"></span></button>`).join('')}<button data-x="ask" style="color:var(--research)">${ic('spark','s')}问助手</button><button data-x="copy">拷贝</button>`;
+  tb.onclick = ev => {
+    const b = ev.target.closest('button'); if (!b) return; ev.stopPropagation();
+    if (b.dataset.x === 'excerpt') {
+      if (!S.added.includes(i)) S.added.push(i);
+      S.selPara = null; render();
+      toast(sc === 'compact' || S.pane === 'reader' ? '已加入“间隔重复”分支 · <a data-act="tab" data-v="map">查看脑图</a>' : '已加入脑图 · 原文定位已建立');
+    } else if (b.dataset.x === 'ask') { S.selPara = null; S.panel = true; render(); }
+    else { S.selPara = null; if (b.dataset.x === 'hl' && !S.added.includes(i)) S.added.push(i); render(); }
+  };
+  document.querySelector('.app').appendChild(tb);
+}
+document.getElementById('scaler').addEventListener('click', e => {
+  const a = e.target.closest('.toast a'); if (a) { S.tab = 'map'; if (sizeClass(plat()) !== 'compact') S.pane = S.pane === 'reader' ? 'split' : S.pane; render(); }
+}, true);
+
+/* long-press + context menu (touch) / right-click (pointer) */
+const pressed = {t:null, long:false, start:null};
+document.getElementById('scaler').addEventListener('contextmenu', e => {
+  const p = plat(); const tgt = e.target.closest('[data-node],[data-ctx]'); if (!tgt) return;
+  e.preventDefault();
+  if (p.input === 'touch') { toast('触屏设备没有右键：请长按'); return; }
+  openMenu(tgt, e);
+});
+function openMenu(tgt, e){
+  const pt = screenPoint(e);
+  if (tgt.dataset.node) S.selNode = tgt.dataset.node;
+  S.menu = {kind: tgt.dataset.ctx || 'node', x: pt.x, y: pt.y};
+  render();
+}
+document.getElementById('scaler').addEventListener('pointerdown', e => {
+  const p = plat(); if (p.input !== 'touch') return;
+  const tgt = e.target.closest('[data-node],[data-ctx]'); if (!tgt) return;
+  pressed.long = false; pressed.start = {x: e.clientX, y: e.clientY};
+  const ring = document.createElement('div'); ring.className = 'lp-ring';
+  const pt = screenPoint(e); ring.style.left = pt.x + 'px'; ring.style.top = pt.y + 'px';
+  document.querySelector('.app').appendChild(ring); requestAnimationFrame(() => ring.classList.add('go'));
+  pressed.ring = ring;
+  pressed.t = setTimeout(() => { pressed.long = true; ring.remove(); openMenu(tgt, e); }, 500);
+});
+['pointerup','pointercancel'].forEach(t => document.getElementById('scaler').addEventListener(t, () => { clearTimeout(pressed.t); pressed.ring && pressed.ring.remove(); setTimeout(() => pressed.long = false, 50); }));
+document.getElementById('scaler').addEventListener('pointermove', e => {
+  if (pressed.start && Math.hypot(e.clientX - pressed.start.x, e.clientY - pressed.start.y) > 8) { clearTimeout(pressed.t); pressed.ring && pressed.ring.remove(); pressed.start = null; }
+});
+
+/* map pan / zoom / select */
+function bindMap(){
+  const vp = document.getElementById('mapvp'); if (!vp) return;
+  const scene = document.getElementById('scene');
+  if (S.t.fit) {
+    // Fit the sample map (about 840×560 scene points) into the viewport once.
+    const w = vp.clientWidth, h = vp.clientHeight;
+    S.t.s = Math.max(.5, Math.min(1, (w - 30) / 840, (h - 40) / 560));
+    S.t.x = Math.max(10, (w - 840 * S.t.s) / 2); S.t.y = Math.max(0, (h - 560 * S.t.s) / 2 - 20 * S.t.s); S.t.fit = false;
+    scene.style.transform = `translate(${S.t.x}px,${S.t.y}px) scale(${S.t.s})`;
+    const z = vp.querySelector('[data-d="0"]'); if (z) z.textContent = Math.round(S.t.s * 100) + '%';
+  }
+  let drag = null;
+  vp.onpointerdown = e => {
+    if (e.button !== 0) return;
+    const node = e.target.closest('[data-node]');
+    drag = {x: e.clientX, y: e.clientY, tx: S.t.x, ty: S.t.y, moved: false, node: node && node.dataset.node};
+    vp.setPointerCapture(e.pointerId);
+  };
+  vp.onpointermove = e => {
+    if (!drag) return;
+    const dx = (e.clientX - drag.x) / S.k, dy = (e.clientY - drag.y) / S.k;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+    drag.moved = true; vp.classList.add('dragging');
+    S.t.x = drag.tx + dx; S.t.y = drag.ty + dy;
+    scene.style.transform = `translate(${S.t.x}px,${S.t.y}px) scale(${S.t.s})`;
+  };
+  vp.onpointerup = () => {
+    if (drag && !drag.moved && !pressed.long) { S.selNode = drag.node || null; render(); }
+    drag = null; vp.classList.remove('dragging');
+  };
+  vp.onwheel = e => {
+    e.preventDefault();
+    const r = vp.getBoundingClientRect();
+    const fx = (e.clientX - r.left) / S.k, fy = (e.clientY - r.top) / S.k;
+    const f = Math.exp(-e.deltaY / 400), s = Math.max(.4, Math.min(2.5, S.t.s * f)), k = s / S.t.s;
+    S.t.x = fx - (fx - S.t.x) * k; S.t.y = fy - (fy - S.t.y) * k; S.t.s = s;
+    scene.style.transform = `translate(${S.t.x}px,${S.t.y}px) scale(${S.t.s})`;
+    const z = vp.querySelector('[data-d="0"]'); if (z) z.textContent = Math.round(s * 100) + '%';
+  };
+  const div = document.querySelector('[data-act=divider]');
+  if (div) div.onpointerdown = e => {
+    const ws = div.parentElement, r = ws.getBoundingClientRect(), vert = ws.classList.contains('vert');
+    div.setPointerCapture(e.pointerId);
+    div.onpointermove = ev => {
+      S.splitRatio = Math.max(.25, Math.min(.75, vert ? (ev.clientY - r.top) / r.height : (ev.clientX - r.left) / r.width));
+      const [a,, b] = ws.children; a.style.flex = S.splitRatio; b.style.flex = 1 - S.splitRatio;
+    };
+    div.onpointerup = () => { div.onpointermove = null; };
+  };
+}
+
+/* drag a file from the Files app (Split View) into MarginMind */
+document.addEventListener('dragstart', e => { const f = e.target.closest && e.target.closest('[data-dragfile]'); if (f) e.dataTransfer.setData('text/plain', f.dataset.dragfile); });
+document.addEventListener('dragover', e => { if (e.target.closest && e.target.closest('.screen')) e.preventDefault(); });
+document.addEventListener('drop', e => { if (!(e.target.closest && e.target.closest('.screen'))) return; e.preventDefault(); const n = e.dataTransfer.getData('text/plain'); if (n) toast(`已导入“${n}”`); });
+
+resetUi();
+render();
+</script>
+</body>
+</html>

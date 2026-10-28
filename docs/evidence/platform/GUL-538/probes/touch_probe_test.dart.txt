@@ -1,0 +1,84 @@
+// GUL-538 scratch probe: how the mind map reacts to touch input. Not committed.
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' hide Card;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+import 'package:marginmind/l10n/generated/app_localizations.dart';
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
+
+final _now = DateTime(2026);
+StudySetContent _topics(int n) => StudySetContent(
+  cards: [for (var i = 0; i < n; i++) Card(id: 't$i', kind: CardKind.topic, title: 'Topic $i', createdAt: _now)],
+  nodes: [for (var i = 0; i < n; i++) MapNode(cardId: 't$i', parentId: null, order: i.toDouble())],
+);
+
+void main() {
+  late TransformationController transform;
+  final log = <String>[];
+  Set<String> many = {};
+  Future<void> pump(WidgetTester tester) async {
+    transform = TransformationController();
+    final focus = FocusNode();
+    await tester.pumpWidget(MaterialApp(
+      theme: MMTheme.light(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SizedBox(width: 800, height: 600, child: MindMapCanvas(
+        content: _topics(4), rootTitle: 'Root', selectedCardId: null, selectedCardIds: const {}, flashCardId: null,
+        transformation: transform, focusNode: focus,
+        onSelect: (id) => log.add('select:$id'), onSelectMany: (ids) => many = ids,
+        onContextMenu: (id, _) => log.add('menu:$id'),
+        onReveal: (_) {}, onRename: (_) {}, onDelete: () {},
+        onMove: (id, p, i) => log.add('move:$id'),
+        onToggleCollapsed: (_) {}, onNavigate: (_) {}, onAddChild: () {}, onShift: (_) {},
+      ))),
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  for (final kind in [PointerDeviceKind.touch, PointerDeviceKind.mouse]) {
+    testWidgets('one-finger drag on empty canvas ($kind)', (tester) async {
+      await pump(tester);
+      final before = transform.value.getTranslation();
+      final g = await tester.startGesture(const Offset(790, 10), kind: kind);
+      for (var i = 0; i < 20; i++) { await g.moveBy(const Offset(-38, 28)); await tester.pump(); }
+      await g.up(); await tester.pumpAndSettle();
+      final after = transform.value.getTranslation();
+      // ignore: avoid_print
+      print('PROBE drag-empty $kind: pan=${(after - before).xy} boxSelected=${many.length}');
+    });
+  }
+
+  testWidgets('two-finger pinch on canvas (touch)', (tester) async {
+    await pump(tester);
+    final s0 = transform.value.getMaxScaleOnAxis();
+    final a = await tester.startGesture(const Offset(300, 500), pointer: 1);
+    final b = await tester.startGesture(const Offset(400, 500), pointer: 2);
+    for (var i = 0; i < 10; i++) { await a.moveBy(const Offset(-15, 0)); await b.moveBy(const Offset(15, 0)); await tester.pump(); }
+    await a.up(); await b.up(); await tester.pumpAndSettle();
+    // ignore: avoid_print
+    print('PROBE pinch touch: scale ${s0.toStringAsFixed(3)} -> ${transform.value.getMaxScaleOnAxis().toStringAsFixed(3)}');
+  });
+
+  testWidgets('one-finger drag starting on a node (touch)', (tester) async {
+    await pump(tester);
+    log.clear();
+    final before = transform.value.getTranslation();
+    final start = tester.getRect(find.byKey(const ValueKey('t1'))).center;
+    final g = await tester.startGesture(start, kind: PointerDeviceKind.touch);
+    for (var i = 0; i < 10; i++) { await g.moveBy(const Offset(0, 25)); await tester.pump(); }
+    await g.up(); await tester.pumpAndSettle();
+    // ignore: avoid_print
+    print('PROBE drag-node touch: pan=${(transform.value.getTranslation() - before).xy} events=$log');
+  });
+
+  testWidgets('long press on a node (touch)', (tester) async {
+    await pump(tester);
+    log.clear();
+    await tester.longPress(find.byKey(const ValueKey('t1')));
+    await tester.pumpAndSettle();
+    // ignore: avoid_print
+    print('PROBE long-press node: events=$log');
+  });
+}
