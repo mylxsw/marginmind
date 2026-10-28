@@ -168,3 +168,26 @@ MOB-02a、MOB-02b 是 iPad 能用的最小集合，建议先做；它们大部�
 ## 8. 测试工具链说明
 
 Android 工具链安装在 Mac 主机的 `~/macrun-work/android-tools`（约 6.3 GB，JDK + SDK + 系统镜像 + NDK），只用于本次验证，没有修改系统级配置；不再需要时可直接删除该目录。iOS / Android / Web 平台工程生成在临时克隆 `~/macrun-work/mm-gul538` 与 Agent 主机 `/tmp/mm-web`，同样未提交。
+
+## 9. 适配结果（2026-10-28，`986f9e6`）
+
+第 6 节的任务已经全部合入：GUL-539 平台工程（#76）、GUL-540 自适应布局（#74）、GUL-541 触控交互（#73）、GUL-542 手机布局（#75）、GUL-543 Web 与 Windows（#77）、GUL-544 移动端打磨（#78）。
+
+| 平台 | 构建 | 运行实测 | 状态 |
+| --- | --- | --- | --- |
+| macOS | `flutter build macos` 成功 | 启动后菜单、布局、资料库与之前一致 | 可用，无回退 |
+| iPadOS | `flutter build ios --simulator` 成功 | iPad Pro 13" 打开示例学习集，0 次布局错误；竖屏上下分栏，安全区正确 | 可用 |
+| iOS（iPhone） | 同上 | iPhone 17 Pro 竖屏与横屏，0 次布局错误；底部 Tab、sheet | 可用 |
+| Android | `assembleDebug` 成功 | Pixel 8（API 36）竖屏与横屏，0 次布局错误；返回键逐级返回 | 可用 |
+| Web | `flutter build web --release` 成功 | Chrome 中打开示例学习集，PDF 与脑图都能渲染，刷新后数据仍在 | 可用（助手、OCR 等能力不提供） |
+| Linux | `flutter build linux --release` 成功（ARM64） | Xvfb 下打开示例学习集，工作区正常 | 可用（原生导出、OCR 等能力不提供） |
+| Windows | 未构建（没有 Windows 主机） | — | 已完成代码适配（F11 全屏、Ctrl 主键、按能力过滤导出格式），待实机验证 |
+
+全仓检查：format、analyze 通过；测试全部通过（应用 587 项、8 项既有跳过）；覆盖率 90.72%。
+
+后续工作：
+- iPad 原生拖入导入；
+- 移动端与 Linux/Windows 的 OCR、正文解析、PNG/PDF 导出编码；
+- 真机测试：Apple Pencil、外接键盘与触控板、云文件提供者；
+- Windows 实机构建与验证；
+- Web 端助手所需的网络代理（ADR 0003 之后的工作）。
