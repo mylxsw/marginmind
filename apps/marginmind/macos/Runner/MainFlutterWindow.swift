@@ -318,7 +318,10 @@ final class SecretStoreChannel {
     }
   }
 
-  static func handle(_ call: FlutterMethodCall, keychain: SecKeychain? = nil, result: @escaping FlutterResult) {
+  static func handle(_ call: FlutterMethodCall, keychain: SecKeychain? = nil,
+                     references: UserDefaults = .standard,
+                     update: (CFDictionary, CFDictionary) -> OSStatus = SecItemUpdate,
+                     result: @escaping FlutterResult) {
       guard let args = call.arguments as? [String: String],
             let account = args["account"], !account.isEmpty, account.count <= 256 else {
         result(FlutterError(code: "invalid_arguments", message: nil, details: nil))
@@ -334,10 +337,15 @@ final class SecretStoreChannel {
       defer { SecKeychainSetUserInteractionAllowed(interactionAllowed.boolValue) }
       let context = LAContext()
       context.interactionNotAllowed = true
+      // Only an opaque Keychain account reference is stored in defaults. A
+      // replacement key can use a fresh item if an old build's ACL rejects us.
+      // Retain the reference after deletion so the old item cannot reappear.
+      let referenceKey = "marginmind.secret-store.reference.v1." + account
+      let storageAccount = references.string(forKey: referenceKey) ?? account
       var query: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: "io.github.mylxsw.marginmind.research",
-        kSecAttrAccount as String: account,
+        kSecAttrAccount as String: storageAccount,
         kSecAttrSynchronizable as String: false,
         kSecUseAuthenticationContext as String: context,
       ]
@@ -359,13 +367,21 @@ final class SecretStoreChannel {
           result(FlutterError(code: "invalid_arguments", message: nil, details: nil)); return
         }
         let values: [String: Any] = [kSecValueData as String: Data(value.utf8)]
-        status = SecItemUpdate(query as CFDictionary, values as CFDictionary)
-        if status == errSecItemNotFound {
+        status = update(query as CFDictionary, values as CFDictionary)
+        if status == errSecItemNotFound || requiresAuthentication(status) {
+          // Never ask for a Mac password to overwrite an inaccessible item.
+          // Save only the key explicitly supplied by the user in a new item;
+          // switch references after success, leaving the old item untouched.
+          let replacement = requiresAuthentication(status) ? "replacement-" + UUID().uuidString : storageAccount
           var insert = query.merging(values) { _, new in new }
+          insert[kSecAttrAccount as String] = replacement
           insert.removeValue(forKey: kSecMatchSearchList as String)
           if let keychain = keychain { insert[kSecUseKeychain as String] = keychain }
           insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
           status = SecItemAdd(insert as CFDictionary, nil)
+          if status == errSecSuccess && replacement != storageAccount {
+            references.set(replacement, forKey: referenceKey)
+          }
         }
         if status == errSecSuccess { result(nil); return }
       case "delete":
@@ -373,7 +389,10 @@ final class SecretStoreChannel {
         if status == errSecSuccess || status == errSecItemNotFound { result(nil); return }
       default: result(FlutterMethodNotImplemented); return
       }
-      let needsAuthentication = status == errSecInteractionNotAllowed || status == errSecAuthFailed || status == errSecUserCanceled
-      result(FlutterError(code: needsAuthentication ? "keychain_auth_required" : "keychain_failure", message: nil, details: nil))
+      result(FlutterError(code: requiresAuthentication(status) ? "keychain_auth_required" : "keychain_failure", message: nil, details: nil))
+  }
+
+  private static func requiresAuthentication(_ status: OSStatus) -> Bool {
+    status == errSecInteractionNotAllowed || status == errSecAuthFailed || status == errSecUserCanceled
   }
 }

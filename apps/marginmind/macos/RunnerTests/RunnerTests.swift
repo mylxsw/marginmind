@@ -156,6 +156,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(SecKeychainLock(isolated), errSecSuccess)
     let started = Date()
     XCTAssertEqual((invoke("read") as? FlutterError)?.code, "keychain_auth_required")
+    XCTAssertEqual((invoke("write", value: "must-not-replace") as? FlutterError)?.code, "keychain_auth_required")
     XCTAssertLessThan(Date().timeIntervalSince(started), 5)
     var after: DarwinBoolean = false
     XCTAssertEqual(SecKeychainGetUserInteractionAllowed(&after), errSecSuccess)
@@ -165,6 +166,62 @@ class RunnerTests: XCTestCase {
     }
     XCTAssertEqual(unlocked, errSecSuccess)
     XCTAssertEqual(invoke("read") as? String, "preserved")
+  }
+
+  func testReplacingAnInaccessibleKeyNeverRequiresChangingItsPermissions() throws {
+    let account = "test-" + UUID().uuidString
+    let suite = "marginmind-secret-reference-test-" + UUID().uuidString
+    let references = try XCTUnwrap(UserDefaults(suiteName: suite))
+    let originalReferences = try XCTUnwrap(UserDefaults(suiteName: suite + "-original"))
+    let referenceKey = "marginmind.secret-store.reference.v1." + account
+    var created = [account]
+    defer {
+      for item in created {
+        SecretStoreChannel.handle(FlutterMethodCall(methodName: "delete", arguments: ["account": item]),
+                                  references: originalReferences) { _ in }
+      }
+      references.removePersistentDomain(forName: suite)
+      originalReferences.removePersistentDomain(forName: suite + "-original")
+    }
+    func invoke(_ method: String, value: String? = nil,
+                update: (CFDictionary, CFDictionary) -> OSStatus = SecItemUpdate) -> Any? {
+      var arguments = ["account": account]
+      if let value = value { arguments["value"] = value }
+      var answer: Any?
+      SecretStoreChannel.handle(FlutterMethodCall(methodName: method, arguments: arguments),
+                                references: references, update: update) { answer = $0 }
+      return answer
+    }
+    XCTAssertNil(invoke("write", value: "old-test-key"))
+    for denied in [errSecInteractionNotAllowed, errSecAuthFailed, errSecUserCanceled] {
+      XCTAssertNil(invoke("write", value: "replacement-test-key", update: { _, _ in
+        var allowed: DarwinBoolean = true
+        XCTAssertEqual(SecKeychainGetUserInteractionAllowed(&allowed), errSecSuccess)
+        XCTAssertFalse(allowed.boolValue)
+        return denied
+      }))
+      let replacement = try XCTUnwrap(references.string(forKey: referenceKey))
+      XCTAssertNotEqual(replacement, account)
+      XCTAssertFalse(created.contains(replacement))
+      created.append(replacement)
+      XCTAssertEqual(invoke("read") as? String, "replacement-test-key")
+      // The reference survives recreating the store, and contains no API key.
+      let reloaded = try XCTUnwrap(UserDefaults(suiteName: suite))
+      var read: Any?
+      SecretStoreChannel.handle(FlutterMethodCall(methodName: "read", arguments: ["account": account]),
+                                references: reloaded) { read = $0 }
+      XCTAssertEqual(read as? String, "replacement-test-key")
+      XCTAssertFalse(String(describing: references.persistentDomain(forName: suite)).contains("test-key"))
+    }
+    var old: Any?
+    SecretStoreChannel.handle(FlutterMethodCall(methodName: "read", arguments: ["account": account]),
+                              references: originalReferences) { old = $0 }
+    XCTAssertEqual(old as? String, "old-test-key")
+    XCTAssertNil(invoke("delete"))
+    XCTAssertNil(invoke("read")) // Clearing the new key must not resurrect the old one.
+    XCTAssertNotNil(references.string(forKey: referenceKey))
+    XCTAssertNil(invoke("write", value: "saved-again"))
+    XCTAssertEqual(invoke("read") as? String, "saved-again")
   }
 
   func testKeychainChannelRepliesAsynchronouslyOnMainThread() {

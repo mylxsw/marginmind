@@ -161,6 +161,8 @@ metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessi
 
 打开学习集只加载模型配置，助手面板打开或实际提问时才检查凭据。macOS 钥匙串读写使用串行后台队列，结果回到主线程；同时禁止传统 login 钥匙串和 LAContext 的认证弹窗，操作完成后恢复原有交互策略。钥匙串锁定或拒绝访问会返回认证错误，保留已存 Key，不阻塞阅读；助手显示连接入口，设置表单仍可编辑。不会把凭据转存到普通文件或 preferences。
 
+系统账号密码和修改钥匙串权限均不是应用的使用或迁移步骤。旧条目拒绝更新时，用户显式填写的新 API Key 存入新的钥匙串条目，成功后才切换逻辑账户的引用；旧条目保持不动。UserDefaults 的 `marginmind.secret-store.reference.v1.<account>` 只保存随机条目 ID，不含密钥。删除当前条目后保留引用，避免读回旧密钥；如果整个钥匙串锁定而无法保存，则返回错误，不弹系统密码框，也不改成明文存储。
+
 旧 `AssistantSettingsController` 适配层已在 GUL-537 删除（见下文）。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
 
 模型列表按协议使用 models/tags，Anthropic/Gemini 支持分页（最多 20 页并拒绝重复游标）。过滤明确非对话 ID 和能力字段；未知兼容模型保留，允许手动添加。工具能力 `unknown/supported/unsupported`：优先用能力字段，否则一次最小带工具请求；不执行返回的工具，不把鉴权、超时、限流和其他参数错误当作不支持。仅明确工具不支持的 400 错误记为 unsupported。unknown 在运行时按支持处理，由 GUL-536 的连续错误兜底。

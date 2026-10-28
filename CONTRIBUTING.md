@@ -12,8 +12,9 @@ macOS 日常开发如需保存 AI Key，请先把 `apps/marginmind/macos/Runner/
 复制为同目录的 `LocalSigning.xcconfig`，填入本机证书指纹和团队 ID。用 `security find-identity -v -p codesigning`
 查看可用证书；这个本机配置不会提交到 Git，`flutter run` 和 `flutter build macos` 都会使用它。
 同一份钥匙串凭据应一直使用同一签名身份；临时签名（ad hoc / Sign to Run Locally）的身份绑定具体构建，
-重新编译后可能无法读取旧 Key。正式分发也需保持签名身份连续。过去临时签名创建的 Key 可能需要一次迁移授权，
-或由用户在稳定签名版本中重新保存；这不应变成日常反复输入系统密码。
+重新编译后可能无法读取旧 Key。正式分发也需保持签名身份连续。历史 Key 只允许静默读取；不能把输入系统密码、
+修改钥匙串权限作为迁移步骤。旧条目无法访问时保留它，用户重新填写 AI Key 后保存到应用可访问的新条目，
+仍由钥匙串保护。普通偏好只存条目引用，不存 Key；阅读不依赖凭据是否可用。
 
 项目背景、当前进度和开发计划：[docs/project-plan.md](docs/project-plan.md)。
 
