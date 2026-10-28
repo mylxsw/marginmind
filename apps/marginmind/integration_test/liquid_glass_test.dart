@@ -76,7 +76,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('mm-tab-1')));
       await idle(tester, 4);
       final pdf = find.byType(MMPdfView);
-      await tester.drag(pdf, const Offset(0, -300));
+      // A quick fling scrolls; a slow drag would select text.
+      await tester.fling(pdf, const Offset(0, -300), 2000);
       await idle(tester, 3);
       await capture(tester, '$name-reader');
       if (appearance == AppearancePreference.light) {
