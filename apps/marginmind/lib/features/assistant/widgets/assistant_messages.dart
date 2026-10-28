@@ -15,7 +15,6 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../../../settings/settings_window.dart';
 import '../assistant_services.dart';
-import '../assistant_settings.dart';
 import 'assistant_markdown.dart';
 import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
@@ -748,19 +747,13 @@ class _Tail extends ConsumerWidget {
       ),
       _ => switch (kind) {
         _ when m.diagnostics?.failure == 'secret_store' => (
-          l.assistantSavedKeyUnavailable,
+          l.assistantModelUnavailableTitle,
           false,
           [
             _ActionButton(
-              label: l.assistantRetrySavedKey,
+              key: const ValueKey('assistant-open-settings'),
+              label: l.assistantConfigureModels,
               color: primary,
-              onPressed: () {
-                ref.read(assistantKeysProvider.notifier).changed();
-                retry();
-              },
-            ),
-            _ActionButton(
-              label: l.assistantOpenSettings,
               onPressed: () => showSettings(context, tab: SettingsTab.models),
             ),
           ],

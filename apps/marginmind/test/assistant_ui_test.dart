@@ -86,13 +86,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assistant-send')));
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.last.diagnostics?.failure, 'secret_store');
-    expect(find.textContaining('暂时无法读取已保存的 API Key'), findsOneWidget);
+    expect(find.text('模型暂不可用'), findsOneWidget);
+    expect(find.text('重试读取'), findsNothing);
     expect(find.text('API Key 无效'), findsNothing);
-    await tester.tap(find.text('重试读取'));
-    await pumpFor(tester, 20);
-    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     secrets.blocked = false;
-    await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
+    await tester.tap(find.byKey(const ValueKey('assistant-open-settings')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
@@ -106,7 +104,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
-    await tester.tap(find.text('重试读取'));
+    await _type(tester, '解释这段内容');
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.last.status, MessageStatus.done);
   });
@@ -118,6 +117,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
+    expect(find.text('模型暂不可用'), findsOneWidget);
+    expect(find.textContaining('这不代表 Key 无效'), findsNothing);
+    expect(find.text('重试读取'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
