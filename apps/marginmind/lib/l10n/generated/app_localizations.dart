@@ -4568,11 +4568,11 @@ abstract class AppLocalizations {
   /// **'Search Service'**
   String get settingsSearchService;
 
-  /// No description provided for @settingsSearchModel.
+  /// No description provided for @settingsSearchUnconfigured.
   ///
   /// In en, this message translates to:
-  /// **'Model’s Own Search'**
-  String get settingsSearchModel;
+  /// **'Not Configured'**
+  String get settingsSearchUnconfigured;
 
   /// No description provided for @settingsAccountId.
   ///
@@ -4591,12 +4591,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cannot reach the search service'**
   String get settingsSearchUnreachable;
-
-  /// No description provided for @settingsNoBuiltinSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'{model} can’t search the web. Choose another search service to answer online.'**
-  String settingsNoBuiltinSearch(String model);
 
   /// No description provided for @assistantManageModels.
   ///

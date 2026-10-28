@@ -491,7 +491,7 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
       await controller.upsert(service);
       if (!_local) await controller.saveKey(service.id, key);
       if (!service.models.any((m) => m.id == model!.id && m.enabled)) {
-        await controller.addDiscoveredModel(service.id, model.copyWith(enabled: true), cancellation: _cancel);
+        await controller.addModels(service.id, [model.copyWith(enabled: true)]);
       }
       await controller.setDefault(ModelReference(service.id, model.id));
     } on ResearchFailure catch (e) {

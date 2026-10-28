@@ -72,7 +72,7 @@ class AssistantServicesStore {
         'assistant.search.v1',
         jsonEncode(
           WebSearchSettings(
-            backend: endpoint.isEmpty ? WebSearchBackend.model : WebSearchBackend.searxng,
+            backend: endpoint.isEmpty ? WebSearchBackend.none : WebSearchBackend.searxng,
             endpoint: endpoint,
           ).toJson(),
         ),
@@ -175,26 +175,17 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     final service = _service(v, id);
     return v.upsert(service.copyWith(models: service.models.where((m) => m.id != modelId).toList()));
   });
-  Future<void> addDiscoveredModel(String id, ServiceModel model, {CancellationToken? cancellation}) async {
-    final service = _service(await future, id);
-    final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(id)) ?? '';
-    final checked = await ref.read(serviceCatalogProvider).probe(service, model, key, cancellation: cancellation);
-    await _change((value) async {
-      final current = _service(value, id);
-      if (current.endpoint != service.endpoint || current.protocol != service.protocol) {
-        throw StateError('Service changed during capability probe');
-      }
-      return value.upsert(
-        current.copyWith(
-          models: [
-            for (final m in current.models)
-              if (m.id != checked.id) m,
-            checked,
-          ],
-        ),
-      );
-    });
-  }
+
+  /// Saving models is local and atomic. Keep catalog metadata as supplied;
+  /// unknown tool support is handled when a conversation actually uses tools.
+  Future<void> addModels(String id, List<ServiceModel> models) => _change((value) async {
+    final current = _service(value, id);
+    final merged = {for (final m in current.models) m.id: m};
+    for (final model in models) {
+      merged[model.id] = model;
+    }
+    return value.upsert(current.copyWith(models: merged.values.toList()));
+  });
 }
 
 final webSearchSettingsProvider = NotifierProvider<WebSearchSettingsController, WebSearchSettings>(
@@ -211,7 +202,7 @@ class WebSearchSettingsController extends Notifier<WebSearchSettings> {
     if (raw != null) return WebSearchSettings.fromJson(jsonDecode(raw));
     final endpoint = prefs.getString('assistant.searxng') ?? '';
     return WebSearchSettings(
-      backend: endpoint.isEmpty ? WebSearchBackend.model : WebSearchBackend.searxng,
+      backend: endpoint.isEmpty ? WebSearchBackend.none : WebSearchBackend.searxng,
       endpoint: endpoint,
     );
   }

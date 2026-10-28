@@ -6,7 +6,7 @@ enum ToolCapability { unknown, supported, unsupported }
 
 enum ConnectionStatus { ok, authFailed, unreachable }
 
-enum WebSearchBackend { model, cloudflare, searxng, tavily, brave }
+enum WebSearchBackend { none, cloudflare, searxng, tavily, brave }
 
 class ServiceModel {
   const ServiceModel({required this.id, this.name = '', this.enabled = true, this.tools = ToolCapability.unknown});
@@ -171,10 +171,12 @@ AssistantModel quickModelFor(AssistantService service, AssistantModel current) =
           current;
 
 class WebSearchSettings {
-  const WebSearchSettings({this.backend = WebSearchBackend.model, this.endpoint = ''});
+  const WebSearchSettings({this.backend = WebSearchBackend.none, this.endpoint = ''});
   final WebSearchBackend backend;
   final String endpoint;
   Map<String, dynamic> toJson() => {'version': 1, 'backend': backend.name, 'endpoint': endpoint};
-  factory WebSearchSettings.fromJson(Map<String, dynamic> j) =>
-      WebSearchSettings(backend: WebSearchBackend.values.byName(j['backend']), endpoint: j['endpoint'] ?? '');
+  factory WebSearchSettings.fromJson(Map<String, dynamic> j) => WebSearchSettings(
+    backend: j['backend'] == 'model' ? WebSearchBackend.none : WebSearchBackend.values.byName(j['backend']),
+    endpoint: j['endpoint'] ?? '',
+  );
 }

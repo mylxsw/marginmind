@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,15 +20,25 @@ class FailingSecrets extends Secrets {
   }
 }
 
-class Catalog extends ServiceCatalog {
-  final result = Completer<ServiceModel>();
+class OfflineSecrets extends Secrets {
+  bool offline = false;
   @override
-  Future<ServiceModel> probe(
-    AssistantService service,
-    ServiceModel model,
-    String key, {
-    CancellationToken? cancellation,
-  }) => result.future;
+  Future<String?> read(String name) async {
+    if (offline) throw StateError('Saving models must not read the keychain');
+    return super.read(name);
+  }
+}
+
+class RecordingServicesStore extends AssistantServicesStore {
+  RecordingServicesStore(super.prefs, super.secrets);
+  int writes = 0;
+  bool fail = false;
+  @override
+  Future<void> save(AssistantServices value) async {
+    writes++;
+    if (fail) throw StateError('Local write failed');
+    await super.save(value);
+  }
 }
 
 void main() {
@@ -136,37 +145,50 @@ void main() {
     await actions.remove('legacy-responses');
     expect(secrets.values.containsKey('openai'), false);
   });
-  test('adding probes capabilities, persists results and refuses stale connection results', () async {
+  test('bulk model saving is local, atomic and preserves catalog capabilities', () async {
     SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance(), secrets = Secrets(), catalog = Catalog();
-    final c = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        assistantSecretsProvider.overrideWithValue(secrets),
-        serviceCatalogProvider.overrideWithValue(catalog),
-      ],
-    );
+    final prefs = await SharedPreferences.getInstance(), secrets = OfflineSecrets();
+    final store = RecordingServicesStore(prefs, secrets);
+    final c = ProviderContainer(overrides: [assistantServicesStoreProvider.overrideWithValue(store)]);
     addTearDown(c.dispose);
     await c.read(assistantServicesProvider.future);
     final controller = c.read(assistantServicesProvider.notifier);
-    final add = controller.addDiscoveredModel('legacy-claude', const ServiceModel(id: 'mini'));
-    catalog.result.complete(const ServiceModel(id: 'mini', tools: ToolCapability.unsupported));
-    await add;
-    expect((await c.read(assistantServicesProvider.future)).services.first.models.last.supportsTools, false);
-    await controller.setModelEnabled('legacy-claude', 'mini', false);
-    expect(c.read(enabledAssistantModelsProvider)['legacy-claude']!.length, 1);
-    final second = Catalog();
-    c.updateOverrides([
-      sharedPreferencesProvider.overrideWithValue(prefs),
-      assistantSecretsProvider.overrideWithValue(secrets),
-      serviceCatalogProvider.overrideWithValue(second),
+    secrets.offline = true;
+    final writes = store.writes;
+    await controller.addModels('legacy-claude', const [
+      ServiceModel(id: 'mini'),
+      ServiceModel(id: 'no-tools', tools: ToolCapability.unsupported),
+      ServiceModel(id: 'with-tools', tools: ToolCapability.supported),
     ]);
-    final pending = controller.addDiscoveredModel('legacy-claude', const ServiceModel(id: 'other'));
-    await Future<void>.delayed(Duration.zero);
-    final service = (await c.read(assistantServicesProvider.future)).services.first;
-    await controller.upsert(service.copyWith(endpoint: 'https://new.example/v1/messages'));
-    second.result.complete(const ServiceModel(id: 'other'));
-    await expectLater(pending, throwsStateError);
+    expect(store.writes, writes + 1);
+    final saved = (await store.load()).services.first;
+    expect(saved.models.map((m) => m.id), ['claude-opus-5-5', 'mini', 'no-tools', 'with-tools']);
+    expect(saved.models[1].tools, ToolCapability.unknown);
+    expect(saved.models[2].supportsTools, false);
+    expect(saved.models[3].supportsTools, true);
+    expect(c.read(enabledAssistantModelsProvider)['legacy-claude']!.length, 4);
+
+    // Failed persistence leaves both the saved data and visible state intact.
+    store.fail = true;
+    await expectLater(controller.addModels('legacy-claude', const [ServiceModel(id: 'failed')]), throwsStateError);
+    expect(
+      c.read(assistantServicesProvider).value!.services.first.models.map((m) => m.id),
+      saved.models.map((m) => m.id),
+    );
+    expect((await store.load()).services.first.models.map((m) => m.id), saved.models.map((m) => m.id));
+    store.fail = false;
+    // Uses the current service, preserving a concurrent rename and existing models.
+    await Future.wait([
+      controller.upsert(saved.copyWith(name: 'Renamed')),
+      controller.addModels('legacy-claude', const [ServiceModel(id: 'mini', name: 'Mini'), ServiceModel(id: 'other')]),
+    ]);
+    final updated = c.read(assistantServicesProvider).value!.services.first;
+    expect(updated.name, 'Renamed');
+    expect(updated.models.where((m) => m.id == 'mini').single.name, 'Mini');
+    expect(updated.models.last.id, 'other');
+    expect(updated.models, hasLength(5));
+    await controller.setModelEnabled('legacy-claude', 'mini', false);
+    expect(c.read(enabledAssistantModelsProvider)['legacy-claude']!.length, 4);
   });
   test('new services, endpoints, and the configured state', () async {
     final service = newAssistantService(ServiceProtocol.openai, 'OpenAI', ['service-1']);

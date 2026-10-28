@@ -18,8 +18,14 @@ Future<AssistantNetwork?> assistantNetworkFor(Ref ref, String studySetId, Conver
   final model = await ref.read(assistantServicesStoreProvider).resolve(conversation.model);
   final settings = ref.read(webSearchSettingsProvider);
   final secrets = ref.read(assistantSecretsProvider);
-  final searchKey = await secrets.read(WebSearchSettingsController.account(settings.backend));
-  final account = await secrets.read(WebSearchSettingsController.cloudflareAccount);
+  final needsSearchService = !hasNativeWebSearch(model);
+  final searchKey =
+      needsSearchService && settings.backend != WebSearchBackend.none && settings.backend != WebSearchBackend.searxng
+      ? await secrets.read(WebSearchSettingsController.account(settings.backend))
+      : null;
+  final account = needsSearchService && settings.backend == WebSearchBackend.cloudflare
+      ? await secrets.read(WebSearchSettingsController.cloudflareAccount)
+      : null;
   final parser = ref.read(assistantArticleParserProvider);
   final cache = ref.read(assistantWebCacheProvider);
   final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));

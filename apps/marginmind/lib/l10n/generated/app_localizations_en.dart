@@ -2559,7 +2559,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSearchService => 'Search Service';
 
   @override
-  String get settingsSearchModel => 'Model’s Own Search';
+  String get settingsSearchUnconfigured => 'Not Configured';
 
   @override
   String get settingsAccountId => 'Account ID';
@@ -2569,11 +2569,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSearchUnreachable => 'Cannot reach the search service';
-
-  @override
-  String settingsNoBuiltinSearch(String model) {
-    return '$model can’t search the web. Choose another search service to answer online.';
-  }
 
   @override
   String get assistantManageModels => 'Manage Models…';

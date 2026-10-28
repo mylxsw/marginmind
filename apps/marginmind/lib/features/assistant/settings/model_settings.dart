@@ -41,7 +41,7 @@ class _ModelSettingsPageState extends ConsumerState<ModelSettingsPage> {
 
   Future<void> _add(BuildContext button) async {
     final l = context.l10n;
-    final protocol = await showServiceTiles(button);
+    final protocol = await showServiceList(button);
     if (protocol == null || !mounted) return;
     final value = await ref.read(assistantServicesProvider.future);
     final service = newAssistantService(protocol, serviceTitle(l, protocol), value.services.map((s) => s.id));
@@ -141,7 +141,7 @@ String modelLabel(AssistantServices services, AssistantModel model) =>
         .firstOrNull ??
     model.model;
 
-/// What the add-service tiles call each protocol, and a new service's name.
+/// What the add-service list calls each protocol, and a new service's name.
 String serviceTitle(AppLocalizations l, ServiceProtocol p) => switch (p) {
   ServiceProtocol.anthropic => 'Anthropic',
   ServiceProtocol.openai => 'OpenAI',
@@ -149,13 +149,12 @@ String serviceTitle(AppLocalizations l, ServiceProtocol p) => switch (p) {
   ServiceProtocol.ollama => 'Ollama',
 };
 
-/// The 2×2 tiles of “Add Service”, above [anchor]: resolves to the chosen
-/// protocol.
-Future<ServiceProtocol?> showServiceTiles(BuildContext anchor) {
+/// One horizontal row per service, above [anchor], scrollable as the list grows.
+Future<ServiceProtocol?> showServiceList(BuildContext anchor) {
   final l = anchor.l10n;
   final box = anchor.findRenderObject()! as RenderBox;
   final rect = box.localToGlobal(Offset.zero) & box.size;
-  final tiles = [
+  final services = [
     (ServiceProtocol.anthropic, ServiceBrand.anthropic, 'Anthropic'),
     (ServiceProtocol.openai, ServiceBrand.openai, l.settingsOpenAiCompatible),
     (ServiceProtocol.gemini, ServiceBrand.gemini, 'Google Gemini'),
@@ -173,40 +172,46 @@ Future<ServiceProtocol?> showServiceTiles(BuildContext anchor) {
         autofocus: true,
         child: CustomSingleChildLayout(
           delegate: _AboveLayout(rect),
-          child: MMGlass(
-            key: const ValueKey('service-tiles'),
-            borderRadius: BorderRadius.circular(14),
-            padding: const EdgeInsets.all(MMSpacing.s),
-            child: SizedBox(
-              width: 2 * 128 + MMSpacing.s,
-              child: Wrap(
-                spacing: MMSpacing.s,
-                runSpacing: MMSpacing.s,
-                children: [
-                  for (final (protocol, brand, name) in tiles)
-                    MMInteractive(
-                      key: ValueKey('service-tile-${protocol.name}'),
-                      onTap: () => Navigator.of(context).pop(protocol),
-                      semanticLabel: name,
-                      builder: (context, s) => AnimatedContainer(
-                        duration: MMMotion.quick,
-                        width: 128,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          color: s.hovered || s.focused ? context.mmColors.hover : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
+          child: Material(
+            type: MaterialType.transparency,
+            child: MMGlass(
+              key: const ValueKey('service-list'),
+              borderRadius: BorderRadius.circular(MMRadii.card),
+              padding: const EdgeInsets.all(MMSpacing.xs),
+              child: SizedBox(
+                width: MMSizes.sidebarWidth + MMSpacing.xxl,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height / 2),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    children: [
+                      for (final (protocol, brand, name) in services)
+                        MMInteractive(
+                          key: ValueKey('service-option-${protocol.name}'),
+                          onTap: () => Navigator.of(context).pop(protocol),
+                          semanticLabel: name,
+                          builder: (context, s) => AnimatedContainer(
+                            duration: MMMotion.quick,
+                            padding: const EdgeInsets.all(MMSpacing.s),
+                            decoration: BoxDecoration(
+                              color: s.hovered || s.focused ? context.mmColors.hover : Colors.transparent,
+                              borderRadius: BorderRadius.circular(MMRadii.row),
+                            ),
+                            child: Row(
+                              children: [
+                                ServiceLogo(brand: brand, name: name, size: MMSizes.field),
+                                const SizedBox(width: MMSpacing.m),
+                                Expanded(
+                                  child: Text(name, style: context.mmText.body.copyWith(color: context.mmColors.label)),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ServiceLogo(brand: brand, name: name, size: 40),
-                            const SizedBox(height: 6),
-                            Text(name, style: context.mmText.callout.copyWith(color: context.mmColors.label)),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -788,25 +793,15 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
     setState(() => _adding = true);
     final controller = ref.read(assistantServicesProvider.notifier);
     final listed = {for (final m in _models ?? const <ServiceModel>[]) m.id: m};
-    var failed = false;
-    for (final id in _picked) {
-      try {
-        // New models are on: they appear in the model menu at once.
-        await controller.addDiscoveredModel(
-          widget.service.id,
-          (listed[id] ?? ServiceModel(id: id)).copyWith(enabled: true),
-          cancellation: _cancel,
-        );
-      } catch (_) {
-        failed = true;
-      }
-    }
-    if (!mounted) return;
-    final l = context.l10n;
-    final navigator = Navigator.of(context);
-    navigator.pop();
-    if (failed && navigator.context.mounted) {
-      MMHud.show(navigator.context, l.assistantErrorFailed, icon: MMIcons.warning);
+    try {
+      await controller.addModels(widget.service.id, [
+        for (final id in _picked) (listed[id] ?? ServiceModel(id: id)).copyWith(enabled: true),
+      ]);
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _adding = false);
+      MMHud.show(context, context.l10n.assistantErrorFailed, icon: MMIcons.warning);
     }
   }
 

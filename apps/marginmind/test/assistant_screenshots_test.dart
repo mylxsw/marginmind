@@ -171,10 +171,20 @@ Future<void> _save(WidgetTester tester, String name, {bool overlays = false}) as
   await tester.runAsync(() => File('$_out/$name.png').writeAsBytes(png.buffer.asUint8List()));
 }
 
-Future<void> _shootSettings(WidgetTester tester, String name, SettingsTab tab, {bool dark = false}) async {
+Future<void> _shootSettings(
+  WidgetTester tester,
+  String name,
+  SettingsTab tab, {
+  bool dark = false,
+  bool providers = false,
+}) async {
   await openAssistantApp(tester, size: const Size(1440, 900), prefs: {if (dark) 'settings.appearance': 'dark'});
   showSettings(tester.element(find.byType(MMWindowScaffold)), tab: tab, showsGallery: false);
   await pumpFor(tester, 20);
+  if (providers) {
+    await tester.tap(find.byKey(const ValueKey('settings-add-service')));
+    await tester.pumpAndSettle();
+  }
   await _save(tester, name, overlays: true);
   expect(find.byType(SettingsWindow), findsOneWidget);
 }
@@ -195,6 +205,20 @@ void main() {
     skip: skip,
     variant: mac,
   );
+  for (final dark in [false, true]) {
+    testWidgets(
+      'settings providers ${dark ? 'dark' : 'light'}',
+      (tester) => _shootSettings(
+        tester,
+        'settings-providers-${dark ? 'dark' : 'light'}',
+        SettingsTab.models,
+        dark: dark,
+        providers: true,
+      ),
+      skip: skip,
+      variant: mac,
+    );
+  }
   for (final (tab, dark) in [
     (SettingsTab.general, false),
     (SettingsTab.models, false),

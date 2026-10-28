@@ -2450,7 +2450,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSearchService => '搜索服务';
 
   @override
-  String get settingsSearchModel => '模型自带搜索';
+  String get settingsSearchUnconfigured => '未配置';
 
   @override
   String get settingsAccountId => '账户 ID';
@@ -2460,11 +2460,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsSearchUnreachable => '连不上搜索服务';
-
-  @override
-  String settingsNoBuiltinSearch(String model) {
-    return '$model 不带搜索，联网时请改用其他搜索服务';
-  }
 
   @override
   String get assistantManageModels => '管理模型…';

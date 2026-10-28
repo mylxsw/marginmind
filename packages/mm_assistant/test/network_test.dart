@@ -269,7 +269,7 @@ void main() {
       throwsA(fails(ResearchFailureKind.budget)),
     );
   });
-  test('production chooses native search for Claude/OpenAI and SearXNG for compatible/Ollama', () async {
+  test('production chooses native search or the configured fallback', () async {
     for (final p in AssistantProvider.values) {
       final n = productionAssistantNetwork(
         studySetId: 'set',
@@ -282,7 +282,9 @@ void main() {
         n.discovery,
         p == AssistantProvider.claude || p == AssistantProvider.responses
             ? isA<ProviderWebSearch>()
-            : isA<SearxngSearch>(),
+            : p == AssistantProvider.gemini
+            ? isA<GeminiWebSearch>()
+            : isA<UnavailableWebSearch>(),
       );
       expect(n.paperSearch, isA<OpenAlexSearch>());
       expect(n.extractor, isA<MarkdownArticleExtractor>());

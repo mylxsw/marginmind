@@ -128,42 +128,61 @@ SearchProvider webSearchProvider({
   ServiceHttpFactory httpFactory = serviceHttp,
   ResearchHttp? searxngHttp,
 }) {
+  if (hasNativeWebSearch(model)) {
+    final endpoint = model.provider == AssistantProvider.claude || model.provider == AssistantProvider.responses
+        ? serviceEndpoint(
+            AssistantService(
+              id: '',
+              protocol: model.provider == AssistantProvider.claude ? ServiceProtocol.anthropic : ServiceProtocol.openai,
+              name: '',
+              endpoint: model.endpoint,
+            ),
+            model.provider == AssistantProvider.claude ? 'messages' : 'responses',
+          )
+        : Uri.parse(model.endpoint);
+    return switch (model.provider) {
+      AssistantProvider.claude => ProviderWebSearch(
+        AnthropicProvider(apiKey: modelKey, model: model.model, endpoint: endpoint, http: httpFactory(endpoint, false)),
+      ),
+      AssistantProvider.responses => ProviderWebSearch(
+        OpenAiResponsesProvider(
+          apiKey: modelKey,
+          model: model.model,
+          endpoint: endpoint,
+          http: httpFactory(endpoint, false),
+        ),
+      ),
+      AssistantProvider.gemini => GeminiWebSearch(model, modelKey, httpFactory: httpFactory),
+      _ => const UnavailableWebSearch(),
+    };
+  }
+  return configuredWebSearchProvider(
+    settings: settings,
+    key: key,
+    accountId: accountId,
+    httpFactory: httpFactory,
+    searxngHttp: searxngHttp,
+  );
+}
+
+bool hasNativeWebSearch(AssistantModel model) => switch (model.provider) {
+  AssistantProvider.claude || AssistantProvider.responses || AssistantProvider.gemini => true,
+  _ => false,
+};
+
+/// The external fallback, also used to check exactly the service being edited.
+SearchProvider configuredWebSearchProvider({
+  required WebSearchSettings settings,
+  String key = '',
+  String accountId = '',
+  ServiceHttpFactory httpFactory = serviceHttp,
+  ResearchHttp? searxngHttp,
+}) {
   switch (settings.backend) {
-    case WebSearchBackend.model:
-      final endpoint = model.provider == AssistantProvider.claude || model.provider == AssistantProvider.responses
-          ? serviceEndpoint(
-              AssistantService(
-                id: '',
-                protocol: model.provider == AssistantProvider.claude
-                    ? ServiceProtocol.anthropic
-                    : ServiceProtocol.openai,
-                name: '',
-                endpoint: model.endpoint,
-              ),
-              model.provider == AssistantProvider.claude ? 'messages' : 'responses',
-            )
-          : Uri.parse(model.endpoint);
-      return switch (model.provider) {
-        AssistantProvider.claude => ProviderWebSearch(
-          AnthropicProvider(
-            apiKey: modelKey,
-            model: model.model,
-            endpoint: endpoint,
-            http: httpFactory(endpoint, false),
-          ),
-        ),
-        AssistantProvider.responses => ProviderWebSearch(
-          OpenAiResponsesProvider(
-            apiKey: modelKey,
-            model: model.model,
-            endpoint: endpoint,
-            http: httpFactory(endpoint, false),
-          ),
-        ),
-        AssistantProvider.gemini => GeminiWebSearch(model, modelKey, httpFactory: httpFactory),
-        _ => const UnavailableWebSearch(),
-      };
+    case WebSearchBackend.none:
+      return const UnavailableWebSearch();
     case WebSearchBackend.searxng:
+      if (settings.endpoint.trim().isEmpty) return const UnavailableWebSearch();
       final endpoint = SearxngSearch.parseEndpoint(settings.endpoint);
       return SearxngSearch(
         endpoint: settings.endpoint,

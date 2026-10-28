@@ -263,7 +263,7 @@ void main() {
       expect(await checkWebSearch(denied), ConnectionStatus.authFailed);
     });
   }
-  test('explicit backend selection never silently falls back', () async {
+  test('native search takes priority and other models use the configured service', () async {
     final model = service(ServiceProtocol.openai).configuration(const ServiceModel(id: 'm'));
     for (final backend in WebSearchBackend.values) {
       final search = webSearchProvider(
@@ -271,17 +271,55 @@ void main() {
         model: model,
         modelKey: '',
       );
-      if (backend == WebSearchBackend.model) expect(await checkWebSearch(search), ConnectionStatus.unreachable);
+      if (backend == WebSearchBackend.none) expect(await checkWebSearch(search), ConnectionStatus.unreachable);
       if (backend == WebSearchBackend.searxng) {
         expect((search as SearxngSearch).http.policy.privateEndpoint!.host, 'localhost');
       }
-      if (![WebSearchBackend.model, WebSearchBackend.searxng].contains(backend)) expect(search, isA<ApiWebSearch>());
+      if (![WebSearchBackend.none, WebSearchBackend.searxng].contains(backend)) expect(search, isA<ApiWebSearch>());
     }
     for (final protocol in [ServiceProtocol.anthropic, ServiceProtocol.openai, ServiceProtocol.gemini]) {
       final m = service(protocol, responses: true).configuration(const ServiceModel(id: 'm'));
-      final p = webSearchProvider(settings: const WebSearchSettings(), model: m, modelKey: 'key');
-      expect(p, protocol == ServiceProtocol.gemini ? isA<GeminiWebSearch>() : isA<ProviderWebSearch>());
+      for (final backend in WebSearchBackend.values) {
+        final settings = WebSearchSettings(backend: backend, endpoint: 'invalid fallback address');
+        final p = webSearchProvider(settings: settings, model: m, modelKey: 'key');
+        expect(p, protocol == ServiceProtocol.gemini ? isA<GeminiWebSearch>() : isA<ProviderWebSearch>());
+      }
     }
+    for (final protocol in [ServiceProtocol.openai, ServiceProtocol.ollama]) {
+      final m = service(protocol).configuration(const ServiceModel(id: 'm'));
+      expect(
+        webSearchProvider(settings: const WebSearchSettings(), model: m, modelKey: ''),
+        isA<UnavailableWebSearch>(),
+      );
+      final p = webSearchProvider(
+        settings: const WebSearchSettings(backend: WebSearchBackend.brave),
+        model: m,
+        modelKey: 'model-secret',
+        key: 'search-secret',
+        httpFactory: fake((request) {
+          expect(request.headers['x-subscription-token'], 'search-secret');
+          expect(request.headers.values, isNot(contains('model-secret')));
+          return json({
+            'web': {'results': []},
+          });
+        }),
+      );
+      expect(await p.search(SearchRequest('q'), CancellationToken()), isEmpty);
+    }
+    // A settings check always checks the chosen service, even for native models.
+    expect(
+      configuredWebSearchProvider(
+        settings: const WebSearchSettings(backend: WebSearchBackend.brave),
+        key: 'k',
+      ),
+      isA<ApiWebSearch>(),
+    );
+    expect(
+      configuredWebSearchProvider(settings: const WebSearchSettings(backend: WebSearchBackend.searxng)),
+      isA<UnavailableWebSearch>(),
+    );
+    expect(WebSearchSettings.fromJson({'backend': 'model'}).backend, WebSearchBackend.none);
+    expect(const WebSearchSettings().toJson()['backend'], 'none');
     final gemini = GeminiWebSearch(
       service(ServiceProtocol.gemini).configuration(const ServiceModel(id: 'm')),
       'secret',

@@ -11,7 +11,7 @@ import '../../../settings/settings_window.dart' show SettingsPage;
 import '../../../shared/l10n.dart';
 import '../assistant_services.dart';
 import '../assistant_settings.dart';
-import 'model_settings.dart' show modelLabel, serviceCheckDelay;
+import 'model_settings.dart' show serviceCheckDelay;
 
 /// Checks a search backend; tests replace it to stay off the network.
 typedef WebSearchChecker = Future<ConnectionStatus> Function(
@@ -20,13 +20,6 @@ typedef WebSearchChecker = Future<ConnectionStatus> Function(
 });
 
 final webSearchCheckerProvider = Provider<WebSearchChecker>((ref) => checkWebSearch);
-
-/// Whether the provider's own search works for [model]: Claude, OpenAI's
-/// Responses API and Gemini search; other services do not.
-bool modelSearches(AssistantModel model) =>
-    model.provider == AssistantProvider.claude ||
-    model.provider == AssistantProvider.responses ||
-    model.provider == AssistantProvider.gemini;
 
 /// Settings › Web Search: which service searches the web, independent of
 /// the model that answers.
@@ -98,7 +91,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
 
   /// Whether every field the backend needs is filled in.
   bool _complete(WebSearchBackend backend) => switch (backend) {
-    WebSearchBackend.model => false,
+    WebSearchBackend.none => false,
     WebSearchBackend.searxng => _endpoint.text.trim().isNotEmpty,
     WebSearchBackend.cloudflare => _key.text.trim().isNotEmpty && _account.text.trim().isNotEmpty,
     _ => _key.text.trim().isNotEmpty,
@@ -110,7 +103,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     final settings = WebSearchSettings(backend: backend, endpoint: _endpoint.text.trim());
     try {
       await ref.read(webSearchSettingsProvider.notifier).configure(settings);
-      if (backend != WebSearchBackend.model && backend != WebSearchBackend.searxng) {
+      if (backend != WebSearchBackend.none && backend != WebSearchBackend.searxng) {
         await ref
             .read(webSearchSettingsProvider.notifier)
             .saveKey(backend, _key.text, accountId: backend == WebSearchBackend.cloudflare ? _account.text : null);
@@ -128,10 +121,8 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     setState(() => _checking = true);
     ConnectionStatus status;
     try {
-      final provider = webSearchProvider(
+      final provider = configuredWebSearchProvider(
         settings: settings,
-        model: ref.read(assistantDefaultModelProvider) ?? unconfiguredAssistantModel,
-        modelKey: '',
         key: _key.text.trim(),
         accountId: _account.text.trim(),
       );
@@ -159,8 +150,6 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     final l = context.l10n;
     final settings = ref.watch(webSearchSettingsProvider);
     final backend = settings.backend;
-    final model = ref.watch(assistantDefaultModelProvider);
-    final services = ref.watch(assistantServicesProvider).value;
     final field = t.body.copyWith(color: c.label);
     MMSettingsRow input(
       String label,
@@ -196,7 +185,7 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
                 semanticLabel: l.settingsSearchService,
                 onChanged: (b) => unawaited(_choose(b)),
                 items: [
-                  (WebSearchBackend.model, l.settingsSearchModel),
+                  (WebSearchBackend.none, l.settingsSearchUnconfigured),
                   (WebSearchBackend.cloudflare, 'Cloudflare'),
                   (WebSearchBackend.searxng, 'SearXNG'),
                   (WebSearchBackend.tavily, 'Tavily'),
@@ -229,28 +218,6 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
               ),
           ],
         ),
-        // The one explanation on the page: without it, web answers fail silently.
-        if (backend == WebSearchBackend.model && model != null && !modelSearches(model))
-          Padding(
-            key: const ValueKey('search-unavailable'),
-            padding: const EdgeInsets.fromLTRB(MMSpacing.xs, MMSpacing.s, MMSpacing.xs, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Icon(MMIcons.info, size: 12, color: c.caution),
-                ),
-                const SizedBox(width: MMSpacing.xs),
-                Expanded(
-                  child: Text(
-                    l.settingsNoBuiltinSearch(services == null ? model.model : modelLabel(services, model)),
-                    style: t.footnote.copyWith(color: c.caution),
-                  ),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }

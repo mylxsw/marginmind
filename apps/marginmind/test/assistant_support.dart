@@ -43,6 +43,7 @@ class FakeCatalog extends ServiceCatalog {
   List<ServiceModel> models;
   ResearchFailure? listFailure;
   final checked = <(String, String)>[];
+  int probes = 0;
   @override
   Future<ConnectionStatus> check(AssistantService service, String key, {CancellationToken? cancellation}) async {
     checked.add((service.endpoint, key));
@@ -61,7 +62,10 @@ class FakeCatalog extends ServiceCatalog {
     ServiceModel model,
     String key, {
     CancellationToken? cancellation,
-  }) async => model.copyWith(tools: ToolCapability.supported);
+  }) async {
+    probes++;
+    return model.copyWith(tools: ToolCapability.supported);
+  }
 }
 
 class FakeLinks extends ExternalLinks {

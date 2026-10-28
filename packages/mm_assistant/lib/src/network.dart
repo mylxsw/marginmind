@@ -278,50 +278,34 @@ AssistantNetwork productionAssistantNetwork({
   ResearchDocumentCache? cache,
 }) {
   final http = AssistantNetworkHttp();
-  final endpoint = Uri.parse(model.endpoint);
-  final providerHttp = AssistantNetworkHttp(
-    policy: UrlPolicy(providerEndpoint: endpoint),
-    sharedCounter: http.counter,
-    sharedDeadline: http.deadline,
-  );
-  final SearchProvider discovery = searchSettings != null
-      ? webSearchProvider(
-          settings: searchSettings,
-          searxngHttp: searchSettings.backend == WebSearchBackend.searxng
-              ? AssistantNetworkHttp(
-                  policy: UrlPolicy(privateEndpoint: SearxngSearch.parseEndpoint(searchSettings.endpoint)),
-                  sharedCounter: http.counter,
-                  sharedDeadline: http.deadline,
-                )
-              : null,
-          model: model,
-          modelKey: key,
-          key: searchKey,
-          accountId: searchAccountId,
-          httpFactory: (url, local) => AssistantNetworkHttp(
-            policy: UrlPolicy(providerEndpoint: url),
+  final settings =
+      searchSettings ??
+      WebSearchSettings(
+        backend: searxngEndpoint.isEmpty ? WebSearchBackend.none : WebSearchBackend.searxng,
+        endpoint: searxngEndpoint,
+      );
+  final discovery = webSearchProvider(
+    settings: settings,
+    searxngHttp:
+        !hasNativeWebSearch(model) &&
+            settings.backend == WebSearchBackend.searxng &&
+            settings.endpoint.trim().isNotEmpty
+        ? AssistantNetworkHttp(
+            policy: UrlPolicy(privateEndpoint: SearxngSearch.parseEndpoint(settings.endpoint)),
             sharedCounter: http.counter,
             sharedDeadline: http.deadline,
-          ),
-        )
-      : switch (model.provider) {
-          AssistantProvider.claude => ProviderWebSearch(
-            AnthropicProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
-          ),
-          AssistantProvider.responses => ProviderWebSearch(
-            OpenAiResponsesProvider(apiKey: key, model: model.model, endpoint: endpoint, http: providerHttp),
-          ),
-          _ => SearxngSearch(
-            endpoint: searxngEndpoint,
-            http: AssistantNetworkHttp(
-              policy: UrlPolicy(
-                privateEndpoint: searxngEndpoint.isEmpty ? null : SearxngSearch.parseEndpoint(searxngEndpoint),
-              ),
-              sharedCounter: http.counter,
-              sharedDeadline: http.deadline,
-            ),
-          ),
-        };
+          )
+        : null,
+    model: model,
+    modelKey: key,
+    key: searchKey,
+    accountId: searchAccountId,
+    httpFactory: (url, local) => AssistantNetworkHttp(
+      policy: UrlPolicy(providerEndpoint: url),
+      sharedCounter: http.counter,
+      sharedDeadline: http.deadline,
+    ),
+  );
   return SnapshotAssistantNetwork(
     studySetId: studySetId,
     snapshots: snapshots,

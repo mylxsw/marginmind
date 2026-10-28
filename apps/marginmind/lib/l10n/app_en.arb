@@ -1443,18 +1443,10 @@
   "settingsOpenAiCompatible": "OpenAI Compatible",
   "settingsOllamaLocal": "Ollama (Local)",
   "settingsSearchService": "Search Service",
-  "settingsSearchModel": "Model’s Own Search",
+  "settingsSearchUnconfigured": "Not Configured",
   "settingsAccountId": "Account ID",
   "settingsTokenInvalid": "Invalid API token",
   "settingsSearchUnreachable": "Cannot reach the search service",
-  "settingsNoBuiltinSearch": "{model} can’t search the web. Choose another search service to answer online.",
-  "@settingsNoBuiltinSearch": {
-    "placeholders": {
-      "model": {
-        "type": "String"
-      }
-    }
-  },
   "assistantManageModels": "Manage Models…",
   "assistantModel": "Model",
   "assistantNoOllama": "Ollama isn’t running on this Mac",

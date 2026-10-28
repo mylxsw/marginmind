@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
 import 'package:marginmind/features/assistant/settings/web_search_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart' show preferredModel;
@@ -12,7 +14,8 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'assistant_support.dart';
-import 'helpers.dart' show doubleTap;
+import 'assistant_services_test.dart' show RecordingServicesStore;
+import 'helpers.dart' show doubleTap, settleHud;
 
 /// Opens the panel, then Settings › Models from its gear.
 Future<void> _openModels(WidgetTester tester) async {
@@ -58,9 +61,16 @@ void main() {
     await _openModels(tester);
     await tester.tap(find.byKey(const ValueKey('settings-add-service')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('service-tiles')), findsOneWidget);
+    expect(find.byKey(const ValueKey('service-list')), findsOneWidget);
     expect(find.text('OpenAI 兼容'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('service-tile-openai')));
+    final options = [for (final p in ServiceProtocol.values) find.byKey(ValueKey('service-option-${p.name}'))];
+    final positions = options.map(tester.getTopLeft).toList();
+    expect(positions.map((p) => p.dx).toSet(), hasLength(1));
+    expect(positions.map((p) => p.dy).toSet(), hasLength(ServiceProtocol.values.length));
+    final labelContext = tester.element(find.text('OpenAI 兼容'));
+    expect(DefaultTextStyle.of(labelContext).style.decoration, isNot(TextDecoration.underline));
+
+    await tester.tap(find.byKey(const ValueKey('service-option-openai')));
     await tester.pumpAndSettle();
     final service = _services(app).services.last;
     expect(service.protocol, ServiceProtocol.openai);
@@ -98,7 +108,8 @@ void main() {
     expect(find.byKey(const ValueKey('add-models')), findsNothing);
     final added = _services(app).services.firstWhere((s) => s.id == service.id).models;
     expect(added.map((m) => m.id), ['gpt-5', 'my-model']);
-    expect(added.every((m) => m.enabled && m.tools == ToolCapability.supported), isTrue);
+    expect(added.every((m) => m.enabled && m.tools == ToolCapability.unknown), isTrue);
+    expect(catalog.probes, 0);
     expect(find.text('已启用 2 个模型'), findsOneWidget);
 
     // Off: not in the menu; then on again.
@@ -145,7 +156,7 @@ void main() {
     // Anthropic hides its address until asked.
     await tester.tap(find.byKey(const ValueKey('settings-add-service')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('service-tile-anthropic')));
+    await tester.tap(find.byKey(const ValueKey('service-option-anthropic')));
     await tester.pumpAndSettle();
     final id = _services(app).services.last.id;
     expect(find.byKey(const ValueKey('service-endpoint')), findsNothing);
@@ -257,7 +268,41 @@ void main() {
     expect(find.text('添加'), findsOneWidget);
   });
 
-  testWidgets('web search: five services, their fields, checks and the one warning', (tester) async {
+  testWidgets('a failed local model save keeps the selection for retry', (tester) async {
+    late RecordingServicesStore store;
+    final catalog = FakeCatalog();
+    final app = await openAssistantApp(
+      tester,
+      catalog: catalog,
+      overrides: [
+        assistantServicesStoreProvider.overrideWith(
+          (ref) =>
+              store = RecordingServicesStore(ref.watch(sharedPreferencesProvider), ref.watch(assistantSecretsProvider)),
+        ),
+      ],
+    );
+    await _openModels(tester);
+    await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('service-add-model')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-model-claude-sonnet-5-5')));
+    await tester.pump();
+    store.fail = true;
+    await tester.tap(find.byKey(const ValueKey('add-models-confirm')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('add-models')), findsOneWidget);
+    expect(_services(app).services.first.models, hasLength(1));
+    store.fail = false;
+    await tester.tap(find.byKey(const ValueKey('add-models-confirm')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('add-models')), findsNothing);
+    expect(_services(app).services.first.models.last.id, 'claude-sonnet-5-5');
+    expect(catalog.probes, 0);
+    await settleHud(tester);
+  });
+
+  testWidgets('web search: unconfigured or an external service, independent of the model', (tester) async {
     final checks = <SearchProvider>[];
     var status = ConnectionStatus.unreachable;
     final app = await openAssistantApp(
@@ -272,13 +317,13 @@ void main() {
     await _openModels(tester);
     await tester.tap(find.byKey(const ValueKey('settings-tab-webSearch')));
     await tester.pumpAndSettle();
-    expect(find.text('模型自带搜索'), findsOneWidget);
-    // Claude searches by itself: no warning.
+    expect(find.text('未配置'), findsOneWidget);
+    // Search settings do not explain or depend on the selected model.
     expect(find.byKey(const ValueKey('search-unavailable')), findsNothing);
     Future<void> choose(String label) async {
       await tester.tap(find.byKey(const ValueKey('search-backend')));
       await tester.pumpAndSettle();
-      for (final name in ['模型自带搜索', 'Cloudflare', 'SearXNG', 'Tavily', 'Brave Search']) {
+      for (final name in ['未配置', 'Cloudflare', 'SearXNG', 'Tavily', 'Brave Search']) {
         expect(find.text(name), findsWidgets);
       }
       await tester.tap(find.text(label).last);
@@ -321,7 +366,7 @@ void main() {
     await _afterPause(tester);
     expect(find.text('API Key 无效'), findsOneWidget);
 
-    // A default model that cannot search makes “Model’s own search” fail silently: say so.
+    // Switching to a compatible model does not change the service settings.
     final compatible = AssistantService(
       id: 'compat',
       protocol: ServiceProtocol.openai,
@@ -333,9 +378,10 @@ void main() {
     await app.container
         .read(assistantServicesProvider.notifier)
         .setDefault(const ModelReference('compat', 'coding/auto'));
-    await choose('模型自带搜索');
-    expect(find.byKey(const ValueKey('search-unavailable')), findsOneWidget);
-    expect(find.text('Coding Auto 不带搜索，联网时请改用其他搜索服务'), findsOneWidget);
+    await choose('未配置');
+    expect(find.byKey(const ValueKey('search-unavailable')), findsNothing);
+    expect(find.textContaining('不带搜索'), findsNothing);
+    expect(app.container.read(webSearchSettingsProvider).backend, WebSearchBackend.none);
   });
 
   testWidgets('not configured: connect in the panel; failures say why; the old service is reused', (tester) async {
