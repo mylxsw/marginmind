@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' hide Card;
+import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,10 +13,14 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import 'assistant_support.dart';
+import 'assistant_background_test.dart' show GatedClient;
+
+import 'package:marginmind/features/assistant/assistant_settings.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 
 const _quote = '这条先陡后平的曲线，被称为遗忘曲线。';
 
-Future<AssistantApp> _open(WidgetTester tester, {ScriptClient? client, bool dark = false}) async {
+Future<AssistantApp> _open(WidgetTester tester, {sdk.LLMClient? client, bool dark = false}) async {
   final app = await openAssistantApp(
     tester,
     client: client,
@@ -39,7 +46,7 @@ ProviderContainer _scope(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byKey(const ValueKey('assistant-input'))));
 
 void main() {
-  testWidgets('one row of shortcuts; typing hides them while keeping the reference summary', (tester) async {
+  testWidgets('context and three direct actions stay above the question while typing', (tester) async {
     await _open(tester);
     final summary = find.byKey(const ValueKey('assistant-context-summary'));
     final more = find.byKey(const ValueKey('quick-more'));
@@ -47,16 +54,17 @@ void main() {
     expect(find.byKey(const ValueKey('assistant-context-list')), findsNothing);
     expect(find.byKey(const ValueKey('quick-translate')), findsNothing);
     final explain = tester.getRect(find.byKey(const ValueKey('quick-explain')));
-    final summarize = tester.getRect(find.byKey(const ValueKey('quick-summarize')));
+    final summarize = tester.getRect(find.byKey(const ValueKey('quick-verify')));
     expect(explain.top, summarize.top);
-    expect(explain.top, tester.getRect(more).top);
+    expect(explain.top, tester.getRect(find.byKey(const ValueKey('quick-organize'))).top);
+    expect(explain.bottom, lessThan(tester.getTopLeft(find.byKey(const ValueKey('assistant-input'))).dy));
     expect(tester.getSize(summary).height, MMSizes.field);
     final before = tester.getTopLeft(summary).dy;
 
     await tester.enterText(find.byKey(const ValueKey('assistant-input')), '我的追问');
     await tester.pumpAndSettle();
-    expect(more, findsNothing);
-    expect(find.byKey(const ValueKey('quick-explain')), findsNothing);
+    expect(more, findsOneWidget);
+    expect(find.byKey(const ValueKey('quick-explain')), findsOneWidget);
     expect(find.text('引用 2 项'), findsOneWidget);
     expect(tester.getTopLeft(summary).dy, before); // Editing keeps the input and its references in place.
     await tester.enterText(find.byKey(const ValueKey('assistant-input')), '');
@@ -70,7 +78,7 @@ void main() {
     await _open(tester, client: client);
     await tester.tap(find.byKey(const ValueKey('quick-more')));
     await tester.pumpAndSettle();
-    for (final label in ['翻译', '查证', '出复习题', '整理进脑图']) {
+    for (final label in ['翻译', '总结', '出复习题', '整理进脑图']) {
       expect(find.text(label), findsOneWidget);
     }
     expect(DefaultTextStyle.of(tester.element(find.text('翻译'))).style.decoration, isNot(TextDecoration.underline));
@@ -119,6 +127,55 @@ void main() {
     await pumpFor(tester, 20);
     expect(conversationOf(tester).messages.first.contexts.single.id, auto.id);
     expect(find.byKey(const ValueKey('assistant-context-list')), findsNothing);
+  });
+
+  testWidgets('moving the first question into the transcript preserves the follow-up draft', (tester) async {
+    final client = GatedClient([answer('第一条回答')]);
+    final gate = client.gate(0);
+    await _open(tester, client: client);
+    final field = find.byKey(const ValueKey('assistant-input'));
+    final controller = tester.widget<TextField>(field).controller;
+    await tester.enterText(field, '第一个问题');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester);
+    expect(identical(tester.widget<TextField>(field).controller, controller), isTrue);
+    await tester.enterText(field, '保留我的追问');
+    gate.complete();
+    await pumpFor(tester, 20);
+    expect(controller!.text, '保留我的追问');
+    expect(conversationOf(tester).messages.last.text, '第一条回答');
+  });
+
+  testWidgets('losing credential access retains answers and their source navigation', (tester) async {
+    final app = await _open(
+      tester,
+      client: ScriptClient([
+        call(
+          'read_selection',
+          jsonEncode({'selectionId': selectionContext(documentId: 'c1', page: 24, quote: _quote).id}),
+        ),
+        answer('已有回答 [page:24]'),
+      ]),
+    );
+    await tester.enterText(find.byKey(const ValueKey('assistant-input')), '解释这段话');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester, 20);
+    final scope = _scope(tester);
+    app.secrets.values.clear();
+    scope.invalidate(assistantCredentialStateProvider);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-messages')), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-configure-models')), findsOneWidget);
+    final message = conversationOf(tester).messages.last;
+    final source = find.byKey(ValueKey('assistant-source-${message.id}-c1-24'));
+    expect(source, findsOneWidget);
+    await tester.tap(source);
+    await pumpFor(tester);
+    expect(app.container.read(workspaceProvider('demo-1')).reveal?.page, 24);
+    expect(tester.takeException(), isNull);
   });
 
   for (final dark in [false, true]) {

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
+import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
@@ -224,9 +225,33 @@ Future<void> pumpFor(WidgetTester tester, [int frames = 12]) async {
 
 /// The scoped assistant controller of the open window.
 AssistantController assistantOf(WidgetTester tester) =>
-    ProviderScope.containerOf(tester.element(find.byKey(const ValueKey('assistant-input'))))
-        .read(assistantControllerProvider.notifier);
+    ProviderScope.containerOf(tester.element(find.byType(AssistantPanel))).read(assistantControllerProvider.notifier);
 
 Conversation conversationOf(WidgetTester tester) =>
-    ProviderScope.containerOf(tester.element(find.byKey(const ValueKey('assistant-input'))))
-        .read(assistantControllerProvider);
+    ProviderScope.containerOf(tester.element(find.byType(AssistantPanel))).read(assistantControllerProvider);
+
+/// Chooses a low-frequency action from the assistant's overflow menu.
+Future<void> assistantMenu(WidgetTester tester, String label) async {
+  await tester.tap(find.byKey(const ValueKey('assistant-menu')));
+  await tester.pump(const Duration(milliseconds: 150));
+  await pumpFor(tester, 3);
+  await tester.tap(find.text(label).last);
+  await tester.pump(const Duration(milliseconds: 150));
+  await pumpFor(tester, 3);
+}
+
+Future<void> assistantModelMenu(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('assistant-menu')));
+  await tester.pump(const Duration(milliseconds: 150));
+  await pumpFor(tester, 3);
+  await tester.tap(find.textContaining('模型 · '));
+  await tester.pump(const Duration(milliseconds: 150));
+  await pumpFor(tester, 3);
+}
+
+Future<void> assistantAnswerMenu(WidgetTester tester, String id, String label) async {
+  await tester.tap(find.byKey(ValueKey('assistant-answer-menu-$id')));
+  await tester.pump(const Duration(milliseconds: 150));
+  await tester.tap(find.text(label).last);
+  await pumpFor(tester, 3);
+}

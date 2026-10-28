@@ -194,10 +194,10 @@ class UserMessage extends ConsumerWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: FractionallySizedBox(
-        widthFactor: .88,
+        widthFactor: 1,
         alignment: Alignment.centerRight,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (final item in shown)
               Padding(
@@ -244,13 +244,9 @@ class UserMessage extends ConsumerWidget {
               key: ValueKey('user-bubble-${message.id}'),
               padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
               decoration: BoxDecoration(
-                color: c.accentTint,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(14),
-                  topRight: Radius.circular(14),
-                  bottomLeft: Radius.circular(14),
-                  bottomRight: Radius.circular(4),
-                ),
+                color: c.quaternaryFill,
+                borderRadius: BorderRadius.circular(MMRadii.card),
+                border: Border.all(color: c.separator),
               ),
               child: Text(
                 message.text,
@@ -683,20 +679,36 @@ class _Tail extends ConsumerWidget {
       final organizes = m.text.isNotEmpty && m.proposals.isEmpty && question.skill != AssistantSkill.organize.name;
       return Padding(
         padding: const EdgeInsets.only(top: MMSpacing.xxs),
-        child: Row(
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: MMSpacing.xs,
+          runSpacing: MMSpacing.xs,
           children: [
             if (m.status == MessageStatus.stopped) ...[
               Text(l.assistantStopped, style: t.footnote.copyWith(color: c.secondaryLabel)),
               const SizedBox(width: MMSpacing.s),
             ],
+            for (final citation in {
+              for (final cite in m.citations)
+                if (!cite.external && cite.documentId != null && cite.page != null && m.text.contains(cite.marker))
+                  '${cite.documentId}:${cite.page}': cite,
+            }.values)
+              _ActionButton(
+                key: ValueKey('assistant-source-${m.id}-${citation.documentId}-${citation.page}'),
+                emphasized: true,
+                icon: MMIcons.document,
+                label: l.researchInSource(citation.page!),
+                color: c.research,
+                onPressed: () => revealCitation(context, ref, studySetId, citation, question.contexts),
+              ),
             if (m.proposals.isEmpty && m.text.isNotEmpty)
               if (m.noteId == null)
                 Builder(
                   builder: (context) => _ActionButton(
                     key: ValueKey('assistant-save-${m.id}'),
+                    emphasized: true,
                     icon: MMIcons.addTopic,
-                    label: l.assistantSaveNote,
-                    color: c.research,
+                    label: l.addToMapAction,
                     onPressed: () => showSaveNotePopover(context, ref, studySetId, m, question),
                   ),
                 )
@@ -714,25 +726,36 @@ class _Tail extends ConsumerWidget {
                   onPressed: () => ref.read(workspaceProvider(studySetId).notifier).locateNoteCard(m.noteId!),
                 ),
               ],
-            copy,
-            if (organizes)
-              _ActionButton(
-                key: ValueKey('assistant-organize-${m.id}'),
-                icon: MMIcons.organize,
-                tooltip: l.assistantSkillOrganize,
-                onPressed: controller.busy
-                    ? null
-                    : () => unawaited(
-                        controller
-                            .send(
-                              AssistantSkill.organize.prompt(l),
-                              contexts: question.contexts,
-                              skill: AssistantSkill.organize.name,
-                            )
-                            .catchError((Object _) {}),
+            Builder(
+              builder: (button) => _ActionButton(
+                key: ValueKey('assistant-answer-menu-${m.id}'),
+                icon: MMIcons.more,
+                tooltip: l.assistantMoreActions,
+                onPressed: () => showMMMenu(
+                  context,
+                  position: boundsOf(button).bottomLeft,
+                  entries: [
+                    MMMenuItem(l.copyAction, copy.onPressed),
+                    if (organizes)
+                      MMMenuItem(
+                        l.assistantSkillOrganize,
+                        controller.busy
+                            ? null
+                            : () => unawaited(
+                                controller
+                                    .send(
+                                      AssistantSkill.organize.prompt(l),
+                                      contexts: question.contexts,
+                                      skill: AssistantSkill.organize.name,
+                                    )
+                                    .catchError((Object _) {}),
+                              ),
                       ),
+                    MMMenuItem(l.assistantRegenerate, controller.busy ? null : retry),
+                  ],
+                ),
               ),
-            regenerate,
+            ),
           ],
         ),
       );
@@ -1015,6 +1038,7 @@ class _ActionButton extends StatelessWidget {
     this.color,
     required this.onPressed,
     this.keepColor = false,
+    this.emphasized = false,
   });
 
   final IconData? icon;
@@ -1025,6 +1049,7 @@ class _ActionButton extends StatelessWidget {
 
   /// A disabled button that shows a state (saved) keeps its color.
   final bool keepColor;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -1038,12 +1063,13 @@ class _ActionButton extends StatelessWidget {
         final fg = !s.enabled && !keepColor ? c.label.withValues(alpha: .3) : (color ?? c.secondaryLabel);
         return AnimatedContainer(
           duration: MMMotion.quick,
-          height: 26,
+          height: emphasized ? MMSizes.field : 26,
           constraints: const BoxConstraints(minWidth: 26),
           padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : MMSpacing.s),
           decoration: BoxDecoration(
-            color: s.hovered ? (color == c.research ? c.researchTint : c.hover) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: s.hovered || (emphasized && color == c.research) ? c.researchTint : Colors.transparent,
+            border: emphasized ? Border.all(color: c.separator) : null,
+            borderRadius: BorderRadius.circular(MMRadii.row),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

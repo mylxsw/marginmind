@@ -23,7 +23,7 @@ import 'helpers.dart' show doubleTap, settleHud;
 Future<void> _openModels(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('assistant-settings')));
+  await assistantMenu(tester, '打开模型设置 →');
   await tester.pumpAndSettle();
   expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
 }
@@ -392,8 +392,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pumpAndSettle();
-    expect(find.text('GPT-5'), findsOneWidget); // The model button.
-    await tester.tap(find.byKey(const ValueKey('assistant-model')));
+    expect(find.text('GPT-5'), findsNothing); // Model details stay in the overflow menu.
+    await assistantModelMenu(tester);
     await tester.pumpAndSettle();
     // Grouped by service, names only, then “Manage Models…”.
     expect(find.text('OpenAI'), findsOneWidget);
@@ -405,7 +405,7 @@ void main() {
     // Only this conversation changes; the default stays.
     expect(conversationOf(tester).model.model, 'claude-opus-5-5');
     expect(_services(app).defaultModel!.modelId, 'gpt-5');
-    await tester.tap(find.byKey(const ValueKey('assistant-model')));
+    await assistantModelMenu(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('管理模型…'));
     await tester.pumpAndSettle();
@@ -655,7 +655,8 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('先配置模型'), findsOneWidget);
+    expect(find.text('添加模型后即可使用'), findsOneWidget);
+    expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
     expect(find.byKey(const ValueKey('connect-button')), findsNothing);
     expect(find.byKey(const ValueKey('quick-explain')), findsNothing);

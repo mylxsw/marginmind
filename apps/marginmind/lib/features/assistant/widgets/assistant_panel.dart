@@ -8,7 +8,6 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../research/research_controller.dart' show researchPanelProvider;
-import '../../research/research_origin.dart' show researchCardTitle;
 import '../../research/widgets/research_note_view.dart';
 import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
@@ -20,7 +19,9 @@ import 'assistant_conversations.dart';
 import 'assistant_composer.dart';
 import 'assistant_markdown.dart' show sourceNumbers;
 import 'assistant_messages.dart';
-import 'assistant_model_menu.dart' show sameModel;
+import 'assistant_model_menu.dart';
+import 'assistant_prompt_bar.dart';
+import '../../../app/providers.dart';
 import 'assistant_overlays.dart';
 
 /// Gives a study set window its assistant: the conversation lives as long as
@@ -99,13 +100,21 @@ class _AssistantHost extends ConsumerWidget {
 
 /// The right panel's assistant: header, the conversation (or the list of
 /// conversations), and the input.
-class AssistantPanel extends ConsumerWidget {
+class AssistantPanel extends ConsumerStatefulWidget {
   const AssistantPanel({super.key, required this.studySetId});
 
   final String studySetId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AssistantPanel> createState() => _AssistantPanelState();
+}
+
+class _AssistantPanelState extends ConsumerState<AssistantPanel> {
+  bool _voiceActive = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final studySetId = widget.studySetId;
     final ui = ref.watch(assistantUiProvider(studySetId));
     final uiNotifier = ref.read(assistantUiProvider(studySetId).notifier);
     final conversation = ref.watch(assistantControllerProvider);
@@ -151,10 +160,8 @@ class AssistantPanel extends ConsumerWidget {
     final Widget body;
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
-    } else if (!configured) {
-      body = ListView(children: const [ModelSetupCard()]);
     } else if (conversation.messages.isEmpty) {
-      body = AssistantSuggestions(studySetId: studySetId);
+      body = configured ? const SizedBox.shrink() : const Center(child: ModelSetupCard());
     } else {
       body = AssistantMessageList(key: ValueKey(conversation.id), studySetId: studySetId);
     }
@@ -171,10 +178,25 @@ class AssistantPanel extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: body),
-                    // A migrated research conversation is read only: no input.
-                    if (!ui.history && !conversation.readOnly)
-                      AssistantComposer(studySetId: studySetId, configured: configured),
+                    if (!ui.history && configured && !conversation.readOnly)
+                      AssistantPromptBar(studySetId: studySetId, enabled: !_voiceActive),
+                    if (!ui.history && !configured && conversation.messages.isNotEmpty)
+                      const ModelSetupCard(inline: true),
+                    if (ui.history || conversation.messages.isNotEmpty || !configured)
+                      Expanded(key: const ValueKey('assistant-body'), child: body),
+                    // Keep one composer, moving it within this Column after the
+                    // first answer. Its draft and voice session retain identity.
+                    if (!ui.history && configured && !conversation.readOnly)
+                      AssistantComposer(
+                        key: const ValueKey('assistant-composer'),
+                        studySetId: studySetId,
+                        configured: true,
+                        onVoiceActiveChanged: (active) {
+                          if (mounted && _voiceActive != active) setState(() => _voiceActive = active);
+                        },
+                      ),
+                    if (!ui.history && configured && conversation.messages.isEmpty)
+                      const Spacer(key: ValueKey('assistant-empty-space')),
                   ],
                 ),
                 if (source != null)
@@ -222,11 +244,11 @@ class AssistantHeader extends ConsumerWidget {
     final t = context.mmText;
     final l = context.l10n;
     final title = ref.watch(assistantControllerProvider.select((s) => s.title));
+    final modelLabel = conversationModelLabel(ref, ref.watch(assistantControllerProvider.select((s) => s.model)));
     final history = ref.watch(assistantUiProvider(studySetId).select((s) => s.history));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
     final workspace = ref.read(workspaceProvider(studySetId).notifier);
-    var shown = title.trim().isEmpty ? l.assistant : title.trim();
-    if (shown.runes.length > 24) shown = '${String.fromCharCodes(shown.runes.take(24))}…';
+    final shown = l.assistant;
     return Container(
       height: MMSizes.toolbarGroupHeight + MMSpacing.s,
       padding: const EdgeInsets.only(left: MMSpacing.s + 2, right: MMSpacing.s),
@@ -246,7 +268,8 @@ class AssistantHeader extends ConsumerWidget {
                   ui.showHistory(!history);
                 },
                 semanticLabel: shown,
-                semanticValue: l.assistantHistory,
+                semanticValue: title.isEmpty ? l.assistantHistory : '${l.assistantHistory} · $title',
+                tooltip: title.isEmpty ? l.assistantHistory : title,
                 builder: (context, s) => AnimatedContainer(
                   duration: MMMotion.quick,
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -257,12 +280,7 @@ class AssistantHeader extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
-                        child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
-                      ),
+                      Icon(MMIcons.ai, size: MMSpacing.xl, color: c.research),
                       const SizedBox(width: MMSpacing.s),
                       Flexible(
                         child: Text(
@@ -280,19 +298,36 @@ class AssistantHeader extends ConsumerWidget {
               ),
             ),
           ),
-          MMIconButton(
-            key: const ValueKey('assistant-new'),
-            icon: MMIcons.add,
-            iconSize: 13,
-            tooltip: l.assistantNewConversation,
-            onPressed: () => startNewConversation(ref, studySetId),
-          ),
-          MMIconButton(
-            key: const ValueKey('assistant-settings'),
-            icon: MMIcons.settings,
-            iconSize: 13,
-            tooltip: AppShortcuts.tip(l.settingsTitle, AppShortcuts.settings),
-            onPressed: () => showSettings(context, tab: SettingsTab.models),
+          Builder(
+            builder: (button) => MMIconButton(
+              key: const ValueKey('assistant-menu'),
+              icon: MMIcons.more,
+              iconSize: 16,
+              tooltip: l.assistantMoreActions,
+              onPressed: () {
+                final conversation = ref.read(assistantControllerProvider);
+                final anchor = boundsOf(button);
+                showMMMenu(
+                  context,
+                  position: anchor.bottomLeft,
+                  entries: [
+                    MMMenuItem(l.assistantNewConversation, () => startNewConversation(ref, studySetId)),
+                    const MMMenuDivider(),
+                    MMMenuItem(
+                      '${l.assistantModel} · $modelLabel',
+                      () => unawaited(showModelMenu(context, ref, anchor)),
+                    ),
+                    MMMenuItem(l.assistantOnline, () {
+                      final online = !conversation.online;
+                      unawaited(ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(studySetId), online));
+                      unawaited(ref.read(assistantControllerProvider.notifier).setOnline(online));
+                    }, checked: conversation.online),
+                    const MMMenuDivider(),
+                    MMMenuItem(l.assistantOpenModelSettings, () => showSettings(context, tab: SettingsTab.models)),
+                  ],
+                );
+              },
+            ),
           ),
           MMIconButton(
             key: const ValueKey('assistant-close'),
@@ -315,155 +350,59 @@ void startNewConversation(WidgetRef ref, String studySetId) {
   ref.read(assistantUiProvider(studySetId).notifier).focus();
 }
 
-/// An empty conversation: five questions that fit what is open, sent on click.
-class AssistantSuggestions extends ConsumerWidget {
-  const AssistantSuggestions({super.key, required this.studySetId});
-
-  final String studySetId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final auto = ref.watch(assistantAutoContextsProvider(studySetId));
-    final ui = ref.watch(assistantUiProvider(studySetId));
-    final online = ref.watch(assistantControllerProvider.select((c) => c.online));
-    final workspace = ref.read(workspaceProvider(studySetId).notifier);
-    final mapId = ref.watch(workspaceProvider(studySetId).select((s) => s.activeMapId));
-    final content = workspace.content;
-    final page = auto.where((c) => c.kind == ContextKind.page).firstOrNull;
-    final selection = ui.contexts.where((c) => c.kind == ContextKind.selection).firstOrNull;
-    var topic = [
-      ...ui.contexts,
-      ...auto,
-    ].where((c) => c.kind == ContextKind.node || c.kind == ContextKind.branch).firstOrNull;
-    // No node attached: the latest topic excerpted from the page being read.
-    if (topic == null && page != null) {
-      final card = content.cards
-          .where((c) => content.annotation(c.annotationId ?? '')?.documentId == page.documentId)
-          .where((c) => content.annotation(c.annotationId!)!.page == page.page)
-          .lastOrNull;
-      final parent = card == null ? null : content.node(card.id, mapId: mapId)?.parentId;
-      if (parent != null) topic = nodeContext(mapId: mapId, nodeId: parent, title: researchCardTitle(content, parent));
-    }
-    final suggestions = <(IconData, String, AssistantSkill, List<ContextItem>)>[
-      if (page != null) (MMIcons.summarize, l.assistantSuggestSummarize(page.page!), AssistantSkill.summarize, [page]),
-      if (topic != null)
-        (MMIcons.explain, l.assistantSuggestExplain(topic.displayText), AssistantSkill.explain, [topic]),
-      if (page != null && online)
-        (MMIcons.verify, l.assistantSuggestVerify(page.page!), AssistantSkill.verify, [page])
-      else if (selection != null)
-        (MMIcons.translate, l.assistantSuggestTranslate, AssistantSkill.translate, [selection]),
-      if (topic != null) (MMIcons.review, l.assistantSuggestQuiz(topic.displayText), AssistantSkill.quiz, [topic]),
-      if (page != null) (MMIcons.organize, l.assistantSuggestOrganize, AssistantSkill.organize, [page]),
-    ];
-    return ListView(
-      key: const ValueKey('assistant-suggestions'),
-      padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.m, MMSpacing.l, MMSpacing.l),
-      children: [
-        for (final (icon, text, skill, contexts) in suggestions.take(5))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: _Suggestion(
-              icon: icon,
-              text: text,
-              onPressed: () {
-                final notifier = ref.read(assistantUiProvider(studySetId).notifier);
-                for (final c in contexts) {
-                  if (!c.auto) notifier.addContext(c);
-                }
-                assistantSend(ref, studySetId, l, skill.prompt(l), skill: skill.name);
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Suggestion extends StatelessWidget {
-  const _Suggestion({required this.icon, required this.text, required this.onPressed});
-
-  final IconData icon;
-  final String text;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.mmColors;
-    return MMInteractive(
-      onTap: onPressed,
-      semanticLabel: text,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: MMSpacing.s),
-        decoration: BoxDecoration(
-          color: s.hovered ? c.researchTint : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: s.hovered ? c.research.withValues(alpha: .16) : c.separator),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: c.research),
-            const SizedBox(width: MMSpacing.s),
-            Expanded(
-              child: Text(
-                text,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: context.mmText.body.copyWith(color: c.label),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// All model configuration lives in Settings › Models, including recovery.
+/// A quiet setup state, or an inline notice above an existing conversation.
+/// Configuration and credential recovery both lead to the same settings page.
 class ModelSetupCard extends ConsumerWidget {
-  const ModelSetupCard({super.key});
+  const ModelSetupCard({super.key, this.inline = false});
+
+  final bool inline;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
-    final unavailable = ref.watch(assistantCredentialStateProvider).value == AssistantCredentialState.unavailable;
+    final credential = ref.watch(assistantCredentialStateProvider).value;
+    final needsKey =
+        credential == AssistantCredentialState.unavailable || credential == AssistantCredentialState.missingKey;
+    final title = needsKey ? l.assistantKeyNeedsAttention : l.assistantSetupHint;
+    final action = MMButton(
+      key: const ValueKey('assistant-configure-models'),
+      label: l.assistantOpenModelSettings,
+      variant: MMButtonVariant.secondary,
+      onPressed: () => showSettings(context, tab: SettingsTab.models),
+    );
     return Container(
       key: const ValueKey('assistant-connect'),
       margin: const EdgeInsets.all(MMSpacing.m),
-      padding: const EdgeInsets.all(MMSpacing.l),
-      decoration: BoxDecoration(
-        color: c.card,
-        borderRadius: BorderRadius.circular(MMRadii.card),
-        border: Border.all(color: c.separator),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(MMIcons.ai, size: MMSpacing.l, color: c.research),
-              const SizedBox(width: MMSpacing.s),
-              Expanded(
-                child: Text(
-                  unavailable ? l.assistantModelUnavailableTitle : l.assistantModelSetupTitle,
-                  style: t.headline.copyWith(color: c.label),
+      padding: EdgeInsets.all(inline ? MMSpacing.s : MMSpacing.l),
+      decoration: inline
+          ? BoxDecoration(color: c.critical.withValues(alpha: .05), borderRadius: BorderRadius.circular(MMRadii.row))
+          : null,
+      child: inline
+          ? Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: MMSpacing.s,
+              runSpacing: MMSpacing.xs,
+              children: [
+                Text(title, style: t.callout.copyWith(color: c.label)),
+                action,
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(MMIcons.ai, size: 28, color: c.secondaryLabel),
+                const SizedBox(height: MMSpacing.m),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: t.body.copyWith(color: c.secondaryLabel),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: MMSpacing.m),
-          MMButton(
-            key: const ValueKey('assistant-configure-models'),
-            label: l.assistantConfigureModels,
-            variant: MMButtonVariant.primary,
-            color: c.research,
-            onPressed: () => showSettings(context, tab: SettingsTab.models),
-          ),
-        ],
-      ),
+                const SizedBox(height: MMSpacing.m),
+                action,
+              ],
+            ),
     );
   }
 }

@@ -2661,4 +2661,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get localNetworkPermission => '连接你的本地模型服务。';
+
+  @override
+  String get assistantOpenModelSettings => '打开模型设置 →';
+
+  @override
+  String get assistantSetupHint => '添加模型后即可使用';
+
+  @override
+  String get assistantKeyNeedsAttention => '请重新填写 API Key';
+
+  @override
+  String get assistantFollowUpPlaceholder => '继续追问…';
 }

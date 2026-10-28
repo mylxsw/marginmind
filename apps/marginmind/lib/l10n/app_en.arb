@@ -1532,5 +1532,9 @@
   "assistantModelUnavailableTitle": "Model temporarily unavailable",
   "assistantConfigureModels": "Configure Models",
   "microphonePermission": "Record audio for transcription.",
-  "localNetworkPermission": "Connect to your local model service."
+  "localNetworkPermission": "Connect to your local model service.",
+  "assistantOpenModelSettings": "Open Model Settings →",
+  "assistantSetupHint": "Add a model to get started",
+  "assistantKeyNeedsAttention": "Re-enter your API key",
+  "assistantFollowUpPlaceholder": "Ask a follow-up…"
 }

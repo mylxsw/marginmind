@@ -117,7 +117,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
-    expect(find.text('模型暂不可用'), findsOneWidget);
+    expect(find.text('请重新填写 API Key'), findsOneWidget);
     expect(find.textContaining('这不代表 Key 无效'), findsNothing);
     expect(find.text('重试读取'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
@@ -162,7 +162,7 @@ void main() {
     expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
     expect(find.byKey(const ValueKey('assistant-context-summary')), findsOneWidget);
     expect(find.byKey(const ValueKey('assistant-context-list')), findsNothing);
-    for (final s in [AssistantSkill.explain, AssistantSkill.summarize]) {
+    for (final s in [AssistantSkill.explain, AssistantSkill.verify, AssistantSkill.organize]) {
       expect(find.byKey(ValueKey('quick-${s.name}')), findsOneWidget);
     }
     expect(find.byKey(const ValueKey('quick-more')), findsOneWidget);
@@ -196,7 +196,7 @@ void main() {
       if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
       return null;
     });
-    await tester.tap(find.byKey(ValueKey('assistant-copy-${c.messages.last.id}')));
+    await assistantAnswerMenu(tester, c.messages.last.id, '拷贝');
     await tester.pump();
     expect(copied, contains('(p.24)'));
     await tester.pump(const Duration(seconds: 3));
@@ -349,7 +349,7 @@ void main() {
     expect(last.status, MessageStatus.stopped);
     expect(last.text, '部分回');
     expect(find.text('已停止'), findsOneWidget);
-    expect(find.byKey(ValueKey('assistant-regenerate-${last.id}')), findsOneWidget);
+    expect(find.byKey(ValueKey('assistant-answer-menu-${last.id}')), findsOneWidget);
     await output.close();
     await tester.pump(const Duration(seconds: 3));
   });
@@ -496,7 +496,7 @@ void main() {
       await pumpFor(tester, 20);
       final first = conversationOf(tester).id;
       expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('assistant-new')));
+      await assistantMenu(tester, '新对话');
       await pumpFor(tester, 20);
       expect(conversationOf(tester).messages, isEmpty);
       await tester.tap(find.byKey(const ValueKey('assistant-title')));
@@ -725,7 +725,7 @@ void main() {
     expect(find.byKey(const ValueKey('assistant-save-5-2')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-regenerate-5-2')), findsNothing);
     // A new conversation brings the input back.
-    await tester.tap(find.byKey(const ValueKey('assistant-new')));
+    await assistantMenu(tester, '新对话');
     await pumpFor(tester, 20);
     expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
   });

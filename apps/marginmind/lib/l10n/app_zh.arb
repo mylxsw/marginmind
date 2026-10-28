@@ -879,5 +879,9 @@
   "assistantModelUnavailableTitle": "模型暂不可用",
   "assistantConfigureModels": "配置模型",
   "microphonePermission": "录制音频以转写文字。",
-  "localNetworkPermission": "连接你的本地模型服务。"
+  "localNetworkPermission": "连接你的本地模型服务。",
+  "assistantOpenModelSettings": "打开模型设置 →",
+  "assistantSetupHint": "添加模型后即可使用",
+  "assistantKeyNeedsAttention": "请重新填写 API Key",
+  "assistantFollowUpPlaceholder": "继续追问…"
 }

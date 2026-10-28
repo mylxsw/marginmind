@@ -55,14 +55,16 @@ class _AssistantContextSummaryState extends State<AssistantContextSummary> {
                 height: MMSizes.field,
                 padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
                 decoration: BoxDecoration(
-                  color: s.hovered || s.focused ? c.hover : c.quaternaryFill,
+                  color: s.hovered || s.focused ? c.hover : Colors.transparent,
                   borderRadius: BorderRadius.circular(MMRadii.row),
                 ),
                 child: Row(
                   children: [
-                    Icon(MMIcons.link, size: MMSpacing.m, color: c.secondaryLabel),
-                    const SizedBox(width: MMSpacing.s),
-                    Text(count, style: t.callout.copyWith(color: c.secondaryLabel)),
+                    Icon(
+                      outgoing.length == 1 ? contextIcon(outgoing.first) : MMIcons.link,
+                      size: MMSpacing.m,
+                      color: c.secondaryLabel,
+                    ),
                     const SizedBox(width: MMSpacing.s),
                     Expanded(
                       child: Text(
@@ -72,6 +74,8 @@ class _AssistantContextSummaryState extends State<AssistantContextSummary> {
                         style: t.footnote.copyWith(color: c.secondaryLabel),
                       ),
                     ),
+                    const SizedBox(width: MMSpacing.s),
+                    Text(count, style: t.footnote.copyWith(color: c.secondaryLabel)),
                     const SizedBox(width: MMSpacing.xs),
                     Icon(_expanded ? MMIcons.chevronUp : MMIcons.chevronDown, size: MMSpacing.m, color: c.icon),
                   ],

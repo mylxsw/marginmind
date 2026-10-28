@@ -2784,4 +2784,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localNetworkPermission => 'Connect to your local model service.';
+
+  @override
+  String get assistantOpenModelSettings => 'Open Model Settings →';
+
+  @override
+  String get assistantSetupHint => 'Add a model to get started';
+
+  @override
+  String get assistantKeyNeedsAttention => 'Re-enter your API key';
+
+  @override
+  String get assistantFollowUpPlaceholder => 'Ask a follow-up…';
 }

@@ -4981,6 +4981,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect to your local model service.'**
   String get localNetworkPermission;
+
+  /// No description provided for @assistantOpenModelSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Model Settings →'**
+  String get assistantOpenModelSettings;
+
+  /// No description provided for @assistantSetupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a model to get started'**
+  String get assistantSetupHint;
+
+  /// No description provided for @assistantKeyNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your API key'**
+  String get assistantKeyNeedsAttention;
+
+  /// No description provided for @assistantFollowUpPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a follow-up…'**
+  String get assistantFollowUpPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
