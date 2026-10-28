@@ -226,8 +226,10 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final floating = sizeClass != MMSizeClass.regular;
+    final paneSwitch = compact && !tabs;
     final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
     return MMWindowScaffold(
+      extendBody: true,
       // A compact window has no room beside or over the panes: the panel
       // rises from the bottom.
       sheet: compact && panel != null
@@ -298,53 +300,76 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
       body: ExcerptViewScope(
         showInMap: compact && layout != MMSplitMode.secondary ? controller.showCardInMap : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (compact && !tabs)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(MMSpacing.m, 0, MMSpacing.m, MMSpacing.s),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
-                    child: MMSegmentedControl<MMSplitMode>(
-                      key: const ValueKey('workspace-pane-switch'),
-                      expand: true,
-                      segments: [
-                        MMSegment(value: MMSplitMode.primary, label: l.paneSource),
-                        MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+        child: Builder(
+          builder: (context) {
+            // The panes run on beneath a touch window's glass chrome; the pane
+            // switch and the right panel stay clear of it.
+            final chrome = MMChromeInsets.of(context);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (paneSwitch)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(MMSpacing.m, chrome.top, MMSpacing.m, MMSpacing.s),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
+                        child: MMSegmentedControl<MMSplitMode>(
+                          key: const ValueKey('workspace-pane-switch'),
+                          expand: true,
+                          segments: [
+                            MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+                            MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+                          ],
+                          value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+                          onChanged: controller.setLayout,
+                        ),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: MMChromeInsets.remove(
+                    context,
+                    removeTop: paneSwitch,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: split),
+                              if (panel != null && !floating)
+                                Padding(
+                                  padding: EdgeInsets.only(top: chrome.top, bottom: chrome.bottom),
+                                  child: SizedBox(width: panelWidth, child: panel),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (panel != null && floating && !compact)
+                          Positioned.fill(
+                            top: chrome.top,
+                            bottom: chrome.bottom,
+                            child: Stack(
+                              children: [
+                                MMDrawer(
+                                  open: true,
+                                  end: true,
+                                  inset: MMSpacing.s,
+                                  width: panelWidth,
+                                  onDismiss: controller.closePanel,
+                                  child: _FloatingPanel(child: panel),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
-                      value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
-                      onChanged: controller.setLayout,
                     ),
                   ),
                 ),
-              ),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(child: split),
-                        if (panel != null && !floating) SizedBox(width: panelWidth, child: panel),
-                      ],
-                    ),
-                  ),
-                  if (panel != null && floating && !compact)
-                    MMDrawer(
-                      open: true,
-                      end: true,
-                      inset: MMSpacing.s,
-                      width: panelWidth,
-                      onDismiss: controller.closePanel,
-                      child: _FloatingPanel(child: panel),
-                    ),
-                ],
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

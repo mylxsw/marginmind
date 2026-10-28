@@ -119,7 +119,7 @@ svg{display:block}
 .touch .srow{height:44px;font-size:15px}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 .tbar{flex:none;height:52px;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px}
-.touch .tbar{height:56px}
+.touch .tbar{height:calc(56px + var(--it,0px));padding-top:var(--it,0px)}
 .tbar .ttl{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbar .ttl small{display:block;font-weight:400;font-size:11px;color:var(--label3)}
 .tbar .sp{flex:1}
@@ -247,14 +247,20 @@ svg{display:block}
 .kbd .kr span.w{max-width:none;flex:5}
 .kbd .kr span.g{background:#ABB0BA}
 
-/* tab bar (compact) */
-.tabbar{flex:none;display:flex;border-top:1px solid var(--sep);background:var(--glass);backdrop-filter:blur(20px);z-index:10}
-.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:7px;font-size:10px;color:var(--label3)}
-.tabbar button.on{color:var(--accent)}
-.atabbar{flex:none;display:flex;background:var(--sidebar);z-index:10;height:72px}
-.atabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:10px;font-size:12px;color:var(--label2)}
-.atabbar button .ic{width:56px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center}
-.atabbar button.on{color:var(--label);font-weight:600}.atabbar button.on .ic{background:var(--accentTint);color:var(--accent)}
+/* tab bar (compact): a Liquid Glass capsule floating over the content, the same on iPhone and Android */
+.tabbar{position:absolute;left:16px;right:16px;display:flex;padding:4px;height:60px;border-radius:30px;z-index:10;
+  background:color-mix(in srgb,var(--glass) 70%,transparent);backdrop-filter:blur(24px) saturate(1.8);
+  box-shadow:0 8px 24px rgba(0,0,0,.12),0 0 0 .5px var(--hair),inset 0 1px 0 rgba(255,255,255,.7)}
+.dark .tabbar{box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 0 .5px var(--hair),inset 0 1px 0 rgba(255,255,255,.3)}
+.tabbar.android{height:64px;border-radius:32px}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--label);border-radius:26px;transition:background .25s,transform .12s}
+.tabbar.android button{font-size:12px;gap:4px}
+.tabbar button.on{color:var(--accent);font-weight:600;background:var(--accentTint)}
+.tabbar button:active{transform:scale(1.08)}
+/* touch toolbar: glass behind the status bar; content scrolls beneath it */
+/* compact touch: map controls and hint stay above the floating tab bar */
+.compact.touch .mctl{bottom:96px}
+.touch .tbar{position:relative;z-index:9;background:color-mix(in srgb,var(--win) 62%,transparent);backdrop-filter:blur(24px) saturate(1.8);border-bottom:.5px solid var(--sep)}
 .topseg{flex:none;display:flex;justify-content:center;padding:6px 12px}
 .topseg .seg2{display:flex;background:var(--fill);border-radius:9px;padding:2px;width:100%;max-width:360px}
 .topseg .seg2 button{flex:1;height:32px;border-radius:7px;font-size:13px;color:var(--label)}
@@ -603,7 +609,7 @@ function mapPane(p, sc){
     ${sc==='compact'?'':`<div class="mhead"><b>主脑图</b><div style="flex:1"></div><div class="pill"><button class="tbtn on" style="font-size:12px;padding:0 10px">脑图</button><button class="tbtn" style="font-size:12px;padding:0 10px">大纲</button></div>${touch?`<button class="tbtn" data-act="selectmode" title="多选">${ic('grid','s')}</button>`:''}<button class="tbtn" data-act="export" title="导出">${ic(p.input==='touch'?'share':'export','s')}</button></div>`}
     <div class="mapvp" id="mapvp"><div class="scene" id="scene" style="transform:translate(${S.t.x}px,${S.t.y}px) scale(${S.t.s})">
       <svg width="1100" height="900" style="position:absolute;left:0;top:0;overflow:visible">${edges.map(path).join('')}</svg>${nodes.map(nodeHtml).join('')}</div>
-      <div style="position:absolute;left:12px;bottom:${sc==='compact'?12:14}px;font-size:11px;color:var(--label3);max-width:60%">${hint}</div>
+      <div style="position:absolute;left:12px;bottom:${sc==='compact'?(touch?100:12):14}px;font-size:11px;color:var(--label3);max-width:60%">${hint}</div>
       <div class="mctl"><div class="pill"><button class="tbtn" data-act="zoom" data-d="-1">${ic('minus','s')}</button><button class="tbtn" style="font-size:12px;min-width:48px" data-act="zoom" data-d="0">${Math.round(S.t.s*100)}%</button><button class="tbtn" data-act="zoom" data-d="1">${ic('plus','s')}</button></div></div>
     </div></div>`;
 }
@@ -668,8 +674,8 @@ function review(p, sc){
 function tabBar(p){
   const tabs = [['library','资料库','grid'],['reader','阅读','book'],['map','脑图','map'],['review','复习','cards']];
   const cur = S.scene === 'library' ? 'library' : S.tab;
-  if (p.chrome === 'android') return `<div class="atabbar" style="padding-bottom:16px">${tabs.map(([id,l,i])=>`<button class="${cur===id?'on':''}" data-act="tab" data-v="${id}"><span class="ic">${ic(i)}</span>${l}</button>`).join('')}</div>`;
-  return `<div class="tabbar" style="height:${49+insets(p).bottom}px">${tabs.map(([id,l,i])=>`<button class="${cur===id?'on':''}" data-act="tab" data-v="${id}">${ic(i,'l')}${l}</button>`).join('')}</div>`;
+  // Floats above the home indicator (at least 12 from the edge), 16 from the sides.
+  return `<div class="tabbar ${p.chrome==='android'?'android':''}" style="bottom:${Math.max(insets(p).bottom,12)}px">${tabs.map(([id,l,i])=>`<button class="${cur===id?'on':''}" data-act="tab" data-v="${id}">${ic(i,p.chrome==='android'?undefined:'l')}${l}</button>`).join('')}</div>`;
 }
 
 function overlays(p, sc){
@@ -753,7 +759,8 @@ function app(p){
   const rowTop = p.chrome === 'win' || p.chrome === 'gtk' ? chrome : '';
   const side = sc === 'compact' ? '' : sidebar(p, sc);
   const sideInline = side && !side.includes('overlay');
-  return `<div class="app ${touch?'touch':''} ${sc}" style="padding-top:${ins.top}px;padding-bottom:${showTabs?0:ins.bottom}px">
+  // Touch: the toolbar's glass reaches behind the status bar.
+  return `<div class="app ${touch?'touch':''} ${sc}" style="padding-top:${touch?0:ins.top}px;padding-bottom:${showTabs?0:ins.bottom}px;--it:${ins.top}px">
     ${rowTop}${p.chrome==='mac'?chrome:''}
     <div class="body">${sideInline?side:''}<div class="main">${main}</div>${!sideInline?side:''}</div>
     ${showTabs?tabBar(p):''}

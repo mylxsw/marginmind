@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/colors.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'glass.dart';
 import 'menu.dart';
 
 /// Window-level hooks the platform layer provides: window dragging, title
@@ -43,6 +45,11 @@ class MMWindowChrome extends InheritedWidget {
 /// An [MMWindowBottomBar] above puts its bar (a phone's tabs) below the
 /// content while the soft keyboard is down. [sheet] lies over everything,
 /// the bar included, and handles the keyboard itself.
+///
+/// On a touch platform the toolbar is a glass bar over the top of the
+/// content, behind the status bar, and the bottom bar floats over the
+/// content. An [extendBody] body runs beneath both and keeps clear of them
+/// with [MMChromeInsets]; any other body is laid out between them.
 class MMWindowScaffold extends StatelessWidget {
   const MMWindowScaffold({
     super.key,
@@ -57,6 +64,8 @@ class MMWindowScaffold extends StatelessWidget {
     this.onTitleDoubleTap,
     this.showsWindowButtons = true,
     this.sheet,
+    this.toolbarBottom,
+    this.extendBody = false,
   });
 
   final Widget toolbar;
@@ -77,6 +86,16 @@ class MMWindowScaffold extends StatelessWidget {
   /// Usually an [MMBottomSheet]; fills the window.
   final Widget? sheet;
 
+  /// A strip below the toolbar and on the same glass, such as the search
+  /// field of a compact library.
+  final PreferredSizeWidget? toolbarBottom;
+
+  /// Whether the body of a touch window runs beneath the glass toolbar and
+  /// the floating bottom bar, reading [MMChromeInsets] to keep its controls
+  /// and the ends of its scroll views clear of them. Pointer windows ignore
+  /// it.
+  final bool extendBody;
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
@@ -84,38 +103,16 @@ class MMWindowScaffold extends StatelessWidget {
     final inline = open && !sidebarOverlay;
     final fullWidth = sidebarWidth + MMSizes.sidebarInset;
     final duration = MMAppearance.duration(context, MMMotion.layout);
+    if (MMInput.of(context).touchPlatform) return _touch(context, c, open, inline, fullWidth, duration);
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         toolbar,
+        ?toolbarBottom,
         Expanded(child: body),
       ],
     );
-
-    final row = Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (sidebar != null)
-          TweenAnimationBuilder<double>(
-            tween: Tween(end: open ? fullWidth : 0),
-            duration: duration,
-            curve: MMMotion.layoutCurve,
-            builder: (context, width, child) => SizedBox(
-              width: width,
-              child: ClipRect(
-                child: OverflowBox(
-                  alignment: Alignment.centerRight,
-                  minWidth: fullWidth,
-                  maxWidth: fullWidth,
-                  child: child,
-                ),
-              ),
-            ),
-            child: ExcludeFocus(excluding: !open, child: sidebar!),
-          ),
-        Expanded(child: content),
-      ],
-    );
+    final row = _row(open, fullWidth, duration, content);
     final safe = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final bar = keyboard > 0 ? null : MMWindowBottomBar.maybeOf(context);
@@ -186,20 +183,199 @@ class MMWindowScaffold extends StatelessWidget {
       ),
     ),
   );
+
+  /// The sidebar column beside [content]; [wrapSidebar] adapts the sidebar
+  /// to where the row sits.
+  Widget _row(bool open, double fullWidth, Duration duration, Widget content, [Widget Function(Widget)? wrapSidebar]) =>
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (sidebar != null)
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: open ? fullWidth : 0),
+              duration: duration,
+              curve: MMMotion.layoutCurve,
+              builder: (context, width, child) => SizedBox(
+                width: width,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.centerRight,
+                    minWidth: fullWidth,
+                    maxWidth: fullWidth,
+                    child: child,
+                  ),
+                ),
+              ),
+              child: ExcludeFocus(excluding: !open, child: wrapSidebar == null ? sidebar! : wrapSidebar(sidebar!)),
+            ),
+          Expanded(child: content),
+        ],
+      );
+
+  /// A touch window: the content fills it edge to edge under the glass
+  /// toolbar and the floating bottom bar; the drawer lies over both.
+  Widget _touch(BuildContext context, MMColors c, bool open, bool inline, double fullWidth, Duration duration) {
+    final safe = MediaQuery.paddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final scope = keyboard > 0 ? null : context.dependOnInheritedWidgetOfExactType<MMWindowBottomBar>();
+    final bar = scope?.bar;
+    final insets = EdgeInsets.only(
+      top: safe.top + MMSizes.toolbarHeight + (toolbarBottom?.preferredSize.height ?? 0),
+      // Above the keyboard the home indicator inset no longer applies.
+      bottom: bar != null ? scope!.extent : (keyboard > 0 ? 0 : safe.bottom),
+    );
+    final chrome = Builder(
+      builder: (context) {
+        final side = MediaQuery.paddingOf(context);
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.only(left: side.left, right: side.right),
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeLeft: true,
+                  removeTop: true,
+                  removeRight: true,
+                  removeBottom: true,
+                  child: MMChromeInsets(
+                    insets: extendBody ? insets : EdgeInsets.zero,
+                    child: extendBody ? body : Padding(padding: insets, child: body),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: MMGlassBar(
+                child: Padding(
+                  padding: EdgeInsets.only(top: safe.top, left: side.left, right: side.right),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // The insets below assume the toolbar's standard height.
+                    children: [
+                      SizedBox(height: MMSizes.toolbarHeight, child: toolbar),
+                      ?toolbarBottom,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    final overlay = sidebarOverlay;
+    final main = overlay
+        ? chrome
+        : _row(
+            open,
+            fullWidth,
+            duration,
+            // The sidebar beside the content takes the leading inset.
+            MediaQuery.removePadding(context: context, removeLeft: inline, child: chrome),
+            (sidebar) => SafeArea(right: false, child: sidebar),
+          );
+
+    // The stack keeps the same children whether or not the bar and the
+    // sheet show, so the content keeps its state when they come and go.
+    return MMContextMenuHost(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: keyboard),
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: keyboard > 0,
+              child: ColoredBox(
+                color: c.windowBackground,
+                child: MMWindowChrome(
+                  toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+                  onDragStart: onDragStart,
+                  onTitleDoubleTap: onTitleDoubleTap,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: ExcludeFocus(excluding: overlay && open, child: main),
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: ExcludeFocus(excluding: overlay && open, child: bar ?? const SizedBox.shrink()),
+                      ),
+                      // The drawer and its scrim cover the whole window, bars included.
+                      if (overlay && sidebar != null)
+                        MMDrawer(
+                          open: open,
+                          width: fullWidth + safe.left,
+                          onDismiss: onSidebarDismiss,
+                          child: SafeArea(right: false, child: sidebar!),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          ?sheet,
+        ],
+      ),
+    );
+  }
 }
 
 /// Supplies the bar [MMWindowScaffold]s below show under their content.
 class MMWindowBottomBar extends InheritedWidget {
-  const MMWindowBottomBar({super.key, required this.bar, required super.child});
+  const MMWindowBottomBar({super.key, required this.bar, this.extent = 0, required super.child});
 
   /// Null shows none; keeping the scope in the tree either way keeps the
   /// state of the screens below when the bar comes and goes.
   final Widget? bar;
 
+  /// Space a floating [bar] covers above the bottom edge of a touch window,
+  /// such as [MMTabBar.heightOf]: the content under it keeps clear of it.
+  final double extent;
+
   static Widget? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MMWindowBottomBar>()?.bar;
 
   @override
-  bool updateShouldNotify(MMWindowBottomBar oldWidget) => oldWidget.bar != bar;
+  bool updateShouldNotify(MMWindowBottomBar oldWidget) => oldWidget.bar != bar || oldWidget.extent != extent;
+}
+
+/// The window chrome lying over an [MMWindowScaffold.extendBody] body: the
+/// glass toolbar above and the floating bottom bar (or home indicator)
+/// below. The body reaches beneath them; its controls and the ends of its
+/// scroll views keep clear by these insets. Zero elsewhere.
+class MMChromeInsets extends InheritedWidget {
+  const MMChromeInsets({super.key, required this.insets, required super.child});
+
+  final EdgeInsets insets;
+
+  static EdgeInsets of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<MMChromeInsets>()?.insets ?? EdgeInsets.zero;
+
+  /// [child] with the insets of [context], less the ends it does not
+  /// reach: a pane away from that edge of the window.
+  static Widget remove(
+    BuildContext context, {
+    bool removeTop = false,
+    bool removeBottom = false,
+    required Widget child,
+  }) {
+    final insets = of(context);
+    return MMChromeInsets(
+      insets: EdgeInsets.only(top: removeTop ? 0 : insets.top, bottom: removeBottom ? 0 : insets.bottom),
+      child: child,
+    );
+  }
+
+  @override
+  bool updateShouldNotify(MMChromeInsets oldWidget) => oldWidget.insets != insets;
 }
 
 /// A panel that slides over the content from one edge, above a scrim that
