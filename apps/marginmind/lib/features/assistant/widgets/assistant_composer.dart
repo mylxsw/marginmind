@@ -96,7 +96,9 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
       _applyingVoice = false;
     }
     setState(() {});
-    if (!_voice.active && ref.read(workspaceProvider(widget.studySetId)).panel == RightPanel.assistant) {
+    if (!_voice.active &&
+        !ref.read(assistantUiProvider(widget.studySetId)).history &&
+        ref.read(workspaceProvider(widget.studySetId)).panel == RightPanel.assistant) {
       _focus.requestFocus();
     }
   }
@@ -314,6 +316,12 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final running = conversation.running;
     final uiNotifier = ref.read(assistantUiProvider(widget.studySetId).notifier);
     ref.listen(assistantControllerProvider.select((s) => s.id), (_, _) => _cancelVoice());
+    ref.listen(assistantUiProvider(widget.studySetId).select((s) => s.history), (_, history) {
+      if (!history) return;
+      _cancelVoice();
+      if (_slash.isShowing) _slash.hide();
+      _focus.unfocus();
+    });
     ref.listen(workspaceProvider(widget.studySetId).select((s) => s.panel), (_, panel) {
       if (panel != RightPanel.assistant && _voice.active) {
         _voiceDraft = null;

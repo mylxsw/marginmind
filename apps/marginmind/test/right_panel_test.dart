@@ -208,6 +208,8 @@ void main() {
       expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
       expect(find.byType(MindMapCanvas), findsOneWidget);
       expect(find.byKey(const ValueKey('pdf-placeholder-c1')), findsOneWidget);
+      expect(_sidebarShown(tester), isTrue);
+      expect(_state(app.container).sidebarAutoCollapsed, isFalse);
       expect(tester.getSize(find.byType(MindMapCanvas)).width, greaterThan(0));
       expect(tester.takeException(), isNull);
       app.controller.closePanel();

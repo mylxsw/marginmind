@@ -8,7 +8,8 @@ import 'package:mm_design/mm_design.dart';
 /// sidebar first and gives the panel 360; whatever is left follows
 /// [MMSplitView.effectiveMode], so a split that still does not fit shows the
 /// source alone. With [preservePanes], the assistant instead shares the
-/// available width between the chosen panes, leaving visibility to the user.
+/// available width between the chosen panes and keeps the sidebar choice,
+/// leaving visibility to the user.
 /// Nothing here changes the user's saved choices.
 ///
 /// Below [MMSizeClass.regular] the sidebar is a drawer (never beside the
@@ -53,5 +54,5 @@ import 'package:mm_design/mm_design.dart';
   if (windowWidth - (sidebarVisible ? sidebar : 0) - MMSizes.rightPanelWidth >= needed) {
     return fit(sidebarVisible, MMSizes.rightPanelWidth);
   }
-  return fit(false, MMSizes.rightPanelNarrowWidth);
+  return fit(preservePanes && sidebarVisible, MMSizes.rightPanelNarrowWidth);
 }

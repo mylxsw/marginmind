@@ -1595,6 +1595,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                     if (_shown(id, r) case final shown)
                                       if (result.leftSide.contains(id))
                                         Positioned(
+                                          // Keep an in-flight press attached to its node when
+                                          // another fold removes or inserts nearby controls.
+                                          key: ValueKey('map-fold-$id'),
                                           left: shown.left - 3,
                                           top: shown.center.dy - 9,
                                           child: FractionalTranslation(
@@ -1604,6 +1607,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         )
                                       else
                                         Positioned(
+                                          key: ValueKey('map-fold-$id'),
                                           left: shown.right + 3,
                                           top: shown.center.dy - 9,
                                           child: foldButtons[id]!,

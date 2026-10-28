@@ -4,6 +4,8 @@ import 'package:dart_agent_core/dart_agent_core.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_research/mm_research.dart';
 
+import 'tools.dart' show mapEditProposalInstructions;
+
 class RunBudget {
   RunBudget({this.limits = const ResearchBudget(), this.maxCalls = 20, this.maxModels = 8}) {
     limits.validate();
@@ -44,10 +46,15 @@ class PolicyHook extends AgentHook {
   ModelCallHookResult beforeModelCall(ModelCallHookContext context) {
     if (_awaitingResponse) return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.protocol));
     _awaitingResponse = true;
+    // The SDK concatenates base tools and every active skill's tools. Our
+    // skills share the same tool instances; expose each name only once on
+    // every turn, including after the model activates more skills.
+    final names = <String>{};
+    final tools = toolsEnabled ? context.request.tools.where((tool) => names.add(tool.name)).toList() : <Tool>[];
     if (++budget.models > budget.maxModels ||
         jsonEncode({
               'messages': context.request.toCallLLMParams().messages.map((m) => m.toJson()).toList(),
-              'tools': context.request.tools.map((t) => t.toJson()).toList(),
+              'tools': tools.map((t) => t.toJson()).toList(),
             }).length >
             budget.limits.inputCharacters) {
       return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.budget));
@@ -58,7 +65,7 @@ class PolicyHook extends AgentHook {
     return ModelCallHookResult.proceed(
       request: context.request.copyWith(
         modelConfig: ModelConfig(model: config.model, maxTokens: remaining, extra: config.extra),
-        tools: toolsEnabled ? null : [],
+        tools: tools,
         clearToolChoice: !toolsEnabled,
         systemMessage: toolsEnabled
             ? null
@@ -228,7 +235,10 @@ class ProposalHook extends AgentHook {
         metadata: {'proposalId': proposals[context.call.id]!.id},
       );
     } catch (_) {
-      return const ToolCallHookResult.deny(reason: 'Invalid proposal');
+      return ToolCallHookResult.deny(
+        reason: 'Invalid proposal',
+        content: [TextPart('Invalid proposal. Correct the fields and references:\n$mapEditProposalInstructions')],
+      );
     }
   }
 

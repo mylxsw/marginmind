@@ -120,10 +120,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                     ) ==
                     MMSplitMode.split;
             controller.onePane = sizeClass == MMSizeClass.compact || !canSplit;
-            // Preserve independent sidebar choices. Narrow windows temporarily
-            // hide the sidebar beside the right panel and show one content
-            // pane; the toolbar reflects the visible layout. Touch windows
-            // keep the sidebar in a drawer.
+            // The assistant keeps the user's sidebar and pane choices. Other
+            // panels may temporarily hide them in narrow windows; the toolbar
+            // reflects the visible layout. Touch windows use a sidebar drawer.
             final shown = resolveWorkspaceLayout(
               windowWidth: width,
               sidebarVisible: state.sidebarVisible && !touchPlatform,

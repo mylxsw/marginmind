@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
-import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../research/research_controller.dart' show researchPanelProvider;
 import '../../research/research_origin.dart' show researchCardTitle;
@@ -177,10 +176,20 @@ class AssistantPanel extends ConsumerWidget {
                     if (!ui.history && !configured && conversation.messages.isNotEmpty)
                       const ModelSetupCard(inline: true),
                     Expanded(child: body),
-                    // Keep the existing input layout; hide it only when credentials
-                    // are unavailable or the conversation is read only.
-                    if (!ui.history && configured && !conversation.readOnly)
-                      AssistantComposer(studySetId: studySetId, configured: configured),
+                    // Browsing history must not discard the current draft.
+                    if (configured && !conversation.readOnly)
+                      Visibility(
+                        visible: !ui.history,
+                        maintainState: true,
+                        child: ExcludeFocus(
+                          excluding: ui.history,
+                          child: AssistantComposer(
+                            key: ValueKey(conversation.id),
+                            studySetId: studySetId,
+                            configured: configured,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 if (source != null)
@@ -215,8 +224,7 @@ class _DrawerTransition extends StatelessWidget {
   );
 }
 
-/// The panel's top row: the conversation's title (opening the list of
-/// conversations), then new conversation, settings and close.
+/// The panel's title, history and new conversation.
 class AssistantHeader extends ConsumerWidget {
   const AssistantHeader({super.key, required this.studySetId});
 
@@ -230,7 +238,6 @@ class AssistantHeader extends ConsumerWidget {
     final title = ref.watch(assistantControllerProvider.select((s) => s.title));
     final history = ref.watch(assistantUiProvider(studySetId).select((s) => s.history));
     final ui = ref.read(assistantUiProvider(studySetId).notifier);
-    final workspace = ref.read(workspaceProvider(studySetId).notifier);
     var shown = title.trim().isEmpty ? l.assistant : title.trim();
     if (shown.runes.length > 24) shown = '${String.fromCharCodes(shown.runes.take(24))}…';
     return Container(
@@ -243,48 +250,36 @@ class AssistantHeader extends ConsumerWidget {
         children: [
           // The title takes the free width, so the buttons sit at the right edge.
           Expanded(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: MMInteractive(
-                key: const ValueKey('assistant-title'),
-                onTap: () {
-                  ref.read(researchPanelProvider(studySetId).notifier).closeNote();
-                  ui.showHistory(!history);
-                },
-                semanticLabel: shown,
-                semanticValue: l.assistantHistory,
-                builder: (context, s) => AnimatedContainer(
-                  duration: MMMotion.quick,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: s.hovered ? c.hover : Colors.transparent,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(7)),
-                        child: const Icon(MMIcons.ai, size: 13, color: Colors.white),
-                      ),
-                      const SizedBox(width: MMSpacing.s),
-                      Flexible(
-                        child: Text(
-                          shown,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.headline.copyWith(color: c.label),
-                        ),
-                      ),
-                      const SizedBox(width: MMSpacing.xs),
-                      Icon(history ? MMIcons.chevronUp : MMIcons.chevronDown, size: 11, color: c.icon),
-                    ],
+            child: Row(
+              key: const ValueKey('assistant-title'),
+              children: [
+                Container(
+                  width: MMSpacing.xl,
+                  height: MMSpacing.xl,
+                  decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.excerpt)),
+                  child: Icon(MMIcons.ai, size: context.mmToolbarIcon, color: Colors.white),
+                ),
+                const SizedBox(width: MMSpacing.s),
+                Expanded(
+                  child: Text(
+                    shown,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.headline.copyWith(color: c.label),
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+          MMToolbarButton(
+            key: const ValueKey('assistant-history-button'),
+            icon: MMIcons.recent,
+            tooltip: l.assistantHistory,
+            selected: history,
+            onPressed: () {
+              ref.read(researchPanelProvider(studySetId).notifier).closeNote();
+              ui.showHistory(!history);
+            },
           ),
           MMIconButton(
             key: const ValueKey('assistant-new'),
@@ -292,20 +287,6 @@ class AssistantHeader extends ConsumerWidget {
             iconSize: 13,
             tooltip: l.assistantNewConversation,
             onPressed: () => startNewConversation(ref, studySetId),
-          ),
-          MMIconButton(
-            key: const ValueKey('assistant-settings'),
-            icon: MMIcons.settings,
-            iconSize: 13,
-            tooltip: AppShortcuts.tip(l.settingsTitle, AppShortcuts.settings),
-            onPressed: () => showSettings(context, tab: SettingsTab.models),
-          ),
-          MMIconButton(
-            key: const ValueKey('assistant-close'),
-            icon: MMIcons.close,
-            iconSize: 13,
-            tooltip: AppShortcuts.tip(l.closePanel, AppShortcuts.assistantPanel),
-            onPressed: workspace.closePanel,
           ),
         ],
       ),

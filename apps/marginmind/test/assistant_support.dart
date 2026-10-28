@@ -1,9 +1,11 @@
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
@@ -221,6 +223,39 @@ Future<void> pumpFor(WidgetTester tester, [int frames = 12]) async {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 5)));
     await tester.pump(const Duration(milliseconds: 30));
   }
+}
+
+/// Opens history using the visible assistant controls.
+Future<void> showAssistantHistory(WidgetTester tester) async {
+  if (find.byType(AssistantPanel).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await pumpFor(tester, 20);
+  }
+  if (find.byKey(const ValueKey('assistant-history')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const ValueKey('assistant-history-button')));
+    await pumpFor(tester, 20);
+  }
+}
+
+Future<void> openAssistantConversation(WidgetTester tester, String id) async {
+  await showAssistantHistory(tester);
+  final row = find.byKey(ValueKey('history-$id'));
+  await tester.ensureVisible(row);
+  await tester.tap(row);
+  await pumpFor(tester, 20);
+}
+
+/// Reaches model settings through the app's shared Settings command.
+Future<void> openAssistantModelSettings(WidgetTester tester) async {
+  final shortcut = AppShortcuts.settings;
+  if (shortcut.meta) await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+  if (shortcut.control) await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+  await tester.sendKeyEvent(shortcut.trigger);
+  if (shortcut.control) await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  if (shortcut.meta) await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('settings-tab-models')));
+  await tester.pumpAndSettle();
 }
 
 /// The scoped assistant controller of the open window.

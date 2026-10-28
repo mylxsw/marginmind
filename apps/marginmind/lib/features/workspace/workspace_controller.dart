@@ -670,7 +670,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void toggleSidebar() {
     if (state.sidebarAutoCollapsed) return showSidebar();
-    state = state.copyWith(sidebarVisible: !state.sidebarVisible);
+    _setSidebarVisible(!state.sidebarVisible);
+  }
+
+  void _setSidebarVisible(bool visible) {
+    if (_panelRestore != null) {
+      _panelRestore = (layout: _panelRestore!.layout, sidebarVisible: visible);
+    }
+    state = state.copyWith(sidebarVisible: visible);
   }
 
   /// Brings the sidebar on screen. With no room beside the right panel the
@@ -682,9 +689,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       state = state.copyWith(sidebarVisible: true, sidebarAutoCollapsed: false);
       return;
     }
-    state = state.sidebarAutoCollapsed
-        ? state.copyWith(layout: MMSplitMode.primary, sidebarAutoCollapsed: false)
-        : state.copyWith(sidebarVisible: true);
+    if (state.sidebarAutoCollapsed) {
+      state = state.copyWith(layout: MMSplitMode.primary, sidebarAutoCollapsed: false);
+    }
+    _setSidebarVisible(true);
   }
 
   // ---- right panel ------------------------------------------------------------
@@ -714,7 +722,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(panel: content, layout: layout);
   }
 
-  /// Closes the right panel and brings back the layout and sidebar it found.
+  /// Closes the right panel and restores its layout, keeping manual choices.
   /// The panes stayed mounted, so their zoom and scroll positions are as
   /// they were; the map's view is left alone.
   void closePanel() {

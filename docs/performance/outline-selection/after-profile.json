@@ -1,0 +1,47 @@
+{
+  "label": "after",
+  "scenarios": {
+    "50/selection": {
+      "frames": 31,
+      "selection_to_frame_p95_ms": 15.425,
+      "build_p95_ms": 3.547,
+      "raster_p95_ms": 2.782,
+      "over_16_67_ms": 0
+    },
+    "50/mouse": {
+      "frames": 65,
+      "selection_to_frame_p95_ms": 27.164,
+      "build_p95_ms": 3.359,
+      "raster_p95_ms": 3.884,
+      "over_16_67_ms": 0
+    },
+    "500/selection": {
+      "frames": 31,
+      "selection_to_frame_p95_ms": 19.335,
+      "build_p95_ms": 12.46,
+      "raster_p95_ms": 3.095,
+      "over_16_67_ms": 0
+    },
+    "500/mouse": {
+      "frames": 74,
+      "selection_to_frame_p95_ms": 30.648,
+      "build_p95_ms": 12.053,
+      "raster_p95_ms": 3.988,
+      "over_16_67_ms": 0
+    },
+    "2000/selection": {
+      "frames": 31,
+      "selection_to_frame_p95_ms": 37.793,
+      "build_p95_ms": 25.192,
+      "raster_p95_ms": 1.903,
+      "over_16_67_ms": 26
+    },
+    "2000/mouse": {
+      "frames": 89,
+      "selection_to_frame_p95_ms": 34.571,
+      "build_p95_ms": 24.494,
+      "raster_p95_ms": 3.857,
+      "over_16_67_ms": 30
+    }
+  }
+}

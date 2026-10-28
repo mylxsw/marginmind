@@ -240,8 +240,7 @@ void main() {
       await archive.save(state);
       final client = ScriptClient([answer('换模型后的回答')]);
       await openAssistantApp(tester, archive: archive, client: client);
-      await tester.tap(find.byKey(const ValueKey('sidebar-conversation-switch-retry')));
-      await pumpFor(tester, 20);
+      await openAssistantConversation(tester, 'switch-retry');
       await tester.enterText(find.byKey(const ValueKey('assistant-input')), '还没发送的草稿');
       await tester.tap(find.byKey(const ValueKey('assistant-switch-model-failure')));
       await tester.pumpAndSettle();
@@ -306,8 +305,7 @@ void main() {
       });
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       await openAssistantApp(tester, archive: archive, client: ScriptClient([answer('不用工具的回答')]));
-      await tester.tap(find.byKey(const ValueKey('sidebar-conversation-tools-1')));
-      await pumpFor(tester, 20);
+      await openAssistantConversation(tester, 'tools-1');
       expect(find.text('模型没能正确调用工具'), findsOneWidget);
       expect(find.text('不用工具重答'), findsOneWidget);
       expect(find.text('换模型重试'), findsOneWidget);
@@ -372,8 +370,7 @@ void main() {
         archive: archive,
         prefs: {'assistant.model.ollama': 'llama', 'assistant.localEnabled': true},
       );
-      await tester.tap(find.byKey(const ValueKey('sidebar-conversation-local-1')));
-      await pumpFor(tester, 20);
+      await openAssistantConversation(tester, 'local-1');
       expect(find.text('网络不可用'), findsOneWidget);
       expect(find.text('改用本机模型'), findsNothing);
     });
@@ -428,9 +425,19 @@ void main() {
       await tester.tap(toolbar);
       await tester.pumpAndSettle();
       final panel = tester.getRect(find.byType(AssistantHeader));
-      final close = tester.getRect(find.byKey(const ValueKey('assistant-close')));
-      expect(close.right, closeTo(panel.right - 8, 1));
-      expect(tester.getRect(find.byKey(const ValueKey('assistant-new'))).right, lessThan(close.left + 1));
+      final newConversation = tester.getRect(find.byKey(const ValueKey('assistant-new')));
+      expect(newConversation.right, closeTo(panel.right - 8, 1));
+      expect(
+        tester.getRect(find.byKey(const ValueKey('assistant-history-button'))).right,
+        lessThanOrEqualTo(newConversation.left),
+      );
+      expect(find.byKey(const ValueKey('assistant-settings')), findsNothing);
+      expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
+      final history = find.byKey(const ValueKey('assistant-history-button'));
+      expect(find.descendant(of: history, matching: find.byIcon(MMIcons.recent)), findsOneWidget);
+      expect(find.descendant(of: history, matching: find.byType(Text)), findsNothing);
+      expect(tester.widget<MMToolbarButton>(history).tooltip, '对话记录');
+      expect(find.descendant(of: find.byType(AssistantHeader), matching: find.byIcon(MMIcons.ai)), findsOneWidget);
       // The collapsed reference summary keeps the page visible; expand for its document title.
       expect(find.textContaining('第 '), findsWidgets);
       await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));

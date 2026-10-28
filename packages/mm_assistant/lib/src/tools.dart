@@ -4,6 +4,17 @@ import 'package:mm_core/mm_core.dart';
 import 'citations.dart';
 import 'hooks.dart';
 
+const mapEditProposalInstructions = '''Submit edits for user confirmation. Never executes writes.
+Each operation has a unique id and ONLY the fields listed for its kind:
+addTopic: id, kind, parentId, title (no body; use addNote for details).
+addNote: id, kind, parentId, title, body.
+addReviewCard: id, kind, parentId, question, answer.
+move: id, kind, nodeId, parentId. rename: id, kind, nodeId, title.
+Use existing node IDs from the supplied graph. To reference a node added earlier
+in the SAME ops array, use new:<opId>, never the bare operation ID.
+Example: {"ops":[{"id":"topic1","kind":"addTopic","parentId":"<existing-node-id>","title":"Topic"},
+{"id":"note1","kind":"addNote","parentId":"new:topic1","title":"Details","body":"Content"}]}''';
+
 class AssistantTools {
   AssistantTools({
     required this.reader,
@@ -103,7 +114,8 @@ class AssistantTools {
     _tool('read_selection', {'selectionId': 'string'}),
     _tool('read_pages', {'documentId': 'string', 'from': 'integer', 'to': 'integer'}),
     _tool('search_study_set', {'query': 'string'}),
-    _tool('read_branch', {'mapId': 'string', 'nodeId': 'string'}),
+    if (scope.maps.isNotEmpty || scope.branches.values.any((nodes) => nodes.isNotEmpty))
+      _tool('read_branch', {'mapId': 'string', 'nodeId': 'string'}),
     if (citations.online) ...[
       _tool('web_search', {'query': 'string'}),
       _tool('search_papers', {'query': 'string'}),
@@ -111,7 +123,7 @@ class AssistantTools {
     ],
     Tool(
       name: 'propose_map_edits',
-      description: 'Submit edits for user confirmation. Never executes writes.',
+      description: mapEditProposalInstructions,
       parameters: {
         'type': 'object',
         'properties': {
@@ -180,7 +192,8 @@ const skillPrompts = {
   'verify': '查证：对照真实读取的来源，没有联网证据时明确未核对。',
   'summarize': '总结：摘要只覆盖实际读取的范围。',
   'quiz': '出题：基于原文生成复习卡提议，不能直接写入。',
-  'organize': '整理：先读取分支，保留用户内容，通过提议修改脑图。',
+  'organize':
+      '整理：先读取已授权的原文；仅在已授权脑图或分支时读取分支。没有分支读取权限时，依据当前可编辑脑图及节点父子关系生成新增内容的提议，不读取未授权分支。保留用户内容，通过 propose_map_edits 提议修改脑图。',
   'papers': '找论文：使用 OpenAlex 元数据，元数据不等于论文全文。',
   'videos': '找视频：只给具体视频链接，没有字幕不能声称看过视频。',
 };

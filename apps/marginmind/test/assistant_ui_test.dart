@@ -467,10 +467,10 @@ void main() {
     await archive.save(state);
     final client = ScriptClient([answer('完整')]);
     await openAssistantApp(tester, archive: archive, client: client);
-    expect(find.byKey(const ValueKey('sidebar-conversation-old-1')), findsOneWidget);
+    await showAssistantHistory(tester);
+    expect(find.byKey(const ValueKey('history-old-1')), findsOneWidget);
     expect(find.text('未完成'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('sidebar-conversation-old-1')));
-    await pumpFor(tester, 20);
+    await openAssistantConversation(tester, 'old-1');
     expect(find.text('上次退出时没有完成'), findsOneWidget);
     expect(client.calls, 0);
     await tester.tap(find.text('继续'));
@@ -483,7 +483,6 @@ void main() {
     testWidgets('[$touch] history: list, open, rename and delete; new conversation; Esc closes the panel', (
       tester,
     ) async {
-      // Wide enough for the sidebar beside the panel.
       final app = await openAssistantApp(
         tester,
         client: ScriptClient([answer('一'), answer('二')]),
@@ -495,11 +494,11 @@ void main() {
       await _press(tester, LogicalKeyboardKey.enter);
       await pumpFor(tester, 20);
       final first = conversationOf(tester).id;
-      expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsOneWidget);
+      expect(find.descendant(of: find.byType(MMSidebar), matching: find.text('对话')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('assistant-new')));
       await pumpFor(tester, 20);
       expect(conversationOf(tester).messages, isEmpty);
-      await tester.tap(find.byKey(const ValueKey('assistant-title')));
+      await tester.tap(find.byKey(const ValueKey('assistant-history-button')));
       await pumpFor(tester);
       expect(find.byKey(const ValueKey('assistant-history')), findsOneWidget);
       expect(find.textContaining('1 个问题'), findsOneWidget);
@@ -513,12 +512,13 @@ void main() {
       await tester.tap(find.byKey(ValueKey('history-$first')));
       await pumpFor(tester, 20);
       expect(conversationOf(tester).id, first);
-      // Rename and delete through the row's menu.
+      // Rename and delete through the history row's menu.
+      await showAssistantHistory(tester);
       if (touch) {
-        await tester.longPress(find.byKey(ValueKey('sidebar-conversation-$first')));
+        await tester.longPress(find.byKey(ValueKey('history-$first')));
       } else {
         await tester.tap(
-          find.byKey(ValueKey('sidebar-conversation-$first')),
+          find.byKey(ValueKey('history-$first')),
           buttons: kSecondaryButton,
           kind: PointerDeviceKind.mouse,
         );
@@ -531,10 +531,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(conversationOf(tester).title, '改过的名字');
       if (touch) {
-        await tester.longPress(find.byKey(ValueKey('sidebar-conversation-$first')));
+        await tester.longPress(find.byKey(ValueKey('history-$first')));
       } else {
         await tester.tap(
-          find.byKey(ValueKey('sidebar-conversation-$first')),
+          find.byKey(ValueKey('history-$first')),
           buttons: kSecondaryButton,
           kind: PointerDeviceKind.mouse,
         );
@@ -546,12 +546,81 @@ void main() {
       await tester.tap(find.text('删除').last);
       await pumpFor(tester, 20);
       expect(app.archive.files.containsKey(first), isFalse);
-      expect(find.byKey(ValueKey('sidebar-conversation-$first')), findsNothing);
+      expect(find.byKey(ValueKey('history-$first')), findsNothing);
+      // Return to the chat before checking its Escape shortcut.
+      await tester.tap(find.byKey(const ValueKey('assistant-history-button')));
+      await pumpFor(tester);
       // Esc in the panel closes it when nothing else is open.
       await tester.tap(find.byKey(const ValueKey('assistant-input')));
       await _press(tester, LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
+    });
+  }
+
+  for (final width in [1000.0, 1400.0]) {
+    testWidgets('history conversations preserve sidebar visibility and manual choices at $width pt', (tester) async {
+      final archive = MemoryConversationArchive();
+      for (final id in ['saved-1', 'saved-2']) {
+        final state = sdk.AgentState(sessionId: id);
+        state.metadata['assistant.view'] = Conversation(
+          id: id,
+          studySetId: 'demo-1',
+          title: id,
+          model: const AssistantModel(
+            provider: AssistantProvider.claude,
+            model: 'm',
+            endpoint: 'https://x/v1/messages',
+          ),
+          messages: [Message(id: '$id-question', requestId: id, role: MessageRole.user, text: '已保存的问题')],
+        ).toJson();
+        await archive.save(state);
+      }
+      final app = await openAssistantApp(tester, archive: archive, size: Size(width, 800));
+      bool sidebarShown() => tester.widget<MMWindowScaffold>(find.byType(MMWindowScaffold)).sidebarVisible;
+      final sidebar = find.byType(MMSidebar);
+      expect(find.descendant(of: sidebar, matching: find.text('对话')), findsNothing);
+      expect(find.descendant(of: sidebar, matching: find.text('saved-1')), findsNothing);
+      expect(find.byKey(const ValueKey('sidebar-new-conversation')), findsNothing);
+      for (final id in ['saved-1', 'saved-2']) {
+        await openAssistantConversation(tester, id);
+        expect(conversationOf(tester).id, id);
+        expect(sidebarShown(), isTrue);
+        expect(app.container.read(workspaceProvider('demo-1')).sidebarAutoCollapsed, isFalse);
+        expect(tester.widget<MMSplitView>(find.byType(MMSplitView)).mode, MMSplitMode.split);
+      }
+      expect(find.byKey(const ValueKey('assistant-close')), findsNothing);
+      await _type(tester, '还没发送的草稿');
+      final historyButton = find.byKey(const ValueKey('assistant-history-button'));
+      await tester.tap(find.byKey(const ValueKey('assistant-title')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('assistant-history')), findsNothing);
+      await tester.tap(historyButton);
+      await pumpFor(tester);
+      expect(tester.widget<MMToolbarButton>(historyButton).selected, isTrue);
+      await tester.tap(historyButton);
+      await pumpFor(tester);
+      expect(tester.widget<MMToolbarButton>(historyButton).selected, isFalse);
+      expect(tester.widget<EditableText>(find.byType(EditableText).last).controller.text, '还没发送的草稿');
+
+      // A manual hide survives closing and reopening the conversation panel.
+      await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
+      await tester.pumpAndSettle();
+      expect(sidebarShown(), isFalse);
+      await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+      await tester.pumpAndSettle();
+      expect(sidebarShown(), isFalse);
+      await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+      await tester.pumpAndSettle();
+      expect(sidebarShown(), isFalse);
+      await tester.tap(find.byIcon(MMIcons.sidebar).hitTestable().first);
+      await tester.pumpAndSettle();
+      expect(sidebarShown(), isTrue);
+      expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
+      app.workspace.closePanel();
+      await tester.pumpAndSettle();
+      expect(sidebarShown(), isTrue);
+      expect(tester.takeException(), isNull);
     });
   }
 
@@ -600,8 +669,7 @@ void main() {
     ).toJson();
     await archive.save(state);
     final app = await openAssistantApp(tester, archive: archive);
-    await tester.tap(find.byKey(const ValueKey('sidebar-conversation-web-1')));
-    await pumpFor(tester, 20);
+    await openAssistantConversation(tester, 'web-1');
     // The process: worked for a while, one tool call failed.
     expect(find.textContaining('处理了'), findsOneWidget);
     expect(find.text(' · 工具调用失败 1 次'), findsOneWidget);
@@ -668,8 +736,7 @@ void main() {
       client: ScriptClient([answer('重试后')]),
       prefs: {'assistant.model.ollama': 'llama', 'assistant.localEnabled': true},
     );
-    await tester.tap(find.byKey(const ValueKey('sidebar-conversation-errors-1')));
-    await pumpFor(tester, 20);
+    await openAssistantConversation(tester, 'errors-1');
     for (final reason in ['网络不可用', '服务暂时不可用', '超出本次上限', '模型拒绝回答', '请求失败']) {
       expect(find.text(reason), findsOneWidget, reason: reason);
     }
@@ -717,8 +784,7 @@ void main() {
     ).toJson();
     await archive.save(state);
     await openAssistantApp(tester, archive: archive);
-    await tester.tap(find.byKey(const ValueKey('sidebar-conversation-legacy-1')));
-    await pumpFor(tester, 20);
+    await openAssistantConversation(tester, 'legacy-1');
     expect(find.text('旧回答'), findsOneWidget);
     expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
     expect(find.byKey(const ValueKey('assistant-copy-5-2')), findsOneWidget);

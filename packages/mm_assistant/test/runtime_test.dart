@@ -13,6 +13,103 @@ import 'package:test/test.dart';
 import 'support.dart';
 
 void main() {
+  for (final skill in [null, ...skillPrompts.keys]) {
+    for (final online in [false, true]) {
+      for (final stream in [false, true]) {
+        test('unique tools for skill=$skill online=$online stream=$stream', () async {
+          final client = ScriptClient([answer('完成')]);
+          final run = makeRun(client, skill: skill, online: online);
+          await run.agent.runStream([UserMessage.text('解释')], useStream: stream).toList();
+          final tools = client.toolRequests.single;
+          final names = tools.map((t) => t.name).toList();
+          expect(names, hasLength(names.toSet().length));
+          expect(names, containsAll(AssistantTools.readNames));
+          expect(names, containsAll(['activate_skills', 'deactivate_skills']));
+          expect(names.contains('propose_map_edits'), skill == 'organize' || skill == 'quiz');
+          expect(names.contains('web_search'), online && {'verify', 'papers', 'videos'}.contains(skill));
+        });
+      }
+    }
+  }
+  test('overlapping active skills keep unique tools through reads and proposals', () async {
+    final client = ScriptClient([
+      call('activate_skills', '{"skill_names":["quiz","verify"]}', id: 'activate'),
+      call('read_pages', '{"documentId":"doc","from":1,"to":1}', id: 'read'),
+      call('propose_map_edits', '{"ops":[{"id":"one","kind":"addTopic","parentId":"root","title":"New"}]}'),
+    ]);
+    final run = makeRun(client, skill: 'organize');
+    await run.run('整理').toList();
+    expect(client.calls, 3);
+    for (final tools in client.toolRequests) {
+      final names = tools.map((t) => t.name).toList();
+      expect(names, hasLength(names.toSet().length));
+      expect(names, containsAll([...AssistantTools.readNames, 'propose_map_edits']));
+    }
+    expect(client.toolRequests.last.map((t) => t.name), contains('web_search'));
+    expect(run.citations.items.single.page, 1);
+    expect(run.proposals.proposals, hasLength(1));
+  });
+  test('page-only organize can read and propose without exposing unauthorized branches', () async {
+    final client = ScriptClient([
+      call('read_pages', '{"documentId":"doc","from":1,"to":1}', id: 'read'),
+      call(
+        'propose_map_edits',
+        '{"ops":[{"id":"one","kind":"addTopic","parentId":"root","title":"New"},'
+            '{"id":"two","kind":"addNote","parentId":"new:one","title":"Details","body":"Page content"}]}',
+      ),
+    ]);
+    final run = createAssistantRun(
+      client: client,
+      model: 'fake',
+      state: AgentState(sessionId: 'page-only'),
+      requestId: 'request',
+      reader: Reader(),
+      scope: ReadScope(
+        studySetId: 'set',
+        pages: {
+          'doc': {1},
+        },
+      ),
+      mapId: 'map',
+      baseRevision: 0,
+      parents: {'root': null},
+      primaryDocumentId: 'doc',
+      skill: 'organize',
+      online: false,
+    );
+    await run.run('把这部分整理进脑图').toList();
+    for (final tools in client.toolRequests) {
+      expect(tools.map((t) => t.name), isNot(contains('read_branch')));
+      expect(tools.map((t) => t.name), containsAll(['read_pages', 'propose_map_edits']));
+    }
+    expect(run.citations.items.single.page, 1);
+    expect(run.proposals.proposals, hasLength(1));
+    expect(run.proposals.proposals.values.single.operations.last.parentId, 'new:one');
+  });
+  test('invalid proposal returns actionable field and reference guidance to the model', () async {
+    final client = ScriptClient([
+      call(
+        'propose_map_edits',
+        '{"ops":[{"id":"one","kind":"addTopic","parentId":"root","title":"New","body":"Invalid"}]}',
+      ),
+      call(
+        'propose_map_edits',
+        '{"ops":[{"id":"one","kind":"addTopic","parentId":"root","title":"New"}]}',
+        id: 'fixed',
+      ),
+    ]);
+    final run = makeRun(client, skill: 'organize');
+    final events = await run.run('整理').toList();
+    final firstResult =
+        events.firstWhere((event) => event.eventType == StreamingEventType.functionCallResult).data
+            as FunctionExecutionResultMessage;
+    expect(firstResult.results.single.isError, true);
+    final feedback = firstResult.results.single.content.whereType<TextPart>().map((part) => part.text).join();
+    expect(feedback, contains('no body'));
+    expect(feedback, contains('new:<opId>'));
+    expect(client.requests.last.whereType<FunctionExecutionResultMessage>().single.results.single.isError, true);
+    expect(run.proposals.proposals, hasLength(1));
+  });
   test('four readers are scoped and register only actual page evidence', () async {
     final registry = CitationRegistry(primaryDocumentId: 'doc', online: false);
     final cancellation = CancellationToken();

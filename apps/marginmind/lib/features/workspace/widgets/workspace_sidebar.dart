@@ -4,13 +4,11 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/widgets/assistant_conversations.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -138,8 +136,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               : controller.selectCard(card.id),
         ),
     ];
-    final conversations = conversationsOf(ref, studySetId).any((s) => matches(s.title));
-    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty && !conversations;
+    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -217,7 +214,6 @@ class WorkspaceSidebar extends ConsumerWidget {
             children: maps,
           ),
         if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
-        if (MMPlatformCapabilities.current.assistant) AssistantSidebarSection(studySetId: studySetId, matches: matches),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],
     );

@@ -143,10 +143,11 @@ void main() {
         'assistant-online',
         'assistant-slash',
         'assistant-new',
-        'assistant-settings',
+        'assistant-history-button',
       ]) {
         expect(find.byKey(ValueKey(key)), findsOneWidget);
       }
+      expect(find.byKey(const ValueKey('assistant-settings')), findsNothing);
       expect(find.byKey(const ValueKey('quick-verify')), findsNothing);
       expect(find.byKey(const ValueKey('quick-organize')), findsNothing);
     }

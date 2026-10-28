@@ -19,12 +19,11 @@ import 'assistant_support.dart';
 import 'assistant_services_test.dart' show RecordingServicesStore;
 import 'helpers.dart' show doubleTap, settleHud;
 
-/// Opens the panel, then Settings › Models from its gear.
+/// Opens the panel, then the shared Settings › Models page.
 Future<void> _openModels(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('assistant-settings')));
-  await tester.pumpAndSettle();
+  await openAssistantModelSettings(tester);
   expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
 }
 

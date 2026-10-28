@@ -21,7 +21,6 @@ import 'package:marginmind/features/assistant/widgets/assistant_composer.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:mm_pdf/mm_pdf.dart';
 
 import 'assistant_support.dart';
 import 'helpers.dart';
@@ -132,27 +131,11 @@ Future<void> _shoot(WidgetTester tester, String name, {Size size = const Size(14
     size: size,
     prefs: {if (dark) 'settings.appearance': 'dark'},
   );
-  await tester.tap(
-    find.byKey(const ValueKey('sidebar-conversation-shot-1')).hitTestable().evaluate().isEmpty
-        ? find.byKey(const ValueKey('toolbar-assistant'))
-        : find.byKey(const ValueKey('sidebar-conversation-shot-1')),
-  );
-  await pumpFor(tester, 20);
-  if (conversationOf(tester).id != 'shot-1') {
-    await assistantOf(tester).openConversation('shot-1');
-    await pumpFor(tester, 10);
-  }
-  await app.workspace.onSelectionCommitted(
-    'c1',
-    MMPdfSelection(
-      page: 24,
-      rects: const [PageRect(10, 100, 200, 88)],
-      text: _claim,
-      viewportRect: const Rect.fromLTWH(100, 200, 200, 20),
-    ),
-  );
-  await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('selection-assistant')));
+  await openAssistantConversation(tester, 'shot-1');
+  // Seed the reference independently of the PDF selection toolbar's geometry.
+  app.container
+      .read(assistantUiProvider('demo-1').notifier)
+      .addContext(selectionContext(documentId: 'c1', page: 24, quote: _claim));
   await pumpFor(tester, 10);
   await _save(tester, name);
   await _save(tester, '$name-composer', bounds: tester.getRect(find.byType(AssistantComposer)));
@@ -169,6 +152,10 @@ Future<void> _shoot(WidgetTester tester, String name, {Size size = const Size(14
   await tester.tap(find.byKey(const ValueKey('quick-more')));
   await tester.pumpAndSettle();
   await _save(tester, '$name-more', overlays: true);
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  await pumpFor(tester);
+  await showAssistantHistory(tester);
+  await _save(tester, '$name-history');
   expect(find.byType(MarginMindApp), findsOneWidget);
 }
 

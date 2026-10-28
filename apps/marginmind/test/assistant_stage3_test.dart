@@ -95,10 +95,13 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assistant-new')));
     await pumpFor(tester);
     expect(conversationOf(tester).messages, isEmpty);
-    // The sidebar shows the other conversation still answering.
-    final row = find.byKey(ValueKey('sidebar-conversation-$first'));
+    // History shows the other conversation still answering.
+    await showAssistantHistory(tester);
+    final row = find.byKey(ValueKey('history-$first'));
     expect(row, findsOneWidget);
     expect(find.descendant(of: row, matching: find.text('生成中')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('assistant-history-button')));
+    await pumpFor(tester);
     // Typing works; sending waits.
     await _type(tester, '第二个问题');
     expect(_sendOpacity(tester), lessThan(1));
@@ -111,8 +114,10 @@ void main() {
     expect(find.descendant(of: row, matching: find.text('生成中')), findsNothing);
     expect(_sendOpacity(tester), 1);
 
-    await tester.tap(row);
+    await showAssistantHistory(tester);
+    expect(find.descendant(of: row, matching: find.text('生成中')), findsNothing);
     expect(tester.getRect(row).left, greaterThanOrEqualTo(0));
+    await tester.tap(row);
     await pumpFor(tester, 20);
     expect(conversationOf(tester).id, first);
     expect(conversationOf(tester).messages.last.text, '第一个回答');
@@ -165,8 +170,7 @@ void main() {
     final app = await openAssistantApp(tester);
     app.workspace.openPanel(RightPanel.assistant);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
-    await tester.pumpAndSettle();
+    await openAssistantModelSettings(tester);
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));
     await tester.pumpAndSettle();

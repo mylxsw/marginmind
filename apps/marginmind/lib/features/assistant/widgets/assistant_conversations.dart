@@ -1,21 +1,14 @@
-import 'dart:async';
-
-import 'package:mm_platform/mm_platform.dart' show describeShortcut;
-
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:mm_design/mm_design.dart';
 
-import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../research/research_controller.dart' show researchPanelProvider;
 import '../../workspace/widgets/notices.dart' show showConfirmSheet, showRenameSheet;
 import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
-import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 
 /// The saved conversations with the live ones in place of their copies.
@@ -25,7 +18,7 @@ List<ConversationSummary> conversationsOf(WidgetRef ref, String studySetId) => m
   background: ref.watch(assistantBackgroundProvider),
 );
 
-/// Shows [id] in the panel (from [origin]); the open conversation stays as it is.
+/// Opens the saved conversation [id] in the assistant panel.
 Future<void> openConversation(WidgetRef ref, String studySetId, String id) async {
   final ui = ref.read(assistantUiProvider(studySetId).notifier);
   ui.showHistory(false);
@@ -119,7 +112,7 @@ Future<void> deleteConversation(BuildContext context, WidgetRef ref, String stud
   ref.invalidate(assistantConversationsProvider(studySetId));
 }
 
-/// The title dropdown's list of conversations, in place of the messages.
+/// Saved conversations opened by the header's history button.
 class ConversationHistory extends ConsumerWidget {
   const ConversationHistory({super.key, required this.studySetId});
 
@@ -193,68 +186,6 @@ class ConversationHistory extends ConsumerWidget {
                 ),
               ),
             ),
-          ),
-      ],
-    );
-  }
-}
-
-/// The sidebar's "Conversations" group: the five latest, or one row that
-/// opens the assistant.
-class AssistantSidebarSection extends ConsumerWidget {
-  const AssistantSidebarSection({super.key, required this.studySetId, required this.matches});
-
-  final String studySetId;
-
-  /// The sidebar search.
-  final bool Function(String text) matches;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.mmColors;
-    final l = context.l10n;
-    final all = conversationsOf(ref, studySetId);
-    final list = all.where((s) => matches(s.title)).take(5).toList();
-    final open = ref.watch(workspaceProvider(studySetId).select((s) => s.panel == RightPanel.assistant));
-    final current = ref.watch(assistantControllerProvider.select((s) => s.id));
-    if (all.isNotEmpty && list.isEmpty) return const SizedBox.shrink();
-    return MMSidebarSection(
-      title: l.assistantConversations,
-      trailing: MMIconButton(
-        key: const ValueKey('sidebar-new-conversation'),
-        icon: MMIcons.add,
-        size: 20,
-        iconSize: 12,
-        tooltip: l.assistantNewConversation,
-        onPressed: () {
-          ref.read(assistantUiProvider(studySetId).notifier).showHistory(false);
-          unawaited(ref.read(assistantControllerProvider.notifier).newConversation().catchError((Object _) {}));
-          askAssistant(ref, studySetId);
-        },
-      ),
-      children: [
-        if (all.isEmpty)
-          MMSidebarItem(
-            key: const ValueKey('sidebar-ask-assistant'),
-            icon: MMIcons.ai,
-            iconColor: c.research,
-            label: l.askAssistantEllipsis,
-            // Long elsewhere (three modifiers spelled out): only the Mac shows it.
-            trailing: defaultTargetPlatform == TargetPlatform.macOS
-                ? Text(describeShortcut(AppShortcuts.assistantPanel), style: context.mmText.footnote)
-                : null,
-            onTap: () => askAssistant(ref, studySetId),
-          ),
-        for (final s in list)
-          MMSidebarItem(
-            key: ValueKey('sidebar-conversation-${s.id}'),
-            icon: MMIcons.conversation,
-            iconColor: c.research,
-            label: s.title.isEmpty ? l.assistant : s.title,
-            selected: open && s.id == current,
-            trailing: conversationTrailing(context, s),
-            onTap: () => openConversation(ref, studySetId, s.id),
-            onContextMenu: (position) => showConversationMenu(context, ref, studySetId, s, position),
           ),
       ],
     );
