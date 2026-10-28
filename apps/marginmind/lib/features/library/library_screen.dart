@@ -99,6 +99,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       LibrarySort.cardCount => l.sortCards,
     };
 
+    final body = _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now);
+
     return MMBackHandler(
       onBack: () {
         if (!touchPlatform || !_drawer) return false;
@@ -153,13 +155,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ],
               ),
             ],
-            MMToolbarSearchField(
-              placeholder: l.search,
-              controller: _search,
-              focusNode: _searchFocus,
-              onChanged: controller.setSearch,
-              width: sizeClass == MMSizeClass.compact ? MMSizes.compactSearchWidth : 200,
-            ),
+            if (sizeClass != MMSizeClass.compact)
+              MMToolbarSearchField(
+                placeholder: l.search,
+                controller: _search,
+                focusNode: _searchFocus,
+                onChanged: controller.setSearch,
+                width: 200,
+              ),
             MMToolbarGroup(
               children: [
                 MMToolbarButton(
@@ -177,7 +180,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             final notice = await controller.createFromFiles(files);
             if (context.mounted) showNotice(context, notice, rootTitle: '');
           },
-          child: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+          child: sizeClass == MMSizeClass.compact
+              ? Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
+                      child: MMToolbarSearchField(
+                        placeholder: l.search,
+                        controller: _search,
+                        focusNode: _searchFocus,
+                        onChanged: controller.setSearch,
+                        width: double.infinity,
+                      ),
+                    ),
+                    Expanded(child: body),
+                  ],
+                )
+              : body,
         ),
       ),
     );

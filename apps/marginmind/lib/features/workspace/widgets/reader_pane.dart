@@ -322,6 +322,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   ) {
     final l = context.l10n;
     final c = context.mmColors;
+    // Keep navigation outside the PDF viewport on short handheld windows.
+    // Tall phones, tablets and pointer windows retain their floating controls.
+    final dockNavigation = MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500;
     final provider = workspaceProvider(widget.studySetId);
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
     final source = doc == null ? null : controller.filePath(doc);
@@ -403,6 +406,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             child: Stack(
                               children: [
                                 Positioned.fill(
+                                  bottom: dockNavigation ? pagePillClearance : 0,
                                   child:
                                       !ref.watch(pdfRenderingEnabledProvider) ||
                                           (ocr != null && ocr.document == null && !ocr.failed)
