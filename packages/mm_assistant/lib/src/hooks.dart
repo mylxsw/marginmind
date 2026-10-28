@@ -13,14 +13,26 @@ class RunBudget {
   final ResearchBudget limits;
   final int maxCalls, maxModels;
   int calls = 0, models = 0, searches = 0, pages = 0, bytes = 0, outputTokens = 0;
-  int get remainingPages => limits.pages - pages;
+  // Leave room for tool envelopes and a final answer request. Local documents
+  // consume actual context space, never the research network's page quota.
+  static const contextReserve = 2048;
+  int? _readCharacters;
+  bool contextFull = false;
+  int get remainingReadCharacters => _readCharacters ?? _available(limits.inputCharacters);
   int get remainingSearches => limits.searches - searches;
-  void reserve({int readPages = 0, bool search = false}) {
+  int _available(int value) => value > contextReserve ? value - contextReserve : 0;
+  void updateContextSpace(int used) => _readCharacters = _available(limits.inputCharacters - used);
+  bool takeContextSpace(int characters) {
+    if (characters > remainingReadCharacters) return false;
+    _readCharacters = remainingReadCharacters - characters;
+    return true;
+  }
+
+  void reserve({bool search = false}) {
     if (++calls > maxCalls) throw const ResearchFailure(ResearchFailureKind.loop);
-    if (readPages > remainingPages || (search && remainingSearches <= 0)) {
+    if (search && remainingSearches <= 0) {
       throw const ResearchFailure(ResearchFailureKind.budget);
     }
-    pages += readPages;
     if (search) searches++;
   }
 }
@@ -53,32 +65,39 @@ class PolicyHook extends AgentHook {
     // The SDK concatenates base tools and every active skill's tools. Our
     // skills share the same tool instances; expose each name only once on
     // every turn, including after the model activates more skills.
+    if (budget.contextFull) {
+      toolsEnabled = false;
+      final diagnostics = (context.state.metadata['assistant.diagnostics'] as Map?)?[requestId] as Map?;
+      diagnostics?['fallback'] = true;
+    }
     final names = <String>{};
     final tools = toolsEnabled ? context.request.tools.where((tool) => names.add(tool.name)).toList() : <Tool>[];
-    if (++budget.models > budget.maxModels ||
-        jsonEncode({
-              'messages': context.request.toCallLLMParams().messages.map((m) => m.toJson()).toList(),
-              'tools': tools.map((t) => t.toJson()).toList(),
-            }).length >
-            budget.limits.inputCharacters) {
+    final systemMessage = SystemMessage(
+      [
+        context.request.systemMessage?.content ?? '',
+        '本地文档没有每轮总页数上限，按实际上下文容量分批读取。优先读取与问题有关的内容。'
+            '工具返回 complete=false 时，不能当作已读完整范围；根据 notice 和 nextPage 继续，或说明资料不完整。'
+            '剩余联网搜索次数：${budget.remainingSearches}。',
+        if (!toolsEnabled) '工具已关闭。仅用已附带的上下文和已读取的内容直接回答；不足时明确说明，不补充书外事实。',
+      ].join('\n'),
+    );
+    final request = context.request.copyWith(systemMessage: systemMessage, tools: tools);
+    final inputCharacters = jsonEncode({
+      'messages': request.toCallLLMParams().messages.map((m) => m.toJson()).toList(),
+      'tools': tools.map((t) => t.toJson()).toList(),
+    }).length;
+    if (++budget.models > budget.maxModels || inputCharacters > budget.limits.inputCharacters) {
       return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.budget));
     }
+    budget.updateContextSpace(inputCharacters);
     final config = context.request.modelConfig;
     final remaining = budget.limits.outputTokens - budget.outputTokens;
     if (remaining <= 0) return const ModelCallHookResult.abort(error: ResearchFailure(ResearchFailureKind.budget));
     return ModelCallHookResult.proceed(
-      request: context.request.copyWith(
+      request: request.copyWith(
         modelConfig: ModelConfig(model: config.model, maxTokens: remaining, extra: config.extra),
         tools: tools,
         clearToolChoice: !toolsEnabled,
-        systemMessage: SystemMessage(
-          [
-            context.request.systemMessage?.content ?? '',
-            '本轮剩余读取额度：${budget.remainingPages} 页；剩余搜索次数：${budget.remainingSearches}。'
-                'read_pages 的 from/to 均包含在读取范围内。优先读取选区所在页，按需缩小范围；额度用完后使用已有资料回答，不再请求读取。',
-            if (!toolsEnabled) '工具已关闭。仅用已附带的上下文和已读取的内容直接回答；不足时明确说明，不补充书外事实。',
-          ].join('\n'),
-        ),
       ),
     );
   }
@@ -95,6 +114,13 @@ class PolicyHook extends AgentHook {
   @override
   ModelResponseHookResult afterModelCall(ModelResponseHookContext context) {
     _awaitingResponse = false;
+    final responseCharacters = jsonEncode(context.response.toJson()).length;
+    // All calls in a model response execute concurrently. Hold space for
+    // every result envelope before any one read fills the shared context.
+    if (!budget.takeContextSpace(responseCharacters + context.response.functionCalls.length * 512 + 256)) {
+      budget.updateContextSpace(budget.limits.inputCharacters);
+      budget.contextFull = true;
+    }
     if ({'refusal', 'content_filter'}.contains(context.response.stopReason)) {
       return const ModelResponseHookResult.abort(error: ResearchFailure(ResearchFailureKind.refusal));
     }
@@ -162,25 +188,14 @@ class PolicyHook extends AgentHook {
           return deny('参数 $key 应为字符串');
         }
       }
-      final pages = switch (name) {
-        'read_pages' => (args['to'] as int) - (args['from'] as int) + 1,
-        'fetch_source' => 1,
-        _ => 0,
-      };
-      if (name == 'read_pages' && ((args['from'] as int) < 1 || pages < 1)) return deny('参数页码范围无效');
-      // A range the model can narrow is a recoverable tool error. Do not
-      // consume the remaining allowance or abort the entire answer.
-      if (pages > budget.remainingPages) {
-        return deny(
-          '本次请求读取 $pages 页，但本轮剩余读取额度为 ${budget.remainingPages} 页。'
-          '${budget.remainingPages > 0 ? "请缩小读取范围，优先读取选区所在页。" : "请使用已附带的上下文和已读取的内容直接回答，不再请求读取；资料不足时明确说明。"}',
-        );
+      if (name == 'read_pages' && ((args['from'] as int) < 1 || (args['to'] as int) < (args['from'] as int))) {
+        return deny('参数页码范围无效');
       }
-      final search = {'web_search', 'search_papers', 'search_study_set'}.contains(name);
+      final search = {'web_search', 'search_papers'}.contains(name);
       if (search && budget.remainingSearches <= 0) {
         return deny('本轮搜索额度已用完。请使用已有资料继续回答，不再请求搜索；资料不足时明确说明。');
       }
-      budget.reserve(readPages: pages, search: search);
+      budget.reserve(search: search);
       if (name == 'fetch_source') await urls.validate(Uri.parse(args['url'] as String));
       return ToolCallHookResult.proceed(FunctionCall(id: raw.id, name: name, arguments: jsonEncode(args)));
     } on ResearchFailure catch (e) {

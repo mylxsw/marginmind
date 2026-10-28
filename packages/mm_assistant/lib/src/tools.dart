@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dart_agent_core/dart_agent_core.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -33,6 +35,8 @@ class AssistantTools {
   final RunBudget budget;
   final AssistantNetwork? network;
   final AssistantPermissions? permissions;
+  // Pagination bounds work per tool call, not the total pages a run may read.
+  static const pageBatchSize = 20;
   static const readNames = {'read_selection', 'read_pages', 'search_study_set', 'read_branch'};
   String str(Map<String, dynamic> a, String k, {int max = 200}) {
     final v = a[k];
@@ -48,21 +52,14 @@ class AssistantTools {
         final id = str(a, 'selectionId');
         if (!scope.selections.contains(id)) await _authorize(name, a);
         final pages = await cancel.bind(reader.readSelection(id, scope, cancel));
-        budget.pages += pages.length;
-        if (budget.pages > budget.limits.pages) throw const ResearchFailure(ResearchFailureKind.budget);
         out = _pages(pages, selection: true);
       case 'read_pages':
         final doc = str(a, 'documentId');
         final from = a['from'] as int, to = a['to'] as int;
-        if (from < 1 || to < from || to - from >= budget.limits.pages) {
+        if (from < 1 || to < from) {
           throw const FormatException('Invalid page range');
         }
-        if ([for (var p = from; p <= to; p++) p].any((p) => !scope.allowsPage(doc, p))) await _authorize(name, a);
-        final pages = await cancel.bind(reader.readPages(doc, from, to, scope, cancel));
-        if (pages.length > to - from + 1 || pages.any((p) => p.documentId != doc || p.page < from || p.page > to)) {
-          throw const FormatException('Invalid reader result');
-        }
-        out = _pages(pages);
+        out = await _readPages(doc, from, to);
       case 'search_study_set':
         final query = str(a, 'query');
         final limit = a['limit'] as int? ?? 10;
@@ -106,13 +103,109 @@ class AssistantTools {
     return network!;
   }
 
+  Map<String, Object?> _readResult(
+    List<Map<String, Object?>> pages, {
+    bool complete = true,
+    int? nextPage,
+    bool capacityReached = false,
+  }) => {
+    'pages': pages,
+    'complete': complete,
+    'nextPage': ?nextPage,
+    if (!complete)
+      'notice': capacityReached
+          ? '上下文容量接近上限，仅返回实际容纳的内容。未返回的文字和页面尚未读取；请据此回答，必要时明确说明资料不完整。'
+          : '本次仅返回一批页面，可从 nextPage 继续读取；后续页面尚未读取。',
+  };
+
+  bool _beginRead() {
+    // Reserve the result wrapper and SDK tool-message metadata separately.
+    if (budget.takeContextSpace(512)) return true;
+    budget.contextFull = true;
+    return false;
+  }
+
+  Future<Object> _readPages(String doc, int from, int to) async {
+    final end = to - from < pageBatchSize ? to : from + pageBatchSize - 1;
+    final arguments = {'documentId': doc, 'from': from, 'to': end};
+    if ([for (var p = from; p <= end; p++) p].any((p) => !scope.allowsPage(doc, p))) {
+      await _authorize('read_pages', arguments);
+    }
+    final out = <Map<String, Object?>>[];
+    if (!_beginRead()) return _readResult(out, complete: false, capacityReached: true);
+    for (var page = from; page <= end; page++) {
+      cancel.check();
+      if (!scope.allowsPage(doc, page)) throw const FormatException('Unauthorized page');
+      final read = await cancel.bind(reader.readPages(doc, page, page, scope, cancel));
+      if (read.length > 1 || read.any((p) => p.documentId != doc || p.page != page)) {
+        throw const FormatException('Invalid reader result');
+      }
+      if (read.isEmpty) continue;
+      final row = _fitPage(read.single);
+      if (row != null) {
+        out.add(row);
+        budget.pages++;
+      }
+      if (row == null || row['textComplete'] == false) {
+        budget.contextFull = true;
+        return _readResult(out, complete: false, capacityReached: true);
+      }
+    }
+    return _readResult(out, complete: end == to, nextPage: end < to ? end + 1 : null);
+  }
+
   Object _pages(List<ReadPage> pages, {bool selection = false}) {
     if (pages.any((p) => p.page < 1 || (!selection && !scope.allowsPage(p.documentId, p.page)))) {
       throw const FormatException('Invalid page');
     }
-    return [
-      for (final p in pages) {...p.toJson(), 'citation': citations.page(p)},
-    ];
+    final out = <Map<String, Object?>>[];
+    if (!_beginRead()) return _readResult(out, complete: false, capacityReached: true);
+    for (final p in pages) {
+      final row = _fitPage(p);
+      if (row != null) out.add(row);
+      if (row == null || row['textComplete'] == false) {
+        budget.contextFull = true;
+        return _readResult(out, complete: false, capacityReached: true);
+      }
+    }
+    return _readResult(out);
+  }
+
+  Map<String, Object?>? _fitPage(ReadPage page) {
+    Map<String, Object?> candidate(int length) => {
+      'documentId': page.documentId,
+      'page': page.page,
+      'text': page.text.substring(0, length),
+      'textComplete': length == page.text.length,
+      // A conservative marker length; register evidence only after admission.
+      'citation': '[source:9999999999999999999]',
+    };
+    // Tool JSON is embedded in a text part, so account for both JSON layers
+    // (including quotes, slashes and newlines), not just raw text length.
+    int size(Map<String, Object?> row) => jsonEncode(jsonEncode(row)).length;
+    var length = page.text.length;
+    if (size(candidate(length)) > budget.remainingReadCharacters) {
+      var low = 0;
+      var high = length < budget.remainingReadCharacters ? length : budget.remainingReadCharacters;
+      while (low < high) {
+        final mid = (low + high + 1) ~/ 2;
+        if (size(candidate(mid)) <= budget.remainingReadCharacters) {
+          low = mid;
+        } else {
+          high = mid - 1;
+        }
+      }
+      length = low;
+      if (length == 0) return null;
+      // Never split a UTF-16 surrogate pair, such as an emoji.
+      final last = page.text.codeUnitAt(length - 1);
+      if (last >= 0xd800 && last <= 0xdbff) length--;
+      if (length == 0) return null;
+    }
+    final row = candidate(length);
+    if (!budget.takeContextSpace(size(row))) return null;
+    row['citation'] = citations.page(ReadPage(page.documentId, page.page, row['text'] as String));
+    return row;
   }
 
   Object _source(AssistantSource s) => {
@@ -166,7 +259,9 @@ class AssistantTools {
   Tool _tool(String name, Map<String, String> fields) => Tool(
     name: name,
     description: switch (name) {
-      'read_pages' => 'Read document pages using documentId and inclusive 1-based from/to. Stay within the remaining page allowance in the system message; start with the selected page and narrow the range if denied. If extra read permission is needed, the tool waits for the user to allow or deny it.',
+      'read_pages' =>
+        'Read document pages using documentId and inclusive 1-based from/to. There is no total page quota. Returns {pages, complete, nextPage?, notice?}, at most $pageBatchSize pages per batch within available context space. If complete=false, follow notice/nextPage; textComplete=false means only a prefix of that page was read. Never treat omitted content as read. If extra read permission is needed, the tool waits for the user to allow or deny it.',
+      'read_selection' => 'Read selected text using selectionId. Returns {pages, complete, notice?}; textComplete=false means only a prefix fits. Selected text does not consume a page quota.',
       'read_branch' => 'Read a mind-map branch using mapId and nodeId (__root__ for the map root). The tool asks the user before reading an additional branch.',
       _ => name,
     },
@@ -179,7 +274,9 @@ class AssistantTools {
     parameterMode: ToolParameterMode.object,
     executable: (Map<String, dynamic> a) async {
       try {
-        return await execute(name, a);
+        // The SDK otherwise calls Map.toString(), which is not JSON and
+        // obscures page completeness and continuation fields from the model.
+        return AgentToolResult(content: TextPart(jsonEncode(await execute(name, a))));
       } on ReadPermissionRequired {
         return AgentToolResult(
           content: TextPart(

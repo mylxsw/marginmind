@@ -164,7 +164,9 @@ void main() {
       budget: RunBudget(),
     );
     expect(await tools.execute('read_selection', {'selectionId': 'sel'}), isNotEmpty);
-    expect(await tools.execute('read_pages', {'documentId': 'doc', 'from': 1, 'to': 2}), hasLength(2));
+    final read = await tools.execute('read_pages', {'documentId': 'doc', 'from': 1, 'to': 2}) as Map;
+    expect(read['pages'], hasLength(2));
+    expect(read['complete'], true);
     expect(await tools.execute('search_study_set', {'query': 'term'}), hasLength(1));
     expect(await tools.execute('read_branch', {'mapId': 'map', 'nodeId': 'root'}), hasLength(1));
     for (final args in [

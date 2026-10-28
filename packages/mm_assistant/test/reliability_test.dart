@@ -103,68 +103,161 @@ void main() {
     expect(fake.calls, 4);
   });
 
-  test('selection followed by an oversized context read can narrow its range and finish', () async {
+  test('selection and more than five document pages do not consume the research page quota', () async {
     final client = ScriptClient([
       call('read_selection', '{"selectionId":"sel"}', id: 'selection'),
-      call('read_pages', '{"documentId":"doc","from":195,"to":199}', id: 'too-wide'),
-      call('read_pages', '{"documentId":"doc","from":196,"to":199}', id: 'narrowed'),
+      call('read_pages', '{"documentId":"doc","from":195,"to":205}', id: 'context'),
       answer('根据上下文解释心声社区。[page:197]'),
     ]);
-    final run = makeRun(client, skill: 'explain', online: false);
+    final run = makeRun(
+      client,
+      skill: 'explain',
+      online: false,
+      budget: RunBudget(limits: const ResearchBudget(pages: 0)),
+    );
     final events = await run.run('解释心声社区').toList();
     final results = events
         .where((event) => event.eventType == StreamingEventType.functionCallResult)
         .expand((event) => (event.data as FunctionExecutionResultMessage).results)
         .toList();
-    expect(results.map((result) => result.isError), [false, true, false]);
-    expect(results[1].metadata?['reason'], contains('本次请求读取 5 页'));
-    expect(results[1].metadata?['reason'], contains('剩余读取额度为 4 页'));
-    expect(run.budget.pages, 5);
-    expect(run.budget.calls, 2);
-    expect(run.citations.items.map((citation) => citation.page), [1, 196, 197, 198, 199]);
-    expect(client.requests[1].first.toJson().toString(), contains('本轮剩余读取额度：4 页'));
-    expect(client.requests.last.first.toJson().toString(), contains('本轮剩余读取额度：0 页'));
-    final diagnostics = (run.agent.state.metadata['assistant.diagnostics'] as Map)['request'] as Map;
-    expect(diagnostics['fallback'], isNull);
-    expect((diagnostics['tools'] as List).last['result'], 'done');
-    expect(client.calls, 4);
+    expect(results.map((result) => result.isError), [false, false]);
+    expect(run.budget.pages, 11);
+    expect(run.citations.items.map((citation) => citation.page), [1, for (var p = 195; p <= 205; p++) p]);
+    expect(client.requests.last.first.toJson().toString(), contains('没有每轮总页数上限'));
+    expect(client.calls, 3);
   });
 
-  test('repeated reads after exhaustion fall back to an answer without exceeding the allowance', () async {
+  test('large ranges paginate and continue without a total page cap', () async {
     final client = ScriptClient([
-      call('read_pages', '{"documentId":"doc","from":1,"to":5}', id: 'allowed'),
-      for (var i = 0; i < 3; i++) call('read_pages', '{"documentId":"doc","from":6,"to":6}', id: 'exhausted-$i'),
-      answer('依据已有资料回答。[page:1]'),
+      call('read_pages', '{"documentId":"doc","from":1,"to":25}', id: 'first'),
+      call('read_pages', '{"documentId":"doc","from":21,"to":25}', id: 'next'),
+      answer('已读完相关页面。[page:25]'),
     ]);
     final run = makeRun(client);
-    await run.run('解释').toList();
-    expect(run.budget.pages, 5);
-    expect(run.budget.calls, 1);
-    expect(run.citations.items, hasLength(5));
+    final events = await run.run('解释').toList();
+    final results = events
+        .where((event) => event.eventType == StreamingEventType.functionCallResult)
+        .expand((event) => (event.data as FunctionExecutionResultMessage).results)
+        .map((result) => jsonDecode(result.content.whereType<TextPart>().single.text) as Map)
+        .toList();
+    expect(results.first['complete'], false);
+    expect(results.first['pages'], hasLength(20));
+    expect(results.first['nextPage'], 21);
+    expect(results.last['complete'], true);
+    expect(results.last['pages'], hasLength(5));
+    expect(run.budget.pages, 25);
+    expect(run.citations.items, hasLength(25));
+    expect(run.budget.contextFull, false);
+  });
+
+  test('dense pages fit actual context space, preserve partial evidence and finish directly', () async {
+    final reader = DenseReader();
+    final client = ScriptClient([
+      call('read_pages', '{"documentId":"doc","from":1,"to":10}', id: 'dense'),
+      answer('依据已读片段回答，资料不完整。[page:1] [page:2]'),
+    ]);
+    final run = makeRun(
+      client,
+      reader: reader,
+      budget: RunBudget(limits: const ResearchBudget(inputCharacters: 18000)),
+    );
+    final events = await run.run('解释').toList();
+    final toolResult =
+        (events.firstWhere((event) => event.eventType == StreamingEventType.functionCallResult).data
+                as FunctionExecutionResultMessage)
+            .results
+            .single;
+    expect(toolResult.isError, false);
+    final result = jsonDecode(toolResult.content.whereType<TextPart>().single.text) as Map;
+    expect(result['complete'], false);
+    expect(result['notice'], contains('资料不完整'));
+    final row = (result['pages'] as List).single as Map;
+    final text = row['text'] as String;
+    expect(row['textComplete'], false);
+    expect(text, isNotEmpty);
+    expect(reader.text, startsWith(text));
+    expect(text.length, lessThan(reader.text.length));
+    expect(utf8.decode(utf8.encode(text)), text);
+    expect(reader.reads, [1]);
+    expect(run.citations.items.single.quote, text);
+    expect(run.citations.items.single.page, 1);
     expect(client.toolRequests.last, isEmpty);
-    final diagnostics = (run.agent.state.metadata['assistant.diagnostics'] as Map)['request'] as Map;
-    expect(diagnostics['fallback'], true);
-    final rejected = (diagnostics['tools'] as List).skip(1);
-    expect(rejected.map((tool) => tool['reason']), everyElement(contains('使用已附带的上下文')));
+    expect(jsonEncode(client.requests.last.map((message) => message.toJson()).toList()).length, lessThan(18000));
+    final last =
+        events.lastWhere((event) => event.eventType == StreamingEventType.fullModelMessage).data as ModelMessage;
+    expect(last.textOutput, '依据已读片段回答，资料不完整。[page:1] ');
+    expect(client.calls, 2);
+  });
+
+  test('no context space returns an explicit incomplete result without reading or registering evidence', () async {
+    final reader = DenseReader();
+    final registry = CitationRegistry(primaryDocumentId: 'doc', online: false);
+    final budget = RunBudget(limits: const ResearchBudget(inputCharacters: 2300));
+    final tools = AssistantTools(
+      reader: reader,
+      scope: ReadScope(studySetId: 'set', documents: {'doc'}),
+      cancel: CancellationToken(),
+      citations: registry,
+      budget: budget,
+    );
+    final result = await tools.execute('read_pages', {'documentId': 'doc', 'from': 1, 'to': 1}) as Map;
+    expect(result['complete'], false);
+    expect(result['pages'], isEmpty);
+    expect(reader.reads, isEmpty);
+    expect(registry.items, isEmpty);
+    expect(budget.contextFull, true);
+  });
+
+  test('concurrent page tools share context space and leave room for a final answer', () async {
+    final client = ScriptClient([
+      ModelMessage(
+        model: 'fake',
+        stopReason: 'tool_calls',
+        functionCalls: [
+          FunctionCall(id: 'one', name: 'read_pages', arguments: '{"documentId":"doc","from":1,"to":1}'),
+          FunctionCall(id: 'two', name: 'read_pages', arguments: '{"documentId":"doc","from":2,"to":2}'),
+        ],
+      ),
+      answer('仅依据已返回的片段回答。'),
+    ]);
+    final run = makeRun(
+      client,
+      reader: DenseReader(),
+      budget: RunBudget(limits: const ResearchBudget(inputCharacters: 18000)),
+    );
+    final events = await run.run('解释').toList();
+    final results =
+        (events.firstWhere((event) => event.eventType == StreamingEventType.functionCallResult).data
+                as FunctionExecutionResultMessage)
+            .results;
+    expect(results, hasLength(2));
+    expect(results.map((result) => result.isError), everyElement(false));
+    expect(run.citations.items, hasLength(1));
+    expect(client.toolRequests.last, isEmpty);
+    expect(jsonEncode(client.requests.last.map((message) => message.toJson()).toList()).length, lessThan(18000));
+    expect(client.calls, 2);
+  });
+
+  test('study-set searches are independent of online search quota', () async {
+    final client = ScriptClient([
+      for (var i = 0; i < 4; i++) call('search_study_set', '{"query":"term"}', id: 'search-$i'),
+      answer('根据本地检索结果回答。'),
+    ]);
+    final run = makeRun(client, online: false, budget: RunBudget(limits: const ResearchBudget(searches: 0)));
+    await run.run('查找').toList();
+    expect(run.budget.searches, 0);
     expect(client.calls, 5);
   });
 
-  test('a rejected reservation preserves both page and search allowances', () {
-    final budget = RunBudget(limits: const ResearchBudget(pages: 2, searches: 1));
-    budget.reserve(readPages: 1, search: true);
+  test('a rejected online search reservation preserves the search allowance', () {
+    final budget = RunBudget(limits: const ResearchBudget(searches: 1));
+    budget.reserve(search: true);
     expect(
-      () => budget.reserve(readPages: 1, search: true),
+      () => budget.reserve(search: true),
       throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
     );
-    expect(budget.pages, 1);
     expect(budget.searches, 1);
-    expect(
-      () => budget.reserve(readPages: 2),
-      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
-    );
-    expect(budget.pages, 1);
-    budget.reserve(readPages: 1);
-    expect(budget.remainingPages, 0);
+    expect(budget.remainingSearches, 0);
   });
 
   test('capability false sends no tools and rejects unsolicited tool calls', () async {
@@ -252,4 +345,20 @@ void main() {
     expect(copy.activity.last.count, 3);
     expect(() => copy.activity.add(copy.activity.first), throwsUnsupportedError);
   });
+}
+
+class DenseReader extends Reader {
+  final text = List.filled(10000, '原文😀"\\\n').join();
+  final reads = <int>[];
+  @override
+  Future<List<ReadPage>> readPages(
+    String documentId,
+    int from,
+    int to,
+    ReadScope scope,
+    CancellationToken cancel,
+  ) async {
+    reads.add(from);
+    return [ReadPage(documentId, from, text)];
+  }
 }

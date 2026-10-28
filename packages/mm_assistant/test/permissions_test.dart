@@ -79,7 +79,7 @@ void main() {
     decision.complete(true);
     await execution;
     expect(prompts, 1);
-    expect(reader.reads, 2);
+    expect(reader.reads, 3);
     expect(run.citations.items.map((c) => c.page), [193, 194]);
     expect(client.requests.last.last, isA<FunctionExecutionResultMessage>());
   });

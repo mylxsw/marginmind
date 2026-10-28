@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 
 import '../../../packages/mm_assistant/test/support.dart';
@@ -67,9 +69,13 @@ void main() {
     );
     addTearDown(run.stop);
     final tool = run.agent.tools!.singleWhere((tool) => tool.name == 'read_pages');
-    final pages = await tool.executable!({'documentId': 'c1', 'from': 23, 'to': 25}) as List;
+    Map<String, dynamic> readResult(Object? result) =>
+        jsonDecode(((result as sdk.AgentToolResult).content as sdk.TextPart).text) as Map<String, dynamic>;
+    final result = readResult(await tool.executable!({'documentId': 'c1', 'from': 23, 'to': 25}));
+    final pages = result['pages'] as List;
+    expect(result['complete'], true);
     expect(pages.map((page) => page['page']), [23, 24, 25]);
-    expect(await tool.executable!({'documentId': 'c2', 'from': 1, 'to': 1}), hasLength(1));
+    expect(readResult(await tool.executable!({'documentId': 'c2', 'from': 1, 'to': 1}))['pages'], hasLength(1));
     final outside = await tool.executable!({'documentId': 'outside-study-set', 'from': 1, 'to': 1});
     expect(outside, isA<sdk.AgentToolResult>());
     expect((outside as sdk.AgentToolResult).metadata?['failure'], 'invalidRequest');
@@ -84,7 +90,10 @@ void main() {
     );
     addTearDown(withoutFocus.stop);
     final unfocusedTool = withoutFocus.agent.tools!.singleWhere((tool) => tool.name == 'read_pages');
-    expect(await unfocusedTool.executable!({'documentId': 'c2', 'from': 1, 'to': 1}), hasLength(1));
+    expect(
+      readResult(await unfocusedTool.executable!({'documentId': 'c2', 'from': 1, 'to': 1}))['pages'],
+      hasLength(1),
+    );
   });
   test('composition reads correct key, rejects missing credentials and closes invalid runs', () async {
     final secrets = Secrets();

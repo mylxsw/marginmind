@@ -37,7 +37,7 @@ saveNote(messageId, SaveNoteRequest(title: title, mapId: mapId, parentId: parent
 
 宿主把当前学习集的全部 documentId 传给 `scopeFromContexts`，整份文档均可按需读取和检索，不要求用户逐页附加或授权。选区和当前页用于定位问题、确定主引用文档，不再限制这些文档的可读页码；模型同时收到文档 ID、标题和总页数目录。节点/分支仍授权相应节点；整图授权该图。Reader 每次带 ReadScope 和 CancellationToken，只从当前学习集解析文档，不能接受路径或读取其他学习集。未传文档目录的底层调用仍支持按上下文限定范围。
 
-常驻读工具为 read_selection、read_pages、search_study_set、read_branch。单次分支最多 200 个节点、检索最多 20 项；页读取受整轮 5 页预算。`search_study_set` 只返回有界定位，不登记页面证据。读取成功返回的正文才登记引用。
+常驻读工具为 read_selection、read_pages、search_study_set、read_branch。单次分支最多 200 个节点、检索最多 20 项。本地文档没有整轮总页数上限；`read_pages` 每批最多处理 20 页，返回 `pages`、`complete`，尚有后续批次时提供 `nextPage`。每轮模型请求先计算历史、系统提示和工具定义占用的输入空间，页读取按正文及 JSON 编码后的实际大小使用剩余空间，并为工具消息和最终回答请求预留空间。容量不足时明确返回 `complete=false` 和说明，单页只容纳前缀时标记 `textComplete=false`，随后关闭工具并用已读资料回答。选区按实际文字量处理，不折算为一整页。`search_study_set` 不消耗联网搜索次数，只返回有界定位，不登记页面证据。读取成功且实际返回的正文才登记引用，截断页只登记已返回的前缀。
 
 额外读取权限由用户决定：`WorkspaceReader` 先确认目标确实存在于当前学习集，再由读工具暂停执行并展示对话内授权卡，列明文档及页码、选区、脑图或分支。用户可选择“本轮允许”或“拒绝”；允许仅扩展本次运行的相应读取范围，不改全局设置，重复读取已允许的范围不再询问。等待决定时暂停执行超时计时；拒绝返回给模型并使用已有资料继续，同一请求不重复询问，且不计为工具故障。参数错误、缺失目标、其他学习集和不安全地址不进入授权流程。授权请求及决定随消息保存；停止、退出和重启恢复时，待决定请求取消，旧按钮不能恢复执行。脑图写入仍通过独立修改提议确认。
 
@@ -77,7 +77,7 @@ GUL-531 实现 `MapEditExecutor.apply(proposal, selectedIds)`：事务内重验�
 
 使用假 LLM、SDK generate 模式 RecordingLLMClient/严格 ReplayLLMClient（SDK 2.1.8 不记录流模式），每 Skill 三例；另测真实 runStream 映射、停止、恢复、提议与存储边界。未使用真实账号，不宣称供应商联网验证通过。
 
-预算默认搜索 3 次、页 5、输出 4096 tokens、输入 60000 字符（含历史/系统提示/工具 schema）、响应 2 MiB、90 秒；另限 20 次工具与 8 次模型调用。输入每次检查，输出按供应商 usage 累计并下调后续 maxTokens；未报 usage 时仍保留供应商单次上限和整轮字节/次数/时限边界，不声称本地有通用精确 tokenizer。取消远端接收不能撤回已计费计算。安全传输继承 ADR 0001 中 TLS 握手取消的已知限制。
+预算默认联网搜索 3 次、外部网页抓取 5 次、输出 4096 tokens、输入 60000 字符（含历史/系统提示/工具 schema）、响应 2 MiB、90 秒；另限 20 次工具与 8 次模型调用。本地文档读取不使用网页抓取次数限制，按上文所述的可用输入空间分批返回。输入每次检查，输出按供应商 usage 累计并下调后续 maxTokens；未报 usage 时仍保留供应商单次上限和整轮字节/次数/时限边界，不声称本地有通用精确 tokenizer。取消远端接收不能撤回已计费计算。安全传输继承 ADR 0001 中 TLS 握手取消的已知限制。
 
 交付验证（2026-10-27）：`flutter analyze` 无问题；`dart format --set-exit-if-changed apps packages` 无改动；`python3 -m unittest discover -s tool/tests` 11 项通过；`python3 tool/coverage.py` 全部包通过。补充边界测试后重新运行 mm_assistant 覆盖率并用 `--report-only` 合并：总计 92.46%，mm_assistant 96.17%，AssistantController 98.06%，AssistantSettings 94.55%，新核心契约和 ConversationStorage 100%。mm_assistant 53 项，控制器/设置定向回归 11 项；唯一跳过项为既有 mm_research 的可选公网测试。普通入口和 Agent 探针的 macOS Release 构建通过，体积见 ADR 0002。
 
