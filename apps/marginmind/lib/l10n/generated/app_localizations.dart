@@ -986,6 +986,12 @@ abstract class AppLocalizations {
   /// **'Excerpted to “{target}”'**
   String excerptedHud(String target);
 
+  /// No description provided for @excerptView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get excerptView;
+
   /// No description provided for @highlightedHud.
   ///
   /// In en, this message translates to:

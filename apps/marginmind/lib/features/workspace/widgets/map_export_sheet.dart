@@ -207,6 +207,8 @@ class _MapExportSheetState extends State<MapExportSheet> {
     final l = context.l10n;
     final scene = _scene();
     final plan = MapRasterPlan(scene.size, _scale.toDouble());
+    // A phone's bottom sheet: the controls share the width they have.
+    final fill = MMBottomSheet.contains(context);
     Widget row(String label, Widget child) => Padding(
       padding: const EdgeInsets.only(top: MMSpacing.m),
       child: MMFormRow(label: label, child: child),
@@ -231,6 +233,7 @@ class _MapExportSheetState extends State<MapExportSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 MMSegmentedControl<MapExportFormat>(
+                  expand: fill,
                   segments: [
                     for (final format in MapExportFormat.values)
                       MMSegment(
@@ -296,6 +299,7 @@ class _MapExportSheetState extends State<MapExportSheet> {
                 row(
                   l.exportRange,
                   MMSegmentedControl<bool>(
+                    expand: fill,
                     segments: [
                       MMSegment(value: false, label: l.exportWholeMap),
                       if (widget.branchId != null) MMSegment(value: true, label: l.exportCurrentBranch),
@@ -316,6 +320,7 @@ class _MapExportSheetState extends State<MapExportSheet> {
                   row(
                     l.exportAppearance,
                     MMSegmentedControl<MapExportAppearance>(
+                      expand: fill,
                       segments: [
                         MMSegment(value: MapExportAppearance.light, label: l.exportLight),
                         MMSegment(value: MapExportAppearance.dark, label: l.exportDark),
@@ -330,6 +335,7 @@ class _MapExportSheetState extends State<MapExportSheet> {
                   row(
                     l.exportScale,
                     MMSegmentedControl<int>(
+                      expand: fill,
                       segments: [
                         for (final scale in [1, 2, 3]) MMSegment(value: scale, label: '$scale×'),
                       ],

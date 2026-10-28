@@ -1,0 +1,59 @@
+#!/bin/bash
+# GUL-542 scratch run on the Mac worker.
+# usage: run_probe.sh setup <branch> | ios | android
+# The iOS / Android runners come from the GUL-538 scratch copy (GUL-539 owns
+# the committed ones); nothing here is committed.
+set -u
+export PATH=$HOME/fvm/default/bin:/opt/homebrew/bin:$PATH
+A=~/macrun-work/android-tools
+export JAVA_HOME=$A/jdk/Contents/Home ANDROID_HOME=$A/sdk ANDROID_SDK_ROOT=$A/sdk
+export PATH=$A/sdk/platform-tools:$A/sdk/emulator:$JAVA_HOME/bin:$PATH
+W=~/macrun-work/mm-gul542
+OUT=~/macrun-work/gul542-shots
+mkdir -p $OUT
+
+# Reads `flutter test` output; SHOT:<name> takes a screenshot with $1,
+# ADBBACK:<name> presses Android's back key.
+watch() {
+  while IFS= read -r line; do
+    case "$line" in
+      *SHOT:done*) echo "$line" ;;
+      *SHOT:*) n=${line##*SHOT:}; n=${n%%[[:space:]]*}; $1 "$OUT/$2-$n.png"; echo "shot $2-$n" ;;
+      *ADBBACK:*) adb shell input keyevent 4 < /dev/null; echo "$line" ;;
+      *PROBE*|*passed*|*failed*|*rror*) echo "$line" ;;
+    esac
+  done
+}
+
+case "$1" in
+setup)
+  [ -d $W ] || git clone -q https://github.com/mylxsw/marginmind.git $W || exit 1
+  cd $W && git fetch -q origin "$2" && git checkout -q -f -B gul542 FETCH_HEAD && git clean -qfd apps/marginmind && git log --oneline -1
+  cd apps/marginmind
+  rm -rf ios android && cp -R ~/macrun-work/mm-gul538/apps/marginmind/ios ios && cp -R ~/macrun-work/mm-gul538/apps/marginmind/android android
+  rm -rf ios/Pods ios/Podfile.lock ios/Flutter/ephemeral
+  mkdir -p integration_test && cp ~/macrun-work/gul542-probe/probe_test.dart integration_test/probe_test.dart
+  grep -q 'integration_test:' pubspec.yaml || sed -i '' 's/^dev_dependencies:/dev_dependencies:\
+  integration_test:\
+    sdk: flutter/' pubspec.yaml
+  flutter pub get 2>&1 | tail -1
+  ;;
+ios)
+  UDID=$(xcrun simctl list devices available | grep -F "iPhone 17 Pro (" | head -1 | grep -oE '[0-9A-F-]{36}')
+  xcrun simctl boot $UDID 2>/dev/null; xcrun simctl bootstatus $UDID -b >/dev/null
+  xcrun simctl uninstall $UDID dev.marginmind.marginmind 2>/dev/null
+  cd $W/apps/marginmind
+  ios_shot() { xcrun simctl io $UDID screenshot "$1" >/dev/null 2>&1; }
+  flutter test integration_test/probe_test.dart -d $UDID 2>&1 | watch ios_shot iphone17pro
+  ;;
+android)
+  if ! adb devices | grep -q emulator; then
+    nohup emulator -avd mm_phone -no-snapshot-save -no-boot-anim -no-audio > ~/macrun-work/gul542-emulator.log 2>&1 &
+    adb wait-for-device; until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do sleep 2; done
+  fi
+  adb uninstall dev.marginmind.marginmind >/dev/null 2>&1
+  cd $W/apps/marginmind
+  android_shot() { adb exec-out screencap -p > "$1" < /dev/null; }
+  flutter test integration_test/probe_test.dart -d $(adb devices | grep emulator | cut -f1 | head -1) 2>&1 | watch android_shot pixel8
+  ;;
+esac

@@ -131,17 +131,23 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 640),
-                      child: _ReviewCard(
-                        key: ValueKey('${session.index}-$id'),
-                        studySetId: widget.studySetId,
-                        card: card,
-                        content: content,
-                        rootTitle: content.map(controller.mapId ?? '')?.title.isNotEmpty == true
-                            ? content.map(controller.mapId!)!.title
-                            : setTitle,
-                        mapId: controller.mapId,
-                        revealed: session.revealed,
-                        onRevealSource: () => _revealSource(card.id),
+                      // Under touch, tapping the card turns it over.
+                      child: GestureDetector(
+                        key: const ValueKey('review-card-tap'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: context.mmTouch && !session.revealed ? controller.reveal : null,
+                        child: _ReviewCard(
+                          key: ValueKey('${session.index}-$id'),
+                          studySetId: widget.studySetId,
+                          card: card,
+                          content: content,
+                          rootTitle: content.map(controller.mapId ?? '')?.title.isNotEmpty == true
+                              ? content.map(controller.mapId!)!.title
+                              : setTitle,
+                          mapId: controller.mapId,
+                          revealed: session.revealed,
+                          onRevealSource: () => _revealSource(card.id),
+                        ),
                       ),
                     ),
                   ),
@@ -430,38 +436,49 @@ class _RatingBar extends StatelessWidget {
       Rating.good => l.rateGood,
       Rating.easy => l.rateEasy,
     };
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final (i, r) in Rating.values.indexed) ...[
-          if (i > 0) const SizedBox(width: 10),
-          _RatingButton(
-            label: label(r),
-            interval: l.reviewInterval(intervals[r]!),
-            shortcut: '${i + 1}',
-            primary: r == Rating.good,
-            onPressed: () => onRate(r),
-          ),
-        ],
+    // Under touch the buttons share the width and grow to thumb size.
+    final touch = context.mmTouch;
+    final buttons = [
+      for (final (i, r) in Rating.values.indexed) ...[
+        if (i > 0) SizedBox(width: touch ? MMSpacing.s : 10),
+        _RatingButton(
+          key: ValueKey('rate-${r.name}'),
+          label: label(r),
+          interval: l.reviewInterval(intervals[r]!),
+          shortcut: touch ? null : '${i + 1}',
+          primary: r == Rating.good,
+          touch: touch,
+          onPressed: () => onRate(r),
+        ),
       ],
+    ];
+    if (!touch) return Row(mainAxisSize: MainAxisSize.min, children: buttons);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+      child: Row(children: [for (final b in buttons) b is _RatingButton ? Expanded(child: b) : b]),
     );
   }
 }
 
 class _RatingButton extends StatelessWidget {
   const _RatingButton({
+    super.key,
     required this.label,
     required this.interval,
     required this.shortcut,
     required this.primary,
     required this.onPressed,
+    this.touch = false,
   });
 
   final String label;
   final String interval;
-  final String shortcut;
+  final String? shortcut;
   final bool primary;
   final VoidCallback onPressed;
+
+  /// Fills its share of the row and stands 64 tall.
+  final bool touch;
 
   @override
   Widget build(BuildContext context) {
@@ -475,7 +492,8 @@ class _RatingButton extends StatelessWidget {
         final fg = primary ? c.onAccent : c.label;
         return AnimatedContainer(
           duration: MMMotion.quick,
-          width: 104,
+          width: touch ? null : 104,
+          height: touch ? MMSizes.reviewRatingTouch : null,
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: primary ? c.accentFill : (s.hovered ? c.hover : c.fill),
@@ -483,8 +501,9 @@ class _RatingButton extends StatelessWidget {
             border: s.focused ? Border.all(color: c.accent, width: 2) : null,
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label, style: t.headline.copyWith(color: fg)),
+              Text(label, style: (touch ? t.title3 : t.headline).copyWith(color: fg)),
               const SizedBox(height: 2),
               Text(interval, style: t.footnote.copyWith(color: primary ? c.onAccent.withValues(alpha: 0.85) : null)),
             ],

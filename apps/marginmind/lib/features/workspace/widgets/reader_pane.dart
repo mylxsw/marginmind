@@ -42,7 +42,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   bool _navigationFocused = false;
 
   bool get _navigationVisible =>
-      MMInputMode.touchOf(context) || _hoveringNavigation || _navigationFocused || _scrubPage != null;
+      MMInput.touchInputOf(context) || _hoveringNavigation || _navigationFocused || _scrubPage != null;
   double? _scrubPage;
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));

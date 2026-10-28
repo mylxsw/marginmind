@@ -38,40 +38,58 @@ enum MMSizeClass {
   }
 }
 
-/// Which input the window is driven by. [touchPlatform] is fixed per device
-/// (phones and tablets) and decides layout; [touch] follows the last pointer
-/// on such a device, so a trackpad on an iPad gets pointer-sized controls.
+/// Which device and input drive the window. [touchPlatform] is fixed per
+/// device (phones and tablets) and decides layout, [phone] marks a handheld
+/// whose screen is compact in both orientations. [touchInput] follows the
+/// last pointer on any device, so a touchscreen laptop gets touch menus and
+/// always-visible controls; [touch] is the same on a touch platform only and
+/// sizes controls, so a trackpad on an iPad gets pointer-sized ones.
 @immutable
 class MMInputState {
-  const MMInputState({this.touchPlatform = false, this.touch = false});
+  const MMInputState({this.touchPlatform = false, this.phone = false, this.touch = false, bool? touchInput})
+    : touchInput = touchInput ?? touch;
 
   static const pointer = MMInputState();
 
   final bool touchPlatform;
+  final bool phone;
   final bool touch;
+  final bool touchInput;
 
   @override
   bool operator ==(Object other) =>
-      other is MMInputState && other.touchPlatform == touchPlatform && other.touch == touch;
+      other is MMInputState &&
+      other.touchPlatform == touchPlatform &&
+      other.phone == phone &&
+      other.touch == touch &&
+      other.touchInput == touchInput;
 
   @override
-  int get hashCode => Object.hash(touchPlatform, touch);
+  int get hashCode => Object.hash(touchPlatform, phone, touch, touchInput);
 }
 
-/// Provides [MMInputState] below it. On a touch platform, a mouse or
-/// trackpad switches controls to pointer size until the next touch.
+/// Provides [MMInputState] below it: the one source of touch decisions.
 class MMInput extends StatefulWidget {
-  const MMInput({super.key, required this.touchPlatform, required this.child});
+  const MMInput({super.key, required this.touchPlatform, this.phone = false, required this.child});
 
   final bool touchPlatform;
+
+  /// Only meaningful with [touchPlatform].
+  final bool phone;
   final Widget child;
 
   /// Without an [MMInput] above, the window is a pointer-only desktop.
+  /// Reads the live input: a long press can open a menu in the same frame
+  /// as the pointer-down that made the input touch.
   static MMInputState of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<_MMInputScope>()?.state ?? MMInputState.pointer;
+      context.dependOnInheritedWidgetOfExactType<_MMInputScope>()?.owner.current ?? MMInputState.pointer;
 
   /// Whether controls in [context] need finger-sized hit areas.
   static bool touchOf(BuildContext context) => of(context).touch;
+
+  /// Whether the last pointer was a finger or pen, on any device: menus
+  /// open as touch menus and hover-only controls stay visible.
+  static bool touchInputOf(BuildContext context) => of(context).touchInput;
 
   @override
   State<MMInput> createState() => _MMInputState();
@@ -87,7 +105,6 @@ class _MMInputState extends State<MMInput> {
   }
 
   void _follow(PointerEvent event) {
-    if (!widget.touchPlatform) return;
     final touch = switch (event.kind) {
       PointerDeviceKind.mouse || PointerDeviceKind.trackpad => false,
       PointerDeviceKind.touch || PointerDeviceKind.stylus || PointerDeviceKind.invertedStylus => true,
@@ -96,24 +113,30 @@ class _MMInputState extends State<MMInput> {
     if (touch != _touch) setState(() => _touch = touch);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: _follow,
-      onPointerHover: _follow,
-      onPointerPanZoomStart: _follow,
-      child: _MMInputScope(
-        state: MMInputState(touchPlatform: widget.touchPlatform, touch: widget.touchPlatform && _touch),
-        child: widget.child,
-      ),
+  MMInputState get current {
+    final platform = widget.touchPlatform;
+    return MMInputState(
+      touchPlatform: platform,
+      phone: platform && widget.phone,
+      touch: platform && _touch,
+      touchInput: _touch,
     );
   }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    behavior: HitTestBehavior.translucent,
+    onPointerDown: _follow,
+    onPointerHover: _follow,
+    onPointerPanZoomStart: _follow,
+    child: _MMInputScope(owner: this, state: current, child: widget.child),
+  );
 }
 
 class _MMInputScope extends InheritedWidget {
-  const _MMInputScope({required this.state, required super.child});
+  const _MMInputScope({required this.owner, required this.state, required super.child});
 
+  final _MMInputState owner;
   final MMInputState state;
 
   @override

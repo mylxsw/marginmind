@@ -47,14 +47,22 @@ class AppNavigation extends Notifier<AppRoute> {
   @override
   AppRoute build() => const LibraryRoute();
 
+  /// The study set last opened, reviewed or shown in statistics: a phone's
+  /// Source, Map and Review tabs return to it from the library.
+  String? get recentStudySetId => _recent;
+  String? _recent;
+
   void showLibrary() => state = const LibraryRoute();
 
-  void openStudySet(String id) => state = WorkspaceRoute(id);
+  void openStudySet(String id) => state = WorkspaceRoute(_recent = id);
 
   void startReview(String id, {String? mapId, String? branchId, String? tag}) =>
-      state = ReviewRoute(id, mapId: mapId, branchId: branchId, tag: tag);
+      state = ReviewRoute(_recent = id, mapId: mapId, branchId: branchId, tag: tag);
 
-  void showStats([String? studySetId]) => state = StatsRoute(studySetId);
+  void showStats([String? studySetId]) {
+    if (studySetId != null) _recent = studySetId;
+    state = StatsRoute(studySetId);
+  }
 
   void showGallery() {
     if (state is! GalleryRoute) state = GalleryRoute(returnTo: state);

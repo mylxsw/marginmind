@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/interactive.dart';
-import '../foundation/input_mode.dart';
+import '../foundation/adaptive.dart';
+import '../foundation/back_handler.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
+import '../tokens/metrics.dart';
 import 'glass.dart';
 
 /// An entry in a context menu: [MMMenuItem] or [MMMenuDivider].
@@ -46,17 +48,19 @@ class MMMenuHeader extends MMMenuEntry {
 
 /// Shows a macOS-style context menu at [position] (global coordinates).
 /// Clicking outside or pressing Esc closes it; choosing an item closes it
-/// and then runs the item's callback.
+/// and then runs the item's callback. A compact window shows an action
+/// sheet at the bottom instead.
 Future<void> showMMMenu(
   BuildContext context, {
   required Offset position,
   required List<MMMenuEntry> entries,
   double minWidth = 190,
 }) async {
-  final touch = MMInputMode.touchOf(context);
+  final touch = MMInput.touchInputOf(context);
+  final sheet = MMSizeClass.of(context) == MMSizeClass.compact;
   final host = context.findAncestorStateOfType<_MMContextMenuHostState>();
   if (touch && host != null) {
-    final selected = await host.show(position, entries, minWidth);
+    final selected = await host.show(position, entries, minWidth, actionSheet: sheet);
     selected?.call();
     return;
   }
@@ -64,19 +68,21 @@ Future<void> showMMMenu(
     context: context,
     routeSettings: const RouteSettings(name: _contextMenuRoute),
     barrierDismissible: true,
-    barrierColor: Colors.transparent,
+    barrierColor: sheet ? context.mmColors.scrim : Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: const Duration(milliseconds: 90),
     pageBuilder: (context, _, _) => CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: FocusScope(
         autofocus: true,
-        child: CustomSingleChildLayout(
-          delegate: _MenuLayout(position),
-          child: SingleChildScrollView(
-            child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
-          ),
-        ),
+        child: sheet
+            ? _ActionSheet(entries: entries, onSelected: (selected) => Navigator.of(context).pop(selected))
+            : CustomSingleChildLayout(
+                delegate: _MenuLayout(position),
+                child: SingleChildScrollView(
+                  child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
+                ),
+              ),
       ),
     ),
     transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
@@ -116,11 +122,13 @@ class _MMContextMenuHostState extends State<MMContextMenuHost> {
   Offset _position = Offset.zero;
   List<MMMenuEntry> _entries = const [];
   double _minWidth = 190;
+  bool _actionSheet = false;
 
   bool get isOpen => _result != null;
 
-  Future<VoidCallback?> show(Offset position, List<MMMenuEntry> entries, double minWidth) {
+  Future<VoidCallback?> show(Offset position, List<MMMenuEntry> entries, double minWidth, {bool actionSheet = false}) {
     close();
+    _actionSheet = actionSheet;
     _position = position;
     _entries = entries;
     _minWidth = minWidth;
@@ -151,36 +159,48 @@ class _MMContextMenuHostState extends State<MMContextMenuHost> {
     super.dispose();
   }
 
+  bool _back() {
+    if (!isOpen) return false;
+    close();
+    return true;
+  }
+
   @override
-  Widget build(BuildContext context) => OverlayPortal(
-    controller: _portal,
-    overlayChildBuilder: (context) => CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): close},
-      child: FocusScope(
-        node: _focus,
-        autofocus: true,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ModalBarrier(
-                dismissible: true,
-                onDismiss: close,
-                semanticsLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-              ),
-            ),
-            Positioned.fill(
-              child: CustomSingleChildLayout(
-                delegate: _MenuLayout(_position),
-                child: SingleChildScrollView(
-                  child: _Menu(entries: _entries, minWidth: _minWidth, touch: true, onSelected: close),
+  Widget build(BuildContext context) => MMBackHandler(
+    onBack: _back,
+    child: OverlayPortal(
+      controller: _portal,
+      overlayChildBuilder: (context) => CallbackShortcuts(
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): close},
+        child: FocusScope(
+          node: _focus,
+          autofocus: true,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ModalBarrier(
+                  dismissible: true,
+                  onDismiss: close,
+                  color: _actionSheet ? context.mmColors.scrim : null,
+                  semanticsLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
                 ),
               ),
-            ),
-          ],
+              Positioned.fill(
+                child: _actionSheet
+                    ? _ActionSheet(entries: _entries, onSelected: close)
+                    : CustomSingleChildLayout(
+                        delegate: _MenuLayout(_position),
+                        child: SingleChildScrollView(
+                          child: _Menu(entries: _entries, minWidth: _minWidth, touch: true, onSelected: close),
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
+      child: widget.child,
     ),
-    child: widget.child,
   );
 }
 
@@ -312,6 +332,145 @@ class _MenuRow extends StatelessWidget {
                 const SizedBox(width: 24),
                 Text(item.shortcut!, style: t.body.copyWith(color: highlighted ? c.onAccent : c.secondaryLabel)),
               ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A context menu as an action sheet: the items in one rounded group above
+/// a separate Cancel, at the bottom of the window. [onSelected] receives
+/// the chosen callback, or null for Cancel.
+class _ActionSheet extends StatelessWidget {
+  const _ActionSheet({required this.entries, required this.onSelected});
+
+  final List<MMMenuEntry> entries;
+  final ValueChanged<VoidCallback?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final rows = <Widget?>[
+      for (final e in entries)
+        switch (e) {
+          MMMenuItem() => _ActionSheetRow(
+            label: e.label,
+            checked: e.checked,
+            destructive: e.destructive,
+            onTap: e.onSelected == null ? null : () => onSelected(e.onSelected),
+          ),
+          MMMenuHeader(:final label) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.m),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+            ),
+          ),
+          MMMenuDivider() => null,
+        },
+    ].nonNulls.toList();
+    BoxDecoration group() => BoxDecoration(color: c.glassOpaque, borderRadius: BorderRadius.circular(14));
+    return Material(
+      type: MaterialType.transparency,
+      child: SafeArea(
+        minimum: const EdgeInsets.all(MMSpacing.s),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              key: const ValueKey('mm-action-sheet'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Flexible(
+                  child: Container(
+                    clipBehavior: Clip.antiAlias,
+                    decoration: group(),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final (i, row) in rows.indexed) ...[
+                            if (i > 0) Container(height: 0.5, color: c.separator),
+                            row,
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: MMSpacing.s),
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: group(),
+                  child: _ActionSheetRow(
+                    label: MaterialLocalizations.of(context).cancelButtonLabel,
+                    bold: true,
+                    onTap: () => onSelected(null),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionSheetRow extends StatelessWidget {
+  const _ActionSheetRow({
+    required this.label,
+    required this.onTap,
+    this.checked,
+    this.destructive = false,
+    this.bold = false,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool? checked;
+  final bool destructive;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return MMInteractive(
+      onTap: onTap,
+      semanticLabel: label,
+      builder: (context, s) {
+        final fg = !s.enabled
+            ? c.secondaryLabel
+            : destructive
+            ? c.critical
+            : c.accent;
+        return Container(
+          height: MMSizes.actionSheetRow,
+          color: s.pressed || s.focused ? c.pressed : Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+          child: Row(
+            children: [
+              SizedBox(width: 20, child: checked ?? false ? Icon(MMIcons.check, size: 16, color: fg) : null),
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.mmText.title3.copyWith(
+                    color: fg,
+                    fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
             ],
           ),
         );

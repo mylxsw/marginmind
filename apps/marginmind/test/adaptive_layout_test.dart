@@ -358,10 +358,9 @@ void main() {
       expect(state().layout, MMSplitMode.primary);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
       await tester.pumpAndSettle();
-      expect(
-        tester.getRect(find.byKey(const ValueKey('workspace-floating-panel'))).width,
-        iphone.size.width - MMSpacing.s * 2,
-      );
+      // A compact window raises the panel from the bottom (GUL-542).
+      expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
+      expect(tester.getRect(find.byKey(const ValueKey('mm-bottom-sheet'))).width, iphone.size.width);
       expect(tester.takeException(), isNull);
       await settleHud(tester);
     });

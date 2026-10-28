@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_data/mm_data.dart';
 import 'package:mm_design/mm_design.dart';
@@ -17,6 +18,8 @@ import 'features/assistant/assistant_network.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DesktopWindow.initialize(title: 'MarginMind', minimumSize: MMSizes.windowMinSize);
+  // Android draws the app under clear status and navigation bars (see systemBarsStyle).
+  if (Platform.isAndroid) await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await MMPdfEngine.initialize();
   final prefs = await SharedPreferences.getInstance();
   final support = await getApplicationSupportDirectory();

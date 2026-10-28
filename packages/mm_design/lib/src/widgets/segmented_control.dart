@@ -78,6 +78,9 @@ class MMSegmentedControl<T> extends StatelessWidget {
                     ),
                     child: Text(
                       seg.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
                       style: t.callout.copyWith(fontWeight: on ? FontWeight.w600 : FontWeight.w500),
                     ),
                   );

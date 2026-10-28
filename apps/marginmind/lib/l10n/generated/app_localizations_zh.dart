@@ -496,6 +496,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get excerptView => '查看';
+
+  @override
   String get highlightedHud => '已高亮';
 
   @override

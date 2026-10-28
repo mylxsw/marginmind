@@ -99,79 +99,86 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       LibrarySort.cardCount => l.sortCards,
     };
 
-    return MMWindowScaffold(
-      sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
-      sidebarOverlay: touchPlatform,
-      onSidebarDismiss: () => _setDrawer(false),
-      onDragStart: WindowChrome.onDragStart,
-      onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
-      showsWindowButtons: WindowChrome.showsWindowButtons,
-      sidebar: _LibrarySidebar(sets: sets, folders: folders, filter: view.query.filter),
-      toolbar: MMToolbar(
-        title: _filterTitle(view.query.filter, folders),
-        subtitle: subtitle,
-        leading: view.sidebarVisible && !touchPlatform
-            ? null
-            : MMIconButton(
-                icon: MMIcons.sidebar,
-                tooltip: l.showSidebar,
-                size: context.mmToolbarIcon,
-                onPressed: touchPlatform ? () => _setDrawer(true) : controller.toggleSidebar,
+    return MMBackHandler(
+      onBack: () {
+        if (!touchPlatform || !_drawer) return false;
+        _setDrawer(false);
+        return true;
+      },
+      child: MMWindowScaffold(
+        sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
+        sidebarOverlay: touchPlatform,
+        onSidebarDismiss: () => _setDrawer(false),
+        onDragStart: WindowChrome.onDragStart,
+        onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
+        showsWindowButtons: WindowChrome.showsWindowButtons,
+        sidebar: _LibrarySidebar(sets: sets, folders: folders, filter: view.query.filter),
+        toolbar: MMToolbar(
+          title: _filterTitle(view.query.filter, folders),
+          subtitle: subtitle,
+          leading: view.sidebarVisible && !touchPlatform
+              ? null
+              : MMIconButton(
+                  icon: MMIcons.sidebar,
+                  tooltip: l.showSidebar,
+                  size: context.mmToolbarIcon,
+                  onPressed: touchPlatform ? () => _setDrawer(true) : controller.toggleSidebar,
+                ),
+          actions: [
+            if (sizeClass != MMSizeClass.compact) ...[
+              MMToolbarGroup(
+                children: [
+                  MMToolbarButton(
+                    icon: MMIcons.grid,
+                    tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
+                    selected: view.viewMode == LibraryViewMode.grid,
+                    onPressed: () => controller.setViewMode(LibraryViewMode.grid),
+                  ),
+                  MMToolbarButton(
+                    icon: MMIcons.list,
+                    tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
+                    selected: view.viewMode == LibraryViewMode.list,
+                    onPressed: () => controller.setViewMode(LibraryViewMode.list),
+                  ),
+                ],
               ),
-        actions: [
-          if (sizeClass != MMSizeClass.compact) ...[
-            MMToolbarGroup(
-              children: [
-                MMToolbarButton(
-                  icon: MMIcons.grid,
-                  tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
-                  selected: view.viewMode == LibraryViewMode.grid,
-                  onPressed: () => controller.setViewMode(LibraryViewMode.grid),
-                ),
-                MMToolbarButton(
-                  icon: MMIcons.list,
-                  tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
-                  selected: view.viewMode == LibraryViewMode.list,
-                  onPressed: () => controller.setViewMode(LibraryViewMode.list),
-                ),
-              ],
+              MMToolbarGroup(
+                children: [
+                  MMToolbarButton(
+                    icon: MMIcons.sort,
+                    label: sizeClass == MMSizeClass.regular ? l.sortBy(sortLabel) : null,
+                    tooltip: sizeClass == MMSizeClass.regular ? l.sortTooltip : l.sortBy(sortLabel),
+                    onPressed: controller.cycleSort,
+                  ),
+                ],
+              ),
+            ],
+            MMToolbarSearchField(
+              placeholder: l.search,
+              controller: _search,
+              focusNode: _searchFocus,
+              onChanged: controller.setSearch,
+              width: sizeClass == MMSizeClass.compact ? MMSizes.compactSearchWidth : 200,
             ),
             MMToolbarGroup(
               children: [
                 MMToolbarButton(
-                  icon: MMIcons.sort,
-                  label: sizeClass == MMSizeClass.regular ? l.sortBy(sortLabel) : null,
-                  tooltip: sizeClass == MMSizeClass.regular ? l.sortTooltip : l.sortBy(sortLabel),
-                  onPressed: controller.cycleSort,
+                  icon: MMIcons.add,
+                  tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
+                  onPressed: () => newStudySetFromPdfs(context, ref),
                 ),
               ],
             ),
           ],
-          MMToolbarSearchField(
-            placeholder: l.search,
-            controller: _search,
-            focusNode: _searchFocus,
-            onChanged: controller.setSearch,
-            width: sizeClass == MMSizeClass.compact ? MMSizes.compactSearchWidth : 200,
-          ),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                icon: MMIcons.add,
-                tooltip: AppShortcuts.tip(l.newStudySet, AppShortcuts.newStudySet),
-                onPressed: () => newStudySetFromPdfs(context, ref),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: PdfDropTarget(
-        label: l.dropToCreateSet,
-        onDrop: (files) async {
-          final notice = await controller.createFromFiles(files);
-          if (context.mounted) showNotice(context, notice, rootTitle: '');
-        },
-        child: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+        ),
+        body: PdfDropTarget(
+          label: l.dropToCreateSet,
+          onDrop: (files) async {
+            final notice = await controller.createFromFiles(files);
+            if (context.mounted) showNotice(context, notice, rootTitle: '');
+          },
+          child: _LibraryBody(sets: sets, visible: visible, folders: folders, view: view, now: now),
+        ),
       ),
     );
   }

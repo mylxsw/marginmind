@@ -6,6 +6,7 @@ import '../foundation/appearance.dart';
 import '../foundation/interactive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
+import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'glass.dart';
 
@@ -81,46 +82,59 @@ class MMHudState extends State<MMHudHost> {
             // Above the Navigator there is no Material: give text a style.
             child: Material(
               type: MaterialType.transparency,
-              child: Center(
-                child: AnimatedOpacity(
-                  duration: MMAppearance.duration(context, MMMotion.standard),
-                  opacity: _visible ? 1 : 0,
-                  child: _message == null
-                      ? const SizedBox.shrink()
-                      : Semantics(
-                          liveRegion: true,
-                          child: MMGlass(
-                            borderRadius: BorderRadius.circular(20),
-                            padding: const EdgeInsets.fromLTRB(12, 9, 16, 9),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(_icon, size: 15, color: c.label),
-                                const SizedBox(width: 8),
-                                Text(_message!, style: context.mmText.headline.copyWith(fontWeight: FontWeight.w500)),
-                                if (_action case (final label, final onAction)) ...[
-                                  const SizedBox(width: 10),
-                                  MMInteractive(
-                                    onTap: () {
-                                      _timer?.cancel();
-                                      setState(() => _visible = false);
-                                      onAction();
-                                    },
-                                    semanticLabel: label,
-                                    builder: (context, s) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: s.hovered ? c.pressed : c.fill,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(label, style: context.mmText.callout),
+              // A long message ends in an ellipsis inside the window, so the
+              // action stays in view on a phone.
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
+                child: Center(
+                  child: AnimatedOpacity(
+                    duration: MMAppearance.duration(context, MMMotion.standard),
+                    opacity: _visible ? 1 : 0,
+                    child: _message == null
+                        ? const SizedBox.shrink()
+                        : Semantics(
+                            liveRegion: true,
+                            child: MMGlass(
+                              borderRadius: BorderRadius.circular(20),
+                              padding: const EdgeInsets.fromLTRB(12, 9, 16, 9),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(_icon, size: 15, color: c.label),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      _message!,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.mmText.headline.copyWith(fontWeight: FontWeight.w500),
                                     ),
                                   ),
+                                  if (_action case (final label, final onAction)) ...[
+                                    const SizedBox(width: 10),
+                                    MMInteractive(
+                                      onTap: () {
+                                        _timer?.cancel();
+                                        setState(() => _visible = false);
+                                        onAction();
+                                      },
+                                      semanticLabel: label,
+                                      builder: (context, s) => Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: s.hovered ? c.pressed : c.fill,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(label, style: context.mmText.callout),
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
-                        ),
+                  ),
                 ),
               ),
             ),

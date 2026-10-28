@@ -45,6 +45,7 @@ class _Harness {
             theme: MMTheme.light(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MMInput(touchPlatform: true, child: child!),
             home: Scaffold(
               body: Align(
                 alignment: Alignment.topLeft,
