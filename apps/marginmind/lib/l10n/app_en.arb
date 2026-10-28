@@ -184,6 +184,9 @@
   "layoutReader": "Source Only",
   "layoutSplit": "Split",
   "layoutMap": "Map Only",
+  "paneSource": "Source",
+  "paneMap": "Map",
+  "moreTools": "More",
   "aiAssistant": "AI Assistant",
   "pageNumber": "Page {page}",
   "@pageNumber": {

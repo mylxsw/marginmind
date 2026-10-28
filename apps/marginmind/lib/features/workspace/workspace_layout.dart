@@ -10,6 +10,11 @@ import 'package:mm_design/mm_design.dart';
 /// source alone. With [preservePanes], the assistant instead shares the
 /// available width between the chosen panes, leaving visibility to the user.
 /// Nothing here changes the user's saved choices.
+///
+/// Below [MMSizeClass.regular] the sidebar is a drawer (never beside the
+/// content) and the panel floats over it, at most 400 wide. [MMSizeClass.medium]
+/// stacks the source above the map while both fit [windowHeight];
+/// [MMSizeClass.compact] shows one pane, the source for a split.
 ({bool sidebarVisible, MMSplitMode mode, double panelWidth}) resolveWorkspaceLayout({
   required double windowWidth,
   required bool sidebarVisible,
@@ -18,7 +23,19 @@ import 'package:mm_design/mm_design.dart';
   bool preservePanes = false,
   double minReader = MMSizes.readerMinWidth,
   double minMap = MMSizes.mapMinWidth,
+  MMSizeClass sizeClass = MMSizeClass.regular,
+  double windowHeight = double.infinity,
 }) {
+  if (sizeClass != MMSizeClass.regular) {
+    final floating = (windowWidth - MMSpacing.s * 2).clamp(0.0, MMSizes.rightPanelWidth);
+    return (
+      sidebarVisible: false,
+      mode: sizeClass == MMSizeClass.compact
+          ? (layout == MMSplitMode.split ? MMSplitMode.primary : layout)
+          : MMSplitView.effectiveMode(layout, windowHeight, MMSizes.paneMinHeight, MMSizes.paneMinHeight),
+      panelWidth: panelOpen ? floating : 0,
+    );
+  }
   const sidebar = MMSizes.sidebarWidth + MMSizes.sidebarInset;
   ({bool sidebarVisible, MMSplitMode mode, double panelWidth}) fit(bool showSidebar, double panel) => (
     sidebarVisible: showSidebar,

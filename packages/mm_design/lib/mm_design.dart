@@ -6,6 +6,7 @@
 /// float above content, solid surfaces for content.
 library;
 
+export 'src/foundation/adaptive.dart';
 export 'src/foundation/appearance.dart';
 export 'src/foundation/floating_placement.dart';
 export 'src/foundation/interactive.dart';

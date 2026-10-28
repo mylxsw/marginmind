@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
@@ -114,7 +115,7 @@ class MMSidebarSection extends StatelessWidget {
   }
 }
 
-/// Sidebar row (height 28): accent-tinted icon, label, optional count.
+/// Sidebar row (height 28; 44 under touch): accent-tinted icon, label, optional count.
 /// Selection is a gray rounded fill; text weight does not change.
 /// VoiceOver reads the label and the count once each.
 class MMSidebarItem extends StatelessWidget {
@@ -150,7 +151,7 @@ class MMSidebarItem extends StatelessWidget {
       selected: selected,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
-        height: MMSizes.sidebarRow,
+        height: context.mmSidebarRow,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),

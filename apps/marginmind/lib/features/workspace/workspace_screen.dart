@@ -35,6 +35,14 @@ class WorkspaceScreen extends ConsumerStatefulWidget {
 class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   final _searchFocus = FocusNode();
 
+  /// Whether the sidebar drawer of a touch window is out. Touch windows
+  /// start with it in, whatever the saved sidebar choice.
+  bool _drawer = false;
+
+  void _setDrawer(bool open) {
+    if (_drawer != open) setState(() => _drawer = open);
+  }
+
   @override
   void dispose() {
     _searchFocus.dispose();
@@ -44,13 +52,22 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = workspaceProvider(widget.studySetId);
+    final touchPlatform = MMInput.of(context).touchPlatform;
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 != FocusTarget.search) return;
-      ref.read(provider.notifier).showSidebar();
+      touchPlatform ? _setDrawer(true) : ref.read(provider.notifier).showSidebar();
       // The field takes focus once the sidebar is back in the tree.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _searchFocus.requestFocus();
       });
+    });
+    // On touch the sidebar commands (and the drawer's own hide button) move
+    // the drawer; opening a document puts it away.
+    ref.listen(provider.select((s) => s.sidebarVisible), (_, _) {
+      if (touchPlatform) _setDrawer(!_drawer);
+    });
+    ref.listen(provider.select((s) => s.activeDocumentId), (_, _) {
+      if (touchPlatform) _setDrawer(false);
     });
 
     ref.watch(
@@ -85,18 +102,26 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         resolve: controller.imagePath,
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final safe = MediaQuery.paddingOf(context);
+            final width = constraints.maxWidth - safe.horizontal;
+            final height = constraints.maxHeight - safe.vertical;
+            final sizeClass = MMSizeClass.resolve(context, Size(width, height));
+            controller.panelFloats = sizeClass != MMSizeClass.regular;
             // Preserve independent sidebar choices. Narrow windows temporarily
             // hide the sidebar beside the right panel and show one content
-            // pane; the toolbar reflects the visible layout.
+            // pane; the toolbar reflects the visible layout. Touch windows
+            // keep the sidebar in a drawer.
             final shown = resolveWorkspaceLayout(
-              windowWidth: constraints.maxWidth,
-              sidebarVisible: state.sidebarVisible,
+              windowWidth: width,
+              sidebarVisible: state.sidebarVisible && !touchPlatform,
               layout: state.layout,
               panelOpen: state.panel != null,
               preservePanes: state.panel == RightPanel.assistant,
               minReader: minReader,
+              sizeClass: sizeClass,
+              windowHeight: height - MMSizes.toolbarHeight,
             );
-            final collapsed = state.sidebarVisible && !shown.sidebarVisible;
+            final collapsed = !touchPlatform && state.sidebarVisible && !shown.sidebarVisible;
             if (collapsed != state.sidebarAutoCollapsed) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) controller.setSidebarAutoCollapsed(collapsed);
@@ -112,6 +137,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               shown.mode,
               minReader,
               shown.panelWidth,
+              sizeClass,
+              touchPlatform,
             );
           },
         ),
@@ -129,10 +156,48 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     MMSplitMode layout,
     double minReader,
     double panelWidth,
+    MMSizeClass sizeClass,
+    bool touchPlatform,
   ) {
     final l = context.l10n;
+    final compact = sizeClass == MMSizeClass.compact;
+    final stacked = sizeClass == MMSizeClass.medium;
+    final split = MMSplitView(
+      mode: layout,
+      onModeChanged: compact ? null : controller.setLayout,
+      primaryLabel: l.layoutReader,
+      secondaryLabel: l.layoutMap,
+      splitLabel: l.layoutSplit,
+      fraction: state.splitFraction,
+      axis: stacked ? Axis.vertical : Axis.horizontal,
+      minPrimaryWidth: stacked ? MMSizes.paneMinHeight : minReader,
+      minSecondaryWidth: stacked ? MMSizes.paneMinHeight : MMSizes.mapMinWidth,
+      collapseWhenNarrow: stacked || state.panel != RightPanel.assistant,
+      onFractionChanged: controller.setSplitFraction,
+      primary: PdfDropTarget(
+        label: l.dropToImport,
+        onDrop: (files) async {
+          final notice = await controller.importDocuments(files);
+          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+        },
+        child: ReaderPane(studySetId: widget.studySetId),
+      ),
+      secondary: PdfDropTarget(
+        label: l.dropImage,
+        onDrop: (files) async {
+          final notice = await controller.importDocuments(files);
+          if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
+        },
+        onImageDrop: (files) =>
+            insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
+        child: MapPane(studySetId: widget.studySetId),
+      ),
+    );
+    final floating = sizeClass != MMSizeClass.regular;
     return MMWindowScaffold(
-      sidebarVisible: sidebarVisible,
+      sidebarVisible: touchPlatform ? _drawer : sidebarVisible,
+      sidebarOverlay: touchPlatform,
+      onSidebarDismiss: () => _setDrawer(false),
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -145,32 +210,38 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           return MMToolbar(
             title: doc?.title ?? setTitle,
             subtitle: doc == null ? null : l.pageNumber(page!),
-            leading: sidebarVisible
+            leading: sidebarVisible && !touchPlatform
                 ? null
-                : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.showSidebar),
+                : MMIconButton(
+                    icon: MMIcons.sidebar,
+                    tooltip: l.showSidebar,
+                    size: context.mmToolbarIcon,
+                    onPressed: touchPlatform ? () => _setDrawer(true) : controller.showSidebar,
+                  ),
             actions: [
-              MMToolbarGroup(
-                children: [
-                  MMToolbarButton(
-                    icon: MMIcons.layoutReader,
-                    tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
-                    selected: layout == MMSplitMode.primary,
-                    onPressed: () => controller.setLayout(MMSplitMode.primary),
-                  ),
-                  MMToolbarButton(
-                    icon: MMIcons.layoutSplit,
-                    tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                    selected: layout == MMSplitMode.split,
-                    onPressed: () => controller.setLayout(MMSplitMode.split),
-                  ),
-                  MMToolbarButton(
-                    icon: MMIcons.layoutMap,
-                    tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
-                    selected: layout == MMSplitMode.secondary,
-                    onPressed: () => controller.setLayout(MMSplitMode.secondary),
-                  ),
-                ],
-              ),
+              if (!compact)
+                MMToolbarGroup(
+                  children: [
+                    MMToolbarButton(
+                      icon: MMIcons.layoutReader,
+                      tooltip: AppShortcuts.tip(l.layoutReader, AppShortcuts.view1),
+                      selected: layout == MMSplitMode.primary,
+                      onPressed: () => controller.setLayout(MMSplitMode.primary),
+                    ),
+                    MMToolbarButton(
+                      icon: MMIcons.layoutSplit,
+                      tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                      selected: layout == MMSplitMode.split,
+                      onPressed: () => controller.setLayout(MMSplitMode.split),
+                    ),
+                    MMToolbarButton(
+                      icon: MMIcons.layoutMap,
+                      tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),
+                      selected: layout == MMSplitMode.secondary,
+                      onPressed: () => controller.setLayout(MMSplitMode.secondary),
+                    ),
+                  ],
+                ),
               MMToolbarGroup(
                 children: [
                   MMToolbarButton(
@@ -187,47 +258,81 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
           );
         },
       ),
-      body: Row(
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (compact)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(MMSpacing.m, 0, MMSpacing.m, MMSpacing.s),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
+                  child: MMSegmentedControl<MMSplitMode>(
+                    key: const ValueKey('workspace-pane-switch'),
+                    expand: true,
+                    segments: [
+                      MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+                      MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+                    ],
+                    value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+                    onChanged: controller.setLayout,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
-            child: MMSplitView(
-              mode: layout,
-              onModeChanged: controller.setLayout,
-              primaryLabel: l.layoutReader,
-              secondaryLabel: l.layoutMap,
-              splitLabel: l.layoutSplit,
-              fraction: state.splitFraction,
-              minPrimaryWidth: minReader,
-              collapseWhenNarrow: state.panel != RightPanel.assistant,
-              onFractionChanged: controller.setSplitFraction,
-              primary: PdfDropTarget(
-                label: l.dropToImport,
-                onDrop: (files) async {
-                  final notice = await controller.importDocuments(files);
-                  if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-                },
-                child: ReaderPane(studySetId: widget.studySetId),
-              ),
-              secondary: PdfDropTarget(
-                label: l.dropImage,
-                onDrop: (files) async {
-                  final notice = await controller.importDocuments(files);
-                  if (context.mounted) showNotice(context, notice, rootTitle: setTitle);
-                },
-                onImageDrop: (files) =>
-                    insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
-                child: MapPane(studySetId: widget.studySetId),
-              ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: split),
+                      if (state.panel != null && !floating)
+                        SizedBox(
+                          width: panelWidth,
+                          child: RightPanelView(studySetId: widget.studySetId),
+                        ),
+                    ],
+                  ),
+                ),
+                if (state.panel != null && floating)
+                  MMDrawer(
+                    open: true,
+                    end: true,
+                    inset: MMSpacing.s,
+                    width: panelWidth,
+                    onDismiss: controller.closePanel,
+                    child: _FloatingPanel(child: RightPanelView(studySetId: widget.studySetId)),
+                  ),
+              ],
             ),
           ),
-          if (state.panel != null)
-            SizedBox(
-              width: panelWidth,
-              child: RightPanelView(studySetId: widget.studySetId),
-            ),
         ],
       ),
+    );
+  }
+}
+
+/// The right panel floating over the panes: a rounded, shadowed card.
+class _FloatingPanel extends StatelessWidget {
+  const _FloatingPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    const radius = BorderRadius.all(Radius.circular(MMRadii.sidebar));
+    return DecoratedBox(
+      key: const ValueKey('workspace-floating-panel'),
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          for (final s in c.sidebarShadow) BoxShadow(color: s.color, offset: s.offset, blurRadius: s.blurRadius),
+        ],
+      ),
+      child: ClipRRect(borderRadius: radius, child: child),
     );
   }
 }

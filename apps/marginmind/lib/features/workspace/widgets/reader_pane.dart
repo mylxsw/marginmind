@@ -167,6 +167,148 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     );
   }
 
+  /// The reader's tool row. A regular window shows every tool and wraps if it
+  /// must; a narrower one keeps one line and moves zoom and appearance into
+  /// "More".
+  Widget _toolbar(
+    BuildContext context,
+    WorkspaceState state,
+    WorkspaceController controller,
+    MMReaderStyle style,
+    String? ocrSource,
+  ) {
+    final l = context.l10n;
+    final button = context.mmToolbarButton;
+    final buttonStyle = IconButton.styleFrom(minimumSize: button, fixedSize: button, padding: EdgeInsets.zero);
+    final navigation = MMToolbarButton(
+      icon: MMIcons.readerNavigation,
+      tooltip: AppShortcuts.tip(
+        state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+        AppShortcuts.toggleReaderSidebar,
+      ),
+      selected: state.readerPanelVisible,
+      onPressed: controller.toggleReaderPanel,
+    );
+    final zoomItems = [
+      for (final entry in [
+        (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
+        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
+        (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
+      ])
+        PopupMenuItem<Object>(value: entry.$1, child: _menuRow(entry.$3, entry.$2)),
+    ];
+    final styleItems = [
+      for (final value in MMReaderStyle.values)
+        PopupMenuItem<Object>(
+          value: value,
+          child: _styleRow(context, value, selected: value == style),
+        ),
+    ];
+    void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
+    final annotation = ReaderAnnotationTools(state: state, controller: controller);
+    final progress = ocrSource == null ? null : ReaderOcrProgress(source: ocrSource);
+    if (MMSizeClass.of(context) != MMSizeClass.regular) {
+      return Row(
+        children: [
+          navigation,
+          const SizedBox(width: MMSpacing.s),
+          Flexible(child: annotation),
+          const SizedBox(width: MMSpacing.s),
+          PopupMenuButton<Object>(
+            key: const ValueKey('reader-more'),
+            tooltip: l.moreTools,
+            padding: EdgeInsets.zero,
+            style: buttonStyle,
+            iconSize: MMSpacing.l,
+            icon: const Icon(MMIcons.more),
+            onSelected: (value) {
+              if (value is ReaderZoomCommand) _zoom(value);
+              if (value is MMReaderStyle) setStyle(value);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem<Object>(value: ReaderZoomCommand.zoomOut, child: _menuRow(MMIcons.zoomOut, l.zoomOut)),
+              PopupMenuItem<Object>(value: ReaderZoomCommand.zoomIn, child: _menuRow(MMIcons.zoomIn, l.zoomIn)),
+              ...zoomItems,
+              const PopupMenuDivider(),
+              ...styleItems,
+            ],
+          ),
+          if (progress != null) ...[const SizedBox(width: MMSpacing.s), Flexible(child: progress)],
+        ],
+      );
+    }
+    return Wrap(
+      spacing: MMSpacing.s,
+      runSpacing: MMSpacing.s,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        navigation,
+        MMToolbarButton(icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
+        MMToolbarButton(icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
+        PopupMenuButton<Object>(
+          key: const ValueKey('reader-zoom'),
+          tooltip: l.readerZoom,
+          padding: EdgeInsets.zero,
+          style: buttonStyle,
+          iconSize: MMSpacing.l,
+          icon: const Icon(MMIcons.fitPage),
+          onSelected: (value) => _zoom(value as ReaderZoomCommand),
+          itemBuilder: (_) => zoomItems,
+        ),
+        PopupMenuButton<Object>(
+          key: const ValueKey('reader-appearance'),
+          tooltip: l.readerAppearance,
+          padding: EdgeInsets.zero,
+          style: buttonStyle,
+          iconSize: MMSpacing.l,
+          onSelected: (value) => setStyle(value as MMReaderStyle),
+          itemBuilder: (_) => styleItems,
+          icon: const Icon(MMIcons.appearance),
+        ),
+        annotation,
+        ?progress,
+      ],
+    );
+  }
+
+  Widget _menuRow(IconData icon, String label) => Row(
+    children: [
+      Icon(icon, size: MMSpacing.l),
+      const SizedBox(width: MMSpacing.s),
+      Text(label),
+    ],
+  );
+
+  Widget _styleRow(BuildContext context, MMReaderStyle value, {required bool selected}) {
+    final l = context.l10n;
+    final c = context.mmColors;
+    return Row(
+      children: [
+        Container(
+          width: MMSpacing.xl,
+          height: MMSpacing.xl,
+          decoration: BoxDecoration(
+            color: value.paperColor,
+            border: Border.all(color: c.separator),
+            borderRadius: BorderRadius.circular(MMRadii.field),
+          ),
+          child: Center(
+            child: Text('Aa', style: context.mmText.footnote.copyWith(color: value.inkColor)),
+          ),
+        ),
+        const SizedBox(width: MMSpacing.s),
+        Text(switch (value) {
+          MMReaderStyle.white => l.readerStyleWhite,
+          MMReaderStyle.dark => l.readerStyleDark,
+          MMReaderStyle.paper => l.readerStylePaper,
+          MMReaderStyle.green => l.readerStyleGreen,
+        }),
+        const Spacer(),
+        if (selected) Icon(Icons.check, color: c.accent, size: MMSpacing.l),
+      ],
+    );
+  }
+
   Widget _body(
     BuildContext context,
     WorkspaceState state,
@@ -216,100 +358,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         if (doc != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
-            child: Wrap(
-              spacing: MMSpacing.s,
-              runSpacing: MMSpacing.s,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                MMToolbarButton(
-                  icon: MMIcons.readerNavigation,
-                  tooltip: AppShortcuts.tip(
-                    state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-                    AppShortcuts.toggleReaderSidebar,
-                  ),
-                  selected: state.readerPanelVisible,
-                  onPressed: controller.toggleReaderPanel,
-                ),
-                MMToolbarButton(icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
-                MMToolbarButton(icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
-                PopupMenuButton<ReaderZoomCommand>(
-                  key: const ValueKey('reader-zoom'),
-                  tooltip: l.readerZoom,
-                  padding: EdgeInsets.zero,
-                  style: IconButton.styleFrom(
-                    minimumSize: MMSizes.toolbarButton,
-                    fixedSize: MMSizes.toolbarButton,
-                    padding: EdgeInsets.zero,
-                  ),
-                  iconSize: MMSpacing.l,
-                  icon: const Icon(MMIcons.fitPage),
-                  onSelected: _zoom,
-                  itemBuilder: (_) => [
-                    for (final entry in [
-                      (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
-                      (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
-                      (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
-                    ])
-                      PopupMenuItem(
-                        value: entry.$1,
-                        child: Row(
-                          children: [
-                            Icon(entry.$3, size: MMSpacing.l),
-                            const SizedBox(width: MMSpacing.s),
-                            Text(entry.$2),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                PopupMenuButton<MMReaderStyle>(
-                  key: const ValueKey('reader-appearance'),
-                  tooltip: l.readerAppearance,
-                  padding: EdgeInsets.zero,
-                  style: IconButton.styleFrom(
-                    minimumSize: MMSizes.toolbarButton,
-                    fixedSize: MMSizes.toolbarButton,
-                    padding: EdgeInsets.zero,
-                  ),
-                  iconSize: MMSpacing.l,
-                  onSelected: ref.read(settingsProvider.notifier).setReaderStyle,
-                  itemBuilder: (context) => [
-                    for (final value in MMReaderStyle.values)
-                      PopupMenuItem(
-                        value: value,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: MMSpacing.xl,
-                              height: MMSpacing.xl,
-                              decoration: BoxDecoration(
-                                color: value.paperColor,
-                                border: Border.all(color: c.separator),
-                                borderRadius: BorderRadius.circular(MMRadii.field),
-                              ),
-                              child: Center(
-                                child: Text('Aa', style: context.mmText.footnote.copyWith(color: value.inkColor)),
-                              ),
-                            ),
-                            const SizedBox(width: MMSpacing.s),
-                            Text(switch (value) {
-                              MMReaderStyle.white => l.readerStyleWhite,
-                              MMReaderStyle.dark => l.readerStyleDark,
-                              MMReaderStyle.paper => l.readerStylePaper,
-                              MMReaderStyle.green => l.readerStyleGreen,
-                            }),
-                            const Spacer(),
-                            if (value == style) Icon(Icons.check, color: c.accent, size: MMSpacing.l),
-                          ],
-                        ),
-                      ),
-                  ],
-                  icon: const Icon(MMIcons.appearance),
-                ),
-                ReaderAnnotationTools(state: state, controller: controller),
-                if (ocr?.running == true) ReaderOcrProgress(source: source!),
-              ],
-            ),
+            child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
           ),
         if (ocr != null)
           ReaderOcrControls(

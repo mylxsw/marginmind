@@ -656,6 +656,24 @@ abstract class AppLocalizations {
   /// **'Map Only'**
   String get layoutMap;
 
+  /// No description provided for @paneSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get paneSource;
+
+  /// No description provided for @paneMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get paneMap;
+
+  /// No description provided for @moreTools.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreTools;
+
   /// No description provided for @aiAssistant.
   ///
   /// In en, this message translates to:

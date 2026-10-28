@@ -1,0 +1,135 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/widgets.dart';
+
+import '../tokens/metrics.dart';
+
+/// Width class of the space a layout has, from its logical size rather than
+/// the device: an iPad in Split View is as compact as a phone.
+enum MMSizeClass {
+  /// Narrower than 600: one pane at a time.
+  compact,
+
+  /// 600 to 1179 wide, or taller than wide: source above map.
+  medium,
+
+  /// At least 1180 wide and landscape: the desktop layout.
+  regular;
+
+  static const double compactMaxWidth = 600;
+  static const double regularMinWidth = 1180;
+
+  static MMSizeClass fromSize(Size size) {
+    if (size.width < compactMaxWidth) return compact;
+    if (size.width >= regularMinWidth && size.width >= size.height) return regular;
+    return medium;
+  }
+
+  /// The class for [size] in [context]'s window: pointer-only desktops keep
+  /// [regular] at every size their windows take, so their narrow-window
+  /// rules stay as they are.
+  static MMSizeClass resolve(BuildContext context, Size size) =>
+      MMInput.of(context).touchPlatform ? fromSize(size) : regular;
+
+  /// The class of [context]'s window inside its safe area.
+  static MMSizeClass of(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final safe = MediaQuery.paddingOf(context);
+    return resolve(context, Size(size.width - safe.horizontal, size.height - safe.vertical));
+  }
+}
+
+/// Which input the window is driven by. [touchPlatform] is fixed per device
+/// (phones and tablets) and decides layout; [touch] follows the last pointer
+/// on such a device, so a trackpad on an iPad gets pointer-sized controls.
+@immutable
+class MMInputState {
+  const MMInputState({this.touchPlatform = false, this.touch = false});
+
+  static const pointer = MMInputState();
+
+  final bool touchPlatform;
+  final bool touch;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MMInputState && other.touchPlatform == touchPlatform && other.touch == touch;
+
+  @override
+  int get hashCode => Object.hash(touchPlatform, touch);
+}
+
+/// Provides [MMInputState] below it. On a touch platform, a mouse or
+/// trackpad switches controls to pointer size until the next touch.
+class MMInput extends StatefulWidget {
+  const MMInput({super.key, required this.touchPlatform, required this.child});
+
+  final bool touchPlatform;
+  final Widget child;
+
+  /// Without an [MMInput] above, the window is a pointer-only desktop.
+  static MMInputState of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_MMInputScope>()?.state ?? MMInputState.pointer;
+
+  /// Whether controls in [context] need finger-sized hit areas.
+  static bool touchOf(BuildContext context) => of(context).touch;
+
+  @override
+  State<MMInput> createState() => _MMInputState();
+}
+
+class _MMInputState extends State<MMInput> {
+  late bool _touch = widget.touchPlatform;
+
+  @override
+  void didUpdateWidget(MMInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.touchPlatform != widget.touchPlatform) _touch = widget.touchPlatform;
+  }
+
+  void _follow(PointerEvent event) {
+    if (!widget.touchPlatform) return;
+    final touch = switch (event.kind) {
+      PointerDeviceKind.mouse || PointerDeviceKind.trackpad => false,
+      PointerDeviceKind.touch || PointerDeviceKind.stylus || PointerDeviceKind.invertedStylus => true,
+      PointerDeviceKind.unknown => _touch,
+    };
+    if (touch != _touch) setState(() => _touch = touch);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _follow,
+      onPointerHover: _follow,
+      onPointerPanZoomStart: _follow,
+      child: _MMInputScope(
+        state: MMInputState(touchPlatform: widget.touchPlatform, touch: widget.touchPlatform && _touch),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _MMInputScope extends InheritedWidget {
+  const _MMInputScope({required this.state, required super.child});
+
+  final MMInputState state;
+
+  @override
+  bool updateShouldNotify(_MMInputScope oldWidget) => oldWidget.state != state;
+}
+
+/// Control sizes that grow to the 44 pt touch target under touch input.
+extension MMAdaptiveSizes on BuildContext {
+  bool get mmTouch => MMInput.touchOf(this);
+
+  Size get mmToolbarButton => mmTouch ? const Size.square(MMSizes.touchTarget) : MMSizes.toolbarButton;
+
+  double get mmSidebarRow => mmTouch ? MMSizes.touchTarget : MMSizes.sidebarRow;
+
+  /// Side of an [MMIconButton] in a toolbar.
+  double get mmToolbarIcon => mmTouch ? MMSizes.touchTarget : 28;
+
+  double get mmDividerHit => mmTouch ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
+}

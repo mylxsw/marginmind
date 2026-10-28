@@ -330,6 +330,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutMap => 'Map Only';
 
   @override
+  String get paneSource => 'Source';
+
+  @override
+  String get paneMap => 'Map';
+
+  @override
+  String get moreTools => 'More';
+
+  @override
   String get aiAssistant => 'AI Assistant';
 
   @override

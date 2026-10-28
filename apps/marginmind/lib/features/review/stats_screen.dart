@@ -106,6 +106,7 @@ class StatsScreen extends ConsumerWidget {
         leading: MMIconButton(
           icon: MMIcons.chevronLeft,
           tooltip: studySetId == null ? l.showLibrary : l.backToStudySet,
+          size: context.mmToolbarIcon,
           onPressed: () => _back(ref),
         ),
       ),
