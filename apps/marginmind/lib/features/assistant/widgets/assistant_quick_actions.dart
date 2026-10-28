@@ -111,13 +111,6 @@ enum _QuickAction {
     outline => l.assistantQuickOutline,
     _ => skill!.label(l),
   };
-  String? hint(AppLocalizations l) => switch (this) {
-    explain => l.assistantQuickExplainHint,
-    translate => l.assistantQuickTranslateHint,
-    summarize => l.assistantQuickSummarizeHint,
-    outline => l.assistantQuickOutlineHint,
-    _ => null,
-  };
   String prompt(AppLocalizations l) => skill?.prompt(l) ?? l.assistantQuickOutlinePrompt;
 }
 
@@ -145,7 +138,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
   final _scroll = ScrollController();
   String? _conversationId;
   _QuickAction? _action;
-  bool _more = false, _menu = true, _sending = false, _saving = false;
+  bool _menu = true, _sending = false, _saving = false;
   String? _error;
 
   @override
@@ -301,14 +294,14 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                         tooltip: l.back,
                         onPressed: running ? null : () => setState(() => _menu = true),
                       ),
-                    Icon(MMIcons.ai, size: 19, color: c.research),
+                    Icon(MMIcons.ai, size: 17, color: c.research),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: t.title3.copyWith(color: c.label),
+                        style: t.headline.copyWith(color: c.label),
                       ),
                     ),
                     MMIconButton(
@@ -331,7 +324,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                     widget.passage.displayText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: t.body.copyWith(fontSize: 14, color: c.secondaryLabel, height: 1.5),
+                    style: t.body.copyWith(color: c.secondaryLabel, height: 1.5),
                   ),
                 ),
                 Flexible(
@@ -377,32 +370,13 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: Text(l.assistantQuickBusy, style: t.callout.copyWith(color: c.secondaryLabel)),
                               ),
-                            for (final action in _QuickAction.values.take(4))
+                            for (final action in _QuickAction.values)
                               _ActionRow(
                                 key: ValueKey('quick-action-${action.name}'),
                                 icon: action.icon,
                                 title: action.title(l),
-                                hint: action.hint(l),
-                                primary: action == _QuickAction.explain,
                                 onTap: canSend ? () => _send(action) : null,
                               ),
-                            Divider(height: 12, color: c.separator),
-                            _ActionRow(
-                              key: const ValueKey('quick-actions-more'),
-                              icon: MMIcons.more,
-                              title: l.assistantQuickMore,
-                              hint: _more ? null : l.assistantQuickMoreHint,
-                              expanded: _more,
-                              onTap: () => setState(() => _more = !_more),
-                            ),
-                            if (_more)
-                              for (final action in _QuickAction.values.skip(4))
-                                _ActionRow(
-                                  key: ValueKey('quick-action-${action.name}'),
-                                  icon: action.icon,
-                                  title: action.title(l),
-                                  onTap: canSend ? () => _send(action) : null,
-                                ),
                           ],
                           if (_error != null)
                             Padding(
@@ -448,69 +422,70 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                   ),
                 ],
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.only(left: 12, right: 4),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: c.separator),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const ValueKey('quick-input'),
-                          controller: _text,
-                          focusNode: _focus,
-                          enabled: canSend,
-                          style: t.body.copyWith(color: c.label),
-                          maxLength: 60000,
-                          decoration: InputDecoration(
-                            hintText: _conversationId == null ? l.assistantQuickAsk : l.assistantQuickFollowUp,
-                            hintStyle: t.body.copyWith(color: c.secondaryLabel),
-                            isDense: true,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                            counterText: '',
-                          ),
-                          onChanged: (_) => setState(() {}),
-                          onSubmitted: (_) => _send(),
-                        ),
-                      ),
-                      DecoratedBox(
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 12, right: 4),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
+                          border: Border.all(color: c.separator),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: MMIconButton(
-                          key: const ValueKey('quick-send'),
-                          icon: running ? MMIcons.stop : MMIcons.send,
-                          tooltip: running ? l.assistantStop : l.assistantSend,
-                          color: c.onAccent,
-                          onPressed: running
-                              ? () => unawaited(
-                                  ref.read(assistantControllerProvider.notifier).stop().catchError((Object _) {}),
-                                )
-                              : canSend && _text.text.trim().isNotEmpty
-                              ? () => _send()
-                              : null,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                key: const ValueKey('quick-input'),
+                                controller: _text,
+                                focusNode: _focus,
+                                enabled: canSend,
+                                style: t.body.copyWith(color: c.label),
+                                maxLength: 60000,
+                                decoration: InputDecoration(
+                                  hintText: _conversationId == null ? l.assistantQuickAsk : l.assistantQuickFollowUp,
+                                  hintStyle: t.body.copyWith(color: c.secondaryLabel),
+                                  isDense: true,
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                                  counterText: '',
+                                ),
+                                onChanged: (_) => setState(() {}),
+                                onSubmitted: (_) => _send(),
+                              ),
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
+                              ),
+                              child: MMIconButton(
+                                key: const ValueKey('quick-send'),
+                                icon: running ? MMIcons.stop : MMIcons.send,
+                                tooltip: running ? l.assistantStop : l.assistantSend,
+                                color: c.onAccent,
+                                onPressed: running
+                                    ? () => unawaited(
+                                        ref.read(assistantControllerProvider.notifier).stop().catchError((Object _) {}),
+                                      )
+                                    : canSend && _text.text.trim().isNotEmpty
+                                    ? () => _send()
+                                    : null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                ...[
-                  const SizedBox(height: 6),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: MMButton(
+                    ),
+                    const SizedBox(width: 6),
+                    MMIconButton(
                       key: const ValueKey('quick-sidebar'),
-                      label: l.assistantQuickSidebar,
-                      icon: MMIcons.sidebar,
-                      variant: MMButtonVariant.plain,
+                      icon: MMIcons.sidebarRight,
+                      tooltip: l.assistantQuickSidebar,
+                      size: 32,
                       onPressed: _sending ? null : () => _sidebar(),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -521,21 +496,11 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.hint,
-    this.onTap,
-    this.primary = false,
-    this.expanded = false,
-  });
+  const _ActionRow({super.key, required this.icon, required this.title, this.onTap});
 
   final IconData icon;
   final String title;
-  final String? hint;
   final VoidCallback? onTap;
-  final bool primary, expanded;
 
   @override
   Widget build(BuildContext context) {
@@ -545,31 +510,19 @@ class _ActionRow extends StatelessWidget {
       onTap: onTap,
       semanticLabel: title,
       builder: (context, s) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: s.hovered || s.focused
-              ? c.researchTint
-              : primary
-              ? c.researchTint.withValues(alpha: .10)
-              : Colors.transparent,
+          color: s.hovered || s.focused ? c.researchTint : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         child: Opacity(
           opacity: s.enabled ? 1 : .4,
           child: Row(
             children: [
-              Icon(icon, size: 20, color: primary ? c.research : c.label),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: t.headline.copyWith(fontSize: 14, color: c.label)),
-                    if (hint != null) Text(hint!, style: t.callout.copyWith(color: c.secondaryLabel)),
-                  ],
-                ),
-              ),
-              Icon(expanded ? MMIcons.chevronDown : MMIcons.chevronRight, size: 12, color: c.secondaryLabel),
+              Icon(icon, size: 16, color: c.icon),
+              const SizedBox(width: 10),
+              Expanded(child: Text(title, style: t.body)),
+              Icon(MMIcons.chevronRight, size: 11, color: c.secondaryLabel),
             ],
           ),
         ),

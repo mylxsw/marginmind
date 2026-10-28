@@ -12,6 +12,7 @@ abstract final class MMIcons {
   static const IconData pageZoom = CupertinoIcons.resize;
   static const IconData locate = CupertinoIcons.location_circle;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
+  static const IconData sidebarRight = CupertinoIcons.sidebar_right; // sidebar.right
   static const IconData search = CupertinoIcons.search; // magnifyingglass
   static const IconData add = CupertinoIcons.add; // plus
   static const IconData grid = CupertinoIcons.square_grid_2x2; // square.grid.2x2

@@ -229,7 +229,7 @@ void main() {
     expect(client.calls, 0);
   });
 
-  testWidgets('highlight entry, outline and More actions use the selected passage', (tester) async {
+  testWidgets('highlight entry, outline and verification use the selected passage', (tester) async {
     final app = await openAssistantApp(tester, client: ScriptClient([answer('大纲'), answer('查证结果')]));
     final annotation = app.workspace.content.annotations.first;
     app.workspace.tapHighlight(annotation.id, const Rect.fromLTWH(120, 150, 200, 40));
@@ -241,8 +241,6 @@ void main() {
     expect(view(tester).messages.first.skill, isNull);
     expect(view(tester).messages.first.contexts.single.displayText, annotation.quote);
     await tester.tap(find.byTooltip('返回'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('quick-actions-more')));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const ValueKey('quick-action-verify')));
     await tester.tap(find.byKey(const ValueKey('quick-action-verify')));

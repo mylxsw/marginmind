@@ -114,7 +114,6 @@ class AnswerBody extends StatefulWidget {
     this.tooltipFor,
     this.cursor = false,
     this.conclusion = false,
-    this.fontSize,
   });
 
   final String text;
@@ -128,7 +127,6 @@ class AnswerBody extends StatefulWidget {
 
   /// The first paragraph is a check's verdict: shown boxed.
   final bool conclusion;
-  final double? fontSize;
 
   @override
   State<AnswerBody> createState() => _AnswerBodyState();
@@ -180,7 +178,7 @@ class _Renderer {
       t = context.mmText,
       base = DefaultTextStyle.of(context).style {
     // Merged onto the inherited style: rich text keeps the system family.
-    body = base.merge(t.body.copyWith(fontSize: widget.fontSize, height: 1.75, color: c.label));
+    body = base.merge(t.body.copyWith(height: 1.75, color: c.label));
   }
 
   final BuildContext context;
@@ -192,10 +190,8 @@ class _Renderer {
   late final TextStyle body;
   late final byMarker = {for (final x in widget.citations) x.marker: x};
 
-  TextStyle get heading =>
-      base.merge(t.body.copyWith(fontSize: (widget.fontSize ?? 13) + .5, fontWeight: FontWeight.w600, color: c.label));
-  TextStyle get quote =>
-      base.merge(t.readingExcerpt.copyWith(fontSize: (widget.fontSize ?? 13) - .5, color: c.excerptText));
+  TextStyle get heading => base.merge(t.body.copyWith(fontSize: 13.5, fontWeight: FontWeight.w600, color: c.label));
+  TextStyle get quote => base.merge(t.readingExcerpt.copyWith(fontSize: 12.5, color: c.excerptText));
 
   List<Widget> blocks(List<md.Node> nodes, {bool conclusion = false, TextStyle? style}) {
     final out = <Widget>[];

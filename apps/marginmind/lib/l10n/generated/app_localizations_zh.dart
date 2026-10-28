@@ -2720,31 +2720,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantQuickExplain => '解释这段';
 
   @override
-  String get assistantQuickExplainHint => '换个说法，帮助理解';
-
-  @override
-  String get assistantQuickTranslateHint => '翻译为中文或其他语言';
-
-  @override
   String get assistantQuickSummarize => '总结要点';
-
-  @override
-  String get assistantQuickSummarizeHint => '提炼这段文字的核心信息';
 
   @override
   String get assistantQuickOutline => '整理大纲';
 
   @override
-  String get assistantQuickOutlineHint => '梳理观点与层次';
-
-  @override
   String get assistantQuickOutlinePrompt => '请将所选文字整理为清晰的文字大纲，梳理主要观点及其层次。直接在回答中展示大纲，不要修改脑图。';
-
-  @override
-  String get assistantQuickMore => '更多操作';
-
-  @override
-  String get assistantQuickMoreHint => '查证 · 出题';
 
   @override
   String get assistantQuickAsk => '或直接问一个问题…';

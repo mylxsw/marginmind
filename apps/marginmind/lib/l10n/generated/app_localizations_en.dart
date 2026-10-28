@@ -2844,32 +2844,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantQuickExplain => 'Explain Passage';
 
   @override
-  String get assistantQuickExplainHint => 'Understand it in simpler words';
-
-  @override
-  String get assistantQuickTranslateHint => 'Translate into Chinese or another language';
-
-  @override
   String get assistantQuickSummarize => 'Summarize Key Points';
-
-  @override
-  String get assistantQuickSummarizeHint => 'Extract the main ideas';
 
   @override
   String get assistantQuickOutline => 'Create an Outline';
 
   @override
-  String get assistantQuickOutlineHint => 'Organize ideas and their structure';
-
-  @override
   String get assistantQuickOutlinePrompt =>
       'Create a clear text outline of the selected passage, organizing its main ideas and hierarchy. Show the outline in your answer without modifying the mind map.';
-
-  @override
-  String get assistantQuickMore => 'More Actions';
-
-  @override
-  String get assistantQuickMoreHint => 'Verify · Quiz';
 
   @override
   String get assistantQuickAsk => 'Or ask a question…';

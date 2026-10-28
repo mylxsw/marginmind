@@ -5084,29 +5084,11 @@ abstract class AppLocalizations {
   /// **'Explain Passage'**
   String get assistantQuickExplain;
 
-  /// No description provided for @assistantQuickExplainHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Understand it in simpler words'**
-  String get assistantQuickExplainHint;
-
-  /// No description provided for @assistantQuickTranslateHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Translate into Chinese or another language'**
-  String get assistantQuickTranslateHint;
-
   /// No description provided for @assistantQuickSummarize.
   ///
   /// In en, this message translates to:
   /// **'Summarize Key Points'**
   String get assistantQuickSummarize;
-
-  /// No description provided for @assistantQuickSummarizeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Extract the main ideas'**
-  String get assistantQuickSummarizeHint;
 
   /// No description provided for @assistantQuickOutline.
   ///
@@ -5114,29 +5096,11 @@ abstract class AppLocalizations {
   /// **'Create an Outline'**
   String get assistantQuickOutline;
 
-  /// No description provided for @assistantQuickOutlineHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Organize ideas and their structure'**
-  String get assistantQuickOutlineHint;
-
   /// No description provided for @assistantQuickOutlinePrompt.
   ///
   /// In en, this message translates to:
   /// **'Create a clear text outline of the selected passage, organizing its main ideas and hierarchy. Show the outline in your answer without modifying the mind map.'**
   String get assistantQuickOutlinePrompt;
-
-  /// No description provided for @assistantQuickMore.
-  ///
-  /// In en, this message translates to:
-  /// **'More Actions'**
-  String get assistantQuickMore;
-
-  /// No description provided for @assistantQuickMoreHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify · Quiz'**
-  String get assistantQuickMoreHint;
 
   /// No description provided for @assistantQuickAsk.
   ///

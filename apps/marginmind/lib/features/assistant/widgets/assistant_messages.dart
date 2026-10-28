@@ -320,7 +320,6 @@ class AgentMessage extends ConsumerWidget {
           ),
         AnswerBody(
           text: m.text,
-          fontSize: compact ? 14 : null,
           citations: m.citations,
           cursor: running && !m.waitingForPermission,
           conclusion: skill == AssistantSkill.verify,
