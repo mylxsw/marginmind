@@ -82,48 +82,57 @@ class MMWindowScaffold extends StatelessWidget {
       ],
     );
 
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (sidebar != null)
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: open ? fullWidth : 0),
+            duration: duration,
+            curve: MMMotion.layoutCurve,
+            builder: (context, width, child) => SizedBox(
+              width: width,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.centerRight,
+                  minWidth: fullWidth,
+                  maxWidth: fullWidth,
+                  child: child,
+                ),
+              ),
+            ),
+            child: ExcludeFocus(excluding: !open, child: sidebar!),
+          ),
+        Expanded(child: content),
+      ],
+    );
+    final safe = MediaQuery.paddingOf(context);
+
     return ColoredBox(
       color: c.windowBackground,
-      child: SafeArea(
-        child: MMWindowChrome(
-          toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-          onDragStart: onDragStart,
-          onTitleDoubleTap: onTitleDoubleTap,
-          child: sidebarOverlay
-              ? Stack(
-                  children: [
-                    Positioned.fill(
+      child: MMWindowChrome(
+        toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+        onDragStart: onDragStart,
+        onTitleDoubleTap: onTitleDoubleTap,
+        child: sidebarOverlay
+            // The drawer's scrim covers the whole window, insets included.
+            ? Stack(
+                children: [
+                  Positioned.fill(
+                    child: SafeArea(
                       child: ExcludeFocus(excluding: open, child: content),
                     ),
-                    if (sidebar != null)
-                      MMDrawer(open: open, width: fullWidth, onDismiss: onSidebarDismiss, child: sidebar!),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (sidebar != null)
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(end: open ? fullWidth : 0),
-                        duration: duration,
-                        curve: MMMotion.layoutCurve,
-                        builder: (context, width, child) => SizedBox(
-                          width: width,
-                          child: ClipRect(
-                            child: OverflowBox(
-                              alignment: Alignment.centerRight,
-                              minWidth: fullWidth,
-                              maxWidth: fullWidth,
-                              child: child,
-                            ),
-                          ),
-                        ),
-                        child: ExcludeFocus(excluding: !open, child: sidebar!),
-                      ),
-                    Expanded(child: content),
-                  ],
-                ),
-        ),
+                  ),
+                  if (sidebar != null)
+                    MMDrawer(
+                      open: open,
+                      width: fullWidth + safe.left,
+                      onDismiss: onSidebarDismiss,
+                      child: SafeArea(right: false, child: sidebar!),
+                    ),
+                ],
+              )
+            : SafeArea(child: row),
       ),
     );
   }

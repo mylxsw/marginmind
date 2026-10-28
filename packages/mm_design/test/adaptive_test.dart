@@ -240,6 +240,27 @@ void main() {
     });
   });
 
+  testWidgets('the drawer scrim reaches into the safe area insets', (tester) async {
+    _setWindow(tester, const Size(874, 402), safe: const EdgeInsets.fromLTRB(62, 0, 62, 20));
+    var dismissed = 0;
+    await tester.pumpWidget(
+      _app(
+        MMWindowScaffold(
+          sidebarOverlay: true,
+          onSidebarDismiss: () => dismissed++,
+          sidebar: const MMSidebar(children: [Text('Side')]),
+          toolbar: const MMToolbar(key: ValueKey('toolbar'), title: 'Title'),
+          body: const SizedBox.expand(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byType(MMSidebar)).left, 62);
+    expect(tester.getRect(find.byKey(const ValueKey('toolbar'))).left, 62);
+    await tester.tapAt(const Offset(850, 200));
+    expect(dismissed, 1);
+  });
+
   group('MMDrawer', () {
     testWidgets('slides in from the end edge with an inset, at most the available width', (tester) async {
       _setWindow(tester, const Size(500, 600));
