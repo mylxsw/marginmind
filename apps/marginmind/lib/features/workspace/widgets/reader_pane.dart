@@ -121,8 +121,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       if (was == true && mounted) _focus.requestFocus();
     });
 
-    final openDocs = [for (final id in state.openDocumentIds) ?content.document(id)];
-
     return Actions(
       actions: {
         ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(
@@ -158,7 +156,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               },
               child: ColoredBox(
                 color: c.readerBackground,
-                child: _body(context, state, controller, content, doc, openDocs, rootTitle, dismissSelection),
+                child: _body(context, state, controller, content, doc, rootTitle, dismissSelection),
               ),
             ),
           ),
@@ -317,7 +315,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     WorkspaceController controller,
     StudySetContent content,
     Document? doc,
-    List<Document> openDocs,
     String rootTitle,
     VoidCallback dismissSelection,
   ) {
@@ -338,21 +335,23 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (doc != null)
+        if (content.documents.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
             child: Row(
               children: [
-                Expanded(child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null)),
-                if (openDocs.length > 1) ...[
-                  const SizedBox(width: MMSpacing.s),
-                  _DocumentSwitcher(
-                    documents: openDocs,
-                    activeDocumentId: doc.id,
-                    onOpen: controller.openDocument,
-                    onClose: () => controller.closeDocument(doc.id),
-                  ),
-                ],
+                Expanded(
+                  child: doc == null
+                      ? const SizedBox.shrink()
+                      : _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
+                ),
+                const SizedBox(width: MMSpacing.s),
+                _DocumentSwitcher(
+                  documents: content.documents,
+                  activeDocumentId: doc?.id,
+                  onOpen: controller.openDocument,
+                  onClose: doc == null ? null : () => controller.closeDocument(doc.id),
+                ),
               ],
             ),
           ),
@@ -879,7 +878,7 @@ class _PagePill extends StatelessWidget {
   }
 }
 
-/// A fixed trailing control keeps document switching reachable even when tools wrap.
+/// Lists every document, including ones not yet opened in this session.
 class _DocumentSwitcher extends StatelessWidget {
   const _DocumentSwitcher({
     required this.documents,
@@ -889,54 +888,87 @@ class _DocumentSwitcher extends StatelessWidget {
   });
 
   final List<Document> documents;
-  final String activeDocumentId;
+  final String? activeDocumentId;
   final ValueChanged<String> onOpen;
-  final VoidCallback onClose;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    final height = context.mmTouch ? context.mmToolbarButton.height : 26.0;
+    final text = context.mmText.body;
+    final touch = context.mmTouch;
+    final button = touch ? context.mmToolbarButton : const Size(30, 26);
+    final rowHeight = touch ? 44.0 : 30.0;
+    const rowPadding = EdgeInsets.symmetric(horizontal: MMSpacing.s);
+    Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
+      children: [
+        Icon(icon, size: 14, color: c.secondaryLabel),
+        const SizedBox(width: MMSpacing.s),
+        Expanded(
+          child: Tooltip(
+            message: label,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: enabled ? text : text.copyWith(color: c.secondaryLabel),
+            ),
+          ),
+        ),
+        const SizedBox(width: MMSpacing.s),
+        SizedBox(width: 14, child: selected ? Icon(MMIcons.check, size: 14, color: c.accent) : null),
+      ],
+    );
     return PopupMenuButton<String>(
       key: const ValueKey('reader-documents'),
       tooltip: l.switchDocument,
       position: PopupMenuPosition.under,
+      offset: const Offset(0, MMSpacing.xs),
       padding: EdgeInsets.zero,
+      iconSize: 16,
+      icon: Icon(MMIcons.chevronUpDown, color: c.label, semanticLabel: l.switchDocument),
+      style: IconButton.styleFrom(
+        minimumSize: button,
+        fixedSize: button,
+        padding: EdgeInsets.zero,
+        hoverColor: c.hover,
+        shape: const StadiumBorder(),
+      ),
+      color: c.glassOpaque,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: c.hairline, width: 0.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      menuPadding: const EdgeInsets.all(MMSpacing.xs),
       constraints: const BoxConstraints(minWidth: 240, maxWidth: 360),
-      onSelected: (id) => id.isEmpty ? onClose() : onOpen(id),
+      onSelected: (id) => id.isEmpty ? onClose?.call() : onOpen(id),
       itemBuilder: (_) => [
         for (final document in documents)
           PopupMenuItem<String>(
             value: document.id,
-            child: Row(
-              children: [
-                Icon(MMIcons.document, size: MMSpacing.l, color: c.secondaryLabel),
-                const SizedBox(width: MMSpacing.s),
-                Expanded(child: Text(document.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                const SizedBox(width: MMSpacing.s),
-                SizedBox(
-                  width: MMSpacing.l,
-                  child: document.id == activeDocumentId ? Icon(Icons.check, size: MMSpacing.l, color: c.accent) : null,
-                ),
-              ],
+            height: rowHeight,
+            padding: rowPadding,
+            labelTextStyle: WidgetStatePropertyAll(text),
+            child: Semantics(
+              selected: document.id == activeDocumentId,
+              child: row(MMIcons.document, document.title, selected: document.id == activeDocumentId),
             ),
           ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(value: '', child: Text(l.closeCurrentDocument)),
-      ],
-      child: SizedBox(
-        height: height,
-        width: context.mmTouch ? 52 : 42,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(MMIcons.document, size: MMSpacing.l, color: c.label),
-            const SizedBox(width: 2),
-            Icon(MMIcons.chevronDown, size: 10, color: c.secondaryLabel),
-          ],
+        const PopupMenuDivider(height: MMSpacing.s),
+        PopupMenuItem<String>(
+          value: '',
+          enabled: onClose != null,
+          height: rowHeight,
+          padding: rowPadding,
+          labelTextStyle: WidgetStatePropertyAll(text),
+          child: row(MMIcons.close, l.closeCurrentDocument, enabled: onClose != null),
         ),
-      ),
+      ],
     );
   }
 }
