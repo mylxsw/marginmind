@@ -3,6 +3,9 @@
 /// transparency / motion). Only `apps/marginmind` may depend on this.
 library;
 
+export 'src/capabilities.dart';
+export 'src/file_share.dart';
+
 export 'src/desktop_window.dart';
 export 'src/shortcuts.dart';
 export 'src/system_appearance.dart';

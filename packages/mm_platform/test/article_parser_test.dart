@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:async';
 
 import 'package:flutter/services.dart';
@@ -6,6 +8,8 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 void main() {
+  setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.macOS);
+  tearDown(() => debugDefaultTargetPlatformOverride = null);
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('marginmind/article_parser');
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;

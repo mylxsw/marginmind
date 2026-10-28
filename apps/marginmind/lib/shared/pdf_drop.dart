@@ -1,6 +1,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import 'l10n.dart';
 
@@ -47,6 +48,7 @@ class _PdfDropTargetState extends State<PdfDropTarget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!MMPlatformCapabilities.current.desktopDrop) return widget.child;
     final c = context.mmColors;
     return DropTarget(
       enable: ModalRoute.of(context)?.isCurrent ?? true,

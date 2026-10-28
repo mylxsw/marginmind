@@ -1531,5 +1531,7 @@
   "settingsRequiredFields": "Complete the required fields before saving",
   "assistantModelSetupTitle": "Set up the AI assistant",
   "assistantModelSetupHint": "Add a service, enter its API key, and select a model in Model Settings to start chatting.",
-  "assistantConfigureModels": "Configure Models"
+  "assistantConfigureModels": "Configure Models",
+  "microphonePermission": "Record audio for transcription.",
+  "localNetworkPermission": "Connect to your local model service."
 }

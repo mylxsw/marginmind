@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import 'capabilities.dart';
 
 /// Results are file metadata only; PDF text and pixels never cross the channel.
 class PdfOcrDocument {
@@ -51,7 +52,7 @@ class VisionPdfOcr implements PdfOcrService {
   final _progress = <String, void Function(int, int)>{};
 
   @override
-  bool get supported => !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+  bool get supported => MMPlatformCapabilities.current.pdfOcr;
   @override
   Future<PdfOcrDocument> inspect(String source) async =>
       PdfOcrDocument.fromMap((await channel.invokeMapMethod('inspect', {'source': source}))!);

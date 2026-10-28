@@ -878,5 +878,7 @@
   "settingsRequiredFields": "请填写必填项后保存",
   "assistantModelSetupTitle": "配置 AI 助手",
   "assistantModelSetupHint": "在模型设置中添加服务、填写 API Key 并选择模型，完成后即可开始对话。",
-  "assistantConfigureModels": "配置模型"
+  "assistantConfigureModels": "配置模型",
+  "microphonePermission": "录制音频以转写文字。",
+  "localNetworkPermission": "连接你的本地模型服务。"
 }
