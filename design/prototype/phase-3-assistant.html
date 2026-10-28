@@ -787,6 +787,26 @@ body.demo-min #desk{padding-right:58px}
 .st-seg button{height:24px;padding:0 10px;border-radius:5px;font-size:12px;color:var(--label2);white-space:nowrap}
 .st-seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
 .st-r>span.st-mn:first-child{flex:1;min-width:0}
+/* ---------- Settings v3: a small window in the app's own language ---------- */
+.setwin-scrim{background:rgba(0,0,0,.22)}
+.setwin.st3{flex-direction:row;width:780px;height:560px;max-width:calc(100% - 60px);max-height:calc(100% - 50px);padding:8px;border-radius:22px;background:var(--win);box-shadow:0 0 0 .5px var(--hair),0 30px 80px rgba(0,0,0,.28),0 8px 24px rgba(0,0,0,.08)}
+.s3-side{width:196px;flex:none;border-radius:16px;background:var(--sidebar);backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 6px 24px rgba(0,0,0,.06);padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.s3-title{font-size:13px;font-weight:600;padding:8px 8px 10px}
+.s3-side .row{height:30px}
+.s3-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.s3-head{height:48px;flex:none;display:flex;align-items:center;padding:0 8px 0 22px}
+.s3-head b{flex:1;font-size:15px;font-weight:600}
+.s3-body{flex:1;min-height:0;overflow:auto;padding:0 14px 20px}
+.st3 .st-hero{display:none}
+.st3 .st-page{width:auto;max-width:540px;margin:0 auto;padding:4px 8px 24px}
+.st3 .st-group,.st3 .st-card{background:var(--fill4);box-shadow:none;border-radius:12px}
+.st3 .st-card.open .st-svc{border-bottom-color:var(--sep)}
+.st3 .st-foot{background:transparent}
+.st3 .st-h{margin-top:18px}
+.st3 .st-svc:hover{background:var(--hover)}
+.dark .st3 .st-group,.dark .st3 .st-card{background:rgba(255,255,255,.05)}
+.st3 .sw-fetch-scrim{border-radius:22px}
+
 .st-r .st-bad{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px}
 .st-note{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--warn);margin:2px 14px 0}
 
@@ -2265,11 +2285,23 @@ const builtinSearch = p => p.proto === 'anthropic' || p.proto === 'gemini' || (p
 function localDefault() { const x = enabledModels().find(e => e.p.proto === 'ollama'); return x?.key; }
 function paintSettings() {
   const w = $('#setwin'); if (!w) return;
+  // Same language as the main window: floating glass sidebar on the left, content on the right,
+  // header with the title at left and actions at right (like the assistant panel).
   const tabs = [['general', '通用', 'gear'], ['reading', '阅读', 'read'], ['models', '模型', 'spark'], ['search', '网页搜索', 'globe']];
-  w.innerHTML = `<div class="st-top"><div class="lights"><span style="background:#FF5F57" data-sw="close"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
-      <div class="st-tabs">${tabs.map(([k, n, i]) => `<button class="${SW.tab === k ? 'on' : ''}" data-swtab="${k}">${ic(i, 'l')}<span>${n}</span></button>`).join('')}</div></div>
-    <div class="st-body">${SW.tab === 'models' ? swAssistant() : SW.tab === 'search' ? swSearch() : `<div class="empty" style="padding-top:120px">${SW.tab === 'general' ? '通用' : '阅读'}（现有设置）</div>`}</div>
+  const cur = tabs.find(t => t[0] === SW.tab);
+  w.className = 'setwin st3';
+  w.innerHTML = `<aside class="s3-side"><div class="s3-title">设置</div>
+      ${tabs.map(([k, n, i]) => `<div class="row ${SW.tab === k ? 'on' : ''}" data-swtab="${k}">${ic(i, 'ri')}<span class="t">${n}</span></div>`).join('')}</aside>
+    <section class="s3-main"><header class="s3-head"><b>${cur[1]}</b><button class="ib" data-sw="close" title="关闭（Esc）">${ic('x', 's')}</button></header>
+      <div class="s3-body">${SW.tab === 'models' ? swAssistant() : SW.tab === 'search' ? swSearch() : SW.tab === 'general' ? swGeneral() : swReading()}</div></section>
     ${SW.fetch ? swFetchSheet() : ''}`;
+}
+const popRow = (label, key, opts, val) => `<div class="st-r"><span>${label}</span><select class="st-pop" data-swpref="${key}">${opts.map(([k, n]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`;
+function swGeneral() {
+  return `<div class="st-page"><div class="st-group">${popRow('外观', 'appearance', [['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']], S.theme === 'dark' ? 'dark' : 'system')}${popRow('语言', 'language', [['system', '跟随系统'], ['zh', '简体中文'], ['en', 'English']], 'system')}</div></div>`;
+}
+function swReading() {
+  return `<div class="st-page"><div class="st-group">${popRow('阅读外观', 'reader', [['white', '白色'], ['paper', '纸张'], ['green', '护眼绿'], ['dark', '深色']], S.rtheme)}</div></div>`;
 }
 function swAssistant() {
   const p = S.providers.find(x => x.id === SW.prov);
@@ -2363,6 +2395,7 @@ function settingsInput(e) {
   if (t.matches('[data-swq]')) { SW.fetch.q = t.value; const pos = t.selectionStart; paintSettings(); const q = $('#setwin [data-swq]'); q.focus(); q.setSelectionRange(pos, pos); return; }
   if (t.dataset.swdef) { S.defaults[t.dataset.swdef] = t.value; return paintSettings(); }
   if (t.matches('[data-swsx]')) { S.searxng = t.value; S.search.addr = t.value; searchCheck(); return; }
+  if (t.matches('[data-swpref]')) { const k = t.dataset.swpref; if (k === 'appearance') setEnv('theme', t.value === 'dark' ? 'dark' : 'light'); if (k === 'reader') { S.rtheme = t.value; renderReader(); } return paintSettings(); }
   if (t.matches('[data-swengsel]')) { S.search.engine = t.value; S.search.status = 'idle'; return paintSettings(); }
   if (t.matches('[data-swsacct]')) { S.search.acct = t.value; searchCheck(); return; }
   if (t.matches('[data-swskey]')) { S.search.key = t.value; searchCheck(); return; }
