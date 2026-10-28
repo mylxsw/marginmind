@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/annotation_colors.dart';
@@ -121,8 +122,8 @@ class MMColorMenuButton extends StatelessWidget {
       semanticLabel: tooltip,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
-        height: MMSizes.toolbarButton.height,
-        constraints: BoxConstraints(minWidth: MMSizes.toolbarButton.width),
+        height: context.mmToolbarButton.height,
+        constraints: BoxConstraints(minWidth: context.mmToolbarButton.width),
         decoration: BoxDecoration(
           color: s.pressed
               ? c.pressed

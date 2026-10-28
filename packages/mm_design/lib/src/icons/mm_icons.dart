@@ -50,6 +50,7 @@ abstract final class MMIcons {
   static const IconData bookmark = CupertinoIcons.bookmark; // bookmark
   static const IconData bookmarkFill = CupertinoIcons.bookmark_fill; // bookmark.fill
   static const IconData annotations = CupertinoIcons.text_quote; // text.quote
+  static const IconData more = CupertinoIcons.ellipsis; // ellipsis
   static const IconData chevronUp = CupertinoIcons.chevron_up;
   static const IconData chevronDown = CupertinoIcons.chevron_down;
   static const IconData chevronLeft = CupertinoIcons.chevron_left;

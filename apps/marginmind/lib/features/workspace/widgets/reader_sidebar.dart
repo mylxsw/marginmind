@@ -255,7 +255,7 @@ class _OutlineState extends State<_Outline> {
           onTap: item.isNavigable ? () => widget.pdf.jumpToPage(item.page) : null,
           selected: selected,
           builder: (context, s) => Container(
-            constraints: const BoxConstraints(minHeight: MMSizes.sidebarRow),
+            constraints: BoxConstraints(minHeight: context.mmSidebarRow),
             padding: EdgeInsets.fromLTRB(2 + math.min(depth, 6) * 12.0, 4, 6, 4),
             decoration: BoxDecoration(
               color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
@@ -381,7 +381,7 @@ class _Annotations extends StatelessWidget {
           semanticLabel: annotation.quote.isEmpty ? l.toolArea : annotation.quote,
           semanticValue: l.pageNumber(first.page),
           builder: (context, s) => Container(
-            constraints: const BoxConstraints(minHeight: MMSizes.sidebarRow),
+            constraints: BoxConstraints(minHeight: context.mmSidebarRow),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
             decoration: BoxDecoration(
               color: s.hovered ? c.hover : Colors.transparent,

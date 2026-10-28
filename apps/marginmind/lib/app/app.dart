@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +19,11 @@ import '../settings/system_appearance.dart';
 import '../shared/l10n.dart';
 import 'app_commands.dart';
 import 'navigation.dart';
+
+/// Whether the app runs on a phone or tablet, where layout and controls
+/// are touch-first. Read from the host OS, not the target-platform override,
+/// so widget tests stay on desktop unless they override this.
+final touchPlatformProvider = Provider<bool>((_) => !kIsWeb && (Platform.isIOS || Platform.isAndroid));
 
 class MarginMindApp extends ConsumerWidget {
   const MarginMindApp({super.key});
@@ -46,12 +54,15 @@ class MarginMindApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => MMAppearance(
-        reduceTransparency: system.reduceTransparency,
-        reduceMotion: system.reduceMotion,
-        child: MMHudHost(
-          bottom: pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom,
-          child: child ?? const SizedBox.shrink(),
+      builder: (context, child) => MMInput(
+        touchPlatform: ref.watch(touchPlatformProvider),
+        child: MMAppearance(
+          reduceTransparency: system.reduceTransparency,
+          reduceMotion: system.reduceMotion,
+          child: MMHudHost(
+            bottom: pillShown ? pagePillClearance + MMSpacing.s : MMHudHost.defaultBottom,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
       home: const AppShell(),

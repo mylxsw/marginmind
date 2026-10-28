@@ -182,7 +182,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           subtitle: session.finished || !session.started
               ? scopeTitle
               : '$scopeTitle · ${l.reviewRemaining(session.remaining)}',
-          leading: MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.backToStudySet, onPressed: _back),
+          leading: MMIconButton(
+            icon: MMIcons.chevronLeft,
+            tooltip: l.backToStudySet,
+            size: context.mmToolbarIcon,
+            onPressed: _back,
+          ),
         ),
         body: CardImageScope(
           resolve: (name) => ref.read(contentRepositoryProvider).resolveFile(widget.studySetId, name),

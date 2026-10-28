@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../icons/mm_icons.dart';
 import 'toolbar.dart';
@@ -8,8 +9,9 @@ import '../tokens/metrics.dart';
 /// Which panes of an [MMSplitView] are visible.
 enum MMSplitMode { primary, split, secondary }
 
-/// Two panes side by side with a draggable divider (1px visual, 8px hit
-/// area; double-click resets to 50 : 50). Hidden panes stay mounted, so
+/// Two panes side by side, or [primary] above [secondary] with
+/// [Axis.vertical], and a draggable divider (1px visual, 8px hit area, 44
+/// under touch; double-click resets to 50 : 50). Hidden panes stay mounted, so
 /// switching layouts keeps scroll positions and other state.
 ///
 /// When the window is too narrow for both minimum widths, `split` falls
@@ -29,7 +31,11 @@ class MMSplitView extends StatelessWidget {
     this.minPrimaryWidth = MMSizes.readerMinWidth,
     this.minSecondaryWidth = MMSizes.mapMinWidth,
     this.collapseWhenNarrow = true,
+    this.axis = Axis.horizontal,
   });
+
+  /// [Axis.vertical] stacks the panes; the minimum sizes are then heights.
+  final Axis axis;
 
   final Widget primary;
   final Widget secondary;
@@ -82,9 +88,11 @@ class MMSplitView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final vertical = axis == Axis.vertical;
+    final hit = context.mmDividerHit;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth;
+        final w = vertical ? constraints.maxHeight : constraints.maxWidth;
         final m = collapseWhenNarrow ? effectiveMode(mode, w, minPrimaryWidth, minSecondaryWidth) : mode;
         final showP = m != MMSplitMode.secondary;
         final showS = m != MMSplitMode.primary;
@@ -95,83 +103,94 @@ class MMSplitView extends StatelessWidget {
         final minPrimary = minPrimaryWidth * scale;
         final minSecondary = minSecondaryWidth * scale;
         final pw = split ? primaryWidth(w, fraction, minPrimary, minSecondary) : w;
+        Widget sized(double extent, Widget child) =>
+            vertical ? SizedBox(height: extent, child: child) : SizedBox(width: extent, child: child);
+        final panes = [
+          // A hidden pane stays mounted but cannot keep keyboard focus.
+          Offstage(
+            offstage: !showP,
+            child: ExcludeFocus(excluding: !showP, child: sized(showP ? pw : 0, primary)),
+          ),
+          if (split) sized(1, ColoredBox(color: c.separator)),
+          Offstage(
+            offstage: !showS,
+            child: ExcludeFocus(excluding: !showS, child: sized(showS ? (split ? w - pw - 1 : w) : 0, secondary)),
+          ),
+        ];
+        final divider = MouseRegion(
+          cursor: vertical ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: vertical ? null : (d) => _drag(w, pw, d.delta.dx, minPrimary, minSecondary),
+            onVerticalDragUpdate: vertical ? (d) => _drag(w, pw, d.delta.dy, minPrimary, minSecondary) : null,
+            onDoubleTap: () => onFractionChanged!(0.5),
+            child: Semantics(label: 'Divider', slider: true, child: const SizedBox.expand()),
+          ),
+        );
+        final button = context.mmToolbarButton;
 
         return Stack(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // A hidden pane stays mounted but cannot keep keyboard focus.
-                Offstage(
-                  offstage: !showP,
-                  child: ExcludeFocus(
-                    excluding: !showP,
-                    child: SizedBox(width: showP ? pw : 0, child: primary),
-                  ),
-                ),
-                if (split) SizedBox(width: 1, child: ColoredBox(color: c.separator)),
-                Offstage(
-                  offstage: !showS,
-                  child: ExcludeFocus(
-                    excluding: !showS,
-                    child: SizedBox(width: showS ? (split ? w - pw - 1 : w) : 0, child: secondary),
-                  ),
-                ),
-              ],
-            ),
+            vertical
+                ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: panes)
+                : Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: panes),
             if (split && onFractionChanged != null)
-              Positioned(
-                left: pw + 0.5 - MMSizes.dividerHitWidth / 2,
-                top: 0,
-                bottom: 0,
-                width: MMSizes.dividerHitWidth,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.resizeColumn,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onHorizontalDragUpdate: (d) {
-                      final next = primaryWidth(w, (pw + d.delta.dx) / w, minPrimary, minSecondary);
-                      onFractionChanged!(next / w);
-                    },
-                    onDoubleTap: () => onFractionChanged!(0.5),
-                    child: Semantics(label: 'Divider', slider: true, child: const SizedBox.expand()),
-                  ),
-                ),
-              ),
-            if (onModeChanged != null)
+              vertical
+                  ? Positioned(top: pw + 0.5 - hit / 2, left: 0, right: 0, height: hit, child: divider)
+                  : Positioned(left: pw + 0.5 - hit / 2, top: 0, bottom: 0, width: hit, child: divider),
+            if (onModeChanged != null && !vertical)
               Positioned(
                 left: split
-                    ? (pw - MMSizes.toolbarButton.width).clamp(0, w - MMSizes.toolbarButton.width * 2)
+                    ? (pw - button.width).clamp(0, w - button.width * 2)
                     : showP
                     ? null
                     : MMSpacing.s,
                 right: !split && showP ? MMSpacing.s : null,
                 bottom: MMSizes.toolbarHeight + MMSpacing.m,
-                child: MMToolbarGroup(
-                  children: [
-                    if (split) ...[
-                      MMToolbarButton(
-                        icon: MMIcons.chevronLeft,
-                        tooltip: secondaryLabel,
-                        onPressed: () => onModeChanged!(MMSplitMode.secondary),
-                      ),
-                      MMToolbarButton(
-                        icon: MMIcons.chevronRight,
-                        tooltip: primaryLabel,
-                        onPressed: () => onModeChanged!(MMSplitMode.primary),
-                      ),
-                    ] else
-                      MMToolbarButton(
-                        icon: MMIcons.layoutSplit,
-                        tooltip: splitLabel,
-                        onPressed: () => onModeChanged!(MMSplitMode.split),
-                      ),
-                  ],
-                ),
+                child: _modeButtons(split),
+              ),
+            // Stacked panes: the switch sits at the right end of the divider,
+            // or at the bottom right of the single pane.
+            if (onModeChanged != null && vertical)
+              Positioned(
+                right: MMSpacing.s,
+                top: split ? (pw - button.height - 6 - MMSpacing.s).clamp(0.0, w) : null,
+                bottom: split ? null : MMSizes.toolbarHeight + MMSpacing.m,
+                child: _modeButtons(split),
               ),
           ],
         );
       },
+    );
+  }
+
+  void _drag(double extent, double primary, double delta, double minPrimary, double minSecondary) {
+    final next = primaryWidth(extent, (primary + delta) / extent, minPrimary, minSecondary);
+    onFractionChanged!(next / extent);
+  }
+
+  Widget _modeButtons(bool split) {
+    final vertical = axis == Axis.vertical;
+    return MMToolbarGroup(
+      children: [
+        if (split) ...[
+          MMToolbarButton(
+            icon: vertical ? MMIcons.chevronUp : MMIcons.chevronLeft,
+            tooltip: secondaryLabel,
+            onPressed: () => onModeChanged!(MMSplitMode.secondary),
+          ),
+          MMToolbarButton(
+            icon: vertical ? MMIcons.chevronDown : MMIcons.chevronRight,
+            tooltip: primaryLabel,
+            onPressed: () => onModeChanged!(MMSplitMode.primary),
+          ),
+        ] else
+          MMToolbarButton(
+            icon: MMIcons.layoutSplit,
+            tooltip: splitLabel,
+            onPressed: () => onModeChanged!(MMSplitMode.split),
+          ),
+      ],
     );
   }
 }

@@ -64,6 +64,7 @@ abstract final class MMSizes {
   /// Maximum width of an editable value in a settings row.
   static const double settingsFieldWidth = 245;
   static const double segmented = 28;
+  static const double segmentedTouch = 36;
   static const double readerMinWidth = 420;
 
   /// Quiet full-width reader navigation: page badge above a thin track.
@@ -76,5 +77,17 @@ abstract final class MMSizes {
   static const double rightPanelNarrowWidth = 360;
   static const double mapMinWidth = 360;
   static const double dividerHitWidth = 8;
+
+  /// Minimum hit area of a control under touch input.
+  static const double touchTarget = 44;
+
+  /// Smallest height of either pane when the source sits above the map.
+  static const double paneMinHeight = 240;
+
+  /// Width of the "Source | Map" switch in a compact window.
+  static const double paneSwitchMaxWidth = 360;
+
+  /// Toolbar search field in a compact window.
+  static const double compactSearchWidth = 160;
   static const Size windowMinSize = Size(960, 600);
 }

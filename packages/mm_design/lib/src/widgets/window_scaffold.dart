@@ -34,6 +34,11 @@ class MMWindowChrome extends InheritedWidget {
 
 /// The window layout used by every MarginMind window: a collapsible
 /// floating sidebar, a unified toolbar and the content below it.
+///
+/// The background fills the window; sidebar, toolbar and content stay inside
+/// the safe area (status bar, home indicator, landscape side insets). With
+/// [sidebarOverlay] the sidebar is a drawer over the content instead of a
+/// column beside it, and tapping outside calls [onSidebarDismiss].
 class MMWindowScaffold extends StatelessWidget {
   const MMWindowScaffold({
     super.key,
@@ -42,6 +47,8 @@ class MMWindowScaffold extends StatelessWidget {
     this.sidebar,
     this.sidebarVisible = true,
     this.sidebarWidth = MMSizes.sidebarWidth,
+    this.sidebarOverlay = false,
+    this.onSidebarDismiss,
     this.onDragStart,
     this.onTitleDoubleTap,
     this.showsWindowButtons = true,
@@ -52,6 +59,8 @@ class MMWindowScaffold extends StatelessWidget {
   final Widget? sidebar;
   final bool sidebarVisible;
   final double sidebarWidth;
+  final bool sidebarOverlay;
+  final VoidCallback? onSidebarDismiss;
   final VoidCallback? onDragStart;
   final VoidCallback? onTitleDoubleTap;
 
@@ -64,54 +73,147 @@ class MMWindowScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final open = sidebar != null && sidebarVisible;
+    final inline = open && !sidebarOverlay;
     final fullWidth = sidebarWidth + MMSizes.sidebarInset;
     final duration = MMAppearance.duration(context, MMMotion.layout);
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        toolbar,
+        Expanded(child: body),
+      ],
+    );
+
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (sidebar != null)
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: open ? fullWidth : 0),
+            duration: duration,
+            curve: MMMotion.layoutCurve,
+            builder: (context, width, child) => SizedBox(
+              width: width,
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.centerRight,
+                  minWidth: fullWidth,
+                  maxWidth: fullWidth,
+                  child: child,
+                ),
+              ),
+            ),
+            child: ExcludeFocus(excluding: !open, child: sidebar!),
+          ),
+        Expanded(child: content),
+      ],
+    );
+    final safe = MediaQuery.paddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
 
     return MMInputMode(
       child: MMContextMenuHost(
         child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: ColoredBox(
-            color: c.windowBackground,
-            child: MMWindowChrome(
-              toolbarLeadingInset: !open && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-              onDragStart: onDragStart,
-              onTitleDoubleTap: onTitleDoubleTap,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (sidebar != null)
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(end: open ? fullWidth : 0),
-                      duration: duration,
-                      curve: MMMotion.layoutCurve,
-                      builder: (context, width, child) => SizedBox(
-                        width: width,
-                        child: ClipRect(
-                          child: OverflowBox(
-                            alignment: Alignment.centerRight,
-                            minWidth: fullWidth,
-                            maxWidth: fullWidth,
-                            child: child,
+          padding: EdgeInsets.only(bottom: keyboard),
+          // Above the keyboard the home indicator inset no longer applies.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeBottom: keyboard > 0,
+            child: ColoredBox(
+              color: c.windowBackground,
+              child: MMWindowChrome(
+                toolbarLeadingInset: !inline && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+                onDragStart: onDragStart,
+                onTitleDoubleTap: onTitleDoubleTap,
+                child: sidebarOverlay
+                    // The drawer's scrim covers the whole window, insets included.
+                    ? Stack(
+                        children: [
+                          Positioned.fill(
+                            child: SafeArea(
+                              child: ExcludeFocus(excluding: open, child: content),
+                            ),
                           ),
-                        ),
-                      ),
-                      child: ExcludeFocus(excluding: !open, child: sidebar!),
-                    ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        toolbar,
-                        Expanded(child: body),
-                      ],
-                    ),
-                  ),
-                ],
+                          if (sidebar != null)
+                            MMDrawer(
+                              open: open,
+                              width: fullWidth + safe.left,
+                              onDismiss: onSidebarDismiss,
+                              child: SafeArea(right: false, child: sidebar!),
+                            ),
+                        ],
+                      )
+                    : SafeArea(child: row),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A panel that slides over the content from one edge, above a scrim that
+/// dismisses it: the sidebar of a touch window, or a floating right panel.
+/// Closed, it waits off-screen and keeps its state.
+class MMDrawer extends StatelessWidget {
+  const MMDrawer({
+    super.key,
+    required this.open,
+    required this.width,
+    required this.child,
+    this.onDismiss,
+    this.end = false,
+    this.inset = 0,
+  });
+
+  final bool open;
+  final double width;
+  final Widget child;
+  final VoidCallback? onDismiss;
+
+  /// Slides in from the right edge instead of the left.
+  final bool end;
+
+  /// Gap to the window edges (the sidebar brings its own margin).
+  final double inset;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final duration = MMAppearance.duration(context, MMMotion.layout);
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = width.clamp(0.0, (constraints.maxWidth - inset * 2).clamp(0.0, double.infinity));
+          return Stack(
+            children: [
+              IgnorePointer(
+                ignoring: !open,
+                child: AnimatedOpacity(
+                  opacity: open ? 1 : 0,
+                  duration: duration,
+                  child: GestureDetector(
+                    key: const ValueKey('mm-drawer-scrim'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onDismiss,
+                    child: SizedBox.expand(child: ColoredBox(color: c.scrim)),
+                  ),
+                ),
+              ),
+              AnimatedPositioned(
+                duration: duration,
+                curve: MMMotion.layoutCurve,
+                top: inset,
+                bottom: inset,
+                left: end ? null : (open ? inset : -w - inset),
+                right: end ? (open ? inset : -w - inset) : null,
+                width: w,
+                child: ExcludeFocus(excluding: !open, child: child),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

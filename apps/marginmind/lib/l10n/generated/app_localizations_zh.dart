@@ -319,6 +319,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutMap => '只看脑图';
 
   @override
+  String get paneSource => '阅读';
+
+  @override
+  String get paneMap => '脑图';
+
+  @override
+  String get moreTools => '更多';
+
+  @override
   String get aiAssistant => 'AI 助手';
 
   @override

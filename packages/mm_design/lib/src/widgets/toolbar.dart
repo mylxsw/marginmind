@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
@@ -72,7 +73,7 @@ class MMToolbarGroup extends StatelessWidget {
   }
 }
 
-/// Toolbar button (34×30, radius 15). Selected uses the accent tint, never a
+/// Toolbar button (34×30, radius 15; 44×44 under touch). Selected uses the accent tint, never a
 /// solid fill.
 class MMToolbarButton extends StatelessWidget {
   const MMToolbarButton({
@@ -102,6 +103,7 @@ class MMToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
+    final size = context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
       selected: selected,
@@ -118,8 +120,8 @@ class MMToolbarButton extends StatelessWidget {
             : Colors.transparent;
         return AnimatedContainer(
           duration: MMMotion.quick,
-          height: MMSizes.toolbarButton.height,
-          constraints: BoxConstraints(minWidth: MMSizes.toolbarButton.width),
+          height: size.height,
+          constraints: BoxConstraints(minWidth: size.width),
           padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : 10),
           decoration: BoxDecoration(
             color: bg,

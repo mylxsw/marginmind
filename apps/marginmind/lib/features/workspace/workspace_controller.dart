@@ -688,12 +688,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   _PanelRestore? _panelRestore;
 
+  /// Set by the screen while the panel floats over the panes (touch windows
+  /// below the regular size class): opening it then leaves the panes alone.
+  bool panelFloats = false;
+
   /// Opens the right panel on [content]. The first opening remembers the
   /// layout and sidebar. Only details may put the other pane aside;
   /// asking the assistant leaves the user's pane choices alone.
   void openPanel(RightPanel content, {PanelOrigin origin = PanelOrigin.toolbar}) {
     if (state.panel == null) _panelRestore = (layout: state.layout, sidebarVisible: state.sidebarVisible);
-    final layout = content == RightPanel.assistant || state.layout != MMSplitMode.split
+    final layout = panelFloats || content == RightPanel.assistant || state.layout != MMSplitMode.split
         ? null
         : switch (origin) {
             PanelOrigin.reader => MMSplitMode.primary,

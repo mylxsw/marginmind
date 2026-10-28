@@ -32,6 +32,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   late final TextEditingController _search;
   final _searchFocus = FocusNode();
 
+  /// Whether the sidebar drawer of a touch window is out.
+  bool _drawer = false;
+
+  void _setDrawer(bool open) {
+    if (_drawer != open) setState(() => _drawer = open);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +68,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     ref.listen(focusRequestsProvider, (_, next) {
       if (next?.$1 == FocusTarget.search) _searchFocus.requestFocus();
     });
+    // On touch the sidebar is a drawer: its commands move the drawer, and
+    // picking a filter puts it away.
+    final touchPlatform = MMInput.of(context).touchPlatform;
+    ref.listen(libraryViewProvider.select((v) => v.sidebarVisible), (_, _) {
+      if (touchPlatform) _setDrawer(!_drawer);
+    });
+    ref.listen(libraryViewProvider.select((v) => v.query.filter), (_, _) {
+      if (touchPlatform) _setDrawer(false);
+    });
+    final sizeClass = MMSizeClass.of(context);
 
     final l = context.l10n;
     final view = ref.watch(libraryViewProvider);
@@ -83,7 +100,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     };
 
     return MMWindowScaffold(
-      sidebarVisible: view.sidebarVisible,
+      sidebarVisible: touchPlatform ? _drawer : view.sidebarVisible,
+      sidebarOverlay: touchPlatform,
+      onSidebarDismiss: () => _setDrawer(false),
       onDragStart: WindowChrome.onDragStart,
       onTitleDoubleTap: WindowChrome.onTitleDoubleTap,
       showsWindowButtons: WindowChrome.showsWindowButtons,
@@ -91,41 +110,49 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       toolbar: MMToolbar(
         title: _filterTitle(view.query.filter, folders),
         subtitle: subtitle,
-        leading: view.sidebarVisible
+        leading: view.sidebarVisible && !touchPlatform
             ? null
-            : MMIconButton(icon: MMIcons.sidebar, tooltip: l.showSidebar, onPressed: controller.toggleSidebar),
+            : MMIconButton(
+                icon: MMIcons.sidebar,
+                tooltip: l.showSidebar,
+                size: context.mmToolbarIcon,
+                onPressed: touchPlatform ? () => _setDrawer(true) : controller.toggleSidebar,
+              ),
         actions: [
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                icon: MMIcons.grid,
-                tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
-                selected: view.viewMode == LibraryViewMode.grid,
-                onPressed: () => controller.setViewMode(LibraryViewMode.grid),
-              ),
-              MMToolbarButton(
-                icon: MMIcons.list,
-                tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
-                selected: view.viewMode == LibraryViewMode.list,
-                onPressed: () => controller.setViewMode(LibraryViewMode.list),
-              ),
-            ],
-          ),
-          MMToolbarGroup(
-            children: [
-              MMToolbarButton(
-                icon: MMIcons.sort,
-                label: l.sortBy(sortLabel),
-                tooltip: l.sortTooltip,
-                onPressed: controller.cycleSort,
-              ),
-            ],
-          ),
+          if (sizeClass != MMSizeClass.compact) ...[
+            MMToolbarGroup(
+              children: [
+                MMToolbarButton(
+                  icon: MMIcons.grid,
+                  tooltip: AppShortcuts.tip(l.viewAsIcons, AppShortcuts.view1),
+                  selected: view.viewMode == LibraryViewMode.grid,
+                  onPressed: () => controller.setViewMode(LibraryViewMode.grid),
+                ),
+                MMToolbarButton(
+                  icon: MMIcons.list,
+                  tooltip: AppShortcuts.tip(l.viewAsList, AppShortcuts.view2),
+                  selected: view.viewMode == LibraryViewMode.list,
+                  onPressed: () => controller.setViewMode(LibraryViewMode.list),
+                ),
+              ],
+            ),
+            MMToolbarGroup(
+              children: [
+                MMToolbarButton(
+                  icon: MMIcons.sort,
+                  label: sizeClass == MMSizeClass.regular ? l.sortBy(sortLabel) : null,
+                  tooltip: sizeClass == MMSizeClass.regular ? l.sortTooltip : l.sortBy(sortLabel),
+                  onPressed: controller.cycleSort,
+                ),
+              ],
+            ),
+          ],
           MMToolbarSearchField(
             placeholder: l.search,
             controller: _search,
             focusNode: _searchFocus,
             onChanged: controller.setSearch,
+            width: sizeClass == MMSizeClass.compact ? MMSizes.compactSearchWidth : 200,
           ),
           MMToolbarGroup(
             children: [
