@@ -228,6 +228,8 @@
   "zoomOut": "Zoom Out",
   "previousPage": "Previous Page",
   "nextPage": "Next Page",
+  "switchDocument": "Switch Document",
+  "closeCurrentDocument": "Close Current Document",
   "closeTab": "Close Tab",
   "comingSoon": "Coming soon",
   "settings": "Settings…",

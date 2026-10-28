@@ -776,6 +776,18 @@ abstract class AppLocalizations {
   /// **'Next Page'**
   String get nextPage;
 
+  /// No description provided for @switchDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Document'**
+  String get switchDocument;
+
+  /// No description provided for @closeCurrentDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Current Document'**
+  String get closeCurrentDocument;
+
   /// No description provided for @closeTab.
   ///
   /// In en, this message translates to:

@@ -50,16 +50,46 @@ void main() {
       expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('学习的底层逻辑')), findsNothing);
     });
 
-    testWidgets('a second document brings the tab bar back; closing it hides it again', (tester) async {
-      final container = await openSet(tester);
-      container.read(provider.notifier).openDocument('c2');
-      await tester.pumpAndSettle();
-      expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('学习的底层逻辑')), findsOneWidget);
-      expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('论文：检索练习效应')), findsOneWidget);
-      container.read(provider.notifier).closeDocument('c2');
-      await tester.pumpAndSettle();
-      expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('论文：检索练习效应')), findsNothing);
-    });
+    for (final width in [1280.0, 900.0]) {
+      testWidgets('documents switch from the trailing menu at width $width', (tester) async {
+        final container = await openSet(tester, size: Size(width, 820));
+        final switcher = find.byKey(const ValueKey('reader-documents'));
+        expect(switcher, findsNothing);
+        container.read(provider.notifier).openDocument('c2');
+        await tester.pumpAndSettle();
+        expect(switcher, findsOneWidget);
+        final reader = find.byType(ReaderPane);
+        // No document titles occupy a separate row above the tools.
+        expect(find.descendant(of: reader, matching: find.text('学习的底层逻辑')), findsNothing);
+        expect(find.descendant(of: reader, matching: find.text('论文：检索练习效应')), findsNothing);
+        expect(tester.getRect(switcher).right, closeTo(tester.getRect(reader).right - MMSpacing.m, 0.1));
+
+        await tester.tap(switcher);
+        await tester.pumpAndSettle();
+        final current = find.ancestor(of: find.text('论文：检索练习效应').last, matching: find.byType(PopupMenuItem<String>));
+        expect(find.descendant(of: current, matching: find.byIcon(Icons.check)), findsOneWidget);
+        // Selecting the current item keeps it open.
+        await tester.tap(find.text('论文：检索练习效应').last);
+        await tester.pumpAndSettle();
+        expect(container.read(provider).openDocumentIds, hasLength(2));
+        await tester.tap(switcher);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('学习的底层逻辑').last);
+        await tester.pumpAndSettle();
+        expect(container.read(provider).activeDocumentId, 'c1');
+        expect(toolbar(tester).title, '学习的底层逻辑');
+        expect(container.read(provider).openDocumentIds, hasLength(2));
+
+        await tester.tap(switcher);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Close Current Document'));
+        await tester.pumpAndSettle();
+        expect(container.read(provider).openDocumentIds, ['c2']);
+        expect(container.read(provider).activeDocumentId, 'c2');
+        expect(switcher, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('reader tools control the sidebar and appearance separately', (tester) async {
       final container = await openSet(tester);

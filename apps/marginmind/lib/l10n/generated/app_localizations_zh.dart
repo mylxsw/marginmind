@@ -385,6 +385,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nextPage => '下一页';
 
   @override
+  String get switchDocument => '切换文档';
+
+  @override
+  String get closeCurrentDocument => '关闭当前文档';
+
+  @override
   String get closeTab => '关闭标签页';
 
   @override

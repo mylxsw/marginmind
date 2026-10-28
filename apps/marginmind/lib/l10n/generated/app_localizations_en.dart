@@ -397,6 +397,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextPage => 'Next Page';
 
   @override
+  String get switchDocument => 'Switch Document';
+
+  @override
+  String get closeCurrentDocument => 'Close Current Document';
+
+  @override
   String get closeTab => 'Close Tab';
 
   @override

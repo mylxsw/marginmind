@@ -22,8 +22,7 @@ import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
 import 'reader_ocr_controls.dart';
 
-/// Source pane: document tabs, the PDF (Preview-style gray backdrop), the
-/// text action toolbar and the floating page pill.
+/// Source pane: the PDF, reader tools, document switcher and floating page pill.
 class ReaderPane extends ConsumerStatefulWidget {
   const ReaderPane({super.key, required this.studySetId});
 
@@ -339,35 +338,23 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (openDocs.length > 1)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
-            child: Row(
-              children: [
-                if (openDocs.length > 1)
-                  for (final d in openDocs)
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 240),
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: _Tab(
-                            title: d.title,
-                            active: d.id == state.activeDocumentId,
-                            onOpen: () => controller.openDocument(d.id),
-                            onClose: () => controller.closeDocument(d.id),
-                            closeLabel: l.closeTab,
-                          ),
-                        ),
-                      ),
-                    ),
-              ],
-            ),
-          ),
         if (doc != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
-            child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null),
+            child: Row(
+              children: [
+                Expanded(child: _toolbar(context, state, controller, style, ocr?.running == true ? source : null)),
+                if (openDocs.length > 1) ...[
+                  const SizedBox(width: MMSpacing.s),
+                  _DocumentSwitcher(
+                    documents: openDocs,
+                    activeDocumentId: doc.id,
+                    onOpen: controller.openDocument,
+                    onClose: () => controller.closeDocument(doc.id),
+                  ),
+                ],
+              ],
+            ),
           ),
         if (ocr != null)
           ReaderOcrControls(
@@ -892,56 +879,61 @@ class _PagePill extends StatelessWidget {
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.title,
-    required this.active,
+/// A fixed trailing control keeps document switching reachable even when tools wrap.
+class _DocumentSwitcher extends StatelessWidget {
+  const _DocumentSwitcher({
+    required this.documents,
+    required this.activeDocumentId,
     required this.onOpen,
     required this.onClose,
-    required this.closeLabel,
   });
 
-  final String title;
-  final bool active;
-  final VoidCallback onOpen;
+  final List<Document> documents;
+  final String activeDocumentId;
+  final ValueChanged<String> onOpen;
   final VoidCallback onClose;
-  final String closeLabel;
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final c = context.mmColors;
-    final t = context.mmText;
-    return MMInteractive(
-      onTap: onOpen,
-      selected: active,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        decoration: BoxDecoration(
-          color: active ? c.card : Color.alphaBlend(s.hovered ? c.hover : Colors.transparent, c.quaternaryFill),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: active ? c.cardShadow : null,
-        ),
-        child: Row(
-          children: [
-            Opacity(
-              opacity: s.hovered || active ? 1 : 0,
-              child: MMIconButton(icon: MMIcons.close, tooltip: closeLabel, size: 18, iconSize: 10, onPressed: onClose),
-            ),
-            Expanded(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: t.callout.copyWith(
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  color: active ? c.label : c.secondaryLabel,
+    final height = context.mmTouch ? context.mmToolbarButton.height : 26.0;
+    return PopupMenuButton<String>(
+      key: const ValueKey('reader-documents'),
+      tooltip: l.switchDocument,
+      position: PopupMenuPosition.under,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 240, maxWidth: 360),
+      onSelected: (id) => id.isEmpty ? onClose() : onOpen(id),
+      itemBuilder: (_) => [
+        for (final document in documents)
+          PopupMenuItem<String>(
+            value: document.id,
+            child: Row(
+              children: [
+                Icon(MMIcons.document, size: MMSpacing.l, color: c.secondaryLabel),
+                const SizedBox(width: MMSpacing.s),
+                Expanded(child: Text(document.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: MMSpacing.s),
+                SizedBox(
+                  width: MMSpacing.l,
+                  child: document.id == activeDocumentId ? Icon(Icons.check, size: MMSpacing.l, color: c.accent) : null,
                 ),
-              ),
+              ],
             ),
-            const SizedBox(width: 18),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(value: '', child: Text(l.closeCurrentDocument)),
+      ],
+      child: SizedBox(
+        height: height,
+        width: context.mmTouch ? 52 : 42,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(MMIcons.document, size: MMSpacing.l, color: c.label),
+            const SizedBox(width: 2),
+            Icon(MMIcons.chevronDown, size: 10, color: c.secondaryLabel),
           ],
         ),
       ),
