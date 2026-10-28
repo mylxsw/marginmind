@@ -70,7 +70,7 @@ void main() {
         expect(find.descendant(of: current, matching: find.byIcon(MMIcons.check)), findsOneWidget);
         final other = find.text('论文：检索练习效应').last;
         final label = tester.widget<Text>(other);
-        expect(label.style!.fontSize, 13);
+        expect(label.style!.fontSize, 12);
         expect(label.style!.fontWeight, FontWeight.w400);
         final otherRow = find.ancestor(of: other, matching: find.byType(PopupMenuItem<String>));
         expect(tester.getSize(otherRow).height, 30);

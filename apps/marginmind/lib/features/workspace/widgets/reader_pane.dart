@@ -896,7 +896,7 @@ class _DocumentSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    final text = context.mmText.body;
+    final text = context.mmText.body.copyWith(fontSize: 12);
     final touch = context.mmTouch;
     final button = touch ? context.mmToolbarButton : const Size(30, 26);
     final rowHeight = touch ? 44.0 : 30.0;
