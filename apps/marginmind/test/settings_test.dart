@@ -48,18 +48,14 @@ void main() {
     Future<ProviderContainer> openSettings(WidgetTester tester, {bool? showsGallery}) async {
       final container = await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
       final context = tester.element(find.byType(MMWindowScaffold));
-      showMMSheet<void>(
-        context: context,
-        width: SettingsWindow.width,
-        builder: (_) => showsGallery == null ? const SettingsWindow() : SettingsWindow(showsGallery: showsGallery),
-      );
+      showSettings(context, showsGallery: showsGallery);
       await tester.pumpAndSettle();
       return container;
     }
 
     testWidgets('hides the gallery in release builds; Esc closes', (tester) async {
       await openSettings(tester, showsGallery: false);
-      expect(find.text('General'), findsOneWidget);
+      expect(find.text('General'), findsNWidgets(2), reason: 'the sidebar row and the page title');
       expect(find.text('Component Gallery'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -98,6 +94,66 @@ void main() {
       await tester.tap(find.text('纸质').last);
       await tester.pumpAndSettle();
       expect(container.read(settingsProvider).readerStyle, MMReaderStyle.paper);
+    });
+
+    testWidgets('a centered 780×560 dialog: glass sidebar beside a titled page', (tester) async {
+      await openSettings(tester);
+      final window = tester.getRect(find.byKey(const ValueKey('settings-window')));
+      expect(window.size, SettingsWindow.size);
+      expect(window.center, const Offset(640, 410));
+      final sidebar = tester.getRect(find.byKey(const ValueKey('settings-sidebar')));
+      expect(sidebar.width, SettingsWindow.sidebarWidth);
+      expect(sidebar.left - window.left, closeTo(8, .6));
+      expect(find.byType(BackdropFilter), findsWidgets);
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('settings-sidebar')), matching: find.text('Settings')),
+        findsOneWidget,
+      );
+      Text title() => tester.widget<Text>(find.byKey(const ValueKey('settings-title')));
+      expect(title().data, 'General');
+      await tester.tap(find.byKey(const ValueKey('settings-tab-webSearch')));
+      await tester.pumpAndSettle();
+      expect(title().data, 'Web Search');
+      final selected = tester.widget<MMSidebarItem>(find.byKey(const ValueKey('settings-tab-webSearch')));
+      expect(selected.selected, isTrue);
+      expect(tester.getRect(find.byKey(const ValueKey('settings-close'))).right, lessThan(window.right - 8));
+    });
+
+    testWidgets('shrinks with the window, never below its minimum', (tester) async {
+      await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
+      final context = tester.element(find.byType(MMWindowScaffold));
+      Future<Size> sizeIn(Size window) async {
+        showMMDialog<void>(
+          context: context,
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: window),
+            child: const SettingsWindow(showsGallery: false),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final size = tester.getSize(find.byKey(const ValueKey('settings-window')));
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        return size;
+      }
+
+      expect(await sizeIn(const Size(700, 500)), const Size(652, 452));
+      expect(await sizeIn(const Size(900, 470)), const Size(780, 440), reason: 'the margins go first');
+      expect(await sizeIn(const Size(600, 400)), const Size(600, 400), reason: 'never larger than the window');
+    });
+
+    testWidgets('opaque sidebar when transparency is reduced', (tester) async {
+      await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
+      final context = tester.element(find.byType(MMWindowScaffold));
+      showMMDialog<void>(
+        context: context,
+        builder: (_) => const MMAppearance(reduceTransparency: true, child: SettingsWindow(showsGallery: false)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('settings-sidebar')), matching: find.byType(BackdropFilter)),
+        findsNothing,
+      );
     });
 
     testWidgets('the close button closes', (tester) async {

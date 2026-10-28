@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,18 +13,24 @@ import 'app_settings.dart';
 
 enum SettingsTab { general, reading, models, webSearch }
 
-/// The app's settings (⌘,): icon tabs over one scrolling page, like a macOS
-/// settings window. Shown as a window-sized sheet; changes apply at once.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general}) => showMMSheet<void>(
-  context: context,
-  width: SettingsWindow.width,
-  builder: (_) => SettingsWindow(initialTab: tab),
-);
+/// The app's settings (⌘,): a centered dialog in the main window's own
+/// language — a floating glass sidebar of sections beside a titled,
+/// scrolling page. Changes apply at once.
+Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, bool? showsGallery}) =>
+    showMMDialog<void>(
+      context: context,
+      builder: (_) => SettingsWindow(initialTab: tab, showsGallery: showsGallery ?? kDebugMode),
+    );
 
 class SettingsWindow extends StatefulWidget {
   const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.showsGallery = kDebugMode});
 
-  static const width = 680.0, height = 640.0;
+  static const size = Size(780, 560), minSize = Size(640, 440);
+
+  /// Space kept between the dialog and the window edges.
+  static const margin = 24.0;
+
+  static const sidebarWidth = 196.0;
 
   final SettingsTab initialTab;
 
@@ -36,6 +44,14 @@ class SettingsWindow extends StatefulWidget {
 class _SettingsWindowState extends State<SettingsWindow> {
   late SettingsTab _tab = widget.initialTab;
 
+  /// [preferred], shrunk to fit [screen] less the margins; below [min] it
+  /// gives up the margins first, and only a smaller window shrinks it more.
+  static double _fit(double preferred, double min, double screen) {
+    final floor = min < screen ? min : screen;
+    final room = screen - SettingsWindow.margin * 2;
+    return preferred.clamp(floor, room > floor ? room : floor).toDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
@@ -46,68 +62,82 @@ class _SettingsWindowState extends State<SettingsWindow> {
       (SettingsTab.models, MMIcons.ai, l.settingsModels),
       (SettingsTab.webSearch, MMIcons.web, l.settingsWebSearch),
     ];
-    final available = MediaQuery.sizeOf(context).height - MMSizes.toolbarHeight - 24;
+    final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
+    final screen = MediaQuery.sizeOf(context);
+    const size = SettingsWindow.size, min = SettingsWindow.minSize;
     return Material(
       type: MaterialType.transparency,
       child: Container(
         key: const ValueKey('settings-window'),
-        height: SettingsWindow.height.clamp(320, available < 320 ? 320 : available).toDouble(),
+        width: _fit(size.width, min.width, screen.width),
+        height: _fit(size.height, min.height, screen.height),
+        padding: const EdgeInsets.all(MMSpacing.s),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: c.canvas,
+          color: c.windowBackground,
           borderRadius: BorderRadius.circular(MMRadii.sheet),
           border: Border.all(color: c.hairline, width: .5),
           boxShadow: c.sheetShadow,
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: c.windowBackground,
-                border: Border(bottom: BorderSide(color: c.separator)),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: MMSpacing.s,
-                    top: MMSpacing.s,
-                    child: MMIconButton(
-                      key: const ValueKey('settings-close'),
-                      icon: MMIcons.close,
-                      iconSize: 12,
-                      size: 24,
-                      tooltip: l.closePanel,
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
+            _Sidebar(
+              title: l.settingsTitle,
+              children: [
+                for (final (tab, icon, label) in tabs)
+                  MMSidebarItem(
+                    key: ValueKey('settings-tab-${tab.name}'),
+                    icon: icon,
+                    label: label,
+                    selected: tab == _tab,
+                    onTap: () => setState(() => _tab = tab),
                   ),
-                  Center(
+              ],
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 48,
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        for (final (tab, icon, label) in tabs)
-                          _Tab(
-                            key: ValueKey('settings-tab-${tab.name}'),
-                            icon: icon,
-                            label: label,
-                            selected: tab == _tab,
-                            onPressed: () => setState(() => _tab = tab),
+                        const SizedBox(width: MMSpacing.l),
+                        Expanded(
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              title,
+                              key: const ValueKey('settings-title'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.mmText.title3.copyWith(color: c.label),
+                            ),
                           ),
+                        ),
+                        MMIconButton(
+                          key: const ValueKey('settings-close'),
+                          icon: MMIcons.close,
+                          iconSize: 13,
+                          tooltip: '${l.closePanel}（Esc）',
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                        const SizedBox(width: MMSpacing.xs),
                       ],
                     ),
+                  ),
+                  Expanded(
+                    child: switch (_tab) {
+                      SettingsTab.general => _GeneralPage(showsGallery: widget.showsGallery),
+                      SettingsTab.reading => const _ReadingPage(),
+                      SettingsTab.models => const ModelSettingsPage(),
+                      SettingsTab.webSearch => const WebSearchSettingsPage(),
+                    },
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: switch (_tab) {
-                SettingsTab.general => _GeneralPage(showsGallery: widget.showsGallery),
-                SettingsTab.reading => const _ReadingPage(),
-                SettingsTab.models => const ModelSettingsPage(),
-                SettingsTab.webSearch => const WebSearchSettingsPage(),
-              },
-            ),
           ],
         ),
       ),
@@ -115,99 +145,63 @@ class _SettingsWindowState extends State<SettingsWindow> {
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({super.key, required this.icon, required this.label, required this.selected, required this.onPressed});
+/// The section list: the main window's floating glass sidebar, without its
+/// window buttons.
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({required this.title, required this.children});
 
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onPressed;
+  final String title;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    return MMInteractive(
-      onTap: onPressed,
-      selected: selected,
-      semanticLabel: label,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        width: 76,
-        height: 50,
-        margin: const EdgeInsets.symmetric(horizontal: MMSpacing.xxs),
-        decoration: BoxDecoration(
-          color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
-          borderRadius: BorderRadius.circular(MMRadii.row),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20, color: selected ? c.accent : c.icon),
-            const SizedBox(height: MMSpacing.xxs),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.mmText.footnote.copyWith(color: selected ? c.accent : c.label),
-            ),
-          ],
-        ),
+    final reduce = MMAppearance.reduceTransparencyOf(context);
+    const radius = BorderRadius.all(Radius.circular(MMRadii.sidebar));
+    Widget panel = Container(
+      decoration: BoxDecoration(
+        color: reduce ? c.sidebarOpaque : c.sidebar,
+        borderRadius: radius,
+        border: Border.all(color: c.hairline, width: .5),
       ),
+      padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(MMSpacing.s, 0, MMSpacing.s, 10),
+            child: Semantics(
+              header: true,
+              child: Text(title, style: context.mmText.headline.copyWith(color: c.label)),
+            ),
+          ),
+          for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 2), child: child),
+        ],
+      ),
+    );
+    if (!reduce) panel = BackdropFilter(filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30), child: panel);
+    return SizedBox(
+      key: const ValueKey('settings-sidebar'),
+      width: SettingsWindow.sidebarWidth,
+      child: ClipRRect(borderRadius: radius, child: panel),
     );
   }
 }
 
-/// One settings page: a centered 520pt column on the canvas.
+/// One settings page: a centered column, at most 540pt wide.
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, this.icon, this.iconGradient, this.title, required this.children});
+  const SettingsPage({super.key, required this.children});
 
-  /// The page's icon and name above its groups (Models, Web Search).
-  final IconData? icon;
-  final List<Color>? iconGradient;
-  final String? title;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(MMSpacing.l, MMSpacing.xl, MMSpacing.l, MMSpacing.xxl),
+    padding: const EdgeInsets.fromLTRB(MMSpacing.m + 2, MMSpacing.xs, MMSpacing.m + 2, MMSpacing.xxl),
     children: [
       Center(
-        child: SizedBox(
-          width: 520,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (icon != null && title != null) ...[
-                Center(
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: iconGradient ?? [context.mmColors.research, context.mmColors.research],
-                      ),
-                    ),
-                    child: Icon(icon, size: 28, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: MMSpacing.s),
-                Center(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title!,
-                      style: context.mmText.title3.copyWith(fontSize: 17, color: context.mmColors.label),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: MMSpacing.s),
-              ],
-              ...children,
-            ],
-          ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
       ),
     ],

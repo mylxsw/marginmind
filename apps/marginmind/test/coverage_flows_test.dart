@@ -94,10 +94,10 @@ void main() {
       final l = AppLocalizations.of(context);
       showSettings(context);
       await tester.pumpAndSettle();
-      expect(find.text(l.settingsGeneral), findsOneWidget);
+      expect(find.text(l.settingsGeneral), findsNWidgets(2));
       await container.read(settingsProvider.notifier).setAppearance(AppearancePreference.dark);
       await tester.pumpAndSettle();
-      expect(find.text(l.settingsGeneral), findsOneWidget);
+      expect(find.text(l.settingsGeneral), findsNWidgets(2));
       await tester.tap(find.byKey(const ValueKey('settings-close')));
       await tester.pumpAndSettle();
       expect(find.byType(SettingsWindow), findsNothing);
