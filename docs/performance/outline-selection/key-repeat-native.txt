@@ -1,0 +1,6 @@
+flutter: 00:00 +0: holding outline arrows keeps navigating and never focuses the toolbar
+flutter: 00:06 +1: holding canvas arrows keeps navigating through children and at boundaries
+flutter: 00:12 +2: repeats keep folding single-shot and leave editing arrows with the text field
+flutter: 00:19 +3: (tearDownAll)
+flutter: 00:19 +4: All tests passed!
+All tests passed.

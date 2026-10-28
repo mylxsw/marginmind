@@ -1,4 +1,5 @@
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/widgets/outline_view.dart';
 
 import 'dart:convert';
 import 'dart:math' as math;
@@ -50,7 +51,141 @@ void visible(WidgetTester tester, Finder node) {
   expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
 }
 
+void keyRepeatTests({bool native = false}) {
+  testWidgets(
+    'holding outline arrows keeps navigating and never focuses the toolbar',
+    (tester) async {
+      final container = await openFirstSet(tester);
+      final provider = workspaceProvider('demo-1');
+      final controller = container.read(provider.notifier);
+      controller.setMapView(MapViewMode.outline);
+      await tester.pumpAndSettle();
+      final focus = tester.widget<OutlineView>(find.byType(OutlineView)).focusNode;
+      final layout = container.read(provider).layout;
+      final cases = <(LogicalKeyboardKey, String?, List<String?>)>[
+        (LogicalKeyboardKey.arrowUp, 'c4', ['c6', 'c3', null, null]),
+        (LogicalKeyboardKey.arrowDown, null, ['c3', 'c6', 'c4', 'c4']),
+        (LogicalKeyboardKey.arrowRight, null, ['c3', 'c6', 'c6', 'c6']),
+        (LogicalKeyboardKey.arrowLeft, 'c6', ['c3', null, null, null]),
+      ];
+      for (final (arrow, start, expected) in cases) {
+        // Profile builds omit debug key names; pass physical keys explicitly.
+        final physical = switch (arrow) {
+          LogicalKeyboardKey.arrowUp => PhysicalKeyboardKey.arrowUp,
+          LogicalKeyboardKey.arrowDown => PhysicalKeyboardKey.arrowDown,
+          LogicalKeyboardKey.arrowRight => PhysicalKeyboardKey.arrowRight,
+          _ => PhysicalKeyboardKey.arrowLeft,
+        };
+        controller.selectCard(start);
+        focus.requestFocus();
+        await tester.pumpAndSettle();
+        for (var i = 0; i < expected.length; i++) {
+          if (i == 0) {
+            await tester.sendKeyDownEvent(arrow, physicalKey: physical);
+          } else {
+            await tester.sendKeyRepeatEvent(arrow, physicalKey: physical);
+          }
+          await tester.pump(const Duration(milliseconds: 40));
+          String? focusedButton;
+          FocusManager.instance.primaryFocus?.context?.visitAncestorElements((element) {
+            if (element.widget case final MMToolbarButton button) focusedButton = button.tooltip;
+            return true;
+          });
+          expect(
+            FocusManager.instance.primaryFocus,
+            same(focus),
+            reason: '$arrow repeat $i must stay in the outline; focused toolbar: $focusedButton',
+          );
+          expect(container.read(provider).selectedCardId, expected[i], reason: '$arrow repeat $i');
+          expect(container.read(provider).layout, layout);
+        }
+        await tester.sendKeyUpEvent(arrow, physicalKey: physical);
+      }
+      await settleHud(tester);
+    },
+    semanticsEnabled: !native,
+    variant: native ? const DefaultTestVariant() : TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'holding canvas arrows keeps navigating through children and at boundaries',
+    (tester) async {
+      final container = await openFirstSet(tester);
+      final provider = workspaceProvider('demo-1');
+      final controller = container.read(provider.notifier);
+      controller.selectCard(null);
+      await focusMap(tester);
+      final focus = canvas(tester).focusNode;
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowRight, physicalKey: PhysicalKeyboardKey.arrowRight);
+      await tester.pumpAndSettle();
+      expect(container.read(provider).selectedCardId, 'c3');
+      for (var i = 0; i < 3; i++) {
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowRight, physicalKey: PhysicalKeyboardKey.arrowRight);
+        await tester.pumpAndSettle();
+        expect(FocusManager.instance.primaryFocus, same(focus));
+        expect(container.read(provider).selectedCardId, 'c6');
+      }
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowRight, physicalKey: PhysicalKeyboardKey.arrowRight);
+      await settleHud(tester);
+    },
+    semanticsEnabled: !native,
+    variant: native ? const DefaultTestVariant() : TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'repeats keep folding single-shot and leave editing arrows with the text field',
+    (tester) async {
+      final container = await openFirstSet(tester);
+      final provider = workspaceProvider('demo-1');
+      final controller = container.read(provider.notifier);
+      for (final view in MapViewMode.values) {
+        controller.setMapView(view);
+        controller.selectCard('c3');
+        await tester.pumpAndSettle();
+        final focus = view == MapViewMode.outline
+            ? tester.widget<OutlineView>(find.byType(OutlineView)).focusNode
+            : canvas(tester).focusNode;
+        focus.requestFocus();
+        await tester.pumpAndSettle();
+        final initiallyCollapsed = controller.content.node('c3')!.collapsed;
+        final expectedCollapsed = view == MapViewMode.map ? !initiallyCollapsed : initiallyCollapsed;
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft, physicalKey: PhysicalKeyboardKey.metaLeft);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.slash, physicalKey: PhysicalKeyboardKey.slash);
+        await tester.pumpAndSettle();
+        expect(controller.content.node('c3')!.collapsed, expectedCollapsed);
+        for (var i = 0; i < 3; i++) {
+          await tester.sendKeyRepeatEvent(LogicalKeyboardKey.slash, physicalKey: PhysicalKeyboardKey.slash);
+          await tester.pumpAndSettle();
+          expect(controller.content.node('c3')!.collapsed, expectedCollapsed);
+        }
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.slash, physicalKey: PhysicalKeyboardKey.slash);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft, physicalKey: PhysicalKeyboardKey.metaLeft);
+        controller.beginEditing('c3');
+        await tester.pumpAndSettle();
+        final editor = tester.widget<MMInlineTextField>(find.byType(MMInlineTextField));
+        editor.controller.selection = TextSelection.collapsed(offset: editor.controller.text.length);
+        await tester.pump();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowLeft, physicalKey: PhysicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        await tester.sendKeyRepeatEvent(LogicalKeyboardKey.arrowLeft, physicalKey: PhysicalKeyboardKey.arrowLeft);
+        await tester.pump();
+        expect(FocusManager.instance.primaryFocus, same(editor.focusNode));
+        expect(container.read(provider).selectedCardId, 'c3');
+        expect(container.read(provider).editingCardId, 'c3');
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.arrowLeft, physicalKey: PhysicalKeyboardKey.arrowLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape, physicalKey: PhysicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
+      await settleHud(tester);
+    },
+    semanticsEnabled: !native,
+    variant: native ? const DefaultTestVariant() : TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+}
+
 void main() {
+  keyRepeatTests();
+
   testWidgets('macOS menu lists shortcuts, dispatches commands and protects text focus', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);

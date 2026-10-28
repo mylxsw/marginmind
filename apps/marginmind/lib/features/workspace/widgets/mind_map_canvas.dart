@@ -1279,22 +1279,26 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         focusNode: widget.focusNode,
         onKeyEvent: (_, event) {
           // Keys the text field leaves alone must not act on the map.
-          if (event is! KeyDownEvent || field != null || _markField != null) return KeyEventResult.ignored;
+          if ((event is! KeyDownEvent && event is! KeyRepeatEvent) || field != null || _markField != null) {
+            return KeyEventResult.ignored;
+          }
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
           // On macOS ⌥Space types a no-break space, and the Option key can
           // reach the keyboard state after it: never take it for Space (edit).
           if (key == LogicalKeyboardKey.space && event.character == '\u00a0') {
-            _command(MindMapCommand.expand);
+            if (event is KeyDownEvent) _command(MindMapCommand.expand);
             return KeyEventResult.handled;
           }
           for (final entry in mindMapShortcuts.entries) {
             if (entry.key.accepts(event, HardwareKeyboard.instance)) {
-              _command(entry.value);
+              // Navigation repeats below; mutation shortcuts remain single-shot.
+              if (event is KeyDownEvent) _command(entry.value);
               return KeyEventResult.handled;
             }
           }
           if (key == LogicalKeyboardKey.escape) {
+            if (event is KeyRepeatEvent) return KeyEventResult.handled;
             if (widget.connectingFromId != null) {
               widget.onCancelConnect?.call();
             } else {
@@ -1311,13 +1315,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             _ => null,
           };
           if (direction == null) {
-            if (!_isCard(selected) || !isTypingKey(event)) return KeyEventResult.ignored;
+            if (event is! KeyDownEvent || !_isCard(selected) || !isTypingKey(event)) return KeyEventResult.ignored;
             typed = event.character;
             widget.onRename(selected!);
             return KeyEventResult.handled;
           }
           if (meta && (direction == AxisDirection.up || direction == AxisDirection.down)) {
-            widget.onShift(direction == AxisDirection.up ? -1 : 1);
+            if (event is KeyDownEvent) widget.onShift(direction == AxisDirection.up ? -1 : 1);
           } else {
             _navigate(direction);
           }

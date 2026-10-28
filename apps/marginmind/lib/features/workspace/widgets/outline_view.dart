@@ -245,16 +245,17 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
 
   KeyEventResult _onKey(FocusNode _, KeyEvent event) {
     // Keys the text field leaves alone must not act on the outline.
-    if (event is! KeyDownEvent || field != null) return KeyEventResult.ignored;
+    if ((event is! KeyDownEvent && event is! KeyRepeatEvent) || field != null) return KeyEventResult.ignored;
     for (final entry in mindMapShortcuts.entries) {
       if (entry.key.accepts(event, HardwareKeyboard.instance)) {
-        _command(entry.value);
+        // Navigation repeats below; mutation shortcuts remain single-shot.
+        if (event is KeyDownEvent) _command(entry.value);
         return KeyEventResult.handled;
       }
     }
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.escape) {
-      widget.onSelect(null);
+      if (event is KeyDownEvent) widget.onSelect(null);
       return KeyEventResult.handled;
     }
     final direction = switch (key) {
@@ -269,7 +270,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       return KeyEventResult.handled;
     }
     final selected = widget.selectedCardId;
-    if (selected == null || widget.content.card(selected) == null || !isTypingKey(event)) {
+    if (event is! KeyDownEvent || selected == null || widget.content.card(selected) == null || !isTypingKey(event)) {
       return KeyEventResult.ignored;
     }
     typed = event.character;

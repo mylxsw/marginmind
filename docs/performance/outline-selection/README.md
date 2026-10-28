@@ -42,3 +42,21 @@ flutter run --no-pub -d macos --profile -t tool/outline_performance.dart --dart-
 - 大纲、编辑、多选剪贴板、多脑图及工作区相关测试 46 项通过；加入触屏用例后的应用全量测试 595 项通过、8 项跳过。
 - `flutter analyze --no-pub`：通过，无问题。
 - macOS Profile 原生应用构建及六组性能场景完成。未替换或重启用户当前运行的应用，未在用户实际资料库上测量。
+
+## 长按方向键与工具栏焦点（2026-10-28）
+
+后续补测发现另一处独立问题：大纲和画布的按键处理都只接收 `KeyDownEvent`，长按产生的 `KeyRepeatEvent` 被返回为 `ignored`。Flutter 的 macOS 默认方向键快捷键会将这些事件解释为 `DirectionalFocusIntent`，于是焦点离开脑图。回归测试精确复现了：从大纲的 `c4` 按上键，第一次选择 `c6`，第一次重复事件就把焦点交给 `Source Only（⌘1）`（中文“只看原文”）按钮。按钮显示的是键盘焦点边框，工作区布局没有切换。
+
+修复接收导航键的重复事件，并在首尾、叶节点等无法继续移动时也消费事件，避免焦点落到工具栏。编辑字段仍先接收自己的按键；增删、折叠、重排等命令只在第一次按下时执行，重复事件被消费，不连续修改内容。
+
+新增三组共用场景：大纲四个方向的连续按键与边界；画布连续进入子节点和叶节点边界；折叠命令只执行一次以及编辑字段保留焦点。前两组在修复前均失败，修复后通过。原生入口复用同一组场景并使用内存资料库：
+
+```bash
+cd apps/marginmind
+flutter test --no-pub test/map_keyboard_test.dart test/card_edit_test.dart test/outline_performance_test.dart
+flutter drive --no-pub -d macos --profile --driver=test_driver/integration_test.dart --target=integration_test/map_key_repeat_test.dart
+```
+
+本次长按修复的应用全量测试：599 项通过、8 项跳过；相关键盘/编辑/大纲测试 26 项通过；静态检查无问题。当前用户使用的应用进程未替换，资料库未改动。
+
+macOS Profile 原生验证的三组键盘场景全部通过，`flutter drive` 返回 0；其结果通过 VM Service 驱动收集。原生场景显式指定物理按键，并关闭测试框架逐项强制开启的语义树（这些场景不做无障碍断言），避免系统延迟启用无障碍支持造成测试句柄计数误报。常规 Widget 测试仍使用默认语义树检查。原生验证使用注入的按下/重复/抬起事件，未将其记为实际硬件键盘长按验收。
