@@ -4999,12 +4999,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re-enter your API key'**
   String get assistantKeyNeedsAttention;
-
-  /// No description provided for @assistantFollowUpPlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask a follow-up…'**
-  String get assistantFollowUpPlaceholder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

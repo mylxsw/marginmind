@@ -229,29 +229,3 @@ AssistantController assistantOf(WidgetTester tester) =>
 
 Conversation conversationOf(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(AssistantPanel))).read(assistantControllerProvider);
-
-/// Chooses a low-frequency action from the assistant's overflow menu.
-Future<void> assistantMenu(WidgetTester tester, String label) async {
-  await tester.tap(find.byKey(const ValueKey('assistant-menu')));
-  await tester.pump(const Duration(milliseconds: 150));
-  await pumpFor(tester, 3);
-  await tester.tap(find.text(label).last);
-  await tester.pump(const Duration(milliseconds: 150));
-  await pumpFor(tester, 3);
-}
-
-Future<void> assistantModelMenu(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('assistant-menu')));
-  await tester.pump(const Duration(milliseconds: 150));
-  await pumpFor(tester, 3);
-  await tester.tap(find.textContaining('模型 · '));
-  await tester.pump(const Duration(milliseconds: 150));
-  await pumpFor(tester, 3);
-}
-
-Future<void> assistantAnswerMenu(WidgetTester tester, String id, String label) async {
-  await tester.tap(find.byKey(ValueKey('assistant-answer-menu-$id')));
-  await tester.pump(const Duration(milliseconds: 150));
-  await tester.tap(find.text(label).last);
-  await pumpFor(tester, 3);
-}

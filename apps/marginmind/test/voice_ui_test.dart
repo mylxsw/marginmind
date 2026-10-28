@@ -77,7 +77,6 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assistant-voice')));
     await tester.pumpAndSettle();
     expect(controller.phase, VoicePhase.recording);
-    expect(tester.widget<MMInteractive>(find.byKey(const ValueKey('quick-explain'))).onTap, isNull);
     expect(tester.widget<TextField>(field).readOnly, true);
     session.onText!('临时');
     await tester.pump();

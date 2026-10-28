@@ -15,17 +15,19 @@ import '../../workspace/workspace_controller.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
+import '../../../app/providers.dart';
 import '../assistant_settings.dart';
+import 'assistant_context_summary.dart';
+import 'assistant_model_menu.dart';
 import 'assistant_overlays.dart';
 
-/// One question field: below the context in a new conversation, then at the
-/// bottom for follow-ups. Model and network controls live in the header menu.
+/// The input at the bottom of the panel: attached context, quick actions,
+/// the question, and the online / model / send controls.
 class AssistantComposer extends ConsumerStatefulWidget {
-  const AssistantComposer({super.key, required this.studySetId, required this.configured, this.onVoiceActiveChanged});
+  const AssistantComposer({super.key, required this.studySetId, required this.configured});
 
   final String studySetId;
   final bool configured;
-  final ValueChanged<bool>? onVoiceActiveChanged;
 
   @override
   ConsumerState<AssistantComposer> createState() => _AssistantComposerState();
@@ -51,9 +53,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     _text.addListener(_changed);
     _focus.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.onVoiceActiveChanged?.call(_voice.active);
-      if (widget.configured) _focus.requestFocus();
+      if (mounted && widget.configured) _focus.requestFocus();
     });
   }
 
@@ -83,9 +83,6 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
 
   void _voiceChanged() {
     if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onVoiceActiveChanged?.call(_voice.active);
-    });
     final draft = _voiceDraft;
     if (draft != null && _voice.text != _voiceText) {
       _voiceText = _voice.text;
@@ -290,11 +287,20 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final chosen = await showPopupMenu<AssistantSkill>(
       context,
       anchor: boundsOf(button),
-      items: [for (final s in AssistantSkill.values.take(6)) PopupItem(s, s.label(_l), icon: s.icon)],
+      items: [
+        for (final s in AssistantSkill.values.take(6))
+          if (s != AssistantSkill.explain && s != AssistantSkill.summarize) PopupItem(s, s.label(_l), icon: s.icon),
+      ],
     );
     if (!mounted) return;
     if (chosen != null) _send(chosen.prompt(_l), chosen.name);
     _focus.requestFocus();
+  }
+
+  /// The toggle is remembered for the study set's next conversations.
+  Future<void> _setOnline(bool online) async {
+    await ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(widget.studySetId), online);
+    await ref.read(assistantControllerProvider.notifier).setOnline(online);
   }
 
   @override
@@ -302,8 +308,11 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final ui = ref.watch(assistantUiProvider(widget.studySetId));
+    final auto = ref.watch(assistantAutoContextsProvider(widget.studySetId));
     final conversation = ref.watch(assistantControllerProvider);
     final running = conversation.running;
+    final uiNotifier = ref.read(assistantUiProvider(widget.studySetId).notifier);
     ref.listen(assistantControllerProvider.select((s) => s.id), (_, _) => _cancelVoice());
     ref.listen(workspaceProvider(widget.studySetId).select((s) => s.panel), (_, panel) {
       if (panel != RightPanel.assistant && _voice.active) {
@@ -317,6 +326,18 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
       });
     });
     final configured = widget.configured;
+    final outgoing = outgoingContexts(ui, auto);
+    final chips = [
+      ...ui.contexts,
+      for (final a in auto)
+        if (!ui.contexts.any(
+          (c) => c.kind == a.kind && c.nodeId == a.nodeId && c.documentId == a.documentId && c.page == a.page,
+        ))
+          a,
+    ];
+    final quick = outgoing.any(
+      (c) => c.kind == ContextKind.selection || c.kind == ContextKind.node || c.kind == ContextKind.branch,
+    );
     // One answer at a time per study set: another conversation is answering.
     final elsewhere = ref.watch(assistantBackgroundProvider) != null;
     final canSend = configured && !elsewhere && !_voice.active && _text.text.trim().isNotEmpty;
@@ -349,10 +370,37 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
         ),
         child: Container(
           padding: const EdgeInsets.fromLTRB(10, MMSpacing.s, 10, 10),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: c.separator)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (configured && quick && _text.text.trim().isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+                  child: Row(
+                    children: [
+                      for (final s in [AssistantSkill.explain, AssistantSkill.summarize])
+                        _QuickAction(
+                          key: ValueKey('quick-${s.name}'),
+                          label: s.label(l),
+                          icon: s.icon,
+                          onPressed: running || elsewhere || _voice.active ? null : () => _send(s.prompt(l), s.name),
+                        ),
+                      Builder(
+                        builder: (button) => _QuickAction(
+                          key: const ValueKey('quick-more'),
+                          label: l.assistantMoreActions,
+                          icon: MMIcons.chevronDown,
+                          trailing: true,
+                          onPressed: running || elsewhere || _voice.active ? null : () => _moreActions(button),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               AnimatedContainer(
                 duration: MMMotion.quick,
                 curve: MMMotion.quickCurve,
@@ -402,6 +450,14 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                           ],
                         ),
                       ),
+                    if (configured && chips.isNotEmpty)
+                      AssistantContextSummary(
+                        key: ValueKey('composer-contexts-${conversation.id}-${conversation.messages.length}'),
+                        items: chips,
+                        outgoing: outgoing,
+                        onChange: (item) =>
+                            item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
+                      ),
                     ConstrainedBox(
                       constraints: const BoxConstraints(minHeight: 40 - 14, maxHeight: 140),
                       child: Padding(
@@ -424,11 +480,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               cursorWidth: 1.5,
                               cursorColor: c.research,
                               decoration: InputDecoration.collapsed(
-                                hintText: configured
-                                    ? (conversation.messages.isEmpty
-                                          ? l.assistantPlaceholder
-                                          : l.assistantFollowUpPlaceholder)
-                                    : l.assistantConnectFirst,
+                                hintText: configured ? l.assistantPlaceholder : l.assistantConnectFirst,
                                 hintStyle: t.bodySecondary,
                               ),
                             ),
@@ -446,17 +498,42 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             tooltip: '${l.assistantMention}（@）',
                             onPressed: configured && !_voice.active ? _mention : null,
                           ),
-                          Builder(
-                            builder: (button) => _BarButton(
-                              key: const ValueKey('quick-more'),
-                              icon: MMIcons.more,
-                              tooltip: l.assistantMoreActions,
-                              onPressed: configured && !running && !elsewhere && !_voice.active
-                                  ? () => _moreActions(button)
-                                  : null,
-                            ),
+                          _BarButton(
+                            key: const ValueKey('assistant-slash'),
+                            icon: MMIcons.command,
+                            tooltip: '${l.assistantCommands}（/）',
+                            onPressed: configured && !_voice.active
+                                ? () {
+                                    _text.value = const TextEditingValue(
+                                      text: '/',
+                                      selection: TextSelection.collapsed(offset: 1),
+                                    );
+                                    _focus.requestFocus();
+                                  }
+                                : null,
+                          ),
+                          _BarButton(
+                            key: const ValueKey('assistant-online'),
+                            icon: MMIcons.web,
+                            label: conversation.online ? l.assistantOnline : l.assistantOffline,
+                            color: conversation.online ? c.research : c.secondaryLabel,
+                            tooltip: conversation.online ? l.assistantOnline : l.assistantOffline,
+                            selected: conversation.online,
+                            onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
                           ),
                           const Spacer(),
+                          if (configured)
+                            Builder(
+                              builder: (button) => _BarButton(
+                                key: const ValueKey('assistant-model'),
+                                label: conversationModelLabel(ref, conversation.model),
+                                trailing: MMIcons.chevronDown,
+                                tooltip: l.assistantModel,
+                                maxLabel: 120,
+                                onPressed: () => showModelMenu(context, ref, boundsOf(button)),
+                              ),
+                            ),
+                          const SizedBox(width: MMSpacing.xs),
                           _BarButton(
                             key: const ValueKey('assistant-voice'),
                             icon: _voice.phase == VoicePhase.recording ? MMIcons.stop : MMIcons.microphone,
@@ -497,13 +574,76 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   }
 }
 
-/// A compact icon control in the input toolbar.
-class _BarButton extends StatelessWidget {
-  const _BarButton({super.key, required this.icon, required this.tooltip, required this.onPressed, this.color});
+/// A quiet shortcut: emphasis appears only while pointing at or focusing it.
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.trailing = false,
+  });
+
+  final String label;
   final IconData icon;
+  final VoidCallback? onPressed;
+  final bool trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    return MMInteractive(
+      onTap: onPressed,
+      semanticLabel: label,
+      builder: (context, s) {
+        final active = s.hovered || s.focused || s.pressed;
+        final fg = active ? c.research : c.secondaryLabel;
+        return Opacity(
+          opacity: s.enabled ? 1 : .4,
+          child: Container(
+            height: MMSizes.field,
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+            decoration: BoxDecoration(
+              color: active ? c.researchTint : Colors.transparent,
+              borderRadius: BorderRadius.circular(MMRadii.row),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!trailing) ...[Icon(icon, size: MMSpacing.m, color: fg), const SizedBox(width: MMSpacing.xs)],
+                Text(label, style: context.mmText.callout.copyWith(color: fg)),
+                if (trailing) ...[const SizedBox(width: MMSpacing.xs), Icon(icon, size: MMSpacing.m, color: fg)],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A 26pt control in the input's bottom row.
+class _BarButton extends StatelessWidget {
+  const _BarButton({
+    super.key,
+    this.icon,
+    this.label,
+    this.trailing,
+    required this.tooltip,
+    required this.onPressed,
+    this.color,
+    this.selected = false,
+    this.maxLabel = 160,
+  });
+
+  final IconData? icon;
+  final String? label;
+  final IconData? trailing;
   final String tooltip;
   final VoidCallback? onPressed;
   final Color? color;
+  final bool selected;
+  final double maxLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -511,16 +651,40 @@ class _BarButton extends StatelessWidget {
     return MMInteractive(
       onTap: onPressed,
       tooltip: tooltip,
-      semanticLabel: tooltip,
-      builder: (context, state) => Container(
-        height: MMSizes.field,
-        width: MMSizes.field,
-        decoration: BoxDecoration(
-          color: state.hovered ? c.hover : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMRadii.row),
-        ),
-        child: Icon(icon, size: MMSpacing.m, color: state.enabled ? color ?? c.icon : c.icon.withValues(alpha: .3)),
-      ),
+      semanticLabel: label ?? tooltip,
+      semanticValue: selected ? '✓' : null,
+      builder: (context, s) {
+        final fg = s.enabled ? (color ?? c.icon) : c.icon.withValues(alpha: .3);
+        return AnimatedContainer(
+          duration: MMMotion.quick,
+          height: 26,
+          constraints: const BoxConstraints(minWidth: 26),
+          padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : 6),
+          decoration: BoxDecoration(
+            color: s.hovered ? c.hover : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) Icon(icon, size: 14, color: fg),
+              if (icon != null && label != null) const SizedBox(width: MMSpacing.xs),
+              if (label != null)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxLabel),
+                  child: Text(
+                    label!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.mmText.callout.copyWith(color: color ?? c.secondaryLabel),
+                  ),
+                ),
+              if (trailing != null) ...[const SizedBox(width: 3), Icon(trailing, size: 10, color: c.icon)],
+            ],
+          ),
+        );
+      },
     );
   }
 }

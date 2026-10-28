@@ -882,6 +882,5 @@
   "localNetworkPermission": "连接你的本地模型服务。",
   "assistantOpenModelSettings": "打开模型设置 →",
   "assistantSetupHint": "添加模型后即可使用",
-  "assistantKeyNeedsAttention": "请重新填写 API Key",
-  "assistantFollowUpPlaceholder": "继续追问…"
+  "assistantKeyNeedsAttention": "请重新填写 API Key"
 }

@@ -395,8 +395,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('quick-explain')));
       await pumpFor(tester, 20);
       final first = conversationOf(tester).messages.last;
-      expect(find.byKey(ValueKey('assistant-answer-menu-${first.id}')), findsOneWidget);
-      await assistantAnswerMenu(tester, first.id, '整理进脑图');
+      expect(find.byKey(ValueKey('assistant-organize-${first.id}')), findsOneWidget);
+      await tester.tap(find.byKey(ValueKey('assistant-organize-${first.id}')));
       await pumpFor(tester, 20);
       final messages = conversationOf(tester).messages;
       final question = messages[messages.length - 2];
@@ -430,7 +430,7 @@ void main() {
       final panel = tester.getRect(find.byType(AssistantHeader));
       final close = tester.getRect(find.byKey(const ValueKey('assistant-close')));
       expect(close.right, closeTo(panel.right - 8, 1));
-      expect(tester.getRect(find.byKey(const ValueKey('assistant-menu'))).right, lessThan(close.left + 1));
+      expect(tester.getRect(find.byKey(const ValueKey('assistant-new'))).right, lessThan(close.left + 1));
       // The collapsed reference summary keeps the page visible; expand for its document title.
       expect(find.textContaining('第 '), findsWidgets);
       await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));

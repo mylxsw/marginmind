@@ -92,7 +92,7 @@ void main() {
     final first = conversationOf(tester).id;
     expect(conversationOf(tester).running, isTrue);
 
-    await assistantMenu(tester, '新对话');
+    await tester.tap(find.byKey(const ValueKey('assistant-new')));
     await pumpFor(tester);
     expect(conversationOf(tester).messages, isEmpty);
     // The sidebar shows the other conversation still answering.
@@ -127,7 +127,7 @@ void main() {
     await pumpFor(tester, 20);
     expect(find.textContaining('旧的回答'), findsOneWidget);
     final old = conversationOf(tester).messages.last;
-    await assistantAnswerMenu(tester, old.id, '重新生成');
+    await tester.tap(find.byKey(ValueKey('assistant-regenerate-${old.id}')));
     await pumpFor(tester, 20);
     expect(find.textContaining('旧的回答'), findsNothing);
     expect(find.textContaining('新的回答'), findsOneWidget);
@@ -165,7 +165,7 @@ void main() {
     final app = await openAssistantApp(tester);
     app.workspace.openPanel(RightPanel.assistant);
     await tester.pumpAndSettle();
-    await assistantMenu(tester, '打开模型设置 →');
+    await tester.tap(find.byKey(const ValueKey('assistant-settings')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('service-header-legacy-claude')));

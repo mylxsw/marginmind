@@ -2793,7 +2793,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantKeyNeedsAttention => 'Re-enter your API key';
-
-  @override
-  String get assistantFollowUpPlaceholder => 'Ask a follow-up…';
 }

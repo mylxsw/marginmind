@@ -2670,7 +2670,4 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantKeyNeedsAttention => '请重新填写 API Key';
-
-  @override
-  String get assistantFollowUpPlaceholder => '继续追问…';
 }

@@ -1535,6 +1535,5 @@
   "localNetworkPermission": "Connect to your local model service.",
   "assistantOpenModelSettings": "Open Model Settings →",
   "assistantSetupHint": "Add a model to get started",
-  "assistantKeyNeedsAttention": "Re-enter your API key",
-  "assistantFollowUpPlaceholder": "Ask a follow-up…"
+  "assistantKeyNeedsAttention": "Re-enter your API key"
 }

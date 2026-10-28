@@ -7,7 +7,6 @@
 library;
 
 import 'dart:io';
-import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
@@ -15,17 +14,12 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:marginmind/features/assistant/assistant_settings.dart';
-import 'package:marginmind/features/assistant/assistant_services.dart';
-import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_composer.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_core/mm_core.dart';
-import 'package:mm_assistant/mm_assistant.dart' show AssistantServices;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
@@ -59,7 +53,7 @@ Future<void> _loadFonts() async {
       .load();
 }
 
-MemoryConversationArchive _seed(String topic, {bool quiet = false}) {
+MemoryConversationArchive _seed(String topic) {
   final archive = MemoryConversationArchive();
   final state = sdk.AgentState(sessionId: 'shot-1');
   final selection = selectionContext(documentId: 'c1', page: 24, quote: _claim);
@@ -126,15 +120,6 @@ MemoryConversationArchive _seed(String topic, {bool quiet = false}) {
       ),
     ],
   ).toJson();
-  if (quiet) {
-    final view = state.metadata['assistant.view'] as Map<String, dynamic>;
-    view['title'] = '';
-    final messages = (view['messages'] as List).take(2).toList();
-    (messages.first as Map<String, dynamic>)['contexts'] = [
-      pageContext(document: demoContent().document('c1')!, page: 24, auto: true).toJson(),
-    ];
-    view['messages'] = messages;
-  }
   archive.save(state);
   return archive;
 }
@@ -177,7 +162,7 @@ Future<void> _shoot(WidgetTester tester, String name, {Size size = const Size(14
   await tester.tap(find.byKey(const ValueKey('assistant-context-summary')));
   await tester.enterText(find.byKey(const ValueKey('assistant-input')), '这段话和前面的观点有什么关系？');
   await tester.pumpAndSettle();
-  expect(find.byKey(const ValueKey('quick-more')), findsOneWidget);
+  expect(find.byKey(const ValueKey('quick-more')), findsNothing);
   await _save(tester, '$name-typing');
   await tester.enterText(find.byKey(const ValueKey('assistant-input')), '');
   await tester.pumpAndSettle();
@@ -219,43 +204,6 @@ Future<void> _shootSettings(
   expect(find.byType(SettingsWindow), findsOneWidget);
 }
 
-Future<void> _quiet(WidgetTester tester, String state, {bool dark = false, Size size = const Size(1440, 720)}) async {
-  final topic = demoContent().cards.firstWhere((c) => c.title == '遗忘的规律').id;
-  final populated = state == 'answer' || state == 'recovery';
-  final app = await openAssistantApp(
-    tester,
-    key: state != 'setup',
-    size: size,
-    archive: populated ? _seed(topic, quiet: true) : null,
-    prefs: {
-      if (dark) 'settings.appearance': 'dark',
-      if (state == 'setup') AssistantServicesStore.settingsKey: jsonEncode(AssistantServices().toJson()),
-    },
-    overrides: [
-      if (state == 'recovery')
-        assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.unavailable),
-    ],
-  );
-  app.workspace.recordPage('c1', 24);
-  await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
-  await pumpFor(tester, 10);
-  if (populated) {
-    final scope = ProviderScope.containerOf(tester.element(find.byType(AssistantPanel)));
-    await scope.read(assistantControllerProvider.notifier).openConversation('shot-1');
-    await pumpFor(tester, 10);
-    FocusManager.instance.primaryFocus?.unfocus();
-  }
-  await tester.pumpAndSettle();
-  final name = 'quiet-$state${dark ? '-dark' : ''}${size.width < 1440 ? '-narrow' : ''}';
-  await _save(tester, name);
-  await _save(tester, '$name-panel', bounds: tester.getRect(find.byType(AssistantPanel)));
-  expect(tester.takeException(), isNull);
-  if (state == 'setup' || state == 'recovery') expect(find.byKey(const ValueKey('assistant-input')), findsNothing);
-  if (state == 'recovery') expect(find.byKey(const ValueKey('assistant-messages')), findsOneWidget);
-  // Keep the owning container alive until capture completes.
-  expect(app.workspace.content.documents, isNotEmpty);
-}
-
 void main() {
   final skip = _out == null || _font == null;
   setUpAll(() async {
@@ -264,16 +212,6 @@ void main() {
     await _loadFonts();
   });
   final mac = TargetPlatformVariant.only(TargetPlatform.macOS);
-  for (final state in ['setup', 'empty', 'answer', 'recovery']) {
-    testWidgets('quiet $state', (tester) => _quiet(tester, state), skip: skip, variant: mac);
-  }
-  testWidgets('quiet dark', (tester) => _quiet(tester, 'answer', dark: true), skip: skip, variant: mac);
-  testWidgets(
-    'quiet narrow',
-    (tester) => _quiet(tester, 'answer', size: const Size(1000, 760)),
-    skip: skip,
-    variant: mac,
-  );
   testWidgets('light', (tester) => _shoot(tester, 'assistant-light'), skip: skip, variant: mac);
   testWidgets('dark', (tester) => _shoot(tester, 'assistant-dark', dark: true), skip: skip, variant: mac);
   testWidgets(
