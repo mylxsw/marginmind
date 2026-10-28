@@ -254,31 +254,35 @@ void main() {
   });
 
   group('MMBackHandler', () {
-    testWidgets('newest handler first, only while its page is current', (tester) async {
+    testWidgets('newest handler first, only while its page is current; then the app leaves', (tester) async {
       final log = <String>[];
       var innerHandles = true;
+      var outerHandles = true;
       late BuildContext context;
       await _phone(
         tester,
-        MMBackHandler(
-          onBack: () {
-            log.add('outer');
-            return true;
-          },
+        MMBackScope(
           child: MMBackHandler(
             onBack: () {
-              log.add('inner');
-              return innerHandles;
+              log.add('outer');
+              return outerHandles;
             },
-            child: Builder(
-              builder: (c) {
-                context = c;
-                return const SizedBox.expand();
+            child: MMBackHandler(
+              onBack: () {
+                log.add('inner');
+                return innerHandles;
               },
+              child: Builder(
+                builder: (c) {
+                  context = c;
+                  return const SizedBox.expand();
+                },
+              ),
             ),
           ),
         ),
       );
+      // The page claims back, so Android sends it to the app.
       expect(await tester.binding.handlePopRoute(), isTrue);
       expect(log, ['inner']);
       innerHandles = false;
@@ -292,6 +296,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Dialog'), findsNothing);
       expect(log, ['inner', 'inner', 'outer']);
+
+      // Nothing handles it: the app leaves.
+      outerHandles = false;
+      final calls = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        calls.add(call.method);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await tester.binding.handlePopRoute();
+      expect(calls, contains('SystemNavigator.pop'));
     });
 
     testWidgets('an open touch menu closes first', (tester) async {
@@ -299,17 +314,19 @@ void main() {
       var page = 0;
       await _phone(
         tester,
-        MMBackHandler(
-          onBack: () {
-            page++;
-            return true;
-          },
-          child: MMContextMenuHost(
-            child: Builder(
-              builder: (c) {
-                context = c;
-                return const SizedBox.expand();
-              },
+        MMBackScope(
+          child: MMBackHandler(
+            onBack: () {
+              page++;
+              return true;
+            },
+            child: MMContextMenuHost(
+              child: Builder(
+                builder: (c) {
+                  context = c;
+                  return const SizedBox.expand();
+                },
+              ),
             ),
           ),
         ),
