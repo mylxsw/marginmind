@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
@@ -26,6 +27,7 @@ class _Harness {
   final transform = TransformationController();
   final focus = FocusNode();
   final moves = <String>[];
+  final menus = <String?>[];
   String? selection;
   Set<String> selected = {};
   late StudySetContent content;
@@ -60,6 +62,8 @@ class _Harness {
                       selection = id;
                       selected = {?id};
                     }),
+                    onSelectMany: (ids) => setState(() => selected = ids),
+                    onContextMenu: (id, _) => menus.add(id),
                     onReveal: (_) {},
                     onRename: (_) {},
                     onDelete: () {},
@@ -85,7 +89,7 @@ class _Harness {
 
   /// Starts dragging [id] with enough small steps for `Draggable` to start.
   Future<TestGesture> grab(String id) async {
-    final gesture = await tester.startGesture(node(id).center);
+    final gesture = await tester.startGesture(node(id).center, kind: PointerDeviceKind.mouse);
     await gesture.moveBy(const Offset(8, 0));
     await tester.pump();
     await gesture.moveBy(const Offset(20, 0));
@@ -100,6 +104,134 @@ class _Harness {
 }
 
 void main() {
+  testWidgets('touch pans from blank space and nodes without selecting a box or moving nodes', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    Future<void> pan(Offset start) async {
+      final before = h.transform.value.clone();
+      final g = await tester.startGesture(start, kind: PointerDeviceKind.touch);
+      for (var i = 0; i < 5; i++) {
+        await g.moveBy(const Offset(-20, 15));
+        await tester.pump();
+      }
+      await g.up();
+      await tester.pumpAndSettle();
+      expect(h.transform.value, isNot(before));
+      expect(h.selected, isEmpty);
+      expect(h.moves, isEmpty);
+      expect(h.menus, isEmpty);
+    }
+
+    await pan(const Offset(680, 450));
+    await pan(h.node('t0').center);
+  });
+
+  testWidgets('two touch pointers zoom around their moving focal point', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    final before = mapScale(h.transform.value);
+    final a = await tester.startGesture(const Offset(260, 420), pointer: 1, kind: PointerDeviceKind.touch);
+    final b = await tester.startGesture(const Offset(380, 420), pointer: 2, kind: PointerDeviceKind.touch);
+    await tester.pump();
+    for (var i = 0; i < 5; i++) {
+      await a.moveBy(const Offset(-12, -5));
+      await b.moveBy(const Offset(18, -5));
+      await tester.pump();
+    }
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(mapScale(h.transform.value), greaterThan(before));
+    expect(h.selected, isEmpty);
+    expect(h.moves, isEmpty);
+  });
+
+  testWidgets('holding two fingers on nodes keeps pinch available without starting a node drag', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    final a = await tester.startGesture(h.node('t0').center, pointer: 1, kind: PointerDeviceKind.touch);
+    final b = await tester.startGesture(h.node('t3').center, pointer: 2, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    expect(h.menus, isEmpty);
+    final before = mapScale(h.transform.value);
+    for (var i = 0; i < 5; i++) {
+      await a.moveBy(const Offset(0, -10));
+      await b.moveBy(const Offset(0, 10));
+      await tester.pump();
+    }
+    await a.up();
+    await b.up();
+    await tester.pumpAndSettle();
+    expect(mapScale(h.transform.value), greaterThan(before));
+    expect(h.moves, isEmpty);
+  });
+
+  testWidgets('touch long press opens a node menu; continuing to drag moves it instead', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    await tester.longPress(find.byKey(const ValueKey('t0')));
+    await tester.pumpAndSettle();
+    expect(h.menus, ['t0']);
+    expect(h.moves, isEmpty);
+    final g = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    expect(h.menus, ['t0', 't0'], reason: 'menu appears before the finger lifts');
+    await g.moveTo(h.node('t3').center);
+    await tester.pump();
+    expect(h.preview, findsOneWidget);
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, ['t0:t3:null']);
+    expect(h.menus, ['t0', 't0']);
+  });
+
+  testWidgets('cancelling a held touch drops no nodes', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    final g = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.touch);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+    await g.cancel();
+    await tester.pumpAndSettle();
+    expect(h.menus, ['t0']);
+    expect(h.moves, isEmpty);
+    expect(h.preview, findsNothing);
+  });
+
+  testWidgets('touch multiple selection toggles nodes without a keyboard', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    await tester.tap(find.byKey(const ValueKey('map-multi-select')));
+    await tester.tap(find.byKey(const ValueKey('t0')));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('t2')));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    expect(h.selected, {'t0', 't2'});
+    await tester.tap(find.byKey(const ValueKey('t0')));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    expect(h.selected, {'t2'});
+  });
+
+  testWidgets('Pencil drags nodes immediately and box selects blank space', (tester) async {
+    final h = _Harness(tester);
+    await h.pump(_topics(4));
+    final g = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.stylus);
+    await g.moveTo(h.node('t3').center);
+    await tester.pump();
+    expect(h.preview, findsOneWidget);
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(h.moves, ['t0:t3:null']);
+    final box = await tester.startGesture(const Offset(690, 490), kind: PointerDeviceKind.stylus);
+    await box.moveTo(const Offset(10, 10));
+    await tester.pump();
+    await box.up();
+    await tester.pumpAndSettle();
+    expect(h.selected, isNotEmpty);
+  });
+
   testWidgets('the preview line or ring shows exactly where the node lands', (tester) async {
     final h = _Harness(tester);
     await h.pump(_topics(4));
@@ -144,7 +276,7 @@ void main() {
 
     // A drag that starts on the very move that reaches the target still
     // previews and drops there (Draggable's first update reports the press).
-    final quick = await tester.startGesture(h.node('t0').center);
+    final quick = await tester.startGesture(h.node('t0').center, kind: PointerDeviceKind.mouse);
     await h.moveTo(quick, h.node('t3').center);
     expect(tester.getRect(h.preview), h.node('t3'));
     await quick.up();

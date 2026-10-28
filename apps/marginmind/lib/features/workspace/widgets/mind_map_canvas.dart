@@ -242,6 +242,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Offset? _boxStart;
   Offset? _boxEnd;
   Set<String> _boxInitial = {};
+  bool _touchSelection = false;
+  final _touchPointers = <int>{};
+  Offset? _touchDragOrigin;
+  bool _touchDragMoved = false;
+  bool _touchDragCancelled = false;
 
   bool get _additive =>
       HardwareKeyboard.instance.isShiftPressed ||
@@ -251,6 +256,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   void _select(String? id, {required bool additive}) {
     if (id != null && additive && widget.onToggleSelection != null) {
       widget.onToggleSelection!(id);
+    } else if (id != null && additive && widget.onSelectMany != null) {
+      final selected = {...widget.selectedCardIds};
+      if (!selected.remove(id)) selected.add(id);
+      widget.onSelectMany!(selected);
     } else {
       widget.onSelect(id);
     }
@@ -958,44 +967,73 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (id == rootNodeId) return child;
     final scale = mapScale(widget.transformation.value);
     final count = widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1;
-    return Draggable<String>(
-      data: id,
-      dragAnchorStrategy: pointerDragAnchorStrategy,
-      onDragStarted: () => _startDrag(id),
-      onDragUpdate: (_) => _updateDrag(),
-      onDragEnd: (_) => _endDrag(id),
-      feedback: Transform.translate(
-        offset: const Offset(-12, -12),
-        child: Opacity(
-          opacity: 0.85,
-          child: Transform.scale(
-            scale: scale,
-            alignment: Alignment.topLeft,
-            child: SizedBox.fromSize(
-              size: spec.size,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: _NodeView(
-                      spec: spec,
-                      selected: true,
-                      flashing: false,
-                      onTap: () {},
-                      onDoubleTap: null,
-                      onSecondaryTapUp: null,
-                      onReveal: null,
-                      revealLabel: '',
-                    ),
+    final feedback = Transform.translate(
+      offset: const Offset(-12, -12),
+      child: Opacity(
+        opacity: 0.85,
+        child: Transform.scale(
+          scale: scale,
+          alignment: Alignment.topLeft,
+          child: SizedBox.fromSize(
+            size: spec.size,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: _NodeView(
+                    spec: spec,
+                    selected: true,
+                    flashing: false,
+                    onTap: () {},
+                    onDoubleTap: null,
+                    onSecondaryTapUp: null,
+                    onReveal: null,
+                    revealLabel: '',
                   ),
-                  if (count > 1) Positioned(top: -MMSpacing.s, right: -MMSpacing.s, child: _CountBadge(count)),
-                ],
-              ),
+                ),
+                if (count > 1) Positioned(top: -MMSpacing.s, right: -MMSpacing.s, child: _CountBadge(count)),
+              ],
             ),
           ),
         ),
       ),
-      child: child,
+    );
+    return _PointerDraggable(
+      touch: false,
+      data: id,
+      feedback: feedback,
+      onDragStarted: () => _startDrag(id),
+      onDragUpdate: (_) => _updateDrag(),
+      onDragEnd: (_) => _endDrag(id),
+      child: _PointerDraggable(
+        touch: true,
+        canStart: () => _touchPointers.length == 1 && _dragging == null,
+        data: id,
+        feedback: feedback,
+        onDragStarted: () {
+          _touchDragOrigin = _dragPointer;
+          _touchDragMoved = false;
+          _startDrag(id);
+          final position = _touchDragOrigin;
+          if (position != null) widget.onContextMenu?.call(id, position);
+        },
+        onDragUpdate: (_) {
+          if (_touchDragOrigin != null &&
+              _dragPointer != null &&
+              (_dragPointer! - _touchDragOrigin!).distance > kTouchSlop) {
+            if (!_touchDragMoved) dismissMMMenu(context);
+            _touchDragMoved = true;
+          }
+          if (_touchDragMoved) _updateDrag();
+        },
+        onDragEnd: (_) {
+          final showMenu = !_touchDragMoved && !_touchDragCancelled && _dragging != null;
+          if (_touchDragCancelled) dismissMMMenu(context);
+          _endDrag(showMenu || _touchDragCancelled ? null : id);
+          _touchDragOrigin = null;
+        },
+        child: child,
+      ),
     );
   }
 
@@ -1114,7 +1152,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 spec: spec,
                 selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
-                onPressStart: () => _tapModifiers[id] = _additive,
+                longPressEnabled: id == rootNodeId,
+                onPressStart: (kind) =>
+                    _tapModifiers[id] = _additive || (kind == PointerDeviceKind.touch && _touchSelection),
                 onTap: () {
                   widget.focusNode.requestFocus();
                   final additive = _tapModifiers.remove(id) ?? false;
@@ -1200,11 +1240,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final layoutChanged = !identical(result, _layout);
     _animateTo(result, _layout);
     _layout = result;
+    final viewportChanged = _viewport != Size(viewport.maxWidth, viewport.maxHeight);
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
     _keepRootInPlace(result);
     final sceneSize = _sceneSize(result);
-    if (layoutChanged && hadLayout && _centered) {
+    if ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId, settled: true);
       });
@@ -1296,6 +1337,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 },
                 onPointerPanZoomEnd: (_) => _pinchScale = null,
                 onPointerDown: (event) {
+                  _dragPointer = event.position;
+                  if (event.kind == PointerDeviceKind.touch) {
+                    if (_touchPointers.isEmpty) _touchDragCancelled = false;
+                    setState(() => _touchPointers.add(event.pointer));
+                    return;
+                  }
                   if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
                   final scene = widget.transformation.toScene(event.localPosition);
                   if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) {
@@ -1320,7 +1367,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       if (e.key != rootNodeId && box.overlaps(_drawn(e.key, e.value))) e.key,
                   });
                 },
-                onPointerUp: (_) {
+                onPointerUp: (event) {
+                  _touchPointers.remove(event.pointer);
                   _afterPointerUp();
                   setState(() {
                     _boxStart = null;
@@ -1328,7 +1376,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   });
                 },
                 // Runs before the drag ends, so a cancelled drag drops nothing.
-                onPointerCancel: (_) {
+                onPointerCancel: (event) {
+                  if (event.kind == PointerDeviceKind.touch) _touchDragCancelled = true;
+                  _touchPointers.remove(event.pointer);
                   _afterPointerUp();
                   setState(() {
                     _boxStart = null;
@@ -1339,7 +1389,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 child: InteractiveViewer(
                   panEnabled: _boxStart == null,
                   // Zooming is handled above to preserve the pointer anchor.
-                  scaleEnabled: false,
+                  scaleEnabled: _touchPointers.isNotEmpty,
                   transformationController: widget.transformation,
                   constrained: false,
                   minScale: mapMinScale,
@@ -1347,8 +1397,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   // A finite scene boundary pins small maps when zoomed out.
                   // Manual panning must work at every scale and viewport height.
                   boundaryMargin: const EdgeInsets.all(double.infinity),
-                  child: GestureDetector(
+                  child: MMContextMenuRegion(
                     behavior: HitTestBehavior.translucent,
+                    longPressHitTest: (point) => _markAt(point) != null,
                     onTapUp: (details) {
                       widget.focusNode.requestFocus();
                       final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
@@ -1595,6 +1646,21 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     },
                   ),
                 ),
+              if (MMInputMode.touchOf(context) && (widget.onToggleSelection != null || widget.onSelectMany != null))
+                Positioned(
+                  top: MMSizes.toolbarHeight + MMSpacing.xl,
+                  right: MMSpacing.s,
+                  child: SizedBox(
+                    height: 44,
+                    child: MMButton(
+                      key: const ValueKey('map-multi-select'),
+                      label: l.mapMultiSelect,
+                      icon: _touchSelection ? MMIcons.check : Icons.checklist,
+                      variant: _touchSelection ? MMButtonVariant.primary : MMButtonVariant.secondary,
+                      onPressed: () => setState(() => _touchSelection = !_touchSelection),
+                    ),
+                  ),
+                ),
               Positioned.fill(
                 child: AnimatedBuilder(
                   animation: Listenable.merge([widget.transformation, _motion, _hovered]),
@@ -1654,10 +1720,12 @@ class _NodeView extends StatelessWidget {
     this.expandLabel = '',
     this.collapseLabel = '',
     this.onOpenNote,
+    this.longPressEnabled = true,
   });
 
   /// A research card's "whole note and citations" link.
   final VoidCallback? onOpenNote;
+  final bool longPressEnabled;
 
   /// Shows a cut card's whole text, or its preview again.
   final VoidCallback? onToggleExpanded;
@@ -1672,7 +1740,7 @@ class _NodeView extends StatelessWidget {
   final bool selected;
   final bool flashing;
   final VoidCallback onTap;
-  final VoidCallback? onPressStart;
+  final ValueChanged<PointerDeviceKind>? onPressStart;
   final VoidCallback? onDoubleTap;
   final VoidCallback? onReveal;
   final String revealLabel;
@@ -1837,8 +1905,9 @@ class _NodeView extends StatelessWidget {
 
     if (editor != null) return _decorated(c, bg, radius, shadow, ring, body, padding);
     return Listener(
-      onPointerDown: (_) => onPressStart?.call(),
-      child: GestureDetector(
+      onPointerDown: (event) => onPressStart?.call(event.kind),
+      child: MMContextMenuRegion(
+        longPressEnabled: longPressEnabled,
         onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
         child: _interactive(context, c, bg, radius, shadow, ring, body, padding),
       ),
@@ -2118,7 +2187,7 @@ class _FoldButton extends StatelessWidget {
       canRequestFocus: false,
       builder: (context, s) => AnimatedOpacity(
         duration: MMMotion.standard,
-        opacity: collapsed || s.hovered ? 1 : 0.45,
+        opacity: collapsed || s.hovered || MMInputMode.touchOf(context) ? 1 : 0.45,
         child: Container(
           constraints: const BoxConstraints(minWidth: 18),
           height: 18,
@@ -2319,7 +2388,7 @@ class _MarkLabel extends StatelessWidget {
       ),
     );
     if (editor != null) return box(Center(widthFactor: 1, heightFactor: 1, child: editor));
-    return GestureDetector(
+    return MMContextMenuRegion(
       onSecondaryTapUp: onSecondaryTapUp == null ? null : (d) => onSecondaryTapUp!(d.globalPosition),
       child: MMInteractive(
         onTap: onTap,
@@ -2329,5 +2398,108 @@ class _MarkLabel extends StatelessWidget {
         builder: (context, _) => box(Text(text, style: style)),
       ),
     );
+  }
+}
+
+/// Both recognizers see pointer down before the first rebuild. Filtering at
+/// recognizer creation preserves mouse/Pencil drags on hybrid devices.
+class _PointerDraggable extends Draggable<String> {
+  const _PointerDraggable({
+    required this.touch,
+    this.canStart,
+    required super.data,
+    required super.feedback,
+    required super.child,
+    required super.onDragStarted,
+    required super.onDragUpdate,
+    required super.onDragEnd,
+  }) : super(dragAnchorStrategy: pointerDragAnchorStrategy, maxSimultaneousDrags: 1);
+
+  final bool touch;
+  final bool Function()? canStart;
+
+  @override
+  MultiDragGestureRecognizer createRecognizer(GestureMultiDragStartCallback onStart) {
+    if (!touch) {
+      return ImmediateMultiDragGestureRecognizer(
+        supportedDevices: const {
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.invertedStylus,
+          PointerDeviceKind.unknown,
+        },
+      )..onStart = onStart;
+    }
+    return _TouchDragGestureRecognizer(canStart ?? () => true)
+      ..onStart = (position) {
+        final drag = onStart(position);
+        if (drag != null) HapticFeedback.selectionClick();
+        return drag;
+      };
+  }
+}
+
+/// Decide before accepting the arena: returning null from onStart is too late
+/// to leave the ancestor's scale recognizer available for a held pinch.
+class _TouchDragGestureRecognizer extends MultiDragGestureRecognizer {
+  _TouchDragGestureRecognizer(this.canStart)
+    : super(debugOwner: null, supportedDevices: const {PointerDeviceKind.touch});
+  final bool Function() canStart;
+
+  @override
+  MultiDragPointerState createNewPointerState(PointerDownEvent event) =>
+      _TouchDragPointerState(event, gestureSettings, canStart);
+
+  @override
+  String get debugDescription => 'touch node long press';
+}
+
+class _TouchDragPointerState extends MultiDragPointerState {
+  _TouchDragPointerState(PointerDownEvent event, DeviceGestureSettings? settings, this.canStart)
+    : super(event.position, event.kind, settings) {
+    _timer = Timer(kLongPressTimeout, () {
+      _timer = null;
+      if (!canStart()) {
+        resolve(GestureDisposition.rejected);
+        return;
+      }
+      _ready = true;
+      final starter = _starter;
+      if (starter != null) {
+        _starter = null;
+        starter(initialPosition);
+      } else {
+        resolve(GestureDisposition.accepted);
+      }
+    });
+  }
+  final bool Function() canStart;
+  Timer? _timer;
+  bool _ready = false;
+  GestureMultiDragStartCallback? _starter;
+
+  @override
+  void accepted(GestureMultiDragStartCallback starter) {
+    if (_ready) {
+      starter(initialPosition);
+    } else {
+      _starter = starter;
+    }
+  }
+
+  @override
+  void checkForResolutionAfterMove() {
+    if (!_ready && pendingDelta!.distance > computeHitSlop(kind, gestureSettings)) {
+      _timer?.cancel();
+      _timer = null;
+      resolve(GestureDisposition.rejected);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }

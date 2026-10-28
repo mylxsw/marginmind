@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -110,7 +112,7 @@ void main() {
         .getRect(node('c3'))
         .expandToInclude(tester.getRect(node('c4')))
         .expandToInclude(tester.getRect(node('c6')));
-    final gesture = await tester.startGesture(bounds.topLeft - const Offset(15, 15));
+    final gesture = await tester.startGesture(bounds.topLeft - const Offset(15, 15), kind: PointerDeviceKind.mouse);
     await tester.pump();
     await gesture.moveTo(bounds.bottomRight + const Offset(15, 15));
     await tester.pump();
@@ -195,7 +197,7 @@ void main() {
     controller.selectCards(['c3', 'c4']);
     await tester.pumpAndSettle();
     Future<void> dragTo(String targetId) async {
-      final gesture = await tester.startGesture(tester.getCenter(node('c3')));
+      final gesture = await tester.startGesture(tester.getCenter(node('c3')), kind: PointerDeviceKind.mouse);
       await gesture.moveBy(const Offset(8, 0));
       await tester.pump();
       await gesture.moveBy(const Offset(20, 0));

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/gestures.dart' show kSecondaryButton;
+import 'package:flutter/gestures.dart' show kSecondaryButton, PointerDeviceKind;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -140,7 +140,7 @@ void main() {
     final app = await openAssistantApp(tester, client: ScriptClient([answer('整理好了'), answer('出好了')]));
     final root = app.container.read(studySetProvider('demo-1'))!.title;
     Future<void> rootMenu(String item) async {
-      await tester.tap(find.text(root).last, buttons: kSecondaryButton);
+      await tester.tap(find.text(root).last, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       expect(find.text('问助手'), findsOneWidget);
       expect(find.text('整理这个分支…'), findsOneWidget);

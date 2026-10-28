@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/appearance.dart';
+import '../foundation/input_mode.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'menu.dart';
 
 /// Window-level hooks the platform layer provides: window dragging, title
 /// bar double-click, and how much the toolbar must leave for the window
@@ -65,43 +67,50 @@ class MMWindowScaffold extends StatelessWidget {
     final fullWidth = sidebarWidth + MMSizes.sidebarInset;
     final duration = MMAppearance.duration(context, MMMotion.layout);
 
-    return ColoredBox(
-      color: c.windowBackground,
-      child: MMWindowChrome(
-        toolbarLeadingInset: !open && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
-        onDragStart: onDragStart,
-        onTitleDoubleTap: onTitleDoubleTap,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (sidebar != null)
-              TweenAnimationBuilder<double>(
-                tween: Tween(end: open ? fullWidth : 0),
-                duration: duration,
-                curve: MMMotion.layoutCurve,
-                builder: (context, width, child) => SizedBox(
-                  width: width,
-                  child: ClipRect(
-                    child: OverflowBox(
-                      alignment: Alignment.centerRight,
-                      minWidth: fullWidth,
-                      maxWidth: fullWidth,
-                      child: child,
-                    ),
-                  ),
-                ),
-                child: ExcludeFocus(excluding: !open, child: sidebar!),
-              ),
-            Expanded(
-              child: Column(
+    return MMInputMode(
+      child: MMContextMenuHost(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: ColoredBox(
+            color: c.windowBackground,
+            child: MMWindowChrome(
+              toolbarLeadingInset: !open && showsWindowButtons ? MMSizes.windowButtonsWidth : 0,
+              onDragStart: onDragStart,
+              onTitleDoubleTap: onTitleDoubleTap,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  toolbar,
-                  Expanded(child: body),
+                  if (sidebar != null)
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(end: open ? fullWidth : 0),
+                      duration: duration,
+                      curve: MMMotion.layoutCurve,
+                      builder: (context, width, child) => SizedBox(
+                        width: width,
+                        child: ClipRect(
+                          child: OverflowBox(
+                            alignment: Alignment.centerRight,
+                            minWidth: fullWidth,
+                            maxWidth: fullWidth,
+                            child: child,
+                          ),
+                        ),
+                      ),
+                      child: ExcludeFocus(excluding: !open, child: sidebar!),
+                    ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        toolbar,
+                        Expanded(child: body),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

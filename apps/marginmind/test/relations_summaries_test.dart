@@ -336,104 +336,130 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('a summary is added from the menu, edited in place and removed from its bracket menu', (tester) async {
-      final controller = await open(tester);
-      controller.selectCards(['c3', 'c4']);
-      await tester.pumpAndSettle();
-      await focusMap(tester);
-      await key(tester, LogicalKeyboardKey.bracketRight, primary: true);
-      expect(find.byType(MMInlineTextField), findsOneWidget);
-      await tester.enterText(find.byType(MMInlineTextField), 'Two ideas');
-      await key(tester, LogicalKeyboardKey.enter);
-      final summary = controller.content.summaries.single;
-      expect(summary.label, 'Two ideas');
-      await key(tester, LogicalKeyboardKey.digit0, primary: true);
-      await reveal(tester, find.text('Two ideas'));
-      final label = tester.getRect(find.text('Two ideas'));
-      final width = tester.getRect(find.byKey(const ValueKey('c3'))).right;
-      expect(label.left, greaterThan(width), reason: 'right of the covered nodes');
-      final text = tester.renderObject<RenderParagraph>(find.text('Two ideas'));
-      expect(
-        text.size.width,
-        greaterThan(text.getMaxIntrinsicWidth(double.infinity)),
-        reason: 'room for glyphs a fraction wider than measured, so the label never wraps',
-      );
+    for (final touch in [false, true]) {
+      testWidgets('[$touch] a summary is added from the menu, edited in place and removed from its bracket menu', (
+        tester,
+      ) async {
+        final controller = await open(tester);
+        controller.selectCards(['c3', 'c4']);
+        await tester.pumpAndSettle();
+        await focusMap(tester);
+        await key(tester, LogicalKeyboardKey.bracketRight, primary: true);
+        expect(find.byType(MMInlineTextField), findsOneWidget);
+        await tester.enterText(find.byType(MMInlineTextField), 'Two ideas');
+        await key(tester, LogicalKeyboardKey.enter);
+        final summary = controller.content.summaries.single;
+        expect(summary.label, 'Two ideas');
+        await key(tester, LogicalKeyboardKey.digit0, primary: true);
+        await reveal(tester, find.text('Two ideas'));
+        final label = tester.getRect(find.text('Two ideas'));
+        final width = tester.getRect(find.byKey(const ValueKey('c3'))).right;
+        expect(label.left, greaterThan(width), reason: 'right of the covered nodes');
+        final text = tester.renderObject<RenderParagraph>(find.text('Two ideas'));
+        expect(
+          text.size.width,
+          greaterThan(text.getMaxIntrinsicWidth(double.infinity)),
+          reason: 'room for glyphs a fraction wider than measured, so the label never wraps',
+        );
 
-      // Double click edits the label; Esc keeps the old text.
-      await doubleTap(tester, find.text('Two ideas'));
-      expect(state(tester).editingMarkId, summary.id);
-      await tester.enterText(find.byType(MMInlineTextField), 'Changed');
-      await key(tester, LogicalKeyboardKey.escape);
-      expect(controller.content.summaries.single.label, 'Two ideas');
+        // Double click edits the label; Esc keeps the old text.
+        await doubleTap(tester, find.text('Two ideas'));
+        expect(state(tester).editingMarkId, summary.id);
+        await tester.enterText(find.byType(MMInlineTextField), 'Changed');
+        await key(tester, LogicalKeyboardKey.escape);
+        expect(controller.content.summaries.single.label, 'Two ideas');
 
-      // The bracket sits just left of the label.
-      controller.selectCard(null);
-      await tester.pumpAndSettle();
-      final scale = mapScale(viewer(tester).transformationController!.value);
-      final shown = tester.getRect(find.text('Two ideas'));
-      final bracket = Offset(
-        shown.left - (MMSpacing.s + MMSpacing.m / 2) * scale - MMSpacing.m * scale,
-        shown.center.dy,
-      );
-      await tester.tapAt(bracket, buttons: kSecondaryButton);
-      await tester.pumpAndSettle();
-      expect(state(tester).selectedMarkId, summary.id);
-      expect(find.text('Delete Summary'), findsOneWidget);
-      await tester.tap(find.text('Delete Summary'));
-      await tester.pumpAndSettle();
-      expect(controller.content.summaries, isEmpty);
-      await settleHud(tester);
-    });
+        // The bracket sits just left of the label.
+        controller.selectCard(null);
+        await tester.pumpAndSettle();
+        final scale = mapScale(viewer(tester).transformationController!.value);
+        final shown = tester.getRect(find.text('Two ideas'));
+        final bracket = Offset(
+          shown.left - (MMSpacing.s + MMSpacing.m / 2) * scale - MMSpacing.m * scale,
+          shown.center.dy,
+        );
+        if (touch) {
+          final g = await tester.startGesture(bracket, kind: PointerDeviceKind.touch);
+          await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+          await g.up();
+        } else {
+          await tester.tapAt(bracket, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+        }
+        await tester.pumpAndSettle();
+        expect(state(tester).selectedMarkId, summary.id);
+        expect(find.text('Delete Summary'), findsOneWidget);
+        await tester.tap(find.text('Delete Summary'));
+        await tester.pumpAndSettle();
+        expect(controller.content.summaries, isEmpty);
+        await settleHud(tester);
+      });
 
-    testWidgets('node menu adds relations and summaries; label menu edits and deletes', (tester) async {
-      final controller = await open(tester);
-      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add Summary'));
-      await tester.pumpAndSettle();
-      await key(tester, LogicalKeyboardKey.enter);
-      expect(controller.content.summaries.single.label, 'Summary');
+      testWidgets('[$touch] node menu adds relations and summaries; label menu edits and deletes', (tester) async {
+        final controller = await open(tester);
+        if (touch) {
+          await tester.longPress(find.text('遗忘的规律'));
+        } else {
+          await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+        }
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Add Summary'));
+        await tester.pumpAndSettle();
+        await key(tester, LogicalKeyboardKey.enter);
+        expect(controller.content.summaries.single.label, 'Summary');
 
-      await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Add Relationship'));
-      await tester.pumpAndSettle();
-      expect(state(tester).connectingFromId, 'c3');
-      await tester.tap(find.text('对策一：间隔重复'));
-      // A node also takes double clicks: its tap waits out the double-click time.
-      await tester.pump(kDoubleTapTimeout);
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(MMInlineTextField), 'link');
-      await key(tester, LogicalKeyboardKey.enter);
+        if (touch) {
+          await tester.longPress(find.text('遗忘的规律'));
+        } else {
+          await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+        }
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Add Relationship'));
+        await tester.pumpAndSettle();
+        expect(state(tester).connectingFromId, 'c3');
+        await tester.tap(find.text('对策一：间隔重复'));
+        // A node also takes double clicks: its tap waits out the double-click time.
+        await tester.pump(kDoubleTapTimeout);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(MMInlineTextField), 'link');
+        await key(tester, LogicalKeyboardKey.enter);
 
-      await tester.tap(find.text('link'), buttons: kSecondaryButton);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Edit Label'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(MMInlineTextField), 'renamed');
-      await tester.tapAt(blank(tester));
-      await tester.pumpAndSettle();
-      expect(controller.content.relations.single.label, 'renamed', reason: 'clicking elsewhere confirms');
+        if (touch) {
+          await tester.longPress(find.text('link'));
+        } else {
+          await tester.tap(find.text('link'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+        }
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Edit Label'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(MMInlineTextField), 'renamed');
+        await tester.tapAt(blank(tester));
+        await tester.pumpAndSettle();
+        expect(controller.content.relations.single.label, 'renamed', reason: 'clicking elsewhere confirms');
 
-      await tester.tap(find.text('renamed'), buttons: kSecondaryButton);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete Relationship'));
-      await tester.pumpAndSettle();
-      expect(controller.content.relations, isEmpty);
+        if (touch) {
+          await tester.longPress(find.text('renamed'));
+        } else {
+          await tester.tap(find.text('renamed'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
+        }
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete Relationship'));
+        await tester.pumpAndSettle();
+        expect(controller.content.relations, isEmpty);
 
-      // The toolbar's trash removes a selected mark too. The label may end at
-      // the window's right edge: tap its start.
-      await reveal(tester, find.text('Summary'));
-      await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
-      await tester.pump(kDoubleTapTimeout);
-      await tester.pumpAndSettle();
-      expect(state(tester).selectedMarkId, controller.content.summaries.single.id);
-      await tester.tap(find.byTooltip('Remove from Map'));
-      await tester.pumpAndSettle();
-      expect(controller.content.summaries, isEmpty);
-      expect(controller.content.card('c3'), isNotNull);
-      await settleHud(tester);
-    });
+        // The toolbar's trash removes a selected mark too. The label may end at
+        // the window's right edge: tap its start.
+        await reveal(tester, find.text('Summary'));
+        await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
+        await tester.pump(kDoubleTapTimeout);
+        await tester.pumpAndSettle();
+        expect(state(tester).selectedMarkId, controller.content.summaries.single.id);
+        await tester.tap(find.byTooltip('Remove from Map'));
+        await tester.pumpAndSettle();
+        expect(controller.content.summaries, isEmpty);
+        expect(controller.content.card('c3'), isNotNull);
+        await settleHud(tester);
+      });
+    }
 
     testWidgets('marks of folded nodes are hidden and come back on expand', (tester) async {
       final controller = await open(tester);

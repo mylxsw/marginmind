@@ -239,7 +239,7 @@ void main() {
     expect(inReaderSidebar('Page 5'), findsOneWidget);
     expect(find.text('No Bookmarks'), findsNothing);
 
-    await tester.tap(inReaderSidebar('Page 5'), buttons: kSecondaryMouseButton);
+    await tester.tap(inReaderSidebar('Page 5'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename Bookmark…'));
     await tester.pumpAndSettle();
@@ -251,7 +251,7 @@ void main() {
 
     await tester.tap(find.text('遗忘曲线'));
     await tester.pump();
-    await tester.tap(find.text('遗忘曲线'), buttons: kSecondaryMouseButton);
+    await tester.tap(find.text('遗忘曲线'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete Bookmark'));
     await tester.pumpAndSettle();

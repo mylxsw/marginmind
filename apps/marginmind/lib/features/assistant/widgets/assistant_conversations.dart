@@ -147,7 +147,7 @@ class ConversationHistory extends ConsumerWidget {
             child: Text(l.assistantNoConversations, style: t.footnote.copyWith(color: c.secondaryLabel)),
           ),
         for (final s in list)
-          GestureDetector(
+          MMContextMenuRegion(
             onSecondaryTapUp: (d) => showConversationMenu(context, ref, studySetId, s, d.globalPosition),
             child: MMInteractive(
               key: ValueKey('history-${s.id}'),

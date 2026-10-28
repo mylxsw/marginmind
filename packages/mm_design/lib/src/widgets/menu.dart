@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/interactive.dart';
+import '../foundation/input_mode.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import 'glass.dart';
@@ -50,8 +53,16 @@ Future<void> showMMMenu(
   required List<MMMenuEntry> entries,
   double minWidth = 190,
 }) async {
+  final touch = MMInputMode.touchOf(context);
+  final host = context.findAncestorStateOfType<_MMContextMenuHostState>();
+  if (touch && host != null) {
+    final selected = await host.show(position, entries, minWidth);
+    selected?.call();
+    return;
+  }
   final selected = await showGeneralDialog<VoidCallback>(
     context: context,
+    routeSettings: const RouteSettings(name: _contextMenuRoute),
     barrierDismissible: true,
     barrierColor: Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -62,13 +73,115 @@ Future<void> showMMMenu(
         autofocus: true,
         child: CustomSingleChildLayout(
           delegate: _MenuLayout(position),
-          child: _Menu(entries: entries, minWidth: minWidth),
+          child: SingleChildScrollView(
+            child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
+          ),
         ),
       ),
     ),
     transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
   );
   selected?.call();
+}
+
+const _contextMenuRoute = 'marginmind-context-menu';
+
+/// Dismisses an open context menu when a held pointer becomes a drag.
+/// The predicate stops at every other route, including the underlying page.
+void dismissMMMenu(BuildContext context) {
+  final host = context.findAncestorStateOfType<_MMContextMenuHostState>();
+  if (host?.isOpen ?? false) {
+    host!.close();
+    return;
+  }
+  Navigator.of(context, rootNavigator: true).popUntil((route) => route.settings.name != _contextMenuRoute);
+}
+
+/// Touch menus use a page-owned portal: pushing a route would cancel the
+/// pointer that is still held on a draggable node. Disposing the page also
+/// disposes its menu, focus scope and barrier.
+class MMContextMenuHost extends StatefulWidget {
+  const MMContextMenuHost({super.key, required this.child});
+  final Widget child;
+
+  @override
+  State<MMContextMenuHost> createState() => _MMContextMenuHostState();
+}
+
+class _MMContextMenuHostState extends State<MMContextMenuHost> {
+  final _portal = OverlayPortalController();
+  final _focus = FocusScopeNode(debugLabel: 'Touch context menu');
+  FocusNode? _previousFocus;
+  Completer<VoidCallback?>? _result;
+  Offset _position = Offset.zero;
+  List<MMMenuEntry> _entries = const [];
+  double _minWidth = 190;
+
+  bool get isOpen => _result != null;
+
+  Future<VoidCallback?> show(Offset position, List<MMMenuEntry> entries, double minWidth) {
+    close();
+    _position = position;
+    _entries = entries;
+    _minWidth = minWidth;
+    final result = _result = Completer<VoidCallback?>();
+    _previousFocus = FocusManager.instance.primaryFocus;
+    _portal.show();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && identical(_result, result)) _focus.requestFocus();
+    });
+    return result.future;
+  }
+
+  void close([VoidCallback? selected]) {
+    final result = _result;
+    if (result == null) return;
+    _result = null;
+    _portal.hide();
+    final previous = _previousFocus;
+    _previousFocus = null;
+    if (previous?.context != null) previous!.requestFocus();
+    result.complete(selected);
+  }
+
+  @override
+  void dispose() {
+    _result?.complete();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => OverlayPortal(
+    controller: _portal,
+    overlayChildBuilder: (context) => CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): close},
+      child: FocusScope(
+        node: _focus,
+        autofocus: true,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ModalBarrier(
+                dismissible: true,
+                onDismiss: close,
+                semanticsLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+              ),
+            ),
+            Positioned.fill(
+              child: CustomSingleChildLayout(
+                delegate: _MenuLayout(_position),
+                child: SingleChildScrollView(
+                  child: _Menu(entries: _entries, minWidth: _minWidth, touch: true, onSelected: close),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    child: widget.child,
+  );
 }
 
 class _MenuLayout extends SingleChildLayoutDelegate {
@@ -94,10 +207,12 @@ class _MenuLayout extends SingleChildLayoutDelegate {
 }
 
 class _Menu extends StatelessWidget {
-  const _Menu({required this.entries, required this.minWidth});
+  const _Menu({required this.entries, required this.minWidth, required this.touch, this.onSelected});
 
   final List<MMMenuEntry> entries;
   final double minWidth;
+  final bool touch;
+  final ValueChanged<VoidCallback>? onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +232,7 @@ class _Menu extends StatelessWidget {
               children: [
                 for (final (i, e) in entries.indexed)
                   switch (e) {
-                    MMMenuItem() => _MenuRow(item: e, autofocus: i == 0),
+                    MMMenuItem() => _MenuRow(item: e, autofocus: i == 0, touch: touch, onSelected: onSelected),
                     MMMenuDivider() => Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                       child: Container(height: 0.5, color: c.separator),
@@ -142,10 +257,12 @@ class _Menu extends StatelessWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.item, required this.autofocus});
+  const _MenuRow({required this.item, required this.autofocus, required this.touch, this.onSelected});
 
   final MMMenuItem item;
   final bool autofocus;
+  final bool touch;
+  final ValueChanged<VoidCallback>? onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +270,15 @@ class _MenuRow extends StatelessWidget {
     final t = context.mmText;
     final enabled = item.onSelected != null;
     return MMInteractive(
-      onTap: enabled ? () => Navigator.of(context).pop(item.onSelected) : null,
+      onTap: !enabled
+          ? null
+          : () {
+              if (onSelected != null) {
+                onSelected!(item.onSelected!);
+              } else {
+                Navigator.of(context).pop(item.onSelected);
+              }
+            },
       semanticLabel: item.label,
       builder: (context, s) {
         final highlighted = s.hovered || s.focused;
@@ -165,7 +290,7 @@ class _MenuRow extends StatelessWidget {
             ? const Color(0xFFE5484D)
             : c.label;
         return Container(
-          height: 24,
+          height: touch ? 44 : 24,
           padding: const EdgeInsets.symmetric(horizontal: 9),
           decoration: BoxDecoration(
             color: highlighted && enabled ? c.accentFill : Colors.transparent,

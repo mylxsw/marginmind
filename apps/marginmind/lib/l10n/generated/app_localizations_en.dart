@@ -2748,5 +2748,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceKeyPlaceholder => 'Paste credential';
 
   @override
+  String get mapMultiSelect => 'Multiple Selection';
+
+  @override
   String get voiceAppIdPlaceholder => 'Enter App ID';
 }

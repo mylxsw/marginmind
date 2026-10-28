@@ -250,13 +250,13 @@ void main() {
       controller.selectCard(excerpt.id);
       await tester.pumpAndSettle();
       final quote = find.textContaining('遗忘曲线');
-      await tester.tap(quote.first, buttons: kSecondaryButton);
+      await tester.tap(quote.first, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Reset Width'));
       await tester.pumpAndSettle();
       expect(controller.content.node(excerpt.id)!.width, isNull);
       // Without a width the menu has no reset.
-      await tester.tap(quote.first, buttons: kSecondaryButton);
+      await tester.tap(quote.first, buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle();
       expect(find.text('Reset Width'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);

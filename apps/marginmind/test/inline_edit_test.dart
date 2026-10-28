@@ -33,6 +33,28 @@ Future<void> _select(WidgetTester tester, String title) async {
 String _json(StudySetContent c) => jsonEncode(c.toJson());
 
 void main() {
+  testWidgets('a renaming node remains visible as the soft keyboard reduces the viewport', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await doubleTap(tester, find.text('遗忘的规律'));
+    expect(_field, findsOneWidget);
+    final canvas = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
+    final m = canvas.transformation.value.clone();
+    m.setTranslationRaw(m.storage[12], m.storage[13] + 250, 0);
+    canvas.transformation.value = m;
+    await tester.pump();
+    tester.view.viewInsets = const FakeViewPadding(bottom: 360);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(_field).bottom, lessThan(tester.view.physicalSize.height - 360));
+    expect(container.read(workspaceProvider('demo-1')).editingCardId, 'c3');
+    await tester.enterText(_field, 'Renamed above keyboard');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(controller.content.card('c3')!.title, 'Renamed above keyboard');
+    tester.view.resetViewInsets();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('corner plus creates and edits one child under its marked node', (tester) async {
     final container = await openFirstSet(tester);
     final provider = workspaceProvider('demo-1');
@@ -181,7 +203,7 @@ void main() {
 
   testWidgets('the context menu edits in place', (tester) async {
     await openFirstSet(tester);
-    await tester.tap(find.text('对策一：间隔重复'), buttons: kSecondaryButton);
+    await tester.tap(find.text('对策一：间隔重复'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename'));
     await tester.pumpAndSettle();
