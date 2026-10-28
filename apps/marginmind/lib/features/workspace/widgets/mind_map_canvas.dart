@@ -1646,7 +1646,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     },
                   ),
                 ),
-              if (MMInputMode.touchOf(context) && (widget.onToggleSelection != null || widget.onSelectMany != null))
+              if (MMInput.touchInputOf(context) && (widget.onToggleSelection != null || widget.onSelectMany != null))
                 Positioned(
                   top: MMSizes.toolbarHeight + MMSpacing.xl,
                   right: MMSpacing.s,
@@ -2187,7 +2187,7 @@ class _FoldButton extends StatelessWidget {
       canRequestFocus: false,
       builder: (context, s) => AnimatedOpacity(
         duration: MMMotion.standard,
-        opacity: collapsed || s.hovered || MMInputMode.touchOf(context) ? 1 : 0.45,
+        opacity: collapsed || s.hovered || MMInput.touchInputOf(context) ? 1 : 0.45,
         child: Container(
           constraints: const BoxConstraints(minWidth: 18),
           height: 18,

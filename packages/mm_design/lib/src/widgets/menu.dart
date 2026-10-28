@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../foundation/interactive.dart';
-import '../foundation/input_mode.dart';
+import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import 'glass.dart';
@@ -53,7 +53,7 @@ Future<void> showMMMenu(
   required List<MMMenuEntry> entries,
   double minWidth = 190,
 }) async {
-  final touch = MMInputMode.touchOf(context);
+  final touch = MMInput.touchInputOf(context);
   final host = context.findAncestorStateOfType<_MMContextMenuHostState>();
   if (touch && host != null) {
     final selected = await host.show(position, entries, minWidth);

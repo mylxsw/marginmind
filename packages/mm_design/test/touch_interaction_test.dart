@@ -81,11 +81,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: MMTheme.light().copyWith(platform: TargetPlatform.macOS),
-        home: MMInputMode(
+        home: MMInput(
+          touchPlatform: false,
           child: Builder(
             builder: (context) {
               menuContext = context;
-              return SizedBox.expand(child: Text(MMInputMode.touchOf(context) ? 'touch' : 'pointer'));
+              return SizedBox.expand(child: Text(MMInput.touchInputOf(context) ? 'touch' : 'pointer'));
             },
           ),
         ),

@@ -40,4 +40,3 @@ export 'src/widgets/toolbar.dart';
 export 'src/widgets/window_scaffold.dart';
 
 export 'src/widgets/context_menu_region.dart';
-export 'src/foundation/input_mode.dart';
