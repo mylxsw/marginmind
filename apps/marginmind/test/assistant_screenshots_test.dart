@@ -243,6 +243,7 @@ Future<void> _quiet(WidgetTester tester, String state, {bool dark = false, Size 
     final scope = ProviderScope.containerOf(tester.element(find.byType(AssistantPanel)));
     await scope.read(assistantControllerProvider.notifier).openConversation('shot-1');
     await pumpFor(tester, 10);
+    FocusManager.instance.primaryFocus?.unfocus();
   }
   await tester.pumpAndSettle();
   final name = 'quiet-$state${dark ? '-dark' : ''}${size.width < 1440 ? '-narrow' : ''}';
