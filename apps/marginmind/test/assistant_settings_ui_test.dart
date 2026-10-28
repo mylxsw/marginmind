@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
@@ -47,7 +49,99 @@ Future<TestGesture> _hover(WidgetTester tester, Finder finder) async {
 
 AssistantServices _services(AssistantApp app) => app.container.read(assistantServicesProvider).value!;
 
+class UnavailableKeyStore extends FakeSecrets {
+  bool blockReads = true;
+  bool blockWrites = true;
+  @override
+  Future<String?> read(String account) async {
+    if (blockReads) throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+    return super.read(account);
+  }
+
+  @override
+  Future<void> write(String account, String key) async {
+    if (blockWrites) throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+    await super.write(account, key);
+  }
+}
+
 void main() {
+  testWidgets('inaccessible saved keys are explained and retry restores AI without re-entering a key', (tester) async {
+    final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
+    final app = await openAssistantApp(tester, secretStore: secrets, catalog: catalog);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    expect(await app.container.read(assistantCredentialStateProvider.future), AssistantCredentialState.unavailable);
+    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
+    expect(find.text('API Key 无效'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
+    secrets.blockReads = false;
+    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
+    await tester.pumpAndSettle();
+    expect(await app.container.read(assistantCredentialStateProvider.future), AssistantCredentialState.ready);
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+    expect(catalog.checked, isEmpty); // Retry reads storage; it does not send the key to the network.
+  });
+
+  testWidgets('storage failures never say the provider rejected a valid key and saving can be retried', (tester) async {
+    final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
+    final app = await openAssistantApp(tester, key: false, secretStore: secrets, catalog: catalog);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    await _enter(tester, 'connect-key', 'valid-test-key');
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.pumpAndSettle();
+    expect(catalog.checked.single.$2, 'valid-test-key');
+    expect(find.textContaining('暂时无法保存 API Key'), findsOneWidget);
+    expect(find.text('API Key 无效'), findsNothing);
+    expect(await app.container.read(assistantConfiguredProvider.future), isFalse);
+    expect(secrets.values, isEmpty);
+    secrets
+      ..blockReads = false
+      ..blockWrites = false;
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.pumpAndSettle();
+    expect(await app.container.read(assistantConfiguredProvider.future), isTrue);
+    expect(secrets.values[AssistantServicesStore.account('legacy-claude')], 'valid-test-key');
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+  });
+
+  testWidgets('credential recovery uses the selected service when multiple services share a protocol', (tester) async {
+    AssistantService service(String id, String host) => AssistantService(
+      id: id,
+      protocol: ServiceProtocol.openai,
+      name: id,
+      endpoint: 'https://$host/v1',
+      models: const [ServiceModel(id: 'model')],
+    );
+    final value = AssistantServices(
+      services: [service('first', 'first.example'), service('selected', 'selected.example')],
+      defaultModel: const ModelReference('selected', 'model'),
+    );
+    final secrets = UnavailableKeyStore(), catalog = FakeCatalog();
+    final app = await openAssistantApp(
+      tester,
+      key: false,
+      secretStore: secrets,
+      catalog: catalog,
+      prefs: {AssistantServicesStore.settingsKey: jsonEncode(value.toJson())},
+    );
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    secrets
+      ..blockReads = false
+      ..blockWrites = false;
+    await _enter(tester, 'connect-key', 'replacement-test-key');
+    await tester.tap(find.byKey(const ValueKey('connect-button')));
+    await tester.pumpAndSettle();
+    expect(catalog.checked.single, ('https://selected.example/v1', 'replacement-test-key'));
+    expect(secrets.values[AssistantServicesStore.account('selected')], 'replacement-test-key');
+    expect(secrets.values.containsKey(AssistantServicesStore.account('first')), isFalse);
+    expect(_services(app).defaultModel!.serviceId, 'selected');
+  });
+
   // Flutter 3.47 asserts (debug, with semantics) when a sheet closes after a
   // dialog opened over it; this flow needs both, and semantics are tested elsewhere.
   testWidgets('new service → key → fetch models → enable → default → listed in the model menu', (tester) async {

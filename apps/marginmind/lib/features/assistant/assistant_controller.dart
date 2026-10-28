@@ -338,7 +338,7 @@ class AssistantController extends Notifier<Conversation> {
       if (active()) {
         final kind = assistantFailureKind(error);
         final diagnostics = (session.agent.metadata['assistant.diagnostics'] as Map?)?[question.requestId] as Map?;
-        diagnostics?['failure'] = kind.name;
+        diagnostics?['failure'] = error is ResearchFailure && error.code == 'secret_store' ? 'secret_store' : kind.name;
         final status = assistantFailureStatus(error);
         if (status != null) diagnostics?['httpStatus'] = status;
         for (final tool in diagnostics?['tools'] as List? ?? []) {

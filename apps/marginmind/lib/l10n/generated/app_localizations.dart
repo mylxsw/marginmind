@@ -4268,6 +4268,24 @@ abstract class AppLocalizations {
   /// **'Organize this section into the map'**
   String get assistantSuggestOrganize;
 
+  /// No description provided for @assistantSavedKeyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved API key is temporarily inaccessible. This does not mean it is invalid. Retry reading it or enter the key for this service again. Reading is unaffected.'**
+  String get assistantSavedKeyUnavailable;
+
+  /// No description provided for @assistantRetrySavedKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry reading key'**
+  String get assistantRetrySavedKey;
+
+  /// No description provided for @assistantKeySaveUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The API key could not be saved. Its text remains in this form so you can retry. This does not mean the key is invalid.'**
+  String get assistantKeySaveUnavailable;
+
   /// No description provided for @assistantConnectTitle.
   ///
   /// In en, this message translates to:

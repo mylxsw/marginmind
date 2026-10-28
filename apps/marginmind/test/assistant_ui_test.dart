@@ -28,6 +28,15 @@ class _LockedSecrets extends FakeSecrets {
   Future<String?> read(String name) async => throw const ResearchFailure(ResearchFailureKind.authentication);
 }
 
+class _ToggleKeyStore extends FakeSecrets {
+  bool blocked = false;
+  @override
+  Future<String?> read(String account) async {
+    if (blocked) throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+    return super.read(account);
+  }
+}
+
 Future<void> _selectText(WidgetTester tester, WorkspaceController workspace) async {
   await workspace.onSelectionCommitted(
     'c1',
@@ -61,6 +70,30 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool shift = f
 }
 
 void main() {
+  testWidgets('storage becoming inaccessible during a question is not reported as an invalid API key', (tester) async {
+    final secrets = _ToggleKeyStore();
+    await openAssistantApp(tester, secretStore: secrets);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    secrets.blocked = true;
+    await _type(tester, '解释这段内容');
+    await tester.tap(find.byKey(const ValueKey('assistant-send')));
+    await pumpFor(tester, 20);
+    expect(conversationOf(tester).messages.last.diagnostics?.failure, 'secret_store');
+    expect(find.textContaining('暂时无法读取已保存的 API Key'), findsOneWidget);
+    expect(find.text('API Key 无效'), findsNothing);
+    await tester.tap(find.text('重试读取'));
+    await pumpFor(tester, 20);
+    expect(find.byKey(const ValueKey('connect-key-unavailable')), findsOneWidget);
+    secrets.blocked = false;
+    await tester.tap(find.byKey(const ValueKey('connect-retry-key')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+    await tester.tap(find.text('重试读取'));
+    await pumpFor(tester, 20);
+    expect(conversationOf(tester).messages.last.status, MessageStatus.done);
+  });
+
   testWidgets('locked credentials leave the reader and assistant connection form usable', (tester) async {
     final app = await openAssistantApp(tester, secretStore: _LockedSecrets());
     expect(app.workspace.content.documents, isNotEmpty);

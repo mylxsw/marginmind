@@ -355,7 +355,14 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
         service = serviceWithEndpoint(service, endpoint);
         await controller.upsert(service);
       }
-      if (_needsKey) await controller.saveKey(service.id, _key.text);
+      if (_needsKey) {
+        try {
+          await controller.saveKey(service.id, _key.text);
+        } catch (_) {
+          if (mounted) setState(() => _failure = context.l10n.assistantKeySaveUnavailable);
+          return;
+        }
+      }
     } catch (_) {
       if (mounted) setState(() => _failure = context.l10n.assistantErrorFailed);
       return;

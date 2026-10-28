@@ -163,6 +163,8 @@ metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessi
 
 系统账号密码和修改钥匙串权限均不是应用的使用或迁移步骤。旧条目拒绝更新时，用户显式填写的新 API Key 存入新的钥匙串条目，成功后才切换逻辑账户的引用；旧条目保持不动。UserDefaults 的 `marginmind.secret-store.reference.v1.<account>` 只保存随机条目 ID，不含密钥。删除当前条目后保留引用，避免读回旧密钥；如果整个钥匙串锁定而无法保存，则返回错误，不弹系统密码框，也不改成明文存储。
 
+`assistantCredentialStateProvider` 区分未配置模型、未保存 Key、存储暂不可访问和可用，不能将前三种情况混成“API Key 无效”。存储不可访问时显示原因和“重试读取”；恢复访问后可沿用原 Key。重新填写 Key 会复用当前选中的服务和地址，而不是同协议的第一个服务；保存失败保留输入并明确提示保存失败。请求执行时的 `secret_store` 错误也保留为受控诊断标记，与供应商拒绝 API Key 分开显示。若整个钥匙串持续不可用，云端 AI 暂时不可用，这是明确限制；普通阅读不受影响。禁止弹窗本身不会恢复权限，也不能保证取回旧凭据。
+
 旧 `AssistantSettingsController` 适配层已在 GUL-537 删除（见下文）。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
 
 模型列表按协议使用 models/tags，Anthropic/Gemini 支持分页（最多 20 页并拒绝重复游标）。过滤明确非对话 ID 和能力字段；未知兼容模型保留，允许手动添加。工具能力 `unknown/supported/unsupported`：优先用能力字段，否则一次最小带工具请求；不执行返回的工具，不把鉴权、超时、限流和其他参数错误当作不支持。仅明确工具不支持的 400 错误记为 unsupported。unknown 在运行时按支持处理，由 GUL-536 的连续错误兜底。

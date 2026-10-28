@@ -158,7 +158,8 @@ class AssistantPanel extends ConsumerWidget {
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
     } else if (!configured) {
-      body = ListView(children: const [ConnectCard()]);
+      final selectedService = ref.watch(assistantServicesProvider).value?.defaultModel?.serviceId;
+      body = ListView(children: [ConnectCard(key: ValueKey(selectedService))]);
     } else if (conversation.messages.isEmpty) {
       body = AssistantSuggestions(studySetId: studySetId);
     } else {
@@ -444,6 +445,17 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    final value = ref.read(assistantServicesProvider).value;
+    final selected = value?.services.where((s) => s.id == value.defaultModel?.serviceId).firstOrNull;
+    if (selected != null) {
+      _protocol = selected.protocol;
+      if (_local) _endpoint.text = selected.endpoint;
+    }
+  }
+
+  @override
   void dispose() {
     _cancel.cancel();
     _key.dispose();
@@ -471,8 +483,10 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     final catalog = ref.read(serviceCatalogProvider);
     try {
       final value = await ref.read(assistantServicesProvider.future);
+      final selected = value.services.where((s) => s.id == value.defaultModel?.serviceId).firstOrNull;
       // A service of this kind without a key (from older settings) is reused.
       var service =
+          (selected?.protocol == _protocol ? selected : null) ??
           value.services.where((s) => s.protocol == _protocol).firstOrNull ??
           newAssistantService(_protocol, serviceTitle(l, _protocol), value.services.map((s) => s.id));
       service = service.copyWith(enabled: true, localEnabled: _local || service.localEnabled);
@@ -489,7 +503,13 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
       model ??= preferredModel(_protocol, await catalog.list(service, key, cancellation: _cancel));
       if (model == null) return _fail(l.assistantNoModels);
       await controller.upsert(service);
-      if (!_local) await controller.saveKey(service.id, key);
+      if (!_local) {
+        try {
+          await controller.saveKey(service.id, key);
+        } catch (_) {
+          return _fail(l.assistantKeySaveUnavailable);
+        }
+      }
       if (!service.models.any((m) => m.id == model!.id && m.enabled)) {
         await controller.addModels(service.id, [model.copyWith(enabled: true)]);
       }
@@ -516,6 +536,7 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
     final c = context.mmColors;
     final t = context.mmText;
     final l = context.l10n;
+    final credentials = ref.watch(assistantCredentialStateProvider).value;
     final tiles = [
       (ServiceProtocol.anthropic, ServiceBrand.anthropic, 'Anthropic'),
       (ServiceProtocol.openai, ServiceBrand.openai, 'OpenAI'),
@@ -541,6 +562,23 @@ class _ConnectCardState extends ConsumerState<ConnectCard> {
               Text(l.assistantConnectTitle, style: t.headline.copyWith(color: c.label)),
             ],
           ),
+          if (credentials == AssistantCredentialState.unavailable) ...[
+            const SizedBox(height: MMSpacing.s),
+            Text(
+              l.assistantSavedKeyUnavailable,
+              key: const ValueKey('connect-key-unavailable'),
+              style: t.footnote.copyWith(color: c.secondaryLabel),
+            ),
+            const SizedBox(height: MMSpacing.s),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: MMButton(
+                key: const ValueKey('connect-retry-key'),
+                label: l.assistantRetrySavedKey,
+                onPressed: () => ref.read(assistantKeysProvider.notifier).changed(),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, box) => Wrap(

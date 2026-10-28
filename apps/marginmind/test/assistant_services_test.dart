@@ -99,6 +99,7 @@ void main() {
     addTearDown(c.dispose);
     expect((await c.read(assistantServicesProvider.future)).services, isNotEmpty);
     expect(await c.read(assistantConfiguredProvider.future), isFalse);
+    expect(await c.read(assistantCredentialStateProvider.future), AssistantCredentialState.unavailable);
     expect(await assistantServiceKey(LockedSecrets(), 'legacy-ollama', AssistantProvider.ollama), isNull);
 
     final secrets = Secrets()..values['anthropic'] = 'old';

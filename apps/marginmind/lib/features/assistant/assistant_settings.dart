@@ -62,22 +62,29 @@ class AssistantKeys extends Notifier<int> {
   void changed() => state++;
 }
 
-/// Whether the assistant can answer: a default model, and a key for its
-/// service unless it runs on this Mac.
-final assistantConfiguredProvider = FutureProvider<bool>((ref) async {
+enum AssistantCredentialState { unconfigured, missingKey, unavailable, ready }
+
+/// Missing configuration and inaccessible saved credentials need different
+/// recovery instructions. An unavailable key is not an invalid provider key.
+final assistantCredentialStateProvider = FutureProvider<AssistantCredentialState>((ref) async {
   ref.watch(assistantKeysProvider);
   final services = await ref.watch(assistantServicesProvider.future);
   final model = services.configuration;
-  if (model == null) return false;
-  if (model.provider == AssistantProvider.ollama) return model.localEnabled;
+  if (model == null) return AssistantCredentialState.unconfigured;
+  if (model.provider == AssistantProvider.ollama) {
+    return model.localEnabled ? AssistantCredentialState.ready : AssistantCredentialState.unconfigured;
+  }
   try {
     final key = await assistantModelKey(ref.watch(assistantSecretsProvider), model);
-    return key != null && key.isNotEmpty;
+    return key != null && key.isNotEmpty ? AssistantCredentialState.ready : AssistantCredentialState.missingKey;
   } on ResearchFailure {
-    // Locked or inaccessible keys must leave the reader and connection form usable.
-    return false;
+    return AssistantCredentialState.unavailable;
   }
 });
+
+final assistantConfiguredProvider = FutureProvider<bool>(
+  (ref) async => await ref.watch(assistantCredentialStateProvider.future) == AssistantCredentialState.ready,
+);
 
 /// Application composition point. Reader, graph snapshot and network adapters
 /// are injected by the owning study-set surface; no global filesystem authority.
