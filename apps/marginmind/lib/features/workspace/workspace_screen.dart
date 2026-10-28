@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/app.dart';
 import '../../app/app_commands.dart';
@@ -13,7 +14,6 @@ import '../../shared/l10n.dart';
 import '../../settings/app_settings.dart';
 import '../../shared/pdf_drop.dart';
 import '../assistant/assistant_entry.dart';
-import '../../shared/platform_support.dart';
 import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
 import 'widgets/map_pane.dart';
@@ -282,7 +282,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 ),
               ],
             ),
-          if (supportsAssistant)
+          if (MMPlatformCapabilities.current.assistant)
             MMToolbarGroup(
               children: [
                 MMToolbarButton(

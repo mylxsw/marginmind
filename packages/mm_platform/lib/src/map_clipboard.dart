@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+import 'capabilities.dart';
 
 /// The native pasteboard writes both representations in the same item.
 abstract final class MMMapClipboard {
@@ -7,14 +8,14 @@ abstract final class MMMapClipboard {
 
   /// Screenshot bytes, or a Finder image URL, copied into the package by callers.
   static Future<({Uint8List? bytes, String? path})?> readImage() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.macOS) return null;
+    if (!MMPlatformCapabilities.current.nativeMapClipboard) return null;
     final data = await channel.invokeMapMethod<String, Object?>('readImage');
     if (data == null || (data['bytes'] == null && data['path'] == null)) return null;
     return (bytes: data['bytes'] as Uint8List?, path: data['path'] as String?);
   }
 
   static Future<void> write({required String text, required String internal}) async {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+    if (MMPlatformCapabilities.current.nativeMapClipboard) {
       await channel.invokeMethod<void>('write', {'text': text, 'internal': internal});
     } else {
       await Clipboard.setData(ClipboardData(text: text));
@@ -22,7 +23,7 @@ abstract final class MMMapClipboard {
   }
 
   static Future<({String text, String? internal})> read() async {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
+    if (MMPlatformCapabilities.current.nativeMapClipboard) {
       final data = await channel.invokeMapMethod<String, String>('read');
       return (text: data?['text'] ?? '', internal: data?['internal']);
     }

@@ -1,0 +1,4 @@
+00:00 +0: mobile credentials, import persistence and system share
+GUL539_SHARE_READY
+02:53 +1: (tearDownAll)
+03:09 +1: All tests passed!

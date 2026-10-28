@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import '../../shared/platform_support.dart';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/providers.dart';
 import '../../shared/l10n.dart';
@@ -113,7 +112,7 @@ void askAssistant(
   String? skill,
   PanelOrigin origin = PanelOrigin.toolbar,
 }) {
-  if (!supportsAssistant) return;
+  if (!MMPlatformCapabilities.current.assistant) return;
   final ui = ref.read(assistantUiProvider(studySetId).notifier);
   for (final c in contexts) {
     ui.addContext(c, anchor: anchors[c.id]);

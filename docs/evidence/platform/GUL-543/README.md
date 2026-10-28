@@ -52,6 +52,15 @@ provided by this minimum Web release. Browser storage is origin-local and is
 not a backup. See `docs/decisions/0003-browser-library-storage.md` for quota,
 eviction, memory and concurrent-tab behavior.
 
-GUL-539 had no merged PR at delivery. Its eventual unified capability interface
-can replace the small policies in `shared/platform_support.dart`; this task
-does not redefine `mm_platform.dart` or the shared providers.
+## Main integration review
+
+Merged GUL-539 / PR #76 (main commit `f5e270b`). All gates above except the
+Linux/macOS native builds were rerun on the merged code; those two build logs
+record the earlier GUL-543 validation. The merged CI retains iOS/Android jobs.
+
+Removed `shared/platform_support.dart`. Export, assistant and credential
+availability now use `MMPlatformCapabilities.current`; Web disables assistant
+and external credentials. Mobile exports use native sharing, Web downloads
+bytes, and desktop exports retain the save-location picker. Tests cover mobile
+sharing/cancellation and Windows/Linux text export. Fresh analysis, formatting,
+browser unit, Web build and smoke logs are stored alongside this document.

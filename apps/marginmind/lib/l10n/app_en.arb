@@ -1530,5 +1530,7 @@
   "settingsRequiredFields": "Complete the required fields before saving",
   "assistantModelSetupTitle": "Set up the AI assistant",
   "assistantModelUnavailableTitle": "Model temporarily unavailable",
-  "assistantConfigureModels": "Configure Models"
+  "assistantConfigureModels": "Configure Models",
+  "microphonePermission": "Record audio for transcription.",
+  "localNetworkPermission": "Connect to your local model service."
 }

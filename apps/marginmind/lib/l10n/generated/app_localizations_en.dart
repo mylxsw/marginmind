@@ -2778,4 +2778,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantConfigureModels => 'Configure Models';
+
+  @override
+  String get microphonePermission => 'Record audio for transcription.';
+
+  @override
+  String get localNetworkPermission => 'Connect to your local model service.';
 }

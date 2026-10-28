@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/card_image.dart';
 import '../../../shared/l10n.dart';
-import '../../../shared/platform_support.dart';
 import '../../../shared/note_text.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../research/widgets/research_note_view.dart';
@@ -46,7 +46,7 @@ class CardDetails extends ConsumerWidget {
       CardKind.note => (MMIcons.addNote, l.detailsNote),
       CardKind.topic || null => (MMIcons.mindMap, l.detailsTopic),
     };
-    final ask = !supportsAssistant || card == null
+    final ask = !MMPlatformCapabilities.current.assistant || card == null
         ? const <Widget>[]
         : [
             MMIconButton(

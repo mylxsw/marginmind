@@ -18,7 +18,6 @@ import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_window.dart';
 import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
-import '../shared/platform_support.dart';
 import 'navigation.dart';
 import 'providers.dart';
 
@@ -529,9 +528,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       edit.add(
         AppCommand(
           l.askAssistantEllipsis,
-          selectionText && supportsAssistant
+          selectionText && MMPlatformCapabilities.current.assistant
               ? () => invokeSelection(ReaderSelectionCommand.assistant)
-              : askCard != null && supportsAssistant
+              : askCard != null && MMPlatformCapabilities.current.assistant
               ? () => askAboutNode(ref, workspaceId, askCard)
               : null,
           shortcut: AppShortcuts.askAssistant,
@@ -768,7 +767,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
         AppCommand(
           workspaceState!.panel == RightPanel.assistant ? l.hideAssistant : l.showAssistant,
-          supportsAssistant ? () => toggleAssistant(ref, workspaceId) : null,
+          MMPlatformCapabilities.current.assistant ? () => toggleAssistant(ref, workspaceId) : null,
           shortcut: AppShortcuts.assistantPanel,
         ),
       ],

@@ -8,6 +8,8 @@ analyzer:
     - linux/**
     - lib/l10n/generated/**
     - web/**
+    - android/**
+    - ios/**
 
 linter:
   rules:

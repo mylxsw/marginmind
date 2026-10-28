@@ -42,6 +42,9 @@ MapExportScene scene(StudySetContent c, {bool transparent = false}) => MapExport
   source: (d, p) => '${d.title} $p',
   transparent: transparent,
 );
+void desktopTestWidgets(String description, WidgetTesterCallback callback) =>
+    testWidgets(description, callback, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test('Chinese sheet title omits ellipsis while menu and save action retain it', () {
@@ -50,7 +53,7 @@ void main() {
     expect(l.exportMap, '导出脑图…');
     expect(l.exportAction, '导出…');
   });
-  testWidgets('File menu opens unified export; node menu preselects its branch', (tester) async {
+  desktopTestWidgets('File menu opens unified export; node menu preselects its branch', (tester) async {
     await openFirstSet(tester);
     Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
       for (final item in items) {
@@ -78,7 +81,7 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     await settleHud(tester);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
 
   test('500 nodes are present, text readable, bounds contain every drawing', () {
     final s = scene(exportFixture(500));
@@ -209,7 +212,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('formats, scope, appearance and text exports; cancel keeps form', (tester) async {
+  desktopTestWidgets('formats, scope, appearance and text exports; cancel keeps form', (tester) async {
     String? saved;
     await pumpSheet(
       tester,
@@ -243,8 +246,8 @@ void main() {
     expect(saved, contains('<opml'));
     expect(saved, contains('节点 1'));
     expect(tester.takeException(), isNull);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
-  testWidgets('PNG and PDF encode snapshots; cancelling save keeps the sheet', (tester) async {
+  });
+  desktopTestWidgets('PNG and PDF encode snapshots; cancelling save keeps the sheet', (tester) async {
     const channel = MethodChannel('marginmind/map_export');
     final methods = <String>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
@@ -268,7 +271,7 @@ void main() {
     await tester.tap(find.text('Export…'));
     await tester.pumpAndSettle();
     expect(methods, contains('pdf'));
-  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
 
   test('image loader decodes complete image and fails explicitly for missing files', () async {
     final dir = Directory.systemTemp.createTempSync('export-images-test');
@@ -312,7 +315,9 @@ void main() {
     await expectLater(loadExportImages(content, (n) => '${dir.path}/missing'), throwsA(isA<FileSystemException>()));
   });
 
-  testWidgets('missing image blocks visual export across format switches; another branch can export', (tester) async {
+  desktopTestWidgets('missing image blocks visual export across format switches; another branch can export', (
+    tester,
+  ) async {
     final now = DateTime.utc(2026);
     final content = StudySetContent(
       cards: [
@@ -339,7 +344,7 @@ void main() {
     await tester.tap(find.text('Current branch'));
     await tester.pumpAndSettle();
     expect(exportButton().onPressed, isNotNull);
-  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  });
 
   testWidgets('Windows and Linux offer only portable text formats', (tester) async {
     String? exported;
@@ -363,7 +368,28 @@ void main() {
     expect(exported, contains('<opml'));
   }, variant: const TargetPlatformVariant({TargetPlatform.windows, TargetPlatform.linux}));
 
-  testWidgets('save failure is retryable', (tester) async {
+  testWidgets('mobile text export uses system share and cancellation retains sheet', (tester) async {
+    const channel = MethodChannel('marginmind/file_share');
+    MethodCall? shared;
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      shared = call;
+      return false;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    await pumpSheet(tester);
+    expect(find.text('PNG'), findsNothing);
+    expect(find.text('PDF'), findsNothing);
+    await tester.tap(find.text('Export…'));
+    await tester.pumpAndSettle();
+    expect(shared!.method, 'share');
+    expect(shared!.arguments['name'], endsWith('.md'));
+    expect(utf8.decode(shared!.arguments['bytes'] as Uint8List), contains('节点 0'));
+    expect(find.byType(MapExportSheet), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  }, variant: const TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+  desktopTestWidgets('save failure is retryable', (tester) async {
     await pumpSheet(tester, save: (name, bytes) async => throw const FileSystemException('Denied'));
     await tester.tap(find.text('Markdown'));
     await tester.pumpAndSettle();

@@ -4969,6 +4969,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Configure Models'**
   String get assistantConfigureModels;
+
+  /// No description provided for @microphonePermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Record audio for transcription.'**
+  String get microphonePermission;
+
+  /// No description provided for @localNetworkPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to your local model service.'**
+  String get localNetworkPermission;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

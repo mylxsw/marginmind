@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -11,7 +11,6 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
-import '../../../shared/platform_support.dart';
 import 'map_export_scene.dart';
 import '../workspace_controller.dart';
 
@@ -64,7 +63,7 @@ class MapExportSheet extends StatefulWidget {
 }
 
 class _MapExportSheetState extends State<MapExportSheet> {
-  late var _format = supportsNativeMapExport ? MapExportFormat.png : MapExportFormat.markdown;
+  late var _format = MMPlatformCapabilities.current.mapExport ? MapExportFormat.png : MapExportFormat.markdown;
   var _appearance = MapExportAppearance.light;
   var _scale = 2;
   late bool _branch = widget.initialBranch && widget.branchId != null;
@@ -180,6 +179,11 @@ class _MapExportSheetState extends State<MapExportSheet> {
       final bool saved;
       if (widget.save case final save?) {
         saved = await save(name, data);
+      } else if (MMPlatformCapabilities.current.shareFile) {
+        saved = await const MobileFileShare().share(name, data);
+      } else if (kIsWeb) {
+        await XFile.fromData(data, name: name, mimeType: 'application/octet-stream').saveTo('');
+        saved = true;
       } else {
         final location = await getSaveLocation(
           suggestedName: name,
@@ -238,7 +242,10 @@ class _MapExportSheetState extends State<MapExportSheet> {
                   expand: fill,
                   segments: [
                     for (final format in MapExportFormat.values.where(
-                      (f) => supportsNativeMapExport || f == MapExportFormat.markdown || f == MapExportFormat.opml,
+                      (format) =>
+                          MMPlatformCapabilities.current.mapExport ||
+                          format == MapExportFormat.markdown ||
+                          format == MapExportFormat.opml,
                     ))
                       MMSegment(
                         value: format,
