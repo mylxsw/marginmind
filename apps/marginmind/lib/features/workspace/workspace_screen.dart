@@ -139,6 +139,15 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               shown.panelWidth,
               sizeClass,
               touchPlatform,
+              // A landscape phone is too short to stack the panes.
+              sizeClass != MMSizeClass.medium ||
+                  MMSplitView.effectiveMode(
+                        MMSplitMode.split,
+                        height - MMSizes.toolbarHeight,
+                        MMSizes.paneMinHeight,
+                        MMSizes.paneMinHeight,
+                      ) ==
+                      MMSplitMode.split,
             );
           },
         ),
@@ -158,13 +167,14 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     double panelWidth,
     MMSizeClass sizeClass,
     bool touchPlatform,
+    bool canSplit,
   ) {
     final l = context.l10n;
     final compact = sizeClass == MMSizeClass.compact;
     final stacked = sizeClass == MMSizeClass.medium;
     final split = MMSplitView(
       mode: layout,
-      onModeChanged: compact ? null : controller.setLayout,
+      onModeChanged: compact || !canSplit ? null : controller.setLayout,
       primaryLabel: l.layoutReader,
       secondaryLabel: l.layoutMap,
       splitLabel: l.layoutSplit,
@@ -228,12 +238,13 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                       selected: layout == MMSplitMode.primary,
                       onPressed: () => controller.setLayout(MMSplitMode.primary),
                     ),
-                    MMToolbarButton(
-                      icon: MMIcons.layoutSplit,
-                      tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
-                      selected: layout == MMSplitMode.split,
-                      onPressed: () => controller.setLayout(MMSplitMode.split),
-                    ),
+                    if (canSplit)
+                      MMToolbarButton(
+                        icon: MMIcons.layoutSplit,
+                        tooltip: AppShortcuts.tip(l.layoutSplit, AppShortcuts.view2),
+                        selected: layout == MMSplitMode.split,
+                        onPressed: () => controller.setLayout(MMSplitMode.split),
+                      ),
                     MMToolbarButton(
                       icon: MMIcons.layoutMap,
                       tooltip: AppShortcuts.tip(l.layoutMap, AppShortcuts.view3),

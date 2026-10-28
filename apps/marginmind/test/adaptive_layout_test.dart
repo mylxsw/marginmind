@@ -366,6 +366,20 @@ void main() {
       await settleHud(tester);
     });
 
+    testWidgets('a landscape phone shows one pane without split controls', (tester) async {
+      final container = await openWorkspace(tester, iphoneLandscape);
+      expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
+      expect(find.byType(ReaderPane).hitTestable(), findsOneWidget);
+      expect(find.byType(MapPane).hitTestable(), findsNothing);
+      expect(find.byTooltip('Split'), findsNothing);
+      expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
+      await tester.tap(find.byIcon(MMIcons.layoutMap));
+      await tester.pumpAndSettle();
+      expect(find.byType(MapPane).hitTestable(), findsOneWidget);
+      expect(rectOf(tester, MapPane).left, iphoneLandscape.safe.left);
+      expect(rectOf(tester, MapPane).right, iphoneLandscape.size.width - iphoneLandscape.safe.right);
+    });
+
     testWidgets('a trackpad on a touch device gets pointer-sized controls', (tester) async {
       await openWorkspace(tester, ipadLandscape);
       final assistant = find.byKey(const ValueKey('toolbar-assistant'));
