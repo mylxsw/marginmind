@@ -179,9 +179,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     String? ocrSource,
   ) {
     final l = context.l10n;
-    final button = context.mmToolbarButton;
+    final compact = !context.mmTouch;
+    final button = compact ? const Size(30, 26) : context.mmToolbarButton;
     final buttonStyle = IconButton.styleFrom(minimumSize: button, fixedSize: button, padding: EdgeInsets.zero);
     final navigation = MMToolbarButton(
+      compact: compact,
       icon: MMIcons.readerNavigation,
       tooltip: AppShortcuts.tip(
         state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
@@ -206,7 +208,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
-    final annotation = ReaderAnnotationTools(state: state, controller: controller);
+    final annotation = ReaderAnnotationTools(state: state, controller: controller, compact: compact);
     final progress = ocrSource == null ? null : ReaderOcrProgress(source: ocrSource);
     if (MMSizeClass.of(context) != MMSizeClass.regular) {
       return Row(
@@ -239,13 +241,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       );
     }
     return Wrap(
-      spacing: MMSpacing.s,
+      spacing: compact ? MMSpacing.xs : MMSpacing.s,
       runSpacing: MMSpacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         navigation,
-        MMToolbarButton(icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
-        MMToolbarButton(icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
+        MMToolbarButton(compact: compact, icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
+        MMToolbarButton(compact: compact, icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
         PopupMenuButton<Object>(
           key: const ValueKey('reader-zoom'),
           tooltip: l.readerZoom,

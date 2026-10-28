@@ -895,7 +895,7 @@
   "assistantOpenModelSettings": "打开模型设置 →",
   "assistantSetupHint": "添加模型后即可使用",
   "assistantKeyNeedsAttention": "请重新填写 API Key",
-  "assistantQuickTitle": "AI 快速操作",
+  "assistantQuickTitle": "AI 助手",
   "assistantQuickExplain": "解释这段",
   "assistantQuickSummarize": "总结要点",
   "assistantQuickOutline": "整理大纲",

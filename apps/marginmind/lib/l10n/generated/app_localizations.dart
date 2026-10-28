@@ -5075,7 +5075,7 @@ abstract class AppLocalizations {
   /// No description provided for @assistantQuickTitle.
   ///
   /// In en, this message translates to:
-  /// **'AI Quick Actions'**
+  /// **'AI Assistant'**
   String get assistantQuickTitle;
 
   /// No description provided for @assistantQuickExplain.

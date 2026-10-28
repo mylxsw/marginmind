@@ -60,14 +60,15 @@ class MMToolbar extends StatelessWidget {
 
 /// A glass capsule that groups related toolbar buttons.
 class MMToolbarGroup extends StatelessWidget {
-  const MMToolbarGroup({super.key, required this.children});
+  const MMToolbarGroup({super.key, required this.children, this.compact = false});
 
   final List<Widget> children;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return MMGlass(
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(compact && !context.mmTouch ? 2 : 3),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -84,6 +85,7 @@ class MMToolbarButton extends StatelessWidget {
     this.selected = false,
     this.label,
     this.tint,
+    this.compact = false,
   }) : assert(icon != null || label != null);
 
   /// A feature color for icon and label (research), in place of the label
@@ -96,6 +98,9 @@ class MMToolbarButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool selected;
 
+  /// Denser desktop chrome; touch controls keep their full hit area.
+  final bool compact;
+
   /// Optional text shown next to the icon (e.g. a sort pop-up).
   final String? label;
 
@@ -103,7 +108,7 @@ class MMToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final size = context.mmToolbarButton;
+    final size = compact && !context.mmTouch ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
       selected: selected,

@@ -71,12 +71,14 @@ class MMColorMenuButton extends StatelessWidget {
     required this.onChanged,
     required this.labelOf,
     required this.tooltip,
+    this.compact = false,
   });
 
   final MMAnnotationColor selected;
   final ValueChanged<MMAnnotationColor> onChanged;
   final String Function(MMAnnotationColor color) labelOf;
   final String tooltip;
+  final bool compact;
 
   Future<void> _open(BuildContext context) async {
     final box = context.findRenderObject()! as RenderBox;
@@ -116,14 +118,16 @@ class MMColorMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final dense = compact && !context.mmTouch;
+    final size = dense ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: () => _open(context),
       tooltip: tooltip,
       semanticLabel: tooltip,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
-        height: context.mmToolbarButton.height,
-        constraints: BoxConstraints(minWidth: context.mmToolbarButton.width),
+        height: size.height,
+        constraints: BoxConstraints(minWidth: size.width),
         decoration: BoxDecoration(
           color: s.pressed
               ? c.pressed
@@ -134,8 +138,8 @@ class MMColorMenuButton extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Container(
-          width: 14,
-          height: 14,
+          width: dense ? 12 : 14,
+          height: dense ? 12 : 14,
           decoration: BoxDecoration(
             color: selected.color,
             shape: BoxShape.circle,

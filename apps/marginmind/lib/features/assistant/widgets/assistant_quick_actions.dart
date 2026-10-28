@@ -426,50 +426,60 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.only(left: 12, right: 4),
+                        height: 36,
+                        clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
                           border: Border.all(color: c.separator),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(
                           children: [
                             Expanded(
-                              child: TextField(
-                                key: const ValueKey('quick-input'),
-                                controller: _text,
-                                focusNode: _focus,
-                                enabled: canSend,
-                                style: t.body.copyWith(color: c.label),
-                                maxLength: 60000,
-                                decoration: InputDecoration(
-                                  hintText: _conversationId == null ? l.assistantQuickAsk : l.assistantQuickFollowUp,
-                                  hintStyle: t.body.copyWith(color: c.secondaryLabel),
-                                  isDense: true,
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 11),
-                                  counterText: '',
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 12, right: 6),
+                                child: TextField(
+                                  key: const ValueKey('quick-input'),
+                                  controller: _text,
+                                  focusNode: _focus,
+                                  enabled: canSend,
+                                  style: t.body.copyWith(color: c.label),
+                                  maxLength: 60000,
+                                  decoration: InputDecoration(
+                                    hintText: _conversationId == null ? l.assistantQuickAsk : l.assistantQuickFollowUp,
+                                    hintStyle: t.body.copyWith(color: c.secondaryLabel),
+                                    isDense: true,
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                    counterText: '',
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                  onSubmitted: (_) => _send(),
                                 ),
-                                onChanged: (_) => setState(() {}),
-                                onSubmitted: (_) => _send(),
                               ),
                             ),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
-                              ),
-                              child: MMIconButton(
-                                key: const ValueKey('quick-send'),
-                                icon: running ? MMIcons.stop : MMIcons.send,
-                                tooltip: running ? l.assistantStop : l.assistantSend,
-                                color: c.onAccent,
-                                onPressed: running
-                                    ? () => unawaited(
-                                        ref.read(assistantControllerProvider.notifier).stop().catchError((Object _) {}),
-                                      )
-                                    : canSend && _text.text.trim().isNotEmpty
-                                    ? () => _send()
-                                    : null,
+                            ClipOval(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
+                                ),
+                                child: MMIconButton(
+                                  key: const ValueKey('quick-send'),
+                                  size: 36,
+                                  icon: running ? MMIcons.stop : MMIcons.send,
+                                  tooltip: running ? l.assistantStop : l.assistantSend,
+                                  color: c.onAccent,
+                                  onPressed: running
+                                      ? () => unawaited(
+                                          ref
+                                              .read(assistantControllerProvider.notifier)
+                                              .stop()
+                                              .catchError((Object _) {}),
+                                        )
+                                      : canSend && _text.text.trim().isNotEmpty
+                                      ? () => _send()
+                                      : null,
+                                ),
                               ),
                             ),
                           ],

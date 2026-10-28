@@ -2714,7 +2714,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantKeyNeedsAttention => '请重新填写 API Key';
 
   @override
-  String get assistantQuickTitle => 'AI 快速操作';
+  String get assistantQuickTitle => 'AI 助手';
 
   @override
   String get assistantQuickExplain => '解释这段';

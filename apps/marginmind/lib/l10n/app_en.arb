@@ -1551,7 +1551,7 @@
   "assistantOpenModelSettings": "Open Model Settings →",
   "assistantSetupHint": "Add a model to get started",
   "assistantKeyNeedsAttention": "Re-enter your API key",
-  "assistantQuickTitle": "AI Quick Actions",
+  "assistantQuickTitle": "AI Assistant",
   "assistantQuickExplain": "Explain Passage",
   "assistantQuickSummarize": "Summarize Key Points",
   "assistantQuickOutline": "Create an Outline",

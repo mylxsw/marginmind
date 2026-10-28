@@ -6,10 +6,11 @@ import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 
 class ReaderAnnotationTools extends StatelessWidget {
-  const ReaderAnnotationTools({super.key, required this.state, required this.controller});
+  const ReaderAnnotationTools({super.key, required this.state, required this.controller, this.compact = false});
 
   final WorkspaceState state;
   final WorkspaceController controller;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +24,13 @@ class ReaderAnnotationTools extends StatelessWidget {
         AnnotationTool.select => label,
       },
       selected: state.tool == value,
+      compact: compact,
       onPressed: () => controller.setTool(value),
     );
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: MMToolbarGroup(
+        compact: compact,
         children: [
           tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
           tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
@@ -35,6 +38,7 @@ class ReaderAnnotationTools extends StatelessWidget {
           tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
           const MMToolbarDivider(),
           MMColorMenuButton(
+            compact: compact,
             selected: state.color,
             labelOf: l.colorName,
             tooltip: l.annotationColor,
@@ -42,6 +46,7 @@ class ReaderAnnotationTools extends StatelessWidget {
           ),
           const MMToolbarDivider(),
           MMToolbarButton(
+            compact: compact,
             icon: MMIcons.syncToMap,
             tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
             selected: state.syncToMap,

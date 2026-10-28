@@ -2838,7 +2838,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantKeyNeedsAttention => 'Re-enter your API key';
 
   @override
-  String get assistantQuickTitle => 'AI Quick Actions';
+  String get assistantQuickTitle => 'AI Assistant';
 
   @override
   String get assistantQuickExplain => 'Explain Passage';

@@ -44,9 +44,9 @@ Future<void> open(WidgetTester tester) async {
   expect(find.byType(AssistantQuickActions), findsOneWidget);
 }
 
-Future<void> screenshot(WidgetTester tester, String name) async {
+Future<void> screenshot(WidgetTester tester, String name, {Finder? target}) async {
   if (_output == null) return;
-  final box = tester.renderObject<RenderBox>(find.byKey(const ValueKey('assistant-quick-actions')));
+  final box = tester.renderObject<RenderBox>(target ?? find.byKey(const ValueKey('assistant-quick-actions')));
   final rect = box.localToGlobal(Offset.zero) & box.size;
   final image = (await tester.runAsync(() {
     final renderView = tester.binding.renderViews.first;
@@ -95,6 +95,16 @@ void main() {
       );
       app.workspace.setLayout(MMSplitMode.primary);
       await select(tester, app);
+      await screenshot(
+        tester,
+        'reader-toolbar-${dark ? 'dark' : 'light'}',
+        target: find.ancestor(of: find.byKey(const ValueKey('reader-zoom')), matching: find.byType(Wrap)).first,
+      );
+      await screenshot(
+        tester,
+        'window-controls-${dark ? 'dark' : 'light'}',
+        target: find.descendant(of: find.byType(MMToolbar), matching: find.byType(MMToolbarGroup)).first,
+      );
       final pending = app.container.read(workspaceProvider('demo-1')).pending;
       await open(tester);
       expect(client.calls, 0);
@@ -126,6 +136,8 @@ void main() {
       expect(app.workspace.content.noteAttachments.single.target, isA<PdfTarget>());
       expect((app.workspace.content.noteAttachments.single.target as PdfTarget).quote, quote);
       await tester.enterText(find.byKey(const ValueKey('quick-input')), '再简短一点');
+      await tester.pump();
+      await screenshot(tester, 'quick-input-${dark ? 'dark' : 'light'}');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await pumpFor(tester, 25);
       expect(view(tester).id, id);
