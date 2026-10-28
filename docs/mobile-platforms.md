@@ -1,6 +1,6 @@
 # Mobile platform integration (GUL-539)
 
-The iOS and Android applications use `io.github.mylxsw.marginmind`, matching macOS. iOS/iPadOS requires 17.0. Android requires API 24, the minimum of Flutter 3.47.2 and the locked `record_android` 2.2.0 plugin. Release signing remains an owner configuration: select an Apple development team in Xcode; replace the generated Android debug signing configuration before distributing release builds.
+The iOS and Android applications use `io.github.mylxsw.marginmind`, matching macOS. iOS/iPadOS requires 17.0. Android requires API 24, the minimum of Flutter 3.47.2 and the locked `record_android` 2.2.0 plugin. The `--no-codesign` simulator build checks compilation. Runtime credential tests must retain `Runner.entitlements` and use a normally signed simulator build: a binary lacking simulated application-identifier/keychain-access-group entitlements returns Keychain OSStatus -34018. Release signing remains an owner configuration: select an Apple development team in Xcode; replace the generated Android debug signing configuration before distributing release builds.
 
 ## Capability contract
 
