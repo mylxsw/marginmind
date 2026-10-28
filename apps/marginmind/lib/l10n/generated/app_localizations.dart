@@ -4964,11 +4964,11 @@ abstract class AppLocalizations {
   /// **'Set up the AI assistant'**
   String get assistantModelSetupTitle;
 
-  /// No description provided for @assistantModelSetupHint.
+  /// No description provided for @assistantModelUnavailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add a service, enter its API key, and select a model in Model Settings to start chatting.'**
-  String get assistantModelSetupHint;
+  /// **'Model temporarily unavailable'**
+  String get assistantModelUnavailableTitle;
 
   /// No description provided for @assistantConfigureModels.
   ///

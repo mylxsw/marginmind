@@ -447,14 +447,12 @@ class ModelSetupCard extends ConsumerWidget {
               Icon(MMIcons.ai, size: MMSpacing.l, color: c.research),
               const SizedBox(width: MMSpacing.s),
               Expanded(
-                child: Text(l.assistantModelSetupTitle, style: t.headline.copyWith(color: c.label)),
+                child: Text(
+                  unavailable ? l.assistantModelUnavailableTitle : l.assistantModelSetupTitle,
+                  style: t.headline.copyWith(color: c.label),
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: MMSpacing.s),
-          Text(
-            unavailable ? l.assistantSavedKeyUnavailable : l.assistantModelSetupHint,
-            style: t.callout.copyWith(color: c.secondaryLabel),
           ),
           const SizedBox(height: MMSpacing.m),
           MMButton(

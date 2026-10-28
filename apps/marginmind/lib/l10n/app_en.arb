@@ -1530,6 +1530,6 @@
   "settingsSaveBeforeModels": "Save the service settings before fetching models",
   "settingsRequiredFields": "Complete the required fields before saving",
   "assistantModelSetupTitle": "Set up the AI assistant",
-  "assistantModelSetupHint": "Add a service, enter its API key, and select a model in Model Settings to start chatting.",
+  "assistantModelUnavailableTitle": "Model temporarily unavailable",
   "assistantConfigureModels": "Configure Models"
 }

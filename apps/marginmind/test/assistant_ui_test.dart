@@ -118,6 +118,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
     expect(find.byKey(const ValueKey('connect-key')), findsNothing);
+    expect(find.text('模型暂不可用'), findsOneWidget);
+    expect(find.textContaining('这不代表 Key 无效'), findsNothing);
+    expect(find.text('重试读取'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('assistant-configure-models')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('settings-models')), findsOneWidget);

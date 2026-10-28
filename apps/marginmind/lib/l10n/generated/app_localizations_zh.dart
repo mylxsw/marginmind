@@ -2654,7 +2654,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantModelSetupTitle => '配置 AI 助手';
 
   @override
-  String get assistantModelSetupHint => '在模型设置中添加服务、填写 API Key 并选择模型，完成后即可开始对话。';
+  String get assistantModelUnavailableTitle => '模型暂不可用';
 
   @override
   String get assistantConfigureModels => '配置模型';

@@ -2778,8 +2778,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantModelSetupTitle => 'Set up the AI assistant';
 
   @override
-  String get assistantModelSetupHint =>
-      'Add a service, enter its API key, and select a model in Model Settings to start chatting.';
+  String get assistantModelUnavailableTitle => 'Model temporarily unavailable';
 
   @override
   String get assistantConfigureModels => 'Configure Models';
