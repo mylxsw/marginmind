@@ -1,5 +1,5 @@
-/// Renders the assistant panel to PNGs with real fonts (light, dark, narrow
-/// window). Skipped unless MM_SCREENSHOTS names an output directory and
+/// Renders the assistant panel (light, dark, narrow window) and the
+/// settings dialog to PNGs with real fonts. Skipped unless MM_SCREENSHOTS names an output directory and
 /// MM_FONT a CJK font file:
 ///
 ///   MM_SCREENSHOTS=docs/evidence/gul-530 MM_FONT=~/.fonts/NotoSansSC.otf \
@@ -17,7 +17,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
+import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import 'assistant_support.dart';
@@ -151,11 +153,30 @@ Future<void> _shoot(WidgetTester tester, String name, {Size size = const Size(14
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(const ValueKey('selection-assistant')));
   await pumpFor(tester, 10);
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byType(RepaintBoundary).first);
-  final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 2)))!;
+  await _save(tester, name);
+  expect(find.byType(MarginMindApp), findsOneWidget);
+}
+
+/// Saves the app, or with [overlays] the whole view including dialogs.
+Future<void> _save(WidgetTester tester, String name, {bool overlays = false}) async {
+  final image = overlays
+      ? (await tester.runAsync(() {
+          final view = tester.binding.renderViews.first;
+          return (view.debugLayer! as OffsetLayer).toImage(Offset.zero & view.size, pixelRatio: 2);
+        }))!
+      : (await tester.runAsync(
+          () => tester.renderObject<RenderRepaintBoundary>(find.byType(RepaintBoundary).first).toImage(pixelRatio: 2),
+        ))!;
   final png = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.png)))!;
   await tester.runAsync(() => File('$_out/$name.png').writeAsBytes(png.buffer.asUint8List()));
-  expect(find.byType(MarginMindApp), findsOneWidget);
+}
+
+Future<void> _shootSettings(WidgetTester tester, String name, SettingsTab tab, {bool dark = false}) async {
+  await openAssistantApp(tester, size: const Size(1440, 900), prefs: {if (dark) 'settings.appearance': 'dark'});
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: tab, showsGallery: false);
+  await pumpFor(tester, 20);
+  await _save(tester, name, overlays: true);
+  expect(find.byType(SettingsWindow), findsOneWidget);
 }
 
 void main() {
@@ -174,4 +195,16 @@ void main() {
     skip: skip,
     variant: mac,
   );
+  for (final (tab, dark) in [
+    (SettingsTab.general, false),
+    (SettingsTab.models, false),
+    (SettingsTab.webSearch, true),
+  ]) {
+    testWidgets(
+      'settings ${tab.name}${dark ? ' dark' : ''}',
+      (tester) => _shootSettings(tester, 'settings-${tab.name}${dark ? '-dark' : ''}', tab, dark: dark),
+      skip: skip,
+      variant: mac,
+    );
+  }
 }

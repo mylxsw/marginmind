@@ -159,6 +159,45 @@ void main() {
     expect(find.text('New Study Set'), findsNothing);
   });
 
+  testWidgets('dialog opens centered over a scrim, ignores scrim taps and closes on Esc', (tester) async {
+    for (final reduceMotion in [false, true]) {
+      await tester.pumpWidget(
+        MMAppearance(
+          reduceMotion: reduceMotion,
+          child: harness(
+            Builder(
+              builder: (context) => MMButton(
+                label: 'Open',
+                onPressed: () => showMMDialog<void>(
+                  context: context,
+                  builder: (_) => const SizedBox(width: 200, height: 100, child: Text('Dialog')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(
+        find.ancestor(of: find.text('Dialog'), matching: find.byType(ScaleTransition)),
+        reduceMotion ? findsNothing : findsOneWidget,
+      );
+      final screen = tester.getRect(find.byType(Navigator).first);
+      expect(
+        tester.getCenter(find.ancestor(of: find.text('Dialog'), matching: find.byType(SizedBox)).first),
+        screen.center,
+      );
+      expect(tester.widgetList<ModalBarrier>(find.byType(ModalBarrier)).map((b) => b.color), contains(mmDialogScrim));
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+      expect(find.text('Dialog'), findsOneWidget, reason: 'the scrim is modal');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Dialog'), findsNothing);
+    }
+  });
+
   testWidgets('HUD shows a message and hides it again', (tester) async {
     await tester.pumpWidget(
       harness(

@@ -26,46 +26,43 @@ class MMSettingsHeader extends StatelessWidget {
   );
 }
 
-/// An inset grouped card: rows separated by 1pt lines that start at the
-/// row's text. Dark appearance uses a light wash instead of white.
+/// An inset grouped card: a quaternary-fill panel (a light wash in dark
+/// appearance) whose rows are separated by 1pt lines that start at the
+/// row's text. No border or shadow: it sits on the window background.
 class MMSettingsGroup extends StatelessWidget {
   const MMSettingsGroup({super.key, required this.children, this.footer});
 
   final List<Widget> children;
 
-  /// A tinted strip below the rows (links such as “Remove Service”).
+  /// A strip below the rows (links such as “Remove Service”).
   final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final separator = Padding(
+      padding: const EdgeInsets.only(left: 14),
+      child: Container(height: 1, color: c.separator),
+    );
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: dark ? Colors.white.withValues(alpha: .05) : c.card,
+        color: dark ? Colors.white.withValues(alpha: .05) : c.quaternaryFill,
         borderRadius: BorderRadius.circular(MMRadii.card),
-        border: Border.all(color: dark ? Colors.white.withValues(alpha: .08) : c.hairline, width: .5),
-        boxShadow: dark ? null : const [BoxShadow(color: Color(0x0A000000), blurRadius: 2, offset: Offset(0, .5))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final (i, child) in children.indexed) ...[
-            if (i > 0)
-              Padding(
-                padding: const EdgeInsets.only(left: 14),
-                child: Container(height: 1, color: c.separator),
-              ),
-            child,
-          ],
-          if (footer != null)
-            Container(
-              color: c.quaternaryFill,
+          for (final (i, child) in children.indexed) ...[if (i > 0) separator, child],
+          if (footer != null) ...[
+            if (children.isNotEmpty) separator,
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: MMSpacing.xs),
               child: footer,
             ),
+          ],
         ],
       ),
     );

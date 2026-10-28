@@ -50,6 +50,15 @@ void main() {
     expect((box.decoration! as BoxDecoration).color, Colors.white.withValues(alpha: .05));
   });
 
+  testWidgets('light settings group is a quaternary-fill panel without shadow', (tester) async {
+    await tester.pumpWidget(harness(const MMSettingsGroup(children: [Text('row')])));
+    final box = tester.widget<Container>(find.ancestor(of: find.text('row'), matching: find.byType(Container)).last);
+    final decoration = box.decoration! as BoxDecoration;
+    expect(decoration.color, MMColors.light.quaternaryFill);
+    expect(decoration.boxShadow, isNull);
+    expect(decoration.border, isNull);
+  });
+
   testWidgets('pop-up button checks the current value and reports a choice', (tester) async {
     String? chosen;
     await tester.pumpWidget(

@@ -63,9 +63,6 @@ class _ModelSettingsPageState extends ConsumerState<ModelSettingsPage> {
     final controller = ref.read(assistantServicesProvider.notifier);
     return SettingsPage(
       key: const ValueKey('settings-models'),
-      icon: MMIcons.ai,
-      iconGradient: [c.research.withValues(alpha: .75), c.research],
-      title: l.settingsModels,
       children: [
         if (value == null)
           Padding(

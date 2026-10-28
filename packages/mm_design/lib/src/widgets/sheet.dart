@@ -45,6 +45,38 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
   );
 }
 
+/// Presents a window-level dialog centered over a 22% black scrim, such as
+/// Settings. Esc closes; clicking the scrim does nothing. Fades in with a
+/// slight scale (fade only when motion is reduced).
+Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {
+  final reduceMotion = MMAppearance.reduceMotionOf(context);
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: mmDialogScrim,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    transitionDuration: MMAppearance.duration(context, MMMotion.standard),
+    pageBuilder: (context, _, _) => SafeArea(
+      child: Center(
+        child: CallbackShortcuts(
+          bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
+          child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+        ),
+      ),
+    ),
+    transitionBuilder: (context, animation, _, child) {
+      final curved = CurvedAnimation(parent: animation, curve: MMMotion.layoutCurve);
+      return FadeTransition(
+        opacity: curved,
+        child: reduceMotion ? child : ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(curved), child: child),
+      );
+    },
+  );
+}
+
+/// The scrim behind [showMMDialog].
+const mmDialogScrim = Color(0x38000000);
+
 /// Content frame for [showMMSheet]: title, body, right-aligned actions.
 class MMSheet extends StatelessWidget {
   const MMSheet({super.key, required this.title, required this.child, this.actions = const []});

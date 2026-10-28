@@ -184,9 +184,6 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
     );
     return SettingsPage(
       key: const ValueKey('settings-web-search'),
-      icon: MMIcons.web,
-      iconGradient: [c.accent.withValues(alpha: .7), c.accent],
-      title: l.settingsWebSearch,
       children: [
         const SizedBox(height: MMSpacing.s),
         MMSettingsGroup(
