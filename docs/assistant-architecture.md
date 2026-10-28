@@ -157,7 +157,9 @@ metadata['assistant.legacySession']，旧文件不删除。原笔记保留 sessi
 
 持久化键为 `assistant.services.v1` 和 `assistant.search.v1`，不含凭据。服务 Key 使用 `assistant.service.<id>`；搜索 Key 使用 `assistant.search.<backend>`，Cloudflare 账户 ID 单独使用 `assistant.search.cloudflare.account`。服务操作串行化，失败不阻塞后续操作。删除服务同时删除新 Key；迁移服务另清理其旧供应商 Key，其他服务只引用自己的独立 Key。Keychain 与 preferences 无跨存储事务：删除若中途失败，保留服务配置并向调用方报错，可重试，可能需要重新输入已删除的 Key。
 
-首次读取复制所有旧服务配置和 Key，包括未选中的服务；密钥复制成功后才提交版本化 JSON。失败不写完成标记，旧字段和旧 Key 不动，可重试。新配置存在时不再重迁移，因此删除服务不会被旧偏好恢复。旧对话不改写：缺少 serviceId 时按 `legacy-<provider>` 解析；发送及标题生成重新检查服务/模型启用状态。删除、停用或移除模型后旧内容仍可阅读，发送失败要求重新选择模型。
+首次读取只迁移旧服务配置，包括未选中但已配置的服务，不读写钥匙串。迁移服务需要凭据时，优先读取新服务 Key，缺失时读取原供应商 Key；自建服务不回退到其他服务的 Key。清空迁移服务 Key 时同时清理旧账户，避免清空后又恢复旧 Key。新配置存在时不再重迁移，因此删除服务不会被旧偏好恢复。旧对话不改写：缺少 serviceId 时按 `legacy-<provider>` 解析；发送及标题生成重新检查服务/模型启用状态。删除、停用或移除模型后旧内容仍可阅读，发送失败要求重新选择模型。
+
+打开学习集只加载模型配置，助手面板打开或实际提问时才检查凭据。macOS 钥匙串读写使用串行后台队列，结果回到主线程；同时禁止传统 login 钥匙串和 LAContext 的认证弹窗，操作完成后恢复原有交互策略。钥匙串锁定或拒绝访问会返回认证错误，保留已存 Key，不阻塞阅读；助手显示连接入口，设置表单仍可编辑。不会把凭据转存到普通文件或 preferences。
 
 旧 `AssistantSettingsController` 适配层已在 GUL-537 删除（见下文）。GUL-537 应在设置/模型菜单初始化时订阅 `assistantServicesProvider`，新对话使用其 `configuration`，无模型时展示未配置状态。旧会话文件格式不升级。
 

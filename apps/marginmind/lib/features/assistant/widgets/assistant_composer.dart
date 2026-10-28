@@ -50,6 +50,16 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   }
 
   @override
+  void didUpdateWidget(AssistantComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.configured && widget.configured) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.configured) _focus.requestFocus();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _text.dispose();
     _focus.dispose();

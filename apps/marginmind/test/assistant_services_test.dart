@@ -11,13 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'assistant_settings_test.dart' show Secrets;
 
-class FailingSecrets extends Secrets {
-  bool fail = true;
+class LockedSecrets extends Secrets {
   @override
-  Future<void> write(String name, String value) async {
-    if (fail && name.startsWith('assistant.service.')) throw StateError('Keychain unavailable');
-    await super.write(name, value);
-  }
+  Future<String?> read(String name) async => throw const ResearchFailure(ResearchFailureKind.authentication);
 }
 
 class OfflineSecrets extends Secrets {
@@ -43,7 +39,7 @@ class RecordingServicesStore extends AssistantServicesStore {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test('migration copies all keys before commit, retries safely and preserves legacy data', () async {
+  test('migration never accesses keys and preserves legacy settings and credentials', () async {
     SharedPreferences.setMockInitialValues({
       'assistant.model.claude': '',
       'assistant.provider': 'responses',
@@ -56,21 +52,21 @@ void main() {
       'assistant.searxng': 'http://localhost:8888/search',
     });
     final prefs = await SharedPreferences.getInstance();
-    final secrets = FailingSecrets()..values.addAll({'anthropic': 'a', 'openai': 'b', 'compatible': 'c'});
+    final secrets = OfflineSecrets()
+      ..offline = true
+      ..values.addAll({'anthropic': 'a', 'openai': 'b', 'compatible': 'c'});
     final store = AssistantServicesStore(prefs, secrets);
-    await expectLater(store.load(), throwsStateError);
-    expect(prefs.containsKey(AssistantServicesStore.settingsKey), false);
-    secrets.fail = false;
     final value = await store.load();
     expect(value.defaultModel!.serviceId, 'legacy-responses');
     expect(value.configuration!.endpoint, 'https://proxy.example/v1/responses');
     expect(value.services.length, 3);
     expect(value.services.first.models.first.id, 'claude-opus-5-5');
-    expect(secrets.values['assistant.service.legacy-compatible'], 'c');
-    expect(secrets.values['compatible'], 'c');
+    expect(secrets.values, {'anthropic': 'a', 'openai': 'b', 'compatible': 'c'});
     expect(prefs.getBool('assistant.online'), false);
     expect(prefs.getString('assistant.model.responses'), 'gpt');
     expect((await store.load()).toJson(), value.toJson());
+    secrets.offline = false;
+    expect(await assistantModelKey(secrets, value.configuration!), 'b');
     final old = AssistantModel(provider: AssistantProvider.responses, model: 'gpt', endpoint: 'old');
     expect((await store.resolve(old)).serviceId, 'legacy-responses');
     final responseService = value.services.firstWhere((s) => s.id == 'legacy-responses');
@@ -90,6 +86,37 @@ void main() {
     await expectLater(store.resolve(old), throwsA(isA<ResearchFailure>()));
     expect(old.endpoint, 'old');
     expect(jsonEncode(value.toJson()), isNot(contains('secret')));
+  });
+  test('locked keys do not break settings and legacy keys never leak into unrelated services', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final c = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assistantSecretsProvider.overrideWithValue(LockedSecrets()),
+      ],
+    );
+    addTearDown(c.dispose);
+    expect((await c.read(assistantServicesProvider.future)).services, isNotEmpty);
+    expect(await c.read(assistantConfiguredProvider.future), isFalse);
+    expect(await assistantServiceKey(LockedSecrets(), 'legacy-ollama', AssistantProvider.ollama), isNull);
+
+    final secrets = Secrets()..values['anthropic'] = 'old';
+    expect(await assistantServiceKey(secrets, 'legacy-claude', AssistantProvider.claude), 'old');
+    expect(await assistantServiceKey(secrets, 'custom', AssistantProvider.claude), isNull);
+    secrets.values['assistant.service.legacy-claude'] = 'new';
+    expect(await assistantServiceKey(secrets, 'legacy-claude', AssistantProvider.claude), 'new');
+
+    final editable = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assistantSecretsProvider.overrideWithValue(secrets),
+      ],
+    );
+    addTearDown(editable.dispose);
+    await editable.read(assistantServicesProvider.future);
+    await editable.read(assistantServicesProvider.notifier).saveKey('legacy-claude', '');
+    expect(await assistantServiceKey(secrets, 'legacy-claude', AssistantProvider.claude), isNull);
   });
   test('Riverpod serial CRUD, default repair, isolated keys, model actions and old adapter', () async {
     SharedPreferences.setMockInitialValues({});

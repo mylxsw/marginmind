@@ -24,8 +24,13 @@ export '../../../packages/mm_assistant/test/support.dart' show ScriptClient, Str
 
 class FakeSecrets implements SecretStore {
   final values = <String, String>{};
+  final reads = <String>[];
   @override
-  Future<String?> read(String name) async => values[name];
+  Future<String?> read(String name) async {
+    reads.add(name);
+    return values[name];
+  }
+
   @override
   Future<void> write(String name, String value) async => values[name] = value;
   @override
@@ -113,12 +118,13 @@ Future<AssistantApp> openAssistantApp(
   Map<String, Object> prefs = const {},
   List<Override> overrides = const [],
   FakeCatalog? catalog,
+  FakeSecrets? secretStore,
   MemoryConversationArchive? archive,
   bool realWrites = false,
 }) async {
   final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
   final store = archive ?? MemoryConversationArchive();
-  final secrets = FakeSecrets();
+  final secrets = secretStore ?? FakeSecrets();
   if (key) secrets.values['anthropic'] = 'test-key';
   final links = FakeLinks();
   final executor = RecordingExecutor();

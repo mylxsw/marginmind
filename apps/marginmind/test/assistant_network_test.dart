@@ -16,15 +16,6 @@ class NoSnapshots implements StudySetContentRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class TrackingSecrets extends FakeSecrets {
-  final reads = <String>[];
-  @override
-  Future<String?> read(String name) async {
-    reads.add(name);
-    return super.read(name);
-  }
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
@@ -36,7 +27,7 @@ void main() {
         for (final p in AssistantProvider.values) 'assistant.model.${p.name}': 'm',
       });
       final prefs = await SharedPreferences.getInstance();
-      final secrets = TrackingSecrets();
+      final secrets = FakeSecrets();
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -60,7 +51,12 @@ void main() {
           AssistantProvider.gemini => isA<GeminiWebSearch>(),
           _ => isA<SearxngSearch>(),
         });
-        expect(secrets.reads, [AssistantServicesStore.account('legacy-${provider.name}')]);
+        expect(secrets.reads, [
+          if (provider != AssistantProvider.ollama) ...[
+            AssistantServicesStore.account('legacy-${provider.name}'),
+            legacyAssistantAccount(provider),
+          ],
+        ]);
         if (n.discovery case final SearxngSearch s) expect(s.endpoint, 'https://search.example/search');
         final offline = Provider((ref) => assistantNetworkFor(ref, 's', conversation.copyWith(online: false)));
         expect(await container.read(offline), isNull);

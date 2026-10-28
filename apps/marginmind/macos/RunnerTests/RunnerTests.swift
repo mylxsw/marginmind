@@ -4,6 +4,7 @@ import XCTest
 import CoreText
 import PDFKit
 import Network
+import Security
 import PDFKit
 
 @testable import MarginMind
@@ -124,6 +125,59 @@ class RunnerTests: XCTestCase {
     XCTAssertNotNil(invoke("read", ["account": ""]) as? FlutterError)
     XCTAssertNotNil(invoke("write", ["account": account]) as? FlutterError)
     XCTAssertNotNil(invoke("unknown", ["account": account]))
+  }
+
+  func testLockedKeychainFailsWithoutPromptAndPreservesSecret() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let path = directory.appendingPathComponent("isolated.keychain").path
+    let password = UUID().uuidString
+    var keychain: SecKeychain?
+    let created = password.withCString {
+      SecKeychainCreate(path, UInt32(password.utf8.count), $0, false, nil, &keychain)
+    }
+    XCTAssertEqual(created, errSecSuccess)
+    let isolated = try XCTUnwrap(keychain)
+    defer { SecKeychainDelete(isolated) }
+    func invoke(_ method: String, value: String? = nil) -> Any? {
+      var arguments = ["account": "locked-test"]
+      if let value = value { arguments["value"] = value }
+      var answer: Any?
+      SecretStoreChannel.handle(FlutterMethodCall(methodName: method, arguments: arguments), keychain: isolated) {
+        answer = $0
+      }
+      return answer
+    }
+    var before: DarwinBoolean = false
+    XCTAssertEqual(SecKeychainGetUserInteractionAllowed(&before), errSecSuccess)
+    XCTAssertNil(invoke("write", value: "preserved"))
+    XCTAssertEqual(invoke("read") as? String, "preserved")
+    XCTAssertEqual(SecKeychainLock(isolated), errSecSuccess)
+    let started = Date()
+    XCTAssertEqual((invoke("read") as? FlutterError)?.code, "keychain_auth_required")
+    XCTAssertLessThan(Date().timeIntervalSince(started), 5)
+    var after: DarwinBoolean = false
+    XCTAssertEqual(SecKeychainGetUserInteractionAllowed(&after), errSecSuccess)
+    XCTAssertEqual(after.boolValue, before.boolValue)
+    let unlocked = password.withCString {
+      SecKeychainUnlock(isolated, UInt32(password.utf8.count), $0, true)
+    }
+    XCTAssertEqual(unlocked, errSecSuccess)
+    XCTAssertEqual(invoke("read") as? String, "preserved")
+  }
+
+  func testKeychainChannelRepliesAsynchronouslyOnMainThread() {
+    let replied = expectation(description: "Keychain callback")
+    var returned = false
+    SecretStoreChannel.handleAsync(FlutterMethodCall(methodName: "read", arguments: ["account": "test-" + UUID().uuidString])) { value in
+      XCTAssertTrue(returned)
+      XCTAssertTrue(Thread.isMainThread)
+      XCTAssertNil(value)
+      replied.fulfill()
+    }
+    returned = true
+    wait(for: [replied], timeout: 5)
   }
 
   func testExternalLinksOpenOnlyWebPages() {

@@ -28,7 +28,7 @@ Future<AssistantNetwork?> assistantNetworkFor(Ref ref, String studySetId, Conver
       : null;
   final parser = ref.read(assistantArticleParserProvider);
   final cache = ref.read(assistantWebCacheProvider);
-  final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));
+  final key = await assistantModelKey(secrets, model);
   return productionAssistantNetwork(
     studySetId: studySetId,
     snapshots: repository as ResearchSnapshotRepository,

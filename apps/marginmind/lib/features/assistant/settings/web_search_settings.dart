@@ -57,14 +57,19 @@ class _WebSearchSettingsPageState extends ConsumerState<WebSearchSettingsPage> {
   }
 
   Future<void> _loadSecrets(WebSearchBackend backend) async {
+    if (backend == WebSearchBackend.none || backend == WebSearchBackend.searxng) return;
     final secrets = ref.read(assistantSecretsProvider);
-    final key = await secrets.read(WebSearchSettingsController.account(backend));
-    final account = backend == WebSearchBackend.cloudflare
-        ? await secrets.read(WebSearchSettingsController.cloudflareAccount)
-        : null;
-    if (!mounted || ref.read(webSearchSettingsProvider).backend != backend) return;
-    _key.text = key ?? '';
-    _account.text = account ?? '';
+    try {
+      final key = await secrets.read(WebSearchSettingsController.account(backend));
+      final account = backend == WebSearchBackend.cloudflare
+          ? await secrets.read(WebSearchSettingsController.cloudflareAccount)
+          : null;
+      if (!mounted || ref.read(webSearchSettingsProvider).backend != backend) return;
+      _key.text = key ?? '';
+      _account.text = account ?? '';
+    } on ResearchFailure {
+      // Saved credentials may be unavailable; users can still edit the form.
+    }
   }
 
   Future<void> _choose(WebSearchBackend backend) async {

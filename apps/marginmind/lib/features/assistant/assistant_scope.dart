@@ -80,7 +80,7 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
       final store = ref.read(assistantServicesStoreProvider);
       final resolved = await store.resolve(current);
       final model = assistantTitleModel(resolved, (await store.load()).enabledModels);
-      final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));
+      final key = await assistantModelKey(ref.read(assistantSecretsProvider), model);
       final connection = connectAssistant(model, key ?? '');
       try {
         return await generateAssistantTitle(connection.client, model.model, question);

@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 import Security
+import LocalAuthentication
 
 class MainFlutterWindow: NSWindow {
   private var mapExport: MapExportChannel?
@@ -302,24 +303,46 @@ final class ExternalLinkChannel {
 /// App-scoped generic passwords; never copies secrets into defaults or logs.
 final class SecretStoreChannel {
   private let channel: FlutterMethodChannel
+  private static let queue = DispatchQueue(label: "marginmind.secret_store", qos: .userInitiated)
 
   init(messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(name: "marginmind/secret_store", binaryMessenger: messenger)
-    channel.setMethodCallHandler(Self.handle)
+    channel.setMethodCallHandler(Self.handleAsync)
   }
 
-  static func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+  static func handleAsync(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    queue.async {
+      handle(call) { value in
+        DispatchQueue.main.async { result(value) }
+      }
+    }
+  }
+
+  static func handle(_ call: FlutterMethodCall, keychain: SecKeychain? = nil, result: @escaping FlutterResult) {
       guard let args = call.arguments as? [String: String],
             let account = args["account"], !account.isEmpty, account.count <= 256 else {
         result(FlutterError(code: "invalid_arguments", message: nil, details: nil))
         return
       }
-      let query: [String: Any] = [
+      // Old login-keychain items ignore LAContext's UI policy. Suppress that
+      // UI too, only for this serialized operation, and restore the prior state.
+      var interactionAllowed: DarwinBoolean = false
+      guard SecKeychainGetUserInteractionAllowed(&interactionAllowed) == errSecSuccess,
+            SecKeychainSetUserInteractionAllowed(false) == errSecSuccess else {
+        result(FlutterError(code: "keychain_failure", message: nil, details: nil)); return
+      }
+      defer { SecKeychainSetUserInteractionAllowed(interactionAllowed.boolValue) }
+      let context = LAContext()
+      context.interactionNotAllowed = true
+      var query: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: "io.github.mylxsw.marginmind.research",
         kSecAttrAccount as String: account,
         kSecAttrSynchronizable as String: false,
+        kSecUseAuthenticationContext as String: context,
       ]
+      // Tests use an isolated keychain, never lock or modify the login keychain.
+      if let keychain = keychain { query[kSecMatchSearchList as String] = [keychain] }
       var status: OSStatus
       switch call.method {
       case "read":
@@ -339,6 +362,8 @@ final class SecretStoreChannel {
         status = SecItemUpdate(query as CFDictionary, values as CFDictionary)
         if status == errSecItemNotFound {
           var insert = query.merging(values) { _, new in new }
+          insert.removeValue(forKey: kSecMatchSearchList as String)
+          if let keychain = keychain { insert[kSecUseKeychain as String] = keychain }
           insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
           status = SecItemAdd(insert as CFDictionary, nil)
         }
@@ -348,6 +373,7 @@ final class SecretStoreChannel {
         if status == errSecSuccess || status == errSecItemNotFound { result(nil); return }
       default: result(FlutterMethodNotImplemented); return
       }
-      result(FlutterError(code: "keychain_failure", message: nil, details: nil))
+      let needsAuthentication = status == errSecInteractionNotAllowed || status == errSecAuthFailed || status == errSecUserCanceled
+      result(FlutterError(code: needsAuthentication ? "keychain_auth_required" : "keychain_failure", message: nil, details: nil))
   }
 }

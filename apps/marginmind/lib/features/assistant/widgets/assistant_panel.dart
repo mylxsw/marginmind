@@ -81,8 +81,8 @@ class _AssistantHost extends ConsumerWidget {
         if (previous != next) unawaited(ref.read(assistantControllerProvider.notifier).syncReceipts());
       },
     );
-    // Kept loaded, so a question asked as the panel opens is not dropped.
-    ref.listen(assistantConfiguredProvider, (_, _) {});
+    // Reading a study set only loads model metadata. Credentials are checked
+    // when the assistant panel opens or a question is actually requested.
     // An empty conversation follows the default model (it loads after the
     // window opens, and may change in settings); used ones keep theirs.
     ref.listen(assistantDefaultModelProvider, (previous, next) {

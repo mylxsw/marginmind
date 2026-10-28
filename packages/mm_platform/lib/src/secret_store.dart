@@ -8,7 +8,10 @@ class KeychainSecretStore implements SecretStore {
     if (account.isEmpty || account.length > 256) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
     try {
       return await _channel.invokeMethod<T>(method, {'account': account, 'value': ?value});
-    } on PlatformException {
+    } on PlatformException catch (error) {
+      if (error.code == 'keychain_auth_required') {
+        throw const ResearchFailure(ResearchFailureKind.authentication, 'secret_store');
+      }
       throw const ResearchFailure(ResearchFailureKind.unavailable, 'secret_store');
     } on MissingPluginException {
       throw const ResearchFailure(ResearchFailureKind.unsupported, 'secret_store');

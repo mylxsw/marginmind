@@ -302,8 +302,12 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
   }
 
   Future<void> _loadKey() async {
-    final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(_service.id));
-    if (mounted && _key.text.isEmpty && key != null) _key.text = key;
+    try {
+      final key = await assistantServiceKey(ref.read(assistantSecretsProvider), _service.id, _service.provider);
+      if (mounted && _key.text.isEmpty && key != null) _key.text = key;
+    } on ResearchFailure {
+      // Leave the field editable when macOS cannot release the saved key.
+    }
   }
 
   @override
@@ -750,9 +754,10 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
     super.initState();
     _query.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _queryFocus.requestFocus();
+      if (!mounted) return;
+      _queryFocus.requestFocus();
+      unawaited(_load());
     });
-    unawaited(_load());
   }
 
   @override
@@ -764,10 +769,12 @@ class _AddModelsSheetState extends ConsumerState<AddModelsSheet> {
   }
 
   Future<void> _load() async {
-    final key = await ref.read(assistantSecretsProvider).read(AssistantServicesStore.account(widget.service.id)) ?? '';
     if (!mounted) return;
     final l = context.l10n;
     try {
+      final key =
+          await assistantServiceKey(ref.read(assistantSecretsProvider), widget.service.id, widget.service.provider) ??
+          '';
       final models = await ref.read(serviceCatalogProvider).list(widget.service, key, cancellation: _cancel);
       if (mounted) setState(() => _models = models);
     } on ResearchFailure catch (e) {

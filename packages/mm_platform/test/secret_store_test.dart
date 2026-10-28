@@ -44,4 +44,11 @@ void main() {
     messenger.setMockMethodCallHandler(channel, null);
     await expectLater(store.read('a'), throwsA(isA<ResearchFailure>()));
   });
+  test('a locked key is an authentication failure, never a missing key', () async {
+    messenger.setMockMethodCallHandler(channel, (_) => throw PlatformException(code: 'keychain_auth_required'));
+    await expectLater(
+      store.read('saved'),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.authentication)),
+    );
+  });
 }

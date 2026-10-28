@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_entry.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
@@ -21,6 +22,11 @@ import 'helpers.dart';
 
 const _claim = '这条先陡后平的曲线，被称为遗忘曲线。';
 const _rect = PageRect(10, 100, 200, 88);
+
+class _LockedSecrets extends FakeSecrets {
+  @override
+  Future<String?> read(String name) async => throw const ResearchFailure(ResearchFailureKind.authentication);
+}
 
 Future<void> _selectText(WidgetTester tester, WorkspaceController workspace) async {
   await workspace.onSelectionCommitted(
@@ -55,6 +61,35 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool shift = f
 }
 
 void main() {
+  testWidgets('locked credentials leave the reader and assistant connection form usable', (tester) async {
+    final app = await openAssistantApp(tester, secretStore: _LockedSecrets());
+    expect(app.workspace.content.documents, isNotEmpty);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-connect')), findsOneWidget);
+    await tester.enterText(find.byKey(const ValueKey('connect-key')), 'replacement-test-key');
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    app.container.read(navigationProvider.notifier).showLibrary();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-connect')), findsNothing);
+  });
+
+  testWidgets('opening and reopening a study set never reads the Keychain', (tester) async {
+    final app = await openAssistantApp(tester);
+    expect(app.secrets.reads, isEmpty);
+    expect(app.workspace.content.documents, isNotEmpty);
+    app.container.read(navigationProvider.notifier).showLibrary();
+    await tester.pumpAndSettle();
+    app.container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    expect(app.secrets.reads, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('toolbar-assistant')));
+    await tester.pumpAndSettle();
+    expect(app.secrets.reads, contains('anthropic'));
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
+  });
+
   testWidgets('scene 1: ask about a selection, explain it, jump back with p.24, copy and save as note', (tester) async {
     final client = ScriptClient([
       call('read_selection', jsonEncode({'selectionId': _selectionId()})),

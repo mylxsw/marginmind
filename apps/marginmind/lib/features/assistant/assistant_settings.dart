@@ -9,8 +9,8 @@ import 'assistant_services.dart';
 
 final assistantSecretsProvider = Provider<SecretStore>((ref) => const KeychainSecretStore());
 
-/// Keychain accounts of the settings before services (GUL-535): read by the
-/// one-time migration and by conversations saved without a service ID.
+/// Original Keychain accounts (before GUL-535), retained for migrated services
+/// and conversations saved without a service ID.
 String legacyAssistantAccount(AssistantProvider provider) => switch (provider) {
   AssistantProvider.claude => 'anthropic',
   AssistantProvider.responses => 'openai',
@@ -22,6 +22,19 @@ String legacyAssistantAccount(AssistantProvider provider) => switch (provider) {
 /// The model the old settings used when none was typed: only Claude had one.
 String legacyAssistantModel(AssistantProvider provider) =>
     provider == AssistantProvider.claude ? 'claude-opus-5-5' : '';
+
+/// Prefer a newly saved key, then the original account of a migrated service.
+/// Never fall back across unrelated services of the same provider.
+Future<String?> assistantServiceKey(SecretStore secrets, String? serviceId, AssistantProvider provider) async {
+  if (provider == AssistantProvider.ollama) return null;
+  if (serviceId == null) return secrets.read(legacyAssistantAccount(provider));
+  final key = await secrets.read(AssistantServicesStore.account(serviceId));
+  if (key != null || serviceId != AssistantServicesStore.legacyId(provider)) return key;
+  return secrets.read(legacyAssistantAccount(provider));
+}
+
+Future<String?> assistantModelKey(SecretStore secrets, AssistantModel model) =>
+    assistantServiceKey(secrets, model.serviceId, model.provider);
 
 /// What a conversation starts with before any service is set up.
 const unconfiguredAssistantModel = AssistantModel(provider: AssistantProvider.claude, model: '', endpoint: '');
@@ -57,8 +70,13 @@ final assistantConfiguredProvider = FutureProvider<bool>((ref) async {
   final model = services.configuration;
   if (model == null) return false;
   if (model.provider == AssistantProvider.ollama) return model.localEnabled;
-  final key = await ref.watch(assistantSecretsProvider).read(AssistantServicesStore.account(model.serviceId!));
-  return key != null && key.isNotEmpty;
+  try {
+    final key = await assistantModelKey(ref.watch(assistantSecretsProvider), model);
+    return key != null && key.isNotEmpty;
+  } on ResearchFailure {
+    // Locked or inaccessible keys must leave the reader and connection form usable.
+    return false;
+  }
 });
 
 /// Application composition point. Reader, graph snapshot and network adapters
@@ -75,11 +93,7 @@ AssistantRunFactory assistantRunFactory({
   final config = services == null
       ? conversation.model
       : await services.resolve(conversation.model, quick: question.skill == 'translate');
-  final key = await secrets.read(
-    config.serviceId == null
-        ? legacyAssistantAccount(config.provider)
-        : AssistantServicesStore.account(config.serviceId!),
-  );
+  final key = await assistantModelKey(secrets, config);
   if (config.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
     throw const ResearchFailure(ResearchFailureKind.authentication);
   }

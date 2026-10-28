@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../app/providers.dart';
 import 'assistant_settings.dart';
 
-/// Persistence is serialized by the controller. Secrets are copied before the
-/// migration marker (the versioned JSON) is committed; legacy data is retained.
+/// Persistence is serialized by the controller. Migration only touches local
+/// settings; legacy keys stay in the Keychain and are resolved when needed.
 class AssistantServicesStore {
   AssistantServicesStore(this.prefs, this.secrets);
   final SharedPreferences prefs;
@@ -27,7 +27,6 @@ class AssistantServicesStore {
     for (final p in AssistantProvider.values) {
       final storedModel = prefs.getString('assistant.model.${p.name}') ?? '';
       final model = storedModel.isEmpty ? legacyAssistantModel(p) : storedModel;
-      final key = await secrets.read(legacyAssistantAccount(p));
       final endpoint =
           prefs.getString('assistant.endpoint.${p.name}') ??
           switch (p) {
@@ -37,11 +36,10 @@ class AssistantServicesStore {
             AssistantProvider.ollama => 'http://localhost:11434/v1/chat/completions',
             _ => '',
           };
-      if (p.name != selected && model.isEmpty && key == null && !prefs.containsKey('assistant.endpoint.${p.name}')) {
+      if (p.name != selected && model.isEmpty && !prefs.containsKey('assistant.endpoint.${p.name}')) {
         continue;
       }
       final id = legacyId(p);
-      if (key != null) await secrets.write(account(id), key);
       services.add(
         AssistantService(
           id: id,
@@ -147,6 +145,10 @@ class AssistantServicesController extends AsyncNotifier<AssistantServices> {
     final secrets = ref.read(assistantSecretsProvider), account = AssistantServicesStore.account(id);
     if (key.trim().isEmpty) {
       await secrets.delete(account);
+      final service = _service(v, id);
+      if (id == AssistantServicesStore.legacyId(service.provider)) {
+        await secrets.delete(legacyAssistantAccount(service.provider));
+      }
     } else {
       await secrets.write(account, key.trim());
     }
