@@ -4,6 +4,9 @@ library;
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:mm_core/mm_core.dart' show TextAnchor;
+export 'package:mm_core/mm_core.dart' show TextAnchor;
+
 import 'package:archive/archive.dart';
 import 'package:characters/characters.dart';
 import 'package:html/dom.dart' as dom;
@@ -88,13 +91,6 @@ class BookBlock {
   int get end => start + text.length;
 }
 
-class TextAnchor {
-  const TextAnchor(this.chapterId, this.start, this.end, this.quote);
-  final String chapterId, quote;
-  final int start, end;
-  Map<String, Object> toJson() => {'chapter': chapterId, 'start': start, 'end': end, 'quote': quote};
-}
-
 class BookChapter {
   BookChapter(
     this.id,
@@ -115,7 +111,7 @@ class BookChapter {
   final List<BookBlock> blocks;
 
   /// Both edges expand to whole grapheme clusters, including emoji sequences.
-  TextAnchor anchor(int start, int end) {
+  TextAnchor anchor(int start, int end, {String revision = ''}) {
     RangeError.checkValidRange(start, end, canonicalText.length);
     var boundary = 0;
     var a = start, b = end;
@@ -126,7 +122,15 @@ class BookChapter {
       boundary = next;
       if (boundary >= end) break;
     }
-    return TextAnchor(id, a, b, canonicalText.substring(a, b));
+    return TextAnchor(
+      id,
+      a,
+      b,
+      canonicalText.substring(a, b),
+      revision: revision,
+      prefix: canonicalText.substring(0, a).characters.takeLast(32).string,
+      suffix: canonicalText.substring(b).characters.take(32).join(),
+    );
   }
 
   bool resolves(TextAnchor anchor) =>

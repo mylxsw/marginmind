@@ -1,8 +1,10 @@
+import 'document_commands.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart' show CardKind;
+import 'package:mm_core/mm_core.dart' show CardKind, DocumentRuntime, TextReadingPosition;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -358,23 +360,28 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         workspace.content.document(workspaceState.activeDocumentId!) != null;
     // Page commands wait while a title or note is typed, but not in the
     // reader's own fields (the find bar).
+    final document = hasDocument ? workspace.content.document(workspaceState.activeDocumentId!) : null;
+    final capabilities = document?.capabilities(runtime: DocumentRuntime(ocr: MMPlatformCapabilities.current.pdfOcr));
     final canRead = hasDocument && (!_textFocused || _readerFocused);
-    final findsInDocument = hasDocument && _readerFocused;
+    final findsInDocument = hasDocument && _readerFocused && capabilities!.search;
     final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
     final bookmarkContent = workspace?.content;
     final bookmarkPage = workspace?.activePage ?? 0;
     final bookmarked =
         hasDocument &&
-        ref.watch(
-          readingPagesProvider(workspaceId!).select(
-            (pages) =>
-                bookmarkContent!.bookmarkAt(
-                  workspaceState.activeDocumentId!,
-                  pages[workspaceState.activeDocumentId] ?? bookmarkPage,
-                ) !=
-                null,
-          ),
-        );
+        (document!.readingPosition is TextReadingPosition
+            ? bookmarkContent!.bookmarkAtPosition(document.id, document.readingPosition!) != null
+            : capabilities!.zoom &&
+                  ref.watch(
+                    readingPagesProvider(workspaceId!).select(
+                      (pages) =>
+                          bookmarkContent!.bookmarkAt(
+                            workspaceState.activeDocumentId!,
+                            pages[workspaceState.activeDocumentId] ?? bookmarkPage,
+                          ) !=
+                          null,
+                    ),
+                  ));
     final settings = AppCommand(l.settings, () => showSettings(context), shortcut: AppShortcuts.settings);
     final file = [
       AppCommand(l.showLibrary, inLibrary ? null : nav.showLibrary, shortcut: AppShortcuts.showLibrary),
@@ -389,11 +396,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         shortcut: AppShortcuts.importDocument,
       ),
     ];
-    if (MMPlatformCapabilities.current.webBrowser) {
+    if (ref.watch(canAddWebPageProvider)) {
       file.add(
         AppCommand(
           l.addWebPage,
-          editable ? () => showAddWebPage(context, ref, workspaceId!) : null,
+          editable ? () => dispatchAddWebPage(context, ref, workspaceId!) : null,
           shortcut: AppShortcuts.addWebPage,
         ),
       );
@@ -442,6 +449,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     void invokeSelection(ReaderSelectionCommand command) {
+      if (workspace?.canRunSelection(command) != true) return;
       final focus = FocusManager.instance.primaryFocus?.context;
       if (focus != null) Actions.maybeInvoke(focus, ReaderSelectionIntent(command));
     }
@@ -524,15 +532,16 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       }.entries)
         AppCommand(
           entry.value,
-          (selectionOpen &&
-                      entry.key != ReaderSelectionCommand.locateCard &&
-                      entry.key != ReaderSelectionCommand.deleteHighlight) ||
-                  (highlightOpen &&
-                      (entry.key == ReaderSelectionCommand.marginNote ||
-                          entry.key == ReaderSelectionCommand.copy ||
-                          entry.key == ReaderSelectionCommand.deleteHighlight ||
-                          (entry.key == ReaderSelectionCommand.excerpt && highlightCard == null) ||
-                          (entry.key == ReaderSelectionCommand.locateCard && highlightCard != null)))
+          ((workspace?.canRunSelection(entry.key) ?? false) &&
+                  ((selectionOpen &&
+                          entry.key != ReaderSelectionCommand.locateCard &&
+                          entry.key != ReaderSelectionCommand.deleteHighlight) ||
+                      (highlightOpen &&
+                          (entry.key == ReaderSelectionCommand.marginNote ||
+                              entry.key == ReaderSelectionCommand.copy ||
+                              entry.key == ReaderSelectionCommand.deleteHighlight ||
+                              (entry.key == ReaderSelectionCommand.excerpt && highlightCard == null) ||
+                              (entry.key == ReaderSelectionCommand.locateCard && highlightCard != null)))))
               ? () => invokeSelection(entry.key)
               : null,
           shortcut: entry.key == ReaderSelectionCommand.marginNote && !selectionOpen && !highlightOpen
@@ -765,21 +774,21 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           ref.watch(readerMarginProvider(workspaceId!)).openDocuments.contains(workspaceState.activeDocumentId)
               ? l.hideMarginNotes
               : l.showMarginNotes,
-          !_textFocused && crop?.editing != true && !comparing
+          !_textFocused && capabilities!.marginNotes && crop?.editing != true && !comparing
               ? () => ref.read(readerMarginProvider(workspaceId).notifier).toggle(workspaceState.activeDocumentId!)
               : null,
           shortcut: AppShortcuts.toggleMarginNotes,
         ),
         AppCommand(
           activeDoc?.crop?.enabled == true ? l.uncropMargins : l.cropMargins,
-          !_textFocused && ref.read(readerCropProvider(workspaceId).notifier).canToggle
+          !_textFocused && capabilities!.crop && ref.read(readerCropProvider(workspaceId).notifier).canToggle
               ? () => toggleReaderCrop(context, ref, workspaceId)
               : null,
           shortcut: AppShortcuts.toggleCrop,
         ),
         AppCommand(
           l.cropAdjust,
-          crop?.editing != true && crop?.busy != true && pdf?.isReady == true
+          capabilities!.crop && crop?.editing != true && crop?.busy != true && pdf?.isReady == true
               ? () => ref.read(readerCropProvider(workspaceId).notifier).adjust()
               : null,
         ),
@@ -787,7 +796,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (inWorkspace && ref.watch(pdfOcrServiceProvider).supported) ...[
         AppCommand(
           l.ocrRecognize,
-          hasDocument && ocrState?.running != true ? () => showReaderOcrOptions(context, ref, workspaceId) : null,
+          hasDocument && capabilities!.ocr && ocrState?.running != true
+              ? () => showReaderOcrOptions(context, ref, workspaceId)
+              : null,
         ),
         if (ocrState?.running == true)
           AppCommand(
@@ -799,7 +810,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         for (final entry in readerZoomLabels.entries)
           AppCommand(
             entry.value,
-            _readerFocused && !_textFocused && workspaceState?.activeDocumentId != null
+            _readerFocused && !_textFocused && capabilities?.zoom == true && workspaceState?.activeDocumentId != null
                 ? () {
                     final focus = FocusManager.instance.primaryFocus?.context;
                     if (focus != null) Actions.maybeInvoke(focus, ReaderZoomIntent(entry.key));
@@ -832,17 +843,17 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (inWorkspace) ...[
         AppCommand(
           l.toggleAnnotationTool,
-          crop?.editing == true ? null : workspace!.toggleTool,
+          crop?.editing == true || capabilities?.annotate != true ? null : workspace!.toggleTool,
           shortcut: AppShortcuts.toggleAnnotationTool,
         ),
         AppCommand(
           l.toggleAreaTool,
-          crop?.editing == true ? null : workspace!.toggleAreaTool,
+          crop?.editing == true || capabilities?.capture != true ? null : workspace!.toggleAreaTool,
           shortcut: AppShortcuts.toggleAreaTool,
         ),
         AppCommand(
           l.toggleInkTool,
-          crop?.editing == true ? null : workspace!.toggleInkTool,
+          crop?.editing == true || capabilities?.ink != true ? null : workspace!.toggleInkTool,
           shortcut: AppShortcuts.toggleInkTool,
         ),
         AppCommand(
@@ -883,7 +894,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           (ReaderPanelMode.bookmarks, l.readerBookmarks, AppShortcuts.readerBookmarks),
           (ReaderPanelMode.annotations, l.readerAnnotations, AppShortcuts.readerAnnotations),
         ])
-          AppCommand(label, hasDocument ? () => workspace.showReaderPanel(mode) : null, shortcut: shortcut),
+          AppCommand(
+            label,
+            hasDocument && workspace.canShowReaderPanel(mode) ? () => workspace.showReaderPanel(mode) : null,
+            shortcut: shortcut,
+          ),
       ],
       if (comparing) AppCommand(l.compareExit, () => ref.read(readerCompareProvider(workspaceId).notifier).exit()),
       if (hasDocument)
@@ -906,30 +921,38 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final go = [
       AppCommand(
         l.findNext,
-        canRead && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
+        canRead && capabilities!.search && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
         shortcut: AppShortcuts.findNext,
       ),
       AppCommand(
         l.findPrevious,
-        canRead && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
+        canRead && capabilities!.search && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
         shortcut: AppShortcuts.findPrevious,
       ),
       AppCommand(
         bookmarked ? l.removeBookmark : l.addBookmark,
-        canRead && !_textFocused ? workspace.toggleBookmark : null,
+        canRead && capabilities!.bookmarks && !_textFocused ? workspace.toggleBookmark : null,
         shortcut: AppShortcuts.toggleBookmark,
       ),
-      AppCommand(l.goBack, canRead && !_textFocused ? () => pdf!.goBack() : null, shortcut: AppShortcuts.goBack),
+      AppCommand(
+        l.goBack,
+        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.goBack() : null,
+        shortcut: AppShortcuts.goBack,
+      ),
       AppCommand(
         l.firstPage,
-        canRead && !_textFocused ? () => pdf!.firstPage() : null,
+        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.firstPage() : null,
         shortcut: AppShortcuts.firstPage,
       ),
-      AppCommand(l.lastPage, canRead && !_textFocused ? () => pdf!.lastPage() : null, shortcut: AppShortcuts.lastPage),
+      AppCommand(
+        l.lastPage,
+        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.lastPage() : null,
+        shortcut: AppShortcuts.lastPage,
+      ),
       // The page pill is part of the reader: with the map alone there is no field to focus.
       AppCommand(
         l.goToPage,
-        canRead && !_textFocused && workspaceState.layout != MMSplitMode.secondary
+        canRead && capabilities!.zoom && !_textFocused && workspaceState.layout != MMSplitMode.secondary
             ? () => ref.read(focusRequestsProvider.notifier).request(FocusTarget.pageField)
             : null,
         shortcut: AppShortcuts.goToPage,

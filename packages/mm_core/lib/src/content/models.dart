@@ -1,7 +1,10 @@
+// ignore_for_file: prefer_initializing_formals
 import 'package:meta/meta.dart';
 
 import 'research.dart';
 import 'reading.dart';
+import 'document_format.dart';
+import 'text_anchor.dart';
 
 const _keepCrop = Object();
 const _keepValue = Object();
@@ -31,7 +34,7 @@ class PageRect {
 
 double _d(Object? v) => (v as num).toDouble();
 
-/// A PDF inside a study set. The file lives in the set's package folder.
+/// A document inside a study set. The file lives in the set's package folder.
 @immutable
 class Document {
   const Document({
@@ -44,8 +47,31 @@ class Document {
     this.lastReadAt,
     this.crop,
     this.cropSuggestionDismissed = false,
+    this.features = const DocumentContentFeatures(),
+    this.format = DocumentFormat.pdf,
+    this.layout = DocumentLayout.fixed,
+    this.sourceFileName,
+    this.contentManifest,
+    this.revision,
+    this.origin,
+    this.readingPosition,
   });
 
+  final DocumentContentFeatures features;
+  final DocumentFormat format;
+  final DocumentLayout layout;
+  final String? sourceFileName, contentManifest, revision;
+  final DocumentOrigin? origin;
+  final ReadingPosition? readingPosition;
+  DocumentCapabilities capabilities({
+    DocumentRuntime runtime = const DocumentRuntime(),
+    DocumentContentFeatures? contentFeatures,
+  }) => DocumentCapabilities.resolve(
+    format: format,
+    layout: layout,
+    runtime: runtime,
+    contentFeatures: contentFeatures ?? features,
+  );
   final String id;
   final String title;
 
@@ -66,10 +92,23 @@ class Document {
     DateTime? lastReadAt,
     Object? crop = _keepCrop,
     bool? cropSuggestionDismissed,
+    String? fileName,
+    String? contentManifest,
+    String? revision,
+    ReadingPosition? readingPosition,
+    DocumentOrigin? origin,
   }) => Document(
     id: id,
     title: title ?? this.title,
-    fileName: fileName,
+    fileName: fileName ?? this.fileName,
+    format: format,
+    features: features,
+    layout: layout,
+    sourceFileName: sourceFileName,
+    contentManifest: contentManifest ?? this.contentManifest,
+    revision: revision ?? this.revision,
+    origin: origin ?? this.origin,
+    readingPosition: readingPosition ?? this.readingPosition,
     pageCount: pageCount,
     importedAt: importedAt,
     lastPage: lastPage ?? this.lastPage,
@@ -82,6 +121,14 @@ class Document {
     'id': id,
     'title': title,
     'fileName': fileName,
+    'features': features.toJson(),
+    'format': format.name,
+    'layout': layout.name,
+    if (sourceFileName != null) 'sourceFileName': sourceFileName,
+    if (contentManifest != null) 'contentManifest': contentManifest,
+    if (revision != null) 'revision': revision,
+    if (origin != null) 'origin': origin!.toJson(),
+    if (readingPosition != null) 'readingPosition': readingPosition!.toJson(),
     'pageCount': pageCount,
     'lastPage': lastPage,
     'importedAt': importedAt.toIso8601String(),
@@ -91,6 +138,18 @@ class Document {
   };
 
   factory Document.fromJson(Map<String, Object?> j) => Document(
+    features: j['features'] == null
+        ? const DocumentContentFeatures()
+        : DocumentContentFeatures.fromJson((j['features'] as Map).cast()),
+    format: DocumentFormat.values.byName(j['format'] as String? ?? 'pdf'),
+    layout: DocumentLayout.values.byName(j['layout'] as String? ?? 'fixed'),
+    sourceFileName: j['sourceFileName'] as String?,
+    contentManifest: j['contentManifest'] as String?,
+    revision: j['revision'] as String?,
+    origin: j['origin'] == null ? null : DocumentOrigin.fromJson((j['origin'] as Map).cast()),
+    readingPosition: j['readingPosition'] == null
+        ? null
+        : ReadingPosition.fromJson((j['readingPosition'] as Map).cast()),
     crop: j['crop'] == null ? null : DocumentCrop.fromJson((j['crop'] as Map).cast()),
     cropSuggestionDismissed: j['cropSuggestionDismissed'] as bool? ?? false,
     id: j['id'] as String,
@@ -107,30 +166,43 @@ class Document {
 /// means "unnamed": the UI shows the page number instead.
 @immutable
 class Bookmark {
-  const Bookmark({
+  Bookmark({
     required this.id,
     required this.documentId,
-    required this.page,
+    // Public compatibility name; the backing field is private.
+    int? page,
+    this.position,
     required this.createdAt,
     this.title = '',
     this.order,
-  });
+  }) : _page = page {
+    if ((page != null) == (position != null) || (page != null && page < 1)) {
+      throw ArgumentError('Exactly one bookmark position is required');
+    }
+  }
 
   final String id;
   final String documentId;
 
   /// 1-based page.
-  final int page;
+  final int? _page;
+  final ReadingPosition? position;
+  int get page => switch (position) {
+    TextReadingPosition() => throw StateError('Text bookmark has no page'),
+    PdfPosition(:final page) => page,
+    _ => _page!,
+  };
   final DateTime createdAt;
   final String title;
 
   /// Custom position within this document; null retains legacy page sorting.
   final int? order;
 
-  Bookmark copyWith({String? title, int? page, int? order}) => Bookmark(
+  Bookmark copyWith({String? title, int? page, int? order, ReadingPosition? position}) => Bookmark(
     id: id,
     documentId: documentId,
-    page: page ?? this.page,
+    page: position != null || this.position != null ? null : page ?? _page,
+    position: position ?? this.position,
     createdAt: createdAt,
     title: title ?? this.title,
     order: order ?? this.order,
@@ -139,7 +211,7 @@ class Bookmark {
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
-    'page': page,
+    if (position != null) 'position': position!.toJson() else 'page': page,
     'createdAt': createdAt.toIso8601String(),
     if (title.isNotEmpty) 'title': title,
     if (order != null) 'order': order,
@@ -148,7 +220,8 @@ class Bookmark {
   factory Bookmark.fromJson(Map<String, Object?> j) => Bookmark(
     id: j['id'] as String,
     documentId: j['documentId'] as String,
-    page: j['page'] as int,
+    page: j['page'] as int?,
+    position: j['position'] == null ? null : ReadingPosition.fromJson((j['position'] as Map).cast()),
     createdAt: DateTime.parse(j['createdAt'] as String),
     title: (j['title'] as String?) ?? '',
     order: j['order'] as int?,
@@ -178,28 +251,44 @@ enum AnnotationLineStyle { solid, dashed, dotted, wavy }
 /// A text mark spanning one or more pages, in reading order.
 @immutable
 class Annotation {
-  const Annotation({
+  Annotation({
     required this.id,
     required this.documentId,
     int? page,
     List<PageRect>? rects,
     List<AnnotationPage>? pages,
+    List<TextAnchor> textAnchors = const [],
     required this.quote,
     required this.colorIndex,
     required this.createdAt,
     this.kind = AnnotationKind.highlight,
     this.lineStyle = AnnotationLineStyle.solid,
-  }) : assert(pages != null || (page != null && rects != null)),
-       _pages = pages,
+  }) : _pages = pages == null
+           ? null
+           : List.unmodifiable(pages.map((p) => AnnotationPage(page: p.page, rects: List.unmodifiable(p.rects)))),
+       textAnchors = List.unmodifiable(textAnchors),
        _page = page,
-       _rects = rects;
+       _rects = rects == null ? null : List.unmodifiable(rects) {
+    final pdf = pages != null || page != null || rects != null;
+    if (pdf == textAnchors.isNotEmpty || (pdf && (pages?.isEmpty ?? (page == null || rects == null)))) {
+      throw ArgumentError('Exactly one PDF or text annotation target is required');
+    }
+    for (final anchor in textAnchors) {
+      anchor.validate();
+    }
+  }
 
   final String id;
   final String documentId;
   final List<AnnotationPage>? _pages;
   final int? _page;
   final List<PageRect>? _rects;
-  List<AnnotationPage> get pages => _pages ?? [AnnotationPage(page: _page!, rects: _rects!)];
+  final List<TextAnchor> textAnchors;
+  bool get isText => textAnchors.isNotEmpty;
+  List<AnnotationPage> get pages {
+    if (isText) throw StateError('Text annotations have no PDF pages');
+    return _pages ?? [AnnotationPage(page: _page!, rects: _rects!)];
+  }
 
   /// First-page compatibility accessors for the existing reader.
   int get page => pages.first.page;
@@ -216,7 +305,8 @@ class Annotation {
   Annotation copyWith({int? colorIndex, AnnotationKind? kind, AnnotationLineStyle? lineStyle}) => Annotation(
     id: id,
     documentId: documentId,
-    pages: pages,
+    pages: isText ? null : pages,
+    textAnchors: textAnchors,
     quote: quote,
     colorIndex: colorIndex ?? this.colorIndex,
     kind: kind ?? this.kind,
@@ -226,26 +316,43 @@ class Annotation {
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
-    'pages': [for (final p in pages) p.toJson()],
+    if (isText) 'targetType': 'text',
+    if (isText)
+      'textAnchors': [for (final a in textAnchors) a.toJson()]
+    else
+      'pages': [for (final p in pages) p.toJson()],
     'quote': quote,
     'colorIndex': colorIndex,
     if (kind != AnnotationKind.highlight) 'kind': kind.name,
     if (lineStyle != AnnotationLineStyle.solid) 'lineStyle': lineStyle.name,
     'createdAt': createdAt.toIso8601String(),
   };
-  factory Annotation.fromJson(Map<String, Object?> j) => Annotation(
-    id: j['id'] as String,
-    documentId: j['documentId'] as String,
-    pages: j['pages'] == null
-        ? [AnnotationPage.fromJson(j)]
-        : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
-    quote: j['quote'] as String,
-    colorIndex: j['colorIndex'] as int,
-    kind: AnnotationKind.values.where((v) => v.name == j['kind']).firstOrNull ?? AnnotationKind.highlight,
-    lineStyle:
-        AnnotationLineStyle.values.where((v) => v.name == j['lineStyle']).firstOrNull ?? AnnotationLineStyle.solid,
-    createdAt: DateTime.parse(j['createdAt'] as String),
-  );
+  factory Annotation.fromJson(Map<String, Object?> j) {
+    final type = j['targetType'];
+    if (type != null && type != 'pdf' && type != 'text') throw const FormatException('Unknown annotation target');
+    if ((type == 'pdf' && j['textAnchors'] != null) ||
+        (type == 'text' && (j['textAnchors'] == null || j['pages'] != null))) {
+      throw const FormatException('Mismatched annotation target');
+    }
+    return Annotation(
+      id: j['id'] as String,
+      documentId: j['documentId'] as String,
+      textAnchors: [for (final a in j['textAnchors'] as List? ?? []) TextAnchor.fromJson((a as Map).cast())],
+      pages: j['textAnchors'] != null
+          ? (j['pages'] == null
+                ? null
+                : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())])
+          : j['pages'] == null
+          ? [AnnotationPage.fromJson(j)]
+          : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
+      quote: j['quote'] as String,
+      colorIndex: j['colorIndex'] as int,
+      kind: AnnotationKind.values.where((v) => v.name == j['kind']).firstOrNull ?? AnnotationKind.highlight,
+      lineStyle:
+          AnnotationLineStyle.values.where((v) => v.name == j['lineStyle']).firstOrNull ?? AnnotationLineStyle.solid,
+      createdAt: DateTime.parse(j['createdAt'] as String),
+    );
+  }
 }
 
 @immutable

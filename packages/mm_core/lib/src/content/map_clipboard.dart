@@ -113,7 +113,7 @@ abstract final class MapClipboard {
               sources: sources,
               pdfAttachments: [
                 for (final a in content.noteAttachments)
-                  if (noteIds.contains(a.noteId) && a.target is PdfTarget) a,
+                  if (noteIds.contains(a.noteId) && (a.target is PdfTarget || a.target is TextTarget)) a,
               ],
               snapshots: {
                 for (final file in files)

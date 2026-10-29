@@ -23,7 +23,7 @@ void main() {
     final source = legacy();
     final before = jsonEncode(source);
     final migrated = migrateStudySet(source);
-    expect(migrated['format'], 10);
+    expect(migrated['format'], currentStudySetFormat);
     expect(migrated['futureMetadata'], source['futureMetadata']);
     final old = source['content'] as Map;
     final content = migrated['content'] as Map;
@@ -80,7 +80,7 @@ void main() {
     store = FileLibraryStore(root);
     expect((await store.load('current')).toJson(), loaded.toJson());
     expect(await File('${file.path}.format-8.bak').readAsBytes(), original);
-    expect(jsonDecode(await file.readAsString())['format'], 10);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });
 
@@ -101,7 +101,7 @@ void main() {
     await obstruction.delete();
     store = FileLibraryStore(root);
     expect((await store.load('current')).cards.last.title, '旧概要');
-    expect(jsonDecode(await file.readAsString())['format'], 10);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });
 }

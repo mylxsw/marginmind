@@ -75,6 +75,10 @@ class MapExportScene extends CustomPainter {
             if (attachment.target case PdfTarget(:final documentId, :final pages))
               if (content.document(documentId) case final document?)
                 for (final page in pages) source(document, page.page),
+          for (final attachment in content.noteAttachments.where((a) => a.noteId == note.id))
+            if (attachment.target case TextTarget(:final documentId, :final textAnchors))
+              if (content.document(documentId) case final document?)
+                for (final anchor in textAnchors) '${document.title} · ${anchor.chapterId}',
           for (final citation in note.citations)
             if (content.evidence.where((e) => e.id == citation.evidenceId).firstOrNull case final evidence?)
               if (content.researchSources.where((s) => s.id == evidence.sourceId).firstOrNull case final s?)
@@ -83,9 +87,12 @@ class MapExportScene extends CustomPainter {
         if (card.kind == CardKind.excerpt) ...{
           for (final segment in content.segmentsOf(card))
             if (content.annotation(segment.annotationId ?? '') case final annotation?)
-              if (content.document(annotation.documentId) case final document?) source(document, annotation.page),
+              if (content.document(annotation.documentId) case final document?)
+                annotation.isText
+                    ? '${document.title} · ${annotation.textAnchors.first.chapterId}'
+                    : source(document, annotation.page),
         } else if (doc != null)
-          source(doc, a!.page),
+          a!.isText ? '${doc.title} · ${a.textAnchors.first.chapterId}' : source(doc, a.page),
       ].where((s) => s.isNotEmpty).join('\n');
       nodes[n.cardId] = _ExportNode(
         note != null

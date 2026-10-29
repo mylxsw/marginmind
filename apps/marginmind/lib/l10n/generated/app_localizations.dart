@@ -701,7 +701,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'Pick a document in the sidebar, or import a PDF into this study set.'**
+  /// **'Pick a document in the sidebar, or import one.'**
   String get readerEmptyMessage;
 
   /// No description provided for @readerPlaceholder.
@@ -6235,6 +6235,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not Saved'**
   String get browserUnsaved;
+
+  /// No description provided for @addDocumentMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addDocumentMenu;
+
+  /// No description provided for @documentFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documentFiles;
+
+  /// No description provided for @unsupportedFile.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” isn’t supported'**
+  String unsupportedFile(String name);
+
+  /// No description provided for @readingSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Settings'**
+  String get readingSettings;
+
+  /// No description provided for @cancelImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Import'**
+  String get cancelImport;
+
+  /// No description provided for @okAction.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get okAction;
+
+  /// No description provided for @importFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t Import “{name}”'**
+  String importFailedTitle(String name);
+
+  /// No description provided for @importFailedMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 document couldn’t be imported} other{{count} documents couldn’t be imported}}'**
+  String importFailedMany(int count);
+
+  /// No description provided for @importErrorDrm.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected by DRM'**
+  String get importErrorDrm;
+
+  /// No description provided for @importErrorDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is damaged'**
+  String get importErrorDamaged;
+
+  /// No description provided for @importErrorKfx.
+  ///
+  /// In en, this message translates to:
+  /// **'KFX isn’t supported'**
+  String get importErrorKfx;
+
+  /// No description provided for @importErrorEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No readable content'**
+  String get importErrorEmpty;
+
+  /// No description provided for @importErrorUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported format'**
+  String get importErrorUnsupported;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

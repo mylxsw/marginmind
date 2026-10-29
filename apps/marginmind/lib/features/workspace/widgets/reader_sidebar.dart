@@ -70,7 +70,9 @@ class ReaderSidebar extends ConsumerWidget {
                         icon: icon,
                         tooltip: AppShortcuts.tip(label, shortcut),
                         selected: value == shown,
-                        onPressed: () => controller.setReaderPanelMode(value),
+                        onPressed: controller.canShowReaderPanel(value)
+                            ? () => controller.setReaderPanelMode(value)
+                            : null,
                       ),
                   ],
                 ),
@@ -265,8 +267,8 @@ class _Annotations extends ConsumerWidget {
     final t = context.mmText;
     final entries =
         [
-          for (final annotation in annotations) _AnnotationEntry.highlight(annotation),
-          for (final note in notes) _AnnotationEntry.note(note),
+          for (final annotation in annotations.where((a) => !a.isText)) _AnnotationEntry.highlight(annotation),
+          for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
         ]..sort((a, b) {
           final byPage = a.page.compareTo(b.page);
           if (byPage != 0) return byPage;

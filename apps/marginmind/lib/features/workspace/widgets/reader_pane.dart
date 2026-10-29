@@ -1,3 +1,7 @@
+import '../../../app/document_commands.dart';
+import '../../../shared/document_icon.dart';
+import '../document_reader.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -164,7 +168,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final rootTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
     ref.listen(provider.select((s) => s.reveal), (_, reveal) {
-      if (reveal == null) return;
+      if (reveal == null || reveal.textAnchors.isNotEmpty) return;
       // After this frame the right document's viewer exists; if it is still
       // loading, the view queues the reveal until it is ready.
       WidgetsBinding.instance.addPostFrameCallback((_) => _pdf.reveal(reveal.page, reveal.rects));
@@ -192,12 +196,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       actions: {
         ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(
           onInvoke: (intent) {
-            _zoom(intent.command);
+            if (controller.activeCapabilities.zoom) _zoom(intent.command);
             return null;
           },
         ),
         ReaderNavIntent: CallbackAction<ReaderNavIntent>(
           onInvoke: (intent) {
+            if (!controller.activeCapabilities.zoom) return null;
             dismissSelection();
             return switch (intent.command) {
               ReaderNavCommand.firstPage => _pdf.firstPage(),
@@ -212,9 +217,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           bindings: {
             AppShortcuts.toggleMarginNotes: () {
               final id = ref.read(provider).activeDocumentId;
-              if (!comparing && id != null) ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(id);
+              if (controller.activeCapabilities.marginNotes && !comparing && id != null) {
+                ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(id);
+              }
             },
-            AppShortcuts.toggleCrop: () => toggleReaderCrop(context, ref, widget.studySetId),
+            AppShortcuts.toggleCrop: () {
+              if (controller.activeCapabilities.crop) toggleReaderCrop(context, ref, widget.studySetId);
+            },
             if (marginState.popup.isNotEmpty)
               const SingleActivator(LogicalKeyboardKey.escape): () =>
                   ref.read(readerMarginProvider(widget.studySetId).notifier).close(),
@@ -267,6 +276,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     String? ocrSource,
   ) {
     final l = context.l10n;
+    final capabilities = controller.activeCapabilities;
+    final settingsHandler = ref.watch(readingSettingsHandlerProvider);
     final compact = !context.mmTouch;
     final navigation = MMToolbarButton(
       compact: compact,
@@ -276,7 +287,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         AppShortcuts.toggleReaderSidebar,
       ),
       selected: state.readerPanelVisible,
-      onPressed: controller.toggleReaderPanel,
+      onPressed: (capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate)
+          ? controller.toggleReaderPanel
+          : null,
     );
     final comparing = ref.watch(readerCompareProvider(widget.studySetId)) != null;
     final crop = ref.watch(readerCropProvider(widget.studySetId));
@@ -288,15 +301,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
 
     final zoomItems = <PopupMenuEntry<Object>>[
-      ReaderZoomSlider(pdf: _pdf, enabled: !crop.editing),
+      ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
         (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
         (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
       ])
-        MMDropdownItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
+        MMDropdownItem<Object>(
+          value: entry.$1,
+          enabled: capabilities.zoom && !crop.editing,
+          child: _menuRow(entry.$3, entry.$2),
+        ),
     ];
-    final canAdjustCrop = !crop.editing && !crop.busy && _pdf.isReady;
+    final canAdjustCrop = capabilities.crop && !crop.editing && !crop.busy && _pdf.isReady;
     final cropItems = <PopupMenuEntry<Object>>[
       MMDropdownItem<Object>(
         value: 'crop-adjust',
@@ -319,11 +336,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       icon: MMIcons.captionsBubble,
       tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
       selected: marginState.openDocuments.contains(state.activeDocumentId),
-      onPressed: crop.editing || comparing || document == null
+      onPressed: !capabilities.marginNotes || crop.editing || comparing || document == null
           ? null
           : () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id),
     );
-    final compareButton = ReaderCompareMenu(studySetId: widget.studySetId, enabled: !crop.editing);
+    final compareButton = ReaderCompareMenu(
+      studySetId: widget.studySetId,
+      enabled: capabilities.parallel && !crop.editing,
+    );
     final annotation = IgnorePointer(
       ignoring: crop.editing,
       child: Opacity(
@@ -340,22 +360,30 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           Flexible(child: annotation),
           if (MMSizeClass.of(context) == MMSizeClass.medium) ...[marginButton, compareButton],
           const SizedBox(width: MMSpacing.s),
-          MMDropdownButton<Object>(
-            key: const ValueKey('reader-more'),
-            tooltip: l.moreTools,
-            icon: const Icon(MMIcons.more),
-            onSelected: (value) {
-              pageCommand(value);
-              if (value is MMReaderStyle) setStyle(value);
-            },
-            itemBuilder: (_) => [
-              ...zoomItems,
-              const PopupMenuDivider(),
-              ...cropItems,
-              const PopupMenuDivider(),
-              ...styleItems,
-            ],
-          ),
+          if (capabilities.readingSettings)
+            MMToolbarButton(
+              key: const ValueKey('reader-settings'),
+              icon: MMIcons.readingSettings,
+              tooltip: l.readingSettings,
+              onPressed: settingsHandler == null ? null : () => settingsHandler(context, ref, widget.studySetId),
+            )
+          else
+            MMDropdownButton<Object>(
+              key: const ValueKey('reader-more'),
+              tooltip: capabilities.readingSettings ? l.readingSettings : l.moreTools,
+              icon: Icon(capabilities.readingSettings ? MMIcons.readingSettings : MMIcons.more),
+              onSelected: (value) {
+                pageCommand(value);
+                if (value is MMReaderStyle) setStyle(value);
+              },
+              itemBuilder: (_) => [
+                ...zoomItems,
+                const PopupMenuDivider(),
+                ...cropItems,
+                const PopupMenuDivider(),
+                ...styleItems,
+              ],
+            ),
           if (progress != null) ...[const SizedBox(width: MMSpacing.s), Flexible(child: progress)],
         ],
       );
@@ -369,6 +397,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         MMDropdownButton<Object>(
           key: const ValueKey('reader-page'),
           tooltip: l.readerZoom,
+          enabled: capabilities.zoom,
           width: MMSizes.readerZoomMenuWidth,
           icon: const Icon(MMIcons.zoomControl),
           onSelected: pageCommand,
@@ -377,9 +406,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         MMToolbarButton(
           key: const ValueKey('reader-crop'),
           compact: compact,
-          tooltip: l.cropMargins,
-          icon: MMIcons.crop,
-          onPressed: canAdjustCrop ? cropSession.adjust : null,
+          tooltip: capabilities.readingSettings ? l.readingSettings : l.cropMargins,
+          icon: capabilities.readingSettings ? MMIcons.readingSettings : MMIcons.crop,
+          onPressed: capabilities.readingSettings
+              ? (settingsHandler == null ? null : () => settingsHandler(context, ref, widget.studySetId))
+              : canAdjustCrop
+              ? cropSession.adjust
+              : null,
         ),
         MMDropdownButton<Object>(
           key: const ValueKey('reader-appearance'),
@@ -448,7 +481,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final chrome = MMChromeInsets.of(context);
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
     final source = doc == null ? null : controller.filePath(doc);
-    final ocr = source == null || !ref.watch(pdfOcrServiceProvider).supported
+    final ocr =
+        source == null ||
+            !doc!.capabilities(runtime: DocumentRuntime(ocr: ref.watch(pdfOcrServiceProvider).supported)).ocr
         ? null
         : ref.watch(readerOcrProvider(source));
     final column = Column(
@@ -467,6 +502,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 const SizedBox(width: MMSpacing.s),
                 if (ref.watch(readerCompareProvider(widget.studySetId)) == null)
                   _DocumentSwitcher(
+                    studySetId: widget.studySetId,
                     documents: content.documents,
                     activeDocumentId: doc?.id,
                     onOpen: controller.openDocument,
@@ -494,7 +530,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     message: l.readerEmptyMessage,
                     actions: [
                       MMButton(
-                        label: l.importPdf,
+                        label: l.importDocument,
                         icon: MMIcons.import,
                         variant: MMButtonVariant.primary,
                         onPressed: () => pickAndImportDocuments(context, ref, widget.studySetId),
@@ -505,7 +541,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               : LayoutBuilder(
                   builder: (context, constraints) => Row(
                     children: [
-                      if (state.readerPanelVisible)
+                      if (state.readerPanelVisible && doc.contentManifest == null)
                         Padding(
                           padding: EdgeInsets.only(bottom: chrome.bottom),
                           child: _ResizableReaderSidebar(
@@ -573,6 +609,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     VoidCallback onDismiss, {
     int side = 0,
   }) {
+    if (doc.contentManifest != null) {
+      return ref.watch(documentReaderBuilderProvider)?.call(context, ref, widget.studySetId, doc) ??
+          MMEmptyState(icon: documentIcon(doc), title: doc.title, message: '');
+    }
     final c = context.mmColors, l = context.l10n;
     final chrome = MMChromeInsets.of(context);
     final dockNavigation = MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500;
@@ -908,7 +948,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     };
     return [
       for (final a in content.annotationsOn(documentId))
-        for (final page in a.pages)
+        for (final page in a.isText ? <AnnotationPage>[] : a.pages)
           () {
             final color = MMAnnotationColor.fromIndex(a.colorIndex);
             final sharedCard = content.cardForAnnotation(a.id);
@@ -1131,21 +1171,23 @@ class _PagePill extends StatelessWidget {
 }
 
 /// Lists every document, including ones not yet opened in this session.
-class _DocumentSwitcher extends StatelessWidget {
+class _DocumentSwitcher extends ConsumerWidget {
   const _DocumentSwitcher({
+    required this.studySetId,
     required this.documents,
     required this.activeDocumentId,
     required this.onOpen,
     required this.onClose,
   });
 
+  final String studySetId;
   final List<Document> documents;
   final String? activeDocumentId;
   final ValueChanged<String> onOpen;
   final VoidCallback? onClose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final c = context.mmColors;
     final text = context.mmText.callout;
@@ -1173,7 +1215,17 @@ class _DocumentSwitcher extends StatelessWidget {
       tooltip: l.switchDocument,
       width: MMSizes.dropdownWideWidth,
       icon: Icon(MMIcons.collections, color: c.label, semanticLabel: l.switchDocument),
-      onSelected: (id) => id.isEmpty ? onClose?.call() : onOpen(id),
+      onSelected: (id) {
+        if (id == ':import') {
+          pickAndImportDocuments(context, ref, studySetId);
+        } else if (id == ':web') {
+          dispatchAddWebPage(context, ref, studySetId);
+        } else if (id.isEmpty) {
+          onClose?.call();
+        } else {
+          onOpen(id);
+        }
+      },
       itemBuilder: (_) => [
         for (final document in documents)
           MMDropdownItem<String>(
@@ -1181,9 +1233,13 @@ class _DocumentSwitcher extends StatelessWidget {
             labelTextStyle: WidgetStatePropertyAll(text),
             child: Semantics(
               selected: document.id == activeDocumentId,
-              child: row(MMIcons.document, document.title, selected: document.id == activeDocumentId),
+              child: row(documentIcon(document), document.title, selected: document.id == activeDocumentId),
             ),
           ),
+        const PopupMenuDivider(height: MMSpacing.s),
+        MMDropdownItem<String>(value: ':import', child: row(MMIcons.import, l.importDocument)),
+        if (ref.watch(canAddWebPageProvider))
+          MMDropdownItem<String>(value: ':web', child: row(MMIcons.web, l.addWebPage)),
         const PopupMenuDivider(height: MMSpacing.s),
         MMDropdownItem<String>(
           value: '',

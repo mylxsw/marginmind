@@ -1,3 +1,5 @@
+import '../document_import.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
@@ -27,6 +29,51 @@ class ExcerptViewScope extends InheritedWidget {
 void showNotice(BuildContext context, WorkspaceNotice? notice, {required String rootTitle}) {
   if (notice == null || !context.mounted) return;
   final l = context.l10n;
+  if (notice is ImportedNotice && notice.count == 0 && notice.failed.isEmpty) return;
+  if (notice is ImportedNotice && notice.errors.isNotEmpty) {
+    String reason(DocumentImportError error) => switch (error) {
+      DocumentImportError.drm => l.importErrorDrm,
+      DocumentImportError.damaged => l.importErrorDamaged,
+      DocumentImportError.unsupported => l.importErrorUnsupported,
+      DocumentImportError.kfx => l.importErrorKfx,
+      DocumentImportError.empty => l.importErrorEmpty,
+      DocumentImportError.unavailable => l.somethingWentWrong,
+    };
+    showMMDialog<void>(
+      context: context,
+      builder: (dialogContext) => MMSheet(
+        title: notice.failed.length == 1
+            ? l.importFailedTitle(notice.failed.first)
+            : l.importFailedMany(notice.failed.length),
+        actions: [
+          MMButton(
+            label: l.okAction,
+            variant: MMButtonVariant.primary,
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+        ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(dialogContext).height * MMSizes.bottomSheetMedium),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final name in notice.failed)
+                  Text(
+                    notice.failed.length == 1
+                        ? reason(notice.errors[name]!)
+                        : '$name — ${reason(notice.errors[name]!)}',
+                    style: dialogContext.mmText.body,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (notice.count > 0) MMHud.show(context, l.importedHud(notice.count), icon: MMIcons.success);
+    return;
+  }
   final text = switch (notice) {
     ExcerptedNotice(:final targetTitle) => l.excerptedHud(targetTitle ?? rootTitle),
     HighlightedNotice() => l.highlightedHud,
@@ -55,9 +102,9 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
   );
 }
 
-/// Opens the system file picker for PDFs and imports the chosen files.
+/// Opens the system file picker for documents and imports the chosen files.
 Future<void> pickAndImportDocuments(BuildContext context, WidgetRef ref, String studySetId) async {
-  final files = await ref.read(pdfPickerProvider)(context.l10n.pdfFiles);
+  final files = await ref.read(pdfPickerProvider)(context.l10n.documentFiles);
   if (files.isEmpty || !context.mounted) return;
   final notice = await ref.read(workspaceProvider(studySetId).notifier).importDocuments(files);
   if (context.mounted) showNotice(context, notice, rootTitle: '');

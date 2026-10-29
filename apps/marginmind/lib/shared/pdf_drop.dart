@@ -1,4 +1,4 @@
-import 'package:desktop_drop/desktop_drop.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:flutter/material.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
@@ -7,7 +7,7 @@ import 'l10n.dart';
 
 typedef DroppedFile = ({String path, String name});
 
-/// Accepts PDFs dragged in from Finder. While a drag hovers, the area gets
+/// Accepts supported documents dragged in from the desktop. While a drag hovers, the area gets
 /// an accent outline and a glass label saying what dropping will do.
 class PdfDropTarget extends StatefulWidget {
   const PdfDropTarget({super.key, required this.label, required this.onDrop, this.onImageDrop, required this.child});
@@ -25,36 +25,33 @@ class PdfDropTarget extends StatefulWidget {
 class _PdfDropTargetState extends State<PdfDropTarget> {
   bool _hovering = false;
 
-  void _done(DropDoneDetails details) {
-    setState(() => _hovering = false);
-    final pdfs = [
-      for (final f in details.files)
-        if (f.path.toLowerCase().endsWith('.pdf')) (path: f.path, name: f.name),
+  void _done(List<MMDocumentFile> files) {
+    final documents = [
+      for (final f in files)
+        if (DocumentFormat.fromFileName(f.name) != DocumentFormat.unknown) f,
     ];
-    if (widget.onImageDrop != null) {
-      final others = [
-        for (final f in details.files)
-          if (!f.path.toLowerCase().endsWith('.pdf')) (path: f.path, name: f.name),
-      ];
-      if (others.isNotEmpty) widget.onImageDrop!(others);
-      if (pdfs.isEmpty) return;
+    final images = [
+      for (final f in files)
+        if (RegExp(r'\.(png|jpe?g)$', caseSensitive: false).hasMatch(f.name)) f,
+    ];
+    final unsupported = [
+      for (final f in files)
+        if (!documents.contains(f) && (widget.onImageDrop == null || !images.contains(f))) f,
+    ];
+    if (documents.isNotEmpty) widget.onDrop(documents);
+    if (images.isNotEmpty) widget.onImageDrop?.call(images);
+    if (unsupported.isNotEmpty) {
+      MMHud.show(context, context.l10n.unsupportedFile(unsupported.first.name), icon: MMIcons.close);
     }
-    if (pdfs.isEmpty) {
-      MMHud.show(context, context.l10n.dropOnlyPdf, icon: MMIcons.close);
-      return;
-    }
-    widget.onDrop(pdfs);
   }
 
   @override
   Widget build(BuildContext context) {
     if (!MMPlatformCapabilities.current.desktopDrop) return widget.child;
     final c = context.mmColors;
-    return DropTarget(
-      enable: ModalRoute.of(context)?.isCurrent ?? true,
-      onDragEntered: (_) => setState(() => _hovering = true),
-      onDragExited: (_) => setState(() => _hovering = false),
-      onDragDone: _done,
+    return MMFileDropTarget(
+      onHover: (hovering) => setState(() => _hovering = hovering),
+      onDrop: _done,
       child: Stack(
         children: [
           Positioned.fill(child: widget.child),

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'document_outline.dart';
 
 import 'models.dart';
+import 'document_format.dart';
+import 'text_anchor.dart';
 import 'reading.dart';
 import 'reading_editor.dart';
 import 'research.dart';
@@ -97,6 +99,8 @@ class StudySetEditor {
         if (doc == null || pages.isEmpty || pages.any((p) => p.page < 1 || p.page > doc.pageCount)) {
           throw ArgumentError('Invalid PDF attachment');
         }
+      case TextTarget(:final documentId):
+        if (c.document(documentId) == null) throw ArgumentError('Unknown attachment document');
       case CardTarget(:final cardId):
         if (c.card(cardId) == null) throw ArgumentError('Unknown attachment card');
     }
@@ -224,8 +228,7 @@ class StudySetEditor {
             ellipse.bottom >= ellipse.top);
     if (invalidEllipse ||
         doc == null ||
-        stroke.page < 1 ||
-        stroke.page > doc.pageCount ||
+        (stroke.textAnchor == null && (stroke.page < 1 || stroke.page > doc.pageCount)) ||
         !stroke.width.isFinite ||
         stroke.width <= 0 ||
         stroke.colorIndex < 0 ||
@@ -535,9 +538,16 @@ class StudySetEditor {
           final pdf = entry.pdfAttachments
               .where((a) => a.noteId == original.id)
               .map((a) => a.target)
-              .whereType<PdfTarget>()
+              .where((t) => t is PdfTarget || t is TextTarget)
               .toList();
-          final missing = pdf.any((p) => c.document(p.documentId) == null);
+          final missing = pdf.any(
+            (p) =>
+                c.document(switch (p) {
+                  PdfTarget(:final documentId) || TextTarget(:final documentId) => documentId,
+                  _ => '',
+                }) ==
+                null,
+          );
           final noteJson = {
             ...original.toJson(),
             'id': noteId,
@@ -552,7 +562,12 @@ class StudySetEditor {
             sources: sources,
             targets: [
               for (final p in pdf)
-                if (c.document(p.documentId) != null) p,
+                if (c.document(switch (p) {
+                      PdfTarget(:final documentId) || TextTarget(:final documentId) => documentId,
+                      _ => '',
+                    }) !=
+                    null)
+                  p,
             ],
           );
         }
@@ -596,7 +611,8 @@ class StudySetEditor {
             Annotation(
               id: annotationId,
               documentId: source.documentId,
-              pages: source.pages,
+              pages: source.isText ? null : source.pages,
+              textAnchors: source.textAnchors,
               quote: source.quote,
               colorIndex: source.colorIndex,
               kind: source.kind,
@@ -673,8 +689,26 @@ class StudySetEditor {
     required String title,
     required String fileName,
     required int pageCount,
+    DocumentFormat format = DocumentFormat.pdf,
+    DocumentLayout layout = DocumentLayout.fixed,
+    String? sourceFileName,
+    String? contentManifest,
+    String? revision,
+    DocumentOrigin? origin,
   }) {
-    final doc = Document(id: newId(), title: title, fileName: fileName, pageCount: pageCount, importedAt: now());
+    final doc = Document(
+      id: newId(),
+      title: title,
+      fileName: fileName,
+      pageCount: pageCount,
+      importedAt: now(),
+      format: format,
+      layout: layout,
+      sourceFileName: sourceFileName,
+      contentManifest: contentManifest,
+      revision: revision,
+      origin: origin,
+    );
     return (c.copyWith(documents: [...c.documents, doc]), doc);
   }
 
@@ -689,6 +723,7 @@ class StudySetEditor {
     int? page,
     List<PageRect>? rects,
     List<AnnotationPage>? pages,
+    List<TextAnchor> textAnchors = const [],
     required String quote,
     required int colorIndex,
   }) {
@@ -698,6 +733,7 @@ class StudySetEditor {
       page: page,
       rects: rects,
       pages: pages,
+      textAnchors: textAnchors,
       quote: quote.trim(),
       colorIndex: colorIndex,
       createdAt: now(),
@@ -720,7 +756,10 @@ class StudySetEditor {
     final existing = c.annotations
         .where(
           (a) =>
-              a.kind == AnnotationKind.underline && a.documentId == documentId && _sameAnnotationPages(a.pages, pages),
+              a.kind == AnnotationKind.underline &&
+              !a.isText &&
+              a.documentId == documentId &&
+              _sameAnnotationPages(a.pages, pages),
         )
         .firstOrNull;
     if (existing != null) {
@@ -776,6 +815,7 @@ class StudySetEditor {
     int? page,
     List<PageRect>? rects,
     List<AnnotationPage>? pages,
+    List<TextAnchor> textAnchors = const [],
     required String quote,
     required int colorIndex,
     String? parentId,
@@ -786,6 +826,7 @@ class StudySetEditor {
       page: page,
       rects: rects,
       pages: pages,
+      textAnchors: textAnchors,
       quote: quote,
       colorIndex: colorIndex,
     );
@@ -1143,7 +1184,11 @@ class StudySetEditor {
       ],
       noteAttachments: [
         for (final a in next.noteAttachments)
-          if (!(a.target is PdfTarget && (a.target as PdfTarget).documentId == documentId)) a,
+          if (!(switch (a.target) {
+            PdfTarget(documentId: final id) || TextTarget(documentId: final id) => id == documentId,
+            _ => false,
+          }))
+            a,
       ],
       inkStrokes: [
         for (final s in next.inkStrokes)
@@ -1152,6 +1197,51 @@ class StudySetEditor {
       bookmarks: [
         for (final b in next.bookmarks)
           if (b.documentId != documentId) b,
+      ],
+    );
+  }
+
+  StudySetContent setReadingPosition(StudySetContent c, String documentId, ReadingPosition position) {
+    final doc = c.document(documentId);
+    if (doc == null ||
+        (position is PdfPosition && position.page > doc.pageCount) ||
+        (position is TextReadingPosition && doc.contentManifest == null)) {
+      throw ArgumentError('Invalid reading position');
+    }
+    return c.copyWith(
+      documents: [
+        for (final d in c.documents)
+          d.id == documentId
+              ? d.copyWith(
+                  readingPosition: position,
+                  lastPage: position is PdfPosition ? position.page : null,
+                  lastReadAt: now(),
+                )
+              : d,
+      ],
+    );
+  }
+
+  StudySetContent toggleTextBookmark(
+    StudySetContent c,
+    String documentId,
+    TextReadingPosition position, {
+    String title = '',
+  }) {
+    if (c.document(documentId)?.contentManifest == null) throw ArgumentError('Unknown text document');
+    final existing = c.bookmarks
+        .where(
+          (b) =>
+              b.documentId == documentId &&
+              b.position is TextReadingPosition &&
+              jsonEncode(b.position!.toJson()) == jsonEncode(position.toJson()),
+        )
+        .firstOrNull;
+    if (existing != null) return removeBookmark(c, existing.id);
+    return c.copyWith(
+      bookmarks: [
+        ...c.bookmarks,
+        Bookmark(id: newId(), documentId: documentId, position: position, title: title, createdAt: now()),
       ],
     );
   }
@@ -1205,7 +1295,7 @@ class StudySetEditor {
     if (doc == null) return c;
     final entries = OutlineTree.flatten(items).toList();
     if (entries.map((e) => e.id).toSet().length != entries.length ||
-        entries.any((e) => e.page < 0 || e.page > doc.pageCount)) {
+        entries.any((e) => e.position is! TextReadingPosition && (e.page < 0 || e.page > doc.pageCount))) {
       return c;
     }
     return c.copyWith(
@@ -1240,6 +1330,7 @@ class StudySetEditor {
         if (current.document(d.id) case final now?)
           d.copyWith(
             lastPage: now.lastPage,
+            readingPosition: now.readingPosition,
             lastReadAt: now.lastReadAt,
             cropSuggestionDismissed: now.cropSuggestionDismissed,
           )

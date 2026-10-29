@@ -191,7 +191,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     final annotations = <int, List<Annotation>>{};
     for (final a in ref.watch(workspaceContentProvider(widget.studySetId))?.annotations ?? const <Annotation>[]) {
       if (a.documentId != doc.id) continue;
-      for (final page in a.pages) {
+      for (final page in a.isText ? <AnnotationPage>[] : a.pages) {
         (annotations[page.page] ??= []).add(a);
       }
     }
@@ -199,6 +199,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
       for (final a in annotations[p.page] ?? const <Annotation>[]) {
         if (a.quote.isNotEmpty &&
             state.values[p.fingerprint]?.contains(a.quote) == true &&
+            !a.isText &&
             a.pages.any((page) => page.page == p.page && listEquals(page.rects, p.rects))) {
           return MMAnnotationColor.fromIndex(a.colorIndex).highlight;
         }

@@ -4,13 +4,14 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import '../content/research_repository.dart';
+import '../content/document_repository.dart';
 
 import '../content/study_set_content.dart';
 import '../content/study_set_content_repository.dart';
 
 /// Content kept in memory; files are "imported" by remembering their path.
 class InMemoryStudySetContentRepository
-    implements StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
+    implements DocumentRepository, StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
   InMemoryStudySetContentRepository([Map<String, StudySetContent>? initial]) : _content = {...?initial};
 
   final Map<String, StudySetContent> _content;
@@ -43,6 +44,41 @@ class InMemoryStudySetContentRepository
 
   @override
   Future<String> importFile(String studySetId, String sourcePath) async => sourcePath;
+
+  final documentFiles = <(String, String), List<int>>{};
+  @override
+  Future<StudySetContent> importDocumentPackage(
+    String studySetId,
+    DocumentPackage package, {
+    bool Function()? cancelled,
+  }) async {
+    if (cancelled?.call() ?? false) throw StateError('Document import cancelled');
+    for (final e in package.files.entries) {
+      final old = documentFiles[(studySetId, e.key)];
+      if (old != null && base64Encode(old) != base64Encode(e.value)) {
+        throw StateError('Immutable document file differs');
+      }
+    }
+    for (final e in package.files.entries) {
+      documentFiles[(studySetId, e.key)] = e.value;
+    }
+    return update(
+      studySetId,
+      (c) => c.copyWith(
+        documents: [
+          for (final d in c.documents)
+            if (d.id != package.document.id) d,
+          package.document,
+        ],
+      ),
+    );
+  }
+
+  @override
+  Future<List<int>> readDocumentFile(String studySetId, String fileName) async {
+    validateDocumentPath(fileName);
+    return documentFiles[(studySetId, fileName)] ?? (throw StateError('Missing document file'));
+  }
 
   @override
   Future<String> importImage(String studySetId, String sourcePath) async => sourcePath;

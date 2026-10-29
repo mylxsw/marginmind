@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,11 +21,30 @@ import 'helpers.dart';
 /// new set is open.
 Future<void> importSettled(WidgetTester tester) async {
   final container = ProviderScope.containerOf(tester.element(find.byType(MarginMindApp)));
-  for (var i = 0; i < 50 && container.read(navigationProvider) is! WorkspaceRoute; i++) {
+  for (
+    var i = 0;
+    i < 50 && container.read(navigationProvider) is! WorkspaceRoute && find.byType(MMSheet).evaluate().isEmpty;
+    i++
+  ) {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump();
   }
   await tester.pumpAndSettle();
+}
+
+/// Real local inputs exercise the portable importer without native PDFium.
+Future<PdfPicker> picker(WidgetTester tester, List<String> names, List<String> labels) async {
+  final directory = await tester.runAsync(() => Directory.systemTemp.createTemp('mm_library_import'));
+  addTearDown(() => directory!.delete(recursive: true));
+  await tester.runAsync(() async {
+    for (final name in names) {
+      await File('${directory!.path}/$name').writeAsString('# Document\n\nBody');
+    }
+  });
+  return (label) async {
+    labels.add(label);
+    return [for (final name in names) (path: '${directory!.path}/$name', name: name)];
+  };
 }
 
 void main() {
@@ -71,31 +92,26 @@ void main() {
   });
 
   group('new study set', () {
-    /// Picks [names] in the open panel and records the type label it showed.
-    PdfPicker picker(List<String> names, List<String> labels) => (label) async {
-      labels.add(label);
-      return [for (final n in names) (path: '/tmp/$n', name: n)];
-    };
-
-    testWidgets('asks for PDFs first, then creates and opens a set named after the document', (tester) async {
+    testWidgets('asks for documents first, then imports and opens a set named after the first file', (tester) async {
       final labels = <String>[];
-      final container = await pumpApp(tester, pdfPicker: picker(['认知心理学.PDF', 'b.pdf'], labels));
+      final container = await pumpApp(tester, pdfPicker: await picker(tester, ['认知心理学.MD', 'b.markdown'], labels));
       await tester.tap(find.byIcon(MMIcons.add));
       await importSettled(tester);
 
-      expect(labels, ['PDF documents']);
+      expect(labels, ['Documents']);
       expect(find.byType(MMSheet), findsNothing); // no name sheet in between
       final sets = container.read(studySetsProvider).value!;
       final created = sets.singleWhere((s) => s.title == '认知心理学');
       expect(created.folderId, isNull);
       expect(container.read(navigationProvider), isA<WorkspaceRoute>());
-      // No PDFium in widget tests: the import itself reports a failure.
-      expect(find.text('Couldn’t open “认知心理学.PDF” as a PDF'), findsOneWidget);
+      final content = await container.read(contentRepositoryProvider).load(created.id);
+      expect(content.documents, hasLength(2));
+      expect(content.documents.map((d) => d.format), everyElement(DocumentFormat.markdown));
       await settleHud(tester);
     });
 
     testWidgets('cancelling the open panel creates nothing', (tester) async {
-      final container = await pumpApp(tester, pdfPicker: picker(const [], []));
+      final container = await pumpApp(tester, pdfPicker: await picker(tester, const [], []));
       final before = container.read(studySetsProvider).value!.length;
       await tester.tap(find.byIcon(MMIcons.add));
       await tester.pumpAndSettle();
@@ -103,8 +119,23 @@ void main() {
       expect(container.read(navigationProvider), isA<LibraryRoute>());
     });
 
+    testWidgets('failed imports keep the library unchanged and show a recoverable error', (tester) async {
+      final container = await pumpApp(
+        tester,
+        pdfPicker: (_) async => [(path: '/missing/book.epub', name: 'book.epub')],
+      );
+      final before = container.read(studySetsProvider).value!.length;
+      await tester.tap(find.byIcon(MMIcons.add));
+      await importSettled(tester);
+      expect(container.read(studySetsProvider).value!.length, before);
+      expect(container.read(navigationProvider), isA<LibraryRoute>());
+      expect(find.text('Couldn’t Import “book.epub”'), findsOneWidget);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a set made while viewing a folder lands in that folder', (tester) async {
-      final container = await pumpApp(tester, pdfPicker: picker(['notes.pdf'], []));
+      final container = await pumpApp(tester, pdfPicker: await picker(tester, ['notes.md'], []));
       container.read(libraryViewProvider.notifier).setFilter(const FolderFilter('design'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.add));
@@ -125,11 +156,7 @@ void main() {
   });
 
   testWidgets('first run shows only the icon and two buttons', (tester) async {
-    final container = await pumpApp(
-      tester,
-      sets: const [],
-      pdfPicker: (_) async => [(path: '/tmp/a.pdf', name: 'a.pdf')],
-    );
+    final container = await pumpApp(tester, sets: const [], pdfPicker: await picker(tester, ['a.md'], []));
     final empty = find.byType(MMEmptyState);
     expect(find.descendant(of: empty, matching: find.byIcon(MMIcons.studySet)), findsOneWidget);
     expect(find.descendant(of: empty, matching: find.byType(MMButton)), findsNWidgets(2));

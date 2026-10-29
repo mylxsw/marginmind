@@ -157,7 +157,7 @@ class ResearchNoteView extends ConsumerWidget {
         ),
         const SizedBox(height: MMSpacing.l),
         section(l.researchPlaces, [
-          if (!attachments.any((a) => a.target is PdfTarget))
+          if (!attachments.any((a) => (a.target is PdfTarget || a.target is TextTarget)))
             Text(l.researchNotInSource, style: t.footnote.copyWith(color: c.secondaryLabel)),
           for (final a in attachments)
             switch (a.target) {
@@ -176,6 +176,18 @@ class ResearchNoteView extends ConsumerWidget {
                     ),
                   MMButton(
                     key: ValueKey('detach-${a.id}'),
+                    label: l.researchDetach,
+                    variant: MMButtonVariant.plain,
+                    onPressed: () => workspace.detachResearchNote(a.id),
+                  ),
+                ],
+              ),
+              TextTarget(:final documentId) => _PlaceRow(
+                key: ValueKey('place-${a.id}'),
+                icon: MMIcons.document,
+                label: content.document(documentId)?.title ?? l.researchOriginGone,
+                actions: [
+                  MMButton(
                     label: l.researchDetach,
                     variant: MMButtonVariant.plain,
                     onPressed: () => workspace.detachResearchNote(a.id),
@@ -216,7 +228,7 @@ class ResearchNoteView extends ConsumerWidget {
               label: l.researchDeleteNote,
               icon: MMIcons.trash,
               onPressed: () async {
-                final marks = attachments.where((a) => a.target is PdfTarget).length;
+                final marks = attachments.where((a) => (a.target is PdfTarget || a.target is TextTarget)).length;
                 final cards = content.cards
                     .where(
                       (card) => card.researchNoteId == note.id && card.id != StudySetContent.researchReviewId(note.id),

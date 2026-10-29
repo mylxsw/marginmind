@@ -5,6 +5,7 @@ import '../../app/navigation.dart';
 import '../../app/providers.dart';
 import '../../shared/pdf_drop.dart';
 import '../workspace/workspace_controller.dart';
+import '../workspace/document_import.dart';
 
 enum LibraryViewMode { grid, list }
 
@@ -61,17 +62,25 @@ class LibraryViewController extends Notifier<LibraryViewState> {
 
   void toggleSidebar() => state = state.copyWith(sidebarVisible: !state.sidebarVisible);
 
-  /// PDFs dropped on the library or picked for a new study set: a set named
+  /// Documents dropped on the library or picked for a new study set: a set named
   /// after the first file, in the folder being viewed, with all of them
   /// imported, then opened.
   Future<ImportedNotice> createFromFiles(List<DroppedFile> files) async {
+    if (files.isEmpty) return const ImportedNotice(0, []);
     final repo = ref.read(studySetRepositoryProvider);
     final count = ref.read(studySetsProvider).value?.length ?? 0;
-    final title = files.first.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
+    final title = files.first.name.replaceFirst(RegExp(r'\.[^.]+$'), '');
     final filter = state.query.filter;
     final folderId = filter is FolderFilter ? filter.folderId : null;
     final created = await repo.create(NewStudySet(title: title, colorIndex: count % 6, folderId: folderId));
     final notice = await ref.read(workspaceProvider(created.id).notifier).importDocuments(files);
+    if (notice.count == 0) {
+      await repo.delete(created.id);
+      ref.invalidate(workspaceProvider(created.id));
+      ref.invalidate(contentProvider(created.id));
+      ref.invalidate(documentImportsProvider(created.id));
+      return notice;
+    }
     setFilter(LibraryFilter.all);
     await open(created.id);
     return notice;

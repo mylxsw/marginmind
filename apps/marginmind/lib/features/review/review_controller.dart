@@ -135,9 +135,9 @@ final excerptPageTextProvider = FutureProvider.autoDispose.family<PageContent?, 
   final card = content?.card(key.cardId);
   final annotation = card?.annotationId == null ? null : content!.annotation(card!.annotationId!);
   final doc = annotation == null ? null : content!.document(annotation.documentId);
-  if (doc == null) return null;
+  if (doc == null || annotation!.isText) return null;
   final path = ref.read(contentRepositoryProvider).resolveFile(key.studySetId, doc.fileName);
-  final first = await MMPdfEngine.pageContent(path, annotation!.page);
+  final first = await MMPdfEngine.pageContent(path, annotation.page);
   if (first == null) return null;
   final lastPage = annotation.pages.last.page;
   final lastText = lastPage == annotation.page ? null : await MMPdfEngine.pageText(path, lastPage);

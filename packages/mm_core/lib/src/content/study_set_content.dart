@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'text_anchor.dart';
+
 import 'package:meta/meta.dart';
 
 import 'models.dart';
@@ -79,18 +83,32 @@ class StudySetContent {
       documentOutlines.where((o) => o.documentId == documentId).firstOrNull;
 
   /// Bookmarks in custom order, falling back to page order for legacy data.
-  List<Bookmark> bookmarksOn(String documentId) =>
+  List<Bookmark> bookmarksOn(String documentId, {List<String> chapters = const []}) =>
       bookmarks.where((b) => b.documentId == documentId).toList()..sort((a, b) {
         if (a.order != null || b.order != null) {
           final byOrder = (a.order ?? 0x7fffffff).compareTo(b.order ?? 0x7fffffff);
           if (byOrder != 0) return byOrder;
         }
-        final byPage = a.page.compareTo(b.page);
+        final byPage = a.position is TextReadingPosition || b.position is TextReadingPosition
+            ? (a.position == null || b.position == null
+                  ? 0
+                  : compareReadingPositions(a.position!, b.position!, chapters: chapters))
+            : a.page.compareTo(b.page);
         return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
       });
 
-  Bookmark? bookmarkAt(String documentId, int page) =>
-      bookmarks.where((b) => b.documentId == documentId && b.page == page).firstOrNull;
+  Bookmark? bookmarkAt(String documentId, int page) => bookmarks
+      .where((b) => b.documentId == documentId && b.position is! TextReadingPosition && b.page == page)
+      .firstOrNull;
+
+  Bookmark? bookmarkAtPosition(String documentId, ReadingPosition position) => bookmarks
+      .where(
+        (b) =>
+            b.documentId == documentId &&
+            b.position != null &&
+            jsonEncode(b.position!.toJson()) == jsonEncode(position.toJson()),
+      )
+      .firstOrNull;
 
   /// Relations of [mapId] whose two cards are both placed in that map.
   List<MapRelation> relationsOf(String mapId) => [

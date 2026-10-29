@@ -1,3 +1,5 @@
+import '../../../shared/document_icon.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
@@ -106,7 +108,7 @@ class ReaderCompareMenu extends ConsumerWidget {
             if (context.mounted) MMHud.show(context, l.somethingWentWrong);
           }
         } else if (value == 'import') {
-          final files = await ref.read(pdfPickerProvider)(l.pdfFiles);
+          final files = await ref.read(pdfPickerProvider)(l.documentFiles);
           if (files.isEmpty || !context.mounted) return;
           final before = workspace.content.documents.map((d) => d.id).toSet();
           final notice = await workspace.importDocuments(files, open: false);
@@ -133,7 +135,7 @@ class ReaderCompareMenu extends ConsumerWidget {
               selected: doc.id == selectedId,
               child: Row(
                 children: [
-                  Icon(doc.id == selectedId ? MMIcons.check : MMIcons.document, size: 14),
+                  Icon(doc.id == selectedId ? MMIcons.check : documentIcon(doc), size: 14),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(doc.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.callout),
@@ -151,7 +153,7 @@ class ReaderCompareMenu extends ConsumerWidget {
             ),
           ),
         if (!left) ...[
-          MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importPdf)),
+          MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importDocument)),
           if (MMPlatformCapabilities.current.assistant) ...[
             const PopupMenuDivider(),
             _AiTranslationEntry(
@@ -200,7 +202,7 @@ class ReaderCompareMenu extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(translationLanguage == null ? MMIcons.document : MMIcons.translate, size: 14),
+                  Icon(translationLanguage == null ? documentIcon(document!) : MMIcons.translate, size: 14),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(

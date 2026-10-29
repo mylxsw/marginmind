@@ -13,7 +13,8 @@ extension ReadingEditor on StudySetEditor {
 
   StudySetContent upsertMarginNote(StudySetContent c, MarginNote note) {
     final doc = _document(c, note.documentId);
-    if (note.page > doc.pageCount || (note.anchor?.pages.any((p) => p.page > doc.pageCount) ?? false)) {
+    if ((note.anchor?.textAnchors.isEmpty ?? true) &&
+        (note.page > doc.pageCount || (note.anchor?.pages.any((p) => p.page > doc.pageCount) ?? false))) {
       throw ArgumentError('Invalid anchor page');
     }
     final previous = c.marginNotes.where((n) => n.id == note.id).firstOrNull;
@@ -80,7 +81,8 @@ extension ReadingEditor on StudySetEditor {
           Annotation(
             id: annotationId!,
             documentId: note.documentId,
-            pages: anchor.pages,
+            pages: anchor.textAnchors.isEmpty ? anchor.pages : null,
+            textAnchors: anchor.textAnchors,
             quote: anchor.quote,
             colorIndex: note.colorIndex,
             createdAt: now(),

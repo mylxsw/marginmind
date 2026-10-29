@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'text_anchor.dart';
 
 const _keep = Object();
 double _number(Object? value) => (value as num).toDouble();
@@ -103,12 +104,16 @@ class DocumentCrop {
 /// A captured quote, independent of any highlight's lifetime.
 @immutable
 class AnnotationAnchor {
-  AnnotationAnchor({required List<AnnotationPage> pages, required this.quote})
-    : pages = List.unmodifiable([
-        for (final p in pages) AnnotationPage(page: p.page, rects: List.unmodifiable(p.rects)),
-      ]) {
+  AnnotationAnchor({
+    List<AnnotationPage> pages = const [],
+    List<TextAnchor> textAnchors = const [],
+    required this.quote,
+  }) : textAnchors = List.unmodifiable(textAnchors),
+       pages = List.unmodifiable([
+         for (final p in pages) AnnotationPage(page: p.page, rects: List.unmodifiable(p.rects)),
+       ]) {
     _check(
-      pages.isNotEmpty &&
+      (pages.isNotEmpty != textAnchors.isNotEmpty) &&
           pages.every(
             (p) =>
                 p.page > 0 &&
@@ -124,17 +129,29 @@ class AnnotationAnchor {
           ),
       'Invalid annotation anchor',
     );
+    for (final a in textAnchors) {
+      a.validate();
+    }
   }
   final List<AnnotationPage> pages;
+  final List<TextAnchor> textAnchors;
   final String quote;
-  AnnotationAnchor copyWith({List<AnnotationPage>? pages, String? quote}) =>
-      AnnotationAnchor(pages: pages ?? this.pages, quote: quote ?? this.quote);
+  AnnotationAnchor copyWith({List<AnnotationPage>? pages, List<TextAnchor>? textAnchors, String? quote}) =>
+      AnnotationAnchor(
+        pages: pages ?? this.pages,
+        textAnchors: textAnchors ?? this.textAnchors,
+        quote: quote ?? this.quote,
+      );
   Map<String, Object?> toJson() => {
-    'pages': [for (final p in pages) p.toJson()],
+    if (textAnchors.isNotEmpty)
+      'textAnchors': [for (final a in textAnchors) a.toJson()]
+    else
+      'pages': [for (final p in pages) p.toJson()],
     'quote': quote,
   };
   factory AnnotationAnchor.fromJson(Map<String, Object?> j) => AnnotationAnchor(
-    pages: [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
+    pages: [for (final p in j['pages'] as List? ?? []) AnnotationPage.fromJson((p as Map).cast())],
+    textAnchors: [for (final a in j['textAnchors'] as List? ?? []) TextAnchor.fromJson((a as Map).cast())],
     quote: j['quote'] as String,
   );
 }
@@ -144,7 +161,7 @@ class MarginNote {
   MarginNote({
     required this.id,
     required this.documentId,
-    required this.page,
+    int? page,
     this.anchor,
     this.lineY,
     required this.text,
@@ -153,24 +170,29 @@ class MarginNote {
     this.mapId,
     required this.createdAt,
     required this.updatedAt,
-  }) {
+  }) : _page = page {
     _check(
       id.isNotEmpty &&
           documentId.isNotEmpty &&
-          page > 0 &&
+          ((anchor?.textAnchors.isNotEmpty ?? false) ? page == null : page != null && page > 0) &&
           // Preset IDs 0–5 or a tagged 24-bit RGB color, as stored by annotations.
           ((colorIndex >= 0 && colorIndex < 6) || (colorIndex >= 0x01000000 && colorIndex <= 0x01FFFFFF)),
       'Invalid margin note',
     );
     _check((anchor == null) != (lineY == null), 'Exactly one anchor or lineY is required');
     _check(lineY == null || (lineY!.isFinite && lineY! >= 0), 'Invalid lineY');
-    _check(anchor == null || anchor!.pages.first.page == page, 'Anchor page mismatch');
+    _check(
+      anchor == null || anchor!.textAnchors.isNotEmpty || anchor!.pages.first.page == page,
+      'Anchor page mismatch',
+    );
     _check(mapId == null || nodeId != null, 'mapId requires nodeId');
   }
   final String id, documentId, text;
 
   /// Color uses the same preset IDs or tagged RGB encoding as [Annotation].
-  final int page, colorIndex;
+  final int colorIndex;
+  final int? _page;
+  int get page => _page ?? (throw StateError('Text margin note has no PDF page'));
   final AnnotationAnchor? anchor;
   final double? lineY;
 
@@ -189,7 +211,7 @@ class MarginNote {
   }) => MarginNote(
     id: id,
     documentId: documentId,
-    page: page ?? this.page,
+    page: page ?? _page,
     anchor: identical(anchor, _keep) ? this.anchor : anchor as AnnotationAnchor?,
     lineY: identical(lineY, _keep) ? this.lineY : lineY as double?,
     text: text ?? this.text,
@@ -202,7 +224,7 @@ class MarginNote {
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
-    'page': page,
+    if (_page != null) 'page': _page,
     if (anchor != null) 'anchor': anchor!.toJson(),
     if (lineY != null) 'lineY': lineY,
     'text': text,
@@ -215,7 +237,7 @@ class MarginNote {
   factory MarginNote.fromJson(Map<String, Object?> j) => MarginNote(
     id: j['id'] as String,
     documentId: j['documentId'] as String,
-    page: j['page'] as int,
+    page: j['page'] as int?,
     anchor: j['anchor'] == null ? null : AnnotationAnchor.fromJson((j['anchor'] as Map).cast()),
     lineY: j['lineY'] == null ? null : _number(j['lineY']),
     text: j['text'] as String,
@@ -286,38 +308,63 @@ class AlignPoint {
 }
 
 @immutable
+class SourceAlignPoint {
+  const SourceAlignPoint({required this.left, required this.right});
+  final ReadingPosition left, right;
+  Map<String, Object?> toJson() => {'left': left.toJson(), 'right': right.toJson()};
+  factory SourceAlignPoint.fromJson(Map<String, Object?> j) => SourceAlignPoint(
+    left: ReadingPosition.fromJson((j['left'] as Map).cast()),
+    right: ReadingPosition.fromJson((j['right'] as Map).cast()),
+  );
+}
+
+@immutable
 class ComparePair {
   ComparePair({
     required this.id,
     required this.leftDocumentId,
     required this.right,
     List<AlignPoint> alignPoints = const [],
+    List<SourceAlignPoint> sourceAlignPoints = const [],
     this.sync = true,
-  }) : alignPoints = List.unmodifiable(alignPoints) {
+  }) : sourceAlignPoints = List.unmodifiable(sourceAlignPoints),
+       alignPoints = List.unmodifiable(alignPoints) {
     _check(id.isNotEmpty && leftDocumentId.isNotEmpty, 'Invalid compare pair');
     _check(
       right is! PdfCompareTarget || (right as PdfCompareTarget).documentId != leftDocumentId,
       'Cannot compare a document to itself',
     );
-    _check(right is! AiCompareTarget || alignPoints.isEmpty, 'AI uses paragraph alignment');
+    _check(
+      right is! AiCompareTarget || (alignPoints.isEmpty && sourceAlignPoints.isEmpty),
+      'AI uses paragraph alignment',
+    );
+    _check(alignPoints.isEmpty || sourceAlignPoints.isEmpty, 'Use one alignment representation');
   }
   final String id, leftDocumentId;
   final CompareTarget right;
   final List<AlignPoint> alignPoints;
+  final List<SourceAlignPoint> sourceAlignPoints;
   final bool sync;
-  ComparePair copyWith({String? leftDocumentId, CompareTarget? right, List<AlignPoint>? alignPoints, bool? sync}) =>
-      ComparePair(
-        id: id,
-        leftDocumentId: leftDocumentId ?? this.leftDocumentId,
-        right: right ?? this.right,
-        alignPoints: alignPoints ?? this.alignPoints,
-        sync: sync ?? this.sync,
-      );
+  ComparePair copyWith({
+    String? leftDocumentId,
+    CompareTarget? right,
+    List<AlignPoint>? alignPoints,
+    List<SourceAlignPoint>? sourceAlignPoints,
+    bool? sync,
+  }) => ComparePair(
+    id: id,
+    leftDocumentId: leftDocumentId ?? this.leftDocumentId,
+    right: right ?? this.right,
+    alignPoints: alignPoints ?? this.alignPoints,
+    sourceAlignPoints: sourceAlignPoints ?? this.sourceAlignPoints,
+    sync: sync ?? this.sync,
+  );
   Map<String, Object?> toJson() => {
     'id': id,
     'leftDocumentId': leftDocumentId,
     'right': right.toJson(),
     'alignPoints': [for (final p in alignPoints) p.toJson()],
+    if (sourceAlignPoints.isNotEmpty) 'sourceAlignPoints': [for (final p in sourceAlignPoints) p.toJson()],
     'sync': sync,
   };
   factory ComparePair.fromJson(Map<String, Object?> j) => ComparePair(
@@ -325,6 +372,9 @@ class ComparePair {
     leftDocumentId: j['leftDocumentId'] as String,
     right: CompareTarget.fromJson((j['right'] as Map).cast()),
     alignPoints: [for (final p in j['alignPoints'] as List? ?? []) AlignPoint.fromJson((p as Map).cast())],
+    sourceAlignPoints: [
+      for (final p in j['sourceAlignPoints'] as List? ?? []) SourceAlignPoint.fromJson((p as Map).cast()),
+    ],
     sync: j['sync'] as bool? ?? true,
   );
 }

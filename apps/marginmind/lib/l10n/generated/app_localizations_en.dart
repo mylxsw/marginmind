@@ -355,7 +355,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerEmptyTitle => 'Open a document to start reading';
 
   @override
-  String get readerEmptyMessage => 'Pick a document in the sidebar, or import a PDF into this study set.';
+  String get readerEmptyMessage => 'Pick a document in the sidebar, or import one.';
 
   @override
   String get readerPlaceholder =>
@@ -3454,4 +3454,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get browserUnsaved => 'Not Saved';
+
+  @override
+  String get addDocumentMenu => 'Add';
+
+  @override
+  String get documentFiles => 'Documents';
+
+  @override
+  String unsupportedFile(String name) {
+    return '“$name” isn’t supported';
+  }
+
+  @override
+  String get readingSettings => 'Reading Settings';
+
+  @override
+  String get cancelImport => 'Cancel Import';
+
+  @override
+  String get okAction => 'OK';
+
+  @override
+  String importFailedTitle(String name) {
+    return 'Couldn’t Import “$name”';
+  }
+
+  @override
+  String importFailedMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count documents couldn’t be imported',
+      one: '1 document couldn’t be imported',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importErrorDrm => 'Protected by DRM';
+
+  @override
+  String get importErrorDamaged => 'The file is damaged';
+
+  @override
+  String get importErrorKfx => 'KFX isn’t supported';
+
+  @override
+  String get importErrorEmpty => 'No readable content';
+
+  @override
+  String get importErrorUnsupported => 'Unsupported format';
 }

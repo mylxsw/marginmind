@@ -140,7 +140,7 @@ class CardDetails extends ConsumerWidget {
             if (annotation != null)
               MMButton(
                 icon: MMIcons.revealSource,
-                label: l.revealSourcePage(annotation.page),
+                label: annotation.isText ? l.revealSource : l.revealSourcePage(annotation.page),
                 onPressed: () => controller.revealCard(card.id),
               ),
             if (card.kind == CardKind.excerpt && annotation != null && annotation.quote.isNotEmpty)

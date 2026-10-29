@@ -1,3 +1,6 @@
+import '../document_import.dart';
+import '../../../app/document_commands.dart';
+import '../../../shared/document_icon.dart';
 import '../reader_ocr.dart';
 import '../workspace_browser.dart';
 
@@ -57,13 +60,16 @@ class WorkspaceSidebar extends ConsumerWidget {
     ];
     final browser = ref.watch(workspaceBrowserProvider(studySetId));
     final browserOwner = ref.read(workspaceBrowserProvider(studySetId).notifier);
+    final importing = ref.watch(documentImportsProvider(studySetId));
     final docs = <Widget>[
       for (final d in documents)
         if (matches(d.title))
           MMSidebarItem(
-            icon: MMIcons.document,
+            icon: documentIcon(d),
             label: d.title,
-            trailing: ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
+            trailing: d.capabilities().readingSettings
+                ? null
+                : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
                 ? Text(l.ocrRecognized, style: context.mmText.footnote)
                 : MMCount(d.pageCount),
             selected: !browser.visible && d.id == state.activeDocumentId,
@@ -73,6 +79,24 @@ class WorkspaceSidebar extends ConsumerWidget {
             },
             onContextMenu: (position) => _documentMenu(context, ref, d, position),
           ),
+      for (final task in importing)
+        MMSidebarItem(
+          key: ValueKey('import-${task.id}'),
+          icon: MMIcons.document,
+          label: task.name,
+          trailing: const SizedBox(
+            width: MMSizes.dropdownIcon,
+            height: MMSizes.dropdownIcon,
+            child: CircularProgressIndicator(strokeWidth: MMSpacing.xxs),
+          ),
+          onContextMenu: (position) => showMMMenu(
+            context,
+            position: position,
+            entries: [
+              MMMenuItem(l.cancelImport, () => ref.read(documentImportsProvider(studySetId).notifier).cancel(task.id)),
+            ],
+          ),
+        ),
     ];
     if (browser.session case final session?) {
       docs.add(
@@ -244,11 +268,25 @@ class WorkspaceSidebar extends ConsumerWidget {
           MMSidebarSection(
             title: l.sectionDocuments,
             showTrailingOnHover: true,
-            trailing: MMIconButton(
-              icon: MMIcons.add,
-              tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
-              onPressed: () => pickAndImportDocuments(context, ref, studySetId),
-            ),
+            trailing: ref.watch(canAddWebPageProvider)
+                ? MMDropdownButton<String>(
+                    key: const ValueKey('add-document-menu'),
+                    tooltip: l.addDocumentMenu,
+                    width: MMSizes.dropdownWideWidth,
+                    icon: const Icon(MMIcons.add),
+                    onSelected: (value) => value == 'web'
+                        ? dispatchAddWebPage(context, ref, studySetId)
+                        : pickAndImportDocuments(context, ref, studySetId),
+                    itemBuilder: (_) => [
+                      MMDropdownItem(value: 'import', child: Text(l.importDocument)),
+                      MMDropdownItem(value: 'web', child: Text(l.addWebPage)),
+                    ],
+                  )
+                : MMIconButton(
+                    icon: MMIcons.add,
+                    tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
+                    onPressed: () => pickAndImportDocuments(context, ref, studySetId),
+                  ),
             children: docs,
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),

@@ -24,7 +24,7 @@ abstract final class DemoLibrary {
       required int total,
       required Duration openedAgo,
       bool starred = false,
-      required ReadingPosition position,
+      required LastReadingPosition position,
     }) {
       return StudySet(
         id: id,
@@ -57,7 +57,7 @@ abstract final class DemoLibrary {
         total: 176,
         openedAgo: const Duration(minutes: 2),
         starred: true,
-        position: const ReadingPosition(documentTitle: '学习的底层逻辑', page: 24),
+        position: const LastReadingPosition(documentTitle: '学习的底层逻辑', page: 24),
       ),
       make(
         'demo-2',
@@ -70,7 +70,7 @@ abstract final class DemoLibrary {
         read: 310,
         total: 500,
         openedAgo: const Duration(days: 1),
-        position: const ReadingPosition(documentTitle: '深度工作的条件', page: 88),
+        position: const LastReadingPosition(documentTitle: '深度工作的条件', page: 88),
       ),
       make(
         'demo-3',
@@ -83,7 +83,7 @@ abstract final class DemoLibrary {
         total: 800,
         openedAgo: const Duration(days: 3),
         starred: true,
-        position: const ReadingPosition(documentTitle: '用户访谈指南', page: 12),
+        position: const LastReadingPosition(documentTitle: '用户访谈指南', page: 12),
       ),
       make(
         'demo-4',
@@ -96,7 +96,7 @@ abstract final class DemoLibrary {
         read: 140,
         total: 310,
         openedAgo: const Duration(days: 7),
-        position: const ReadingPosition(documentTitle: '交互设计原则', page: 140),
+        position: const LastReadingPosition(documentTitle: '交互设计原则', page: 140),
       ),
       make(
         'demo-5',
@@ -108,7 +108,7 @@ abstract final class DemoLibrary {
         read: 90,
         total: 300,
         openedAgo: const Duration(days: 14),
-        position: const ReadingPosition(documentTitle: '资产配置基础', page: 51),
+        position: const LastReadingPosition(documentTitle: '资产配置基础', page: 51),
       ),
       make(
         'demo-6',
@@ -119,7 +119,7 @@ abstract final class DemoLibrary {
         read: 400,
         total: 2000,
         openedAgo: const Duration(days: 32),
-        position: const ReadingPosition(documentTitle: '综述草稿', page: 3),
+        position: const LastReadingPosition(documentTitle: '综述草稿', page: 3),
       ),
     ];
   }

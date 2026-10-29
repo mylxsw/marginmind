@@ -22,6 +22,18 @@ Uint8List epub({String href = 'c.xhtml', String? extra, bool empty = false}) {
 }
 
 void main() {
+  test('source anchor contexts stay within 32 complete graphemes and retain revision', () {
+    final before = '👩‍💻' * 40, after = 'e\u0301' * 40;
+    final chapter = BookChapter('main', [
+      BookBlock(id: 'p', kind: BlockKind.paragraph, start: 0, runs: [InlineRun('$before目标$after')]),
+    ]);
+    final anchor = chapter.anchor(before.length, before.length + 2, revision: 'v1');
+    expect(anchor.prefix, '👩‍💻' * 32);
+    expect(anchor.suffix, 'e\u0301' * 32);
+    expect(anchor.revision, 'v1');
+    anchor.validate();
+  });
+
   const parser = EpubParser();
   test('EPUB spine, relative resources and UTF16 offsets', () {
     final book = parser.parse(epub());

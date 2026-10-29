@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import '../content/text_anchor.dart';
+
 /// A study set groups documents, their annotations and the mind maps built
 /// from them. On disk it will be one `.mmset` package.
 @immutable
@@ -41,7 +43,7 @@ class StudySet {
   final int totalPages;
 
   /// Human readable "where I stopped", e.g. a document title and page.
-  final ReadingPosition? lastPosition;
+  final LastReadingPosition? lastPosition;
   final DateTime createdAt;
   final DateTime lastOpenedAt;
 
@@ -60,7 +62,7 @@ class StudySet {
     int? reviewLogCount,
     int? readPages,
     int? totalPages,
-    ReadingPosition? lastPosition,
+    LastReadingPosition? lastPosition,
     DateTime? lastOpenedAt,
   }) {
     return StudySet(
@@ -83,11 +85,20 @@ class StudySet {
 }
 
 @immutable
-class ReadingPosition {
-  const ReadingPosition({required this.documentTitle, required this.page});
+class LastReadingPosition {
+  const LastReadingPosition({required this.documentTitle, int? page, this.position})
+    // Keep the existing public named page parameter.
+    // ignore: prefer_initializing_formals
+    : _page = page;
+  final ReadingPosition? position;
 
   final String documentTitle;
-  final int page;
+  final int? _page;
+  int get page => position is TextReadingPosition
+      ? (throw StateError('Text progress has no page'))
+      : position is PdfPosition
+      ? (position as PdfPosition).page
+      : _page!;
 }
 
 /// Input for creating a study set.

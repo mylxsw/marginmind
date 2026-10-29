@@ -99,7 +99,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   }
 
   Future<void> _run(ReaderSelectionCommand command, [MMAnnotationColor? color]) async {
-    if (_busy) return;
+    if (_busy || !ref.read(workspaceProvider(widget.studySetId).notifier).canRunSelection(command)) return;
     _busy = true;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     final selectedColor = color ?? ref.read(workspaceProvider(widget.studySetId)).color;
@@ -247,6 +247,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final capabilities = controller.activeCapabilities;
     final content = ref.watch(workspaceProvider(widget.studySetId).select((s) => s.content));
     final annotation = switch (widget.pending) {
       PendingHighlight(:final annotationId) => content?.annotation(annotationId),
@@ -290,9 +292,10 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       color: recent,
                       tooltip: l.colorName(recent),
                       selected: recent == color,
-                      onPressed: () => _run(ReaderSelectionCommand.highlight, recent),
+                      onPressed: capabilities.annotate ? () => _run(ReaderSelectionCommand.highlight, recent) : null,
                     ),
                   HighlightColorButton.more(
+                    enabled: capabilities.annotate,
                     key: const ValueKey('selection-more-colors'),
                     color: color,
                     onOpenChanged: (open) {
@@ -303,6 +306,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                   ),
                   if (!isArea)
                     UnderlineToolButton(
+                      enabled: capabilities.annotate,
                       key: const ValueKey('selection-underline'),
                       studySetId: widget.studySetId,
                       selectionAction: true,
@@ -316,26 +320,29 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     MMToolbarButton(
                       icon: MMIcons.copy,
                       tooltip: l.copyAction,
-                      onPressed: () => _run(ReaderSelectionCommand.copy),
+                      onPressed: capabilities.selectText ? () => _run(ReaderSelectionCommand.copy) : null,
                     ),
                   MMToolbarButton(
                     key: const ValueKey('selection-margin-note'),
                     icon: MMIcons.quoteBubble,
                     tooltip: '${l.marginNoteAction}（C）',
-                    onPressed: () => _run(ReaderSelectionCommand.marginNote),
+                    onPressed: capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
                   ),
                   MMToolbarButton(
                     icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
                     tooltip: isHighlight
                         ? (annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight)
                         : l.addNote,
-                    onPressed: () =>
-                        _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
+                    onPressed: (isHighlight ? capabilities.annotate : capabilities.excerpt)
+                        ? () => _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
+                        : null,
                   ),
                   MMToolbarButton(
                     icon: MMIcons.network,
                     tooltip: hasCard ? l.locateCard : l.addToMapAction,
-                    onPressed: () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt),
+                    onPressed: capabilities.excerpt
+                        ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
+                        : null,
                   ),
                   if (MMPlatformCapabilities.current.assistant && !isArea)
                     MMToolbarButton(
@@ -343,7 +350,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       icon: MMIcons.translate,
                       tooltip: l.selectionTranslate,
                       selected: _translationOpen,
-                      onPressed: _translate,
+                      onPressed: capabilities.translate ? _translate : null,
                     ),
                   if (MMPlatformCapabilities.current.assistant && !isArea) ...[
                     const MMToolbarDivider(),
