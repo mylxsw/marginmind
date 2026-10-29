@@ -79,7 +79,7 @@ void main() {
     final editor = StudySetEditor(newId: () => 'w${++n}', now: () => testNow);
     final (withDoc, doc) = editor.addDocument(StudySetContent.empty, title: 'Book', fileName: 'a.pdf', pageCount: 9);
     var content = withDoc;
-    for (final (i, length) in [20, 90, 400].indexed) {
+    for (final (i, length) in [20, 60, 400].indexed) {
       content = editor
           .createExcerpt(
             content,

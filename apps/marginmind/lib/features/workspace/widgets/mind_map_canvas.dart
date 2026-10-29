@@ -989,7 +989,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   List<Widget> _interactionWidgets(Map<String, Rect> rects, List<Rect> obstacles) {
     final widgets = <Widget>[];
-    final selected = widget.selectedCardId;
     if (widget.connectingFromId != null && _hover != null) {
       final target = _targetAt(_hover!);
       if (target != null) {

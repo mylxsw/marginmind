@@ -3319,6 +3319,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapEditMissingSummary => 'This summary is unavailable';
 
   @override
+  String get nodeBarChild => 'Child';
+
+  @override
+  String get nodeBarSibling => 'Sibling';
+
+  @override
+  String get nodeBarImage => 'Image';
+
+  @override
+  String get nodeBarAssistant => 'AI';
+
+  @override
   String get selectionMerge => 'Merge';
 
   @override

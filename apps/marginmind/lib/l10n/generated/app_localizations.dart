@@ -5966,6 +5966,30 @@ abstract class AppLocalizations {
   /// **'This summary is unavailable'**
   String get mapEditMissingSummary;
 
+  /// No description provided for @nodeBarChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get nodeBarChild;
+
+  /// No description provided for @nodeBarSibling.
+  ///
+  /// In en, this message translates to:
+  /// **'Sibling'**
+  String get nodeBarSibling;
+
+  /// No description provided for @nodeBarImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get nodeBarImage;
+
+  /// No description provided for @nodeBarAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get nodeBarAssistant;
+
   /// No description provided for @selectionMerge.
   ///
   /// In en, this message translates to:
