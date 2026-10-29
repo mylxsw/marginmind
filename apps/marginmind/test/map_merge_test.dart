@@ -121,21 +121,42 @@ void main() {
     await settleHud(tester);
   });
 
-  testWidgets('long cards can expand; source highlight exposes the matching hidden paragraph', (tester) async {
+  testWidgets('a merged card shows every part in full; compact clips each part and can expand', (tester) async {
     final original = fixture(long: true);
     final container = await openFirstSet(tester, content: InMemoryStudySetContentRepository({'demo-1': original}));
     final controller = container.read(workspaceProvider('demo-1').notifier);
     controller.selectCards(original.cards.map((c) => c.id));
     final result = await controller.mergeSelected();
     await tester.pumpAndSettle();
-    expect(find.text('Show Full Text'), findsOneWidget);
-    expect(find.text('Second passage'), findsNothing);
-    controller.tapHighlight(result!.value!.segments.last.annotationId!);
-    await tester.pumpAndSettle();
+    expect(find.text('Show Full Text'), findsNothing);
     expect(find.text('Second passage'), findsOneWidget);
+    await controller.setMapDensity(MapDensity.compact);
+    await tester.pumpAndSettle();
+    expect(find.text('Show Full Text'), findsOneWidget);
+    expect(find.text('Second passage'), findsOneWidget, reason: 'every part keeps its own lines');
+    controller.tapHighlight(result!.value!.segments.first.annotationId!);
+    await tester.pumpAndSettle();
     expect(find.text('Show Less'), findsOneWidget);
     await settleHud(tester);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an unavailable action says why when clicked', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    controller.selectCard('c3');
+    await controller.addSummaryAndEdit('Summary');
+    await controller.finishMarkEditing('Summary');
+    final topic = controller.content.summaries.single.cardId!;
+    controller.selectCards(['c3', topic]);
+    await tester.pumpAndSettle();
+    expect(controller.mergeReason, MapEditReason.summaryTopic);
+    await tester.tap(find.widgetWithText(MMButton, 'Merge'));
+    await tester.pump();
+    final reason = mapEditReasonText(tester.element(find.byType(MapSelectionBar)), MapEditReason.summaryTopic);
+    expect(find.text(reason), findsWidgets);
+    expect(controller.content.card('c3')!.segments, isEmpty);
+    await settleHud(tester);
   });
 
   testWidgets('own-words paragraphs have no source colour dot', (tester) async {

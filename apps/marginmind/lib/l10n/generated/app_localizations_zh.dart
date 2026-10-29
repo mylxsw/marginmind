@@ -3187,6 +3187,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapEditMissingSummary => '概要已不可用';
 
   @override
+  String get nodeBarChild => '子主题';
+
+  @override
+  String get nodeBarSibling => '同级';
+
+  @override
+  String get nodeBarImage => '图片';
+
+  @override
+  String get nodeBarAssistant => 'AI';
+
+  @override
   String get selectionMerge => '合并';
 
   @override

@@ -306,6 +306,18 @@ class MindMapRenderCache {
     return result;
   }
 
+  /// The default width of an excerpt card: the narrowest of
+  /// [_NodeSpec.excerptWidths] at which its text fits in
+  /// [_NodeSpec.maxQuoteLines] lines, else the widest.
+  double _excerptWidthFor(Card card) {
+    final text = _content!.segmentsOf(card).map((s) => s.text).join('\n');
+    for (final width in _NodeSpec.excerptWidths) {
+      final textWidth = width - _NodeSpec._cardInset - _NodeSpec._quoteInset;
+      if (_measure(text, MMTypography.readingExcerpt, textWidth).lines <= _NodeSpec.maxQuoteLines) return width;
+    }
+    return _NodeSpec.excerptWidths.last;
+  }
+
   final _clipped = <(String, TextStyle, double, int), String>{};
 
   /// [text] as shown in at most [maxLines] lines of [width]: cut at the end
@@ -408,6 +420,11 @@ class _NodeSpec {
   final List<({String text, String? annotationId, MMAnnotationColor color})> segments;
 
   static const excerptWidth = 240.0;
+
+  /// Default excerpt widths, narrowest first: a card widens one step while
+  /// its text needs more than [maxQuoteLines] lines, up to about 25 CJK
+  /// characters a line at the widest. A width set by hand always wins.
+  static const excerptWidths = [excerptWidth, 320.0, 400.0];
   static const maxQuoteLines = 4;
   static const compactQuoteLines = 2;
 
@@ -466,7 +483,9 @@ class _NodeSpec {
     final titled = card.title.isNotEmpty || editing;
     final titleRow = titled ? cache._textScaler.scale(17) + 6 : 0;
     final source = doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}';
-    final cardWidth = (width ?? excerptWidth).clamp(MapNode.minWidth, MapNode.maxWidth).toDouble();
+    final cardWidth = (width ?? (card.kind == CardKind.excerpt ? cache._excerptWidthFor(card) : excerptWidth))
+        .clamp(MapNode.minWidth, MapNode.maxWidth)
+        .toDouble();
     // Title text beside the color dot (9) and its gap (7).
     final titleWidth = cardWidth - _cardInset - 16;
     switch (card.kind) {
@@ -602,7 +621,24 @@ class _NodeSpec {
                         )
                         .lines,
               );
-        final truncated = !editing && (clipped != full || titleLines > 1 || segmentLines > maxLines);
+        // A merged card shows every part in full; compact keeps each part to
+        // [compactQuoteLines].
+        final merged = card.segments.length > 1;
+        final truncated = merged
+            ? compact &&
+                  !editing &&
+                  allSegments.any(
+                    (segment) =>
+                        cache
+                            ._measure(
+                              segment.text,
+                              segment.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt,
+                              textWidth - 12,
+                            )
+                            .lines >
+                        maxLines,
+                  )
+            : !editing && (clipped != full || titleLines > 1 || segmentLines > maxLines);
         final open = truncated && expanded;
         final quote = open ? full : clipped;
         final lines = cache._measure(quote, MMTypography.readingExcerpt, textWidth).lines;
@@ -611,12 +647,10 @@ class _NodeSpec {
         final toggle = truncated ? toggleGap + scale(toggleLineHeight) : 0;
         final shownSegments = <({String text, String? annotationId, MMAnnotationColor color})>[];
         var segmentHeight = 0.0;
-        var budget = maxLines;
-        if (card.segments.length > 1) {
+        if (merged) {
           for (final segment in allSegments) {
-            if (!open && budget <= 0) break;
             final style = segment.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt;
-            final text = open ? segment.text : cache._clip(segment.text, style, textWidth - 12, budget);
+            final text = open || !compact ? segment.text : cache._clip(segment.text, style, textWidth - 12, maxLines);
             final measured = cache._measure(text, style, textWidth - 12);
             shownSegments.add((
               text: text,
@@ -626,7 +660,6 @@ class _NodeSpec {
               ),
             ));
             segmentHeight += measured.size.height;
-            budget -= measured.lines;
           }
         }
         final sourceNames = {

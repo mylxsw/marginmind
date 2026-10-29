@@ -114,7 +114,6 @@ class MindMapCanvas extends StatefulWidget {
     this.onMarkEditDone,
     this.onMarkEditCancel,
     this.onConnect,
-    this.onStartConnect,
     this.onAdjustSummary,
     this.onUpdateRelation,
     this.onReverseRelation,
@@ -236,7 +235,7 @@ class MindMapCanvas extends StatefulWidget {
   /// Double click on a label, F2, Space or Enter on a selected mark.
   final ValueChanged<String>? onEditMark;
   final VoidCallback? onDeleteMark;
-  final VoidCallback? onStartConnect;
+
   final void Function(String, String, String)? onAdjustSummary;
   final ValueChanged<MapRelation>? onUpdateRelation;
   final ValueChanged<String>? onReverseRelation;
@@ -330,7 +329,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   /// Pointer position in the scene while a relation is being drawn.
   Offset? _hover;
-  bool _linkDragging = false;
   (String, Duration, Offset)? _lastMarkTap;
   Duration _pointerTime = Duration.zero;
   MapRelation? _relationDraft;
@@ -543,12 +541,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         if (mounted) _ensureVisible(id);
       });
     }
+    final deselecting = _deselecting;
+    if (widget.selectedCardId != oldWidget.selectedCardId) _deselecting = false;
     if (widget.locateCardTick > 0 &&
         widget.locateCardTick != oldWidget.locateCardTick &&
         widget.selectedCardId != null) {
       final id = widget.selectedCardId!;
       final tick = widget.locateCardTick;
       WidgetsBinding.instance.addPostFrameCallback((_) => _locate(id, tick));
+    } else if (deselecting && widget.selectedCardId == null && widget.flashCardId == oldWidget.flashCardId) {
+      // Deselected: nothing to bring into view.
     } else if (_boxStart == null &&
         (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
@@ -556,6 +558,15 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           : widget.selectedCardId ?? rootNodeId;
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(id));
     }
+  }
+
+  /// Set when the selection returns to the root by deselecting (a tap on the
+  /// empty canvas, Esc): focus moves to the root but the view stays put.
+  bool _deselecting = false;
+
+  void _deselect() {
+    _deselecting = true;
+    widget.onSelect(null);
   }
 
   void _keepRootInPlace(TreeLayoutResult result) {
@@ -978,56 +989,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   List<Widget> _interactionWidgets(Map<String, Rect> rects, List<Rect> obstacles) {
     final widgets = <Widget>[];
-    final selected = widget.selectedCardId;
-    if (selected != null &&
-        widget.selectedCardIds.length <= 1 &&
-        rects[selected] != null &&
-        field == null &&
-        _markField == null &&
-        widget.onStartConnect != null) {
-      final point = rects[selected]!.topRight + const Offset(-8, 8);
-      widgets.add(
-        Positioned(
-          key: const ValueKey('relation-drag-position'),
-          left: point.dx - 12,
-          top: point.dy - 12,
-          child: Tooltip(
-            message: context.l10n.addRelation,
-            child: GestureDetector(
-              key: const ValueKey('relation-drag-handle'),
-              onPanStart: (d) {
-                widget.focusNode.requestFocus();
-                widget.onStartConnect!();
-                setState(() {
-                  _linkDragging = true;
-                  _hover = _scenePoint(d.globalPosition);
-                });
-              },
-              onPanUpdate: (d) => setState(() => _hover = _scenePoint(d.globalPosition)),
-              onPanEnd: (_) {
-                final target = _hover == null ? null : _targetAt(_hover!);
-                if (_linkDragging && widget.connectingFromId != null && target != null) {
-                  widget.onConnect?.call(target);
-                } else {
-                  widget.onCancelConnect?.call();
-                }
-                setState(() => _linkDragging = false);
-              },
-              onPanCancel: () {
-                widget.onCancelConnect?.call();
-                setState(() => _linkDragging = false);
-              },
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(color: context.mmColors.research, shape: BoxShape.circle),
-                child: Icon(Icons.north_east, size: 16, color: context.mmColors.onAccent),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
     if (widget.connectingFromId != null && _hover != null) {
       final target = _targetAt(_hover!);
       if (target != null) {
@@ -1764,7 +1725,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             if (widget.connectingFromId != null) {
               widget.onCancelConnect?.call();
             } else {
-              widget.onSelect(null);
+              _deselect();
             }
             return KeyEventResult.handled;
           }
@@ -1859,7 +1820,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   });
                 },
                 child: InteractiveViewer(
-                  panEnabled: _boxStart == null && !_linkDragging && _rangePointer == null && _relationDraft == null,
+                  panEnabled: _boxStart == null && _rangePointer == null && _relationDraft == null,
                   // Zooming is handled above to preserve the pointer anchor.
                   scaleEnabled: _touchPointers.isNotEmpty,
                   transformationController: widget.transformation,
@@ -1892,7 +1853,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       } else if (widget.connectingFromId != null) {
                         widget.onCancelConnect?.call();
                       } else {
-                        widget.onSelect(null);
+                        _deselect();
                       }
                     },
                     onSecondaryTapUp: widget.onMarkContextMenu == null
@@ -2119,13 +2080,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
-              if (widget.selectionToolbar != null || widget.mergePreviewCardId != null)
+              if ((widget.selectionToolbar != null && field == null && widget.connectingFromId == null) ||
+                  widget.mergePreviewCardId != null)
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: Listenable.merge([widget.transformation, _motion]),
                     builder: (context, _) {
                       final selected = [
-                        for (final id in widget.selectedCardIds)
+                        for (final id in {...widget.selectedCardIds, ?widget.selectedCardId})
                           if (result.rects[id] case final rect?)
                             MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
                       ];
@@ -2152,7 +2114,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 ),
                               ),
                             ),
-                          if (widget.selectionToolbar != null)
+                          if (widget.selectionToolbar != null && field == null && widget.connectingFromId == null)
                             Positioned.fill(
                               child: CustomSingleChildLayout(
                                 delegate: _SelectionToolbarLayout(bounds),
@@ -2224,8 +2186,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       return const SizedBox.shrink();
                     }
                     final shown = _shown(id, rect);
-                    // Keep the add button above the relationship handle. In a
-                    // tree it stays below the node at the children's trunk.
+                    // At the node's outer top corner; in a tree, below the node
+                    // at the children's trunk.
                     final corner = MatrixUtils.transformPoint(
                       widget.transformation.value,
                       result.structure == LayoutStructure.tree
@@ -2236,9 +2198,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       children: [
                         Positioned(
                           left: corner.dx - MMSpacing.l,
-                          top: result.structure == LayoutStructure.tree
-                              ? corner.dy - MMSpacing.l
-                              : corner.dy - MMSpacing.xxxl - MMSpacing.s,
+                          top: corner.dy - MMSpacing.l,
                           child: MouseRegion(
                             onEnter: (_) => _enterNode(id),
                             onExit: (_) => _leaveNode(id),
@@ -3195,7 +3155,8 @@ class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
   @override
   Offset getPositionForChild(Size size, Size childSize) => Offset(
     (bounds.center.dx - childSize.width / 2).clamp(8.0, math.max(8.0, size.width - childSize.width - 8)),
-    (bounds.top - childSize.height - 8).clamp(60.0, math.max(60.0, size.height - childSize.height - 8)),
+    // Clear of the add-child button on the node's top corner.
+    (bounds.top - childSize.height - 22).clamp(60.0, math.max(60.0, size.height - childSize.height - 8)),
   );
   @override
   bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds;

@@ -42,10 +42,21 @@ class MapSelectionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    // Only a disabled button explains itself; an enabled one is its label.
+    // Only an unavailable action explains itself: dimmed, its tooltip and a
+    // click say why. An available one is just its label.
     Widget action(String label, VoidCallback? callback, String? reason) {
-      final button = MMButton(label: label, onPressed: callback, variant: MMButtonVariant.plain);
-      return reason == null ? button : Tooltip(message: reason, child: button);
+      if (reason == null) return MMButton(label: label, onPressed: callback, variant: MMButtonVariant.plain);
+      return Tooltip(
+        message: reason,
+        child: Opacity(
+          opacity: 0.45,
+          child: MMButton(
+            label: label,
+            onPressed: () => MMHud.show(context, reason, icon: MMIcons.info),
+            variant: MMButtonVariant.plain,
+          ),
+        ),
+      );
     }
 
     return MMGlass(
@@ -89,6 +100,61 @@ class MapSelectionBar extends StatelessWidget {
                 ),
               ),
           action(l.selectionDelete, onDelete, null),
+        ],
+      ),
+    );
+  }
+}
+
+/// Above a single selected node: what is done to that node. Each action
+/// is named by its label; the tooltip adds only the shortcut.
+class MapNodeBar extends StatelessWidget {
+  const MapNodeBar({
+    super.key,
+    required this.onChild,
+    required this.onSibling,
+    required this.onImage,
+    required this.onRelation,
+    this.onAssistant,
+  });
+
+  final VoidCallback onChild, onSibling, onImage, onRelation;
+
+  /// Opens the assistant's actions for the node, anchored below [anchor].
+  final ValueChanged<Offset>? onAssistant;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    Widget action(String key, String label, VoidCallback onPressed, String tooltip) => Tooltip(
+      message: tooltip,
+      child: MMButton(
+        key: ValueKey('node-bar-$key'),
+        label: label,
+        onPressed: onPressed,
+        variant: MMButtonVariant.plain,
+      ),
+    );
+
+    return MMGlass(
+      borderRadius: BorderRadius.circular(24),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          action('child', l.nodeBarChild, onChild, '${l.addChildTopic}  ⇥'),
+          action('sibling', l.nodeBarSibling, onSibling, '${l.addSiblingAfter}  ↩'),
+          action('image', l.nodeBarImage, onImage, l.insertImage),
+          action('relation', l.selectionRelation, onRelation, '${l.addRelation}  ⌥⌘R'),
+          if (onAssistant != null) ...[
+            const MMToolbarDivider(),
+            Builder(
+              builder: (context) => action('assistant', l.nodeBarAssistant, () {
+                final box = context.findRenderObject()! as RenderBox;
+                onAssistant!(box.localToGlobal(box.size.bottomLeft(Offset.zero)));
+              }, l.askAssistant),
+            ),
+          ],
         ],
       ),
     );

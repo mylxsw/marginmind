@@ -176,6 +176,61 @@ class _MapPaneState extends ConsumerState<MapPane> {
     }
   }
 
+  /// The assistant's actions on [card] (null: the whole map).
+  List<MMMenuEntry> _assistantEntries(Card? card) {
+    if (!MMPlatformCapabilities.current.assistant) return const [];
+    final l = context.l10n;
+    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
+    if (card != null && researchCardTitle(content, card.id).isEmpty) return const [];
+    final topic = card?.kind == CardKind.topic;
+    // The root stands for the whole map: its branch is everything on it.
+    void ask(AssistantSkill? skill, {bool branch = false}) => askAboutNode(
+      ref,
+      widget.studySetId,
+      card?.id ?? assistantRootId,
+      branch: branch,
+      text: skill?.prompt(l),
+      skill: skill?.name,
+    );
+    if (card == null) {
+      return [
+        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
+        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+      ];
+    }
+    return [
+      MMMenuItem(
+        topic ? l.assistantExplainTopic : l.assistantExplainCard,
+        () => ask(AssistantSkill.explain),
+        shortcut: describeShortcut(AppShortcuts.askAssistant),
+      ),
+      if (topic) ...[
+        MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
+        MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+      ],
+      if (card.kind == CardKind.excerpt) MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify)),
+      MMMenuItem(l.assistantAskWith, () => ask(null)),
+    ];
+  }
+
+  /// The toolbar above a single selected card; none for the root.
+  Widget? _nodeBar(String? cardId) {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final card = cardId == null ? null : controller.content.card(cardId);
+    if (card == null) return null;
+    final assistant = _assistantEntries(card);
+    return MapNodeBar(
+      onChild: () => addTopic(asChild: true),
+      onSibling: () => _command(MindMapCommand.siblingAfter),
+      onImage: () => pickAndInsertImages(context, ref, widget.studySetId),
+      onRelation: controller.addRelation,
+      onAssistant: assistant.isEmpty
+          ? null
+          : (anchor) =>
+                showMMMenu(context, position: anchor, entries: [MMMenuHeader(context.l10n.askAssistant), ...assistant]),
+    );
+  }
+
   void _showNodeMenu(String? cardId, Offset position, Future<void> Function() remove) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
@@ -189,41 +244,14 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final branchDue = card != null && hasChildren && content.dueCount(now, mapId: mapId, branchId: card.id) > 0;
     final suspendable = card != null && (card.suspended || card.kind != CardKind.topic);
 
-    final askTitle = card == null ? '' : researchCardTitle(content, card.id);
-    final topic = card?.kind == CardKind.topic;
-    // The root stands for the whole map: its branch is everything on it.
-    void ask(AssistantSkill? skill, {bool branch = false}) => askAboutNode(
-      ref,
-      widget.studySetId,
-      card?.id ?? assistantRootId,
-      branch: branch,
-      text: skill?.prompt(l),
-      skill: skill?.name,
-    );
     showMMMenu(
       context,
       position: position,
       entries: [
         // Ask the assistant about the node: sent at once, or attached to ask freely.
-        if (MMPlatformCapabilities.current.assistant && card != null && askTitle.isNotEmpty) ...[
+        if (_assistantEntries(card) case final entries when entries.isNotEmpty) ...[
           MMMenuHeader(l.askAssistant),
-          MMMenuItem(
-            topic ? l.assistantExplainTopic : l.assistantExplainCard,
-            () => ask(AssistantSkill.explain),
-            shortcut: describeShortcut(AppShortcuts.askAssistant),
-          ),
-          if (topic) ...[
-            MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
-            MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
-          ],
-          if (card.kind == CardKind.excerpt) MMMenuItem(l.assistantVerifyCard, () => ask(AssistantSkill.verify)),
-          MMMenuItem(l.assistantAskWith, () => ask(null)),
-          const MMMenuDivider(),
-        ],
-        if (MMPlatformCapabilities.current.assistant && card == null) ...[
-          MMMenuHeader(l.askAssistant),
-          MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
-          MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
+          ...entries,
           const MMMenuDivider(),
         ],
         if (card != null) ...[
@@ -416,7 +444,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 ? MindMapCanvas(
                     key: ValueKey(state.activeMapId),
                     selectionToolbar: state.selectedCardIds.length < 2
-                        ? null
+                        ? _nodeBar(state.selectedCardId)
                         : MapSelectionBar(
                             count: state.selectedCardIds.length,
                             mergeReason: controller.mergeReason,
@@ -478,7 +506,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onMarkEditDone: controller.finishMarkEditing,
                     onMarkEditCancel: controller.cancelMarkEditing,
                     onConnect: controller.connectTo,
-                    onStartConnect: controller.addRelation,
                     onAdjustSummary: controller.adjustSummaryRange,
                     onUpdateRelation: controller.updateRelation,
                     onReverseRelation: controller.reverseRelation,
