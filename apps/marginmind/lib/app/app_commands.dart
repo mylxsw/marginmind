@@ -13,6 +13,7 @@ import '../features/research/research_controller.dart';
 import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
+import '../features/workspace/reader_crop.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_window.dart';
@@ -60,6 +61,7 @@ abstract final class AppShortcuts {
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
   static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
   static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true, shift: true);
+  static SingleActivator get toggleCrop => primaryShortcut(LogicalKeyboardKey.keyK, alt: true);
   static SingleActivator get undo => primaryShortcut(LogicalKeyboardKey.keyZ);
   static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
   static SingleActivator get review => primaryShortcut(LogicalKeyboardKey.keyR);
@@ -695,7 +697,26 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ? workspace.filePath(workspace.content.document(workspaceState.activeDocumentId!)!)
         : null;
     final ocrState = ocrSource == null ? null : ref.watch(readerOcrProvider(ocrSource));
+    final crop = inWorkspace ? ref.watch(readerCropProvider(workspaceId)) : null;
+    final activeDoc = hasDocument
+        ? ref.watch(workspaceContentProvider(workspaceId!))?.document(workspaceState.activeDocumentId!)
+        : null;
     final view = <AppCommand>[
+      if (hasDocument) ...[
+        AppCommand(
+          activeDoc?.crop?.enabled == true ? l.uncropMargins : l.cropMargins,
+          !_textFocused && ref.read(readerCropProvider(workspaceId!).notifier).canToggle
+              ? () => toggleReaderCrop(context, ref, workspaceId)
+              : null,
+          shortcut: AppShortcuts.toggleCrop,
+        ),
+        AppCommand(
+          l.cropAdjust,
+          crop?.editing != true && crop?.busy != true && pdf?.isReady == true
+              ? () => ref.read(readerCropProvider(workspaceId!).notifier).adjust()
+              : null,
+        ),
+      ],
       if (inWorkspace && ref.watch(pdfOcrServiceProvider).supported) ...[
         AppCommand(
           l.ocrRecognize,
@@ -742,9 +763,21 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       ],
       if (inWorkspace) ...[
-        AppCommand(l.toggleAnnotationTool, workspace!.toggleTool, shortcut: AppShortcuts.toggleAnnotationTool),
-        AppCommand(l.toggleAreaTool, workspace.toggleAreaTool, shortcut: AppShortcuts.toggleAreaTool),
-        AppCommand(l.toggleInkTool, workspace.toggleInkTool, shortcut: AppShortcuts.toggleInkTool),
+        AppCommand(
+          l.toggleAnnotationTool,
+          crop?.editing == true ? null : workspace!.toggleTool,
+          shortcut: AppShortcuts.toggleAnnotationTool,
+        ),
+        AppCommand(
+          l.toggleAreaTool,
+          crop?.editing == true ? null : workspace!.toggleAreaTool,
+          shortcut: AppShortcuts.toggleAreaTool,
+        ),
+        AppCommand(
+          l.toggleInkTool,
+          crop?.editing == true ? null : workspace!.toggleInkTool,
+          shortcut: AppShortcuts.toggleInkTool,
+        ),
         AppCommand(
           l.layoutReader,
           () => ref.read(workspaceProvider(workspaceId).notifier).setLayout(MMSplitMode.primary),

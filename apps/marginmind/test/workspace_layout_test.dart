@@ -54,7 +54,7 @@ void main() {
     expect(tester.getRect(group).right, closeTo(tester.getRect(toolbar).right - MMSpacing.m, .01));
     expect(find.byTooltip('Zoom In'), findsNWidgets(2));
     expect(find.byTooltip('Zoom Out'), findsNWidgets(2));
-    await tester.tap(find.byKey(const ValueKey('reader-zoom')));
+    await tester.tap(find.byKey(const ValueKey('reader-page')));
     await tester.pumpAndSettle();
     expect(find.text('Fit Width'), findsOneWidget);
     expect(find.text('Fit Page'), findsOneWidget);

@@ -319,7 +319,7 @@
   "readerStyleDark": "黑暗",
   "readerStylePaper": "纸质",
   "readerStyleGreen": "浅绿",
-  "readerZoom": "页面适配",
+  "readerZoom": "页面",
   "readerAppearance": "阅读外观",
   "research": "研究",
   "showResearchPanel": "显示研究面板",
@@ -908,5 +908,26 @@
   "assistantQuickBusy": "另一个对话正在回答，完成后即可提问。",
   "assistantQuickChanged": "此对话已切换，可在侧边栏继续查看。",
   "assistantQuickGenerated": "AI 生成内容",
-  "assistantQuickSelection": "已选文字"
+  "assistantQuickSelection": "已选文字",
+  "cropMargins": "裁掉白边",
+  "uncropMargins": "取消裁边",
+  "cropAdjust": "调整裁边…",
+  "cropScopeAll": "所有页",
+  "cropScopeOddEven": "奇偶页分开",
+  "cropScopePage": "仅本页",
+  "cropAuto": "自动",
+  "cropNone": "不裁",
+  "cropOddPages": "奇数页",
+  "cropEvenPages": "偶数页",
+  "cropCustomPage": "单独设置",
+  "cropHiddenAnnotations": "{count} 处标注将被隐藏",
+  "croppedHud": "已裁边",
+  "uncroppedHud": "已取消裁边",
+  "@cropHiddenAnnotations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1883,7 +1883,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerZoom.
   ///
   /// In en, this message translates to:
-  /// **'Page Fit'**
+  /// **'Page'**
   String get readerZoom;
 
   /// No description provided for @readerAppearance.
@@ -5155,6 +5155,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected Text'**
   String get assistantQuickSelection;
+
+  /// No description provided for @cropMargins.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop Margins'**
+  String get cropMargins;
+
+  /// No description provided for @uncropMargins.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncrop Margins'**
+  String get uncropMargins;
+
+  /// No description provided for @cropAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust Crop…'**
+  String get cropAdjust;
+
+  /// No description provided for @cropScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All Pages'**
+  String get cropScopeAll;
+
+  /// No description provided for @cropScopeOddEven.
+  ///
+  /// In en, this message translates to:
+  /// **'Odd & Even'**
+  String get cropScopeOddEven;
+
+  /// No description provided for @cropScopePage.
+  ///
+  /// In en, this message translates to:
+  /// **'This Page'**
+  String get cropScopePage;
+
+  /// No description provided for @cropAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get cropAuto;
+
+  /// No description provided for @cropNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get cropNone;
+
+  /// No description provided for @cropOddPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Odd Pages'**
+  String get cropOddPages;
+
+  /// No description provided for @cropEvenPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Even Pages'**
+  String get cropEvenPages;
+
+  /// No description provided for @cropCustomPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get cropCustomPage;
+
+  /// No description provided for @cropHiddenAnnotations.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 annotation will be hidden} other{{count} annotations will be hidden}}'**
+  String cropHiddenAnnotations(int count);
+
+  /// No description provided for @croppedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Margins cropped'**
+  String get croppedHud;
+
+  /// No description provided for @uncroppedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop removed'**
+  String get uncroppedHud;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

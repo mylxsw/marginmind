@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -11,10 +12,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:mm_core/mm_core.dart' show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect, PdfReadingPosition;
+import 'package:mm_core/mm_core.dart'
+    show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect, PdfReadingPosition, CropInsets, DocumentCrop;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
+import 'cropped_document.dart';
+import 'crop_geometry.dart';
+import 'reading_geometry.dart';
 import 'ink.dart';
 import 'pdf_navigation.dart';
 import 'pdf_pixel_grid.dart';
@@ -131,19 +136,19 @@ class MMPdfViewController extends ChangeNotifier {
       }
     }
     final rect = rects[index];
-    final height = pdf.document.pages[index].height;
-    return PdfReadingPosition(page: index + 1, y: height * (1 - ((at.dy - rect.top) / rect.height).clamp(0.0, 1.0)));
+    final point = _state!._transform(index + 1).toPdf(Offset(at.dx, at.dy.clamp(rect.top, rect.bottom)));
+    return PdfReadingPosition(page: index + 1, y: point.dy.clamp(0.0, _state!._originalPage(index + 1).height));
   }
 
-  List<double> get pageHeights => isReady ? [for (final p in _state!._controller.document.pages) p.height] : const [];
+  List<double> get pageHeights =>
+      isReady ? [for (var n = 1; n <= pageCount; n++) _state!._originalPage(n).height] : const [];
 
   /// Immediate programmatic synchronization, without polluting jump history.
   Future<void> jumpToReadingPosition(PdfReadingPosition position) async {
     if (!isReady || position.page > _pageCount) return;
     final pdf = _state!._controller;
     final rect = pdf.layout.pageLayouts[position.page - 1];
-    final height = pdf.document.pages[position.page - 1].height;
-    final y = rect.top + (1 - (position.y / height).clamp(0.0, 1.0)) * rect.height;
+    final y = _state!._transform(position.page).toViewport(Offset(0, position.y)).dy.clamp(rect.top, rect.bottom);
     final center = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height / 2));
     await pdf.goTo(
       pdf.calcMatrixFor(Offset(center.dx, y + pdf.viewSize.height * .25 / pdf.currentZoom), zoom: pdf.currentZoom),
@@ -151,10 +156,27 @@ class MMPdfViewController extends ChangeNotifier {
     );
   }
 
+  Future<DocumentCrop?> automaticCrop({List<AnnotationPage> anchors = const [], bool refresh = false}) async =>
+      _state?._automaticCrop(anchors, refresh: refresh);
+  void restorePositionAfterCrop(PdfReadingPosition? position) {
+    _state?._restorePosition = position;
+  }
+
+  Size? pageSize(int page) => !isReady || page < 1 || page > pageCount
+      ? null
+      : Size(_state!._originalPage(page).width, _state!._originalPage(page).height);
+  double get zoom => isReady ? _state!._controller.currentZoom : 1;
+
+  /// Restore original zoom after leaving the temporary full-page editor.
+  void restoreZoomAfterCrop(double zoom) {
+    _state?._restoreZoom = zoom;
+    _state?._fitAfterCrop = false;
+  }
+
   /// The document's own table of contents; empty when it has none.
   List<MMPdfOutlineItem> get outline => _outline;
 
-  bool get isReady => _state?._ready ?? false;
+  bool get isReady => (_state?._ready ?? false) && (_state?._controller.isReady ?? false);
 
   /// Scrolls so that [rects] on [page] are centered (left-aligned when wider than the viewport).
   Future<void> reveal(int page, List<PageRect> rects) async => _state?._reveal(page, rects);
@@ -518,9 +540,15 @@ class MMPdfView extends StatefulWidget {
     this.onInkDrawn,
     this.onInkErased,
     this.bottomInset = 0,
+    this.crop,
+    this.cropEditorBuilder,
   });
 
   final String filePath;
+  final DocumentCrop? crop;
+
+  /// Editor overlays receive original page dimensions; editing displays full pages.
+  final List<Widget> Function(BuildContext, int, Size)? cropEditorBuilder;
   final MMPdfViewController controller;
   final List<MMPdfHighlight> highlights;
   final int initialPage;
@@ -579,13 +607,85 @@ class MMPdfView extends StatefulWidget {
 class _MMPdfViewState extends State<MMPdfView> {
   final _controller = PdfViewerController();
 
+  PdfPage _originalPage(int number) {
+    final page = _controller.document.pages[number - 1];
+    return page is CroppedPage ? page.basePage : page;
+  }
+
+  CropInsets _cropFor(int number) {
+    final page = _controller.document.pages[number - 1];
+    return page is CroppedPage ? page.crop : CropInsets();
+  }
+
+  PageViewportTransform _transform(int number) {
+    final original = _originalPage(number);
+    final layout = _controller.layout.pageLayouts[number - 1];
+    return PageViewportTransform(
+      pageSize: Size(original.width, original.height),
+      crop: _cropFor(number),
+      scale: layout.width / _controller.document.pages[number - 1].width,
+      origin: layout.topLeft,
+    );
+  }
+
+  Rect _originalRect(int number, PageRect r) => _transform(number).rect(r);
+  Rect _overlayRect(PdfPage page, Size size, PageRect r) {
+    final original = _originalPage(page.pageNumber);
+    return PageViewportTransform(
+      pageSize: Size(original.width, original.height),
+      crop: _cropFor(page.pageNumber),
+      scale: size.width / page.width,
+    ).rect(r);
+  }
+
+  PdfReadingPosition? _restorePosition;
+  double? _restoreZoom;
+  bool _fitAfterCrop = true;
+  Future<List<({Size size, Rect? content})>>? _cropBounds;
+  final _cropTokens = <PdfPageRenderCancellationToken>{};
+
+  Future<DocumentCrop> _automaticCrop(List<AnnotationPage> anchors, {bool refresh = false}) async {
+    if (refresh) _cropBounds = null;
+    final path = widget.filePath;
+    final bounds = await (_cropBounds ??= _analyzeCrop(
+      path,
+      cancelled: () => !mounted || widget.filePath != path,
+      tokens: _cropTokens,
+    ));
+    if (!mounted || widget.filePath != path) throw StateError('Crop analysis cancelled');
+    final expanded = [for (final b in bounds) (size: b.size, content: b.content)];
+    void include(int number, PageRect rect) {
+      if (number < 1 || number > expanded.length) return;
+      final b = expanded[number - 1];
+      final r = Rect.fromLTRB(rect.left, b.size.height - rect.top, rect.right, b.size.height - rect.bottom);
+      expanded[number - 1] = (size: b.size, content: b.content?.expandToInclude(r) ?? r);
+    }
+
+    for (final a in anchors) {
+      for (final r in a.rects) {
+        include(a.page, r);
+      }
+    }
+    for (final h in widget.highlights) {
+      for (final r in h.rects) {
+        include(h.page, r);
+      }
+    }
+    for (final stroke in widget.inkStrokes) {
+      for (final r in cropInkBounds(stroke)) {
+        include(stroke.page, r);
+      }
+    }
+    return DocumentCrop(all: automaticCrop(expanded));
+  }
+
   Matrix4 _fitWidthMatrix({double? centerY}) {
     final size = _controller.viewSize;
     final width = _controller.documentSize.width;
     // Layout margins are PDF units and scale with the pages. Subtracting
     // unscaled margins from the viewport leaves horizontal overflow at zoom > 1.
     // Fit the whole layout, including wider pages in mixed-size documents.
-    final zoom = size.width / width;
+    final zoom = math.min(1.4, size.width / width);
     final page = _controller.layout.pageLayouts[(_controller.pageNumber ?? 1) - 1];
     final y = centerY ?? page.top - _controller.params.margin + size.height / (2 * zoom);
     return _controller.calcMatrixFor(Offset(width / 2, y), zoom: zoom);
@@ -597,18 +697,25 @@ class _MMPdfViewState extends State<MMPdfView> {
   double _fitZoom = 1;
 
   void _updateFitZoom() {
-    if (widget.bottomInset <= 0 || !_controller.isReady) return;
+    if ((widget.bottomInset <= 0 && widget.crop?.enabled != true) || !_controller.isReady) return;
     final document = _controller.documentSize.width;
     if (document <= 0) return;
-    final zoom = _controller.viewSize.width / document;
+    final zoom = math.min(1.4, _controller.viewSize.width / document);
     if (zoom <= 0 || (zoom - _fitZoom).abs() < 0.001) return;
     setState(() => _fitZoom = zoom);
   }
 
   /// Room below the document for [MMPdfView.bottomInset]; null without one
   /// keeps pdfrx's own bounds.
-  EdgeInsets? get _boundaryMargin =>
-      widget.bottomInset > 0 ? EdgeInsets.only(bottom: widget.bottomInset / _fitZoom) : null;
+  EdgeInsets? get _boundaryMargin {
+    if (widget.crop?.enabled == true && widget.cropEditorBuilder == null && _controller.isReady) {
+      // The original reading line can lie near the first/last page edge.
+      // Permit that point to stay on the 25% line after removing whitespace.
+      final height = _controller.viewSize.height / _fitZoom;
+      return EdgeInsets.only(top: height * .25, bottom: math.max(widget.bottomInset / _fitZoom, height * .75));
+    }
+    return widget.bottomInset > 0 ? EdgeInsets.only(bottom: widget.bottomInset / _fitZoom) : null;
+  }
 
   /// Created once the viewer is ready: the searcher needs an open document.
   PdfTextSearcher? _searcher;
@@ -714,11 +821,10 @@ class _MMPdfViewState extends State<MMPdfView> {
   /// Page-to-viewport mapping, or null if the page is not laid out.
   InkMapping? _viewportMapping(int pageNumber) {
     if (!_ready || pageNumber < 1 || pageNumber > _controller.layout.pageLayouts.length) return null;
-    final page = _controller.document.pages[pageNumber - 1];
-    final layout = _controller.layout.pageLayouts[pageNumber - 1];
+    final transform = _transform(pageNumber);
     return (
-      point: (p) => _controller.documentToLocal(PdfPoint(p.x, p.y).toOffsetInDocument(page: page, pageRect: layout)),
-      scale: layout.height / page.height * _controller.currentZoom,
+      point: (p) => _controller.documentToLocal(transform.toViewport(Offset(p.x, p.y))),
+      scale: transform.scale * _controller.currentZoom,
     );
   }
 
@@ -733,10 +839,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     final bounds = layouts[index];
     point = Offset(point.dx.clamp(bounds.left, bounds.right), point.dy.clamp(bounds.top, bounds.bottom));
     final pdfPage = _controller.document.pages[index];
-    final p = (point - bounds.topLeft).toPdfPoint(page: pdfPage, scaledPageSize: bounds.size);
+    final p = _transform(index + 1).toPdf(point);
     // Viewport pixels per page point.
     final scale = bounds.height / pdfPage.height * _controller.currentZoom;
-    return (index + 1, InkPoint(p.x, p.y), scale);
+    return (index + 1, InkPoint(p.dx, p.dy), scale);
   }
 
   void _inkStart(Offset local) {
@@ -872,7 +978,7 @@ class _MMPdfViewState extends State<MMPdfView> {
               colors: widget.inkColors,
               hidden: _hiddenOn(page.pageNumber),
               map: (size) => (
-                point: (p) => PdfPoint(p.x, p.y).toOffset(page: page, scaledPageSize: size),
+                point: (p) => _overlayRect(page, size, PageRect(p.x, p.y, p.x, p.y)).topLeft,
                 scale: size.height / page.height,
               ),
             ),
@@ -897,7 +1003,7 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   Future<Uint8List?> _renderPreview(int number, int width) async {
     if (!_ready || number > _controller.document.pages.length) return null;
-    final page = _controller.document.pages[number - 1];
+    final page = _originalPage(number);
     final token = page.createCancellationToken();
     _previewTokens.add(token);
     PdfImage? image;
@@ -951,6 +1057,23 @@ class _MMPdfViewState extends State<MMPdfView> {
   @override
   void didUpdateWidget(MMPdfView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final cropChanged =
+        (widget.cropEditorBuilder == null &&
+            jsonEncode(oldWidget.crop?.toJson()) != jsonEncode(widget.crop?.toJson())) ||
+        (oldWidget.cropEditorBuilder == null) != (widget.cropEditorBuilder == null);
+    if (cropChanged && _ready) {
+      _restorePosition ??= widget.controller.readingPosition;
+      _restoreZoom ??= _controller.currentZoom;
+      _overlayCache.clear();
+      _selectionEpoch++;
+      _selection = null;
+      _cleanSelection = null;
+      _ready = false;
+      _searcher?.removeListener(_searchChanged);
+      _searcher?.dispose();
+      _searcher = null;
+      _invalidatePreviews();
+    }
     _indexHighlights();
     if (oldWidget.filePath != widget.filePath) {
       _inkLive = null;
@@ -960,6 +1083,12 @@ class _MMPdfViewState extends State<MMPdfView> {
     _indexInk();
     if (widget.ink == null || widget.ink!.tool != oldWidget.ink?.tool) _inkCancel();
     if (oldWidget.filePath != widget.filePath) {
+      for (final token in _cropTokens) {
+        token.cancel();
+      }
+      _cropBounds = null;
+      _restorePosition = null;
+      _restoreZoom = null;
       _ready = false;
       _invalidatePreviews();
       _overlayCache.clear();
@@ -975,8 +1104,12 @@ class _MMPdfViewState extends State<MMPdfView> {
     if (!widget.areaSelecting && _area != null) _changeArea(null);
   }
 
-  void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) =>
-      _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
+  void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    canvas.save();
+    canvas.clipRect(pageRect);
+    _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
+    canvas.restore();
+  }
 
   void _beginPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
     canvas.save();
@@ -1015,6 +1148,9 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   @override
   void dispose() {
+    for (final token in _cropTokens) {
+      token.cancel();
+    }
     _controller.removeListener(_viewportChanged);
     _searcher?.removeListener(_searchChanged);
     _searcher?.dispose();
@@ -1043,13 +1179,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     final r = rects.map((r) => r.right).reduce((a, b) => a > b ? a : b);
     final t = rects.map((r) => r.top).reduce((a, b) => a > b ? a : b);
     final b = rects.map((r) => r.bottom).reduce((a, b) => a < b ? a : b);
-    final layout = _controller.layout.pageLayouts[page - 1];
-    final target = PdfRect(
-      l,
-      t,
-      r,
-      b,
-    ).toRect(page: _controller.pages[page - 1], scaledPageSize: layout.size).shift(layout.topLeft);
+    final target = _originalRect(page, PageRect(l, t, r, b));
     // Center in document coordinates without fitting the excerpt to the viewport.
     // An excerpt wider than the viewport would lose both ends: start at its left edge.
     final zoom = _controller.currentZoom;
@@ -1077,7 +1207,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   Future<String?> _pageText(int pageNumber) async {
     if (!_ready || pageNumber < 1 || pageNumber > _controller.document.pages.length) return null;
     try {
-      final text = (await _controller.document.pages[pageNumber - 1].loadStructuredText()).fullText;
+      final text = (await _originalPage(pageNumber).loadStructuredText()).fullText;
       return text.trim().isEmpty ? null : text;
     } catch (_) {
       return null;
@@ -1087,7 +1217,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   /// Rendered pixels of [rect] on [pageNumber], encoded as PNG.
   Future<Uint8List?> _capture(int pageNumber, PageRect rect, double scale, int maxPixels) async {
     if (!_ready || pageNumber < 1 || pageNumber > _controller.document.pages.length) return null;
-    final page = _controller.document.pages[pageNumber - 1];
+    final page = _originalPage(pageNumber);
     final area = PdfRect(rect.left, rect.top, rect.right, rect.bottom).toRect(page: page);
     if (area.isEmpty) return null;
     final s = math.min(scale, maxPixels / math.max(area.width, area.height));
@@ -1141,12 +1271,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     final viewport = _areaViewportRect(area);
     // A click or a sliver is not an area.
     if (viewport.width < 6 || viewport.height < 6) return;
-    final pageRect = _controller.layout.pageLayouts[area.$1];
     final page = _controller.document.pages[area.$1];
-    final r = Rect.fromPoints(
-      area.$2,
-      area.$3,
-    ).shift(-pageRect.topLeft).toPdfRect(page: page, scaledPageSize: pageRect.size);
+    final transform = _transform(page.pageNumber);
+    final a = transform.toPdf(area.$2), b = transform.toPdf(area.$3);
+    final r = PdfRect(math.min(a.dx, b.dx), math.max(a.dy, b.dy), math.max(a.dx, b.dx), math.min(a.dy, b.dy));
     widget.onAreaSelected?.call(
       MMPdfArea(
         page: page.pageNumber,
@@ -1189,7 +1317,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     };
     final evidence = <ExcerptPageText>[];
     for (final n in evidencePages) {
-      final page = _controller.document.pages[n - 1];
+      final page = _originalPage(n);
       // Reuse selected structured text so indices are exactly those of ranges.
       PdfPageText structured;
       try {
@@ -1206,7 +1334,18 @@ class _MMPdfViewState extends State<MMPdfView> {
           page: n,
           height: page.height,
           text: structured.fullText,
-          rects: [for (final r in structured.charRects) PageRect(r.left, r.top, r.right, r.bottom)],
+          rects: [
+            for (final r in structured.charRects)
+              if (_controller.document.pages[n - 1] case final CroppedPage cropped when selectedPages.contains(n))
+                PageRect(
+                  r.left + cropped.crop.left,
+                  r.top + cropped.crop.bottom,
+                  r.right + cropped.crop.left,
+                  r.bottom + cropped.crop.bottom,
+                )
+              else
+                PageRect(r.left, r.top, r.right, r.bottom),
+          ],
         ),
       );
     }
@@ -1222,10 +1361,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     Rect? bounds;
     for (final page in pages) {
       for (final r in page.rects) {
-        final rect = _controller.calcRectForRectInsidePage(
-          pageNumber: page.page,
-          rect: PdfRect(r.left, r.top, r.right, r.bottom),
-        );
+        final rect = _originalRect(page.page, r);
         bounds = bounds?.expandToInclude(rect) ?? rect;
       }
     }
@@ -1252,6 +1388,13 @@ class _MMPdfViewState extends State<MMPdfView> {
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
     final highlights = _highlightOverlays(context, pageRect, page);
     final ink = _inkOverlay(pageRect, page);
+    if (widget.cropEditorBuilder != null) {
+      return [
+        ...highlights,
+        ?ink,
+        ...widget.cropEditorBuilder!(context, page.pageNumber, Size(page.width, page.height)),
+      ];
+    }
     final selected = _cleanSelection?.where((p) => p.page == page.pageNumber);
     if (selected == null || selected.isEmpty) return ink == null ? highlights : [...highlights, ink];
     // Transient selection is kept outside the persistent highlight LRU.
@@ -1259,7 +1402,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       for (final selection in selected)
         for (final r in selection.rects)
           Positioned.fromRect(
-            rect: PdfRect(r.left, r.top, r.right, r.bottom).toRect(page: page, scaledPageSize: pageRect.size),
+            rect: _overlayRect(page, pageRect.size, r),
             child: IgnorePointer(child: ColoredBox(color: widget.emphasisColor.withValues(alpha: 0.25))),
           ),
       ...highlights,
@@ -1283,17 +1426,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     }
     bool tap(MMPdfHighlight h) {
       // With the pen out, a click on a highlight is drawing.
-      if (widget.ink != null) return false;
+      if (widget.ink != null || widget.cropEditorBuilder != null) return false;
       // Cancel a pending text-selection commit from this click.
       _selectionEpoch++;
-      final bounds = h.rects
-          .map(
-            (r) => _controller.calcRectForRectInsidePage(
-              pageNumber: h.page,
-              rect: PdfRect(r.left, r.top, r.right, r.bottom),
-            ),
-          )
-          .reduce((a, b) => a.expandToInclude(b));
+      final bounds = h.rects.map((r) => _originalRect(h.page, r)).reduce((a, b) => a.expandToInclude(b));
       widget.onHighlightTap?.call(
         h.id,
         Rect.fromPoints(_controller.documentToLocal(bounds.topLeft), _controller.documentToLocal(bounds.bottomRight)),
@@ -1306,7 +1442,7 @@ class _MMPdfViewState extends State<MMPdfView> {
         for (final r in h.rects)
           Builder(
             builder: (context) {
-              final rect = PdfRect(r.left, r.top, r.right, r.bottom).toRect(page: page, scaledPageSize: scaled);
+              final rect = _overlayRect(page, scaled, r);
               return Positioned.fromRect(
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
@@ -1340,12 +1476,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           Builder(
             builder: (context) {
               final first = h.rects.first;
-              final rect = PdfRect(
-                first.left,
-                first.top,
-                first.right,
-                first.bottom,
-              ).toRect(page: page, scaledPageSize: scaled);
+              final rect = _overlayRect(page, scaled, first);
               final size = (scaled.width * 0.03).clamp(14.0, 22.0);
               return Positioned(
                 key: ValueKey('pdf-marker-${h.id}'),
@@ -1507,6 +1638,9 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   Widget _viewer() {
+    final path = widget.filePath;
+    final appliedCrop = widget.crop;
+    final editing = widget.cropEditorBuilder != null;
     return Listener(
       onPointerDown: (event) {
         _textDragStart = event.localPosition;
@@ -1517,13 +1651,30 @@ class _MMPdfViewState extends State<MMPdfView> {
       onPointerUp: _textPointerUp,
       onPointerCancel: (_) => _textDragStart = null,
       child: PdfViewer(
-        kIsWeb
-            ? PdfDocumentRefByLoader((_) => openDocument(widget.filePath), key: PdfDocumentRefKey(widget.filePath))
-            : PdfDocumentRefFile(widget.filePath),
+        PdfDocumentRefByLoader(
+          (_) async {
+            final original = await openDocument(path);
+            if (editing || appliedCrop?.enabled != true) return original;
+            try {
+              return CroppedDocument(original, appliedCrop!);
+            } catch (_) {
+              await original.dispose();
+              rethrow;
+            }
+          },
+          key: PdfDocumentRefKey(widget.filePath, [
+            widget.cropEditorBuilder != null ? null : jsonEncode(widget.crop?.toJson()),
+            widget.cropEditorBuilder != null,
+          ]),
+        ),
         controller: _controller,
         initialPageNumber: widget.initialPage,
         params: PdfViewerParams(
           backgroundColor: widget.backgroundColor,
+          sizeDelegateProvider: const PdfViewerSizeDelegateProviderLegacy(
+            useAlternativeFitScaleAsMinScale: false,
+            calculateInitialZoom: _initialReadingZoom,
+          ),
           pageImageColorFilter: widget.pageColorFilter,
           onViewSizeChanged: (size, previous, controller) {
             Future.microtask(() {
@@ -1556,7 +1707,7 @@ class _MMPdfViewState extends State<MMPdfView> {
           textSelectionParams: PdfTextSelectionParams(
             // Tool overlays claim mouse/Pencil drags. Keep pdfrx's touch
             // long-press selection and handles available underneath them.
-            enabled: true,
+            enabled: widget.cropEditorBuilder == null,
             showContextMenuAutomatically: false,
             onTextSelectionChange: (selection) {
               _selection = selection;
@@ -1565,7 +1716,34 @@ class _MMPdfViewState extends State<MMPdfView> {
             },
           ),
           onViewerReady: (document, controller) {
+            _searcher?.removeListener(_searchChanged);
+            _searcher?.dispose();
             _ready = true;
+            final restore = _restorePosition;
+            final zoom = _restoreZoom;
+            _restorePosition = null;
+            _restoreZoom = null;
+            Future.microtask(() async {
+              if (!mounted) return;
+              if (widget.cropEditorBuilder != null) {
+                await controller.goTo(
+                  controller.calcMatrixForFit(pageNumber: restore?.page ?? controller.pageNumber ?? 1),
+                  duration: Duration.zero,
+                );
+              } else if (restore != null) {
+                await controller.goTo(
+                  _fitAfterCrop
+                      ? _fitWidthMatrix()
+                      : controller.calcMatrixFor(controller.centerPosition, zoom: zoom ?? 1),
+                  duration: Duration.zero,
+                );
+                if (mounted) await widget.controller.jumpToReadingPosition(restore);
+                _fitAfterCrop = true;
+              }
+              if (mounted && widget.controller.searchQuery.isNotEmpty) {
+                widget.controller.search(widget.controller.searchQuery);
+              }
+            });
             Future.microtask(() {
               if (mounted) _updateFitZoom();
             });
@@ -1641,3 +1819,72 @@ bool _sameStrokes(List<InkStroke> a, List<InkStroke> b) {
   }
   return true;
 }
+
+Future<List<({Size size, Rect? content})>> _analyzeCrop(
+  String path, {
+  required bool Function() cancelled,
+  required Set<PdfPageRenderCancellationToken> tokens,
+}) async {
+  final document = await openDocument(path);
+  try {
+    return await Pdfrx.runAsBackgroundWork(() async {
+      final bounds = <({Size size, Rect? content})>[];
+      for (final page in document.pages) {
+        if (cancelled()) throw StateError('Crop analysis cancelled');
+        final size = Size(page.width, page.height);
+        Rect? content;
+        // A low-resolution raster also includes figures and embedded PDF marks.
+        // Native PDFium rendering is on its worker; the pixel scan is isolated.
+        final scale = math.min(1.0, 768 / math.max(page.width, page.height));
+        final width = (page.width * scale).ceil(), height = (page.height * scale).ceil();
+        final token = page.createCancellationToken();
+        tokens.add(token);
+        PdfImage? image;
+        try {
+          image = await page.render(
+            width: width,
+            height: height,
+            fullWidth: width.toDouble(),
+            fullHeight: height.toDouble(),
+            cancellationToken: token,
+          );
+          if (image == null) {
+            content = Offset.zero & size; // Unknown image: retain the full page.
+          } else {
+            final pixels = await compute(cropPixelBounds, (
+              pixels: image.pixels,
+              width: image.width,
+              height: image.height,
+            ));
+            if (pixels != null) {
+              content = Rect.fromLTRB(
+                pixels.left * page.width / image.width,
+                pixels.top * page.height / image.height,
+                pixels.right * page.width / image.width,
+                pixels.bottom * page.height / image.height,
+              );
+            }
+          }
+          final text = await page.loadStructuredText();
+          for (final r in text.charRects) {
+            if (r.width <= 0 || r.height <= 0) continue;
+            final rect = Rect.fromLTRB(r.left, page.height - r.top, r.right, page.height - r.bottom);
+            content = content?.expandToInclude(rect) ?? rect;
+          }
+        } catch (_) {
+          content = Offset.zero & size;
+        } finally {
+          tokens.remove(token);
+          image?.dispose();
+        }
+        bounds.add((size: size, content: content));
+      }
+      return bounds;
+    });
+  } finally {
+    await document.dispose();
+  }
+}
+
+double _initialReadingZoom(PdfDocument document, PdfViewerController controller, double fit, double cover) =>
+    math.min(1.4, controller.viewSize.width / controller.documentSize.width);

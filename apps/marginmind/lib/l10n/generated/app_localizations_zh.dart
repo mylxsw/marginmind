@@ -981,7 +981,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerStyleGreen => '浅绿';
 
   @override
-  String get readerZoom => '页面适配';
+  String get readerZoom => '页面';
 
   @override
   String get readerAppearance => '阅读外观';
@@ -2754,4 +2754,48 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistantQuickSelection => '已选文字';
+
+  @override
+  String get cropMargins => '裁掉白边';
+
+  @override
+  String get uncropMargins => '取消裁边';
+
+  @override
+  String get cropAdjust => '调整裁边…';
+
+  @override
+  String get cropScopeAll => '所有页';
+
+  @override
+  String get cropScopeOddEven => '奇偶页分开';
+
+  @override
+  String get cropScopePage => '仅本页';
+
+  @override
+  String get cropAuto => '自动';
+
+  @override
+  String get cropNone => '不裁';
+
+  @override
+  String get cropOddPages => '奇数页';
+
+  @override
+  String get cropEvenPages => '偶数页';
+
+  @override
+  String get cropCustomPage => '单独设置';
+
+  @override
+  String cropHiddenAnnotations(int count) {
+    return '$count 处标注将被隐藏';
+  }
+
+  @override
+  String get croppedHud => '已裁边';
+
+  @override
+  String get uncroppedHud => '已取消裁边';
 }

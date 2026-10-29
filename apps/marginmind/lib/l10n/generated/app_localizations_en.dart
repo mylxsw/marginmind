@@ -1017,7 +1017,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerStyleGreen => 'Light Green';
 
   @override
-  String get readerZoom => 'Page Fit';
+  String get readerZoom => 'Page';
 
   @override
   String get readerAppearance => 'Reading Appearance';
@@ -2879,4 +2879,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistantQuickSelection => 'Selected Text';
+
+  @override
+  String get cropMargins => 'Crop Margins';
+
+  @override
+  String get uncropMargins => 'Uncrop Margins';
+
+  @override
+  String get cropAdjust => 'Adjust Crop…';
+
+  @override
+  String get cropScopeAll => 'All Pages';
+
+  @override
+  String get cropScopeOddEven => 'Odd & Even';
+
+  @override
+  String get cropScopePage => 'This Page';
+
+  @override
+  String get cropAuto => 'Auto';
+
+  @override
+  String get cropNone => 'None';
+
+  @override
+  String get cropOddPages => 'Odd Pages';
+
+  @override
+  String get cropEvenPages => 'Even Pages';
+
+  @override
+  String get cropCustomPage => 'Custom';
+
+  @override
+  String cropHiddenAnnotations(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count annotations will be hidden',
+      one: '1 annotation will be hidden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get croppedHud => 'Margins cropped';
+
+  @override
+  String get uncroppedHud => 'Crop removed';
 }

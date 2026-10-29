@@ -15,6 +15,8 @@ import '../../research/widgets/research_note_popover.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
+import '../reader_crop.dart';
+import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
 import 'reader_ink_toolbar.dart';
@@ -53,6 +55,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   }
 
   void _zoom(ReaderZoomCommand command) {
+    if (ref.read(readerCropProvider(widget.studySetId)).editing) return;
     switch (command) {
       case ReaderZoomCommand.zoomIn:
         _pdf.zoomIn();
@@ -94,6 +97,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       ),
     );
+    final cropState = ref.watch(readerCropProvider(widget.studySetId));
+    final cropSession = ref.read(readerCropProvider(widget.studySetId).notifier);
+    ref.listen(readerCropProvider(widget.studySetId).select((s) => s.editing), (_, editing) {
+      if (editing) _focus.requestFocus();
+    });
     final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
@@ -143,7 +151,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         shortcuts: {...readerNavShortcuts, ...readerZoomShortcuts},
         child: CallbackShortcuts(
           bindings: {
-            if (state.tool == AnnotationTool.ink) const SingleActivator(LogicalKeyboardKey.escape): controller.exitInk,
+            AppShortcuts.toggleCrop: () => toggleReaderCrop(context, ref, widget.studySetId),
+            if (cropState.editing) ...{
+              const SingleActivator(LogicalKeyboardKey.escape): cropSession.cancel,
+              const SingleActivator(LogicalKeyboardKey.enter): () =>
+                  completeReaderCrop(context, ref, widget.studySetId),
+              const SingleActivator(LogicalKeyboardKey.numpadEnter): () =>
+                  completeReaderCrop(context, ref, widget.studySetId),
+            } else if (state.tool == AnnotationTool.ink)
+              const SingleActivator(LogicalKeyboardKey.escape): controller.exitInk,
           },
           child: Focus(
             focusNode: _focus,
@@ -189,13 +205,41 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       selected: state.readerPanelVisible,
       onPressed: controller.toggleReaderPanel,
     );
-    final zoomItems = [
+    final crop = ref.watch(readerCropProvider(widget.studySetId));
+    final cropSession = ref.read(readerCropProvider(widget.studySetId).notifier);
+    final document = controller.content.documents.where((d) => d.id == state.activeDocumentId).firstOrNull;
+    void pageCommand(Object value) {
+      if (value is ReaderZoomCommand) _zoom(value);
+      if (value == 'crop-toggle') toggleReaderCrop(context, ref, widget.studySetId);
+      if (value == 'crop-adjust') cropSession.adjust();
+    }
+
+    final zoomItems = <PopupMenuEntry<Object>>[
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
         (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
         (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
       ])
-        PopupMenuItem<Object>(value: entry.$1, child: _menuRow(entry.$3, entry.$2)),
+        PopupMenuItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
+      const PopupMenuDivider(),
+      PopupMenuItem<Object>(
+        value: 'crop-toggle',
+        enabled: cropSession.canToggle,
+        child: Row(
+          children: [
+            Icon(document?.crop?.enabled == true ? Icons.check : Icons.crop, size: 16),
+            const SizedBox(width: 8),
+            Expanded(child: Text(l.cropMargins)),
+            const SizedBox(width: 8),
+            Text(describeShortcut(AppShortcuts.toggleCrop), style: context.mmText.footnote),
+          ],
+        ),
+      ),
+      PopupMenuItem<Object>(
+        value: 'crop-adjust',
+        enabled: !crop.editing && !crop.busy && _pdf.isReady,
+        child: _menuRow(Icons.crop, l.cropAdjust),
+      ),
     ];
     final styleItems = [
       for (final value in MMReaderStyle.values)
@@ -205,7 +249,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
-    final annotation = ReaderAnnotationTools(state: state, controller: controller, compact: compact);
+    final annotation = IgnorePointer(
+      ignoring: crop.editing,
+      child: Opacity(
+        opacity: crop.editing ? .4 : 1,
+        child: ReaderAnnotationTools(state: state, controller: controller, compact: compact),
+      ),
+    );
     final progress = ocrSource == null ? null : ReaderOcrProgress(source: ocrSource);
     if (MMSizeClass.of(context) != MMSizeClass.regular) {
       return Row(
@@ -222,7 +272,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             iconSize: MMSpacing.l,
             icon: const Icon(MMIcons.more),
             onSelected: (value) {
-              if (value is ReaderZoomCommand) _zoom(value);
+              pageCommand(value);
               if (value is MMReaderStyle) setStyle(value);
             },
             itemBuilder: (_) => [
@@ -243,16 +293,26 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         navigation,
-        MMToolbarButton(compact: compact, icon: MMIcons.zoomOut, tooltip: l.zoomOut, onPressed: _pdf.zoomOut),
-        MMToolbarButton(compact: compact, icon: MMIcons.zoomIn, tooltip: l.zoomIn, onPressed: _pdf.zoomIn),
+        MMToolbarButton(
+          compact: compact,
+          icon: MMIcons.zoomOut,
+          tooltip: l.zoomOut,
+          onPressed: crop.editing ? null : _pdf.zoomOut,
+        ),
+        MMToolbarButton(
+          compact: compact,
+          icon: MMIcons.zoomIn,
+          tooltip: l.zoomIn,
+          onPressed: crop.editing ? null : _pdf.zoomIn,
+        ),
         PopupMenuButton<Object>(
-          key: const ValueKey('reader-zoom'),
+          key: const ValueKey('reader-page'),
           tooltip: l.readerZoom,
           padding: EdgeInsets.zero,
           style: buttonStyle,
           iconSize: MMSpacing.l,
-          icon: const Icon(MMIcons.pageZoom),
-          onSelected: (value) => _zoom(value as ReaderZoomCommand),
+          icon: Icon(MMIcons.pageZoom, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
+          onSelected: pageCommand,
           itemBuilder: (_) => zoomItems,
         ),
         PopupMenuButton<Object>(
@@ -332,6 +392,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final ocr = source == null || !ref.watch(pdfOcrServiceProvider).supported
         ? null
         : ref.watch(readerOcrProvider(source));
+    final crop = ref.watch(readerCropProvider(widget.studySetId));
+    final cropSession = ref.read(readerCropProvider(widget.studySetId).notifier);
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -417,7 +479,36 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                               : ValueKey((doc.id, ocr.revision)),
                                           filePath: ocr?.document?.path ?? controller.filePath(doc),
                                           controller: _pdf,
+                                          crop: crop.draft ?? doc.crop,
+                                          cropEditorBuilder: !crop.editing
+                                              ? null
+                                              : (context, page, size) {
+                                                  var minWidth = size.width, minHeight = size.height;
+                                                  for (var n = 1; n <= _pdf.pageCount; n++) {
+                                                    if (crop.draft!.scope == CropScope.page && n != page) continue;
+                                                    if (crop.draft!.scope == CropScope.oddEven &&
+                                                        n.isOdd != page.isOdd) {
+                                                      continue;
+                                                    }
+                                                    final other = _pdf.pageSize(n);
+                                                    if (other == null) continue;
+                                                    if (other.width < minWidth) minWidth = other.width;
+                                                    if (other.height < minHeight) minHeight = other.height;
+                                                  }
+                                                  return [
+                                                    Positioned.fill(
+                                                      child: CropPageEditor(
+                                                        page: page,
+                                                        size: size,
+                                                        crop: crop.draft!,
+                                                        groupMinimum: Size(minWidth, minHeight),
+                                                        onChanged: (insets) => cropSession.change(page, insets),
+                                                      ),
+                                                    ),
+                                                  ];
+                                                },
                                           onReady: (_) {
+                                            cropSession.prepare();
                                             if (ocr?.document?.hasCopy != true) return;
                                             dismissSelection();
                                             _pdf.search(_pdf.searchQuery);
@@ -429,13 +520,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           bottomInset: dockNavigation ? 0 : chrome.bottom,
                                           pageColorFilter: style.pageFilter,
                                           highlights: _highlights(content, doc.id, state),
-                                          areaSelecting: state.tool == AnnotationTool.area,
+                                          areaSelecting: !crop.editing && state.tool == AnnotationTool.area,
                                           inkStrokes: [
                                             for (final s in content.inkStrokes)
                                               if (s.documentId == doc.id) s,
                                           ],
                                           inkColors: _inkColors,
-                                          ink: state.ink,
+                                          ink: crop.editing ? null : state.ink,
                                           onInkDrawn: (draft) => controller.addInkStroke(doc.id, draft),
                                           onInkErased: controller.eraseInkStrokes,
                                           onAreaSelected: (area) async {
@@ -490,7 +581,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           },
                                         ),
                                 ),
-                                if (state.tool == AnnotationTool.ink)
+                                Positioned(
+                                  top: crop.editing ? 10 : 8,
+                                  left: 8,
+                                  right: 8,
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: CropControls(studySetId: widget.studySetId, document: doc),
+                                  ),
+                                ),
+                                if (state.tool == AnnotationTool.ink && !crop.editing)
                                   Positioned(
                                     top: MMSpacing.s,
                                     left: 0,

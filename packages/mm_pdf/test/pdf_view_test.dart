@@ -645,14 +645,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(controller.isReady, isFalse);
   });
-  for (final reverse in [false, true]) {
-    testWidgets('commits three pages in reading order, reverse=$reverse', (tester) async {
+  for (final (reverse, cropped) in [(false, false), (true, false), (false, true), (true, true)]) {
+    testWidgets('commits three pages in reading order, reverse=$reverse, cropped=$cropped', (tester) async {
       final controller = MMPdfViewController();
       MMPdfSelection? committed;
       await tester.pumpWidget(
         MaterialApp(
           home: MMPdfView(
-            filePath: 'cross-page.pdf',
+            filePath: 'cross-page-$cropped.pdf',
+            crop: cropped ? DocumentCrop(all: CropInsets(left: 24, top: 36, right: 60, bottom: 80)) : null,
             controller: controller,
             onSelectionCommitted: (s) => committed = s,
           ),
