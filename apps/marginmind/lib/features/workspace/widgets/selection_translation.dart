@@ -326,23 +326,23 @@ class _TranslationCopyButton extends StatelessWidget {
       onTap: onPressed,
       builder: (context, state) => AnimatedContainer(
         duration: MMAppearance.duration(context, MMMotion.quick),
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: state.pressed
               ? c.pressed
               : state.hovered
               ? c.hover
               : c.quaternaryFill,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(7),
           border: Border.all(color: state.focused ? c.accent : c.separator),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(MMIcons.copy, size: 12, color: c.icon),
-            const SizedBox(width: 6),
-            Text(label, style: context.mmText.callout.copyWith(color: c.label)),
+            Icon(MMIcons.copy, size: 11, color: c.icon),
+            const SizedBox(width: 5),
+            Text(label, style: context.mmText.footnote.copyWith(color: c.label)),
           ],
         ),
       ),
