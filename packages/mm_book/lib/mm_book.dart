@@ -9,8 +9,20 @@ import 'package:characters/characters.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 import 'package:xml/xml.dart';
+import 'package:crypto/crypto.dart';
+import 'package:markdown/markdown.dart' as md;
 
-enum BlockKind { paragraph, heading, list, quote, code, image, table }
+part 'src/contracts.dart';
+part 'src/parser.dart';
+part 'src/html.dart';
+part 'src/css.dart';
+part 'src/epub.dart';
+part 'src/markdown.dart';
+part 'src/mobi.dart';
+part 'src/mobi_compression.dart';
+part 'src/mobi_index.dart';
+
+enum BlockKind { paragraph, heading, list, quote, code, image, table, rule, footnote }
 
 class InlineRun {
   const InlineRun(
@@ -22,15 +34,26 @@ class InlineRun {
     this.resource,
     this.width,
     this.height,
+    this.style = const {},
+    this.sourcePath,
+    this.sourceStart = 0,
+    this.sourceEnd = 0,
+    this.ruby,
+    this.footnoteRef,
+    this.remoteUrl,
   });
   final String text;
+  final Map<String, String> style;
+  final String? sourcePath, ruby, footnoteRef, remoteUrl;
+  final int sourceStart, sourceEnd;
   final bool strong, emphasis, code;
   final String? link;
   final String? resource, width, height;
 }
 
 class BookCell {
-  BookCell(List<InlineRun> runs) : runs = List.unmodifiable(runs);
+  BookCell(List<InlineRun> runs, {this.rowSpan = 1, this.colSpan = 1}) : runs = List.unmodifiable(runs);
+  final int rowSpan, colSpan;
   final List<InlineRun> runs;
   String get text => runs.map((r) => r.text).join();
   int get length => text.length;
@@ -44,6 +67,10 @@ class BookBlock {
     required List<InlineRun> runs,
     this.level = 1,
     this.resource,
+    this.style = const {},
+    this.sourcePath = '',
+    this.ordered = false,
+    this.listStart = 1,
     List<List<BookCell>> rows = const [],
   }) : runs = List.unmodifiable(runs),
        rows = List.unmodifiable(rows.map(List<BookCell>.unmodifiable));
@@ -51,6 +78,10 @@ class BookBlock {
   final BlockKind kind;
   final int start, level;
   final String? resource;
+  final Map<String, String> style;
+  final String sourcePath;
+  final bool ordered;
+  final int listStart;
   final List<InlineRun> runs;
   final List<List<BookCell>> rows;
   String get text => runs.map((r) => r.text).join();
@@ -65,10 +96,22 @@ class TextAnchor {
 }
 
 class BookChapter {
-  BookChapter(this.id, List<BookBlock> blocks)
-    : blocks = List.unmodifiable(blocks),
-      canonicalText = blocks.map((b) => b.text).join('\n');
+  BookChapter(
+    this.id,
+    List<BookBlock> blocks, {
+    this.elementOffsets = const {},
+    this.viewportWidth,
+    this.viewportHeight,
+    this.structure = const [],
+    this.fonts = const [],
+  }) : blocks = List.unmodifiable(blocks),
+       canonicalText = blocks.map((b) => b.text).join('\n');
   final String id, canonicalText;
+  final Map<String, int> elementOffsets;
+  final List<BookNode> structure;
+  final List<BookFontFace> fonts;
+  final double? viewportWidth, viewportHeight;
+  List<Map<String, Object>> get sourceMap => [for (final b in blocks) ..._sourceEntries(b.runs, b.start)];
   final List<BookBlock> blocks;
 
   /// Both edges expand to whole grapheme clusters, including emoji sequences.
@@ -95,218 +138,76 @@ class BookChapter {
 }
 
 class Book {
-  Book(this.title, List<BookChapter> chapters, Map<String, Uint8List> resources, List<String> diagnostics)
-    : chapters = List.unmodifiable(chapters),
-      resources = Map.unmodifiable(resources),
-      diagnostics = List.unmodifiable(diagnostics);
+  Book(
+    this.title,
+    List<BookChapter> chapters,
+    Map<String, Uint8List> resources,
+    List<String> diagnostics, {
+    Map<String, List<String>> metadata = const {},
+    List<BookTocEntry> toc = const [],
+    this.fixedLayout = false,
+    Uint8List? pdf,
+  }) : metadata = Map.unmodifiable(metadata.map((k, v) => MapEntry(k, List<String>.unmodifiable(v)))),
+       toc = List.unmodifiable(toc),
+       pdf = pdf == null ? null : Uint8List.fromList(pdf).asUnmodifiableView(),
+       chapters = List.unmodifiable(chapters),
+       resources = Map.unmodifiable(resources.map((k, v) => MapEntry(k, Uint8List.fromList(v).asUnmodifiableView()))),
+       diagnostics = List.unmodifiable(diagnostics);
   final String title;
+  final Map<String, List<String>> metadata;
+  final List<BookTocEntry> toc;
+  final bool fixedLayout;
+
+  /// AZW4 Print Replica payload; hand this to the PDF importer.
+  final Uint8List? pdf;
+  int get version => 1;
+  String get revision => sha256.convert(utf8.encode(jsonEncode(toJson(includeRevision: false)))).toString();
+  Map<String, Object?> toJson({bool includeRevision = true}) => {
+    'version': version,
+    'normalizationVersion': 1,
+    if (includeRevision) 'revision': revision,
+    'title': title,
+    'metadata': metadata,
+    'fixedLayout': fixedLayout,
+    'spine': chapters.map(_chapterJson).toList(),
+    'toc': toc.map((e) => e.toJson()).toList(),
+    'resources': [
+      for (final path in (resources.keys.toList()..sort()))
+        {
+          'path': path,
+          'sha256': sha256.convert(resources[path]!).toString(),
+          'length': resources[path]!.length,
+          'mime': _mime(resources[path]!, path),
+        },
+    ],
+    if (pdf != null) 'pdfSha256': sha256.convert(pdf!).toString(),
+  };
   final List<BookChapter> chapters;
   final Map<String, Uint8List> resources;
   final List<String> diagnostics;
 }
 
 /// Bounded in-memory EPUB parser. This deliberately reports unsupported markup.
-/// Production CSS, nav/NCX and MOBI adapters extend this IR in GUL-574.
+/// EPUB container adapter and shared HTML normalization entry point.
 class EpubParser {
   const EpubParser({this.maxBytes = 64 * 1024 * 1024, this.maxEntries = 10000});
   final int maxBytes, maxEntries;
 
-  Book parse(Uint8List bytes) {
-    if (bytes.length > maxBytes) throw const FormatException('EPUB exceeds compressed size limit');
-    final zip = ZipDecoder().decodeBytes(bytes);
-    if (zip.length > maxEntries) throw const FormatException('Too many ZIP entries');
-    var size = 0;
-    final files = <String, Uint8List>{};
-    for (final entry in zip) {
-      if (!entry.isFile) continue;
-      final name = _resolve('', entry.name);
-      if (files.containsKey(name)) throw FormatException('Duplicate ZIP path: $name');
-      size += entry.size;
-      if (size > maxBytes) throw const FormatException('EPUB exceeds expanded size limit');
-      files[name] = entry.content;
-    }
-    String read(String path) {
-      final data = files[path];
-      if (data == null) throw FormatException('Missing EPUB member: $path');
-      return utf8.decode(data);
-    }
+  Book parse(Uint8List bytes) => _guard(() => _epub(bytes, maxBytes, maxEntries));
 
-    final container = XmlDocument.parse(read('META-INF/container.xml'));
-    final rootfiles = container.descendants.whereType<XmlElement>().where((e) => e.name.local == 'rootfile');
-    if (rootfiles.isEmpty) throw const FormatException('Missing EPUB rootfile');
-    final opfPath = _resolve('', rootfiles.first.getAttribute('full-path') ?? '');
-    final opf = XmlDocument.parse(read(opfPath));
-    final manifest = <String, String>{};
-    for (final item in opf.descendants.whereType<XmlElement>().where((e) => e.name.local == 'item')) {
-      manifest[item.getAttribute('id')!] = _resolve(opfPath, item.getAttribute('href')!);
-    }
-    final diagnostics = <String>['Prototype: publisher CSS, nav/NCX and fixed layout are not implemented'];
-    final chapters = <BookChapter>[];
-    for (final item in opf.descendants.whereType<XmlElement>().where((e) => e.name.local == 'itemref')) {
-      final path = manifest[item.getAttribute('idref')];
-      if (path == null) throw const FormatException('Missing spine item');
-      chapters.add(parseHtml(path, read(path), diagnostics));
-    }
-    if (chapters.isEmpty) throw const FormatException('Empty EPUB spine');
-    final title =
-        opf.descendants.whereType<XmlElement>().where((e) => e.name.local == 'title').firstOrNull?.innerText ?? '';
-    return Book(title, chapters, files, diagnostics);
-  }
-
-  BookChapter parseHtml(String id, String source, [List<String>? diagnostics]) {
-    final body = html.parse(source).body!;
-    final blocks = <BookBlock>[];
-    var offset = 0;
-    void add(
-      BlockKind kind,
-      List<InlineRun> runs, {
-      int level = 1,
-      String? resource,
-      List<List<BookCell>> rows = const [],
-    }) {
-      if (runs.every((r) => r.text.trim().isEmpty)) return;
-      final block = BookBlock(
-        id: '$id#b${blocks.length}',
-        kind: kind,
-        start: offset,
-        runs: runs,
-        level: level,
-        resource: resource,
-        rows: rows,
-      );
-      blocks.add(block);
-      offset = block.end + 1;
-    }
-
-    void visit(dom.Node node) {
-      if (node is dom.Text) {
-        final text = node.text.replaceAll(RegExp(r'\s+'), ' ').trim();
-        if (text.isNotEmpty) add(BlockKind.paragraph, [InlineRun(text)]);
-        return;
-      }
-      if (node is! dom.Element) return;
-      final tag = node.localName!;
-      if (const {'script', 'style', 'head', 'noscript'}.contains(tag) || node.attributes.containsKey('hidden')) return;
-      if (tag == 'img' || tag == 'image') {
-        final src = node.attributes['src'] ?? node.attributes['href'] ?? node.attributes['xlink:href'];
-        if (src != null) {
-          try {
-            add(BlockKind.image, [const InlineRun('\uFFFC')], resource: _resolve(id, src));
-          } on FormatException {
-            diagnostics?.add('Unsupported image URL: $src');
-          }
-        }
-        return;
-      }
-      if (tag == 'table') {
-        final rows = node
-            .querySelectorAll('tr')
-            .map(
-              (row) => row.children
-                  .where((c) => c.localName == 'td' || c.localName == 'th')
-                  .map((c) => BookCell(_inline(c, id, diagnostics, preserve: false)))
-                  .toList(),
-            )
-            .where((r) => r.isNotEmpty)
-            .toList();
-        add(BlockKind.table, [InlineRun(rows.map((r) => r.map((c) => c.text).join('\t')).join('\n'))], rows: rows);
-        return;
-      }
-      final kind = switch (tag) {
-        'p' => BlockKind.paragraph,
-        'h1' || 'h2' || 'h3' || 'h4' || 'h5' || 'h6' => BlockKind.heading,
-        'li' => BlockKind.list,
-        'blockquote' => BlockKind.quote,
-        'pre' => BlockKind.code,
-        _ => null,
-      };
-      // Images remain inline, including image-only paragraphs.
-      if (kind != null) {
-        final runs = _inline(node, id, diagnostics, preserve: kind == BlockKind.code);
-        add(kind, runs, level: tag.startsWith('h') ? int.tryParse(tag.substring(1)) ?? 1 : 1);
-      } else {
-        for (final child in node.nodes) {
-          visit(child);
-        }
-      }
-    }
-
-    for (final node in body.nodes) {
-      visit(node);
-    }
-    return BookChapter(id, blocks);
-  }
-}
-
-List<InlineRun> _inline(dom.Element root, String id, List<String>? diagnostics, {required bool preserve}) {
-  final result = <InlineRun>[];
-  var previousWhitespace = true;
-  void walk(dom.Node node, bool strong, bool emphasis, bool code, String? link) {
-    if (node is dom.Text) {
-      var text = node.text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-      if (!preserve) {
-        text = text.replaceAll(RegExp(r'[ \t\n\f]+'), ' ');
-        if (previousWhitespace && text.startsWith(' ')) text = text.substring(1);
-      }
-      if (text.isNotEmpty) {
-        result.add(InlineRun(text, strong: strong, emphasis: emphasis, code: code, link: link));
-        previousWhitespace = text.endsWith(' ') || text.endsWith('\n');
-      }
-    } else if (node is dom.Element) {
-      if (const {'script', 'style', 'rt'}.contains(node.localName) || node.attributes.containsKey('hidden')) return;
-      if (node.localName == 'img' || node.localName == 'image') {
-        final src = node.attributes['src'] ?? node.attributes['href'] ?? node.attributes['xlink:href'];
-        if (src != null) {
-          try {
-            String? dimension(String name) =>
-                RegExp('$name\\s*:\\s*([^;]+)').firstMatch(node.attributes['style'] ?? '')?.group(1)?.trim() ??
-                node.attributes[name];
-            result.add(
-              InlineRun('\uFFFC', resource: _resolve(id, src), width: dimension('width'), height: dimension('height')),
-            );
-            previousWhitespace = false;
-          } on FormatException {
-            diagnostics?.add('Unsupported image URL: $src');
-          }
-        }
-        return;
-      }
-      if (node.localName == 'br') {
-        result.add(const InlineRun('\n'));
-        previousWhitespace = true;
-        return;
-      }
-      for (final child in node.nodes) {
-        walk(
-          child,
-          strong || const {'b', 'strong'}.contains(node.localName),
-          emphasis || const {'em', 'i'}.contains(node.localName),
-          code || node.localName == 'code',
-          node.localName == 'a' ? node.attributes['href'] : link,
-        );
-      }
-    }
-  }
-
-  walk(root, false, false, preserve, null);
-  if (!preserve && result.isNotEmpty && result.last.resource == null) {
-    final last = result.removeLast();
-    result.add(
-      InlineRun(last.text.trimRight(), strong: last.strong, emphasis: last.emphasis, code: last.code, link: last.link),
-    );
-  }
-  return result;
+  BookChapter parseHtml(String id, String source, [List<String>? diagnostics]) =>
+      _htmlChapter(id, source, diagnostics ?? []);
 }
 
 String _resolve(String base, String href) {
-  if (href.contains('\\') || href.startsWith('/') || Uri.parse(href).hasScheme) {
+  if (href.contains('\\') || href.startsWith('/') || href.contains('\u0000') || Uri.parse(href).hasScheme) {
     throw FormatException('Unsafe archive reference: $href');
   }
   final path = Uri.parse(base).resolve(href).path;
   if (path.isEmpty || path.startsWith('../') || path.split('/').contains('..')) {
     throw FormatException('Unsafe archive path: $href');
   }
-  final decoded = Uri.decodeFull(path);
+  final decoded = Uri.decodeComponent(path);
   if (decoded.startsWith('/') || decoded.split('/').contains('..') || decoded.contains('\\')) {
     throw FormatException('Unsafe decoded archive path: $href');
   }

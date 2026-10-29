@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "normalizationVersion": 1,
+  "revision": "0ebc3048e29af0b3f8ad14451f6e43682e391185aff4ecf744dcc6c28d4e5e84",
+  "title": "Sample",
+  "metadata": {
+    "title": [
+      "Sample"
+    ],
+    "creator": [
+      "Author"
+    ],
+    "identifier": [
+      "urn:uuid:00112233-4455-6677-8899-aabbccddeeff"
+    ],
+    "rendition:layout": [
+      ""
+    ]
+  },
+  "fixedLayout": false,
+  "spine": [
+    {
+      "id": "OPS/c.xhtml",
+      "sourceHref": "OPS/c.xhtml",
+      "canonicalText": "中文 😀\nHello world漢￼\ncell",
+      "sourceMap": [
+        {
+          "path": "0/1/0/0",
+          "sourceStart": 0,
+          "sourceEnd": 5,
+          "start": 0,
+          "end": 5
+        },
+        {
+          "path": "0/1/1/0",
+          "sourceStart": 0,
+          "sourceEnd": 6,
+          "start": 6,
+          "end": 12
+        },
+        {
+          "path": "0/1/1/1/0",
+          "sourceStart": 0,
+          "sourceEnd": 5,
+          "start": 12,
+          "end": 17
+        },
+        {
+          "path": "0/1/1/2",
+          "sourceStart": 0,
+          "sourceEnd": 0,
+          "start": 17,
+          "end": 18
+        },
+        {
+          "path": "0/1/1/3",
+          "sourceStart": 0,
+          "sourceEnd": 0,
+          "start": 18,
+          "end": 19
+        },
+        {
+          "path": "0/1/2/0/0/0/0",
+          "sourceStart": 0,
+          "sourceEnd": 4,
+          "start": 20,
+          "end": 24
+        }
+      ],
+      "elementOffsets": {
+        "title": 0,
+        "body": 6
+      },
+      "structure": [
+        {
+          "path": "0/1/0",
+          "tag": "h1",
+          "blockId": "OPS/c.xhtml#0/1/0",
+          "children": []
+        },
+        {
+          "path": "0/1/1",
+          "tag": "p",
+          "blockId": "OPS/c.xhtml#0/1/1",
+          "children": []
+        },
+        {
+          "path": "0/1/2",
+          "tag": "table",
+          "blockId": "OPS/c.xhtml#0/1/2",
+          "children": []
+        }
+      ],
+      "fonts": [],
+      "blocks": [
+        {
+          "id": "OPS/c.xhtml#0/1/0",
+          "kind": "heading",
+          "start": 0,
+          "end": 5,
+          "level": 1,
+          "style": {},
+          "sourcePath": "0/1/0",
+          "ordered": false,
+          "listStart": 1,
+          "runs": [
+            {
+              "text": "中文 😀",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            }
+          ],
+          "rows": []
+        },
+        {
+          "id": "OPS/c.xhtml#0/1/1",
+          "kind": "paragraph",
+          "start": 6,
+          "end": 19,
+          "level": 1,
+          "style": {},
+          "sourcePath": "0/1/1",
+          "ordered": false,
+          "listStart": 1,
+          "runs": [
+            {
+              "text": "Hello ",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            },
+            {
+              "text": "world",
+              "strong": true,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            },
+            {
+              "text": "漢",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {},
+              "ruby": "kan"
+            },
+            {
+              "text": "￼",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {},
+              "resource": "OPS/pic.png"
+            }
+          ],
+          "rows": []
+        },
+        {
+          "id": "OPS/c.xhtml#0/1/2",
+          "kind": "table",
+          "start": 20,
+          "end": 24,
+          "level": 1,
+          "style": {},
+          "sourcePath": "0/1/2",
+          "ordered": false,
+          "listStart": 1,
+          "runs": [
+            {
+              "text": "cell",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            }
+          ],
+          "rows": [
+            [
+              {
+                "rowSpan": 1,
+                "colSpan": 2,
+                "runs": [
+                  {
+                    "text": "cell",
+                    "strong": false,
+                    "emphasis": false,
+                    "code": false,
+                    "style": {}
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "toc": [
+    {
+      "id": "nav-0",
+      "title": "Start",
+      "chapterId": "OPS/c.xhtml",
+      "offset": 0,
+      "children": [
+        {
+          "id": "nav-0-0",
+          "title": "Body",
+          "chapterId": "OPS/c.xhtml",
+          "offset": 6,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "path": "META-INF/container.xml",
+      "sha256": "888b3fd7cc9e063417bfe8b58f07312d30b3a5d1684eac4da0cb09a52f38cb7c",
+      "length": 82,
+      "mime": "application/xml"
+    },
+    {
+      "path": "OPS/book.opf",
+      "sha256": "5a0136c1b29296ba06c2822b9f241dabd00411c849e0537424c1a69d7095daa7",
+      "length": 578,
+      "mime": "application/xml"
+    },
+    {
+      "path": "OPS/c.xhtml",
+      "sha256": "a28483d582fab1673865ae8988d8ede840d1db52c5ebaed5bf247e1181f0fbf2",
+      "length": 173,
+      "mime": "application/xhtml+xml"
+    },
+    {
+      "path": "OPS/nav.xhtml",
+      "sha256": "97e8c393512f7b86b0e757b3e339c35a10b3c13f23333c0f90538dafb0a3de98",
+      "length": 127,
+      "mime": "application/xhtml+xml"
+    },
+    {
+      "path": "OPS/pic.png",
+      "sha256": "4c4b6a3be1314ab86138bef4314dde022e600960d8689a2c8f8631802d20dab6",
+      "length": 8,
+      "mime": "image/png"
+    },
+    {
+      "path": "OPS/toc.ncx",
+      "sha256": "79a705ee99de578fc1d1965f6730eb8c820a192d4f6c338e6c142325372ca23d",
+      "length": 235,
+      "mime": "application/xml"
+    }
+  ]
+}

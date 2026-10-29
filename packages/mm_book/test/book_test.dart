@@ -54,16 +54,19 @@ void main() {
       <svg><image href="image.png"/></svg><img src="https://bad/x"><script>bad</script><p hidden>hidden</p></section>''',
       diagnostics,
     );
-    expect(c.blocks.map((b) => b.kind).toSet(), containsAll(BlockKind.values));
+    expect(
+      c.blocks.map((b) => b.kind).toSet(),
+      containsAll(BlockKind.values.where((k) => k != BlockKind.rule && k != BlockKind.footnote)),
+    );
     expect(c.canonicalText, contains('A B xlink\nend'));
     expect(c.canonicalText, contains(' a\n  b'));
     expect(c.canonicalText, contains('A\tB\n1\t2'));
     expect(c.canonicalText, isNot(contains('bad')));
     expect(c.canonicalText, isNot(contains('hidden')));
-    expect(c.blocks.expand((b) => [b.resource, ...b.runs.map((r) => r.resource)]).whereType<String>(), [
+    expect(c.blocks.expand((b) => [b.resource, ...b.runs.map((r) => r.resource)]).whereType<String>().toSet(), {
       'OPS/img.png',
       'OPS/image.png',
-    ]);
+    });
     expect(diagnostics, hasLength(1));
     for (final b in c.blocks) {
       expect(c.canonicalText.substring(b.start, b.end), b.text);
