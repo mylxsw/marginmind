@@ -16,7 +16,7 @@ abstract final class MMIcons {
   static const IconData fitWidth = CupertinoIcons.arrow_left_right;
   static const IconData fitPage = CupertinoIcons.rectangle;
   static const IconData pageZoom = CupertinoIcons.resize;
-  static const IconData zoomControl = CupertinoIcons.arrow_up_left_arrow_down_right;
+  static const IconData zoomControl = CupertinoIcons.plus_slash_minus;
   static const IconData crop = CupertinoIcons.crop;
   static const IconData locate = CupertinoIcons.location_circle;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
