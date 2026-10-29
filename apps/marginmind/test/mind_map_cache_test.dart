@@ -345,7 +345,8 @@ void main() {
     test('the expanded set is part of the key: the card grows and shrinks back from cache', () {
       final cache = MindMapRenderCache();
       final long = 'word ' * 80;
-      final content = excerpt(quote: long);
+      // At the narrowest width; a long excerpt would otherwise start wider.
+      final content = excerpt(quote: long).copyWith(nodes: const [MapNode(cardId: 'e', order: 0, width: 240)]);
       final cut = expand(cache, content, const {});
       expect(expand(cache, content, const {}), same(cut));
       final layouts = cache.layoutCount;

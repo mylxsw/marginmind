@@ -430,7 +430,7 @@ void main() {
   });
 
   group('node actions', () {
-    testWidgets('add child stays screen-sized above the selected node and relation handle', (tester) async {
+    testWidgets('add child stays screen-sized on the selected node\'s outer top corner', (tester) async {
       final h = _Harness(tester);
       h.selection = 't2';
       await h.pump(_topics(4));
@@ -440,9 +440,7 @@ void main() {
         final mark = tester.getRect(find.byKey(const ValueKey('node-add-child')));
         expect(mark.size, const Size(32, 32));
         expect(mark.center.dx, closeTo(h.node('t2').left, .5));
-        // GUL-568 moved the button above the corner to clear the relation handle.
-        expect(mark.center.dy, closeTo(h.node('t2').top - 24, .5));
-        expect(mark.bottom, lessThan(h.node('t2').top));
+        expect(mark.center.dy, closeTo(h.node('t2').top, .5));
       }
     });
 
