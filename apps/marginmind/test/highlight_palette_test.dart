@@ -20,6 +20,22 @@ void main() {
     expect(const HighlightPalette().frequent(now), MMAnnotationColor.values.take(3));
   });
 
+  test('inline colors follow recency, independent of lifetime frequency', () {
+    final now = DateTime(2026, 10, 29);
+    final custom = MMAnnotationColor.tryParse('#12A4B8')!;
+    final palette = HighlightPalette(
+      usage: {
+        MMAnnotationColor.yellow: HighlightColorUse(100, now.subtract(const Duration(days: 1))),
+        MMAnnotationColor.purple: HighlightColorUse(1, now.subtract(const Duration(minutes: 2))),
+        MMAnnotationColor.pink: HighlightColorUse(2, now.subtract(const Duration(minutes: 1))),
+        custom: HighlightColorUse(1, now),
+      },
+    );
+    expect(palette.recent(), [custom, MMAnnotationColor.pink, MMAnnotationColor.purple]);
+    expect(const HighlightPalette().recent(), MMAnnotationColor.values.take(3));
+    expect(HighlightPalette(current: custom).recent(), [custom, MMAnnotationColor.yellow, MMAnnotationColor.green]);
+  });
+
   test('picking does not count as use; actual use and current color survive reload', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -68,6 +84,7 @@ void main() {
     expect(restored.current, custom);
     expect(restored.usage[custom]!.count, 1);
     expect(restored.frequent(DateTime.now()).first, custom);
+    expect(restored.recent().first, custom);
   });
 
   test('translation directions include automatic and explicit overrides', () {

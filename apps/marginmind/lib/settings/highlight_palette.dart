@@ -16,6 +16,16 @@ class HighlightPalette {
   final MMAnnotationColor current;
   final Map<MMAnnotationColor, HighlightColorUse> usage;
 
+  /// Last-used colors first; unused slots keep a useful, stable default.
+  List<MMAnnotationColor> recent() {
+    final used = usage.keys.toList()
+      ..sort((a, b) {
+        final order = usage[b]!.lastUsed.compareTo(usage[a]!.lastUsed);
+        return order != 0 ? order : a.index.compareTo(b.index);
+      });
+    return {...used, current, ...MMAnnotationColor.values}.take(3).toList();
+  }
+
   List<MMAnnotationColor> frequent(DateTime now) {
     // A week's inactivity halves the weight of a color's lifetime use count.
     double score(MMAnnotationColor color) {

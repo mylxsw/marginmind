@@ -356,6 +356,7 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
   late final TextEditingController _text = TextEditingController(text: widget.note.text);
   final _focus = FocusNode();
   bool _menuOpen = false;
+  bool _wasEditing = false;
   ReaderMarginSession get _session => ref.read(readerMarginProvider(widget.studySetId).notifier);
   @override
   void initState() {
@@ -418,6 +419,16 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
     final state = ref.watch(readerMarginProvider(widget.studySetId));
     final note = widget.note;
     final editing = state.draft?.id == note.id;
+    if (editing && !_wasEditing) {
+      // Autofocus does not replace focus already held by the selection toolbar
+      // in this scope. Hand it over after the editor joins the focus tree.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && ref.read(readerMarginProvider(widget.studySetId)).draft?.id == widget.note.id) {
+          _focus.requestFocus();
+        }
+      });
+    }
+    _wasEditing = editing;
     final hovered = state.hovered == note.id;
     final color = MMAnnotationColor.fromIndex(note.colorIndex);
     final l = context.l10n;
@@ -486,7 +497,6 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                               key: ValueKey('margin-editor-${note.id}'),
                               controller: _text,
                               focusNode: _focus,
-                              autofocus: true,
                               minLines: 2,
                               maxLines: null,
                               style: marginNoteTextStyle(context, widget.style),

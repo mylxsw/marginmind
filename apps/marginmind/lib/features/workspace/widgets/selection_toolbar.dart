@@ -8,6 +8,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
+import '../../../settings/highlight_palette.dart';
 import '../../assistant/assistant_scope.dart' show selectionContext;
 import '../../assistant/widgets/assistant_quick_actions.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
@@ -281,7 +282,15 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               focusNode: _focus,
               child: MMFloatingToolbar(
                 children: [
-                  HighlightColorButton(
+                  for (final recent in ref.watch(highlightPaletteProvider).recent())
+                    MMFloatingToolbarColor(
+                      color: recent,
+                      tooltip: l.colorName(recent),
+                      selected: recent == color,
+                      onPressed: () => _run(ReaderSelectionCommand.highlight, recent),
+                    ),
+                  HighlightColorButton.more(
+                    key: const ValueKey('selection-more-colors'),
                     color: color,
                     onOpenChanged: (open) {
                       _paletteOpen = open;

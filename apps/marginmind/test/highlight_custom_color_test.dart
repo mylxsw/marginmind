@@ -7,7 +7,6 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
-import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/highlight_palette.dart';
 import 'package:mm_design/mm_design.dart';
@@ -85,8 +84,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<MMToolbarButton>(button).tint, isNull);
       await controller.onSelectionCommitted('c1', selection);
-      await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)));
       await tester.pumpAndSettle();
       final customSwatch = find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == expected);
       expect(customSwatch, findsOneWidget, reason: 'The current custom color is immediately reusable');

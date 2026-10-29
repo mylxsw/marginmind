@@ -54,7 +54,11 @@ void main() {
     await drain(tester);
     final draft = container.read(readerMarginProvider('demo-1')).draft!;
     expect(draft.colorIndex, MMAnnotationColor.blue.index);
-    await tester.enterText(find.byKey(ValueKey('margin-editor-${draft.id}')), 'My comment');
+    final field = tester.widget<TextField>(find.byKey(ValueKey('margin-editor-${draft.id}')));
+    expect(field.focusNode!.hasPrimaryFocus, isTrue);
+    tester.testTextInput.enterText('My comment');
+    await tester.pump();
+    expect(container.read(readerMarginProvider('demo-1')).draft!.text, 'My comment');
     await session.finish();
     await drain(tester);
     await session.start('c1', pages: selection.pages, quote: selection.text);
@@ -103,6 +107,51 @@ void main() {
     await settleHud(tester);
     expect(tester.takeException(), isNull);
   });
+  for (final width in [1400.0, 1800.0]) {
+    testWidgets('comment takes input focus on creation and reopening at width $width', (tester) async {
+      final container = await pumpApp(tester, renderPdf: true, size: Size(width, 1000));
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await drain(tester);
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      final session = container.read(readerMarginProvider('demo-1').notifier);
+      if (width == 1800) workspace.setLayout(MMSplitMode.primary);
+      await drain(tester);
+      const selection = MMPdfSelection(
+        text: 'Source quote',
+        page: 1,
+        rects: [PageRect(40, 700, 200, 680)],
+        viewportRect: Rect.fromLTWH(100, 200, 160, 20),
+      );
+      await workspace.onSelectionCommitted('c1', selection);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('selection-margin-note')));
+      await drain(tester);
+      final id = container.read(readerMarginProvider('demo-1')).draft!.id;
+      void expectReady() {
+        final field = tester.widget<TextField>(find.byKey(ValueKey('margin-editor-$id')));
+        expect(field.focusNode!.hasPrimaryFocus, isTrue);
+        expect(tester.testTextInput.isVisible, isTrue);
+      }
+
+      expectReady();
+      tester.testTextInput.enterText('Typed immediately');
+      await tester.pump();
+      expect(container.read(readerMarginProvider('demo-1')).draft!.text, 'Typed immediately');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await drain(tester);
+      await session.start('c1', existing: workspace.content.marginNotes.single);
+      await drain(tester);
+      expectReady();
+      tester.testTextInput.enterText('Edited immediately');
+      await tester.pump();
+      expect(container.read(readerMarginProvider('demo-1')).draft!.text, 'Edited immediately');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await drain(tester);
+      expect(workspace.content.marginNotes.single.text, 'Edited immediately');
+      await settleHud(tester);
+    });
+  }
+
   testWidgets('failed writes retain draft, concurrent finish coalesces and typing during persistence survives', (
     tester,
   ) async {

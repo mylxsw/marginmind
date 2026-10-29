@@ -73,6 +73,9 @@ void main() {
           Future.value(ByteData.sublistView(File('${iconDir.path}/assets/CupertinoIcons.ttf').readAsBytesSync())),
         ))
         .load();
+    await (FontLoader(
+      'packages/lucide_icons_flutter/Lucide',
+    )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
   });
   for (final dark in [false, true]) {
     testWidgets('palette, translation and preserved selection in ${dark ? 'dark' : 'light'}', (tester) async {
@@ -97,7 +100,6 @@ void main() {
           .map((b) => b.icon)
           .toList();
       expect(icons, [
-        MMIcons.highlight,
         MMIcons.copy,
         MMIcons.quoteBubble,
         MMIcons.addNote,
@@ -108,8 +110,9 @@ void main() {
       await screenshot(tester, 'selection-toolbar-${dark ? 'dark' : 'light'}', target: toolbar);
       await tester.tap(find.descendant(of: toolbar, matching: find.byType(HighlightColorButton)));
       await tester.pumpAndSettle();
-      expect(find.byType(MMFloatingToolbarColor), findsNWidgets(3));
-      final palette = find.byKey(const ValueKey('highlight-color-palette'));
+      final palette = find.byKey(const ValueKey('highlight-custom-color-picker'));
+      expect(palette, findsOneWidget);
+      expect(find.byType(MMFloatingToolbar), findsOneWidget);
       expect(tester.getRect(palette).top, greaterThan(tester.getRect(toolbar).bottom));
       await screenshot(tester, 'selection-palette-${dark ? 'dark' : 'light'}', target: palette);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);

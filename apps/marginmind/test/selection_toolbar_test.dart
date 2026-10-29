@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
-import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -43,7 +42,7 @@ void main() {
     ),
   );
   for (final color in MMAnnotationColor.values) {
-    testWidgets('brush palette ${color.name} highlights without creating a card', (tester) async {
+    testWidgets('inline palette ${color.name} highlights without creating a card', (tester) async {
       final container = await pumpApp(tester);
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -56,9 +55,12 @@ void main() {
         tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout)).anchor,
         selection.viewportRect,
       );
-      expect(find.byType(MMFloatingToolbarColor), findsNothing);
-      await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)));
-      await tester.pumpAndSettle();
+      expect(find.byType(MMFloatingToolbarColor), findsNWidgets(3));
+      expect(
+        find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.highlight)),
+        findsNothing,
+      );
+      expect(find.byType(MMFloatingToolbar), findsOneWidget);
       if (![MMAnnotationColor.yellow, MMAnnotationColor.green, MMAnnotationColor.blue].contains(color)) {
         await tester.tap(find.byTooltip('More Colors'));
         await tester.pumpAndSettle();
@@ -104,15 +106,11 @@ void main() {
           await tester.tap(
             find.descendant(
               of: find.byType(SelectionToolbar),
-              matching: find.byIcon(command == ReaderSelectionCommand.copy ? MMIcons.copy : MMIcons.highlight),
+              matching: command == ReaderSelectionCommand.copy
+                  ? find.byIcon(MMIcons.copy)
+                  : find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.yellow),
             ),
           );
-          if (command == ReaderSelectionCommand.highlight) {
-            await tester.pumpAndSettle();
-            await tester.tap(
-              find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.yellow),
-            );
-          }
         }
         await tester.pumpAndSettle();
         expect(find.byType(SelectionToolbar), findsNothing);

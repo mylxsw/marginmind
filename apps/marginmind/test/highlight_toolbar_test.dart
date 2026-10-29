@@ -62,20 +62,11 @@ void main() {
         );
         expect(find.byTooltip(linked ? 'Locate Card' : 'Add to Map'), findsOneWidget);
         expect(
-          tester
-              .widget<HighlightColorButton>(
-                find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)),
-              )
-              .color
-              .index,
+          tester.widget<HighlightColorButton>(find.byKey(const ValueKey('selection-more-colors'))).color.index,
           annotation.colorIndex,
         );
         switch (action) {
           case 'color':
-            await tester.tap(
-              find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)),
-            );
-            await tester.pumpAndSettle();
             await tester.tap(
               find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.blue),
             );
