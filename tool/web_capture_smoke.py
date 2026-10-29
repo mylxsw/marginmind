@@ -75,8 +75,41 @@ try:
         page.wait_for_function('globalThis.testCapture.result', timeout=5000)
         assert 'error' in page.evaluate('globalThis.testCapture.result')
         assert page.evaluate('scrollY') == 0, 'A stale capture must not scroll the new SPA route'
+        # A fetch that never returns must lose only its image, even when a
+        # healthy image follows it in the same capture.
+        hanging = []
+        page.route('**/hang.png', lambda route: hanging.append(route))
+        page.evaluate("""document.querySelector('article').insertAdjacentHTML('afterbegin',
+            '<img src="/hang.png">')""")
+        readable = subprocess.check_output([args.dart, 'run', 'packages/mm_platform/tool/web_capture_script.dart'], text=True)
+        page.evaluate(readable)
+        page.wait_for_function('globalThis.testCapture.result', timeout=45000)
+        result = page.evaluate('globalThis.testCapture.result')
+        assert 'error' not in result, result
+        assert 'image_unavailable' in result['diagnostics'], result
+        assert any(k.endswith('.png') for k in result['resources']), result
+        assert 'Canonical paragraph' in result['html']
+        for route in hanging:
+            route.abort()
+        page.evaluate("document.querySelector('img[src=\"/hang.png\"]').remove()")
+        # Exhaust the image budget after the first image without waiting 40s.
+        # The rest must be omitted with diagnostics while the article survives.
+        page.evaluate("""() => {
+          globalThis.clockShift = 0;
+          globalThis.realNow = performance.now.bind(performance);
+          Object.defineProperty(performance, 'now', {configurable:true, value:()=>realNow()+clockShift});
+          globalThis.realFetch = fetch;
+          globalThis.fetch = async (...args) => {const response=await realFetch(...args);clockShift=41000;return response;};
+        }""")
+        page.evaluate(readable)
+        page.wait_for_function('globalThis.testCapture.result', timeout=5000)
+        result = page.evaluate('globalThis.testCapture.result')
+        assert 'error' not in result, result
+        assert 'image_unavailable' in result['diagnostics'], result
+        assert len(result['resources']) == 1, result
+        page.evaluate('fetch=realFetch;delete performance.now')
         browser.close()
     print(json.dumps({'live_dom': True, 'session_images': True, 'sanitized_snapshot': True,
-                      'scroll_restored': True, 'page_requests': requests.count('/page')}))
+                      'scroll_restored': True, 'slow_image_isolated': True, 'page_requests': requests.count('/page')}))
 finally:
     server.shutdown(); server.server_close(); thread.join()

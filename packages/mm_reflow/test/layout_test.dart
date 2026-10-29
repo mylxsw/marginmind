@@ -9,6 +9,31 @@ import 'package:mm_reflow/mm_reflow.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final parser = EpubParser();
+  test('web provenance flows below the title, scales with body text and links only the domain', () {
+    final html = const WebBookParser().withAttribution(
+      '<h1>Article</h1><p>Body</p>',
+      'Article',
+      Uri.parse('https://example.com/article'),
+      DateTime(2026, 10, 29),
+    );
+    final chapter = parser.parseHtml('main', html);
+    for (final ink in MMReaderStyle.values) {
+      final layout = ChapterLayout.layout(
+        chapter,
+        LayoutSpec(width: 500, fontSize: 20, fontFamily: 'serif', readerStyle: ink),
+      );
+      final source = layout.pieces[1];
+      expect(source.rect.top, greaterThanOrEqualTo(layout.pieces.first.rect.bottom));
+      final span = (source.painter!.text! as TextSpan).children!.first as TextSpan;
+      expect(span.style!.fontSize, 15);
+      expect(span.style!.fontFamily, isNull);
+      expect(span.style!.inherit, isFalse);
+      expect(span.style!.color, ink.inkColor.withValues(alpha: ink.inkColor.a * .6));
+      expect(layout.links.single.anchor.quote, 'example.com');
+      expect(layout.links.single.target, 'https://example.com/article');
+      layout.dispose();
+    }
+  });
   test('reflow preserves exact source, selection boxes and hit tests', () {
     final c = parser.parseHtml('main', '<h1>标题</h1><p>${'中文 mixed text emoji 😀 ' * 50}</p>');
     final a = c.anchor(6, 16);

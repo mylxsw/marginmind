@@ -38,7 +38,6 @@ import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
 import 'reader_ocr_controls.dart';
 import 'web_source.dart';
-import '../web_conversion.dart';
 
 /// Source pane: document renderer, tools, document switcher and navigation.
 class ReaderPane extends ConsumerStatefulWidget {
@@ -597,7 +596,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               : LayoutBuilder(
                   builder: (context, constraints) => Row(
                     children: [
-                      if (state.readerPanelVisible && doc.contentManifest == null)
+                      if (state.readerPanelVisible &&
+                          (doc.contentManifest == null || state.readerPanelMode == ReaderPanelMode.annotations))
                         Padding(
                           padding: EdgeInsets.only(bottom: chrome.bottom),
                           child: _ResizableReaderSidebar(
@@ -656,36 +656,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   };
 
   Widget _viewport(
-    BuildContext context,
-    WorkspaceState state,
-    WorkspaceController controller,
-    StudySetContent content,
-    Document doc,
-    String rootTitle,
-    VoidCallback onDismiss, {
-    int side = 0,
-  }) {
-    final child = _documentViewport(context, state, controller, content, doc, rootTitle, onDismiss, side: side);
-    if (doc.origin == null) return child;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.s),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(doc.title, style: context.mmText.headline),
-              WebSourceAttribution(document: doc),
-            ],
-          ),
-        ),
-        Expanded(child: child),
-      ],
-    );
-  }
-
-  Widget _documentViewport(
     BuildContext context,
     WorkspaceState state,
     WorkspaceController controller,
@@ -953,6 +923,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage;
                         return _PagePill(
                           visible: _navigationVisible,
+                          source: doc.origin == null ? null : WebSourceAttribution(document: doc),
                           page: _scrubPage?.round() ?? page,
                           editRequests: _pageFieldRequests,
                           pageCount: doc.pageCount,
@@ -1100,6 +1071,7 @@ class _PagePill extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     this.progress,
+    this.source,
     required this.visible,
   });
 
@@ -1109,7 +1081,7 @@ class _PagePill extends StatelessWidget {
   final ValueChanged<int> onJump;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
-  final Widget? progress;
+  final Widget? progress, source;
   final bool visible;
 
   @override
@@ -1136,7 +1108,13 @@ class _PagePill extends StatelessWidget {
                   color: MMAppearance.reduceTransparencyOf(context) ? c.glassOpaque : c.glass.withValues(alpha: .35),
                   borderRadius: BorderRadius.circular(MMRadii.capsule),
                 ),
-                child: ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (source != null) ...[Flexible(child: source!), const SizedBox(width: MMSpacing.m)],
+                    ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: MMSpacing.s),
@@ -1194,13 +1172,6 @@ class _DocumentSwitcher extends ConsumerWidget {
     final c = context.mmColors;
     final text = context.mmText.callout;
     final active = documents.where((d) => d.id == activeDocumentId).firstOrNull;
-    final review =
-        ref
-            .watch(workspaceContentProvider(studySetId))
-            ?.annotations
-            .where((a) => a.documentId == active?.id && a.needsReview)
-            .toList() ??
-        <Annotation>[];
     final sourceCommands = active == null
         ? <WebSourceCommand, AppCommand>{}
         : webSourceCommands(
@@ -1210,8 +1181,6 @@ class _DocumentSwitcher extends ConsumerWidget {
             refetch: () => ref
                 .read(workspaceBrowserProvider(studySetId).notifier)
                 .open(Uri.parse(active.origin!.url), documentId: active.id),
-            reviewCount: review.length,
-            review: review.isEmpty ? null : () => showWebAlignmentReview(context, review),
           );
     Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
       children: [
@@ -1246,8 +1215,6 @@ class _DocumentSwitcher extends ConsumerWidget {
           sourceCommands[WebSourceCommand.openOriginal]?.onInvoke?.call();
         } else if (id == ':refetch') {
           sourceCommands[WebSourceCommand.refetch]?.onInvoke?.call();
-        } else if (id == ':review') {
-          sourceCommands[WebSourceCommand.review]?.onInvoke?.call();
         } else if (id.isEmpty) {
           onClose?.call();
         } else {
@@ -1273,8 +1240,6 @@ class _DocumentSwitcher extends ConsumerWidget {
           MMDropdownItem<String>(value: ':original', child: row(MMIcons.web, l.openOriginalPage)),
           if (sourceCommands.containsKey(WebSourceCommand.refetch))
             MMDropdownItem<String>(value: ':refetch', child: row(MMIcons.history, l.refetchPage)),
-          if (sourceCommands[WebSourceCommand.review] case final command?)
-            MMDropdownItem<String>(value: ':review', child: row(MMIcons.warning, command.label)),
         ],
         const PopupMenuDivider(height: MMSpacing.s),
         MMDropdownItem<String>(

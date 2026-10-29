@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/document_commands.dart';
+import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
 import 'package:marginmind/features/workspace/web_conversion.dart';
 import 'package:marginmind/features/workspace/web_document.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
@@ -159,11 +161,33 @@ void main() {
     expect(document.origin!.url, 'https://example.com/article');
     expect(controller.state.activeDocumentId, document.id);
     expect(container.read(workspaceBrowserProvider('demo-1')).session, isNull);
-    await tester.tap(find.byType(WebSourceAttribution));
-    await tester.pump();
-    expect(openedUrl, document.origin!.url);
+    expect(find.byType(WebSourceAttribution), findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-documents')));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Open Original Page'));
+    await tester.pumpAndSettle();
+    expect(openedUrl, document.origin!.url);
+    await container
+        .read(contentRepositoryProvider)
+        .update(
+          'demo-1',
+          (content) => content.copyWith(
+            annotations: [
+              ...content.annotations,
+              Annotation(
+                id: 'missing',
+                documentId: document.id,
+                textAnchors: [TextAnchor('main', 0, 7, 'removed', revision: document.revision!)],
+                quote: 'removed',
+                colorIndex: 0,
+                createdAt: DateTime.utc(2026),
+              ),
+            ],
+          ),
+        );
+    await tester.tap(find.byKey(const ValueKey('reader-documents')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Needs Review'), findsNothing);
     await tester.tap(find.text('Refetch Page'));
     await tester.pump();
     expect(container.read(workspaceBrowserProvider('demo-1')).replacingDocumentId, document.id);
@@ -178,6 +202,26 @@ void main() {
     final updated = controller.content.document(document.id)!;
     expect(updated.revision, isNot(document.revision));
     expect(controller.content.documents.where((d) => d.origin != null).length, 1);
+    expect(find.text('1 highlight needs review'), findsOneWidget);
+    await tester.tap(find.text('View'));
+    await tester.pumpAndSettle();
+    expect(controller.state.readerPanelMode, ReaderPanelMode.annotations);
+    expect(find.byType(ReaderSidebar), findsOneWidget);
+    expect(find.text('Needs Review (1)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('annotation-missing')));
+    await tester.pumpAndSettle();
+    final reveal = controller.state.reveal!.textAnchors.single;
+    expect(reveal.chapterId, 'main');
+    expect(reveal.start, 0);
+    expect(reveal.end, 0);
+    expect(reveal.revision, updated.revision);
+    expect(find.text('Can’t find the original text'), findsOneWidget);
+    await tester.longPress(find.byKey(const ValueKey('annotation-missing')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(controller.content.annotation('missing'), isNull);
     fail = true;
     owner.open(Uri.parse(updated.origin!.url), documentId: updated.id);
     await tester.pump();
@@ -192,38 +236,50 @@ void main() {
     owner.close();
     await tester.pumpWidget(const SizedBox.shrink());
   });
-  testWidgets('review sheet lists preserved unresolved quotes', (tester) async {
-    final annotations = [
-      Annotation(
-        id: 'a',
-        documentId: 'web',
-        page: 1,
-        rects: [const PageRect(0, 10, 10, 0)],
-        quote: 'Missing passage',
-        colorIndex: 0,
-        createdAt: DateTime.utc(2026),
-        needsReview: true,
-      ),
-    ];
+  testWidgets('narrow PDF source links only the domain and leaves the date inert', (tester) async {
+    var opens = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('marginmind/external_link'),
+      (_) async {
+        opens++;
+        return true;
+      },
+    );
     await tester.pumpWidget(
       MaterialApp(
         theme: MMTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('en'),
         home: Scaffold(
-          body: Builder(
-            builder: (context) =>
-                MMButton(label: 'Review', onPressed: () => showWebAlignmentReview(context, annotations)),
+          body: Center(
+            child: SizedBox(
+              width: 60,
+              child: WebSourceAttribution(
+                document: Document(
+                  id: 'pdf',
+                  title: 'Article',
+                  fileName: 'article.pdf',
+                  pageCount: 1,
+                  importedAt: DateTime.utc(2026),
+                  origin: DocumentOrigin(
+                    url: 'https://example.com/article',
+                    capturedAt: DateTime.utc(2026, 10, 29),
+                    mode: WebCaptureMode.original,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
-    await tester.tap(find.text('Review'));
-    await tester.pumpAndSettle();
-    expect(find.text('Missing passage'), findsOneWidget);
-    await tester.tap(find.text('Done'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining(' · '));
+    await tester.pump();
+    expect(opens, 0);
+    await tester.tap(find.text('example.com'));
+    await tester.pump();
+    expect(opens, 1);
+    expect(tester.takeException(), isNull);
   });
   testWidgets('fast format switches share one capture; navigation invalidates the prepared document', (tester) async {
     final pending = Completer<BrowserDocumentCapture>();

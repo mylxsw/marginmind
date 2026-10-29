@@ -3629,5 +3629,5 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get annotationNotFound => 'Passage not found';
+  String get annotationNotFound => 'Can’t find the original text';
 }

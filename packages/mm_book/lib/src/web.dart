@@ -117,6 +117,34 @@ class WebBookParser {
     );
   }
 
+  /// App-authored provenance belongs to the article flow, below its title.
+  /// Call after sanitizing the site's markup; only the domain is linked.
+  String withAttribution(String source, String title, Uri url, DateTime capturedAt) {
+    final document = html.parse(source);
+    if (document.body!.text.trim().isEmpty &&
+        !document.body!.querySelectorAll('img').any((n) => n.attributes.containsKey('src'))) {
+      _damaged('No readable content');
+    }
+    var heading = document.body!.querySelector('h1');
+    if (heading == null) {
+      heading = dom.Element.tag('h1')..text = title.trim().isEmpty ? url.host : title;
+      document.body!.nodes.insert(0, heading);
+    }
+    final date = capturedAt.toLocal().toIso8601String().substring(0, 10);
+    final attribution = dom.Element.tag('p')
+      ..classes.add('mm-web-source')
+      ..attributes['style'] = 'font-size:0.75em;font-family:system-ui;opacity:0.6'
+      ..nodes.addAll([
+        dom.Element.tag('a')
+          ..attributes['href'] = url.toString()
+          ..text = url.host,
+        dom.Text(' · $date'),
+      ]);
+    final siblings = heading.parentNode!.nodes;
+    siblings.insert(siblings.indexOf(heading) + 1, attribution);
+    return document.outerHtml;
+  }
+
   /// Preserve inline HTML for structures Markdown cannot represent losslessly
   /// (tables, ruby, nested lists); the shared Markdown parser accepts these.
   String markdown(String source) {
@@ -142,6 +170,7 @@ class WebBookParser {
         return '';
       }
       final body = node.nodes.map(render).join();
+      if (tag == 'p' && node.classes.contains('mm-web-source')) return '\n${node.outerHtml}\n\n';
       if (RegExp(r'^h[1-6]$').hasMatch(tag)) return '\n${'#' * int.parse(tag[1])} $body\n\n';
       return switch (tag) {
         'p' || 'div' || 'section' || 'article' => '$body\n\n',

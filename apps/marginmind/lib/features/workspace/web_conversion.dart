@@ -112,7 +112,9 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
           : previous == null
           ? context.l10n.docSaved(prepared.package.document.title)
           : context.l10n.docUpdated,
-      action: review.isEmpty ? null : (context.l10n.viewAction, () => showWebAlignmentReview(context, review)),
+      action: review.isEmpty
+          ? null
+          : (context.l10n.viewAction, () => controller.showReaderPanel(ReaderPanelMode.annotations)),
     );
   } catch (_) {
     if (context.mounted && !session.disposed) {
@@ -128,30 +130,6 @@ Future<void> showWebConversion(BuildContext context, Ref ref, String studySetId,
     if (ref.mounted) owner.endConversion();
   }
 }
-
-Future<void> showWebAlignmentReview(BuildContext context, List<Annotation> annotations) => showMMSheet<void>(
-  context: context,
-  builder: (context) => MMSheet(
-    title: context.l10n.annotationsNeedReview(annotations.length),
-    actions: [MMButton(label: context.l10n.done, onPressed: () => Navigator.of(context).pop())],
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: MMSizes.webConversionPreviewCompactHeight),
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          for (final annotation in annotations)
-            Padding(
-              padding: const EdgeInsets.only(bottom: MMSpacing.m),
-              child: Text(
-                annotation.quote.trim().isEmpty ? context.l10n.toolArea : annotation.quote,
-                style: context.mmText.body,
-              ),
-            ),
-        ],
-      ),
-    ),
-  ),
-);
 
 class WebConversionSheet extends StatefulWidget {
   const WebConversionSheet({super.key, required this.prepare});

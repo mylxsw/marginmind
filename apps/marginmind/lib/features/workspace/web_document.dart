@@ -34,7 +34,10 @@ class WebDocumentConverter {
     if (title.trim().isEmpty) throw const FormatException('Empty title');
     const parser = bk.WebBookParser();
     final capturedResources = parser.sanitizeResources(capture.resources);
-    final sourceHtml = parser.sanitizeHtml(capture.html, capturedResources.keys.toSet());
+    final sanitized = parser.sanitizeHtml(capture.html, capturedResources.keys.toSet());
+    final sourceHtml = mode == WebCaptureMode.original
+        ? sanitized
+        : parser.withAttribution(sanitized, capture.title, capture.url, capture.capturedAt);
     final snapshot = parser.sanitizeHtml(capture.snapshot, capturedResources.keys.toSet());
     final initial = mode == WebCaptureMode.original
         ? bk.Book(capture.title, [], capturedResources, [])
@@ -55,7 +58,7 @@ class WebDocumentConverter {
     if (pdf != null && pdf.pageCount < 1) throw const FormatException('Empty PDF');
     // Capture identity includes time and snapshot. Repeated captures of the
     // same article get distinct, immutable capture directories. The IR keeps
-    // its canonical content revision, independent of capture time and title edits.
+    // its canonical content revision, including the displayed capture date.
     final captureVersion = sha256
         .convert(
           utf8.encode(
@@ -193,11 +196,14 @@ StudySetContent reconcileWebContent(
       final offset = map['offset'] as int;
       if (source != null && offset <= source.length) {
         // A nearby passage supplies context for zero-length positions.
-        final start = (offset - 32).clamp(0, source.length), end = (offset + 32).clamp(0, source.length);
-        if (end > start) {
-          final oldChapter = bk.BookChapter(map['chapterId'] as String, [
-            bk.BookBlock(id: 'position', kind: bk.BlockKind.paragraph, start: 0, runs: [bk.InlineRun(source)]),
-          ]);
+        final before = (offset - 32).clamp(0, source.length), after = (offset + 32).clamp(0, source.length);
+        final oldChapter = bk.BookChapter(map['chapterId'] as String, [
+          bk.BookBlock(id: 'position', kind: bk.BlockKind.paragraph, start: 0, runs: [bk.InlineRun(source)]),
+        ]);
+        // If an adjacent insertion broke the surrounding passage, a unique
+        // passage on either side can still locate this zero-length position.
+        for (final (start, end) in [(before, after), (offset, after), (before, offset)]) {
+          if (end <= start) continue;
           final oldAnchor = oldChapter.anchor(start, end, revision: map['revision'] as String);
           final anchor = bk.alignTextAnchor(oldAnchor, chapters, revision);
           if (anchor != null) {

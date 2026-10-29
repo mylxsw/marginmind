@@ -49,6 +49,13 @@ void main() {
       expect(document.pageCount, mode == WebCaptureMode.original ? 2 : 0);
       expect(document.contentManifest, mode == WebCaptureMode.original ? isNull : isNotNull);
       expect(document.layout, mode == WebCaptureMode.original ? DocumentLayout.fixed : DocumentLayout.reflow);
+      if (mode != WebCaptureMode.original) {
+        final blocks = result.book.chapters.single.blocks;
+        expect(blocks.first.text, 'Title');
+        expect(blocks[1].text, 'example.com · ${now.toLocal().toIso8601String().substring(0, 10)}');
+        expect(blocks[1].runs.where((r) => r.link != null).single.text, 'example.com');
+        expect(blocks[1].runs.where((r) => r.link != null).single.link, document.origin!.url);
+      }
       if (mode == WebCaptureMode.markdown) {
         expect(utf8.decode(result.package.files[document.sourceFileName]!), contains('# Title'));
       }
@@ -64,15 +71,21 @@ void main() {
       title: 'Title',
       mode: WebCaptureMode.readable,
     );
+    final oldText = first.book.chapters.single.canonicalText;
+    final oldOffset = oldText.indexOf('target');
     final previous = first.package.document.copyWith(
-      readingPosition: TextReadingPosition(revision: first.package.document.revision!, chapterId: 'main', offset: 7),
+      readingPosition: TextReadingPosition(
+        revision: first.package.document.revision!,
+        chapterId: 'main',
+        offset: oldOffset,
+      ),
     );
     final store = InMemoryStudySetContentRepository();
     await store.importDocumentPackage('set', first.package);
     Annotation mark(String id, String quote) => Annotation(
       id: id,
       documentId: 'web',
-      textAnchors: [TextAnchor('main', 7, 7 + quote.length, quote, revision: previous.revision!)],
+      textAnchors: [TextAnchor('main', oldOffset, oldOffset + quote.length, quote, revision: previous.revision!)],
       quote: quote,
       colorIndex: 2,
       createdAt: now,
@@ -119,7 +132,7 @@ void main() {
           Bookmark(
             id: 'bookmark',
             documentId: 'web',
-            position: TextReadingPosition(revision: previous.revision!, chapterId: 'main', offset: 7),
+            position: TextReadingPosition(revision: previous.revision!, chapterId: 'main', offset: oldOffset),
             createdAt: now,
           ),
         ],
@@ -131,19 +144,20 @@ void main() {
       title: 'Title',
       mode: WebCaptureMode.readable,
       previous: previous,
-      oldChapters: {'main': 'before target after'},
+      oldChapters: {'main': oldText},
     );
     // This edit lands after preparation and must be included by reconciliation.
     await store.update('set', (c) => c.copyWith(annotations: [...c.annotations, mark('late', 'target')]));
     final result = await store.importDocumentPackage('set', next.package);
-    expect(result.annotation('a')!.textAnchors.single.start, 11);
+    final newOffset = next.book.chapters.single.canonicalText.indexOf('target');
+    expect(result.annotation('a')!.textAnchors.single.start, newOffset);
     expect(result.annotation('late')!.textAnchors.single.revision, next.package.document.revision);
     expect(result.annotation('a')!.needsReview, isFalse);
     expect(result.annotation('b')!.needsReview, isTrue);
     expect(result.annotation('b')!.textAnchors.single.revision, previous.revision);
-    expect((result.bookmarks.single.position as TextReadingPosition).offset, 11);
-    expect((result.document('web')!.readingPosition as TextReadingPosition).offset, 11);
-    expect((result.noteAttachments.single.target as TextTarget).textAnchors.single.start, 11);
+    expect((result.bookmarks.single.position as TextReadingPosition).offset, newOffset);
+    expect((result.document('web')!.readingPosition as TextReadingPosition).offset, newOffset);
+    expect((result.noteAttachments.single.target as TextTarget).textAnchors.single.start, newOffset);
     expect(result.marginNotes.single.anchor!.textAnchors.single.revision, next.package.document.revision);
     expect(result.inkStrokes.single.textAnchor!.blockId, isNot('old-block'));
     expect(next.package.document.importedAt, previous.importedAt);

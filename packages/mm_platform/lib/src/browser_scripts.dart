@@ -44,6 +44,8 @@ String browserDocumentScript(String readability, String token, {required bool or
 '''
     r'''
   const abort = new AbortController(), x = scrollX, y = scrollY, initialUrl = location.href;
+  // Leave time for serialization and the Dart-side 45 second deadline.
+  const imageDeadline = performance.now() + 40000;
   const restore = () => {if(original && location.href===initialUrl) scrollTo(x,y);};
   const job = {cancel: () => {abort.abort(); restore();}};
   globalThis[key] = job;
@@ -117,12 +119,16 @@ String browserDocumentScript(String readability, String token, {required bool or
           if (uri.href.split('#')[0]===location.href.split('#')[0]) {img.removeAttribute('src');diagnostics.push('image_unavailable');continue;}
           if (!byUrl.has(uri.href)) {
             let path=null;
-            if (count++ < 64) {
+            if (performance.now() >= imageDeadline) diagnostics.push('image_unavailable');
+            else if (count++ < 64) {
               try {
-                const timer=setTimeout(()=>abort.abort(),30000);
+                const imageAbort = new AbortController();
+                const cancelImage = () => imageAbort.abort();
+                abort.signal.addEventListener('abort',cancelImage,{once:true});
+                const timer=setTimeout(cancelImage,Math.min(10000,imageDeadline-performance.now()));
                 let response, bytes;
                 try {
-                  response=await fetch(uri.href,{credentials:'include',signal:abort.signal,referrerPolicy:'no-referrer'});
+                  response=await fetch(uri.href,{credentials:'include',signal:imageAbort.signal,referrerPolicy:'no-referrer'});
                   if (!response.ok || Number(response.headers.get('content-length'))>5*1024*1024) {
                     await response.body?.cancel();throw Error('image_failed');
                   }
@@ -136,7 +142,10 @@ String browserDocumentScript(String readability, String token, {required bool or
                     }
                   } finally {await reader.cancel();reader.releaseLock();}
                   bytes=new Uint8Array(length);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
-                } finally {clearTimeout(timer);}
+                } finally {
+                  clearTimeout(timer);
+                  abort.signal.removeEventListener('abort',cancelImage);
+                }
                 // Raster data stays opaque; SVG is reduced to static markup.
                 let ext=null;
                 if(bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71) ext='png';
@@ -169,7 +178,7 @@ String browserDocumentScript(String readability, String token, {required bool or
       const meta=clone.createElement('meta');meta.setAttribute('http-equiv','Content-Security-Policy');
       meta.setAttribute('content',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; form-action 'none'");
       clone.head.prepend(meta);
-      if(location.href!==initialUrl) throw Error('cancelled');
+      if(abort.signal.aborted || location.href!==initialUrl) throw Error('cancelled');
       job.result={url:initialUrl,title:document.title,html:body.body.innerHTML,
         snapshot:'<!doctype html>\n'+clone.documentElement.outerHTML,resources,diagnostics};
     } catch (_) {job.result={error:'capture_failed'};}

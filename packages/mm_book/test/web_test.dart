@@ -9,6 +9,29 @@ import 'fixtures.dart';
 void main() {
   const parser = WebBookParser();
   BookChapter chapter(String text, [String id = 'main']) => const EpubParser().parseHtml(id, '<p>$text</p>');
+  test('body attribution follows a single title in HTML and Markdown, with only the domain linked', () async {
+    final url = Uri.parse('https://example.com/article?a=1&b=2');
+    for (final source in ['<h1>Article</h1><p>Body</p>', '<p>Body</p>']) {
+      final html = parser.withAttribution(source, 'Article', url, DateTime(2026, 10, 29));
+      for (final book in [
+        parser.parse('Article', html, {}),
+        await const MarkdownBookParser().parse(utf8.encode(parser.markdown(html))),
+      ]) {
+        final blocks = book.chapters.single.blocks;
+        expect(blocks.map((b) => b.text), ['Article', 'example.com · 2026-10-29', 'Body']);
+        final source = blocks[1];
+        expect(source.style['font-size'], '0.75em');
+        expect(source.style['font-family'], 'system-ui');
+        expect(source.style['opacity'], '0.6');
+        expect(source.runs.where((r) => r.link != null).single.text, 'example.com');
+        expect(source.runs.where((r) => r.link != null).single.link, url.toString());
+      }
+    }
+    final escaped = parser.withAttribution('<p>Body</p>', '<script>title</script>', url, DateTime(2026));
+    expect(escaped, contains('&lt;script&gt;title&lt;/script&gt;'));
+    expect(parser.withAttribution('<p>Body</p>', '', url, DateTime(2026)), contains('<h1>example.com</h1>'));
+    expect(() => parser.withAttribution('', 'Title', url, DateTime(2026)), throwsFormatException);
+  });
   test('snapshot sanitization is independent of page JavaScript and retains article text inside forms', () {
     final clean = parser.sanitizeHtml(
       '<form><article><p>visible</p><img src="resources/a.png" onload="secret()">'

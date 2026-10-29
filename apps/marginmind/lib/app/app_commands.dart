@@ -22,7 +22,6 @@ import '../features/workspace/reader_compare.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../features/workspace/workspace_browser.dart';
-import '../features/workspace/web_conversion.dart';
 import '../settings/settings_window.dart';
 import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
@@ -54,15 +53,13 @@ class AppCommand {
 
 enum BrowserCommand { back, forward, reload, stop, convert, close }
 
-enum WebSourceCommand { openOriginal, refetch, review }
+enum WebSourceCommand { openOriginal, refetch }
 
 Map<WebSourceCommand, AppCommand> webSourceCommands(
   AppLocalizations l,
   Document document, {
   required bool canRefetch,
   required VoidCallback refetch,
-  int reviewCount = 0,
-  VoidCallback? review,
 }) => document.origin == null
     ? {}
     : {
@@ -71,7 +68,6 @@ Map<WebSourceCommand, AppCommand> webSourceCommands(
           () => const ExternalLinks().open(Uri.parse(document.origin!.url)),
         ),
         if (canRefetch) WebSourceCommand.refetch: AppCommand(l.refetchPage, refetch),
-        if (review != null) WebSourceCommand.review: AppCommand(l.annotationsNeedReview(reviewCount), review),
       };
 
 Map<BrowserCommand, AppCommand> browserCommands(
@@ -437,9 +433,6 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     }
     final sourceDocument = workspace?.content.document(workspaceState?.activeDocumentId ?? '');
     if (sourceDocument?.origin != null && workspaceId != null) {
-      final review = workspace!.content.annotations
-          .where((a) => a.documentId == sourceDocument!.id && a.needsReview)
-          .toList();
       file.addAll(
         webSourceCommands(
           l,
@@ -448,8 +441,6 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           refetch: () => ref
               .read(workspaceBrowserProvider(workspaceId).notifier)
               .open(Uri.parse(sourceDocument.origin!.url), documentId: sourceDocument.id),
-          reviewCount: review.length,
-          review: review.isEmpty ? null : () => showWebAlignmentReview(context, review),
         ).values,
       );
     }

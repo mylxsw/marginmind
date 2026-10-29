@@ -7,6 +7,7 @@ const _cssProperties = {
   'font-style',
   'line-height',
   'color',
+  'opacity',
   'text-decoration',
   'text-align',
   'text-indent',

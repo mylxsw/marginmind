@@ -1980,5 +1980,5 @@
       }
     }
   },
-  "annotationNotFound": "Passage not found"
+  "annotationNotFound": "Can’t find the original text"
 }

@@ -122,8 +122,6 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                     ? l.browserConvertShort
                     : l.browserConvert,
                 variant: session.canCapture ? MMButtonVariant.primary : MMButtonVariant.secondary,
-                // The GUL-577 converter is a separate staged task. Keep the browser
-                // command available for its consumer without pretending to save data.
                 onPressed: browser.converting ? null : commands[BrowserCommand.convert]!.onInvoke,
               );
               return Column(

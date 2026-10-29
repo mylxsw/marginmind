@@ -6527,7 +6527,7 @@ abstract class AppLocalizations {
   /// No description provided for @annotationNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Passage not found'**
+  /// **'Can’t find the original text'**
   String get annotationNotFound;
 }
 

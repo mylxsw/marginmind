@@ -52,7 +52,8 @@ class ReaderSidebar extends ConsumerWidget {
         builder: (context, _) {
           final shown = mode;
           final tabs = <(ReaderPanelMode, IconData, String, SingleActivator)>[
-            (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails, AppShortcuts.readerThumbnails),
+            if (document.contentManifest == null)
+              (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails, AppShortcuts.readerThumbnails),
             (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline, AppShortcuts.readerOutline),
             (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks, AppShortcuts.readerBookmarks),
             (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations, AppShortcuts.readerAnnotations),
@@ -95,6 +96,7 @@ class ReaderSidebar extends ConsumerWidget {
                     bookmarks: content.bookmarksOn(document.id),
                   ),
                   ReaderPanelMode.annotations => _Annotations(
+                    document: document,
                     studySetId: studySetId,
                     pdf: pdf,
                     annotations: content.annotationsOn(document.id),
@@ -223,14 +225,23 @@ class _AnnotationEntry {
   final MarginNote? note;
 
   String get id => highlight == null ? 'margin-note-${note!.id}' : 'annotation-${highlight!.id}';
-  int get page => highlight?.page ?? note!.page;
+  int get page => highlight?.isText == true ? 0 : highlight?.page ?? note!.page;
+  bool get needsReview => highlight?.needsReview ?? false;
   int get colorIndex => highlight?.colorIndex ?? note!.colorIndex;
   DateTime get createdAt => highlight?.createdAt ?? note!.createdAt;
   String get text => highlight?.quote ?? note!.text;
 }
 
 class _Annotations extends ConsumerWidget {
-  const _Annotations({required this.studySetId, required this.pdf, required this.annotations, required this.notes});
+  const _Annotations({
+    required this.document,
+    required this.studySetId,
+    required this.pdf,
+    required this.annotations,
+    required this.notes,
+  });
+
+  final Document document;
 
   final String studySetId;
   final MMPdfViewController pdf;
@@ -238,18 +249,44 @@ class _Annotations extends ConsumerWidget {
   final List<MarginNote> notes;
 
   Future<void> _open(BuildContext context, WidgetRef ref, _AnnotationEntry entry) async {
-    if (entry.highlight?.needsReview ?? false) {
-      MMHud.show(context, context.l10n.annotationNotFound, icon: MMIcons.warning);
-      return;
-    }
     final session = ref.read(readerMarginProvider(studySetId).notifier);
     if (!await session.finish() || !context.mounted) return;
     // Saving changes the margin layout. Let it consume that revision before
     // issuing a jump, so its reading-position restoration cannot undo the jump.
     await WidgetsBinding.instance.endOfFrame;
     if (!context.mounted) return;
-    ref.read(workspaceProvider(studySetId).notifier).dismissPending();
-    if (entry.note case final note?) {
+    final controller = ref.read(workspaceProvider(studySetId).notifier);
+    controller.dismissPending();
+    if (entry.needsReview || entry.highlight?.isText == true) {
+      await session.close();
+      if (!context.mounted) return;
+      final annotation = entry.highlight!;
+      if (annotation.isText) {
+        final anchors = entry.needsReview
+            ? [
+                TextAnchor(
+                  document.origin == null ? annotation.textAnchors.first.chapterId : 'main',
+                  0,
+                  0,
+                  '',
+                  revision: document.revision!,
+                ),
+              ]
+            : annotation.textAnchors;
+        await controller.revealAnchor(
+          SourceAnchor(
+            target: TextTarget(documentId: document.id, textAnchors: anchors),
+          ),
+        );
+      } else {
+        // A removed PDF passage has no usable rectangles. Use its chapter's
+        // first page, falling back to the document start when there is no TOC.
+        await pdf.jumpToPage(_chapter(entry, controller).page.clamp(1, math.max(1, document.pageCount)));
+      }
+      if (entry.needsReview && context.mounted) {
+        MMHud.show(context, context.l10n.annotationNotFound, icon: MMIcons.warning);
+      }
+    } else if (entry.note case final note?) {
       // Line notes have no quote rectangles; reveal their original PDF line.
       final rects =
           note.anchor?.pages.first.rects ??
@@ -264,6 +301,21 @@ class _Annotations extends ConsumerWidget {
     }
   }
 
+  ({String title, int page}) _chapter(_AnnotationEntry entry, WorkspaceController controller) {
+    if (entry.highlight?.isText == true) return (title: document.title, page: 0);
+    final custom = controller.content.outlineOn(document.id);
+    final locations = custom == null
+        ? flattenOutline(pdf.outline).map((e) => (title: e.title, page: e.page))
+        : OutlineTree.flatten(custom.items)
+              .where((e) => e.position is! TextReadingPosition)
+              .map((e) => (title: e.title, page: e.page));
+    var chapter = (title: document.title, page: 1);
+    for (final location in locations) {
+      if (location.page > 0 && location.page <= entry.page && location.page >= chapter.page) chapter = location;
+    }
+    return chapter;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -271,31 +323,51 @@ class _Annotations extends ConsumerWidget {
     final t = context.mmText;
     final entries =
         [
-          for (final annotation in annotations.where((a) => !a.isText)) _AnnotationEntry.highlight(annotation),
+          for (final annotation in annotations) _AnnotationEntry.highlight(annotation),
           for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
         ]..sort((a, b) {
+          if (a.needsReview != b.needsReview) return a.needsReview ? -1 : 1;
           final byPage = a.page.compareTo(b.page);
           if (byPage != 0) return byPage;
           final byCreated = a.createdAt.compareTo(b.createdAt);
           return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
         });
     if (entries.isEmpty) return _Empty(label: l.noAnnotations);
+    final reviewCount = entries.where((e) => e.needsReview).length;
     final popup = ref.watch(readerMarginProvider(studySetId).select((s) => s.popup));
     return ListView.builder(
       padding: const EdgeInsets.all(MMSizes.sidebarInset),
-      itemCount: entries.length,
+      itemCount: entries.length + (reviewCount > 0 ? 2 : 0),
       itemBuilder: (context, index) {
+        if (reviewCount > 0) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
+              child: Row(
+                children: [
+                  Icon(MMIcons.warning, color: c.caution, size: t.subheadline.fontSize),
+                  const SizedBox(width: MMSpacing.s),
+                  Text(l.annotationsNeedReview(reviewCount), style: t.subheadline.copyWith(color: c.caution)),
+                ],
+              ),
+            );
+          }
+          if (index == reviewCount + 1) return Divider(height: MMSpacing.m, thickness: 0.5, color: c.separator);
+          index -= index <= reviewCount ? 1 : 2;
+        }
         final entry = entries[index];
+        final chapter = _chapter(entry, ref.read(workspaceProvider(studySetId).notifier));
         final color = MMAnnotationColor.fromIndex(entry.colorIndex);
         final label = entry.text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : entry.text;
         final selected = entry.note != null && popup.contains(entry.note!.id);
-        return MMInteractive(
+        final row = MMInteractive(
           key: ValueKey(entry.id),
           onTap: () => _open(context, ref, entry),
-          tooltip: label,
+          // A tooltip's own long-press recognizer would consume the Delete menu.
+          tooltip: entry.needsReview ? null : label,
           selected: selected,
           semanticLabel: entry.note == null ? label : '${l.marginNoteAction}: $label',
-          semanticValue: l.pageNumber(entry.page),
+          semanticValue: entry.page > 0 ? l.pageNumber(entry.page) : document.title,
           builder: (context, s) => Container(
             constraints: BoxConstraints(minHeight: context.mmSidebarRow),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
@@ -310,23 +382,53 @@ class _Annotations extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
                   child: entry.note != null
                       ? Icon(MMIcons.marginNote, size: t.callout.fontSize, color: color.color)
-                      : Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
-                        ),
+                      : Container(width: 3, height: context.mmSidebarRow, color: color.color),
                 ),
                 Expanded(
-                  child: Text(label, maxLines: 3, overflow: TextOverflow.ellipsis, style: t.callout),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: entry.note == null ? MMTypography.readingExcerpt : t.callout,
+                      ),
+                      if (entry.needsReview || entry.highlight?.isText == true)
+                        Text(
+                          chapter.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.footnote.copyWith(color: entry.needsReview ? c.caution : c.secondaryLabel),
+                        ),
+                    ],
+                  ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: MMSpacing.xs),
-                  child: MMCount(entry.page),
-                ),
+                if (entry.page > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: MMSpacing.xs),
+                    child: MMCount(entry.page),
+                  ),
               ],
             ),
           ),
         );
+        return !entry.needsReview
+            ? row
+            : MMContextMenuRegion(
+                onSecondaryTapUp: (details) => showMMMenu(
+                  context,
+                  position: details.globalPosition,
+                  entries: [
+                    MMMenuItem(
+                      l.delete,
+                      () => ref.read(workspaceProvider(studySetId).notifier).deleteHighlight(entry.highlight!.id),
+                      destructive: true,
+                    ),
+                  ],
+                ),
+                child: row,
+              );
       },
     );
   }
