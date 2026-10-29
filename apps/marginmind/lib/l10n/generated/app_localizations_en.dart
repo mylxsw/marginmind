@@ -3095,4 +3095,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get highlightColorHexInvalid => 'Enter a six-digit hex color, such as #12A4B8';
+
+  @override
+  String get translationSourceLanguage => 'Source Language';
+
+  @override
+  String get translationTargetLanguage => 'Target Language';
+
+  @override
+  String get translationDetectLanguage => 'Detect Language';
+
+  @override
+  String get translationSwapLanguages => 'Swap Source and Translation';
+
+  @override
+  String get translationSameLanguage => 'Choose different source and target languages.';
+
+  @override
+  String get translationTraditionalChinese => 'Traditional Chinese';
+
+  @override
+  String get translationJapanese => 'Japanese';
+
+  @override
+  String get translationKorean => 'Korean';
+
+  @override
+  String get translationFrench => 'French';
+
+  @override
+  String get translationGerman => 'German';
+
+  @override
+  String get translationSpanish => 'Spanish';
+
+  @override
+  String get translationPortuguese => 'Portuguese';
+
+  @override
+  String get translationItalian => 'Italian';
+
+  @override
+  String get translationRussian => 'Russian';
+
+  @override
+  String get translationArabic => 'Arabic';
+
+  @override
+  String get translationChooseSourceToSwap => 'Select the source language to swap direction';
+
+  @override
+  String get translationChinese => 'Chinese';
+
+  @override
+  String get translationEnglish => 'English';
 }

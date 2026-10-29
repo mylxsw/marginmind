@@ -5545,6 +5545,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a six-digit hex color, such as #12A4B8'**
   String get highlightColorHexInvalid;
+
+  /// No description provided for @translationSourceLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Language'**
+  String get translationSourceLanguage;
+
+  /// No description provided for @translationTargetLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Language'**
+  String get translationTargetLanguage;
+
+  /// No description provided for @translationDetectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect Language'**
+  String get translationDetectLanguage;
+
+  /// No description provided for @translationSwapLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap Source and Translation'**
+  String get translationSwapLanguages;
+
+  /// No description provided for @translationSameLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose different source and target languages.'**
+  String get translationSameLanguage;
+
+  /// No description provided for @translationTraditionalChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Traditional Chinese'**
+  String get translationTraditionalChinese;
+
+  /// No description provided for @translationJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get translationJapanese;
+
+  /// No description provided for @translationKorean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get translationKorean;
+
+  /// No description provided for @translationFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get translationFrench;
+
+  /// No description provided for @translationGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get translationGerman;
+
+  /// No description provided for @translationSpanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get translationSpanish;
+
+  /// No description provided for @translationPortuguese.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get translationPortuguese;
+
+  /// No description provided for @translationItalian.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get translationItalian;
+
+  /// No description provided for @translationRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get translationRussian;
+
+  /// No description provided for @translationArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get translationArabic;
+
+  /// No description provided for @translationChooseSourceToSwap.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the source language to swap direction'**
+  String get translationChooseSourceToSwap;
+
+  /// No description provided for @translationChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get translationChinese;
+
+  /// No description provided for @translationEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get translationEnglish;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -14,6 +14,7 @@ import 'package:marginmind/features/workspace/widgets/selection_translation.dart
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
+import 'package:marginmind/shared/l10n.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -25,13 +26,20 @@ import 'selection_toolbar_test.dart' show selection;
 
 class SelectionTestTranslator implements ParagraphTranslator {
   final pending = Completer<ParagraphTranslation>();
-  String? language, source;
+  String? language, source, sourceCode;
   CancellationToken? cancel;
   bool closed = false;
   @override
-  Future<ParagraphTranslation> translate(TranslationParagraph p, String lang, CancellationToken token, int maxTokens) {
+  Future<ParagraphTranslation> translate(
+    TranslationParagraph p,
+    String lang,
+    CancellationToken token,
+    int maxTokens, {
+    String? sourceLanguage,
+  }) {
     language = lang;
     source = p.text;
+    sourceCode = sourceLanguage;
     cancel = token;
     return pending.future;
   }
@@ -270,5 +278,174 @@ void main() {
     expect(translator.source, annotation.quote);
     expect(find.text('This is the forgetting curve.'), findsOneWidget);
     expect(controller.content, same(before));
+  });
+
+  testWidgets('inline language changes cancel older requests and discard late results', (tester) async {
+    final translators = List.generate(4, (_) => SelectionTestTranslator());
+    var calls = 0;
+    final container = await pumpApp(
+      tester,
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    Future<void> pick(String key, String language) async {
+      await tester.tap(find.byKey(ValueKey(key)));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text(language).last);
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    await pick('translation-target-language', 'Japanese');
+    expect(translators[0].cancel!.isCancelled, isTrue);
+    expect(translators[1].language, 'ja');
+    await pick('translation-source-language', 'English');
+    expect(translators[1].cancel!.isCancelled, isTrue);
+    expect(translators[2].sourceCode, 'en');
+    await pick('translation-target-language', 'French');
+    expect(translators[2].cancel!.isCancelled, isTrue);
+    expect(translators[3].language, 'fr');
+    expect(translators[3].sourceCode, 'en');
+    translators[0].pending.complete(const ParagraphTranslation('old Chinese'));
+    translators[1].pending.complete(const ParagraphTranslation('old Japanese'));
+    translators[2].pending.completeError(StateError('old request failure'));
+    translators[3].pending.complete(const ParagraphTranslation('Texte français'));
+    await tester.pumpAndSettle();
+    expect(find.text('Texte français'), findsOneWidget);
+    expect(find.text('old Chinese'), findsNothing);
+    expect(find.text('old Japanese'), findsNothing);
+    expect(find.text('Translation failed. Check your model settings or connection and retry.'), findsNothing);
+    expect(translators.every((t) => t.closed), isTrue);
+    expect(container.read(settingsProvider).selectionTranslationDirection, SelectionTranslationDirection.automatic);
+  });
+
+  for (final appearance in ['light', 'dark']) {
+    testWidgets('swap uses the previous translation as source in $appearance', (tester) async {
+      final translators = [SelectionTestTranslator(), SelectionTestTranslator()];
+      var calls = 0;
+      final container = await pumpApp(
+        tester,
+        prefs: {
+          'settings.appearance': appearance,
+          'settings.language': 'zh',
+          'settings.selectionTranslationDirection': 'chineseToEnglish',
+        },
+        overrides: [
+          assistantDefaultModelProvider.overrideWithValue(model),
+          paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+        ],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      final before = controller.content;
+      final annotation = before.annotations.last;
+      controller.tapHighlight(annotation.id, selection.viewportRect!);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('selection-translate')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(translators[0].sourceCode, 'zh');
+      translators[0].pending.complete(const ParagraphTranslation('This curve is called the forgetting curve.'));
+      await tester.pumpAndSettle();
+      final popup = find.byKey(const ValueKey('selection-translation-result'));
+      await screenshot(tester, 'language-controls-$appearance', target: popup);
+      await tester.tap(find.byKey(const ValueKey('translation-swap-languages')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(translators[1].source, 'This curve is called the forgetting curve.');
+      expect(translators[1].sourceCode, 'en');
+      expect(translators[1].language, 'zh');
+      translators[1].pending.complete(const ParagraphTranslation('这条曲线被称为遗忘曲线。'));
+      await tester.pumpAndSettle();
+      expect(find.text('这条曲线被称为遗忘曲线。'), findsOneWidget);
+      expect(controller.content, same(before));
+      await screenshot(tester, 'swapped-languages-$appearance', target: popup);
+      await tester.tap(find.byKey(const ValueKey('translation-target-language')));
+      await tester.pumpAndSettle();
+      final l = tester.element(find.byType(SelectionTranslation)).l10n;
+      expect(find.text(l.translationJapanese), findsOneWidget);
+      expect(find.text(l.translationFrench), findsOneWidget);
+      await screenshot(
+        tester,
+        'language-menu-$appearance',
+        target: find.ancestor(of: find.text(l.translationJapanese), matching: find.byType(MMGlass)).first,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
+
+  testWidgets('same explicit languages show a correction prompt without a model call', (tester) async {
+    final translator = SelectionTestTranslator();
+    var calls = 0;
+    final container = await pumpApp(
+      tester,
+      prefs: {'settings.selectionTranslationDirection': 'englishToChinese'},
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) async {
+          calls++;
+          return translator;
+        }),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('translation-target-language')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('English').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Choose different source and target languages.'), findsOneWidget);
+    expect(calls, 1);
+    expect(translator.cancel!.isCancelled, isTrue);
+    translator.pending.complete(const ParagraphTranslation('late'));
+    await tester.pumpAndSettle();
+    expect(find.text('late'), findsNothing);
+  });
+
+  testWidgets('a superseded credential lookup closes its connection without starting a stale translation', (
+    tester,
+  ) async {
+    final factory = Completer<ParagraphTranslator>();
+    final stale = SelectionTestTranslator(), current = SelectionTestTranslator();
+    var calls = 0;
+    final container = await pumpApp(
+      tester,
+      size: const Size(800, 600),
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) => calls++ == 0 ? factory.future : Future.value(current)),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.byKey(const ValueKey('translation-target-language')));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Traditional Chinese').last);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(current.language, 'zh-Hant');
+    current.pending.complete(const ParagraphTranslation('選中的一段文字'));
+    await tester.pumpAndSettle();
+    factory.complete(stale);
+    await tester.pumpAndSettle();
+    expect(stale.closed, isTrue);
+    expect(stale.source, isNull);
+    expect(find.text('選中的一段文字'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'Language controls fit a narrow reader');
   });
 }

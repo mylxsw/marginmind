@@ -26,8 +26,9 @@ class AcceptanceTranslator implements ParagraphTranslator {
     TranslationParagraph p,
     String lang,
     CancellationToken cancel,
-    int maxTokens,
-  ) async {
+    int maxTokens, {
+    String? sourceLanguage,
+  }) async {
     await cancel.bind(Future<void>.delayed(const Duration(seconds: 2)));
     const translations = {
       'Learning and Memory': '学习与记忆',

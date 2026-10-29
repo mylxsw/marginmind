@@ -23,7 +23,13 @@ class Translator implements ParagraphTranslator {
   final allowances = <int>[];
   bool closed = false;
   @override
-  Future<ParagraphTranslation> translate(TranslationParagraph p, String lang, CancellationToken cancel, int maxTokens) {
+  Future<ParagraphTranslation> translate(
+    TranslationParagraph p,
+    String lang,
+    CancellationToken cancel,
+    int maxTokens, {
+    String? sourceLanguage,
+  }) {
     calls.add(p.index);
     allowances.add(maxTokens);
     return (gates[p.index] = Completer<ParagraphTranslation>()).future;
@@ -53,6 +59,27 @@ void main() {
     await expectLater(translator.translate(paragraph(0), 'zh', cancel, 200), throwsA(isA<ResearchFailure>()));
     cancel.cancel();
     await expectLater(translator.translate(paragraph(0), 'en', cancel, 200), throwsA(isA<ResearchFailure>()));
+    translator.close();
+  });
+
+  test('supported target and explicit source languages reach the model prompt', () async {
+    final client = ScriptClient([for (final _ in TranslationLanguage.values) answer('complete')]);
+    final translator = ModelParagraphTranslator(AssistantConnection(client, Dio()), 'fixture');
+    for (final language in TranslationLanguage.values) {
+      await translator.translate(paragraph(0), language.code, CancellationToken(), 200, sourceLanguage: 'en');
+      final prompt = client.requests.last.first.toJson().toString();
+      expect(prompt, contains('from English into ${language.promptName}'));
+    }
+    expect(client.toolRequests.every((tools) => tools.isEmpty), isTrue);
+    await expectLater(
+      translator.translate(paragraph(0), 'unknown', CancellationToken(), 200),
+      throwsA(isA<ResearchFailure>()),
+    );
+    await expectLater(
+      translator.translate(paragraph(0), 'ja', CancellationToken(), 200, sourceLanguage: 'unknown'),
+      throwsA(isA<ResearchFailure>()),
+    );
+    expect(client.requests, hasLength(TranslationLanguage.values.length));
     translator.close();
   });
   test('visible first, concurrency two, pending reprioritized, one request per key; caches complete values', () async {

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:mm_core/mm_core.dart' show TranslationLanguage;
 import 'package:mm_design/mm_design.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -10,6 +11,21 @@ extension L10nContext on BuildContext {
 }
 
 extension AppLocalizationsX on AppLocalizations {
+  String translationLanguageName(TranslationLanguage language) => switch (language) {
+    TranslationLanguage.chinese => translationChinese,
+    TranslationLanguage.traditionalChinese => translationTraditionalChinese,
+    TranslationLanguage.english => translationEnglish,
+    TranslationLanguage.japanese => translationJapanese,
+    TranslationLanguage.korean => translationKorean,
+    TranslationLanguage.french => translationFrench,
+    TranslationLanguage.german => translationGerman,
+    TranslationLanguage.spanish => translationSpanish,
+    TranslationLanguage.portuguese => translationPortuguese,
+    TranslationLanguage.italian => translationItalian,
+    TranslationLanguage.russian => translationRussian,
+    TranslationLanguage.arabic => translationArabic,
+  };
+
   String colorName(MMAnnotationColor color) => switch (color) {
     MMAnnotationColor.yellow => colorYellow,
     MMAnnotationColor.green => colorGreen,

@@ -5,6 +5,27 @@ import 'package:crypto/crypto.dart';
 
 import 'models.dart';
 
+/// Stable language codes shared by translation controls and model prompts.
+enum TranslationLanguage {
+  chinese('zh', 'Simplified Chinese'),
+  traditionalChinese('zh-Hant', 'Traditional Chinese'),
+  english('en', 'English'),
+  japanese('ja', 'Japanese'),
+  korean('ko', 'Korean'),
+  french('fr', 'French'),
+  german('de', 'German'),
+  spanish('es', 'Spanish'),
+  portuguese('pt', 'Portuguese'),
+  italian('it', 'Italian'),
+  russian('ru', 'Russian'),
+  arabic('ar', 'Arabic');
+
+  const TranslationLanguage(this.code, this.promptName);
+  final String code, promptName;
+
+  static TranslationLanguage? fromCode(String? code) => values.where((language) => language.code == code).firstOrNull;
+}
+
 /// Original PDF text and character boxes, before crop or viewer transforms.
 class TranslationPage {
   TranslationPage(this.page, this.text, List<PageRect> boxes) : boxes = List.unmodifiable(boxes);

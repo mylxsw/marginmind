@@ -47,17 +47,21 @@ class SelectionTranslation extends ConsumerStatefulWidget {
   ConsumerState<SelectionTranslation> createState() => _SelectionTranslationState();
 }
 
-enum _Problem { setup, offline, failed, tooLong }
+enum _Problem { setup, offline, failed, tooLong, sameLanguage }
 
 class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
   CancellationToken? _cancel;
-  ParagraphTranslator? _translator;
   String? _answer;
   _Problem? _problem;
-  late final String _language = ref
-      .read(settingsProvider)
-      .selectionTranslationDirection
-      .targetLanguage(widget.paragraph.text);
+  late String _sourceText = widget.paragraph.text;
+  late TranslationLanguage? _sourceLanguage = switch (ref.read(settingsProvider).selectionTranslationDirection) {
+    SelectionTranslationDirection.automatic => null,
+    SelectionTranslationDirection.englishToChinese => TranslationLanguage.english,
+    SelectionTranslationDirection.chineseToEnglish => TranslationLanguage.chinese,
+  };
+  late TranslationLanguage _targetLanguage = TranslationLanguage.fromCode(
+    ref.read(settingsProvider).selectionTranslationDirection.targetLanguage(widget.paragraph.text),
+  )!;
 
   @override
   void initState() {
@@ -66,14 +70,29 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
   }
 
   Future<void> _translate() async {
+    _cancel?.cancel();
     final cancel = CancellationToken();
     _cancel = cancel;
+    final sourceLanguage = _sourceLanguage, targetLanguage = _targetLanguage;
+    final paragraph = TranslationParagraph(
+      documentId: widget.paragraph.documentId,
+      page: widget.paragraph.page,
+      index: widget.paragraph.index,
+      text: _sourceText,
+      fingerprint: '',
+      rects: widget.paragraph.rects,
+    );
+    bool current() => mounted && identical(_cancel, cancel) && !cancel.isCancelled;
     setState(() {
       _answer = null;
       _problem = null;
     });
     ParagraphTranslator? translator;
     try {
+      if (sourceLanguage == targetLanguage) {
+        setState(() => _problem = _Problem.sameLanguage);
+        return;
+      }
       final model = ref.read(assistantDefaultModelProvider);
       if (model == null) {
         setState(() => _problem = _Problem.setup);
@@ -85,21 +104,22 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
         setState(() => _problem = _Problem.offline);
         return;
       }
-      if (widget.paragraph.text.length > 24000) {
+      if (paragraph.text.length > 24000) {
         setState(() => _problem = _Problem.tooLong);
         return;
       }
       translator = await ref.read(paragraphTranslatorProvider)(model);
-      if (!mounted || cancel.isCancelled) return;
-      _translator = translator;
+      if (!current()) return;
       final translated = await cancel
-          .bind(translator.translate(widget.paragraph, _language, cancel, 16384))
+          .bind(
+            translator.translate(paragraph, targetLanguage.code, cancel, 16384, sourceLanguage: sourceLanguage?.code),
+          )
           .timeout(const Duration(seconds: 90));
-      if (!mounted || cancel.isCancelled) return;
+      if (!current()) return;
       if (translated.text.trim().isEmpty) throw StateError('Empty translation');
       setState(() => _answer = translated.text.trim());
     } catch (error) {
-      if (mounted && !cancel.isCancelled) {
+      if (current()) {
         setState(
           () => _problem = error is ResearchFailure && error.kind == ResearchFailureKind.authentication
               ? _Problem.setup
@@ -108,9 +128,33 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
       }
     } finally {
       cancel.cancel();
-      if (identical(_translator, translator)) _translator = null;
       translator?.close();
     }
+  }
+
+  void _setSource(String code) {
+    final language = TranslationLanguage.fromCode(code);
+    if (language == _sourceLanguage) return;
+    setState(() => _sourceLanguage = language);
+    unawaited(_translate());
+  }
+
+  void _setTarget(TranslationLanguage language) {
+    if (language == _targetLanguage) return;
+    setState(() => _targetLanguage = language);
+    unawaited(_translate());
+  }
+
+  void _swap() {
+    final answer = _answer;
+    final source = _sourceLanguage;
+    if (answer == null || source == null) return;
+    setState(() {
+      _sourceText = answer;
+      _sourceLanguage = _targetLanguage;
+      _targetLanguage = source;
+    });
+    unawaited(_translate());
   }
 
   @override
@@ -148,14 +192,46 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
               children: [
                 Row(
                   children: [
-                    Icon(MMIcons.translate, color: c.icon, size: 16),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        _language == 'zh'
-                            ? l.selectionTranslationEnglishToChinese
-                            : l.selectionTranslationChineseToEnglish,
-                        style: t.body,
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: MMPopUpButton<String>(
+                              key: const ValueKey('translation-source-language'),
+                              value: _sourceLanguage?.code ?? 'auto',
+                              items: [
+                                ('auto', l.translationDetectLanguage),
+                                for (final language in TranslationLanguage.values)
+                                  (language.code, l.translationLanguageName(language)),
+                              ],
+                              onChanged: _setSource,
+                              semanticLabel: l.translationSourceLanguage,
+                              maxWidth: 132,
+                            ),
+                          ),
+                          MMIconButton(
+                            key: const ValueKey('translation-swap-languages'),
+                            icon: MMIcons.swapSides,
+                            tooltip: _sourceLanguage == null
+                                ? l.translationChooseSourceToSwap
+                                : l.translationSwapLanguages,
+                            size: 28,
+                            onPressed: _answer == null || _sourceLanguage == null ? null : _swap,
+                          ),
+                          Flexible(
+                            child: MMPopUpButton<TranslationLanguage>(
+                              key: const ValueKey('translation-target-language'),
+                              value: _targetLanguage,
+                              items: [
+                                for (final language in TranslationLanguage.values)
+                                  (language, l.translationLanguageName(language)),
+                              ],
+                              onChanged: _setTarget,
+                              semanticLabel: l.translationTargetLanguage,
+                              maxWidth: 132,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (_answer != null)
@@ -175,7 +251,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.paragraph.text,
+                          _sourceText,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: t.footnote.copyWith(color: c.secondaryLabel),
@@ -189,6 +265,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                             _Problem.offline => l.selectionTranslationOffline,
                             _Problem.tooLong => l.selectionTranslationTooLong,
                             _Problem.failed => l.selectionTranslationFailed,
+                            _Problem.sameLanguage => l.translationSameLanguage,
                           }, style: t.body),
                           const SizedBox(height: 10),
                           Row(
@@ -201,7 +278,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                                     if (mounted) unawaited(_translate());
                                   },
                                 )
-                              else if (_problem != _Problem.tooLong)
+                              else if (_problem != _Problem.tooLong && _problem != _Problem.sameLanguage)
                                 MMButton(label: l.assistantRetry, onPressed: _translate),
                             ],
                           ),

@@ -2963,4 +2963,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get highlightColorHexInvalid => '请输入六位十六进制颜色，例如 #12A4B8';
+
+  @override
+  String get translationSourceLanguage => '原文语言';
+
+  @override
+  String get translationTargetLanguage => '译文语言';
+
+  @override
+  String get translationDetectLanguage => '自动检测';
+
+  @override
+  String get translationSwapLanguages => '互换原文与译文';
+
+  @override
+  String get translationSameLanguage => '请选择不同的原文和译文语言。';
+
+  @override
+  String get translationTraditionalChinese => '繁体中文';
+
+  @override
+  String get translationJapanese => '日语';
+
+  @override
+  String get translationKorean => '韩语';
+
+  @override
+  String get translationFrench => '法语';
+
+  @override
+  String get translationGerman => '德语';
+
+  @override
+  String get translationSpanish => '西班牙语';
+
+  @override
+  String get translationPortuguese => '葡萄牙语';
+
+  @override
+  String get translationItalian => '意大利语';
+
+  @override
+  String get translationRussian => '俄语';
+
+  @override
+  String get translationArabic => '阿拉伯语';
+
+  @override
+  String get translationChooseSourceToSwap => '先选择原文语言，再互换方向';
+
+  @override
+  String get translationChinese => '中文';
+
+  @override
+  String get translationEnglish => '英文';
 }

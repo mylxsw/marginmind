@@ -42,8 +42,9 @@ class TestTranslator implements ParagraphTranslator {
     TranslationParagraph p,
     String language,
     CancellationToken cancel,
-    int maxTokens,
-  ) async {
+    int maxTokens, {
+    String? sourceLanguage,
+  }) async {
     calls.add(p.index);
     languages.add(language);
     return (pending[p.index] = Completer<ParagraphTranslation>()).future;
