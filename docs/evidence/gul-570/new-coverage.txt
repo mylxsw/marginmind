@@ -1,0 +1,4 @@
+packages/mm_book/: 144/145 = 99.31%
+packages/mm_reflow/lib/: 159/159 = 100.00%
+packages/mm_reflow/example/lib/: 122/222 = 54.95%
+New code combined (including example): 425/526 = 80.80%

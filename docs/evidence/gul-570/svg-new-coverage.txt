@@ -1,0 +1,5 @@
+packages/mm_book/lib/: 147/151 = 97.35%
+packages/mm_reflow/lib/: 189/189 = 100.00%
+packages/mm_reflow/example/lib/: 236/270 = 87.41%
+packages/mm_design/lib/src/foundation/book_image.dart: 21/21 = 100.00%
+Combined: 593/631 = 93.98%

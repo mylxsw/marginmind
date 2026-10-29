@@ -32,3 +32,7 @@ macrun.toml
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Downloaded EPUB benchmarks (fetch_books.py verifies SHA-256)
+/packages/mm_reflow/example/assets/33283.epub
+/packages/mm_reflow/example/assets/28885.epub

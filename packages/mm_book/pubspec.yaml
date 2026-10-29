@@ -1,0 +1,15 @@
+name: mm_book
+description: Pure Dart book IR and bounded EPUB prototype parser.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.13.0
+dependencies:
+  archive: 4.5.2
+  xml: 7.0.1
+  html: 0.15.7
+  characters: 1.4.1
+dev_dependencies:
+  test: ^1.26.0
+  lints: ^6.0.0

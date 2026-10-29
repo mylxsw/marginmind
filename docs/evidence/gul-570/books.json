@@ -1,0 +1,44 @@
+[
+  {
+    "id": 7337,
+    "title": "道德經",
+    "author": "Laozi",
+    "role": "Chinese",
+    "url": "https://www.gutenberg.org/ebooks/7337.epub3.images",
+    "catalog": "https://www.gutenberg.org/ebooks/7337",
+    "sha256": "75564e3b400d811caf6923dcf9bd1359e2d2be9554a1e15a753b5bc7892bee22",
+    "bytes": 79405,
+    "table_elements": 0,
+    "image_files": 1,
+    "license": "Project Gutenberg license included in EPUB; underlying historical work public domain in US",
+    "downloaded": "2026-10-29"
+  },
+  {
+    "id": 33283,
+    "title": "Calculus Made Easy",
+    "author": "Silvanus P. Thompson (d. 1916)",
+    "role": "tables",
+    "url": "https://www.gutenberg.org/ebooks/33283.epub3.images",
+    "catalog": "https://www.gutenberg.org/ebooks/33283",
+    "sha256": "a82a353c67ddedeef19267fe225ff29077fe989c8909734054fbbc78365e123b",
+    "bytes": 13215877,
+    "table_elements": 15,
+    "image_files": 68,
+    "license": "Project Gutenberg license included in EPUB; underlying historical work public domain in US",
+    "downloaded": "2026-10-29"
+  },
+  {
+    "id": 28885,
+    "title": "Alice’s Adventures in Wonderland",
+    "author": "Lewis Carroll (d. 1898); Arthur Rackham (d. 1939); Austin Dobson (d. 1921)",
+    "role": "illustrated",
+    "url": "https://www.gutenberg.org/ebooks/28885.epub3.images",
+    "catalog": "https://www.gutenberg.org/ebooks/28885",
+    "sha256": "69c757719102f175303e7e8b8e508f1466e9aa78ddd9afb05609d00150699b3d",
+    "bytes": 1475456,
+    "table_elements": 17,
+    "image_files": 38,
+    "license": "Project Gutenberg license included in EPUB; underlying historical work public domain in US",
+    "downloaded": "2026-10-29"
+  }
+]

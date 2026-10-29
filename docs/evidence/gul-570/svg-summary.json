@@ -1,0 +1,75 @@
+{
+  "events": {
+    "environment": 1,
+    "book": 1,
+    "decode": 74,
+    "layout": 6660,
+    "frame": 400,
+    "memory_round": 6,
+    "book_done": 1,
+    "done": 1
+  },
+  "worst_layout_p95_ms": 30.889,
+  "anchor_failures": 0,
+  "frames": {
+    "cold": {
+      "count": 200,
+      "over": 0,
+      "over_percent": 0.0,
+      "build_p95_ms": 1.795,
+      "raster_p95_ms": 4.354
+    },
+    "hot": {
+      "count": 200,
+      "over": 0,
+      "over_percent": 0.0,
+      "build_p95_ms": 1.88,
+      "raster_p95_ms": 4.585
+    }
+  },
+  "decode_and_first_layout": {
+    "cold": {
+      "count": 37,
+      "p95_ms": 260.83,
+      "max_ms": 269.803
+    },
+    "hot": {
+      "count": 37,
+      "p95_ms": 247.865,
+      "max_ms": 256.685
+    }
+  },
+  "memory_rounds": [
+    {
+      "round": 0,
+      "switches": 0,
+      "pss_kib": 179041
+    },
+    {
+      "round": 1,
+      "switches": 10,
+      "pss_kib": 178448
+    },
+    {
+      "round": 2,
+      "switches": 20,
+      "pss_kib": 177795
+    },
+    {
+      "round": 3,
+      "switches": 30,
+      "pss_kib": 178395
+    },
+    {
+      "round": 4,
+      "switches": 40,
+      "pss_kib": 179019
+    },
+    {
+      "round": 5,
+      "switches": 50,
+      "pss_kib": 178375
+    }
+  ],
+  "unsupported_paths": []
+}
