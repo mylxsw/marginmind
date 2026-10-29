@@ -50,6 +50,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   ReadingSync _sync = ReadingSync();
   final _positions = <String, PdfReadingPosition>{};
   final _restoring = <String>{};
+  final _scrollPositions = <String, PdfScrollPosition>{};
   int _epoch = 0;
   int _transition = 0;
   int? _queuedSide;
@@ -116,6 +117,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   void remember() {
     _epoch++;
+    _scrollPositions.clear();
     _driver = null;
     _queuedSide = null;
     _driven = null;
@@ -126,6 +128,8 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     }.whereType<String>()) {
       final position = pdf(id).readingPosition;
       if (position != null) _positions[id] = position;
+      final scroll = pdf(id).scrollPosition;
+      if (scroll != null) _scrollPositions[id] = scroll;
     }
   }
 
@@ -237,6 +241,8 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   }
 
   Future<void> ready(String id) async {
+    // A new viewer/document may have identical dimensions but a new origin.
+    _scrollPositions.remove(id);
     final position = _positions.remove(id);
     if (position == null) return;
     _restoring.add(id);
@@ -335,30 +341,40 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
         final position = pdf(id).readingPosition;
         if (position != null) _workspace.recordPage(id, position.page);
       }
-      if (source != null) unawaited(_drive(source));
+      final previous = Map.of(_scrollPositions);
+      for (final id in [document(0), document(1)].whereType<String>()) {
+        final position = pdf(id).scrollPosition;
+        if (position != null) _scrollPositions[id] = position;
+      }
+      if (source != null && document(source) != null && document(1 - source) != null) {
+        final id = document(source)!, targetId = document(1 - source)!;
+        final before = previous[id], current = _scrollPositions[id];
+        final targetBefore = previous[targetId], targetNow = _scrollPositions[targetId];
+        if (before != null &&
+            current != null &&
+            current.sameGeometry(before) &&
+            targetBefore != null &&
+            targetNow != null &&
+            targetNow.sameGeometry(targetBefore)) {
+          unawaited(_drive(source, current.offset - before.offset));
+        }
+      }
     });
   }
 
-  Future<void> _drive(int side) async {
-    if (state?.sync != true || _restoring.isNotEmpty || _driver != side) return;
-    final map = mapping;
-    if (map == null) return;
-    final source = pdf(document(side)!).readingPosition;
-    final target = pdf(document(1 - side)!);
-    final current = target.readingPosition;
-    if (source == null || current == null) return;
-    final position = target.clampedReadingPosition(map.map(source, reverse: side == 1));
-    if (position == null) return;
-    final heights = side == 0 ? map.rightHeights : map.leftHeights;
-    if ((ReadingAlignment.scalar(position, heights) - ReadingAlignment.scalar(current, heights)).abs() < .001) {
-      target.stopScroll();
-      return;
-    }
+  Future<void> _drive(int side, double distance) async {
+    if (state?.sync != true || _restoring.isNotEmpty || _driver != side || distance.abs() < .001) return;
+    final targetId = document(1 - side)!;
+    final target = pdf(targetId);
     final epoch = _epoch;
     await _sync.drive(side, () async {
       _driven = 1 - side;
       try {
-        await target.jumpToReadingPosition(position);
+        await target.scrollByScreenDistance(distance);
+        // The follower's movement is the baseline if the user takes over next.
+        // Discard distance blocked at an edge, so reversal follows immediately.
+        final position = target.scrollPosition;
+        if (epoch == _epoch && position != null) _scrollPositions[targetId] = position;
         await SchedulerBinding.instance.endOfFrame;
       } finally {
         if (epoch == _epoch) _driven = null;

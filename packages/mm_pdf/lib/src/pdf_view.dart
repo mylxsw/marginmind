@@ -153,6 +153,18 @@ class MMPdfSelection {
   final Rect? viewportRect;
 }
 
+/// A displayed vertical offset, in logical screen pixels. Geometry changes
+/// establish a new baseline instead of being mistaken for a scroll gesture.
+class PdfScrollPosition {
+  PdfScrollPosition._(this.offset, this._zoom, this._viewSize, this._pages);
+  final double offset, _zoom;
+  final Size _viewSize;
+  final List<Rect> _pages;
+
+  bool sameGeometry(PdfScrollPosition other) =>
+      _zoom == other._zoom && _viewSize == other._viewSize && listEquals(_pages, other._pages);
+}
+
 /// Commands from outside (e.g. "reveal this excerpt") into an [MMPdfView],
 /// and what the view reports back: page, outline and in-document search.
 /// Listeners are notified (never during a build) when any of it changes.
@@ -247,6 +259,34 @@ class MMPdfViewController extends ChangeNotifier {
         Offset(pdf.viewSize.width / 2, pdf.viewSize.height * .25),
       ),
     );
+  }
+
+  PdfScrollPosition? get scrollPosition {
+    if (!isReady) return null;
+    final pdf = _state!._controller;
+    return PdfScrollPosition._(
+      -pdf.documentToLocal(Offset.zero).dy,
+      pdf.currentZoom,
+      pdf.viewSize,
+      pdf.layout.pageLayouts,
+    );
+  }
+
+  /// Scroll by the same displayed distance, regardless of PDF size or zoom.
+  /// Safe-range clamping discards movement beyond either document edge.
+  Future<void> scrollByScreenDistance(double distance) async {
+    if (!isReady || !distance.isFinite || distance.abs() < .001) return;
+    final pdf = _state!._controller;
+    _state!._marginInputEpoch++;
+    final next = pdf.makeMatrixInSafeRange(
+      pdf.calcMatrixFor(pdf.centerPosition + Offset(0, distance / pdf.currentZoom), zoom: pdf.currentZoom),
+      forceClamp: true,
+    );
+    if ((MatrixUtils.transformPoint(next, Offset.zero).dy - pdf.documentToLocal(Offset.zero).dy).abs() < .001) {
+      pdf.stopInteractiveViewerAnimation();
+      return;
+    }
+    await pdf.goTo(next, duration: Duration.zero);
   }
 
   void stopScroll() {

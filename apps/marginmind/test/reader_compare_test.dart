@@ -264,18 +264,26 @@ void main() {
     }
 
     final leftView = find.byWidgetPredicate((w) => w is MMPdfView && identical(w.controller, session.pdf('c1')));
-    final rightBeforeWheel = session.pdf('c2').readingPosition!;
-    await tester.sendEventToBinding(
-      PointerScrollEvent(position: tester.getCenter(leftView), scrollDelta: const Offset(0, 180)),
-    );
-    await drain(tester);
-    expect(session.pdf('c2').readingPosition!.y, isNot(closeTo(rightBeforeWheel.y, 1)));
-    expect(session.pdf('c2').readingPosition!.y, closeTo(session.pdf('c1').readingPosition!.y, 1));
-    await move(0, 2, 500);
-    expect(session.pdf('c2').readingPosition!.page, 2);
-    expect(session.pdf('c2').readingPosition!.y, closeTo(500, 1));
-    await move(1, 2, 250);
-    expect(session.pdf('c1').readingPosition!.y, closeTo(250, 1));
+    final a = session.pdf('c1'), b = session.pdf('c2');
+    Future<void> equalMovement(Future<void> Function() gesture) async {
+      final left = a.scrollPosition!.offset, right = b.scrollPosition!.offset;
+      await gesture();
+      expect(b.scrollPosition!.offset - right, closeTo(a.scrollPosition!.offset - left, .01));
+    }
+
+    await equalMovement(() async {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: tester.getCenter(leftView), scrollDelta: const Offset(0, 180)),
+      );
+      await drain(tester);
+    });
+    await equalMovement(() => move(0, 2, 500));
+    await equalMovement(() => move(1, 2, 250));
+    await equalMovement(() async {
+      await tester.drag(leftView, const Offset(0, 60), kind: PointerDeviceKind.touch);
+      await drain(tester);
+    });
+    final rightBeforeResize = b.readingPosition!;
     final stable = session.pdf('c1').readingPosition!.toJson();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
@@ -288,7 +296,7 @@ void main() {
     await drain(tester);
     expect(session.pdf('c1').readingPosition!.page, before.page);
     expect(session.pdf('c1').readingPosition!.y, closeTo(before.y, 1));
-    expect(session.pdf('c2').readingPosition!.y, closeTo(250, 1));
+    expect(session.pdf('c2').readingPosition!.y, closeTo(rightBeforeResize.y, 1));
     session.exit();
     await drain(tester);
     await tester.pumpWidget(const SizedBox());
@@ -323,17 +331,29 @@ void main() {
       await drain(tester);
     }
 
-    final before = right.readingPosition!;
-    await wheel(0, 160);
-    expect(right.readingPosition!.page, greaterThan(before.page));
-    final expected = session.mapping!.map(left.readingPosition!);
-    expect(right.readingPosition!.page, expected.page);
-    expect(right.readingPosition!.y, closeTo(expected.y, 1));
-    final leftBefore = left.readingPosition!;
-    await wheel(1, 500);
-    expect(left.readingPosition!.y, isNot(closeTo(leftBefore.y, .1)));
-    final reverse = session.mapping!.map(right.readingPosition!, reverse: true);
-    expect(left.readingPosition!.y, closeTo(reverse.y, 1));
+    Future<void> equalWheel(int side, double delta) async {
+      final a = left.scrollPosition!.offset, b = right.scrollPosition!.offset;
+      await wheel(side, delta);
+      final leftDelta = left.scrollPosition!.offset - a, rightDelta = right.scrollPosition!.offset - b;
+      expect(side == 0 ? leftDelta : rightDelta, delta > 0 ? greaterThan(0) : lessThan(0));
+      expect(rightDelta, closeTo(leftDelta, .01));
+    }
+
+    await equalWheel(0, 160);
+    expect(right.readingPosition!.page, 1); // A short PDF no longer races through a long PDF.
+    await equalWheel(1, 200);
+    await equalWheel(0, -80);
+    // Different zoom and cropping must still move the same screen distance.
+    await container
+        .read(workspaceProvider('demo-1').notifier)
+        .setDocumentCrop('c2', DocumentCrop(all: CropInsets(left: 24, top: 36, right: 60, bottom: 80)));
+    await drain(tester);
+    final zooming = right.setWidthZoom(1.5);
+    await tester.pumpAndSettle();
+    await zooming;
+    await drain(tester);
+    await equalWheel(0, 120);
+    await equalWheel(1, -60);
     await session.toggleSync();
     await drain(tester);
     Future<void> jump(MMPdfViewController pdf, int page, double y) async {
@@ -359,6 +379,7 @@ void main() {
     final pair = container.read(readerCompareProvider('demo-1'))!;
     expect(pair.alignPoints, hasLength(1));
     expect(pair.alignPoints.single.right.page, 30);
+    await equalWheel(0, -40);
     expect((await repository.load('demo-1')).comparePairs.single.toJson(), pair.toJson());
     final undo = container.read(workspaceProvider('demo-1').notifier).undo();
     await drain(tester);
@@ -429,17 +450,24 @@ void main() {
     await move(288, 400);
     expect(short.readingPosition!.toJson(), atEnd);
     await stable();
-    await move(100, 400);
-    expect(short.readingPosition!.toJson(), isNot(atEnd));
+    final a = short.scrollPosition!.offset, b = long.scrollPosition!.offset;
+    session.userInput(1);
+    await long.scrollByScreenDistance(-80);
+    await drain(tester);
+    expect(short.scrollPosition!.offset - a, closeTo(-80, .01));
+    expect(long.scrollPosition!.offset - b, closeTo(-80, .01));
     await stable();
     await move(1, 900);
-    final atStart = short.readingPosition!.toJson();
+    final atStart = short.scrollPosition!.offset;
     await stable();
-    await move(2, 800);
-    expect(short.readingPosition!.toJson(), atStart);
+    // Keep moving towards the top while the short PDF is already clamped.
+    await move(1, 900);
+    expect(short.scrollPosition!.offset, atStart);
+    session.userInput(1);
+    await long.scrollByScreenDistance(80);
+    await drain(tester);
+    expect(short.scrollPosition!.offset - atStart, closeTo(80, .01));
     await stable();
-    await move(100, 400);
-    expect(short.readingPosition!.toJson(), isNot(atStart));
     expect(container.read(readerCompareProvider('demo-1'))!.sync, true);
     expect(container.read(readerCompareProvider('demo-1'))!.alignPoints, isEmpty);
     await tester.pumpWidget(const SizedBox());
