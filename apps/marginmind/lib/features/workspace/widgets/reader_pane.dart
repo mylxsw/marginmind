@@ -370,8 +370,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           else
             MMDropdownButton<Object>(
               key: const ValueKey('reader-more'),
-              tooltip: capabilities.readingSettings ? l.readingSettings : l.moreTools,
-              icon: Icon(capabilities.readingSettings ? MMIcons.readingSettings : MMIcons.more),
+              tooltip: l.moreTools,
+              icon: const Icon(MMIcons.more),
               onSelected: (value) {
                 pageCommand(value);
                 if (value is MMReaderStyle) setStyle(value);

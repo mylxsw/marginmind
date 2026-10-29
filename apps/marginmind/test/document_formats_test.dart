@@ -381,10 +381,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Couldn’t Import “Book.epub”'), findsOneWidget);
       expect(find.text(reason), findsOneWidget);
+      expect(find.byKey(const ValueKey('import-failed-badge')), findsOneWidget);
+      expect(
+        find.descendant(of: find.byKey(const ValueKey('import-failed-badge')), matching: find.byIcon(MMIcons.shield)),
+        kind == DocumentImportError.drm ? findsOneWidget : findsNothing,
+      );
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.text(reason), findsNothing);
     }
+    showNotice(
+      tester.element(find.byType(ReaderPane)),
+      const ImportedNotice(
+        0,
+        ['A.epub', 'B.mobi'],
+        errors: {'A.epub': DocumentImportError.drm, 'B.mobi': DocumentImportError.damaged},
+      ),
+      rootTitle: '',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('2 documents couldn’t be imported'), findsOneWidget);
+    expect(find.text('B.mobi — The file is damaged'), findsOneWidget);
+    expect(find.byKey(const ValueKey('import-failed-badge')), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('mixed desktop drop preserves supported documents and reports unsupported name', (tester) async {

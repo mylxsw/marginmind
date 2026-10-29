@@ -36,6 +36,7 @@ abstract final class MMSizes {
   static const double readerZoomMenuWidth = 280;
   static const double dropdownRowHeight = 30;
   static const double dropdownIcon = 14;
+  static const double noticeBadge = 40;
   static const double readerCompareHeader = 34;
   static const double readerCompareDivider = .5;
   static const double readerCompareControl = 24;

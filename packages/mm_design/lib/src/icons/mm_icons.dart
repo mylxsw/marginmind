@@ -108,6 +108,7 @@ abstract final class MMIcons {
   static const IconData link = CupertinoIcons.link; // link
   static const IconData openExternal = CupertinoIcons.arrow_up_right_square; // arrow.up.right.square
   static const IconData warning = CupertinoIcons.exclamationmark_triangle; // exclamationmark.triangle
+  static const IconData shield = CupertinoIcons.shield; // shield
   static const IconData check = CupertinoIcons.checkmark; // checkmark
   static const IconData stop = CupertinoIcons.stop_fill; // stop.fill
   static const IconData microphone = CupertinoIcons.mic; // mic

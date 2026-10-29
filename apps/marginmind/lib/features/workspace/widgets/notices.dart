@@ -52,22 +52,49 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
             onPressed: () => Navigator.of(dialogContext).pop(),
           ),
         ],
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(dialogContext).height * MMSizes.bottomSheetMedium),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final name in notice.failed)
-                  Text(
-                    notice.failed.length == 1
-                        ? reason(notice.errors[name]!)
-                        : '$name — ${reason(notice.errors[name]!)}',
-                    style: dialogContext.mmText.body,
-                  ),
-              ],
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              key: const ValueKey('import-failed-badge'),
+              width: MMSizes.noticeBadge,
+              height: MMSizes.noticeBadge,
+              decoration: BoxDecoration(
+                color: dialogContext.mmColors.critical.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(MMRadii.row),
+              ),
+              child: Icon(
+                notice.failed.length == 1 && notice.errors[notice.failed.first] == DocumentImportError.drm
+                    ? MMIcons.shield
+                    : MMIcons.warning,
+                color: dialogContext.mmColors.critical,
+              ),
             ),
-          ),
+            const SizedBox(width: MMSpacing.m),
+            Expanded(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(dialogContext).height * MMSizes.bottomSheetMedium,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final name in notice.failed)
+                        Text(
+                          notice.failed.length == 1
+                              ? reason(notice.errors[name]!)
+                              : '$name — ${reason(notice.errors[name]!)}',
+                          style: notice.failed.length == 1
+                              ? dialogContext.mmText.body
+                              : dialogContext.mmText.callout.copyWith(color: dialogContext.mmColors.secondaryLabel),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
