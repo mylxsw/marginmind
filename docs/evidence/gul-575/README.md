@@ -36,4 +36,4 @@ Flutter 3.47.2 / Dart 3.13.2, Xcode 27.1, macOS ARM64; iPad Pro 13-inch (M5), iO
 
 Windows `windows-latest` also passed both `flutter build windows --debug` and the real browser integration test: [Actions job](https://github.com/mylxsw/marginmind/actions/runs/40922140386/job/123617923402), tested commit `35930bf` (6m51s). Later changes only tighten address validation and isolate hidden PDF focus; their Dart/widget tests run locally and in CI.
 
-The macOS native window suite is recorded in the PR and task comment.
+The macOS native suite also passed: `xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES` (22 tests). Run `flutter build macos --config-only --debug` first after a `flutter test integration_test` invocation: otherwise the generated Xcode config still points at Flutter's deleted temporary test listener. The first attempt exposed that stale path; after regenerating config the suite passed. LaunchServices registration was skipped on this host as described above; no global registration or daemon settings were changed.
