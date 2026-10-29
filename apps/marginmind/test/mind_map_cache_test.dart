@@ -116,6 +116,26 @@ void expectSameGeometry(TreeLayoutResult a, TreeLayoutResult b) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('legacy summaries without a card distinguish stored labels from active drafts', () {
+    final cache = MindMapRenderCache();
+    final content = fixture(2).copyWith(
+      summaries: const [MapSummary(id: 's', fromId: 'c0', toId: 'c1', label: 'Legacy summary')],
+    );
+    final stored = update(cache, content);
+    expect(stored.summaries['s']!.label.width, greaterThan(0));
+    expect(update(cache, content), same(stored));
+    final empty = content.copyWith(summaries: [content.summaries.single.copyWith(label: '')]);
+    expect(update(cache, empty).summaries['s']!.label.width, 0);
+    final editing = cache.update(
+      content: empty,
+      rootTitle: 'Root',
+      localizations: english,
+      theme: theme,
+      markDraft: ('s', ''),
+    );
+    expect(editing.summaries['s']!.label.width, greaterThan(0));
+    expect(update(cache, empty).summaries['s']!.label.width, 0);
+  });
   test('500 mixed nodes preserve every original rectangle and edge', () {
     final content = fixture();
     final cached = update(MindMapRenderCache(), content);

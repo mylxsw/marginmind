@@ -509,46 +509,59 @@ class _OutlineRowState extends State<_OutlineRow> {
                 : (s.hovered ? c.hover : Colors.transparent),
             borderRadius: BorderRadius.circular(MMRadii.row),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(top: 6, right: 8),
-                decoration: BoxDecoration(
-                  color: widget.dot,
-                  shape: BoxShape.circle,
-                  border: widget.dot == null ? Border.all(color: fg2) : null,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 6, right: 8),
+                  decoration: BoxDecoration(
+                    color: widget.dot,
+                    shape: BoxShape.circle,
+                    border: widget.dot == null ? Border.all(color: fg2) : null,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    widget.editor ??
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      widget.editor ??
+                          Text(
+                            widget.label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: _OutlineRow.labelStyle(t, bold: widget.bold).copyWith(color: fg),
+                          ),
+                      if (widget.sub != null)
                         Text(
-                          widget.label,
+                          widget.sub!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: _OutlineRow.labelStyle(t, bold: widget.bold).copyWith(color: fg),
+                          style: t.readingExcerpt.copyWith(color: fg2),
                         ),
-                    if (widget.sub != null)
-                      Text(
-                        widget.sub!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.readingExcerpt.copyWith(color: fg2),
+                    ],
+                  ),
+                ),
+                if (widget.meta != null)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 3),
+                      child: Tooltip(
+                        message: widget.meta!,
+                        child: Text(
+                          widget.meta!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.footnote.copyWith(color: fg2),
+                        ),
                       ),
-                  ],
-                ),
-              ),
-              if (widget.meta != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 3),
-                  child: Text(widget.meta!, style: t.footnote.copyWith(color: fg2)),
-                ),
-            ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

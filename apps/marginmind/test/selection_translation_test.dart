@@ -101,6 +101,7 @@ void main() {
           .map((b) => b.icon)
           .toList();
       expect(icons, [
+        MMIcons.underline,
         MMIcons.copy,
         MMIcons.quoteBubble,
         MMIcons.addNote,
