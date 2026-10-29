@@ -16,13 +16,18 @@ ComparePair reverseComparePair(ComparePair pair) => pair.copyWith(
   alignPoints: [for (final p in pair.alignPoints) AlignPoint(left: p.right, right: p.left)],
 );
 
-/// Replace coincident anchors and validate strict order before persisting.
+/// The newest explicit alignment replaces older anchors that contradict it.
 List<AlignPoint> insertCompareAlignment(ReadingAlignment mapping, List<AlignPoint> points, AlignPoint point) {
   final left = ReadingAlignment.scalar(point.left, mapping.leftHeights);
+  final right = ReadingAlignment.scalar(point.right, mapping.rightHeights);
   final next =
       [
         for (final p in points)
-          if ((ReadingAlignment.scalar(p.left, mapping.leftHeights) - left).abs() >= .001) p,
+          if ((ReadingAlignment.scalar(p.left, mapping.leftHeights) - left).abs() >= .001 &&
+              (ReadingAlignment.scalar(p.right, mapping.rightHeights) - right).abs() >= .001 &&
+              (ReadingAlignment.scalar(p.left, mapping.leftHeights) < left) ==
+                  (ReadingAlignment.scalar(p.right, mapping.rightHeights) < right))
+            p,
         point,
       ]..sort(
         (a, b) => ReadingAlignment.scalar(
@@ -277,7 +282,9 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   Future<bool> align() async {
     final map = mapping;
     if (map == null || _writing) return false;
-    final point = AlignPoint(left: pdf(document(0)!).readingPosition!, right: pdf(document(1)!).readingPosition!);
+    final left = pdf(document(0)!).readingPosition, right = pdf(document(1)!).readingPosition;
+    if (left == null || right == null) return false;
+    final point = AlignPoint(left: left, right: right);
     if (state!.sync &&
         state!.alignPoints.any(
           (p) =>
@@ -297,9 +304,12 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   void userInput(int side) {
     _epoch++;
-    _queuedSide = null;
+    _queuedSide = side;
     _driven = null;
     _sync.userInput(side);
+    // The child viewer may update its matrix before this outer pointer
+    // listener runs. Retain that update and give this gesture ownership.
+    changed(side);
   }
 
   void changed(int side) {
@@ -307,6 +317,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     if (_driven != side && _restoring.isEmpty) _queuedSide = side;
     if (_scheduled) return;
     _scheduled = true;
+    SchedulerBinding.instance.ensureVisualUpdate();
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _scheduled = false;
       final source = _queuedSide;

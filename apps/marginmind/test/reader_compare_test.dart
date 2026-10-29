@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -75,7 +76,7 @@ void main() {
     final replaced = insertCompareAlignment(map, [a, b], p(1, 400, 2, 450));
     expect(replaced.length, 2);
     expect(replaced.first.right.y, 450);
-    expect(() => insertCompareAlignment(map, [a, b], p(1, 600, 3, 100)), throwsArgumentError);
+    expect(insertCompareAlignment(map, [a, b], p(1, 600, 3, 100)), hasLength(1));
     expect(compareLanguage('学习的底层逻辑'), 'zh');
     expect(compareLanguage('Learning and memory'), 'en');
     expect(compareLanguage('123'), isNull);
@@ -262,6 +263,14 @@ void main() {
       await drain(tester);
     }
 
+    final leftView = find.byWidgetPredicate((w) => w is MMPdfView && identical(w.controller, session.pdf('c1')));
+    final rightBeforeWheel = session.pdf('c2').readingPosition!;
+    await tester.sendEventToBinding(
+      PointerScrollEvent(position: tester.getCenter(leftView), scrollDelta: const Offset(0, 180)),
+    );
+    await drain(tester);
+    expect(session.pdf('c2').readingPosition!.y, isNot(closeTo(rightBeforeWheel.y, 1)));
+    expect(session.pdf('c2').readingPosition!.y, closeTo(session.pdf('c1').readingPosition!.y, 1));
     await move(0, 2, 500);
     expect(session.pdf('c2').readingPosition!.page, 2);
     expect(session.pdf('c2').readingPosition!.y, closeTo(500, 1));
@@ -282,6 +291,79 @@ void main() {
     expect(session.pdf('c2').readingPosition!.y, closeTo(250, 1));
     session.exit();
     await drain(tester);
+    await tester.pumpWidget(const SizedBox());
+    await drain(tester);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('wheel sync in both directions and realignment with 2 versus 291 pages', (tester) async {
+    installTestPdfBackend(documents: {'a.pdf': (pages: 2, height: 800), 'b.pdf': (pages: 291, height: 900)});
+    final fixture = compareFixture();
+    final repository = InMemoryStudySetContentRepository({
+      'demo-1': fixture.copyWith(
+        documents: [
+          Document(id: 'c1', title: '学习的底层逻辑', fileName: 'a.pdf', pageCount: 2, importedAt: testNow),
+          Document(id: 'c2', title: 'Learning and memory.pdf', fileName: 'b.pdf', pageCount: 291, importedAt: testNow),
+        ],
+      ),
+    });
+    final container = await pumpApp(tester, renderPdf: true, content: repository, size: const Size(1800, 1100));
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    final session = container.read(readerCompareProvider('demo-1').notifier);
+    await session.select('c2', readerWidth: 700);
+    await drain(tester);
+    final left = session.pdf('c1'), right = session.pdf('c2');
+    Future<void> wheel(int side, double delta) async {
+      final pdf = side == 0 ? left : right;
+      final view = find.byWidgetPredicate((w) => w is MMPdfView && identical(w.controller, pdf));
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: tester.getCenter(view), scrollDelta: Offset(0, delta)),
+      );
+      await drain(tester);
+    }
+
+    final before = right.readingPosition!;
+    await wheel(0, 160);
+    expect(right.readingPosition!.page, greaterThan(before.page));
+    final expected = session.mapping!.map(left.readingPosition!);
+    expect(right.readingPosition!.page, expected.page);
+    expect(right.readingPosition!.y, closeTo(expected.y, 1));
+    final leftBefore = left.readingPosition!;
+    await wheel(1, 500);
+    expect(left.readingPosition!.y, isNot(closeTo(leftBefore.y, .1)));
+    final reverse = session.mapping!.map(right.readingPosition!, reverse: true);
+    expect(left.readingPosition!.y, closeTo(reverse.y, 1));
+    await session.toggleSync();
+    await drain(tester);
+    Future<void> jump(MMPdfViewController pdf, int page, double y) async {
+      final moving = pdf.jumpToReadingPosition(PdfReadingPosition(page: page, y: y));
+      await tester.pumpAndSettle();
+      await moving;
+      await drain(tester);
+    }
+
+    await jump(left, 1, 400);
+    await jump(right, 40, 500);
+    final first = session.align();
+    await drain(tester);
+    expect(await first, true);
+    await session.toggleSync();
+    await drain(tester);
+    // A later source position aligned to an earlier target contradicts the old anchor.
+    await jump(left, 2, 400);
+    await jump(right, 30, 500);
+    final realign = session.align();
+    await drain(tester);
+    expect(await realign, true);
+    final pair = container.read(readerCompareProvider('demo-1'))!;
+    expect(pair.alignPoints, hasLength(1));
+    expect(pair.alignPoints.single.right.page, 30);
+    expect((await repository.load('demo-1')).comparePairs.single.toJson(), pair.toJson());
+    final undo = container.read(workspaceProvider('demo-1').notifier).undo();
+    await drain(tester);
+    await undo;
+    expect(container.read(readerCompareProvider('demo-1'))!.alignPoints.single.right.page, 40);
     await tester.pumpWidget(const SizedBox());
     await drain(tester);
     expect(tester.takeException(), isNull);

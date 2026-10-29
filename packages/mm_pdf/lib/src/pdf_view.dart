@@ -246,6 +246,23 @@ class MMPdfViewController extends ChangeNotifier {
       : Size(_state!._originalPage(page).width, _state!._originalPage(page).height);
   double get zoom => isReady ? _state!._controller.currentZoom : 1;
 
+  /// The width-fitting zoom is the midpoint of the reader's zoom slider.
+  double get widthZoom =>
+      isReady ? math.min(1.4, _state!._controller.viewSize.width / _state!._controller.documentSize.width) : 1;
+
+  /// Apply slider updates immediately and retain the line being read.
+  Future<void> setWidthZoom(double factor) async {
+    if (!isReady || !factor.isFinite || factor <= 0) return;
+    final pdf = _state!._controller;
+    final zoom = (widthZoom * factor).clamp(.1, 8.0);
+    final line = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height * .25));
+    _state!._marginInputEpoch++;
+    await pdf.goTo(
+      pdf.calcMatrixFor(Offset(line.dx, line.dy + pdf.viewSize.height * .25 / zoom), zoom: zoom),
+      duration: Duration.zero,
+    );
+  }
+
   /// Restore original zoom after leaving the temporary full-page editor.
   void restoreZoomAfterCrop(double zoom) {
     _state?._restoreZoom = zoom;

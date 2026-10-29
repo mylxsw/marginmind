@@ -2762,7 +2762,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get uncropMargins => '取消裁边';
 
   @override
-  String get cropAdjust => '调整裁边…';
+  String get cropAdjust => '调整裁边';
 
   @override
   String get cropScopeAll => '所有页';

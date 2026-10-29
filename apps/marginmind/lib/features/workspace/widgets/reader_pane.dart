@@ -19,6 +19,7 @@ import '../reader_crop.dart';
 import '../reader_compare.dart';
 import '../reader_translation.dart';
 import 'reader_compare_controls.dart';
+import 'reader_zoom_control.dart';
 import '../reader_margin.dart';
 import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
@@ -249,9 +250,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
 
     final zoomItems = <PopupMenuEntry<Object>>[
+      ReaderZoomSlider(pdf: _pdf, enabled: !crop.editing),
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
-        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
+        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, Icons.crop),
         (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
       ])
         PopupMenuItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
@@ -263,7 +265,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           children: [
             Icon(document?.crop?.enabled == true ? Icons.check : Icons.crop, size: 16),
             const SizedBox(width: 8),
-            Expanded(child: Text(l.cropMargins)),
+            Expanded(child: Text(l.cropMargins, style: context.mmText.callout)),
             const SizedBox(width: 8),
             Text(describeShortcut(AppShortcuts.toggleCrop), style: context.mmText.footnote),
           ],
@@ -324,13 +326,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               pageCommand(value);
               if (value is MMReaderStyle) setStyle(value);
             },
-            itemBuilder: (_) => [
-              PopupMenuItem<Object>(value: ReaderZoomCommand.zoomOut, child: _menuRow(MMIcons.zoomOut, l.zoomOut)),
-              PopupMenuItem<Object>(value: ReaderZoomCommand.zoomIn, child: _menuRow(MMIcons.zoomIn, l.zoomIn)),
-              ...zoomItems,
-              const PopupMenuDivider(),
-              ...styleItems,
-            ],
+            itemBuilder: (_) => [...zoomItems, const PopupMenuDivider(), ...styleItems],
           ),
           if (progress != null) ...[const SizedBox(width: MMSpacing.s), Flexible(child: progress)],
         ],
@@ -342,25 +338,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         navigation,
-        MMToolbarButton(
-          compact: compact,
-          icon: MMIcons.zoomOut,
-          tooltip: l.zoomOut,
-          onPressed: crop.editing ? null : _pdf.zoomOut,
-        ),
-        MMToolbarButton(
-          compact: compact,
-          icon: MMIcons.zoomIn,
-          tooltip: l.zoomIn,
-          onPressed: crop.editing ? null : _pdf.zoomIn,
-        ),
         PopupMenuButton<Object>(
           key: const ValueKey('reader-page'),
           tooltip: l.readerZoom,
           padding: EdgeInsets.zero,
           style: buttonStyle,
           iconSize: MMSpacing.l,
-          icon: Icon(MMIcons.pageZoom, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
+          icon: Icon(MMIcons.zoomControl, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
           onSelected: pageCommand,
           itemBuilder: (_) => zoomItems,
         ),
@@ -386,7 +370,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     children: [
       Icon(icon, size: MMSpacing.l),
       const SizedBox(width: MMSpacing.s),
-      Text(label),
+      Text(label, style: context.mmText.callout),
     ],
   );
 

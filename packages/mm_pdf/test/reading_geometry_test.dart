@@ -44,6 +44,17 @@ void main() {
     expect(() => ReadingAlignment(leftHeights: [], rightHeights: [600]), throwsArgumentError);
     expect(() => ReadingAlignment.scalar(PdfReadingPosition(page: 1, y: 900), [800]), throwsArgumentError);
   });
+  test('explicit alignment can start at either document edge', () {
+    for (final point in [
+      AlignPoint(left: PdfReadingPosition(page: 1, y: 800), right: PdfReadingPosition(page: 40, y: 450)),
+      AlignPoint(left: PdfReadingPosition(page: 2, y: 400), right: PdfReadingPosition(page: 1, y: 900)),
+    ]) {
+      final map = ReadingAlignment(leftHeights: [800, 800], rightHeights: List.filled(291, 900), points: [point]);
+      expect(map.map(point.left).page, point.right.page);
+      expect(map.map(point.left).y, closeTo(point.right.y, 1e-8));
+      expect(map.map(point.right, reverse: true).y, closeTo(point.left.y, 1e-8));
+    }
+  });
   test('asynchronous echo, user takeover, disabled and disposed sync', () async {
     final sync = ReadingSync();
     final pending = Completer<void>();

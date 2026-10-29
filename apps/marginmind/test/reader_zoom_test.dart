@@ -7,6 +7,10 @@ import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/shared/l10n.dart';
 import 'package:mm_platform/mm_platform.dart';
+import 'package:marginmind/app/providers.dart';
+
+import '../../../packages/mm_pdf/test/support/pdf_backend.dart';
+import 'reader_crop_test.dart' show drain;
 
 import 'helpers.dart';
 
@@ -19,6 +23,37 @@ Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
 }
 
 void main() {
+  testWidgets('zoom menu slider changes PDF size live and keeps the menu open', (tester) async {
+    installTestPdfBackend();
+    final container = await pumpApp(tester, renderPdf: true);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    final pdf = container.read(readerPdfProvider('demo-1'));
+    expect(pdf.isReady, true);
+    await tester.tap(find.byKey(const ValueKey('reader-page')));
+    await tester.pumpAndSettle();
+    final slider = find.byKey(const ValueKey('reader-zoom-slider'));
+    expect(slider, findsOneWidget);
+    final baseline = pdf.widthZoom;
+    final control = tester.widget<Slider>(slider);
+    control.onChanged!(1);
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline * 2, .001));
+    expect(slider, findsOneWidget);
+    control.onChanged!(-1);
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline / 2, .001));
+    control.onChanged!(0);
+    await tester.pumpAndSettle();
+    expect(pdf.zoom, closeTo(baseline, .001));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(slider, findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await drain(tester);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('reader focus enables View zoom menus and keeps map fit separate', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');

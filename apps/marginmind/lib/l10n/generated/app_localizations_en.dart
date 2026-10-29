@@ -2887,7 +2887,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uncropMargins => 'Uncrop Margins';
 
   @override
-  String get cropAdjust => 'Adjust Crop…';
+  String get cropAdjust => 'Adjust Crop';
 
   @override
   String get cropScopeAll => 'All Pages';

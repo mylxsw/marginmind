@@ -161,7 +161,7 @@ class ReaderCompareMenu extends ConsumerWidget {
             ),
           ),
         if (!left) ...[
-          PopupMenuItem<String>(value: 'import', height: 30, child: _menuRow(MMIcons.add, l.importPdf)),
+          PopupMenuItem<String>(value: 'import', height: 30, child: _menuRow(context, MMIcons.add, l.importPdf)),
           if (MMPlatformCapabilities.current.assistant) ...[
             const PopupMenuDivider(),
             _AiTranslationEntry(
@@ -180,7 +180,7 @@ class ReaderCompareMenu extends ConsumerWidget {
                 children: [
                   const Icon(MMIcons.close, size: 14),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(l.compareExit)),
+                  Expanded(child: Text(l.compareExit, style: context.mmText.callout)),
                   Text('Esc', style: context.mmText.footnote),
                 ],
               ),
@@ -233,8 +233,13 @@ class ReaderCompareMenu extends ConsumerWidget {
     );
   }
 
-  Widget _menuRow(IconData icon, String label) =>
-      Row(children: [Icon(icon, size: 14), const SizedBox(width: 8), Text(label)]);
+  Widget _menuRow(BuildContext context, IconData icon, String label) => Row(
+    children: [
+      Icon(icon, size: 14),
+      const SizedBox(width: 8),
+      Text(label, style: context.mmText.callout),
+    ],
+  );
 }
 
 /// Mount only inside the open popup. Opening a study set must never read

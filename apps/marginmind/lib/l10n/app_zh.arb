@@ -911,7 +911,7 @@
   "assistantQuickSelection": "已选文字",
   "cropMargins": "裁掉白边",
   "uncropMargins": "取消裁边",
-  "cropAdjust": "调整裁边…",
+  "cropAdjust": "调整裁边",
   "cropScopeAll": "所有页",
   "cropScopeOddEven": "奇偶页分开",
   "cropScopePage": "仅本页",

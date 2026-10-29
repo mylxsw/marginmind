@@ -5171,7 +5171,7 @@ abstract class AppLocalizations {
   /// No description provided for @cropAdjust.
   ///
   /// In en, this message translates to:
-  /// **'Adjust Crop…'**
+  /// **'Adjust Crop'**
   String get cropAdjust;
 
   /// No description provided for @cropScopeAll.

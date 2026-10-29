@@ -39,9 +39,10 @@ class ReadingAlignment {
     final anchors = [for (final p in points) (scalar(p.left, leftHeights), scalar(p.right, rightHeights))]
       ..sort((a, b) => a.$1.compareTo(b.$1));
     _points = [
-      (0, 0),
-      ...anchors.where((p) => p != (0.0, 0.0) && p != (leftHeights.length.toDouble(), rightHeights.length.toDouble())),
-      (leftHeights.length.toDouble(), rightHeights.length.toDouble()),
+      if (anchors.isEmpty || (anchors.first.$1 > 0 && anchors.first.$2 > 0)) (0, 0),
+      ...anchors,
+      if (anchors.isEmpty || (anchors.last.$1 < leftHeights.length && anchors.last.$2 < rightHeights.length))
+        (leftHeights.length.toDouble(), rightHeights.length.toDouble()),
     ];
     for (var i = 1; i < _points.length; i++) {
       if (_points[i].$1 <= _points[i - 1].$1 || _points[i].$2 <= _points[i - 1].$2) {
@@ -65,6 +66,7 @@ class ReadingAlignment {
   PdfReadingPosition map(PdfReadingPosition source, {bool reverse = false}) {
     final s = scalar(source, reverse ? rightHeights : leftHeights);
     final points = reverse ? [for (final p in _points) (p.$2, p.$1)] : _points;
+    if (points.length == 1) return position(points.single.$2, reverse ? leftHeights : rightHeights);
     var i = 1;
     while (i < points.length - 1 && s > points[i].$1) {
       i++;

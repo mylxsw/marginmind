@@ -4,16 +4,21 @@ import 'dart:typed_data';
 
 import 'package:pdfrx/pdfrx.dart';
 
-void installTestPdfBackend({int pageCount = 3, List<double>? pageWidths}) {
+void installTestPdfBackend({
+  int pageCount = 3,
+  List<double>? pageWidths,
+  Map<String, ({int pages, double height})> documents = const {},
+}) {
   assert(pageWidths == null || pageWidths.length == pageCount);
   Pdfrx.cacheDirectoryPath = Directory.systemTemp.path;
-  PdfrxEntryFunctions.instance = _Engine(pageCount, pageWidths);
+  PdfrxEntryFunctions.instance = _Engine(pageCount, pageWidths, documents);
 }
 
 // Deterministic backend: exercise the actual viewer and selection delegate
 // without requiring a native PDFium asset in flutter test or CI.
 class _Engine implements PdfrxEntryFunctions {
-  _Engine(this.pageCount, this.pageWidths);
+  _Engine(this.pageCount, this.pageWidths, this.documents);
+  final Map<String, ({int pages, double height})> documents;
   final int pageCount;
   final List<double>? pageWidths;
   @override
@@ -24,17 +29,25 @@ class _Engine implements PdfrxEntryFunctions {
     PdfPasswordProvider? passwordProvider,
     bool firstAttemptByEmptyPassword = true,
     bool useProgressiveLoading = false,
-  }) async => _Document(pageCount, pageWidths);
+  }) async {
+    final spec = documents[filePath.split('/').last];
+    return _Document(spec?.pages ?? pageCount, spec == null ? pageWidths : null, spec?.height ?? 800);
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _Document extends PdfDocument {
-  _Document(this.pageCount, this.pageWidths) : super(sourceName: 'selection-test.pdf');
+  _Document(this.pageCount, this.pageWidths, this.pageHeight) : super(sourceName: 'selection-test.pdf');
   final int pageCount;
   final List<double>? pageWidths;
+  final double pageHeight;
   @override
-  late List<PdfPage> pages = List.generate(pageCount, (index) => _Page(this, index + 1, pageWidths?[index] ?? 600));
+  late List<PdfPage> pages = List.generate(
+    pageCount,
+    (index) => _Page(this, index + 1, pageWidths?[index] ?? 600, pageHeight),
+  );
   @override
   bool get isEncrypted => false;
   @override
@@ -59,7 +72,7 @@ class _Document extends PdfDocument {
 }
 
 class _Page implements PdfPage {
-  _Page(this.document, this.pageNumber, this.width);
+  _Page(this.document, this.pageNumber, this.width, this.height);
   @override
   final PdfDocument document;
   @override
@@ -69,7 +82,7 @@ class _Page implements PdfPage {
   @override
   final double width;
   @override
-  double get height => 800;
+  final double height;
   @override
   PdfPageRotation get rotation => PdfPageRotation.none;
   @override
