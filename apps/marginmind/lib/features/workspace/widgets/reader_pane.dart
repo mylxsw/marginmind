@@ -340,7 +340,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           compact: compact,
           tooltip: l.cropMargins,
           icon: MMIcons.crop,
-          selected: crop.editing || document?.crop?.enabled == true,
           onPressed: canAdjustCrop ? cropSession.adjust : null,
         ),
         MMDropdownButton<Object>(
