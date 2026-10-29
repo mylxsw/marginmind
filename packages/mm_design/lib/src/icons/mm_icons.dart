@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Icons;
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Icon vocabulary. Uses Cupertino icons (SF Symbols look-alikes that ship
-/// with Flutter) so the same names work on every platform; the SF Symbol each
-/// one stands for is noted for a future native-symbol renderer on macOS.
+/// Shared icon vocabulary. Primarily uses Cupertino icons, supplemented by
+/// Lucide and Material icons. Feature code refers to these names so icon
+/// sources can change without altering controls or their behavior.
 abstract final class MMIcons {
   static const compare = CupertinoIcons.square_split_2x1;
   static const swapSides = CupertinoIcons.arrow_right_arrow_left;
@@ -53,7 +54,7 @@ abstract final class MMIcons {
   static const IconData syncToMap = CupertinoIcons.arrow_branch; // arrow.triangle.branch
   static const IconData layoutReader = CupertinoIcons.doc_plaintext; // doc.text
   static const IconData layoutSplit = CupertinoIcons.square_split_2x1; // rectangle.split.2x1
-  static const IconData layoutMap = CupertinoIcons.graph_square; // point.3.connected.trianglepath.dotted
+  static const IconData layoutMap = LucideIcons.brain;
   static const IconData mindMap = CupertinoIcons.arrow_branch;
   static const IconData revealSource = CupertinoIcons.arrow_up_right; // arrow.up.right
   static const IconData popUp = CupertinoIcons.chevron_up_chevron_down; // chevron.up.chevron.down
@@ -93,7 +94,7 @@ abstract final class MMIcons {
   static const IconData verify = CupertinoIcons.checkmark_seal; // checkmark.seal
   static const IconData video = CupertinoIcons.play_rectangle; // play.rectangle
   static const IconData paper = CupertinoIcons.doc_richtext; // doc.richtext
-  static const IconData translate = CupertinoIcons.textformat_abc; // character.book.closed
+  static const IconData translate = LucideIcons.languages;
   static const IconData web = CupertinoIcons.globe; // globe
   static const IconData offline = CupertinoIcons.wifi_slash; // wifi.slash
   static const IconData later = CupertinoIcons.clock; // clock
