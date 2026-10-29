@@ -31,10 +31,10 @@ flutter run -d macos -t example/translation_acceptance.dart
 - `dart format --set-exit-if-changed apps packages`：445 个文件，0 改动，退出码 0。
 - `flutter analyze --no-pub`：无问题，退出码 0。
 - `python3 -m unittest discover -s tool/tests`：17 项通过。
-- 纯 Dart 包 `dart test --coverage=coverage` 后以 `coverage:format_coverage` 生成 LCOV：mm_core 190、mm_research 62（另跳过 1）、mm_assistant 165、mm_layout 21、mm_data 41，全部通过。
+- 纯 Dart 包 `dart test --coverage=coverage` 后以 `coverage:format_coverage` 生成 LCOV：mm_core 190、mm_research 62（另跳过 1）、mm_assistant 167、mm_layout 21、mm_data 41，全部通过。
 - Flutter 包 `flutter test --no-pub --coverage`：mm_design 139、mm_platform 29、mm_pdf 105，全部通过。
 - 应用完整复跑：按 `app-test-groups.json` 把全部 80 个测试文件分成不重叠的两组，逐组运行 `flutter test --no-pub --no-test-assets --coverage --coverage-path=coverage/group-N.info --concurrency=4 <该组文件>`。第 0 组 338 项通过、9 项按条件跳过；第 1 组 317 项通过；两组均退出 0，合并 LCOV 后覆盖完整应用。
-- `python3 tool/coverage.py --report-only --minimum 80`：整体 91.27%；改动可执行行 630 / 707，89.11%。详见 `coverage.md`、`changed-coverage.json`。
+- `python3 tool/coverage.py --report-only --minimum 80`：整体 91.26%；改动可执行行 628 / 709，88.58%。详见 `coverage.md`、`changed-coverage.json`。
 - macOS `flutter build macos --debug --no-pub -t example/translation_acceptance.dart`：退出 0；真实 PDFium 渲染，输出 `NATIVE_TRANSLATION_SAVED paragraphs=27`。
 
 单次应用全量曾显示 655 项通过、9 项跳过并生成覆盖率后由执行器返回 143；最终用上述文件分组复跑，取得两组明确的退出码 0。测试内容没有放宽或删减。
@@ -46,3 +46,5 @@ flutter run -d macos -t example/translation_acceptance.dart
 - [悬停译文，原文对应段落同时高亮](03-hover.png)
 
 截图为 Mac mini / Flutter 3.47.2 Debug 的真实窗口捕获（1568 × 975），没有图片合成。已停止本次验收进程。
+
+预算边界复核补充：任一会话预算耗尽后停止新段落请求，重试不补充额度；空响应属于可重试的协议失败。更新后助手包 167 项及应用翻译 5 项均通过，静态分析无问题。

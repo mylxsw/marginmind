@@ -179,6 +179,55 @@ void main() {
     expect(t.calls.length, 2);
     s.cancel();
   });
+  test('empty output is a retryable protocol failure while remaining budget is preserved', () async {
+    final model = Translator();
+    final s = TranslationSession(
+      paragraphs: [paragraph(0)],
+      language: 'zh',
+      translator: model,
+      save: (p, text) async {},
+      changed: () {},
+      budget: const ResearchBudget(outputTokens: 32),
+    );
+    final run = s.start();
+    model.finish(0, text: '', tokens: 0);
+    await run;
+    expect((s.failure as ResearchFailure).kind, ResearchFailureKind.protocol);
+    expect(s.done, 0);
+    final retry = s.retry();
+    await tick();
+    model.finish(0);
+    await retry;
+    expect(s.complete, true);
+    expect(model.calls, [0, 0]);
+    s.cancel();
+  });
+  test('a global byte limit stops queued requests and retry cannot replenish it', () async {
+    final model = Translator();
+    var saved = 0;
+    final s = TranslationSession(
+      paragraphs: [for (var i = 0; i < 5; i++) paragraph(i)],
+      language: 'zh',
+      translator: model,
+      save: (p, text) async {
+        saved++;
+      },
+      changed: () {},
+      budget: const ResearchBudget(responseBytes: 1),
+    );
+    final run = s.start();
+    expect(model.calls, [0, 1]);
+    model.finish(0);
+    await tick();
+    expect(model.calls, [0, 1]);
+    model.finish(1);
+    await run;
+    await s.retry();
+    expect(model.calls, [0, 1]);
+    expect(saved, 0);
+    expect(s.failure, isNotNull);
+    s.cancel();
+  });
   test('missing or zero usage is conservatively charged and cannot bypass output limit', () async {
     final model = Translator();
     final s = TranslationSession(

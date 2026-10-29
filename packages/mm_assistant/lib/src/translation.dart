@@ -112,6 +112,7 @@ class TranslationSession {
   final _cancel = CancellationToken();
   int _generation = 0, _tokens = 0, _reserved = 0, _input = 0, _bytes = 0;
   int _focus = 0;
+  bool _exhausted = false;
   Set<int> _visible = {};
   Object? failure;
   bool get cancelled => _cancel.isCancelled;
@@ -127,7 +128,7 @@ class TranslationSession {
   Future<void> start() => _running ??= _run().whenComplete(() => _running = null);
   Future<void> retry() async {
     await _running;
-    if (cancelled) return;
+    if (cancelled || _exhausted) return;
     _failed.clear();
     failure = null;
     changed();
@@ -140,7 +141,7 @@ class TranslationSession {
   }
 
   Future<void> _worker() async {
-    while (!cancelled) {
+    while (!cancelled && !_exhausted) {
       final candidates = paragraphs
           .where(
             (p) =>
@@ -160,6 +161,7 @@ class TranslationSession {
       final available = budget.outputTokens - _tokens - _reserved;
       if (available <= 0) {
         if (_active.isNotEmpty) return;
+        _exhausted = true;
         failure = const ResearchFailure(ResearchFailureKind.budget);
         changed();
         return;
@@ -183,10 +185,11 @@ class TranslationSession {
         _tokens += response.tokens != null && response.tokens! > 0 ? response.tokens! : textBytes;
         charged = false;
         _bytes += math.max(textBytes, response.bytes ?? 0);
-        if (_tokens + _reserved - allowance > budget.outputTokens ||
-            _bytes > budget.responseBytes ||
-            response.text.trim().isEmpty) {
+        if (_tokens + _reserved - allowance > budget.outputTokens || _bytes > budget.responseBytes) {
           throw const ResearchFailure(ResearchFailureKind.budget);
+        }
+        if (response.text.trim().isEmpty) {
+          throw const ResearchFailure(ResearchFailureKind.protocol);
         }
         // The host merges into the latest repository content. Never save fragments.
         await save(p, response.text.trim());
@@ -197,6 +200,9 @@ class TranslationSession {
         if (charged) _tokens += allowance;
         if (cancelled || generation != _generation) return;
         _failed.add(key);
+        if (error is TimeoutException || error is ResearchFailure && error.kind == ResearchFailureKind.budget) {
+          _exhausted = true;
+        }
         failure = error;
         changed();
       } finally {

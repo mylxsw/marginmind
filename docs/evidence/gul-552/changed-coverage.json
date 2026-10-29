@@ -1,7 +1,7 @@
 {
-  "covered": 630,
-  "lines": 707,
-  "percent": 89.11,
+  "covered": 628,
+  "lines": 709,
+  "percent": 88.58,
   "files": {
     "apps/marginmind/lib/features/workspace/reader_compare.dart": {
       "covered": 44,
@@ -90,10 +90,14 @@
       ]
     },
     "packages/mm_assistant/lib/src/translation.dart": {
-      "covered": 96,
-      "lines": 97,
+      "covered": 94,
+      "lines": 99,
       "uncovered": [
-        44
+        44,
+        163,
+        164,
+        165,
+        166
       ]
     },
     "packages/mm_core/lib/src/content/translation.dart": {
