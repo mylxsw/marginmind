@@ -143,11 +143,16 @@ void main() {
     final repository = InMemoryStudySetContentRepository();
     final container = ProviderContainer(overrides: await testOverrides(content: repository));
     addTearDown(container.dispose);
+    container.listen(importedDocumentsProvider('demo-1'), (_, _) {});
     final controller = container.read(workspaceProvider('demo-1').notifier);
     final notice = await controller.importDocuments([
       for (final name in ['first.md', 'second.pdf', 'broken.epub']) (path: '${directory.path}/$name', name: name),
     ]);
     expect(notice.count, 2);
+    expect(
+      container.read(importedDocumentsProvider('demo-1')),
+      containsAll(controller.content.documents.map((d) => d.id)),
+    );
     expect(notice.failed, ['broken.epub']);
     expect(notice.errors['broken.epub'], DocumentImportError.damaged);
     expect(controller.content.documents.last.pageCount, 5);

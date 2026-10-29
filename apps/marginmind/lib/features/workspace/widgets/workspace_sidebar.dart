@@ -61,23 +61,31 @@ class WorkspaceSidebar extends ConsumerWidget {
     final browser = ref.watch(workspaceBrowserProvider(studySetId));
     final browserOwner = ref.read(workspaceBrowserProvider(studySetId).notifier);
     final importing = ref.watch(documentImportsProvider(studySetId));
+    final flashed = ref.watch(importedDocumentsProvider(studySetId));
     final docs = <Widget>[
       for (final d in documents)
         if (matches(d.title))
-          MMSidebarItem(
-            icon: documentIcon(d),
-            label: d.title,
-            trailing: d.capabilities().readingSettings
-                ? null
-                : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
-                ? Text(l.ocrRecognized, style: context.mmText.footnote)
-                : MMCount(d.pageCount),
-            selected: !browser.visible && d.id == state.activeDocumentId,
-            onTap: () {
-              browserOwner.hide();
-              controller.openDocument(d.id);
-            },
-            onContextMenu: (position) => _documentMenu(context, ref, d, position),
+          DecoratedBox(
+            key: ValueKey('document-row-${d.id}'),
+            decoration: BoxDecoration(
+              color: flashed.contains(d.id) ? c.accentTint : null,
+              borderRadius: BorderRadius.circular(MMRadii.row),
+            ),
+            child: MMSidebarItem(
+              icon: documentIcon(d),
+              label: d.title,
+              trailing: d.capabilities().readingSettings
+                  ? null
+                  : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
+                  ? Text(l.ocrRecognized, style: context.mmText.footnote)
+                  : MMCount(d.pageCount),
+              selected: !browser.visible && d.id == state.activeDocumentId,
+              onTap: () {
+                browserOwner.hide();
+                controller.openDocument(d.id);
+              },
+              onContextMenu: (position) => _documentMenu(context, ref, d, position),
+            ),
           ),
       for (final task in importing)
         MMSidebarItem(

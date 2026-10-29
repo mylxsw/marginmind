@@ -81,6 +81,7 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
   Future<void> start(
     String documentId, {
     List<AnnotationPage>? pages,
+    List<TextAnchor> textAnchors = const [],
     String quote = '',
     int? page,
     double? lineY,
@@ -90,13 +91,17 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
     if (existing?.id == state.draft?.id && existing != null) return;
     if (!await finish() || !ref.mounted) return;
     final editor = ref.read(editorProvider);
-    final anchor = pages == null ? (anchor: null, lineY: lineY) : marginAnchor(pages, quote);
+    final anchor = textAnchors.isNotEmpty
+        ? (anchor: AnnotationAnchor(textAnchors: textAnchors, quote: quote), lineY: null)
+        : pages == null
+        ? (anchor: null, lineY: lineY)
+        : marginAnchor(pages, quote);
     final candidate =
         existing ??
         MarginNote(
           id: editor.newId(),
           documentId: documentId,
-          page: page ?? pages!.first.page,
+          page: textAnchors.isNotEmpty ? null : page ?? pages!.first.page,
           anchor: anchor.anchor,
           lineY: anchor.lineY,
           text: '',
@@ -111,7 +116,7 @@ class ReaderMarginSession extends Notifier<ReaderMarginState> {
             .where(
               (n) =>
                   n.documentId == documentId &&
-                  n.page == candidate.page &&
+                  (textAnchors.isNotEmpty || n.page == candidate.page) &&
                   n.lineY == candidate.lineY &&
                   jsonEncode(n.anchor?.toJson()) == jsonEncode(candidate.anchor?.toJson()),
             )

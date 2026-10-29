@@ -41,6 +41,7 @@ class SelectionToolbar extends ConsumerStatefulWidget {
 
 class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   final _focus = FocusNode();
+  final _moreAnchor = GlobalKey();
   bool _busy = false;
   bool _quickOpen = false;
   bool _paletteOpen = false;
@@ -66,8 +67,13 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     widget.pdf.clearSelection();
   }
 
-  Future<void> _ask(String documentId, List<AnnotationPage> pages, String quote) async {
-    if (pages.isEmpty || quote.trim().isEmpty) return;
+  Future<void> _ask(
+    String documentId,
+    List<AnnotationPage> pages,
+    String quote, [
+    List<TextAnchor> anchors = const [],
+  ]) async {
+    if ((pages.isEmpty && anchors.isEmpty) || quote.trim().isEmpty) return;
     final layout = context.findAncestorRenderObjectOfType<RenderCustomSingleChildLayoutBox>();
     if (layout == null) return;
     final origin = layout.localToGlobal(Offset.zero);
@@ -81,9 +87,11 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
       context,
       studySetId: widget.studySetId,
       pending: widget.pending,
-      passage: selectionContext(documentId: documentId, page: pages.first.page, quote: quote),
+      passage: selectionContext(documentId: documentId, page: pages.firstOrNull?.page, quote: quote),
       source: SourceAnchor(
-        target: PdfTarget(documentId: documentId, pages: pages, quote: quote),
+        target: anchors.isEmpty
+            ? PdfTarget(documentId: documentId, pages: pages, quote: quote)
+            : TextTarget(documentId: documentId, textAnchors: anchors, context: quote),
       ),
       toolbar: boundsOf(context),
       selection: selected.shift(origin),
@@ -113,11 +121,17 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         final selection = pending is PendingSelection ? pending.selection : null;
         if (annotation == null && selection == null) return;
         final margin = ref.read(readerMarginProvider(widget.studySetId).notifier);
-        final pages = annotation?.pages ?? selection!.pages;
-        await pdf.ensureVisible(pages.first.page, pages.first.rects.first);
+        final anchors = annotation?.textAnchors ?? selection!.textAnchors;
+        final pages = annotation == null
+            ? selection!.pages
+            : annotation.isText
+            ? <AnnotationPage>[]
+            : annotation.pages;
+        if (pages.isNotEmpty) await pdf.ensureVisible(pages.first.page, pages.first.rects.first);
         await margin.start(
           annotation?.documentId ?? (pending as PendingSelection).documentId,
-          pages: annotation?.pages ?? selection!.pages,
+          pages: anchors.isEmpty ? pages : null,
+          textAnchors: anchors,
           quote: annotation?.quote ?? selection!.text,
           colorIndex: annotation?.colorIndex ?? selectedColor.index,
         );
@@ -157,7 +171,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               notice = await controller.deleteHighlight(annotationId);
             case ReaderSelectionCommand.assistant:
               if (annotation.quote.isEmpty) return;
-              await _ask(annotation.documentId, annotation.pages, annotation.quote);
+              await _ask(
+                annotation.documentId,
+                annotation.isText ? [] : annotation.pages,
+                annotation.quote,
+                annotation.textAnchors,
+              );
               return;
             case ReaderSelectionCommand.marginNote:
             case ReaderSelectionCommand.highlight:
@@ -175,12 +194,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         return;
       }
       if (command == ReaderSelectionCommand.assistant) {
-        await _ask(pending.documentId, pending.selection.pages, pending.selection.text);
+        await _ask(pending.documentId, pending.selection.pages, pending.selection.text, pending.selection.textAnchors);
         return;
       }
       if (command == ReaderSelectionCommand.note) {
         // The note is typed on its card in the map; the selection is done.
-        await controller.excerptAndEditNote(pending.documentId, pending.selection, selectedColor);
+        await controller.excerptSourceAndEditNote(pending.documentId, pending.selection, selectedColor);
         await pdf.clearSelection();
         return;
       }
@@ -191,8 +210,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         controller.dismissPending();
       } else {
         final notice = command == ReaderSelectionCommand.highlight
-            ? await controller.highlight(pending.documentId, pending.selection, selectedColor)
-            : await controller.excerpt(pending.documentId, pending.selection, selectedColor);
+            ? await controller.highlightSource(pending.documentId, pending.selection, selectedColor)
+            : await controller.excerptSource(pending.documentId, pending.selection, selectedColor);
         if (mounted) showNotice(context, notice, rootTitle: rootTitle);
       }
       await pdf.clearSelection();
@@ -211,8 +230,13 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         : null;
     final selection = pending is PendingSelection ? pending.selection : null;
     final quote = annotation?.quote ?? selection?.text ?? '';
-    final pages = annotation?.pages ?? selection?.pages ?? [];
-    if (quote.trim().isEmpty || pages.isEmpty) return;
+    final anchors = annotation?.textAnchors ?? selection?.textAnchors ?? <TextAnchor>[];
+    final pages = annotation == null
+        ? selection?.pages ?? []
+        : annotation.isText
+        ? <AnnotationPage>[]
+        : annotation.pages;
+    if (quote.trim().isEmpty || (pages.isEmpty && anchors.isEmpty)) return;
     final layout = context.findAncestorRenderObjectOfType<RenderCustomSingleChildLayoutBox>();
     if (layout == null) return;
     final origin = layout.localToGlobal(Offset.zero);
@@ -225,11 +249,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         studySetId: widget.studySetId,
         paragraph: TranslationParagraph(
           documentId: annotation?.documentId ?? (pending as PendingSelection).documentId,
-          page: pages.first.page,
+          page: pages.firstOrNull?.page,
+          textAnchor: anchors.firstOrNull,
           index: 0,
           text: quote,
           fingerprint: '',
-          rects: pages.first.rects,
+          rects: pages.firstOrNull?.rects ?? [],
         ),
         toolbar: boundsOf(context),
         selection: rect.shift(origin),
@@ -241,6 +266,54 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         setState(() => _translationOpen = false);
         _focus.requestFocus();
       }
+    }
+  }
+
+  Future<void> _compactMore(bool isHighlight, bool isArea) async {
+    _paletteOpen = true;
+    final l = context.l10n;
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final capabilities = controller.activeCapabilities;
+    try {
+      await showMMMenu(
+        context,
+        position: boundsOf(_moreAnchor.currentContext!).bottomRight,
+        entries: [
+          MMMenuItem(
+            isHighlight ? l.deleteHighlight : l.addNote,
+            capabilities.excerpt
+                ? () => _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
+                : null,
+          ),
+          MMMenuItem(
+            l.marginNoteAction,
+            capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
+          ),
+          if (!isArea)
+            MMMenuItem(
+              l.toolUnderline,
+              capabilities.annotate
+                  ? () async {
+                      try {
+                        final pending = widget.pending;
+                        if (pending is PendingSelection) {
+                          await controller.underlineSource(pending.documentId, pending.selection);
+                        }
+                        if (pending is PendingHighlight) {
+                          await controller.styleUnderline(annotationId: pending.annotationId);
+                        }
+                        if (mounted) _dismiss();
+                      } catch (_) {
+                        if (mounted) MMHud.show(context, l.somethingWentWrong);
+                      }
+                    }
+                  : null,
+            ),
+        ],
+      );
+    } finally {
+      _paletteOpen = false;
+      if (mounted) _focus.requestFocus();
     }
   }
 
@@ -265,6 +338,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         ? ref.watch(workspaceProvider(widget.studySetId).select((s) => s.color))
         : MMAnnotationColor.fromIndex(annotation.colorIndex);
     final c = context.mmColors;
+    final compact = MMSizeClass.of(context) == MMSizeClass.compact;
     return TapRegion(
       groupId: annotationTapGroup(widget.studySetId),
       onTapOutside: (_) {
@@ -287,7 +361,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               focusNode: _focus,
               child: MMFloatingToolbar(
                 children: [
-                  for (final recent in ref.watch(highlightPaletteProvider).recent())
+                  for (final recent in ref.watch(highlightPaletteProvider).recent().take(compact ? 1 : 3))
                     MMFloatingToolbarColor(
                       color: recent,
                       tooltip: l.colorName(recent),
@@ -304,7 +378,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     },
                     onChanged: (color) => _run(ReaderSelectionCommand.highlight, color),
                   ),
-                  if (!isArea)
+                  if (!isArea && !compact)
                     UnderlineToolButton(
                       enabled: capabilities.annotate,
                       key: const ValueKey('selection-underline'),
@@ -322,21 +396,24 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       tooltip: l.copyAction,
                       onPressed: capabilities.selectText ? () => _run(ReaderSelectionCommand.copy) : null,
                     ),
-                  MMToolbarButton(
-                    key: const ValueKey('selection-margin-note'),
-                    icon: MMIcons.quoteBubble,
-                    tooltip: '${l.marginNoteAction}（C）',
-                    onPressed: capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
-                  ),
-                  MMToolbarButton(
-                    icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
-                    tooltip: isHighlight
-                        ? (annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight)
-                        : l.addNote,
-                    onPressed: (isHighlight ? capabilities.annotate : capabilities.excerpt)
-                        ? () => _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
-                        : null,
-                  ),
+                  if (!compact)
+                    MMToolbarButton(
+                      key: const ValueKey('selection-margin-note'),
+                      icon: MMIcons.quoteBubble,
+                      tooltip: '${l.marginNoteAction}（C）',
+                      onPressed: capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
+                    ),
+                  if (!compact)
+                    MMToolbarButton(
+                      icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
+                      tooltip: isHighlight
+                          ? (annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight)
+                          : l.addNote,
+                      onPressed: (isHighlight ? capabilities.annotate : capabilities.excerpt)
+                          ? () =>
+                                _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
+                          : null,
+                    ),
                   MMToolbarButton(
                     icon: MMIcons.network,
                     tooltip: hasCard ? l.locateCard : l.addToMapAction,
@@ -351,6 +428,13 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       tooltip: l.selectionTranslate,
                       selected: _translationOpen,
                       onPressed: capabilities.translate ? _translate : null,
+                    ),
+                  if (compact)
+                    MMToolbarButton(
+                      key: _moreAnchor,
+                      icon: MMIcons.more,
+                      tooltip: l.moreTools,
+                      onPressed: () => _compactMore(isHighlight, isArea),
                     ),
                   if (MMPlatformCapabilities.current.assistant && !isArea) ...[
                     const MMToolbarDivider(),

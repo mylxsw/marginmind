@@ -3505,4 +3505,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importErrorUnsupported => 'Unsupported format';
+
+  @override
+  String get readerFontSmaller => 'Smaller Text';
+
+  @override
+  String get readerFontLarger => 'Larger Text';
+
+  @override
+  String get readerLineTight => 'Tight';
+
+  @override
+  String get readerLineNormal => 'Normal';
+
+  @override
+  String get readerLineLoose => 'Loose';
+
+  @override
+  String get readerFontOriginal => 'Original';
+
+  @override
+  String get readerFontSerif => 'Serif';
+
+  @override
+  String get readerFontSans => 'Sans';
+
+  @override
+  String get readerModePaged => 'Pages';
+
+  @override
+  String get readerModeScroll => 'Scroll';
+
+  @override
+  String get readerPositionMissing => 'Source position not found';
+
+  @override
+  String get readerLoadFailed => 'Unable to open document';
+
+  @override
+  String get readerNeedsReview => 'Needs Review';
+
+  @override
+  String get readerRetry => 'Retry';
+
+  @override
+  String get readerNoOutline => 'No outline';
+
+  @override
+  String get readerSelectionStart => 'Selection start';
+
+  @override
+  String get readerSelectionEnd => 'Selection end';
 }

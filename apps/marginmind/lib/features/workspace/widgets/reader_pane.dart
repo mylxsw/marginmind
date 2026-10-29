@@ -1,3 +1,5 @@
+import 'reader_page_field.dart';
+import '../reflow_session.dart';
 import '../../../app/document_commands.dart';
 import '../../../shared/document_icon.dart';
 import '../document_reader.dart';
@@ -36,7 +38,7 @@ import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
 import 'reader_ocr_controls.dart';
 
-/// Source pane: the PDF, reader tools, document switcher and floating page pill.
+/// Source pane: document renderer, tools, document switcher and navigation.
 class ReaderPane extends ConsumerStatefulWidget {
   const ReaderPane({super.key, required this.studySetId});
 
@@ -67,6 +69,34 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   }
 
   void _zoom(ReaderZoomCommand command) {
+    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final doc = workspace.content.document(ref.read(workspaceProvider(widget.studySetId)).activeDocumentId ?? '');
+    if (doc?.contentManifest != null && doc!.capabilities().zoom) {
+      final session = ref.read(reflowSessionProvider((widget.studySetId, doc.id)));
+      switch (command) {
+        case ReaderZoomCommand.zoomIn:
+          session.zoomTo(session.zoom * MMReaderLayout.zoomStep);
+        case ReaderZoomCommand.zoomOut:
+          session.zoomTo(session.zoom / MMReaderLayout.zoomStep);
+        case ReaderZoomCommand.actualSize:
+          session.actualSize();
+        case ReaderZoomCommand.fitWidth:
+          session.fitWidth();
+        case ReaderZoomCommand.fitPage:
+          session.fitPage();
+      }
+      return;
+    }
+    if (doc?.capabilities().readingSettings == true) {
+      final settings = ref.read(settingsProvider).reading(doc!.format);
+      final size = switch (command) {
+        ReaderZoomCommand.zoomIn => settings.size + 1,
+        ReaderZoomCommand.zoomOut => settings.size - 1,
+        _ => MMReaderTypography.defaultSize,
+      };
+      ref.read(settingsProvider.notifier).setReading(doc.format, settings.copyWith(size: size));
+      return;
+    }
     if (ref.read(readerCropProvider(widget.studySetId)).editing) return;
     switch (command) {
       case ReaderZoomCommand.zoomIn:
@@ -197,12 +227,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       actions: {
         ReaderZoomIntent: CallbackAction<ReaderZoomIntent>(
           onInvoke: (intent) {
-            if (controller.activeCapabilities.zoom) _zoom(intent.command);
+            if (controller.activeCapabilities.zoom || controller.activeCapabilities.readingSettings) {
+              _zoom(intent.command);
+            }
             return null;
           },
         ),
         ReaderNavIntent: CallbackAction<ReaderNavIntent>(
           onInvoke: (intent) {
+            if (doc?.contentManifest != null) {
+              controller.dismissPending();
+              final session = ref.read(reflowSessionProvider((widget.studySetId, doc!.id)));
+              if (session.book != null) {
+                session.jump(intent.command == ReaderNavCommand.firstPage ? session.book!.start : session.book!.end);
+              }
+              return null;
+            }
             if (!controller.activeCapabilities.zoom) return null;
             dismissSelection();
             return switch (intent.command) {
@@ -302,7 +342,20 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
 
     final zoomItems = <PopupMenuEntry<Object>>[
-      ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
+      if (document?.contentManifest != null)
+        ReaderZoomSlider.source(
+          ratio: () =>
+              ref.read(reflowSessionProvider((widget.studySetId, document!.id))).zoom /
+              ref.read(reflowSessionProvider((widget.studySetId, document.id))).widthZoom,
+          ready: () => ref.read(reflowSessionProvider((widget.studySetId, document!.id))).ready,
+          onZoom: (ratio) {
+            final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
+            session.zoomTo(ratio * session.widthZoom);
+          },
+          enabled: capabilities.zoom && !crop.editing,
+        )
+      else
+        ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
         (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
@@ -1006,90 +1059,6 @@ const pagePillClearance = _pagePillBottom + _pagePillHeight;
 Rect _pagePillArea(Size viewport, double inset) =>
     Rect.fromLTWH(0, viewport.height - inset - _pagePillBottom - _pagePillHeight, viewport.width, _pagePillHeight);
 
-/// "n / N" that turns into a field on click: type a page, Enter jumps.
-class _PageField extends StatefulWidget {
-  const _PageField({required this.page, required this.pageCount, required this.onJump, required this.editRequests});
-
-  final int page;
-
-  /// Changes when the field should open, without a click.
-  final int editRequests;
-  final int pageCount;
-  final ValueChanged<int> onJump;
-
-  @override
-  State<_PageField> createState() => _PageFieldState();
-}
-
-class _PageFieldState extends State<_PageField> {
-  final _text = TextEditingController();
-  final _focus = FocusNode();
-  bool _editing = false;
-
-  @override
-  void didUpdateWidget(_PageField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.editRequests != oldWidget.editRequests) _start();
-  }
-
-  @override
-  void dispose() {
-    _text.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  void _start() {
-    _text.text = '${widget.page}';
-    _text.selection = TextSelection(baseOffset: 0, extentOffset: _text.text.length);
-    setState(() => _editing = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focus.requestFocus();
-    });
-  }
-
-  void _finish({required bool jump}) {
-    if (!_editing) return;
-    final page = int.tryParse(_text.text.trim());
-    setState(() => _editing = false);
-    if (jump && page != null) widget.onJump(page);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final t = context.mmText;
-    final style = t.callout.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
-    if (!_editing) {
-      return MMInteractive(
-        onTap: _start,
-        semanticLabel: l.pageNumberField,
-        builder: (context, _) => Text(l.pageOf(widget.page, widget.pageCount), style: style),
-      );
-    }
-    final digits = '${widget.pageCount}'.length;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 10.0 * digits + 6,
-          child: MMInlineTextField(
-            controller: _text,
-            focusNode: _focus,
-            style: style,
-            semanticLabel: l.pageNumberField,
-            maxLines: 1,
-            onSubmitted: () => _finish(jump: true),
-            onCancel: () => _finish(jump: false),
-            onTapOutside: () => _finish(jump: true),
-          ),
-        ),
-        Text(' / ${widget.pageCount}', style: style),
-      ],
-    );
-  }
-}
-
 class _PagePill extends StatelessWidget {
   const _PagePill({
     required this.page,
@@ -1135,7 +1104,7 @@ class _PagePill extends StatelessWidget {
                   color: MMAppearance.reduceTransparencyOf(context) ? c.glassOpaque : c.glass.withValues(alpha: .35),
                   borderRadius: BorderRadius.circular(MMRadii.capsule),
                 ),
-                child: _PageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+                child: ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
               ),
             ),
             const SizedBox(height: MMSpacing.s),

@@ -1220,5 +1220,22 @@
   "importErrorDamaged": "文件已损坏",
   "importErrorKfx": "不支持 KFX 格式",
   "importErrorEmpty": "没有可读内容",
-  "importErrorUnsupported": "不支持此格式"
+  "importErrorUnsupported": "不支持此格式",
+  "readerFontSmaller": "缩小字号",
+  "readerFontLarger": "增大字号",
+  "readerLineTight": "紧凑",
+  "readerLineNormal": "适中",
+  "readerLineLoose": "宽松",
+  "readerFontOriginal": "原书",
+  "readerFontSerif": "宋体",
+  "readerFontSans": "黑体",
+  "readerModePaged": "翻页",
+  "readerModeScroll": "滚动",
+  "readerPositionMissing": "找不到原文位置",
+  "readerLoadFailed": "无法打开文档",
+  "readerNeedsReview": "需要确认",
+  "readerRetry": "重试",
+  "readerNoOutline": "没有目录",
+  "readerSelectionStart": "选区起点",
+  "readerSelectionEnd": "选区终点"
 }

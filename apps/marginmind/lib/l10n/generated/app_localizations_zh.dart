@@ -3367,4 +3367,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get importErrorUnsupported => '不支持此格式';
+
+  @override
+  String get readerFontSmaller => '缩小字号';
+
+  @override
+  String get readerFontLarger => '增大字号';
+
+  @override
+  String get readerLineTight => '紧凑';
+
+  @override
+  String get readerLineNormal => '适中';
+
+  @override
+  String get readerLineLoose => '宽松';
+
+  @override
+  String get readerFontOriginal => '原书';
+
+  @override
+  String get readerFontSerif => '宋体';
+
+  @override
+  String get readerFontSans => '黑体';
+
+  @override
+  String get readerModePaged => '翻页';
+
+  @override
+  String get readerModeScroll => '滚动';
+
+  @override
+  String get readerPositionMissing => '找不到原文位置';
+
+  @override
+  String get readerLoadFailed => '无法打开文档';
+
+  @override
+  String get readerNeedsReview => '需要确认';
+
+  @override
+  String get readerRetry => '重试';
+
+  @override
+  String get readerNoOutline => '没有目录';
+
+  @override
+  String get readerSelectionStart => '选区起点';
+
+  @override
+  String get readerSelectionEnd => '选区终点';
 }

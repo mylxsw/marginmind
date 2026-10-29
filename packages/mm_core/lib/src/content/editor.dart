@@ -745,21 +745,28 @@ class StudySetEditor {
   (StudySetContent, Annotation) underline(
     StudySetContent c, {
     required String documentId,
-    required List<AnnotationPage> pages,
+    List<AnnotationPage>? pages,
+    List<TextAnchor> textAnchors = const [],
     required String quote,
     required int colorIndex,
     required AnnotationLineStyle lineStyle,
   }) {
-    if (quote.trim().isEmpty || pages.isEmpty || pages.any((p) => p.rects.isEmpty)) {
-      throw ArgumentError('An underline needs text and page rectangles');
+    if (quote.trim().isEmpty ||
+        (textAnchors.isEmpty && (pages == null || pages.isEmpty || pages.any((p) => p.rects.isEmpty)))) {
+      throw ArgumentError('An underline needs text and a source target');
+    }
+    if (pages != null && textAnchors.isNotEmpty) throw ArgumentError('Mixed annotation targets');
+    for (final anchor in textAnchors) {
+      anchor.validate();
     }
     final existing = c.annotations
         .where(
           (a) =>
               a.kind == AnnotationKind.underline &&
-              !a.isText &&
               a.documentId == documentId &&
-              _sameAnnotationPages(a.pages, pages),
+              (textAnchors.isNotEmpty
+                  ? a.isText && _sameTextAnchors(a.textAnchors, textAnchors)
+                  : !a.isText && _sameAnnotationPages(a.pages, pages!)),
         )
         .firstOrNull;
     if (existing != null) {
@@ -771,6 +778,7 @@ class StudySetEditor {
       id: newId(),
       documentId: documentId,
       pages: pages,
+      textAnchors: textAnchors,
       quote: quote.trim(),
       colorIndex: colorIndex,
       kind: AnnotationKind.underline,
@@ -778,6 +786,21 @@ class StudySetEditor {
       createdAt: now(),
     );
     return (c.copyWith(annotations: [...c.annotations, a]), a);
+  }
+
+  static bool _sameTextAnchors(List<TextAnchor> a, List<TextAnchor> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].chapterId != b[i].chapterId ||
+          a[i].revision != b[i].revision ||
+          a[i].normalizationVersion != b[i].normalizationVersion ||
+          a[i].start != b[i].start ||
+          a[i].end != b[i].end ||
+          a[i].quote != b[i].quote) {
+        return false;
+      }
+    }
+    return true;
   }
 
   static bool _sameAnnotationPages(List<AnnotationPage> a, List<AnnotationPage> b) {

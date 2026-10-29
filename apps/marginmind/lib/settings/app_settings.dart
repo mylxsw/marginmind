@@ -1,9 +1,9 @@
 import 'dart:ui' show Locale;
 
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/material.dart' show ThemeMode, immutable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:mm_core/mm_core.dart' show AnnotationLineStyle;
+import 'package:mm_core/mm_core.dart' show AnnotationLineStyle, DocumentFormat;
 
 import '../app/providers.dart';
 
@@ -25,8 +25,41 @@ enum SelectionTranslationDirection {
   };
 }
 
+enum ReaderFont { original, serif, sans }
+
+@immutable
+class ReadingSettings {
+  const ReadingSettings({
+    this.size = MMReaderTypography.defaultSize,
+    this.lineHeight = 1,
+    this.font = ReaderFont.original,
+    this.paged = true,
+  });
+  final int size, lineHeight;
+  final ReaderFont font;
+  final bool paged;
+  ReadingSettings copyWith({int? size, int? lineHeight, ReaderFont? font, bool? paged}) => ReadingSettings(
+    size: (size ?? this.size).clamp(0, MMReaderTypography.fontSizes.length - 1),
+    lineHeight: (lineHeight ?? this.lineHeight).clamp(0, MMReaderTypography.lineHeights.length - 1),
+    font: font ?? this.font,
+    paged: paged ?? this.paged,
+  );
+  static bool isArticle(DocumentFormat format) => format == DocumentFormat.markdown || format == DocumentFormat.web;
+  @override
+  bool operator ==(Object other) =>
+      other is ReadingSettings &&
+      other.size == size &&
+      other.lineHeight == lineHeight &&
+      other.font == font &&
+      other.paged == paged;
+  @override
+  int get hashCode => Object.hash(size, lineHeight, font, paged);
+}
+
 class AppSettings {
   const AppSettings({
+    this.bookReading = const ReadingSettings(),
+    this.articleReading = const ReadingSettings(font: ReaderFont.serif, paged: false),
     this.appearance = AppearancePreference.system,
     this.language = LanguagePreference.system,
     this.annotationTool = AnnotationTool.select,
@@ -37,6 +70,8 @@ class AppSettings {
     this.selectionTranslationDirection = SelectionTranslationDirection.automatic,
   });
 
+  final ReadingSettings bookReading, articleReading;
+  ReadingSettings reading(DocumentFormat format) => ReadingSettings.isArticle(format) ? articleReading : bookReading;
   final AppearancePreference appearance;
   final LanguagePreference language;
   final AnnotationTool annotationTool;
@@ -60,6 +95,8 @@ class AppSettings {
   };
 
   AppSettings copyWith({
+    ReadingSettings? bookReading,
+    ReadingSettings? articleReading,
     AppearancePreference? appearance,
     LanguagePreference? language,
     AnnotationTool? annotationTool,
@@ -69,6 +106,8 @@ class AppSettings {
     double? readerSidebarWidth,
     SelectionTranslationDirection? selectionTranslationDirection,
   }) => AppSettings(
+    bookReading: bookReading ?? this.bookReading,
+    articleReading: articleReading ?? this.articleReading,
     appearance: appearance ?? this.appearance,
     language: language ?? this.language,
     annotationTool: annotationTool ?? this.annotationTool,
@@ -90,7 +129,20 @@ class SettingsController extends Notifier<AppSettings> {
   @override
   AppSettings build() {
     final prefs = ref.watch(sharedPreferencesProvider);
+    ReadingSettings reading(String key, {bool article = false}) => ReadingSettings(
+      size: (prefs.getInt('$key.size') ?? MMReaderTypography.defaultSize).clamp(
+        0,
+        MMReaderTypography.fontSizes.length - 1,
+      ),
+      lineHeight: (prefs.getInt('$key.lineHeight') ?? 1).clamp(0, MMReaderTypography.lineHeights.length - 1),
+      font: _parse(ReaderFont.values, prefs.getString('$key.font'), article ? ReaderFont.serif : ReaderFont.original),
+      paged: prefs.getBool('$key.paged') ?? !article,
+    );
     return AppSettings(
+      bookReading: reading('settings.reading.book'),
+      articleReading: reading('settings.reading.article', article: true).font == ReaderFont.original
+          ? reading('settings.reading.article', article: true).copyWith(font: ReaderFont.serif)
+          : reading('settings.reading.article', article: true),
       underlineColor: MMAnnotationColor.tryParse(prefs.getString('settings.underlineColor')) ?? MMAnnotationColor.blue,
       underlineStyle: _parse(
         AnnotationLineStyle.values,
@@ -119,6 +171,26 @@ class SettingsController extends Notifier<AppSettings> {
       appearance: _parse(AppearancePreference.values, prefs.getString(_appearanceKey), AppearancePreference.system),
       language: _parse(LanguagePreference.values, prefs.getString(_languageKey), LanguagePreference.system),
     );
+  }
+
+  Future<void> usePhoneReadingDefault(DocumentFormat format) async {
+    final key = ReadingSettings.isArticle(format) ? 'settings.reading.article' : 'settings.reading.book';
+    if (!ref.read(sharedPreferencesProvider).containsKey('$key.size')) {
+      await setReading(format, state.reading(format).copyWith(size: MMReaderTypography.defaultSizePhone));
+    }
+  }
+
+  Future<void> setReading(DocumentFormat format, ReadingSettings value) async {
+    value = value.copyWith();
+    final article = ReadingSettings.isArticle(format);
+    if (article && value.font == ReaderFont.original) value = value.copyWith(font: ReaderFont.serif);
+    state = state.copyWith(bookReading: article ? null : value, articleReading: article ? value : null);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final key = article ? 'settings.reading.article' : 'settings.reading.book';
+    await prefs.setInt('$key.size', value.size);
+    await prefs.setInt('$key.lineHeight', value.lineHeight);
+    await prefs.setString('$key.font', value.font.name);
+    await prefs.setBool('$key.paged', value.paged);
   }
 
   Future<void> setUnderlineStyle(MMAnnotationColor color, AnnotationLineStyle style) async {

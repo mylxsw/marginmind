@@ -131,3 +131,25 @@ abstract final class MMSizes {
   static const double compactSearchWidth = 160;
   static const Size windowMinSize = Size(960, 600);
 }
+
+/// Shared geometry for the source-anchored book reader.
+abstract final class MMReaderLayout {
+  static const double zoomStep = 1.2;
+  static const double minZoom = .25;
+  static const double maxZoom = 16;
+  static const double measure = 680;
+  static const double spreadMeasure = 600;
+  static const double spreadMinWidth = 1000;
+  static const double spreadGap = 64;
+  static const double margin = 48;
+  static const double marginCompact = 24;
+  static const double topInset = 40;
+  static const double topInsetCompact = 28;
+  static const double scrollTopInset = 36;
+  static const double scrollTopInsetCompact = 24;
+  static const double turnZone = .25;
+  static const double marginColumn = 220;
+  static const double settingsWidth = 280;
+  static const double thumbnailWidth = 112;
+  static const double thumbnailHeight = 144;
+}

@@ -40,3 +40,12 @@ abstract final class MMTypography {
     height: 16 / 12,
   );
 }
+
+abstract final class MMReaderTypography {
+  static const fontSizes = [13.0, 14.5, 15.5, 16.5, 18.0, 20.0, 22.0, 25.0];
+  static const defaultSize = 3;
+  static const defaultSizePhone = 4;
+  static const lineHeights = [1.6, 1.9, 2.2];
+  static const serif = 'Songti SC';
+  static const sans = 'Noto Sans';
+}

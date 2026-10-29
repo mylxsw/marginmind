@@ -1867,5 +1867,22 @@
   "importErrorDamaged": "The file is damaged",
   "importErrorKfx": "KFX isn’t supported",
   "importErrorEmpty": "No readable content",
-  "importErrorUnsupported": "Unsupported format"
+  "importErrorUnsupported": "Unsupported format",
+  "readerFontSmaller": "Smaller Text",
+  "readerFontLarger": "Larger Text",
+  "readerLineTight": "Tight",
+  "readerLineNormal": "Normal",
+  "readerLineLoose": "Loose",
+  "readerFontOriginal": "Original",
+  "readerFontSerif": "Serif",
+  "readerFontSans": "Sans",
+  "readerModePaged": "Pages",
+  "readerModeScroll": "Scroll",
+  "readerPositionMissing": "Source position not found",
+  "readerLoadFailed": "Unable to open document",
+  "readerNeedsReview": "Needs Review",
+  "readerRetry": "Retry",
+  "readerNoOutline": "No outline",
+  "readerSelectionStart": "Selection start",
+  "readerSelectionEnd": "Selection end"
 }
