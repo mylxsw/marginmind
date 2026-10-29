@@ -3223,4 +3223,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get underlineDeletedHud => 'Underline Deleted';
+
+  @override
+  String mergeNodes(int count) {
+    return 'Merge $count nodes';
+  }
+
+  @override
+  String splitNodes(int count) {
+    return 'Split into $count nodes';
+  }
+
+  @override
+  String selectedNodes(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get mergedNodes => 'Nodes merged';
+
+  @override
+  String mergeCleanup(int relations, int summaries) {
+    return 'Removed $relations relationships and $summaries summaries';
+  }
+
+  @override
+  String mergedSources(int count) {
+    return '$count sources · Merged';
+  }
+
+  @override
+  String get relationNeedsTwo => 'Select exactly two nodes';
+
+  @override
+  String get mapEditTooFewCards => 'Select at least two nodes';
+
+  @override
+  String get mapEditMissingCard => 'A selected node is unavailable';
+
+  @override
+  String get mapEditCenterTopic => 'The central topic cannot be used';
+
+  @override
+  String get mapEditImageCard => 'Image cards cannot be merged';
+
+  @override
+  String get mapEditSummaryTopic => 'Summary topics cannot be used';
+
+  @override
+  String get mapEditUnsupportedCard => 'This card type cannot be merged';
+
+  @override
+  String get mapEditNotMerged => 'This card has no segments to split';
+
+  @override
+  String get mapEditDifferentParents => 'Select nodes with the same parent';
+
+  @override
+  String get mapEditOverlappingSummary => 'This range overlaps an existing summary';
+
+  @override
+  String get mapEditMissingSummary => 'This summary is unavailable';
+
+  @override
+  String get selectionMerge => 'Merge';
+
+  @override
+  String get selectionSummary => 'Summary';
+
+  @override
+  String get selectionRelation => 'Relate';
+
+  @override
+  String get selectionDelete => 'Delete';
 }

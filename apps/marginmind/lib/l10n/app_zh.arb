@@ -1068,5 +1068,64 @@
   "lineWavy": "波浪线",
   "underlinedHud": "已添加下划线",
   "deleteUnderline": "删除下划线",
-  "underlineDeletedHud": "已删除下划线"
+  "underlineDeletedHud": "已删除下划线",
+  "mergeNodes": "合并 {count} 个节点",
+  "splitNodes": "拆分为 {count} 个节点",
+  "selectedNodes": "已选 {count} 个",
+  "mergedNodes": "已合并节点",
+  "mergeCleanup": "已移除 {relations} 条关联线和 {summaries} 个概要",
+  "mergedSources": "{count} 处原文 · 已合并",
+  "relationNeedsTwo": "请选择两个节点",
+  "mapEditTooFewCards": "请至少选择两个节点",
+  "mapEditMissingCard": "选中的节点已不可用",
+  "mapEditCenterTopic": "不能操作中心主题",
+  "mapEditImageCard": "图片卡片不能合并",
+  "mapEditSummaryTopic": "不能操作概要主题",
+  "mapEditUnsupportedCard": "此类卡片不能合并",
+  "mapEditNotMerged": "此卡片没有可拆分的段落",
+  "mapEditDifferentParents": "请选择同一父主题下的节点",
+  "mapEditOverlappingSummary": "范围与现有概要重叠",
+  "mapEditMissingSummary": "概要已不可用",
+  "@mergeNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@splitNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@selectedNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mergedSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mergeCleanup": {
+    "placeholders": {
+      "relations": {
+        "type": "int"
+      },
+      "summaries": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionMerge": "合并",
+  "selectionSummary": "概要",
+  "selectionRelation": "关联",
+  "selectionDelete": "删除"
 }

@@ -71,7 +71,7 @@ class MapExporter {
         if (card.kind == CardKind.note && card.textFormat == TextFormat.markdown) {
           _markdownNote(out, card.title, depth);
         } else {
-          out.writeln('${'  ' * depth}- ${_markdownLine(card)}');
+          out.writeln('${'  ' * depth}- ${_markdownLine(card).replaceAll('\n', '\n${'  ' * (depth + 1)}')}');
         }
         if (card.body.isNotEmpty) {
           for (final line in card.body.split('\n')) {
@@ -127,7 +127,9 @@ class MapExporter {
     final card = content.card(cardId);
     if (card == null) return '';
     if (card.title.trim().isNotEmpty) return _oneLine(notePlainText(card.title, card.textFormat));
-    return _oneLine(content.annotation(card.annotationId ?? '')?.quote ?? card.imageFileName ?? '');
+    return _oneLine(
+      card.kind == CardKind.excerpt ? content.segmentsOf(card).map((s) => s.text).join('\n') : card.imageFileName ?? '',
+    );
   }
 
   String _markdownLine(Card card) {
@@ -145,12 +147,17 @@ class MapExporter {
       case CardKind.note:
         return _oneLine(card.title);
       case CardKind.excerpt:
-        final a = content.annotation(card.annotationId ?? '');
-        final doc = a == null ? null : content.document(a.documentId);
         final title = card.title.trim().isEmpty ? '' : '**${_oneLine(card.title)}** — ';
-        final quote = a == null ? '' : '“${_oneLine(a.quote)}”';
-        final src = doc == null ? '' : ' *(${_source(doc, a!.page)})*';
-        return '$title$quote$src';
+        final paragraphs = content
+            .segmentsOf(card)
+            .map((segment) {
+              final a = content.annotation(segment.annotationId ?? '');
+              final doc = a == null ? null : content.document(a.documentId);
+              final src = doc == null ? '' : ' *(${_source(doc, a!.page)})*';
+              return '“${_oneLine(segment.text)}”$src';
+            })
+            .join('\n');
+        return '$title$paragraphs';
     }
   }
 
@@ -254,11 +261,14 @@ class MapExporter {
       return 'text="${_xml(notePlainText(card.title, card.textFormat))}"$body';
     }
     if (card.kind != CardKind.excerpt) return 'text="${_xml(card.title)}"';
-    final a = content.annotation(card.annotationId ?? '');
-    final doc = a == null ? null : content.document(a.documentId);
-    final quote = a?.quote ?? '';
+    final quote = content.segmentsOf(card).map((s) => s.text).join('\n');
     final text = card.title.trim().isNotEmpty ? card.title : quote;
-    final note = [if (card.title.trim().isNotEmpty) quote, if (doc != null) _source(doc, a!.page)].join('\n');
+    final sources = {
+      for (final segment in content.segmentsOf(card))
+        if (content.annotation(segment.annotationId ?? '') case final annotation?)
+          if (content.document(annotation.documentId) case final document?) _source(document, annotation.page),
+    };
+    final note = [if (card.title.trim().isNotEmpty) quote, ...sources].join('\n');
     return 'text="${_xml(text)}"${note.isEmpty ? '' : ' _note="${_xml(note)}"'}';
   }
 

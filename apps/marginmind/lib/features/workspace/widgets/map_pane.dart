@@ -19,6 +19,7 @@ import 'mind_map_canvas.dart';
 import 'notices.dart';
 import 'map_export_sheet.dart';
 import 'outline_view.dart';
+import 'map_selection_bar.dart';
 
 /// Map pane: the mind map (or outline) plus floating glass controls — map
 /// picker and view switch top-left, node actions top-right, zoom bottom-right.
@@ -32,6 +33,33 @@ class MapPane extends ConsumerStatefulWidget {
 }
 
 class _MapPaneState extends ConsumerState<MapPane> {
+  bool _mergeHover = false;
+
+  Future<void> _merge() async {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    if (_mergeHover) setState(() => _mergeHover = false);
+    final result = await controller.mergeSelected();
+    if (!mounted || result == null) return;
+    if (result.reason case final reason?) {
+      MMHud.show(context, mapEditReasonText(context, reason));
+      return;
+    }
+    final l = context.l10n;
+    final cleanup = result.removedRelationCount + result.removedSummaryCount == 0
+        ? ''
+        : ' · ${l.mergeCleanup(result.removedRelationCount, result.removedSummaryCount)}';
+    MMHud.show(
+      context,
+      '${l.mergedNodes}$cleanup',
+      action: (
+        l.undo,
+        () {
+          controller.undo();
+        },
+      ),
+    );
+  }
+
   final _transforms = <String, TransformationController>{};
   TransformationController get _transform =>
       _transforms.putIfAbsent(ref.read(workspaceProvider(widget.studySetId)).activeMapId, TransformationController.new);
@@ -107,6 +135,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
         controller.promoteSelected();
       case MindMapCommand.relation:
         controller.addRelation();
+      case MindMapCommand.merge:
+        _merge();
       case MindMapCommand.summary:
         controller.addSummaryAndEdit(l.newSummaryLabel);
       case MindMapCommand.expand:
@@ -227,6 +257,14 @@ class _MapPaneState extends ConsumerState<MapPane> {
               ),
           ],
           const MMMenuDivider(),
+          if (ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.length >= 2)
+            MMMenuItem(
+              l.mergeNodes(ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.length),
+              controller.mergeReason == null ? _merge : null,
+              shortcut: '⌥⌘J',
+            ),
+          if (card.segments.length > 1)
+            MMMenuItem(l.splitNodes(card.segments.length), () => controller.splitCard(card.id)),
           MMMenuItem(
             l.addRelation,
             () => _command(MindMapCommand.relation),
@@ -288,6 +326,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
           s.selectedCardIds,
           s.mapView,
           s.flashCardId,
+          s.flashAnnotationId,
           s.flashCardIds,
           s.locateCardTick,
           s.editingCardId,
@@ -298,6 +337,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
         ),
       ),
     );
+    ref.listen(provider.select((s) => (s.activeMapId, s.selectedCardIds, s.mapView)), (_, _) {
+      if (_mergeHover) setState(() => _mergeHover = false);
+    });
     // Closing the details hands the keyboard back to the map and its node;
     // the view stays where it was.
     ref.listen(provider.select((s) => s.panel), (previous, next) {
@@ -340,6 +382,26 @@ class _MapPaneState extends ConsumerState<MapPane> {
             child: state.mapView == MapViewMode.map
                 ? MindMapCanvas(
                     key: ValueKey(state.activeMapId),
+                    selectionToolbar: state.selectedCardIds.length < 2
+                        ? null
+                        : MapSelectionBar(
+                            count: state.selectedCardIds.length,
+                            mergeReason: controller.mergeReason,
+                            summaryReason: controller.summaryReason,
+                            onMerge: _merge,
+                            onSummary: () => controller.addSummaryAndEdit(l.newSummaryLabel),
+                            onRelation: controller.addRelation,
+                            onDelete: remove,
+                            onMergeHover: (hover) {
+                              if (_mergeHover != hover) setState(() => _mergeHover = hover);
+                            },
+                            onColor: state.selectedCardIds.any((id) => content.card(id)?.kind == CardKind.excerpt)
+                                ? (color) => controller.recolorCards(state.selectedCardIds, color)
+                                : null,
+                          ),
+                    mergePreviewCardId: _mergeHover ? controller.mergeSurvivorId : null,
+                    flashAnnotationId: state.flashAnnotationId,
+                    onRevealSegment: controller.revealSegment,
                     content: content,
                     mapId: state.activeMapId,
                     rootTitle: rootTitle,

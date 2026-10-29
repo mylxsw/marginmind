@@ -132,6 +132,7 @@ enum MindMapCommand {
   paste,
   relation,
   summary,
+  merge,
   expand,
 }
 
@@ -159,6 +160,7 @@ Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
   primaryShortcut(LogicalKeyboardKey.digit0): MindMapCommand.fit,
   primaryShortcut(LogicalKeyboardKey.keyR, alt: true): MindMapCommand.relation,
   primaryShortcut(LogicalKeyboardKey.bracketRight): MindMapCommand.summary,
+  primaryShortcut(LogicalKeyboardKey.keyJ, alt: true): MindMapCommand.merge,
   AppShortcuts.toggleCardText: MindMapCommand.expand,
 };
 
@@ -651,6 +653,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       MindMapCommand.center: l.centerCurrentNode,
       MindMapCommand.relation: l.addRelation,
       MindMapCommand.summary: l.addSummary,
+      MindMapCommand.merge: l.mergeNodes(workspaceState?.selectedCardIds.length ?? 0),
       MindMapCommand.expand: l.toggleCardText,
     };
     // Dispatch through the focused canvas so menu and keyboard run the same action.

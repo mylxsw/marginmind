@@ -1715,5 +1715,64 @@
   "lineWavy": "Wavy",
   "underlinedHud": "Underlined",
   "deleteUnderline": "Delete Underline",
-  "underlineDeletedHud": "Underline Deleted"
+  "underlineDeletedHud": "Underline Deleted",
+  "mergeNodes": "Merge {count} nodes",
+  "splitNodes": "Split into {count} nodes",
+  "selectedNodes": "{count} selected",
+  "mergedNodes": "Nodes merged",
+  "mergeCleanup": "Removed {relations} relationships and {summaries} summaries",
+  "mergedSources": "{count} sources · Merged",
+  "relationNeedsTwo": "Select exactly two nodes",
+  "mapEditTooFewCards": "Select at least two nodes",
+  "mapEditMissingCard": "A selected node is unavailable",
+  "mapEditCenterTopic": "The central topic cannot be used",
+  "mapEditImageCard": "Image cards cannot be merged",
+  "mapEditSummaryTopic": "Summary topics cannot be used",
+  "mapEditUnsupportedCard": "This card type cannot be merged",
+  "mapEditNotMerged": "This card has no segments to split",
+  "mapEditDifferentParents": "Select nodes with the same parent",
+  "mapEditOverlappingSummary": "This range overlaps an existing summary",
+  "mapEditMissingSummary": "This summary is unavailable",
+  "@mergeNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@splitNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@selectedNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mergedSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@mergeCleanup": {
+    "placeholders": {
+      "relations": {
+        "type": "int"
+      },
+      "summaries": {
+        "type": "int"
+      }
+    }
+  },
+  "selectionMerge": "Merge",
+  "selectionSummary": "Summary",
+  "selectionRelation": "Relate",
+  "selectionDelete": "Delete"
 }

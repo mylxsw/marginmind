@@ -209,7 +209,8 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       case MindMapCommand.siblingAfter ||
           MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
-          MindMapCommand.promote:
+          MindMapCommand.promote ||
+          MindMapCommand.merge:
         if (selected != null) widget.onCommand?.call(command);
       // The outline always shows the whole tree and has no viewport to fit.
       // Relations and summaries are drawn on the map only.
@@ -327,6 +328,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
       }
       final annotation = entry.annotation;
       final isExcerpt = card.kind == CardKind.excerpt;
+      final quote = widget.content.segmentsOf(card).map((s) => s.text).join('\n');
       final isImage = card.kind == CardKind.image;
       final bold = card.kind == CardKind.topic;
       rows.add(
@@ -334,13 +336,13 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
           key: _keyFor(id),
           depth: entry.depth,
           label: isExcerpt
-              ? (card.title.isEmpty ? (annotation?.quote ?? '') : card.title)
+              ? (card.title.isEmpty ? quote : card.title)
               : isImage && card.title.isEmpty && f?.id != id
               ? l.imageExcerpt
               : card.kind == CardKind.research
               ? l.researchNoteLabel(entry.researchTitle)
               : notePlainText(card.title, card.textFormat),
-          sub: isExcerpt && (card.title.isNotEmpty || f?.id == id) ? annotation?.quote : null,
+          sub: isExcerpt && (card.title.isNotEmpty || f?.id == id) ? quote : null,
           meta: annotation == null ? null : l.pageNumber(annotation.page),
           dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
           bold: bold,
