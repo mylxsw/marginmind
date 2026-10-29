@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:mm_book/mm_book.dart';
 import 'package:test/test.dart';
 
+import 'fixtures.dart';
+
 Uint8List bytes(String text) => Uint8List.fromList(utf8.encode(text));
-final png = Uint8List.fromList([137, 80, 78, 71]);
+final png = pngImage();
 
 void checkResourceKeys(Book book) {
   expect(book.resources, isNotEmpty);
@@ -115,11 +117,11 @@ void main() {
   test('encoded filename spaces normalize and oversized images are optional failures', () async {
     final source = bytes('![big](big.png) ![small](img/a%20b.png)');
     final seen = <String>[];
-    final book = await MarkdownBookParser(maxBytes: source.length + 4).parse(
+    final book = await MarkdownBookParser(maxBytes: source.length + png.length).parse(
       source,
       resolver: (path) async {
         seen.add(path);
-        return path == 'big.png' ? Uint8List(5) : png;
+        return path == 'big.png' ? Uint8List(png.length + 1) : png;
       },
     );
     expect(seen, ['big.png', 'img/a b.png']);

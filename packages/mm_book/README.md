@@ -26,9 +26,25 @@ on a fatal error. Atomic persistence/cleanup belongs to mm_data (GUL-573).
 
 `Book.toJson()` emits schema/normalization version 1, content revision,
 metadata, spine, TOC and hashed resource descriptors. Resource bytes accompany
-the manifest separately. `test/fixtures/book-v1.json` is a concrete consumer
+the manifest separately. `book.resourceManifest` exposes the same immutable
+`BookResource` descriptors by package path; `book.resources` still provides bytes.
+Image descriptors include nullable `width`/`height` in pixels, omitted from JSON
+when unavailable. PNG, JPEG (including progressive), GIF and WebP (VP8/VP8L/VP8X)
+use bounded header reads without decoding pixels. SVG uses explicit absolute
+`width`/`height` (CSS px, with physical units converted at 96 dpi), then a valid
+`viewBox` to infer a missing dimension or supply both dimensions. Percentages
+and font-relative SVG sizes without a viewBox remain unknown. Each image with
+an unreadable dimension adds one diagnostic when the Book is constructed;
+non-image resources need no dimensions. Authored image display sizes remain
+in inline runs and do not override the resource's intrinsic dimensions.
+`test/fixtures/book-v1.json` is a concrete consumer
 example. Existing flat `chapter.blocks` stays usable by mm_reflow;
-`chapter.structure` additionally preserves source containers/nesting.
+`chapter.structure` additionally preserves source containers/nesting and each
+`BookNode.style` stores its computed cascade, including box, position, background
+and alignment properties. Styles are immutable; non-inherited box/background
+properties stay on their container. `BookCell.header` is true for every `th`
+and every cell in a `thead`, including `td`; body/footer `td` cells default false.
+Header identity is serialized without duplicating text or changing offsets.
 Offsets and source-map destinations are half-open UTF-16 ranges in canonical
 text; source ranges refer to decoded DOM text nodes, before whitespace
 normalization, not original ZIP/XML bytes. Source-map entries can therefore
@@ -58,3 +74,7 @@ Tests construct small original samples in Dart; no copyrighted book binaries
 are included. External interoperability checks and provenance are documented
 in `docs/evidence/gul-574/README.md`. `tool/inspect_book.dart` accepts local
 sample paths and prints a JSON summary for each successfully parsed book.
+
+Regenerate the JSON contract fixture from the package directory with
+`dart run tool/update_contract_fixture.dart`; `test/ir_contract_test.dart`
+checks it against the parser output and content revision.

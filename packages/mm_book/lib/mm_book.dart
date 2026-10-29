@@ -13,6 +13,7 @@ import 'package:crypto/crypto.dart';
 import 'package:markdown/markdown.dart' as md;
 
 part 'src/contracts.dart';
+part 'src/resources.dart';
 part 'src/parser.dart';
 part 'src/html.dart';
 part 'src/css.dart';
@@ -52,8 +53,12 @@ class InlineRun {
 }
 
 class BookCell {
-  BookCell(List<InlineRun> runs, {this.rowSpan = 1, this.colSpan = 1}) : runs = List.unmodifiable(runs);
+  BookCell(List<InlineRun> runs, {this.rowSpan = 1, this.colSpan = 1, this.header = false})
+    : runs = List.unmodifiable(runs);
   final int rowSpan, colSpan;
+
+  /// True for a `th`, or any cell in a `thead`, including a `td`.
+  final bool header;
   final List<InlineRun> runs;
   String get text => runs.map((r) => r.text).join();
   int get length => text.length;
@@ -151,8 +156,7 @@ class Book {
        toc = List.unmodifiable(toc),
        pdf = pdf == null ? null : Uint8List.fromList(pdf).asUnmodifiableView(),
        chapters = List.unmodifiable(chapters),
-       resources = Map.unmodifiable(resources.map((k, v) => MapEntry(k, Uint8List.fromList(v).asUnmodifiableView()))),
-       diagnostics = List.unmodifiable(diagnostics);
+       _resources = _BookResources(resources, diagnostics);
   final String title;
   final Map<String, List<String>> metadata;
   final List<BookTocEntry> toc;
@@ -171,20 +175,16 @@ class Book {
     'fixedLayout': fixedLayout,
     'spine': chapters.map(_chapterJson).toList(),
     'toc': toc.map((e) => e.toJson()).toList(),
-    'resources': [
-      for (final path in (resources.keys.toList()..sort()))
-        {
-          'path': path,
-          'sha256': sha256.convert(resources[path]!).toString(),
-          'length': resources[path]!.length,
-          'mime': _mime(resources[path]!, path),
-        },
-    ],
+    'resources': [for (final path in (resourceManifest.keys.toList()..sort())) resourceManifest[path]!.toJson()],
     if (pdf != null) 'pdfSha256': sha256.convert(pdf!).toString(),
   };
   final List<BookChapter> chapters;
-  final Map<String, Uint8List> resources;
-  final List<String> diagnostics;
+  final _BookResources _resources;
+  Map<String, Uint8List> get resources => _resources.bytes;
+
+  /// Immutable descriptors indexed by the same package paths as [resources].
+  Map<String, BookResource> get resourceManifest => _resources.manifest;
+  List<String> get diagnostics => _resources.diagnostics;
 }
 
 /// Bounded in-memory EPUB parser. This deliberately reports unsupported markup.
