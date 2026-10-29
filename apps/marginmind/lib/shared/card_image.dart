@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -31,12 +32,16 @@ class CardImage extends StatelessWidget {
     this.fit = BoxFit.contain,
     this.semanticLabel,
     this.fullResolution = false,
+    this.displayScale = 1,
   });
 
   final String fileName;
   final BoxFit fit;
   final String? semanticLabel;
   final bool fullResolution;
+
+  /// Scale applied by the containing canvas, in addition to screen density.
+  final double displayScale;
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +53,18 @@ class CardImage extends StatelessWidget {
     );
     if (resolve == null) return placeholder;
     final ratio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 1;
-    // Captures are large; decode at the shown width to keep memory low.
+    // Include canvas zoom: layout constraints alone stay unchanged when the
+    // map zooms. Half-step buckets reuse decodes through small zoom changes;
+    // ResizeImage also keeps the result within the source's pixel dimensions.
+    final scale = math.max(1.0, (displayScale * 2).ceil() / 2);
     return LayoutBuilder(
       builder: (context, box) => Image(
         image: kIsWeb
             ? NetworkImage(resolve(fileName))
             : ResizeImage.resizeIfNeeded(
-                !fullResolution && box.hasBoundedWidth && box.maxWidth >= 1 ? (box.maxWidth * ratio).ceil() : null,
+                !fullResolution && box.hasBoundedWidth && box.maxWidth >= 1
+                    ? (box.maxWidth * ratio * scale).ceil()
+                    : null,
                 null,
                 FileImage(File(resolve(fileName))),
               ),

@@ -532,7 +532,9 @@ class _NodeSpec {
         }
         final r = a?.rects.firstOrNull;
         final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
-        final imageHeight = ((cardWidth - _cardInset) * aspect).clamp(36.0, 200.0).roundToDouble();
+        // Preserve short selections' aspect ratio too, without tinted strips
+        // above/below the picture. Tall images still fit within the preview.
+        final imageHeight = ((cardWidth - _cardInset) * aspect).clamp(1.0, 200.0);
         final height = 11 + titleRow + imageHeight + 11 + 2;
         return _NodeSpec._(
           _Kind.image,

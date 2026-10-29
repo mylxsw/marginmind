@@ -421,6 +421,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       rect: _shown(id, target),
       child: _NodeView(
         spec: spec,
+        transformation: widget.transformation,
         selected: true,
         flashing: false,
         onTap: () {},
@@ -982,6 +983,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 Positioned.fill(
                   child: _NodeView(
                     spec: spec,
+                    transformation: widget.transformation,
                     selected: true,
                     flashing: false,
                     onTap: () {},
@@ -1121,6 +1123,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       id == widget.flashCardId || widget.flashCardIds.contains(id),
       _dragging?.contains(id) ?? false,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
+      widget.transformation,
       mapScale(widget.transformation.value),
       widget.onContextMenu != null,
       l.revealSource,
@@ -1150,6 +1153,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               spec,
               _NodeView(
                 spec: spec,
+                transformation: widget.transformation,
                 selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
                 longPressEnabled: id == rootNodeId,
@@ -1715,6 +1719,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 class _NodeView extends StatelessWidget {
   const _NodeView({
     required this.spec,
+    required this.transformation,
     required this.selected,
     required this.flashing,
     required this.onTap,
@@ -1745,6 +1750,7 @@ class _NodeView extends StatelessWidget {
   final Widget? editor;
   final ValueChanged<Offset>? onSecondaryTapUp;
   final _NodeSpec spec;
+  final TransformationController transformation;
   final bool selected;
   final bool flashing;
   final VoidCallback onTap;
@@ -1852,9 +1858,14 @@ class _NodeView extends StatelessWidget {
           else if (spec.kind == _Kind.image)
             SizedBox(
               height: spec.imageHeight,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(MMRadii.excerpt),
-                child: ColoredBox(color: spec.color!.cardTint, child: CardImage(spec.image ?? '')),
+              // A PDF selection is rectangular: masking its corners can
+              // remove text or diagram borders right at the selected edge.
+              child: ColoredBox(
+                color: spec.color!.cardTint,
+                child: ValueListenableBuilder<Matrix4>(
+                  valueListenable: transformation,
+                  builder: (context, matrix, _) => CardImage(spec.image ?? '', displayScale: mapScale(matrix)),
+                ),
               ),
             )
           else
