@@ -34,7 +34,7 @@ abstract final class MMIcons {
   static const IconData newFolder = CupertinoIcons.folder_badge_plus; // folder.badge.plus
   static const IconData trash = CupertinoIcons.trash; // trash
   static const IconData document = CupertinoIcons.doc_text; // doc.text
-  static const IconData collections = CupertinoIcons.collections;
+  static const IconData collections = LucideIcons.bookOpen;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
   static const IconData ai = CupertinoIcons.sparkles; // sparkles
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass
