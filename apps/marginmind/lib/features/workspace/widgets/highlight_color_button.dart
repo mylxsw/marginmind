@@ -9,6 +9,7 @@ import '../../../app/providers.dart';
 import '../../../settings/highlight_palette.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf, inScope;
+import 'highlight_custom_color_picker.dart';
 
 /// One colored brush opens the palette. Picking a swatch is the only commit.
 class HighlightColorButton extends ConsumerStatefulWidget {
@@ -70,7 +71,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
   @override
   Widget build(BuildContext context) => MMToolbarButton(
     icon: MMIcons.highlight,
-    tint: widget.color.color,
+    tint: _open || widget.selected ? widget.color.color : null,
     tooltip: context.l10n.chooseHighlightColor,
     selected: _open || widget.selected,
     compact: widget.compact,
@@ -92,59 +93,66 @@ class _HighlightColorsState extends ConsumerState<_HighlightColors> {
   Widget build(BuildContext context) {
     final l = context.l10n, c = context.mmColors;
     final palette = ref.watch(highlightPaletteProvider);
-    final colors = _more ? MMAnnotationColor.values : palette.frequent(ref.read(clockProvider)());
+    final colors = palette.frequent(ref.read(clockProvider)());
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: FocusScope(
         autofocus: true,
         child: Material(
           type: MaterialType.transparency,
-          child: MMFloatingToolbar(
-            key: const ValueKey('highlight-color-palette'),
-            children: [
-              for (final color in colors)
-                MMFloatingToolbarColor(
-                  color: color,
-                  tooltip: l.colorName(color),
-                  selected: color == widget.current,
-                  onPressed: () => Navigator.of(context).pop(color),
-                ),
-              if (!_more)
-                MMInteractive(
-                  tooltip: l.moreHighlightColors,
-                  semanticLabel: l.moreHighlightColors,
-                  onTap: () => setState(() => _more = true),
-                  builder: (context, s) => Container(
-                    width: MMSizes.floatingToolbarColor,
-                    height: context.mmToolbarButton.height,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: s.hovered || s.pressed ? c.hover : Colors.transparent,
-                      borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-                      border: s.focused ? Border.all(color: c.accent) : null,
-                    ),
-                    child: Container(
-                      width: 17,
-                      height: 17,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: SweepGradient(
-                          colors: [
-                            Color(0xFFFFCC00),
-                            Color(0xFF34C759),
-                            Color(0xFF007AFF),
-                            Color(0xFFAF52DE),
-                            Color(0xFFFF2D55),
-                            Color(0xFFFFCC00),
-                          ],
+          child: _more
+              ? SingleChildScrollView(
+                  child: HighlightCustomColorPicker(
+                    current: widget.current,
+                    onSelected: (color) => Navigator.of(context).pop(color),
+                    onCancel: () => Navigator.of(context).pop(),
+                  ),
+                )
+              : MMFloatingToolbar(
+                  key: const ValueKey('highlight-color-palette'),
+                  children: [
+                    for (final color in colors)
+                      MMFloatingToolbarColor(
+                        color: color,
+                        tooltip: l.colorName(color),
+                        selected: color == widget.current,
+                        onPressed: () => Navigator.of(context).pop(color),
+                      ),
+                    MMInteractive(
+                      tooltip: l.moreHighlightColors,
+                      semanticLabel: l.moreHighlightColors,
+                      onTap: () => setState(() => _more = true),
+                      builder: (context, s) => Container(
+                        width: MMSizes.floatingToolbarColor,
+                        height: context.mmToolbarButton.height,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: s.hovered || s.pressed ? c.hover : Colors.transparent,
+                          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
+                          border: s.focused ? Border.all(color: c.accent) : null,
+                        ),
+                        child: Container(
+                          width: 17,
+                          height: 17,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: SweepGradient(
+                              colors: [
+                                Color(0xFFFFCC00),
+                                Color(0xFF34C759),
+                                Color(0xFF007AFF),
+                                Color(0xFFAF52DE),
+                                Color(0xFFFF2D55),
+                                Color(0xFFFFCC00),
+                              ],
+                            ),
+                          ),
+                          child: const Icon(MMIcons.add, color: Colors.white, size: 13),
                         ),
                       ),
-                      child: const Icon(MMIcons.add, color: Colors.white, size: 13),
                     ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ),
     );

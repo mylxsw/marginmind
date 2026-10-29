@@ -331,19 +331,34 @@ class _ReadingPage extends ConsumerWidget {
                 ],
               ),
             ),
-            MMSettingsRow(
-              label: l.selectionTranslationDirection,
-              trailing: MMPopUpButton<SelectionTranslationDirection>(
-                key: const ValueKey('settings-selection-translation'),
-                value: direction,
-                semanticLabel: l.selectionTranslationDirection,
-                onChanged: ref.read(settingsProvider.notifier).setSelectionTranslationDirection,
-                items: [
-                  (SelectionTranslationDirection.automatic, l.selectionTranslationAutomatic),
-                  (SelectionTranslationDirection.englishToChinese, l.selectionTranslationEnglishToChinese),
-                  (SelectionTranslationDirection.chineseToEnglish, l.selectionTranslationChineseToEnglish),
-                ],
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final picker = MMPopUpButton<SelectionTranslationDirection>(
+                  key: const ValueKey('settings-selection-translation'),
+                  value: direction,
+                  semanticLabel: l.selectionTranslationDirection,
+                  onChanged: ref.read(settingsProvider.notifier).setSelectionTranslationDirection,
+                  items: [
+                    (SelectionTranslationDirection.automatic, l.selectionTranslationAutomatic),
+                    (SelectionTranslationDirection.englishToChinese, l.selectionTranslationEnglishToChinese),
+                    (SelectionTranslationDirection.chineseToEnglish, l.selectionTranslationChineseToEnglish),
+                  ],
+                );
+                if (constraints.maxWidth >= 460) {
+                  return MMSettingsRow(label: l.selectionTranslationDirection, trailing: picker);
+                }
+                return Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l.selectionTranslationDirection, style: context.mmText.body),
+                      const SizedBox(height: 8),
+                      Align(alignment: Alignment.centerRight, child: picker),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),

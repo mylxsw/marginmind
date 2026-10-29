@@ -186,6 +186,8 @@ class Annotation {
   int get page => pages.first.page;
   List<PageRect> get rects => pages.first.rects;
   final String quote;
+
+  /// Preset ID 0–5, or 0x01000000 | RGB for an exact custom color.
   final int colorIndex;
   final DateTime createdAt;
 

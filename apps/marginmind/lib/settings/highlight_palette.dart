@@ -25,7 +25,7 @@ class HighlightPalette {
       return use.count / (1 + days / 7);
     }
 
-    final colors = [...MMAnnotationColor.values];
+    final colors = {...MMAnnotationColor.values, ...usage.keys, current}.toList();
     colors.sort((a, b) {
       final weight = score(b).compareTo(score(a));
       if (weight != 0) return weight;
@@ -34,7 +34,10 @@ class HighlightPalette {
       );
       return recent != 0 ? recent : a.index.compareTo(b.index);
     });
-    return colors.take(3).toList();
+    final frequent = colors.take(3).toList();
+    // The current color must remain reusable even before its first mark.
+    if (!frequent.contains(current)) frequent[frequent.length - 1] = current;
+    return frequent;
   }
 }
 
@@ -50,8 +53,10 @@ class HighlightPaletteController extends Notifier<HighlightPalette> {
     try {
       final data = jsonDecode(ref.watch(sharedPreferencesProvider).getString(_key) ?? '{}') as Map;
       final usage = <MMAnnotationColor, HighlightColorUse>{};
-      for (final color in MMAnnotationColor.values) {
-        final use = (data['usage'] as Map?)?[color.name];
+      for (final entry in ((data['usage'] as Map?) ?? {}).entries) {
+        final color = MMAnnotationColor.tryParse(entry.key as String?);
+        if (color == null) continue;
+        final use = entry.value;
         if (use is! Map) continue;
         final count = use['count'], last = use['last'];
         if (count is int && count > 0 && last is int) {
@@ -59,8 +64,7 @@ class HighlightPaletteController extends Notifier<HighlightPalette> {
         }
       }
       return HighlightPalette(
-        current:
-            MMAnnotationColor.values.where((c) => c.name == data['current']).firstOrNull ?? MMAnnotationColor.yellow,
+        current: MMAnnotationColor.tryParse(data['current'] as String?) ?? MMAnnotationColor.yellow,
         usage: Map.unmodifiable(usage),
       );
     } catch (_) {

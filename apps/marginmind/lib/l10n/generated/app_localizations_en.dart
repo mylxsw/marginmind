@@ -3080,4 +3080,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectionTranslationCopy => 'Copy Translation';
+
+  @override
+  String get highlightCustomColor => 'Custom Color';
+
+  @override
+  String get highlightColorHue => 'Hue';
+
+  @override
+  String get highlightColorSaturationValue => 'Saturation and Brightness';
+
+  @override
+  String get highlightColorHex => 'Hex Color';
+
+  @override
+  String get highlightColorHexInvalid => 'Enter a six-digit hex color, such as #12A4B8';
 }

@@ -1020,5 +1020,10 @@
   "selectionTranslationFailed": "翻译失败，请检查模型配置或网络后重试。",
   "selectionTranslationOffline": "当前处于离线模式。请启用联网或选择本地模型后重试。",
   "selectionTranslationTooLong": "所选内容过长，请缩小选区后再翻译。",
-  "selectionTranslationCopy": "复制译文"
+  "selectionTranslationCopy": "复制译文",
+  "highlightCustomColor": "自定义颜色",
+  "highlightColorHue": "色相",
+  "highlightColorSaturationValue": "饱和度和明暗",
+  "highlightColorHex": "颜色代码",
+  "highlightColorHexInvalid": "请输入六位十六进制颜色，例如 #12A4B8"
 }

@@ -53,6 +53,23 @@ void main() {
     expect(container.read(highlightPaletteProvider).current, MMAnnotationColor.yellow);
   });
 
+  test('custom color, usage and quick access survive preference reload', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
+    addTearDown(container.dispose);
+    final custom = MMAnnotationColor.tryParse('#12A4B8')!;
+    await container.read(highlightPaletteProvider.notifier).choose(custom);
+    expect(container.read(highlightPaletteProvider).frequent(DateTime.now()), contains(custom));
+    expect(container.read(highlightPaletteProvider).usage, isEmpty);
+    await container.read(highlightPaletteProvider.notifier).record(custom);
+    container.invalidate(highlightPaletteProvider);
+    final restored = container.read(highlightPaletteProvider);
+    expect(restored.current, custom);
+    expect(restored.usage[custom]!.count, 1);
+    expect(restored.frequent(DateTime.now()).first, custom);
+  });
+
   test('translation directions include automatic and explicit overrides', () {
     expect(SelectionTranslationDirection.automatic.targetLanguage('Memory and learning'), 'zh');
     expect(SelectionTranslationDirection.automatic.targetLanguage('阅读 PDF 有助于学习'), 'en');

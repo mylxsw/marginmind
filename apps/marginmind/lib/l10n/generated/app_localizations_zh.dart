@@ -2948,4 +2948,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectionTranslationCopy => '复制译文';
+
+  @override
+  String get highlightCustomColor => '自定义颜色';
+
+  @override
+  String get highlightColorHue => '色相';
+
+  @override
+  String get highlightColorSaturationValue => '饱和度和明暗';
+
+  @override
+  String get highlightColorHex => '颜色代码';
+
+  @override
+  String get highlightColorHexInvalid => '请输入六位十六进制颜色，例如 #12A4B8';
 }

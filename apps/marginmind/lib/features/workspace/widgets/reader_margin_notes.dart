@@ -419,7 +419,7 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
     final note = widget.note;
     final editing = state.draft?.id == note.id;
     final hovered = state.hovered == note.id;
-    final color = MMAnnotationColor.values[note.colorIndex];
+    final color = MMAnnotationColor.fromIndex(note.colorIndex);
     final l = context.l10n;
     if (editing && (_text.text != note.text || !_text.selection.isValid)) {
       _text.value = TextEditingValue(

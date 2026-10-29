@@ -155,7 +155,11 @@ class MarginNote {
     required this.updatedAt,
   }) {
     _check(
-      id.isNotEmpty && documentId.isNotEmpty && page > 0 && colorIndex >= 0 && colorIndex < 6,
+      id.isNotEmpty &&
+          documentId.isNotEmpty &&
+          page > 0 &&
+          // Preset IDs 0–5 or a tagged 24-bit RGB color, as stored by annotations.
+          ((colorIndex >= 0 && colorIndex < 6) || (colorIndex >= 0x01000000 && colorIndex <= 0x01FFFFFF)),
       'Invalid margin note',
     );
     _check((anchor == null) != (lineY == null), 'Exactly one anchor or lineY is required');
@@ -164,6 +168,8 @@ class MarginNote {
     _check(mapId == null || nodeId != null, 'mapId requires nodeId');
   }
   final String id, documentId, text;
+
+  /// Color uses the same preset IDs or tagged RGB encoding as [Annotation].
   final int page, colorIndex;
   final AnnotationAnchor? anchor;
   final double? lineY;

@@ -1667,5 +1667,10 @@
   "selectionTranslationFailed": "Translation failed. Check your model settings or connection and retry.",
   "selectionTranslationOffline": "You are offline. Enable online access or select a local model, then retry.",
   "selectionTranslationTooLong": "Select a shorter passage to translate.",
-  "selectionTranslationCopy": "Copy Translation"
+  "selectionTranslationCopy": "Copy Translation",
+  "highlightCustomColor": "Custom Color",
+  "highlightColorHue": "Hue",
+  "highlightColorSaturationValue": "Saturation and Brightness",
+  "highlightColorHex": "Hex Color",
+  "highlightColorHexInvalid": "Enter a six-digit hex color, such as #12A4B8"
 }

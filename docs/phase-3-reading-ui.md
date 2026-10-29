@@ -18,7 +18,7 @@
 | 用途 | 令牌 |
 | --- | --- |
 | 选中态、手柄、主按钮、对照段落高亮 | `accent` / `accentTint`；段落高亮用 `accent` 9% |
-| 批注卡底色、色条 | 批注颜色 `MMAnnotationColor`（六色，存 `colorIndex`）；底色见 0.2 |
+| 批注卡底色、色条 | 批注颜色 `MMAnnotationColor`（六种预设与自定义 RGB，存 `colorIndex`）；底色见 0.2 |
 | 批注锚点虚线、连线、刻度、页边标记 | 新增 `MMReaderStyle.marginNoteLine`、`marginNoteMarker`（0.2） |
 | 浮层（页面菜单、对照菜单、标记弹层、批注“…”菜单） | `MMGlass` + `glassShadow`，圆角 14，与现有菜单一致 |
 | 胶囊（裁边提示、调整裁边工具条） | `MMGlass`，0.5pt `hairline`，圆角 = 高度 / 2 |

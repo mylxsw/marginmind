@@ -17,6 +17,7 @@ extension AppLocalizationsX on AppLocalizations {
     MMAnnotationColor.pink => colorPink,
     MMAnnotationColor.orange => colorOrange,
     MMAnnotationColor.purple => colorPurple,
+    _ => color.hex,
   };
 
   String inkColorName(MMInkColor color) => switch (color) {

@@ -5515,6 +5515,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copy Translation'**
   String get selectionTranslationCopy;
+
+  /// No description provided for @highlightCustomColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Color'**
+  String get highlightCustomColor;
+
+  /// No description provided for @highlightColorHue.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get highlightColorHue;
+
+  /// No description provided for @highlightColorSaturationValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation and Brightness'**
+  String get highlightColorSaturationValue;
+
+  /// No description provided for @highlightColorHex.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex Color'**
+  String get highlightColorHex;
+
+  /// No description provided for @highlightColorHexInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a six-digit hex color, such as #12A4B8'**
+  String get highlightColorHexInvalid;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

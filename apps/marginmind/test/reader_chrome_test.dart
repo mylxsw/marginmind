@@ -59,6 +59,7 @@ void main() {
         MMIcons.zoomControl,
         MMIcons.crop,
         MMIcons.appearance,
+        MMIcons.highlight,
         MMIcons.areaSelect,
         MMIcons.pen,
         MMIcons.compare,

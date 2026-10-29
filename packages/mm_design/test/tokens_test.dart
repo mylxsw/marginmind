@@ -56,6 +56,23 @@ void main() {
     expect(MMAnnotationColor.yellow.highlight.a, closeTo(0.32, 0.01));
   });
 
+  test('arbitrary RGB colors keep a stable storage ID and preserve preset IDs', () {
+    for (final rgb in [0x000000, 0xFFFFFF, 0x12A4B8, 0x020406]) {
+      final custom = MMAnnotationColor.fromColor(Color(0xFF000000 | rgb));
+      expect(custom.isCustom, isTrue);
+      expect(MMAnnotationColor.fromIndex(custom.index), custom);
+      expect(MMAnnotationColor.tryParse(custom.hex), custom);
+      expect(custom.color.toARGB32(), 0xFF000000 | rgb);
+    }
+    expect(MMAnnotationColor.fromColor(const Color(0xFFFFCC00)), MMAnnotationColor.yellow);
+    expect(MMAnnotationColor.yellow.index, 0);
+    expect(MMAnnotationColor.purple.index, 5);
+    expect(MMAnnotationColor.tryParse('#12a4b8')!.hex, '#12A4B8');
+    expect(MMAnnotationColor.tryParse('#ABC'), isNull);
+    expect(MMAnnotationColor.tryParse('#GGGGGG'), isNull);
+    expect(MMAnnotationColor.tryParse('yellow'), MMAnnotationColor.yellow);
+  });
+
   test('themes carry MMColors and drop ink splashes', () {
     final light = MMTheme.light();
     final dark = MMTheme.dark(systemAccent: const Color(0xFFFF9500));
