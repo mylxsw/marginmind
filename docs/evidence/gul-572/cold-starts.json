@@ -1,0 +1,77 @@
+[
+  {
+    "launch": 1,
+    "elapsed_us": 376513,
+    "environment": {
+      "kind": "environment",
+      "profile": false,
+      "release": true,
+      "platform": "linux",
+      "pixel_ratio": 1.0,
+      "refresh_hz": 0.0,
+      "repeats": 30
+    },
+    "rss_kib": 212192,
+    "pss_kib": 181524
+  },
+  {
+    "launch": 2,
+    "elapsed_us": 440282,
+    "environment": {
+      "kind": "environment",
+      "profile": false,
+      "release": true,
+      "platform": "linux",
+      "pixel_ratio": 1.0,
+      "refresh_hz": 0.0,
+      "repeats": 30
+    },
+    "rss_kib": 212192,
+    "pss_kib": 181476
+  },
+  {
+    "launch": 3,
+    "elapsed_us": 360888,
+    "environment": {
+      "kind": "environment",
+      "profile": false,
+      "release": true,
+      "platform": "linux",
+      "pixel_ratio": 1.0,
+      "refresh_hz": 0.0,
+      "repeats": 30
+    },
+    "rss_kib": 212564,
+    "pss_kib": 181851
+  },
+  {
+    "launch": 4,
+    "elapsed_us": 324468,
+    "environment": {
+      "kind": "environment",
+      "profile": false,
+      "release": true,
+      "platform": "linux",
+      "pixel_ratio": 1.0,
+      "refresh_hz": 0.0,
+      "repeats": 30
+    },
+    "rss_kib": 212008,
+    "pss_kib": 181292
+  },
+  {
+    "launch": 5,
+    "elapsed_us": 420648,
+    "environment": {
+      "kind": "environment",
+      "profile": false,
+      "release": true,
+      "platform": "linux",
+      "pixel_ratio": 1.0,
+      "refresh_hz": 0.0,
+      "repeats": 30
+    },
+    "rss_kib": 212396,
+    "pss_kib": 181729
+  }
+]

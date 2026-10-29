@@ -35,6 +35,8 @@ class Probe extends StatefulWidget {
 class _ProbeState extends State<Probe> {
   Book? book;
   ChapterLayout? layout;
+  final engine = ReflowEngine();
+  String revision = '';
   Map<String, MMBookImage> images = {};
   int chapter = 0, page = 0, bookIndex = 0;
   double size = 16;
@@ -112,6 +114,7 @@ class _ProbeState extends State<Probe> {
       book = const EpubParser().parse(
         bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
       );
+      revision = book!.revision;
       bookIndex = index;
       await loadChapter(0);
     } catch (error, stack) {
@@ -129,32 +132,77 @@ class _ProbeState extends State<Probe> {
       }
       return;
     }
-    layout?.dispose();
-    layout = null;
-    for (final i in images.values) {
-      i.dispose();
+    final oldLayout = layout;
+    final oldImages = images;
+    late ChapterLayout next;
+    try {
+      next = await engine.layout(
+        book!.chapters[index],
+        LayoutSpec(width: 360, fontSize: size),
+        request,
+        revision: revision,
+        resources: LayoutResources(images: decoded),
+      );
+    } on LayoutCancelled {
+      for (final image in decoded.values) {
+        image.dispose();
+      }
+      return;
+    } catch (_) {
+      for (final image in decoded.values) {
+        image.dispose();
+      }
+      rethrow;
+    }
+    if (!mounted || request != generation) {
+      next.dispose();
+      engine.evictChapter(next.chapter.id);
+      for (final image in decoded.values) {
+        image.dispose();
+      }
+      return;
     }
     images = decoded;
     chapter = index;
     page = 0;
     selection = null;
-    relayout();
+    setState(() => layout = next);
+    oldLayout?.dispose();
+    engine
+        .clear(); // Release borrowed old image handles before their owner does.
+    for (final i in oldImages.values) {
+      i.dispose();
+    }
   }
 
-  void relayout({double width = 360}) {
+  Future<void> relayout({double width = 360}) async {
+    final request = ++generation;
     final oldOffset =
         selection?.start ??
         (layout == null
             ? 0
-            : layout!.hitTest(Offset(0, layout!.pages[page].top)));
-    layout?.dispose();
-    layout = ChapterLayout.layout(
-      book!.chapters[chapter],
-      LayoutSpec(width: width, fontSize: size),
-      images: images,
-    );
-    page = layout!.pageForOffset(oldOffset);
-    if (mounted) setState(() {});
+            : layout!.hitTest(Offset(0, layout!.pages[page].top)).start);
+    try {
+      final next = await engine.layout(
+        book!.chapters[chapter],
+        LayoutSpec(width: width, fontSize: size),
+        request,
+        revision: revision,
+        resources: LayoutResources(images: images),
+        visibleOffset: oldOffset,
+      );
+      if (!mounted || request != generation) {
+        next.dispose();
+        return;
+      }
+      final previous = layout;
+      layout = next;
+      page = next.pageForOffset(oldOffset);
+      setState(() {});
+      previous?.dispose();
+    } on LayoutCancelled {
+      /* A newer settings request owns the surface. */
+    }
   }
 
   Future<void> benchmark({
@@ -176,6 +224,7 @@ class _ProbeState extends State<Probe> {
       'refresh_hz': View.of(context).display.refreshRate,
       'repeats': iterations,
     });
+    final measureEngine = ReflowEngine(maxChapters: 0);
     try {
       for (final bi in bookIndices) {
         if (onlyBook.isNotEmpty && sampleIds[bi] != onlyBook) continue;
@@ -214,10 +263,12 @@ class _ProbeState extends State<Probe> {
             for (var iteration = -2; iteration < iterations; iteration++) {
               for (final fontSize in [16.0, 22.0]) {
                 final watch = Stopwatch()..start();
-                final measured = ChapterLayout.layout(
+                final measured = await measureEngine.layout(
                   c,
                   LayoutSpec(width: width, fontSize: fontSize),
-                  images: images,
+                  0,
+                  revision: revision,
+                  resources: LayoutResources(images: images),
                 );
                 watch.stop();
                 final anchor = c.anchor(
@@ -243,6 +294,8 @@ class _ProbeState extends State<Probe> {
                     'font': fontSize,
                     'iteration': iteration,
                     'us': watch.elapsedMicroseconds,
+                    'work_us': measured.workTime.inMicroseconds,
+                    'max_batch_us': measured.maxBatchTime.inMicroseconds,
                     'pages': measured.pages.length,
                     'anchor_ok': matches,
                   });
@@ -319,10 +372,51 @@ class _ProbeState extends State<Probe> {
         }
         emit({'kind': 'book_done', 'book': sampleIds[bi]});
       }
+      for (final scenario in [
+        'long-chapter',
+        'single-paragraph',
+        'huge-image',
+      ]) {
+        final html = switch (scenario) {
+          'long-chapter' => '<p>${'中文 mixed text ' * 20}</p>' * 500,
+          'single-paragraph' => '<p>${'中文 mixed text ' * 3000}</p>',
+          _ => '<img src="huge">',
+        };
+        final stress = const EpubParser().parseHtml(scenario, html);
+        final resources = LayoutResources(
+          intrinsicSizes: {'huge': const Size(100000, 100000)},
+        );
+        for (var i = -2; i < iterations; i++) {
+          for (final font in [16.0, 22.0]) {
+            final timer = Stopwatch()..start();
+            final measured = await measureEngine.layout(
+              stress,
+              LayoutSpec(width: 320, fontSize: font),
+              0,
+              revision: 'synthetic-v1',
+              resources: resources,
+            );
+            if (i >= 0) {
+              emit({
+                'kind': 'stress_layout',
+                'scenario': scenario,
+                'iteration': i,
+                'font': font,
+                'utf16': stress.canonicalText.length,
+                'us': timer.elapsedMicroseconds,
+                'work_us': measured.workTime.inMicroseconds,
+                'max_batch_us': measured.maxBatchTime.inMicroseconds,
+              });
+            }
+            measured.dispose();
+          }
+        }
+      }
       emit({'kind': 'done'});
     } catch (error, stack) {
       emit({'kind': 'error', 'error': '$error', 'stack': '$stack'});
     }
+    measureEngine.dispose();
     if (mounted) setState(() => busy = false);
   }
 
@@ -421,6 +515,7 @@ class _ProbeState extends State<Probe> {
     generation++;
     WidgetsBinding.instance.removeTimingsCallback(onTimings);
     layout?.dispose();
+    engine.dispose();
     for (final image in images.values) {
       image.dispose();
     }

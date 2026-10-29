@@ -80,13 +80,27 @@ void main() {
     }
 
     await settleLoad();
+    final dynamic state = tester.state(find.byType(Probe));
+    Future<void> settleLayout(bool Function() ready) async {
+      for (var attempt = 0; attempt < 100 && !ready(); attempt++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(ready(), isTrue);
+      await tester.pumpAndSettle();
+    }
+
     await tester.tap(find.byTooltip('Chapter'));
+    await settleLayout(() => state.chapter == 1);
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
     await tester.pump();
     expect(tester.takeException(), isNull);
     await tester.tap(find.byTooltip('Font size'));
+    await settleLayout(() => state.layout.spec.fontSize == state.size);
     await tester.pump();
     expect(tester.takeException(), isNull);
     expect(find.byType(ReflowSurface), findsOneWidget);

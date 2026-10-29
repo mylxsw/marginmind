@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,16 +15,38 @@ class MMBookImage {
   final ui.Picture? _picture;
   final ui.Size size;
 
-  static Future<MMBookImage> decode(Uint8List bytes, {required bool svgImage}) async {
+  /// Raster pixels retained by this handle; vector pictures allocate no raster.
+  int get decodedPixels => _image == null ? 0 : _image.width * _image.height;
+
+  /// Bounds raster allocation by both dimensions and total pixels, including
+  /// unusually tall images. Vector pictures do not allocate a raster here.
+  static Future<MMBookImage> decode(Uint8List bytes, {required bool svgImage, int maxPixels = 4 * 1024 * 1024}) async {
+    if (maxPixels < 1) throw ArgumentError.value(maxPixels, 'maxPixels');
     if (svgImage) {
       final info = await vg.loadPicture(SvgBytesLoader(bytes), null);
       return MMBookImage._vector(info.picture, info.size);
     }
-    final codec = await ui.instantiateImageCodec(bytes, targetWidth: 1024, allowUpscaling: false);
+    final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
     try {
-      return MMBookImage.raster((await codec.getNextFrame()).image);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+      try {
+        final ratio = math.min(
+          1.0,
+          math.min(1024 / descriptor.width, math.sqrt(maxPixels / (descriptor.width * descriptor.height))),
+        );
+        final targetWidth = math.max(1, math.min(maxPixels, (descriptor.width * ratio).floor()));
+        final targetHeight = math.max(1, math.min((descriptor.height * ratio).floor(), maxPixels ~/ targetWidth));
+        final codec = await descriptor.instantiateCodec(targetWidth: targetWidth, targetHeight: targetHeight);
+        try {
+          return MMBookImage.raster((await codec.getNextFrame()).image);
+        } finally {
+          codec.dispose();
+        }
+      } finally {
+        descriptor.dispose();
+      }
     } finally {
-      codec.dispose();
+      buffer.dispose();
     }
   }
 

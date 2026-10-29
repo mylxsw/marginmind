@@ -7,6 +7,32 @@ import 'package:mm_design/mm_design.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('tall raster decode respects pixel budget before allocating decoded image', () async {
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawRect(const ui.Rect.fromLTWH(0, 0, 20, 200), ui.Paint());
+    final picture = recorder.endRecording();
+    final original = await picture.toImage(20, 200);
+    final bytes = (await original.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    final image = await MMBookImage.decode(bytes, svgImage: false, maxPixels: 100);
+    expect(image.decodedPixels, lessThanOrEqualTo(100));
+    expect(image.size.height / image.size.width, closeTo(10, 1));
+    await expectLater(MMBookImage.decode(bytes, svgImage: false, maxPixels: 0), throwsArgumentError);
+    image.dispose();
+    original.dispose();
+    picture.dispose();
+  });
+  test('extreme wide image honors even a one-pixel budget', () async {
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder);
+    final picture = recorder.endRecording();
+    final original = await picture.toImage(2000, 1);
+    final bytes = (await original.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+    final image = await MMBookImage.decode(bytes, svgImage: false, maxPixels: 1);
+    expect(image.decodedPixels, 1);
+    image.dispose();
+    original.dispose();
+    picture.dispose();
+  });
   test('SVG picture preserves intrinsic size, scales and releases', () async {
     MMBookImage.clearSvgCache();
     final bytes = Uint8List.fromList(
@@ -17,6 +43,7 @@ void main() {
     for (var i = 0; i < 2; i++) {
       final image = await MMBookImage.decode(bytes, svgImage: true);
       expect(image.size, const ui.Size(20, 10));
+      expect(image.decodedPixels, 0);
       final recorder = ui.PictureRecorder();
       image.paint(ui.Canvas(recorder), const ui.Rect.fromLTWH(0, 0, 40, 20));
       final picture = recorder.endRecording();
