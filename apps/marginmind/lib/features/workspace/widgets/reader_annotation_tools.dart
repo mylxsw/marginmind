@@ -4,6 +4,7 @@ import 'package:mm_design/mm_design.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import 'highlight_color_button.dart';
 
 class ReaderAnnotationTools extends StatelessWidget {
   const ReaderAnnotationTools({super.key, required this.state, required this.controller, this.compact = false});
@@ -33,17 +34,15 @@ class ReaderAnnotationTools extends StatelessWidget {
         compact: compact,
         children: [
           tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
-          tool(MMIcons.highlight, l.toolHighlight, AnnotationTool.highlight),
-          tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-          tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
-          const MMToolbarDivider(),
-          MMColorMenuButton(
+          HighlightColorButton(
+            color: state.color,
+            selected: state.tool == AnnotationTool.highlight,
             compact: compact,
-            selected: state.color,
-            labelOf: l.colorName,
-            tooltip: l.annotationColor,
+            onOpen: () => controller.setTool(AnnotationTool.highlight),
             onChanged: controller.setColor,
           ),
+          tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
+          tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
           const MMToolbarDivider(),
           MMToolbarButton(
             compact: compact,

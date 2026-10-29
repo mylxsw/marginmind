@@ -15,6 +15,8 @@ import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import '../reader_margin.dart';
 import 'notices.dart';
+import 'highlight_color_button.dart';
+import 'selection_translation.dart';
 
 /// All reader text actions share their floating UI, focus and command handling.
 class SelectionToolbar extends ConsumerStatefulWidget {
@@ -39,6 +41,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   final _focus = FocusNode();
   bool _busy = false;
   bool _quickOpen = false;
+  bool _paletteOpen = false;
+  bool _translationOpen = false;
 
   @override
   void initState() {
@@ -196,6 +200,47 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     }
   }
 
+  Future<void> _translate() async {
+    if (_busy) return;
+    final pending = widget.pending;
+    final annotation = pending is PendingHighlight
+        ? ref.read(workspaceProvider(widget.studySetId).notifier).content.annotation(pending.annotationId)
+        : null;
+    final selection = pending is PendingSelection ? pending.selection : null;
+    final quote = annotation?.quote ?? selection?.text ?? '';
+    final pages = annotation?.pages ?? selection?.pages ?? [];
+    if (quote.trim().isEmpty || pages.isEmpty) return;
+    final layout = context.findAncestorRenderObjectOfType<RenderCustomSingleChildLayoutBox>();
+    if (layout == null) return;
+    final origin = layout.localToGlobal(Offset.zero);
+    final rect = pending is PendingHighlight ? pending.viewportRect : selection?.viewportRect ?? Rect.zero;
+    _busy = true;
+    setState(() => _translationOpen = true);
+    try {
+      await showSelectionTranslation(
+        context,
+        studySetId: widget.studySetId,
+        paragraph: TranslationParagraph(
+          documentId: annotation?.documentId ?? (pending as PendingSelection).documentId,
+          page: pages.first.page,
+          index: 0,
+          text: quote,
+          fingerprint: '',
+          rects: pages.first.rects,
+        ),
+        toolbar: boundsOf(context),
+        selection: rect.shift(origin),
+        viewport: origin & layout.size,
+      );
+    } finally {
+      _busy = false;
+      if (mounted) {
+        setState(() => _translationOpen = false);
+        _focus.requestFocus();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -211,10 +256,13 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         content!.node(existingCard.id, mapId: ref.watch(workspaceProvider(widget.studySetId)).activeMapId) != null;
     // An area excerpt has no text to copy.
     final isArea = annotation != null && annotation.quote.isEmpty;
+    final color = annotation == null
+        ? ref.watch(workspaceProvider(widget.studySetId).select((s) => s.color))
+        : MMAnnotationColor.fromIndex(annotation.colorIndex);
     final c = context.mmColors;
     return TapRegion(
       onTapOutside: (_) {
-        if (!_busy) _dismiss();
+        if (!_busy && !_paletteOpen) _dismiss();
       },
       child: Actions(
         actions: {
@@ -233,29 +281,15 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               focusNode: _focus,
               child: MMFloatingToolbar(
                 children: [
-                  for (final color in MMAnnotationColor.values)
-                    MMFloatingToolbarColor(
-                      color: color,
-                      tooltip: isHighlight ? l.colorName(color) : l.excerptInColor(l.colorName(color)),
-                      selected: isHighlight && annotation?.colorIndex == color.index,
-                      onPressed: () => _run(ReaderSelectionCommand.excerpt, color),
-                    ),
+                  HighlightColorButton(
+                    color: color,
+                    onOpenChanged: (open) {
+                      _paletteOpen = open;
+                      if (!open) _focus.requestFocus();
+                    },
+                    onChanged: (color) => _run(ReaderSelectionCommand.highlight, color),
+                  ),
                   const MMToolbarDivider(),
-                  MMToolbarButton(
-                    icon: isHighlight ? MMIcons.mindMap : MMIcons.highlight,
-                    tooltip: isHighlight ? (hasCard ? l.locateCard : l.addToMapAction) : l.highlightAction,
-                    onPressed: () => _run(
-                      isHighlight
-                          ? (hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
-                          : ReaderSelectionCommand.highlight,
-                    ),
-                  ),
-                  MMToolbarButton(
-                    key: const ValueKey('selection-margin-note'),
-                    icon: MMIcons.marginNote,
-                    tooltip: '${l.marginNoteAction}（C）',
-                    onPressed: () => _run(ReaderSelectionCommand.marginNote),
-                  ),
                   if (!isArea)
                     MMToolbarButton(
                       icon: MMIcons.copy,
@@ -263,11 +297,30 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       onPressed: () => _run(ReaderSelectionCommand.copy),
                     ),
                   MMToolbarButton(
+                    key: const ValueKey('selection-margin-note'),
+                    icon: MMIcons.marginNote,
+                    tooltip: '${l.marginNoteAction}（C）',
+                    onPressed: () => _run(ReaderSelectionCommand.marginNote),
+                  ),
+                  MMToolbarButton(
                     icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
                     tooltip: isHighlight ? l.deleteHighlight : l.addNote,
                     onPressed: () =>
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
+                  MMToolbarButton(
+                    icon: MMIcons.mindMap,
+                    tooltip: hasCard ? l.locateCard : l.addToMapAction,
+                    onPressed: () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt),
+                  ),
+                  if (MMPlatformCapabilities.current.assistant && !isArea)
+                    MMToolbarButton(
+                      key: const ValueKey('selection-translate'),
+                      icon: MMIcons.translate,
+                      tooltip: l.selectionTranslate,
+                      selected: _translationOpen,
+                      onPressed: _translate,
+                    ),
                   if (MMPlatformCapabilities.current.assistant && !isArea) ...[
                     const MMToolbarDivider(),
                     MMToolbarButton(

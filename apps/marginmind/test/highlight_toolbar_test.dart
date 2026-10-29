@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
+import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -62,14 +63,19 @@ void main() {
         expect(find.byTooltip(linked ? 'Locate Card' : 'Add to Map'), findsOneWidget);
         expect(
           tester
-              .widgetList<MMFloatingToolbarColor>(find.byType(MMFloatingToolbarColor))
-              .singleWhere((w) => w.selected)
+              .widget<HighlightColorButton>(
+                find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)),
+              )
               .color
               .index,
           annotation.colorIndex,
         );
         switch (action) {
           case 'color':
+            await tester.tap(
+              find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)),
+            );
+            await tester.pumpAndSettle();
             await tester.tap(
               find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.blue),
             );

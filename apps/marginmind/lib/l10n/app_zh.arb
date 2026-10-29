@@ -1005,5 +1005,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "chooseHighlightColor": "选择高亮颜色",
+  "moreHighlightColors": "更多颜色",
+  "selectionTranslate": "翻译",
+  "selectionTranslationDirection": "划词翻译方向",
+  "selectionTranslationAutomatic": "自动判断（中英互译）",
+  "selectionTranslationEnglishToChinese": "英文 → 中文",
+  "selectionTranslationChineseToEnglish": "中文 → 英文",
+  "selectionTranslationLoading": "正在翻译…",
+  "selectionTranslationFailed": "翻译失败，请检查模型配置或网络后重试。",
+  "selectionTranslationOffline": "当前处于离线模式。请启用联网或选择本地模型后重试。",
+  "selectionTranslationTooLong": "所选内容过长，请缩小选区后再翻译。",
+  "selectionTranslationCopy": "复制译文"
 }

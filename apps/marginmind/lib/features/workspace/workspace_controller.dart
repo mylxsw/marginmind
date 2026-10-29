@@ -12,6 +12,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../app/providers.dart';
 import '../../settings/app_settings.dart';
+import '../../settings/highlight_palette.dart';
 
 export '../../settings/app_settings.dart' show AnnotationTool;
 
@@ -402,7 +403,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.listen(settingsProvider.select((s) => s.annotationTool), (_, tool) {
       if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
     });
-    final initialState = WorkspaceState(tool: ref.read(settingsProvider).annotationTool);
+    ref.listen(highlightPaletteProvider.select((s) => s.current), (_, color) {
+      if (state.color != color) state = state.copyWith(color: color);
+    });
+    final initialState = WorkspaceState(
+      tool: ref.read(settingsProvider).annotationTool,
+      color: ref.read(highlightPaletteProvider).current,
+    );
     final initial = ref.read(contentProvider(studySetId)).value;
     return initial == null ? initialState : _withTabs(initialState.copyWith(content: initial), initial);
   }
@@ -888,9 +895,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Picking a color arms the highlighter; the area tool keeps going and
   /// frames new areas in that color.
-  Future<void> setColor(MMAnnotationColor color) {
+  Future<void> setColor(MMAnnotationColor color) async {
     state = state.copyWith(color: color);
-    return state.tool == AnnotationTool.area ? Future.value() : setTool(AnnotationTool.highlight);
+    await ref.read(highlightPaletteProvider.notifier).choose(color);
+    if (state.tool != AnnotationTool.area) await setTool(AnnotationTool.highlight);
   }
 
   void toggleSyncToMap() => state = state.copyWith(syncToMap: !state.syncToMap);
@@ -1047,6 +1055,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     });
     state = state.copyWith(clearPending: true);
     _flash(cardId: card.id);
+    await ref.read(highlightPaletteProvider.notifier).record(color);
     return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
@@ -1055,6 +1064,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       (c) => _editor.highlight(c, documentId: documentId, pages: s.pages, quote: s.text, colorIndex: color.index).$1,
     );
     state = state.copyWith(clearPending: true);
+    await ref.read(highlightPaletteProvider.notifier).record(color);
     return const HighlightedNotice();
   }
 
@@ -1386,6 +1396,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> recolor(String annotationId, MMAnnotationColor color) async {
     await _update((c) => _editor.recolor(c, annotationId, color.index));
     state = state.copyWith(clearPending: true);
+    await ref.read(highlightPaletteProvider.notifier).record(color);
   }
 
   Future<HighlightDeletedNotice> deleteHighlight(String annotationId) async {

@@ -12,6 +12,18 @@ enum LanguagePreference { system, zh, en }
 
 enum AnnotationTool { select, highlight, area, ink }
 
+enum SelectionTranslationDirection {
+  automatic,
+  englishToChinese,
+  chineseToEnglish;
+
+  String targetLanguage(String text) => switch (this) {
+    englishToChinese => 'zh',
+    chineseToEnglish => 'en',
+    automatic => RegExp(r'[\u3400-\u9fff]').hasMatch(text) ? 'en' : 'zh',
+  };
+}
+
 class AppSettings {
   const AppSettings({
     this.appearance = AppearancePreference.system,
@@ -19,6 +31,7 @@ class AppSettings {
     this.annotationTool = AnnotationTool.select,
     this.readerStyle = MMReaderStyle.white,
     this.readerSidebarWidth = MMSizes.readerSidebarWidth,
+    this.selectionTranslationDirection = SelectionTranslationDirection.automatic,
   });
 
   final AppearancePreference appearance;
@@ -26,6 +39,7 @@ class AppSettings {
   final AnnotationTool annotationTool;
   final MMReaderStyle readerStyle;
   final double readerSidebarWidth;
+  final SelectionTranslationDirection selectionTranslationDirection;
 
   ThemeMode get themeMode => switch (appearance) {
     AppearancePreference.system => ThemeMode.system,
@@ -46,12 +60,14 @@ class AppSettings {
     AnnotationTool? annotationTool,
     MMReaderStyle? readerStyle,
     double? readerSidebarWidth,
+    SelectionTranslationDirection? selectionTranslationDirection,
   }) => AppSettings(
     appearance: appearance ?? this.appearance,
     language: language ?? this.language,
     annotationTool: annotationTool ?? this.annotationTool,
     readerStyle: readerStyle ?? this.readerStyle,
     readerSidebarWidth: readerSidebarWidth ?? this.readerSidebarWidth,
+    selectionTranslationDirection: selectionTranslationDirection ?? this.selectionTranslationDirection,
   );
 }
 
@@ -66,6 +82,11 @@ class SettingsController extends Notifier<AppSettings> {
   AppSettings build() {
     final prefs = ref.watch(sharedPreferencesProvider);
     return AppSettings(
+      selectionTranslationDirection: _parse(
+        SelectionTranslationDirection.values,
+        prefs.getString('settings.selectionTranslationDirection'),
+        SelectionTranslationDirection.automatic,
+      ),
       readerSidebarWidth: (prefs.getDouble('settings.readerSidebarWidth') ?? MMSizes.readerSidebarWidth).clamp(
         MMSizes.readerSidebarMinWidth,
         MMSizes.readerSidebarMaxWidth,
@@ -94,6 +115,11 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setReaderStyle(MMReaderStyle value) async {
     state = state.copyWith(readerStyle: value);
     await ref.read(sharedPreferencesProvider).setString(_readerStyleKey, value.name);
+  }
+
+  Future<void> setSelectionTranslationDirection(SelectionTranslationDirection value) async {
+    state = state.copyWith(selectionTranslationDirection: value);
+    await ref.read(sharedPreferencesProvider).setString('settings.selectionTranslationDirection', value.name);
   }
 
   Future<void> setAppearance(AppearancePreference value) async {

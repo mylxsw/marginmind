@@ -5431,6 +5431,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page {page} · Translating {done}/{total}'**
   String compareTranslationPageProgress(int page, int done, int total);
+
+  /// No description provided for @chooseHighlightColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Highlight Color'**
+  String get chooseHighlightColor;
+
+  /// No description provided for @moreHighlightColors.
+  ///
+  /// In en, this message translates to:
+  /// **'More Colors'**
+  String get moreHighlightColors;
+
+  /// No description provided for @selectionTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get selectionTranslate;
+
+  /// No description provided for @selectionTranslationDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection Translation Direction'**
+  String get selectionTranslationDirection;
+
+  /// No description provided for @selectionTranslationAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic (Chinese ↔ English)'**
+  String get selectionTranslationAutomatic;
+
+  /// No description provided for @selectionTranslationEnglishToChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'English → Chinese'**
+  String get selectionTranslationEnglishToChinese;
+
+  /// No description provided for @selectionTranslationChineseToEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese → English'**
+  String get selectionTranslationChineseToEnglish;
+
+  /// No description provided for @selectionTranslationLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating…'**
+  String get selectionTranslationLoading;
+
+  /// No description provided for @selectionTranslationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation failed. Check your model settings or connection and retry.'**
+  String get selectionTranslationFailed;
+
+  /// No description provided for @selectionTranslationOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You are offline. Enable online access or select a local model, then retry.'**
+  String get selectionTranslationOffline;
+
+  /// No description provided for @selectionTranslationTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a shorter passage to translate.'**
+  String get selectionTranslationTooLong;
+
+  /// No description provided for @selectionTranslationCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Translation'**
+  String get selectionTranslationCopy;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

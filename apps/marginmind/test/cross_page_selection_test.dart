@@ -42,7 +42,7 @@ void main() {
       tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout)).anchor,
       _selection.viewportRect,
     );
-    await tester.tap(find.byType(MMFloatingToolbarColor).first);
+    await tester.tap(find.byTooltip('Add to Map'));
     await tester.pumpAndSettle();
     final saved = await repo.load('demo-1');
     final annotation = saved.annotations.single;

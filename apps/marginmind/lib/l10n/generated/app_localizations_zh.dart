@@ -2904,4 +2904,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String compareTranslationPageProgress(int page, int done, int total) {
     return '第 $page 页翻译中 $done/$total';
   }
+
+  @override
+  String get chooseHighlightColor => '选择高亮颜色';
+
+  @override
+  String get moreHighlightColors => '更多颜色';
+
+  @override
+  String get selectionTranslate => '翻译';
+
+  @override
+  String get selectionTranslationDirection => '划词翻译方向';
+
+  @override
+  String get selectionTranslationAutomatic => '自动判断（中英互译）';
+
+  @override
+  String get selectionTranslationEnglishToChinese => '英文 → 中文';
+
+  @override
+  String get selectionTranslationChineseToEnglish => '中文 → 英文';
+
+  @override
+  String get selectionTranslationLoading => '正在翻译…';
+
+  @override
+  String get selectionTranslationFailed => '翻译失败，请检查模型配置或网络后重试。';
+
+  @override
+  String get selectionTranslationOffline => '当前处于离线模式。请启用联网或选择本地模型后重试。';
+
+  @override
+  String get selectionTranslationTooLong => '所选内容过长，请缩小选区后再翻译。';
+
+  @override
+  String get selectionTranslationCopy => '复制译文';
 }

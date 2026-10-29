@@ -1,0 +1,274 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/assistant/assistant_settings.dart';
+import 'package:marginmind/features/workspace/reader_translation.dart';
+import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
+import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
+import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
+import 'package:marginmind/features/workspace/widgets/selection_translation.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/settings/app_settings.dart';
+import 'package:marginmind/settings/settings_window.dart';
+import 'package:mm_assistant/mm_assistant.dart';
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
+
+import 'assistant_quick_actions_test.dart' show screenshot;
+import 'helpers.dart';
+import 'reader_translation_test.dart' show model;
+import 'selection_toolbar_test.dart' show selection;
+
+class SelectionTestTranslator implements ParagraphTranslator {
+  final pending = Completer<ParagraphTranslation>();
+  String? language, source;
+  CancellationToken? cancel;
+  bool closed = false;
+  @override
+  Future<ParagraphTranslation> translate(TranslationParagraph p, String lang, CancellationToken token, int maxTokens) {
+    language = lang;
+    source = p.text;
+    cancel = token;
+    return pending.future;
+  }
+
+  @override
+  void close() => closed = true;
+}
+
+void main() {
+  setUpAll(() async {
+    if (Platform.environment['MM_SCREENSHOTS'] == null) return;
+    final data = ByteData.sublistView(
+      File(Platform.environment['MM_FONT'] ?? '/System/Library/Fonts/Supplemental/Arial Unicode.ttf').readAsBytesSync(),
+    );
+    for (final family in [
+      '.AppleSystemUIFont',
+      'CupertinoSystemText',
+      'CupertinoSystemDisplay',
+      'Roboto',
+      'PingFang SC',
+      'Songti SC',
+    ]) {
+      await (FontLoader(family)..addFont(Future.value(data))).load();
+    }
+    final pub = Platform.environment['PUB_CACHE'] ?? '${Platform.environment['HOME']}/.pub-cache';
+    final iconDir = Directory('$pub/hosted/pub.dev')
+        .listSync()
+        .whereType<Directory>()
+        .lastWhere((d) => d.path.contains('cupertino_icons-'));
+    await (FontLoader('packages/cupertino_icons/CupertinoIcons')..addFont(
+          Future.value(ByteData.sublistView(File('${iconDir.path}/assets/CupertinoIcons.ttf').readAsBytesSync())),
+        ))
+        .load();
+  });
+  for (final dark in [false, true]) {
+    testWidgets('palette, translation and preserved selection in ${dark ? 'dark' : 'light'}', (tester) async {
+      final translator = SelectionTestTranslator();
+      final container = await pumpApp(
+        tester,
+        prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
+        overrides: [
+          assistantDefaultModelProvider.overrideWithValue(model),
+          paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        ],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      await screenshot(tester, 'reader-brush-${dark ? 'dark' : 'light'}', target: find.byType(ReaderAnnotationTools));
+      await controller.onSelectionCommitted('c1', selection);
+      await tester.pumpAndSettle();
+      final toolbar = find.byType(SelectionToolbar);
+      final icons = tester
+          .widgetList<MMToolbarButton>(find.descendant(of: toolbar, matching: find.byType(MMToolbarButton)))
+          .map((b) => b.icon)
+          .toList();
+      expect(icons, [
+        MMIcons.highlight,
+        MMIcons.copy,
+        MMIcons.marginNote,
+        MMIcons.addNote,
+        MMIcons.mindMap,
+        MMIcons.translate,
+        MMIcons.ai,
+      ]);
+      await screenshot(tester, 'selection-toolbar-${dark ? 'dark' : 'light'}', target: toolbar);
+      await tester.tap(find.descendant(of: toolbar, matching: find.byType(HighlightColorButton)));
+      await tester.pumpAndSettle();
+      expect(find.byType(MMFloatingToolbarColor), findsNWidgets(3));
+      final palette = find.byKey(const ValueKey('highlight-color-palette'));
+      expect(tester.getRect(palette).top, greaterThan(tester.getRect(toolbar).bottom));
+      await screenshot(tester, 'selection-palette-${dark ? 'dark' : 'light'}', target: palette);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
+      await tester.tap(find.byKey(const ValueKey('selection-translate')));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byType(SelectionTranslation), findsOneWidget);
+      expect(translator.language, 'zh');
+      expect(translator.source, selection.text);
+      translator.pending.complete(const ParagraphTranslation('选中的一段文字'));
+      await tester.pumpAndSettle();
+      expect(find.text('选中的一段文字'), findsOneWidget);
+      final popup = find.byKey(const ValueKey('selection-translation-result'));
+      await screenshot(tester, 'selection-translation-${dark ? 'dark' : 'light'}', target: popup);
+      String? copied;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+          return null;
+        },
+      );
+      await tester.tap(find.byTooltip('复制译文'));
+      await tester.pump();
+      expect(copied, '选中的一段文字');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
+      expect(translator.closed, isTrue);
+      await settleHud(tester);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+    });
+  }
+
+  testWidgets('closing in flight cancels and closes the translation request', (tester) async {
+    final translator = SelectionTestTranslator();
+    final container = await pumpApp(
+      tester,
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(translator.cancel, isNotNull);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(translator.cancel!.isCancelled, isTrue);
+    expect(translator.closed, isTrue);
+    translator.pending.complete(const ParagraphTranslation('late response'));
+    await tester.pumpAndSettle();
+    expect(find.text('late response'), findsNothing);
+  });
+
+  testWidgets('fixed direction is used and a failed request can retry', (tester) async {
+    final translators = [SelectionTestTranslator(), SelectionTestTranslator()];
+    var calls = 0;
+    final container = await pumpApp(
+      tester,
+      prefs: {'settings.selectionTranslationDirection': 'chineseToEnglish'},
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) async => translators[calls++]),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(translators.first.language, 'en');
+    translators.first.pending.completeError(StateError('fixture failure'));
+    await tester.pumpAndSettle();
+    expect(find.text('Translation failed. Check your model settings or connection and retry.'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    translators.last.pending.complete(const ParagraphTranslation('Complete translation'));
+    await tester.pumpAndSettle();
+    expect(find.text('Complete translation'), findsOneWidget);
+  });
+
+  testWidgets('unconfigured model offers setup and settings persist direction', (tester) async {
+    final container = await pumpApp(tester, overrides: [assistantDefaultModelProvider.overrideWithValue(null)]);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pumpAndSettle();
+    expect(find.text('Configure a model first'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(SelectionToolbar));
+    unawaited(showSettings(context, tab: SettingsTab.reading));
+    await tester.pumpAndSettle();
+    await screenshot(tester, 'selection-translation-settings', target: find.byKey(const ValueKey('settings-window')));
+    await tester.tap(find.byKey(const ValueKey('settings-selection-translation')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chinese → English').last);
+    await tester.pumpAndSettle();
+    expect(
+      container.read(settingsProvider).selectionTranslationDirection,
+      SelectionTranslationDirection.chineseToEnglish,
+    );
+  });
+
+  testWidgets('offline cloud translation makes no request', (tester) async {
+    var calls = 0;
+    final container = await pumpApp(
+      tester,
+      prefs: {'assistant.online.demo-1': false},
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(
+          const AssistantModel(
+            provider: AssistantProvider.compatible,
+            model: 'fixture',
+            endpoint: 'https://example.invalid/v1',
+          ),
+        ),
+        paragraphTranslatorProvider.overrideWithValue((_) async {
+          calls++;
+          return SelectionTestTranslator();
+        }),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    await container.read(workspaceProvider('demo-1').notifier).onSelectionCommitted('c1', selection);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pumpAndSettle();
+    expect(find.text('You are offline. Enable online access or select a local model, then retry.'), findsOneWidget);
+    expect(calls, 0);
+  });
+
+  testWidgets('an existing Chinese highlight translates its quote without editing the document', (tester) async {
+    final translator = SelectionTestTranslator();
+    translator.pending.complete(const ParagraphTranslation('This is the forgetting curve.'));
+    final container = await pumpApp(
+      tester,
+      overrides: [
+        assistantDefaultModelProvider.overrideWithValue(model),
+        paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+      ],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    final before = controller.content;
+    final annotation = before.annotations.last;
+    controller.tapHighlight(annotation.id, selection.viewportRect!);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('selection-translate')));
+    await tester.pumpAndSettle();
+    expect(translator.language, 'en');
+    expect(translator.source, annotation.quote);
+    expect(find.text('This is the forgetting curve.'), findsOneWidget);
+    expect(controller.content, same(before));
+  });
+}

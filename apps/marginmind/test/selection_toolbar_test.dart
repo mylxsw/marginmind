@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
+import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -42,7 +43,7 @@ void main() {
     ),
   );
   for (final color in MMAnnotationColor.values) {
-    testWidgets('color ${color.name} excerpts and flashes', (tester) async {
+    testWidgets('brush palette ${color.name} highlights without creating a card', (tester) async {
       final container = await pumpApp(tester);
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -55,13 +56,21 @@ void main() {
         tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout)).anchor,
         selection.viewportRect,
       );
+      expect(find.byType(MMFloatingToolbarColor), findsNothing);
+      await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(HighlightColorButton)));
+      await tester.pumpAndSettle();
+      if (![MMAnnotationColor.yellow, MMAnnotationColor.green, MMAnnotationColor.blue].contains(color)) {
+        await tester.tap(find.byTooltip('More Colors'));
+        await tester.pumpAndSettle();
+      }
       await tester.tap(find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == color));
       await tester.pumpAndSettle();
       final annotation = controller.content.annotations.last;
-      final card = controller.content.cardForAnnotation(annotation.id)!;
+      expect(controller.content.cardForAnnotation(annotation.id), isNull);
+      expect(controller.content.cards.length, before.cards.length);
       expect(annotation.colorIndex, color.index);
       expect(annotation.quote, selection.text);
-      expect(container.read(workspaceProvider('demo-1')).flashCardId, card.id);
+      expect(container.read(workspaceProvider('demo-1')).color, color);
       expect(find.byType(SelectionToolbar), findsNothing);
       await controller.undo();
       expect(controller.content.annotations.length, before.annotations.length);
@@ -98,6 +107,12 @@ void main() {
               matching: find.byIcon(command == ReaderSelectionCommand.copy ? MMIcons.copy : MMIcons.highlight),
             ),
           );
+          if (command == ReaderSelectionCommand.highlight) {
+            await tester.pumpAndSettle();
+            await tester.tap(
+              find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.yellow),
+            );
+          }
         }
         await tester.pumpAndSettle();
         expect(find.byType(SelectionToolbar), findsNothing);

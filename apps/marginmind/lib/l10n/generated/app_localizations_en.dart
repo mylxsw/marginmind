@@ -3035,4 +3035,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String compareTranslationPageProgress(int page, int done, int total) {
     return 'Page $page · Translating $done/$total';
   }
+
+  @override
+  String get chooseHighlightColor => 'Choose Highlight Color';
+
+  @override
+  String get moreHighlightColors => 'More Colors';
+
+  @override
+  String get selectionTranslate => 'Translate';
+
+  @override
+  String get selectionTranslationDirection => 'Selection Translation Direction';
+
+  @override
+  String get selectionTranslationAutomatic => 'Automatic (Chinese ↔ English)';
+
+  @override
+  String get selectionTranslationEnglishToChinese => 'English → Chinese';
+
+  @override
+  String get selectionTranslationChineseToEnglish => 'Chinese → English';
+
+  @override
+  String get selectionTranslationLoading => 'Translating…';
+
+  @override
+  String get selectionTranslationFailed => 'Translation failed. Check your model settings or connection and retry.';
+
+  @override
+  String get selectionTranslationOffline =>
+      'You are offline. Enable online access or select a local model, then retry.';
+
+  @override
+  String get selectionTranslationTooLong => 'Select a shorter passage to translate.';
+
+  @override
+  String get selectionTranslationCopy => 'Copy Translation';
 }

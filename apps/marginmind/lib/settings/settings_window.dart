@@ -311,6 +311,7 @@ class _ReadingPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
+    final direction = ref.watch(settingsProvider.select((s) => s.selectionTranslationDirection));
     return SettingsPage(
       children: [
         MMSettingsGroup(
@@ -327,6 +328,20 @@ class _ReadingPage extends ConsumerWidget {
                   (MMReaderStyle.dark, l.readerStyleDark),
                   (MMReaderStyle.paper, l.readerStylePaper),
                   (MMReaderStyle.green, l.readerStyleGreen),
+                ],
+              ),
+            ),
+            MMSettingsRow(
+              label: l.selectionTranslationDirection,
+              trailing: MMPopUpButton<SelectionTranslationDirection>(
+                key: const ValueKey('settings-selection-translation'),
+                value: direction,
+                semanticLabel: l.selectionTranslationDirection,
+                onChanged: ref.read(settingsProvider.notifier).setSelectionTranslationDirection,
+                items: [
+                  (SelectionTranslationDirection.automatic, l.selectionTranslationAutomatic),
+                  (SelectionTranslationDirection.englishToChinese, l.selectionTranslationEnglishToChinese),
+                  (SelectionTranslationDirection.chineseToEnglish, l.selectionTranslationChineseToEnglish),
                 ],
               ),
             ),

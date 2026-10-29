@@ -1652,5 +1652,17 @@
         "type": "int"
       }
     }
-  }
+  },
+  "chooseHighlightColor": "Choose Highlight Color",
+  "moreHighlightColors": "More Colors",
+  "selectionTranslate": "Translate",
+  "selectionTranslationDirection": "Selection Translation Direction",
+  "selectionTranslationAutomatic": "Automatic (Chinese ↔ English)",
+  "selectionTranslationEnglishToChinese": "English → Chinese",
+  "selectionTranslationChineseToEnglish": "Chinese → English",
+  "selectionTranslationLoading": "Translating…",
+  "selectionTranslationFailed": "Translation failed. Check your model settings or connection and retry.",
+  "selectionTranslationOffline": "You are offline. Enable online access or select a local model, then retry.",
+  "selectionTranslationTooLong": "Select a shorter passage to translate.",
+  "selectionTranslationCopy": "Copy Translation"
 }

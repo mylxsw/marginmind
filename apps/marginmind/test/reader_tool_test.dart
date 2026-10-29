@@ -123,6 +123,8 @@ void main() {
     await tester.tap(find.byIcon(MMIcons.highlight));
     await tester.pumpAndSettle();
     expect(container.read(provider).tool, AnnotationTool.highlight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     expect(await controller.onSelectionCommitted('c1', selection), isA<ExcerptedNotice>());
     await toggle();
     expect(container.read(provider).tool, AnnotationTool.select);
