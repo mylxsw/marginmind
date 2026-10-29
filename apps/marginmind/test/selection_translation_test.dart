@@ -18,6 +18,7 @@ import 'package:marginmind/shared/l10n.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 import 'assistant_quick_actions_test.dart' show screenshot;
 import 'helpers.dart';
@@ -127,6 +128,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('选中的一段文字'), findsOneWidget);
       final popup = find.byKey(const ValueKey('selection-translation-result'));
+      final copy = find.byKey(const ValueKey('selection-translation-copy'));
+      final header = find.byKey(const ValueKey('selection-translation-header'));
+      final scroll = find.byKey(const ValueKey('selection-translation-scroll'));
+      expect(find.descendant(of: header, matching: find.byIcon(MMIcons.copy)), findsNothing);
+      expect(find.text('复制译文'), findsOneWidget);
+      expect(tester.getRect(copy).top, greaterThan(tester.getRect(scroll).bottom));
+      expect(tester.getRect(copy).right, closeTo(tester.getRect(popup).right - 14, .1));
       await screenshot(tester, 'selection-translation-${dark ? 'dark' : 'light'}', target: popup);
       String? copied;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -451,4 +459,88 @@ void main() {
     expect(find.text('選中的一段文字'), findsOneWidget);
     expect(tester.takeException(), isNull, reason: 'Language controls fit a narrow reader');
   });
+
+  for (final scenario in ['dark', 'light', 'narrow-long']) {
+    testWidgets('copy footer matches approved layout and stays reachable in $scenario', (tester) async {
+      const source =
+          '对 Scrum 的需求由社会、经济和政治的快速变化驱动，而变化又是由技术进步的巨大速度所驱动的。'
+          '你肯定听说过英特尔公司创始人戈登·摩尔提出的摩尔定律……';
+      const translation =
+          'The demand for Scrum is driven by rapid social, economic, and political change, '
+          'which in turn is driven by the enormous speed of technological progress. '
+          'You have surely heard of Moore’s Law, first formulated by Intel co-founder Gordon Moore in 1965. '
+          'His paper predicted that the number of transistors on a chip would double every year, '
+          'while the price of the added computing power would be correspondingly halved.';
+      final long = scenario == 'narrow-long';
+      final answer = long ? List.filled(40, translation).join('\n\n') : translation;
+      final translator = SelectionTestTranslator();
+      final container = await pumpApp(
+        tester,
+        size: long ? const Size(800, 600) : const Size(1280, 820),
+        prefs: {
+          'settings.language': 'zh',
+          'settings.appearance': scenario == 'light' ? 'light' : 'dark',
+          'settings.selectionTranslationDirection': 'chineseToEnglish',
+        },
+        overrides: [
+          assistantDefaultModelProvider.overrideWithValue(model),
+          paragraphTranslatorProvider.overrideWithValue((_) async => translator),
+        ],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      await container
+          .read(workspaceProvider('demo-1').notifier)
+          .onSelectionCommitted(
+            'c1',
+            MMPdfSelection(
+              page: selection.page,
+              rects: selection.rects,
+              text: source,
+              viewportRect: selection.viewportRect,
+            ),
+          );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('selection-translate')));
+      await tester.pump(const Duration(milliseconds: 200));
+      final copy = find.byKey(const ValueKey('selection-translation-copy'));
+      expect(copy, findsNothing, reason: 'There is no empty action row while translating');
+      translator.pending.complete(ParagraphTranslation(answer));
+      await tester.pumpAndSettle();
+      final popup = find.byKey(const ValueKey('selection-translation-result'));
+      final scroll = find.byKey(const ValueKey('selection-translation-scroll'));
+      final copyBounds = tester.getRect(copy);
+      expect(copyBounds.top, greaterThan(tester.getRect(scroll).bottom));
+      expect(copyBounds.bottom, closeTo(tester.getRect(popup).bottom - 14, .1));
+      expect(copyBounds.right, closeTo(tester.getRect(popup).right - 14, .1));
+      if (long) {
+        final position = tester
+            .state<ScrollableState>(find.descendant(of: scroll, matching: find.byType(Scrollable)).first)
+            .position;
+        expect(position.maxScrollExtent, greaterThan(1000));
+        await tester.drag(scroll, const Offset(0, -300));
+        await tester.pumpAndSettle();
+        expect(position.pixels, greaterThan(0));
+        expect(tester.getRect(copy), copyBounds, reason: 'Scrolling never hides the copy action');
+      }
+      expect(tester.takeException(), isNull);
+      await screenshot(tester, 'copy-footer-$scenario', target: popup);
+      String? copied;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+          return null;
+        },
+      );
+      await tester.tap(copy);
+      await tester.pump();
+      expect(copied, answer, reason: 'Copy includes the full answer, including text outside the viewport');
+      await settleHud(tester);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
 }

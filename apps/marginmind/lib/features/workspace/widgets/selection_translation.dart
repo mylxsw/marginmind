@@ -191,6 +191,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
+                  key: const ValueKey('selection-translation-header'),
                   children: [
                     Expanded(
                       child: Row(
@@ -234,8 +235,6 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                         ],
                       ),
                     ),
-                    if (_answer != null)
-                      MMIconButton(icon: MMIcons.copy, tooltip: l.selectionTranslationCopy, onPressed: _copy),
                     MMIconButton(
                       icon: MMIcons.close,
                       tooltip: l.closePanel,
@@ -246,6 +245,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                 const SizedBox(height: 10),
                 Flexible(
                   child: SingleChildScrollView(
+                    key: const ValueKey('selection-translation-scroll'),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisSize: MainAxisSize.min,
@@ -258,7 +258,7 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                         ),
                         const SizedBox(height: 12),
                         if (_answer != null)
-                          SelectableText(_answer!, style: t.body)
+                          SelectableText(_answer!, key: const ValueKey('selection-translation-answer'), style: t.body)
                         else if (_problem != null) ...[
                           Text(switch (_problem!) {
                             _Problem.setup => l.assistantConnectFirst,
@@ -294,9 +294,56 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
                     ),
                   ),
                 ),
+                if (_answer != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _TranslationCopyButton(onPressed: _copy),
+                  ),
+                ],
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A quiet answer action, outside the scrolling prose so it stays reachable.
+class _TranslationCopyButton extends StatelessWidget {
+  const _TranslationCopyButton({required this.onPressed});
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final label = context.l10n.selectionTranslationCopy;
+    return MMInteractive(
+      key: const ValueKey('selection-translation-copy'),
+      tooltip: label,
+      semanticLabel: label,
+      onTap: onPressed,
+      builder: (context, state) => AnimatedContainer(
+        duration: MMAppearance.duration(context, MMMotion.quick),
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: state.pressed
+              ? c.pressed
+              : state.hovered
+              ? c.hover
+              : c.quaternaryFill,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: state.focused ? c.accent : c.separator),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(MMIcons.copy, size: 12, color: c.icon),
+            const SizedBox(width: 6),
+            Text(label, style: context.mmText.callout.copyWith(color: c.label)),
+          ],
         ),
       ),
     );
