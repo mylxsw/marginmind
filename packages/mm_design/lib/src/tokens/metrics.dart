@@ -21,6 +21,7 @@ abstract final class MMRadii {
   static const double capsuleButton = 15;
   static const double card = 12;
   static const double cover = 14;
+  static const double dropdown = 14;
   static const double excerpt = 6;
   static const double page = 3;
   static const double sheet = 22;
@@ -29,6 +30,14 @@ abstract final class MMRadii {
 
 abstract final class MMSizes {
   static const double readerMaxFitZoom = 1.4;
+  static const Size readerToolbarButton = Size(30, 26);
+  static const double dropdownWidth = 240;
+  static const double dropdownWideWidth = 340;
+  static const double readerZoomMenuWidth = 280;
+  static const double dropdownRowHeight = 30;
+  static const double dropdownIcon = 14;
+  static const double readerCompareHeader = 34;
+  static const double readerCompareDivider = .5;
   static const double mapExportNodeWidth = 240;
   static const double mapExportCanvasPadding = 72;
   static const double mapExportImageFallbackHeight = 120;

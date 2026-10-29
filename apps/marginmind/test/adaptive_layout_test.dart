@@ -317,7 +317,7 @@ void main() {
       expect(find.byKey(const ValueKey('reader-page')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
-      expect(find.text('Zoom In'), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-zoom-slider')), findsOneWidget);
       expect(find.text('Fit Width'), findsOneWidget);
       await tester.tap(find.text('Dark'));
       await tester.pumpAndSettle();

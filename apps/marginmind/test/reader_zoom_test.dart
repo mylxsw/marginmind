@@ -34,6 +34,9 @@ void main() {
     await tester.pumpAndSettle();
     final slider = find.byKey(const ValueKey('reader-zoom-slider'));
     expect(slider, findsOneWidget);
+    final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
+    expect(find.text(l.cropAdjust), findsNothing);
+    expect(find.text(l.cropMargins), findsNothing);
     final baseline = pdf.widthZoom;
     final control = tester.widget<Slider>(slider);
     control.onChanged!(1);
@@ -49,6 +52,13 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(slider, findsNothing);
+    await tester.tap(find.byKey(const ValueKey('reader-crop')));
+    await tester.pumpAndSettle();
+    expect(find.text(l.cropAdjust), findsOneWidget);
+    expect(find.text(l.pdfFitWidth), findsNothing);
+    expect(slider, findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox());
     await drain(tester);
     expect(tester.takeException(), isNull);

@@ -9,12 +9,13 @@ abstract final class MMIcons {
   static const alignHere = CupertinoIcons.equal;
   static const marginNote = CupertinoIcons.text_bubble;
   static const IconData readerNavigation = CupertinoIcons.square_stack_3d_up;
-  static const IconData actualSize = CupertinoIcons.arrow_up_left_arrow_down_right;
+  static const IconData actualSize = CupertinoIcons.square;
   static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;
   static const IconData fitWidth = CupertinoIcons.arrow_left_right;
   static const IconData fitPage = CupertinoIcons.rectangle;
   static const IconData pageZoom = CupertinoIcons.resize;
-  static const IconData zoomControl = CupertinoIcons.zoom_out;
+  static const IconData zoomControl = CupertinoIcons.arrow_up_left_arrow_down_right;
+  static const IconData crop = CupertinoIcons.crop;
   static const IconData locate = CupertinoIcons.location_circle;
   static const IconData sidebar = CupertinoIcons.sidebar_left; // sidebar.left
   static const IconData sidebarRight = CupertinoIcons.sidebar_right; // sidebar.right

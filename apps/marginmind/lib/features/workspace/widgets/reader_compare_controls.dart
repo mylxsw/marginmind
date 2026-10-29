@@ -34,7 +34,7 @@ class ReaderCompareMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n, c = context.mmColors;
-    final buttonSize = context.mmTouch ? context.mmToolbarButton : const Size(30, 26);
+    final buttonSize = context.mmTouch ? context.mmToolbarButton : MMSizes.readerToolbarButton;
     final pair = ref.watch(readerCompareProvider(studySetId));
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
     final workspace = ref.read(workspaceProvider(studySetId).notifier);
@@ -84,21 +84,13 @@ class ReaderCompareMenu extends ConsumerWidget {
             PdfCompareTarget(:final documentId) => documentId,
             _ => null,
           };
-    return PopupMenuButton<String>(
+    return MMDropdownButton<String>(
       key: document == null
           ? const ValueKey('reader-compare')
           : ValueKey(left ? 'compare-left-document' : 'compare-right-document'),
       enabled: enabled,
       tooltip: document == null ? l.compareReading : l.switchDocument,
-      position: PopupMenuPosition.under,
-      constraints: const BoxConstraints(minWidth: 340, maxWidth: 340),
-      color: c.glassOpaque,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: c.hairline, width: .5),
-      ),
-      menuPadding: const EdgeInsets.all(4),
+      width: MMSizes.dropdownWideWidth,
       onSelected: (value) async {
         if (value == 'exit') {
           ref.read(readerCompareProvider(studySetId).notifier).exit();
@@ -128,17 +120,15 @@ class ReaderCompareMenu extends ConsumerWidget {
       },
       itemBuilder: (_) => [
         if (tooNarrow)
-          PopupMenuItem<String>(
+          MMDropdownItem<String>(
             enabled: false,
             height: 26,
             child: Text(l.compareTooNarrow, style: context.mmText.footnote),
           ),
         for (final doc in ordered)
-          PopupMenuItem<String>(
+          MMDropdownItem<String>(
             value: doc.id,
             enabled: !tooNarrow,
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             child: Semantics(
               selected: doc.id == selectedId,
               child: Row(
@@ -161,7 +151,7 @@ class ReaderCompareMenu extends ConsumerWidget {
             ),
           ),
         if (!left) ...[
-          PopupMenuItem<String>(value: 'import', height: 30, child: _menuRow(context, MMIcons.add, l.importPdf)),
+          MMDropdownItem<String>(value: 'import', child: _menuRow(context, MMIcons.add, l.importPdf)),
           if (MMPlatformCapabilities.current.assistant) ...[
             const PopupMenuDivider(),
             _AiTranslationEntry(
@@ -173,9 +163,8 @@ class ReaderCompareMenu extends ConsumerWidget {
           ],
           if (pair != null) ...[
             const PopupMenuDivider(),
-            PopupMenuItem<String>(
+            MMDropdownItem<String>(
               value: 'exit',
-              height: 30,
               child: Row(
                 children: [
                   const Icon(MMIcons.close, size: 14),
@@ -267,7 +256,7 @@ class _AiTranslationEntryState extends State<_AiTranslationEntry> {
       final reason = widget.cached
           ? null
           : widget.reason ?? (credential == AssistantCredentialState.ready ? null : context.l10n.assistantConnectFirst);
-      return PopupMenuItem<String>(
+      return MMDropdownItem<String>(
         value: 'ai',
         enabled: !widget.tooNarrow && reason == null,
         height: reason == null ? 30 : 50,
@@ -316,6 +305,47 @@ class ReaderCompareView extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId))!;
     final session = ref.read(readerCompareProvider(studySetId).notifier);
     final l = context.l10n, c = context.mmColors;
+    Future<void> action(Future<void> Function() run) async {
+      try {
+        await run();
+      } catch (_) {
+        if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+      }
+    }
+
+    Widget floatingControls() => Column(
+      key: const ValueKey('compare-floating-controls'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        MMToolbarButton(
+          compact: true,
+          key: const ValueKey('compare-sync'),
+          icon: MMIcons.link,
+          tooltip: l.compareSync,
+          selected: pair.sync,
+          onPressed: () => action(session.toggleSync),
+        ),
+        if (pair.right is PdfCompareTarget) ...[
+          const SizedBox(height: MMSpacing.xs),
+          MMToolbarButton(
+            compact: true,
+            key: const ValueKey('compare-align'),
+            icon: MMIcons.alignHere,
+            tooltip: l.compareAlign,
+            onPressed: () => action(() async {
+              if (await session.align() && context.mounted) {
+                MMHud.show(
+                  context,
+                  l.compareAlignedHud,
+                  action: (l.undo, () => ref.read(workspaceProvider(studySetId).notifier).undo()),
+                );
+              }
+            }),
+          ),
+        ],
+      ],
+    );
+
     Widget column(String id, int side) {
       final doc = content.document(id);
       if (doc == null) return const SizedBox.shrink();
@@ -324,7 +354,7 @@ class ReaderCompareView extends ConsumerWidget {
           key: ValueKey('compare-column-$id'),
           children: [
             Container(
-              height: 34,
+              height: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareHeader,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: c.separator, width: .5)),
@@ -396,70 +426,38 @@ class ReaderCompareView extends ConsumerWidget {
       );
     }
 
-    Future<void> action(Future<void> Function() run) async {
-      try {
-        await run();
-      } catch (_) {
-        if (context.mounted) MMHud.show(context, l.somethingWentWrong);
-      }
-    }
-
-    return Row(
+    return Stack(
       key: const ValueKey('reader-compare-view'),
       children: [
-        column(pair.leftDocumentId, 0),
-        Container(
-          width: 34,
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(color: c.separator, width: .5),
-              right: BorderSide(color: c.separator, width: .5),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            column(pair.leftDocumentId, 0),
+            SizedBox(
+              key: const ValueKey('compare-divider'),
+              width: MMSizes.readerCompareDivider,
+              child: ColoredBox(color: c.separator),
+            ),
+            if (pair.right is PdfCompareTarget)
+              column((pair.right as PdfCompareTarget).documentId, 1)
+            else
+              Expanded(child: ReaderTranslationView(studySetId: studySetId)),
+          ],
+        ),
+        Align(
+          alignment: Alignment.center,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: c.glassOpaque,
+              borderRadius: BorderRadius.circular(MMRadii.dropdown),
+              border: Border.all(color: c.hairline, width: .5),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: MMSpacing.xs),
+              child: floatingControls(),
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: MMToolbarButton(
-                  compact: true,
-                  key: const ValueKey('compare-sync'),
-                  icon: MMIcons.link,
-                  tooltip: l.compareSync,
-                  selected: pair.sync,
-                  onPressed: () => action(session.toggleSync),
-                ),
-              ),
-              if (pair.right is PdfCompareTarget) ...[
-                const SizedBox(height: 6),
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: MMToolbarButton(
-                    compact: true,
-                    key: const ValueKey('compare-align'),
-                    icon: MMIcons.alignHere,
-                    tooltip: l.compareAlign,
-                    onPressed: () => action(() async {
-                      if (await session.align() && context.mounted) {
-                        MMHud.show(
-                          context,
-                          l.compareAlignedHud,
-                          action: (l.undo, () => ref.read(workspaceProvider(studySetId).notifier).undo()),
-                        );
-                      }
-                    }),
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
-        if (pair.right is PdfCompareTarget)
-          column((pair.right as PdfCompareTarget).documentId, 1)
-        else
-          Expanded(child: ReaderTranslationView(studySetId: studySetId)),
       ],
     );
   }

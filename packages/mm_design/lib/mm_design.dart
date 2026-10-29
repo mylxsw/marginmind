@@ -30,6 +30,7 @@ export 'src/widgets/glass.dart';
 export 'src/widgets/hud.dart';
 export 'src/widgets/inline_text_field.dart';
 export 'src/widgets/menu.dart';
+export 'src/widgets/dropdown.dart';
 export 'src/widgets/progress_bar.dart';
 export 'src/widgets/search_field.dart';
 export 'src/widgets/segmented_control.dart';

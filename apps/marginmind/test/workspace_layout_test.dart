@@ -52,8 +52,8 @@ void main() {
     final toolbar = find.byType(MMToolbar);
     final group = find.descendant(of: toolbar, matching: find.byType(MMToolbarGroup)).last;
     expect(tester.getRect(group).right, closeTo(tester.getRect(toolbar).right - MMSpacing.m, .01));
-    expect(find.byTooltip('Zoom In'), findsNWidgets(2));
-    expect(find.byTooltip('Zoom Out'), findsNWidgets(2));
+    expect(find.byTooltip('Zoom In'), findsOneWidget);
+    expect(find.byTooltip('Zoom Out'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reader-page')));
     await tester.pumpAndSettle();
     expect(find.text('Fit Width'), findsOneWidget);

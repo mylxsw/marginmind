@@ -227,8 +227,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   ) {
     final l = context.l10n;
     final compact = !context.mmTouch;
-    final button = compact ? const Size(30, 26) : context.mmToolbarButton;
-    final buttonStyle = IconButton.styleFrom(minimumSize: button, fixedSize: button, padding: EdgeInsets.zero);
     final navigation = MMToolbarButton(
       compact: compact,
       icon: MMIcons.readerNavigation,
@@ -253,17 +251,18 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       ReaderZoomSlider(pdf: _pdf, enabled: !crop.editing),
       for (final entry in [
         (ReaderZoomCommand.actualSize, l.pdfActualSize, MMIcons.actualSize),
-        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, Icons.crop),
+        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMIcons.fitWidth),
         (ReaderZoomCommand.fitPage, l.pdfFitPage, MMIcons.fitPage),
       ])
-        PopupMenuItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
-      const PopupMenuDivider(),
-      PopupMenuItem<Object>(
+        MMDropdownItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
+    ];
+    final cropItems = <PopupMenuEntry<Object>>[
+      MMDropdownItem<Object>(
         value: 'crop-toggle',
         enabled: cropSession.canToggle,
         child: Row(
           children: [
-            Icon(document?.crop?.enabled == true ? Icons.check : Icons.crop, size: 16),
+            Icon(document?.crop?.enabled == true ? MMIcons.check : MMIcons.actualSize, size: MMSizes.dropdownIcon),
             const SizedBox(width: 8),
             Expanded(child: Text(l.cropMargins, style: context.mmText.callout)),
             const SizedBox(width: 8),
@@ -271,15 +270,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           ],
         ),
       ),
-      PopupMenuItem<Object>(
+      MMDropdownItem<Object>(
         value: 'crop-adjust',
         enabled: !crop.editing && !crop.busy && _pdf.isReady,
-        child: _menuRow(Icons.crop, l.cropAdjust),
+        child: _menuRow(MMIcons.crop, l.cropAdjust),
       ),
     ];
     final styleItems = [
       for (final value in MMReaderStyle.values)
-        PopupMenuItem<Object>(
+        MMDropdownItem<Object>(
           value: value,
           child: _styleRow(context, value, selected: value == style),
         ),
@@ -315,18 +314,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           Flexible(child: annotation),
           if (MMSizeClass.of(context) == MMSizeClass.medium) ...[marginButton, compareButton],
           const SizedBox(width: MMSpacing.s),
-          PopupMenuButton<Object>(
+          MMDropdownButton<Object>(
             key: const ValueKey('reader-more'),
             tooltip: l.moreTools,
-            padding: EdgeInsets.zero,
-            style: buttonStyle,
-            iconSize: MMSpacing.l,
             icon: const Icon(MMIcons.more),
             onSelected: (value) {
               pageCommand(value);
               if (value is MMReaderStyle) setStyle(value);
             },
-            itemBuilder: (_) => [...zoomItems, const PopupMenuDivider(), ...styleItems],
+            itemBuilder: (_) => [
+              ...zoomItems,
+              const PopupMenuDivider(),
+              ...cropItems,
+              const PopupMenuDivider(),
+              ...styleItems,
+            ],
           ),
           if (progress != null) ...[const SizedBox(width: MMSpacing.s), Flexible(child: progress)],
         ],
@@ -338,22 +340,24 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         navigation,
-        PopupMenuButton<Object>(
+        MMDropdownButton<Object>(
           key: const ValueKey('reader-page'),
           tooltip: l.readerZoom,
-          padding: EdgeInsets.zero,
-          style: buttonStyle,
-          iconSize: MMSpacing.l,
-          icon: Icon(MMIcons.zoomControl, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
+          width: MMSizes.readerZoomMenuWidth,
+          icon: const Icon(MMIcons.zoomControl),
           onSelected: pageCommand,
           itemBuilder: (_) => zoomItems,
         ),
-        PopupMenuButton<Object>(
+        MMDropdownButton<Object>(
+          key: const ValueKey('reader-crop'),
+          tooltip: l.cropMargins,
+          icon: Icon(MMIcons.crop, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
+          onSelected: pageCommand,
+          itemBuilder: (_) => cropItems,
+        ),
+        MMDropdownButton<Object>(
           key: const ValueKey('reader-appearance'),
           tooltip: l.readerAppearance,
-          padding: EdgeInsets.zero,
-          style: buttonStyle,
-          iconSize: MMSpacing.l,
           onSelected: (value) => setStyle(value as MMReaderStyle),
           itemBuilder: (_) => styleItems,
           icon: const Icon(MMIcons.appearance),
@@ -368,7 +372,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   Widget _menuRow(IconData icon, String label) => Row(
     children: [
-      Icon(icon, size: MMSpacing.l),
+      Icon(icon, size: MMSizes.dropdownIcon),
       const SizedBox(width: MMSpacing.s),
       Text(label, style: context.mmText.callout),
     ],
@@ -380,15 +384,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return Row(
       children: [
         Container(
-          width: MMSpacing.xl,
-          height: MMSpacing.xl,
+          width: MMSpacing.l,
+          height: MMSpacing.l,
           decoration: BoxDecoration(
             color: value.paperColor,
             border: Border.all(color: c.separator),
-            borderRadius: BorderRadius.circular(MMRadii.field),
-          ),
-          child: Center(
-            child: Text('Aa', style: context.mmText.footnote.copyWith(color: value.inkColor)),
+            borderRadius: BorderRadius.circular(MMRadii.page),
           ),
         ),
         const SizedBox(width: MMSpacing.s),
@@ -397,9 +398,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           MMReaderStyle.dark => l.readerStyleDark,
           MMReaderStyle.paper => l.readerStylePaper,
           MMReaderStyle.green => l.readerStyleGreen,
-        }),
+        }, style: context.mmText.callout),
         const Spacer(),
-        if (selected) Icon(Icons.check, color: c.accent, size: MMSpacing.l),
+        if (selected) Icon(MMIcons.check, color: c.accent, size: MMSizes.dropdownIcon),
       ],
     );
   }
@@ -1118,11 +1119,7 @@ class _DocumentSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final c = context.mmColors;
-    final text = context.mmText.body.copyWith(fontSize: 12);
-    final touch = context.mmTouch;
-    final button = touch ? context.mmToolbarButton : const Size(30, 26);
-    final rowHeight = touch ? 44.0 : 30.0;
-    const rowPadding = EdgeInsets.symmetric(horizontal: MMSpacing.s);
+    final text = context.mmText.callout;
     Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
       children: [
         Icon(icon, size: 14, color: c.secondaryLabel),
@@ -1142,39 +1139,16 @@ class _DocumentSwitcher extends StatelessWidget {
         SizedBox(width: 14, child: selected ? Icon(MMIcons.check, size: 14, color: c.accent) : null),
       ],
     );
-    return PopupMenuButton<String>(
+    return MMDropdownButton<String>(
       key: const ValueKey('reader-documents'),
       tooltip: l.switchDocument,
-      position: PopupMenuPosition.under,
-      offset: const Offset(0, MMSpacing.xs),
-      padding: EdgeInsets.zero,
-      iconSize: 16,
+      width: MMSizes.dropdownWideWidth,
       icon: Icon(MMIcons.chevronUpDown, color: c.label, semanticLabel: l.switchDocument),
-      style: IconButton.styleFrom(
-        minimumSize: button,
-        fixedSize: button,
-        padding: EdgeInsets.zero,
-        hoverColor: c.hover,
-        shape: const StadiumBorder(),
-      ),
-      color: c.glassOpaque,
-      surfaceTintColor: Colors.transparent,
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.25),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: c.hairline, width: 0.5),
-      ),
-      clipBehavior: Clip.antiAlias,
-      menuPadding: const EdgeInsets.all(MMSpacing.xs),
-      constraints: const BoxConstraints(minWidth: 240, maxWidth: 360),
       onSelected: (id) => id.isEmpty ? onClose?.call() : onOpen(id),
       itemBuilder: (_) => [
         for (final document in documents)
-          PopupMenuItem<String>(
+          MMDropdownItem<String>(
             value: document.id,
-            height: rowHeight,
-            padding: rowPadding,
             labelTextStyle: WidgetStatePropertyAll(text),
             child: Semantics(
               selected: document.id == activeDocumentId,
@@ -1182,11 +1156,9 @@ class _DocumentSwitcher extends StatelessWidget {
             ),
           ),
         const PopupMenuDivider(height: MMSpacing.s),
-        PopupMenuItem<String>(
+        MMDropdownItem<String>(
           value: '',
           enabled: onClose != null,
-          height: rowHeight,
-          padding: rowPadding,
           labelTextStyle: WidgetStatePropertyAll(text),
           child: row(MMIcons.close, l.closeCurrentDocument, enabled: onClose != null),
         ),

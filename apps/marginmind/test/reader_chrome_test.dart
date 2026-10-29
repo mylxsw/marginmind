@@ -66,13 +66,13 @@ void main() {
 
         await tester.tap(switcher);
         await tester.pumpAndSettle();
-        final current = find.ancestor(of: find.text('学习的底层逻辑').last, matching: find.byType(PopupMenuItem<String>));
+        final current = find.ancestor(of: find.text('学习的底层逻辑').last, matching: find.byType(MMDropdownItem<String>));
         expect(find.descendant(of: current, matching: find.byIcon(MMIcons.check)), findsOneWidget);
         final other = find.text('论文：检索练习效应').last;
         final label = tester.widget<Text>(other);
         expect(label.style!.fontSize, 12);
-        expect(label.style!.fontWeight, FontWeight.w400);
-        final otherRow = find.ancestor(of: other, matching: find.byType(PopupMenuItem<String>));
+        expect(label.style!.fontWeight, FontWeight.w500);
+        final otherRow = find.ancestor(of: other, matching: find.byType(MMDropdownItem<String>));
         expect(tester.getSize(otherRow).height, 30);
         final closeLabel = tester.widget<Text>(find.text('Close Current Document'));
         expect(closeLabel.style, label.style);
@@ -120,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
       final close = find.ancestor(
         of: find.text('Close Current Document'),
-        matching: find.byType(PopupMenuItem<String>),
+        matching: find.byType(MMDropdownItem<String>),
       );
       expect(tester.widget<PopupMenuItem<String>>(close).enabled, isFalse);
       await tester.tap(find.text('学习的底层逻辑').last);
@@ -155,7 +155,7 @@ void main() {
         await tester.tap(menu);
         await tester.pumpAndSettle();
         expect(find.text(label), findsOneWidget);
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(find.byIcon(MMIcons.check), findsOneWidget);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
       }

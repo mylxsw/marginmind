@@ -99,7 +99,7 @@ void main() {
     await drain(tester);
     expect(workspace.content.document('c1')!.crop!.toJson(), saved);
     expect(workspace.content.document('c1')!.cropSuggestionDismissed, true);
-    await tester.tap(find.byKey(const ValueKey('reader-page')));
+    await tester.tap(find.byKey(const ValueKey('reader-crop')));
     await tester.pumpAndSettle();
     expect(find.text(l.cropAdjust), findsOneWidget);
     await tester.tap(find.text(l.cropMargins));

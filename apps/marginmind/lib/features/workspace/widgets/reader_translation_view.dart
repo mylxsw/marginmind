@@ -201,7 +201,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     return Column(
       children: [
         Container(
-          height: 34,
+          height: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareHeader,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: c.separator, width: .5)),
