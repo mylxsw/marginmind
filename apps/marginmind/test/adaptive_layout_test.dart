@@ -314,7 +314,7 @@ void main() {
       // Touch-sized toolbar buttons.
       expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(MMSizes.touchTarget));
       // The reader tools stay on one line; zoom and appearance are under More.
-      expect(find.byKey(const ValueKey('reader-zoom')), findsNothing);
+      expect(find.byKey(const ValueKey('reader-page')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
       expect(find.text('Zoom In'), findsOneWidget);
@@ -336,7 +336,7 @@ void main() {
       expect(reader.right, lessThanOrEqualTo(map.left));
       expect(reader.left, 0);
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsNothing);
-      expect(find.byKey(const ValueKey('reader-zoom')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-page')), findsOneWidget);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
@@ -444,7 +444,7 @@ void main() {
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsOneWidget);
       expect(find.byKey(const ValueKey('mm-drawer-scrim')), findsNothing);
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
-      expect(find.byKey(const ValueKey('reader-zoom')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-page')), findsOneWidget);
       expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), MMSizes.toolbarButton);
       container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
       await tester.pumpAndSettle();

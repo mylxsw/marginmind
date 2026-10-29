@@ -110,7 +110,7 @@ void main() {
       await screenshot(
         tester,
         'reader-toolbar-${dark ? 'dark' : 'light'}',
-        target: find.ancestor(of: find.byKey(const ValueKey('reader-zoom')), matching: find.byType(Wrap)).first,
+        target: find.ancestor(of: find.byKey(const ValueKey('reader-page')), matching: find.byType(Wrap)).first,
       );
       await screenshot(
         tester,

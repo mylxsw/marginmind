@@ -51,7 +51,15 @@ void main() {
       set.id,
       (c) => c.copyWith(
         documents: [
-          for (final id in ['a', 'b']) Document(id: id, title: id, fileName: '$id.pdf', pageCount: 2, importedAt: date),
+          for (final id in ['a', 'b'])
+            Document(
+              id: id,
+              title: id,
+              fileName: '$id.pdf',
+              pageCount: 2,
+              importedAt: date,
+              cropSuggestionDismissed: id == 'a',
+            ),
         ],
       ),
     );
@@ -85,6 +93,8 @@ void main() {
     ]);
     final saved = await store.load(set.id);
     expect(saved.translationCaches.single.paragraphs.length, 2);
+    expect(saved.document('a')!.cropSuggestionDismissed, true);
+    expect(saved.document('b')!.cropSuggestionDismissed, false);
     await store.dispose();
     store = FileLibraryStore(root);
     expect((await store.load(set.id)).toJson(), saved.toJson());

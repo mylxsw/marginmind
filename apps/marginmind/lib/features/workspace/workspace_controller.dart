@@ -1062,6 +1062,24 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   // ---- ink ---------------------------------------------------------------------
 
+  Future<void> setDocumentCrop(String documentId, DocumentCrop? crop) async {
+    await _update((c) {
+      final next = _editor.setDocumentCrop(c, documentId, crop);
+      return next.copyWith(
+        documents: [for (final d in next.documents) d.id == documentId ? d.copyWith(cropSuggestionDismissed: true) : d],
+      );
+    });
+  }
+
+  Future<void> dismissCropSuggestion(String documentId) async {
+    await _update(
+      (c) => c.copyWith(
+        documents: [for (final d in c.documents) d.id == documentId ? d.copyWith(cropSuggestionDismissed: true) : d],
+      ),
+      undoable: false,
+    );
+  }
+
   /// One finished pen stroke; one undo step.
   Future<void> addInkStroke(String documentId, MMPdfInkDraft draft) async {
     if (content.document(documentId) == null) return;
@@ -1990,7 +2008,9 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       a.title == b.title &&
       a.fileName == b.fileName &&
       a.pageCount == b.pageCount &&
-      a.importedAt == b.importedAt;
+      a.importedAt == b.importedAt &&
+      a.cropSuggestionDismissed == b.cropSuggestionDismissed &&
+      (identical(a.crop, b.crop) || jsonEncode(a.crop?.toJson()) == jsonEncode(b.crop?.toJson()));
   bool samePresentation(StudySetContent a, StudySetContent b) =>
       identical(a.cards, b.cards) &&
       identical(a.nodes, b.nodes) &&
@@ -2001,6 +2021,7 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       identical(a.summaries, b.summaries) &&
       identical(a.bookmarks, b.bookmarks) &&
       identical(a.inkStrokes, b.inkStrokes) &&
+      identical(a.marginNotes, b.marginNotes) &&
       identical(a.researchNotes, b.researchNotes) &&
       identical(a.noteAttachments, b.noteAttachments) &&
       identical(a.evidence, b.evidence) &&

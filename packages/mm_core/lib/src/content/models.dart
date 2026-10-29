@@ -42,6 +42,7 @@ class Document {
     this.lastPage = 1,
     this.lastReadAt,
     this.crop,
+    this.cropSuggestionDismissed = false,
   });
 
   final String id;
@@ -51,13 +52,20 @@ class Document {
   final String fileName;
   final int pageCount;
   final DocumentCrop? crop;
+  final bool cropSuggestionDismissed;
   final int lastPage;
   final DateTime importedAt;
 
   /// When [lastPage] was last updated; drives "Continue Learning".
   final DateTime? lastReadAt;
 
-  Document copyWith({String? title, int? lastPage, DateTime? lastReadAt, Object? crop = _keepCrop}) => Document(
+  Document copyWith({
+    String? title,
+    int? lastPage,
+    DateTime? lastReadAt,
+    Object? crop = _keepCrop,
+    bool? cropSuggestionDismissed,
+  }) => Document(
     id: id,
     title: title ?? this.title,
     fileName: fileName,
@@ -66,6 +74,7 @@ class Document {
     lastPage: lastPage ?? this.lastPage,
     lastReadAt: lastReadAt ?? this.lastReadAt,
     crop: identical(crop, _keepCrop) ? this.crop : crop as DocumentCrop?,
+    cropSuggestionDismissed: cropSuggestionDismissed ?? this.cropSuggestionDismissed,
   );
 
   Map<String, Object?> toJson() => {
@@ -77,10 +86,12 @@ class Document {
     'importedAt': importedAt.toIso8601String(),
     if (lastReadAt != null) 'lastReadAt': lastReadAt!.toIso8601String(),
     if (crop != null) 'crop': crop!.toJson(),
+    if (cropSuggestionDismissed) 'cropSuggestionDismissed': true,
   };
 
   factory Document.fromJson(Map<String, Object?> j) => Document(
     crop: j['crop'] == null ? null : DocumentCrop.fromJson((j['crop'] as Map).cast()),
+    cropSuggestionDismissed: j['cropSuggestionDismissed'] as bool? ?? false,
     id: j['id'] as String,
     title: j['title'] as String,
     fileName: j['fileName'] as String,

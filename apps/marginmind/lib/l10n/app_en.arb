@@ -548,7 +548,7 @@
   "readerStyleDark": "Dark",
   "readerStylePaper": "Paper",
   "readerStyleGreen": "Light Green",
-  "readerZoom": "Page Fit",
+  "readerZoom": "Page",
   "readerAppearance": "Reading Appearance",
   "research": "Research",
   "showResearchPanel": "Show Research Panel",
@@ -1564,5 +1564,26 @@
   "assistantQuickBusy": "Another conversation is answering. You can ask when it finishes.",
   "assistantQuickChanged": "This conversation has changed. Continue viewing it in the sidebar.",
   "assistantQuickGenerated": "AI-generated content",
-  "assistantQuickSelection": "Selected Text"
+  "assistantQuickSelection": "Selected Text",
+  "cropMargins": "Crop Margins",
+  "uncropMargins": "Uncrop Margins",
+  "cropAdjust": "Adjust Crop…",
+  "cropScopeAll": "All Pages",
+  "cropScopeOddEven": "Odd & Even",
+  "cropScopePage": "This Page",
+  "cropAuto": "Auto",
+  "cropNone": "None",
+  "cropOddPages": "Odd Pages",
+  "cropEvenPages": "Even Pages",
+  "cropCustomPage": "Custom",
+  "cropHiddenAnnotations": "{count, plural, =1{1 annotation will be hidden} other{{count} annotations will be hidden}}",
+  "croppedHud": "Margins cropped",
+  "uncroppedHud": "Crop removed",
+  "@cropHiddenAnnotations": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

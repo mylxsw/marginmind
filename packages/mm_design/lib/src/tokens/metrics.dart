@@ -28,6 +28,7 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double readerMaxFitZoom = 1.4;
   static const double mapExportNodeWidth = 240;
   static const double mapExportCanvasPadding = 72;
   static const double mapExportImageFallbackHeight = 120;

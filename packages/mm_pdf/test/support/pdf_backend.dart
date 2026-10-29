@@ -79,7 +79,8 @@ class _Page implements PdfPage {
       TestPdfText.pages[pageNumber] ??
       PdfPageRawText('Selected passage', List.generate(16, (i) => PdfRect(30 + i * 10, 700, 40 + i * 10, 680)));
   @override
-  Future<List<PdfLink>> loadLinks({bool compact = false, bool enableAutoLinkDetection = true}) async => [];
+  Future<List<PdfLink>> loadLinks({bool compact = false, bool enableAutoLinkDetection = true}) async =>
+      TestPdfLinks.pages[pageNumber] ?? [];
   @override
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #render) return TestPdfRender._render(invocation.namedArguments);
@@ -100,6 +101,7 @@ abstract final class TestPdfOutline {
 /// (blank) pixels for area captures when [produceImages] is set.
 abstract final class TestPdfRender {
   static bool produceImages = false;
+  static bool scanImage = false;
   static final requestedFullSizes = <(double?, double?)>[];
 
   /// Arguments of each produced render.
@@ -117,7 +119,17 @@ abstract final class TestPdfRender {
       'height': height,
       if (renders.isEmpty && args[#fullWidth] == 1200.0) 'fullWidth': args[#fullWidth],
     });
-    return Future.value(PdfImage.createFromBgraData(Uint8List(width * height * 4), width: width, height: height));
+    final pixels = Uint8List(width * height * 4);
+    if (scanImage) {
+      pixels.fillRange(0, pixels.length, 255);
+      for (var y = (height * .15).round(); y < (height * .85).round(); y++) {
+        for (var x = (width * .2).round(); x < (width * .8).round(); x++) {
+          final i = (y * width + x) * 4;
+          pixels[i] = pixels[i + 1] = pixels[i + 2] = 0;
+        }
+      }
+    }
+    return Future.value(PdfImage.createFromBgraData(pixels, width: width, height: height));
   }
 }
 
@@ -126,4 +138,8 @@ class _Token implements PdfPageRenderCancellationToken {
   bool isCanceled = false;
   @override
   void cancel() => isCanceled = true;
+}
+
+abstract final class TestPdfLinks {
+  static Map<int, List<PdfLink>> pages = {};
 }

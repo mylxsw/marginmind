@@ -1096,7 +1096,11 @@ class StudySetEditor {
     documents: [
       for (final d in snapshot.documents)
         if (current.document(d.id) case final now?)
-          d.copyWith(lastPage: now.lastPage, lastReadAt: now.lastReadAt)
+          d.copyWith(
+            lastPage: now.lastPage,
+            lastReadAt: now.lastReadAt,
+            cropSuggestionDismissed: now.cropSuggestionDismissed,
+          )
         else
           d,
     ],
