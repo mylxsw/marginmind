@@ -1135,6 +1135,10 @@
       }
     }
   },
+  "nodeBarChild": "子主题",
+  "nodeBarSibling": "同级",
+  "nodeBarImage": "图片",
+  "nodeBarAssistant": "AI",
   "selectionMerge": "合并",
   "selectionSummary": "概要",
   "selectionRelation": "关联",

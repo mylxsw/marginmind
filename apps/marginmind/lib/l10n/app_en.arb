@@ -1782,6 +1782,10 @@
       }
     }
   },
+  "nodeBarChild": "Child",
+  "nodeBarSibling": "Sibling",
+  "nodeBarImage": "Image",
+  "nodeBarAssistant": "AI",
   "selectionMerge": "Merge",
   "selectionSummary": "Summary",
   "selectionRelation": "Relate",

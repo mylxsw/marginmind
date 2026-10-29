@@ -362,33 +362,39 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('dragging from the handle connects a highlighted target; controls save on release', (tester) async {
+    testWidgets('Link on the node toolbar draws to a highlighted target; controls save on release', (tester) async {
       final controller = await open(tester);
       controller.selectCard('c3');
       await tester.pumpAndSettle();
       await focusMap(tester);
       await key(tester, LogicalKeyboardKey.digit0, primary: true);
-      final handle = find.byKey(const ValueKey('relation-drag-handle'));
-      expect(handle, findsOneWidget);
+      final link = find.byKey(const ValueKey('node-bar-relation'));
+      expect(link, findsOneWidget);
       for (final cancel in ['blank', 'escape']) {
-        final cancelled = await tester.startGesture(tester.getCenter(handle));
-        await cancelled.moveBy(const Offset(0, 25));
-        await tester.pump();
-        await cancelled.moveTo(cancel == 'blank' ? blank(tester) : tester.getCenter(find.byKey(const ValueKey('c4'))));
-        await tester.pump();
-        if (cancel == 'escape') await key(tester, LogicalKeyboardKey.escape);
-        await cancelled.up();
+        await tester.tap(link);
+        await tester.pumpAndSettle();
+        expect(state(tester).connectingFromId, 'c3');
+        if (cancel == 'escape') {
+          await key(tester, LogicalKeyboardKey.escape);
+        } else {
+          await tester.tapAt(blank(tester));
+        }
         await tester.pumpAndSettle();
         expect(controller.content.relations, isEmpty, reason: cancel);
-        expect(state(tester).connectingFromId, isNull);
+        expect(state(tester).connectingFromId, isNull, reason: cancel);
+        controller.selectCard('c3');
+        await tester.pumpAndSettle();
       }
-      final gesture = await tester.startGesture(tester.getCenter(handle));
-      await gesture.moveBy(const Offset(0, 25));
-      await tester.pump();
-      await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('c4'))));
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+      // The line follows the pointer; the node under it is highlighted.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: blank(tester));
+      await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('c4'))));
       await tester.pump();
       expect(find.byKey(const ValueKey('relation-target')), findsOneWidget);
-      await gesture.up();
+      await mouse.removePointer();
+      await tester.tap(find.byKey(const ValueKey('c4')));
       await tester.pumpAndSettle();
       expect(controller.content.relations, hasLength(1));
       await key(tester, LogicalKeyboardKey.enter);
