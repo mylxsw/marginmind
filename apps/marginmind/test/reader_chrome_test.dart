@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:marginmind/settings/app_settings.dart';
 
+import '../../../packages/mm_pdf/test/support/pdf_backend.dart';
 import 'helpers.dart';
+import 'reader_crop_test.dart' show drain;
 
 Future<ProviderContainer> openSet(WidgetTester tester, {Size size = const Size(1280, 820)}) async {
   final container = await pumpApp(tester);
@@ -35,6 +38,50 @@ void drainOverflow(WidgetTester tester) {
 
 void main() {
   final provider = workspaceProvider('demo-1');
+
+  for (final appearance in ['light', 'dark']) {
+    testWidgets('reader buttons share foreground colors in $appearance', (tester) async {
+      installTestPdfBackend();
+      final container = await pumpApp(tester, renderPdf: true, prefs: {'settings.appearance': appearance});
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await drain(tester);
+      final reader = find.byType(ReaderPane);
+      final colors = tester.element(reader).mmColors;
+      Color? paintedColor(IconData icon) {
+        final glyph = find.descendant(of: reader, matching: find.byIcon(icon)).first;
+        final text = tester.widget<RichText>(find.descendant(of: glyph, matching: find.byType(RichText)));
+        return (text.text as TextSpan).style!.color;
+      }
+
+      for (final icon in [
+        MMIcons.readerNavigation,
+        MMIcons.zoomControl,
+        MMIcons.crop,
+        MMIcons.appearance,
+        MMIcons.highlight,
+        MMIcons.areaSelect,
+        MMIcons.pen,
+        MMIcons.compare,
+      ]) {
+        expect(paintedColor(icon), colors.label, reason: 'Enabled toolbar icons use one foreground');
+      }
+      expect(paintedColor(MMIcons.select), colors.accent);
+      final menu = find.byKey(const ValueKey('reader-appearance'));
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      expect(paintedColor(MMIcons.appearance), colors.accent);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(paintedColor(MMIcons.appearance), colors.label);
+      await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 700);
+      await drain(tester);
+      expect(paintedColor(MMIcons.compare), colors.accent);
+      expect(paintedColor(MMIcons.marginNote), colors.label.withValues(alpha: .3));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await drain(tester);
+    });
+  }
 
   group('window title (U-R5)', () {
     testWidgets('title is the document on one line without a page subtitle or single-document tab bar', (tester) async {

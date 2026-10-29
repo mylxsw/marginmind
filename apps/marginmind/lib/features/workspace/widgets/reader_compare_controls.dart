@@ -189,10 +189,10 @@ class ReaderCompareMenu extends ConsumerWidget {
                 MMIcons.compare,
                 size: 16,
                 color: !enabled
-                    ? c.secondaryLabel
+                    ? c.label.withValues(alpha: .3)
                     : pair != null
                     ? c.accent
-                    : c.icon,
+                    : c.label,
               ),
             )
           : SizedBox(
