@@ -5797,6 +5797,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Underline Deleted'**
   String get underlineDeletedHud;
+
+  /// No description provided for @mergeNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge {count} nodes'**
+  String mergeNodes(int count);
+
+  /// No description provided for @splitNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Split into {count} nodes'**
+  String splitNodes(int count);
+
+  /// No description provided for @selectedNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedNodes(int count);
+
+  /// No description provided for @mergedNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Nodes merged'**
+  String get mergedNodes;
+
+  /// No description provided for @mergeCleanup.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {relations} relationships and {summaries} summaries'**
+  String mergeCleanup(int relations, int summaries);
+
+  /// No description provided for @mergedSources.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sources · Merged'**
+  String mergedSources(int count);
+
+  /// No description provided for @relationNeedsTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Select exactly two nodes'**
+  String get relationNeedsTwo;
+
+  /// No description provided for @mapEditTooFewCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least two nodes'**
+  String get mapEditTooFewCards;
+
+  /// No description provided for @mapEditMissingCard.
+  ///
+  /// In en, this message translates to:
+  /// **'A selected node is unavailable'**
+  String get mapEditMissingCard;
+
+  /// No description provided for @mapEditCenterTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'The central topic cannot be used'**
+  String get mapEditCenterTopic;
+
+  /// No description provided for @mapEditImageCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Image cards cannot be merged'**
+  String get mapEditImageCard;
+
+  /// No description provided for @mapEditSummaryTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary topics cannot be used'**
+  String get mapEditSummaryTopic;
+
+  /// No description provided for @mapEditUnsupportedCard.
+  ///
+  /// In en, this message translates to:
+  /// **'This card type cannot be merged'**
+  String get mapEditUnsupportedCard;
+
+  /// No description provided for @mapEditNotMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'This card has no segments to split'**
+  String get mapEditNotMerged;
+
+  /// No description provided for @mapEditDifferentParents.
+  ///
+  /// In en, this message translates to:
+  /// **'Select nodes with the same parent'**
+  String get mapEditDifferentParents;
+
+  /// No description provided for @mapEditOverlappingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'This range overlaps an existing summary'**
+  String get mapEditOverlappingSummary;
+
+  /// No description provided for @mapEditMissingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'This summary is unavailable'**
+  String get mapEditMissingSummary;
+
+  /// No description provided for @selectionMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get selectionMerge;
+
+  /// No description provided for @selectionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get selectionSummary;
+
+  /// No description provided for @selectionRelation.
+  ///
+  /// In en, this message translates to:
+  /// **'Relate'**
+  String get selectionRelation;
+
+  /// No description provided for @selectionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get selectionDelete;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

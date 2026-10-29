@@ -921,8 +921,8 @@ class StudySetEditor {
     final selected = cardIds.toSet();
     final annotations = {
       for (final card in c.cards)
-        if (selected.contains(card.id) && c.node(card.id, mapId: mapId) != null && card.annotationId != null)
-          card.annotationId!,
+        if (selected.contains(card.id) && c.node(card.id, mapId: mapId) != null)
+          for (final segment in c.segmentsOf(card)) ?segment.annotationId,
     };
     if (!c.annotations.any((a) => annotations.contains(a.id) && a.colorIndex != colorIndex)) return c;
     return c.copyWith(

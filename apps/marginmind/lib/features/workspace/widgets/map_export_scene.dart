@@ -64,7 +64,7 @@ class MapExportScene extends CustomPainter {
       final doc = content.document(a?.documentId ?? '');
       final note = content.researchNote(card.researchNoteId ?? '');
       final body = <String>[
-        if (card.kind == CardKind.excerpt) a?.quote ?? '',
+        if (card.kind == CardKind.excerpt) content.segmentsOf(card).map((s) => s.text).join('\n'),
         if (note != null) ...[
           note.body,
           for (final attachment in content.noteAttachments.where((a) => a.noteId == note.id))
@@ -76,7 +76,12 @@ class MapExportScene extends CustomPainter {
               if (content.researchSources.where((s) => s.id == evidence.sourceId).firstOrNull case final s?)
                 '${s.title} · ${s.url} · ${s.fetchedAt.toIso8601String()}',
         ],
-        if (doc != null) source(doc, a!.page),
+        if (card.kind == CardKind.excerpt) ...{
+          for (final segment in content.segmentsOf(card))
+            if (content.annotation(segment.annotationId ?? '') case final annotation?)
+              if (content.document(annotation.documentId) case final document?) source(document, annotation.page),
+        } else if (doc != null)
+          source(doc, a!.page),
       ].where((s) => s.isNotEmpty).join('\n');
       nodes[n.cardId] = _ExportNode(
         note != null

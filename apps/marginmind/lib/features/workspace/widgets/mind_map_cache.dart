@@ -334,6 +334,7 @@ class _NodeSpec {
     this.format = TextFormat.plain,
     this.maxLines = maxQuoteLines,
     this.resizable = false,
+    this.segments = const [],
   }) : label = label ?? title;
 
   final _Kind kind;
@@ -376,6 +377,7 @@ class _NodeSpec {
 
   /// Excerpts, images and research notes can be made wider or narrower.
   final bool resizable;
+  final List<({String text, String? annotationId, MMAnnotationColor color})> segments;
 
   static const excerptWidth = 240.0;
   static const maxQuoteLines = 4;
@@ -552,30 +554,84 @@ class _NodeSpec {
       case CardKind.excerpt:
         final maxLines = compact ? compactQuoteLines : maxQuoteLines;
         final textWidth = cardWidth - _cardInset - _quoteInset;
-        final full = a?.quote ?? '';
+        final allSegments = cache._content!.segmentsOf(card);
+        final full = allSegments.map((s) => s.text).join('\n');
         final clipped = cache._clip(full, MMTypography.readingExcerpt, textWidth, maxLines);
         // While the title is typed the field keeps one line, so the card
         // shows its preview.
         final titleLines = card.title.isEmpty || editing ? 1 : cache._measure(card.title, titleStyle, titleWidth).lines;
-        final truncated = !editing && (clipped != full || titleLines > 1);
+        final segmentLines = card.segments.length < 2
+            ? 0
+            : allSegments.fold<int>(
+                0,
+                (count, segment) =>
+                    count +
+                    cache
+                        ._measure(
+                          segment.text,
+                          segment.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt,
+                          textWidth - 12,
+                        )
+                        .lines,
+              );
+        final truncated = !editing && (clipped != full || titleLines > 1 || segmentLines > maxLines);
         final open = truncated && expanded;
         final quote = open ? full : clipped;
         final lines = cache._measure(quote, MMTypography.readingExcerpt, textWidth).lines;
         final scale = cache._textScaler.scale;
         final shownTitle = titled ? (open ? titleLines : 1) * scale(17) + 6 : 0;
         final toggle = truncated ? toggleGap + scale(toggleLineHeight) : 0;
-        final height = 11 + shownTitle + (lines * scale(20) + 12) + toggle + 11 + 2;
+        final shownSegments = <({String text, String? annotationId, MMAnnotationColor color})>[];
+        var segmentHeight = 0.0;
+        var budget = maxLines;
+        if (card.segments.length > 1) {
+          for (final segment in allSegments) {
+            if (!open && budget <= 0) break;
+            final style = segment.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt;
+            final text = open ? segment.text : cache._clip(segment.text, style, textWidth - 12, budget);
+            final measured = cache._measure(text, style, textWidth - 12);
+            shownSegments.add((
+              text: text,
+              annotationId: segment.annotationId,
+              color: MMAnnotationColor.fromIndex(
+                cache._content!.annotation(segment.annotationId ?? '')?.colorIndex ?? 0,
+              ),
+            ));
+            segmentHeight += measured.size.height;
+            budget -= measured.lines;
+          }
+        }
+        final sourceNames = {
+          for (final segment in allSegments)
+            if (cache._content!.annotation(segment.annotationId ?? '') case final annotation?)
+              if (cache._content!.document(annotation.documentId) case final document?) document.title,
+        };
+        final sourceCount = allSegments.where((s) => s.annotationId != null).length;
+        final meta = card.segments.length > 1 ? '${sourceNames.join('、')} · ${l.mergedSources(sourceCount)}' : source;
+        final metaHeight = shownSegments.isEmpty || meta == null
+            ? 0.0
+            : cache._measure(meta, MMTypography.footnote, textWidth).size.height.clamp(0, scale(28)) + 6;
+        final height =
+            11 +
+            shownTitle +
+            (shownSegments.isEmpty
+                ? lines * scale(20) + 12
+                : segmentHeight + (shownSegments.length - 1) * 13 + metaHeight + 12) +
+            toggle +
+            11 +
+            2;
         return _NodeSpec._(
           _Kind.excerpt,
           card.title,
           quote,
-          source,
+          meta,
           MMAnnotationColor.fromIndex(a?.colorIndex ?? 0),
           Size(cardWidth, height.toDouble()),
           label: card.title.isEmpty ? (clipped.isEmpty ? l.untitledExcerpt : clipped) : card.title,
           suspended: card.suspended,
           truncated: truncated,
           expanded: open,
+          segments: shownSegments,
           maxLines: maxLines,
           resizable: true,
         );

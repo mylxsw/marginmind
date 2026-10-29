@@ -1,0 +1,96 @@
+import 'package:flutter/material.dart';
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
+
+import '../../../shared/l10n.dart';
+
+String mapEditReasonText(BuildContext context, MapEditReason reason) {
+  final l = context.l10n;
+  return switch (reason) {
+    MapEditReason.tooFewCards => l.mapEditTooFewCards,
+    MapEditReason.missingCard => l.mapEditMissingCard,
+    MapEditReason.centerTopic => l.mapEditCenterTopic,
+    MapEditReason.imageCard => l.mapEditImageCard,
+    MapEditReason.summaryTopic => l.mapEditSummaryTopic,
+    MapEditReason.unsupportedCard => l.mapEditUnsupportedCard,
+    MapEditReason.notMerged => l.mapEditNotMerged,
+    MapEditReason.differentParents => l.mapEditDifferentParents,
+    MapEditReason.overlappingSummary => l.mapEditOverlappingSummary,
+    MapEditReason.missingSummary => l.mapEditMissingSummary,
+  };
+}
+
+class MapSelectionBar extends StatelessWidget {
+  const MapSelectionBar({
+    super.key,
+    required this.count,
+    required this.mergeReason,
+    required this.summaryReason,
+    required this.onMerge,
+    required this.onSummary,
+    required this.onRelation,
+    required this.onDelete,
+    required this.onMergeHover,
+    required this.onColor,
+  });
+  final int count;
+  final MapEditReason? mergeReason, summaryReason;
+  final VoidCallback onMerge, onSummary, onRelation, onDelete;
+  final ValueChanged<bool> onMergeHover;
+  final ValueChanged<MMAnnotationColor>? onColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    // Only a disabled button explains itself; an enabled one is its label.
+    Widget action(String label, VoidCallback? callback, String? reason) {
+      final button = MMButton(label: label, onPressed: callback, variant: MMButtonVariant.plain);
+      return reason == null ? button : Tooltip(message: reason, child: button);
+    }
+
+    return MMGlass(
+      borderRadius: BorderRadius.circular(24),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l.selectedNodes(count), style: context.mmText.footnote),
+          const MMToolbarDivider(),
+          MouseRegion(
+            onEnter: (_) => onMergeHover(true),
+            onExit: (_) => onMergeHover(false),
+            child: action(
+              l.selectionMerge,
+              mergeReason == null ? onMerge : null,
+              mergeReason == null ? null : mapEditReasonText(context, mergeReason!),
+            ),
+          ),
+          action(
+            l.selectionSummary,
+            summaryReason == null ? onSummary : null,
+            summaryReason == null ? null : mapEditReasonText(context, summaryReason!),
+          ),
+          action(l.selectionRelation, count == 2 ? onRelation : null, count == 2 ? null : l.relationNeedsTwo),
+          if (onColor != null)
+            for (final color in MMAnnotationColor.values)
+              Tooltip(
+                message: l.colorName(color),
+                child: InkWell(
+                  onTap: () => onColor!(color),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
+                    ),
+                  ),
+                ),
+              ),
+          action(l.selectionDelete, onDelete, null),
+        ],
+      ),
+    );
+  }
+}

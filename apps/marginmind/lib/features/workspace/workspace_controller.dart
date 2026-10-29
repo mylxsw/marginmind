@@ -1295,6 +1295,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
     if (content.annotation(annotationId) == null) return;
     state = state.copyWith(pending: PendingHighlight(annotationId, viewportRect));
+    final matches = content.segmentsForAnnotation(annotationId, mapId: state.activeMapId);
+    if (matches.isNotEmpty) {
+      state = state.copyWith(
+        expandedCardIds: {
+          ...state.expandedCardIds,
+          for (final match in matches)
+            if (match.card.segments.length > 1) match.card.id,
+        },
+      );
+      _flash(cardId: matches.first.card.id, cardIds: matches.map((m) => m.card.id).toSet(), annotationId: annotationId);
+    }
   }
 
   // ---- research notes -----------------------------------------------------------
@@ -1434,17 +1445,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> locateHighlightCard(String annotationId) async {
-    final card = content.cardForAnnotation(annotationId);
-    if (card == null || content.node(card.id, mapId: state.activeMapId) == null) return;
+    final matches = content.segmentsForAnnotation(annotationId, mapId: state.activeMapId);
+    final card = matches.firstOrNull?.card;
+    if (card == null) return;
     await _update((c) => _expandAncestors(c, card.id), undoable: false);
     state = state.copyWith(
       selectedCardId: card.id,
       locateCardTick: state.locateCardTick + 1,
       clearPending: true,
+      expandedCardIds: {...state.expandedCardIds, if (card.segments.length > 1) card.id},
       mapView: MapViewMode.map,
       layout: _layoutShowingMap,
     );
-    _flash(cardId: card.id);
+    _flash(cardId: card.id, annotationId: annotationId);
   }
 
   StudySetContent _expandAncestors(StudySetContent c, String cardId) {
@@ -1685,10 +1698,47 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (shown && ref.mounted) setLayout(MMSplitMode.secondary);
   }
 
-  /// Opens the source document of an excerpt and scrolls to it.
-  void revealCard(String cardId) {
-    final c = content;
-    final annotation = c.annotation(c.card(cardId)?.annotationId ?? '');
+  MapEditReason? get mergeReason => _editor.mergeReason(content, state.selectedCardIds);
+  MapEditReason? get summaryReason => _editor.summaryReason(content, state.selectedCardIds);
+
+  String? get mergeSurvivorId =>
+      mergeReason == null ? _editor.mergeCards(content, state.selectedCardIds).value?.id : null;
+
+  Future<MapEditResult<Card>?> mergeSelected() async {
+    if (_editing != null || _markEditing != null || _creating || _clipboardBusy) return null;
+    final ids = {...state.selectedCardIds};
+    final editor = _editor;
+    MapEditResult<Card>? result;
+    await _update((c) {
+      result = editor.mergeCards(c, ids);
+      return result!.content;
+    });
+    if (result?.value case final card? when ref.mounted && state.activeMapId == editor.mapId) {
+      selectCard(card.id);
+      _flash(cardId: card.id);
+    }
+    return result;
+  }
+
+  Future<void> splitCard(String id) async {
+    if (_editing != null || _markEditing != null || _creating || _clipboardBusy) return;
+    final editor = _editor;
+    MapEditResult<List<Card>>? result;
+    await _update((c) {
+      result = editor.splitCard(c, id);
+      return result!.content;
+    });
+    if (result?.value case final cards? when ref.mounted && state.activeMapId == editor.mapId) {
+      selectCards(cards.map((c) => c.id));
+    }
+  }
+
+  void revealSegment(String cardId, int index) {
+    final card = content.card(cardId);
+    if (card == null) return;
+    final segments = content.segmentsOf(card);
+    if (index < 0 || index >= segments.length) return;
+    final annotation = content.annotation(segments[index].annotationId ?? '');
     if (annotation == null) return;
     openDocument(annotation.documentId);
     state = state.copyWith(
@@ -1696,6 +1746,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       reveal: RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),
     );
     _flash(annotationId: annotation.id, cardId: cardId);
+  }
+
+  /// Opens the source document of an excerpt and scrolls to it.
+  void revealCard(String cardId) {
+    final card = content.card(cardId);
+    if (card == null) return;
+    final firstSource = content.segmentsOf(card).indexWhere((s) => s.annotationId != null);
+    revealSegment(cardId, firstSource);
   }
 
   /// Adds a topic under the selected topic, or at the root. With

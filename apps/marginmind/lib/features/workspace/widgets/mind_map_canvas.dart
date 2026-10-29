@@ -120,11 +120,19 @@ class MindMapCanvas extends StatefulWidget {
     this.onToggleExpanded,
     this.onOpenDetails,
     this.onResize,
+    this.selectionToolbar,
+    this.mergePreviewCardId,
+    this.flashAnnotationId,
+    this.onRevealSegment,
   });
 
   /// The selected excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
   final void Function(String cardId, double? width)? onResize;
+  final Widget? selectionToolbar;
+  final String? mergePreviewCardId;
+  final String? flashAnnotationId;
+  final void Function(String cardId, int index)? onRevealSegment;
 
   /// Cards shown with their whole text; the others are cut to a preview.
   final Set<String> expandedCardIds;
@@ -526,7 +534,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Rect _withSourceLabel(String id, LayoutRect rect) {
     final card = Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height);
     final meta = _cache._specs[id]?.meta;
-    if (meta == null) return card;
+    if (meta == null || _cache._specs[id]!.segments.isNotEmpty) return card;
     final painter = TextPainter(
       text: TextSpan(text: meta, style: context.mmText.footnote),
       textDirection: TextDirection.ltr,
@@ -635,6 +643,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           MindMapCommand.parent ||
           MindMapCommand.promote ||
           MindMapCommand.relation ||
+          MindMapCommand.merge ||
           MindMapCommand.summary:
         if (selected != null) widget.onCommand?.call(command);
     }
@@ -1132,6 +1141,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.expanded,
       spec.format,
       spec.maxLines,
+      spec.segments,
+      widget.flashAnnotationId,
       widget.onToggleExpanded != null,
       widget.onOpenDetails != null,
       l.expandCardText,
@@ -1153,6 +1164,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               spec,
               _NodeView(
                 spec: spec,
+                flashAnnotationId: widget.flashAnnotationId,
+                onRevealSegment: (index) {
+                  widget.focusNode.requestFocus();
+                  final additive = _tapModifiers.remove(id) ?? _additive;
+                  if (widget.connectingFromId != null) {
+                    widget.onConnect?.call(id);
+                  } else if (additive) {
+                    _select(id, additive: true);
+                  } else {
+                    widget.onRevealSegment?.call(id, index);
+                  }
+                },
                 transformation: widget.transformation,
                 selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
@@ -1573,26 +1596,27 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           clipBehavior: Clip.none,
                                           children: [
                                             for (final id in {hovered, widget.selectedCardId})
-                                              if (specs[id]?.meta case final meta?)
-                                                if (result.rects[id!] case final r?)
-                                                  if (_shown(id, r) case final shown)
-                                                    // Beside the card on its outer side, past the fold
-                                                    // button: below it would cover the next sibling.
-                                                    if (result.leftSide.contains(id))
-                                                      Positioned(
-                                                        left: shown.left - _sourceGap(id),
-                                                        top: shown.top + MMSpacing.xs,
-                                                        child: FractionalTranslation(
-                                                          translation: const Offset(-1, 0),
+                                              if (specs[id]?.segments.isEmpty ?? false)
+                                                if (specs[id]?.meta case final meta?)
+                                                  if (result.rects[id!] case final r?)
+                                                    if (_shown(id, r) case final shown)
+                                                      // Beside the card on its outer side, past the fold
+                                                      // button: below it would cover the next sibling.
+                                                      if (result.leftSide.contains(id))
+                                                        Positioned(
+                                                          left: shown.left - _sourceGap(id),
+                                                          top: shown.top + MMSpacing.xs,
+                                                          child: FractionalTranslation(
+                                                            translation: const Offset(-1, 0),
+                                                            child: _SourceLabel(meta, maxWidth: shown.width),
+                                                          ),
+                                                        )
+                                                      else
+                                                        Positioned(
+                                                          left: shown.right + _sourceGap(id),
+                                                          top: shown.top + MMSpacing.xs,
                                                           child: _SourceLabel(meta, maxWidth: shown.width),
                                                         ),
-                                                      )
-                                                    else
-                                                      Positioned(
-                                                        left: shown.right + _sourceGap(id),
-                                                        top: shown.top + MMSpacing.xs,
-                                                        child: _SourceLabel(meta, maxWidth: shown.width),
-                                                      ),
                                           ],
                                         ),
                                       ),
@@ -1630,6 +1654,54 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
+              if (widget.selectionToolbar != null || widget.mergePreviewCardId != null)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([widget.transformation, _motion]),
+                    builder: (context, _) {
+                      final selected = [
+                        for (final id in widget.selectedCardIds)
+                          if (result.rects[id] case final rect?)
+                            MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
+                      ];
+                      if (selected.isEmpty) return const SizedBox.shrink();
+                      final bounds = selected.reduce((a, b) => a.expandToInclude(b));
+                      final preview = result.rects[widget.mergePreviewCardId];
+                      return Stack(
+                        children: [
+                          if (preview != null)
+                            Positioned.fromRect(
+                              rect: MatrixUtils.transformRect(
+                                widget.transformation.value,
+                                _shown(widget.mergePreviewCardId!, preview),
+                              ).inflate(7),
+                              child: IgnorePointer(
+                                child: CustomPaint(
+                                  painter: DashedBorderPainter(
+                                    color: context.mmColors.accent,
+                                    radius: 16,
+                                    width: 2,
+                                    dash: 5,
+                                    gap: 4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (widget.selectionToolbar != null)
+                            Positioned.fill(
+                              child: CustomSingleChildLayout(
+                                delegate: _SelectionToolbarLayout(bounds),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: widget.selectionToolbar!,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               if (field?.note case final note? when specs[field!.id]?.kind == _Kind.note)
                 Positioned.fill(
                   child: AnimatedBuilder(
@@ -1734,11 +1806,15 @@ class _NodeView extends StatelessWidget {
     this.collapseLabel = '',
     this.onOpenNote,
     this.longPressEnabled = true,
+    this.flashAnnotationId,
+    this.onRevealSegment,
   });
 
   /// A research card's "whole note and citations" link.
   final VoidCallback? onOpenNote;
   final bool longPressEnabled;
+  final String? flashAnnotationId;
+  final ValueChanged<int>? onRevealSegment;
 
   /// Shows a cut card's whole text, or its preview again.
   final VoidCallback? onToggleExpanded;
@@ -1875,12 +1951,61 @@ class _NodeView extends StatelessWidget {
                 color: spec.color!.cardTint,
                 borderRadius: BorderRadius.circular(MMRadii.excerpt),
               ),
-              child: Text(
-                spec.quote ?? '',
-                maxLines: spec.expanded ? null : spec.maxLines,
-                overflow: spec.expanded ? null : TextOverflow.ellipsis,
-                style: t.readingExcerpt,
-              ),
+              child: spec.segments.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final (index, segment) in spec.segments.indexed) ...[
+                          if (index > 0)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: CustomPaint(
+                                size: const Size(double.infinity, 1),
+                                painter: _SegmentDivider(c.separator),
+                              ),
+                            ),
+                          GestureDetector(
+                            onTap: segment.annotationId == null ? null : () => onRevealSegment?.call(index),
+                            child: ColoredBox(
+                              color: segment.annotationId != null && segment.annotationId == flashAnnotationId
+                                  ? c.accentTint
+                                  : Colors.transparent,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 6, right: 6),
+                                    width: 6,
+                                    height: 6,
+                                    // "Own words" segments have no source colour.
+                                    decoration: segment.annotationId == null
+                                        ? null
+                                        : BoxDecoration(shape: BoxShape.circle, color: segment.color.color),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      segment.text,
+                                      style: segment.annotationId == null ? t.body : t.readingExcerpt,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (spec.meta != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(spec.meta!, style: t.footnote, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                    )
+                  : Text(
+                      spec.quote ?? '',
+                      maxLines: spec.expanded ? null : spec.maxLines,
+                      overflow: spec.expanded ? null : TextOverflow.ellipsis,
+                      style: t.readingExcerpt,
+                    ),
             ),
           if (spec.truncated)
             Padding(
@@ -2521,4 +2646,36 @@ class _TouchDragPointerState extends MultiDragPointerState {
     _timer?.cancel();
     super.dispose();
   }
+}
+
+class _SegmentDivider extends CustomPainter {
+  const _SegmentDivider(this.color);
+  final Color color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final pen = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    for (double x = 0; x < size.width; x += 6) {
+      canvas.drawLine(Offset(x, 0), Offset(math.min(x + 3, size.width), 0), pen);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SegmentDivider old) => old.color != color;
+}
+
+class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
+  const _SelectionToolbarLayout(this.bounds);
+  final Rect bounds;
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints(maxWidth: math.max(0, constraints.maxWidth - 16), maxHeight: constraints.maxHeight);
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset(
+    (bounds.center.dx - childSize.width / 2).clamp(8.0, math.max(8.0, size.width - childSize.width - 8)),
+    (bounds.top - childSize.height - 8).clamp(60.0, math.max(60.0, size.height - childSize.height - 8)),
+  );
+  @override
+  bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds;
 }

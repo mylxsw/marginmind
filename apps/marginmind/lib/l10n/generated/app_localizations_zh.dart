@@ -3091,4 +3091,77 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get underlineDeletedHud => '已删除下划线';
+
+  @override
+  String mergeNodes(int count) {
+    return '合并 $count 个节点';
+  }
+
+  @override
+  String splitNodes(int count) {
+    return '拆分为 $count 个节点';
+  }
+
+  @override
+  String selectedNodes(int count) {
+    return '已选 $count 个';
+  }
+
+  @override
+  String get mergedNodes => '已合并节点';
+
+  @override
+  String mergeCleanup(int relations, int summaries) {
+    return '已移除 $relations 条关联线和 $summaries 个概要';
+  }
+
+  @override
+  String mergedSources(int count) {
+    return '$count 处原文 · 已合并';
+  }
+
+  @override
+  String get relationNeedsTwo => '请选择两个节点';
+
+  @override
+  String get mapEditTooFewCards => '请至少选择两个节点';
+
+  @override
+  String get mapEditMissingCard => '选中的节点已不可用';
+
+  @override
+  String get mapEditCenterTopic => '不能操作中心主题';
+
+  @override
+  String get mapEditImageCard => '图片卡片不能合并';
+
+  @override
+  String get mapEditSummaryTopic => '不能操作概要主题';
+
+  @override
+  String get mapEditUnsupportedCard => '此类卡片不能合并';
+
+  @override
+  String get mapEditNotMerged => '此卡片没有可拆分的段落';
+
+  @override
+  String get mapEditDifferentParents => '请选择同一父主题下的节点';
+
+  @override
+  String get mapEditOverlappingSummary => '范围与现有概要重叠';
+
+  @override
+  String get mapEditMissingSummary => '概要已不可用';
+
+  @override
+  String get selectionMerge => '合并';
+
+  @override
+  String get selectionSummary => '概要';
+
+  @override
+  String get selectionRelation => '关联';
+
+  @override
+  String get selectionDelete => '删除';
 }
