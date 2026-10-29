@@ -50,12 +50,16 @@ MMPdfMargin readerMargin(
   for (final note in notes) {
     (byPage[note.page] ??= []).add(note);
   }
-  // Extents are cached per page and width; viewport widgets only arrange visible
-  // pages and neighbours. Far pages retain an exact height without building cards.
+  // Only nearby pages are measured. Previously visited pages retain their
+  // overflow extent; the PDF reserves it before painting interactive cards.
   final extentCache = <int, double>{};
   double? extentZoom;
   return MMPdfMargin(
-    revision: jsonEncode([state.draft?.id, for (final n in notes) n.toJson()]),
+    revision: jsonEncode([
+      state.draft?.id,
+      MediaQuery.textScalerOf(context).scale(12),
+      for (final n in notes) n.toJson(),
+    ]),
     requested: state.openDocuments.contains(doc.id),
     forceCollapsed: forceCollapsed,
     extent: (page, original, crop, zoom) {

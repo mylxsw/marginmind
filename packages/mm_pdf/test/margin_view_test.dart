@@ -17,6 +17,7 @@ void main() {
       final controller = MMPdfViewController();
       addTearDown(controller.dispose);
       MMPdfMarginViewport? viewport;
+      final measured = <int>{};
       Future<void> mount({
         bool requested = true,
         bool collapsed = false,
@@ -35,7 +36,8 @@ void main() {
                   margin: MMPdfMargin(
                     requested: requested,
                     forceCollapsed: collapsed,
-                    extent: (_, size, insets, zoom) {
+                    extent: (page, size, insets, zoom) {
+                      measured.add(page);
                       expect(size, const Size(600, 800));
                       return 150;
                     },
@@ -59,15 +61,19 @@ void main() {
       expect(pdf.documentSize.width, 832);
       expect(pdf.layout.pageLayouts[1].top - pdf.layout.pageLayouts.first.bottom, 166);
       expect(viewport!.expanded, true);
+      expect(measured, {1, 2}, reason: 'offscreen card layout waits until its page approaches the viewport');
       expect(viewport!.pages.length, lessThanOrEqualTo(3));
       final initial = controller.readingPosition!;
-      await controller.ensureVisible(1, const PageRect(20, 700, 100, 680));
+      final firstReveal = controller.ensureVisible(1, const PageRect(20, 700, 100, 680));
+      await tester.pumpAndSettle();
+      await firstReveal;
       expect(controller.readingPosition!.y, closeTo(initial.y, 1));
       await controller.ensureVisible(0, const PageRect(20, 700, 100, 680));
       final reveal = controller.ensureVisible(3, const PageRect(20, 700, 100, 680));
       await tester.pumpAndSettle();
       await reveal;
       expect(controller.readingPosition!.page, greaterThan(1));
+      expect(measured, contains(3));
       final before = controller.readingPosition!;
       await mount(requested: false);
       expect(pdf.documentSize.width, 632);
@@ -85,4 +91,59 @@ void main() {
       await close(tester);
     },
   );
+  testWidgets('rapid navigation and zoom finish while lazy heights preserve the original reading line', (tester) async {
+    installTestPdfBackend(pageCount: 20);
+    await tester.binding.setSurfaceSize(const Size(1000, 700));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    final measured = <int>{};
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(
+          filePath: 'margin-rapid.pdf',
+          controller: controller,
+          margin: MMPdfMargin(
+            requested: true,
+            extent: (page, _, _, _) {
+              measured.add(page);
+              return 150;
+            },
+            builder: (_, _) => [],
+          ),
+        ),
+      ),
+    );
+    await ready(tester, () => controller.isReady);
+    expect(measured, {1, 2});
+    final moves = Future.wait([controller.goToPage(1), controller.goToPage(15)]);
+    await tester.pumpAndSettle();
+    await moves;
+    expect(controller.currentPage, 15);
+    expect(measured, containsAll([14, 15, 16]));
+    expect(measured.intersection({for (var n = 3; n < 13; n++) n}), isEmpty);
+    final before = controller.readingPosition!;
+    final zooms = Future.wait([controller.zoomIn(), controller.zoomOut()]);
+    await tester.pumpAndSettle();
+    await zooms;
+    expect(controller.readingPosition!.page, before.page);
+    expect(controller.readingPosition!.y, closeTo(before.y, 1));
+    for (final move in [controller.actualSize, controller.fitWidth, controller.fitPage]) {
+      final moving = move();
+      await tester.pumpAndSettle();
+      await moving;
+      expect(controller.currentPage, 15);
+    }
+    final interruptedZoom = controller.zoomIn();
+    final direct = controller.jumpToReadingPosition(PdfReadingPosition(page: 10, y: 500));
+    await tester.pumpAndSettle();
+    await Future.wait([interruptedZoom, direct]);
+    expect(controller.readingPosition!.page, 10);
+    expect(controller.readingPosition!.y, closeTo(500, 1));
+    final scrubbing = controller.scrubToPage(1);
+    await tester.pumpAndSettle();
+    await scrubbing;
+    expect(controller.currentPage, 1);
+    await close(tester);
+  });
 }
