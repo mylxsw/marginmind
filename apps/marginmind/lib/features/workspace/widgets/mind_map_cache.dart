@@ -625,7 +625,19 @@ class _NodeSpec {
         // [compactQuoteLines].
         final merged = card.segments.length > 1;
         final truncated = merged
-            ? compact && !editing && segmentLines > allSegments.length * maxLines
+            ? compact &&
+                  !editing &&
+                  allSegments.any(
+                    (segment) =>
+                        cache
+                            ._measure(
+                              segment.text,
+                              segment.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt,
+                              textWidth - 12,
+                            )
+                            .lines >
+                        maxLines,
+                  )
             : !editing && (clipped != full || titleLines > 1 || segmentLines > maxLines);
         final open = truncated && expanded;
         final quote = open ? full : clipped;
