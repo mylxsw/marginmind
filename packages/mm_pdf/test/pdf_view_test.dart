@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_pdf/src/pdf_pixel_grid.dart';
@@ -12,6 +15,102 @@ import 'excerpt_text_test.dart' as fixture;
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
+
+  testWidgets('scrolled highlights, underlines and margin notes stay inside the viewport', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 600);
+    addTearDown(tester.view.reset);
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    const surround = Color(0xFF303030);
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: ColoredBox(
+          color: surround,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 120),
+            child: MMPdfView(
+              filePath: 'clipped-overlays.pdf',
+              controller: controller,
+              // Margin anchors use viewport coordinates outside pdfrx's own
+              // page clip, as the reader's comments do when collapsed.
+              margin: MMPdfMargin(
+                requested: false,
+                extent: (_, _, _, _) => 0,
+                builder: (context, viewport) => [
+                  for (final page in viewport.pages.where((p) => p.page == 1)) ...[
+                    Positioned.fromRect(
+                      rect: page.transform.rect(const PageRect(30, 760, 430, 740)),
+                      child: CustomPaint(
+                        painter: MMPdfAnnotationLinePainter(color: Colors.yellow, style: AnnotationLineStyle.dashed),
+                      ),
+                    ),
+                    Positioned(
+                      left: page.rect.right - 25,
+                      top: page.transform.rect(const PageRect(30, 760, 430, 740)).top,
+                      child: const Icon(Icons.sticky_note_2_outlined, color: Colors.yellow, size: 18),
+                    ),
+                  ],
+                ],
+              ),
+              highlights: const [
+                MMPdfHighlight(id: 'fill', page: 1, rects: [PageRect(30, 700, 150, 660)], color: Colors.red),
+                MMPdfHighlight(
+                  id: 'line',
+                  page: 1,
+                  rects: [PageRect(170, 700, 290, 660)],
+                  color: Colors.transparent,
+                  underline: Colors.blue,
+                  lineStyle: AnnotationLineStyle.dashed,
+                ),
+                MMPdfHighlight(
+                  id: 'note',
+                  page: 1,
+                  rects: [PageRect(310, 700, 430, 660)],
+                  color: Colors.transparent,
+                  underline: Colors.yellow,
+                  dashed: true,
+                  marker: Colors.yellow,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await _waitReady(tester, controller);
+    await tester.pumpAndSettle();
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    final viewport = tester.getRect(find.byType(MMPdfView));
+    for (final scroll in [100.0, 140.0, 200.0]) {
+      pdf.value = Matrix4.identity()..translateByDouble(0, -scroll, 0, 1);
+      await tester.pumpAndSettle();
+      // The page and its overlays still exist while crossing the upper edge.
+      expect(find.byKey(const ValueKey('pdf-marker-note')), findsOneWidget);
+      final image = (await tester.runAsync(
+        () => (tester.binding.renderViews.first.debugLayer! as OffsetLayer).toImage(
+          Offset.zero & tester.view.physicalSize,
+          pixelRatio: 1,
+        ),
+      ))!;
+      final pixels = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+      var leaked = 0;
+      for (var y = 0; y < image.height; y++) {
+        if (y >= viewport.top && y < viewport.bottom) continue;
+        for (var x = 0; x < image.width; x++) {
+          final i = (y * image.width + x) * 4;
+          if (pixels.getUint8(i) != 0x30 || pixels.getUint8(i + 1) != 0x30 || pixels.getUint8(i + 2) != 0x30) {
+            leaked++;
+          }
+        }
+      }
+      image.dispose();
+      expect(leaked, 0, reason: 'PDF overlays must not paint into the bars at scroll $scroll');
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+  });
 
   testWidgets('drag on empty text prompts OCR; clicks, text, area and ink do not', (tester) async {
     final controller = MMPdfViewController();

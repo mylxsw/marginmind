@@ -1804,6 +1804,12 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   @override
   Widget build(BuildContext context) {
+    // Page overlays and margin notes can paint beyond their layout bounds.
+    // Always contain them here, including while a page scrolls under chrome.
+    return ClipRect(child: _buildViewport(context));
+  }
+
+  Widget _buildViewport(BuildContext context) {
     return Stack(
       children: [
         Positioned.fill(

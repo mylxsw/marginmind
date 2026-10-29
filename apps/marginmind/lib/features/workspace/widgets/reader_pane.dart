@@ -890,10 +890,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   : color.color.withValues(alpha: strong ? 0.5 : 0.32),
               underline: a.kind == AnnotationKind.underline || card != null ? color.underline : null,
               lineStyle: a.kind == AnnotationKind.underline ? a.lineStyle : null,
-              marker: a.kind == AnnotationKind.underline && card != null && page == a.pages.first
-                  ? color.underline
-                  : null,
-              markerIcon: a.kind == AnnotationKind.underline ? Icons.account_tree_outlined : null,
               emphasized: a.id == state.flashAnnotationId || a.id == pendingAnnotation,
               framed: card?.kind == CardKind.image,
             );

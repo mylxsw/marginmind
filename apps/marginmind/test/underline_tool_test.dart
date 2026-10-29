@@ -116,6 +116,30 @@ void main() {
     expect(controller.content.annotation(mark.id)?.lineStyle, AnnotationLineStyle.dashed);
   });
 
+  testWidgets('underlines linked to a map keep their lines without page-margin icons', (tester) async {
+    installTestPdfBackend();
+    final container = await pumpApp(tester, renderPdf: true);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    await controller.setTool(AnnotationTool.underline);
+    await controller.onSelectionCommitted('c1', selection);
+    await drain(tester);
+    final mark = controller.content.annotations.last;
+    expect(controller.content.cardForAnnotation(mark.id), isNotNull);
+    final painted = tester.widget<MMPdfView>(find.byType(MMPdfView)).highlights.where((h) => h.id == mark.id);
+    expect(painted, isNotEmpty);
+    for (final highlight in painted) {
+      expect(highlight.underline, isNotNull);
+      expect(highlight.lineStyle, AnnotationLineStyle.solid);
+      expect(highlight.marker, isNull);
+    }
+    expect(find.byKey(ValueKey('pdf-marker-${mark.id}')), findsNothing);
+    await settleHud(tester);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
   for (final appearance in ['light', 'dark']) {
     testWidgets('compact continuous toolbar stays open, custom color works, Esc exits in $appearance', (tester) async {
       final container = await pumpApp(tester, prefs: {'settings.appearance': appearance});
