@@ -43,8 +43,9 @@ String browserDocumentScript(String readability, String token, {required bool or
   const key = ${jsonEncode(token)}, original = $original;
 '''
     r'''
-  const abort = new AbortController(), x = scrollX, y = scrollY;
-  const job = {cancel: () => {abort.abort(); scrollTo(x,y);}};
+  const abort = new AbortController(), x = scrollX, y = scrollY, initialUrl = location.href;
+  const restore = () => {if(original && location.href===initialUrl) scrollTo(x,y);};
+  const job = {cancel: () => {abort.abort(); restore();}};
   globalThis[key] = job;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   (async () => {
@@ -53,7 +54,7 @@ String browserDocumentScript(String readability, String token, {required bool or
         let bottom = false;
         try {
           for (let step=0; step<80; step++) {
-            if (abort.signal.aborted) throw Error('cancelled');
+            if (abort.signal.aborted || location.href!==initialUrl) throw Error('cancelled');
             scrollTo(0, step * Math.max(200, innerHeight * .8));
             await delay(150);
             if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) {
@@ -63,7 +64,7 @@ String browserDocumentScript(String readability, String token, {required bool or
             }
           }
           if (!bottom) throw Error('scroll_limit');
-        } finally {scrollTo(x,y);}
+        } finally {restore();}
       }
       if (document.documentElement.outerHTML.length > 16*1024*1024) throw Error('dom_limit');
       const clone = document.cloneNode(true), source = document.querySelectorAll('img');
@@ -109,6 +110,7 @@ String browserDocumentScript(String readability, String token, {required bool or
       let total=0, count=0;
       for (const root of [body,clone]) {
         for (const img of root.querySelectorAll('img')) {
+          if(abort.signal.aborted || location.href!==initialUrl) {abort.abort();throw Error('cancelled');}
           let uri;
           try {uri = new URL(img.getAttribute('src'),document.baseURI);} catch (_) {img.removeAttribute('src');continue;}
           if (uri.username || uri.password || !/^(https?:|blob:|data:)$/.test(uri.protocol)) {img.removeAttribute('src');continue;}
@@ -167,7 +169,8 @@ String browserDocumentScript(String readability, String token, {required bool or
       const meta=clone.createElement('meta');meta.setAttribute('http-equiv','Content-Security-Policy');
       meta.setAttribute('content',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; form-action 'none'");
       clone.head.prepend(meta);
-      job.result={url:location.href,title:document.title,html:body.body.innerHTML,
+      if(location.href!==initialUrl) throw Error('cancelled');
+      job.result={url:initialUrl,title:document.title,html:body.body.innerHTML,
         snapshot:'<!doctype html>\n'+clone.documentElement.outerHTML,resources,diagnostics};
     } catch (_) {job.result={error:'capture_failed'};}
   })();

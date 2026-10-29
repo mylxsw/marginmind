@@ -69,6 +69,12 @@ try:
             assert 'resources/image-1.png' in result['html']
             assert page.evaluate('scrollY') == 150
             assert requests.count('/page') == 1, requests
+        page.evaluate(script)
+        page.wait_for_timeout(50)
+        page.evaluate("history.pushState({},'', '/spa');scrollTo(0,0)")
+        page.wait_for_function('globalThis.testCapture.result', timeout=5000)
+        assert 'error' in page.evaluate('globalThis.testCapture.result')
+        assert page.evaluate('scrollY') == 0, 'A stale capture must not scroll the new SPA route'
         browser.close()
     print(json.dumps({'live_dom': True, 'session_images': True, 'sanitized_snapshot': True,
                       'scroll_restored': True, 'page_requests': requests.count('/page')}))

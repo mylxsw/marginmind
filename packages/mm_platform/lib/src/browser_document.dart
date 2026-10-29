@@ -113,7 +113,7 @@ extension BrowserDocumentConversion on BrowserSession {
       );
     } finally {
       _capturingDocument = false;
-      if (!_disposed && this.navigationId == navigationId) {
+      if (!_disposed) {
         try {
           await _channel
               .invokeMethod<String>('evaluate', {
