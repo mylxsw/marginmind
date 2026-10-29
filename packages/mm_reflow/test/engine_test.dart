@@ -40,7 +40,7 @@ void main() {
       const LayoutSpec(width: 240, locale: Locale('zh')),
       const LayoutSpec(width: 240, direction: TextDirection.rtl),
       const LayoutSpec(width: 240, textScale: 2),
-      const LayoutSpec(width: 240, inkColor: Color(0xffeeeeee)),
+      const LayoutSpec(width: 240, readerStyle: MMReaderStyle.dark),
       const LayoutSpec(width: 240, engineVersion: 2),
     ];
     expect(variants.every((v) => v != spec), isTrue);
@@ -260,8 +260,25 @@ void main() {
         revision: 'r',
         resources: LayoutResources(images: {'x': a, 'y': b}),
       ),
-      throwsArgumentError,
+      throwsA(
+        isA<ImageBudgetExceeded>()
+            .having((e) => e.decodedPixels, 'decodedPixels', 200)
+            .having((e) => e.budget, 'budget', 100)
+            .having((e) => e.toString(), 'description', contains('200')),
+      ),
     );
+    expect(engine.cachedLayouts, 0);
+    final fallback = await engine.layout(
+      c,
+      spec,
+      1,
+      revision: 'r',
+      resources: LayoutResources(intrinsicSizes: {'x': a.size}),
+    );
+    expect(fallback.pieces.single.artwork.single.image, isNull);
+    expect(fallback.boxes(c.anchor(0, c.canonicalText.length)), isNotEmpty);
+    paint(fallback);
+    fallback.dispose();
     final first = await engine.layout(
       c,
       spec,

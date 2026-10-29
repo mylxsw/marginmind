@@ -1,5 +1,8 @@
 # GUL-572 validation
 
+For subsequent theme, image-budget and controller-geometry fixes, see
+[review validation](review.md). The measurements below retain their original baseline.
+
 Baseline: `7aa0c27`. Flutter 3.47.2 / Dart 3.13.2 / engine a804b26164.
 Linux ARM64, Ubuntu 24.04.5, shared Oracle host (4 × Neoverse-N1 cores). The native release probe runs
 under Xvfb with Mesa software rendering; it is not an Android/GPU result.

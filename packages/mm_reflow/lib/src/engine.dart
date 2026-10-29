@@ -7,6 +7,17 @@ class LayoutCancelled implements Exception {
   String toString() => 'Layout generation was superseded';
 }
 
+/// Recoverable image admission failure. Re-decode at a lower pixel limit or
+/// replace some image handles with placeholders, then request layout again.
+class ImageBudgetExceeded implements Exception {
+  const ImageBudgetExceeded({required this.decodedPixels, required this.budget});
+  final int decodedPixels;
+  final int budget;
+
+  @override
+  String toString() => 'ImageBudgetExceeded: $decodedPixels decoded pixels exceed the $budget pixel budget';
+}
+
 class _CacheEntry {
   _CacheEntry(this.layout, this.resources);
   final ChapterLayout layout;
@@ -56,7 +67,7 @@ class ReflowEngine {
     _generation = generation;
     final input = resources ?? LayoutResources();
     final pixels = input.images.values.toSet().fold(0, (n, i) => n + i.decodedPixels);
-    if (pixels > maxImagePixels) throw ArgumentError('Decoded images exceed the chapter pixel budget');
+    if (pixels > maxImagePixels) throw ImageBudgetExceeded(decodedPixels: pixels, budget: maxImagePixels);
     final key = (revision, chapter.id, spec);
     final old = _cache.remove(key);
     if (old != null) {
@@ -211,14 +222,31 @@ class ReflowController extends ChangeNotifier {
     }
   }
 
-  TextAnchor? hitTest(Offset point, {required int generation, int? page, Offset localScroll = Offset.zero}) =>
-      engine.accepts(generation) && _current?.generation == generation
-      ? _current!.hitTest(point, page: page, localScroll: localScroll)
+  TextAnchor? hitTest(
+    Offset point, {
+    required int generation,
+    int? page,
+    Offset localScroll = Offset.zero,
+    Map<String, double> horizontalOffsets = const {},
+  }) => engine.accepts(generation) && _current?.generation == generation
+      ? _current!.hitTest(point, page: page, localScroll: localScroll, horizontalOffsets: horizontalOffsets)
       : null;
-  List<LayoutBox> boxes(TextAnchor anchor, {int? page}) =>
-      _current != null && engine.accepts(_current!.generation) ? _current!.boxes(anchor, page: page) : const [];
-  LayoutBox? reveal(TextAnchor position) =>
-      _current != null && engine.accepts(_current!.generation) ? _current!.reveal(position) : null;
+  List<LayoutBox> boxes(
+    TextAnchor anchor, {
+    int? page,
+    Offset localScroll = Offset.zero,
+    Map<String, double> horizontalOffsets = const {},
+  }) => _current != null && engine.accepts(_current!.generation)
+      ? _current!.boxes(anchor, page: page, localScroll: localScroll, horizontalOffsets: horizontalOffsets)
+      : const [];
+  LayoutBox? reveal(
+    TextAnchor position, {
+    int? page,
+    Offset localScroll = Offset.zero,
+    Map<String, double> horizontalOffsets = const {},
+  }) => _current != null && engine.accepts(_current!.generation)
+      ? _current!.reveal(position, page: page, localScroll: localScroll, horizontalOffsets: horizontalOffsets)
+      : null;
 
   /// The caller supplies anchors in spine order, one per selected chapter.
   /// Stale drag callbacks are rejected before notifying the reading view.

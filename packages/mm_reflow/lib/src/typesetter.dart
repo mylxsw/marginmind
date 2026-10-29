@@ -274,7 +274,7 @@ class _Typesetter {
         style: TextStyle(
           fontSize: baseSize,
           height: spec.lineHeight,
-          color: spec.inkColor,
+          color: spec.readerStyle.inkColor,
           fontFamily: spec.fontFamily,
         ),
         children: children,

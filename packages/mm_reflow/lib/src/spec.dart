@@ -15,7 +15,7 @@ class LayoutSpec {
     this.locale = const Locale('en'),
     this.direction = TextDirection.ltr,
     this.textScale = 1,
-    this._inkColor,
+    this.readerStyle = MMReaderStyle.white,
     this.engineVersion = 1,
   });
   final double width, pageHeight, fontSize, lineHeight, textScale;
@@ -24,8 +24,7 @@ class LayoutSpec {
   final String fontDigest;
   final Locale locale;
   final TextDirection direction;
-  final Color? _inkColor;
-  Color get inkColor => _inkColor ?? MMReaderStyle.white.inkColor;
+  final MMReaderStyle readerStyle;
   final int engineVersion;
   double get contentWidth => width - padding.horizontal;
   double get contentHeight => pageHeight - padding.vertical;
@@ -56,7 +55,7 @@ class LayoutSpec {
     locale,
     direction,
     textScale,
-    inkColor,
+    readerStyle,
     engineVersion,
   );
   @override
@@ -65,7 +64,7 @@ class LayoutSpec {
   int get hashCode => _key.hashCode;
 }
 
-/// Optional facts at the parser boundary, pending GUL-574's typed IR fields.
+/// Optional facts at the parser boundary, pending GUL-584's typed IR fields.
 /// Keys are source paths, table block IDs and resource paths respectively.
 /// Missing facts mean no container box, no repeated header, placeholder image.
 /// [revision] must change whenever these facts or resource bytes change.

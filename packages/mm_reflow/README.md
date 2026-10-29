@@ -17,7 +17,10 @@ engine.dispose(); // Release cache leases before disposing decodedImages.
 ```
 
 `LayoutSpec` includes viewport dimensions, insets, font size, line height, family,
-font-resource digest, locale, direction, text scale, ink color and engine version.
+font-resource digest, locale, direction, text scale, `MMReaderStyle` and engine version.
+The reader style participates in the cache key and supplies body ink, selection
+highlight (`marginNoteLine`) and missing-image fill (`marginGuide`) for white,
+dark, paper and green reading palettes. The reading view paints the paper background.
 Await font loading before layout; change the digest on successful load or fallback.
 Reader typography and ink override publisher body sizes, line spacing and colors;
 relative font sizes remain proportional. The same chapter geometry serves both
@@ -27,6 +30,9 @@ continuous scrolling and pagination. Omitting `page` selects chapter coordinates
 `ReflowController.layout` increments generation immediately, remembers the viewport's
 source position and fraction within the line, then publishes only the latest result.
 Its `hitTest`, `boxes`, `reveal` and `selectionChanged` reject stale generations.
+The three geometry queries accept the same `page`, `localScroll` and per-block
+`horizontalOffsets` as `ChapterLayout`. Supply the offsets used for painting;
+`reveal` transforms its caret without clipping so the reader can reveal offscreen text.
 The controller owns its engine and current layout. A layout returned by the controller
 is borrowed until the next replacement; do not dispose it separately. Direct engine
 results are caller-owned leases. `ReflowSurface.activeGeneration` can reject pointer
@@ -44,7 +50,7 @@ rows joined by rowspan remain an indivisible group. Oversized groups expose
 `PageSlice.scrollExtent`; the UI supplies `localScroll` to paint and geometry queries.
 Code preserves whitespace and its natural line width. `LayoutPiece.contentWidth`
 and `viewport` expose horizontal overflow; pass per-block `horizontalOffsets` to
-`paint`, `boxes` and `hitTest` for local horizontal scrolling. Repeated headers are
+`paint`, `boxes`, `hitTest` and `reveal` for local horizontal scrolling. Repeated headers are
 paint-only copies, not additional canonical text or selection boxes. Bidi selection
 rectangles remain separate. Hit testing snaps to grapheme boundaries, including
 surrogates, combining marks and ZWJ sequences. Ruby is displayed in parentheses but
@@ -58,7 +64,7 @@ scaled uniformly along with its text geometry. Unsupported publisher positioning
 outside fixed pages follows normal block flow. The parser remains responsible for
 CSS cascade and diagnostics; missing parser facts cannot be reconstructed here.
 
-`LayoutResources` isolates three remaining GUL-574 IR gaps: container styles by
+`LayoutResources` isolates three remaining IR gaps, tracked by GUL-584: container styles by
 source path, repeated header-row counts by table block ID, and intrinsic image
 sizes by resource path. Defaults are respectively no container box, no repeated
 header, and bounded image placeholders. Supplying these facts exercises the same
@@ -79,6 +85,16 @@ painters alive after eviction. Image storage is separate: admission defaults to
 16 million pixels per chapter, and `MMBookImage.decode(maxPixels: ...)` bounds
 raster allocation before decode. Evict/cache-clear and release all leases before
 releasing borrowed image handles.
+
+When supplied decoded images exceed the chapter budget, `ReflowEngine.layout`
+throws the recoverable `ImageBudgetExceeded`, with `decodedPixels` and `budget`.
+Catch this separately from programming errors: re-decode images with a smaller
+`MMBookImage.decode(maxPixels: ...)` limit, or omit some handles from
+`LayoutResources.images` to render placeholders, then request layout again.
+Keep known `intrinsicSizes` when substituting placeholders to preserve image geometry.
+The exception does not dispose caller-owned images; release old leases/cache
+references before disposing replaced handles. The controller propagates this
+exception so the reading view can choose its fallback and retry.
 
 Tests: `flutter test --coverage` in this package. The original three-book probe is
 in `example/`; Linux reproduction and measured limitations are under

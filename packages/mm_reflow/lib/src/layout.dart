@@ -235,7 +235,14 @@ class ChapterLayout {
   }
 
   /// Returns the source caret/line rectangle, or null for a stale source anchor.
-  LayoutBox? reveal(TextAnchor position, {int? page}) {
+  /// Applies the same scroll transforms as [boxes], without clipping the caret:
+  /// callers can use an offscreen rectangle to scroll the position into view.
+  LayoutBox? reveal(
+    TextAnchor position, {
+    int? page,
+    Offset localScroll = Offset.zero,
+    Map<String, double> horizontalOffsets = const {},
+  }) {
     _check();
     if (!chapter.resolves(position)) return null;
     final offset = _snap(position.start);
@@ -256,7 +263,8 @@ class ChapterLayout {
         (line?.height ?? spec.fontSize * spec.lineHeight) * piece.scale,
       );
     }
-    if (page != null) rect = rect.shift(_pageShift(page, Offset.zero));
+    rect = rect.shift(Offset(-(horizontalOffsets[piece.block.id] ?? 0), 0));
+    if (page != null) rect = rect.shift(_pageShift(page, localScroll));
     return LayoutBox(rect, generation, page: page);
   }
 
@@ -338,7 +346,7 @@ class ChapterLayout {
     canvas.clipRect(Rect.fromLTRB(localScroll.dx, slice.top, spec.width + localScroll.dx, slice.bottom));
     if (highlight != null) {
       for (final box in boxes(highlight, horizontalOffsets: horizontalOffsets)) {
-        canvas.drawRect(box.rect, Paint()..color = MMReaderStyle.white.marginNoteLine);
+        canvas.drawRect(box.rect, Paint()..color = spec.readerStyle.marginNoteLine);
       }
     }
     for (final piece in pieces) {
@@ -375,14 +383,14 @@ class ChapterLayout {
         if (art.image != null) {
           art.image!.paint(canvas, rect);
         } else {
-          canvas.drawRect(rect, Paint()..color = MMColors.light.fill);
+          canvas.drawRect(rect, Paint()..color = spec.readerStyle.marginGuide);
         }
       }
       canvas.restore();
     } else if (piece.image != null) {
       piece.image!.paint(canvas, piece.rect);
     } else {
-      canvas.drawRect(piece.rect, Paint()..color = MMColors.light.fill);
+      canvas.drawRect(piece.rect, Paint()..color = spec.readerStyle.marginGuide);
     }
   }
 
