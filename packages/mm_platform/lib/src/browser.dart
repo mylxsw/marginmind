@@ -54,8 +54,11 @@ class BrowserSession extends ChangeNotifier {
   Uri url;
   String title = '';
   String? lastErrorCode;
+  BrowserLoadError loadError = BrowserLoadError.other;
   bool canGoBack = false, canGoForward = false, prompt = false;
-  bool _prompted = false;
+  final _prompted = <BrowserPhase>{};
+  ({Uri url, String title, BrowserReadiness readiness, String? signature, Set<BrowserPhase> prompted, bool prompt})?
+  _retainedDocument;
   String? _signature;
   int _interactions = 0;
   BrowserPhase get phase => _readiness.phase;
@@ -91,8 +94,11 @@ class BrowserSession extends ChangeNotifier {
 
   Future<void> navigate(Uri next) async {
     if (!BrowserPolicy.allowsNavigation(next)) throw ArgumentError.value(next);
-    url = next;
-    if (_attached) await _command('navigate', {'url': next.toString()});
+    if (_attached) {
+      await _command('navigate', {'url': next.toString()});
+    } else {
+      url = next;
+    }
   }
 
   Future<void> back() => _command('back');
@@ -117,33 +123,56 @@ class BrowserSession extends ChangeNotifier {
     if (_disposed) return;
     if ({'navigate', 'back', 'forward', 'reload'}.contains(method)) {
       _invalidate();
+      if (method == 'navigate') url = Uri.parse(args!['url']! as String);
       notifyListeners();
     }
+    final generation = navigationId;
     try {
       await _channel.invokeMethod<void>(method, args).timeout(const Duration(seconds: 15));
-    } catch (_) {
-      if (!_disposed) {
-        _readiness.fail();
-        notifyListeners();
+    } catch (error) {
+      if (!_disposed && generation == navigationId) {
+        _fail(error is TimeoutException ? BrowserLoadError.timeout : BrowserLoadError.other);
       }
     }
   }
 
   void _invalidate() {
+    if (phase == BrowserPhase.failed) _retainedDocument = null;
+    // A provisional navigation may turn out to be a download. Keep the last
+    // displayed document until the new one loads. A late download callback
+    // may follow an engine's cancellation error for that same navigation.
+    if (_hasDocument && !_isLoading && phase != BrowserPhase.failed) {
+      _retainedDocument = (
+        url: url,
+        title: title,
+        readiness: _readiness,
+        signature: _signature,
+        prompted: Set.of(_prompted),
+        prompt: prompt,
+      );
+    }
     navigationId++;
     _isLoading = true;
     _hasDocument = false;
     _readiness = BrowserReadiness(_now);
     _signature = null;
-    _prompted = false;
+    _prompted.clear();
     prompt = false;
     title = '';
+    loadError = BrowserLoadError.other;
+    lastErrorCode = null;
   }
 
-  void _fail() {
+  void _fail([BrowserLoadError error = BrowserLoadError.other]) {
+    loadError = error;
     _readiness.fail();
     _isLoading = false;
+    prompt = false;
     notifyListeners();
+  }
+
+  void _updatePrompt() {
+    if (canCapture && _prompted.add(phase)) prompt = true;
   }
 
   Future<void> _event(MethodCall call) async {
@@ -156,14 +185,36 @@ class BrowserSession extends ChangeNotifier {
       _invalidate();
     }
     if (data['kind'] == 'loaded') {
+      if (phase == BrowserPhase.failed) return;
+      _retainedDocument = null;
       _hasDocument = true;
       _isLoading = false;
       _readiness.finish(_now);
     }
     if (data['kind'] == 'failed') {
-      _isLoading = false;
-      _readiness.fail();
-      prompt = false;
+      _fail(BrowserLoadError.values.firstWhere((e) => e.name == data['error'], orElse: () => BrowserLoadError.other));
+      return;
+    }
+    if (data['kind'] == 'download') {
+      final retained = _retainedDocument;
+      if (retained != null) {
+        url = retained.url;
+        title = retained.title;
+        _readiness = retained.readiness;
+        _signature = retained.signature;
+        _prompted
+          ..clear()
+          ..addAll(retained.prompted);
+        prompt = retained.prompt;
+        _hasDocument = true;
+        _isLoading = false;
+        loadError = BrowserLoadError.other;
+        _retainedDocument = null;
+        notifyListeners();
+      } else if (!_hasDocument || _isLoading) {
+        _fail();
+      }
+      return;
     }
     final next = Uri.tryParse(data['url'] as String? ?? '');
     if (next != null && BrowserPolicy.allowsNavigation(next)) url = next;
@@ -188,6 +239,7 @@ class BrowserSession extends ChangeNotifier {
         if (next == null || !BrowserPolicy.allowsNavigation(next) || (_isLoading && next != url)) {
           // Provisional loads can still expose about:blank or the old page.
           _readiness.tick(_now);
+          if (previous != (phase, url, title, prompt)) notifyListeners();
           return;
         }
         _hasDocument = true;
@@ -195,7 +247,7 @@ class BrowserSession extends ChangeNotifier {
           // SPA navigation invalidates captures and restarts the heuristic.
           navigationId++;
           _readiness = BrowserReadiness(_now);
-          _prompted = false;
+          _prompted.clear();
           prompt = false;
           url = next;
         }
@@ -211,10 +263,7 @@ class BrowserSession extends ChangeNotifier {
         if (!_isLoading && value['complete'] == true && _readiness.loaded == null) _readiness.finish(_now);
       }
       _readiness.tick(_now);
-      if (canCapture && !_prompted) {
-        _prompted = true;
-        prompt = true;
-      }
+      _updatePrompt();
       if (previous != (phase, url, title, prompt)) notifyListeners();
     } catch (error) {
       lastErrorCode = error is PlatformException ? error.code : 'invalid_observation';
@@ -222,11 +271,8 @@ class BrowserSession extends ChangeNotifier {
       // own load errors. The deadline still advances if JS is unavailable.
       if (!_disposed && generation == navigationId) {
         _readiness.tick(_now);
-        if (canCapture && !_prompted) {
-          _prompted = true;
-          prompt = true;
-          notifyListeners();
-        }
+        _updatePrompt();
+        if (previous != (phase, url, title, prompt)) notifyListeners();
       }
     } finally {
       _polling = false;

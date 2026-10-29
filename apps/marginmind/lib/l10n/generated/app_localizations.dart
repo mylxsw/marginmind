@@ -6056,35 +6056,29 @@ abstract class AppLocalizations {
   /// **'Add Web Page…'**
   String get addWebPage;
 
-  /// No description provided for @browserAddress.
+  /// No description provided for @webUrlPlaceholder.
   ///
   /// In en, this message translates to:
   /// **'URL'**
-  String get browserAddress;
+  String get webUrlPlaceholder;
 
-  /// No description provided for @browserOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get browserOpen;
-
-  /// No description provided for @browserUrlEmpty.
+  /// No description provided for @webUrlEmpty.
   ///
   /// In en, this message translates to:
   /// **'Enter a URL'**
-  String get browserUrlEmpty;
+  String get webUrlEmpty;
 
-  /// No description provided for @browserUrlInvalid.
+  /// No description provided for @webUrlInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Invalid URL'**
-  String get browserUrlInvalid;
+  /// **'Not a valid URL'**
+  String get webUrlInvalid;
 
-  /// No description provided for @browserUrlScheme.
+  /// No description provided for @webUrlScheme.
   ///
   /// In en, this message translates to:
   /// **'Only http and https are supported'**
-  String get browserUrlScheme;
+  String get webUrlScheme;
 
   /// No description provided for @browserBack.
   ///
@@ -6128,53 +6122,119 @@ abstract class AppLocalizations {
   /// **'Convert'**
   String get browserConvertShort;
 
-  /// No description provided for @browserReady.
+  /// No description provided for @webReadyPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Convert to document?'**
-  String get browserReady;
+  /// **'Convert to a document?'**
+  String get webReadyPrompt;
 
-  /// No description provided for @browserStillLoading.
+  /// No description provided for @webStillLoading.
   ///
   /// In en, this message translates to:
   /// **'Some content is still loading'**
-  String get browserStillLoading;
+  String get webStillLoading;
 
-  /// No description provided for @browserLater.
+  /// No description provided for @webLater.
   ///
   /// In en, this message translates to:
   /// **'Later'**
-  String get browserLater;
+  String get webLater;
 
-  /// No description provided for @browserFailed.
+  /// No description provided for @webErrorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Unable to Open Page'**
-  String get browserFailed;
+  /// **'Can’t Open Page'**
+  String get webErrorTitle;
 
-  /// No description provided for @browserRetry.
+  /// No description provided for @webRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
-  String get browserRetry;
+  /// **'Try Again'**
+  String get webRetry;
 
-  /// No description provided for @browserClearData.
+  /// No description provided for @settingsClearWebsiteData.
   ///
   /// In en, this message translates to:
-  /// **'Clear Browser Data'**
-  String get browserClearData;
+  /// **'Clear…'**
+  String get settingsClearWebsiteData;
 
-  /// No description provided for @browserClearConfirm.
+  /// No description provided for @clearWebsiteDataConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Clear browser cookies, storage and cache? Open pages will close.'**
-  String get browserClearConfirm;
+  /// **'Clear all website data?'**
+  String get clearWebsiteDataConfirm;
 
-  /// No description provided for @browserDataCleared.
+  /// No description provided for @websiteDataCleared.
   ///
   /// In en, this message translates to:
-  /// **'Browser data cleared'**
-  String get browserDataCleared;
+  /// **'Website data cleared'**
+  String get websiteDataCleared;
+
+  /// No description provided for @addWebTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Web Page'**
+  String get addWebTitle;
+
+  /// No description provided for @webKeepWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Waiting'**
+  String get webKeepWaiting;
+
+  /// No description provided for @webConvertAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get webConvertAction;
+
+  /// No description provided for @webErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection timed out'**
+  String get webErrorTimeout;
+
+  /// No description provided for @webErrorHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Server not found'**
+  String get webErrorHost;
+
+  /// No description provided for @webErrorCertificate.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid certificate'**
+  String get webErrorCertificate;
+
+  /// No description provided for @webErrorOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You’re offline'**
+  String get webErrorOffline;
+
+  /// No description provided for @settingsBrowserGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'In-App Browser'**
+  String get settingsBrowserGroup;
+
+  /// No description provided for @settingsWebsiteData.
+  ///
+  /// In en, this message translates to:
+  /// **'Website Data'**
+  String get settingsWebsiteData;
+
+  /// No description provided for @clearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearAction;
+
+  /// No description provided for @browserUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Saved'**
+  String get browserUnsaved;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

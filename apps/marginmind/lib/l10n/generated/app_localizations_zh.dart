@@ -3234,19 +3234,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addWebPage => '添加网页…';
 
   @override
-  String get browserAddress => '网址';
+  String get webUrlPlaceholder => '网址';
 
   @override
-  String get browserOpen => '打开';
+  String get webUrlEmpty => '请输入网址';
 
   @override
-  String get browserUrlEmpty => '请输入网址';
+  String get webUrlInvalid => '网址无效';
 
   @override
-  String get browserUrlInvalid => '网址无效';
-
-  @override
-  String get browserUrlScheme => '只支持 http 和 https';
+  String get webUrlScheme => '只支持 http 和 https';
 
   @override
   String get browserBack => '后退';
@@ -3270,26 +3267,59 @@ class AppLocalizationsZh extends AppLocalizations {
   String get browserConvertShort => '转换';
 
   @override
-  String get browserReady => '转换为文档？';
+  String get webReadyPrompt => '转换为文档？';
 
   @override
-  String get browserStillLoading => '部分内容仍在加载';
+  String get webStillLoading => '部分内容仍在加载';
 
   @override
-  String get browserLater => '稍后';
+  String get webLater => '稍后';
 
   @override
-  String get browserFailed => '无法打开页面';
+  String get webErrorTitle => '无法打开页面';
 
   @override
-  String get browserRetry => '重试';
+  String get webRetry => '重试';
 
   @override
-  String get browserClearData => '清除浏览器数据';
+  String get settingsClearWebsiteData => '清除…';
 
   @override
-  String get browserClearConfirm => '清除浏览器 Cookie、存储和缓存？已打开的网页将关闭。';
+  String get clearWebsiteDataConfirm => '清除所有网站数据？';
 
   @override
-  String get browserDataCleared => '已清除浏览器数据';
+  String get websiteDataCleared => '已清除网站数据';
+
+  @override
+  String get addWebTitle => '添加网页';
+
+  @override
+  String get webKeepWaiting => '继续等待';
+
+  @override
+  String get webConvertAction => '转换';
+
+  @override
+  String get webErrorTimeout => '连接超时';
+
+  @override
+  String get webErrorHost => '找不到服务器';
+
+  @override
+  String get webErrorCertificate => '证书无效';
+
+  @override
+  String get webErrorOffline => '未连接网络';
+
+  @override
+  String get settingsBrowserGroup => '内置浏览器';
+
+  @override
+  String get settingsWebsiteData => '网站数据';
+
+  @override
+  String get clearAction => '清除';
+
+  @override
+  String get browserUnsaved => '未保存';
 }

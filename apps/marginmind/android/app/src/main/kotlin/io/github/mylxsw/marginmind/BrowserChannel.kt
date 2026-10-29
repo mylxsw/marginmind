@@ -33,13 +33,17 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
     private val channel = MethodChannel(messenger, "marginmind/browser/$id")
     private var generation = 0
     private var closed = false
+    private var terminal = false
+    private var committed = false
+    private var finished = false
+    private var mainUrl: String? = null
     private fun allowed(raw: String): Boolean {
         val uri = Uri.parse(raw)
         return uri.scheme?.lowercase() in listOf("http", "https") && !uri.host.isNullOrEmpty()
     }
-    private fun emit(kind: String) {
+    private fun emit(kind: String, error: String = "other") {
         if (!closed) channel.invokeMethod("event", mapOf("kind" to kind, "navigationId" to generation,
-            "url" to web.url, "back" to web.canGoBack(), "forward" to web.canGoForward()))
+            "url" to web.url, "back" to web.canGoBack(), "forward" to web.canGoForward(), "error" to error))
     }
     init {
         web.settings.apply {
@@ -51,16 +55,38 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
         CookieManager.getInstance().setAcceptCookie(true)
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = !allowed(request.url.toString())
-            override fun onPageStarted(view: WebView, url: String?, icon: Bitmap?) { generation++; emit("start") }
-            override fun onPageFinished(view: WebView, url: String?) { emit("loaded"); CookieManager.getInstance().flush() }
-            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) { if (request.isForMainFrame) emit("failed") }
-            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) { if (request.isForMainFrame) emit("failed") }
-            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) { handler.cancel(); emit("failed") }
+            override fun onPageStarted(view: WebView, url: String?, icon: Bitmap?) {
+                generation++; terminal = false; committed = false; finished = false; mainUrl = url; emit("start")
+            }
+            override fun onPageCommitVisible(view: WebView, url: String?) {
+                if (url == mainUrl) { committed = true; if (finished && !terminal) emit("loaded") }
+            }
+            override fun onPageFinished(view: WebView, url: String?) {
+                if (url == mainUrl) { finished = true; if (committed && !terminal) emit("loaded") }
+                CookieManager.getInstance().flush()
+            }
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                if (request.isForMainFrame && request.url.toString() == mainUrl) {
+                    terminal = true
+                    emit("failed", when (error.errorCode) {
+                        ERROR_TIMEOUT -> "timeout"
+                        ERROR_HOST_LOOKUP -> "host"
+                        ERROR_FAILED_SSL_HANDSHAKE -> "certificate"
+                        ERROR_CONNECT, ERROR_IO -> "offline"
+                        else -> "other"
+                    })
+                }
+            }
+            // HTTP errors still contain the site's document (including login walls).
+            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: android.net.http.SslError) {
+                handler.cancel()
+                if (error.url == mainUrl) { terminal = true; emit("failed", "certificate") }
+            }
         }
         web.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) { request.deny() }
         }
-        web.setDownloadListener { _, _, _, _, _ -> web.stopLoading(); emit("failed") }
+        web.setDownloadListener { _, _, _, _, _ -> terminal = true; emit("download") }
         channel.setMethodCallHandler { call, result ->
             if (closed) { result.success(null); return@setMethodCallHandler }
             when (call.method) {

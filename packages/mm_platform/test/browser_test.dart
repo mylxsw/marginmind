@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -64,9 +65,16 @@ void main() {
     slow.fail();
     expect(slow.tick(const Duration(seconds: 30)), BrowserPhase.failed);
   });
-  Future<void> event(BrowserSession s, String kind, {int id = 1}) async {
+  Future<void> event(BrowserSession s, String kind, {int id = 1, String? error}) async {
     final data = const StandardMethodCodec().encodeMethodCall(
-      MethodCall('event', {'kind': kind, 'navigationId': id, 'url': s.url.toString(), 'back': true, 'forward': false}),
+      MethodCall('event', {
+        'kind': kind,
+        'navigationId': id,
+        'url': s.url.toString(),
+        'back': true,
+        'forward': false,
+        'error': error,
+      }),
     );
     await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
       'marginmind/browser/${s.id}',
@@ -233,5 +241,144 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(s.phase, BrowserPhase.ready);
     s.dispose();
+  });
+  testWidgets('slow and ready each prompt once, then navigation resets both', (tester) async {
+    var now = Duration.zero;
+    var dom = 0;
+    final s = BrowserSession(Uri.parse('https://example.com/'), elapsed: () => now);
+    addTearDown(s.dispose);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async => call.method == 'evaluate'
+          ? jsonEncode({'url': s.url.toString(), 'title': 'Page', 'dom': dom, 'network': 0, 'complete': true})
+          : null,
+    );
+    await s.attach();
+    for (var navigation = 1; navigation <= 2; navigation++) {
+      await event(s, 'start', id: navigation);
+      await event(s, 'loaded', id: navigation);
+      await tester.pump(const Duration(milliseconds: 200));
+      now += const Duration(seconds: 15);
+      dom++;
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.phase, BrowserPhase.slow);
+      expect(s.prompt, isTrue);
+      s.dismissPrompt();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.prompt, isFalse);
+      now += const Duration(milliseconds: 800);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.phase, BrowserPhase.ready);
+      expect(s.prompt, isTrue);
+      s.dismissPrompt();
+      dom++;
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.phase, BrowserPhase.slow);
+      expect(s.prompt, isFalse);
+      now += const Duration(seconds: 1);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(s.phase, BrowserPhase.ready);
+      expect(s.prompt, isFalse);
+    }
+    s.dispose();
+  });
+
+  testWidgets('downloads retain the displayed document; an empty tab fails', (tester) async {
+    var now = Duration.zero;
+    final s = BrowserSession(Uri.parse('https://example.com/article'), elapsed: () => now);
+    addTearDown(s.dispose);
+    final original = s.url;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async => call.method == 'evaluate'
+          ? jsonEncode({'url': original.toString(), 'title': 'Article', 'dom': 0, 'network': 0, 'complete': true})
+          : null,
+    );
+    await s.attach();
+    await event(s, 'download');
+    expect(s.phase, BrowserPhase.failed);
+    expect(s.canCapture, isFalse);
+    await s.navigate(original);
+    await event(s, 'start', id: 2);
+    await event(s, 'loaded', id: 2);
+    await tester.pump(const Duration(milliseconds: 200));
+    now += const Duration(seconds: 1);
+    await tester.pump(const Duration(milliseconds: 200));
+    s.dismissPrompt();
+    expect(s.phase, BrowserPhase.ready);
+    await event(s, 'download', id: 2); // A download attribute need not start navigation.
+    expect(s.phase, BrowserPhase.ready);
+    await s.navigate(Uri.parse('https://example.com/download'));
+    await event(s, 'start', id: 3);
+    await event(s, 'download', id: 3);
+    expect(s.url, original);
+    expect(s.title, 'Article');
+    expect(s.phase, BrowserPhase.ready);
+    expect(s.canCapture, isTrue);
+    expect(s.prompt, isFalse);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(s.prompt, isFalse);
+    s.dispose();
+  });
+
+  testWidgets('download before quiet restores the committed page even after a cancellation error', (tester) async {
+    var now = Duration.zero;
+    final original = Uri.parse('https://example.com/article');
+    final s = BrowserSession(original, elapsed: () => now);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async => call.method == 'evaluate'
+          ? jsonEncode({'url': original.toString(), 'title': 'Article', 'dom': 0, 'network': 0, 'complete': true})
+          : null,
+    );
+    await s.attach();
+    await event(s, 'start');
+    await event(s, 'loaded');
+    await s.navigate(Uri.parse('https://example.com/download'));
+    await event(s, 'start', id: 2);
+    await event(s, 'failed', id: 2);
+    await event(s, 'download', id: 2);
+    expect(s.phase, BrowserPhase.loading);
+    expect(s.url, original);
+    expect(s.loading, isFalse);
+    await tester.pump(const Duration(milliseconds: 200));
+    now += const Duration(seconds: 1);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(s.phase, BrowserPhase.ready);
+    expect(s.canCapture, isTrue);
+    s.dispose();
+  });
+
+  testWidgets('a stale command failure cannot fail a newer navigation', (tester) async {
+    final pending = Completer<void>();
+    final s = BrowserSession(Uri.parse('https://example.com/'));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async {
+        if (call.method == 'back') await pending.future;
+        return null;
+      },
+    );
+    final command = s.back();
+    await event(s, 'start', id: 2);
+    pending.completeError(PlatformException(code: 'old_navigation'));
+    await command;
+    expect(s.phase, BrowserPhase.loading);
+    s.dispose();
+  });
+
+  testWidgets('load failure categories remain failed until a new navigation', (tester) async {
+    final s = BrowserSession(Uri.parse('https://example.com/'));
+    addTearDown(s.dispose);
+    for (final error in BrowserLoadError.values) {
+      await event(s, 'start');
+      await event(s, 'failed', error: error.name);
+      await event(s, 'loaded'); // Android may finish its built-in error document.
+      expect(s.loadError, error);
+      expect(s.phase, BrowserPhase.failed);
+      expect(s.canCapture, isFalse);
+    }
+    await event(s, 'start');
+    expect(s.loadError, BrowserLoadError.other);
   });
 }

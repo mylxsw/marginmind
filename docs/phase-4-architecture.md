@@ -86,7 +86,7 @@ Annotation 新增 `textAnchors`（可跨章），PDF 的 pages JSON 不变；两
 
 Apple 最低系统使用应用内 WKWebsiteDataStore.default 持久会话，与 Safari 隔离；新系统可用固定 UUID 的 store，不能直接将 macOS 14/iOS 17 API 用于旧部署目标。[WebKit 官方说明](https://webkit.org/blog/14423/building-profiles-with-new-webkit-api/)。Windows 使用 Application Support 下专属 WebView2 userDataFolder；[Microsoft UDF 契约](https://github.com/MicrosoftDocs/edge-developer/blob/main/microsoft-edge/webview2/concepts/user-data-folder.md)。Android 使用应用沙盒 WebView/CookieManager 会话。清除会话要关闭视图、清 Cookie/存储/缓存并重建，不能只清历史。Cookie 不写入学习集。
 
-主框架 load 完成、DOM mutation 及可观测请求静默 800ms 提示就绪，15s 上限提示仍可转换；这是启发式，长轮询/跨域 iframe 等不可保证观测完整。手动转换始终可用，load 失败时禁用。每次导航最多自动提示一次，SPA 内容变化更新 navigationId/捕获代次。
+主框架 load 完成、DOM mutation 及可观测请求静默 800ms 提示就绪，15s 上限提示仍可转换；这是启发式，长轮询/跨域 iframe 等不可保证观测完整。手动转换始终可用，load 失败时禁用。每次导航的慢加载与就绪状态各最多自动提示一次；慢加载后静默时再提示就绪，SPA 内容变化更新 navigationId/捕获代次。
 
 在当前已登录页面的 DOM clone 上运行同一份 Readability JS，随后清洗，再交 mm_book HTML 适配器；不重新 HTTP 请求正文。脚本在页面 DOM 环境运行，不用无 DOM 的 JSCore 冒充 Readability 运行时。抓取 img.currentSrc、baseURI、可读 blob/data 图片；受认证资源通过会话内请求读取，跨域不可读资源记为缺失，不泄露 Cookie 到 Dart 下载器。正文、资源和快照一致后原子提交。
 

@@ -11,7 +11,6 @@ import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/settings/web_search_settings.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
-import '../features/workspace/widgets/notices.dart';
 import 'app_settings.dart';
 
 enum SettingsTab { general, reading, models, webSearch, voice }
@@ -288,23 +287,36 @@ class _GeneralPage extends ConsumerWidget {
         ),
         if (MMPlatformCapabilities.current.webBrowser) ...[
           const SizedBox(height: MMSpacing.m),
+          MMSettingsHeader(l.settingsBrowserGroup),
           MMSettingsGroup(
             children: [
               MMSettingsRow(
-                label: l.browserClearData,
+                label: l.settingsWebsiteData,
                 trailing: MMButton(
-                  label: l.browserClearData,
+                  label: l.settingsClearWebsiteData,
+                  variant: MMButtonVariant.plain,
+                  color: context.mmColors.critical,
                   onPressed: () async {
-                    final confirmed = await showConfirmSheet(
-                      context,
-                      title: l.browserClearData,
-                      message: l.browserClearConfirm,
-                      confirmLabel: l.browserClearData,
+                    final confirmed = await showMMSheet<bool>(
+                      context: context,
+                      builder: (context) => MMSheet(
+                        title: l.clearWebsiteDataConfirm,
+                        actions: [
+                          MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop(false)),
+                          MMButton(
+                            label: l.clearAction,
+                            variant: MMButtonVariant.primary,
+                            color: context.mmColors.critical,
+                            onPressed: () => Navigator.of(context).pop(true),
+                          ),
+                        ],
+                        child: const SizedBox.shrink(),
+                      ),
                     );
-                    if (!confirmed || !context.mounted) return;
+                    if (confirmed != true || !context.mounted) return;
                     try {
                       await BrowserSession.clearData();
-                      if (context.mounted) MMHud.show(context, l.browserDataCleared);
+                      if (context.mounted) MMHud.show(context, l.websiteDataCleared);
                     } catch (_) {
                       if (context.mounted) MMHud.show(context, l.somethingWentWrong);
                     }

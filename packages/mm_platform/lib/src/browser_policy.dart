@@ -37,6 +37,8 @@ abstract final class BrowserPolicy {
 
 enum BrowserPhase { loading, ready, slow, failed }
 
+enum BrowserLoadError { timeout, host, certificate, offline, other }
+
 /// Deterministic clock injected by the session. No timers or platform objects.
 class BrowserReadiness {
   BrowserReadiness(this.started);

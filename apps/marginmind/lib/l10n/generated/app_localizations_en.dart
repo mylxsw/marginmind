@@ -3366,19 +3366,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addWebPage => 'Add Web Page…';
 
   @override
-  String get browserAddress => 'URL';
+  String get webUrlPlaceholder => 'URL';
 
   @override
-  String get browserOpen => 'Open';
+  String get webUrlEmpty => 'Enter a URL';
 
   @override
-  String get browserUrlEmpty => 'Enter a URL';
+  String get webUrlInvalid => 'Not a valid URL';
 
   @override
-  String get browserUrlInvalid => 'Invalid URL';
-
-  @override
-  String get browserUrlScheme => 'Only http and https are supported';
+  String get webUrlScheme => 'Only http and https are supported';
 
   @override
   String get browserBack => 'Back';
@@ -3402,26 +3399,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get browserConvertShort => 'Convert';
 
   @override
-  String get browserReady => 'Convert to document?';
+  String get webReadyPrompt => 'Convert to a document?';
 
   @override
-  String get browserStillLoading => 'Some content is still loading';
+  String get webStillLoading => 'Some content is still loading';
 
   @override
-  String get browserLater => 'Later';
+  String get webLater => 'Later';
 
   @override
-  String get browserFailed => 'Unable to Open Page';
+  String get webErrorTitle => 'Can’t Open Page';
 
   @override
-  String get browserRetry => 'Retry';
+  String get webRetry => 'Try Again';
 
   @override
-  String get browserClearData => 'Clear Browser Data';
+  String get settingsClearWebsiteData => 'Clear…';
 
   @override
-  String get browserClearConfirm => 'Clear browser cookies, storage and cache? Open pages will close.';
+  String get clearWebsiteDataConfirm => 'Clear all website data?';
 
   @override
-  String get browserDataCleared => 'Browser data cleared';
+  String get websiteDataCleared => 'Website data cleared';
+
+  @override
+  String get addWebTitle => 'Add Web Page';
+
+  @override
+  String get webKeepWaiting => 'Keep Waiting';
+
+  @override
+  String get webConvertAction => 'Convert';
+
+  @override
+  String get webErrorTimeout => 'The connection timed out';
+
+  @override
+  String get webErrorHost => 'Server not found';
+
+  @override
+  String get webErrorCertificate => 'Invalid certificate';
+
+  @override
+  String get webErrorOffline => 'You’re offline';
+
+  @override
+  String get settingsBrowserGroup => 'In-App Browser';
+
+  @override
+  String get settingsWebsiteData => 'Website Data';
+
+  @override
+  String get clearAction => 'Clear';
+
+  @override
+  String get browserUnsaved => 'Not Saved';
 }

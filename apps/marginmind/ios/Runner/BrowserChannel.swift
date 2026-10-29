@@ -96,29 +96,50 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
     guard let url = url else { return false }
     return ["http", "https"].contains(url.scheme?.lowercased() ?? "") && url.host?.isEmpty == false
   }
-  private func emit(_ kind: String) {
+  private func emit(_ kind: String, error: String = "other") {
     channel.invokeMethod("event", arguments: ["kind": kind, "navigationId": generation,
-      "url": web.url?.absoluteString ?? "", "back": web.canGoBack, "forward": web.canGoForward])
+      "url": web.url?.absoluteString ?? "", "back": web.canGoBack, "forward": web.canGoForward, "error": error])
+  }
+  private static func errorCategory(_ error: Error) -> String {
+    let error = error as NSError
+    guard error.domain == NSURLErrorDomain else { return "other" }
+    switch error.code {
+    case NSURLErrorTimedOut: return "timeout"
+    case NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed: return "host"
+    case NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost: return "offline"
+    case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateHasBadDate,
+      NSURLErrorServerCertificateUntrusted, NSURLErrorServerCertificateHasUnknownRoot,
+      NSURLErrorServerCertificateNotYetValid, NSURLErrorClientCertificateRejected,
+      NSURLErrorClientCertificateRequired: return "certificate"
+    default: return "other"
+    }
   }
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) { activeNavigation = navigation; generation += 1; emit("start") }
-  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { if navigation === activeNavigation { emit("loaded") } }
-  func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { if navigation === activeNavigation { emit("failed") } }
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { if let active = activeNavigation, navigation === active { emit("loaded") } }
+  func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    if let active = activeNavigation, navigation === active && (error as NSError).code != NSURLErrorCancelled { emit("failed", error: Self.errorCategory(error)) }
+  }
   func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-    if navigation === activeNavigation && (error as NSError).code != NSURLErrorCancelled { emit("failed") }
+    if let active = activeNavigation, navigation === active && (error as NSError).code != NSURLErrorCancelled { emit("failed", error: Self.errorCategory(error)) }
   }
   func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-    guard Self.allowed(action.request.url), !action.shouldPerformDownload else { decisionHandler(.cancel); return }
+    guard Self.allowed(action.request.url) else { decisionHandler(.cancel); return }
+    if action.shouldPerformDownload {
+      decisionHandler(.cancel)
+      if action.targetFrame?.isMainFrame != false { emit("download") }
+      return
+    }
     if action.targetFrame == nil { webView.load(action.request); decisionHandler(.cancel) }
     else { decisionHandler(.allow) }
   }
   func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
     decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
     let disposition = (response.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition") ?? ""
-    let status = (response.response as? HTTPURLResponse)?.statusCode ?? 200
-    let blocked = status >= 400 || !response.canShowMIMEType || disposition.lowercased().contains("attachment") || !Self.allowed(response.response.url)
+    let blocked = !response.canShowMIMEType || disposition.lowercased().contains("attachment") || !Self.allowed(response.response.url)
+    if blocked && response.isForMainFrame { activeNavigation = nil }
     decisionHandler(blocked ? .cancel : .allow)
-    if blocked && response.isForMainFrame { emit("failed") }
+    if blocked && response.isForMainFrame { emit("download") }
   }
   func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
     for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? { nil }

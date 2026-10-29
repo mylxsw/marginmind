@@ -30,6 +30,23 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
   final _focus = FocusNode();
   BrowserUrlError? _error;
   @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_focusChanged);
+  }
+
+  void _focusChanged() {
+    if (_focus.hasFocus) {
+      final text = widget.session.url.toString();
+      _address.value = TextEditingValue(
+        text: text,
+        selection: TextSelection(baseOffset: 0, extentOffset: text.length),
+      );
+    }
+    setState(() {});
+  }
+
+  @override
   void dispose() {
     _address.dispose();
     _focus.dispose();
@@ -56,21 +73,27 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
       listenable: session,
       builder: (context, _) {
         if (session.disposed) return const SizedBox.shrink();
-        if (!_focus.hasFocus) _address.text = session.url.toString();
-        return PopScope(
-          canPop: !widget.visible,
-          onPopInvokedWithResult: (popped, _) {
-            if (!popped) {
-              if (session.canGoBack) {
-                session.back();
-              } else {
-                owner.close();
-              }
+        return MMBackHandler(
+          onBack: () {
+            if (!widget.visible) return false;
+            if (session.canGoBack) {
+              unawaited(session.back());
+            } else {
+              owner.close();
             }
+            return true;
           },
           child: LayoutBuilder(
             builder: (context, constraints) {
               final compact = constraints.maxWidth < MMSizes.readerMinWidth;
+              if (!_focus.hasFocus) _address.text = compact ? session.url.host : session.url.toString();
+              final reason = switch (session.loadError) {
+                BrowserLoadError.timeout => l.webErrorTimeout,
+                BrowserLoadError.host => l.webErrorHost,
+                BrowserLoadError.certificate => l.webErrorCertificate,
+                BrowserLoadError.offline => l.webErrorOffline,
+                BrowserLoadError.other => null,
+              };
               final converter = ref.watch(browserConverterProvider);
               void convert() {
                 session.dismissPrompt();
@@ -78,6 +101,11 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
               }
 
               final commands = browserCommands(l, session, close: owner.close, convert: convert);
+              final reload = MMIconButton(
+                icon: session.loading ? MMIcons.close : MMIcons.history,
+                tooltip: session.loading ? l.browserStop : l.browserReload,
+                onPressed: commands[session.loading ? BrowserCommand.stop : BrowserCommand.reload]!.onInvoke,
+              );
               final convertButton = MMButton(
                 key: const ValueKey('browser-convert'),
                 label: compact ? l.browserConvertShort : l.browserConvert,
@@ -105,17 +133,55 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                             onPressed: commands[BrowserCommand.forward]!.onInvoke,
                           ),
                         ],
-                        MMIconButton(
-                          icon: session.loading ? MMIcons.close : MMIcons.history,
-                          tooltip: session.loading ? l.browserStop : l.browserReload,
-                          onPressed: commands[session.loading ? BrowserCommand.stop : BrowserCommand.reload]!.onInvoke,
-                        ),
+                        if (!compact) reload,
                         Expanded(
-                          child: MMTextField(
-                            controller: _address,
-                            focusNode: _focus,
-                            semanticLabel: l.browserAddress,
-                            onSubmitted: _navigate,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(MMRadii.capsule),
+                            child: Container(
+                              height: MMInput.of(context).touchPlatform
+                                  ? MMSizes.browserAddressTouch
+                                  : MMSizes.browserAddress,
+                              color: context.mmColors.quaternaryFill,
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          session.phase == BrowserPhase.failed ? MMIcons.warning : MMIcons.lock,
+                                          size: MMSizes.dropdownIcon,
+                                          color: context.mmColors.secondaryLabel,
+                                        ),
+                                        const SizedBox(width: MMSpacing.s),
+                                        Expanded(
+                                          child: MMTextField(
+                                            controller: _address,
+                                            focusNode: _focus,
+                                            plain: true,
+                                            semanticLabel: l.webUrlPlaceholder,
+                                            onSubmitted: _navigate,
+                                          ),
+                                        ),
+                                        if (compact) reload,
+                                      ],
+                                    ),
+                                  ),
+                                  if (session.loading)
+                                    Positioned(
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      child: LinearProgressIndicator(
+                                        key: const ValueKey('browser-load-progress'),
+                                        minHeight: MMSizes.browserProgressTrack,
+                                        color: context.mmColors.accent,
+                                        backgroundColor: context.mmColors.quaternaryFill,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: MMSpacing.s),
@@ -146,13 +212,16 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                         children: [
                           Expanded(
                             child: Text(
-                              session.phase == BrowserPhase.slow ? l.browserStillLoading : l.browserReady,
+                              session.phase == BrowserPhase.slow ? l.webStillLoading : l.webReadyPrompt,
                               style: context.mmText.headline,
                             ),
                           ),
-                          MMButton(label: l.browserLater, onPressed: session.dismissPrompt),
+                          MMButton(
+                            label: session.phase == BrowserPhase.slow ? l.webKeepWaiting : l.webLater,
+                            onPressed: session.dismissPrompt,
+                          ),
                           const SizedBox(width: MMSpacing.s),
-                          MMButton(label: l.browserConvertShort, variant: MMButtonVariant.primary, onPressed: convert),
+                          MMButton(label: l.webConvertAction, variant: MMButtonVariant.primary, onPressed: convert),
                         ],
                       ),
                     ),
@@ -175,9 +244,13 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                                   children: [
                                     Icon(MMIcons.web, color: context.mmColors.secondaryLabel),
                                     const SizedBox(height: MMSpacing.m),
-                                    Text(l.browserFailed, style: context.mmText.headline),
+                                    Text(l.webErrorTitle, style: context.mmText.headline),
+                                    if (reason != null) ...[
+                                      const SizedBox(height: MMSpacing.s),
+                                      Text(reason, style: context.mmText.bodySecondary),
+                                    ],
                                     const SizedBox(height: MMSpacing.m),
-                                    MMButton(label: l.browserRetry, onPressed: session.reload),
+                                    MMButton(label: l.webRetry, onPressed: session.reload),
                                   ],
                                 ),
                               ),

@@ -1,6 +1,7 @@
 // No JavaScript-to-native message handlers are installed. Apple executes these
-// in a private WKContentWorld. Other engines expose only DOM observations in a
-// closure; there is no application bridge for page code to discover or call.
+// in a private WKContentWorld. Other engines keep DOM observation counters on
+// the page's global object; page code can inspect or change these heuristics,
+// but there is no application bridge for it to discover or call.
 const browserProbeScript = r'''
 (() => {
   const key = '__marginmindObservation';

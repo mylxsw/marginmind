@@ -80,11 +80,23 @@ class WorkspaceSidebar extends ConsumerWidget {
           listenable: session,
           builder: (context, _) => session.disposed
               ? const SizedBox.shrink()
-              : MMSidebarItem(
-                  icon: MMIcons.web,
-                  label: session.title.isEmpty ? session.url.host : session.title,
-                  selected: browser.visible,
-                  onTap: browserOwner.show,
+              : Tooltip(
+                  message: l.browserUnsaved,
+                  child: MMSidebarItem(
+                    icon: MMIcons.web,
+                    leading: session.loading
+                        ? SizedBox.square(
+                            dimension: MMSpacing.l,
+                            child: CircularProgressIndicator(strokeWidth: MMSpacing.xxs, color: c.secondaryLabel),
+                          )
+                        : null,
+                    labelColor: c.secondaryLabel,
+                    label: session.phase == BrowserPhase.loading || session.title.isEmpty
+                        ? session.url.host
+                        : session.title,
+                    selected: browser.visible,
+                    onTap: browserOwner.show,
+                  ),
                 ),
         ),
       );
@@ -237,15 +249,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
               onPressed: () => pickAndImportDocuments(context, ref, studySetId),
             ),
-            children: [
-              if (MMPlatformCapabilities.current.webBrowser)
-                MMSidebarItem(
-                  icon: MMIcons.web,
-                  label: l.addWebPage,
-                  onTap: () => showAddWebPage(context, ref, studySetId),
-                ),
-              ...docs,
-            ],
+            children: docs,
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],

@@ -84,10 +84,11 @@ const mmDialogScrim = Color(0x38000000);
 
 /// Content frame for [showMMSheet]: title, body, right-aligned actions.
 class MMSheet extends StatelessWidget {
-  const MMSheet({super.key, required this.title, required this.child, this.actions = const []});
+  const MMSheet({super.key, required this.title, required this.child, this.actions = const [], this.titleTrailing});
 
   final String title;
   final Widget child;
+  final Widget? titleTrailing;
 
   /// Usually a secondary "Cancel" followed by the primary default action.
   final List<Widget> actions;
@@ -100,9 +101,16 @@ class MMSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Semantics(
-          header: true,
-          child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            ?titleTrailing,
+          ],
         ),
         const SizedBox(height: 18),
         // A bottom sheet can be shorter than its content: the body scrolls.

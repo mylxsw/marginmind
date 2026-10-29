@@ -58,14 +58,14 @@ class WorkspaceBrowser extends Notifier<WorkspaceBrowserState> {
 }
 
 String browserUrlError(BuildContext context, BrowserUrlError code) => switch (code) {
-  BrowserUrlError.empty => context.l10n.browserUrlEmpty,
-  BrowserUrlError.invalid => context.l10n.browserUrlInvalid,
-  BrowserUrlError.scheme => context.l10n.browserUrlScheme,
+  BrowserUrlError.empty => context.l10n.webUrlEmpty,
+  BrowserUrlError.invalid => context.l10n.webUrlInvalid,
+  BrowserUrlError.scheme => context.l10n.webUrlScheme,
 };
 
 Future<void> showAddWebPage(BuildContext context, WidgetRef ref, String studySetId) async {
   if (!MMPlatformCapabilities.current.webBrowser) return;
-  final url = await showMMDialog<Uri>(context: context, builder: (_) => const _AddressDialog());
+  final url = await showMMSheet<Uri>(context: context, builder: (_) => const _AddressDialog());
   if (url != null && context.mounted) ref.read(workspaceBrowserProvider(studySetId).notifier).open(url);
 }
 
@@ -77,10 +77,22 @@ class _AddressDialog extends StatefulWidget {
 
 class _AddressDialogState extends State<_AddressDialog> {
   final _text = TextEditingController();
+  final _focus = FocusNode();
   BrowserUrlError? _error;
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_selectAll);
+  }
+
+  void _selectAll() {
+    if (_focus.hasFocus) _text.selection = TextSelection(baseOffset: 0, extentOffset: _text.text.length);
+  }
+
   @override
   void dispose() {
     _text.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -93,40 +105,43 @@ class _AddressDialogState extends State<_AddressDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(MMSpacing.xl),
-    child: SizedBox(
-      width: MMSizes.dropdownWideWidth,
+  Widget build(BuildContext context) {
+    final compact = MMBottomSheet.contains(context);
+    final open = MMButton(label: context.l10n.open, variant: MMButtonVariant.primary, onPressed: _open);
+    return MMSheet(
+      title: context.l10n.addWebTitle,
+      titleTrailing: compact ? open : null,
+      actions: [
+        MMButton(label: context.l10n.cancel, onPressed: () => Navigator.of(context).pop()),
+        if (!compact) open,
+      ],
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(context.l10n.addWebPage, style: context.mmText.title3),
-          const SizedBox(height: MMSpacing.l),
-          MMTextField(
-            controller: _text,
-            placeholder: context.l10n.browserAddress,
-            autofocus: true,
-            onSubmitted: (_) => _open(),
-          ),
-          if (_error != null)
-            Text(
-              browserUrlError(context, _error!),
-              style: context.mmText.footnote.copyWith(color: context.mmColors.critical),
-            ),
-          const SizedBox(height: MMSpacing.l),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              MMButton(label: context.l10n.cancel, onPressed: () => Navigator.of(context).pop()),
+              Icon(MMIcons.web, size: MMSizes.dropdownIcon, color: context.mmColors.secondaryLabel),
               const SizedBox(width: MMSpacing.s),
-              MMButton(label: context.l10n.browserOpen, variant: MMButtonVariant.primary, onPressed: _open),
+              Expanded(
+                child: MMTextField(
+                  controller: _text,
+                  focusNode: _focus,
+                  placeholder: context.l10n.webUrlPlaceholder,
+                  autofocus: true,
+                  onSubmitted: (_) => _open(),
+                ),
+              ),
             ],
+          ),
+          Text(
+            _error == null ? ' ' : browserUrlError(context, _error!),
+            style: context.mmText.footnote.copyWith(color: context.mmColors.critical),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// The capture preview is the handoff boundary for GUL-577; it does not claim

@@ -7,9 +7,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/workspace/widgets/workspace_sidebar.dart';
 import 'package:marginmind/features/workspace/widgets/browser_pane.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
+import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -22,7 +24,9 @@ void main() {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Add Web Page…').first);
+    expect(find.text('Add Web Page…'), findsNothing); // Entry belongs to GUL-573 menus.
+    final sidebar = tester.element(find.byType(WorkspaceSidebar));
+    unawaited(showAddWebPage(sidebar, sidebar as WidgetRef, 'demo-1'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(MMButton, 'Open'));
     await tester.pumpAndSettle();
@@ -43,9 +47,101 @@ void main() {
     owner.show();
     await tester.pump();
     final s = container.read(workspaceBrowserProvider('demo-1')).session!;
-    owner.close();
+    var backs = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async {
+        if (call.method == 'back') backs++;
+        return null;
+      },
+    );
+    s.canGoBack = true;
+    expect(MMBackHandler.dispatch(), isTrue);
+    await tester.pump();
+    expect(backs, 1);
+    s.canGoBack = false;
+    expect(MMBackHandler.dispatch(), isTrue);
     await tester.pump();
     expect(s.disposed, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('compact add panel reserves errors and puts Open in its header', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: MMTheme.light(),
+          builder: (context, child) => MMInput(touchPlatform: true, child: child!),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) =>
+                  MMButton(label: 'Add', onPressed: () => showAddWebPage(context, ref, 'demo-1')),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MMBottomSheet), findsOneWidget);
+    expect(find.byIcon(MMIcons.web), findsOneWidget);
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+    final sheet = tester.widget<MMSheet>(find.byType(MMSheet));
+    expect((sheet.titleTrailing! as MMButton).label, 'Open');
+    final before = tester.getSize(find.byType(MMSheet));
+    await tester.tap(find.widgetWithText(MMButton, 'Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter a URL'), findsOneWidget);
+    expect(tester.getSize(find.byType(MMSheet)), before);
+    await tester.tap(find.widgetWithText(MMButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MMSheet), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('website data has a destructive clear action and concise confirmation', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    var clears = 0;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('marginmind/browser'),
+      (call) async {
+        if (call.method == 'clearData') clears++;
+        return null;
+      },
+    );
+    await pumpApp(tester);
+    unawaited(showSettings(tester.element(find.byType(MMWindowScaffold)), showsGallery: false));
+    await tester.pumpAndSettle();
+    expect(find.text('In-App Browser'), findsOneWidget);
+    expect(find.text('Website Data'), findsOneWidget);
+    final button = tester.widget<MMButton>(find.widgetWithText(MMButton, 'Clear…'));
+    expect(button.variant, MMButtonVariant.plain);
+    expect(button.color, tester.element(find.byType(SettingsWindow)).mmColors.critical);
+    await tester.tap(find.widgetWithText(MMButton, 'Clear…'));
+    await tester.pumpAndSettle();
+    expect(find.text('Clear all website data?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(MMButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(clears, 0);
+    await tester.tap(find.widgetWithText(MMButton, 'Clear…'));
+    await tester.pumpAndSettle();
+    final confirm = tester.widget<MMButton>(find.widgetWithText(MMButton, 'Clear'));
+    expect(confirm.color, tester.element(find.byType(SettingsWindow)).mmColors.critical);
+    await tester.tap(find.widgetWithText(MMButton, 'Clear'));
+    await tester.pumpAndSettle();
+    expect(clears, 1);
     await tester.pumpWidget(const SizedBox.shrink());
     debugDefaultTargetPlatformOverride = null;
   });
@@ -102,6 +198,15 @@ void main() {
         ),
       );
       expect(tester.widget<MMButton>(find.byKey(const ValueKey('browser-convert'))).onPressed, isNull);
+      expect(find.byIcon(MMIcons.lock), findsOneWidget);
+      expect(find.byKey(const ValueKey('browser-load-progress')), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        size.width < MMSizes.readerMinWidth ? 'example.com' : 'https://example.com/',
+      );
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'https://example.com/');
       await s.attach();
       await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
         'marginmind/browser/${s.id}',
@@ -111,6 +216,19 @@ void main() {
         (_) {},
       );
       await tester.pump(const Duration(milliseconds: 200));
+      elapsed += const Duration(seconds: 15);
+      // A new navigation with a finished main frame but no quiet window yet.
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+        'marginmind/browser/${s.id}',
+        const StandardMethodCodec().encodeMethodCall(
+          MethodCall('event', {'kind': 'loaded', 'navigationId': 1, 'url': s.url.toString()}),
+        ),
+        (_) {},
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Keep Waiting'), findsOneWidget);
+      await tester.tap(find.widgetWithText(MMButton, 'Keep Waiting'));
+      await tester.pump();
       elapsed += const Duration(seconds: 1);
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.byKey(const ValueKey('browser-ready-prompt')), findsOneWidget);
@@ -141,11 +259,29 @@ void main() {
         (_) {},
       );
       await tester.pump();
-      expect(find.text('Unable to Open Page'), findsOneWidget);
+      expect(find.text('Can’t Open Page'), findsOneWidget);
+      expect(find.byIcon(MMIcons.warning), findsOneWidget);
+      for (final reason in {
+        'timeout': 'The connection timed out',
+        'host': 'Server not found',
+        'certificate': 'Invalid certificate',
+        'offline': 'You’re offline',
+        'other': null,
+      }.entries) {
+        await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+          'marginmind/browser/${s.id}',
+          const StandardMethodCodec().encodeMethodCall(
+            MethodCall('event', {'kind': 'failed', 'navigationId': 1, 'error': reason.key}),
+          ),
+          (_) {},
+        );
+        await tester.pump();
+        if (reason.value != null) expect(find.text(reason.value!), findsOneWidget);
+      }
       unawaited(previewBrowserCapture(previewContext, 'demo-1', s));
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
-      await tester.tap(find.widgetWithText(MMButton, 'Retry'));
+      await tester.tap(find.widgetWithText(MMButton, 'Try Again'));
       await tester.pump();
       expect(calls, contains('reload'));
       s.dispose();

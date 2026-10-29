@@ -46,6 +46,20 @@ bool Allowed(const wchar_t* value) {
   // Parsed a second time by WebView2; never dispatch OS protocol handlers.
   return raw.rfind("https://", 0) == 0 || raw.rfind("http://", 0) == 0;
 }
+const char* ErrorCategory(COREWEBVIEW2_WEB_ERROR_STATUS status) {
+  switch (status) {
+    case COREWEBVIEW2_WEB_ERROR_STATUS_TIMEOUT: return "timeout";
+    case COREWEBVIEW2_WEB_ERROR_STATUS_HOST_NAME_NOT_RESOLVED: return "host";
+    case COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_COMMON_NAME_IS_INCORRECT:
+    case COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_EXPIRED:
+    case COREWEBVIEW2_WEB_ERROR_STATUS_CLIENT_CERTIFICATE_CONTAINS_ERRORS:
+    case COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_REVOKED:
+    case COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_IS_INVALID: return "certificate";
+    case COREWEBVIEW2_WEB_ERROR_STATUS_SERVER_UNREACHABLE:
+    case COREWEBVIEW2_WEB_ERROR_STATUS_DISCONNECTED: return "offline";
+    default: return "other";
+  }
+}
 std::wstring Profile() {
   PWSTR path = nullptr;
   if (FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path))) return L"";
@@ -60,22 +74,24 @@ struct Tab : std::enable_shared_from_this<Tab> {
   int generation = 0;
   UINT64 navigation_id = 0;
   bool closed = false;
+  bool download_cancelled = false;
   std::function<void()> on_close;
   void Close() {
     if (closed) return;
     closed = true;
+    if (channel) channel->SetMethodCallHandler(nullptr);
     if (controller) controller->Close();
     web.Reset(); controller.Reset();
     if (on_close) on_close();
   }
   ~Tab() { Close(); }
-  void Emit(const char* kind) {
+  void Emit(const char* kind, const char* error = "other") {
     if (closed || !web) return;
     LPWSTR source = nullptr; web->get_Source(&source);
     BOOL back = FALSE, forward = FALSE;
     web->get_CanGoBack(&back); web->get_CanGoForward(&forward);
     channel->InvokeMethod("event", std::make_unique<Value>(Map{
-      {Value("kind"), Value(kind)}, {Value("navigationId"), Value(generation)},
+      {Value("kind"), Value(kind)}, {Value("navigationId"), Value(generation)}, {Value("error"), Value(error)},
       {Value("url"), Value(Utf8(source))}, {Value("back"), Value(back != FALSE)}, {Value("forward"), Value(forward != FALSE)}}));
     CoTaskMemFree(source);
   }
@@ -97,6 +113,7 @@ struct Tab : std::enable_shared_from_this<Tab> {
         LPWSTR uri = nullptr; args->get_Uri(&uri); bool allowed = Allowed(uri); CoTaskMemFree(uri);
         if (!allowed) { args->put_Cancel(TRUE); return S_OK; }
         args->get_NavigationId(&self->navigation_id);
+        self->download_cancelled = false;
         ++self->generation; self->Emit("start"); return S_OK;
       }).Get(), &token);
     web->add_FrameNavigationStarting(Callback<ICoreWebView2NavigationStartingEventHandler>(
@@ -110,7 +127,19 @@ struct Tab : std::enable_shared_from_this<Tab> {
         auto self = weak.lock(); if (!self || self->closed) return S_OK;
         UINT64 id = 0; args->get_NavigationId(&id);
         if (id != self->navigation_id) return S_OK;
-        BOOL success = FALSE; args->get_IsSuccess(&success); self->Emit(success ? "loaded" : "failed"); return S_OK;
+        if (self->download_cancelled) return S_OK;
+        BOOL success = FALSE; args->get_IsSuccess(&success);
+        COREWEBVIEW2_WEB_ERROR_STATUS status = COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN;
+        args->get_WebErrorStatus(&status);
+        ComPtr<ICoreWebView2NavigationCompletedEventArgs2> response;
+        int http_status = 0;
+        if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&response)))) response->get_HttpStatusCode(&http_status);
+        // IsSuccess is also false for HTTP 4xx/5xx; those documents remain
+        // readable and convertible. Only transport failures replace the page.
+        if (success || (http_status >= 400 && http_status <= 599)) self->Emit("loaded");
+        else if (status == COREWEBVIEW2_WEB_ERROR_STATUS_OPERATION_CANCELED) self->Emit("download");
+        else self->Emit("failed", ErrorCategory(status));
+        return S_OK;
       }).Get(), &token);
     web->add_NewWindowRequested(Callback<ICoreWebView2NewWindowRequestedEventHandler>(
       [weak](ICoreWebView2*, ICoreWebView2NewWindowRequestedEventArgs* args) -> HRESULT {
@@ -128,8 +157,11 @@ struct Tab : std::enable_shared_from_this<Tab> {
     if (SUCCEEDED(web.As(&downloads))) downloads->add_DownloadStarting(
       Callback<ICoreWebView2DownloadStartingEventHandler>(
         [weak](ICoreWebView2*, ICoreWebView2DownloadStartingEventArgs* args) -> HRESULT {
+          auto self = weak.lock();
+          if (self) self->download_cancelled = true;
           args->put_Cancel(TRUE); args->put_Handled(TRUE);
-          if (auto self = weak.lock()) self->Emit("failed"); return S_OK;
+          if (self) self->Emit("download");
+          return S_OK;
         }).Get(), &token);
     channel->SetMethodCallHandler([weak](const flutter::MethodCall<Value>& call, std::unique_ptr<Result> result) {
       auto self = weak.lock();
