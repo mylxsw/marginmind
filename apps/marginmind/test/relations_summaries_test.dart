@@ -145,6 +145,70 @@ void main() {
       expect(state().connectingFromId, isNull);
     });
 
+    test('reversed duplicate selects the existing relation without editing or undo', () async {
+      controller.selectCards(['c3', 'c4']);
+      await controller.addRelation();
+      await controller.finishMarkEditing('kept');
+      final id = relation().id;
+      controller.selectCards(['c4', 'c3']);
+      await controller.addRelation();
+      expect(controller.content.relations, hasLength(1));
+      expect(state().selectedMarkId, id);
+      expect(state().editingMarkId, isNull);
+      await controller.undo();
+      expect(relation().label, isEmpty, reason: 'duplicate added no undo entry');
+    });
+
+    test('summary range commits once, rejects overlap, and supports child topics and relations', () async {
+      controller.selectCard('c3');
+      await controller.addSummaryAndEdit('Summary');
+      await controller.finishMarkEditing('Summary');
+      final summary = controller.content.summaries.single;
+      controller.selectMark(summary.id);
+      final child = await controller.addTopic('Detail', asChild: true);
+      expect(controller.content.node(child.id)!.parentId, summary.cardId);
+      controller.selectCards([summary.cardId!, 'c4']);
+      await controller.addRelation();
+      expect(relation().fromId, summary.cardId);
+      await controller.cancelMarkEditing();
+      await controller.adjustSummaryRange(summary.id, 'c3', 'c4');
+      expect(controller.content.summaryRange(controller.content.summaries.single), ['c3', 'c4']);
+      await controller.undo();
+      expect(controller.content.summaryRange(controller.content.summaries.single), ['c3']);
+      controller.selectCard('c4');
+      await controller.addSummaryAndEdit('Other');
+      await controller.finishMarkEditing('Other');
+      final before = controller.content;
+      await controller.adjustSummaryRange(summary.id, 'c3', 'c4');
+      expect(controller.content, same(before), reason: 'cannot overlap another summary');
+      await controller.adjustSummaryRange(summary.id, 'c3', 'c6');
+      expect(controller.content, same(before), reason: 'cannot cross parents');
+    });
+
+    test('relation controls persist relative offsets and undo as one change', () async {
+      controller.selectCards(['c3', 'c4']);
+      await controller.addRelation();
+      await controller.cancelMarkEditing();
+      expect(relation().control1, isNull);
+      expect(relation().control2, isNull);
+      await controller.updateRelation(
+        relation().copyWith(
+          control1: const RelationControlPoint(80, -30),
+          control2: const RelationControlPoint(-60, 20),
+        ),
+      );
+      final restored = StudySetContent.fromJson(controller.content.toJson()).relations.single;
+      expect((restored.control1!.dx, restored.control1!.dy), (80, -30));
+      expect((restored.control2!.dx, restored.control2!.dy), (-60, 20));
+      await controller.undo();
+      expect(relation().control1, isNull);
+      expect(relation().control2, isNull);
+      await controller.redo();
+      await controller.reverseRelation(relation().id);
+      expect((relation().fromId, relation().toId), ('c4', 'c3'));
+      expect(relation().control1!.dx, -60);
+    });
+
     test('export uses the localized labels it is given', () async {
       controller.selectCards(['c3', 'c4']);
       await controller.addRelation();
@@ -207,9 +271,20 @@ void main() {
         toGlobal(
           tester,
           cubicPoint(
-            relationCurve(sceneRect(tester, from), sceneRect(tester, to), [
-              for (final id in others) sceneRect(tester, id),
-            ]),
+            mapRelationCurve(
+              ProviderScope.containerOf(tester.element(find.byType(MindMapCanvas)))
+                  .read(workspaceProvider('demo-1').notifier)
+                  .content
+                  .relations
+                  .firstWhere((r) => r.fromId == from && r.toId == to),
+              sceneRect(tester, from),
+              sceneRect(tester, to),
+              [for (final id in others) sceneRect(tester, id)],
+              left:
+                  sceneRect(tester, from).center.dx < sceneRect(tester, rootNodeId).center.dx &&
+                  sceneRect(tester, to).center.dx < sceneRect(tester, rootNodeId).center.dx,
+              root: sceneRect(tester, rootNodeId),
+            ),
             t,
           ),
         );
@@ -254,10 +329,16 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.getCenter(find.text('leads to')), isNot(before));
 
+      await controller.updateRelation(
+        controller.content.relations.single.copyWith(
+          control1: const RelationControlPoint(100, -160),
+          control2: const RelationControlPoint(-100, -160),
+        ),
+      );
       controller.selectCard(null);
       await tester.pumpAndSettle();
-      // A short line: its label covers the middle.
-      await tester.tapAt(onLine(tester, 'c3', 'c4', others: ['c6'], t: 0.1));
+      // Select the curve away from its label and the node's fold button.
+      await tester.tapAt(onLine(tester, 'c3', 'c4', others: ['c6'], t: 0.2));
       await tester.pumpAndSettle();
       expect(state(tester).selectedMarkId, id);
       await focusMap(tester);
@@ -266,9 +347,126 @@ void main() {
       await key(tester, LogicalKeyboardKey.escape);
       expect(state(tester).editingMarkId, isNull);
       expect(controller.content.relations.single.label, 'leads to');
+      controller.selectCard(null);
+      await tester.pumpAndSettle();
+      final linePoint = onLine(tester, 'c3', 'c4', others: ['c6'], t: 0.2);
+      await tester.tapAt(linePoint);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(linePoint);
+      await tester.pumpAndSettle();
+      expect(state(tester).editingMarkId, id, reason: 'double-clicking the curve edits the label');
+      await key(tester, LogicalKeyboardKey.escape);
       await key(tester, LogicalKeyboardKey.backspace);
       expect(controller.content.relations, isEmpty);
       expect(find.text('leads to'), findsNothing);
+      await settleHud(tester);
+    });
+
+    testWidgets('dragging from the handle connects a highlighted target; controls save on release', (tester) async {
+      final controller = await open(tester);
+      controller.selectCard('c3');
+      await tester.pumpAndSettle();
+      await focusMap(tester);
+      await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      final handle = find.byKey(const ValueKey('relation-drag-handle'));
+      expect(handle, findsOneWidget);
+      for (final cancel in ['blank', 'escape']) {
+        final cancelled = await tester.startGesture(tester.getCenter(handle));
+        await cancelled.moveBy(const Offset(0, 25));
+        await tester.pump();
+        await cancelled.moveTo(cancel == 'blank' ? blank(tester) : tester.getCenter(find.byKey(const ValueKey('c4'))));
+        await tester.pump();
+        if (cancel == 'escape') await key(tester, LogicalKeyboardKey.escape);
+        await cancelled.up();
+        await tester.pumpAndSettle();
+        expect(controller.content.relations, isEmpty, reason: cancel);
+        expect(state(tester).connectingFromId, isNull);
+      }
+      final gesture = await tester.startGesture(tester.getCenter(handle));
+      await gesture.moveBy(const Offset(0, 25));
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byKey(const ValueKey('c4'))));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('relation-target')), findsOneWidget);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(controller.content.relations, hasLength(1));
+      await key(tester, LogicalKeyboardKey.enter);
+      await focusMap(tester);
+      await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      final control = find.byKey(const ValueKey('relation-control-1'));
+      expect(control, findsOneWidget);
+      expect(controller.content.relations.single.control1, isNull);
+      final drag = await tester.startGesture(tester.getCenter(control));
+      await drag.moveBy(const Offset(0, 30));
+      await tester.pump();
+      await drag.moveBy(const Offset(20, 20));
+      await tester.pump();
+      expect(controller.content.relations.single.control1, isNull, reason: 'preview is not persisted');
+      await drag.up();
+      await tester.pumpAndSettle();
+      expect(controller.content.relations.single.control1, isNotNull);
+      await controller.undo();
+      expect(controller.content.relations.single.control1, isNull);
+      expect(controller.content.relations.single.control2, isNull);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Two-way arrows'));
+      await tester.pumpAndSettle();
+      expect(controller.content.relations.single.arrow, RelationArrow.both);
+      await tester.tap(find.byTooltip('Solid / dashed'));
+      await tester.pumpAndSettle();
+      expect(controller.content.relations.single.solid, isTrue);
+      expect(controller.content.relations.single.control1, isNull, reason: 'styling does not save automatic controls');
+      await tester.tap(find.byTooltip('Reverse direction'));
+      await tester.pumpAndSettle();
+      expect(controller.content.relations.single.fromId, 'c4');
+      await settleHud(tester);
+    });
+
+    testWidgets('summary range drag commits once, Tab adds detail, outline follows the range', (tester) async {
+      final controller = await open(tester);
+      await controller.setMapStructure(MapStructure.logic);
+      controller.selectCard('c3');
+      await controller.addSummaryAndEdit('Summary');
+      await controller.finishMarkEditing('Summary');
+      final summary = controller.content.summaries.single;
+      controller.selectMark(summary.id);
+      await tester.pumpAndSettle();
+      await focusMap(tester);
+      await key(tester, LogicalKeyboardKey.digit0, primary: true);
+      final handle = find.byKey(const ValueKey('summary-range-to'));
+      expect(handle, findsOneWidget);
+      final drag = await tester.startGesture(tester.getCenter(handle));
+      await drag.moveBy(const Offset(0, 24));
+      await tester.pump();
+      await drag.moveTo(tester.getCenter(find.byKey(const ValueKey('c4'))));
+      await tester.pump();
+      expect(controller.content.summaries.single.toId, 'c3', reason: 'only a preview until release');
+      await drag.up();
+      await tester.pumpAndSettle();
+      expect(controller.content.summaries.single.toId, 'c4');
+      await controller.undo();
+      expect(controller.content.summaries.single.toId, 'c3');
+      controller.selectMark(summary.id);
+      await tester.pumpAndSettle();
+      await focusMap(tester);
+      await key(tester, LogicalKeyboardKey.tab);
+      await tester.enterText(find.byType(MMInlineTextField), 'Detail');
+      await key(tester, LogicalKeyboardKey.enter);
+      expect(find.text('Detail'), findsOneWidget);
+      final child = controller.content.cards.firstWhere((c) => c.title == 'Detail');
+      expect(controller.content.node(child.id)!.parentId, summary.cardId);
+      controller.setMapView(MapViewMode.outline);
+      await tester.pumpAndSettle();
+      expect(find.text('Summary: Summary'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Detail')).dy,
+        greaterThan(tester.getTopLeft(find.text('Summary: Summary')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Detail')).dx,
+        greaterThan(tester.getTopLeft(find.text('Summary: Summary')).dx),
+      );
       await settleHud(tester);
     });
 
@@ -452,7 +650,7 @@ void main() {
         await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
         await tester.pump(kDoubleTapTimeout);
         await tester.pumpAndSettle();
-        expect(state(tester).selectedMarkId, controller.content.summaries.single.id);
+        expect(state(tester).selectedCardId, controller.content.summaries.single.cardId);
         await tester.tap(find.byTooltip('Remove from Map'));
         await tester.pumpAndSettle();
         expect(controller.content.summaries, isEmpty);

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
+import 'package:mm_core/mm_core.dart';
 
 /// Where a relation between [a] and [b] runs: from the border of [a] facing
 /// [b] to the border of [b] facing [a], bowed to one side so it stands out
@@ -68,4 +69,53 @@ bool relationGoesAround((Offset, Offset, Offset, Offset) c) =>
 Offset cubicPoint((Offset, Offset, Offset, Offset) c, double t) {
   final u = 1 - t;
   return c.$1 * (u * u * u) + c.$2 * (3 * u * u * t) + c.$3 * (3 * u * t * t) + c.$4 * (t * t * t);
+}
+
+/// Saved controls are offsets from endpoint centers; automatic controls remain
+/// layout dependent until the user actually moves a handle.
+(Offset, Offset, Offset, Offset) mapRelationCurve(
+  MapRelation relation,
+  Rect a,
+  Rect b,
+  Iterable<Rect> others, {
+  required bool left,
+  Rect? root,
+}) {
+  var c = relationCurveOnSide(a, b, others, left: left);
+  if (root != null && !relationGoesAround(c)) {
+    final midpoint = (c.$1 + c.$4) / 2;
+    final bow = cubicPoint(c, 0.5) - midpoint;
+    if ((midpoint - root.center).dx * bow.dx + (midpoint - root.center).dy * bow.dy < 0) {
+      c = (c.$1, c.$2 - bow * (8 / 3), c.$3 - bow * (8 / 3), c.$4);
+    }
+  }
+  Offset control(RelationControlPoint? saved, Rect node, Offset automatic) =>
+      saved == null ? automatic : node.center + Offset(saved.dx, saved.dy);
+  return (c.$1, control(relation.control1, a, c.$2), control(relation.control2, b, c.$3), c.$4);
+}
+
+/// Snap a range end using the geometry frozen when dragging starts.
+/// Reject opposite-side siblings, crossed ends and overlapping summaries.
+(String, String)? summaryRangeAt(
+  StudySetContent content,
+  MapSummary summary,
+  Map<String, Rect> rects,
+  Set<String> leftSide,
+  Offset pointer, {
+  required bool start,
+}) {
+  final siblings = content.childrenOf(summary.parentId, mapId: summary.mapId).map((n) => n.cardId).toList();
+  final candidates = siblings
+      .where((id) => rects.containsKey(id) && leftSide.contains(id) == leftSide.contains(summary.fromId))
+      .toList();
+  if (candidates.isEmpty) return null;
+  candidates.sort(
+    (a, b) => (rects[a]!.center.dy - pointer.dy).abs().compareTo((rects[b]!.center.dy - pointer.dy).abs()),
+  );
+  final from = start ? candidates.first : summary.fromId;
+  final to = start ? summary.toId : candidates.first;
+  if (siblings.indexOf(from) > siblings.indexOf(to)) return null;
+  final editor = StudySetEditor(newId: () => '', now: DateTime.now, mapId: summary.mapId);
+  if (editor.summaryReason(content, [from, to], excludingSummaryId: summary.id) != null) return null;
+  return (from, to);
 }

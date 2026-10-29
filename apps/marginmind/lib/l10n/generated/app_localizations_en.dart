@@ -3329,4 +3329,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectionDelete => 'Delete';
+
+  @override
+  String get relationArrowEnd => 'One-way arrow';
+
+  @override
+  String get relationArrowBoth => 'Two-way arrows';
+
+  @override
+  String get relationArrowNone => 'No arrows';
+
+  @override
+  String get relationReverse => 'Reverse direction';
+
+  @override
+  String get relationLineStyle => 'Solid / dashed';
+
+  @override
+  String summaryIncludedNodes(int count) {
+    return 'Includes $count unselected nodes in between';
+  }
 }

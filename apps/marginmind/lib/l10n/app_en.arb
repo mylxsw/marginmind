@@ -1785,5 +1785,18 @@
   "selectionMerge": "Merge",
   "selectionSummary": "Summary",
   "selectionRelation": "Relate",
-  "selectionDelete": "Delete"
+  "selectionDelete": "Delete",
+  "relationArrowEnd": "One-way arrow",
+  "relationArrowBoth": "Two-way arrows",
+  "relationArrowNone": "No arrows",
+  "relationReverse": "Reverse direction",
+  "relationLineStyle": "Solid / dashed",
+  "summaryIncludedNodes": "Includes {count} unselected nodes in between",
+  "@summaryIncludedNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -1138,5 +1138,18 @@
   "selectionMerge": "合并",
   "selectionSummary": "概要",
   "selectionRelation": "关联",
-  "selectionDelete": "删除"
+  "selectionDelete": "删除",
+  "relationArrowEnd": "单向箭头",
+  "relationArrowBoth": "双向箭头",
+  "relationArrowNone": "无箭头",
+  "relationReverse": "交换方向",
+  "relationLineStyle": "实线 / 虚线",
+  "summaryIncludedNodes": "包含了中间未选中的 {count} 个节点",
+  "@summaryIncludedNodes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

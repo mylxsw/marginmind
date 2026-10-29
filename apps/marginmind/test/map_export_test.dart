@@ -83,6 +83,40 @@ void main() {
     await settleHud(tester);
   });
 
+  test('summary subtrees and relation appearance are included in visual export', () {
+    var seq = 0;
+    final editor = StudySetEditor(newId: () => 'export-${seq++}', now: () => DateTime(2026));
+    final result = editor.createSummary(exportFixture().copyWith(summaries: [], relations: []), [
+      'c2',
+      'c3',
+    ], label: 'Summary topic');
+    final summary = result.value!;
+    final (withChild, child) = editor.addTopic(result.content, parentId: summary.cardId, title: 'Detail topic');
+    final (linked, relation) = editor.addRelation(withChild, summary.cardId!, 'c1');
+    final content = editor.updateRelation(
+      linked,
+      relation!.id,
+      arrow: RelationArrow.none,
+      solid: true,
+      control1: const RelationControlPoint(120, 60),
+      control2: const RelationControlPoint(-80, 60),
+    );
+    for (final structure in MapStructure.values) {
+      final drawing = scene(editor.setMapStructure(content, structure));
+      expect(drawing.layout.rects[summary.cardId], isNotNull);
+      expect(drawing.layout.rects[child.id], isNotNull);
+      final texts = drawing.commands.where((c) => c['type'] == 'text').map((c) => c['text']);
+      expect(texts.where((t) => t == 'Summary topic'), hasLength(1));
+      expect(texts, contains('Detail topic'));
+      expect(
+        drawing.commands
+            .where((c) => c['type'] == 'curve' && c['color'] == MMColors.light.research.toARGB32())
+            .every((c) => c['dashed'] == false),
+        isTrue,
+      );
+    }
+  });
+
   test('500 nodes are present, text readable, bounds contain every drawing', () {
     final s = scene(exportFixture(500));
     expect(s.layout.rects, hasLength(501));

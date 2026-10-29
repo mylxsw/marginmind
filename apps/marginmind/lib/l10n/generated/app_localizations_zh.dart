@@ -3197,4 +3197,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectionDelete => '删除';
+
+  @override
+  String get relationArrowEnd => '单向箭头';
+
+  @override
+  String get relationArrowBoth => '双向箭头';
+
+  @override
+  String get relationArrowNone => '无箭头';
+
+  @override
+  String get relationReverse => '交换方向';
+
+  @override
+  String get relationLineStyle => '实线 / 虚线';
+
+  @override
+  String summaryIncludedNodes(int count) {
+    return '包含了中间未选中的 $count 个节点';
+  }
 }
