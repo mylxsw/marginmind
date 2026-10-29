@@ -1,6 +1,8 @@
 # Validation, 2026-10-30
 
-Code is available for review; acceptance remains blocked on macOS native verification.
+Pure Dart acceptance checks pass. Ora waived macOS native testing for this task
+in issue comment 01a188b2-df61-777b-aab2-b06e3e7534d5 (2026-10-29 17:26 UTC),
+because the change touches no native code or plugin registration.
 
 | Check | Result |
 | --- | --- |
@@ -38,7 +40,7 @@ the fresh final mm_book LCOV report, without stale pre-edit coverage JSON.
 
 Required: 80%.
 
-## Native verification blocker
+## Native verification (waived by Ora)
 
 Executed from `apps/marginmind`:
 
@@ -59,8 +61,10 @@ the same registration command and stalled; it too was cancelled (exit 75).
 Only the exact task-owned child processes were stopped. No daemon or system
 service was restarted, and no native test pass is claimed.
 
-Native acceptance must be completed on a working macOS test runner. The issue
-stays blocked and the PR stays draft until Ora resolves this verification gap.
+Ora confirmed that the LaunchServices issue is unrelated to this pure Dart
+change and waived this check. No macOS source or plugin registration changed.
+The final handoff therefore proceeds to ready / in_review, with the attempted
+native commands and their incomplete results retained above.
 
 ## Self-review
 
