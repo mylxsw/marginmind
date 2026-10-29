@@ -102,6 +102,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               session: session,
               visible: browser.visible,
               documentSwitcher: _DocumentSwitcher(
+                studySetId: widget.studySetId,
                 documents: content.documents,
                 activeDocumentId: null,
                 onOpen: (id) {

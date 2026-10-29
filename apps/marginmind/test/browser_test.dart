@@ -10,6 +10,8 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/workspace_sidebar.dart';
 import 'package:marginmind/features/workspace/widgets/browser_pane.dart';
 import 'package:marginmind/features/workspace/workspace_browser.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/document_import.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:marginmind/settings/settings_window.dart';
 import 'package:mm_design/mm_design.dart';
@@ -24,7 +26,7 @@ void main() {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    expect(find.text('Add Web Page…'), findsNothing); // Entry belongs to GUL-573 menus.
+    expect(find.text('Add Web Page…'), findsNothing);
     final sidebar = tester.element(find.byType(WorkspaceSidebar));
     unawaited(showAddWebPage(sidebar, sidebar as WidgetRef, 'demo-1'));
     await tester.pumpAndSettle();
@@ -41,9 +43,19 @@ void main() {
     await tester.pump();
     final owner = container.read(workspaceBrowserProvider('demo-1').notifier);
     expect(container.read(workspaceBrowserProvider('demo-1')).visible, isTrue);
-    owner.hide();
+    final imports = container.read(documentImportsProvider('demo-1').notifier);
+    final task = imports.add('Pending.epub');
+    await tester.pump();
+    expect(find.text('Pending.epub'), findsOneWidget);
+    final browserRow = find.widgetWithText(MMSidebarItem, 'example.com');
+    expect(tester.widget<MMSidebarItem>(browserRow).labelColor, tester.element(browserRow).mmColors.secondaryLabel);
+    final document = container.read(workspaceProvider('demo-1').notifier).content.documents.first;
+    await tester.tap(find.widgetWithText(MMSidebarItem, document.title));
     await tester.pump();
     expect(container.read(workspaceBrowserProvider('demo-1')).visible, isFalse);
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, document.id);
+    expect(container.read(workspaceBrowserProvider('demo-1')).session!.disposed, isFalse);
+    imports.remove(task);
     owner.show();
     await tester.pump();
     final s = container.read(workspaceBrowserProvider('demo-1')).session!;

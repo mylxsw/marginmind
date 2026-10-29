@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart' show Text;
+import 'package:flutter/widgets.dart' show Text, PlatformMenuBar, PlatformMenuItem, PlatformMenu, PlatformMenuItemGroup;
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/document_commands.dart';
@@ -21,6 +21,7 @@ import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/workspace_browser.dart';
 import 'package:marginmind/shared/document_icon.dart';
 import 'package:marginmind/shared/pdf_drop.dart';
 import 'package:mm_book/mm_book.dart' as book;
@@ -234,12 +235,78 @@ void main() {
   testWidgets('missing browser handler hides entry even with platform support', (tester) async {
     final container = await pumpApp(
       tester,
-      overrides: [documentPlatformProvider.overrideWithValue(const BrowserCapabilities())],
+      overrides: [
+        documentPlatformProvider.overrideWithValue(const BrowserCapabilities()),
+        addWebPageHandlerProvider.overrideWithValue(null),
+      ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('add-document-menu')), findsNothing);
   });
+
+  for (final available in [true, false]) {
+    testWidgets('real default web handler opens all three menus only when available=$available', (tester) async {
+      final container = await pumpApp(
+        tester,
+        overrides: [
+          documentPlatformProvider.overrideWithValue(
+            available ? const BrowserCapabilities() : const MMPlatformCapabilities(TargetPlatform.linux),
+          ),
+        ],
+      );
+      expect(container.read(addWebPageHandlerProvider), showAddWebPage);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      Iterable<PlatformMenuItem> flatten(Iterable<PlatformMenuItem> items) sync* {
+        for (final item in items) {
+          yield item;
+          if (item is PlatformMenu) yield* flatten(item.menus);
+          if (item is PlatformMenuItemGroup) yield* flatten(item.members);
+        }
+      }
+
+      final commands = flatten(tester.widget<PlatformMenuBar>(find.byType(PlatformMenuBar)).menus)
+          .where((item) => item.label == 'Add Web Page…');
+      expect(commands.length, available ? 1 : 0);
+      Future<void> closeAddressPanel() async {
+        await tester.pumpAndSettle();
+        expect(find.text('Add Web Page'), findsOneWidget);
+        await tester.tap(find.widgetWithText(MMButton, 'Cancel'));
+        await tester.pumpAndSettle();
+      }
+
+      if (available) {
+        commands.single.onSelected!();
+        await closeAddressPanel();
+      }
+      final add = find.byKey(const ValueKey('add-document-menu'));
+      if (available) {
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await mouse.addPointer(location: tester.getCenter(add));
+        await mouse.moveTo(tester.getCenter(add));
+        await tester.pumpAndSettle();
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        expect(find.text('Add Web Page…'), findsOneWidget);
+        await tester.tap(find.text('Add Web Page…'));
+        await closeAddressPanel();
+        await mouse.removePointer();
+      } else {
+        expect(add, findsNothing);
+      }
+      await tester.tap(find.byKey(const ValueKey('reader-documents')));
+      await tester.pumpAndSettle();
+      expect(find.text('Add Web Page…'), available ? findsOneWidget : findsNothing);
+      if (available) {
+        await tester.tap(find.text('Add Web Page…'));
+        await closeAddressPanel();
+      } else {
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
+      }
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
 
   testWidgets('reflow swaps crop, disables zoom and never mounts PDF viewport', (tester) async {
     final doc = Document(
@@ -322,6 +389,8 @@ void main() {
     final task = container.read(documentImportsProvider('demo-1').notifier).add('Pending.epub');
     await tester.pump();
     expect(find.text('Pending.epub'), findsOneWidget);
+    final row = find.byKey(ValueKey('import-${task.id}'));
+    expect(tester.widget<MMSidebarItem>(row).labelColor, tester.element(row).mmColors.secondaryLabel);
     container.read(documentImportsProvider('demo-1').notifier).cancel(task.id);
     expect(task.cancelled, isTrue);
     container.read(documentImportsProvider('demo-1').notifier).remove(task);

@@ -132,7 +132,7 @@ Web 后端使用相同逻辑键，不要求磁盘目录。原文件不可变；�
 - 研究关联增加 `TextTarget`；`AnnotationAnchor.textAnchors`、`MarginNote.anchor`、`InkStroke.textAnchor`（`ParagraphInkAnchor`）、书签和目录的 `position` 共用原文锚点。对照的 `sourceAlignPoints` 接受通用位置，旧 PDF `alignPoints` 保留；翻译段落增加 `textAnchor`。
 - `DocumentRepository.importDocumentPackage(setId, DocumentPackage, {cancelled})` 以同一学习集写队列提交完整版本；`readDocumentFile` 按相同逻辑路径读原文件、manifest、章节、资源和网页快照。`DocumentPackage.files` 必须包含文档引用的全部文件，路径限制在 documents/books/web；旧版本永不自动回收。
 - app 的 `DocumentImporter` 组合 `mm_book` 与上述事务，manifest 的 `spine` 项为 `{id,path,sha256}`，资源项保留原逻辑路径 `sourcePath` 并增加存储 `path`。`documentReaderBuilderProvider` / `readingSettingsHandlerProvider` 供 GUL-576 接入阅读器；接入前显示文档标题占位，不把 IR 交给 PDFium。
-- GUL-575 通过 `addWebPageHandlerProvider` 接入 `showAddWebPage`；`canAddWebPageProvider` 同时检查处理器与 `MMPlatformCapabilities.webBrowser`。处理器缺失时菜单和快捷键入口隐藏。
+- `addWebPageHandlerProvider` 默认接入 GUL-575 的 `showAddWebPage`；`canAddWebPageProvider` 同时检查处理器与 `MMPlatformCapabilities.webBrowser`。处理器被覆盖为空时菜单和快捷键入口隐藏；Web / Linux 的平台能力仍为 false。
 
 ## 10. 技术验证计划与当前结论
 

@@ -84,6 +84,7 @@ class WorkspaceSidebar extends ConsumerWidget {
           key: ValueKey('import-${task.id}'),
           icon: MMIcons.document,
           label: task.name,
+          labelColor: c.secondaryLabel,
           trailing: const SizedBox(
             width: MMSizes.dropdownIcon,
             height: MMSizes.dropdownIcon,
