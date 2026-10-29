@@ -29,9 +29,11 @@ void main() {
     for (final key in original.keys.where((k) => k != 'format' && k != 'content')) {
       expect(migrated[key], original[key]);
     }
-    for (final key in (original['content'] as Map).keys) {
+    for (final key in (original['content'] as Map).keys.where((k) => k != 'cards' && k != 'summaries')) {
       expect(migrated['content'][key], original['content'][key], reason: '$key must survive');
     }
+    expect(c.cards.map((card) => card.toJson()), before.cards.map((card) => card.toJson()));
+    expect(c.summaries.map((s) => s.toJson()), before.summaries.map((s) => s.toJson()));
     expect(c.reviewLogs, isEmpty);
     expect(c.memoryStates.length, c.reviews.length);
     expect(c.reviews.map((r) => r.toJson()), before.reviews.map((r) => r.toJson()));
@@ -77,7 +79,7 @@ void main() {
     await store.dispose();
     await backup.writeAsBytes(source);
     store = FileLibraryStore(root);
-    expect((await store.load('legacy')).cards.length, 3);
+    expect((await store.load('legacy')).cards.length, 4);
     expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });

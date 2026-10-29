@@ -95,7 +95,7 @@ class StudySetContent {
   /// Relations of [mapId] whose two cards are both placed in that map.
   List<MapRelation> relationsOf(String mapId) => [
     for (final r in relations)
-      if (r.mapId == mapId && node(r.fromId, mapId: mapId) != null && node(r.toId, mapId: mapId) != null) r,
+      if (r.mapId == mapId && isPlaced(r.fromId, mapId: mapId) && isPlaced(r.toId, mapId: mapId)) r,
   ];
 
   /// Summaries of [mapId] whose range is intact, each with the children it
@@ -123,8 +123,41 @@ class StudySetContent {
   MapNode? node(String cardId, {String mapId = MindMap.defaultId}) =>
       nodes.where((n) => n.mapId == mapId && n.cardId == cardId).firstOrNull;
 
-  /// The excerpt card made from [annotationId], if any.
-  Card? cardForAnnotation(String annotationId) => cards.where((c) => c.annotationId == annotationId).firstOrNull;
+  bool containsCard(String cardId) => card(cardId) != null;
+
+  /// Summary topic cards have a placement through their summary, not a MapNode.
+  bool isPlaced(String cardId, {String mapId = MindMap.defaultId}) =>
+      containsCard(cardId) &&
+      (node(cardId, mapId: mapId) != null ||
+          summaries.any((s) => s.mapId == mapId && s.cardId == cardId && summaryRange(s) != null));
+
+  /// Effective ordered content, including legacy cards without stored segments.
+  List<CardSegment> segmentsOf(Card card) {
+    if (card.segments.isNotEmpty) return card.segments;
+    final result = <CardSegment>[];
+    if ((card.kind == CardKind.excerpt || card.kind == CardKind.image) && card.annotationId != null) {
+      final source = annotation(card.annotationId!);
+      result.add(CardSegment(text: source?.quote ?? '', annotationId: card.annotationId));
+    }
+    // An excerpt title is its review question, not another source segment.
+    // Empty text cards still represent one segment for merge/split round trips.
+    if (card.kind != CardKind.excerpt &&
+        (card.title.isNotEmpty || card.kind == CardKind.topic || card.kind == CardKind.note)) {
+      result.add(CardSegment(text: card.title));
+    }
+    if (card.body.isNotEmpty) result.add(CardSegment(text: card.body));
+    return List.unmodifiable(result);
+  }
+
+  List<AnnotationSegmentMatch> segmentsForAnnotation(String annotationId, {String? mapId}) => [
+    for (final card in cards)
+      if (mapId == null || isPlaced(card.id, mapId: mapId))
+        for (final (index, segment) in segmentsOf(card).indexed)
+          if (segment.annotationId == annotationId) AnnotationSegmentMatch(card: card, segmentIndex: index),
+  ];
+
+  /// First card containing a segment linked to this annotation.
+  Card? cardForAnnotation(String annotationId) => segmentsForAnnotation(annotationId).firstOrNull?.card;
 
   /// Children of [parentId] (null = root) in display order.
   List<MapNode> childrenOf(String? parentId, {String mapId = MindMap.defaultId}) =>
@@ -159,7 +192,7 @@ class StudySetContent {
         (nodes.any((n) => n.cardId == c.id) ||
             (c.kind == CardKind.research && c.id == researchReviewId(c.researchNoteId ?? ''))) &&
         switch (c.kind) {
-          CardKind.excerpt => annotation(c.annotationId ?? '') != null,
+          CardKind.excerpt => segmentsOf(c).any((s) => s.annotationId != null && annotation(s.annotationId!) != null),
           CardKind.note => c.title.trim().isNotEmpty,
           CardKind.topic => false,
           CardKind.research =>
@@ -218,10 +251,15 @@ class StudySetContent {
   /// [cardId] and every card below it on [mapId], folded or not; empty when
   /// the card is not on that map.
   Set<String> branch(String cardId, {String mapId = MindMap.defaultId}) {
-    if (node(cardId, mapId: mapId) == null) return const {};
+    if (!isPlaced(cardId, mapId: mapId)) return const {};
     final children = <String, List<String>>{};
     for (final n in nodes) {
       if (n.mapId == mapId && n.parentId != null) children.putIfAbsent(n.parentId!, () => []).add(n.cardId);
+    }
+    // A summary belongs to the same branch as the siblings it summarizes.
+    for (final summary in summaries) {
+      if (summary.mapId != mapId || summary.cardId == null || summaryRange(summary) == null) continue;
+      if (summary.parentId != null) children.putIfAbsent(summary.parentId!, () => []).add(summary.cardId!);
     }
     final ids = <String>{};
     final pending = [cardId];
@@ -269,9 +307,15 @@ class StudySetContent {
       for (final n in childrenOf(parentId, mapId: mapId)) {
         final c = card(n.cardId);
         if (c == null) continue;
-        final a = c.annotationId == null ? null : annotation(c.annotationId!);
         final tagged = tag == null || c.tags.any((t) => t.toLowerCase() == tag.toLowerCase());
-        if (tagged && (q.isEmpty || hit(c.title) || hit(c.body) || hit(a?.quote) || c.tags.any(hit))) result.add(c);
+        if (tagged &&
+            (q.isEmpty ||
+                hit(c.title) ||
+                hit(c.body) ||
+                segmentsOf(c).any((segment) => hit(segment.text)) ||
+                c.tags.any(hit))) {
+          result.add(c);
+        }
         walk(c.id);
       }
     }
@@ -356,18 +400,44 @@ class StudySetContent {
     List<T> list<T>(String key, T Function(Map<String, Object?>) f) => [
       for (final e in (j[key] as List?) ?? const []) f((e as Map).cast()),
     ];
+    final cards = list('cards', Card.fromJson);
+    final summaries = list('summaries', MapSummary.fromJson);
+    final usedIds = cards.map((c) => c.id).toSet();
+    final normalizedSummaries = <MapSummary>[];
+    for (final summary in summaries) {
+      if (summary.cardId != null && usedIds.contains(summary.cardId)) {
+        normalizedSummaries.add(summary);
+        continue;
+      }
+      final base = 'summary-topic:${summary.id}';
+      var id = base;
+      var suffix = 1;
+      while (usedIds.contains(id)) {
+        id = '$base:${suffix++}';
+      }
+      usedIds.add(id);
+      cards.add(
+        Card(
+          id: id,
+          kind: CardKind.topic,
+          title: summary.label,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        ),
+      );
+      normalizedSummaries.add(summary.copyWith(cardId: id));
+    }
     return StudySetContent(
       assistantReceipts: list('assistantReceipts', (j) => MapEditReceipt.fromJson(j.cast<String, dynamic>())),
       documents: list('documents', Document.fromJson),
       annotations: list('annotations', Annotation.fromJson),
-      cards: list('cards', Card.fromJson),
+      cards: cards,
       nodes: list('nodes', MapNode.fromJson),
       maps: j['maps'] == null ? const [MindMap.main] : list('maps', MindMap.fromJson),
       reviews: list('reviews', ReviewState.fromJson),
       reviewLogs: list('reviewLogs', ReviewLog.fromJson),
       memoryStates: list('memoryStates', MemoryState.fromJson),
       relations: list('relations', MapRelation.fromJson),
-      summaries: list('summaries', MapSummary.fromJson),
+      summaries: normalizedSummaries,
       researchNotes: list('researchNotes', ResearchNote.fromJson),
       noteAttachments: list('noteAttachments', NoteAttachment.fromJson),
       evidence: list('evidence', Evidence.fromJson),

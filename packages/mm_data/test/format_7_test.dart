@@ -68,9 +68,13 @@ void main() {
     final content = await store.load('legacy');
     final migrated = jsonDecode(await file.readAsString()) as Map;
     expect(migrated['format'], currentStudySetFormat);
-    for (final entry in (original['content'] as Map).entries) {
+    for (final entry in (original['content'] as Map).entries.where(
+      (e) => e.key != 'cards' && e.key != 'summaries',
+    )) {
       expect(migrated['content'][entry.key], entry.value, reason: '${entry.key} unchanged');
     }
+    expect(content.cards.map((card) => card.toJson()), before.cards.map((card) => card.toJson()));
+    expect(content.summaries.map((s) => s.toJson()), before.summaries.map((s) => s.toJson()));
     for (var day = 0; day < 365; day++) {
       final now = DateTime.utc(2026, 10, 20 + day);
       expect(content.dueCount(now), before.dueCount(now));
@@ -108,7 +112,7 @@ void main() {
     await store.dispose();
     await backup.writeAsBytes(bytes);
     store = FileLibraryStore(root);
-    expect((await store.load('legacy')).cards.length, 4);
+    expect((await store.load('legacy')).cards.length, 5);
     expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });

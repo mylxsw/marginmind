@@ -34,8 +34,8 @@ void main() {
       final (linked, r) = e.addRelation(c, ids['A1']!, ids['D']!, label: ' causes ');
       expect(r!.label, 'causes');
       expect(linked.relationsOf(MindMap.defaultId).single.toId, ids['D']);
-      expect(e.addRelation(linked, ids['A1']!, ids['D']!).$2, isNull, reason: 'same direction once');
-      expect(e.addRelation(linked, ids['D']!, ids['A1']!).$2, isNotNull, reason: 'reverse is another line');
+      expect(e.addRelation(linked, ids['A1']!, ids['D']!).$2, same(r), reason: 'select existing line');
+      expect(e.addRelation(linked, ids['D']!, ids['A1']!).$2, same(r), reason: 'unordered pair has one line');
       expect(e.addRelation(c, ids['A']!, ids['A']!).$2, isNull);
       expect(e.addRelation(c, ids['A']!, 'missing').$2, isNull);
       expect(editor('other').addRelation(c, ids['A']!, ids['B']!).$2, isNull, reason: 'not placed in that map');
@@ -84,7 +84,7 @@ void main() {
       expect((s.fromId, s.toId), (ids['A'], ids['C']));
       expect(summed.summariesOf(MindMap.defaultId).single.$2, [ids['A'], ids['B'], ids['C']]);
       expect(e.addSummary(summed, [ids['A']!, ids['C']!]).$2, isNull, reason: 'identical range');
-      expect(e.addSummary(summed, [ids['A']!, ids['B']!]).$2, isNotNull, reason: 'nested range');
+      expect(e.addSummary(summed, [ids['A']!, ids['B']!]).$2, isNull, reason: 'overlapping range');
       expect(e.addSummary(c, [ids['A']!, ids['A1']!]).$2, isNull, reason: 'different parents');
       expect(e.addSummary(c, const []).$2, isNull);
       expect(e.addSummary(c, ['missing']).$2, isNull);

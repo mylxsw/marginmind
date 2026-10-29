@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 9;
+const currentStudySetFormat = 10;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -20,7 +20,47 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 7) result = _toFormat7(result);
   if (format < 8) result = _toFormat8(result);
   if (format < 9) result = _toFormat9(result);
+  if (format < 10) result = _toFormat10(result);
   return result;
+}
+
+/// Format 10: summaries own topic cards. Preserve raw fields (including the old
+/// label) while giving every legacy summary a stable, collision-free card id.
+Map<String, Object?> _toFormat10(Map<String, Object?> json) {
+  final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
+  final summaries = (content['summaries'] as List?) ?? const [];
+  if (summaries.isEmpty) return {...json, 'format': 10};
+  final cards = [...(content['cards'] as List?) ?? const []];
+  final usedIds = {
+    for (final card in cards) (card as Map)['id'],
+    for (final summary in summaries) (summary as Map)['cardId'],
+  };
+  final upgraded = <Map<String, Object?>>[];
+  for (final raw in summaries) {
+    final summary = (raw as Map).cast<String, Object?>();
+    if (summary['cardId'] != null) {
+      upgraded.add(summary);
+      continue;
+    }
+    final base = 'summary-topic:${summary['id']}';
+    var cardId = base;
+    for (var suffix = 1; usedIds.contains(cardId); suffix++) {
+      cardId = '$base:$suffix';
+    }
+    usedIds.add(cardId);
+    cards.add({
+      'id': cardId,
+      'kind': 'topic',
+      'title': summary['label'] ?? '',
+      'createdAt': '1970-01-01T00:00:00.000Z',
+    });
+    upgraded.add({...summary, 'cardId': cardId});
+  }
+  return {
+    ...json,
+    'format': 10,
+    'content': {...content, 'cards': cards, 'summaries': upgraded},
+  };
 }
 
 /// Format 2: multi-page highlights and named maps.
