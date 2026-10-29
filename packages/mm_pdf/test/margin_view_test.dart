@@ -9,6 +9,28 @@ import 'support/pdf_backend.dart';
 
 void main() {
   setUp(installTestPdfBackend);
+  testWidgets('removing an expanded margin restores ordinary page painting', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    Future<void> mount(MMPdfMargin? margin) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(filePath: 'margin-removal.pdf', controller: controller, margin: margin),
+        ),
+      );
+      await ready(tester, () => controller.isReady);
+      await tester.pumpAndSettle();
+    }
+
+    await mount(MMPdfMargin(requested: true, extent: (_, _, _, _) => 0, builder: (_, _) => []));
+    expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!.documentSize.width, 832);
+    await mount(null);
+    expect(tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!.documentSize.width, 632);
+    expect(tester.takeException(), isNull);
+    await close(tester);
+  });
   testWidgets(
     'column adds outer width and overflow while source page keeps full size; collapsing preserves reading line',
     (tester) async {

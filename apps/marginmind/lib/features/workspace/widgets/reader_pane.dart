@@ -273,19 +273,16 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
     final noteCount = controller.content.marginNotes.where((n) => n.documentId == state.activeDocumentId).length;
-    final marginButton = Badge(
-      isLabelVisible: noteCount > 0,
-      label: Text('$noteCount'),
-      child: MMToolbarButton(
-        key: const ValueKey('reader-margin'),
-        compact: compact,
-        icon: MMIcons.marginNote,
-        tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
-        selected: marginState.openDocuments.contains(state.activeDocumentId),
-        onPressed: crop.editing || document == null
-            ? null
-            : () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id),
-      ),
+    final marginButton = MMToolbarButton(
+      key: const ValueKey('reader-margin'),
+      compact: compact,
+      icon: MMIcons.marginNote,
+      count: noteCount,
+      tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
+      selected: marginState.openDocuments.contains(state.activeDocumentId),
+      onPressed: crop.editing || document == null
+          ? null
+          : () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id),
     );
     final annotation = IgnorePointer(
       ignoring: crop.editing,

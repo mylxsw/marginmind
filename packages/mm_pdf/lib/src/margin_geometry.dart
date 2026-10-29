@@ -16,11 +16,15 @@ class MMPdfMargin {
     required this.requested,
     this.revision,
     this.forceCollapsed = false,
+    this.backgroundColor = const Color(0xFFFFFFFF),
     required this.extent,
     required this.builder,
   });
   final bool requested, forceCollapsed;
   final Object? revision;
+
+  /// Paper color for the combined source page and expanded margin surface.
+  final Color backgroundColor;
 
   /// Extra height in PDF points. Cache estimates independently of visible widgets.
   final double Function(int page, Size originalSize, CropInsets crop, double zoom) extent;

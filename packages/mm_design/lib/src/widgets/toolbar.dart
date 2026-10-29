@@ -84,6 +84,7 @@ class MMToolbarButton extends StatelessWidget {
     required this.onPressed,
     this.selected = false,
     this.label,
+    this.count = 0,
     this.tint,
     this.compact = false,
   }) : assert(icon != null || label != null);
@@ -103,6 +104,9 @@ class MMToolbarButton extends StatelessWidget {
 
   /// Optional text shown next to the icon (e.g. a sort pop-up).
   final String? label;
+
+  /// Quiet inline count, hidden at zero and sharing the button's foreground.
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +131,7 @@ class MMToolbarButton extends StatelessWidget {
           duration: MMMotion.quick,
           height: size.height,
           constraints: BoxConstraints(minWidth: size.width),
-          padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : 10),
+          padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : (count > 0 ? MMSpacing.xs : 0)),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
@@ -140,6 +144,18 @@ class MMToolbarButton extends StatelessWidget {
               if (icon != null) Icon(icon, size: 16, color: fg),
               if (icon != null && label != null) const SizedBox(width: 6),
               if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
+              if (count > 0) ...[
+                const SizedBox(width: MMSpacing.xxs),
+                Text(
+                  '$count',
+                  style: t.footnote.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    color: fg,
+                  ),
+                ),
+              ],
             ],
           ),
         );
