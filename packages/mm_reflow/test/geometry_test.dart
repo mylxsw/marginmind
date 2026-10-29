@@ -12,21 +12,25 @@ void main() {
   const parser = EpubParser();
 
   test('indexed link anchors match the source contract across split graphemes', () {
-    final c = parser.parseHtml(
-      'links',
-      '<p><a href="#a">e</a>́ <a href="#b">👩</a>‍👩‍👧‍👦 <a href="#c">🇦</a>🇧 '
-          '<a href="#d">plain</a></p>',
-    );
-    final l = ChapterLayout.layout(c, const LayoutSpec(width: 400));
-    var offset = 0, index = 0;
-    for (final run in c.blocks.single.runs) {
-      if (run.link != null) {
-        expect(l.links[index++].anchor.toJson(), c.anchor(offset, offset + run.text.length).toJson());
+    for (final padded in [false, true]) {
+      final c = parser.parseHtml(
+        'links',
+        '<p>${padded ? '前' * 40 : ''}<a href="#a">e</a>́ <a href="#b">👩</a>‍👩‍👧‍👦 <a href="#c">🇦</a>🇧 '
+            '<a href="#d">plain</a>${padded ? '😀' * 40 : ''}</p>',
+      );
+      final l = ChapterLayout.layout(c, const LayoutSpec(width: 400));
+      var offset = 0, index = 0;
+      for (final run in c.blocks.single.runs) {
+        if (run.link != null) {
+          expect(l.links[index++].anchor.toJson(), c.anchor(offset, offset + run.text.length).toJson());
+        }
+        offset += run.text.length;
       }
-      offset += run.text.length;
+      expect(l.links.map((link) => link.anchor.quote), ['é', '👩‍👩‍👧‍👦', '🇦🇧', 'plain']);
+      expect(l.links.first.anchor.prefix, padded ? '前' * 32 : '');
+      expect(l.links.last.anchor.suffix, padded ? '😀' * 32 : '');
+      l.dispose();
     }
-    expect(l.links.map((link) => link.anchor.quote), ['é', '👩‍👩‍👧‍👦', '🇦🇧', 'plain']);
-    l.dispose();
   });
 
   test('continuous horizontal scroll keeps painted ink inside page insets', () async {
