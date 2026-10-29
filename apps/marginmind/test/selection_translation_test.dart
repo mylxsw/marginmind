@@ -103,7 +103,7 @@ void main() {
         MMIcons.copy,
         MMIcons.quoteBubble,
         MMIcons.addNote,
-        MMIcons.mindMap,
+        MMIcons.network,
         MMIcons.translate,
         MMIcons.ai,
       ]);

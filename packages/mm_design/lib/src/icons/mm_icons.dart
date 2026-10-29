@@ -53,7 +53,8 @@ abstract final class MMIcons {
   static const IconData syncToMap = CupertinoIcons.arrow_branch; // arrow.triangle.branch
   static const IconData layoutReader = CupertinoIcons.doc_plaintext; // doc.text
   static const IconData layoutSplit = CupertinoIcons.square_split_2x1; // rectangle.split.2x1
-  static const IconData layoutMap = LucideIcons.brain;
+  static const IconData network = LucideIcons.network;
+  static const IconData layoutMap = network;
   static const IconData mindMap = CupertinoIcons.arrow_branch;
   static const IconData revealSource = CupertinoIcons.arrow_up_right; // arrow.up.right
   static const IconData popUp = CupertinoIcons.chevron_up_chevron_down; // chevron.up.chevron.down

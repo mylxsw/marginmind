@@ -318,7 +318,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),
                   MMToolbarButton(
-                    icon: MMIcons.mindMap,
+                    icon: MMIcons.network,
                     tooltip: hasCard ? l.locateCard : l.addToMapAction,
                     onPressed: () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt),
                   ),
