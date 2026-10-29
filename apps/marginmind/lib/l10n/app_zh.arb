@@ -938,5 +938,36 @@
   "expandMargin": "显示页边",
   "cropExpandMargin": "裁掉白边，展开页边",
   "marginNoteDeleted": "已删除批注",
-  "marginNoteAddedToMap": "已加入脑图"
+  "marginNoteAddedToMap": "已加入脑图",
+  "compareReading": "对照阅读",
+  "compareRecommended": "推荐",
+  "compareAiTranslate": "AI 逐段翻译成{language}",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "languageCodeZh": "中",
+  "languageCodeEn": "EN",
+  "compareAiOffline": "断网",
+  "compareAiNeedsOcr": "先识别文字",
+  "compareAiPending": "暂未提供",
+  "compareTooNarrow": "窗口太窄",
+  "compareExit": "退出对照阅读",
+  "compareSync": "同步滚动",
+  "compareAlign": "对齐此处",
+  "compareAlignedHud": "已对齐",
+  "compareSwap": "左右互换",
+  "compareMapHiddenHud": "已收起脑图 · {shortcut}",
+  "@compareAiTranslate": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "@compareMapHiddenHud": {
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  }
 }

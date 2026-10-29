@@ -4,6 +4,8 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_platform/mm_platform.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features/workspace/workspace_controller.dart';
+
 /// Composition root for outer-layer services. `main()` provides the real
 /// implementations (files on disk); tests override them with in-memory ones.
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -50,8 +52,13 @@ final pdfRenderingEnabledProvider = Provider<bool>((ref) => true);
 
 /// Talks to the PDF view of a study set's source pane, so menus, the reader
 /// sidebar and the find bar can drive it without owning it.
-final readerPdfProvider = Provider.family<MMPdfViewController, String>((ref, studySetId) {
+final documentPdfProvider = Provider.family<MMPdfViewController, (String, String?)>((ref, key) {
   final controller = MMPdfViewController();
   ref.onDispose(controller.dispose);
   return controller;
+});
+
+final readerPdfProvider = Provider.family<MMPdfViewController, String>((ref, studySetId) {
+  final id = ref.watch(workspaceProvider(studySetId).select((s) => s.activeDocumentId));
+  return ref.watch(documentPdfProvider((studySetId, id)));
 });

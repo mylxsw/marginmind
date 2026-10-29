@@ -1594,5 +1594,36 @@
   "expandMargin": "Show Margin",
   "cropExpandMargin": "Crop Margins and Show Notes",
   "marginNoteDeleted": "Comment Deleted",
-  "marginNoteAddedToMap": "Added to Mind Map"
+  "marginNoteAddedToMap": "Added to Mind Map",
+  "compareReading": "Side by Side",
+  "compareRecommended": "Suggested",
+  "compareAiTranslate": "AI Translate into {language}",
+  "languageChinese": "Chinese",
+  "languageEnglish": "English",
+  "languageCodeZh": "ZH",
+  "languageCodeEn": "EN",
+  "compareAiOffline": "Offline",
+  "compareAiNeedsOcr": "Recognize text first",
+  "compareAiPending": "Coming soon",
+  "compareTooNarrow": "Window too narrow",
+  "compareExit": "Exit Side by Side",
+  "compareSync": "Sync Scrolling",
+  "compareAlign": "Align Here",
+  "compareAlignedHud": "Aligned",
+  "compareSwap": "Swap Sides",
+  "compareMapHiddenHud": "Map hidden · {shortcut}",
+  "@compareAiTranslate": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "@compareMapHiddenHud": {
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  }
 }

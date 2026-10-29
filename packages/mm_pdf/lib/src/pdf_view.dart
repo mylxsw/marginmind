@@ -160,10 +160,13 @@ class MMPdfViewController extends ChangeNotifier {
   int get pageCount => _pageCount;
 
   /// Original PDF position at the 25% reading line. Page gaps use the nearest edge.
-  PdfReadingPosition? get readingPosition {
+  PdfReadingPosition? get readingPosition => _readingPositionForSize(null);
+
+  PdfReadingPosition? _readingPositionForSize(Size? viewport) {
     if (!isReady) return null;
     final pdf = _state!._controller;
-    final at = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height * .25));
+    final size = viewport ?? pdf.viewSize;
+    final at = pdf.localToDocument(Offset(size.width / 2, size.height * .25));
     final rects = pdf.layout.pageLayouts;
     var index = 0;
     var distance = double.infinity;
@@ -790,11 +793,11 @@ class _MMPdfViewState extends State<MMPdfView> {
 
   /// Room below the document for [MMPdfView.bottomInset]; null without one
   /// keeps pdfrx's own bounds.
-  EdgeInsets? get _boundaryMargin {
+  EdgeInsets? _boundaryMargin(Size viewport) {
     if (widget.crop?.enabled == true && widget.cropEditorBuilder == null && _controller.isReady) {
       // The original reading line can lie near the first/last page edge.
       // Permit that point to stay on the 25% line after removing whitespace.
-      final height = _controller.viewSize.height / _fitZoom;
+      final height = viewport.height / _fitZoom;
       return EdgeInsets.only(top: height * .25, bottom: math.max(widget.bottomInset / _fitZoom, height * .75));
     }
     return widget.bottomInset > 0 ? EdgeInsets.only(bottom: widget.bottomInset / _fitZoom) : null;
@@ -2039,16 +2042,19 @@ class _MMPdfViewState extends State<MMPdfView> {
                 if (mounted) _updateFitZoom();
               });
               if (previous == null || size.width == previous.width) return;
-              final center = controller.value.calcPosition(previous);
+              final position = widget.controller._readingPositionForSize(previous);
               // pdfrx calls this after layout in a microtask. A post-frame
               // callback here can wait indefinitely for another scheduled frame.
-              Future.microtask(() {
+              Future.microtask(() async {
                 if (!mounted || !_ready || controller.viewSize != size) return;
-                controller.goTo(_fitWidthMatrix(centerY: center.dy), duration: Duration.zero);
+                await controller.goTo(_fitWidthMatrix(), duration: Duration.zero);
+                if (mounted && _ready && controller.viewSize == size && position != null) {
+                  await widget.controller.jumpToReadingPosition(position);
+                }
               });
             },
             margin: 16,
-            boundaryMargin: _boundaryMargin,
+            boundaryMargin: _boundaryMargin(constraints.biggest),
             // Remove pdfrx's default 80% reduction in mouse-wheel movement.
             scrollByMouseWheel: 1,
             // Match PDFium's integer bitmap to the aligned device rectangle.

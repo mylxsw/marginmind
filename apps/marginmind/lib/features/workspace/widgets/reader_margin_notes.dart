@@ -11,6 +11,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
 import '../reader_crop.dart';
+import '../reader_compare.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
 
@@ -270,7 +271,11 @@ List<Widget> _page(
                                   doc.crop?.enabled != true &&
                                   automatic != null &&
                                   marginFits(viewport.size.width, pageWidth - automatic.all.left - automatic.all.right);
-                              if (crop.editing || (!canExpand && !canCrop)) return const SizedBox.shrink();
+                              if (ref.watch(readerCompareProvider(studySetId)) != null ||
+                                  crop.editing ||
+                                  (!canExpand && !canCrop)) {
+                                return const SizedBox.shrink();
+                              }
                               return Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
@@ -371,6 +376,13 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
     super.dispose();
   }
 
+  Future<void> _finishFromKeyboard() async {
+    if (!await _session.finish() || !mounted) return;
+    // The temporary field leaves the tree after saving. Keep Esc/navigation
+    // in the reader instead of dropping focus into the window's root scope.
+    Focus.of(context).requestFocus();
+  }
+
   Future<void> _perform(Future<void> Function() action) async {
     try {
       await action();
@@ -424,8 +436,11 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
         onExit: (_) => _session.hover(null),
         child: CallbackShortcuts(
           bindings: {
-            const SingleActivator(LogicalKeyboardKey.escape): _session.finish,
-            primaryShortcut(LogicalKeyboardKey.enter): _session.finish,
+            if (editing)
+              const SingleActivator(LogicalKeyboardKey.escape): _finishFromKeyboard
+            else if (state.popup.contains(note.id))
+              const SingleActivator(LogicalKeyboardKey.escape): _session.close,
+            primaryShortcut(LogicalKeyboardKey.enter): _finishFromKeyboard,
             if (!editing)
               const SingleActivator(LogicalKeyboardKey.enter): () => _session.start(note.documentId, existing: note),
             if (!editing) const SingleActivator(LogicalKeyboardKey.backspace): () => _session.delete(note),

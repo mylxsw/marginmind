@@ -2825,4 +2825,59 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get marginNoteAddedToMap => '已加入脑图';
+
+  @override
+  String get compareReading => '对照阅读';
+
+  @override
+  String get compareRecommended => '推荐';
+
+  @override
+  String compareAiTranslate(String language) {
+    return 'AI 逐段翻译成$language';
+  }
+
+  @override
+  String get languageChinese => '中文';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageCodeZh => '中';
+
+  @override
+  String get languageCodeEn => 'EN';
+
+  @override
+  String get compareAiOffline => '断网';
+
+  @override
+  String get compareAiNeedsOcr => '先识别文字';
+
+  @override
+  String get compareAiPending => '暂未提供';
+
+  @override
+  String get compareTooNarrow => '窗口太窄';
+
+  @override
+  String get compareExit => '退出对照阅读';
+
+  @override
+  String get compareSync => '同步滚动';
+
+  @override
+  String get compareAlign => '对齐此处';
+
+  @override
+  String get compareAlignedHud => '已对齐';
+
+  @override
+  String get compareSwap => '左右互换';
+
+  @override
+  String compareMapHiddenHud(String shortcut) {
+    return '已收起脑图 · $shortcut';
+  }
 }
