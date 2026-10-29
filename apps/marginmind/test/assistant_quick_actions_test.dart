@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,8 @@ import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_quick_actions.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
+import 'package:marginmind/features/assistant/widgets/assistant_messages.dart';
+import 'package:marginmind/features/assistant/widgets/assistant_markdown.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
@@ -142,10 +145,10 @@ void main() {
         if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
         return null;
       });
-      await tester.tap(find.byKey(const ValueKey('quick-copy')));
+      await tester.tap(find.byKey(ValueKey('assistant-copy-${view(tester).messages.last.id}')));
       await tester.pump();
       expect(copied, contains('信息流通方式'));
-      await tester.tap(find.byKey(const ValueKey('quick-save')));
+      await tester.tap(find.byKey(ValueKey('assistant-save-${view(tester).messages.last.id}')));
       await pumpFor(tester);
       expect(view(tester).messages.last.noteId, isNotNull);
       final saved = app.workspace.content.researchNotes.single;
@@ -172,6 +175,86 @@ void main() {
       expect(tester.takeException(), isNull);
       await settleHud(tester);
     });
+  }
+
+  for (final (sidebar, dark) in [(false, false), (true, false), (false, true), (true, true)]) {
+    testWidgets('desktop result actions reveal on hover and keyboard focus, sidebar=$sidebar dark=$dark', (
+      tester,
+    ) async {
+      final app = await openAssistantApp(
+        tester,
+        client: ScriptClient([answer(response), answer('导图建议')]),
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+      );
+      app.workspace.setLayout(MMSplitMode.primary);
+      await select(tester, app);
+      await open(tester);
+      await tester.tap(find.byKey(const ValueKey('quick-action-explain')));
+      await pumpFor(tester, 25);
+      if (sidebar) {
+        await tester.tap(find.byKey(const ValueKey('quick-sidebar')));
+        await pumpFor(tester);
+      }
+      final container = ProviderScope.containerOf(tester.element(find.byType(AgentMessage).last));
+      final answerId = container.read(assistantControllerProvider).messages.last.id;
+      final row = find.byKey(ValueKey('answer-actions-$answerId'));
+      final message = find.byType(AgentMessage).last;
+      final body = find.descendant(of: message, matching: find.byType(AnswerBody));
+      final copy = find.byKey(ValueKey('assistant-copy-$answerId'));
+      final save = find.byKey(ValueKey('assistant-save-$answerId'));
+      final organize = find.byKey(ValueKey('assistant-organize-$answerId'));
+      final before = tester.getRect(body);
+      expect(tester.widget<AnimatedOpacity>(row).opacity, 0);
+      expect(copy.hitTestable(), findsNothing);
+      expect(find.descendant(of: save, matching: find.byType(Text)), findsNothing);
+      expect(find.descendant(of: organize, matching: find.byIcon(MMIcons.mindMap)), findsOneWidget);
+      expect(find.descendant(of: save, matching: find.byTooltip('记笔记')), findsOneWidget);
+      expect(find.descendant(of: organize, matching: find.byTooltip('整理成导图')), findsOneWidget);
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: const Offset(1, 1));
+      await mouse.moveTo(tester.getCenter(body));
+      await tester.pumpAndSettle();
+      expect(tester.widget<AnimatedOpacity>(row).opacity, 1);
+      expect(tester.getRect(body), before);
+      expect(tester.getTopLeft(row).dy, greaterThanOrEqualTo(tester.getBottomLeft(body).dy));
+      if (!sidebar) {
+        expect(find.ancestor(of: copy, matching: find.byKey(const ValueKey('quick-content'))), findsOneWidget);
+      }
+      await mouse.moveTo(tester.getCenter(copy));
+      await tester.pumpAndSettle();
+      expect(copy.hitTestable(), findsOneWidget);
+      await screenshot(
+        tester,
+        'result-actions-${sidebar ? 'sidebar' : 'popover'}-${dark ? 'dark' : 'light'}-hover',
+        target: message,
+      );
+      await mouse.moveTo(const Offset(1, 1));
+      await tester.pumpAndSettle();
+      expect(tester.widget<AnimatedOpacity>(row).opacity, 0);
+      await screenshot(
+        tester,
+        'result-actions-${sidebar ? 'sidebar' : 'popover'}-${dark ? 'dark' : 'light'}-idle',
+        target: message,
+      );
+      final focus = Focus.of(tester.element(find.descendant(of: save, matching: find.byType(GestureDetector)).first));
+      focus.requestFocus();
+      await tester.pumpAndSettle();
+      expect(tester.widget<AnimatedOpacity>(row).opacity, 1);
+      focus.unfocus();
+      await mouse.moveTo(tester.getCenter(body));
+      await tester.pumpAndSettle();
+      await tester.tap(organize);
+      await pumpFor(tester, 25);
+      final conversation = container.read(assistantControllerProvider);
+      final question = conversation.messages[conversation.messages.length - 2];
+      expect(question.skill, 'organize');
+      expect(question.text, contains(response));
+      expect(question.contexts.single.displayText, quote);
+      expect(conversation.messages.last.text, '导图建议');
+      expect(find.byKey(ValueKey('assistant-organize-${conversation.messages.last.id}')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await mouse.removePointer();
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
   }
 
   testWidgets('opening, Esc and outside click keep selection and existing chat intact', (tester) async {
@@ -223,7 +306,7 @@ void main() {
     await tester.pumpAndSettle();
     await open(tester);
     expect(view(tester).messages.last.text, '本次');
-    expect(find.byKey(const ValueKey('quick-copy')), findsOneWidget);
+    expect(find.byKey(ValueKey('assistant-copy-${view(tester).messages.last.id}')), findsOneWidget);
   });
 
   testWidgets('closing a running answer keeps it alive and reopening resumes it; stop works', (tester) async {
@@ -382,6 +465,11 @@ void main() {
         find.descendant(of: find.byKey(const ValueKey('quick-content')), matching: find.byType(Scrollable)).first,
       );
       expect(scroll.position.maxScrollExtent, greaterThan(0));
+      final copy = find.byKey(ValueKey('assistant-copy-${view(tester).messages.last.id}'));
+      expect(copy.hitTestable(), findsNothing, reason: 'the actions scroll with the answer');
+      scroll.position.jumpTo(scroll.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(copy.hitTestable(), findsOneWidget);
       expect(find.byKey(const ValueKey('quick-input')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

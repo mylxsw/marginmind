@@ -3953,8 +3953,20 @@ abstract class AppLocalizations {
   /// No description provided for @assistantSaveNote.
   ///
   /// In en, this message translates to:
-  /// **'Save as Note'**
+  /// **'Take Note'**
   String get assistantSaveNote;
+
+  /// No description provided for @assistantAnswerToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn into Mind Map'**
+  String get assistantAnswerToMap;
+
+  /// No description provided for @assistantAnswerToMapPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn the following answer into a mind map, preserving its main points and hierarchy. Propose map edits for review:\n\n{answer}'**
+  String assistantAnswerToMapPrompt(String answer);
 
   /// No description provided for @assistantSavedNote.
   ///

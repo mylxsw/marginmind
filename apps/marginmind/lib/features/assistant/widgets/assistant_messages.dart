@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,6 +276,8 @@ class AgentMessage extends ConsumerWidget {
     this.last = false,
     this.compact = false,
     this.onSource,
+    this.onSaveNote,
+    this.savingNote = false,
   });
 
   final String studySetId;
@@ -285,6 +288,8 @@ class AgentMessage extends ConsumerWidget {
   final bool last;
   final bool compact;
   final ValueChanged<Citation>? onSource;
+  final VoidCallback? onSaveNote;
+  final bool savingNote;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -300,42 +305,87 @@ class AgentMessage extends ConsumerWidget {
     String tooltip(Citation x) => x.external
         ? (x.url == null ? '' : Uri.tryParse(x.url!)?.host ?? x.url!)
         : '${content.document(x.documentId ?? '')?.title ?? ''} · ${l.assistantCurrentPage(x.page ?? 1)}';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if ((!compact && (m.traces.isNotEmpty || (m.startedAt != null && m.endedAt != null))) || running)
-          ActivityTimeline(key: ValueKey('trace-${m.id}'), message: m),
-        for (final permission in m.permissions)
-          ReadPermissionCard(key: ValueKey(permission.request.id), messageId: m.id, view: permission),
-        if (notOnline)
-          Padding(
-            padding: const EdgeInsets.only(bottom: MMSpacing.xs),
-            child: Row(
-              children: [
-                Icon(MMIcons.info, size: 12, color: c.secondaryLabel),
-                const SizedBox(width: MMSpacing.xs),
-                Text(l.assistantNotOnline, style: t.footnote.copyWith(color: c.secondaryLabel)),
-              ],
+    return _AnswerActionRegion(
+      builder: (context, actionsVisible) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if ((!compact && (m.traces.isNotEmpty || (m.startedAt != null && m.endedAt != null))) || running)
+            ActivityTimeline(key: ValueKey('trace-${m.id}'), message: m),
+          for (final permission in m.permissions)
+            ReadPermissionCard(key: ValueKey(permission.request.id), messageId: m.id, view: permission),
+          if (notOnline)
+            Padding(
+              padding: const EdgeInsets.only(bottom: MMSpacing.xs),
+              child: Row(
+                children: [
+                  Icon(MMIcons.info, size: 12, color: c.secondaryLabel),
+                  const SizedBox(width: MMSpacing.xs),
+                  Text(l.assistantNotOnline, style: t.footnote.copyWith(color: c.secondaryLabel)),
+                ],
+              ),
             ),
+          AnswerBody(
+            text: m.text,
+            citations: m.citations,
+            cursor: running && !m.waitingForPermission,
+            conclusion: skill == AssistantSkill.verify,
+            tooltipFor: tooltip,
+            onLink: (url) => ref.read(assistantLinksProvider).open(url),
+            onCitation: (x) => x.external
+                ? (onSource ?? ref.read(assistantUiProvider(studySetId).notifier).openSource)(x)
+                : revealCitation(context, ref, studySetId, x, question.contexts),
           ),
-        AnswerBody(
-          text: m.text,
-          citations: m.citations,
-          cursor: running && !m.waitingForPermission,
-          conclusion: skill == AssistantSkill.verify,
-          tooltipFor: tooltip,
-          onLink: (url) => ref.read(assistantLinksProvider).open(url),
-          onCitation: (x) => x.external
-              ? (onSource ?? ref.read(assistantUiProvider(studySetId).notifier).openSource)(x)
-              : revealCitation(context, ref, studySetId, x, question.contexts),
-        ),
-        if (!running && numbers.isNotEmpty)
-          SourcesRow(message: m, numbers: numbers, studySetId: studySetId, onSource: onSource),
-        for (final p in m.proposals)
-          ProposalCard(key: ValueKey('proposal-${p.proposal.id}'), studySetId: studySetId, view: p),
-        if (!running && (!compact || (m.status != MessageStatus.done && m.status != MessageStatus.stopped)))
-          _Tail(studySetId: studySetId, message: m, question: question),
-      ],
+          if (!running && numbers.isNotEmpty)
+            SourcesRow(message: m, numbers: numbers, studySetId: studySetId, onSource: onSource),
+          for (final p in m.proposals)
+            ProposalCard(key: ValueKey('proposal-${p.proposal.id}'), studySetId: studySetId, view: p),
+          if (compact && m.status == MessageStatus.done)
+            Padding(
+              padding: const EdgeInsets.only(top: MMSpacing.s),
+              child: Text(l.assistantQuickGenerated, style: t.footnote.copyWith(color: c.secondaryLabel)),
+            ),
+          if (!running)
+            _Tail(
+              studySetId: studySetId,
+              message: m,
+              question: question,
+              actionsVisible: actionsVisible,
+              compact: compact,
+              onSaveNote: onSaveNote,
+              savingNote: savingNote,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Hover covers the whole answer and its footer, so moving to an action never
+/// hides it. Keyboard focus and touch devices keep the same actions reachable.
+class _AnswerActionRegion extends StatefulWidget {
+  const _AnswerActionRegion({required this.builder});
+
+  final Widget Function(BuildContext, bool) builder;
+
+  @override
+  State<_AnswerActionRegion> createState() => _AnswerActionRegionState();
+}
+
+class _AnswerActionRegionState extends State<_AnswerActionRegion> {
+  bool _hovered = false, _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final touch = defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android;
+    final visible = _hovered || _focused || touch || MediaQuery.accessibleNavigationOf(context);
+    return Focus(
+      canRequestFocus: false,
+      onFocusChange: (value) => setState(() => _focused = value),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: widget.builder(context, visible),
+      ),
     );
   }
 }
@@ -658,11 +708,29 @@ class SourcesRow extends ConsumerWidget {
 
 /// What an answer ends with: actions when done, or why it is not.
 class _Tail extends ConsumerWidget {
-  const _Tail({required this.studySetId, required this.message, required this.question});
+  const _Tail({
+    required this.studySetId,
+    required this.message,
+    required this.question,
+    required this.actionsVisible,
+    this.compact = false,
+    this.onSaveNote,
+    this.savingNote = false,
+  });
 
   final String studySetId;
   final Message message;
   final Message question;
+  final bool actionsVisible, compact, savingNote;
+  final VoidCallback? onSaveNote;
+
+  Widget _actions(BuildContext context, Widget child) => AnimatedOpacity(
+    key: ValueKey('answer-actions-${message.id}'),
+    opacity: actionsVisible ? 1 : 0,
+    duration: MMAppearance.duration(context, MMMotion.quick),
+    alwaysIncludeSemantics: true,
+    child: IgnorePointer(ignoring: !actionsVisible, child: child),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -679,8 +747,12 @@ class _Tail extends ConsumerWidget {
       onPressed: m.text.isEmpty
           ? null
           : () async {
-              await Clipboard.setData(ClipboardData(text: copyableAnswer(m.text, m.citations)));
-              if (context.mounted) MMHud.show(context, l.copiedHud);
+              try {
+                await Clipboard.setData(ClipboardData(text: copyableAnswer(m.text, m.citations)));
+                if (context.mounted) MMHud.show(context, l.copiedHud);
+              } catch (_) {
+                if (context.mounted) MMHud.show(context, l.assistantErrorFailed, icon: MMIcons.warning);
+              }
             },
     );
     final regenerate = _ActionButton(
@@ -689,70 +761,83 @@ class _Tail extends ConsumerWidget {
       tooltip: l.assistantRegenerate,
       onPressed: retry,
     );
-    // Migrated research: the answer can be copied, nothing else.
+    // Migrated research keeps its copy action without offering new writes.
     if (ref.watch(assistantControllerProvider.select((c) => c.readOnly))) {
-      return Padding(
-        padding: const EdgeInsets.only(top: MMSpacing.xxs),
-        child: Row(children: [copy]),
+      return _actions(
+        context,
+        Padding(
+          padding: const EdgeInsets.only(top: MMSpacing.xs),
+          child: Wrap(children: [copy]),
+        ),
       );
     }
     if (m.status == MessageStatus.done || m.status == MessageStatus.stopped) {
-      // An answer that already is (or proposes) map edits needs no second pass.
       final organizes = m.text.isNotEmpty && m.proposals.isEmpty && question.skill != AssistantSkill.organize.name;
-      return Padding(
-        padding: const EdgeInsets.only(top: MMSpacing.xxs),
-        child: Row(
-          children: [
-            if (m.status == MessageStatus.stopped) ...[
-              Text(l.assistantStopped, style: t.footnote.copyWith(color: c.secondaryLabel)),
-              const SizedBox(width: MMSpacing.s),
-            ],
-            if (m.proposals.isEmpty && m.text.isNotEmpty)
-              if (m.noteId == null)
-                Builder(
-                  builder: (context) => _ActionButton(
-                    key: ValueKey('assistant-save-${m.id}'),
-                    icon: MMIcons.addTopic,
-                    label: l.assistantSaveNote,
-                    color: c.research,
-                    onPressed: () => showSaveNotePopover(context, ref, studySetId, m, question),
-                  ),
-                )
-              else ...[
-                _ActionButton(
-                  key: ValueKey('assistant-saved-${m.id}'),
-                  icon: MMIcons.check,
-                  label: l.assistantSavedNote,
-                  color: c.positive,
-                  onPressed: null,
-                  keepColor: true,
-                ),
-                _ActionButton(
-                  label: l.assistantLocate,
-                  onPressed: () => ref.read(workspaceProvider(studySetId).notifier).locateNoteCard(m.noteId!),
-                ),
-              ],
-            copy,
-            if (organizes)
-              _ActionButton(
-                key: ValueKey('assistant-organize-${m.id}'),
-                icon: MMIcons.organize,
-                tooltip: l.assistantSkillOrganize,
-                onPressed: controller.busy
-                    ? null
-                    : () => unawaited(
-                        controller
-                            .send(
-                              AssistantSkill.organize.prompt(l),
-                              contexts: question.contexts,
-                              skill: AssistantSkill.organize.name,
-                            )
-                            .catchError((Object _) {}),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.status == MessageStatus.stopped)
+            Text(l.assistantStopped, style: t.footnote.copyWith(color: c.secondaryLabel)),
+          if (m.text.isNotEmpty || !compact)
+            _actions(
+              context,
+              Padding(
+                padding: const EdgeInsets.only(top: MMSpacing.xs),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    if (m.proposals.isEmpty && m.text.isNotEmpty)
+                      if (m.noteId == null)
+                        Builder(
+                          builder: (button) => _ActionButton(
+                            key: ValueKey('assistant-save-${m.id}'),
+                            icon: MMIcons.addNote,
+                            tooltip: l.assistantSaveNote,
+                            onPressed: savingNote
+                                ? null
+                                : onSaveNote ?? () => showSaveNotePopover(button, ref, studySetId, m, question),
+                          ),
+                        )
+                      else ...[
+                        _ActionButton(
+                          key: ValueKey('assistant-saved-${m.id}'),
+                          icon: MMIcons.check,
+                          tooltip: l.assistantSavedNote,
+                          onPressed: null,
+                          keepColor: true,
+                        ),
+                        if (!compact)
+                          _ActionButton(
+                            icon: MMIcons.locate,
+                            tooltip: l.assistantLocate,
+                            onPressed: () => ref.read(workspaceProvider(studySetId).notifier).locateNoteCard(m.noteId!),
+                          ),
+                      ],
+                    if (organizes)
+                      _ActionButton(
+                        key: ValueKey('assistant-organize-${m.id}'),
+                        icon: MMIcons.mindMap,
+                        tooltip: l.assistantAnswerToMap,
+                        onPressed: controller.busy
+                            ? null
+                            : () => unawaited(
+                                controller
+                                    .send(
+                                      l.assistantAnswerToMapPrompt(m.text),
+                                      contexts: question.contexts,
+                                      skill: AssistantSkill.organize.name,
+                                    )
+                                    .catchError((Object _) {}),
+                              ),
                       ),
+                    copy,
+                    if (!compact) regenerate,
+                  ],
+                ),
               ),
-            regenerate,
-          ],
-        ),
+            ),
+        ],
       );
     }
     final kind = m.errorKind;
@@ -1060,7 +1145,7 @@ class _ActionButton extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 26),
           padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : MMSpacing.s),
           decoration: BoxDecoration(
-            color: s.hovered ? (color == c.research ? c.researchTint : c.hover) : Colors.transparent,
+            color: s.hovered || s.focused ? (color == c.research ? c.researchTint : c.hover) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

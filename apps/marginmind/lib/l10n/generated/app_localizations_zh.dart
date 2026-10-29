@@ -2111,7 +2111,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantNotOnline => '未联网';
 
   @override
-  String get assistantSaveNote => '存为笔记';
+  String get assistantSaveNote => '记笔记';
+
+  @override
+  String get assistantAnswerToMap => '整理成导图';
+
+  @override
+  String assistantAnswerToMapPrompt(String answer) {
+    return '把下面这条回答整理成思维导图，保留主要观点和层级，并给出可预览的导图修改建议：\n\n$answer';
+  }
 
   @override
   String get assistantSavedNote => '已存为笔记';

@@ -400,7 +400,8 @@ void main() {
       final messages = conversationOf(tester).messages;
       final question = messages[messages.length - 2];
       expect(question.skill, 'organize');
-      expect(question.text, '把这部分整理进脑图');
+      expect(question.text, contains('解释'));
+      expect(question.text, contains('思维导图'));
       expect(question.contexts.map((c) => c.kind), contains(ContextKind.selection));
       expect(find.byKey(ValueKey('assistant-organize-${messages.last.id}')), findsNothing);
     });

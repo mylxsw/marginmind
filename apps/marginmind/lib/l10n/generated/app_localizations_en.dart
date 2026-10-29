@@ -2207,7 +2207,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantNotOnline => 'Not checked online';
 
   @override
-  String get assistantSaveNote => 'Save as Note';
+  String get assistantSaveNote => 'Take Note';
+
+  @override
+  String get assistantAnswerToMap => 'Turn into Mind Map';
+
+  @override
+  String assistantAnswerToMapPrompt(String answer) {
+    return 'Turn the following answer into a mind map, preserving its main points and hierarchy. Propose map edits for review:\n\n$answer';
+  }
 
   @override
   String get assistantSavedNote => 'Saved as Note';

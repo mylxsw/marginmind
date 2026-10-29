@@ -13,7 +13,6 @@ import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../assistant_settings.dart';
-import 'assistant_markdown.dart';
 import 'assistant_messages.dart';
 import 'assistant_overlays.dart';
 import 'assistant_panel.dart' show ModelSetupCard;
@@ -267,7 +266,9 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
       });
     });
     final showingAnswer = !_menu && answer != null && question != null;
-    final title = showingAnswer ? (_action?.title(l) ?? question.text) : l.assistantQuickTitle;
+    final title = showingAnswer
+        ? (question.skill == AssistantSkill.organize.name ? l.assistantAnswerToMap : _action?.title(l) ?? question.text)
+        : l.assistantQuickTitle;
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: Focus(
@@ -341,15 +342,10 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                 question: question,
                                 compact: true,
                                 onSource: (citation) => _sidebar(source: citation),
+                                onSaveNote: () => _save(answer),
+                                savingNote: _saving,
                               ),
                             ),
-                            if (!running) ...[
-                              const SizedBox(height: 10),
-                              Text(
-                                answer.status == MessageStatus.stopped ? l.assistantStopped : l.assistantQuickGenerated,
-                                style: t.footnote.copyWith(color: c.secondaryLabel),
-                              ),
-                            ],
                           ] else ...[
                             if (busy)
                               Padding(
@@ -374,39 +370,6 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                     ),
                   ),
                 ),
-                if (showingAnswer && !running && answer.text.isNotEmpty) ...[
-                  Divider(height: 18, color: c.separator),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: MMButton(
-                          key: const ValueKey('quick-copy'),
-                          label: l.copyAction,
-                          icon: MMIcons.copy,
-                          onPressed: () async {
-                            try {
-                              await Clipboard.setData(
-                                ClipboardData(text: copyableAnswer(answer.text, answer.citations)),
-                              );
-                              if (context.mounted) MMHud.show(context, l.copiedHud);
-                            } catch (_) {
-                              if (mounted) setState(() => _error = l.assistantErrorFailed);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: MMButton(
-                          key: const ValueKey('quick-save'),
-                          label: answer.noteId == null ? l.assistantSaveNote : l.assistantSavedNote,
-                          icon: answer.noteId == null ? MMIcons.addNote : MMIcons.check,
-                          onPressed: _saving || answer.noteId != null ? null : () => _save(answer),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [
