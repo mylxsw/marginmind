@@ -3149,4 +3149,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get translationEnglish => 'English';
+
+  @override
+  String get editBookmark => 'Edit Bookmark…';
+
+  @override
+  String get addOutlineEntry => 'Add Outline Entry…';
+
+  @override
+  String get addOutlineChild => 'Add Subentry…';
+
+  @override
+  String get editOutlineEntry => 'Edit Outline Entry…';
+
+  @override
+  String get deleteOutlineEntry => 'Delete Outline Entry';
+
+  @override
+  String get deleteOutlineBranch => 'Delete Entry and Subentries';
+
+  @override
+  String get noOutlineEntries => 'No outline entries. Use + to add one.';
+
+  @override
+  String get outlineNoDestination => 'Use page 0 for a section without a destination.';
+
+  @override
+  String get readerEntryActions => 'Entry Actions';
+
+  @override
+  String get readerDragToMove => 'Drag to reorder';
+
+  @override
+  String get readerSortPageAscending => 'Page Number: Ascending';
+
+  @override
+  String get readerSortPageDescending => 'Page Number: Descending';
+
+  @override
+  String get readerSortTitle => 'By Name';
+
+  @override
+  String get bookmarkPageOccupied => 'This page already has a bookmark.';
+
+  @override
+  String readerInvalidPage(int count) {
+    return 'Enter a valid page number up to $count.';
+  }
+
+  @override
+  String get outlineDragHint => 'Drag above or below an entry to reorder; drag to its center to nest.';
 }

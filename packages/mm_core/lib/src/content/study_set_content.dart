@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'document_outline.dart';
 import 'reading.dart';
 import '../assistant/proposals.dart';
 import 'note_format.dart';
@@ -33,6 +34,7 @@ class StudySetContent {
     this.comparePairs = const [],
     this.translationCaches = const [],
     this.bookmarks = const [],
+    this.documentOutlines = const [],
   });
 
   static const empty = StudySetContent();
@@ -60,7 +62,6 @@ class StudySetContent {
   final List<MapRelation> relations;
   final List<MapSummary> summaries;
 
-  /// The reader's page bookmarks, across documents.
   final List<ResearchNote> researchNotes;
   final List<NoteAttachment> noteAttachments;
   final List<Evidence> evidence;
@@ -69,11 +70,21 @@ class StudySetContent {
   final List<MarginNote> marginNotes;
   final List<ComparePair> comparePairs;
   final List<TranslationCache> translationCaches;
-  final List<Bookmark> bookmarks;
 
-  /// Bookmarks of [documentId] in page order.
+  /// The reader's page bookmarks, across documents.
+  final List<Bookmark> bookmarks;
+  final List<DocumentOutline> documentOutlines;
+
+  DocumentOutline? outlineOn(String documentId) =>
+      documentOutlines.where((o) => o.documentId == documentId).firstOrNull;
+
+  /// Bookmarks in custom order, falling back to page order for legacy data.
   List<Bookmark> bookmarksOn(String documentId) =>
       bookmarks.where((b) => b.documentId == documentId).toList()..sort((a, b) {
+        if (a.order != null || b.order != null) {
+          final byOrder = (a.order ?? 0x7fffffff).compareTo(b.order ?? 0x7fffffff);
+          if (byOrder != 0) return byOrder;
+        }
         final byPage = a.page.compareTo(b.page);
         return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
       });
@@ -290,6 +301,7 @@ class StudySetContent {
     List<ComparePair>? comparePairs,
     List<TranslationCache>? translationCaches,
     List<Bookmark>? bookmarks,
+    List<DocumentOutline>? documentOutlines,
   }) {
     return StudySetContent(
       assistantReceipts: assistantReceipts ?? this.assistantReceipts,
@@ -312,6 +324,7 @@ class StudySetContent {
       comparePairs: comparePairs ?? this.comparePairs,
       translationCaches: translationCaches ?? this.translationCaches,
       bookmarks: bookmarks ?? this.bookmarks,
+      documentOutlines: documentOutlines ?? this.documentOutlines,
     );
   }
 
@@ -336,6 +349,7 @@ class StudySetContent {
     'comparePairs': [for (final v in comparePairs) v.toJson()],
     'translationCaches': [for (final v in translationCaches) v.toJson()],
     'bookmarks': [for (final b in bookmarks) b.toJson()],
+    'documentOutlines': [for (final o in documentOutlines) o.toJson()],
   };
 
   factory StudySetContent.fromJson(Map<String, Object?> j) {
@@ -363,6 +377,7 @@ class StudySetContent {
       comparePairs: list('comparePairs', ComparePair.fromJson),
       translationCaches: list('translationCaches', TranslationCache.fromJson),
       bookmarks: list('bookmarks', Bookmark.fromJson),
+      documentOutlines: list('documentOutlines', DocumentOutline.fromJson),
     );
   }
 }

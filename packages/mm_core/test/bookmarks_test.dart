@@ -73,4 +73,41 @@ void main() {
     final restored = StudySetEditor.restore(c, marked);
     expect(restored.bookmarks, isEmpty);
   });
+  test('custom ordering survives save, edit, add, undo and document isolation', () {
+    final (c, doc) = book();
+    var next = editor.addBookmark(c, doc.id, 8, title: 'Eight');
+    next = editor.addBookmark(next, doc.id, 2, title: 'Two');
+    next = editor.addBookmark(next, doc.id, 5);
+    final original = next;
+    final ids = next.bookmarksOn(doc.id).reversed.map((b) => b.id).toList();
+    next = editor.orderBookmarks(next, doc.id, ids);
+    expect(next.bookmarksOn(doc.id).map((b) => b.page), [8, 5, 2]);
+    next = editor.editBookmark(next, ids.first, 'Edited', 9);
+    expect(next.bookmarksOn(doc.id).map((b) => b.page), [9, 5, 2]);
+    next = editor.addBookmark(next, doc.id, 1);
+    expect(next.bookmarksOn(doc.id).map((b) => b.page), [9, 5, 2, 1]);
+    expect(StudySetContent.fromJson(next.toJson()).bookmarksOn(doc.id).map((b) => b.page), [9, 5, 2, 1]);
+    expect(StudySetEditor.restore(original, next).bookmarksOn(doc.id).map((b) => b.page), [2, 5, 8]);
+    final (both, other) = editor.addDocument(next, title: 'Other', fileName: 'b.pdf', pageCount: 10);
+    final withOther = editor.addBookmark(both, other.id, 3);
+    final ordered = editor.orderBookmarks(
+      withOther,
+      doc.id,
+      next.bookmarksOn(doc.id).reversed.map((b) => b.id).toList(),
+    );
+    expect(ordered.bookmarksOn(other.id).single.toJson(), withOther.bookmarksOn(other.id).single.toJson());
+  });
+
+  test('add is idempotent and editing cannot duplicate a page or accept invalid order', () {
+    final (c, doc) = book();
+    var next = editor.addBookmark(c, doc.id, 3);
+    next = editor.addBookmark(next, doc.id, 5);
+    expect(editor.addBookmark(next, doc.id, 3), same(next));
+    final id = next.bookmarks.first.id;
+    expect(editor.editBookmark(next, id, 'Invalid', 5), same(next));
+    expect(editor.editBookmark(next, id, 'Invalid', 11), same(next));
+    expect(editor.orderBookmarks(next, doc.id, [id, id]), same(next));
+    expect(editor.orderBookmarks(next, doc.id, ['missing', id]), same(next));
+    expect(editor.orderBookmarks(next, doc.id, [id]), same(next));
+  });
 }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'document_outline.dart';
+
 import 'models.dart';
 import 'reading.dart';
 import 'reading_editor.dart';
@@ -1039,6 +1041,10 @@ class StudySetEditor {
       next = deleteAnnotation(next, a.id);
     }
     return next.copyWith(
+      documentOutlines: [
+        for (final o in next.documentOutlines)
+          if (o.documentId != documentId) o,
+      ],
       marginNotes: [
         for (final n in next.marginNotes)
           if (n.documentId != documentId) n,
@@ -1079,8 +1085,58 @@ class StudySetEditor {
     if (doc == null || page < 1 || page > doc.pageCount) return c;
     final existing = c.bookmarkAt(documentId, page);
     if (existing != null) return removeBookmark(c, existing.id);
-    final bookmark = Bookmark(id: newId(), documentId: documentId, page: page, createdAt: now());
-    return c.copyWith(bookmarks: [...c.bookmarks, bookmark]);
+    return addBookmark(c, documentId, page);
+  }
+
+  StudySetContent addBookmark(StudySetContent c, String documentId, int page, {String title = ''}) {
+    final doc = c.document(documentId);
+    if (doc == null || page < 1 || page > doc.pageCount || c.bookmarkAt(documentId, page) != null) return c;
+    final existing = c.bookmarksOn(documentId);
+    final custom = existing.any((b) => b.order != null);
+    final bookmark = Bookmark(id: newId(), documentId: documentId, page: page, createdAt: now(), title: title.trim());
+    final next = c.copyWith(bookmarks: [...c.bookmarks, bookmark]);
+    return custom ? orderBookmarks(next, documentId, [...existing.map((b) => b.id), bookmark.id]) : next;
+  }
+
+  StudySetContent editBookmark(StudySetContent c, String id, String title, int page) {
+    final bookmark = c.bookmarks.where((b) => b.id == id).firstOrNull;
+    if (bookmark == null) return c;
+    final doc = c.document(bookmark.documentId);
+    final occupied = c.bookmarkAt(bookmark.documentId, page);
+    if (doc == null || page < 1 || page > doc.pageCount || (occupied != null && occupied.id != id)) return c;
+    return c.copyWith(
+      bookmarks: [for (final b in c.bookmarks) b.id == id ? b.copyWith(title: title.trim(), page: page) : b],
+    );
+  }
+
+  StudySetContent orderBookmarks(StudySetContent c, String documentId, List<String> ids) {
+    final existing = c.bookmarksOn(documentId);
+    if (ids.length != existing.length ||
+        ids.toSet().length != ids.length ||
+        !existing.every((b) => ids.contains(b.id))) {
+      return c;
+    }
+    final positions = {for (final (index, id) in ids.indexed) id: index};
+    return c.copyWith(
+      bookmarks: [for (final b in c.bookmarks) b.documentId == documentId ? b.copyWith(order: positions[b.id]) : b],
+    );
+  }
+
+  StudySetContent setDocumentOutline(StudySetContent c, String documentId, List<PdfOutlineEntry> items) {
+    final doc = c.document(documentId);
+    if (doc == null) return c;
+    final entries = OutlineTree.flatten(items).toList();
+    if (entries.map((e) => e.id).toSet().length != entries.length ||
+        entries.any((e) => e.page < 0 || e.page > doc.pageCount)) {
+      return c;
+    }
+    return c.copyWith(
+      documentOutlines: [
+        for (final o in c.documentOutlines)
+          if (o.documentId != documentId) o,
+        DocumentOutline(documentId: documentId, items: items),
+      ],
+    );
   }
 
   /// An empty [title] goes back to the unnamed bookmark.

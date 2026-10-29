@@ -1690,5 +1690,22 @@
   "translationArabic": "Arabic",
   "translationChooseSourceToSwap": "Select the source language to swap direction",
   "translationChinese": "Chinese",
-  "translationEnglish": "English"
+  "translationEnglish": "English",
+  "editBookmark": "Edit Bookmark…",
+  "addOutlineEntry": "Add Outline Entry…",
+  "addOutlineChild": "Add Subentry…",
+  "editOutlineEntry": "Edit Outline Entry…",
+  "deleteOutlineEntry": "Delete Outline Entry",
+  "deleteOutlineBranch": "Delete Entry and Subentries",
+  "noOutlineEntries": "No outline entries. Use + to add one.",
+  "outlineNoDestination": "Use page 0 for a section without a destination.",
+  "readerEntryActions": "Entry Actions",
+  "readerDragToMove": "Drag to reorder",
+  "readerSortPageAscending": "Page Number: Ascending",
+  "readerSortPageDescending": "Page Number: Descending",
+  "readerSortTitle": "By Name",
+  "bookmarkPageOccupied": "This page already has a bookmark.",
+  "readerInvalidPage": "Enter a valid page number up to {count}.",
+  "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
+  "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest."
 }

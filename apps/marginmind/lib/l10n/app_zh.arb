@@ -1043,5 +1043,22 @@
   "translationArabic": "阿拉伯语",
   "translationChooseSourceToSwap": "先选择原文语言，再互换方向",
   "translationChinese": "中文",
-  "translationEnglish": "英文"
+  "translationEnglish": "英文",
+  "editBookmark": "编辑书签…",
+  "addOutlineEntry": "新增目录条目…",
+  "addOutlineChild": "新增子目录…",
+  "editOutlineEntry": "编辑目录条目…",
+  "deleteOutlineEntry": "删除目录条目",
+  "deleteOutlineBranch": "删除条目及其子目录",
+  "noOutlineEntries": "没有目录，点击 + 新增条目",
+  "outlineNoDestination": "页码填 0 表示不跳转的分组标题",
+  "readerEntryActions": "条目操作",
+  "readerDragToMove": "拖动调整顺序",
+  "readerSortPageAscending": "按页码升序",
+  "readerSortPageDescending": "按页码降序",
+  "readerSortTitle": "按名称排序",
+  "bookmarkPageOccupied": "这一页已有书签，请编辑已有书签",
+  "readerInvalidPage": "请输入有效页码，最大为 {count}",
+  "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
+  "outlineDragHint": "拖到条目上方或下方调整顺序，拖到中间成为子目录"
 }

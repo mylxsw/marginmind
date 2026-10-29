@@ -3017,4 +3017,54 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get translationEnglish => '英文';
+
+  @override
+  String get editBookmark => '编辑书签…';
+
+  @override
+  String get addOutlineEntry => '新增目录条目…';
+
+  @override
+  String get addOutlineChild => '新增子目录…';
+
+  @override
+  String get editOutlineEntry => '编辑目录条目…';
+
+  @override
+  String get deleteOutlineEntry => '删除目录条目';
+
+  @override
+  String get deleteOutlineBranch => '删除条目及其子目录';
+
+  @override
+  String get noOutlineEntries => '没有目录，点击 + 新增条目';
+
+  @override
+  String get outlineNoDestination => '页码填 0 表示不跳转的分组标题';
+
+  @override
+  String get readerEntryActions => '条目操作';
+
+  @override
+  String get readerDragToMove => '拖动调整顺序';
+
+  @override
+  String get readerSortPageAscending => '按页码升序';
+
+  @override
+  String get readerSortPageDescending => '按页码降序';
+
+  @override
+  String get readerSortTitle => '按名称排序';
+
+  @override
+  String get bookmarkPageOccupied => '这一页已有书签，请编辑已有书签';
+
+  @override
+  String readerInvalidPage(int count) {
+    return '请输入有效页码，最大为 $count';
+  }
+
+  @override
+  String get outlineDragHint => '拖到条目上方或下方调整顺序，拖到中间成为子目录';
 }

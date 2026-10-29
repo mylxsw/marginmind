@@ -28,7 +28,7 @@ void main() {
     };
     final before = jsonEncode(old);
     final migrated = migrateStudySet(old);
-    expect(migrated['format'], 8);
+    expect(migrated['format'], currentStudySetFormat);
     expect(migrated['unknown'], 42);
     final content = migrated['content'] as Map;
     for (final e in (old['content'] as Map).entries) {
@@ -38,7 +38,7 @@ void main() {
     expect(content['translationCaches'], isEmpty);
     expect(jsonEncode(old), before);
     expect(migrateStudySet(migrated), same(migrated));
-    expect(() => migrateStudySet({'format': 9}), throwsFormatException);
+    expect(() => migrateStudySet({'format': currentStudySetFormat + 1}), throwsFormatException);
     expect((migrateStudySet({'format': 7})['content'] as Map)['marginNotes'], isEmpty);
   });
   test('reading CRUD and concurrent translations survive durable reopen', () async {

@@ -10,7 +10,8 @@ import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
-import 'notices.dart';
+import 'reader_bookmarks.dart';
+import 'reader_outline.dart';
 
 /// Width of the page sidebar inside the source pane.
 const readerSidebarWidth = MMSizes.readerSidebarWidth;
@@ -49,12 +50,10 @@ class ReaderSidebar extends ConsumerWidget {
       child: ListenableBuilder(
         listenable: pdf,
         builder: (context, _) {
-          final hasOutline = pdf.outline.isNotEmpty;
-          // A document without contents has no such tab; fall back quietly.
-          final shown = mode == ReaderPanelMode.outline && !hasOutline ? ReaderPanelMode.thumbnails : mode;
+          final shown = mode;
           final tabs = <(ReaderPanelMode, IconData, String, SingleActivator)>[
             (ReaderPanelMode.thumbnails, MMIcons.thumbnails, l.readerThumbnails, AppShortcuts.readerThumbnails),
-            if (hasOutline) (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline, AppShortcuts.readerOutline),
+            (ReaderPanelMode.outline, MMIcons.outline, l.readerOutline, AppShortcuts.readerOutline),
             (ReaderPanelMode.bookmarks, MMIcons.bookmark, l.readerBookmarks, AppShortcuts.readerBookmarks),
             (ReaderPanelMode.annotations, MMIcons.annotations, l.readerAnnotations, AppShortcuts.readerAnnotations),
           ];
@@ -80,8 +79,15 @@ class ReaderSidebar extends ConsumerWidget {
               Expanded(
                 child: switch (shown) {
                   ReaderPanelMode.thumbnails => _Thumbnails(pdf: pdf, pageCount: document.pageCount),
-                  ReaderPanelMode.outline => _Outline(key: ValueKey(document.id), pdf: pdf),
-                  ReaderPanelMode.bookmarks => _Bookmarks(
+                  ReaderPanelMode.outline => ReaderOutline(
+                    key: ValueKey(document.id),
+                    studySetId: studySetId,
+                    document: document,
+                    pdf: pdf,
+                    outline: content.outlineOn(document.id),
+                  ),
+                  ReaderPanelMode.bookmarks => ReaderBookmarks(
+                    document: document,
                     studySetId: studySetId,
                     pdf: pdf,
                     bookmarks: content.bookmarksOn(document.id),
@@ -197,155 +203,6 @@ class _ThumbnailsState extends State<_Thumbnails> {
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---- table of contents ----------------------------------------------------------
-
-class _Outline extends StatefulWidget {
-  const _Outline({super.key, required this.pdf});
-
-  final MMPdfViewController pdf;
-
-  @override
-  State<_Outline> createState() => _OutlineState();
-}
-
-class _OutlineState extends State<_Outline> {
-  final _collapsed = <MMPdfOutlineItem>{};
-  MMPdfOutlineItem? _lastActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    final t = context.mmText;
-    final roots = widget.pdf.outline;
-    final active = activeOutlineItem(roots, widget.pdf.currentPage);
-    if (active != _lastActive) {
-      // The section being read must stay visible, whatever was folded.
-      _lastActive = active;
-      if (active != null) _collapsed.removeAll(outlinePathTo(roots, active).where((i) => i != active));
-    }
-    final rows = <(MMPdfOutlineItem, int)>[];
-    void collect(List<MMPdfOutlineItem> items, int depth) {
-      for (final item in items) {
-        rows.add((item, depth));
-        if (!_collapsed.contains(item)) collect(item.children, depth + 1);
-      }
-    }
-
-    collect(roots, 0);
-    return ListView.builder(
-      padding: const EdgeInsets.all(MMSizes.sidebarInset),
-      itemCount: rows.length,
-      itemBuilder: (context, index) {
-        final (item, depth) = rows[index];
-        final selected = identical(item, active);
-        final folded = _collapsed.contains(item);
-        return MMInteractive(
-          key: ValueKey('outline-$index'),
-          tooltip: item.title,
-          semanticLabel: item.title,
-          onTap: item.isNavigable ? () => widget.pdf.jumpToPage(item.page) : null,
-          selected: selected,
-          builder: (context, s) => Container(
-            constraints: BoxConstraints(minHeight: context.mmSidebarRow),
-            padding: EdgeInsets.fromLTRB(2 + math.min(depth, 6) * 12.0, 4, 6, 4),
-            decoration: BoxDecoration(
-              color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
-              borderRadius: BorderRadius.circular(MMRadii.row),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 20,
-                  child: item.children.isEmpty
-                      ? null
-                      : MMInteractive(
-                          onTap: () => setState(() => folded ? _collapsed.remove(item) : _collapsed.add(item)),
-                          semanticLabel: folded ? l.expandSection : l.collapseSection,
-                          builder: (context, _) => Icon(
-                            folded ? MMIcons.chevronRight : MMIcons.chevronDown,
-                            size: 10,
-                            color: c.secondaryLabel,
-                          ),
-                        ),
-                ),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.callout.copyWith(
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: item.isNavigable ? c.label : c.secondaryLabel,
-                    ),
-                  ),
-                ),
-                if (item.isNavigable)
-                  Padding(
-                    padding: const EdgeInsets.only(left: MMSpacing.xs),
-                    child: MMCount(item.page),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---- bookmarks ------------------------------------------------------------------
-
-class _Bookmarks extends ConsumerWidget {
-  const _Bookmarks({required this.studySetId, required this.pdf, required this.bookmarks});
-
-  final String studySetId;
-  final MMPdfViewController pdf;
-  final List<Bookmark> bookmarks;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    if (bookmarks.isEmpty) return _Empty(label: l.noBookmarks);
-    final controller = ref.read(workspaceProvider(studySetId).notifier);
-    return ListView.builder(
-      padding: const EdgeInsets.all(MMSizes.sidebarInset),
-      itemCount: bookmarks.length,
-      itemBuilder: (context, index) {
-        final bookmark = bookmarks[index];
-        final named = bookmark.title.isNotEmpty;
-        return MMSidebarItem(
-          key: ValueKey('bookmark-${bookmark.id}'),
-          icon: MMIcons.bookmarkFill,
-          iconColor: c.accent,
-          label: named ? bookmark.title : l.pageNumber(bookmark.page),
-          trailing: named ? MMCount(bookmark.page) : null,
-          selected: bookmark.page == pdf.currentPage,
-          onTap: () => pdf.jumpToPage(bookmark.page),
-          onContextMenu: (position) => showMMMenu(
-            context,
-            position: position,
-            entries: [
-              MMMenuItem(l.renameBookmark, () async {
-                final title = await showRenameSheet(
-                  context,
-                  title: l.renameBookmark,
-                  initial: named ? bookmark.title : l.pageNumber(bookmark.page),
-                );
-                if (title != null) await controller.renameBookmark(bookmark.id, title);
-              }),
-              MMMenuItem(l.deleteBookmark, () => controller.removeBookmark(bookmark.id), destructive: true),
             ],
           ),
         );

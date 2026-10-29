@@ -143,7 +143,7 @@ void main() {
     await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsOneWidget);
-    expect(find.byIcon(MMIcons.outline), findsNothing, reason: 'no contents, no tab');
+    expect(find.byIcon(MMIcons.outline), findsOneWidget, reason: 'empty PDFs can create their own outline');
     expect(find.byIcon(MMIcons.bookmark), findsOneWidget);
     expect(find.byIcon(MMIcons.annotations), findsOneWidget);
     await tester.tap(find.byTooltip(RegExp('Hide Page Sidebar')));
@@ -169,12 +169,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('contents: folds, highlights the section being read, and only exists with an outline', (tester) async {
+  testWidgets('contents: folds, highlights the current section and supports an empty outline', (tester) async {
     final r = await openReader(tester);
     r.controller.showReaderPanel(ReaderPanelMode.outline);
     await tester.pumpAndSettle();
-    expect(find.byIcon(MMIcons.outline), findsNothing);
-    expect(find.byKey(const ValueKey('thumbnail-1')), findsOneWidget, reason: 'falls back to thumbnails');
+    expect(find.byIcon(MMIcons.outline), findsOneWidget);
+    expect(find.text('No outline entries. Use + to add one.'), findsOneWidget);
 
     r.pdf.debugReport(pageCount: 164, page: 24, outline: [_chapter1, _chapter2]);
     await tester.pumpAndSettle();
@@ -204,8 +204,8 @@ void main() {
 
     r.pdf.debugReport(outline: const []);
     await tester.pumpAndSettle();
-    expect(find.byIcon(MMIcons.outline), findsNothing);
-    expect(find.byKey(const ValueKey('thumbnail-21')), findsOneWidget);
+    expect(find.byIcon(MMIcons.outline), findsOneWidget);
+    expect(find.text('No outline entries. Use + to add one.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -242,9 +242,12 @@ void main() {
 
     await tester.tap(inReaderSidebar('Page 5'), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Rename Bookmark…'));
+    await tester.tap(find.text('Edit Bookmark…'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.descendant(of: find.byType(MMSheet), matching: find.byType(TextField)), '遗忘曲线');
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('reader-entry-title')), matching: find.byType(TextField)),
+      '遗忘曲线',
+    );
     await tester.tap(find.widgetWithText(MMButton, 'Save'));
     await tester.pumpAndSettle();
     expect(find.text('遗忘曲线'), findsOneWidget);

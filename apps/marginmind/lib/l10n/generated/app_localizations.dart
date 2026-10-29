@@ -5653,6 +5653,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'English'**
   String get translationEnglish;
+
+  /// No description provided for @editBookmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bookmark…'**
+  String get editBookmark;
+
+  /// No description provided for @addOutlineEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Outline Entry…'**
+  String get addOutlineEntry;
+
+  /// No description provided for @addOutlineChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Subentry…'**
+  String get addOutlineChild;
+
+  /// No description provided for @editOutlineEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Outline Entry…'**
+  String get editOutlineEntry;
+
+  /// No description provided for @deleteOutlineEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Outline Entry'**
+  String get deleteOutlineEntry;
+
+  /// No description provided for @deleteOutlineBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Entry and Subentries'**
+  String get deleteOutlineBranch;
+
+  /// No description provided for @noOutlineEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No outline entries. Use + to add one.'**
+  String get noOutlineEntries;
+
+  /// No description provided for @outlineNoDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Use page 0 for a section without a destination.'**
+  String get outlineNoDestination;
+
+  /// No description provided for @readerEntryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry Actions'**
+  String get readerEntryActions;
+
+  /// No description provided for @readerDragToMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get readerDragToMove;
+
+  /// No description provided for @readerSortPageAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Number: Ascending'**
+  String get readerSortPageAscending;
+
+  /// No description provided for @readerSortPageDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Number: Descending'**
+  String get readerSortPageDescending;
+
+  /// No description provided for @readerSortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'By Name'**
+  String get readerSortTitle;
+
+  /// No description provided for @bookmarkPageOccupied.
+  ///
+  /// In en, this message translates to:
+  /// **'This page already has a bookmark.'**
+  String get bookmarkPageOccupied;
+
+  /// No description provided for @readerInvalidPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid page number up to {count}.'**
+  String readerInvalidPage(int count);
+
+  /// No description provided for @outlineDragHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag above or below an entry to reorder; drag to its center to nest.'**
+  String get outlineDragHint;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

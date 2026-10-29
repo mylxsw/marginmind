@@ -52,6 +52,39 @@ void main() {
     await reopened.dispose();
   });
 
+  test('outline edits and custom bookmark order survive closing and reopening the store', () async {
+    final store = FileLibraryStore(dir);
+    final set = await store.create(const NewStudySet(title: 'Navigation', colorIndex: 0));
+    late String docId;
+    await store.update(set.id, (c) {
+      final (next, doc) = editor.addDocument(c, title: 'Book', fileName: 'a.pdf', pageCount: 20);
+      docId = doc.id;
+      var edited = editor.addBookmark(next, docId, 3, title: 'First');
+      edited = editor.addBookmark(edited, docId, 10, title: 'Last');
+      edited = editor.orderBookmarks(edited, docId, edited.bookmarksOn(docId).reversed.map((b) => b.id).toList());
+      return editor.setDocumentOutline(edited, docId, const [
+        PdfOutlineEntry(
+          id: 'chapter',
+          title: 'Edited chapter',
+          page: 2,
+          children: [PdfOutlineEntry(id: 'section', title: 'New section', page: 4)],
+        ),
+      ]);
+    });
+    final expected = (await store.load(set.id)).toJson();
+    await store.dispose();
+    final reopened = FileLibraryStore(dir);
+    final content = await reopened.load(set.id);
+    expect(content.toJson(), expected);
+    expect(content.bookmarksOn(docId).map((b) => b.page), [10, 3]);
+    expect(content.outlineOn(docId)!.items.single.children.single.title, 'New section');
+    await reopened.update(set.id, (c) => editor.setDocumentOutline(c, docId, []));
+    await reopened.dispose();
+    final empty = FileLibraryStore(dir);
+    expect((await empty.load(set.id)).outlineOn(docId)!.items, isEmpty);
+    await empty.dispose();
+  });
+
   test('content watchers see updates; damaged packages are skipped', () async {
     final store = FileLibraryStore(dir);
     final set = await store.create(const NewStudySet(title: 'A', colorIndex: 0));

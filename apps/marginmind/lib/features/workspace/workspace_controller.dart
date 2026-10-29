@@ -1018,6 +1018,21 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _update((c) => _editor.toggleBookmark(c, documentId, page));
   }
 
+  Future<void> addBookmark(String documentId, int page, String title) =>
+      _update((c) => _editor.addBookmark(c, documentId, page, title: title));
+
+  Future<void> editBookmark(String id, String title, int page) =>
+      _update((c) => _editor.editBookmark(c, id, title, page));
+
+  Future<void> orderBookmarks(String documentId, List<String> ids) =>
+      _update((c) => _editor.orderBookmarks(c, documentId, ids));
+
+  Future<void> editDocumentOutline(
+    String documentId,
+    List<PdfOutlineEntry> original,
+    List<PdfOutlineEntry> Function(List<PdfOutlineEntry>) edit,
+  ) => _update((c) => _editor.setDocumentOutline(c, documentId, edit(c.outlineOn(documentId)?.items ?? original)));
+
   Future<void> renameBookmark(String id, String title) => _update((c) => _editor.renameBookmark(c, id, title));
 
   Future<void> removeBookmark(String id) => _update((c) => _editor.removeBookmark(c, id));
@@ -2119,6 +2134,7 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       identical(a.relations, b.relations) &&
       identical(a.summaries, b.summaries) &&
       identical(a.bookmarks, b.bookmarks) &&
+      identical(a.documentOutlines, b.documentOutlines) &&
       identical(a.inkStrokes, b.inkStrokes) &&
       identical(a.marginNotes, b.marginNotes) &&
       identical(a.comparePairs, b.comparePairs) &&

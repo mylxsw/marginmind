@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 8;
+const currentStudySetFormat = 9;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -19,6 +19,7 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 6) result = _toFormat6(result);
   if (format < 7) result = _toFormat7(result);
   if (format < 8) result = _toFormat8(result);
+  if (format < 9) result = _toFormat9(result);
   return result;
 }
 
@@ -112,5 +113,15 @@ Map<String, Object?> _toFormat8(Map<String, Object?> json) {
       for (final key in ['marginNotes', 'comparePairs', 'translationCaches'])
         if (!content.containsKey(key)) key: const [],
     },
+  };
+}
+
+/// Format 9: editable PDF outlines and persistent bookmark ordering.
+Map<String, Object?> _toFormat9(Map<String, Object?> json) {
+  final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
+  return {
+    ...json,
+    'format': 9,
+    'content': {...content, 'documentOutlines': content['documentOutlines'] ?? const []},
   };
 }

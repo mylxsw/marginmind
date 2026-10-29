@@ -112,6 +112,7 @@ class Bookmark {
     required this.page,
     required this.createdAt,
     this.title = '',
+    this.order,
   });
 
   final String id;
@@ -122,8 +123,17 @@ class Bookmark {
   final DateTime createdAt;
   final String title;
 
-  Bookmark copyWith({String? title}) =>
-      Bookmark(id: id, documentId: documentId, page: page, createdAt: createdAt, title: title ?? this.title);
+  /// Custom position within this document; null retains legacy page sorting.
+  final int? order;
+
+  Bookmark copyWith({String? title, int? page, int? order}) => Bookmark(
+    id: id,
+    documentId: documentId,
+    page: page ?? this.page,
+    createdAt: createdAt,
+    title: title ?? this.title,
+    order: order ?? this.order,
+  );
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -131,6 +141,7 @@ class Bookmark {
     'page': page,
     'createdAt': createdAt.toIso8601String(),
     if (title.isNotEmpty) 'title': title,
+    if (order != null) 'order': order,
   };
 
   factory Bookmark.fromJson(Map<String, Object?> j) => Bookmark(
@@ -139,6 +150,7 @@ class Bookmark {
     page: j['page'] as int,
     createdAt: DateTime.parse(j['createdAt'] as String),
     title: (j['title'] as String?) ?? '',
+    order: j['order'] as int?,
   );
 }
 
