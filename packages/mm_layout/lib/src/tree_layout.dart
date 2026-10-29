@@ -153,6 +153,11 @@ class TreeLayout {
 
   TreeLayoutResult layout(LayoutNode root, {List<LayoutSummary> summaries = const []}) {
     final heights = <String, double>{};
+    // Space a summary subtree needs beyond its covered range, split evenly
+    // before the range's first sibling and after its last one. The range
+    // itself keeps its normal sibling gaps and the bracket hugs its content.
+    final padBefore = <String, double>{}, padAfter = <String, double>{};
+    double padded(LayoutNode c) => (padBefore[c.id] ?? 0) + heights[c.id]! + (padAfter[c.id] ?? 0);
     final byParent = <String, List<LayoutSummary>>{};
     for (final s in summaries) {
       byParent.putIfAbsent(s.parentId, () => []).add(s);
@@ -160,13 +165,12 @@ class TreeLayout {
     final vertical = structure == LayoutStructure.tree;
     final gap = levelGap + (structure == LayoutStructure.brace ? braceGap : 0);
     double block(List<LayoutNode> nodes) =>
-        nodes.isEmpty ? 0 : nodes.fold<double>(0, (s, c) => s + heights[c.id]!) + siblingGap * (nodes.length - 1);
+        nodes.isEmpty ? 0 : nodes.fold<double>(0, (s, c) => s + padded(c)) + siblingGap * (nodes.length - 1);
     double measure(LayoutNode n) {
       for (final c in n.children) {
         measure(c);
       }
-      // Narrow ranges first, matching bracket placement. Enlarging the last
-      // band's height keeps all subsequent siblings beyond the summary tree.
+      // Narrow ranges first, matching bracket placement.
       final ranges = <(int, int, LayoutSummary)>[];
       for (final s in byParent[n.id] ?? <LayoutSummary>[]) {
         final a = n.children.indexWhere((c) => c.id == s.fromId);
@@ -178,11 +182,15 @@ class TreeLayout {
         // Label-only summaries retain their original node positions.
         if (s.node == null) continue;
         final needed = measure(s.node!);
-        final available = block(n.children.sublist(lo, hi + 1));
-        if (needed > available) {
-          final id = n.children[hi].id;
-          heights[id] = heights[id]! + needed - available;
-        }
+        final range = n.children.sublist(lo, hi + 1);
+        final available = block(range) - (padBefore[range.first.id] ?? 0) - (padAfter[range.last.id] ?? 0);
+        // The topic is centred on the range; in a tree its subtree then grows
+        // downward from there, so nearly all the extra space goes below.
+        final above = vertical ? s.node!.height / 2 : needed / 2;
+        final below = needed - above;
+        final before = above - available / 2, after = below - available / 2;
+        if (before > 0) padBefore[range.first.id] = before;
+        if (after > 0) padAfter[range.last.id] = after;
       }
       final childrenHeight = block(n.children);
       final h = vertical
@@ -194,7 +202,7 @@ class TreeLayout {
 
     measure(root);
     final split = balanced && structure == LayoutStructure.mind
-        ? _split(root, heights, summaries)
+        ? _split(root, {for (final c in root.children) c.id: padded(c)}, summaries)
         : root.children.length;
     final right = root.children.sublist(0, split), left = root.children.sublist(split);
     final total = [root.height, block(right), block(left)].reduce((a, b) => a > b ? a : b);
@@ -222,8 +230,9 @@ class TreeLayout {
       final cx = vertical ? rect.left + levelGap : (dir > 0 ? rect.right + gap : rect.left - gap);
       for (final c in n.children) {
         edges.add(LayoutEdge(n.id, c.id));
+        cy += padBefore[c.id] ?? 0;
         place(c, cx, cy, dir);
-        cy += heights[c.id]! + siblingGap;
+        cy += heights[c.id]! + (padAfter[c.id] ?? 0) + siblingGap;
       }
     }
 
@@ -235,8 +244,9 @@ class TreeLayout {
       for (final (side, dir, x) in [(right, 1, root.width + gap), (left, -1, -gap)]) {
         var cy = (total - block(side)) / 2;
         for (final c in side) {
+          cy += padBefore[c.id] ?? 0;
           place(c, x, cy, dir);
-          cy += heights[c.id]! + siblingGap;
+          cy += heights[c.id]! + (padAfter[c.id] ?? 0) + siblingGap;
         }
       }
       edges.insertAll(0, [for (final c in root.children) LayoutEdge(root.id, c.id)]);
@@ -360,7 +370,8 @@ class TreeLayout {
       var label = LayoutRect(labelLeft, (top + bottom - height) / 2, width, height);
       double? subtreeEdge;
       if (node != null) {
-        place(node, dir > 0 ? labelLeft : labelLeft + width, (top + bottom - heights[node.id]!) / 2, dir);
+        final topY = structure == LayoutStructure.tree ? (top + bottom - node.height) / 2 : (top + bottom - heights[node.id]!) / 2;
+        place(node, dir > 0 ? labelLeft : labelLeft + width, topY, dir);
         label = rects[node.id]!;
         subtreeEdge = _placeSummaries(node, node.children, dir, rects, bands, byParent, out, heights, place);
       }

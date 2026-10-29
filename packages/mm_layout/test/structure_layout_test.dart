@@ -100,6 +100,30 @@ void main() {
       contained(result);
     });
 
+    test('$structure keeps the summarized range compact around a tall topic subtree', () {
+      final result = TreeLayout(structure: structure, padding: 20).layout(
+        node('r', children: [node('a', height: 20), node('b', height: 20), node('c', height: 20)]),
+        summaries: [
+          LayoutSummary(
+            id: 's',
+            parentId: 'r',
+            fromId: 'a',
+            toId: 'b',
+            node: node('topic', height: 20, children: [for (var i = 0; i < 4; i++) node('t$i', height: 20)]),
+          ),
+        ],
+      );
+      final a = result.rects['a']!, b = result.rects['b']!, c = result.rects['c']!, topic = result.rects['topic']!;
+      final bracket = result.summaries['s']!.bracket;
+      expect(b.top - a.bottom, 14);
+      expect(bracket.top, a.top);
+      expect(bracket.bottom, b.bottom);
+      expect(topic.top + topic.height / 2, closeTo((a.top + b.bottom) / 2, 0.001));
+      final subtreeBottom = [for (var i = 0; i < 4; i++) result.rects['t$i']!.bottom].reduce((x, y) => x > y ? x : y);
+      expect(c.top, greaterThanOrEqualTo(subtreeBottom + 14));
+      contained(result);
+    });
+
     test('$structure ignores a hidden summary subtree', () {
       final result = TreeLayout(structure: structure, padding: 20).layout(
         root,
