@@ -18,6 +18,8 @@ void main() {
       '  ',
       'example',
       'https://',
+      'https://example.com:99999',
+      'https://a..com',
       'https://a b.com',
       'https://user:pass@example.com',
       'file:///a',

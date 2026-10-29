@@ -6,7 +6,7 @@ The browser uses an app-owned `marginmind/browser` native bridge: WKWebView on A
 
 Each Apple app uses its persistent default WK website store (separate from Safari). Android uses app-sandbox WebView/CookieManager. Windows uses `%LOCALAPPDATA%\MarginMind\Browser`. Clearing closes native views and clears cookies, storage and cache; it also closes the temporary sidebar entries. Windows initializes a hidden controller if clearing before opening a page in this launch.
 
-No JavaScript-to-app bridge is registered. WK scripts use a private content world; Android has no `addJavascriptInterface`; WebView2 disables web messages and host objects. Navigation permits only HTTP(S), including subframes where supported. Downloads, popups to external protocols, file access and permission requests are denied. Capture strings are capped at 16 MiB; platform and navigation errors leave conversion disabled.
+No JavaScript-to-app bridge is registered. WK scripts use a private content world; Android has no `addJavascriptInterface`; WebView2 disables web messages and host objects. Navigation permits only HTTP(S), including subframes where supported. Downloads, popups to external protocols, file access and permission requests are denied. Capture strings are capped at 16 million UTF-16 code units; platform and navigation errors leave conversion disabled.
 
 Readiness requires main-frame completion and 800 ms without observed DOM/resource activity. A PerformanceObserver avoids the browser's resource-timing buffer limit. At 15 seconds, the browser offers manual capture of the partially loaded page. This is a heuristic: unfinished fetches, cross-origin frames and long polling cannot all be observed through DOM/resource timing. The automatic prompt appears at most once per navigation.
 
@@ -24,4 +24,16 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home PATH=/o
 
 The fixture is a local HTTP server inside the test app: it changes DOM after loading, serves a local image, and sets a persistent cookie. Assertions exercise quiet readiness, captured live DOM/resources, navigation invalidation, cookie retention after recreating the view, and cookie removal after clearing data. Windows runs the same fixture in GitHub Actions after `flutter build windows --debug`; no external website or account is required.
 
-Final validation results are recorded in the PR and task comment.
+## Local results
+
+Flutter 3.47.2 / Dart 3.13.2, Xcode 27.1, macOS ARM64; iPad Pro 13-inch (M5), iOS 26.5 simulator; `mm_phone` Android API 36 ARM64 AVD with JDK 21.
+
+- macOS, iOS and Android: the integration test above passed on all three native engines. macOS LaunchServices registration stalled on this host; terminating only the build-owned `lsregister` child allowed the build to complete and the test to pass. Flutter also reported that foregrounding via `open` failed; the app still launched and all native fixture assertions passed.
+- `python3 tool/coverage.py`: all suites passed, 28,717 / 31,415 lines (91.41%).
+- Fresh browser-only coverage: `browser.dart` 87.80%, policy 100%, browser pane 96.04%, workspace browser 95.83%.
+- `python3 -m unittest discover -s tool/tests`: 17 passed.
+- `flutter analyze` and `dart format --set-exit-if-changed apps packages`: passed.
+
+Windows `windows-latest` also passed both `flutter build windows --debug` and the real browser integration test: [Actions job](https://github.com/mylxsw/marginmind/actions/runs/40922140386/job/123617923402), tested commit `35930bf` (6m51s). Later changes only tighten address validation and isolate hidden PDF focus; their Dart/widget tests run locally and in CI.
+
+The macOS native window suite is recorded in the PR and task comment.

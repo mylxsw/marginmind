@@ -85,7 +85,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
     return Stack(
       children: [
-        Offstage(offstage: browser.visible, child: _buildReader(context)),
+        Offstage(
+          offstage: browser.visible,
+          child: ExcludeFocus(excluding: browser.visible, child: _buildReader(context)),
+        ),
         if (browser.session case final session?)
           Offstage(
             offstage: !browser.visible,

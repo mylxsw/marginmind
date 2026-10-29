@@ -50,102 +50,107 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets('toolbar loading, ready, validation, history and failure states', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-    var elapsed = Duration.zero;
-    final s = BrowserSession(Uri.parse('https://example.com/'), elapsed: () => elapsed);
-    final calls = <String>[];
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      MethodChannel('marginmind/browser/${s.id}'),
-      (call) async {
-        calls.add(call.method);
-        if (call.method == 'evaluate') {
-          if (((call.arguments as Map)['script'] as String).contains('outerHTML')) {
-            return jsonEncode({
-              'url': s.url.toString(),
-              'title': 'Captured Title',
-              'dom': '<html>page</html>',
-              'resources': <String>[],
-            });
+  for (final size in [const Size(900, 600), const Size(390, 700)]) {
+    testWidgets('toolbar loading, ready, validation, history and failure states at $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      var elapsed = Duration.zero;
+      final s = BrowserSession(Uri.parse('https://example.com/'), elapsed: () => elapsed);
+      final calls = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannel('marginmind/browser/${s.id}'),
+        (call) async {
+          calls.add(call.method);
+          if (call.method == 'evaluate') {
+            if (((call.arguments as Map)['script'] as String).contains('outerHTML')) {
+              return jsonEncode({
+                'url': s.url.toString(),
+                'title': 'Captured Title',
+                'dom': '<html>page</html>',
+                'resources': <String>[],
+              });
+            }
+            return jsonEncode({'url': s.url.toString(), 'title': 'Title', 'dom': 0, 'network': 0, 'complete': true});
           }
-          return jsonEncode({'url': s.url.toString(), 'title': 'Title', 'dom': 0, 'network': 0, 'complete': true});
-        }
-        return null;
-      },
-    );
-    var converted = 0;
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          browserConverterProvider.overrideWithValue((_, _, _) async {
-            converted++;
-          }),
-        ],
-        child: MaterialApp(
-          theme: MMTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('en'),
-          home: Scaffold(
-            body: BrowserPane(
-              studySetId: 'demo-1',
-              session: s,
-              visible: true,
-              documentSwitcher: const SizedBox.shrink(),
+          return null;
+        },
+      );
+      var converted = 0;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            browserConverterProvider.overrideWithValue((_, _, _) async {
+              converted++;
+            }),
+          ],
+          child: MaterialApp(
+            theme: MMTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Scaffold(
+              body: BrowserPane(
+                studySetId: 'demo-1',
+                session: s,
+                visible: true,
+                documentSwitcher: const SizedBox.shrink(),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    expect(tester.widget<MMButton>(find.byKey(const ValueKey('browser-convert'))).onPressed, isNull);
-    await s.attach();
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
-      'marginmind/browser/${s.id}',
-      const StandardMethodCodec().encodeMethodCall(
-        MethodCall('event', {'kind': 'loaded', 'navigationId': 1, 'url': s.url.toString()}),
-      ),
-      (_) {},
-    );
-    await tester.pump(const Duration(milliseconds: 200));
-    elapsed += const Duration(seconds: 1);
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(const ValueKey('browser-ready-prompt')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('browser-convert')));
-    await tester.pump();
-    expect(converted, 1);
-    final previewContext = tester.element(find.byType(BrowserPane));
-    final preview = previewBrowserCapture(previewContext, 'demo-1', s);
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.text('Captured Title'), findsOneWidget);
-    await tester.tap(find.widgetWithText(MMButton, 'Done'));
-    await tester.pump(const Duration(seconds: 1));
-    await preview;
-    await tester.enterText(find.byType(TextField), 'file:///a');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    expect(find.text('Only http and https are supported'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'example.org');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
-    expect(calls.where((method) => method == 'navigate').length, 2);
-    await s.stop();
-    expect(s.canCapture, isFalse);
-    await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
-      'marginmind/browser/${s.id}',
-      const StandardMethodCodec().encodeMethodCall(const MethodCall('event', {'kind': 'failed', 'navigationId': 1})),
-      (_) {},
-    );
-    await tester.pump();
-    expect(find.text('Unable to Open Page'), findsOneWidget);
-    unawaited(previewBrowserCapture(previewContext, 'demo-1', s));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 3));
-    await tester.tap(find.widgetWithText(MMButton, 'Retry'));
-    await tester.pump();
-    expect(calls, contains('reload'));
-    s.dispose();
-    await tester.pumpWidget(const SizedBox.shrink());
-    debugDefaultTargetPlatformOverride = null;
-  });
+      );
+      expect(tester.widget<MMButton>(find.byKey(const ValueKey('browser-convert'))).onPressed, isNull);
+      await s.attach();
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+        'marginmind/browser/${s.id}',
+        const StandardMethodCodec().encodeMethodCall(
+          MethodCall('event', {'kind': 'loaded', 'navigationId': 1, 'url': s.url.toString()}),
+        ),
+        (_) {},
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      elapsed += const Duration(seconds: 1);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byKey(const ValueKey('browser-ready-prompt')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('browser-convert')));
+      await tester.pump();
+      expect(converted, 1);
+      final previewContext = tester.element(find.byType(BrowserPane));
+      final preview = previewBrowserCapture(previewContext, 'demo-1', s);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Captured Title'), findsOneWidget);
+      await tester.tap(find.widgetWithText(MMButton, 'Done'));
+      await tester.pump(const Duration(seconds: 1));
+      await preview;
+      await tester.enterText(find.byType(TextField), 'file:///a');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(find.text('Only http and https are supported'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'example.org');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      expect(calls.where((method) => method == 'navigate').length, 2);
+      await s.stop();
+      expect(s.canCapture, isFalse);
+      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.handlePlatformMessage(
+        'marginmind/browser/${s.id}',
+        const StandardMethodCodec().encodeMethodCall(const MethodCall('event', {'kind': 'failed', 'navigationId': 1})),
+        (_) {},
+      );
+      await tester.pump();
+      expect(find.text('Unable to Open Page'), findsOneWidget);
+      unawaited(previewBrowserCapture(previewContext, 'demo-1', s));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+      await tester.tap(find.widgetWithText(MMButton, 'Retry'));
+      await tester.pump();
+      expect(calls, contains('reload'));
+      s.dispose();
+      await tester.pumpWidget(const SizedBox.shrink());
+      debugDefaultTargetPlatformOverride = null;
+    });
+  }
 }

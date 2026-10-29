@@ -20,6 +20,9 @@ abstract final class BrowserPolicy {
       throw const BrowserUrlException(BrowserUrlError.scheme);
     }
     if (!allowsNavigation(uri) ||
+        (uri.hasPort && (uri.port < 1 || uri.port > 65535)) ||
+        uri.host.startsWith('.') ||
+        uri.host.contains('..') ||
         uri.userInfo.isNotEmpty ||
         RegExp(r'[\s\\\x00-\x1f]').hasMatch(value) ||
         (!uri.host.contains('.') && uri.host != 'localhost' && !uri.host.contains(':'))) {

@@ -345,12 +345,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ref.watch(workspaceContentProvider(workspaceId));
     }
     final workspaceState = inWorkspace ? ref.read(workspaceProvider(workspaceId)) : null;
+    final browserState = inWorkspace ? ref.watch(workspaceBrowserProvider(workspaceId)) : null;
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
     final editable =
         workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
     final hasDocument =
+        browserState?.visible != true &&
         workspace != null &&
         workspaceState!.activeDocumentId != null &&
         workspace.content.document(workspaceState.activeDocumentId!) != null;
@@ -396,7 +398,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
-    final browser = inWorkspace ? ref.watch(workspaceBrowserProvider(workspaceId)) : null;
+    final browser = browserState;
     if (browser?.visible == true && browser?.session != null) {
       final session = browser!.session!;
       final owner = ref.read(workspaceBrowserProvider(workspaceId!).notifier);
