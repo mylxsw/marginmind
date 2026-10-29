@@ -102,8 +102,12 @@ void main() {
         return Uint8List.fromList([137, 80, 78, 71]);
       },
     );
-    expect(seen, ['notes/img/a.png']);
-    expect(book.resources.keys, ['notes/img/a.png']);
+    expect(seen, ['img/a.png']);
+    expect(book.resources.keys.single, matches(r'^images/[a-f0-9]{64}\.png$'));
+    expect(
+      book.chapters.single.blocks.expand((b) => b.runs).where((r) => r.resource != null).map((r) => r.resource).toSet(),
+      book.resources.keys.toSet(),
+    );
     expect(book.chapters.single.id, 'main');
     expect(book.toc.single.title, '标题');
     expect(book.diagnostics.single, startsWith('Blocked image URL:'));
@@ -114,7 +118,7 @@ void main() {
     Future<Book> parse(String s, {BookCancellationToken? token}) =>
         const MarkdownBookParser().parse(Uint8List.fromList(utf8.encode(s)), cancellation: token);
     expect((await parse('![a](missing.png)')).diagnostics.single, startsWith('Missing image:'));
-    await expectLater(parse('![a](../secret.png)'), throwsA(error(BookErrorKind.damaged)));
+    expect((await parse('![a](../secret.png)')).diagnostics.single, startsWith('Missing image:'));
     await expectLater(
       const MarkdownBookParser().parse(Uint8List.fromList([255])),
       throwsA(error(BookErrorKind.damaged)),

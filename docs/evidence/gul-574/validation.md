@@ -7,27 +7,29 @@ because the change touches no native code or plugin registration.
 | Check | Result |
 | --- | --- |
 | `flutter analyze` | Exit 0, no issues (final source) |
-| `dart format --set-exit-if-changed apps packages` | Exit 0, 518 files unchanged |
+| `dart analyze packages/mm_book` | Exit 0, no issues |
+| `dart format --set-exit-if-changed apps packages` | Exit 0, 519 files unchanged |
 | `python3 -m unittest discover -s tool/tests` | Exit 0, 17 passed |
 | `python3 tool/coverage.py` | Exit 0, all 12 Dart/Flutter suites passed; app 774 passed / 21 skipped |
-| mm_book `dart test --coverage=coverage` | Exit 0, final 27 tests passed; coverage directory cleared before final collection |
+| mm_book `dart test --coverage=coverage` | Exit 0, final 36 tests passed; coverage directory cleared before final collection |
 | mm_book `dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib` | Exit 0 |
-| mm_book `CHROME_EXECUTABLE=... dart test --platform chrome` | Exit 0, 27 tests passed in Chrome (dart2js) |
+| mm_book `CHROME_EXECUTABLE=... dart test --platform chrome` | Exit 0, 36 tests passed in Chrome (dart2js) |
 | `python3 tool/coverage.py --report-only` | Exit 0, refreshed with final mm_book report |
 | `git diff --check` | Exit 0 |
 | External samples through `tool/inspect_book.dart` | All 7 parsed; source hashes and summaries in samples.json |
 
 The full-suite run exercised mm_core, mm_book, mm_reflow, its example,
 mm_research, mm_assistant, mm_layout, mm_data, mm_design, mm_platform, mm_pdf
-and the app. Subsequent parser review fixes were rechecked with the final 27
-mm_book VM/Chrome tests, analyze and format. The merged coverage below uses
-the fresh final mm_book LCOV report, without stale pre-edit coverage JSON.
+and the app. After the Markdown review fixes, all 12 suites were run again,
+along with the final 36 mm_book Chrome tests, analyze and format. The merged
+coverage below comes from this full rerun, with coverage directories cleared
+by the coverage script before collection.
 
 | Package | Covered / lines | Coverage |
 | --- | ---: | ---: |
 | apps/marginmind | 17618 / 19799 | 88.98% |
 | packages/mm_assistant | 1606 / 1659 | 96.81% |
-| packages/mm_book | 942 / 1005 | 93.73% |
+| packages/mm_book | 968 / 1031 | 93.89% |
 | packages/mm_core | 3318 / 3401 | 97.56% |
 | packages/mm_data | 441 / 455 | 96.92% |
 | packages/mm_design | 1912 / 2049 | 93.31% |
@@ -36,7 +38,7 @@ the fresh final mm_book LCOV report, without stale pre-edit coverage JSON.
 | packages/mm_platform | 200 / 216 | 92.59% |
 | packages/mm_reflow | 425 / 459 | 92.59% |
 | packages/mm_research | 637 / 655 | 97.25% |
-| **Total** | **29053 / 31739** | **91.54%** |
+| **Total** | **29079 / 31765** | **91.54%** |
 
 Required: 80%.
 
@@ -84,3 +86,28 @@ are copied into immutable views; metadata and container lists are immutable.
 Markdown resolvers never receive remote URLs; unsafe archive references and
 active link schemes are rejected/removed. No secrets or external book binaries
 were added. Persistence transactions remain GUL-573's responsibility.
+
+## Markdown review follow-up
+
+The previous Markdown adapter incorrectly applied EPUB archive-root rules to
+image source paths. It now passes normalized paths relative to the selected
+Markdown file directory to the caller-bound resolver, including literal `../`
+references. Absolute and relative SourceBytes names use the same resolver
+contract. Imported images and their HTML references use independent hashed
+`images/` keys; source paths never become storage keys.
+
+Unsafe paths, missing files, resolver exceptions and images exceeding the
+resource byte budget retain placeholders with diagnostics. A bad image cannot
+reject the entire document; explicit cancellation still aborts the parse.
+Percent-encoded traversal/separators, backslashes, NUL and malformed URL/UTF-8
+encoding are rejected before a resolver call. Invalid percent decoding can
+raise ArgumentError in Dart; it is converted into an image-path diagnostic.
+Resolver exception details are not included in diagnostics.
+
+Nine new regression tests cover relative/absolute/POSIX/Windows source names,
+parent-directory aliases and deduplication, unsafe image paths, partial read
+failures, encoded spaces/resource limits, and cancellation on resolver failure.
+Self-review checked source-directory binding versus stored-resource naming,
+all image failure branches, immutable resource copying and unaffected EPUB
+archive path restrictions. The optional MOBI malformed-UTF8 suggestion was
+left outside this Markdown correction.

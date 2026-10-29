@@ -16,7 +16,9 @@ class BookCancellationToken {
   }
 }
 
-/// Callers resolve sandboxed logical paths, never arbitrary filesystem URLs.
+/// Markdown paths are relative to the source file directory and may contain `../`.
+/// Callers bind resolution to that directory and enforce their import sandbox.
+/// Stored resource keys are independent safe package paths, never filesystem URLs.
 /// No parser performs network access or writes files; persistence is mm_data's transaction.
 typedef ResourceResolver = Future<Uint8List?> Function(String path);
 

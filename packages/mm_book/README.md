@@ -6,8 +6,12 @@ selects EPUB, MOBI/AZW/AZW3/AZW4 or Markdown by filename. The individual
 `EpubParser.parseHtml` is the shared HTML-to-IR entry point for web captures.
 
 No parser reads files, writes staging files, launches tools or requests URLs.
-`ResourceResolver` receives package-relative paths for Markdown images; the
-caller must restrict resolution to the selected document's import sandbox.
+`ResourceResolver` receives paths relative to the Markdown file's containing
+folder, including literal `../` references. The caller binds the resolver to
+that directory (for absolute or relative source filenames) and enforces its
+import sandbox. Imported images use hashed `images/` keys, independent of
+source paths; missing, unsafe or unreadable images produce diagnostics and
+placeholders without rejecting the document.
 Remote images keep a U+FFFC placeholder and `remoteUrl`, with a diagnostic;
 they never reach the resolver. `BookCancellationToken` checks before/after
 parsing and between asynchronous resource reads. Run synchronous decoding in
