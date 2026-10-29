@@ -1,7 +1,7 @@
 # 四期：更多文档类型（EPUB / MOBI / Markdown / 网页）设计方案
 
 > 建立日期：2026-10-29（GUL-569）。状态：**方案已定，进入开发**（第 0、6 节为已定决定，覆盖下文与之冲突的内容）。
-> 配套高保真原型：[`design/prototype/phase-4-documents.html`](../design/prototype/phase-4-documents.html)。单文件、无依赖，浏览器直接打开；右侧演示控制台有 17 个场景，最后一个是现有 PDF 界面，方便对照。界面按当前应用还原（`workspace_sidebar.dart`、`reader_pane.dart` 工具栏、`map_pane.dart`）。
+> 配套交互原型：[`design/prototype/phase-4-documents.html`](../design/prototype/phase-4-documents.html)（流式阅读、全平台，GUL-571 更新）；界面规格：[`phase-4-ui.md`](phase-4-ui.md)。单文件、无依赖，浏览器直接打开；演示控制台可切换设备与场景，最后一个场景是现有 PDF 界面。
 > 依据：当前 `main` 的代码（`mm_core` 的 `Document` / `Annotation` / `PageRect`、`mm_pdf`、`ArticleParserChannel.swift`、`pdf_picker.dart`）。技术架构以 `docs/phase-4-architecture.md`（GUL-569 子任务产出）为准。
 
 ---
@@ -57,6 +57,8 @@
 ---
 
 ## 3. 交互设计（对应原型场景）
+
+> 本节是方案阶段的交互设计，界面以 [`phase-4-ui.md`](phase-4-ui.md) 为准；与第 0、6 节冲突的内容（排版成 PDF、“排版”按钮、Markdown 仅阅读等）已作废。
 
 原则：**不新增界面区域，只在现有位置上按格式替换或置灰。** 侧栏、标题栏视图切换、原文工具栏、页面侧栏、浮动工具条、脑图栏都沿用现在的样子，用户换一种文档不需要重新找按钮。
 
