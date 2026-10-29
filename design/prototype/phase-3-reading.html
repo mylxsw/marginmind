@@ -833,10 +833,9 @@ body.demo-min #desk{padding-right:58px}
 .rtheme-dark .mn-card[class]{background:#2A2A2C;color:#E5E5EA}
 
 /* ---------- Crop ---------- */
-.crop-tip{position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:8px;height:34px;padding:0 6px 0 12px;border-radius:17px;
+.crop-tip{position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:8px;height:38px;padding:0 4px 0 12px;border-radius:19px;
   background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair);font-size:12px;color:var(--label);white-space:nowrap;animation:fin 200ms}
 .crop-tip .ci{color:var(--accent)}
-.crop-tip .btn{height:24px}
 .crop-ov{position:absolute;inset:0;z-index:7;cursor:default}
 .crop-ov .shade{position:absolute;background:rgba(0,0,0,.34);pointer-events:none}
 .crop-ov .box{position:absolute;box-shadow:0 0 0 1.5px var(--accent);pointer-events:none}
@@ -847,7 +846,6 @@ body.demo-min #desk{padding-right:58px}
 .crop-ov .h.l::after,.crop-ov .h.r::after{width:6px;height:28px;border-radius:3px}
 .crop-ov .h.t,.crop-ov .h.b{width:44px;margin-left:-22px}
 .crop-ov .h.l,.crop-ov .h.r{height:44px;margin-top:-22px}
-.crop-ov .dim{position:absolute;right:6px;bottom:6px;font-size:10px;font-family:var(--mono);color:#fff;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:5px;pointer-events:none}
 .crop-ov .pglbl{position:absolute;left:6px;top:6px;font-size:10px;color:#fff;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:5px;pointer-events:none}
 .crop-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:9;display:flex;align-items:center;gap:6px;min-height:40px;padding:4px 6px 4px 12px;border-radius:20px;
   background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair);font-size:12px;white-space:nowrap}
@@ -879,7 +877,6 @@ body.demo-min #desk{padding-right:58px}
 .mn-card.c-g{--mnc:#34C759;background:#E8F7EC}.mn-card.c-b{--mnc:#007AFF;background:#E6F0FF}.mn-card.c-p{--mnc:#FF2D55;background:#FFE8EE}.mn-card.c-o{--mnc:#FF9500;background:#FFF0DD}.mn-card.c-v{--mnc:#AF52DE;background:#F4E8FA}
 .mn-card.hot{box-shadow:0 0 0 1.5px var(--mnc,var(--mnYb)),0 4px 14px rgba(0,0,0,.12)}
 .mn-card .txt{white-space:pre-wrap;word-break:break-word;min-height:18px}
-.mn-card .txt:empty::before{content:"写下你的想法…";color:#8e8e93}
 .mn-card textarea{display:block;width:100%;border:0;outline:none;background:transparent;resize:none;padding:0;font:inherit;line-height:inherit;color:inherit;min-height:36px;overflow:hidden}
 .mn-card .meta{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:10px;color:#8e8e93;min-height:14px}
 .mn-card .meta .grow{flex:1}
@@ -1068,7 +1065,7 @@ body.demo-min #desk{padding-right:58px}
             <span class="tdiv"></span>
             <button class="tbtn" data-act="rzOut" data-tip><svg class="i"><use href="#i-minus"/></svg><span class="tip">缩小（⌘-）</span></button>
             <button class="tbtn" data-act="rzIn" data-tip><svg class="i"><use href="#i-plus"/></svg><span class="tip">放大（⌘+）</span></button>
-            <button class="tbtn" data-act="pageMenu" id="pageMenuBtn" data-tip><svg class="i"><use href="#i-fit"/></svg><span class="tip">页面：缩放与裁边</span></button>
+            <button class="tbtn" data-act="pageMenu" id="pageMenuBtn" data-tip><svg class="i"><use href="#i-fit"/></svg><span class="tip">页面</span></button>
             <button class="tbtn" data-act="rTheme" data-tip><svg class="i"><use href="#i-contrast"/></svg><span class="tip">阅读主题：白 / 纸 / 绿 / 暗</span></button>
           </div>
           <div class="capsule" id="toolCaps">
@@ -3145,7 +3142,7 @@ function paintReadChrome() {
   if (!c.on && !R.cropEdit && !R.cropTip[S.doc] && wideMargins(S.doc) && S.layout !== 'map') {
     const t = document.createElement('div'); t.className = 'crop-tip';
     if (R.cmp) t.style.top = '86px';
-    t.innerHTML = `${ic('crop', 's ci')}<button class="btn sm pri" data-act="cropOn">裁掉白边</button><button class="ib" data-act="cropTipX" title="不用了">${ic('x', 'xs')}</button>`;
+    t.innerHTML = `${ic('crop', 's ci')}<button class="btn pri" data-act="cropOn">裁掉白边</button><button class="ib" data-act="cropTipX" title="关闭">${ic('x', 'xs')}</button>`;
     $('#reader').appendChild(t);
   }
 }
@@ -3155,7 +3152,7 @@ ACTS.pageMenu = el => {
   closeFloating(true);
   const c = cropOf(S.doc), m = document.createElement('div'); m.className = 'pop menu'; m.style.width = '232px';
   const fit = S.readerZoom === 1 ? 'width' : '';
-  m.innerHTML = [['actual', '实际大小'], ['width', '适合宽度'], ['page', '适合整页']].map(([k, t]) => `<div class="mi" data-pm="${k}"><span class="chk">${fit === k ? ic('check', 'xs') : ''}</span><span class="grow">${t}</span></div>`).join('')
+  m.innerHTML = [['actual', '实际大小'], ['width', '适合宽度'], ['page', '适合页面']].map(([k, t]) => `<div class="mi" data-pm="${k}"><span class="chk">${fit === k ? ic('check', 'xs') : ''}</span><span class="grow">${t}</span></div>`).join('')
     + `<div class="msep"></div>`
     + `<div class="mi" data-pm="crop"><span class="chk">${c.on ? ic('check', 'xs') : ''}</span><span class="grow">裁掉白边</span><span class="kbd">⌥⌘K</span></div>`
     + `<div class="mi" data-pm="cropEdit"><span class="chk"></span><span class="grow">调整裁边…</span></div>`;
@@ -3195,10 +3192,10 @@ function paintCropBar() {
   $$('#reader > .crop-bar, #reader > .crop-warn').forEach(e => e.remove());
   const R = RD(); if (!R.cropEdit) return;
   const c = cropOf(R.cropEdit.doc), bar = document.createElement('div'); bar.className = 'crop-bar';
-  bar.innerHTML = `${ic('crop', 's')}<b>裁边</b><span class="tdiv"></span>
+  bar.innerHTML = `${ic('crop', 's')}<span class="tdiv"></span>
     <div class="seg sm">${[['all', '所有页'], ['oddeven', '奇偶页分开'], ['page', '仅本页']].map(([k, t]) => `<button data-cscope="${k}" class="${c.scope === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <span class="tdiv"></span><button class="btn sm" data-cact="auto">自动</button><button class="btn sm" data-cact="none">不裁</button>
-    <span class="tdiv"></span><button class="btn sm" data-cact="cancel">取消</button><button class="btn sm pri" data-cact="done">完成</button>`;
+    <span class="tdiv"></span><button class="btn" data-cact="auto">自动</button><button class="btn" data-cact="none">不裁</button>
+    <span class="tdiv"></span><button class="btn" data-cact="cancel">取消</button><button class="btn pri" data-cact="done">完成</button>`;
   $('#reader').appendChild(bar);
 }
 function drawCropOverlays() {
@@ -3215,7 +3212,7 @@ function drawCropOverlays() {
     ov.innerHTML = `<div class="shade" style="left:0;top:0;right:0;height:${y0}px"></div><div class="shade" style="left:0;top:${y1}px;right:0;bottom:0"></div>
       <div class="shade" style="left:0;top:${y0}px;width:${x0}px;height:${y1 - y0}px"></div><div class="shade" style="left:${x1}px;top:${y0}px;right:0;height:${y1 - y0}px"></div>
       <div class="box" style="left:${x0}px;top:${y0}px;width:${x1 - x0}px;height:${y1 - y0}px"></div>
-      <span class="pglbl">第 ${no} 页${c_scopeLabel(d, no)}</span><span class="dim">${Math.round(x1 - x0)} × ${Math.round(y1 - y0)}</span>
+      ${c_scopeLabel(d, no) ? `<span class="pglbl">${c_scopeLabel(d, no)}</span>` : ''}
       <div class="h t" data-edge="t" style="left:${(x0 + x1) / 2}px;top:${y0}px"></div><div class="h b" data-edge="b" style="left:${(x0 + x1) / 2}px;top:${y1}px"></div>
       <div class="h l" data-edge="l" style="left:${x0}px;top:${(y0 + y1) / 2}px"></div><div class="h r" data-edge="r" style="left:${x1}px;top:${(y0 + y1) / 2}px"></div>`;
     // Annotations that would end up outside the crop are hidden, never deleted: say so.
@@ -3226,7 +3223,7 @@ function drawCropOverlays() {
   $$('#reader > .crop-warn').forEach(e => e.remove());
   if (hidden) { const w = document.createElement('div'); w.className = 'crop-warn'; w.innerHTML = `${ic('warn', 's')}${hidden} 处标注将被隐藏`; $('#reader').appendChild(w); }
 }
-function c_scopeLabel(d, no) { const c = cropOf(d); return c.pages[no] ? ' · 单独设置' : c.scope === 'oddeven' ? (no % 2 ? ' · 奇数页' : ' · 偶数页') : ''; }
+function c_scopeLabel(d, no) { const c = cropOf(d); return c.pages[no] ? '单独设置' : c.scope === 'oddeven' ? (no % 2 ? '奇数页' : '偶数页') : ''; }
 function editTarget(d, no) {
   const c = cropOf(d);
   if (c.scope === 'page') return c.pages[no] || (c.pages[no] = { ...editBox(d, no) });
@@ -3264,8 +3261,8 @@ function noteCard(n, editing) {
   if (n.node && !nodeById(n.node)) n.node = null; // the map card was deleted or undone
   return `<div class="mn-card c-${n.color}${editing ? ' editing' : ''}${RD().hot === n.id ? ' hot' : ''}" data-mnid="${n.id}">`
     + (editing ? `<textarea data-mnta="${n.id}" rows="2">${esc(n.text)}</textarea>` : `<div class="txt">${esc(n.text)}</div>`)
-    + `<div class="meta">${n.node ? `<span class="inmap" data-mnact="locate">${ic('map', 'xs')}已在脑图</span>` : ''}<span class="grow"></span><span>${esc(n.at)}</span></div>`
-    + `<div class="acts"><button data-mnact="${n.node ? 'locate' : 'map'}" title="${n.node ? '在脑图中定位' : '加入脑图'}">${ic(n.node ? 'goto' : 'map', 'xs')}</button><button data-mnact="more" title="颜色 / 删除">${ic('more', 'xs')}</button></div></div>`;
+    + (n.node ? `<div class="meta"><span class="grow"></span><span class="inmap" data-mnact="locate" title="在脑图中定位">${ic('map', 'xs')}</span></div>` : '')
+    + `<div class="acts"><button data-mnact="${n.node ? 'locate' : 'map'}" title="${n.node ? '在脑图中定位' : '加入脑图'}">${ic(n.node ? 'goto' : 'map', 'xs')}</button><button data-mnact="more" title="更多">${ic('more', 'xs')}</button></div></div>`;
 }
 function anchorEl(id, root = $('#readerScroll')) { return root.querySelector(`.page:not([data-virtual]) [data-mn="${id}"]`); }
 // Where a note belongs on its page, in .pg pixels.
@@ -3411,13 +3408,13 @@ function noteMore(n, anchor) {
   const m = document.createElement('div'); m.className = 'pop menu'; m.style.width = '200px';
   m.innerHTML = `<div style="display:flex;gap:2px;padding:4px 6px 6px">${COLORS.map(([k, c, nm]) => `<button class="cdot ${n.color === k ? 'on' : ''}" data-mncolor="${k}" style="background:${c}" title="${nm}"></button>`).join('')}</div><div class="msep"></div>`
     + (n.node ? `<div class="mi" data-mnm="locate">${ic('goto', 's ii')}<span class="grow">在脑图中定位</span></div>` : `<div class="mi" data-mnm="map">${ic('map', 's ii')}<span class="grow">加入脑图</span></div>`)
-    + `<div class="mi" data-mnm="copy">${ic('copy', 's ii')}<span class="grow">复制文字</span></div><div class="mi" data-mnm="del">${ic('trash', 's ii')}<span class="grow">删除批注</span></div>`;
+    + `<div class="mi" data-mnm="copy">${ic('copy', 's ii')}<span class="grow">拷贝</span></div><div class="mi" data-mnm="del">${ic('trash', 's ii')}<span class="grow">删除</span></div>`;
   closeFloating(true); placePop(m, winRect(anchor), 'below');
   m.onclick = e => {
     const c = e.target.closest('[data-mncolor]'), it = e.target.closest('[data-mnm]');
     if (c) { n.color = c.dataset.mncolor; closeFloating(true); return refreshNote(n.id); }
     if (!it) return; closeFloating(true);
-    ({ locate: () => locateNode(n), map: () => noteToMap(n), copy: () => hud('已复制'), del: () => deleteNote(n) })[it.dataset.mnm]();
+    ({ locate: () => locateNode(n), map: () => noteToMap(n), copy: () => hud('已拷贝'), del: () => deleteNote(n) })[it.dataset.mnm]();
   };
 }
 function locateNode(n) {
@@ -3454,9 +3451,8 @@ ACTS.compareMenu = el => {
   closeFloating(true);
   const R = RD(), d = S.doc, D = DOCS[d], m = document.createElement('div'); m.className = 'pop menu cmp-pick';
   const others = DOCS.map((x, i) => i).filter(i => i !== d);
-  const aiOff = !S.ai ? '需要先在设置里连接模型' : !S.net && !S.local ? '当前断网' : (d === 1 ? (S.ocr.state === 'done' ? '演示中没有这份讲义的译文' : '扫描版需先识别文字') : '');
-  m.innerHTML = `<div class="mh">对照阅读</div>`
-    + others.map(i => `<div class="mi ${R.cmp?.doc === i ? 'on' : ''}" data-cmpto="${i}">${ic(DOCS[i].icon, 's ii')}<span class="grow">${esc(DOCS[i].name)}</span>${D.pair === i ? '<span class="pill">推荐</span>' : ''}<span class="kbd">${DOCS[i].lang}</span></div>`).join('')
+  const aiOff = !S.ai ? '先配置模型' : !S.net && !S.local ? '断网' : (d === 1 ? (S.ocr.state === 'done' ? '演示中没有这份讲义的译文' : '先识别文字') : '');
+  m.innerHTML = others.map(i => `<div class="mi ${R.cmp?.doc === i ? 'on' : ''}" data-cmpto="${i}">${ic(DOCS[i].icon, 's ii')}<span class="grow">${esc(DOCS[i].name)}</span>${D.pair === i ? '<span class="pill">推荐</span>' : ''}<span class="kbd">${DOCS[i].lang}</span></div>`).join('')
     + `<div class="mi" data-cmpto="import">${ic('plus', 's ii')}<span class="grow">导入 PDF…</span></div>`
     + `<div class="msep"></div>`
     + `<div class="mi res ${aiOff ? 'dis' : ''}" data-cmpto="ai">${ic('trans', 's ii')}<span class="two grow"><span>AI 逐段翻译成${tgtLang(d).name}</span>${aiOff ? `<small>${aiOff}</small>` : ''}</span></div>`
@@ -3502,18 +3498,18 @@ function exitCompare() {
 function compareHtml() {
   const c = RD().cmp;
   return colHtml('L', S.doc, false)
-    + `<div class="cmp-gut"><button class="tbtn ${c.sync ? 'on' : ''}" data-cmp="sync" data-tip>${ic(c.sync ? 'chain' : 'unchain', 's')}<span class="tip">${c.sync ? '同步滚动：开' : '同步滚动：关'}</span></button>`
-    + (c.doc === 'ai' ? '' : `<button class="tbtn" data-cmp="align" data-tip>${ic('align', 's')}<span class="tip">对齐此处：把两边当前位置设为对应</span></button>`) + `</div>`
+    + `<div class="cmp-gut"><button class="tbtn ${c.sync ? 'on' : ''}" data-cmp="sync" data-tip>${ic(c.sync ? 'chain' : 'unchain', 's')}<span class="tip">同步滚动</span></button>`
+    + (c.doc === 'ai' ? '' : `<button class="tbtn" data-cmp="align" data-tip>${ic('align', 's')}<span class="tip">对齐此处</span></button>`) + `</div>`
     + (c.doc === 'ai' ? colHtml('R', S.doc, true) : colHtml('R', c.doc, false));
 }
 function colHtml(side, d, ai) {
   const D = DOCS[d], c = RD().cmp, done = ai && trTotal(d) <= (c.done || 0);
-  const name = ai ? `AI 译文 · ${tgtLang(d).name}` : D.name;
+  const name = ai ? 'AI 译文' : D.name;
   const state = ai ? (done ? `<span class="pill ok">${ic('check', 'xs')}已保存</span>` : `<span class="pill run" id="trState"><span class="spin"></span>翻译中 <span id="trN">${c.done || 0}</span>/${trTotal(d)}</span>`) : '';
   return `<div class="cmp-col" data-side="${side}"><div class="cmp-head">
-      <button class="dn" ${side === 'R' ? 'data-cmp="pick"' : 'data-cmp="pickL"'} title="${side === 'R' ? '换一份对照' : '切换文档'}">${ic(ai ? 'trans' : D.icon, 's')}<span class="t">${esc(name)}</span>${ic('cd', 'xs')}</button>
+      <button class="dn" ${side === 'R' ? 'data-cmp="pick"' : 'data-cmp="pickL"'} title="切换文档">${ic(ai ? 'trans' : D.icon, 's')}<span class="t">${esc(name)}</span>${ic('cd', 'xs')}</button>
       <span class="lang">${ai ? tgtLang(d).code : D.lang}</span>${state}<span class="grow"></span><span class="pgno" data-pgno="${side}">第 ${D.pages[0].no} 页</span>
-      ${side === 'R' ? `${ai ? '' : `<button class="ib" data-cmp="swap" title="左右互换">${ic('swap', 's')}</button>`}<button class="ib" data-cmp="close" title="退出对照（Esc）">${ic('x', 's')}</button>` : ''}
+      ${side === 'R' ? `${ai ? '' : `<button class="ib" data-cmp="swap" title="左右互换">${ic('swap', 's')}</button>`}<button class="ib" data-cmp="close" title="退出对照阅读（Esc）">${ic('x', 's')}</button>` : ''}
     </div><div class="reader-scroll rtheme-${S.rtheme}" data-cmpcol="${side}">${ai ? trPagesHtml(d) : docPagesHtml(d)}</div></div>`;
 }
 function trSource(d, i) {
@@ -3592,12 +3588,14 @@ document.addEventListener('mouseover', e => {
 function showFtb(hlEl) {
   closeFloating(true);
   const f = document.createElement('div'); f.className = 'ftb';
-  const isHl = !!hlEl;
+  const isHl = !!hlEl, at = pendingSel?.range?.startContainer;
+  // Notes belong to the original: an AI translation's selection offers no 批注.
+  const inTr = !!(at && (at.nodeType === 1 ? at : at.parentElement)?.closest('.page[data-virtual]'));
   f.innerHTML = COLORS.map(([k, c, n]) => `<button class="cdot" data-ftb-color="${k}" style="background:${c}" title="${isHl ? '换成' + n + '色' : '摘录到脑图（' + n + '）· E'}"></button>`).join('')
     + '<span class="tdiv"></span>'
     + (isHl ? `<button class="tbtn" data-ftb="locate" data-tip>${ic('goto')}<span class="tip">定位卡片（⌘L）</span></button>`
       : `<button class="tbtn" data-ftb="hl" data-tip>${ic('hl')}<span class="tip">仅高亮（H）</span></button>`)
-    + `<button class="tbtn" data-ftb="mnote" data-tip>${ic('mnote')}<span class="tip">写批注（C）</span></button>`
+    + (inTr ? '' : `<button class="tbtn" data-ftb="mnote" data-tip>${ic('mnote')}<span class="tip">批注（C）</span></button>`)
     + `<button class="tbtn" data-ftb="copy" data-tip>${ic('copy')}<span class="tip">复制（⌘C）</span></button>`
     + (isHl ? '' : `<button class="tbtn" data-ftb="note" data-tip>${ic('note')}<span class="tip">摘录并添加笔记</span></button>`)
     + `<span class="tdiv"></span><button class="tbtn research" data-ftb="ask" data-tip>${ic('spark')}<span class="tip">问助手（A · ⇧⌘E）</span></button>`;
@@ -3643,7 +3641,7 @@ document.addEventListener('click', e => {
     stop(); const k = cb.dataset.cmp, c = R.cmp;
     if (k === 'close') return exitCompare();
     if (k === 'sync') { c.sync = !c.sync; return renderReader(); }
-    if (k === 'align') { c.aligned++; c.sync = true; renderReader(); return hud('已对齐'); }
+    if (k === 'align') { const was = c.sync; c.aligned++; c.sync = true; renderReader(); return hud('已对齐', '撤销', () => { c.aligned--; c.sync = was; renderReader(); }); }
     if (k === 'swap') { const a = S.doc; S.doc = c.doc; c.doc = a; return renderReader(); }
     if (k === 'pick') return ACTS.compareMenu(cb);
     if (k === 'pickL') return leftDocMenu(cb);
@@ -3765,7 +3763,7 @@ const READING_SCENES = [
   { k: 'crop', t: '裁掉白边（一键）', d: '页边很宽时出现一次提示；文字放大，标注位置不变', go() { sceneReset('split'); setTimeout(() => coach($('.crop-tip'), 3200), 380); },
     g: '这本书页边很宽，原文栏顶部出现一条提示：<b>裁掉白边</b>，文字可放大约三成。点它，或在工具栏 <b>页面</b> 菜单里勾选（⌥⌘K）。<br>留意左边的红色手写括号：自动裁边把<b>你的笔迹也算作内容</b>，不会被裁掉。裁边只改变显示，原 PDF、导出和标注坐标都不变。' },
   { k: 'cropEdit', t: '手动调整裁边', d: '拖四边；所有页 / 奇偶页分开 / 仅本页', go() { sceneReset('reader'); setTimeout(() => ACTS.cropEdit(), 60); },
-    g: '拖动四边的蓝色手柄。上方可选 <b>所有页 / 奇偶页分开 / 仅本页</b>：扫描书左右页的页边常常不一样，选“奇偶页分开”。<br>把左边拖过红色括号，会提示“有标注落在裁掉的区域：不显示，但不会删除”。<b>完成</b>（↩）应用，<b>取消</b>（Esc）还原。' },
+    g: '拖动四边的蓝色手柄。上方可选 <b>所有页 / 奇偶页分开 / 仅本页</b>：扫描书左右页的页边常常不一样，选“奇偶页分开”。<br>把左边拖过红色括号，会提示“N 处标注将被隐藏”：只是不显示，不会删除。<b>完成</b>（↩）应用，<b>取消</b>（Esc）还原。' },
   { k: 'mnote', t: '页边批注：选中一句，写下想法', d: '页边自动展开，卡片就在那句话旁边', go() { sceneReset('reader'); selectFor('s-claim', 'mnote'); },
     g: '已选中一句话。浮动工具条上点 <b>批注</b>（或按 <b>C</b>）：页边自动展开，卡片出现在这句话旁边，直接打字。<br>点别处即保存，⌘↩ 也行；什么都没写就离开，这条批注不会留下。' },
   { k: 'mfree', t: '在页边空白处随手写', d: '鼠标移到页边，点一下就在这一行旁边写', go() { sceneReset('reader'); RD().margin = true; renderReader(); scrollToNote('mn1'); setTimeout(() => { const g = $('.mcol .ghost'); if (!g) return; g.classList.add('show'); g.style.top = '330px'; coach(g); setTimeout(() => g.classList.remove('show'), 3800); }, 800); },
