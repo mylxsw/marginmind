@@ -89,7 +89,7 @@ void main() {
     );
     expect(reverseComparePair(reverseComparePair(pair)).toJson(), pair.toJson());
   });
-  testWidgets('enter, sync, align, undo, swap, exit restore and saved pair reuse', (tester) async {
+  testWidgets('enter, sync, swap, exit restore and saved pair reuse', (tester) async {
     final repository = InMemoryStudySetContentRepository({'demo-1': compareFixture()});
     final container = await pumpApp(
       tester,
@@ -132,21 +132,13 @@ void main() {
     await jump(left, 2, 450);
     await jump(right, 2, 250);
     final l = left.readingPosition!, r = right.readingPosition!;
-    await tester.tap(find.byKey(const ValueKey('compare-align')));
+    await tester.tap(find.byKey(const ValueKey('compare-sync')));
     await drain(tester);
     final pair = container.read(readerCompareProvider('demo-1'))!;
     expect(pair.sync, true);
-    expect(pair.alignPoints, hasLength(1));
-    expect(pair.alignPoints.first.left.y, closeTo(l.y, 1));
-    expect(pair.alignPoints.first.right.y, closeTo(r.y, 1));
+    expect(left.readingPosition!.y, closeTo(l.y, 1));
+    expect(right.readingPosition!.y, closeTo(r.y, 1));
     expect((await repository.load('demo-1')).comparePairs.single.toJson(), pair.toJson());
-    expect(await session.align(), false); // No duplicate undo step for an unchanged anchor.
-    await workspace.undo();
-    await drain(tester);
-    expect(container.read(readerCompareProvider('demo-1'))!.alignPoints, isEmpty);
-    expect(container.read(readerCompareProvider('demo-1'))!.sync, false);
-    await tester.tap(find.byKey(const ValueKey('compare-align')));
-    await drain(tester);
     await tester.tap(find.byKey(const ValueKey('compare-swap')));
     await drain(tester);
     expect(container.read(readerCompareProvider('demo-1'))!.leftDocumentId, 'c2');
@@ -168,7 +160,7 @@ void main() {
     await session.select('c1', readerWidth: 600);
     await drain(tester);
     expect(container.read(readerCompareProvider('demo-1'))!.id, pair.id);
-    expect(container.read(readerCompareProvider('demo-1'))!.alignPoints.single.left.y, closeTo(r.y, 1));
+    expect(container.read(readerCompareProvider('demo-1'))!.sync, true);
     await tester.tap(find.byKey(const ValueKey('reader-compare-view')), warnIfMissed: false);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await drain(tester);
@@ -423,6 +415,7 @@ void main() {
     final frame = tester.getRect(find.byKey(const ValueKey('reader-compare-view')));
     expect(frame.bottom - controls.bottom, closeTo(MMSizes.readerCompareBottomGap + MMSpacing.xxs, .01));
     expect(controls.width, MMSizes.readerCompareControl);
+    expect(controls.height, MMSizes.readerCompareControl);
     Future<void> move(int page, double y) async {
       session.userInput(1);
       final moving = long.jumpToReadingPosition(PdfReadingPosition(page: page, y: y));

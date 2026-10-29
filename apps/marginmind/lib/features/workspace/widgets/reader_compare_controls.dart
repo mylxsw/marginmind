@@ -326,25 +326,6 @@ class ReaderCompareView extends ConsumerWidget {
           selected: pair.sync,
           onPressed: () => action(session.toggleSync),
         ),
-        if (pair.right is PdfCompareTarget) ...[
-          const SizedBox(height: MMSpacing.xxs),
-          MMIconButton(
-            size: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareControl,
-            iconSize: MMSizes.dropdownIcon,
-            key: const ValueKey('compare-align'),
-            icon: MMIcons.alignHere,
-            tooltip: l.compareAlign,
-            onPressed: () => action(() async {
-              if (await session.align() && context.mounted) {
-                MMHud.show(
-                  context,
-                  l.compareAlignedHud,
-                  action: (l.undo, () => ref.read(workspaceProvider(studySetId).notifier).undo()),
-                );
-              }
-            }),
-          ),
-        ],
       ],
     );
 
