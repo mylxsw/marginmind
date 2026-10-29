@@ -1266,6 +1266,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get densityFull => 'Full';
 
   @override
+  String get mapStyle => 'Style';
+
+  @override
+  String get mapStructureMind => 'Mind Map';
+
+  @override
+  String get mapStructureLogic => 'Logic Chart';
+
+  @override
+  String get mapStructureBrace => 'Brace Map';
+
+  @override
+  String get mapStructureTree => 'Tree Chart';
+
+  @override
+  String get mapPaletteSystem => 'System';
+
+  @override
+  String get mapPaletteRainbow => 'Colorful';
+
+  @override
+  String get mapPaletteFresh => 'Fresh';
+
+  @override
+  String get mapPaletteWarm => 'Warm';
+
+  @override
+  String get mapPaletteMorandi => 'Morandi';
+
+  @override
+  String get mapPaletteInk => 'Ink';
+
+  @override
   String get cardWidthHandle => 'Card Width';
 
   @override

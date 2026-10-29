@@ -36,6 +36,7 @@ class MindMapRenderCache {
   (String, double)? _widthDraft;
   (String, String)? _markDraft;
   Set<String> _expanded = const {};
+  MapStructure? _structure;
   TreeLayoutResult? _layout;
   List<(String, String?, double, double)> _geometry = [];
   List<(String, String, String, String, double, double)> _summaryGeometry = [];
@@ -43,6 +44,10 @@ class MindMapRenderCache {
   /// Relations of the map, and the label shown for each summary and relation.
   List<MapRelation> _relations = const [];
   Map<String, String> _markLabels = const {};
+
+  /// A node of each summary's range, by summary id: the summary takes its
+  /// branch's color.
+  Map<String, String> _summaryBranches = const {};
   Map<String, _NodeSpec> _specs = {};
   Map<String, int> _collapsed = {};
   Set<String> _expandable = {};
@@ -86,7 +91,11 @@ class MindMapRenderCache {
     /// Cards shown with their whole text: part of the key, since it changes
     /// what is measured and so every size and the layout.
     Set<String> expanded = const {},
+
+    /// The structure to lay out in place of the map's own (a preview).
+    MapStructure? structure,
   }) {
+    structure ??= content.map(mapId)?.structure ?? MapStructure.mind;
     final environmentChanged =
         _theme != theme ||
         _baseStyle != baseStyle ||
@@ -102,6 +111,7 @@ class MindMapRenderCache {
         _widthDraft == widthDraft &&
         _markDraft == markDraft &&
         setEquals(_expanded, expanded) &&
+        _structure == structure &&
         identical(_localizations, localizations)) {
       return _layout!;
     }
@@ -123,6 +133,8 @@ class MindMapRenderCache {
     _markDraft = markDraft;
     _expanded = Set.of(expanded);
     _localizations = localizations;
+    final structureChanged = _structure != structure;
+    _structure = structure;
 
     // Index once: childrenOf/card/annotation each scan the content lists.
     final cards = {for (final card in content.cards) card.id: card};
@@ -193,6 +205,7 @@ class MindMapRenderCache {
       for (final r in _relations) r.id: label(r.id, r.label),
       for (final (s, _) in mapSummaries) s.id: label(s.id, s.label),
     };
+    _summaryBranches = {for (final (s, _) in mapSummaries) s.id: s.fromId};
     final summaries = [
       for (final (s, _) in mapSummaries)
         if (_summaryLabelSize(_markLabels[s.id]!, editing: markDraft?.$1 == s.id) case final size)
@@ -206,8 +219,11 @@ class MindMapRenderCache {
           ),
     ];
     final summaryGeometry = [for (final s in summaries) (s.id, s.parentId, s.fromId, s.toId, s.width, s.height)];
-    if (_layout == null || !listEquals(_geometry, geometry) || !listEquals(_summaryGeometry, summaryGeometry)) {
-      _layout = const TreeLayout(
+    if (_layout == null ||
+        structureChanged ||
+        !listEquals(_geometry, geometry) ||
+        !listEquals(_summaryGeometry, summaryGeometry)) {
+      _layout = TreeLayout(
         levelGap: 56,
         siblingGap: _siblingGap,
         padding: 72,
@@ -215,6 +231,7 @@ class MindMapRenderCache {
         bracketWidth: MMSpacing.m,
         labelGap: MMSpacing.s,
         balanced: true,
+        structure: layoutStructureOf(structure),
       ).layout(tree, summaries: summaries);
       layoutCount++;
       _geometry = geometry;

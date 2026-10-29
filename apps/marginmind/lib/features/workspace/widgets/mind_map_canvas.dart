@@ -18,8 +18,10 @@ import '../../assistant/widgets/dashed_border.dart';
 import 'card_field.dart';
 import 'map_drop.dart';
 import 'mind_map_geometry.dart';
+import 'mind_map_style.dart';
 
 export 'mind_map_geometry.dart';
+export 'mind_map_style.dart';
 
 part 'mind_map_cache.dart';
 
@@ -124,7 +126,17 @@ class MindMapCanvas extends StatefulWidget {
     this.mergePreviewCardId,
     this.flashAnnotationId,
     this.onRevealSegment,
+    this.previewStyle,
+    this.fitInsets,
   });
+
+  /// A structure and palette shown in place of the map's own while they are
+  /// previewed; nothing is saved.
+  final (MapStructure, MapPalette)? previewStyle;
+
+  /// While set, the whole map is kept in view within the viewport less these
+  /// insets (the part a popover covers), also as a preview changes it.
+  final EdgeInsets? fitInsets;
 
   /// The selected excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
@@ -415,20 +427,21 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     return Rect.fromLTWH(drawn.left, drawn.center.dy - target.height / 2, target.width, target.height);
   }
 
-  Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target) {
+  Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target, _NodeLook? look) {
     final f = field!;
     final t = context.mmText;
     final (style, kind, maxLines) = switch (spec.kind) {
       _Kind.note => (t.body.copyWith(height: 19 / 13), CardKind.note, null),
       _Kind.excerpt => (t.headline.copyWith(height: 17 / 13), CardKind.excerpt, 1),
       _Kind.image => (t.headline.copyWith(height: 17 / 13), CardKind.image, 1),
-      _ => (t.headline, CardKind.topic, null),
+      _ => (t.headline.copyWith(color: look?.text), CardKind.topic, null),
     };
     return Positioned.fromRect(
       key: ValueKey(id),
       rect: _shown(id, target),
       child: _NodeView(
         spec: spec,
+        look: look,
         transformation: widget.transformation,
         selected: true,
         flashing: false,
@@ -470,7 +483,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         : result.leftSide.isNotEmpty
         ? w / 2 - (root.left + root.width / 2) * scale
         : w * 0.04 - (root.left - 24) * scale;
-    final dy = h / 2 - root.centerY * scale;
+    // A tree grows down from its root: it starts at the top.
+    final dy = result.structure == LayoutStructure.tree && scene.height * scale > h
+        ? _topClearance - root.top * scale
+        : h / 2 - root.centerY * scale;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       widget.transformation.value = Matrix4.identity()
@@ -584,10 +600,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (right > _viewport.width - margin) dx = _viewport.width - margin - right;
     if (left + dx < margin) dx = margin - left;
     if (bottom > _viewport.height - margin) dy = _viewport.height - margin - bottom;
-    if (top + dy < margin + MMSpacing.xxxl + MMSpacing.l) dy = margin + MMSpacing.xxxl + MMSpacing.l - top;
+    if (top + dy < _topClearance) dy = _topClearance - top;
     if (dx == 0 && dy == 0) return;
     widget.transformation.value = m.clone()..setTranslationRaw(tx + dx, ty + dy, 0);
   }
+
+  /// Room kept above nodes brought into view: the pane's controls float there.
+  static const _topClearance = MMSpacing.xxxl * 2 + MMSpacing.l;
 
   void _command(MindMapCommand command) {
     final selected = widget.selectedCardId;
@@ -617,23 +636,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       case MindMapCommand.up || MindMapCommand.down:
         if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
       case MindMapCommand.fit:
-        final layout = _layout;
-        if (layout == null || _viewport.isEmpty) return;
-        final scene = _sceneSize(layout);
-        final scale = math
-            .min(
-              (_viewport.width - MMSpacing.xl * 2) / scene.width,
-              (_viewport.height - MMSpacing.xl * 2) / scene.height,
-            )
-            .clamp(mapMinScale, 1.0);
-        widget.transformation.value = Matrix4.identity()
-          ..translateByDouble(
-            (_viewport.width - scene.width * scale) / 2,
-            (_viewport.height - scene.height * scale) / 2,
-            0,
-            1,
-          )
-          ..scaleByDouble(scale, scale, 1, 1);
+        _fit(widget.fitInsets ?? EdgeInsets.zero);
       case MindMapCommand.center:
         _centerOn(selected ?? rootNodeId, math.max(mapLocateScale, mapScale(widget.transformation.value)));
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
@@ -647,6 +650,32 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           MindMapCommand.summary:
         if (selected != null) widget.onCommand?.call(command);
     }
+  }
+
+  /// The least room beside fit insets the map is shown in.
+  static const _minFitExtent = 160.0;
+
+  /// Shows the whole map, at most at 100%, in the middle of the viewport
+  /// less [insets].
+  void _fit(EdgeInsets insets) {
+    final layout = _layout;
+    if (layout == null || _viewport.isEmpty) return;
+    var area = insets.deflateRect(Offset.zero & _viewport);
+    // A narrow view has no room beside the insets: the map then fits all of it.
+    if (area.width < _minFitExtent) area = Rect.fromLTRB(0, area.top, _viewport.width, area.bottom);
+    if (area.height < _minFitExtent) area = Rect.fromLTRB(area.left, 0, area.right, _viewport.height);
+    final scene = _sceneSize(layout);
+    final scale = math
+        .min((area.width - MMSpacing.xl * 2) / scene.width, (area.height - MMSpacing.xl * 2) / scene.height)
+        .clamp(mapMinScale, 1.0);
+    widget.transformation.value = Matrix4.identity()
+      ..translateByDouble(
+        area.left + (area.width - scene.width * scale) / 2,
+        area.top + (area.height - scene.height * scale) / 2,
+        0,
+        1,
+      )
+      ..scaleByDouble(scale, scale, 1, 1);
   }
 
   /// Shows the node [id] in the middle of the view at [scale].
@@ -819,7 +848,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Widget _markLabel(String id, {required bool summary}) {
     final t = context.mmText;
     final f = _markField?.id == id ? _markField : null;
-    final style = summary ? t.headline : t.footnote;
+    final palette = summary ? _mapColors(context.mmColors) : null;
+    final style = summary ? t.headline.copyWith(color: palette?.onSummary) : t.footnote;
     Widget? editor;
     if (f != null) {
       final width = _cache._measure(f.controller.text, summary ? MMTypography.headline : MMTypography.footnote, 200);
@@ -842,6 +872,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       text: _cache._markLabels[id] ?? '',
       style: style,
       summary: summary,
+      fill: palette?.summary,
       selected: id == widget.selectedMarkId,
       editor: editor,
       onTap: () {
@@ -973,7 +1004,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     });
   }
 
-  Widget _draggable(String id, _NodeSpec spec, Widget child) {
+  Widget _draggable(String id, _NodeSpec spec, _NodeLook? look, Widget child) {
     if (id == rootNodeId) return child;
     final scale = mapScale(widget.transformation.value);
     final count = widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1;
@@ -992,6 +1023,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 Positioned.fill(
                   child: _NodeView(
                     spec: spec,
+                    look: look,
                     transformation: widget.transformation,
                     selected: true,
                     flashing: false,
@@ -1117,8 +1149,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   final _nodeWidgets = <String, ({Object signature, Widget child})>{};
 
-  Widget _nodeWidget(String id, _NodeSpec spec, AppLocalizations l) {
+  Widget _nodeWidget(String id, _NodeSpec spec, AppLocalizations l, _NodeLook? look) {
     final signature = (
+      look,
       spec.kind,
       spec.title,
       spec.quote,
@@ -1162,6 +1195,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             child: _draggable(
               id,
               spec,
+              look,
               _NodeView(
                 spec: spec,
                 flashAnnotationId: widget.flashAnnotationId,
@@ -1176,6 +1210,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     widget.onRevealSegment?.call(id, index);
                   }
                 },
+                look: look,
                 transformation: widget.transformation,
                 selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
@@ -1238,6 +1273,30 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     return child;
   }
 
+  /// The palette as drawn: a previewed one, or the map's own.
+  MMMapColors _mapColors(MMColors c) =>
+      mapPaletteOf(widget.previewStyle?.$2 ?? widget.content.map(widget.mapId)?.palette ?? MapPalette.system)
+          .of(c.brightness);
+
+  /// Each node's branch, for the layout it was computed for.
+  Map<String, int> _branches = const {};
+  Set<String> _firstLevel = const {};
+  TreeLayoutResult? _branchesLayout;
+
+  /// The insets, layout and viewport the view was last fitted to while
+  /// [MindMapCanvas.fitInsets] is set: each change fits again once.
+  (EdgeInsets, TreeLayoutResult, Size)? _lastFit;
+
+  /// How a node is colored by the palette: the root, and the topics of the
+  /// first level. Null keeps the node's own look.
+  _NodeLook? _lookOf(String id, _NodeSpec spec, MMMapColors palette, MMColors c) {
+    if (id == rootNodeId) return _look(palette.root, palette.onRoot, null);
+    if (spec.kind != _Kind.topic) return null;
+    final branch = _branches[id];
+    if (branch == null || !_firstLevel.contains(id)) return null;
+    return _look(palette.topicFill(branch, c), palette.topicText(branch, c), palette.topicBorder(branch));
+  }
+
   Widget _build(BuildContext context, BoxConstraints viewport) {
     final l = context.l10n;
     final c = context.mmColors;
@@ -1257,8 +1316,18 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       locale: Localizations.localeOf(context),
       textDirection: Directionality.of(context),
       expanded: widget.expandedCardIds,
+      structure: widget.previewStyle?.$1,
     );
     final specs = _cache._specs;
+    final palette = _mapColors(c);
+    if (!identical(_branchesLayout, result)) {
+      _branchesLayout = result;
+      _branches = mapBranches(result, rootNodeId);
+      _firstLevel = {
+        for (final e in result.edges)
+          if (e.parentId == rootNodeId) e.childId,
+      };
+    }
     _tapModifiers.removeWhere((id, _) => !specs.containsKey(id));
     final collapsed = _cache._collapsed;
     final expandable = _cache._expandable;
@@ -1272,7 +1341,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _fitOnce(result, viewport);
     _keepRootInPlace(result);
     final sceneSize = _sceneSize(result);
-    if ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null)) {
+    final fitting = widget.fitInsets;
+    if (fitting != null) {
+      final fit = (fitting, result, _viewport);
+      if (fit != _lastFit) {
+        _lastFit = fit;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && widget.fitInsets == fitting) _fit(fitting);
+        });
+      }
+    } else if ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null)) {
+      _lastFit = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId, settled: true);
       });
@@ -1282,7 +1361,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _nodeWidgets.removeWhere((id, _) => !specs.containsKey(id));
     final nodes = {
       for (final id in result.rects.keys)
-        if (id != field?.id) id: _nodeWidget(id, specs[id]!, l),
+        if (id != field?.id) id: _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c)),
     };
     final foldButtons = {
       for (final id in expandable)
@@ -1475,6 +1554,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         c.line,
                                         _motion.isAnimating ? _from : const {},
                                         _motion.value,
+                                        palette: palette,
+                                        branches: _branches,
+                                        colors: c,
                                       ),
                                     ),
                                   ),
@@ -1494,6 +1576,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           selectedId: widget.selectedMarkId,
                                           line: c.secondaryLabel,
                                           bracket: c.line,
+                                          bracketColors: {
+                                            for (final s in _cache._summaryBranches.entries)
+                                              if (_branches[s.value] case final branch?) s.key: palette.line(branch, c),
+                                          },
                                           accent: c.accent,
                                           connectFrom: widget.connectingFromId,
                                           pointer: _hover,
@@ -1503,7 +1589,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                   ),
                                 for (final e in result.rects.entries)
                                   if (e.key == field?.id)
-                                    _fieldNode(e.key, specs[e.key]!, e.value)
+                                    _fieldNode(e.key, specs[e.key]!, e.value, _lookOf(e.key, specs[e.key]!, palette, c))
                                   else
                                     Positioned.fromRect(
                                       key: ValueKey(e.key),
@@ -1753,9 +1839,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     final rect = result.rects[id];
                     if (rect == null || field != null || _dragging != null) return const SizedBox.shrink();
                     final shown = _shown(id, rect);
+                    // At the outer top corner; in a tree, below the node where
+                    // its children's trunk starts.
                     final corner = MatrixUtils.transformPoint(
                       widget.transformation.value,
-                      Offset(result.leftSide.contains(id) ? shown.left : shown.right, shown.top),
+                      result.structure == LayoutStructure.tree
+                          ? Offset(shown.left + math.min(mapTreeTrunkInset, shown.width / 2), shown.bottom)
+                          : Offset(result.leftSide.contains(id) ? shown.left : shown.right, shown.top),
                     );
                     return Stack(
                       children: [
@@ -1808,7 +1898,11 @@ class _NodeView extends StatelessWidget {
     this.longPressEnabled = true,
     this.flashAnnotationId,
     this.onRevealSegment,
+    this.look,
   });
+
+  /// The palette's colors for the root or a first-level topic.
+  final _NodeLook? look;
 
   /// A research card's "whole note and citations" link.
   final VoidCallback? onOpenNote;
@@ -1843,7 +1937,7 @@ class _NodeView extends StatelessWidget {
       if (selected || flashing) BoxShadow(color: c.accent, spreadRadius: 3),
       if (flashing) BoxShadow(color: c.accentTint, spreadRadius: 9),
     ];
-    final (Color bg, double radius, List<BoxShadow> shadow) = switch (spec.kind) {
+    final (Color own, double radius, List<BoxShadow> shadow) = switch (spec.kind) {
       _Kind.root => (
         c.rootNode,
         14.0,
@@ -1854,6 +1948,7 @@ class _NodeView extends StatelessWidget {
       _Kind.note => (Color.alphaBlend(c.quaternaryFill, c.canvas), 12.0, const <BoxShadow>[]),
       _Kind.research => (c.card, 12.0, c.cardShadow),
     };
+    final bg = look?.fill ?? own;
 
     final Widget content = switch (spec.kind) {
       _Kind.root => Center(
@@ -1861,10 +1956,15 @@ class _NodeView extends StatelessWidget {
           spec.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: t.title3.copyWith(color: c.onRootNode),
+          style: t.title3.copyWith(color: look?.text ?? c.onRootNode),
         ),
       ),
-      _Kind.topic => editor == null ? Center(child: Text(spec.title, style: t.headline)) : Center(child: editor),
+      _Kind.topic =>
+        editor == null
+            ? Center(
+                child: Text(spec.title, style: t.headline.copyWith(color: look?.text)),
+              )
+            : Center(child: editor),
       _Kind.note => Row(
         children: [
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
@@ -2090,6 +2190,7 @@ class _NodeView extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(radius),
+        border: look?.border == null ? null : Border.all(color: look!.border!, width: _outlineWidth),
         boxShadow: [...shadow, ...ring],
       ),
       // The reveal button sits in the right padding, inside the node's box
@@ -2128,15 +2229,28 @@ class _NodeView extends StatelessWidget {
   }
 }
 
+/// A node's colors from the map palette: fill, text and optional outline.
+typedef _NodeLook = ({Color fill, Color text, Color? border});
+
+_NodeLook _look(Color fill, Color text, Color? border) => (fill: fill, text: text, border: border);
+
+/// Width of a first-level topic's outline (the ink palette).
+const _outlineWidth = 1.5;
+
 Rect _rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
 
 Rect _lerpRect(Rect? from, Rect to, double t) => from == null || t >= 1 ? to : Rect.lerp(from, to, t)!;
 
 class _EdgesPainter extends CustomPainter {
-  _EdgesPainter(this.layout, this.color, this.from, this.t);
+  _EdgesPainter(this.layout, this.color, this.from, this.t, {this.palette, this.branches = const {}, this.colors});
 
   final TreeLayoutResult layout;
+
+  /// The neutral line color; branches take the [palette]'s.
   final Color color;
+  final MMMapColors? palette;
+  final Map<String, int> branches;
+  final MMColors? colors;
 
   /// Where nodes started moving from; [t] is the progress toward [layout].
   final Map<String, Rect> from;
@@ -2149,17 +2263,10 @@ class _EdgesPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    for (final e in layout.edges) {
-      final a = _at(e.parentId);
-      final b = _at(e.childId);
-      final left = layout.leftSide.contains(e.childId);
-      final start = Offset(left ? a.left : a.right, a.center.dy);
-      final end = Offset(left ? b.right : b.left, b.center.dy);
-      final midX = (start.dx + end.dx) / 2;
-      final path = Path()
-        ..moveTo(start.dx, start.dy)
-        ..cubicTo(midX, start.dy, midX, end.dy, end.dx, end.dy);
-      canvas.drawPath(path, paint);
+    for (final connector in mapConnectors(layout, _at, rootId: rootNodeId)) {
+      final branch = connector.colorId == null ? null : branches[connector.colorId];
+      paint.color = branch == null || palette == null || colors == null ? color : palette!.line(branch, colors!);
+      canvas.drawPath(connector.path, paint);
     }
   }
 
@@ -2167,7 +2274,13 @@ class _EdgesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EdgesPainter old) =>
-      old.layout != layout || old.color != color || !identical(old.from, from) || old.t != t;
+      old.layout != layout ||
+      old.color != color ||
+      !identical(old.from, from) ||
+      old.t != t ||
+      old.palette != palette ||
+      !identical(old.branches, branches) ||
+      old.colors != colors;
 }
 
 /// Screen-sized action independent of the canvas zoom.
@@ -2373,6 +2486,7 @@ class _MarksPainter extends CustomPainter {
     required this.selectedId,
     required this.line,
     required this.bracket,
+    this.bracketColors = const {},
     required this.accent,
     this.connectFrom,
     this.pointer,
@@ -2385,6 +2499,9 @@ class _MarksPainter extends CustomPainter {
   final String? selectedId;
   final Color line;
   final Color bracket;
+
+  /// Brackets in their branch's palette color, by summary id.
+  final Map<String, Color> bracketColors;
   final Color accent;
   final String? connectFrom;
   final Offset? pointer;
@@ -2402,7 +2519,7 @@ class _MarksPainter extends CustomPainter {
       final selected = e.key == selectedId;
       canvas.drawPath(
         _bracketPath(_rect(e.value.bracket), left: e.value.left),
-        stroke(selected ? accent : bracket, selected ? 2 : 1.5),
+        stroke(selected ? accent : bracketColors[e.key] ?? bracket, selected ? 2 : 1.5),
       );
     }
     final others = [...rects.values, for (final s in summaries.values) _rect(s.label)];
@@ -2486,6 +2603,7 @@ class _MarksPainter extends CustomPainter {
       old.selectedId != selectedId ||
       old.line != line ||
       old.bracket != bracket ||
+      !mapEquals(old.bracketColors, bracketColors) ||
       old.accent != accent ||
       old.connectFrom != connectFrom ||
       old.pointer != pointer;
@@ -2504,7 +2622,11 @@ class _MarkLabel extends StatelessWidget {
     this.onDoubleTap,
     this.onSecondaryTapUp,
     this.editor,
+    this.fill,
   });
+
+  /// A summary's palette fill, in place of the topic fill.
+  final Color? fill;
 
   final String text;
   final TextStyle style;
@@ -2520,7 +2642,7 @@ class _MarkLabel extends StatelessWidget {
     final c = context.mmColors;
     Widget box(Widget child) => DecoratedBox(
       decoration: BoxDecoration(
-        color: summary ? Color.alphaBlend(c.fill, c.canvas) : c.canvas,
+        color: summary ? fill ?? Color.alphaBlend(c.fill, c.canvas) : c.canvas,
         borderRadius: BorderRadius.circular(summary ? MMRadii.card : MMRadii.excerpt),
         boxShadow: [if (selected) BoxShadow(color: c.accent, spreadRadius: 2)],
       ),
