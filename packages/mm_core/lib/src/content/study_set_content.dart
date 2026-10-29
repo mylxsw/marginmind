@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'reading.dart';
 import '../assistant/proposals.dart';
 import 'note_format.dart';
 import 'research.dart';
@@ -28,6 +29,9 @@ class StudySetContent {
     this.evidence = const [],
     this.researchSources = const [],
     this.inkStrokes = const [],
+    this.marginNotes = const [],
+    this.comparePairs = const [],
+    this.translationCaches = const [],
     this.bookmarks = const [],
   });
 
@@ -62,6 +66,9 @@ class StudySetContent {
   final List<Evidence> evidence;
   final List<ResearchSource> researchSources;
   final List<InkStroke> inkStrokes;
+  final List<MarginNote> marginNotes;
+  final List<ComparePair> comparePairs;
+  final List<TranslationCache> translationCaches;
   final List<Bookmark> bookmarks;
 
   /// Bookmarks of [documentId] in page order.
@@ -279,6 +286,9 @@ class StudySetContent {
     List<Evidence>? evidence,
     List<ResearchSource>? researchSources,
     List<InkStroke>? inkStrokes,
+    List<MarginNote>? marginNotes,
+    List<ComparePair>? comparePairs,
+    List<TranslationCache>? translationCaches,
     List<Bookmark>? bookmarks,
   }) {
     return StudySetContent(
@@ -298,6 +308,9 @@ class StudySetContent {
       evidence: evidence ?? this.evidence,
       researchSources: researchSources ?? this.researchSources,
       inkStrokes: inkStrokes ?? this.inkStrokes,
+      marginNotes: marginNotes ?? this.marginNotes,
+      comparePairs: comparePairs ?? this.comparePairs,
+      translationCaches: translationCaches ?? this.translationCaches,
       bookmarks: bookmarks ?? this.bookmarks,
     );
   }
@@ -319,6 +332,9 @@ class StudySetContent {
     'evidence': [for (final v in evidence) v.toJson()],
     'researchSources': [for (final v in researchSources) v.toJson()],
     'inkStrokes': [for (final v in inkStrokes) v.toJson()],
+    'marginNotes': [for (final v in marginNotes) v.toJson()],
+    'comparePairs': [for (final v in comparePairs) v.toJson()],
+    'translationCaches': [for (final v in translationCaches) v.toJson()],
     'bookmarks': [for (final b in bookmarks) b.toJson()],
   };
 
@@ -343,6 +359,9 @@ class StudySetContent {
       evidence: list('evidence', Evidence.fromJson),
       researchSources: list('researchSources', ResearchSource.fromJson),
       inkStrokes: list('inkStrokes', InkStroke.fromJson),
+      marginNotes: list('marginNotes', MarginNote.fromJson),
+      comparePairs: list('comparePairs', ComparePair.fromJson),
+      translationCaches: list('translationCaches', TranslationCache.fromJson),
       bookmarks: list('bookmarks', Bookmark.fromJson),
     );
   }

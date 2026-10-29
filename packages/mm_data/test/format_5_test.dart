@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -23,7 +24,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('current');
     final after = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-    expect(after['format'], 7);
+    expect(after['format'], currentStudySetFormat);
     for (final key in before.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], before[key]);
     }
@@ -49,7 +50,7 @@ void main() {
     await file.writeAsBytes(await File('test/fixtures/format-3.json').readAsBytes());
     final store = FileLibraryStore(root);
     final c = await store.load('current');
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     expect(c.bookmarks, isEmpty);
     expect(await File('${file.path}.format-3.bak').exists(), isTrue);
     await store.dispose();
@@ -69,7 +70,7 @@ void main() {
     final reopened = FileLibraryStore(root);
     final read = await reopened.load('current');
     expect(read.bookmarkAt(doc.id, 7)?.title, '第一章');
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await reopened.update('current', (c) => editor.removeDocument(c, doc.id));
     expect((await reopened.load('current')).bookmarks, isEmpty);
     await reopened.dispose();
@@ -87,7 +88,7 @@ void main() {
 
   test('a newer format is not opened', () async {
     final json = jsonDecode(utf8.decode(original)) as Map<String, Object?>;
-    json['format'] = 8;
+    json['format'] = currentStudySetFormat + 1;
     final text = jsonEncode(json);
     await file.writeAsString(text);
     final store = FileLibraryStore(root);

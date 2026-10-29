@@ -90,7 +90,7 @@
   - 已在对照模式时，菜单末尾有“退出对照阅读 Esc”。
 - **布局**：原文栏分成左右两栏，中间是 34pt 的栏缝，放“同步滚动”开关和“对齐此处”。每栏顶部有标题条：文档名（点开可以换文档）、语言、当前页码；右栏还有 ⇄ 互换和 × 退出。进入时侧栏自动收起；原文栏宽度不足 900pt 时，脑图也暂时收起（HUD 说明，⌘2 可以随时打开）。退出后恢复进入前的布局。
 - **同步滚动**
-  - 两份 PDF：按页对应，用户设置的“对齐点”之间做分段线性插值。默认对齐点是首页 ↔ 首页、末页 ↔ 末页；“对齐此处”把两栏当前阅读线所在的位置记为一个对齐点。对齐点按文档对保存。
+  - 两份 PDF：按页对应，用户设置的“对齐点”之间做分段线性插值。默认对齐点是首页 ↔ 首页、末页 ↔ 末页；“对齐此处”把两栏当前阅读线（视口高度 25%）所在的位置记为一个对齐点。对齐点按文档对保存。
   - AI 译文：段落一一对应，按段落精确同步；悬停任意一段，两边对应的段落同时高亮。
   - 同步可以关闭，两栏各自滚动。
 - **标注**：两栏都可以划线、摘录、写批注（批注在对照模式下以标记显示）。在 AI 译文上摘录时，卡片正文是译文，出处指向原文对应的段落；在译文上不能写批注（译文栏的浮动工具条不出现“批注”）。
@@ -135,14 +135,14 @@ Document
 DocumentCrop { enabled, mode: auto|manual, scope: all|oddEven|page,
                all: Insets, odd: Insets?, pages: {page: Insets} }   // Insets = 四边 point
 MarginNote { id, documentId, page, anchor: AnnotationAnchor? | lineY: double?,
-             text, colorIndex, nodeId?, createdAt, updatedAt }
+             text, colorIndex, nodeId?, mapId?, createdAt, updatedAt }
   // anchor 复用 Annotation 的 pages/rects + quote；二者必有其一
 ComparePair { id, leftDocumentId, right: documentId | ai(targetLang),
               alignPoints: [(leftPage, leftY) ↔ (rightPage, rightY)], sync: bool }
 TranslationCache { documentId, targetLang, paragraphs: {fingerprint: text}, model, createdAt }
 ```
 
-- `MarginNote.nodeId` 指向脑图节点。删除节点只清空 `nodeId`；删除批注时脑图卡片保留，不弹确认。
+- `MarginNote.nodeId` 保存关联卡片的 cardId，`mapId` 可选（缺省为主脑图），以 `(mapId, cardId)` 定位节点。批注是唯一编辑来源，关联卡片的标题编辑也回写批注。删除节点只清空 `nodeId` / `mapId`；删除批注时脑图卡片及出处快照保留，不弹确认。
 - 格式版本 +1，在 `format_migration.dart` 里加迁移，旧学习集打开后没有任何变化。
 
 ---

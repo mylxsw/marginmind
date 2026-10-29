@@ -30,3 +30,7 @@ export 'src/assistant/ports.dart';
 export 'src/assistant/proposals.dart';
 
 export 'src/assistant/writes.dart';
+
+export 'src/content/reading.dart';
+export 'src/content/reading_repository.dart';
+export 'src/content/reading_editor.dart';

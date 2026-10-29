@@ -11,7 +11,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:mm_core/mm_core.dart' show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect;
+import 'package:mm_core/mm_core.dart' show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect, PdfReadingPosition;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
@@ -114,6 +114,42 @@ class MMPdfViewController extends ChangeNotifier {
   /// Page shown at the top of the viewport (1-based).
   int get currentPage => _page;
   int get pageCount => _pageCount;
+
+  /// Original PDF position at the 25% reading line. Page gaps use the nearest edge.
+  PdfReadingPosition? get readingPosition {
+    if (!isReady) return null;
+    final pdf = _state!._controller;
+    final at = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height * .25));
+    final rects = pdf.layout.pageLayouts;
+    var index = 0;
+    var distance = double.infinity;
+    for (var i = 0; i < rects.length; i++) {
+      final d = (at.dy - at.dy.clamp(rects[i].top, rects[i].bottom)).abs();
+      if (d < distance) {
+        index = i;
+        distance = d;
+      }
+    }
+    final rect = rects[index];
+    final height = pdf.document.pages[index].height;
+    return PdfReadingPosition(page: index + 1, y: height * (1 - ((at.dy - rect.top) / rect.height).clamp(0.0, 1.0)));
+  }
+
+  List<double> get pageHeights => isReady ? [for (final p in _state!._controller.document.pages) p.height] : const [];
+
+  /// Immediate programmatic synchronization, without polluting jump history.
+  Future<void> jumpToReadingPosition(PdfReadingPosition position) async {
+    if (!isReady || position.page > _pageCount) return;
+    final pdf = _state!._controller;
+    final rect = pdf.layout.pageLayouts[position.page - 1];
+    final height = pdf.document.pages[position.page - 1].height;
+    final y = rect.top + (1 - (position.y / height).clamp(0.0, 1.0)) * rect.height;
+    final center = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height / 2));
+    await pdf.goTo(
+      pdf.calcMatrixFor(Offset(center.dx, y + pdf.viewSize.height * .25 / pdf.currentZoom), zoom: pdf.currentZoom),
+      duration: Duration.zero,
+    );
+  }
 
   /// The document's own table of contents; empty when it has none.
   List<MMPdfOutlineItem> get outline => _outline;

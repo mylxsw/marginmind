@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -26,7 +27,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('legacy');
     final after = jsonDecode(await file.readAsString()) as Map;
-    expect(after['format'], 7);
+    expect(after['format'], currentStudySetFormat);
     for (final key in old.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], old[key]);
     }
@@ -79,7 +80,7 @@ void main() {
     await obstruction.delete();
     final retry = FileLibraryStore(root);
     expect((await retry.load('legacy')).cards.length, 3);
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await retry.dispose();
   });
 
@@ -153,7 +154,7 @@ void main() {
     await file.writeAsBytes(source);
     final store = FileLibraryStore(root);
     expect((await store.load('legacy')).toJson(), content.toJson());
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     expect(await File('${file.path}.format-2.bak').readAsBytes(), source);
     final editor = StudySetEditor(newId: () => 'unused', now: () => DateTime.utc(2026));
     await store.update('legacy', (c) => editor.setTags(c, 'note', ['知识', 'Review']));
@@ -193,12 +194,12 @@ void main() {
     await backup.writeAsBytes(source);
     final retry = FileLibraryStore(root);
     expect((await retry.load('legacy')).toJson(), mapped.toJson());
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await retry.dispose();
   });
 
   test('unknown and missing versions are left untouched', () async {
-    for (final version in [null, 0, 8, '4']) {
+    for (final version in [null, 0, currentStudySetFormat + 1, '4']) {
       final json = jsonDecode(utf8.decode(original)) as Map;
       json['format'] = version;
       final text = jsonEncode(json);

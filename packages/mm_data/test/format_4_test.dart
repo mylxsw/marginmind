@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -23,7 +24,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('current');
     final after = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-    expect(after['format'], 7);
+    expect(after['format'], currentStudySetFormat);
     for (final key in before.keys.where((k) => k != 'format' && k != 'content')) {
       expect(after[key], before[key]);
     }
@@ -62,7 +63,7 @@ void main() {
     final read = await reopened.load('current');
     expect(read.relationsOf(MindMap.defaultId).single.label, 'why');
     expect(read.summariesOf(MindMap.defaultId).single.$2, cards);
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await reopened.dispose();
   });
 

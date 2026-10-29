@@ -1,6 +1,9 @@
 import 'package:meta/meta.dart';
 
 import 'research.dart';
+import 'reading.dart';
+
+const _keepCrop = Object();
 
 /// A rectangle in PDF page coordinates (points, origin bottom-left, so
 /// `top >= bottom`). Independent of zoom and screen size.
@@ -38,6 +41,7 @@ class Document {
     required this.importedAt,
     this.lastPage = 1,
     this.lastReadAt,
+    this.crop,
   });
 
   final String id;
@@ -46,13 +50,14 @@ class Document {
   /// Path relative to the study set package, e.g. `documents/ab12.pdf`.
   final String fileName;
   final int pageCount;
+  final DocumentCrop? crop;
   final int lastPage;
   final DateTime importedAt;
 
   /// When [lastPage] was last updated; drives "Continue Learning".
   final DateTime? lastReadAt;
 
-  Document copyWith({String? title, int? lastPage, DateTime? lastReadAt}) => Document(
+  Document copyWith({String? title, int? lastPage, DateTime? lastReadAt, Object? crop = _keepCrop}) => Document(
     id: id,
     title: title ?? this.title,
     fileName: fileName,
@@ -60,6 +65,7 @@ class Document {
     importedAt: importedAt,
     lastPage: lastPage ?? this.lastPage,
     lastReadAt: lastReadAt ?? this.lastReadAt,
+    crop: identical(crop, _keepCrop) ? this.crop : crop as DocumentCrop?,
   );
 
   Map<String, Object?> toJson() => {
@@ -70,9 +76,11 @@ class Document {
     'lastPage': lastPage,
     'importedAt': importedAt.toIso8601String(),
     if (lastReadAt != null) 'lastReadAt': lastReadAt!.toIso8601String(),
+    if (crop != null) 'crop': crop!.toJson(),
   };
 
   factory Document.fromJson(Map<String, Object?> j) => Document(
+    crop: j['crop'] == null ? null : DocumentCrop.fromJson((j['crop'] as Map).cast()),
     id: j['id'] as String,
     title: j['title'] as String,
     fileName: j['fileName'] as String,
