@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Icons;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Shared icon vocabulary. Primarily uses Cupertino icons, supplemented by
-/// Lucide and Material icons. Feature code refers to these names so icon
+/// Lucide icons. Feature code refers to these names so icon
 /// sources can change without altering controls or their behavior.
 abstract final class MMIcons {
   static const compare = CupertinoIcons.square_split_2x1;
@@ -35,7 +34,7 @@ abstract final class MMIcons {
   static const IconData newFolder = CupertinoIcons.folder_badge_plus; // folder.badge.plus
   static const IconData trash = CupertinoIcons.trash; // trash
   static const IconData document = CupertinoIcons.doc_text; // doc.text
-  static const IconData collections = Icons.collections;
+  static const IconData collections = CupertinoIcons.collections;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
   static const IconData ai = CupertinoIcons.sparkles; // sparkles
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass

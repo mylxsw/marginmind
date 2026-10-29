@@ -50,7 +50,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMEmptyState` / `MMProgressBar` | 空状态（图标、可选的标题与说明、操作按钮）与细进度条。 |
 | `MMInteractive` | 所有可点击组件共用的悬停 / 按下 / 键盘焦点 / 语义处理（光标保持箭头）。 |
 | `MMAppearance` | 向组件提供“降低透明度”“减少动态效果”。 |
-| `MMIcons` | 统一图标词表，以 Cupertino 为主，补充 Lucide 与 Material。业务组件只使用词表，不直接依赖第三方图标包。切换到脑图使用 Lucide `brain`（`layoutMap`），翻译入口统一使用 Lucide `languages`（`translate`）；文档切换使用 Material `collections`。阅读器缩放入口使用 `zoomControl`（`plus_slash_minus`），菜单项实际大小为正方形、适合宽度为横向双箭头、适合页面为页面矩形；裁边独立使用 `crop`，不与适配复用图标。 |
+| `MMIcons` | 统一图标词表，以 Cupertino 为主，补充 Lucide。业务组件只使用词表，不直接依赖第三方图标包。切换到脑图使用 Lucide `brain`（`layoutMap`），翻译入口统一使用 Lucide `languages`（`translate`）；文档切换使用 Cupertino `collections`。阅读器缩放入口使用 `zoomControl`（`plus_slash_minus`），菜单项实际大小为正方形、适合宽度为横向双箭头、适合页面为页面矩形；裁边独立使用 `crop`，不与适配复用图标。 |
 
 运行应用后按 ⌥⌘G（或在“设置”里点“组件库”）可以在浅色/深色下查看所有令牌和组件。
 
