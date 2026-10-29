@@ -99,6 +99,13 @@ void main() {
     expect(medium, greaterThan(short));
     expect(long, greaterThan(medium));
     final controller = container.read(workspaceProvider('demo-1').notifier);
+    // Merged parts count as separate paragraphs: two short parts widen the card.
+    controller.selectCards([cards[0], cards[1]]);
+    final merged = (await controller.mergeSelected())!.value!;
+    await tester.pumpAndSettle();
+    expect(width(merged.id), greaterThan(short));
+    await controller.undo();
+    await tester.pumpAndSettle();
     await controller.setCardWidth(cards[2], 240);
     await tester.pumpAndSettle();
     expect(width(cards[2]), closeTo(short, 1), reason: 'a width set by hand wins');

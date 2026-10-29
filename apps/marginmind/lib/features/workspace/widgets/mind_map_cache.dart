@@ -310,10 +310,23 @@ class MindMapRenderCache {
   /// [_NodeSpec.excerptWidths] at which its text fits in
   /// [_NodeSpec.maxQuoteLines] lines, else the widest.
   double _excerptWidthFor(Card card) {
-    final text = _content!.segmentsOf(card).map((s) => s.text).join('\n');
+    final segments = _content!.segmentsOf(card);
     for (final width in _NodeSpec.excerptWidths) {
       final textWidth = width - _NodeSpec._cardInset - _NodeSpec._quoteInset;
-      if (_measure(text, MMTypography.readingExcerpt, textWidth).lines <= _NodeSpec.maxQuoteLines) return width;
+      // Merged parts are drawn as separate paragraphs beside their dots.
+      final lines = segments.length < 2
+          ? _measure(segments.map((s) => s.text).join('\n'), MMTypography.readingExcerpt, textWidth).lines
+          : segments.fold<int>(
+              0,
+              (n, s) =>
+                  n +
+                  _measure(
+                    s.text,
+                    s.annotationId == null ? MMTypography.body : MMTypography.readingExcerpt,
+                    textWidth - 12,
+                  ).lines,
+            );
+      if (lines <= _NodeSpec.maxQuoteLines) return width;
     }
     return _NodeSpec.excerptWidths.last;
   }
