@@ -249,12 +249,24 @@ BookChapter _htmlChapter(String id, String source, List<String> diagnostics) {
     if (tag == 'table') {
       final rows = <List<BookCell>>[];
       var cellOffset = offset;
+      bool visibleInTable(dom.Element element) {
+        dom.Element? ancestor = element;
+        while (ancestor != null && ancestor != node) {
+          if (hidden(ancestor) || ancestor.localName == 'table') return false;
+          ancestor = ancestor.parent;
+        }
+        return ancestor == node;
+      }
+
       for (final row in node.querySelectorAll('tr')) {
+        if (!visibleInTable(row)) continue;
         final cells = <BookCell>[];
         for (final cell in row.children.where((c) => c.localName == 'td' || c.localName == 'th')) {
+          if (!visibleInTable(cell)) continue;
           final runs = inline(cell, start: cellOffset);
           final c = BookCell(
             runs,
+            header: cell.localName == 'th' || row.parent?.localName == 'thead',
             rowSpan: (int.tryParse(cell.attributes['rowspan'] ?? '') ?? 1).clamp(1, 1000),
             colSpan: (int.tryParse(cell.attributes['colspan'] ?? '') ?? 1).clamp(1, 1000),
           );
@@ -363,7 +375,13 @@ BookChapter _htmlChapter(String id, String source, List<String> diagnostics) {
     ];
     final block = blockByPath[path];
     if (block == null && children.isEmpty) return null;
-    return BookNode(path, node is dom.Element ? node.localName ?? '' : '#text', block, block == null ? children : []);
+    return BookNode(
+      path,
+      node is dom.Element ? node.localName ?? '' : '#text',
+      block,
+      block == null ? children : [],
+      style: node is dom.Element ? styles[node] ?? {} : {},
+    );
   }
 
   final roots = <BookNode>[

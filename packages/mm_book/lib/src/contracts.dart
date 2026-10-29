@@ -30,14 +30,20 @@ class BookFontFace {
 }
 
 class BookNode {
-  BookNode(this.path, this.tag, this.blockId, List<BookNode> children) : children = List.unmodifiable(children);
+  BookNode(this.path, this.tag, this.blockId, List<BookNode> children, {Map<String, String> style = const {}})
+    : children = List.unmodifiable(children),
+      style = Map.unmodifiable(style);
   final String path, tag;
   final String? blockId;
   final List<BookNode> children;
+
+  /// Cascaded properties, with lengths retained in CSS units for layout.
+  final Map<String, String> style;
   Map<String, Object?> toJson() => {
     'path': path,
     'tag': tag,
     if (blockId != null) 'blockId': blockId,
+    'style': style,
     'children': children.map((c) => c.toJson()).toList(),
   };
 }
@@ -102,7 +108,14 @@ Map<String, Object?> _chapterJson(BookChapter c) => {
         'rows': b.rows
             .map(
               (r) => r
-                  .map((c) => {'rowSpan': c.rowSpan, 'colSpan': c.colSpan, 'runs': c.runs.map(_runJson).toList()})
+                  .map(
+                    (c) => {
+                      'rowSpan': c.rowSpan,
+                      'colSpan': c.colSpan,
+                      'header': c.header,
+                      'runs': c.runs.map(_runJson).toList(),
+                    },
+                  )
                   .toList(),
             )
             .toList(),
@@ -129,9 +142,10 @@ String _mime(Uint8List b, String path) {
   if (starts([0x89, 0x50, 0x4e, 0x47])) return 'image/png';
   if (starts([0xff, 0xd8, 0xff])) return 'image/jpeg';
   if (starts(ascii.encode('GIF8'))) return 'image/gif';
-  if (b.isNotEmpty &&
-      b.first == 60 &&
-      (path.toLowerCase().endsWith('.svg') || latin1.decode(b.take(512).toList()).contains('<svg'))) {
+  if (b.length >= 12 && starts(ascii.encode('RIFF')) && latin1.decode(b.sublist(8, 12)) == 'WEBP') {
+    return 'image/webp';
+  }
+  if (path.toLowerCase().endsWith('.svg') || latin1.decode(b.take(512).toList()).contains('<svg')) {
     try {
       if (XmlDocument.parse(utf8.decode(b)).rootElement.name.local == 'svg') return 'image/svg+xml';
     } on FormatException {

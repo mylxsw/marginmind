@@ -23,7 +23,22 @@ const _cssProperties = {
   'padding-left',
   'width',
   'max-width',
+  'min-width',
   'height',
+  'min-height',
+  'max-height',
+  'box-sizing',
+  'background',
+  'background-color',
+  'border',
+  'border-width',
+  'border-style',
+  'border-color',
+  'border-top',
+  'border-right',
+  'border-bottom',
+  'border-left',
+  'vertical-align',
   'break-before',
   'break-after',
   'break-inside',
@@ -152,8 +167,7 @@ Map<String, (String, bool)> _declarations(String source, List<String> diagnostic
     final important = RegExp(r'\s*!important\s*$', caseSensitive: false).hasMatch(value);
     value = value.replaceFirst(RegExp(r'\s*!important\s*$', caseSensitive: false), '');
     if (!_cssProperties.contains(key) ||
-        value.contains('url(') ||
-        value.contains('expression(') ||
+        RegExp(r'(?:url|expression)\s*\(', caseSensitive: false).hasMatch(value) ||
         key == 'display' && !const {'none', 'block', 'inline', 'inline-block'}.contains(value)) {
       diagnostics.add('Unsupported CSS declaration: $key');
       continue;

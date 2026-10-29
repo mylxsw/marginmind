@@ -1,7 +1,7 @@
 {
   "version": 1,
   "normalizationVersion": 1,
-  "revision": "0ebc3048e29af0b3f8ad14451f6e43682e391185aff4ecf744dcc6c28d4e5e84",
+  "revision": "4f212561c4c79fe21f012f3592547a789082e5189dbd5a3bf4bd581511e66be1",
   "title": "Sample",
   "metadata": {
     "title": [
@@ -22,49 +22,70 @@
     {
       "id": "OPS/c.xhtml",
       "sourceHref": "OPS/c.xhtml",
-      "canonicalText": "中文 😀\nHello world漢￼\ncell",
+      "canonicalText": "中文 😀\nHello world漢￼\nHead\tTitle\nRow\tcell",
       "sourceMap": [
         {
-          "path": "0/1/0/0",
+          "path": "0/1/0/0/0",
           "sourceStart": 0,
           "sourceEnd": 5,
           "start": 0,
           "end": 5
         },
         {
-          "path": "0/1/1/0",
+          "path": "0/1/0/1/0",
           "sourceStart": 0,
           "sourceEnd": 6,
           "start": 6,
           "end": 12
         },
         {
-          "path": "0/1/1/1/0",
+          "path": "0/1/0/1/1/0",
           "sourceStart": 0,
           "sourceEnd": 5,
           "start": 12,
           "end": 17
         },
         {
-          "path": "0/1/1/2",
+          "path": "0/1/0/1/2",
           "sourceStart": 0,
           "sourceEnd": 0,
           "start": 17,
           "end": 18
         },
         {
-          "path": "0/1/1/3",
+          "path": "0/1/0/1/3",
           "sourceStart": 0,
           "sourceEnd": 0,
           "start": 18,
           "end": 19
         },
         {
-          "path": "0/1/2/0/0/0/0",
+          "path": "0/1/0/2/0/0/0/0",
           "sourceStart": 0,
           "sourceEnd": 4,
           "start": 20,
           "end": 24
+        },
+        {
+          "path": "0/1/0/2/0/0/1/0",
+          "sourceStart": 0,
+          "sourceEnd": 5,
+          "start": 25,
+          "end": 30
+        },
+        {
+          "path": "0/1/0/2/1/0/0/0",
+          "sourceStart": 0,
+          "sourceEnd": 3,
+          "start": 31,
+          "end": 34
+        },
+        {
+          "path": "0/1/0/2/1/0/1/0",
+          "sourceStart": 0,
+          "sourceEnd": 4,
+          "start": 35,
+          "end": 39
         }
       ],
       "elementOffsets": {
@@ -74,33 +95,56 @@
       "structure": [
         {
           "path": "0/1/0",
-          "tag": "h1",
-          "blockId": "OPS/c.xhtml#0/1/0",
-          "children": []
-        },
-        {
-          "path": "0/1/1",
-          "tag": "p",
-          "blockId": "OPS/c.xhtml#0/1/1",
-          "children": []
-        },
-        {
-          "path": "0/1/2",
-          "tag": "table",
-          "blockId": "OPS/c.xhtml#0/1/2",
-          "children": []
+          "tag": "section",
+          "style": {
+            "margin": "1em",
+            "padding": "8px",
+            "background-color": "#eee",
+            "text-align": "center"
+          },
+          "children": [
+            {
+              "path": "0/1/0/0",
+              "tag": "h1",
+              "blockId": "OPS/c.xhtml#0/1/0/0",
+              "style": {
+                "text-align": "center"
+              },
+              "children": []
+            },
+            {
+              "path": "0/1/0/1",
+              "tag": "p",
+              "blockId": "OPS/c.xhtml#0/1/0/1",
+              "style": {
+                "text-align": "center"
+              },
+              "children": []
+            },
+            {
+              "path": "0/1/0/2",
+              "tag": "table",
+              "blockId": "OPS/c.xhtml#0/1/0/2",
+              "style": {
+                "text-align": "center"
+              },
+              "children": []
+            }
+          ]
         }
       ],
       "fonts": [],
       "blocks": [
         {
-          "id": "OPS/c.xhtml#0/1/0",
+          "id": "OPS/c.xhtml#0/1/0/0",
           "kind": "heading",
           "start": 0,
           "end": 5,
           "level": 1,
-          "style": {},
-          "sourcePath": "0/1/0",
+          "style": {
+            "text-align": "center"
+          },
+          "sourcePath": "0/1/0/0",
           "ordered": false,
           "listStart": 1,
           "runs": [
@@ -109,19 +153,23 @@
               "strong": false,
               "emphasis": false,
               "code": false,
-              "style": {}
+              "style": {
+                "text-align": "center"
+              }
             }
           ],
           "rows": []
         },
         {
-          "id": "OPS/c.xhtml#0/1/1",
+          "id": "OPS/c.xhtml#0/1/0/1",
           "kind": "paragraph",
           "start": 6,
           "end": 19,
           "level": 1,
-          "style": {},
-          "sourcePath": "0/1/1",
+          "style": {
+            "text-align": "center"
+          },
+          "sourcePath": "0/1/0/1",
           "ordered": false,
           "listStart": 1,
           "runs": [
@@ -130,21 +178,27 @@
               "strong": false,
               "emphasis": false,
               "code": false,
-              "style": {}
+              "style": {
+                "text-align": "center"
+              }
             },
             {
               "text": "world",
               "strong": true,
               "emphasis": false,
               "code": false,
-              "style": {}
+              "style": {
+                "text-align": "center"
+              }
             },
             {
               "text": "漢",
               "strong": false,
               "emphasis": false,
               "code": false,
-              "style": {},
+              "style": {
+                "text-align": "center"
+              },
               "ruby": "kan"
             },
             {
@@ -152,43 +206,150 @@
               "strong": false,
               "emphasis": false,
               "code": false,
-              "style": {},
-              "resource": "OPS/pic.png"
+              "style": {
+                "text-align": "center"
+              },
+              "resource": "OPS/a.png"
             }
           ],
           "rows": []
         },
         {
-          "id": "OPS/c.xhtml#0/1/2",
+          "id": "OPS/c.xhtml#0/1/0/2",
           "kind": "table",
           "start": 20,
-          "end": 24,
+          "end": 39,
           "level": 1,
-          "style": {},
-          "sourcePath": "0/1/2",
+          "style": {
+            "text-align": "center"
+          },
+          "sourcePath": "0/1/0/2",
           "ordered": false,
           "listStart": 1,
           "runs": [
+            {
+              "text": "Head",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {
+                "text-align": "center"
+              }
+            },
+            {
+              "text": "\t",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            },
+            {
+              "text": "Title",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {
+                "text-align": "center"
+              }
+            },
+            {
+              "text": "\n",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            },
+            {
+              "text": "Row",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {
+                "text-align": "center"
+              }
+            },
+            {
+              "text": "\t",
+              "strong": false,
+              "emphasis": false,
+              "code": false,
+              "style": {}
+            },
             {
               "text": "cell",
               "strong": false,
               "emphasis": false,
               "code": false,
-              "style": {}
+              "style": {
+                "text-align": "center"
+              }
             }
           ],
           "rows": [
             [
               {
                 "rowSpan": 1,
-                "colSpan": 2,
+                "colSpan": 1,
+                "header": true,
+                "runs": [
+                  {
+                    "text": "Head",
+                    "strong": false,
+                    "emphasis": false,
+                    "code": false,
+                    "style": {
+                      "text-align": "center"
+                    }
+                  }
+                ]
+              },
+              {
+                "rowSpan": 1,
+                "colSpan": 1,
+                "header": true,
+                "runs": [
+                  {
+                    "text": "Title",
+                    "strong": false,
+                    "emphasis": false,
+                    "code": false,
+                    "style": {
+                      "text-align": "center"
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              {
+                "rowSpan": 1,
+                "colSpan": 1,
+                "header": true,
+                "runs": [
+                  {
+                    "text": "Row",
+                    "strong": false,
+                    "emphasis": false,
+                    "code": false,
+                    "style": {
+                      "text-align": "center"
+                    }
+                  }
+                ]
+              },
+              {
+                "rowSpan": 1,
+                "colSpan": 1,
+                "header": false,
                 "runs": [
                   {
                     "text": "cell",
                     "strong": false,
                     "emphasis": false,
                     "code": false,
-                    "style": {}
+                    "style": {
+                      "text-align": "center"
+                    }
                   }
                 ]
               }
@@ -223,6 +384,14 @@
       "mime": "application/xml"
     },
     {
+      "path": "OPS/a.png",
+      "sha256": "43739c566e26fd7cb88f69d3864ea34740372f5ee99acac169e090beffbce5c6",
+      "length": 68,
+      "mime": "image/png",
+      "width": 1.0,
+      "height": 1.0
+    },
+    {
       "path": "OPS/book.opf",
       "sha256": "5a0136c1b29296ba06c2822b9f241dabd00411c849e0537424c1a69d7095daa7",
       "length": 578,
@@ -230,8 +399,8 @@
     },
     {
       "path": "OPS/c.xhtml",
-      "sha256": "a28483d582fab1673865ae8988d8ede840d1db52c5ebaed5bf247e1181f0fbf2",
-      "length": 173,
+      "sha256": "0c2d1df5440974cc6a67ae31e7d2f3f1bc659874dac48249bb8c40404dec46a0",
+      "length": 342,
       "mime": "application/xhtml+xml"
     },
     {
@@ -239,12 +408,6 @@
       "sha256": "97e8c393512f7b86b0e757b3e339c35a10b3c13f23333c0f90538dafb0a3de98",
       "length": 127,
       "mime": "application/xhtml+xml"
-    },
-    {
-      "path": "OPS/pic.png",
-      "sha256": "4c4b6a3be1314ab86138bef4314dde022e600960d8689a2c8f8631802d20dab6",
-      "length": 8,
-      "mime": "image/png"
     },
     {
       "path": "OPS/toc.ncx",

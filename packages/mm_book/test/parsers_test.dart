@@ -99,7 +99,7 @@ void main() {
       sourcePath: 'notes/book.md',
       resolver: (p) async {
         seen.add(p);
-        return Uint8List.fromList([137, 80, 78, 71]);
+        return pngImage();
       },
     );
     expect(seen, ['img/a.png']);

@@ -3,6 +3,20 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
+// Original 1x1 PNG, also usable by tests that assert successful image metadata.
+Uint8List pngImage() =>
+    base64Decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgAAIAAAUAAXpeqz8AAAAASUVORK5CYII=');
+
+Uint8List contractEpub() => richEpub(
+  chapter:
+      '<style>section {margin:1em;padding:8px;background-color:#eee;text-align:center}</style>'
+      '<section><h1 id="title">中文 😀</h1><p id="body">Hello <strong>world</strong>'
+      '<ruby>漢<rt>kan</rt></ruby><img src="a.png"></p>'
+      '<table><thead><tr><th>Head</th><td>Title</td></tr></thead>'
+      '<tbody><tr><th>Row</th><td>cell</td></tr></tbody></table></section>',
+  extra: {'OPS/a.png': pngImage()},
+);
+
 void u16(Uint8List b, int p, int v) => ByteData.sublistView(b).setUint16(p, v);
 void u32(Uint8List b, int p, int v) => ByteData.sublistView(b).setUint32(p, v);
 void magic(Uint8List b, int p, String s) => b.setRange(p, p + s.length, latin1.encode(s));
