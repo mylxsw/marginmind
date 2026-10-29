@@ -4,6 +4,55 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  for (final portal in [false, true]) {
+    testWidgets('anchored menu aligns above the button and fits window edges (portal: $portal)', (tester) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: MMTheme.light(),
+          home: MMInput(
+            touchPlatform: portal,
+            child: MMContextMenuHost(
+              child: Builder(
+                builder: (c) {
+                  context = c;
+                  return const Scaffold();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      for (final anchor in [
+        const Rect.fromLTWH(650, 550, 100, 30),
+        const Rect.fromLTWH(650, 10, 100, 30),
+        const Rect.fromLTWH(10, 550, 100, 30),
+        const Rect.fromLTWH(750, 550, 50, 30),
+      ]) {
+        showMMMenu(
+          context,
+          position: anchor.topLeft,
+          anchor: anchor,
+          entries: [MMMenuItem('Model', () {}), MMMenuItem('Manage', () {})],
+        );
+        await tester.pumpAndSettle();
+        final menu = tester.getRect(find.ancestor(of: find.text('Model'), matching: find.byType(MMGlass)).first);
+        expect(menu.left, greaterThanOrEqualTo(8));
+        expect(menu.right, lessThanOrEqualTo(792));
+        expect(menu.top, greaterThanOrEqualTo(8));
+        expect(menu.bottom, lessThanOrEqualTo(592));
+        if (anchor.top == 10) {
+          expect(menu.top, anchor.bottom + 4);
+        } else {
+          expect(menu.bottom, anchor.top - 4);
+        }
+        if (anchor.left == 650) expect(menu.right, anchor.right);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+      }
+    });
+  }
+
   testWidgets('menu clamps to screen, disables items, selects and dismisses', (tester) async {
     late BuildContext context;
     var selected = 0;

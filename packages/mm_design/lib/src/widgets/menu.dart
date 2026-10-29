@@ -50,17 +50,20 @@ class MMMenuHeader extends MMMenuEntry {
 /// Clicking outside or pressing Esc closes it; choosing an item closes it
 /// and then runs the item's callback. A compact window shows an action
 /// sheet at the bottom instead.
+/// With [anchor], opens above the button with right edges aligned (4 px gap),
+/// falling below it when there is no room above, and staying inside the window.
 Future<void> showMMMenu(
   BuildContext context, {
   required Offset position,
   required List<MMMenuEntry> entries,
   double minWidth = 190,
+  Rect? anchor,
 }) async {
   final touch = MMInput.touchInputOf(context);
   final sheet = MMSizeClass.of(context) == MMSizeClass.compact;
   final host = context.findAncestorStateOfType<_MMContextMenuHostState>();
   if (touch && host != null) {
-    final selected = await host.show(position, entries, minWidth, actionSheet: sheet);
+    final selected = await host.show(position, entries, minWidth, actionSheet: sheet, anchor: anchor);
     selected?.call();
     return;
   }
@@ -78,7 +81,7 @@ Future<void> showMMMenu(
         child: sheet
             ? _ActionSheet(entries: entries, onSelected: (selected) => Navigator.of(context).pop(selected))
             : CustomSingleChildLayout(
-                delegate: _MenuLayout(position),
+                delegate: _MenuLayout(position, anchor: anchor),
                 child: SingleChildScrollView(
                   child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
                 ),
@@ -120,16 +123,24 @@ class _MMContextMenuHostState extends State<MMContextMenuHost> {
   FocusNode? _previousFocus;
   Completer<VoidCallback?>? _result;
   Offset _position = Offset.zero;
+  Rect? _anchor;
   List<MMMenuEntry> _entries = const [];
   double _minWidth = 190;
   bool _actionSheet = false;
 
   bool get isOpen => _result != null;
 
-  Future<VoidCallback?> show(Offset position, List<MMMenuEntry> entries, double minWidth, {bool actionSheet = false}) {
+  Future<VoidCallback?> show(
+    Offset position,
+    List<MMMenuEntry> entries,
+    double minWidth, {
+    bool actionSheet = false,
+    Rect? anchor,
+  }) {
     close();
     _actionSheet = actionSheet;
     _position = position;
+    _anchor = anchor;
     _entries = entries;
     _minWidth = minWidth;
     final result = _result = Completer<VoidCallback?>();
@@ -189,7 +200,7 @@ class _MMContextMenuHostState extends State<MMContextMenuHost> {
                 child: _actionSheet
                     ? _ActionSheet(entries: _entries, onSelected: close)
                     : CustomSingleChildLayout(
-                        delegate: _MenuLayout(_position),
+                        delegate: _MenuLayout(_position, anchor: _anchor),
                         child: SingleChildScrollView(
                           child: _Menu(entries: _entries, minWidth: _minWidth, touch: true, onSelected: close),
                         ),
@@ -205,16 +216,28 @@ class _MMContextMenuHostState extends State<MMContextMenuHost> {
 }
 
 class _MenuLayout extends SingleChildLayoutDelegate {
-  _MenuLayout(this.position);
+  _MenuLayout(this.position, {this.anchor});
 
   final Offset position;
+  final Rect? anchor;
 
   @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => constraints.loosen();
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) => anchor == null
+      ? constraints.loosen()
+      : BoxConstraints(
+          maxWidth: (constraints.maxWidth - 16).clamp(0, double.infinity),
+          maxHeight: (constraints.maxHeight - 16).clamp(0, double.infinity),
+        );
 
   /// Opens down-right of the pointer, flipping when it would leave the window.
   @override
   Offset getPositionForChild(Size size, Size child) {
+    if (anchor case final button?) {
+      final x = button.right - child.width;
+      var y = button.top - child.height - 4;
+      if (y < 8) y = button.bottom + 4;
+      return Offset(x.clamp(8, size.width - child.width - 8), y.clamp(8, size.height - child.height - 8));
+    }
     var x = position.dx;
     var y = position.dy;
     if (x + child.width > size.width - 8) x = (x - child.width).clamp(8, size.width);
@@ -223,7 +246,7 @@ class _MenuLayout extends SingleChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_MenuLayout old) => old.position != position;
+  bool shouldRelayout(_MenuLayout old) => old.position != position || old.anchor != anchor;
 }
 
 class _Menu extends StatelessWidget {

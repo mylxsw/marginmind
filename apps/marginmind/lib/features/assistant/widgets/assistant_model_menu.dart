@@ -39,6 +39,7 @@ Future<void> showModelMenu(BuildContext context, WidgetRef ref, Rect anchor, {St
   await showMMMenu(
     context,
     position: anchor.topLeft,
+    anchor: anchor,
     minWidth: 220,
     entries: [
       for (final (i, (service, models)) in groups.indexed) ...[

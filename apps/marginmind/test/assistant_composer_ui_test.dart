@@ -19,11 +19,16 @@ import 'assistant_support.dart';
 
 const _quote = '这条先陡后平的曲线，被称为遗忘曲线。';
 
-Future<AssistantApp> _open(WidgetTester tester, {ScriptClient? client, bool dark = false}) async {
+Future<AssistantApp> _open(
+  WidgetTester tester, {
+  ScriptClient? client,
+  bool dark = false,
+  Size size = const Size(1000, 760),
+}) async {
   final app = await openAssistantApp(
     tester,
     client: client,
-    size: const Size(1000, 760),
+    size: size,
     prefs: {if (dark) 'settings.appearance': 'dark'},
   );
   await app.workspace.onSelectionCommitted(
@@ -47,6 +52,23 @@ ProviderContainer _scope(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byKey(const ValueKey('assistant-input'))));
 
 void main() {
+  for (final width in [1000.0, 1600.0]) {
+    testWidgets('model menu stays above its button at window width $width', (tester) async {
+      await _open(tester, size: Size(width, 760));
+      final button = find.byKey(const ValueKey('assistant-model'));
+      final anchor = tester.getRect(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      final menu = tester.getRect(find.ancestor(of: find.text('管理模型…'), matching: find.byType(MMGlass)).first);
+      expect(menu.right, closeTo(anchor.right, 1));
+      expect(menu.bottom, closeTo(anchor.top - 4, 1));
+      expect(menu.left, greaterThanOrEqualTo(8));
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('管理模型…'), findsNothing);
+    });
+  }
+
   testWidgets('one row of shortcuts; typing hides them while keeping the reference summary', (tester) async {
     await _open(tester);
     final summary = find.byKey(const ValueKey('assistant-context-summary'));
