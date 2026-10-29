@@ -1625,5 +1625,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "compareTranslationProgress": "Translating {done}/{total}",
+  "compareTranslationSaved": "Saved",
+  "compareTranslationFailed": "Translation failed",
+  "@compareTranslationProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}}
 }

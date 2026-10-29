@@ -13,7 +13,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart'
-    show AnnotationPage, InkPoint, InkStroke, InkTool, PageRect, PdfReadingPosition, CropInsets, DocumentCrop;
+    show
+        AnnotationPage,
+        InkPoint,
+        InkStroke,
+        InkTool,
+        PageRect,
+        PdfReadingPosition,
+        CropInsets,
+        DocumentCrop,
+        TranslationParagraph;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
@@ -184,6 +193,33 @@ class MMPdfViewController extends ChangeNotifier {
 
   List<double> get pageHeights =>
       isReady ? [for (var n = 1; n <= pageCount; n++) _state!._originalPage(n).height] : const [];
+
+  /// Original paragraph geometry intersecting the current, cropped viewport.
+  List<int> visibleParagraphs(List<TranslationParagraph> paragraphs) {
+    if (!isReady) return const [];
+    final pdf = _state!._controller;
+    final viewport = Offset.zero & pdf.viewSize;
+    final pages = <int>{};
+    for (var i = 0; i < pdf.layout.pageLayouts.length; i++) {
+      final rect = pdf.layout.pageLayouts[i];
+      if (viewport.overlaps(
+        Rect.fromPoints(pdf.documentToLocal(rect.topLeft), pdf.documentToLocal(rect.bottomRight)),
+      )) {
+        pages.add(i + 1);
+      }
+    }
+    return [
+      for (final p in paragraphs)
+        if (pages.contains(p.page))
+          if (() {
+            final rect = _state!._originalRect(p.page, p.bounds);
+            return viewport.overlaps(
+              Rect.fromPoints(pdf.documentToLocal(rect.topLeft), pdf.documentToLocal(rect.bottomRight)),
+            );
+          }())
+            p.index,
+    ];
+  }
 
   /// Immediate programmatic synchronization, without polluting jump history.
   Future<void> jumpToReadingPosition(PdfReadingPosition position) async {
@@ -625,8 +661,14 @@ class MMPdfView extends StatefulWidget {
     this.crop,
     this.cropEditorBuilder,
     this.margin,
+    this.paragraphs = const [],
+    this.hoveredParagraph,
+    this.onParagraphHover,
   });
 
+  final List<TranslationParagraph> paragraphs;
+  final String? hoveredParagraph;
+  final ValueChanged<String?>? onParagraphHover;
   final String filePath;
   final MMPdfMargin? margin;
   final DocumentCrop? crop;
@@ -1521,7 +1563,33 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   List<Widget> _pageOverlays(BuildContext context, Rect pageRect, PdfPage page) {
-    final highlights = _highlightOverlays(context, pageRect, page);
+    final cached = _highlightOverlays(context, pageRect, page);
+    final paragraphs = widget.paragraphs.where((p) => p.page == page.pageNumber).toList();
+    final highlights = paragraphs.isEmpty
+        ? cached
+        : [
+            ...cached,
+            for (final p in paragraphs)
+              Positioned.fromRect(
+                rect: _overlayRect(page, pageRect.size, p.bounds).inflate(6),
+                child: MouseRegion(
+                  opaque: false,
+                  hitTestBehavior: HitTestBehavior.translucent,
+                  onEnter: (_) => widget.onParagraphHover?.call(p.fingerprint),
+                  onExit: (_) => widget.onParagraphHover?.call(null),
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: p.fingerprint == widget.hoveredParagraph
+                            ? widget.emphasisColor.withValues(alpha: .09)
+                            : null,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ];
     final ink = _inkOverlay(pageRect, page);
     if (widget.cropEditorBuilder != null) {
       return [

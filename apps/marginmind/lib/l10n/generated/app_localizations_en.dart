@@ -3011,4 +3011,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String compareMapHiddenHud(String shortcut) {
     return 'Map hidden · $shortcut';
   }
+
+  @override
+  String compareTranslationProgress(int done, int total) {
+    return 'Translating $done/$total';
+  }
+
+  @override
+  String get compareTranslationSaved => 'Saved';
+
+  @override
+  String get compareTranslationFailed => 'Translation failed';
 }

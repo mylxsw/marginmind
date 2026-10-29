@@ -9,6 +9,15 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
 
+  test('translation extraction keeps original page boxes and closes the document', () async {
+    final paragraphs = await MMPdfEngine.translationParagraphs('any.pdf', 'doc');
+    expect(paragraphs.map((p) => p.page), [1, 2, 3]);
+    expect(paragraphs.first.documentId, 'doc');
+    expect(paragraphs.first.text, 'Selected passage');
+    expect(paragraphs.first.rects, isNotEmpty);
+    expect(paragraphs.first.fingerprint, isNot(paragraphs.last.fingerprint));
+  });
+
   test('pageText reads one page and gives null for bad pages', () async {
     expect(await MMPdfEngine.pageText('any.pdf', 2), 'Selected passage');
     expect(await MMPdfEngine.pageContent('any.pdf', 2), (text: 'Selected passage', height: 800.0));

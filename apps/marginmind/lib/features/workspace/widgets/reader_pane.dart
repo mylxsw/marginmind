@@ -17,6 +17,7 @@ import 'notices.dart';
 import 'reader_find_bar.dart';
 import '../reader_crop.dart';
 import '../reader_compare.dart';
+import '../reader_translation.dart';
 import 'reader_compare_controls.dart';
 import '../reader_margin.dart';
 import 'reader_margin_notes.dart';
@@ -579,7 +580,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         : readerDocumentCropProvider((widget.studySetId, doc.id));
     final crop = ref.watch(cropProvider);
     final cropSession = ref.read(cropProvider.notifier);
-    final comparing = ref.watch(readerCompareProvider(widget.studySetId)) != null;
+    final comparePair = ref.watch(readerCompareProvider(widget.studySetId));
+    final comparing = comparePair != null;
+    final translating = comparePair?.right is AiCompareTarget;
+    final translation = translating ? ref.watch(readerTranslationProvider(widget.studySetId)) : null;
     final compareSession = ref.read(readerCompareProvider(widget.studySetId).notifier);
     void dismissSelection() {
       if (ref.read(provider).pending != null) {
@@ -592,14 +596,17 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       child: Listener(
         onPointerDown: (_) {
           if (comparing) compareSession.userInput(side);
+          if (translating) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
         },
         onPointerSignal: (_) {
           dismissSelection();
           if (comparing) compareSession.userInput(side);
+          if (translating) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
         },
         onPointerPanZoomStart: (_) {
           dismissSelection();
           if (comparing) compareSession.userInput(side);
+          if (translating) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
         },
         child: Stack(
           children: [
@@ -611,6 +618,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
                       filePath: ocr?.document?.path ?? controller.filePath(doc),
                       controller: pdf,
+                      paragraphs: translation?.paragraphs ?? const [],
+                      hoveredParagraph: translation?.hovered,
+                      onParagraphHover: !translating
+                          ? null
+                          : ref.read(readerTranslationProvider(widget.studySetId).notifier).hover,
                       crop: crop.draft ?? doc.crop,
                       margin: readerMargin(
                         context,
@@ -700,6 +712,11 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       onViewportChanged: () {
                         dismissSelection();
                         if (comparing) compareSession.changed(side);
+                        if (translating) {
+                          ref
+                              .read(readerTranslationProvider(widget.studySetId).notifier)
+                              .sourceChanged(pdf.readingPosition);
+                        }
                       },
                       onPageChanged: (page, _) {
                         dismissSelection();

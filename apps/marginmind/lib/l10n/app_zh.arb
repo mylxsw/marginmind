@@ -969,5 +969,18 @@
         "type": "String"
       }
     }
+  },
+  "compareTranslationProgress": "翻译中 {done}/{total}",
+  "compareTranslationSaved": "已保存",
+  "compareTranslationFailed": "翻译失败",
+  "@compareTranslationProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }
