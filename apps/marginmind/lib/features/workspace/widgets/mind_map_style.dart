@@ -38,7 +38,7 @@ class MapConnector {
 
 /// Which of the root's branches each node belongs to: the index of its
 /// first-level ancestor among the root's children, in drawing order.
-Map<String, int> mapBranches(TreeLayoutResult layout, String rootId) {
+Map<String, int> mapBranches(TreeLayoutResult layout, String rootId, {Map<String, String> summarySources = const {}}) {
   final children = <String, List<String>>{};
   for (final e in layout.edges) {
     children.putIfAbsent(e.parentId, () => []).add(e.childId);
@@ -55,6 +55,16 @@ Map<String, int> mapBranches(TreeLayoutResult layout, String rootId) {
   final first = children[rootId] ?? const <String>[];
   for (var i = 0; i < first.length; i++) {
     mark(first[i], i);
+  }
+  // Summary topics are positioned beside their range rather than attached
+  // by a tree edge. Their descendants still belong to that range's branch.
+  final pending = Map.of(summarySources);
+  while (pending.isNotEmpty) {
+    final ready = pending.keys.where((id) => branches.containsKey(pending[id])).toList();
+    if (ready.isEmpty) break;
+    for (final id in ready) {
+      mark(id, branches[pending.remove(id)]!);
+    }
   }
   return branches;
 }

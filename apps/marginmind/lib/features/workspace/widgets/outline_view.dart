@@ -78,6 +78,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
   Map<String?, int> _indices = const {null: 0};
   Map<String?, List<MapNode>> _children = const {};
   Map<String, MapNode> _nodes = const {};
+  Map<String, String?> _summaryParents = const {};
   List<_OutlineEntry> _entries = const [];
   final _rows = <String?, _OutlineRow>{};
   StudySetContent? _content;
@@ -106,12 +107,26 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
     }
     _children = children;
     final entries = <_OutlineEntry>[const _OutlineEntry(depth: 0)];
-    final pending = [for (final node in (children[null] ?? const <MapNode>[]).reversed) (node, 1)];
+    final summariesAfter = <String, List<String>>{};
+    _summaryParents = {};
+    for (final summary in content.summaries.where((s) => s.mapId == widget.mapId)) {
+      if (summary.cardId case final id?) {
+        (summariesAfter[summary.toId] ??= []).add(id);
+        _summaryParents[id] = summary.parentId;
+      }
+    }
+    List<String> rowsUnder(String? parent) => [
+      for (final node in children[parent] ?? const <MapNode>[]) ...[
+        node.cardId,
+        ...summariesAfter[node.cardId] ?? const <String>[],
+      ],
+    ];
+    final pending = [for (final id in rowsUnder(null).reversed) (id, 1)];
     final seen = <String>{};
     while (pending.isNotEmpty) {
-      final (node, depth) = pending.removeLast();
-      final card = cards[node.cardId];
-      if (card == null || !seen.add(card.id)) continue;
+      final (id, depth) = pending.removeLast();
+      final card = cards[id];
+      if (card == null || !seen.add(id)) continue;
       entries.add(
         _OutlineEntry(
           depth: depth,
@@ -120,7 +135,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
           researchTitle: notes[card.researchNoteId]?.title ?? '',
         ),
       );
-      for (final child in (children[card.id] ?? const <MapNode>[]).reversed) {
+      for (final child in rowsUnder(id).reversed) {
         pending.add((child, depth + 1));
       }
     }
@@ -235,7 +250,7 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         target = _order[i];
       case AxisDirection.left:
         if (selected == null) return;
-        target = _nodes[selected]?.parentId;
+        target = _nodes[selected]?.parentId ?? _summaryParents[selected];
       case AxisDirection.right:
         final children = _children[selected] ?? const <MapNode>[];
         if (children.isEmpty) return;
@@ -341,6 +356,8 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
               ? l.imageExcerpt
               : card.kind == CardKind.research
               ? l.researchNoteLabel(entry.researchTitle)
+              : _summaryParents.containsKey(card.id)
+              ? l.exportSummary(card.title)
               : notePlainText(card.title, card.textFormat),
           sub: isExcerpt && (card.title.isNotEmpty || f?.id == id) ? quote : null,
           meta: annotation == null ? null : l.pageNumber(annotation.page),

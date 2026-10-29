@@ -620,11 +620,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
     active ??= open.lastOrNull;
     final mapId = c.map(s.activeMapId) != null ? s.activeMapId : (c.maps.firstOrNull?.id ?? MindMap.defaultId);
-    final selectionGone = s.selectedCardId != null && c.node(s.selectedCardId!, mapId: mapId) == null;
-    final selectedIds = s.selectedCardIds.where((id) => c.node(id, mapId: mapId) != null).toSet();
+    final selectionGone = s.selectedCardId != null && !c.isPlaced(s.selectedCardId!, mapId: mapId);
+    final selectedIds = s.selectedCardIds.where((id) => c.isPlaced(id, mapId: mapId)).toSet();
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
     final mark = s.selectedMarkId != null && _markExists(c, mapId, s.selectedMarkId!) ? s.selectedMarkId : null;
-    final connecting = s.connectingFromId != null && c.node(s.connectingFromId!, mapId: mapId) != null;
+    final connecting = s.connectingFromId != null && c.isPlaced(s.connectingFromId!, mapId: mapId);
     if (listEquals(open, s.openDocumentIds) &&
         active == s.activeDocumentId &&
         mapId == s.activeMapId &&
@@ -1519,7 +1519,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void selectCards(Iterable<String> cardIds) {
-    final ids = cardIds.where((id) => content.node(id, mapId: state.activeMapId) != null).toSet();
+    final ids = cardIds.where((id) => content.isPlaced(id, mapId: state.activeMapId)).toSet();
     state = state.copyWith(selectedCardIds: ids, selectedCardId: ids.lastOrNull, selectRoot: ids.isEmpty);
   }
 
@@ -1759,7 +1759,11 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Adds a topic under the selected topic, or at the root. With
   /// [asChild] it goes under the selected node of any kind (Tab).
   Future<Card> addTopic(String title, {bool asChild = false}) async {
-    final selected = state.selectedCardId == null ? null : content.card(state.selectedCardId!);
+    final summary = content.summaries
+        .where((s) => s.mapId == state.activeMapId && s.id == state.selectedMarkId)
+        .firstOrNull;
+    final selectedId = state.selectedCardId ?? summary?.cardId;
+    final selected = selectedId == null ? null : content.card(selectedId);
     final parent = asChild || selected?.kind == CardKind.topic ? selected?.id : null;
     late Card card;
     await _update((c) {
@@ -2131,15 +2135,33 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Draws the line and opens its label for typing; the label is optional.
   Future<void> _relate(String fromId, String toId) async {
     MapRelation? created;
+    var existing = false;
     await _update((c) {
       final (next, relation) = _editor.addRelation(c, fromId, toId);
       created = relation;
+      existing = identical(c, next);
       return next;
     });
     if (created == null || !ref.mounted) return;
     state = state.copyWith(selectRoot: true, selectedMarkId: created!.id);
-    beginMarkEditing(created!.id);
+    if (!existing) beginMarkEditing(created!.id);
   }
+
+  Future<void> adjustSummaryRange(String id, String from, String to) =>
+      _update((c) => _editor.adjustSummaryRange(c, id, [from, to]).content);
+
+  Future<void> updateRelation(MapRelation relation) => _update(
+    (c) => _editor.updateRelation(
+      c,
+      relation.id,
+      arrow: relation.arrow,
+      solid: relation.solid,
+      control1: relation.control1,
+      control2: relation.control2,
+    ),
+  );
+
+  Future<void> reverseRelation(String id) => _update((c) => _editor.reverseRelation(c, id));
 
   /// Sums up the selected siblings and opens the label for typing. Creation
   /// and label are one undo step; Esc or an empty label leaves nothing.

@@ -114,6 +114,10 @@ class MindMapCanvas extends StatefulWidget {
     this.onMarkEditDone,
     this.onMarkEditCancel,
     this.onConnect,
+    this.onStartConnect,
+    this.onAdjustSummary,
+    this.onUpdateRelation,
+    this.onReverseRelation,
     this.onCancelConnect,
     this.onMarkContextMenu,
     this.excerptTargetId,
@@ -232,6 +236,10 @@ class MindMapCanvas extends StatefulWidget {
   /// Double click on a label, F2, Space or Enter on a selected mark.
   final ValueChanged<String>? onEditMark;
   final VoidCallback? onDeleteMark;
+  final VoidCallback? onStartConnect;
+  final void Function(String, String, String)? onAdjustSummary;
+  final ValueChanged<MapRelation>? onUpdateRelation;
+  final ValueChanged<String>? onReverseRelation;
   final ValueChanged<String>? onMarkEditDone;
   final VoidCallback? onMarkEditCancel;
   final ValueChanged<String>? onConnect;
@@ -322,6 +330,22 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   /// Pointer position in the scene while a relation is being drawn.
   Offset? _hover;
+  bool _linkDragging = false;
+  (String, Duration, Offset)? _lastMarkTap;
+  Duration _pointerTime = Duration.zero;
+  MapRelation? _relationDraft;
+  Offset? _rangePointer;
+  Map<String, Rect> _rangeRects = const {};
+  Set<String> _rangeSide = const {};
+  (String, String)? _rangeDraft;
+  String? _targetAt(Offset scene) => _layout?.rects.entries
+      .where((e) => e.key != rootNodeId && e.key != widget.connectingFromId && _rect(e.value).contains(scene))
+      .firstOrNull
+      ?.key;
+
+  List<MapRelation> get _drawnRelations => [
+    for (final r in _cache._relations) _relationDraft?.id == r.id ? _relationDraft! : r,
+  ];
 
   String _storedLabel(String id) =>
       widget.content.relations.where((r) => r.id == id).firstOrNull?.label ??
@@ -778,7 +802,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     for (final r in _cache._relations.reversed) {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
-      final curve = relationCurveOnSide(a, b, others, left: _leftRelation(r));
+      final curve = mapRelationCurve(
+        _relationDraft?.id == r.id ? _relationDraft! : r,
+        a,
+        b,
+        others,
+        left: _leftRelation(r),
+        root: rects[rootNodeId],
+      );
       var previous = curve.$1;
       for (var i = 1; i <= 24; i++) {
         final point = cubicPoint(curve, i / 24);
@@ -795,14 +826,30 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     var width = layout.width, height = layout.height;
     if (_cache._relations.isEmpty) return Size(width, height);
     final others = _obstacles({for (final e in layout.rects.entries) e.key: _rect(e.value)}, layout);
-    for (final r in _cache._relations) {
+    for (final r in _drawnRelations) {
       final from = layout.rects[r.fromId], to = layout.rects[r.toId];
       if (from == null || to == null) continue;
-      final curve = relationCurveOnSide(_rect(from), _rect(to), others, left: _leftRelation(r));
+      final curve = mapRelationCurve(
+        r,
+        _rect(from),
+        _rect(to),
+        others,
+        left: _leftRelation(r),
+        root: layout.rects[rootNodeId] == null ? null : _rect(layout.rects[rootNodeId]!),
+      );
       for (var i = 0; i <= 8; i++) {
         final p = cubicPoint(curve, i / 8);
         width = math.max(width, p.dx + MMSpacing.l);
         height = math.max(height, p.dy + MMSpacing.l);
+      }
+      if (r.id == widget.selectedMarkId && _markField == null) {
+        final middle = cubicPoint(curve, .5);
+        width = math.max(width, math.max(curve.$2.dx, curve.$3.dx) + 20);
+        width = math.max(width, math.max(0, middle.dx - 140) + 300);
+        height = math.max(
+          height,
+          math.max(math.max(curve.$1.dy, curve.$4.dy), math.max(curve.$2.dy, curve.$3.dy)) + 80,
+        );
       }
       final label = _cache._markLabels[r.id] ?? '';
       if (label.isEmpty && r.id != _markField?.id) continue;
@@ -840,8 +887,295 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final from = _layout?.rects[r.fromId], to = _layout?.rects[r.toId];
     if (from == null || to == null) return null;
     final left = _leftRelation(r);
-    final curve = relationCurveOnSide(_drawn(r.fromId, from), _drawn(r.toId, to), others, left: left);
+    final curve = mapRelationCurve(
+      _relationDraft?.id == r.id ? _relationDraft! : r,
+      _drawn(r.fromId, from),
+      _drawn(r.toId, to),
+      others,
+      left: left,
+      root: _layout?.rects[rootNodeId] == null ? null : _rect(_layout!.rects[rootNodeId]!),
+    );
     return (cubicPoint(curve, 0.5), relationGoesAround(curve) ? (left ? -1 : 1) : 0);
+  }
+
+  Offset _scenePoint(Offset global) {
+    final box = context.findRenderObject()! as RenderBox;
+    return widget.transformation.toScene(box.globalToLocal(global));
+  }
+
+  Widget _dragHandle(
+    String key,
+    Offset point, {
+    required GestureDragStartCallback onStart,
+    required GestureDragUpdateCallback onUpdate,
+    required VoidCallback onEnd,
+    required VoidCallback onCancel,
+    bool round = false,
+  }) => Positioned(
+    key: ValueKey('position-$key'),
+    left: point.dx - 10,
+    top: point.dy - 10,
+    child: GestureDetector(
+      key: ValueKey(key),
+      behavior: HitTestBehavior.opaque,
+      onPanStart: onStart,
+      onPanUpdate: onUpdate,
+      onPanEnd: (_) => onEnd(),
+      onPanCancel: onCancel,
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: context.mmColors.canvas,
+              border: Border.all(color: context.mmColors.accent, width: 2),
+              shape: round ? BoxShape.circle : BoxShape.rectangle,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Map<String, SummaryPlacement> _summaryPlacements(TreeLayoutResult layout) {
+    final range = _rangeDraft;
+    final summary = widget.content.summaries
+        .where((s) => s.id == widget.selectedMarkId && s.mapId == widget.mapId)
+        .firstOrNull;
+    if (range == null || summary == null) return layout.summaries;
+    final original = layout.summaries[summary.id];
+    if (original == null) return layout.summaries;
+    final siblings = widget.content.childrenOf(summary.parentId, mapId: widget.mapId);
+    final from = siblings.indexWhere((n) => n.cardId == range.$1);
+    final to = siblings.indexWhere((n) => n.cardId == range.$2);
+    Rect? bounds;
+    final visited = <String>{};
+    void include(String id) {
+      if (!visited.add(id)) return;
+      if (_rangeRects[id] case final rect?) bounds = bounds?.expandToInclude(rect) ?? rect;
+      for (final child in widget.content.childrenOf(id, mapId: widget.mapId)) {
+        include(child.cardId);
+      }
+    }
+
+    for (final node in siblings.sublist(from, to + 1)) {
+      include(node.cardId);
+    }
+    if (bounds == null) return layout.summaries;
+    final b = original.bracket;
+    return {
+      ...layout.summaries,
+      summary.id: SummaryPlacement(
+        LayoutRect(b.left, bounds!.top, b.width, bounds!.height),
+        original.label,
+        left: original.left,
+      ),
+    };
+  }
+
+  List<Widget> _interactionWidgets(Map<String, Rect> rects, List<Rect> obstacles) {
+    final widgets = <Widget>[];
+    final selected = widget.selectedCardId;
+    if (selected != null &&
+        widget.selectedCardIds.length <= 1 &&
+        rects[selected] != null &&
+        field == null &&
+        _markField == null &&
+        widget.onStartConnect != null) {
+      final point = rects[selected]!.topRight + const Offset(-8, 8);
+      widgets.add(
+        Positioned(
+          key: const ValueKey('relation-drag-position'),
+          left: point.dx - 12,
+          top: point.dy - 12,
+          child: Tooltip(
+            message: context.l10n.addRelation,
+            child: GestureDetector(
+              key: const ValueKey('relation-drag-handle'),
+              onPanStart: (d) {
+                widget.focusNode.requestFocus();
+                widget.onStartConnect!();
+                setState(() {
+                  _linkDragging = true;
+                  _hover = _scenePoint(d.globalPosition);
+                });
+              },
+              onPanUpdate: (d) => setState(() => _hover = _scenePoint(d.globalPosition)),
+              onPanEnd: (_) {
+                final target = _hover == null ? null : _targetAt(_hover!);
+                if (_linkDragging && widget.connectingFromId != null && target != null) {
+                  widget.onConnect?.call(target);
+                } else {
+                  widget.onCancelConnect?.call();
+                }
+                setState(() => _linkDragging = false);
+              },
+              onPanCancel: () {
+                widget.onCancelConnect?.call();
+                setState(() => _linkDragging = false);
+              },
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(color: context.mmColors.research, shape: BoxShape.circle),
+                child: Icon(Icons.north_east, size: 16, color: context.mmColors.onAccent),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    if (widget.connectingFromId != null && _hover != null) {
+      final target = _targetAt(_hover!);
+      if (target != null) {
+        widgets.add(
+          Positioned.fromRect(
+            rect: rects[target]!.inflate(3),
+            child: IgnorePointer(
+              child: DecoratedBox(
+                key: const ValueKey('relation-target'),
+                decoration: BoxDecoration(
+                  border: Border.all(color: context.mmColors.accent, width: 2),
+                  borderRadius: BorderRadius.circular(MMRadii.card),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    final summary = widget.content.summaries
+        .where((s) => s.mapId == widget.mapId && s.id == widget.selectedMarkId)
+        .firstOrNull;
+    final placement = _layout == null ? null : _summaryPlacements(_layout!)[summary?.id];
+    if (summary != null && placement != null && _markField == null) {
+      final bracket = _rect(placement.bracket);
+      for (final start in [true, false]) {
+        void preview(Offset global) {
+          final pointer = _scenePoint(global);
+          final range = summaryRangeAt(widget.content, summary, _rangeRects, _rangeSide, pointer, start: start);
+          if (range != null) {
+            setState(() {
+              _rangePointer = pointer;
+              _rangeDraft = range;
+            });
+          }
+        }
+
+        final point = Offset(placement.left ? bracket.right : bracket.left, start ? bracket.top : bracket.bottom);
+        widgets.add(
+          _dragHandle(
+            'summary-range-${start ? 'from' : 'to'}',
+            point,
+            onStart: (d) {
+              _rangeRects = Map.of(rects);
+              _rangeSide = Set.of(_layout!.leftSide);
+              _rangeDraft = null;
+              preview(d.globalPosition);
+            },
+            onUpdate: (d) => preview(d.globalPosition),
+            onEnd: () {
+              final range = _rangeDraft;
+              if (range != null && (range.$1 != summary.fromId || range.$2 != summary.toId)) {
+                widget.onAdjustSummary?.call(summary.id, range.$1, range.$2);
+              }
+              setState(() {
+                _rangePointer = null;
+                _rangeDraft = null;
+              });
+            },
+            onCancel: () => setState(() {
+              _rangePointer = null;
+              _rangeDraft = null;
+            }),
+          ),
+        );
+      }
+    }
+    final relation = _drawnRelations.where((r) => r.id == widget.selectedMarkId).firstOrNull;
+    if (relation != null && rects[relation.fromId] != null && rects[relation.toId] != null && _markField == null) {
+      final a = rects[relation.fromId]!, b = rects[relation.toId]!;
+      final curve = mapRelationCurve(relation, a, b, obstacles, left: _leftRelation(relation), root: rects[rootNodeId]);
+      for (final first in [true, false]) {
+        void preview(Offset global) {
+          final point = _scenePoint(global) - (first ? a.center : b.center);
+          final c1 = first
+              ? RelationControlPoint(point.dx, point.dy)
+              : RelationControlPoint(curve.$2.dx - a.center.dx, curve.$2.dy - a.center.dy);
+          final c2 = !first
+              ? RelationControlPoint(point.dx, point.dy)
+              : RelationControlPoint(curve.$3.dx - b.center.dx, curve.$3.dy - b.center.dy);
+          setState(() => _relationDraft = relation.copyWith(control1: c1, control2: c2));
+        }
+
+        widgets.add(
+          _dragHandle(
+            'relation-control-${first ? 1 : 2}',
+            first ? curve.$2 : curve.$3,
+            round: true,
+            onStart: (d) => preview(d.globalPosition),
+            onUpdate: (d) => preview(d.globalPosition),
+            onEnd: () {
+              if (_relationDraft case final draft?) widget.onUpdateRelation?.call(draft);
+              setState(() => _relationDraft = null);
+            },
+            onCancel: () => setState(() => _relationDraft = null),
+          ),
+        );
+      }
+      final middle = cubicPoint(curve, .5);
+      final l = context.l10n;
+      Widget button(IconData icon, String label, VoidCallback action) => IconButton(
+        visualDensity: VisualDensity.compact,
+        iconSize: 16,
+        tooltip: label,
+        onPressed: action,
+        icon: Icon(icon),
+      );
+      widgets.add(
+        Positioned(
+          left: math.max(0, middle.dx - 140),
+          top: math.max(math.max(curve.$1.dy, curve.$4.dy), math.max(curve.$2.dy, curve.$3.dy)) + 24,
+          child: Material(
+            color: context.mmColors.canvas,
+            elevation: 2,
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                button(
+                  Icons.arrow_forward,
+                  l.relationArrowEnd,
+                  () => widget.onUpdateRelation?.call(relation.copyWith(arrow: RelationArrow.end)),
+                ),
+                button(
+                  Icons.swap_horiz,
+                  l.relationArrowBoth,
+                  () => widget.onUpdateRelation?.call(relation.copyWith(arrow: RelationArrow.both)),
+                ),
+                button(
+                  Icons.remove,
+                  l.relationArrowNone,
+                  () => widget.onUpdateRelation?.call(relation.copyWith(arrow: RelationArrow.none)),
+                ),
+                button(Icons.flip, l.relationReverse, () => widget.onReverseRelation?.call(relation.id)),
+                button(
+                  relation.solid ? Icons.horizontal_rule : Icons.more_horiz,
+                  l.relationLineStyle,
+                  () => widget.onUpdateRelation?.call(relation.copyWith(solid: !relation.solid)),
+                ),
+                button(Icons.edit, l.editMarkLabel, () => widget.onEditMark?.call(relation.id)),
+                button(Icons.delete_outline, l.deleteRelation, () => widget.onDeleteMark?.call()),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   /// A label of a relation (at the middle of its line) or summary.
@@ -873,11 +1207,22 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       style: style,
       summary: summary,
       fill: palette?.summary,
-      selected: id == widget.selectedMarkId,
+      selected:
+          id == widget.selectedMarkId ||
+          (summary && widget.content.summaries.any((s) => s.id == id && s.cardId == widget.selectedCardId)),
       editor: editor,
       onTap: () {
         widget.focusNode.requestFocus();
-        widget.onSelectMark?.call(id);
+        final cardId = summary ? widget.content.summaries.where((s) => s.id == id).firstOrNull?.cardId : null;
+        if (cardId != null) {
+          if (_additive && widget.onToggleSelection != null) {
+            widget.onToggleSelection!(cardId);
+          } else {
+            widget.onSelect(cardId);
+          }
+        } else {
+          widget.onSelectMark?.call(id);
+        }
       },
       onDoubleTap: widget.onEditMark == null ? null : () => widget.onEditMark!(id),
       onSecondaryTapUp: widget.onMarkContextMenu == null
@@ -1292,6 +1637,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   _NodeLook? _lookOf(String id, _NodeSpec spec, MMMapColors palette, MMColors c) {
     if (id == rootNodeId) return _look(palette.root, palette.onRoot, null);
     if (spec.kind != _Kind.topic) return null;
+    if (widget.content.summaries.any((s) => s.mapId == widget.mapId && s.cardId == id)) {
+      return _look(palette.summary ?? Color.alphaBlend(c.fill, c.canvas), palette.onSummary ?? c.label, null);
+    }
     final branch = _branches[id];
     if (branch == null || !_firstLevel.contains(id)) return null;
     return _look(palette.topicFill(branch, c), palette.topicText(branch, c), palette.topicBorder(branch));
@@ -1322,7 +1670,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final palette = _mapColors(c);
     if (!identical(_branchesLayout, result)) {
       _branchesLayout = result;
-      _branches = mapBranches(result, rootNodeId);
+      _branches = mapBranches(
+        result,
+        rootNodeId,
+        summarySources: {
+          for (final s in widget.content.summaries.where((s) => s.mapId == widget.mapId)) ?s.cardId: s.fromId,
+        },
+      );
       _firstLevel = {
         for (final e in result.edges)
           if (e.parentId == rootNodeId) e.childId,
@@ -1447,13 +1801,19 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 },
                 onPointerPanZoomEnd: (_) => _pinchScale = null,
                 onPointerDown: (event) {
+                  _pointerTime = event.timeStamp;
                   _dragPointer = event.position;
                   if (event.kind == PointerDeviceKind.touch) {
                     if (_touchPointers.isEmpty) _touchDragCancelled = false;
                     setState(() => _touchPointers.add(event.pointer));
                     return;
                   }
-                  if (field != null || widget.onSelectMany == null || event.buttons != 1) return;
+                  if (field != null ||
+                      widget.selectedMarkId != null ||
+                      widget.onSelectMany == null ||
+                      event.buttons != 1) {
+                    return;
+                  }
                   final scene = widget.transformation.toScene(event.localPosition);
                   if (result.rects.entries.any((e) => _drawn(e.key, e.value).inflate(MMSpacing.s).contains(scene))) {
                     return;
@@ -1497,7 +1857,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   });
                 },
                 child: InteractiveViewer(
-                  panEnabled: _boxStart == null,
+                  panEnabled: _boxStart == null && !_linkDragging && _rangePointer == null && _relationDraft == null,
                   // Zooming is handled above to preserve the pointer anchor.
                   scaleEnabled: _touchPointers.isNotEmpty,
                   transformationController: widget.transformation,
@@ -1514,7 +1874,19 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       widget.focusNode.requestFocus();
                       final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
                       if (mark != null) {
-                        widget.onSelectMark!(mark);
+                        final now = _pointerTime;
+                        final last = _lastMarkTap;
+                        if (widget.selectedMarkId == mark &&
+                            last?.$1 == mark &&
+                            now - last!.$2 < kDoubleTapTimeout &&
+                            (details.localPosition - last.$3).distance * mapScale(widget.transformation.value) <=
+                                kDoubleTapSlop) {
+                          widget.onEditMark?.call(mark);
+                          _lastMarkTap = null;
+                        } else {
+                          widget.onSelectMark!(mark);
+                          _lastMarkTap = (mark, now, details.localPosition);
+                        }
                       } else if (widget.connectingFromId != null) {
                         widget.onCancelConnect?.call();
                       } else {
@@ -1571,10 +1943,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         painter: _MarksPainter(
                                           rects: rects,
                                           leftSide: result.leftSide,
-                                          relations: _cache._relations,
-                                          summaries: result.summaries,
+                                          relations: _drawnRelations,
+                                          summaries: _summaryPlacements(result),
                                           selectedId: widget.selectedMarkId,
-                                          line: c.secondaryLabel,
+                                          line: c.research,
                                           bracket: c.line,
                                           bracketColors: {
                                             for (final s in _cache._summaryBranches.entries)
@@ -1590,7 +1962,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 for (final e in result.rects.entries)
                                   if (e.key == field?.id)
                                     _fieldNode(e.key, specs[e.key]!, e.value, _lookOf(e.key, specs[e.key]!, palette, c))
-                                  else
+                                  else if (!widget.content.summaries.any(
+                                    (s) => s.mapId == widget.mapId && s.cardId == e.key,
+                                  ))
                                     Positioned.fromRect(
                                       key: ValueKey(e.key),
                                       rect: _drawn(e.key, e.value),
@@ -1614,7 +1988,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                       ),
                                     ),
                                 for (final e in result.summaries.entries)
-                                  if (e.value.label.width > 0)
+                                  if (e.value.label.width > 0 &&
+                                      !widget.content.summaries.any((s) => s.id == e.key && s.cardId == field?.id))
                                     Positioned.fromRect(
                                       rect: _rect(e.value.label),
                                       child: _markLabel(e.key, summary: true),
@@ -1644,6 +2019,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                             child: _markLabel(r.id, summary: false),
                                           ),
                                         ),
+                                ..._interactionWidgets(rects, obstacles),
                                 if (_boxStart != null && _boxEnd != null)
                                   Positioned.fromRect(
                                     rect: Rect.fromPoints(_boxStart!, _boxEnd!),
@@ -1837,10 +2213,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   builder: (context, _) {
                     final id = _hovered.value ?? widget.selectedCardId ?? rootNodeId;
                     final rect = result.rects[id];
-                    if (rect == null || field != null || _dragging != null) return const SizedBox.shrink();
+                    if (rect == null ||
+                        field != null ||
+                        _dragging != null ||
+                        widget.connectingFromId != null ||
+                        widget.selectedMarkId != null) {
+                      return const SizedBox.shrink();
+                    }
                     final shown = _shown(id, rect);
-                    // At the outer top corner; in a tree, below the node where
-                    // its children's trunk starts.
+                    // Keep the add button above the relationship handle. In a
+                    // tree it stays below the node at the children's trunk.
                     final corner = MatrixUtils.transformPoint(
                       widget.transformation.value,
                       result.structure == LayoutStructure.tree
@@ -1851,7 +2233,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       children: [
                         Positioned(
                           left: corner.dx - MMSpacing.l,
-                          top: corner.dy - MMSpacing.l,
+                          top: result.structure == LayoutStructure.tree
+                              ? corner.dy - MMSpacing.l
+                              : corner.dy - MMSpacing.xxxl - MMSpacing.s,
                           child: MouseRegion(
                             onEnter: (_) => _enterNode(id),
                             onExit: (_) => _leaveNode(id),
@@ -2527,13 +2911,25 @@ class _MarksPainter extends CustomPainter {
       final a = rects[r.fromId], b = rects[r.toId];
       if (a == null || b == null) continue;
       final selected = r.id == selectedId;
-      final c = relationCurveOnSide(a, b, others, left: leftSide.contains(r.fromId) && leftSide.contains(r.toId));
+      final c = mapRelationCurve(
+        r,
+        a,
+        b,
+        others,
+        left: leftSide.contains(r.fromId) && leftSide.contains(r.toId),
+        root: rects[rootNodeId],
+      );
       final paint = stroke(selected ? accent : line, selected ? 2 : 1.5);
       final path = Path()
         ..moveTo(c.$1.dx, c.$1.dy)
         ..cubicTo(c.$2.dx, c.$2.dy, c.$3.dx, c.$3.dy, c.$4.dx, c.$4.dy);
-      _dashed(canvas, path, paint);
-      _arrow(canvas, c.$3, c.$4, paint);
+      if (r.solid) {
+        canvas.drawPath(path, paint);
+      } else {
+        _dashed(canvas, path, paint);
+      }
+      if (r.arrow != RelationArrow.none) _arrow(canvas, c.$3, c.$4, paint);
+      if (r.arrow == RelationArrow.both) _arrow(canvas, c.$2, c.$1, paint);
     }
     final from = connectFrom == null ? null : rects[connectFrom];
     if (from != null && pointer != null && !from.contains(pointer!)) {

@@ -134,6 +134,9 @@ class MapExportScene extends CustomPainter {
           palette.onSummary ?? colors.label,
         ),
     };
+    for (final (s, _) in summaries) {
+      if (s.cardId case final id?) nodes[id] = labels[s.id]!;
+    }
     final layout =
         TreeLayout(
           balanced: true,
@@ -150,6 +153,7 @@ class MapExportScene extends CustomPainter {
                 toId: s.toId,
                 width: labels[s.id]!.size.width,
                 height: labels[s.id]!.size.height,
+                node: s.cardId == null ? null : tree(s.cardId!),
               ),
           ],
         );
@@ -169,7 +173,7 @@ class MapExportScene extends CustomPainter {
       'dashed': dashed,
     });
     Rect rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
-    final branches = mapBranches(layout, root);
+    final branches = mapBranches(layout, root, summarySources: {for (final (s, _) in summaries) ?s.cardId: s.fromId});
     Color line(String? id) => switch (branches[id]) {
       final branch? => palette.line(branch, colors),
       null => colors.line,
@@ -197,17 +201,25 @@ class MapExportScene extends CustomPainter {
       final a = layout.rects[r.fromId], b = layout.rects[r.toId];
       if (a == null || b == null) continue;
       final left = layout.leftSide.contains(r.fromId) && layout.leftSide.contains(r.toId);
-      final c = relationCurveOnSide(rect(a), rect(b), [
-        ...layout.rects.values.map(rect),
-        ...layout.summaries.values.map((s) => rect(s.label)),
-      ], left: left);
-      curve([c.$1, c.$2, c.$3, c.$4], dashed: true);
-      final tip = c.$4, before = c.$3;
-      final angle = math.atan2(tip.dy - before.dy, tip.dx - before.dx);
-      for (final delta in [-0.5, 0.5]) {
-        final p = tip - Offset(math.cos(angle + delta), math.sin(angle + delta)) * MMSpacing.s;
-        curve([p, p, tip, tip]);
+      final c = mapRelationCurve(
+        r,
+        rect(a),
+        rect(b),
+        [...layout.rects.values.map(rect), ...layout.summaries.values.map((s) => rect(s.label))],
+        left: left,
+        root: rect(layout.rects[root]!),
+      );
+      curve([c.$1, c.$2, c.$3, c.$4], dashed: !r.solid, color: colors.research);
+      void arrow(Offset before, Offset tip) {
+        final angle = math.atan2(tip.dy - before.dy, tip.dx - before.dx);
+        for (final delta in [-0.5, 0.5]) {
+          final p = tip - Offset(math.cos(angle + delta), math.sin(angle + delta)) * MMSpacing.s;
+          curve([p, p, tip, tip], color: colors.research);
+        }
       }
+
+      if (r.arrow != RelationArrow.none) arrow(c.$3, c.$4);
+      if (r.arrow == RelationArrow.both) arrow(c.$2, c.$1);
       if (r.label.isNotEmpty) {
         final label = _ExportNode(r.label, '', MMTypography.footnote, colors.canvas, colors.secondaryLabel);
         final middle = cubicPoint(c, .5);
@@ -236,7 +248,9 @@ class MapExportScene extends CustomPainter {
         Offset(outer, b.bottom),
         Offset(inner, b.bottom),
       ], color: color);
-      labels[e.key]!.emit(commands, rect(e.value.label).topLeft, imageBytes);
+      if (summaries.any((s) => s.$1.id == e.key && s.$1.cardId == null)) {
+        labels[e.key]!.emit(commands, rect(e.value.label).topLeft, imageBytes);
+      }
     }
     for (final e in layout.rects.entries) {
       final node = nodes[e.key]!, r = rect(e.value);

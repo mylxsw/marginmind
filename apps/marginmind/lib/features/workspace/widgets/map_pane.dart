@@ -61,6 +61,18 @@ class _MapPaneState extends ConsumerState<MapPane> {
     );
   }
 
+  Future<void> _summary() async {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final selected = ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.toSet();
+    await controller.addSummaryAndEdit(context.l10n.newSummaryLabel);
+    if (!mounted) return;
+    final id = ref.read(workspaceProvider(widget.studySetId)).editingMarkId;
+    final summary = controller.content.summaries.where((s) => s.id == id).firstOrNull;
+    if (summary == null) return;
+    final extra = (controller.content.summaryRange(summary) ?? []).where((id) => !selected.contains(id)).length;
+    if (extra > 0) MMHud.show(context, context.l10n.summaryIncludedNodes(extra));
+  }
+
   final _transforms = <String, TransformationController>{};
   TransformationController get _transform =>
       _transforms.putIfAbsent(ref.read(workspaceProvider(widget.studySetId)).activeMapId, TransformationController.new);
@@ -156,7 +168,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       case MindMapCommand.merge:
         _merge();
       case MindMapCommand.summary:
-        controller.addSummaryAndEdit(l.newSummaryLabel);
+        _summary();
       case MindMapCommand.expand:
         controller.toggleSelectedExpanded();
       default:
@@ -410,7 +422,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                             mergeReason: controller.mergeReason,
                             summaryReason: controller.summaryReason,
                             onMerge: _merge,
-                            onSummary: () => controller.addSummaryAndEdit(l.newSummaryLabel),
+                            onSummary: _summary,
                             onRelation: controller.addRelation,
                             onDelete: remove,
                             onMergeHover: (hover) {
@@ -466,6 +478,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onMarkEditDone: controller.finishMarkEditing,
                     onMarkEditCancel: controller.cancelMarkEditing,
                     onConnect: controller.connectTo,
+                    onStartConnect: controller.addRelation,
+                    onAdjustSummary: controller.adjustSummaryRange,
+                    onUpdateRelation: controller.updateRelation,
+                    onReverseRelation: controller.reverseRelation,
                     onCancelConnect: controller.cancelConnecting,
                     onMarkContextMenu: _showMarkMenu,
                     excerptTargetId: excerptTargetId,

@@ -5989,6 +5989,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get selectionDelete;
+
+  /// No description provided for @relationArrowEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'One-way arrow'**
+  String get relationArrowEnd;
+
+  /// No description provided for @relationArrowBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Two-way arrows'**
+  String get relationArrowBoth;
+
+  /// No description provided for @relationArrowNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No arrows'**
+  String get relationArrowNone;
+
+  /// No description provided for @relationReverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse direction'**
+  String get relationReverse;
+
+  /// No description provided for @relationLineStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid / dashed'**
+  String get relationLineStyle;
+
+  /// No description provided for @summaryIncludedNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes {count} unselected nodes in between'**
+  String summaryIncludedNodes(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

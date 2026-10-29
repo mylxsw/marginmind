@@ -250,6 +250,41 @@ void main() {
       expect(node(tester, 'c').right, lessThan(node(tester, rootNodeId).left));
     });
 
+    testWidgets('summary topics and details render in all structures, palettes and appearances', (tester) async {
+      var seq = 0;
+      final editor = StudySetEditor(newId: () => 'summary-${seq++}', now: () => _now);
+      for (final dark in [false, true]) {
+        final colors = dark ? MMColors.dark : MMColors.light;
+        for (final structure in MapStructure.values) {
+          for (final palette in MapPalette.values) {
+            final result = editor.createSummary(_content(structure: structure, palette: palette), [
+              'a1',
+              'a3',
+            ], label: 'Summary topic');
+            final (content, child) = editor.addTopic(
+              result.content,
+              parentId: result.value!.cardId,
+              title: 'Detail topic',
+            );
+            await pump(tester, content, theme: dark ? MMTheme.dark() : MMTheme.light());
+            expect(find.text('Summary topic'), findsOneWidget);
+            expect(find.byKey(ValueKey(child.id)), findsOneWidget);
+            final tokens = mapPaletteOf(palette).of(colors.brightness);
+            final box = tester.widget<DecoratedBox>(
+              find.ancestor(of: find.text('Summary topic'), matching: find.byType(DecoratedBox)).first,
+            );
+            expect(
+              (box.decoration as BoxDecoration).color,
+              tokens.summary ?? Color.alphaBlend(colors.fill, colors.canvas),
+              reason: '$structure $palette dark=$dark',
+            );
+            if (tokens.onSummary != null) expect(textColor(tester, 'Summary topic'), tokens.onSummary);
+            expect(tester.takeException(), isNull);
+          }
+        }
+      }
+    });
+
     testWidgets('the palette colors the root and first-level topics only', (tester) async {
       await pump(tester, _content(palette: MapPalette.rainbow));
       final palette = MMMapPalette.rainbow.light;
