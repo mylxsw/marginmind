@@ -605,7 +605,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 return Row(
                   children: [
                     Expanded(child: title),
-                    controls,
+                    // Keep controls within the pane without growing into the
+                    // canvas's touch selection controls. Show node actions first.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                      child: SingleChildScrollView(scrollDirection: Axis.horizontal, reverse: true, child: controls),
+                    ),
                   ],
                 );
               },

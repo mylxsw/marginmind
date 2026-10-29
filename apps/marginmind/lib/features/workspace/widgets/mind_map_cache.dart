@@ -203,12 +203,15 @@ class MindMapRenderCache {
     final mapSummaries = content.summariesOf(mapId);
     _markLabels = {
       for (final r in _relations) r.id: label(r.id, r.label),
-      for (final (s, _) in mapSummaries) s.id: draft?.$1 == s.cardId ? draft!.$2 : label(s.id, s.label),
+      for (final (s, _) in mapSummaries) s.id: draft != null && draft.$1 == s.cardId ? draft.$2 : label(s.id, s.label),
     };
     _summaryBranches = {for (final (s, _) in mapSummaries) s.id: s.fromId};
     final summaries = [
       for (final (s, _) in mapSummaries)
-        if (_summaryLabelSize(_markLabels[s.id]!, editing: markDraft?.$1 == s.id || draft?.$1 == s.cardId)
+        if (_summaryLabelSize(
+              _markLabels[s.id]!,
+              editing: markDraft?.$1 == s.id || (draft != null && draft.$1 == s.cardId),
+            )
             case final size)
           LayoutSummary(
             id: s.id,

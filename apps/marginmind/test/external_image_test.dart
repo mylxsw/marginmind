@@ -34,7 +34,7 @@ class ImageRepository extends InMemoryStudySetContentRepository {
 }
 
 void main() {
-  test('batch imports attach beside excerpts, flash, undo/redo once; failures leave history intact', () async {
+  test('batch imports nest under excerpts, flash, undo/redo once; failures leave history intact', () async {
     final repo = ImageRepository();
     final container = ProviderContainer(overrides: await testOverrides(content: repo));
     addTearDown(container.dispose);
@@ -49,7 +49,7 @@ void main() {
     final added = controller.content.cards.skip(before.cards.length).toList();
     expect(added, hasLength(2));
     expect(added.map((c) => c.annotationId), everyElement(isNull));
-    expect(added.map((c) => controller.content.node(c.id)!.parentId), everyElement('c3'));
+    expect(added.map((c) => controller.content.node(c.id)!.parentId), everyElement('c6'));
     expect(added.first.imageOrigin, 'file:diagram.PNG');
     expect(container.read(provider).flashCardId, added.last.id);
     await controller.undo();

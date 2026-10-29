@@ -370,7 +370,9 @@ class TreeLayout {
       var label = LayoutRect(labelLeft, (top + bottom - height) / 2, width, height);
       double? subtreeEdge;
       if (node != null) {
-        final topY = structure == LayoutStructure.tree ? (top + bottom - node.height) / 2 : (top + bottom - heights[node.id]!) / 2;
+        final topY = structure == LayoutStructure.tree
+            ? (top + bottom - node.height) / 2
+            : (top + bottom - heights[node.id]!) / 2;
         place(node, dir > 0 ? labelLeft : labelLeft + width, topY, dir);
         label = rects[node.id]!;
         subtreeEdge = _placeSummaries(node, node.children, dir, rects, bands, byParent, out, heights, place);

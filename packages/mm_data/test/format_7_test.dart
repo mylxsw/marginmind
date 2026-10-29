@@ -68,9 +68,7 @@ void main() {
     final content = await store.load('legacy');
     final migrated = jsonDecode(await file.readAsString()) as Map;
     expect(migrated['format'], currentStudySetFormat);
-    for (final entry in (original['content'] as Map).entries.where(
-      (e) => e.key != 'cards' && e.key != 'summaries',
-    )) {
+    for (final entry in (original['content'] as Map).entries.where((e) => e.key != 'cards' && e.key != 'summaries')) {
       expect(migrated['content'][entry.key], entry.value, reason: '${entry.key} unchanged');
     }
     expect(content.cards.map((card) => card.toJson()), before.cards.map((card) => card.toJson()));

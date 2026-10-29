@@ -317,13 +317,16 @@ class _ReaderOutlineState extends ConsumerState<ReaderOutline> {
                                         ),
                                 ),
                                 Expanded(
-                                  child: Text(
-                                    entry.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.mmText.callout.copyWith(
-                                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                                      color: entry.page > 0 ? c.label : c.secondaryLabel,
+                                  child: Tooltip(
+                                    message: entry.title,
+                                    child: Text(
+                                      entry.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: context.mmText.callout.copyWith(
+                                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                                        color: entry.page > 0 ? c.label : c.secondaryLabel,
+                                      ),
                                     ),
                                   ),
                                 ),

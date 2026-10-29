@@ -1209,7 +1209,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       fill: palette?.summary,
       selected:
           id == widget.selectedMarkId ||
-          (summary && widget.content.summaries.any((s) => s.id == id && s.cardId == widget.selectedCardId)),
+          (summary &&
+              widget.selectedCardId != null &&
+              widget.content.summaries.any((s) => s.id == id && s.cardId == widget.selectedCardId)),
       editor: editor,
       onTap: () {
         widget.focusNode.requestFocus();
@@ -1989,7 +1991,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                     ),
                                 for (final e in result.summaries.entries)
                                   if (e.value.label.width > 0 &&
-                                      !widget.content.summaries.any((s) => s.id == e.key && s.cardId == field?.id))
+                                      (field == null ||
+                                          !widget.content.summaries.any((s) => s.id == e.key && s.cardId == field.id)))
                                     Positioned.fromRect(
                                       rect: _rect(e.value.label),
                                       child: _markLabel(e.key, summary: true),
