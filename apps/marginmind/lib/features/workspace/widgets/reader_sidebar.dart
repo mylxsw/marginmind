@@ -8,6 +8,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
+import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -15,7 +16,7 @@ import 'notices.dart';
 const readerSidebarWidth = MMSizes.readerSidebarWidth;
 
 /// Page sidebar of the source pane: thumbnails, the PDF's own table of
-/// contents, the reader's bookmarks and the document's highlights.
+/// contents, the reader's bookmarks, highlights and margin notes.
 class ReaderSidebar extends ConsumerWidget {
   const ReaderSidebar({
     super.key,
@@ -85,7 +86,12 @@ class ReaderSidebar extends ConsumerWidget {
                     pdf: pdf,
                     bookmarks: content.bookmarksOn(document.id),
                   ),
-                  ReaderPanelMode.annotations => _Annotations(pdf: pdf, annotations: _annotations(content)),
+                  ReaderPanelMode.annotations => _Annotations(
+                    studySetId: studySetId,
+                    pdf: pdf,
+                    annotations: content.annotationsOn(document.id),
+                    notes: content.marginNotes.where((n) => n.documentId == document.id).toList(),
+                  ),
                 },
               ),
             ],
@@ -94,12 +100,6 @@ class ReaderSidebar extends ConsumerWidget {
       ),
     );
   }
-
-  List<Annotation> _annotations(StudySetContent content) => content.annotationsOn(document.id)
-    ..sort((a, b) {
-      final byPage = a.page.compareTo(b.page);
-      return byPage != 0 ? byPage : a.createdAt.compareTo(b.createdAt);
-    });
 }
 
 // ---- thumbnails ---------------------------------------------------------------
@@ -356,35 +356,88 @@ class _Bookmarks extends ConsumerWidget {
 
 // ---- annotations ----------------------------------------------------------------
 
-class _Annotations extends StatelessWidget {
-  const _Annotations({required this.pdf, required this.annotations});
+class _AnnotationEntry {
+  const _AnnotationEntry.highlight(Annotation value) : highlight = value, note = null;
+  const _AnnotationEntry.note(MarginNote value) : note = value, highlight = null;
 
+  final Annotation? highlight;
+  final MarginNote? note;
+
+  String get id => highlight == null ? 'margin-note-${note!.id}' : 'annotation-${highlight!.id}';
+  int get page => highlight?.page ?? note!.page;
+  int get colorIndex => highlight?.colorIndex ?? note!.colorIndex;
+  DateTime get createdAt => highlight?.createdAt ?? note!.createdAt;
+  String get text => highlight?.quote ?? note!.text;
+}
+
+class _Annotations extends ConsumerWidget {
+  const _Annotations({required this.studySetId, required this.pdf, required this.annotations, required this.notes});
+
+  final String studySetId;
   final MMPdfViewController pdf;
   final List<Annotation> annotations;
+  final List<MarginNote> notes;
+
+  Future<void> _open(BuildContext context, WidgetRef ref, _AnnotationEntry entry) async {
+    final session = ref.read(readerMarginProvider(studySetId).notifier);
+    if (!await session.finish() || !context.mounted) return;
+    // Saving changes the margin layout. Let it consume that revision before
+    // issuing a jump, so its reading-position restoration cannot undo the jump.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!context.mounted) return;
+    ref.read(workspaceProvider(studySetId).notifier).dismissPending();
+    if (entry.note case final note?) {
+      // Line notes have no quote rectangles; reveal their original PDF line.
+      final rects =
+          note.anchor?.pages.first.rects ??
+          [PageRect(0, note.lineY!, pdf.pageSize(note.page)?.width ?? 1, note.lineY!)];
+      session.show([note]);
+      await pdf.jumpToRect(note.page, rects);
+    } else {
+      await session.close();
+      if (!context.mounted) return;
+      final first = entry.highlight!.pages.first;
+      await pdf.jumpToRect(first.page, first.rects);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
-    if (annotations.isEmpty) return _Empty(label: l.noAnnotations);
+    final entries =
+        [
+          for (final annotation in annotations) _AnnotationEntry.highlight(annotation),
+          for (final note in notes) _AnnotationEntry.note(note),
+        ]..sort((a, b) {
+          final byPage = a.page.compareTo(b.page);
+          if (byPage != 0) return byPage;
+          final byCreated = a.createdAt.compareTo(b.createdAt);
+          return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
+        });
+    if (entries.isEmpty) return _Empty(label: l.noAnnotations);
+    final popup = ref.watch(readerMarginProvider(studySetId).select((s) => s.popup));
     return ListView.builder(
       padding: const EdgeInsets.all(MMSizes.sidebarInset),
-      itemCount: annotations.length,
+      itemCount: entries.length,
       itemBuilder: (context, index) {
-        final annotation = annotations[index];
-        final color = MMAnnotationColor.fromIndex(annotation.colorIndex);
-        final first = annotation.pages.first;
+        final entry = entries[index];
+        final color = MMAnnotationColor.fromIndex(entry.colorIndex);
+        final label = entry.text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : entry.text;
+        final selected = entry.note != null && popup.contains(entry.note!.id);
         return MMInteractive(
-          key: ValueKey('annotation-${annotation.id}'),
-          onTap: () => pdf.jumpToRect(first.page, first.rects),
-          semanticLabel: annotation.quote.isEmpty ? l.toolArea : annotation.quote,
-          semanticValue: l.pageNumber(first.page),
+          key: ValueKey(entry.id),
+          onTap: () => _open(context, ref, entry),
+          tooltip: label,
+          selected: selected,
+          semanticLabel: entry.note == null ? label : '${l.marginNoteAction}: $label',
+          semanticValue: l.pageNumber(entry.page),
           builder: (context, s) => Container(
             constraints: BoxConstraints(minHeight: context.mmSidebarRow),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
             decoration: BoxDecoration(
-              color: s.hovered ? c.hover : Colors.transparent,
+              color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
               borderRadius: BorderRadius.circular(MMRadii.row),
             ),
             child: Row(
@@ -392,23 +445,20 @@ class _Annotations extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
-                  ),
+                  child: entry.note != null
+                      ? Icon(MMIcons.marginNote, size: t.callout.fontSize, color: color.color)
+                      : Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
+                        ),
                 ),
                 Expanded(
-                  child: Text(
-                    annotation.quote.isEmpty ? l.toolArea : annotation.quote,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.callout,
-                  ),
+                  child: Text(label, maxLines: 3, overflow: TextOverflow.ellipsis, style: t.callout),
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: MMSpacing.xs),
-                  child: MMCount(first.page),
+                  child: MMCount(entry.page),
                 ),
               ],
             ),

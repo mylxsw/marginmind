@@ -355,6 +355,9 @@ class MMPdfViewController extends ChangeNotifier {
 
   /// Same as [reveal], and remembers where the reader was for [goBack].
   Future<void> jumpToRect(int page, List<PageRect> rects) async {
+    // An explicit jump wins over a pending margin-layout position restore,
+    // including when the margin is collapsed.
+    _state?._marginInputEpoch++;
     _history.record(_page);
     await _state?._reveal(page, rects);
     _notify();

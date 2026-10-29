@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/features/workspace/widgets/reader_find_bar.dart';
 import 'package:marginmind/features/workspace/widgets/reader_sidebar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -299,6 +300,60 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Area Select'), findsOneWidget);
+  });
+
+  testWidgets('annotations merge margin notes by page and update after edit, delete, undo and document switch', (
+    tester,
+  ) async {
+    final r = await openReader(tester);
+    final session = r.container.read(readerMarginProvider('demo-1').notifier);
+    await session.start('c1', page: 30, lineY: 400);
+    session.text('Later comment');
+    await session.finish();
+    final later = r.controller.content.marginNotes.single;
+    await session.start('c1', page: 2, lineY: 500);
+    session.text('Earlier comment');
+    await session.finish();
+    r.controller.showReaderPanel(ReaderPanelMode.annotations);
+    await tester.pumpAndSettle();
+    const quote = '这条先陡后平的曲线，被称为遗忘曲线。';
+    expect(
+      tester.getTopLeft(inReaderSidebar('Earlier comment')).dy,
+      lessThan(tester.getTopLeft(inReaderSidebar(quote)).dy),
+    );
+    expect(
+      tester.getTopLeft(inReaderSidebar(quote)).dy,
+      lessThan(tester.getTopLeft(inReaderSidebar('Later comment')).dy),
+    );
+    final row = find.byKey(ValueKey('margin-note-${later.id}'));
+    expect(find.descendant(of: row, matching: find.text('30')), findsOneWidget);
+    expect(find.descendant(of: row, matching: find.byIcon(MMIcons.marginNote)), findsOneWidget);
+    await session.start('c1', existing: later);
+    session.text('Edited comment');
+    await session.finish();
+    await tester.pumpAndSettle();
+    expect(inReaderSidebar('Later comment'), findsNothing);
+    expect(inReaderSidebar('Edited comment'), findsOneWidget);
+    await session.delete(r.controller.content.marginNotes.firstWhere((n) => n.id == later.id));
+    await tester.pumpAndSettle();
+    expect(inReaderSidebar('Edited comment'), findsNothing);
+    await r.controller.undo();
+    await tester.pumpAndSettle();
+    expect(inReaderSidebar('Edited comment'), findsOneWidget);
+
+    r.controller.openDocument('c2');
+    await session.start('c2', page: 1, lineY: 500);
+    session.text('Other document comment');
+    await session.finish();
+    await tester.pumpAndSettle();
+    expect(inReaderSidebar('Earlier comment'), findsNothing);
+    expect(inReaderSidebar('Edited comment'), findsNothing);
+    expect(inReaderSidebar('Other document comment'), findsOneWidget);
+    expect(inReaderSidebar('No Annotations'), findsNothing, reason: 'notes alone fill the list');
+    await session.delete(r.controller.content.marginNotes.firstWhere((n) => n.documentId == 'c2'));
+    await tester.pumpAndSettle();
+    expect(inReaderSidebar('No Annotations'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('find bar: opens focused, shows the state of the search, closes with Esc', (tester) async {

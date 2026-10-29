@@ -272,12 +272,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
-    final noteCount = controller.content.marginNotes.where((n) => n.documentId == state.activeDocumentId).length;
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,
       icon: MMIcons.captionsBubble,
-      count: noteCount,
       tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
       selected: marginState.openDocuments.contains(state.activeDocumentId),
       onPressed: crop.editing || comparing || document == null
