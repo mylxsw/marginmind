@@ -52,6 +52,9 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
         ),
       ),
       child: PopupMenuButton<T>(
+        // Show the complete list together. Material's default 300ms size
+        // expansion and staggered row fades delay scanning desktop menus.
+        popUpAnimationStyle: AnimationStyle.noAnimation,
         enabled: widget.enabled,
         tooltip: widget.tooltip,
         position: PopupMenuPosition.under,

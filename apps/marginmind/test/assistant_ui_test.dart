@@ -76,6 +76,21 @@ Future<void> _press(WidgetTester tester, LogicalKeyboardKey key, {bool shift = f
 }
 
 void main() {
+  testWidgets('macOS toolbar opens and closes the assistant on release', (tester) async {
+    final app = await openAssistantApp(tester);
+    final button = find.byKey(const ValueKey('toolbar-assistant'));
+    await tester.tap(button, kind: PointerDeviceKind.mouse);
+    expect(app.container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
+    await tester.pump();
+    expect(find.byType(AssistantHeader), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('assistant-input')), findsOneWidget);
+    await tester.tap(button, kind: PointerDeviceKind.mouse);
+    expect(app.container.read(workspaceProvider('demo-1')).panel, isNull);
+    await tester.pumpAndSettle();
+    expect(find.byType(AssistantHeader), findsNothing);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
   testWidgets('storage becoming inaccessible during a question is not reported as an invalid API key', (tester) async {
     final secrets = _ToggleKeyStore();
     await openAssistantApp(tester, secretStore: secrets);

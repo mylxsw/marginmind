@@ -24,35 +24,44 @@ class MMToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.mmText;
     final chrome = MMWindowChrome.maybeOf(context);
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
-      onDoubleTap: chrome?.onTitleDoubleTap,
-      child: SizedBox(
-        height: MMSizes.toolbarHeight,
-        child: AnimatedPadding(
-          duration: MMMotion.layout,
-          curve: MMMotion.layoutCurve,
-          padding: EdgeInsets.only(left: 20 + (chrome?.toolbarLeadingInset ?? 0), right: 12),
-          child: Row(
-            children: [
-              if (leading != null) ...[leading!, const SizedBox(width: 8)],
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: t.title3, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    if (subtitle != null)
-                      Text(subtitle!, style: t.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
-            ],
+    return SizedBox(
+      height: MMSizes.toolbarHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // A background sibling cannot compete with button gestures. An
+          // ancestor double-tap recognizer holds their taps for 300ms.
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
+            onDoubleTap: chrome?.onTitleDoubleTap,
           ),
-        ),
+          AnimatedPadding(
+            duration: MMMotion.layout,
+            curve: MMMotion.layoutCurve,
+            padding: EdgeInsets.only(left: 20 + (chrome?.toolbarLeadingInset ?? 0), right: 12),
+            child: Row(
+              children: [
+                if (leading != null) ...[leading!, const SizedBox(width: 8)],
+                Expanded(
+                  child: IgnorePointer(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: t.title3, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        if (subtitle != null)
+                          Text(subtitle!, style: t.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

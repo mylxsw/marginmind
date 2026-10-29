@@ -1,0 +1,61 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mm_design/mm_design.dart';
+
+void main() {
+  testWidgets('toolbar actions respond on release without waiting for a title double click', (tester) async {
+    var opened = false;
+    var zooms = 0;
+    var leadingClicks = 0;
+    var drags = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        home: MMWindowScaffold(
+          onTitleDoubleTap: () => zooms++,
+          onDragStart: () => drags++,
+          toolbar: MMToolbar(
+            title: 'Study set',
+            leading: MMIconButton(icon: MMIcons.sidebar, tooltip: 'Sidebar', onPressed: () => leadingClicks++),
+            actions: [
+              MMToolbarGroup(
+                children: [MMToolbarButton(icon: MMIcons.ai, tooltip: 'Assistant', onPressed: () => opened = true)],
+              ),
+            ],
+          ),
+          body: const SizedBox(),
+        ),
+      ),
+    );
+    await tester.tap(find.byTooltip('Assistant'), kind: PointerDeviceKind.mouse);
+    var waited = 0;
+    while (!opened && waited < 400) {
+      await tester.pump(const Duration(milliseconds: 10));
+      waited += 10;
+    }
+    debugPrint('Toolbar action callback delay: ${waited}ms');
+    expect(waited, 0, reason: 'the title double-click recognizer must not delay a button click');
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(zooms, 0);
+
+    await tester.tap(find.byTooltip('Sidebar'), kind: PointerDeviceKind.mouse);
+    expect(leadingClicks, 1);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tap(find.byTooltip('Sidebar'), kind: PointerDeviceKind.mouse);
+    expect(leadingClicks, 2, reason: 'two quick button clicks must remain two separate actions');
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(zooms, 0);
+
+    final title = tester.getCenter(find.text('Study set'));
+    await tester.tapAt(title, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapAt(title, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(zooms, 1, reason: 'double-clicking the title must still zoom the window');
+
+    await tester.dragFrom(title, const Offset(80, 0));
+    await tester.pumpAndSettle();
+    expect(drags, 1, reason: 'dragging the title must still move the window');
+  });
+}
