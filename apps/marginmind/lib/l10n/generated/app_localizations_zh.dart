@@ -3229,4 +3229,97 @@ class AppLocalizationsZh extends AppLocalizations {
   String summaryIncludedNodes(int count) {
     return '包含了中间未选中的 $count 个节点';
   }
+
+  @override
+  String get addWebPage => '添加网页…';
+
+  @override
+  String get webUrlPlaceholder => '网址';
+
+  @override
+  String get webUrlEmpty => '请输入网址';
+
+  @override
+  String get webUrlInvalid => '网址无效';
+
+  @override
+  String get webUrlScheme => '只支持 http 和 https';
+
+  @override
+  String get browserBack => '后退';
+
+  @override
+  String get browserForward => '前进';
+
+  @override
+  String get browserReload => '重新载入';
+
+  @override
+  String get browserStop => '停止';
+
+  @override
+  String get browserClose => '关闭网页';
+
+  @override
+  String get browserConvert => '转换为文档…';
+
+  @override
+  String get browserConvertShort => '转换';
+
+  @override
+  String get webReadyPrompt => '转换为文档？';
+
+  @override
+  String get webStillLoading => '部分内容仍在加载';
+
+  @override
+  String get webLater => '稍后';
+
+  @override
+  String get webErrorTitle => '无法打开页面';
+
+  @override
+  String get webRetry => '重试';
+
+  @override
+  String get settingsClearWebsiteData => '清除…';
+
+  @override
+  String get clearWebsiteDataConfirm => '清除所有网站数据？';
+
+  @override
+  String get websiteDataCleared => '已清除网站数据';
+
+  @override
+  String get addWebTitle => '添加网页';
+
+  @override
+  String get webKeepWaiting => '继续等待';
+
+  @override
+  String get webConvertAction => '转换';
+
+  @override
+  String get webErrorTimeout => '连接超时';
+
+  @override
+  String get webErrorHost => '找不到服务器';
+
+  @override
+  String get webErrorCertificate => '证书无效';
+
+  @override
+  String get webErrorOffline => '未连接网络';
+
+  @override
+  String get settingsBrowserGroup => '内置浏览器';
+
+  @override
+  String get settingsWebsiteData => '网站数据';
+
+  @override
+  String get clearAction => '清除';
+
+  @override
+  String get browserUnsaved => '未保存';
 }

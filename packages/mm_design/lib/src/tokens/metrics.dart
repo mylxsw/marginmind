@@ -77,6 +77,9 @@ abstract final class MMSizes {
   /// in the toolbar instead.
   static const double windowButtonsWidth = 78;
   static const double field = 28;
+  static const double browserAddress = 30;
+  static const double browserAddressTouch = 36;
+  static const double browserProgressTrack = 2;
 
   /// Maximum width of an editable value in a settings row.
   static const double settingsFieldWidth = 245;

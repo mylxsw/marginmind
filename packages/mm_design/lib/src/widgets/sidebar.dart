@@ -168,6 +168,8 @@ class MMSidebarItem extends StatelessWidget {
     this.onDoubleTap,
     this.onContextMenu,
     this.iconColor,
+    this.leading,
+    this.labelColor,
   });
 
   final IconData icon;
@@ -180,6 +182,8 @@ class MMSidebarItem extends StatelessWidget {
   /// Right click, with the pointer position in global coordinates.
   final ValueChanged<Offset>? onContextMenu;
   final Color? iconColor;
+  final Widget? leading;
+  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
@@ -199,10 +203,15 @@ class MMSidebarItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SizedBox(width: 18, child: Icon(icon, size: 15, color: iconColor ?? c.accent)),
+            SizedBox(width: 18, child: leading ?? Icon(icon, size: 15, color: iconColor ?? c.accent)),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(label, style: context.mmText.body, maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: Text(
+                label,
+                style: context.mmText.body.copyWith(color: labelColor),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             if (trailing != null) ...[const SizedBox(width: 6), trailing!],
           ],

@@ -21,6 +21,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
         val messenger = engine.dartExecutor.binaryMessenger
+        engine.platformViewsController.registry.registerViewFactory("marginmind/browser", BrowserFactory(this, messenger))
         MethodChannel(messenger, "marginmind/secret_store").setMethodCallHandler { call, result ->
             if (call.method !in listOf("read", "write", "delete")) {
                 result.notImplemented(); return@setMethodCallHandler

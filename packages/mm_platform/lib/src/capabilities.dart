@@ -7,6 +7,7 @@ class MMPlatformCapabilities {
   final TargetPlatform platform;
   final bool web;
   static MMPlatformCapabilities get current => MMPlatformCapabilities(defaultTargetPlatform, web: kIsWeb);
+  bool get webBrowser => !web && platform != TargetPlatform.linux && platform != TargetPlatform.fuchsia;
   bool get mobile => !web && (platform == TargetPlatform.iOS || platform == TargetPlatform.android);
   bool get _mac => !web && platform == TargetPlatform.macOS;
   bool get assistant => !web;

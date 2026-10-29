@@ -1802,5 +1802,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addWebPage": "Add Web Page…",
+  "webUrlPlaceholder": "URL",
+  "webUrlEmpty": "Enter a URL",
+  "webUrlInvalid": "Not a valid URL",
+  "webUrlScheme": "Only http and https are supported",
+  "browserBack": "Back",
+  "browserForward": "Forward",
+  "browserReload": "Reload",
+  "browserStop": "Stop",
+  "browserClose": "Close Page",
+  "browserConvert": "Convert to Document…",
+  "browserConvertShort": "Convert",
+  "webReadyPrompt": "Convert to a document?",
+  "webStillLoading": "Some content is still loading",
+  "webLater": "Later",
+  "webErrorTitle": "Can’t Open Page",
+  "webRetry": "Try Again",
+  "settingsClearWebsiteData": "Clear…",
+  "clearWebsiteDataConfirm": "Clear all website data?",
+  "websiteDataCleared": "Website data cleared",
+  "addWebTitle": "Add Web Page",
+  "webKeepWaiting": "Keep Waiting",
+  "webConvertAction": "Convert",
+  "webErrorTimeout": "The connection timed out",
+  "webErrorHost": "Server not found",
+  "webErrorCertificate": "Invalid certificate",
+  "webErrorOffline": "You’re offline",
+  "settingsBrowserGroup": "In-App Browser",
+  "settingsWebsiteData": "Website Data",
+  "clearAction": "Clear",
+  "browserUnsaved": "Not Saved"
 }

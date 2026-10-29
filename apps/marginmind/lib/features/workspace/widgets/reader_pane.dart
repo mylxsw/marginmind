@@ -15,6 +15,8 @@ import '../../research/widgets/research_note_popover.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
+import '../workspace_browser.dart';
+import 'browser_pane.dart';
 import '../reader_crop.dart';
 import '../reader_compare.dart';
 import '../reader_translation.dart';
@@ -78,6 +80,39 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   @override
   Widget build(BuildContext context) {
+    final browser = ref.watch(workspaceBrowserProvider(widget.studySetId));
+    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
+    return Stack(
+      children: [
+        Offstage(
+          offstage: browser.visible,
+          child: ExcludeFocus(excluding: browser.visible, child: _buildReader(context)),
+        ),
+        if (browser.session case final session?)
+          Offstage(
+            offstage: !browser.visible,
+            child: BrowserPane(
+              key: ValueKey(session.id),
+              studySetId: widget.studySetId,
+              session: session,
+              visible: browser.visible,
+              documentSwitcher: _DocumentSwitcher(
+                documents: content.documents,
+                activeDocumentId: null,
+                onOpen: (id) {
+                  ref.read(workspaceBrowserProvider(widget.studySetId).notifier).hide();
+                  workspace.openDocument(id);
+                },
+                onClose: null,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildReader(BuildContext context) {
     final c = context.mmColors;
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(focusRequestsProvider, (_, next) {

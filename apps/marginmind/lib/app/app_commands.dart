@@ -18,6 +18,7 @@ import '../features/workspace/reader_margin.dart';
 import '../features/workspace/reader_compare.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
+import '../features/workspace/workspace_browser.dart';
 import '../settings/settings_window.dart';
 import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
@@ -47,6 +48,22 @@ class AppCommand {
   final VoidCallback? onInvoke;
 }
 
+enum BrowserCommand { back, forward, reload, stop, convert, close }
+
+Map<BrowserCommand, AppCommand> browserCommands(
+  AppLocalizations l,
+  BrowserSession session, {
+  required VoidCallback close,
+  required VoidCallback convert,
+}) => {
+  BrowserCommand.back: AppCommand(l.browserBack, session.canGoBack ? session.back : null),
+  BrowserCommand.forward: AppCommand(l.browserForward, session.canGoForward ? session.forward : null),
+  BrowserCommand.reload: AppCommand(l.browserReload, session.reload),
+  BrowserCommand.stop: AppCommand(l.browserStop, session.loading ? session.stop : null),
+  BrowserCommand.convert: AppCommand(l.browserConvert, session.canCapture ? convert : null),
+  BrowserCommand.close: AppCommand(l.browserClose, close),
+};
+
 /// Global shortcuts. Defined in macOS terms; [primaryShortcut] swaps ⌘ for
 /// Ctrl on Windows and Linux.
 abstract final class AppShortcuts {
@@ -58,6 +75,7 @@ abstract final class AppShortcuts {
   static SingleActivator get view1 => primaryShortcut(LogicalKeyboardKey.digit1);
   static SingleActivator get view2 => primaryShortcut(LogicalKeyboardKey.digit2);
   static SingleActivator get view3 => primaryShortcut(LogicalKeyboardKey.digit3);
+  static SingleActivator get addWebPage => primaryShortcut(LogicalKeyboardKey.keyO, shift: true);
   static SingleActivator get importDocument => primaryShortcut(LogicalKeyboardKey.keyO);
   static SingleActivator get addTopic => primaryShortcut(LogicalKeyboardKey.keyN, shift: true);
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
@@ -327,12 +345,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ref.watch(workspaceContentProvider(workspaceId));
     }
     final workspaceState = inWorkspace ? ref.read(workspaceProvider(workspaceId)) : null;
+    final browserState = inWorkspace ? ref.watch(workspaceBrowserProvider(workspaceId)) : null;
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
     final editable =
         workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
     final hasDocument =
+        browserState?.visible != true &&
         workspace != null &&
         workspaceState!.activeDocumentId != null &&
         workspace.content.document(workspaceState.activeDocumentId!) != null;
@@ -369,6 +389,31 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         shortcut: AppShortcuts.importDocument,
       ),
     ];
+    if (MMPlatformCapabilities.current.webBrowser) {
+      file.add(
+        AppCommand(
+          l.addWebPage,
+          editable ? () => showAddWebPage(context, ref, workspaceId!) : null,
+          shortcut: AppShortcuts.addWebPage,
+        ),
+      );
+    }
+    final browser = browserState;
+    if (browser?.visible == true && browser?.session != null) {
+      final session = browser!.session!;
+      final owner = ref.read(workspaceBrowserProvider(workspaceId!).notifier);
+      file.addAll(
+        browserCommands(
+          l,
+          session,
+          close: owner.close,
+          convert: () {
+            final converter = ref.read(browserConverterProvider) ?? previewBrowserCapture;
+            converter(context, workspaceId, session);
+          },
+        ).values,
+      );
+    }
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.

@@ -3361,4 +3361,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String summaryIncludedNodes(int count) {
     return 'Includes $count unselected nodes in between';
   }
+
+  @override
+  String get addWebPage => 'Add Web Page…';
+
+  @override
+  String get webUrlPlaceholder => 'URL';
+
+  @override
+  String get webUrlEmpty => 'Enter a URL';
+
+  @override
+  String get webUrlInvalid => 'Not a valid URL';
+
+  @override
+  String get webUrlScheme => 'Only http and https are supported';
+
+  @override
+  String get browserBack => 'Back';
+
+  @override
+  String get browserForward => 'Forward';
+
+  @override
+  String get browserReload => 'Reload';
+
+  @override
+  String get browserStop => 'Stop';
+
+  @override
+  String get browserClose => 'Close Page';
+
+  @override
+  String get browserConvert => 'Convert to Document…';
+
+  @override
+  String get browserConvertShort => 'Convert';
+
+  @override
+  String get webReadyPrompt => 'Convert to a document?';
+
+  @override
+  String get webStillLoading => 'Some content is still loading';
+
+  @override
+  String get webLater => 'Later';
+
+  @override
+  String get webErrorTitle => 'Can’t Open Page';
+
+  @override
+  String get webRetry => 'Try Again';
+
+  @override
+  String get settingsClearWebsiteData => 'Clear…';
+
+  @override
+  String get clearWebsiteDataConfirm => 'Clear all website data?';
+
+  @override
+  String get websiteDataCleared => 'Website data cleared';
+
+  @override
+  String get addWebTitle => 'Add Web Page';
+
+  @override
+  String get webKeepWaiting => 'Keep Waiting';
+
+  @override
+  String get webConvertAction => 'Convert';
+
+  @override
+  String get webErrorTimeout => 'The connection timed out';
+
+  @override
+  String get webErrorHost => 'Server not found';
+
+  @override
+  String get webErrorCertificate => 'Invalid certificate';
+
+  @override
+  String get webErrorOffline => 'You’re offline';
+
+  @override
+  String get settingsBrowserGroup => 'In-App Browser';
+
+  @override
+  String get settingsWebsiteData => 'Website Data';
+
+  @override
+  String get clearAction => 'Clear';
+
+  @override
+  String get browserUnsaved => 'Not Saved';
 }

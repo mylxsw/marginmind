@@ -1155,5 +1155,36 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addWebPage": "添加网页…",
+  "webUrlPlaceholder": "网址",
+  "webUrlEmpty": "请输入网址",
+  "webUrlInvalid": "网址无效",
+  "webUrlScheme": "只支持 http 和 https",
+  "browserBack": "后退",
+  "browserForward": "前进",
+  "browserReload": "重新载入",
+  "browserStop": "停止",
+  "browserClose": "关闭网页",
+  "browserConvert": "转换为文档…",
+  "browserConvertShort": "转换",
+  "webReadyPrompt": "转换为文档？",
+  "webStillLoading": "部分内容仍在加载",
+  "webLater": "稍后",
+  "webErrorTitle": "无法打开页面",
+  "webRetry": "重试",
+  "settingsClearWebsiteData": "清除…",
+  "clearWebsiteDataConfirm": "清除所有网站数据？",
+  "websiteDataCleared": "已清除网站数据",
+  "addWebTitle": "添加网页",
+  "webKeepWaiting": "继续等待",
+  "webConvertAction": "转换",
+  "webErrorTimeout": "连接超时",
+  "webErrorHost": "找不到服务器",
+  "webErrorCertificate": "证书无效",
+  "webErrorOffline": "未连接网络",
+  "settingsBrowserGroup": "内置浏览器",
+  "settingsWebsiteData": "网站数据",
+  "clearAction": "清除",
+  "browserUnsaved": "未保存"
 }

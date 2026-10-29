@@ -285,6 +285,47 @@ class _GeneralPage extends ConsumerWidget {
             ),
           ],
         ),
+        if (MMPlatformCapabilities.current.webBrowser) ...[
+          const SizedBox(height: MMSpacing.m),
+          MMSettingsHeader(l.settingsBrowserGroup),
+          MMSettingsGroup(
+            children: [
+              MMSettingsRow(
+                label: l.settingsWebsiteData,
+                trailing: MMButton(
+                  label: l.settingsClearWebsiteData,
+                  variant: MMButtonVariant.plain,
+                  color: context.mmColors.critical,
+                  onPressed: () async {
+                    final confirmed = await showMMSheet<bool>(
+                      context: context,
+                      builder: (context) => MMSheet(
+                        title: l.clearWebsiteDataConfirm,
+                        actions: [
+                          MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop(false)),
+                          MMButton(
+                            label: l.clearAction,
+                            variant: MMButtonVariant.primary,
+                            color: context.mmColors.critical,
+                            onPressed: () => Navigator.of(context).pop(true),
+                          ),
+                        ],
+                        child: const SizedBox.shrink(),
+                      ),
+                    );
+                    if (confirmed != true || !context.mounted) return;
+                    try {
+                      await BrowserSession.clearData();
+                      if (context.mounted) MMHud.show(context, l.websiteDataCleared);
+                    } catch (_) {
+                      if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
         if (showsGallery) ...[
           const SizedBox(height: MMSpacing.m),
           Align(

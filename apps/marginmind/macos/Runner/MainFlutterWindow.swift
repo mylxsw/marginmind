@@ -10,6 +10,7 @@ class MainFlutterWindow: NSWindow {
   private var secretStore: SecretStoreChannel?
   private var mapClipboard: FlutterMethodChannel?
   private var systemAppearance: SystemAppearanceChannel?
+  private var browserFactory: BrowserFactory?
   private var externalLink: ExternalLinkChannel?
   private var toolbarVisibilityBeforeFullScreen: Bool?
   private var chromeDelegate: WindowChromeDelegate?
@@ -100,6 +101,9 @@ class MainFlutterWindow: NSWindow {
 
     installFlutterToolbar(eventTarget: flutterViewController)
     RegisterGeneratedPlugins(registry: flutterViewController)
+    let browser = BrowserFactory(messenger: flutterViewController.engine.binaryMessenger)
+    browserFactory = browser
+    flutterViewController.registrar(forPlugin: "MarginMindBrowser").register(browser, withId: "marginmind/browser")
     mapExport = MapExportChannel(messenger: flutterViewController.engine.binaryMessenger)
     articleParser = ArticleParserChannel(messenger: flutterViewController.engine.binaryMessenger)
     pdfOcr = PdfOcrChannel(messenger: flutterViewController.engine.binaryMessenger)
