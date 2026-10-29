@@ -230,9 +230,12 @@ Future<void> toggleReaderCrop(BuildContext context, WidgetRef ref, String studyS
   }
 }
 
-Future<void> completeReaderCrop(BuildContext context, WidgetRef ref, String studySetId) async {
+Future<void> completeReaderCrop(BuildContext context, WidgetRef ref, String studySetId, {String? documentId}) async {
   try {
-    await ref.read(readerCropProvider(studySetId).notifier).complete();
+    final session = documentId == null
+        ? ref.read(readerCropProvider(studySetId).notifier)
+        : ref.read(readerDocumentCropProvider((studySetId, documentId)).notifier);
+    await session.complete();
   } catch (_) {
     if (context.mounted) MMHud.show(context, context.l10n.somethingWentWrong);
   }

@@ -54,7 +54,8 @@ void main() {
     expect(slider, findsNothing);
     await tester.tap(find.byKey(const ValueKey('reader-crop')));
     await tester.pumpAndSettle();
-    expect(find.text(l.cropAdjust), findsOneWidget);
+    expect(find.byKey(const ValueKey('crop-editor-toolbar')), findsOneWidget);
+    expect(find.text(l.cropAdjust), findsNothing);
     expect(find.text(l.pdfFitWidth), findsNothing);
     expect(slider, findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

@@ -5,6 +5,7 @@ import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/reader_crop.dart';
+import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/widgets/reader_crop_controls.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -56,7 +57,10 @@ void main() {
     expect(find.byKey(const ValueKey('crop-suggestion')), findsOneWidget);
     expect(find.textContaining('文字可放大'), findsNothing);
     await tester.tap(
-      find.descendant(of: find.byKey(const ValueKey('crop-suggestion')), matching: find.byType(MMIconButton)),
+      find.descendant(
+        of: find.byKey(const ValueKey('crop-suggestion')),
+        matching: find.byWidgetPredicate((w) => w is MMToolbarButton && w.icon == MMIcons.close),
+      ),
     );
     await drain(tester);
     expect(workspace.content.document('c1')!.cropSuggestionDismissed, true);
@@ -101,8 +105,10 @@ void main() {
     expect(workspace.content.document('c1')!.cropSuggestionDismissed, true);
     await tester.tap(find.byKey(const ValueKey('reader-crop')));
     await tester.pumpAndSettle();
-    expect(find.text(l.cropAdjust), findsOneWidget);
-    await tester.tap(find.text(l.cropMargins));
+    expect(find.text(l.cropAdjust), findsNothing);
+    expect(find.byKey(const ValueKey('crop-editor-toolbar')), findsOneWidget);
+    await tester.tap(find.text(l.cropNone));
+    await tester.tap(find.text(l.done));
     await drain(tester);
     expect(workspace.content.document('c1')!.crop!.enabled, false);
     await settleHud(tester);
@@ -115,6 +121,76 @@ void main() {
     await drain(tester);
     await settleHud(tester);
     expect(workspace.content.document('c1')!.crop!.enabled, true);
+    await tester.pumpWidget(const SizedBox());
+    await drain(tester);
+  });
+  for (final language in ['zh', 'en']) {
+    testWidgets('crop actions stay visible in narrow reader panes ($language)', (tester) async {
+      final container = await pumpApp(
+        tester,
+        renderPdf: true,
+        prefs: {'settings.language': language},
+        size: const Size(1280, 820),
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await drain(tester);
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      await tester.tap(find.byKey(const ValueKey('reader-crop')));
+      await drain(tester);
+      final toolbar = find.byKey(const ValueKey('crop-editor-toolbar'));
+      final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
+      for (final fraction in [.5, .35, .1]) {
+        if (fraction == .1) workspace.toggleReaderPanel();
+        workspace.setSplitFraction(fraction);
+        await tester.pumpAndSettle();
+        final bounds = tester.getRect(toolbar);
+        if (fraction == .1) expect(bounds.width, lessThanOrEqualTo(MMSizes.readerContentMinWidth));
+        final pane = tester.getRect(find.byType(ReaderPane));
+        expect(bounds.left, greaterThanOrEqualTo(pane.left));
+        expect(bounds.right, lessThanOrEqualTo(pane.right));
+        final buttons = find.descendant(of: toolbar, matching: find.byType(MMToolbarButton));
+        expect(buttons, findsNWidgets(7));
+        for (final element in buttons.evaluate()) {
+          final button = find.byWidget(element.widget);
+          final rect = tester.getRect(button);
+          expect(bounds.contains(rect.topLeft), true);
+          expect(bounds.contains(rect.bottomRight), true);
+          expect(button.hitTestable(), findsOneWidget);
+          expect(rect.height, MMSizes.readerToolbarButton.height);
+        }
+        expect(tester.widget<Text>(find.text(l.done)).style!.fontSize, MMTypography.callout.fontSize);
+        expect(tester.takeException(), isNull);
+      }
+      await tester.tap(find.text(l.cropNone));
+      await tester.pumpAndSettle();
+      expect(tester.widget<MMToolbarButton>(find.widgetWithText(MMToolbarButton, l.cropNone)).selected, true);
+      await tester.tap(find.text(l.done));
+      await drain(tester);
+      expect(toolbar, findsNothing);
+      expect(workspace.content.document('c1')!.crop!.enabled, false);
+      await tester.pumpWidget(const SizedBox());
+      await drain(tester);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
+  testWidgets('Done saves the document being cropped in comparison mode', (tester) async {
+    final container = await pumpApp(tester, renderPdf: true);
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 700);
+    await drain(tester);
+    final workspace = container.read(workspaceProvider('demo-1').notifier);
+    final original = workspace.content.document('c1')!.crop;
+    final session = container.read(readerDocumentCropProvider(('demo-1', 'c2')).notifier);
+    await session.adjust();
+    session.change(1, CropInsets(left: 30));
+    await drain(tester);
+    final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
+    await tester.tap(find.text(l.done));
+    await drain(tester);
+    expect(container.read(readerDocumentCropProvider(('demo-1', 'c2'))).editing, false);
+    expect(workspace.content.document('c1')!.crop, original);
+    expect(workspace.content.document('c2')!.crop!.all.left, 30);
+    expect(workspace.content.document('c2')!.crop!.enabled, true);
     await tester.pumpWidget(const SizedBox());
     await drain(tester);
   });

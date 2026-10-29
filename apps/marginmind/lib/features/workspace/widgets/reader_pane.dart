@@ -243,7 +243,6 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final document = controller.content.documents.where((d) => d.id == state.activeDocumentId).firstOrNull;
     void pageCommand(Object value) {
       if (value is ReaderZoomCommand) _zoom(value);
-      if (value == 'crop-toggle') toggleReaderCrop(context, ref, widget.studySetId);
       if (value == 'crop-adjust') cropSession.adjust();
     }
 
@@ -256,24 +255,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       ])
         MMDropdownItem<Object>(value: entry.$1, enabled: !crop.editing, child: _menuRow(entry.$3, entry.$2)),
     ];
+    final canAdjustCrop = !crop.editing && !crop.busy && _pdf.isReady;
     final cropItems = <PopupMenuEntry<Object>>[
       MMDropdownItem<Object>(
-        value: 'crop-toggle',
-        enabled: cropSession.canToggle,
-        child: Row(
-          children: [
-            Icon(document?.crop?.enabled == true ? MMIcons.check : MMIcons.actualSize, size: MMSizes.dropdownIcon),
-            const SizedBox(width: 8),
-            Expanded(child: Text(l.cropMargins, style: context.mmText.callout)),
-            const SizedBox(width: 8),
-            Text(describeShortcut(AppShortcuts.toggleCrop), style: context.mmText.footnote),
-          ],
-        ),
-      ),
-      MMDropdownItem<Object>(
         value: 'crop-adjust',
-        enabled: !crop.editing && !crop.busy && _pdf.isReady,
-        child: _menuRow(MMIcons.crop, l.cropAdjust),
+        enabled: canAdjustCrop,
+        child: _menuRow(MMIcons.crop, l.cropMargins),
       ),
     ];
     final styleItems = [
@@ -348,12 +335,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           onSelected: pageCommand,
           itemBuilder: (_) => zoomItems,
         ),
-        MMDropdownButton<Object>(
+        MMToolbarButton(
           key: const ValueKey('reader-crop'),
+          compact: compact,
           tooltip: l.cropMargins,
-          icon: Icon(MMIcons.crop, color: document?.crop?.enabled == true ? context.mmColors.accent : null),
-          onSelected: pageCommand,
-          itemBuilder: (_) => cropItems,
+          icon: MMIcons.crop,
+          selected: crop.editing || document?.crop?.enabled == true,
+          onPressed: canAdjustCrop ? cropSession.adjust : null,
         ),
         MMDropdownButton<Object>(
           key: const ValueKey('reader-appearance'),

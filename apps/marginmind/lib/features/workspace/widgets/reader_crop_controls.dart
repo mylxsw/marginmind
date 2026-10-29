@@ -36,23 +36,22 @@ class CropControls extends ConsumerWidget {
       }
       return MMGlass(
         key: const ValueKey('crop-suggestion'),
-        padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+        padding: const EdgeInsets.all(MMSpacing.xs),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.crop, size: 14, color: c.accent),
-            const SizedBox(width: 8),
-            MMButton(
+            MMToolbarButton(
+              compact: true,
+              icon: MMIcons.crop,
               label: l.cropMargins,
-              variant: MMButtonVariant.primary,
+              tooltip: l.cropMargins,
               onPressed: state.busy
                   ? null
                   : () => toggleReaderCrop(context, ref, studySetId, documentId: documentScoped ? document.id : null),
             ),
-            MMIconButton(
+            MMToolbarButton(
+              compact: true,
               icon: MMIcons.close,
-              size: 24,
-              iconSize: 11,
               tooltip: l.closePanel,
               onPressed: () => ref.read(workspaceProvider(studySetId).notifier).dismissCropSuggestion(document.id),
             ),
@@ -61,7 +60,7 @@ class CropControls extends ConsumerWidget {
       );
     }
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
-    final pdf = ref.read(readerPdfProvider(studySetId));
+    final pdf = ref.read(documentPdfProvider((studySetId, document.id)));
     final marks = <List<AnnotationPage>>[
       for (final a in content.annotations.where((a) => a.documentId == document.id)) a.pages,
       for (final stroke in content.inkStrokes.where((s) => s.documentId == document.id))
@@ -90,42 +89,74 @@ class CropControls extends ConsumerWidget {
           }),
         )
         .length;
+    final draft = state.draft!;
+    final uncropped = [
+      draft.all,
+      ?draft.odd,
+      ...draft.pages.values,
+    ].every((insets) => insets.left + insets.right + insets.top + insets.bottom == 0);
+    Widget button(String label, VoidCallback? onPressed, {bool selected = false}) => MMToolbarButton(
+      compact: true,
+      icon: null,
+      label: label,
+      tooltip: label,
+      selected: selected,
+      onPressed: onPressed,
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         MMGlass(
           key: const ValueKey('crop-editor-toolbar'),
-          padding: const EdgeInsets.fromLTRB(12, 5, 5, 5),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.crop, size: 14, color: c.icon),
-                const SizedBox(width: 6),
-                MMSegmentedControl<CropScope>(
-                  value: state.draft!.scope,
-                  onChanged: session.scope,
-                  segments: [
-                    MMSegment(value: CropScope.all, label: l.cropScopeAll),
-                    MMSegment(value: CropScope.oddEven, label: l.cropScopeOddEven),
-                    MMSegment(value: CropScope.page, label: l.cropScopePage),
-                  ],
-                ),
-                const MMToolbarDivider(),
-                MMButton(label: l.cropAuto, onPressed: state.busy ? null : session.automatic),
-                const SizedBox(width: 6),
-                MMButton(label: l.cropNone, onPressed: session.none),
-                const MMToolbarDivider(),
-                MMButton(label: l.cancel, onPressed: session.cancel),
-                const SizedBox(width: 6),
-                MMButton(
-                  label: l.done,
-                  variant: MMButtonVariant.primary,
-                  onPressed: state.busy ? null : () => completeReaderCrop(context, ref, studySetId),
-                ),
-              ],
-            ),
+          padding: const EdgeInsets.all(MMSpacing.xs),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MMSpacing.s,
+            runSpacing: MMSpacing.xs,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.center,
+                runSpacing: MMSpacing.xs,
+                children: [
+                  for (final (scope, label) in [
+                    (CropScope.all, l.cropScopeAll),
+                    (CropScope.oddEven, l.cropScopeOddEven),
+                    (CropScope.page, l.cropScopePage),
+                  ])
+                    button(label, state.busy ? null : () => session.scope(scope), selected: draft.scope == scope),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  button(
+                    l.cropAuto,
+                    state.busy ? null : session.automatic,
+                    selected: !uncropped && draft.mode == CropMode.auto,
+                  ),
+                  button(l.cropNone, state.busy ? null : session.none, selected: uncropped),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  button(l.cancel, state.busy ? null : session.cancel),
+                  button(
+                    l.done,
+                    state.busy
+                        ? null
+                        : () => completeReaderCrop(
+                            context,
+                            ref,
+                            studySetId,
+                            documentId: documentScoped ? document.id : null,
+                          ),
+                    selected: true,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         if (hidden > 0)
@@ -142,9 +173,11 @@ class CropControls extends ConsumerWidget {
                 children: [
                   Icon(Icons.warning_amber, size: 12, color: c.caution),
                   const SizedBox(width: 6),
-                  Text(
-                    l.cropHiddenAnnotations(hidden),
-                    style: context.mmText.footnote.copyWith(color: c.caution, fontSize: 11.5),
+                  Flexible(
+                    child: Text(
+                      l.cropHiddenAnnotations(hidden),
+                      style: context.mmText.footnote.copyWith(color: c.caution),
+                    ),
                   ),
                 ],
               ),

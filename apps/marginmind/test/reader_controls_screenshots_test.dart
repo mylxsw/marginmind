@@ -11,6 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
+import 'package:marginmind/features/workspace/reader_crop.dart';
+import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -123,7 +125,7 @@ void main() {
                 w.shape is RoundedRectangleBorder &&
                 (w.shape as RoundedRectangleBorder).borderRadius == BorderRadius.circular(MMRadii.dropdown),
           );
-          final rect = tester.getRect(popup.last);
+          final rect = tester.getRect(label == 'crop' ? find.byKey(const ValueKey('crop-editor-toolbar')) : popup.last);
           await _save(tester, '$label-$name', bounds: rect.inflate(2));
           await _save(tester, '$label-$name-full');
           await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -132,6 +134,16 @@ void main() {
         tester.view.physicalSize = const Size(1000, 700);
         await drain(tester);
         await _save(tester, 'workspace-$name-narrow');
+        await container.read(readerCompareProvider('demo-1').notifier).exit();
+        tester.view.physicalSize = const Size(1280, 820);
+        final workspace = container.read(workspaceProvider('demo-1').notifier);
+        workspace.setLayout(MMSplitMode.split);
+        if (!container.read(workspaceProvider('demo-1')).readerPanelVisible) workspace.toggleReaderPanel();
+        workspace.setSplitFraction(.1);
+        await drain(tester);
+        await container.read(readerCropProvider('demo-1').notifier).adjust();
+        await drain(tester);
+        await _save(tester, 'crop-$name-narrow');
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
         await drain(tester);
