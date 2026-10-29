@@ -24,7 +24,7 @@ void main() {
     final source = legacy();
     final before = jsonEncode(source);
     final migrated = migrateStudySet(source);
-    expect(migrated['format'], 9);
+    expect(migrated['format'], 10);
     expect(migrated['futureMetadata'], source['futureMetadata']);
     final old = source['content'] as Map;
     final content = migrated['content'] as Map;
@@ -67,7 +67,7 @@ void main() {
   });
 
   test('format 8 backup is byte exact and migrated topic survives save and reopen', () async {
-    final root = await Directory.systemTemp.createTemp('mm_format9_');
+    final root = await Directory.systemTemp.createTemp('mm_format10_');
     addTearDown(() => root.delete(recursive: true));
     final file = File('${root.path}/sets/current.mmset/studyset.json');
     await file.parent.create(recursive: true);
@@ -85,12 +85,12 @@ void main() {
     store = FileLibraryStore(root);
     expect((await store.load('current')).toJson(), loaded.toJson());
     expect(await File('${file.path}.format-8.bak').readAsBytes(), original);
-    expect(jsonDecode(await file.readAsString())['format'], 9);
+    expect(jsonDecode(await file.readAsString())['format'], 10);
     await store.dispose();
   });
 
   test('interrupted format 8 migration keeps source and retries using its backup', () async {
-    final root = await Directory.systemTemp.createTemp('mm_format9_retry_');
+    final root = await Directory.systemTemp.createTemp('mm_format10_retry_');
     addTearDown(() => root.delete(recursive: true));
     final file = File('${root.path}/sets/current.mmset/studyset.json');
     await file.parent.create(recursive: true);
@@ -106,7 +106,7 @@ void main() {
     await obstruction.delete();
     store = FileLibraryStore(root);
     expect((await store.load('current')).cards.last.title, '旧概要');
-    expect(jsonDecode(await file.readAsString())['format'], 9);
+    expect(jsonDecode(await file.readAsString())['format'], 10);
     await store.dispose();
   });
 }
