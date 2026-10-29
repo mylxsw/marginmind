@@ -13,6 +13,7 @@ import '../../assistant/widgets/assistant_quick_actions.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import '../reader_margin.dart';
 import 'notices.dart';
 
 /// All reader text actions share their floating UI, focus and command handling.
@@ -100,6 +101,22 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     final rootTitle = widget.rootTitle;
     // Capture the target before opening a sheet or clearing the selection.
     try {
+      if (command == ReaderSelectionCommand.marginNote) {
+        final annotation = pending is PendingHighlight ? controller.content.annotation(pending.annotationId) : null;
+        final selection = pending is PendingSelection ? pending.selection : null;
+        if (annotation == null && selection == null) return;
+        final margin = ref.read(readerMarginProvider(widget.studySetId).notifier);
+        final pages = annotation?.pages ?? selection!.pages;
+        await pdf.ensureVisible(pages.first.page, pages.first.rects.first);
+        await margin.start(
+          annotation?.documentId ?? (pending as PendingSelection).documentId,
+          pages: annotation?.pages ?? selection!.pages,
+          quote: annotation?.quote ?? selection!.text,
+          colorIndex: annotation?.colorIndex ?? selectedColor.index,
+        );
+        await pdf.clearSelection();
+        return;
+      }
       if (pending case PendingHighlight(:final annotationId)) {
         final annotation = controller.content.annotation(annotationId);
         if (annotation == null) {
@@ -135,6 +152,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               if (annotation.quote.isEmpty) return;
               await _ask(annotation.documentId, annotation.pages, annotation.quote);
               return;
+            case ReaderSelectionCommand.marginNote:
             case ReaderSelectionCommand.highlight:
             case ReaderSelectionCommand.note:
               return;
@@ -231,6 +249,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                           ? (hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
                           : ReaderSelectionCommand.highlight,
                     ),
+                  ),
+                  MMToolbarButton(
+                    key: const ValueKey('selection-margin-note'),
+                    icon: MMIcons.marginNote,
+                    tooltip: '${l.marginNoteAction}（C）',
+                    onPressed: () => _run(ReaderSelectionCommand.marginNote),
                   ),
                   if (!isArea)
                     MMToolbarButton(

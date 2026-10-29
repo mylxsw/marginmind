@@ -5239,6 +5239,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Crop removed'**
   String get uncroppedHud;
+
+  /// No description provided for @marginNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin Notes'**
+  String get marginNotes;
+
+  /// No description provided for @marginNoteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get marginNoteAction;
+
+  /// No description provided for @writeMarginNote.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Comment'**
+  String get writeMarginNote;
+
+  /// No description provided for @showMarginNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Margin Notes'**
+  String get showMarginNotes;
+
+  /// No description provided for @hideMarginNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Margin Notes'**
+  String get hideMarginNotes;
+
+  /// No description provided for @expandMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Margin'**
+  String get expandMargin;
+
+  /// No description provided for @cropExpandMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop Margins and Show Notes'**
+  String get cropExpandMargin;
+
+  /// No description provided for @marginNoteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment Deleted'**
+  String get marginNoteDeleted;
+
+  /// No description provided for @marginNoteAddedToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to Mind Map'**
+  String get marginNoteAddedToMap;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

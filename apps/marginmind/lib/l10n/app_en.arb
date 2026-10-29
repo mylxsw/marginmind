@@ -1585,5 +1585,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "marginNotes": "Margin Notes",
+  "marginNoteAction": "Comment",
+  "writeMarginNote": "+ Comment",
+  "showMarginNotes": "Show Margin Notes",
+  "hideMarginNotes": "Hide Margin Notes",
+  "expandMargin": "Show Margin",
+  "cropExpandMargin": "Crop Margins and Show Notes",
+  "marginNoteDeleted": "Comment Deleted",
+  "marginNoteAddedToMap": "Added to Mind Map"
 }

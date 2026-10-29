@@ -14,6 +14,7 @@ import '../features/workspace/widgets/notices.dart';
 import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/reader_crop.dart';
+import '../features/workspace/reader_margin.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_window.dart';
@@ -61,6 +62,8 @@ abstract final class AppShortcuts {
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
   static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
   static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true, shift: true);
+  static SingleActivator get toggleMarginNotes => primaryShortcut(LogicalKeyboardKey.keyM, alt: true);
+
   static SingleActivator get toggleCrop => primaryShortcut(LogicalKeyboardKey.keyK, alt: true);
   static SingleActivator get undo => primaryShortcut(LogicalKeyboardKey.keyZ);
   static SingleActivator get redo => primaryShortcut(LogicalKeyboardKey.keyZ, shift: true);
@@ -191,7 +194,7 @@ Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand { excerpt, highlight, copy, note, locateCard, deleteHighlight, assistant }
+enum ReaderSelectionCommand { marginNote, excerpt, highlight, copy, note, locateCard, deleteHighlight, assistant }
 
 class ReaderSelectionIntent extends Intent {
   const ReaderSelectionIntent(this.command);
@@ -199,6 +202,7 @@ class ReaderSelectionIntent extends Intent {
 }
 
 Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.marginNote),
   const SingleActivator(LogicalKeyboardKey.keyE): const ReaderSelectionIntent(ReaderSelectionCommand.excerpt),
   const SingleActivator(LogicalKeyboardKey.keyH): const ReaderSelectionIntent(ReaderSelectionCommand.highlight),
   primaryShortcut(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.copy),
@@ -463,6 +467,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             : null,
       ),
       for (final entry in {
+        ReaderSelectionCommand.marginNote: l.marginNoteAction,
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
         ReaderSelectionCommand.note: l.excerptWithNote,
@@ -475,16 +480,19 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                       entry.key != ReaderSelectionCommand.locateCard &&
                       entry.key != ReaderSelectionCommand.deleteHighlight) ||
                   (highlightOpen &&
-                      (entry.key == ReaderSelectionCommand.copy ||
+                      (entry.key == ReaderSelectionCommand.marginNote ||
+                          entry.key == ReaderSelectionCommand.copy ||
                           entry.key == ReaderSelectionCommand.deleteHighlight ||
                           (entry.key == ReaderSelectionCommand.excerpt && highlightCard == null) ||
                           (entry.key == ReaderSelectionCommand.locateCard && highlightCard != null)))
               ? () => invokeSelection(entry.key)
               : null,
-          shortcut: readerSelectionShortcuts.entries
-              .where((e) => e.value.command == entry.key)
-              .map((e) => e.key as SingleActivator)
-              .firstOrNull,
+          shortcut: entry.key == ReaderSelectionCommand.marginNote && !selectionOpen && !highlightOpen
+              ? null
+              : readerSelectionShortcuts.entries
+                    .where((e) => e.value.command == entry.key)
+                    .map((e) => e.key as SingleActivator)
+                    .firstOrNull,
         ),
     ]);
     for (final (command, label) in [
@@ -704,8 +712,17 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final view = <AppCommand>[
       if (hasDocument) ...[
         AppCommand(
+          ref.watch(readerMarginProvider(workspaceId!)).openDocuments.contains(workspaceState.activeDocumentId)
+              ? l.hideMarginNotes
+              : l.showMarginNotes,
+          !_textFocused && crop?.editing != true
+              ? () => ref.read(readerMarginProvider(workspaceId).notifier).toggle(workspaceState.activeDocumentId!)
+              : null,
+          shortcut: AppShortcuts.toggleMarginNotes,
+        ),
+        AppCommand(
           activeDoc?.crop?.enabled == true ? l.uncropMargins : l.cropMargins,
-          !_textFocused && ref.read(readerCropProvider(workspaceId!).notifier).canToggle
+          !_textFocused && ref.read(readerCropProvider(workspaceId).notifier).canToggle
               ? () => toggleReaderCrop(context, ref, workspaceId)
               : null,
           shortcut: AppShortcuts.toggleCrop,
@@ -713,7 +730,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         AppCommand(
           l.cropAdjust,
           crop?.editing != true && crop?.busy != true && pdf?.isReady == true
-              ? () => ref.read(readerCropProvider(workspaceId!).notifier).adjust()
+              ? () => ref.read(readerCropProvider(workspaceId).notifier).adjust()
               : null,
         ),
       ],

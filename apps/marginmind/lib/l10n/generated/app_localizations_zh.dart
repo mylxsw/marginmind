@@ -2798,4 +2798,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get uncroppedHud => '已取消裁边';
+
+  @override
+  String get marginNotes => '页边批注';
+
+  @override
+  String get marginNoteAction => '批注';
+
+  @override
+  String get writeMarginNote => '+ 写批注';
+
+  @override
+  String get showMarginNotes => '显示页边批注';
+
+  @override
+  String get hideMarginNotes => '隐藏页边批注';
+
+  @override
+  String get expandMargin => '显示页边';
+
+  @override
+  String get cropExpandMargin => '裁掉白边，展开页边';
+
+  @override
+  String get marginNoteDeleted => '已删除批注';
+
+  @override
+  String get marginNoteAddedToMap => '已加入脑图';
 }

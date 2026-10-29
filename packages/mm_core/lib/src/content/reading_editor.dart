@@ -30,6 +30,7 @@ extension ReadingEditor on StudySetEditor {
       }
     }
     final saved = note.copyWith(text: note.text.trim());
+    final linkedAnnotationId = note.nodeId == null ? null : c.card(note.nodeId!)?.annotationId;
     return c.copyWith(
       marginNotes: [
         for (final n in c.marginNotes)
@@ -37,6 +38,12 @@ extension ReadingEditor on StudySetEditor {
         saved,
       ],
       cards: [for (final card in c.cards) card.id == note.nodeId ? card.copyWith(title: saved.text) : card],
+      annotations: [
+        for (final annotation in c.annotations)
+          linkedAnnotationId != null && annotation.id == linkedAnnotationId
+              ? annotation.copyWith(colorIndex: saved.colorIndex)
+              : annotation,
+      ],
     );
   }
 
@@ -48,11 +55,13 @@ extension ReadingEditor on StudySetEditor {
     ],
   );
 
-  StudySetContent attachMarginNote(StudySetContent c, String id) {
+  StudySetContent attachMarginNote(StudySetContent c, String id, {String? parentId}) {
     final note = c.marginNotes.where((n) => n.id == id).firstOrNull;
     if (note == null) throw ArgumentError('Unknown margin note');
     if (note.nodeId != null) return c;
-    if (c.map(mapId) == null) throw ArgumentError('Unknown map');
+    if (c.map(mapId) == null || (parentId != null && c.node(parentId, mapId: mapId) == null)) {
+      throw ArgumentError('Unknown map or parent');
+    }
     final anchor = note.anchor;
     final cardId = newId();
     final annotationId = anchor == null ? null : newId();
@@ -83,7 +92,8 @@ extension ReadingEditor on StudySetEditor {
         MapNode(
           cardId: cardId,
           mapId: mapId,
-          order: (c.childrenOf(null, mapId: mapId).lastOrNull?.order ?? 0) + 1,
+          parentId: parentId,
+          order: (c.childrenOf(parentId, mapId: mapId).lastOrNull?.order ?? 0) + 1,
         ),
       ],
     );

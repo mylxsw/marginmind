@@ -91,3 +91,13 @@ PdfReadingPosition 保存 1-based page 与原始 PDF y。内部统一转换为�
 已实现文件关系：`reading.dart` 定义值对象；Document / StudySetContent 挂载并编解码；`reading_editor.dart` 实现纯编辑操作；`reading_repository.dart` 在现有原子 update 内复用编辑器；`editor.dart` 处理节点/文档删除与关联标题回写；`format_migration.dart` 升级 v8。PDF 端 `reading_geometry.dart` 提供变换/映射/同步器，`pdf_view.dart` 提供位置读取与跳转接口。
 
 注意：项目已有用于学习集摘要的 ReadingPosition，新的 PDF 坐标类型命名为 PdfReadingPosition，以区分二者。原型前 9 个场景已使用 Chrome 打开检查，无页面脚本异常。测试和覆盖率的最终数值见任务交付评论。
+
+## 批次 B：页边批注
+
+`MMPdfMargin` 在原有页面矩形之外增加 200pt 列宽和卡片溢出高度；原页 / 裁边显示页的尺寸与坐标保持不变。`MMPdfMarginViewport` 仅返回可见页和相邻页，交互卡片在视口层绘制。只有这些页面测量卡片高度，访问过的页面保留溢出高度；新高度先纳入文档布局再绘制卡片。展开时跨页和缩放使用无动画跳转，避免 pdfrx 重排取消动画导致等待不结束；连续操作以最后一次为准，缩放后恢复原始阅读线。空间判断与实际适合宽度缩放使用同一分母（页面 + 200pt + 页面间距），阈值为 78%；`forceCollapsed` 供调整裁边和后续对照阅读复用。锚点、连线和行点击统一使用 `PageViewportTransform`。高度缓存只保留当前缩放，避免缩放手势累计缓存。
+
+`ReaderMarginSession` 保存内存草稿、展开意图和标记弹层。离开输入框 / Esc / 主修饰键 + Enter 提交；空白新草稿不写仓储，清空已有批注执行可撤销删除。保存并发合并，写盘期间继续输入会补交最新文本；失败保留草稿。跨段与跨页选择降为第一行，打开编辑前确保锚点可见。卡片上滚轮继续驱动原文。
+
+脑图通过 `WorkspaceController` 和既有 `ReadingEditor` 的原子编辑关联，`nodeId` 仍是 cardId，`mapId` 定位所属脑图。沿用现有卡片模型：笔记文本存于 `Card.title`，摘录正文存原文；关联标题编辑回写批注，删除节点解除关联，删除批注保留卡片与出处。加入操作保持布局；父主题使用当前选择，否则取同页最近摘录的主题，最后回退根节点。
+
+原生复现入口：`apps/marginmind/example/margin_acceptance.dart`；`MARGIN_SELF_CHECK=true` 的 Dart define 启用原生保存、脑图同步、删除保留、撤销与位置检查。界面验收见 `macos-acceptance.md` 的 GUL-550 用例。

@@ -929,5 +929,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "marginNotes": "页边批注",
+  "marginNoteAction": "批注",
+  "writeMarginNote": "+ 写批注",
+  "showMarginNotes": "显示页边批注",
+  "hideMarginNotes": "隐藏页边批注",
+  "expandMargin": "显示页边",
+  "cropExpandMargin": "裁掉白边，展开页边",
+  "marginNoteDeleted": "已删除批注",
+  "marginNoteAddedToMap": "已加入脑图"
 }

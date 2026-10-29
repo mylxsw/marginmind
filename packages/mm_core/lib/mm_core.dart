@@ -34,3 +34,5 @@ export 'src/assistant/writes.dart';
 export 'src/content/reading.dart';
 export 'src/content/reading_repository.dart';
 export 'src/content/reading_editor.dart';
+
+export 'src/content/margin_anchor.dart';

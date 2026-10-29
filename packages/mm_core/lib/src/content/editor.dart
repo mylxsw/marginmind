@@ -882,9 +882,17 @@ class StudySetEditor {
     );
   }
 
-  StudySetContent recolor(StudySetContent c, String annotationId, int colorIndex) => c.copyWith(
-    annotations: [for (final a in c.annotations) a.id == annotationId ? a.copyWith(colorIndex: colorIndex) : a],
-  );
+  StudySetContent recolor(StudySetContent c, String annotationId, int colorIndex) {
+    final linkedCards = {
+      for (final card in c.cards)
+        if (card.annotationId == annotationId) card.id,
+    };
+    final note = c.marginNotes.where((n) => linkedCards.contains(n.nodeId)).firstOrNull;
+    if (note != null) return upsertMarginNote(c, note.copyWith(colorIndex: colorIndex, updatedAt: now()));
+    return c.copyWith(
+      annotations: [for (final a in c.annotations) a.id == annotationId ? a.copyWith(colorIndex: colorIndex) : a],
+    );
+  }
 
   /// Moves [cardId] under [newParentId] (null = root), at [index] among
   /// the new siblings (end when null). Refuses to move a node under itself
