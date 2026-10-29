@@ -87,16 +87,35 @@ class MMSidebar extends StatelessWidget {
 }
 
 /// A titled group of sidebar rows.
-class MMSidebarSection extends StatelessWidget {
-  const MMSidebarSection({super.key, required this.title, required this.children, this.trailing});
+class MMSidebarSection extends StatefulWidget {
+  const MMSidebarSection({
+    super.key,
+    required this.title,
+    required this.children,
+    this.trailing,
+    this.showTrailingOnHover = false,
+  });
 
   final String title;
   final List<Widget> children;
   final Widget? trailing;
 
+  /// Reveal the action over the whole section, keeping its space reserved.
+  /// Touch input and keyboard focus keep the action visible without hovering.
+  final bool showTrailingOnHover;
+
+  @override
+  State<MMSidebarSection> createState() => _MMSidebarSectionState();
+}
+
+class _MMSidebarSectionState extends State<MMSidebarSection> {
+  bool _hovered = false;
+  bool _actionFocused = false;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final showAction = !widget.showTrailingOnHover || _hovered || _actionFocused || MMInput.touchInputOf(context);
+    final section = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
@@ -104,14 +123,33 @@ class MMSidebarSection extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Semantics(header: true, child: Text(title, style: context.mmText.subheadline)),
+                child: Semantics(header: true, child: Text(widget.title, style: context.mmText.subheadline)),
               ),
-              ?trailing,
+              if (widget.trailing != null)
+                Focus(
+                  canRequestFocus: false,
+                  onFocusChange: (focused) => setState(() => _actionFocused = focused),
+                  child: IgnorePointer(
+                    ignoring: !showAction,
+                    child: AnimatedOpacity(
+                      opacity: showAction ? 1 : 0,
+                      duration: MMAppearance.duration(context, MMMotion.quick),
+                      alwaysIncludeSemantics: true,
+                      child: widget.trailing,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
-        for (final child in children) Padding(padding: const EdgeInsets.only(bottom: 1), child: child),
+        for (final child in widget.children) Padding(padding: const EdgeInsets.only(bottom: 1), child: child),
       ],
+    );
+    if (!widget.showTrailingOnHover) return section;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: section,
     );
   }
 }

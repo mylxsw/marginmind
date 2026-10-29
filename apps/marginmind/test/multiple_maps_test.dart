@@ -196,6 +196,10 @@ void main() {
   testWidgets('sidebar creates renames switches deletes and undoes maps', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.text('Mind Maps')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('New Mind Map…'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'Second');

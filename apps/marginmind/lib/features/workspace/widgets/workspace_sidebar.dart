@@ -179,15 +179,6 @@ class WorkspaceSidebar extends ConsumerWidget {
           MMSearchField(placeholder: l.searchInSet, focusNode: searchFocus, onChanged: controller.setSidebarQuery),
         ],
       ),
-      footer: Row(
-        children: [
-          MMIconButton(
-            icon: MMIcons.add,
-            tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
-            onPressed: () => pickAndImportDocuments(context, ref, studySetId),
-          ),
-        ],
-      ),
       children: [
         if (empty)
           Padding(
@@ -206,6 +197,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         if (maps.isNotEmpty)
           MMSidebarSection(
             title: l.sectionMaps,
+            showTrailingOnHover: true,
             trailing: MMIconButton(
               icon: MMIcons.add,
               tooltip: l.newMap,
@@ -213,7 +205,17 @@ class WorkspaceSidebar extends ConsumerWidget {
             ),
             children: maps,
           ),
-        if (docs.isNotEmpty) MMSidebarSection(title: l.sectionDocuments, children: docs),
+        if (docs.isNotEmpty || query.isEmpty)
+          MMSidebarSection(
+            title: l.sectionDocuments,
+            showTrailingOnHover: true,
+            trailing: MMIconButton(
+              icon: MMIcons.add,
+              tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
+              onPressed: () => pickAndImportDocuments(context, ref, studySetId),
+            ),
+            children: docs,
+          ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],
     );
