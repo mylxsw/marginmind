@@ -55,6 +55,7 @@ MMPdfMargin readerMargin(
   final extentCache = <int, double>{};
   double? extentZoom;
   return MMPdfMargin(
+    backgroundColor: style.marginFill,
     revision: jsonEncode([
       state.draft?.id,
       MediaQuery.textScalerOf(context).scale(12),
@@ -315,26 +316,23 @@ class _MarginBlankState extends State<_MarginBlank> {
     child: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (e) => widget.onTap(e.localPosition.dy),
-      child: ColoredBox(
-        color: widget.style.marginFill,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: IgnorePointer(child: CustomPaint(painter: _GuidePainter(widget.style.marginGuide))),
-            ),
-            if (_y != null)
-              Positioned(
-                left: 10,
-                right: 10,
-                top: math.max(0, _y! - 11),
-                height: 22,
-                child: Text(
-                  context.l10n.writeMarginNote,
-                  style: context.mmText.footnote.copyWith(color: widget.style.marginNoteText.withValues(alpha: .6)),
-                ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: IgnorePointer(child: CustomPaint(painter: _GuidePainter(widget.style.marginGuide))),
+          ),
+          if (_y != null)
+            Positioned(
+              left: 10,
+              right: 10,
+              top: math.max(0, _y! - 11),
+              height: 22,
+              child: Text(
+                context.l10n.writeMarginNote,
+                style: context.mmText.footnote.copyWith(color: widget.style.marginNoteText.withValues(alpha: .6)),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     ),
   );

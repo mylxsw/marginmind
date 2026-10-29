@@ -1,5 +1,6 @@
 // Native acceptance fixture using the production app, PDFium and bundled PDF.
 // flutter run -d macos -t example/margin_acceptance.dart
+// Add --dart-define=MARGIN_READER_STYLE=paper for the paper palette.
 import 'dart:io';
 
 import 'package:marginmind/features/workspace/reader_margin.dart';
@@ -89,6 +90,13 @@ Future<void> main() async {
     ],
   );
   debugPrint('MARGIN_NATIVE text read');
+  // This standalone acceptance harness must not change the user's preferences.
+  // ignore: invalid_use_of_visible_for_testing_member
+  SharedPreferences.setMockInitialValues({
+    'settings.appearance': 'light',
+    'settings.language': 'zh',
+    'settings.readerStyle': const String.fromEnvironment('MARGIN_READER_STYLE', defaultValue: 'white'),
+  });
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
     overrides: [

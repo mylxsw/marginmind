@@ -26,6 +26,44 @@ import 'pdf_navigation.dart';
 import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
 
+const _pageShadow = BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2));
+
+class _MarginPaperPainter extends CustomPainter {
+  const _MarginPaperPainter(this.viewport, this.color);
+  final MMPdfMarginViewport viewport;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    final shadow = _pageShadow.scale(viewport.zoom);
+    final fill = Paint()..color = color;
+    for (final page in viewport.pages) {
+      final paper = Rect.fromLTRB(
+        page.rect.left,
+        page.rect.top,
+        page.rect.right + marginColumnWidth * viewport.zoom,
+        page.rect.bottom + page.extent,
+      );
+      // The PDF has already painted. Only the outside of the combined sheet
+      // gets a shadow, so neither the source nor its seam is darkened.
+      canvas.save();
+      canvas.clipRect(paper, clipOp: ui.ClipOp.difference);
+      canvas.drawRect(paper.shift(shadow.offset), shadow.toPaint());
+      canvas.restore();
+      canvas.drawRect(Rect.fromLTRB(page.rect.right, paper.top, paper.right, paper.bottom), fill);
+      if (page.extent > 0) {
+        canvas.drawRect(Rect.fromLTRB(paper.left, page.rect.bottom, page.rect.right, paper.bottom), fill);
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_MarginPaperPainter oldDelegate) => true;
+}
+
 /// A highlight to draw on a page.
 @immutable
 class MMPdfHighlight {
@@ -1195,6 +1233,13 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   void _beginPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    if (widget.margin != null && !_marginExpanded) {
+      canvas.drawRect(pageRect.shift(_pageShadow.offset), _pageShadow.toPaint());
+    } else if (widget.margin != null && _marginExpanded) {
+      // Pixel snapping can move the rendered PDF edge inside its layout rect.
+      // Underpaint the source as paper too, keeping that fractional seam filled.
+      canvas.drawRect(pageRect, Paint()..color = widget.margin!.backgroundColor);
+    }
     canvas.save();
     final dpr = MediaQuery.devicePixelRatioOf(context);
     // Only the supersampled preview is snapped. Above the allocation limit,
@@ -1890,6 +1935,28 @@ class _MMPdfViewState extends State<MMPdfView> {
       }
       final indices = nearby.where((i) => !_marginExpanded || _marginExtents.containsKey(i + 1));
       final zoom = _controller.currentZoom;
+      final viewport = MMPdfMarginViewport(
+        pages: [
+          for (final i in indices)
+            MMPdfMarginPage(
+              page: i + 1,
+              rect: Rect.fromPoints(
+                _controller.documentToLocal(layouts[i].topLeft),
+                _controller.documentToLocal(layouts[i].bottomRight),
+              ),
+              transform: PageViewportTransform(
+                pageSize: Size(_originalPage(i + 1).width, _originalPage(i + 1).height),
+                crop: _cropFor(i + 1),
+                scale: zoom,
+                origin: _controller.documentToLocal(layouts[i].topLeft),
+              ),
+              extent: (_marginExtents[i + 1] ?? 0) * zoom,
+            ),
+        ],
+        zoom: zoom,
+        expanded: _marginExpanded,
+        size: size,
+      );
       return Listener(
         onPointerSignal: (event) {
           if (event is! PointerScrollEvent) return;
@@ -1907,31 +1974,15 @@ class _MMPdfViewState extends State<MMPdfView> {
         },
         child: Stack(
           clipBehavior: Clip.none,
-          children: widget.margin!.builder(
-            context,
-            MMPdfMarginViewport(
-              pages: [
-                for (final i in indices)
-                  MMPdfMarginPage(
-                    page: i + 1,
-                    rect: Rect.fromPoints(
-                      _controller.documentToLocal(layouts[i].topLeft),
-                      _controller.documentToLocal(layouts[i].bottomRight),
-                    ),
-                    transform: PageViewportTransform(
-                      pageSize: Size(_originalPage(i + 1).width, _originalPage(i + 1).height),
-                      crop: _cropFor(i + 1),
-                      scale: zoom,
-                      origin: _controller.documentToLocal(layouts[i].topLeft),
-                    ),
-                    extent: (_marginExtents[i + 1] ?? 0) * zoom,
-                  ),
-              ],
-              zoom: zoom,
-              expanded: _marginExpanded,
-              size: size,
-            ),
-          ),
+          children: [
+            if (viewport.expanded)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _MarginPaperPainter(viewport, widget.margin!.backgroundColor)),
+                ),
+              ),
+            ...widget.margin!.builder(context, viewport),
+          ],
         ),
       );
     },
@@ -2007,7 +2058,7 @@ class _MMPdfViewState extends State<MMPdfView> {
               MediaQuery.devicePixelRatioOf(context),
             ).scale,
             // Retain pdfrx's adjacent-page prefetch and 100 MiB image-cache budget.
-            pageDropShadow: const BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2)),
+            pageDropShadow: widget.margin == null ? _pageShadow : null,
             pageOverlaysBuilder: _pageOverlays,
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],
