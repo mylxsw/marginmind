@@ -109,15 +109,14 @@ class MMSplitView extends StatelessWidget {
         // Stacked panes each reach one end of the window's chrome.
         final stacked = vertical && split;
         final panes = [
+          // Offstage occupies no space, but still lays out its child. Keep a
+          // usable extent: a zero-size PDF viewport loses its zoom and page.
           // A hidden pane stays mounted but cannot keep keyboard focus.
           Offstage(
             offstage: !showP,
             child: ExcludeFocus(
               excluding: !showP,
-              child: sized(
-                showP ? pw : 0,
-                stacked ? MMChromeInsets.remove(context, removeBottom: true, child: primary) : primary,
-              ),
+              child: sized(pw, stacked ? MMChromeInsets.remove(context, removeBottom: true, child: primary) : primary),
             ),
           ),
           if (split) sized(1, ColoredBox(color: c.separator)),
@@ -126,7 +125,7 @@ class MMSplitView extends StatelessWidget {
             child: ExcludeFocus(
               excluding: !showS,
               child: sized(
-                showS ? (split ? w - pw - 1 : w) : 0,
+                split ? w - pw - 1 : w,
                 stacked ? MMChromeInsets.remove(context, removeTop: true, child: secondary) : secondary,
               ),
             ),

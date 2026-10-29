@@ -95,6 +95,35 @@ void main() {
     await tester.pumpWidget(build(MMSplitMode.split));
     expect(find.text('1'), findsOneWidget);
   });
+
+  for (final axis in Axis.values) {
+    testWidgets('hidden panes retain usable dimensions in $axis layouts', (tester) async {
+      for (final mode in [MMSplitMode.split, MMSplitMode.secondary, MMSplitMode.primary, MMSplitMode.split]) {
+        await tester.pumpWidget(
+          harness(
+            SizedBox(
+              width: 700,
+              height: 500,
+              child: MMSplitView(
+                mode: mode,
+                axis: axis,
+                minPrimaryWidth: 150,
+                minSecondaryWidth: 150,
+                primary: const SizedBox.expand(key: ValueKey('reader-viewport')),
+                secondary: const SizedBox.expand(key: ValueKey('map-viewport')),
+              ),
+            ),
+          ),
+        );
+        for (final key in ['reader-viewport', 'map-viewport']) {
+          final size = tester.getSize(find.byKey(ValueKey(key), skipOffstage: false));
+          expect(size.width, greaterThan(0), reason: '$mode $key');
+          expect(size.height, greaterThan(0), reason: '$mode $key');
+        }
+        expect(tester.takeException(), isNull);
+      }
+    });
+  }
 }
 
 class _Counter extends StatefulWidget {
