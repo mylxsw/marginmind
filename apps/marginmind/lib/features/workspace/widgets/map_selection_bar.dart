@@ -128,7 +128,12 @@ class MapNodeBar extends StatelessWidget {
     final l = context.l10n;
     Widget action(String key, String label, VoidCallback onPressed, String tooltip) => Tooltip(
       message: tooltip,
-      child: MMButton(key: ValueKey('node-bar-$key'), label: label, onPressed: onPressed, variant: MMButtonVariant.plain),
+      child: MMButton(
+        key: ValueKey('node-bar-$key'),
+        label: label,
+        onPressed: onPressed,
+        variant: MMButtonVariant.plain,
+      ),
     );
 
     return MMGlass(

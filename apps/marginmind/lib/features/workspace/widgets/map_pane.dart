@@ -226,7 +226,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
       onRelation: controller.addRelation,
       onAssistant: assistant.isEmpty
           ? null
-          : (anchor) => showMMMenu(context, position: anchor, entries: [MMMenuHeader(context.l10n.askAssistant), ...assistant]),
+          : (anchor) =>
+                showMMMenu(context, position: anchor, entries: [MMMenuHeader(context.l10n.askAssistant), ...assistant]),
     );
   }
 
