@@ -3022,4 +3022,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get compareTranslationFailed => 'Translation failed';
+
+  @override
+  String get compareTranslationPageEmpty => 'No text to translate on this page';
+
+  @override
+  String compareTranslationPageSaved(int page) {
+    return 'Page $page saved';
+  }
+
+  @override
+  String compareTranslationPageProgress(int page, int done, int total) {
+    return 'Page $page · Translating $done/$total';
+  }
 }

@@ -56,6 +56,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   bool _scheduled = false;
   bool _writing = false;
   int? _driven;
+  int? _driver;
 
   WorkspaceController get _workspace => ref.read(workspaceProvider(studySetId).notifier);
   MMPdfViewController pdf(String id) => ref.read(documentPdfProvider((studySetId, id)));
@@ -115,6 +116,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   void remember() {
     _epoch++;
+    _driver = null;
     _queuedSide = null;
     _driven = null;
     for (final id in {
@@ -268,6 +270,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   Future<void> toggleSync() async {
     if (state == null) return;
     _epoch++;
+    _driver = null;
     _driven = null;
     await _save(state!.copyWith(sync: !state!.sync));
   }
@@ -297,6 +300,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     }
     final points = insertCompareAlignment(map, state!.alignPoints, point);
     _epoch++;
+    _driver = null;
     _driven = null;
     await _save(state!.copyWith(alignPoints: points, sync: true), undoable: true);
     return true;
@@ -304,6 +308,8 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   void userInput(int side) {
     _epoch++;
+    if (_driver != side && document(1 - side) != null) pdf(document(1 - side)!).stopScroll();
+    _driver = side;
     _queuedSide = side;
     _driven = null;
     _sync.userInput(side);
@@ -314,7 +320,9 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   void changed(int side) {
     if (state == null) return;
-    if (_driven != side && _restoring.isEmpty) _queuedSide = side;
+    // Only the pane the user is driving may lead. Layout, a clamped target,
+    // and late programmatic notifications cannot take ownership back.
+    if (_driver == side && _driven != side && _restoring.isEmpty) _queuedSide = side;
     if (_scheduled) return;
     _scheduled = true;
     SchedulerBinding.instance.ensureVisualUpdate();
@@ -332,16 +340,20 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   }
 
   Future<void> _drive(int side) async {
-    if (state?.sync != true || _restoring.isNotEmpty) return;
+    if (state?.sync != true || _restoring.isNotEmpty || _driver != side) return;
     final map = mapping;
     if (map == null) return;
     final source = pdf(document(side)!).readingPosition;
     final target = pdf(document(1 - side)!);
     final current = target.readingPosition;
     if (source == null || current == null) return;
-    final position = map.map(source, reverse: side == 1);
+    final position = target.clampedReadingPosition(map.map(source, reverse: side == 1));
+    if (position == null) return;
     final heights = side == 0 ? map.rightHeights : map.leftHeights;
-    if ((ReadingAlignment.scalar(position, heights) - ReadingAlignment.scalar(current, heights)).abs() < .001) return;
+    if ((ReadingAlignment.scalar(position, heights) - ReadingAlignment.scalar(current, heights)).abs() < .001) {
+      target.stopScroll();
+      return;
+    }
     final epoch = _epoch;
     await _sync.drive(side, () async {
       _driven = 1 - side;

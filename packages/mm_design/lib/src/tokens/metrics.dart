@@ -38,6 +38,8 @@ abstract final class MMSizes {
   static const double dropdownIcon = 14;
   static const double readerCompareHeader = 34;
   static const double readerCompareDivider = .5;
+  static const double readerCompareControl = 24;
+  static const double readerCompareBottomGap = 28;
   static const double mapExportNodeWidth = 240;
   static const double mapExportCanvasPadding = 72;
   static const double mapExportImageFallbackHeight = 120;

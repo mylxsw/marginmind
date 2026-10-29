@@ -176,7 +176,11 @@ class MMPdfViewController extends ChangeNotifier {
     final pdf = _state!._controller;
     final size = viewport ?? pdf.viewSize;
     final at = pdf.localToDocument(Offset(size.width / 2, size.height * .25));
-    final rects = pdf.layout.pageLayouts;
+    return _readingPositionAt(at);
+  }
+
+  PdfReadingPosition _readingPositionAt(Offset at) {
+    final rects = _state!._controller.layout.pageLayouts;
     var index = 0;
     var distance = double.infinity;
     for (var i = 0; i < rects.length; i++) {
@@ -221,18 +225,39 @@ class MMPdfViewController extends ChangeNotifier {
     ];
   }
 
-  /// Immediate programmatic synchronization, without polluting jump history.
-  Future<void> jumpToReadingPosition(PdfReadingPosition position) async {
-    if (!isReady || position.page > _pageCount) return;
-    _state!._marginInputEpoch++;
+  Matrix4 _readingMatrix(PdfReadingPosition position) {
     final pdf = _state!._controller;
     final rect = pdf.layout.pageLayouts[position.page - 1];
     final y = _state!._transform(position.page).toViewport(Offset(0, position.y)).dy.clamp(rect.top, rect.bottom);
     final center = pdf.localToDocument(Offset(pdf.viewSize.width / 2, pdf.viewSize.height / 2));
-    await pdf.goTo(
+    return pdf.makeMatrixInSafeRange(
       pdf.calcMatrixFor(Offset(center.dx, y + pdf.viewSize.height * .25 / pdf.currentZoom), zoom: pdf.currentZoom),
-      duration: Duration.zero,
+      forceClamp: true,
     );
+  }
+
+  /// Resolve the reachable reading line before synchronizing. At the last page
+  /// the original PDF bottom often cannot reach the viewport's 25% line.
+  PdfReadingPosition? clampedReadingPosition(PdfReadingPosition position) {
+    if (!isReady || position.page > _pageCount) return null;
+    final pdf = _state!._controller;
+    return _readingPositionAt(
+      MatrixUtils.transformPoint(
+        Matrix4.inverted(_readingMatrix(position)),
+        Offset(pdf.viewSize.width / 2, pdf.viewSize.height * .25),
+      ),
+    );
+  }
+
+  void stopScroll() {
+    if (isReady) _state!._controller.stopInteractiveViewerAnimation();
+  }
+
+  /// Immediate programmatic synchronization, without polluting jump history.
+  Future<void> jumpToReadingPosition(PdfReadingPosition position) async {
+    if (!isReady || position.page > _pageCount) return;
+    _state!._marginInputEpoch++;
+    await _state!._controller.goTo(_readingMatrix(position), duration: Duration.zero);
   }
 
   Future<DocumentCrop?> automaticCrop({List<AnnotationPage> anchors = const [], bool refresh = false}) async =>

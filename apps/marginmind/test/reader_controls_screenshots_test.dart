@@ -60,7 +60,10 @@ Future<void> _fonts() async {
 Future<void> _save(WidgetTester tester, String name, {Rect? bounds}) async {
   final view = tester.binding.renderViews.first;
   final image = (await tester.runAsync(
-    () => (view.debugLayer! as OffsetLayer).toImage(bounds ?? Offset.zero & view.size, pixelRatio: 2),
+    () => (view.debugLayer! as OffsetLayer).toImage(
+      (bounds ?? Offset.zero & view.size).intersect(Offset.zero & view.size),
+      pixelRatio: 2,
+    ),
   ))!;
   final png = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.png)))!;
   await tester.runAsync(() => File('$_out/$name.png').writeAsBytes(png.buffer.asUint8List()));

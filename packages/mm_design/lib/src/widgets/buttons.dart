@@ -101,6 +101,7 @@ class MMIconButton extends StatelessWidget {
     this.size = 28,
     this.iconSize = 16,
     this.color,
+    this.selected = false,
   });
 
   final IconData icon;
@@ -109,12 +110,14 @@ class MMIconButton extends StatelessWidget {
   final double size;
   final double iconSize;
   final Color? color;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
     return MMInteractive(
       onTap: onPressed,
+      selected: selected,
       tooltip: tooltip,
       semanticLabel: tooltip,
       builder: (context, s) => AnimatedContainer(
@@ -125,7 +128,11 @@ class MMIconButton extends StatelessWidget {
           color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
           borderRadius: BorderRadius.circular(size / 3.5),
         ),
-        child: Icon(icon, size: iconSize, color: s.enabled ? (color ?? c.icon) : c.icon.withValues(alpha: 0.3)),
+        child: Icon(
+          icon,
+          size: iconSize,
+          color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
+        ),
       ),
     );
   }

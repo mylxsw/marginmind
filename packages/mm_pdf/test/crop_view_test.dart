@@ -68,6 +68,43 @@ void main() {
     expect(controller.readingPosition!.y, closeTo(420, 1));
     await close(tester);
   });
+  testWidgets('reading targets clamp to reachable edges after zoom and crop without creeping', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    for (final crop in [null, DocumentCrop(all: CropInsets(left: 24, top: 36, right: 60, bottom: 80))]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(filePath: 'sync-edges.pdf', controller: controller, crop: crop),
+        ),
+      );
+      await ready(tester, () => controller.isReady);
+      await tester.pumpAndSettle();
+      for (final factor in [.5, 1.0, 2.0]) {
+        final zoom = controller.setWidthZoom(factor);
+        await tester.pumpAndSettle();
+        await zoom;
+        for (final requested in [PdfReadingPosition(page: 1, y: 800), PdfReadingPosition(page: 3, y: 0)]) {
+          final expected = controller.clampedReadingPosition(requested)!;
+          final move = controller.jumpToReadingPosition(requested);
+          await tester.pumpAndSettle();
+          await move;
+          expect(controller.readingPosition!.page, expected.page);
+          expect(controller.readingPosition!.y, closeTo(expected.y, .001));
+          final before = controller.readingPosition!.toJson();
+          for (var i = 0; i < 5; i++) {
+            final repeated = controller.jumpToReadingPosition(requested);
+            await tester.pump(const Duration(milliseconds: 50));
+            await repeated;
+          }
+          controller.stopScroll();
+          await tester.pumpAndSettle();
+          expect(controller.readingPosition!.toJson(), before);
+        }
+      }
+    }
+    await close(tester);
+  });
+
   testWidgets('cropped real selection, search, highlights, area and ink keep original coordinates', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);

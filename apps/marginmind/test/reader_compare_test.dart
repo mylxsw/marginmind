@@ -369,6 +369,84 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('clamped endpoints stay still, never echo to the driver and resume on reversal', (tester) async {
+    installTestPdfBackend(documents: {'a.pdf': (pages: 2, height: 800), 'b.pdf': (pages: 291, height: 900)});
+    final fixture = compareFixture();
+    final content = InMemoryStudySetContentRepository({
+      'demo-1': fixture.copyWith(
+        documents: [
+          Document(id: 'c1', title: 'Short source', fileName: 'a.pdf', pageCount: 2, importedAt: testNow),
+          Document(
+            id: 'c2',
+            title: 'Long target',
+            fileName: 'b.pdf',
+            pageCount: 291,
+            lastPage: 200,
+            importedAt: testNow,
+          ),
+        ],
+      ),
+    });
+    final container = await pumpApp(tester, renderPdf: true, content: content, size: const Size(1800, 1100));
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    final session = container.read(readerCompareProvider('demo-1').notifier);
+    final original = session.pdf('c1').readingPosition!;
+    await session.select('c2', readerWidth: 700);
+    await drain(tester);
+    final short = session.pdf('c1'), long = session.pdf('c2');
+    expect(short.readingPosition!.page, original.page);
+    expect(short.readingPosition!.y, closeTo(original.y, 1));
+    expect(long.readingPosition!.page, 200);
+    final controls = tester.getRect(find.byKey(const ValueKey('compare-floating-controls')));
+    final frame = tester.getRect(find.byKey(const ValueKey('reader-compare-view')));
+    expect(frame.bottom - controls.bottom, closeTo(MMSizes.readerCompareBottomGap + MMSpacing.xxs, .01));
+    expect(controls.width, MMSizes.readerCompareControl);
+    Future<void> move(int page, double y) async {
+      session.userInput(1);
+      final moving = long.jumpToReadingPosition(PdfReadingPosition(page: page, y: y));
+      await tester.pumpAndSettle();
+      await moving;
+      await drain(tester);
+    }
+
+    Future<void> stable() async {
+      final a = short.readingPosition!.toJson(), b = long.readingPosition!.toJson();
+      for (var i = 0; i < 12; i++) {
+        session.changed(0); // A late callback from the clamped, driven pane.
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pumpAndSettle();
+      expect(short.readingPosition!.toJson(), a);
+      expect(long.readingPosition!.toJson(), b);
+    }
+
+    await move(280, 400);
+    final atEnd = short.readingPosition!.toJson();
+    final source = long.readingPosition!.toJson();
+    await stable();
+    expect(long.readingPosition!.toJson(), source);
+    await move(288, 400);
+    expect(short.readingPosition!.toJson(), atEnd);
+    await stable();
+    await move(100, 400);
+    expect(short.readingPosition!.toJson(), isNot(atEnd));
+    await stable();
+    await move(1, 900);
+    final atStart = short.readingPosition!.toJson();
+    await stable();
+    await move(2, 800);
+    expect(short.readingPosition!.toJson(), atStart);
+    await stable();
+    await move(100, 400);
+    expect(short.readingPosition!.toJson(), isNot(atStart));
+    expect(container.read(readerCompareProvider('demo-1'))!.sync, true);
+    expect(container.read(readerCompareProvider('demo-1'))!.alignPoints, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await drain(tester);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('single document menu imports to the right, disables AI with reason, and exits from menu', (
     tester,
   ) async {

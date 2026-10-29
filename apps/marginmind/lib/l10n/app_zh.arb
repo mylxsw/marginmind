@@ -982,5 +982,28 @@
         "type": "int"
       }
     }
+  },
+  "compareTranslationPageEmpty": "此页没有可翻译文字",
+  "compareTranslationPageSaved": "第 {page} 页已保存",
+  "compareTranslationPageProgress": "第 {page} 页翻译中 {done}/{total}",
+  "@compareTranslationPageSaved": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "@compareTranslationPageProgress": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }

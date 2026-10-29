@@ -80,8 +80,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
         ref.read(readerCompareProvider(widget.studySetId))?.sync != true) {
       return;
     }
-    if (_fromRight) return;
-    _rightInput = false;
+    if (_fromRight || _rightInput) return;
     final paragraphs = ref.read(readerTranslationProvider(widget.studySetId)).paragraphs;
     final onPage = paragraphs.where((p) => p.page == position.page).toList();
     if (onPage.isEmpty) return;
@@ -103,7 +102,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
       final box = _keys[p.fingerprint]?.currentContext?.findRenderObject() as RenderBox?;
       return top != null && box != null && top + box.size.height > 0 && top < _line * 4;
     });
-    _session.prioritize(visible.map((p) => p.index), p.index);
+    if (_rightInput) _session.prioritize(visible.map((p) => p.index), p.index);
     if (!_rightInput || ref.read(readerCompareProvider(widget.studySetId))?.sync != true) return;
     final pair = ref.read(readerCompareProvider(widget.studySetId))!;
     final pdf = ref.read(readerCompareProvider(widget.studySetId).notifier).pdf(pair.leftDocumentId);
@@ -119,6 +118,16 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
             if (mounted && epoch == _epoch) _fromRight = false;
           }),
     );
+  }
+
+  void _input() {
+    _rightInput = true;
+    _epoch++;
+    // A wheel event can move the child scrollable before this listener runs.
+    WidgetsBinding.instance.ensureVisualUpdate();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _rightInput) _changed();
+    });
   }
 
   @override
@@ -171,7 +180,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
       final anchor = _anchor(), epoch = _epoch;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || epoch != _epoch) return;
-        if (anchor != null) {
+        if (anchor != null && anchor.paragraph.page == ref.read(provider).page) {
           final top = _top(anchor.paragraph.fingerprint);
           if (top != null) _jump(_scroll.offset + top - _line - anchor.delta);
         } else {
@@ -222,8 +231,10 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                         state.failed
                             ? l.compareTranslationFailed
                             : state.complete
-                            ? l.compareTranslationSaved
-                            : l.compareTranslationProgress(state.done, state.paragraphs.length),
+                            ? (state.pageParagraphs.isEmpty
+                                  ? l.compareTranslationPageEmpty
+                                  : l.compareTranslationPageSaved(state.page))
+                            : l.compareTranslationPageProgress(state.page, state.pageDone, state.pageParagraphs.length),
                         key: const ValueKey('translation-status'),
                         icon: state.complete ? MMIcons.check : null,
                         color: state.failed
@@ -250,18 +261,9 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
         ),
         Expanded(
           child: Listener(
-            onPointerSignal: (_) {
-              _rightInput = true;
-              _epoch++;
-            },
-            onPointerDown: (_) {
-              _rightInput = true;
-              _epoch++;
-            },
-            onPointerPanZoomStart: (_) {
-              _rightInput = true;
-              _epoch++;
-            },
+            onPointerSignal: (_) => _input(),
+            onPointerDown: (_) => _input(),
+            onPointerPanZoomStart: (_) => _input(),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final scale = ((constraints.maxWidth - 32) / 612).clamp(.3, 2.0);

@@ -2891,4 +2891,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get compareTranslationFailed => '翻译失败';
+
+  @override
+  String get compareTranslationPageEmpty => '此页没有可翻译文字';
+
+  @override
+  String compareTranslationPageSaved(int page) {
+    return '第 $page 页已保存';
+  }
+
+  @override
+  String compareTranslationPageProgress(int page, int done, int total) {
+    return '第 $page 页翻译中 $done/$total';
+  }
 }

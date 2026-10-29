@@ -5413,6 +5413,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Translation failed'**
   String get compareTranslationFailed;
+
+  /// No description provided for @compareTranslationPageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No text to translate on this page'**
+  String get compareTranslationPageEmpty;
+
+  /// No description provided for @compareTranslationPageSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} saved'**
+  String compareTranslationPageSaved(int page);
+
+  /// No description provided for @compareTranslationPageProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} · Translating {done}/{total}'**
+  String compareTranslationPageProgress(int page, int done, int total);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

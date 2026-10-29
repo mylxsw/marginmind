@@ -35,6 +35,7 @@ List<TranslationParagraph> paragraphs(String id) => [
 class TestTranslator implements ParagraphTranslator {
   final pending = <int, Completer<ParagraphTranslation>>{};
   final calls = <int>[];
+  final languages = <String>[];
   bool closed = false;
   @override
   Future<ParagraphTranslation> translate(
@@ -44,6 +45,7 @@ class TestTranslator implements ParagraphTranslator {
     int maxTokens,
   ) async {
     calls.add(p.index);
+    languages.add(language);
     return (pending[p.index] = Completer<ParagraphTranslation>()).future;
   }
 
@@ -72,6 +74,7 @@ Future<ProviderContainer> setup(
   StudySetContent? data,
   AssistantModel? selected = model,
   Map<String, Object> prefs = const {},
+  List<TranslationParagraph>? pageContent,
 }) async {
   final c = await pumpApp(
     tester,
@@ -86,7 +89,7 @@ Future<ProviderContainer> setup(
       ),
       paragraphTranslatorProvider.overrideWithValue((_) async => translator),
       for (final id in ['c1', 'c2', 'third']) ...[
-        translationParagraphsProvider(('demo-1', id)).overrideWith((ref) async => paragraphs(id)),
+        translationParagraphsProvider(('demo-1', id)).overrideWith((ref) async => pageContent ?? paragraphs(id)),
         compareDocumentInfoProvider(('demo-1', id))
             .overrideWith((ref) async => (language: id == 'c1' ? 'zh' : 'en', hasText: hasText)),
       ],
@@ -145,16 +148,17 @@ void main() {
     await tester.tap(find.text('AI Translate into English'));
     await frames(tester);
     expect(find.byType(ReaderTranslationView), findsOneWidget);
-    expect(find.text('Translating 0/3'), findsOneWidget);
+    expect(find.text('Page 1 · Translating 0/2'), findsOneWidget);
     expect(find.byKey(const ValueKey('compare-align')), findsNothing);
     expect(find.byKey(const ValueKey('compare-swap')), findsNothing);
     t.pending[0]!.complete(const ParagraphTranslation('Translated paragraph 0.', tokens: 5));
     await frames(tester);
-    expect(find.text('Translating 1/3'), findsOneWidget);
+    expect(find.text('Page 1 · Translating 1/2'), findsOneWidget);
     await finish(tester, t);
-    expect(find.text('Saved'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     final workspace = c.read(workspaceProvider('demo-1').notifier);
-    expect(workspace.content.translationCaches.single.paragraphs.length, 3);
+    expect(workspace.content.translationCaches.single.paragraphs.length, 2);
+    expect(t.calls.toSet(), {0, 1});
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: Offset.zero);
     await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('translation-paragraph-0'))));
@@ -180,6 +184,9 @@ void main() {
     final moving = compare.pdf('c1').jumpToReadingPosition(PdfReadingPosition(page: 2, y: 600));
     await frames(tester);
     await moving;
+    expect(t.calls, contains(2));
+    await finish(tester, t);
+    expect(workspace.content.translationCaches.single.paragraphs.length, 3);
     final scrollable = tester.state<ScrollableState>(
       find
           .descendant(
@@ -225,7 +232,7 @@ void main() {
     expect(t.closed, true);
     await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
     await frames(tester);
-    expect(find.text('Saved'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     expect(t.calls.length, 3);
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
@@ -244,10 +251,10 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
     await tester.tap(find.text('Retry'));
     await frames(tester);
-    expect(find.text('Translating 2/3'), findsOneWidget);
+    expect(find.text('Page 1 · Translating 1/2'), findsOneWidget);
     t.pending[0]!.complete(const ParagraphTranslation('Retry translated.', tokens: 5));
     await frames(tester);
-    expect(find.text('Saved'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     await compare.select('c2', left: true);
     await frames(tester);
     expect(t.closed, true);
@@ -282,7 +289,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('AI Translate into English'));
     await frames(tester);
-    expect(find.text('Saved'), findsOneWidget);
+    expect(find.textContaining(RegExp(r'Page \d+ saved')), findsOneWidget);
     expect(t.calls, isEmpty);
     final selectable = tester.widget<SelectableText>(
       find.ancestor(of: find.text('Cached translation 0.'), matching: find.byType(SelectableText)).first,
@@ -327,6 +334,145 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
   });
+  testWidgets('only the viewed page is requested; revisit and reopen reuse partial document cache offline', (
+    tester,
+  ) async {
+    final t = TestTranslator();
+    final c = await setup(tester, t);
+    final compare = c.read(readerCompareProvider('demo-1').notifier);
+    await compare.openAi('en');
+    await frames(tester);
+    await finish(tester, t);
+    expect(t.calls.toSet(), {0, 1});
+    expect(c.read(readerTranslationProvider('demo-1')).complete, true);
+    await frames(tester, count: 20);
+    expect(t.calls.toSet(), {0, 1});
+    final cache = c.read(workspaceProvider('demo-1').notifier).content;
+    expect(cache.translationCaches.single.paragraphs.length, 2);
+    final controller = c.read(readerTranslationProvider('demo-1').notifier);
+    controller.prioritize([2], 2);
+    await frames(tester);
+    expect(t.calls, [0, 1, 2]);
+    await finish(tester, t);
+    controller.prioritize([0], 0);
+    await frames(tester);
+    expect(c.read(readerTranslationProvider('demo-1')).page, 1);
+    expect(t.calls, [0, 1, 2]);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+    final offline = TestTranslator();
+    final reopened = await setup(tester, offline, data: cache, selected: null);
+    await reopened.read(readerCompareProvider('demo-1').notifier).openAi('en');
+    await frames(tester);
+    expect(reopened.read(readerTranslationProvider('demo-1')).complete, true);
+    expect(reopened.read(readerTranslationProvider('demo-1')).failed, false);
+    expect(offline.calls, isEmpty);
+    final restored = reopened.read(readerTranslationProvider('demo-1').notifier);
+    restored.prioritize([2], 2);
+    await frames(tester);
+    expect(reopened.read(readerTranslationProvider('demo-1')).failed, true);
+    restored.prioritize([0], 0);
+    await frames(tester);
+    expect(reopened.read(readerTranslationProvider('demo-1')).complete, true);
+    expect(reopened.read(readerTranslationProvider('demo-1')).failed, false);
+    expect(offline.calls, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
+
+  testWidgets('turning a page cancels its outstanding work and ignores late results', (tester) async {
+    final t = TestTranslator();
+    final c = await setup(tester, t);
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
+    await frames(tester);
+    final pending = t.pending.values.toList();
+    c.read(readerTranslationProvider('demo-1').notifier).prioritize([2], 2);
+    await frames(tester);
+    expect(t.closed, true);
+    expect(t.calls, [0, 1, 2]);
+    for (final future in pending) {
+      future.complete(const ParagraphTranslation('Late previous-page text', tokens: 5));
+    }
+    t.pending[2]!.complete(const ParagraphTranslation('Current-page text', tokens: 5));
+    await frames(tester);
+    final cache = c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single;
+    expect(cache.paragraphs, {'c1-2': 'Current-page text'});
+    expect(c.read(readerTranslationProvider('demo-1')).page, 2);
+    expect(c.read(readerTranslationProvider('demo-1')).complete, true);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
+
+  testWidgets('a text-run-heavy page can finish with reasoning token usage, without starting the next page', (
+    tester,
+  ) async {
+    final t = TestTranslator();
+    final content = [
+      for (var i = 0; i < 27; i++)
+        TranslationParagraph(
+          documentId: 'c1',
+          page: i == 26 ? 2 : 1,
+          index: i,
+          text: 'An ordinary text run extracted from a PDF page, with enough content to translate.',
+          fingerprint: 'c1-heavy-$i',
+          rects: [PageRect(70, 650, 500, 630)],
+        ),
+    ];
+    final c = await setup(tester, t, pageContent: content);
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
+    await frames(tester);
+    for (var n = 0; n < 14; n++) {
+      for (final e in t.pending.entries.toList()) {
+        if (!e.value.isCompleted) e.value.complete(ParagraphTranslation('Translated run ${e.key}', tokens: 400));
+      }
+      await frames(tester, count: 2);
+    }
+    expect(c.read(readerTranslationProvider('demo-1')).complete, true);
+    expect(t.calls.toSet(), {for (var i = 0; i < 26; i++) i});
+    expect(c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single.paragraphs, hasLength(26));
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
+
+  testWidgets('opening before the PDF is ready uses the saved reading page', (tester) async {
+    final t = TestTranslator();
+    final fixture = compareFixture();
+    final c = await setup(
+      tester,
+      t,
+      data: fixture.copyWith(
+        documents: [for (final doc in fixture.documents) doc.id == 'c1' ? doc.copyWith(lastPage: 2) : doc],
+      ),
+    );
+    await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
+    await frames(tester);
+    expect(t.calls, [2]);
+    expect(c.read(readerTranslationProvider('demo-1')).page, 2);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
+
+  testWidgets('English source offers Chinese and requests only its current page', (tester) async {
+    final t = TestTranslator();
+    final c = await setup(tester, t);
+    c.read(workspaceProvider('demo-1').notifier).openDocument('c2');
+    await frames(tester);
+    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tester.pumpAndSettle();
+    expect(find.text('AI Translate into Chinese'), findsOneWidget);
+    await tester.tap(find.text('AI Translate into Chinese'));
+    await frames(tester);
+    expect((c.read(readerCompareProvider('demo-1'))!.right as AiCompareTarget).targetLang, 'zh');
+    expect(t.languages, ['zh', 'zh']);
+    await finish(tester, t);
+    final cache = c.read(workspaceProvider('demo-1').notifier).content.translationCaches.single;
+    expect(cache.documentId, 'c2');
+    expect(cache.targetLang, 'zh');
+    expect(cache.paragraphs.length, 2);
+    await tester.pumpWidget(const SizedBox());
+    await frames(tester);
+  });
+
   testWidgets('missing model, offline cloud model, scan each disable with reason', (tester) async {
     final t = TestTranslator();
     await setup(tester, t, selected: null);

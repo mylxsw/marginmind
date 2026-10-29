@@ -22,6 +22,11 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
 });
 
+// A page can contain many PDF text runs, especially with reasoning models.
+// Keep work bounded per viewed page rather than applying a short whole-job
+// allowance to an arbitrary number of small paragraphs.
+const _pageTranslationBudget = ResearchBudget(outputTokens: 16384, duration: Duration(minutes: 3));
+
 final paragraphTranslatorProvider = Provider<Future<ParagraphTranslator> Function(AssistantModel)>((ref) {
   final secrets = ref.watch(assistantSecretsProvider);
   return (model) async {
@@ -29,7 +34,7 @@ final paragraphTranslatorProvider = Provider<Future<ParagraphTranslator> Functio
     if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
       throw const ResearchFailure(ResearchFailureKind.authentication);
     }
-    return ModelParagraphTranslator(connectAssistant(model, key ?? ''), model.model);
+    return ModelParagraphTranslator(connectAssistant(model, key ?? '', budget: _pageTranslationBudget), model.model);
   };
 });
 
@@ -39,16 +44,38 @@ class ReaderTranslationState {
     this.values = const {},
     this.loading = true,
     this.failed = false,
+    this.page = 1,
     this.position,
     this.hovered,
   });
   final List<TranslationParagraph> paragraphs;
   final Map<String, String> values;
   final bool loading, failed;
+  final int page;
   final String? hovered;
   final PdfReadingPosition? position;
+  Iterable<TranslationParagraph> get pageParagraphs => paragraphs.where((p) => p.page == page);
   int get done => paragraphs.where((p) => values.containsKey(p.fingerprint)).length;
-  bool get complete => !loading && !failed && done == paragraphs.length && paragraphs.isNotEmpty;
+  int get pageDone => pageParagraphs.where((p) => values.containsKey(p.fingerprint)).length;
+  bool get complete => !loading && !failed && pageParagraphs.every((p) => values.containsKey(p.fingerprint));
+
+  ReaderTranslationState copyWith({
+    Map<String, String>? values,
+    bool? loading,
+    bool? failed,
+    int? page,
+    PdfReadingPosition? position,
+    String? hovered,
+    bool clearHover = false,
+  }) => ReaderTranslationState(
+    paragraphs: paragraphs,
+    values: values ?? this.values,
+    loading: loading ?? this.loading,
+    failed: failed ?? this.failed,
+    page: page ?? this.page,
+    position: position ?? this.position,
+    hovered: clearHover ? null : hovered ?? this.hovered,
+  );
 }
 
 final readerTranslationProvider = NotifierProvider.autoDispose
@@ -58,14 +85,21 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
   ReaderTranslationController(this.studySetId);
   final String studySetId;
   TranslationSession? _session;
-  int _generation = 0;
+  int _generation = 0, _pageGeneration = 0;
   String? _identity;
   bool _modelChanged = false;
+
+  void _cancelPage() {
+    _pageGeneration++;
+    _session?.cancel();
+    _session = null;
+  }
+
   @override
   ReaderTranslationState build() {
     ref.onDispose(() {
       _generation++;
-      _session?.cancel();
+      _cancelPage();
     });
     ref.listen(readerCompareProvider(studySetId), (_, pair) {
       final key = pair?.right is AiCompareTarget
@@ -74,8 +108,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       if (key == _identity) return;
       _identity = key;
       _generation++;
-      _session?.cancel();
-      _session = null;
+      _cancelPage();
       if (key != null) unawaited(_load());
     });
     Future.microtask(() {
@@ -90,14 +123,15 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
 
   Future<void> _load() async {
     final generation = ++_generation;
-    _session?.cancel();
-    _session = null;
+    _cancelPage();
     state = const ReaderTranslationState();
     final pair = ref.read(readerCompareProvider(studySetId));
     if (pair?.right is! AiCompareTarget) return;
     final id = pair!.leftDocumentId, language = (pair.right as AiCompareTarget).targetLang;
     bool current() => ref.mounted && generation == _generation;
     try {
+      // Local paragraph geometry is indexed once. Only the selected page's
+      // missing paragraphs are ever passed to a model.
       final paragraphs = await ref.read(translationParagraphsProvider((studySetId, id)).future);
       if (!current()) return;
       final cache = ref
@@ -106,21 +140,57 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
           .translationCaches
           .where((c) => c.documentId == id && c.targetLang == language)
           .firstOrNull;
-      final cached = {for (final p in paragraphs) p.fingerprint: ?cache?.paragraphs[p.fingerprint]};
+      final cached = <String, String>{
+        for (final p in paragraphs)
+          if (cache?.paragraphs[p.fingerprint]?.trim().isNotEmpty == true)
+            p.fingerprint: cache!.paragraphs[p.fingerprint]!,
+      };
+      final pdf = ref.read(documentPdfProvider((studySetId, id)));
+      final position = pdf.readingPosition;
+      final fallback =
+          ref.read(readingPagesProvider(studySetId))[id] ??
+          ref.read(workspaceProvider(studySetId).notifier).content.document(id)?.lastPage ??
+          1;
+      final page = position?.page ?? fallback;
       state = ReaderTranslationState(
         paragraphs: paragraphs,
         values: cached,
         loading: false,
         failed: paragraphs.isEmpty,
+        page: page,
+        position: position,
       );
-      if (paragraphs.isEmpty || cached.length == paragraphs.length) return;
+      if (paragraphs.isNotEmpty) await _translatePage(page);
+    } catch (_) {
+      if (current()) state = state.copyWith(loading: false, failed: true);
+    }
+  }
+
+  Future<void> _translatePage(int page) async {
+    _cancelPage();
+    final documentGeneration = _generation, pageGeneration = _pageGeneration;
+    bool current() => ref.mounted && documentGeneration == _generation && pageGeneration == _pageGeneration;
+    final paragraphs = state.paragraphs.where((p) => p.page == page).toList();
+    // Cached pages, including a partially cached document opened offline, do
+    // not read credentials, create a connection or queue any translation.
+    if (paragraphs.every((p) => state.values.containsKey(p.fingerprint))) return;
+    final pair = ref.read(readerCompareProvider(studySetId));
+    if (pair?.right is! AiCompareTarget) return;
+    final id = pair!.leftDocumentId, language = (pair.right as AiCompareTarget).targetLang;
+    try {
       final model = ref.read(assistantDefaultModelProvider);
       final modelId = model == null ? '' : '${model.serviceId ?? model.provider.name}/${model.model}';
+      final cache = ref
+          .read(workspaceProvider(studySetId).notifier)
+          .content
+          .translationCaches
+          .where((c) => c.documentId == id && c.targetLang == language)
+          .firstOrNull;
       _modelChanged = cache != null && cache.model != modelId;
       if (model == null ||
           _modelChanged ||
           (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
-        state = ReaderTranslationState(paragraphs: paragraphs, values: cached, loading: false, failed: true);
+        if (current()) state = state.copyWith(failed: true);
         return;
       }
       final translator = await ref.read(paragraphTranslatorProvider)(model);
@@ -130,26 +200,23 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       }
       late TranslationSession session;
       session = TranslationSession(
+        // A fresh, bounded session belongs to one explicitly viewed page.
+        // Reading a finished page for minutes cannot expire the next page's budget.
         paragraphs: paragraphs,
         language: language,
         translator: translator,
-        cached: cached,
+        budget: _pageTranslationBudget,
+        cached: state.values,
         changed: () {
           if (current()) {
-            state = ReaderTranslationState(
-              paragraphs: paragraphs,
-              values: Map.unmodifiable(session.values),
-              loading: false,
+            state = state.copyWith(
+              values: Map.unmodifiable({...state.values, ...session.values}),
               failed: session.failure != null,
-              hovered: state.hovered,
-              position: state.position,
             );
           }
         },
         save: (p, text) async {
           if (!current()) return;
-          // Check generation inside the atomic update too: a queued disk write
-          // may start after the reader already switched to another document.
           await ref.read(contentRepositoryProvider).update(studySetId, (content) {
             if (!current() || content.document(id) == null) return content;
             return ref
@@ -170,53 +237,40 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       _session = session;
       final pdf = ref.read(documentPdfProvider((studySetId, id)));
       final position = pdf.readingPosition;
-      final onPage = paragraphs.where((p) => p.page == (position?.page ?? 1)).toList();
-      final initial = onPage.isEmpty
-          ? paragraphs.last
-          : onPage.lastWhere((p) => p.bounds.top >= (position?.y ?? double.infinity), orElse: () => onPage.first);
+      final initial = paragraphs.lastWhere(
+        (p) => p.bounds.top >= (position?.y ?? double.infinity),
+        orElse: () => paragraphs.first,
+      );
       session.prioritize(pdf.visibleParagraphs(paragraphs), focus: initial.index);
       await session.start();
     } catch (_) {
-      if (current()) {
-        state = ReaderTranslationState(
-          paragraphs: state.paragraphs,
-          values: state.values,
-          loading: false,
-          failed: true,
-        );
-      }
+      if (current()) state = state.copyWith(failed: true);
+    }
+  }
+
+  void _showPage(int page, {Iterable<int> visible = const [], int? focus}) {
+    if (state.loading) return;
+    if (page != state.page) {
+      state = state.copyWith(page: page, failed: false);
+      unawaited(_translatePage(page));
+    } else {
+      _session?.prioritize(visible, focus: focus);
     }
   }
 
   void sourceChanged(PdfReadingPosition? position) {
     if (position == null) return;
-    final onPage = state.paragraphs.where((p) => p.page == position.page).toList();
-    if (onPage.isNotEmpty) {
-      final focus = onPage.lastWhere((p) => p.bounds.top >= position.y, orElse: () => onPage.first);
-      final id = ref.read(readerCompareProvider(studySetId))?.leftDocumentId;
-      if (id != null) {
-        prioritize(ref.read(documentPdfProvider((studySetId, id))).visibleParagraphs(state.paragraphs), focus.index);
-      }
-    }
-    state = ReaderTranslationState(
-      paragraphs: state.paragraphs,
-      values: state.values,
-      loading: state.loading,
-      failed: state.failed,
-      hovered: state.hovered,
-      position: position,
-    );
+    _showPage(position.page);
+    state = state.copyWith(position: position);
   }
 
-  void prioritize(Iterable<int> visible, int focus) => _session?.prioritize(visible, focus: focus);
-  void hover(String? key) => state = ReaderTranslationState(
-    paragraphs: state.paragraphs,
-    values: state.values,
-    loading: state.loading,
-    failed: state.failed,
-    hovered: key,
-    position: state.position,
-  );
+  void prioritize(Iterable<int> visible, int focus) {
+    final paragraph = state.paragraphs.where((p) => p.index == focus).firstOrNull;
+    if (paragraph != null) _showPage(paragraph.page, visible: visible, focus: focus);
+  }
+
+  void hover(String? key) => state = state.copyWith(hovered: key, clearHover: key == null);
+
   Future<void> retry() async {
     final model = ref.read(assistantDefaultModelProvider);
     if (model == null || (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
@@ -232,8 +286,11 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       await ref
           .read(contentRepositoryProvider)
           .removeTranslationCache(studySetId, pair!.leftDocumentId, (pair.right as AiCompareTarget).targetLang);
+      await _load();
+    } else {
+      state = state.copyWith(failed: false);
+      await _translatePage(state.page);
     }
-    await _load();
   }
 }
 

@@ -317,8 +317,9 @@ class ReaderCompareView extends ConsumerWidget {
       key: const ValueKey('compare-floating-controls'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        MMToolbarButton(
-          compact: true,
+        MMIconButton(
+          size: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareControl,
+          iconSize: MMSizes.dropdownIcon,
           key: const ValueKey('compare-sync'),
           icon: MMIcons.link,
           tooltip: l.compareSync,
@@ -326,9 +327,10 @@ class ReaderCompareView extends ConsumerWidget {
           onPressed: () => action(session.toggleSync),
         ),
         if (pair.right is PdfCompareTarget) ...[
-          const SizedBox(height: MMSpacing.xs),
-          MMToolbarButton(
-            compact: true,
+          const SizedBox(height: MMSpacing.xxs),
+          MMIconButton(
+            size: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareControl,
+            iconSize: MMSizes.dropdownIcon,
             key: const ValueKey('compare-align'),
             icon: MMIcons.alignHere,
             tooltip: l.compareAlign,
@@ -445,16 +447,19 @@ class ReaderCompareView extends ConsumerWidget {
           ],
         ),
         Align(
-          alignment: Alignment.center,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: c.glassOpaque,
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MMSizes.readerCompareBottomGap + MMChromeInsets.of(context).bottom),
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(MMRadii.dropdown),
-              border: Border.all(color: c.hairline, width: .5),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: MMSpacing.xs),
-              child: floatingControls(),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: c.glassOpaque,
+                  borderRadius: BorderRadius.circular(MMRadii.dropdown),
+                  border: Border.all(color: c.hairline, width: .5),
+                ),
+                child: Padding(padding: const EdgeInsets.all(MMSpacing.xxs), child: floatingControls()),
+              ),
             ),
           ),
         ),

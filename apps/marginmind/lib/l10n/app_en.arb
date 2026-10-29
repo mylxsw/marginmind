@@ -1629,5 +1629,28 @@
   "compareTranslationProgress": "Translating {done}/{total}",
   "compareTranslationSaved": "Saved",
   "compareTranslationFailed": "Translation failed",
-  "@compareTranslationProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}}
+  "@compareTranslationProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "compareTranslationPageEmpty": "No text to translate on this page",
+  "compareTranslationPageSaved": "Page {page} saved",
+  "compareTranslationPageProgress": "Page {page} · Translating {done}/{total}",
+  "@compareTranslationPageSaved": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "@compareTranslationPageProgress": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }
