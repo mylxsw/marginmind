@@ -2336,6 +2336,72 @@ abstract class AppLocalizations {
   /// **'Full'**
   String get densityFull;
 
+  /// No description provided for @mapStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get mapStyle;
+
+  /// No description provided for @mapStructureMind.
+  ///
+  /// In en, this message translates to:
+  /// **'Mind Map'**
+  String get mapStructureMind;
+
+  /// No description provided for @mapStructureLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic Chart'**
+  String get mapStructureLogic;
+
+  /// No description provided for @mapStructureBrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Brace Map'**
+  String get mapStructureBrace;
+
+  /// No description provided for @mapStructureTree.
+  ///
+  /// In en, this message translates to:
+  /// **'Tree Chart'**
+  String get mapStructureTree;
+
+  /// No description provided for @mapPaletteSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get mapPaletteSystem;
+
+  /// No description provided for @mapPaletteRainbow.
+  ///
+  /// In en, this message translates to:
+  /// **'Colorful'**
+  String get mapPaletteRainbow;
+
+  /// No description provided for @mapPaletteFresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh'**
+  String get mapPaletteFresh;
+
+  /// No description provided for @mapPaletteWarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm'**
+  String get mapPaletteWarm;
+
+  /// No description provided for @mapPaletteMorandi.
+  ///
+  /// In en, this message translates to:
+  /// **'Morandi'**
+  String get mapPaletteMorandi;
+
+  /// No description provided for @mapPaletteInk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ink'**
+  String get mapPaletteInk;
+
   /// No description provided for @cardWidthHandle.
   ///
   /// In en, this message translates to:

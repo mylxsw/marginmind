@@ -88,6 +88,12 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 保存后，原文中被关联的文字画 1.5pt 的 `research` 虚线下划线（`MMPdfHighlight.dashed`），页面右侧边距出现 `research` 圆形标记（`marker`），点击弹出研究笔记卡片；脑图中的研究笔记卡片左侧为 3pt `research` 竖线，第一行“研究笔记 · N 个来源”，标题最多两行、正文最多两行（紧凑显示时只留标题一行），底部“查看全文与引用 ›”。右键菜单用 `MMMenuHeader` 给出“研究「节点」”分组。
 
+### 脑图结构与配色（GUL-567）
+
+脑图右上角“样式”按钮打开弹层（`MMSizes.mapStylePopoverWidth`，300 pt）：4 个结构缩略图（高 `mapStructureThumbHeight` 52 pt）和 6 个配色缩略图（高 `mapPaletteThumbHeight` 44 pt），名称只在 tooltip / semantics 中。悬停即预览、移开恢复、点击应用（一步撤销）；弹层打开时脑图让出弹层区域并缩放到能看到全图，Esc 或点击外部关闭。结构决定连线：思维导图为曲线，逻辑图为圆角折线，括号图在每组子主题前画大括号，树形图从父主题左下方竖线引出、横线接入子主题；树形图的添加子节点按钮在节点下方。
+
+`MMMapPalette`（`system`、`rainbow`、`fresh`、`warm`、`morandi`、`ink`）每套有 `light` / `dark` 两个 `MMMapColors`：中心主题底色与文字、按一级分支循环的分支色、一级主题样式（`MMTopicStyle.fill` 填充 / `tint` 浅色底 / `outline` 描边 / `plain` 系统样式）、概要底色与文字。`system` 即现有外观（`rootNode` / `onRootNode`、`line`、`fill`）。分支色同时用于分支线和概要括号；摘录色条、高亮色和关联线不随配色变化。`tokens_test` 检查每套配色在两种外观下中心主题、一级主题和概要的文字对比度 ≥ 4.5:1。导出 PNG / PDF 使用同一结构和配色。
+
 ### 脑图导出（P2-C05）
 
 统一导出表单使用 `MMSizes.mapExportSheetWidth`（560 pt）和 `MMSizes.mapExportPreviewHeight`（180 pt），格式、范围、外观和倍率沿用分段控件。预览和导出使用完整内容，不继承选择、缩放、折叠或编辑状态。透明背景保留卡片底色；研究笔记沿用 `research` / `researchTint`。

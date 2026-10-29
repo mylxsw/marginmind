@@ -1224,6 +1224,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get densityFull => '完整';
 
   @override
+  String get mapStyle => '样式';
+
+  @override
+  String get mapStructureMind => '思维导图';
+
+  @override
+  String get mapStructureLogic => '逻辑图';
+
+  @override
+  String get mapStructureBrace => '括号图';
+
+  @override
+  String get mapStructureTree => '树形图';
+
+  @override
+  String get mapPaletteSystem => '系统';
+
+  @override
+  String get mapPaletteRainbow => '多彩';
+
+  @override
+  String get mapPaletteFresh => '清新';
+
+  @override
+  String get mapPaletteWarm => '暖阳';
+
+  @override
+  String get mapPaletteMorandi => '莫兰迪';
+
+  @override
+  String get mapPaletteInk => '墨水';
+
+  @override
   String get cardWidthHandle => '卡片宽度';
 
   @override

@@ -49,6 +49,70 @@ void main() {
     });
   }
 
+  group('mind map palettes', () {
+    test('six palettes in the offered order, found by their stored names', () {
+      expect(MMMapPalette.values.map((p) => p.name), ['system', 'rainbow', 'fresh', 'warm', 'morandi', 'ink']);
+      for (final p in MMMapPalette.values) {
+        expect(MMMapPalette.byName(p.name), same(p));
+      }
+      expect(MMMapPalette.byName('unknown'), same(MMMapPalette.system));
+    });
+
+    test('the system palette is the current look', () {
+      for (final c in [MMColors.light, MMColors.dark]) {
+        final m = MMMapPalette.system.of(c.brightness);
+        expect(m.root, c.rootNode);
+        expect(m.onRoot, c.onRootNode);
+        expect(m.branch(0), isNull);
+        expect(m.line(3, c), c.line);
+        expect(m.topicFill(0, c), Color.alphaBlend(c.fill, c.canvas));
+        expect(m.topicText(0, c), c.label);
+        expect(m.topicBorder(0), isNull);
+        expect(m.summary, isNull);
+      }
+    });
+
+    for (final c in [MMColors.light, MMColors.dark]) {
+      for (final p in MMMapPalette.values) {
+        test('${p.name} ${c.brightness.name}: text reaches 4.5:1 on every fill', () {
+          final m = p.of(c.brightness);
+          expect(contrastRatio(m.onRoot, m.root), greaterThanOrEqualTo(4.5), reason: 'center topic');
+          if (m.summary case final summary?) {
+            expect(contrastRatio(m.onSummary!, summary), greaterThanOrEqualTo(4.5), reason: 'summary');
+          }
+          for (var i = 0; i < m.branches.length + 1; i++) {
+            final fill = m.topicFill(i, c);
+            expect(fill.a, 1, reason: 'topic fills are opaque');
+            expect(
+              contrastRatio(m.topicText(i, c), fill),
+              greaterThanOrEqualTo(4.5),
+              reason: 'first-level topic of branch $i',
+            );
+          }
+        });
+      }
+    }
+
+    test('branches cycle and set the first-level topic style', () {
+      final rainbow = MMMapPalette.rainbow.light;
+      expect(rainbow.branch(6), rainbow.branch(0));
+      expect(rainbow.topicFill(1, MMColors.light), rainbow.branches[1]);
+      expect(rainbow.line(1, MMColors.light), rainbow.branches[1]);
+
+      final fresh = MMMapPalette.fresh.dark;
+      expect(
+        fresh.topicFill(0, MMColors.dark),
+        Color.alphaBlend(fresh.branches[0].withValues(alpha: 0.34), MMColors.dark.canvas),
+      );
+      expect(fresh.topicText(0, MMColors.dark), MMColors.dark.label);
+
+      final ink = MMMapPalette.ink.light;
+      expect(ink.topicFill(2, MMColors.light), MMColors.light.canvas);
+      expect(ink.topicBorder(2), ink.branches.single);
+      expect(MMMapPalette.ink.dark.branch(4), const Color(0xFFD1D1D6));
+    });
+  });
+
   test('annotation colors map from stored indexes and clamp bad data', () {
     expect(MMAnnotationColor.fromIndex(2), MMAnnotationColor.blue);
     expect(MMAnnotationColor.fromIndex(99), MMAnnotationColor.purple);

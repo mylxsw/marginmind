@@ -16,6 +16,7 @@ export 'src/theme/mm_theme.dart';
 export 'src/tokens/annotation_colors.dart';
 export 'src/tokens/colors.dart';
 export 'src/tokens/ink.dart';
+export 'src/tokens/map_palette.dart';
 export 'src/tokens/reader_style.dart';
 export 'src/tokens/metrics.dart';
 export 'src/tokens/motion.dart';

@@ -1838,6 +1838,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _update((c) => _editor.setMapDensity(c, density));
   }
 
+  /// The active map's structure and palette; each change is one undo step.
+  Future<void> setMapStructure(MapStructure structure) async {
+    if ((content.map(state.activeMapId)?.structure ?? MapStructure.mind) == structure) return;
+    await _update((c) => _editor.setMapStructure(c, structure));
+  }
+
+  Future<void> setMapPalette(MapPalette palette) async {
+    if ((content.map(state.activeMapId)?.palette ?? MapPalette.system) == palette) return;
+    await _update((c) => _editor.setMapPalette(c, palette));
+  }
+
   // ---- in-place editing -------------------------------------------------------
 
   _EditSession? _editing;

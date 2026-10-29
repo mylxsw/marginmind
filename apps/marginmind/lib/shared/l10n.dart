@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:mm_core/mm_core.dart' show TranslationLanguage, AnnotationLineStyle;
+import 'package:mm_core/mm_core.dart' show TranslationLanguage, AnnotationLineStyle, MapPalette, MapStructure;
 import 'package:mm_design/mm_design.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -34,6 +34,22 @@ extension AppLocalizationsX on AppLocalizations {
     MMAnnotationColor.orange => colorOrange,
     MMAnnotationColor.purple => colorPurple,
     _ => color.hex,
+  };
+
+  String mapStructureName(MapStructure structure) => switch (structure) {
+    MapStructure.mind => mapStructureMind,
+    MapStructure.logic => mapStructureLogic,
+    MapStructure.brace => mapStructureBrace,
+    MapStructure.tree => mapStructureTree,
+  };
+
+  String mapPaletteName(MapPalette palette) => switch (palette) {
+    MapPalette.system => mapPaletteSystem,
+    MapPalette.rainbow => mapPaletteRainbow,
+    MapPalette.fresh => mapPaletteFresh,
+    MapPalette.warm => mapPaletteWarm,
+    MapPalette.morandi => mapPaletteMorandi,
+    MapPalette.ink => mapPaletteInk,
   };
 
   String lineStyleName(AnnotationLineStyle style) => switch (style) {

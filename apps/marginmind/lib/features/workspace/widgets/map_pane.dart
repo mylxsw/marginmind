@@ -18,6 +18,7 @@ import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
 import 'map_export_sheet.dart';
+import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
 
@@ -67,6 +68,23 @@ class _MapPaneState extends ConsumerState<MapPane> {
   void _viewCommand(MindMapCommand command) {
     final target = _focus.context;
     if (target != null) Actions.invoke(target, MindMapIntent(command));
+  }
+
+  /// The style popover, the style it previews, and where it hangs.
+  bool _styleOpen = false;
+  (MapStructure, MapPalette)? _stylePreview;
+  final _styleLink = LayerLink();
+  static const _styleRegion = 'map-style';
+
+  void _toggleStyle() => _styleOpen ? _closeStyle() : setState(() => _styleOpen = true);
+
+  void _closeStyle() {
+    if (!_styleOpen) return;
+    setState(() {
+      _styleOpen = false;
+      _stylePreview = null;
+    });
+    _focus.requestFocus();
   }
 
   // Survives canvas remounts when switching outline/map or active map.
@@ -349,6 +367,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
         if (mounted) _focus.requestFocus();
       });
     });
+    // A preview belongs to the map it was opened on.
+    ref.listen(provider.select((s) => (s.activeMapId, s.mapView)), (_, _) => _closeStyle());
     final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
     final loadedContent = ref.watch(workspaceContentProvider(widget.studySetId));
@@ -372,6 +392,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     // and the outline keep clear of it.
     final chrome = MMChromeInsets.of(context);
     final outline = state.mapView != MapViewMode.map;
+    final map = content.map(state.activeMapId);
     return ColoredBox(
       color: state.mapView == MapViewMode.map ? c.canvas : c.windowBackground,
       child: Stack(
@@ -453,6 +474,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     onToggleExpanded: controller.toggleExpanded,
                     onOpenDetails: controller.showDetails,
                     onResize: controller.setCardWidth,
+                    previewStyle: _styleOpen ? _stylePreview : null,
+                    // The map makes way for the popover and shows all of itself.
+                    fitInsets: _styleOpen
+                        ? EdgeInsets.only(
+                            top: chrome.top + MMSizes.toolbarHeight,
+                            right: MMSizes.mapStylePopoverWidth + MMSpacing.m * 2,
+                            bottom: chrome.bottom + MMSizes.toolbarHeight,
+                          )
+                        : null,
                   )
                 : OutlineView(
                     key: ValueKey(state.activeMapId),
@@ -507,6 +537,27 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         MMSegment(value: MapViewMode.outline, label: l.outlineView),
                       ],
                     ),
+                    if (!outline) ...[
+                      const SizedBox(width: MMSpacing.s),
+                      CompositedTransformTarget(
+                        link: _styleLink,
+                        child: TapRegion(
+                          groupId: _styleRegion,
+                          child: MMToolbarGroup(
+                            children: [
+                              MMToolbarButton(
+                                key: const ValueKey('map-style-button'),
+                                icon: MMIcons.mapStyle,
+                                label: l.mapStyle,
+                                tooltip: l.mapStyle,
+                                selected: _styleOpen,
+                                onPressed: _toggleStyle,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: MMSpacing.s),
                     MMToolbarGroup(
                       children: [
@@ -544,6 +595,39 @@ class _MapPaneState extends ConsumerState<MapPane> {
               },
             ),
           ),
+          if (_styleOpen && !outline && map != null)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: CompositedTransformFollower(
+                link: _styleLink,
+                showWhenUnlinked: false,
+                targetAnchor: Alignment.bottomRight,
+                followerAnchor: Alignment.topRight,
+                offset: const Offset(0, MMSpacing.s),
+                child: TapRegion(
+                  groupId: _styleRegion,
+                  onTapOutside: (_) => _closeStyle(),
+                  child: SizedBox(
+                    width: MMSizes.mapStylePopoverWidth,
+                    child: MapStylePopover(
+                      structure: map.structure,
+                      palette: map.palette,
+                      onPreview: (style) => setState(() => _stylePreview = style),
+                      onStructure: (structure) {
+                        setState(() => _stylePreview = null);
+                        controller.setMapStructure(structure);
+                      },
+                      onPalette: (palette) {
+                        setState(() => _stylePreview = null);
+                        controller.setMapPalette(palette);
+                      },
+                      onClose: _closeStyle,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (state.mapView == MapViewMode.map && excerptTargetId != null)
             Positioned(
               left: MMSpacing.m,

@@ -11,6 +11,7 @@ import 'package:mm_layout/mm_layout.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import 'mind_map_geometry.dart';
+import 'mind_map_style.dart';
 
 /// Raster budgets apply to the final image, not just the individual tiles.
 /// A very tall map may require a fractional scale even at the 1× setting.
@@ -33,6 +34,7 @@ class MapRasterPlan {
 /// A complete export drawing tree. It uses the canvas layout engine and design
 /// styles, but measures full text and expands collapsed branches. The same tree
 /// drives preview, offscreen tiles and the native vector PDF display list.
+/// It is drawn in the map's structure and palette.
 class MapExportScene extends CustomPainter {
   MapExportScene._(this.layout, this.commands, this.images);
   final TreeLayoutResult layout;
@@ -52,8 +54,10 @@ class MapExportScene extends CustomPainter {
     Map<String, Uint8List> imageBytes = const {},
   }) {
     const root = '__export_root__';
+    final map = content.map(mapId);
+    final palette = mapPaletteOf(map?.palette ?? MapPalette.system).of(colors.brightness);
     final nodes = <String, _ExportNode>{
-      root: _ExportNode(title, '', MMTypography.title3, colors.rootNode, colors.onRootNode),
+      root: _ExportNode(title, '', MMTypography.title3, palette.root, palette.onRoot),
     };
     final children = <String?, List<MapNode>>{};
     for (final n in content.nodes.where((n) => n.mapId == mapId)) {
@@ -122,22 +126,33 @@ class MapExportScene extends CustomPainter {
     final summaries = content.summariesOf(mapId);
     final labels = {
       for (final (s, _) in summaries)
-        s.id: _ExportNode(s.label, '', MMTypography.headline, colors.canvas, colors.label),
+        s.id: _ExportNode(
+          s.label,
+          '',
+          MMTypography.headline,
+          palette.summary ?? colors.canvas,
+          palette.onSummary ?? colors.label,
+        ),
     };
-    final layout = const TreeLayout(balanced: true, padding: MMSizes.mapExportCanvasPadding).layout(
-      tree(root),
-      summaries: [
-        for (final (s, _) in summaries)
-          LayoutSummary(
-            id: s.id,
-            parentId: s.parentId ?? root,
-            fromId: s.fromId,
-            toId: s.toId,
-            width: labels[s.id]!.size.width,
-            height: labels[s.id]!.size.height,
-          ),
-      ],
-    );
+    final layout =
+        TreeLayout(
+          balanced: true,
+          padding: MMSizes.mapExportCanvasPadding,
+          structure: layoutStructureOf(map?.structure ?? MapStructure.mind),
+        ).layout(
+          tree(root),
+          summaries: [
+            for (final (s, _) in summaries)
+              LayoutSummary(
+                id: s.id,
+                parentId: s.parentId ?? root,
+                fromId: s.fromId,
+                toId: s.toId,
+                width: labels[s.id]!.size.width,
+                height: labels[s.id]!.size.height,
+              ),
+          ],
+        );
     final commands = <Map<String, Object?>>[];
     void box(Rect rect, Color color, {double radius = MMRadii.card}) => commands.add({
       'type': 'box',
@@ -145,22 +160,37 @@ class MapExportScene extends CustomPainter {
       'color': color.toARGB32(),
       'radius': radius,
     });
-    void curve(List<Offset> points, {bool dashed = false}) => commands.add({
+    void curve(List<Offset> points, {bool dashed = false, Color? color}) => commands.add({
       'type': 'curve',
       'points': [
         for (final p in points) ...[p.dx, p.dy],
       ],
-      'color': colors.line.toARGB32(),
+      'color': (color ?? colors.line).toARGB32(),
       'dashed': dashed,
     });
     Rect rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
+    final branches = mapBranches(layout, root);
+    Color line(String? id) => switch (branches[id]) {
+      final branch? => palette.line(branch, colors),
+      null => colors.line,
+    };
+    // First-level topics take the palette's fill; the system look keeps the
+    // export's own.
+    if (palette.branches.isNotEmpty) {
+      for (final e in layout.edges) {
+        final branch = branches[e.childId];
+        if (e.parentId != root || branch == null || content.card(e.childId)?.kind != CardKind.topic) continue;
+        nodes[e.childId]!
+          ..background = palette.topicFill(branch, colors)
+          ..foreground = palette.topicText(branch, colors)
+          ..border = palette.topicBorder(branch);
+      }
+    }
     if (!transparent) box(Rect.fromLTWH(0, 0, layout.width, layout.height), colors.canvas, radius: 0);
-    for (final e in layout.edges) {
-      final a = rect(layout.rects[e.parentId]!), b = rect(layout.rects[e.childId]!);
-      final left = layout.leftSide.contains(e.childId);
-      final start = Offset(left ? a.left : a.right, a.center.dy), end = Offset(left ? b.right : b.left, b.center.dy);
-      final mid = (start.dx + end.dx) / 2;
-      curve([start, Offset(mid, start.dy), Offset(mid, end.dy), end]);
+    for (final connector in mapConnectors(layout, (id) => rect(layout.rects[id]!), rootId: root)) {
+      for (final s in connector.segments) {
+        curve([s.$1, s.$2, s.$3, s.$4], color: line(connector.colorId));
+      }
     }
     final relationLabels = <Map<String, Object?>>[];
     for (final r in content.relationsOf(mapId)) {
@@ -193,13 +223,29 @@ class MapExportScene extends CustomPainter {
     for (final e in layout.summaries.entries) {
       final b = rect(e.value.bracket);
       final outer = e.value.left ? b.left : b.right, inner = e.value.left ? b.right : b.left;
-      curve([Offset(inner, b.top), Offset(outer, b.top), Offset(inner, b.center.dy), Offset(outer, b.center.dy)]);
-      curve([Offset(outer, b.center.dy), Offset(inner, b.center.dy), Offset(outer, b.bottom), Offset(inner, b.bottom)]);
+      final color = line(summaries.where((s) => s.$1.id == e.key).firstOrNull?.$1.fromId);
+      curve([
+        Offset(inner, b.top),
+        Offset(outer, b.top),
+        Offset(inner, b.center.dy),
+        Offset(outer, b.center.dy),
+      ], color: color);
+      curve([
+        Offset(outer, b.center.dy),
+        Offset(inner, b.center.dy),
+        Offset(outer, b.bottom),
+        Offset(inner, b.bottom),
+      ], color: color);
       labels[e.key]!.emit(commands, rect(e.value.label).topLeft, imageBytes);
     }
     for (final e in layout.rects.entries) {
       final node = nodes[e.key]!, r = rect(e.value);
-      box(r, node.background);
+      if (node.border case final border?) {
+        box(r, border);
+        box(r.deflate(_outlineWidth), node.background, radius: MMRadii.card - _outlineWidth);
+      } else {
+        box(r, node.background);
+      }
       if (node.accent case final color?) box(Rect.fromLTWH(r.left, r.top, MMSpacing.xs, r.height), color);
       node.emit(commands, r.topLeft, imageBytes);
     }
@@ -260,6 +306,7 @@ class MapExportScene extends CustomPainter {
           ),
       },
       leftSide: layout.leftSide,
+      structure: layout.structure,
       width: bounds.width,
       height: bounds.height,
     );
@@ -373,6 +420,9 @@ class MapExportScene extends CustomPainter {
   bool shouldRepaint(MapExportScene oldDelegate) => oldDelegate != this;
 }
 
+/// Width of a first-level topic's outline (the ink palette).
+const _outlineWidth = 1.5;
+
 TextPainter _text(String text, TextStyle style, double width) => TextPainter(
   text: TextSpan(text: text, style: style),
   textDirection: TextDirection.ltr,
@@ -414,7 +464,10 @@ class _ExportNode {
   }
   final String title, body;
   final TextStyle style;
-  final Color background, foreground;
+
+  /// The palette may recolor a first-level topic, and outline it.
+  Color background, foreground;
+  Color? border;
   final double width;
   final bool serif;
   final String? image;

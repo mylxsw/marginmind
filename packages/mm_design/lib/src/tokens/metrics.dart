@@ -48,6 +48,11 @@ abstract final class MMSizes {
 
   /// Keep the excerpt-target hint clear of the map view controls.
   static const double mapViewControlsReservedWidth = 380;
+
+  /// The map's structure and palette popover, and its thumbnails.
+  static const double mapStylePopoverWidth = 300;
+  static const double mapStructureThumbHeight = 52;
+  static const double mapPaletteThumbHeight = 44;
   static const double readerSidebarWidth = 240;
   static const double readerSidebarMinWidth = 180;
   static const double readerSidebarMaxWidth = 360;
