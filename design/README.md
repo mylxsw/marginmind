@@ -58,7 +58,7 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 
 ## 四期原型：更多文档类型
 
-`prototype/phase-4-documents.html` 演示 EPUB、MOBI / AZW3、Markdown 和网页的导入与阅读：电子书排成页面后沿用 PDF 的全部阅读工具，可调整排版并自动对齐标注；Markdown 原生渲染、仅阅读；网页在内置浏览器中打开，就绪后以非模态气泡提示转换为 PDF（阅读模式 / 原网页样式）或 Markdown。单文件、无依赖；演示控制台有 15 个场景。设计说明与技术方案见 [docs/phase-4-documents.md](../docs/phase-4-documents.md)（待确认）。
+`prototype/phase-4-documents.html` 演示 EPUB、MOBI / AZW3、Markdown 和网页的导入与阅读：电子书排成页面后沿用 PDF 的全部阅读工具，可调整排版并自动对齐标注；Markdown 原生渲染、仅阅读；网页在内置浏览器中打开，就绪后以非模态气泡提示转换为 PDF（阅读模式 / 原网页样式）或 Markdown。界面按当前应用还原，原文工具栏只在原有位置上按格式替换或置灰。单文件、无依赖；演示控制台有 17 个场景（最后一个是现有 PDF 界面，便于对照）。设计说明与技术方案见 [docs/phase-4-documents.md](../docs/phase-4-documents.md)（待确认）。
 
 ## 思维导图操作优化（一期）
 
