@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MarginMind · 思维导图操作优化（一期）· 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii), same as the phase-2/3 prototypes. */
+:root{
+  --win:#FFFFFF; --reader:#F5F5F7; --canvas:#FFFFFF; --card:#FFFFFF; --page:#FFFFFF;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --glass:rgba(255,255,255,.86); --hair:rgba(0,0,0,.10); --line:rgba(60,60,67,.30); --excerpt:#3A3A3C;
+  --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+  --popShadow:0 10px 36px rgba(0,0,0,.16);
+  --rel:#5E5CE6; --err:#D70015;
+  --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+}
+.dark{
+  --win:#1E1E1F; --reader:#1E1E1F; --canvas:#1E1E1F; --card:#2C2C2E; --page:#2A2A2C;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
+  --glass:rgba(44,44,47,.90); --hair:rgba(255,255,255,.10); --line:rgba(235,235,245,.28); --excerpt:#D1D1D6;
+  --cardShadow:0 2px 10px rgba(0,0,0,.35); --popShadow:0 12px 40px rgba(0,0,0,.5);
+  --rel:#7D7AFF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
+body{background:linear-gradient(135deg,#c9d6e8 0%,#e6dcef 50%,#f1e2d6 100%);overflow:hidden}
+body.dark{background:linear-gradient(135deg,#1b2333 0%,#2a2333 50%,#33281f 100%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.i.s{width:14px;height:14px}
+.kbd{font-size:11px;color:var(--label2);font-family:var(--sans);margin-left:auto;padding-left:14px}
+
+#desk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px 338px 18px 18px}
+#win{position:relative;width:100%;max-width:1560px;height:100%;max-height:960px;background:var(--win);border-radius:24px;overflow:hidden;
+  box-shadow:0 0 0 .5px rgba(0,0,0,.25),0 30px 80px rgba(0,0,0,.28);display:flex;flex-direction:column}
+#tb{height:52px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:.5px solid var(--sep)}
+.lights{display:flex;gap:8px}.lights span{width:12px;height:12px;border-radius:6px}
+#tb .ttl{font-weight:600;font-size:13px;margin-left:12px}
+#tb .sub{color:var(--label2);font-size:11.5px}
+#main{flex:1;display:flex;min-height:0}
+
+/* ---------- Reader (simplified; real app renders PDF pages) ---------- */
+#reader{width:36%;min-width:320px;max-width:540px;display:flex;flex-direction:column;background:var(--reader);border-right:.5px solid var(--sep)}
+.rbar{height:40px;display:flex;align-items:center;gap:6px;padding:0 12px;flex:none}
+.dtab{height:26px;padding:0 10px;border-radius:7px;font-size:12px;color:var(--label2);display:flex;align-items:center;gap:6px}
+.dtab.on{background:var(--fill);color:var(--label);font-weight:500}
+.dtab:hover:not(.on){background:var(--hover)}
+#page{flex:1;overflow:auto;position:relative;padding:8px 22px 40px}
+.paper{background:var(--page);border-radius:4px;box-shadow:0 0 0 .5px var(--hair),0 2px 8px rgba(0,0,0,.06);padding:34px 40px 40px;max-width:520px;margin:0 auto}
+.paper h2{font-family:var(--serif);font-size:19px;margin:0 0 4px;font-weight:600}
+.paper .pg{font-size:11px;color:var(--label3);margin:18px 0 6px;text-align:right}
+.paper p{font-family:var(--serif);font-size:15px;line-height:28px;margin:0 0 12px;color:var(--label);text-align:justify}
+mark.hl{background:none;color:inherit;border-radius:2px;cursor:pointer;padding:1px 0}
+mark.hl.y{background:rgba(255,204,0,.36)}mark.hl.g{background:rgba(52,199,89,.30)}mark.hl.b{background:rgba(0,122,255,.24)}
+mark.hl.p{background:rgba(255,45,85,.24)}mark.hl.o{background:rgba(255,149,0,.32)}mark.hl.v{background:rgba(175,82,222,.26)}
+mark.hl.flash{animation:hflash 1.6s}
+@keyframes hflash{0%,55%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ---------- Map pane ---------- */
+#map{flex:1;position:relative;background:var(--canvas);overflow:hidden;min-width:0}
+.pane-bar{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;z-index:20;
+  background:linear-gradient(var(--canvas) 70%,transparent);pointer-events:none}
+.pane-bar>*{pointer-events:auto}
+.pane-bar .ttl{font-weight:600;font-size:13px}
+.seg{display:inline-flex;background:var(--fill);border-radius:8px;padding:2px;gap:2px}
+.seg button{height:22px;padding:0 10px;border-radius:6px;font-size:12px;color:var(--label2)}
+.seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.dark .seg button.on{background:#636366}
+.capsule{display:flex;align-items:center;gap:2px;height:30px;padding:0 3px;border-radius:15px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair);backdrop-filter:blur(20px)}
+.tbtn{height:24px;min-width:24px;padding:0 6px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--icon);font-size:12px;position:relative}
+.tbtn:hover{background:var(--hover);color:var(--label)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}
+.tbtn[disabled]{opacity:.38}
+.tbtn[disabled]:hover{background:none}
+.grow{flex:1}
+
+#stage{position:absolute;inset:0;cursor:default}
+#world{position:absolute;left:0;top:0;transform-origin:0 0}
+#world svg.links{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+#world svg.links .hit{pointer-events:stroke;cursor:pointer}
+.node{position:absolute;user-select:none;-webkit-user-select:none;transition:left 320ms cubic-bezier(.2,0,0,1),top 320ms cubic-bezier(.2,0,0,1),opacity 200ms}
+.nolay .node{transition:none}
+.nb{position:relative}
+.node.sel>.nb{box-shadow:0 0 0 2px var(--accent),var(--cardShadow)!important}
+.node.target>.nb{box-shadow:0 0 0 2px var(--rel),0 0 0 6px color-mix(in srgb,var(--rel) 22%,transparent)!important}
+.node.mergeTarget>.nb{outline:2px dashed var(--accent);outline-offset:4px}
+.node.merging{opacity:.25}
+.node.flash>.nb{animation:nflash 1.6s}
+@keyframes nflash{0%,50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 45%,transparent),var(--cardShadow)}100%{box-shadow:var(--cardShadow)}}
+.n-root .nb{background:var(--rootBg);color:var(--rootFg);font-weight:600;font-size:16px;padding:11px 20px;border-radius:14px;white-space:nowrap}
+.n-topic .nb{background:var(--fill);padding:7px 12px;border-radius:10px;font-weight:500;white-space:pre;line-height:1.45}
+.n-topic.d1 .nb{background:var(--d1Bg,var(--fill));color:var(--d1Fg,var(--label));font-size:14px;font-weight:600;padding:8px 14px}
+.n-sum .nb{background:var(--sumBg);color:var(--sumFg);padding:7px 13px;border-radius:10px;font-weight:600;white-space:pre}
+.n-note .nb{background:var(--fill4);padding:8px 12px;border-radius:10px;width:200px;line-height:1.5;font-size:12.5px}
+.n-ex .nb{background:var(--card);border-radius:12px;box-shadow:var(--cardShadow);width:250px;padding:10px 12px 10px 18px}
+.n-ex .bar{position:absolute;left:7px;top:10px;bottom:10px;width:3px;border-radius:2px}
+.n-ex .ttl{font-size:12.5px;font-weight:600;margin-bottom:4px;line-height:1.35;padding-right:22px}
+.n-ex .segs{font-family:var(--serif);font-size:13px;line-height:20px;color:var(--excerpt)}
+.n-ex .sg{position:relative;border-radius:5px;margin:0 -5px;padding:1px 5px}
+.n-ex .sg+.sg{margin-top:4px}
+.n-ex.merged .sg+.sg{border-top:.5px dashed var(--sep);padding-top:5px;border-radius:0 0 5px 5px}
+.n-ex .sg.src{cursor:pointer}
+.n-ex .sg.src:hover{background:var(--hover)}
+.n-ex .sg.src:hover .sgmeta{opacity:1}
+.n-ex .sg.lit{background:var(--accentTint)}
+.n-ex .sg .dot{display:inline-block;width:6px;height:6px;border-radius:3px;margin-right:6px;vertical-align:2px}
+.n-ex .sg.own{font-family:var(--sans);font-size:12.5px;color:var(--label)}
+.sgmeta{position:absolute;right:2px;top:1px;opacity:0;font-family:var(--sans);font-size:10.5px;color:var(--accent);background:var(--card);padding:0 4px;border-radius:4px;display:flex;align-items:center;gap:2px}
+.n-ex .src-line{font-size:10.5px;color:var(--label2);margin-top:6px;display:flex;align-items:center;gap:4px}
+.goto{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--icon);opacity:.7}
+.goto:hover{background:var(--hover);opacity:1}
+.mbadge{white-space:nowrap;flex:none;display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--label2);background:var(--fill4);border-radius:5px;padding:0 5px;height:17px;margin-left:4px;font-weight:500;vertical-align:1px}
+.editing>.nb{outline:none;box-shadow:0 0 0 2px var(--accent)!important}
+[contenteditable]{outline:none;cursor:text;-webkit-user-select:text;user-select:text}
+.add-child{position:absolute;top:50%;margin-top:-11px;width:22px;height:22px;border-radius:11px;background:var(--card);box-shadow:0 0 0 .5px var(--hair),0 1px 3px rgba(0,0,0,.12);display:none;align-items:center;justify-content:center;color:var(--icon)}
+.node.solo .add-child{display:flex}
+.add-child:hover{color:var(--accent)}
+.link-h{position:absolute;top:-11px;right:-11px;width:22px;height:22px;border-radius:11px;background:var(--rel);color:#fff;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:crosshair}
+.node.solo .link-h{display:flex}
+.node.solo:not(.n-root) .link-h{animation:pop .2s}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+.node.dim{opacity:.35}
+
+.marquee{position:absolute;border:1px solid var(--accent);background:var(--accentTint);border-radius:3px;pointer-events:none;z-index:15;display:none}
+.rel-label{position:absolute;transform:translate(-50%,-50%);background:var(--canvas);color:var(--rel);font-size:12px;padding:1px 6px;border-radius:6px;white-space:nowrap;cursor:pointer;z-index:4}
+.rel-label.empty{color:var(--label3);font-style:italic;opacity:0}
+.rel-label.sel{box-shadow:0 0 0 1.5px var(--rel)}
+.rel-label.sel.empty,.rel-label.editing{opacity:1}
+.handle{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:6px;background:var(--card);border:2px solid var(--rel);z-index:6;cursor:grab}
+.handle.sq{border-radius:3px;border-color:var(--accent);cursor:ns-resize}
+
+/* Floating selection bar */
+#selbar{position:absolute;z-index:30;display:none;align-items:center;gap:2px;height:34px;padding:0 4px;border-radius:17px;background:var(--glass);
+  box-shadow:0 0 0 .5px var(--hair),var(--popShadow);backdrop-filter:blur(24px) saturate(1.6);transform:translateX(-50%);white-space:nowrap}
+#selbar.on{display:flex;animation:fadeup .16s}
+@keyframes fadeup{from{opacity:0;transform:translate(-50%,4px)}}
+#selbar .cnt{font-size:12px;color:var(--label2);padding:0 8px 0 10px;font-weight:500}
+#selbar .tbtn{height:28px;padding:0 9px;border-radius:14px;color:var(--label)}
+#selbar .tbtn .i{color:var(--icon)}
+#selbar .tbtn:hover .i{color:var(--accent)}
+#selbar .div{width:.5px;height:16px;background:var(--sep);margin:0 3px}
+#selbar .cdot{width:14px;height:14px;border-radius:7px;margin:0 3px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+#selbar .cdot:hover{transform:scale(1.2)}
+.tip{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);background:var(--label);color:var(--win);font-size:11.5px;font-weight:400;line-height:1.45;padding:5px 9px;border-radius:7px;
+  white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:50}
+.tip.w{white-space:normal;width:220px;text-align:left}
+[data-tip]:hover>.tip{opacity:1;transition-delay:.25s}
+
+/* Relation bar */
+#relbar{position:absolute;z-index:30;display:none;align-items:center;gap:2px;height:30px;padding:0 3px;border-radius:15px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair),var(--popShadow);transform:translate(-50%,0);backdrop-filter:blur(24px)}
+#relbar.on{display:flex}
+
+/* Style popover */
+#stylePop{position:absolute;right:12px;top:46px;width:300px;z-index:40;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);border-radius:14px;
+  box-shadow:0 0 0 .5px var(--hair),var(--popShadow);padding:14px;display:none}
+#stylePop.on{display:block;animation:fadeup2 .16s}
+@keyframes fadeup2{from{opacity:0;transform:translateY(-4px)}}
+.sp-h{font-size:11px;font-weight:600;color:var(--label2);margin:2px 2px 8px;display:flex;align-items:center}
+.sp-h .sm{font-weight:400;margin-left:auto}
+.structs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.sc{border-radius:10px;padding:6px 4px 6px;text-align:center;font-size:11.5px;color:var(--label2)}
+.sc .th{height:52px;border-radius:7px;background:var(--card);box-shadow:0 0 0 .5px var(--hair);margin-bottom:5px;display:flex;align-items:center;justify-content:center}
+.dark .sc .th{background:#3A3A3C}
+.sc:hover .th{box-shadow:0 0 0 1.5px var(--line)}
+.sc.on .th{box-shadow:0 0 0 2px var(--accent)}
+.sc.on{color:var(--label);font-weight:600}
+.pals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pal{border-radius:10px;padding:4px;text-align:center;font-size:11.5px;color:var(--label2)}
+.pal .th{height:44px;border-radius:8px;box-shadow:0 0 0 .5px var(--hair);margin-bottom:5px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.pal:hover .th{box-shadow:0 0 0 1.5px var(--line)}
+.pal.on .th{box-shadow:0 0 0 2px var(--accent)}
+.pal.on{color:var(--label);font-weight:600}
+.sc .th svg{width:56px}
+.sp-note{font-size:11.5px;color:var(--label2);line-height:1.5;margin-top:12px;padding-top:10px;border-top:.5px solid var(--sep)}
+
+.map-hint{position:absolute;left:14px;bottom:14px;font-size:11.5px;color:var(--label2);display:flex;align-items:center;gap:6px;z-index:5;max-width:60%}
+.map-hint b{color:var(--label);font-weight:600}
+.map-ctrl{position:absolute;right:12px;bottom:12px;z-index:5}
+#hud{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:10px;height:34px;padding:0 6px 0 14px;border-radius:17px;
+  background:rgba(40,40,42,.92);color:#fff;font-size:12.5px;box-shadow:0 8px 28px rgba(0,0,0,.25);white-space:nowrap}
+#hud.on{display:flex;animation:fadeup3 .2s}
+@keyframes fadeup3{from{opacity:0;transform:translate(-50%,6px)}}
+#hud button{height:24px;padding:0 10px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-weight:500}
+#hud button:hover{background:rgba(255,255,255,.24)}
+#hud.noact{padding-right:14px}
+
+/* Context menu */
+#ctx{position:fixed;z-index:80;min-width:210px;background:var(--glass);backdrop-filter:blur(30px);border-radius:10px;padding:5px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);display:none}
+#ctx.on{display:block}
+#ctx .mi{height:26px;display:flex;align-items:center;padding:0 10px;border-radius:6px;font-size:13px}
+#ctx .mi:hover:not(.dis){background:var(--accent);color:#fff}
+#ctx .mi:hover:not(.dis) .kbd{color:rgba(255,255,255,.8)}
+#ctx .mi.dis{color:var(--label3)}
+#ctx .why{font-size:11px;color:var(--label3);padding:0 10px 4px;line-height:1.4;max-width:240px}
+#ctx .msep{height:.5px;background:var(--sep);margin:4px 8px}
+
+/* ---------- Demo console ---------- */
+#demo{position:fixed;right:14px;top:14px;bottom:14px;width:310px;border-radius:16px;background:rgba(255,255,255,.80);backdrop-filter:blur(30px) saturate(1.6);
+  box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 18px 50px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:#1D1D1F;z-index:100}
+body.dark #demo{background:rgba(36,36,38,.86);color:#F5F5F7}
+#demo .dh{padding:14px 16px 10px;border-bottom:.5px solid rgba(0,0,0,.08)}
+body.dark #demo .dh{border-color:rgba(255,255,255,.08)}
+#demo .dh b{font-size:13px}
+#demo .dh .s{font-size:11.5px;opacity:.65;margin-top:3px;line-height:1.45}
+#demo .dl{flex:1;overflow:auto;padding:8px}
+#demo .grp{font-size:11px;font-weight:600;opacity:.55;margin:10px 8px 4px}
+.sc-btn{display:block;width:100%;text-align:left;padding:7px 9px;border-radius:8px;font-size:12.5px;line-height:1.35}
+.sc-btn:hover{background:rgba(120,120,128,.12)}
+.sc-btn.on{background:var(--accent);color:#fff}
+.sc-btn .n{display:inline-block;width:22px;opacity:.6;font-variant-numeric:tabular-nums}
+#notes{border-top:.5px solid rgba(0,0,0,.08);padding:12px 16px;font-size:12px;line-height:1.55;max-height:45%;overflow:auto}
+body.dark #notes{border-color:rgba(255,255,255,.08)}
+#notes h4{margin:0 0 6px;font-size:12.5px}
+#notes ul{margin:4px 0 8px;padding-left:16px}
+#notes li{margin-bottom:3px}
+#notes .lab{font-size:11px;font-weight:600;opacity:.6;margin-top:8px}
+#demo .df{display:flex;gap:8px;padding:10px 12px;border-top:.5px solid rgba(0,0,0,.08)}
+body.dark #demo .df{border-color:rgba(255,255,255,.08)}
+#demo .df button{flex:1;height:28px;border-radius:8px;background:rgba(120,120,128,.14);font-size:12px}
+#demo .df button:hover{background:rgba(120,120,128,.24)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-merge" viewBox="0 0 24 24"><path d="M6 4v4c0 2.5 2 4 6 4s6 1.5 6 4v4M18 4v4c0 2.5-2 4-6 4"/><path d="M15 17l3 3 3-3" transform="translate(-3 0)"/></symbol>
+  <symbol id="i-sum" viewBox="0 0 24 24"><path d="M5 4c3 0 3 1.5 3 4s0 4 3 4c-3 0-3 1.5-3 4s0 4-3 4"/><path d="M14 12h6"/></symbol>
+  <symbol id="i-rel" viewBox="0 0 24 24"><path d="M5 18C5 9 12 5 19 6" stroke-dasharray="3 2.6"/><path d="M15 3.5 19 6l-3 3.5"/></symbol>
+  <symbol id="i-del" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 4v5M12 9c0 3-6 3-6 7v4M12 9c0 3 6 3 6 7v4"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14 4l6 6-8 8-6-6z"/><path d="M6 12l-2 6 2 2 6-2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-ar1" viewBox="0 0 24 24"><path d="M4 12h15M14 7l5 5-5 5"/></symbol>
+  <symbol id="i-ar2" viewBox="0 0 24 24"><path d="M5 12h14M9 7l-5 5 5 5M15 7l5 5-5 5"/></symbol>
+  <symbol id="i-ar0" viewBox="0 0 24 24"><path d="M4 12h16"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M5 9h13l-3-3M19 15H6l3 3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></symbol>
+</svg>
+
+<div id="desk"><div id="win">
+  <div id="tb">
+    <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    <div><div class="ttl">认知天性 · 学习笔记</div></div>
+    <div class="grow"></div>
+    <div class="sub">原型 · 原文栏已简化为纯文本，实际为 PDF 页面</div>
+  </div>
+  <div id="main">
+    <section id="reader">
+      <div class="rbar" id="docTabs"></div>
+      <div id="page"></div>
+    </section>
+    <section id="map">
+      <div class="pane-bar">
+        <span class="ttl">主脑图</span>
+        <div class="seg"><button class="on">脑图</button><button>大纲</button></div>
+        <div class="grow"></div>
+        <div class="capsule">
+          <button class="tbtn" id="styleBtn" data-tip><svg class="i s"><use href="#i-brush"/></svg>样式<span class="tip">结构与配色</span></button>
+        </div>
+      </div>
+      <div id="stage"><div id="world"><svg class="links" id="links"></svg></div><div class="marquee" id="marquee"></div></div>
+      <div id="selbar"></div>
+      <div id="relbar"></div>
+      <div id="stylePop"></div>
+      <div class="map-hint" id="hint"></div>
+      <div class="map-ctrl capsule">
+        <button class="tbtn" data-act="zoomOut" data-tip><svg class="i s"><use href="#i-minus"/></svg><span class="tip">缩小</span></button>
+        <button class="tbtn" id="zoomLbl" data-act="zoomReset" style="min-width:44px">100%</button>
+        <button class="tbtn" data-act="zoomIn" data-tip><svg class="i s"><use href="#i-plus"/></svg><span class="tip">放大</span></button>
+        <button class="tbtn" data-act="fit" data-tip><svg class="i s"><use href="#i-fit"/></svg><span class="tip">查看全图 ⌘0</span></button>
+      </div>
+      <div id="hud"></div>
+    </section>
+  </div>
+</div></div>
+
+<div id="ctx"></div>
+
+<aside id="demo">
+  <div class="dh"><b>思维导图操作优化 · 一期</b><div class="s">合并节点 · 概要 · 关联线 · 结构与配色。所有操作都可以真实点按，⌘Z 撤销、⇧⌘Z 重做；切换场景会重置数据。</div></div>
+  <div class="dl" id="scList"></div>
+  <div id="notes"></div>
+  <div class="df"><button id="darkBtn">深色模式</button><button id="resetBtn">重置当前场景</button></div>
+</aside>
+
+<script>
+/* MarginMind 思维导图一期原型。单文件、无依赖；资料为演示数据。 */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const ic = (n, cls = 'i s') => `<svg class="${cls}"><use href="#i-${n}"/></svg>`;
+
+/* ---------- Demo documents ---------- */
+const DOCS = {
+  d1: { title: '认知天性', paras: [
+    { pg: 12, t: '学习者普遍高估了重读的价值。[h1:y|回想比重读更有效：合上书本、试着说出刚读过的内容，记忆会被重新巩固。]重读只会带来熟悉感，而熟悉并不等于掌握。' },
+    { pg: 13, t: '[h2:y|每一次从记忆中提取知识，都会让这条提取路径变得更牢固，下次更容易想起。]这就是为什么考试本身也是一种学习手段。' },
+    { pg: 15, t: '[h3:g|小测验本身就是学习，而不只是检验学习的工具。]低风险、频繁的小测验，比一次期末大考更能留住知识。' },
+    { pg: 21, t: '把练习分散开来，比集中在一段时间里反复练习效果更好。[h4:b|间隔一段时间再练习，需要更多努力去回想，正是这份努力让记忆更持久。]' },
+    { pg: 27, t: '[h5:o|交错练习：把不同类型的题目混在一起练，能培养分辨问题类型的能力。]虽然当下感觉更难、进步更慢，但长期表现更好。' },
+    { pg: 34, t: '[h7:p|流畅错觉让我们误以为自己已经掌握了知识。]当内容读起来很顺畅时，我们往往会停止思考。' },
+  ] },
+  d2: { title: '刻意练习', paras: [
+    { pg: 58, t: '[h6:v|刻意练习需要明确的目标、专注的投入和及时的反馈，并且总是在舒适区的边缘。]单纯的重复不会让人进步。' },
+    { pg: 61, t: '[h8:g|心理表征越丰富，越能在练习中发现自己的错误并加以纠正。]这也是高手与新手最大的差别之一。' },
+  ] },
+};
+const HL = {};
+for (const [d, doc] of Object.entries(DOCS)) doc.paras.forEach(p => p.t.replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, (_, id, c, txt) => { HL[id] = { doc: d, pg: p.pg, c, text: txt }; }));
+const COLOR = { y: '#FFCC00', g: '#34C759', b: '#007AFF', p: '#FF2D55', o: '#FF9500', v: '#AF52DE' };
+const CNAME = { y: '黄', g: '绿', b: '蓝', p: '粉', o: '橙', v: '紫' };
+
+/* ---------- Palettes (light/dark aware) ---------- */
+const PALETTES = {
+  system: { name: '系统', root: ['#1D1D1F', '#fff', '#F5F5F7', '#1D1D1F'], d1: null, lines: null, sum: ['#FF9500', '#fff'], br: [] },
+  rainbow: { name: '多彩', root: ['#1F2A6B', '#fff', '#3D4DB0', '#fff'], d1: 'fill', sum: ['#E07A5F', '#fff'], br: ['#F2C14E', '#E07A5F', '#3D5A99', '#81B29A', '#9C6ADE', '#4FB0C6'] },
+  fresh: { name: '清新', root: ['#1E7F74', '#fff', '#2A9D8F', '#fff'], d1: 'tint', sum: ['#2A9D8F', '#fff'], br: ['#2A9D8F', '#5DADE2', '#8AB17D', '#48C9B0', '#7FB3D5', '#A3C4BC'] },
+  warm: { name: '暖阳', root: ['#B5452E', '#fff', '#D0644A', '#fff'], d1: 'tint', sum: ['#B5452E', '#fff'], br: ['#E76F51', '#F4A261', '#E9C46A', '#C08552', '#D4A373', '#BC6C25'] },
+  morandi: { name: '莫兰迪', root: ['#5C5F55', '#fff', '#8A8D80', '#1D1D1F'], d1: 'fill', sum: ['#9A8C98', '#fff'], br: ['#A5A58D', '#CB997E', '#9A8C98', '#6B9080', '#B7B7A4', '#C9ADA7'] },
+  ink: { name: '墨水', root: ['#000', '#fff', '#fff', '#000'], d1: 'outline', sum: ['#3A3A3C', '#fff'], br: ['#3A3A3C'], darkBr: ['#D1D1D6'] },
+};
+const STRUCTS = {
+  mind: { name: '思维导图', desc: '中心向两侧展开' },
+  logic: { name: '逻辑图', desc: '向右展开，折线' },
+  brace: { name: '括号图', desc: '用大括号归组' },
+  tree: { name: '树形图', desc: '自上而下缩进' },
+};
+
+/* ---------- State ---------- */
+let S;
+function freshState() {
+  const ex = (id, parent, h, title = '') => ({ id, parent, kind: 'ex', title, segs: [{ h }] });
+  const tp = (id, parent, text) => ({ id, parent, kind: 'topic', text });
+  return {
+    nodes: [
+      { id: 'root', parent: null, kind: 'root', text: '认知天性 · 学习笔记' },
+      tp('t1', 'root', '检索练习'),
+      ex('e1', 't1', 'h1'), ex('e2', 't1', 'h2'), ex('e3', 't1', 'h3', '小测验的作用是什么？'),
+      tp('t2', 'root', '间隔练习'),
+      ex('e4', 't2', 'h4'), { id: 'n1', parent: 't2', kind: 'note', text: '我的复习节奏：第 1、3、7、14 天各回想一次。' },
+      tp('t3', 'root', '交错与刻意练习'),
+      ex('e5', 't3', 'h5'), ex('e6', 't3', 'h6'), ex('e8', 't3', 'h8'),
+      tp('t4', 'root', '常见误区'),
+      tp('m1', 't4', '反复重读'), tp('m2', 't4', '考前突击'), ex('e7', 't4', 'h7'),
+      { id: 'img1', parent: 't4', kind: 'img', text: '遗忘曲线（图片卡）' },
+    ],
+    sums: [], rels: [],
+    sel: [], selMark: null, structure: 'mind', palette: 'system',
+    zoom: 1, pan: null, doc: 'd1',
+  };
+}
+let undoStack = [], redoStack = [];
+const snap = () => JSON.stringify({ nodes: S.nodes, sums: S.sums, rels: S.rels, structure: S.structure, palette: S.palette });
+function commit(fn) { undoStack.push(snap()); redoStack = []; fn(); }
+function restore(js) { const o = JSON.parse(js); Object.assign(S, o); S.sel = S.sel.filter(id => node(id)); S.selMark = null; }
+function undo() { if (!undoStack.length) return hud('没有可以撤销的操作'); redoStack.push(snap()); restore(undoStack.pop()); render(); hud('已撤销'); }
+function redo() { if (!redoStack.length) return; undoStack.push(snap()); restore(redoStack.pop()); render(); hud('已重做'); }
+
+const node = id => S.nodes.find(n => n.id === id);
+const sumOfNode = id => S.sums.find(s => s.nodeId === id);
+const kids = id => S.nodes.filter(n => n.parent === id);
+const parentOf = id => { const n = node(id); if (!n) return null; if (n.kind === 'sum') return sumOfNode(id)?.parent ?? null; return n.parent; };
+const sumsOf = pid => S.sums.filter(s => s.parent === pid);
+let uid = 100; const nid = p => p + (uid++);
+function isAncestor(a, b) { let p = parentOf(b); while (p) { if (p === a) return true; p = parentOf(p); } return false; }
+/** Map order (pre-order DFS, summary topics after their range). */
+function mapOrder() {
+  const out = [];
+  const walk = id => { out.push(id); const ks = kids(id); ks.forEach(k => walk(k.id)); sumsOf(id).forEach(s => walk(s.nodeId)); };
+  walk('root'); return out;
+}
+function depthOf(id) { let d = 0, p = parentOf(id); while (p) { d++; p = parentOf(p); } return d; }
+function branchIndex(id) {
+  let cur = id, p = parentOf(cur);
+  if (!p) return -1;
+  while (parentOf(p)) { cur = p; p = parentOf(p); }
+  const n = node(cur);
+  if (n.kind === 'sum') { const s = sumOfNode(cur); cur = s.from; }
+  return kids('root').findIndex(k => k.id === cur);
+}
+
+/* ---------- Palette application ---------- */
+const dark = () => document.body.classList.contains('dark');
+function pal() { return PALETTES[S.palette]; }
+function branchColor(id) {
+  const P = pal(); const br = (dark() && P.darkBr) || P.br;
+  if (!br.length) return null;
+  const i = branchIndex(id); return br[(i < 0 ? 0 : i) % br.length];
+}
+function applyPaletteVars() {
+  const P = pal(), m = $('#map');
+  const [rb, rf, drb, drf] = P.root;
+  m.style.setProperty('--rootBg', dark() ? drb : rb); m.style.setProperty('--rootFg', dark() ? drf : rf);
+  m.style.setProperty('--sumBg', P.sum[0]); m.style.setProperty('--sumFg', P.sum[1]);
+}
+function d1Style(id) {
+  const P = pal(), c = branchColor(id);
+  if (!c || !P.d1) return '';
+  if (P.d1 === 'fill') return `--d1Bg:${c};--d1Fg:${contrast(c)}`;
+  if (P.d1 === 'tint') return `--d1Bg:color-mix(in srgb,${c} ${dark() ? 34 : 20}%,transparent);--d1Fg:var(--label)`;
+  if (P.d1 === 'outline') return `--d1Bg:transparent;--d1Fg:var(--label);box-shadow:inset 0 0 0 1.5px ${c}`;
+  return '';
+}
+function contrast(hex) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? '#1D1D1F' : '#fff';
+}
+
+/* ---------- Rendering nodes ---------- */
+const world = $('#world'), links = $('#links'), stage = $('#stage');
+const els = {};
+function nodeHtml(n) {
+  const d = depthOf(n.id);
+  if (n.kind === 'root') return `<div class="nb" data-edit>${esc(n.text)}</div>`;
+  if (n.kind === 'topic' || n.kind === 'sum') return `<div class="nb" data-edit>${esc(n.text || ' ')}</div><div class="add-child" data-act="addChild">${ic('plus', 'i s')}</div><div class="link-h" data-link title="拖到另一个节点建立关联">${ic('rel', 'i s')}</div>`;
+  if (n.kind === 'note') return `<div class="nb" data-edit>${esc(n.text)}</div><div class="add-child" data-act="addChild">${ic('plus')}</div><div class="link-h" data-link>${ic('rel')}</div>`;
+  if (n.kind === 'img') return `<div class="nb" style="width:180px;background:var(--card);box-shadow:var(--cardShadow);border-radius:12px;padding:8px"><svg viewBox="0 0 160 70" style="width:100%;height:70px"><rect width="160" height="70" rx="6" fill="var(--fill4)"/><path d="M10 12C30 52 60 58 150 60" stroke="var(--accent)" stroke-width="2" fill="none"/><path d="M10 60H150M10 10V60" stroke="var(--line)"/></svg><div style="font-size:11.5px;color:var(--label2);margin-top:4px">${esc(n.text)}</div></div><div class="add-child" data-act="addChild">${ic('plus')}</div><div class="link-h" data-link>${ic('rel')}</div>`;
+  // Excerpt (possibly merged): one segment per original excerpt; each keeps its own source.
+  const segs = n.segs;
+  const merged = segs.length > 1;
+  const first = segs.find(s => s.h);
+  const color = first ? COLOR[HL[first.h].c] : 'var(--line)';
+  const docs = [...new Set(segs.filter(s => s.h).map(s => HL[s.h].doc))];
+  const segHtml = segs.map((s, i) => {
+    if (!s.h) return `<div class="sg own" data-seg="${i}">${esc(s.text)}</div>`;
+    const h = HL[s.h];
+    return `<div class="sg src" data-seg="${i}" data-h="${s.h}">${merged ? `<span class="dot" style="background:${COLOR[h.c]}"></span>` : ''}${esc(h.text)}<span class="sgmeta">${ic('arrow', 'i s')}${docs.length > 1 ? esc(DOCS[h.doc].title) + ' · ' : ''}第 ${h.pg} 页</span></div>`;
+  }).join('');
+  const srcLine = merged
+    ? `<div class="src-line">${ic('doc', 'i s')}${docs.map(d => esc(DOCS[d].title)).join('、')} · ${segs.filter(s => s.h).length} 处原文<span class="mbadge">${ic('merge', 'i s')}已合并</span></div>`
+    : first ? `<div class="src-line">${ic('doc', 'i s')}${esc(DOCS[HL[first.h].doc].title)} · 第 ${HL[first.h].pg} 页</div>` : '';
+  return `<div class="nb"><span class="bar" style="background:${color}"></span>${n.title ? `<div class="ttl" data-edit>${esc(n.title)}</div>` : ''}
+    ${first ? `<button class="goto" data-goto="${first.h}" title="${merged ? '回到第一处原文 ⌘L' : '回到原文 ⌘L'}">${ic('arrow', 'i s')}</button>` : ''}
+    <div class="segs">${segHtml}</div>${srcLine}</div><div class="add-child" data-act="addChild">${ic('plus')}</div><div class="link-h" data-link>${ic('rel')}</div>`;
+}
+
+let G = {}; // geometry: id -> {x,y,w,h,dir}
+let SG = {}; // summary bracket geometry
+function render(opts = {}) {
+  applyPaletteVars();
+  const live = new Set(S.nodes.map(n => n.id));
+  for (const id of Object.keys(els)) if (!live.has(id)) { els[id].remove(); delete els[id]; }
+  for (const n of S.nodes) {
+    let el = els[n.id];
+    if (!el) { el = document.createElement('div'); el.dataset.id = n.id; world.appendChild(el); els[n.id] = el; if (G[n.id] == null && opts.from && G[opts.from]) { el.style.left = G[opts.from].x + 'px'; el.style.top = G[opts.from].y + 'px'; } }
+    const d = depthOf(n.id);
+    el.className = `node n-${n.kind} d${Math.min(d, 3)}` + (n.segs && n.segs.length > 1 ? ' merged' : '');
+    const html = nodeHtml(n);
+    if (el._html !== html && !el.classList.contains('editing')) { el.innerHTML = html; el._html = html; }
+    el.setAttribute('style', (el.style.left ? `left:${el.style.left};top:${el.style.top};` : '') + (n.kind === 'topic' && d === 1 ? d1Style(n.id) : ''));
+  }
+  layout();
+  for (const n of S.nodes) { const g = G[n.id], el = els[n.id]; el.style.left = g.x + 'px'; el.style.top = g.y + 'px';
+    const ac = el.querySelector('.add-child'); if (ac) { ac.style.left = g.dir < 0 ? '-30px' : ''; ac.style.right = g.dir < 0 ? '' : '-30px'; ac.style.top = S.structure === 'tree' ? 'auto' : ''; ac.style.bottom = S.structure === 'tree' ? '-28px' : ''; if (S.structure === 'tree') { ac.style.left = '6px'; ac.style.right = ''; ac.style.marginTop = '0'; } else ac.style.marginTop = ''; } }
+  if (S.pan == null) fit(false, true);
+  drawLinks();
+  updateSelection();
+  applyView();
+}
+
+/* ---------- Layout ---------- */
+function measure() {
+  const M = {};
+  for (const n of S.nodes) { const nb = els[n.id].firstElementChild; M[n.id] = { w: nb.offsetWidth, h: nb.offsetHeight }; }
+  return M;
+}
+function layout() {
+  const M = measure(); G = {}; SG = {};
+  const st = S.structure;
+  const VG = st === 'tree' ? 10 : 14, HG = st === 'brace' ? 46 : st === 'logic' ? 40 : 46;
+  const memo = {};
+  // Children grouped so that a summary range stays together.
+  const groups = pid => {
+    const ks = kids(pid).map(k => k.id), out = []; const ss = sumsOf(pid);
+    for (let i = 0; i < ks.length;) {
+      const s = ss.find(s => s.from === ks[i]);
+      if (s) { const j = ks.indexOf(s.to); out.push({ ids: ks.slice(i, j + 1), sum: s }); i = j + 1; }
+      else { out.push({ ids: [ks[i]] }); i++; }
+    }
+    return out;
+  };
+  if (st === 'tree') return layoutTree(M, groups);
+  const blockH = id => {
+    if (memo[id] != null) return memo[id];
+    const gs = groups(id); return memo[id] = Math.max(M[id].h, stackH(gs));
+  };
+  const groupH = g => { const inner = g.ids.reduce((a, k) => a + blockH(k), 0) + VG * (g.ids.length - 1); return g.sum ? Math.max(inner, blockH(g.sum.nodeId)) : inner; };
+  const stackH = gs => gs.length ? gs.reduce((a, g) => a + groupH(g), 0) + VG * (gs.length - 1) : 0;
+  const extent = (id, dir) => { const g = G[id]; let e = dir > 0 ? g.x + g.w : g.x; kids(id).forEach(k => { const x = extent(k.id, dir); e = dir > 0 ? Math.max(e, x) : Math.min(e, x); }); sumsOf(id).forEach(s => { const x = extent(s.nodeId, dir); e = dir > 0 ? Math.max(e, x) : Math.min(e, x); }); return e; };
+  const vspan = id => { const g = G[id]; let t = g.y, b = g.y + g.h; kids(id).forEach(k => { const [a, c] = vspan(k.id); t = Math.min(t, a); b = Math.max(b, c); }); return [t, b]; };
+  const placeKids = (gs, x, top, dir) => {
+    let y = top;
+    for (const g of gs) {
+      const gh = groupH(g), inner = g.ids.reduce((a, k) => a + blockH(k), 0) + VG * (g.ids.length - 1);
+      let yy = y + (gh - inner) / 2;
+      for (const k of g.ids) { place(k, x, yy, dir); yy += blockH(k) + VG; }
+      if (g.sum) {
+        let ext = dir > 0 ? -1e9 : 1e9, t = 1e9, b = -1e9;
+        for (const k of g.ids) { const e = extent(k, dir); ext = dir > 0 ? Math.max(ext, e) : Math.min(ext, e); const [a, c] = vspan(k); t = Math.min(t, a); b = Math.max(b, c); }
+        const bx = ext + 12 * dir;
+        place(g.sum.nodeId, bx + 22 * dir, y + (gh - blockH(g.sum.nodeId)) / 2, dir);
+        const sg = G[g.sum.nodeId];
+        SG[g.sum.id] = { x: bx, top: t, bottom: b, tip: sg.y + sg.h / 2, dir };
+      }
+      y += gh + VG;
+    }
+  };
+  const place = (id, x, top, dir) => {
+    const m = M[id], bh = blockH(id);
+    const left = dir > 0 ? x : x - m.w;
+    G[id] = { x: left, y: top + (bh - m.h) / 2, w: m.w, h: m.h, dir };
+    const gs = groups(id);
+    placeKids(gs, dir > 0 ? left + m.w + HG : left - HG, top + (bh - stackH(gs)) / 2, dir);
+  };
+  const r = M.root;
+  G.root = { x: -r.w / 2, y: -r.h / 2, w: r.w, h: r.h, dir: 1 };
+  const gs = groups('root');
+  let right = gs, left = [];
+  if (st === 'mind' && gs.length > 1) {
+    // Split by height, never through a summary group.
+    const total = stackH(gs); let acc = 0, k = 0;
+    while (k < gs.length && acc + groupH(gs[k]) / 2 < total / 2) { acc += groupH(gs[k]) + VG; k++; }
+    k = Math.max(1, Math.min(gs.length - 1, k));
+    right = gs.slice(0, k); left = gs.slice(k);
+  }
+  placeKids(right, r.w / 2 + HG + 10, -stackH(right) / 2, 1);
+  if (left.length) placeKids(left, -r.w / 2 - HG - 10, -stackH(left) / 2, -1);
+}
+function layoutTree(M, groups) {
+  const IND = 30, VG = 10;
+  const extent = id => { const g = G[id]; let e = g.x + g.w; kids(id).forEach(k => e = Math.max(e, extent(k.id))); sumsOf(id).forEach(s => e = Math.max(e, extent(s.nodeId))); return e; };
+  const bottom = id => { const g = G[id]; let b = g.y + g.h; kids(id).forEach(k => b = Math.max(b, bottom(k.id))); sumsOf(id).forEach(s => b = Math.max(b, bottom(s.nodeId))); return b; };
+  const place = (id, x, y) => {
+    G[id] = { x, y, w: M[id].w, h: M[id].h, dir: 1 };
+    let cy = y + M[id].h + VG + 4;
+    for (const g of groups(id)) {
+      const top = cy;
+      for (const k of g.ids) { place(k, x + IND, cy); cy = bottom(k) + VG; }
+      if (g.sum) {
+        let ext = 0, t = top, b = cy - VG; for (const k of g.ids) ext = Math.max(ext, extent(k));
+        const sid = g.sum.nodeId; const bx = ext + 14;
+        place(sid, bx + 22, (t + b) / 2 - M[sid].h / 2);
+        const sg = G[sid]; SG[g.sum.id] = { x: bx, top: t, bottom: b, tip: sg.y + sg.h / 2, dir: 1 };
+        cy = Math.max(cy, bottom(sid) + VG);
+      }
+    }
+    return cy;
+  };
+  place('root', -200, -160);
+}
+
+/* ---------- Lines ---------- */
+function anchorY(id) { const g = G[id]; return g.y + g.h / 2; }
+function edgePath(p, c) {
+  const a = G[p], b = G[c], st = S.structure, dir = b.dir;
+  if (st === 'tree') {
+    const x = a.x + 16, y0 = a.y + a.h, y1 = b.y + b.h / 2, r = 6;
+    return `M${x} ${y0}V${y1 - r}Q${x} ${y1} ${x + r} ${y1}H${b.x}`;
+  }
+  const x0 = dir > 0 ? a.x + a.w : a.x, y0 = anchorY(p), x1 = dir > 0 ? b.x : b.x + b.w, y1 = anchorY(c);
+  if (st === 'logic') {
+    const mx = x0 + 18 * dir, r = Math.min(6, Math.abs(y1 - y0) / 2), s = Math.sign(y1 - y0);
+    if (!s) return `M${x0} ${y0}H${x1}`;
+    return `M${x0} ${y0}H${mx - r * dir}Q${mx} ${y0} ${mx} ${y0 + r * s}V${y1 - r * s}Q${mx} ${y1} ${mx + r * dir} ${y1}H${x1}`;
+  }
+  const dx = (x1 - x0) * 0.5;
+  return `M${x0} ${y0}C${x0 + dx} ${y0} ${x1 - dx} ${y1} ${x1} ${y1}`;
+}
+/** Curly brace from (x,t) to (x,b) pointing towards dir at y=tip. */
+function bracePath(x, t, b, tip, dir, w = 10) {
+  const q = w * dir;
+  tip = Math.max(t + 8, Math.min(b - 8, tip));
+  return `M${x} ${t}Q${x + q} ${t} ${x + q} ${t + 8}V${tip - 8}Q${x + q} ${tip} ${x + 2 * q} ${tip}Q${x + q} ${tip} ${x + q} ${tip + 8}V${b - 8}Q${x + q} ${b} ${x} ${b}`;
+}
+function drawLinks() {
+  const st = S.structure; let out = '';
+  const lineColor = id => branchColor(id) || 'var(--line)';
+  const parents = new Set();
+  for (const n of S.nodes) {
+    const p = n.kind === 'sum' ? null : n.parent; if (!p) continue;
+    if (st === 'brace') { parents.add(p); continue; }
+    const w = depthOf(n.id) === 1 ? 2.2 : 1.5;
+    out += `<path d="${edgePath(p, n.id)}" fill="none" stroke="${lineColor(n.id)}" stroke-width="${w}" stroke-linecap="round"/>`;
+  }
+  if (st === 'brace') for (const p of parents) {
+    const ks = kids(p).map(k => k.id), a = G[p];
+    const t = Math.min(...ks.map(k => anchorY(k))), b = Math.max(...ks.map(k => anchorY(k)));
+    const x = a.x + a.w + 8, col = lineColor(ks[0]);
+    if (ks.length === 1) out += `<path d="M${x - 4} ${anchorY(p)}H${G[ks[0]].x}" stroke="${col}" stroke-width="1.6" fill="none"/>`;
+    else out += `<path d="${bracePath(x + 12, t, b, anchorY(p), -1, 8)}" stroke="${col}" stroke-width="1.6" fill="none" stroke-linejoin="round"/>`;
+  }
+  // Summary brackets and the line from a summary topic to its own children.
+  for (const s of S.sums) {
+    const g = SG[s.id]; if (!g) continue;
+    const sel = S.selMark === s.id;
+    const col = sel ? 'var(--accent)' : (branchColor(s.from) || 'var(--label2)');
+    out += `<path d="${bracePath(g.x, g.top, g.bottom, g.tip, g.dir)}" fill="none" stroke="${col}" stroke-width="${sel ? 2.4 : 1.8}" stroke-linejoin="round"/>`;
+    out += `<path class="hit" data-sum="${s.id}" d="${bracePath(g.x, g.top, g.bottom, g.tip, g.dir)}" fill="none" stroke="transparent" stroke-width="14"/>`;
+  }
+  // Relations
+  let defs = `<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--rel)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="arrS" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+  document.querySelectorAll('.rel-label').forEach(e => e.remove());
+  for (const r of S.rels) {
+    const c = relCurve(r); if (!c) continue;
+    const sel = S.selMark === r.id, m = sel ? 'arrS' : 'arr';
+    const d = `M${c[0].x} ${c[0].y}C${c[1].x} ${c[1].y} ${c[2].x} ${c[2].y} ${c[3].x} ${c[3].y}`;
+    out += `<path d="${d}" fill="none" stroke="${sel ? 'var(--accent)' : 'var(--rel)'}" stroke-width="${sel ? 2 : 1.6}" stroke-dasharray="${r.solid ? '' : '6 5'}" ${r.arrow !== 'none' ? `marker-end="url(#${m})"` : ''} ${r.arrow === 'both' ? `marker-start="url(#${m})"` : ''}/>`;
+    out += `<path class="hit" data-rel="${r.id}" d="${d}" fill="none" stroke="transparent" stroke-width="14"/>`;
+    const mid = bez(c, .5);
+    const lab = document.createElement('div');
+    lab.className = 'rel-label' + (r.label ? '' : ' empty') + (sel ? ' sel' : '');
+    lab.dataset.rel = r.id; lab.textContent = r.label || '双击添加说明';
+    lab.style.left = mid.x + 'px'; lab.style.top = mid.y + 'px';
+    world.appendChild(lab);
+  }
+  links.innerHTML = defs + out;
+  drawHandles();
+}
+function center(id) { const g = G[id]; return { x: g.x + g.w / 2, y: g.y + g.h / 2 }; }
+function edgePoint(id, toward) {
+  const g = G[id], c = center(id), dx = toward.x - c.x, dy = toward.y - c.y;
+  if (!dx && !dy) return c;
+  const sx = (g.w / 2 + 3) / Math.abs(dx || 1e-9), sy = (g.h / 2 + 3) / Math.abs(dy || 1e-9), s = Math.min(sx, sy);
+  return { x: c.x + dx * s, y: c.y + dy * s };
+}
+/** Control points are stored as offsets from each end's centre, so lines follow nodes when the layout changes. */
+function relCurve(r) {
+  if (!G[r.from] || !G[r.to]) return null;
+  const a = center(r.from), b = center(r.to);
+  let o1 = r.c1, o2 = r.c2;
+  if (!r.custom || !o1) {
+    // Default bend: a gentle arc, away from the centre topic so it crosses fewer branches.
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, k = Math.min(90, len * .3);
+    const nx = -dy / len * k, ny = dx / len * k, o = center('root'), mx = (a.x + b.x) / 2 - o.x, my = (a.y + b.y) / 2 - o.y;
+    const side = mx * nx + my * ny >= 0 ? 1 : -1; // bend away from the centre topic
+    o1 = { x: dx * .25 + nx * side, y: dy * .25 + ny * side }; o2 = { x: -dx * .25 + nx * side, y: -dy * .25 + ny * side };
+  }
+  const c1 = { x: a.x + o1.x, y: a.y + o1.y }, c2 = { x: b.x + o2.x, y: b.y + o2.y };
+  return [edgePoint(r.from, c1), c1, c2, edgePoint(r.to, c2)];
+}
+const bez = (c, t) => { const u = 1 - t; return { x: u * u * u * c[0].x + 3 * u * u * t * c[1].x + 3 * u * t * t * c[2].x + t * t * t * c[3].x, y: u * u * u * c[0].y + 3 * u * u * t * c[1].y + 3 * u * t * t * c[2].y + t * t * t * c[3].y }; };
+
+function drawHandles() {
+  document.querySelectorAll('.handle').forEach(e => e.remove());
+  const r = S.rels.find(r => r.id === S.selMark);
+  if (r) {
+    const c = relCurve(r);
+    let guides = '';
+    [[0, 1], [3, 2]].forEach(([e, k]) => guides += `<path d="M${c[e].x} ${c[e].y}L${c[k].x} ${c[k].y}" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 3" fill="none"/>`);
+    links.insertAdjacentHTML('beforeend', guides);
+    [1, 2].forEach(k => { const h = document.createElement('div'); h.className = 'handle'; h.dataset.cp = k; h.style.left = c[k].x + 'px'; h.style.top = c[k].y + 'px'; world.appendChild(h); });
+  }
+  const s = S.sums.find(s => s.id === S.selMark);
+  if (s && SG[s.id]) {
+    const g = SG[s.id];
+    [['from', g.top], ['to', g.bottom]].forEach(([k, y]) => { const h = document.createElement('div'); h.className = 'handle sq'; h.dataset.range = k; h.style.left = (g.x + 5 * g.dir) + 'px'; h.style.top = y + 'px'; h.title = '拖动调整概要范围'; world.appendChild(h); });
+  }
+}
+
+/* ---------- View (pan / zoom) ---------- */
+function applyView() { world.style.transform = `translate(${S.pan.x}px,${S.pan.y}px) scale(${S.zoom})`; $('#zoomLbl').textContent = Math.round(S.zoom * 100) + '%'; positionBars(); }
+function bounds() { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const g of Object.values(G)) { x0 = Math.min(x0, g.x); y0 = Math.min(y0, g.y); x1 = Math.max(x1, g.x + g.w); y1 = Math.max(y1, g.y + g.h); } return { x0, y0, x1, y1 }; }
+/** "查看全图" fits everything; the first view keeps text readable (≥ 80%) and centres on the selection. */
+function fit(anim = true, readable = false) {
+  const pop = $('#stylePop').classList.contains('on'), off = pop ? 312 : 0;
+  const b = bounds(), W = stage.clientWidth - off, H = stage.clientHeight;
+  const z = Math.min(1, (W - 80) / (b.x1 - b.x0 + 60), (H - 120) / (b.y1 - b.y0));
+  S.zoom = Math.max(readable ? (pop ? .55 : .8) : .35, z);
+  let cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+  if (readable && S.zoom > z) {
+    const focus = [...S.sel, ...S.rels.filter(r => r.id === S.selMark).flatMap(r => [r.from, r.to]), ...S.sums.filter(s => s.id === S.selMark).flatMap(s => [s.from, s.nodeId])].filter(id => G[id]);
+    if (focus.length) { const xs = focus.flatMap(id => [G[id].x, G[id].x + G[id].w]), ys = focus.flatMap(id => [G[id].y, G[id].y + G[id].h]); cx = (Math.min(...xs) + Math.max(...xs)) / 2; cy = (Math.min(...ys) + Math.max(...ys)) / 2; }
+    const hw = (W / 2 - 30) / S.zoom, hh = (H / 2 - 50) / S.zoom;
+    cx = Math.max(b.x0 + hw, Math.min(b.x1 - hw, cx)); cy = Math.max(b.y0 + hh, Math.min(b.y1 - hh, cy));
+    if (b.x1 - b.x0 < 2 * hw) cx = (b.x0 + b.x1) / 2; if (b.y1 - b.y0 < 2 * hh) cy = (b.y0 + b.y1) / 2;
+  }
+  S.pan = { x: W / 2 - cx * S.zoom, y: (H + 10) / 2 - cy * S.zoom };
+  if (anim) { world.style.transition = 'transform 320ms cubic-bezier(.2,0,0,1)'; setTimeout(() => world.style.transition = '', 340); }
+}
+const toScene = (cx, cy) => { const r = stage.getBoundingClientRect(); return { x: (cx - r.left - S.pan.x) / S.zoom, y: (cy - r.top - S.pan.y) / S.zoom }; };
+const toScreen = (x, y) => ({ x: x * S.zoom + S.pan.x, y: y * S.zoom + S.pan.y });
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) {
+    const p = toScene(e.clientX, e.clientY), z = Math.max(.3, Math.min(2, S.zoom * Math.exp(-e.deltaY * .01)));
+    const r = stage.getBoundingClientRect(); S.zoom = z; S.pan = { x: e.clientX - r.left - p.x * z, y: e.clientY - r.top - p.y * z };
+  } else { S.pan.x -= e.shiftKey ? e.deltaY : e.deltaX; S.pan.y -= e.shiftKey ? 0 : e.deltaY; }
+  applyView();
+}, { passive: false });
+
+/* ---------- Selection, floating bars ---------- */
+function setSel(ids) { S.sel = ids; S.selMark = null; endEdit(); updateSelection(); drawLinks(); }
+function updateSelection() {
+  for (const n of S.nodes) {
+    const el = els[n.id]; if (!el) continue;
+    el.classList.toggle('sel', S.sel.includes(n.id));
+    el.classList.toggle('solo', S.sel.length === 1 && S.sel[0] === n.id && n.kind !== 'root' && !connecting);
+  }
+  renderSelbar(); renderRelbar(); renderHint(); renderNotes();
+}
+function selOrdered() { const o = mapOrder(); return S.sel.slice().sort((a, b) => o.indexOf(a) - o.indexOf(b)); }
+
+function mergeCheck(ids) {
+  if (ids.length < 2) return '至少选择两个节点';
+  if (ids.includes('root')) return '中心主题不能合并';
+  if (ids.some(id => node(id).kind === 'img')) return '图片卡片不能合并，可以把它们放在同一个分支下';
+  if (ids.some(id => node(id).kind === 'sum')) return '概要不能参与合并';
+  return null;
+}
+function summaryCheck(ids) {
+  if (!ids.length) return '先选择节点';
+  if (ids.includes('root')) return '中心主题不能添加概要';
+  const ps = new Set(ids.map(id => node(id).kind === 'sum' ? '§' : node(id).parent));
+  if (ps.has('§')) return '概要本身不能再被概要';
+  if (ps.size > 1) return '概要只能概括同一层级的节点（同一个父主题下）';
+  const p = [...ps][0], ks = kids(p).map(k => k.id), idx = ids.map(id => ks.indexOf(id)), a = Math.min(...idx), b = Math.max(...idx);
+  const clash = sumsOf(p).find(s => { const x = ks.indexOf(s.from), y = ks.indexOf(s.to); return !(b < x || a > y); });
+  if (clash && !(ks.indexOf(clash.from) === a && ks.indexOf(clash.to) === b)) return '与已有概要的范围重叠';
+  return null;
+}
+function relationCheck(ids) { if (ids.length !== 2) return ids.length > 2 ? '关联线连接两个节点：请只选两个，或从节点右上角拖出' : '再选一个节点，或从节点右上角的 ⤳ 拖到目标'; return null; }
+
+function btn(act, icon, label, why, tip) {
+  return `<button class="tbtn" data-act="${act}" ${why ? 'disabled' : ''} data-tip>${ic(icon)}${label}<span class="tip ${why && why.length > 18 ? 'w' : ''}">${esc(why || tip)}</span></button>`;
+}
+function renderSelbar() {
+  const bar = $('#selbar');
+  if (S.sel.length < 2 || editingId) { bar.classList.remove('on'); return; }
+  const ids = selOrdered();
+  const mw = mergeCheck(ids), sw = summaryCheck(ids), rw = relationCheck(ids);
+  const hasEx = ids.some(id => node(id).kind === 'ex');
+  bar.innerHTML = `<span class="cnt">已选 ${ids.length} 个</span><span class="div"></span>`
+    + btn('merge', 'merge', '合并', mw, '合并为一个节点，按导图顺序换行拼接 ⌥⌘J')
+    + btn('summary', 'sum', '概要', sw, '为这些节点添加概要 ⌘]')
+    + btn('relate', 'rel', '关联', rw, '从先选的节点连到后选的节点 ⌥⌘R')
+    + (hasEx ? `<span class="div"></span>${Object.entries(COLOR).map(([k, c]) => `<button class="cdot" data-recolor="${k}" style="background:${c}" title="摘录改为${CNAME[k]}色"></button>`).join('')}` : '')
+    + `<span class="div"></span>` + btn('delete', 'del', '', null, '删除 ⌫');
+  bar.classList.add('on');
+  positionBars();
+}
+function positionBars() {
+  if (!S.pan) return;
+  const bar = $('#selbar');
+  if (bar.classList.contains('on')) {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const id of S.sel) { const g = G[id]; if (!g) continue; x0 = Math.min(x0, g.x); y0 = Math.min(y0, g.y); x1 = Math.max(x1, g.x + g.w); y1 = Math.max(y1, g.y + g.h); }
+    const a = toScreen((x0 + x1) / 2, y0), b = toScreen(0, y1);
+    const W = $('#map').clientWidth, bw = bar.offsetWidth;
+    let top = a.y - 50; if (top < 50) top = b.y + 14;
+    bar.style.left = Math.max(bw / 2 + 8, Math.min(W - bw / 2 - 8, a.x)) + 'px'; bar.style.top = top + 'px';
+  }
+  const rb = $('#relbar');
+  if (rb.classList.contains('on')) {
+    const r = S.rels.find(r => r.id === S.selMark); if (!r) return;
+    const c = relCurve(r), m = bez(c, .5), p = toScreen(m.x, m.y);
+    rb.style.left = p.x + 'px'; rb.style.top = (p.y + 18) + 'px';
+  }
+}
+function renderRelbar() {
+  const rb = $('#relbar'), r = S.rels.find(r => r.id === S.selMark);
+  if (!r) { rb.classList.remove('on'); return; }
+  const a = (k, icn, t) => `<button class="tbtn ${r.arrow === k ? 'on' : ''}" data-arrow="${k}" data-tip>${ic(icn)}<span class="tip">${t}</span></button>`;
+  rb.innerHTML = a('end', 'ar1', '单向箭头') + a('both', 'ar2', '双向箭头') + a('none', 'ar0', '无箭头')
+    + `<span style="width:.5px;height:14px;background:var(--sep);margin:0 3px"></span>`
+    + `<button class="tbtn" data-act="relSwap" data-tip>${ic('swap')}<span class="tip">交换方向</span></button>`
+    + `<button class="tbtn ${r.solid ? 'on' : ''}" data-act="relSolid" data-tip><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16"/></svg><span class="tip">${r.solid ? '改为虚线' : '改为实线'}</span></button>`
+    + `<button class="tbtn" data-act="relLabel" data-tip>Aa<span class="tip">编辑说明（双击线条）</span></button>`
+    + `<button class="tbtn" data-act="delMark" data-tip>${ic('del')}<span class="tip">删除关联线 ⌫</span></button>`;
+  rb.classList.add('on'); positionBars();
+}
+function renderHint() {
+  const h = $('#hint');
+  let t = '';
+  if (connecting) t = `<b>建立关联</b> · 松开在目标节点上完成；Esc 取消`;
+  else if (pickTarget) t = `<b>建立关联</b> · 点击要连到的节点；Esc 取消`;
+  else if (S.selMark && S.rels.some(r => r.id === S.selMark)) t = '拖动圆点调整弯曲，双击线条编辑说明，⌫ 删除';
+  else if (S.selMark) t = '拖动括号两端的方块调整范围；选中概要主题后 Tab 添加细分主题';
+  else if (S.sel.length === 1) t = '⌘ / ⇧ 点击或在空白处拖出选框来多选 · 拖动右上角 ⤳ 到另一个节点建立关联';
+  else if (S.sel.length > 1) t = `已选 ${S.sel.length} 个节点`;
+  else t = '点击节点选中；在空白处拖动框选；滚轮平移，⌘ + 滚轮缩放';
+  h.innerHTML = t;
+}
+
+/* ---------- Commands ---------- */
+let hudTimer;
+function hud(msg, action) {
+  const h = $('#hud'); clearTimeout(hudTimer);
+  h.innerHTML = esc(msg) + (action ? `<button id="hudAct">${esc(action[0])}</button>` : '');
+  h.classList.toggle('noact', !action); h.classList.add('on');
+  if (action) $('#hudAct').onclick = () => { action[1](); h.classList.remove('on'); };
+  hudTimer = setTimeout(() => h.classList.remove('on'), action ? 5200 : 2200);
+}
+function flashNode(id, seg) {
+  const el = els[id]; if (!el) return;
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  if (seg != null) { const s = el.querySelector(`[data-seg="${seg}"]`); if (s) { s.classList.add('lit'); setTimeout(() => s.classList.remove('lit'), 1600); } }
+  setTimeout(() => el.classList.remove('flash'), 1700);
+  ensureVisible(id);
+}
+function ensureVisible(id) {
+  const g = G[id]; if (!g) return;
+  const a = toScreen(g.x, g.y), b = toScreen(g.x + g.w, g.y + g.h), W = stage.clientWidth, H = stage.clientHeight;
+  if (a.x < 20 || a.y < 50 || b.x > W - 20 || b.y > H - 40) { S.pan.x += W / 2 - (a.x + b.x) / 2; S.pan.y += H / 2 - (a.y + b.y) / 2; world.style.transition = 'transform 320ms'; applyView(); setTimeout(() => world.style.transition = '', 340); }
+}
+
+function doMerge() {
+  const ids = selOrdered(); const why = mergeCheck(ids); if (why) return hud(why);
+  const [tid, ...rest] = ids; const removed = new Set(rest);
+  // Animate the others flying into the target.
+  rest.forEach(id => { const el = els[id], t = G[tid]; el.classList.add('merging'); el.style.left = t.x + 'px'; el.style.top = t.y + 'px'; });
+  els[tid].classList.add('mergeTarget');
+  setTimeout(() => {
+    els[tid] && els[tid].classList.remove('mergeTarget');
+    let note = '';
+    commit(() => {
+      const t = node(tid);
+      const segsOf = n => n.kind === 'ex' ? n.segs : [{ text: n.text }];
+      const segs = ids.flatMap(id => segsOf(node(id)));
+      const allPlain = ids.every(id => ['topic', 'note'].includes(node(id).kind));
+      if (allPlain) { t.text = ids.map(id => node(id).text).join('\n'); if (t.kind === 'note') t.kind = 'note'; }
+      else { t.kind = 'ex'; t.segs = segs; t.title = ids.map(id => node(id).title).find(Boolean) || ''; delete t.text; }
+      // Children of merged nodes move under the result, in map order.
+      for (const id of rest) for (const k of kids(id)) if (!removed.has(k.id)) { k.parent = tid; S.nodes.splice(S.nodes.indexOf(k), 1); S.nodes.push(k); }
+      // Relations follow; self-loops and duplicates are dropped.
+      let dropped = 0;
+      S.rels = S.rels.map(r => ({ ...r, from: removed.has(r.from) ? tid : r.from, to: removed.has(r.to) ? tid : r.to, custom: r.custom && !removed.has(r.from) && !removed.has(r.to) })).filter((r, i, a) => {
+        const ok = r.from !== r.to && a.findIndex(o => o.from === r.from && o.to === r.to) === i; if (!ok) dropped++; return ok;
+      });
+      // Summaries shrink to remaining siblings; empty ones go (with their sub-topics).
+      let sdrop = 0;
+      for (const s of S.sums.slice()) {
+        const ks = kids(s.parent).map(k => k.id).filter(k => !removed.has(k));
+        const all = kids(s.parent).map(k => k.id), range = all.slice(all.indexOf(s.from), all.indexOf(s.to) + 1).filter(k => !removed.has(k));
+        if (!range.length) { removeSubtree(s.nodeId); S.sums.splice(S.sums.indexOf(s), 1); sdrop++; } else { s.from = range[0]; s.to = range[range.length - 1]; }
+      }
+      S.nodes = S.nodes.filter(n => !removed.has(n.id));
+      S.sel = [tid];
+      note = (dropped ? `，${dropped} 条重复关联线已移除` : '') + (sdrop ? `，${sdrop} 个概要因范围为空被移除` : '');
+    });
+    render(); flashNode(tid);
+    hud(`已将 ${ids.length} 个节点合并为 1 个${note}`, ['撤销', undo]);
+  }, 300);
+}
+function removeSubtree(id) { kids(id).forEach(k => removeSubtree(k.id)); sumsOf(id).forEach(s => { removeSubtree(s.nodeId); S.sums.splice(S.sums.indexOf(s), 1); }); S.rels = S.rels.filter(r => r.from !== id && r.to !== id); S.nodes = S.nodes.filter(n => n.id !== id); }
+function doSplit(id) {
+  const n = node(id); if (!n || n.kind !== 'ex' || n.segs.length < 2) return;
+  commit(() => {
+    const [first, ...rest] = n.segs; n.segs = [first];
+    let at = S.nodes.indexOf(n) + 1; const sibs = kids(n.parent); const after = sibs[sibs.indexOf(n) + 1];
+    const created = rest.map(s => s.h ? { id: nid('e'), parent: n.parent, kind: 'ex', title: '', segs: [s] } : { id: nid('t'), parent: n.parent, kind: 'topic', text: s.text });
+    at = after ? S.nodes.indexOf(after) : S.nodes.length;
+    S.nodes.splice(at, 0, ...created);
+    S.sel = [id, ...created.map(c => c.id)];
+  });
+  render({ from: id }); hud(`已拆分为 ${n.segs.length + S.sel.length - 1} 个节点`, ['撤销', undo]);
+}
+function doSummary() {
+  const ids = selOrdered(); const why = summaryCheck(ids); if (why) return hud(why);
+  const p = node(ids[0]).parent, ks = kids(p).map(k => k.id), idx = ids.map(id => ks.indexOf(id));
+  const a = ks[Math.min(...idx)], b = ks[Math.max(...idx)];
+  const ex = S.sums.find(s => s.parent === p && s.from === a && s.to === b);
+  if (ex) { S.sel = []; S.selMark = ex.id; render(); return hud('这些节点已经有概要了'); }
+  const gap = Math.max(...idx) - Math.min(...idx) + 1 - ids.length;
+  const nodeId = nid('s'), sid = nid('S');
+  commit(() => {
+    S.nodes.push({ id: nodeId, parent: null, kind: 'sum', text: '概要' });
+    S.sums.push({ id: sid, parent: p, from: a, to: b, nodeId });
+    S.sel = [nodeId];
+  });
+  render(); startEdit(nodeId, true);
+  if (gap) hud(`概要包含了中间未选中的 ${gap} 个节点（概要只能概括连续的同级节点）`);
+}
+function doRelate(a, b) {
+  if (a === b) return;
+  const ex = S.rels.find(r => (r.from === a && r.to === b) || (r.from === b && r.to === a));
+  if (ex) { S.sel = []; S.selMark = ex.id; render(); return hud('这两个节点之间已经有关联线'); }
+  const id = nid('r');
+  commit(() => { S.rels.push({ id, from: a, to: b, label: '', arrow: 'end' }); S.sel = []; S.selMark = id; });
+  render(); startRelEdit(id);
+}
+function doDelete() {
+  if (S.selMark) {
+    commit(() => {
+      const s = S.sums.find(s => s.id === S.selMark);
+      if (s) { removeSubtree(s.nodeId); S.sums = S.sums.filter(x => x !== s); }
+      S.rels = S.rels.filter(r => r.id !== S.selMark); S.selMark = null;
+    });
+    return render();
+  }
+  const ids = S.sel.filter(id => id !== 'root'); if (!ids.length) return;
+  commit(() => {
+    for (const id of ids) {
+      if (!node(id)) continue;
+      const s = sumOfNode(id);
+      if (s) { removeSubtree(id); S.sums = S.sums.filter(x => x !== s); continue; }
+      // A deleted node inside a summary range shrinks the range.
+      for (const sm of sumsOf(node(id).parent)) {
+        const all = kids(sm.parent).map(k => k.id), range = all.slice(all.indexOf(sm.from), all.indexOf(sm.to) + 1).filter(k => !ids.includes(k));
+        if (!range.length) { removeSubtree(sm.nodeId); S.sums = S.sums.filter(x => x !== sm); } else { sm.from = range[0]; sm.to = range[range.length - 1]; }
+      }
+      removeSubtree(id);
+    }
+    S.sel = [];
+  });
+  render(); hud(`已删除 ${ids.length} 个节点`, ['撤销', undo]);
+}
+function addChild(pid) {
+  const id = nid('t');
+  commit(() => { S.nodes.push({ id, parent: pid, kind: 'topic', text: node(pid).kind === 'sum' ? '细分主题' : '新主题' }); S.sel = [id]; });
+  render({ from: pid }); startEdit(id, true);
+}
+function addSibling(id) {
+  const n = node(id); if (!n || n.kind === 'root' || n.kind === 'sum') return addChild(id);
+  const nn = { id: nid('t'), parent: n.parent, kind: 'topic', text: '新主题' };
+  commit(() => { S.nodes.splice(S.nodes.indexOf(n) + 1, 0, nn); S.sel = [nn.id];
+    // Adding right after the end of a summary range extends nothing; inside a range it grows naturally.
+  });
+  render({ from: id }); startEdit(nn.id, true);
+}
+
+/* ---------- Inline editing ---------- */
+let editingId = null, editingRel = null;
+function startEdit(id, selectAll) {
+  const el = els[id]; if (!el) return;
+  const t = el.querySelector('[data-edit]'); if (!t) return;
+  ensureVisible(id);
+  editingId = id; el.classList.add('editing'); t.contentEditable = 'true'; t.focus({ preventScroll: true });
+  const r = document.createRange(); r.selectNodeContents(t); if (!selectAll) r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  renderSelbar();
+}
+function endEdit(cancel) {
+  if (editingRel) { const lab = document.querySelector(`.rel-label[data-rel="${editingRel}"]`); const r = S.rels.find(r => r.id === editingRel); const v = lab ? lab.textContent.trim() : ''; editingRel = null; if (r && !cancel && v !== r.label && v !== '双击添加说明') commit(() => r.label = v); render(); return; }
+  if (!editingId) return;
+  const id = editingId, el = els[id]; editingId = null;
+  const t = el && el.querySelector('[data-edit]'); if (!t) return;
+  t.contentEditable = 'false'; el.classList.remove('editing');
+  const n = node(id), v = t.innerText.replace(/\n+$/, '');
+  if (!cancel && n) { if (t.classList.contains('ttl')) { if (v !== n.title) commit(() => n.title = v); } else if (v.trim() && v !== n.text) commit(() => n.text = v); }
+  el._html = null; render();
+}
+function startRelEdit(id) {
+  const lab = document.querySelector(`.rel-label[data-rel="${id}"]`); if (!lab) return;
+  const r0 = S.rels.find(r => r.id === id); if (r0) { const m = bez(relCurve(r0), .5); const p = toScreen(m.x, m.y); if (p.x < 40 || p.y < 60 || p.x > stage.clientWidth - 40 || p.y > stage.clientHeight - 60) { S.pan.x += stage.clientWidth / 2 - p.x; S.pan.y += stage.clientHeight / 2 - p.y; applyView(); } }
+  editingRel = id; lab.classList.add('editing'); lab.classList.remove('empty'); const r = S.rels.find(r => r.id === id); lab.textContent = r.label;
+  lab.contentEditable = 'true'; lab.focus({ preventScroll: true });
+}
+
+/* ---------- Pointer interactions ---------- */
+let connecting = null, pickTarget = null, drag = null;
+stage.addEventListener('pointerdown', e => {
+  hideCtx();
+  if (e.button !== 0) return;
+  if (!$('#stylePop').contains(e.target)) closeStyle();
+  const t = e.target;
+  if (t.closest('[contenteditable="true"]')) return;
+  if (editingId || editingRel) endEdit();
+  const handle = t.closest('.handle');
+  if (handle) {
+    e.preventDefault(); drag = { kind: handle.dataset.cp ? 'cp' : 'range', k: handle.dataset.cp || handle.dataset.range };
+    if (drag.kind === 'range') {
+      // Snap targets are frozen at drag start (the layout reflows while dragging); only siblings on the bracket's side count.
+      const sm = S.sums.find(x => x.id === S.selMark), side = G[sm.from].dir;
+      drag.ys = kids(sm.parent).map(k => G[k.id].dir === side ? anchorY(k.id) : null);
+    }
+    stage.setPointerCapture(e.pointerId); return;
+  }
+  const lk = t.closest('[data-link]');
+  if (lk) { e.preventDefault(); const id = lk.closest('.node').dataset.id; connecting = { from: id, p: toScene(e.clientX, e.clientY) }; stage.setPointerCapture(e.pointerId); updateSelection(); drawRubber(); return; }
+  const add = t.closest('[data-act="addChild"]');
+  if (add) { addChild(add.closest('.node').dataset.id); return; }
+  const go = t.closest('[data-goto]');
+  if (go) { gotoSource(go.dataset.goto); return; }
+  const lab = t.closest('.rel-label'), hitRel = t.dataset && t.dataset.rel, hitSum = t.dataset && t.dataset.sum;
+  if (lab || hitRel) { const id = lab ? lab.dataset.rel : hitRel; S.sel = []; S.selMark = id; updateSelection(); drawLinks(); return; }
+  if (hitSum) { S.sel = []; S.selMark = hitSum; updateSelection(); drawLinks(); return; }
+  const nEl = t.closest('.node');
+  if (nEl) {
+    const id = nEl.dataset.id;
+    if (pickTarget) { const f = pickTarget; pickTarget = null; doRelate(f, id); return; }
+    const seg = t.closest('.sg.src');
+    if (seg && !e.metaKey && !e.shiftKey && S.sel.length <= 1) { S.sel = [id]; S.selMark = null; updateSelection(); drawLinks(); gotoSource(seg.dataset.h); return; }
+    if (e.metaKey || e.shiftKey || e.ctrlKey) { S.sel = S.sel.includes(id) ? S.sel.filter(x => x !== id) : [...S.sel, id]; S.selMark = null; }
+    else { S.sel = [id]; S.selMark = null; }
+    updateSelection(); drawLinks();
+    return;
+  }
+  // Empty canvas: marquee select (pan with wheel / trackpad).
+  if (pickTarget) { pickTarget = null; renderHint(); }
+  const p = toScene(e.clientX, e.clientY);
+  drag = { kind: 'box', p, base: e.shiftKey || e.metaKey ? S.sel.slice() : [], moved: false, sx: e.clientX, sy: e.clientY };
+  stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove', e => {
+  if (connecting) {
+    connecting.p = toScene(e.clientX, e.clientY);
+    const over = document.elementsFromPoint(e.clientX, e.clientY).map(x => x.closest && x.closest('.node')).find(Boolean);
+    document.querySelectorAll('.node.target').forEach(x => x.classList.remove('target'));
+    if (over && over.dataset.id !== connecting.from) over.classList.add('target');
+    drawRubber(); return;
+  }
+  if (!drag) return;
+  const p = toScene(e.clientX, e.clientY);
+  if (drag.kind === 'cp') {
+    const r = S.rels.find(r => r.id === S.selMark), base = center(drag.k === '1' ? r.from : r.to);
+    if (!drag.changed) { undoStack.push(snap()); redoStack = []; if (!r.custom) { const c = relCurve(r), a = center(r.from), b = center(r.to); r.c1 = { x: c[1].x - a.x, y: c[1].y - a.y }; r.c2 = { x: c[2].x - b.x, y: c[2].y - b.y }; r.custom = true; } }
+    r[drag.k === '1' ? 'c1' : 'c2'] = { x: p.x - base.x, y: p.y - base.y }; drag.changed = true; drawLinks(); positionBars(); return;
+  }
+  if (drag.kind === 'range') {
+    const s = S.sums.find(s => s.id === S.selMark), ks = kids(s.parent).map(k => k.id);
+    let best = null, bd = 1e9; drag.ys.forEach((y, i) => { if (y == null) return; const d = Math.abs(y - p.y); if (d < bd) { bd = d; best = i; } });
+    const f = ks.indexOf(s.from), t = ks.indexOf(s.to);
+    let nf = f, nt = t;
+    if (drag.k === 'from') nf = Math.min(best, t); else nt = Math.max(best, f);
+    const clash = sumsOf(s.parent).some(o => o !== s && !(nt < ks.indexOf(o.from) || nf > ks.indexOf(o.to)));
+    if (!clash && (nf !== f || nt !== t)) { if (!drag.changed) { undoStack.push(snap()); redoStack = []; } drag.changed = true; s.from = ks[nf]; s.to = ks[nt]; render(); }
+    return;
+  }
+  if (drag.kind === 'box') {
+    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 4) return;
+    drag.moved = true;
+    const x0 = Math.min(drag.p.x, p.x), y0 = Math.min(drag.p.y, p.y), x1 = Math.max(drag.p.x, p.x), y1 = Math.max(drag.p.y, p.y);
+    const a = toScreen(x0, y0), m = $('#marquee');
+    m.style.display = 'block'; m.style.left = a.x + 'px'; m.style.top = a.y + 'px'; m.style.width = (x1 - x0) * S.zoom + 'px'; m.style.height = (y1 - y0) * S.zoom + 'px';
+    const hit = S.nodes.filter(n => n.id !== 'root' && (() => { const g = G[n.id]; return g.x < x1 && g.x + g.w > x0 && g.y < y1 && g.y + g.h > y0; })()).map(n => n.id);
+    S.sel = [...new Set([...drag.base, ...hit])]; S.selMark = null; updateSelection();
+  }
+});
+stage.addEventListener('pointerup', e => {
+  if (connecting) {
+    const over = document.elementsFromPoint(e.clientX, e.clientY).map(x => x.closest && x.closest('.node')).find(Boolean);
+    const from = connecting.from; connecting = null; document.querySelectorAll('.node.target').forEach(x => x.classList.remove('target'));
+    $('#rubber')?.remove();
+    if (over && over.dataset.id !== from) doRelate(from, over.dataset.id); else { updateSelection(); hud('松开在另一个节点上才能建立关联'); }
+    return;
+  }
+  if (drag) {
+    if (drag.kind === 'box' && !drag.moved) { S.sel = []; S.selMark = null; updateSelection(); drawLinks(); }
+    $('#marquee').style.display = 'none';
+    drag = null;
+  }
+});
+function drawRubber() {
+  $('#rubber')?.remove();
+  if (!connecting) return;
+  const a = edgePoint(connecting.from, connecting.p), b = connecting.p;
+  links.insertAdjacentHTML('beforeend', `<path id="rubber" d="M${a.x} ${a.y}Q${(a.x + b.x) / 2} ${Math.min(a.y, b.y) - 40} ${b.x} ${b.y}" fill="none" stroke="var(--rel)" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arr)"/>`);
+}
+stage.addEventListener('dblclick', e => {
+  const lab = e.target.closest('.rel-label'), hit = e.target.dataset && e.target.dataset.rel;
+  if (lab || hit) { const id = lab ? lab.dataset.rel : hit; S.selMark = id; startRelEdit(id); return; }
+  const nEl = e.target.closest('.node'); if (!nEl) return;
+  if (e.target.closest('.sg.src')) return;
+  const t = e.target.closest('[data-edit]'); if (t) startEdit(nEl.dataset.id);
+});
+stage.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const nEl = e.target.closest('.node'); if (!nEl) return hideCtx();
+  const id = nEl.dataset.id; if (!S.sel.includes(id)) { S.sel = [id]; S.selMark = null; updateSelection(); drawLinks(); }
+  const ids = selOrdered(), n = node(id);
+  const mw = mergeCheck(ids), sw = summaryCheck(ids);
+  const item = (label, act, k, why) => `<div class="mi ${why ? 'dis' : ''}" data-cact="${why ? '' : act}">${label}${k ? `<span class="kbd">${k}</span>` : ''}</div>` + (why ? `<div class="why">${esc(why)}</div>` : '');
+  let h = '';
+  if (ids.length === 1) h += item('添加子主题', 'child', '⇥') + `<div class="msep"></div>`;
+  h += item(ids.length > 1 ? `合并 ${ids.length} 个节点` : '合并节点', 'merge', '⌥⌘J', ids.length > 1 ? mw : '先 ⌘ 点击选中多个节点');
+  if (ids.length === 1 && n.kind === 'ex' && n.segs.length > 1) h += item(`拆分为 ${n.segs.length} 个节点`, 'split', '');
+  h += `<div class="msep"></div>` + item('添加概要', 'summary', '⌘]', sw) + item('添加关联线…', 'relate', '⌥⌘R', ids.length > 2 ? '关联线只连接两个节点' : null);
+  h += `<div class="msep"></div>` + item('删除', 'delete', '⌫');
+  const c = $('#ctx'); c.innerHTML = h; c.classList.add('on');
+  c.style.left = Math.min(e.clientX, innerWidth - 260) + 'px'; c.style.top = Math.min(e.clientY, innerHeight - c.offsetHeight - 10) + 'px';
+});
+function hideCtx() { $('#ctx').classList.remove('on'); }
+$('#ctx').addEventListener('click', e => {
+  const a = e.target.closest('[data-cact]')?.dataset.cact; if (!a) return; hideCtx();
+  if (a === 'child') addChild(S.sel[0]); if (a === 'merge') doMerge(); if (a === 'split') doSplit(S.sel[0]);
+  if (a === 'summary') doSummary(); if (a === 'relate') startRelateCmd(); if (a === 'delete') doDelete();
+});
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#ctx')) hideCtx(); }, true);
+function startRelateCmd() {
+  const ids = selOrdered();
+  if (ids.length === 2) return doRelate(S.sel[0], S.sel[1]);
+  if (ids.length === 1) { pickTarget = ids[0]; renderHint(); }
+}
+
+/* Selection bar & relation bar buttons */
+$('#selbar').addEventListener('click', e => {
+  const r = e.target.closest('[data-recolor]');
+  if (r) { const c = r.dataset.recolor; commit(() => S.sel.forEach(id => { const n = node(id); if (n.kind === 'ex') n.segs.forEach(s => { if (s.h) HL[s.h].c = c; }); })); render(); renderReader(); hud(`已改为${CNAME[c]}色，原文高亮同步更新`); return; }
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  ({ merge: doMerge, summary: doSummary, relate: () => doRelate(S.sel[0], S.sel[1]), delete: doDelete })[b.dataset.act]();
+});
+$('#selbar').addEventListener('mouseover', e => {
+  const b = e.target.closest('[data-act="merge"]');
+  document.querySelectorAll('.mergeTarget').forEach(x => x.classList.remove('mergeTarget'));
+  if (b && !b.disabled) els[selOrdered()[0]].classList.add('mergeTarget');
+});
+$('#selbar').addEventListener('mouseleave', () => document.querySelectorAll('.mergeTarget').forEach(x => x.classList.remove('mergeTarget')));
+$('#relbar').addEventListener('click', e => {
+  const r = S.rels.find(r => r.id === S.selMark); if (!r) return;
+  const a = e.target.closest('[data-arrow]');
+  if (a) { commit(() => r.arrow = a.dataset.arrow); drawLinks(); renderRelbar(); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'relSwap') { commit(() => { [r.from, r.to] = [r.to, r.from]; [r.c1, r.c2] = [r.c2, r.c1]; }); drawLinks(); }
+  if (b.dataset.act === 'relSolid') { commit(() => r.solid = !r.solid); drawLinks(); renderRelbar(); }
+  if (b.dataset.act === 'relLabel') startRelEdit(r.id);
+  if (b.dataset.act === 'delMark') doDelete();
+});
+document.querySelector('.map-ctrl').addEventListener('click', e => {
+  const a = e.target.closest('[data-act]')?.dataset.act; if (!a) return;
+  if (a === 'fit') { fit(); applyView(); return; }
+  const W = stage.clientWidth / 2, H = stage.clientHeight / 2, p = { x: (W - S.pan.x) / S.zoom, y: (H - S.pan.y) / S.zoom };
+  S.zoom = a === 'zoomReset' ? 1 : Math.max(.3, Math.min(2, S.zoom * (a === 'zoomIn' ? 1.2 : 1 / 1.2)));
+  S.pan = { x: W - p.x * S.zoom, y: H - p.y * S.zoom }; applyView();
+});
+
+/* ---------- Keyboard ---------- */
+document.addEventListener('keydown', e => {
+  const k = e.key, mod = e.metaKey || e.ctrlKey;
+  if (editingId || editingRel) {
+    if (k === 'Escape') { e.preventDefault(); endEdit(true); }
+    else if (k === 'Enter' && !e.shiftKey) { e.preventDefault(); endEdit(); }
+    else if (k === 'Tab' && editingId) { e.preventDefault(); const id = editingId; endEdit(); addChild(id); }
+    return;
+  }
+  if (mod && k.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (k === 'Escape') { connecting = null; pickTarget = null; $('#rubber')?.remove(); closeStyle(); setSel([]); return; }
+  if (mod && e.altKey && (e.code === 'KeyJ')) { e.preventDefault(); doMerge(); return; }
+  if (mod && e.altKey && (e.code === 'KeyR')) { e.preventDefault(); startRelateCmd(); return; }
+  if (mod && k === ']') { e.preventDefault(); doSummary(); return; }
+  if (mod && k === '0') { e.preventDefault(); fit(); applyView(); return; }
+  if (k === 'Backspace' || k === 'Delete') { e.preventDefault(); doDelete(); return; }
+  if (S.sel.length === 1) {
+    if (k === 'Tab') { e.preventDefault(); addChild(S.sel[0]); }
+    else if (k === 'Enter') { e.preventDefault(); addSibling(S.sel[0]); }
+    else if (k === ' ' || k === 'F2') { e.preventDefault(); startEdit(S.sel[0]); }
+  }
+});
+
+/* ---------- Reader ---------- */
+function renderReader() {
+  $('#docTabs').innerHTML = Object.entries(DOCS).map(([id, d]) => `<button class="dtab ${S.doc === id ? 'on' : ''}" data-doc="${id}">${ic('doc')}${esc(d.title)}</button>`).join('');
+  const d = DOCS[S.doc];
+  let last = null;
+  $('#page').innerHTML = `<div class="paper"><h2>${esc(d.title)}</h2>` + d.paras.map(p => {
+    const pg = p.pg !== last ? `<div class="pg">第 ${p.pg} 页</div>` : ''; last = p.pg;
+    return pg + `<p>${p.t.replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, (_, id) => `<mark class="hl ${HL[id].c}" data-hl="${id}">${esc(HL[id].text)}</mark>`)}</p>`;
+  }).join('') + '</div>';
+}
+$('#docTabs').addEventListener('click', e => { const b = e.target.closest('[data-doc]'); if (b) { S.doc = b.dataset.doc; renderReader(); } });
+$('#page').addEventListener('click', e => {
+  const m = e.target.closest('[data-hl]'); if (!m) return;
+  const h = m.dataset.hl;
+  const n = S.nodes.find(n => n.kind === 'ex' && n.segs.some(s => s.h === h));
+  if (!n) return hud('这处高亮没有对应的卡片');
+  S.sel = [n.id]; S.selMark = null; updateSelection(); drawLinks();
+  flashNode(n.id, n.segs.findIndex(s => s.h === h));
+});
+function gotoSource(h) {
+  const src = HL[h]; if (S.doc !== src.doc) { S.doc = src.doc; renderReader(); }
+  const m = document.querySelector(`[data-hl="${h}"]`);
+  const pg = $('#page'); pg.scrollTo({ top: m.offsetTop - pg.clientHeight / 2 + m.offsetHeight / 2, behavior: 'smooth' });
+  m.classList.remove('flash'); void m.offsetWidth; m.classList.add('flash');
+}
+
+/* ---------- Style popover ---------- */
+const thumbs = {
+  mind: '<svg width="64" height="40" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="24" y="16" width="16" height="8" rx="3" fill="currentColor" stroke="none"/><path d="M40 20C46 20 46 8 52 8M40 20H52M40 20C46 20 46 32 52 32M24 20C18 20 18 10 12 10M24 20C18 20 18 30 12 30"/><path d="M52 8h8M52 20h8M52 32h8M4 10h8M4 30h8" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>',
+  logic: '<svg width="64" height="40" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="4" y="16" width="16" height="8" rx="3" fill="currentColor" stroke="none"/><path d="M20 20h6M26 8v24M26 8h8M26 20h8M26 32h8"/><path d="M36 8h12M36 20h16M36 32h10" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>',
+  brace: '<svg width="64" height="40" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="4" y="16" width="16" height="8" rx="3" fill="currentColor" stroke="none"/><path d="M30 6Q26 6 26 10V17Q26 20 23 20Q26 20 26 23V30Q26 34 30 34"/><path d="M33 8h14M33 20h18M33 32h12" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>',
+  tree: '<svg width="64" height="40" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="8" y="3" width="16" height="7" rx="3" fill="currentColor" stroke="none"/><path d="M12 10V33M12 18h6M12 26h6M12 33h6"/><path d="M21 18h16M21 26h22M21 33h12" stroke-width="3" stroke-linecap="round" opacity=".45"/></svg>',
+};
+function palThumb(k) {
+  const P = PALETTES[k], br = (dark() && P.darkBr) || P.br, root = dark() ? P.root[2] : P.root[0];
+  const cols = br.length ? br : ['var(--line)'];
+  const bg = dark() ? '#2C2C2E' : '#fff';
+  return `<svg width="100%" height="44" viewBox="0 0 90 44" preserveAspectRatio="xMidYMid meet" style="background:${bg}"><rect x="33" y="17" width="24" height="10" rx="4" fill="${root}"/>${[8, 22, 36].map((y, i) => `<path d="M57 22C64 22 63 ${y} 70 ${y}" stroke="${cols[i % cols.length]}" stroke-width="1.6" fill="none"/><rect x="70" y="${y - 3.5}" width="14" height="7" rx="3" fill="${P.d1 === 'fill' ? cols[i % cols.length] : P.d1 === 'tint' ? cols[i % cols.length] + '44' : 'rgba(120,120,128,.25)'}"/>`).join('')}${[12, 32].map((y, i) => `<path d="M33 22C26 22 27 ${y} 20 ${y}" stroke="${cols[(i + 3) % cols.length]}" stroke-width="1.6" fill="none"/><rect x="6" y="${y - 3.5}" width="14" height="7" rx="3" fill="${P.d1 === 'fill' ? cols[(i + 3) % cols.length] : P.d1 === 'tint' ? cols[(i + 3) % cols.length] + '44' : 'rgba(120,120,128,.25)'}"/>`).join('')}</svg>`;
+}
+let previewBase = null;
+function renderStyle() {
+  $('#stylePop').innerHTML = `<div class="sp-h">结构<span class="sm">悬停预览，点击应用</span></div><div class="structs">${Object.entries(STRUCTS).map(([k, s]) => `<button class="sc ${S.structure === k ? 'on' : ''}" data-struct="${k}" title="${s.desc}"><div class="th">${thumbs[k]}</div>${s.name}</button>`).join('')}</div>
+    <div class="sp-h">配色</div><div class="pals">${Object.entries(PALETTES).map(([k, p]) => `<button class="pal ${S.palette === k ? 'on' : ''}" data-pal="${k}"><div class="th">${palThumb(k)}</div>${p.name}</button>`).join('')}</div>
+    <div class="sp-note">只作用于当前这张脑图，切换后可以 ⌘Z 撤销。摘录卡片左侧的色条始终是原文高亮的颜色，不随配色改变。</div>`;
+}
+function openStyle() { renderStyle(); $('#stylePop').classList.add('on'); $('#styleBtn').classList.add('on'); if (S.pan) { fit(true, true); applyView(); } }
+function closeStyle() { if (previewBase) { S.structure = previewBase.s; S.palette = previewBase.p; previewBase = null; render(); } $('#stylePop').classList.remove('on'); $('#styleBtn').classList.remove('on'); }
+$('#styleBtn').addEventListener('click', e => { e.stopPropagation(); $('#stylePop').classList.contains('on') ? closeStyle() : openStyle(); });
+$('#stylePop').addEventListener('mouseover', e => {
+  const b = e.target.closest('[data-struct],[data-pal]'); if (!b) return;
+  if (!previewBase) previewBase = { s: S.structure, p: S.palette };
+  const s = b.dataset.struct || previewBase.s, p = b.dataset.pal || previewBase.p;
+  if (s !== S.structure || p !== S.palette) { S.structure = s; S.palette = p; S.pan = null; render(); }
+});
+$('#stylePop').addEventListener('mouseleave', () => { if (previewBase) { const ch = previewBase.s !== S.structure || previewBase.p !== S.palette; S.structure = previewBase.s; S.palette = previewBase.p; previewBase = null; if (ch) { S.pan = null; render(); } } });
+$('#stylePop').addEventListener('click', e => {
+  const b = e.target.closest('[data-struct],[data-pal]'); if (!b) return;
+  const base = previewBase || { s: S.structure, p: S.palette }; previewBase = null;
+  const s = b.dataset.struct || base.s, p = b.dataset.pal || base.p;
+  if (s === base.s && p === base.p) return;
+  S.structure = base.s; S.palette = base.p;
+  commit(() => { S.structure = s; S.palette = p; }); S.pan = null; render(); renderStyle();
+  hud(b.dataset.struct ? `已切换为${STRUCTS[s].name}` : `已使用“${PALETTES[p].name}”配色`, ['撤销', () => { undo(); renderStyle(); }]);
+});
+
+/* ---------- Scenarios ---------- */
+const SCENARIOS = [
+  { g: '合并节点', t: '多选后合并', setup: () => { S.sel = ['e1', 'e2']; },
+    notes: { h: '合并节点', d: '⌘ / ⇧ 点击或框选多个节点后，选区上方出现操作条。悬停“合并”会用虚线框标出保留的节点。', rules: ['保留导图顺序中最靠前的节点，其余并入；按导图顺序（不是点选顺序）拼接，每段换行。', '每段保留自己的出处：点击某一段跳回该段原文；点原文高亮会闪烁卡片里对应的那一段。', '被合并节点的子节点挂到合并结果下；关联线改连到结果，重复的自动去掉。', '不弹确认框，底部提示里直接“撤销”。之后想再分开：右键“拆分”，每段变回一个相邻节点（原位置不还原，原样恢复请用撤销）。'], risks: ['复习进度：合并后沿用保留节点的 FSRS 进度；其余卡片的复习记录归档、不再参与排期（待确认）。', '卡片会变长：超过 4 行时沿用“展开全文”。'] } },
+  { g: '合并节点', t: '跨文档、带标题的合并', setup: () => { S.sel = ['e3', 'e5', 'e6']; },
+    notes: { h: '跨文档合并', d: '三个摘录分别来自《认知天性》和《刻意练习》，其中一个已改名为问题（复习题面）。', rules: ['标题取第一个非空标题；正文的出处行改为“认知天性、刻意练习 · 3 处原文”。', '每段前面的小圆点是它原来的高亮颜色；悬停显示“↗ 刻意练习 · 第 58 页”。', '点击第二段会切换左侧到另一份文档并闪烁原句。'], risks: ['不同颜色的摘录合并后，卡片左侧色条取第一段的颜色。'] } },
+  { g: '合并节点', t: '合并的限制', setup: () => { S.sel = ['m2', 'img1', 'e7']; },
+    notes: { h: '哪些不能合并', d: '按钮变灰并在悬停时说明原因，而不是点了之后报错。', rules: ['中心主题、图片卡片、概要主题不能合并。', '主题 + 主题：得到多行主题；主题 + 摘录：主题文字作为一段“自己的话”（系统字体）放进摘录卡片，不可跳转。', '父子同时选中也可以合并：子节点的子节点会提升到合并结果下。'], risks: ['试一试：⌘ 点击取消选中图片卡片，“合并”就可用了。'] } },
+  { g: '概要', t: '为同级节点添加概要', setup: () => { S.sel = ['m1', 'm2', 'e7']; },
+    notes: { h: '概要', d: '选中同一父主题下的几个节点，点“概要”（⌘]）。右侧出现大括号和一个可编辑的概要主题。', rules: ['概要是一个真正的主题：可以改名、Tab 添加细分主题、被关联线连接。', '概要的颜色跟随所概括的分支，样式在所有结构里一致。', '选中概要（点括号）后拖动两端的方块调整范围，自动吸附到同级节点。', '选中不连续的节点时，概要覆盖它们之间的全部节点，并提示包含了几个未选中的。'], risks: ['跨层级不能添加概要；与已有概要范围重叠也不行（避免括号嵌套难以阅读）。'] } },
+  { g: '概要', t: '带细分主题的概要', setup: () => {
+      const nodeId = 's1', sid = 'S1';
+      S.nodes.push({ id: nodeId, parent: null, kind: 'sum', text: '都是“让回想变难”' }, { id: 'st1', parent: nodeId, kind: 'topic', text: '期望困难' }, { id: 'st2', parent: nodeId, kind: 'topic', text: '感觉学得慢，其实记得牢' });
+      S.sums.push({ id: sid, parent: 'root', from: 't1', to: 't3', nodeId });
+      S.selMark = sid;
+    },
+    notes: { h: '概要 + 细分主题（参考 XMind）', d: '对三个一级主题做的概要，概要下还有两个细分主题。括号已选中，可以拖动上下两端调整范围。', rules: ['思维导图结构下，被概要的分支会排在同一侧，括号不会被中心主题切断。', '删除概要会一并删除它的细分主题（可撤销）。'], risks: ['大纲视图：概要显示为所概括范围下方的一行“概要：……”，细分主题缩进在其下（待实现时确认）。'] } },
+  { g: '关联线', t: '拖拽建立关联', setup: () => { S.sel = ['e7']; },
+    notes: { h: '关联线', d: '选中一个节点后，右上角出现紫色 ⤳ 把手。按住拖到另一个节点上松开，就建好了一条关联线，并直接进入说明编辑（可以留空）。', rules: ['也可以：选中两个节点点操作条里的“关联”；或右键“添加关联线…”再点目标节点（⌥⌘R，沿用现有快捷键）。', '同一对节点只保留一条关联线，重复建立会选中已有的那条。', '关联线默认虚线 + 箭头，与分支线一眼区分。'], risks: ['节点被折叠时，关联线连到折叠后可见的祖先节点（待实现）。'] } },
+  { g: '关联线', t: '编辑关联线', setup: () => {
+      S.rels.push({ id: 'r1', from: 'e7', to: 'e1', label: '对策', arrow: 'end' }, { id: 'r2', from: 'n1', to: 'e4', label: '', arrow: 'end' });
+      S.selMark = 'r1';
+    },
+    notes: { h: '编辑关联线', d: '点线条或说明文字选中。两个圆点控制弯曲程度，下方小工具条可以改箭头方向、实线/虚线、删除。', rules: ['控制点相对两端节点保存，结构切换或节点移动后线条跟着走。', '双击线条或说明文字编辑；说明为空时平时不显示占位文字。'], risks: ['线条跨越很多节点时会遮挡内容，所以默认弯曲向外侧，必要时手动拖开。'] } },
+  { g: '结构与配色', t: '切换结构', setup: () => { S._style = true; S.rels.push({ id: 'r1', from: 'e7', to: 'e1', label: '对策', arrow: 'end' }); const nodeId = 's1'; S.nodes.push({ id: nodeId, parent: null, kind: 'sum', text: '误区' }); S.sums.push({ id: 'S1', parent: 't4', from: 'm1', to: 'm2', nodeId }); },
+    notes: { h: '四种结构', d: '右上角“样式”。悬停即预览，点击才应用；移开不选则恢复。', rules: ['思维导图：中心向两侧展开（当前默认）。', '逻辑图：全部向右，折线，适合按顺序阅读的笔记。', '括号图：用大括号归组，适合分类、拆解。', '树形图：自上而下缩进，像文件目录，最适合长摘录卡片和窄窗口。', '概要、关联线、合并后的卡片在每种结构下都可用。'], risks: ['只做 4 种，不做 XMind 的几十种变体：读书笔记里这 4 种覆盖了主要场景，选择越少越容易选。', '结构属于每张脑图；导出 PNG / PDF 时按当前结构。'] } },
+  { g: '结构与配色', t: '配色方案', setup: () => { S._style = true; S.palette = 'rainbow'; },
+    notes: { h: '配色方案', d: '6 套配色：系统（现在的样子）、多彩、清新、暖阳、莫兰迪、墨水。每套同时有浅色和深色版本，切换到深色模式试试。', rules: ['配色决定中心主题、一级主题、分支线和概要的颜色。', '摘录卡片左侧色条仍然是原文高亮色——它表示“这句话在原文里是什么颜色”，不能被配色覆盖。', '不提供自定义配色编辑器（一期）；6 套预设 + 深浅自动适配已覆盖大多数需求。'], risks: ['彩色主题下文字对比度需要逐套检查（≥ 4.5:1），实现时加入 tokens 测试。'] } },
+];
+let cur = 0;
+function loadScenario(i) {
+  cur = i; closeStyle(); $('#hud').classList.remove('on'); S = freshState(); undoStack = []; redoStack = []; connecting = pickTarget = null; editingId = editingRel = null;
+  for (const id of Object.keys(els)) { els[id].remove(); delete els[id]; } G = {};
+  // Reset highlight colours that may have been recoloured.
+  for (const [d, doc] of Object.entries(DOCS)) doc.paras.forEach(p => p.t.replace(/\[(h\d+):(\w)\|/g, (_, id, c) => { HL[id].c = c; }));
+  world.classList.add('nolay');
+  SCENARIOS[i].setup();
+  const st = S._style; delete S._style;
+  renderReader(); render(); if (st) { renderStyle(); $('#stylePop').classList.add('on'); $('#styleBtn').classList.add('on'); } fit(false, true); applyView();
+  requestAnimationFrame(() => world.classList.remove('nolay'));
+  renderScList();
+}
+function renderScList() {
+  let g = null;
+  $('#scList').innerHTML = SCENARIOS.map((s, i) => (s.g !== g ? `<div class="grp">${g = s.g}</div>` : '') + `<button class="sc-btn ${i === cur ? 'on' : ''}" data-sc="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span>${s.t}</button>`).join('');
+}
+function renderNotes() {
+  const n = SCENARIOS[cur].notes;
+  $('#notes').innerHTML = `<h4>${n.h}</h4><div>${n.d}</div><div class="lab">规则</div><ul>${n.rules.map(r => `<li>${r}</li>`).join('')}</ul><div class="lab">约束与待确认</div><ul>${n.risks.map(r => `<li>${r}</li>`).join('')}</ul>`;
+}
+$('#scList').addEventListener('click', e => { const b = e.target.closest('[data-sc]'); if (b) loadScenario(+b.dataset.sc); });
+$('#resetBtn').onclick = () => loadScenario(cur);
+$('#darkBtn').onclick = () => { document.body.classList.toggle('dark'); $('#win').classList.toggle('dark'); $('#ctx').classList.toggle('dark'); for (const id in els) els[id]._html = null; render(); if ($('#stylePop').classList.contains('on')) renderStyle(); };
+addEventListener('resize', () => { fit(false); applyView(); });
+// Overflow-hidden containers must never scroll (focus and caret moves would shift the window).
+document.addEventListener('scroll', e => { const t = e.target; if (t !== document && t.id !== 'page' && !(t.closest && t.closest('#demo'))) { t.scrollTop = 0; t.scrollLeft = 0; } }, true);
+loadScenario(0);
+</script>
+</body>
+</html>
