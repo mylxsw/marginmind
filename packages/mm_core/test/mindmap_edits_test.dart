@@ -192,6 +192,20 @@ void main() {
     expect(dropped.content.card(made.value!.cardId!), isNull);
   });
 
+  test('merge keeps a summary over the consumed card children', () {
+    final (withP, p) = editor.addTopic(content, title: 'p', parentId: b.id);
+    final (withQ, q) = editor.addTopic(withP, title: 'q', parentId: b.id);
+    final made = editor.createSummary(withQ, [p.id, q.id], label: 'S');
+    final summary = made.value!;
+    final (withSub, sub) = editor.addTopic(made.content, title: 'sub', parentId: summary.cardId);
+    final merged = editor.mergeCards(withSub, [a.id, b.id]);
+    expect(merged.removedSummaryCount, 0);
+    final kept = merged.content.summaries.single;
+    expect(kept.parentId, a.id);
+    expect(merged.content.summaryRange(kept), [p.id, q.id]);
+    expect(merged.content.node(sub.id)!.parentId, summary.cardId);
+  });
+
   test('relations deduplicate opposite endpoints and support style and reversal', () {
     final (linked, relation) = editor.addRelation(content, a.id, b.id);
     expect(editor.addRelation(linked, b.id, a.id), (linked, relation));

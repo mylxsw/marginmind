@@ -142,6 +142,12 @@ extension MindMapEditing on StudySetEditor {
             orders.containsKey(n.cardId) ? n.copyWith(parentId: survivor.id, order: orders[n.cardId]) : n,
       ],
       relations: relations,
+      // Summaries over a consumed card's children follow those children to the
+      // survivor; they stay one contiguous block, so ranges remain valid.
+      summaries: [
+        for (final s in c.summaries)
+          s.mapId == mapId && consumed.contains(s.parentId) ? s.copyWith(parentId: survivor.id) : s,
+      ],
       noteAttachments: [
         for (final a in c.noteAttachments)
           if (a.target is CardTarget && consumed.contains((a.target as CardTarget).cardId))
