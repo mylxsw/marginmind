@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Icons;
 
 /// Icon vocabulary. Uses Cupertino icons (SF Symbols look-alikes that ship
 /// with Flutter) so the same names work on every platform; the SF Symbol each
@@ -31,6 +32,7 @@ abstract final class MMIcons {
   static const IconData newFolder = CupertinoIcons.folder_badge_plus; // folder.badge.plus
   static const IconData trash = CupertinoIcons.trash; // trash
   static const IconData document = CupertinoIcons.doc_text; // doc.text
+  static const IconData collections = Icons.collections;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
   static const IconData ai = CupertinoIcons.sparkles; // sparkles
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass

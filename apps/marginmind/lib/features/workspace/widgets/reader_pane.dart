@@ -1130,7 +1130,7 @@ class _DocumentSwitcher extends StatelessWidget {
       key: const ValueKey('reader-documents'),
       tooltip: l.switchDocument,
       width: MMSizes.dropdownWideWidth,
-      icon: Icon(MMIcons.chevronUpDown, color: c.label, semanticLabel: l.switchDocument),
+      icon: Icon(MMIcons.collections, color: c.label, semanticLabel: l.switchDocument),
       onSelected: (id) => id.isEmpty ? onClose?.call() : onOpen(id),
       itemBuilder: (_) => [
         for (final document in documents)

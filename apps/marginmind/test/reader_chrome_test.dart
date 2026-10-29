@@ -103,7 +103,7 @@ void main() {
         final switcher = find.byKey(const ValueKey('reader-documents'));
         expect(container.read(provider).openDocumentIds, ['c1']);
         expect(switcher, findsOneWidget);
-        expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.chevronUpDown)), findsOneWidget);
+        expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.collections)), findsOneWidget);
         expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.document)), findsNothing);
         expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.chevronDown)), findsNothing);
         final reader = find.byType(ReaderPane);
