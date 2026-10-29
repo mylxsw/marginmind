@@ -388,6 +388,27 @@ void main() {
     s.dispose();
   });
 
+  testWidgets('a pending stop cannot change a newer navigation', (tester) async {
+    final stopped = Completer<void>();
+    final s = BrowserSession(Uri.parse('https://example.com/'));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async {
+        if (call.method == 'stop') await stopped.future;
+        return null;
+      },
+    );
+    await event(s, 'loaded');
+    final stop = s.stop();
+    await event(s, 'start', id: 2);
+    stopped.complete();
+    await stop;
+    expect(s.phase, BrowserPhase.loading);
+    expect(s.loading, isTrue);
+    expect(s.canCapture, isFalse);
+    s.dispose();
+  });
+
   testWidgets('load failure categories remain failed until a new navigation', (tester) async {
     final s = BrowserSession(Uri.parse('https://example.com/'));
     addTearDown(s.dispose);

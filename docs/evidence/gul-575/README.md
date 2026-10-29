@@ -52,10 +52,10 @@ Local verification for this revision:
 
 - `flutter analyze --no-pub`, `dart format --set-exit-if-changed apps packages`, `git diff --check`: passed.
 - `python3 -m unittest discover -s tool/tests`: 17 passed.
-- Browser tests: 13 platform unit tests and 5 app widget tests passed.
+- Browser tests: 14 platform unit tests and 5 app widget tests passed.
 - `python3 tool/coverage.py` ran all 12 suites. The app finished with 778 passing, 21 existing opt-in skips and one unrelated timing failure: `mind_map_cache_test.dart` p95 17.601 ms against 16 ms. All other suites passed. The unchanged 16-test cache file passed with coverage (p95 11.782 ms), although an attempted Flutter coverage merge then reported a missing base file. A plain rerun concurrent with analysis exceeded the gate again (21.941 ms). Once the other checks from this run finished, `flutter test test/mind_map_cache_test.dart --no-pub --reporter expanded --concurrency=1` exited 0 with all 16 tests passing and p95 **8.126 ms**. Thresholds and production map code were not changed. The complete full-suite app LCOV was preserved for aggregation.
-- `python3 tool/coverage.py --report-only`: passed, 29,668 / 32,418 lines (**91.52%**). Fresh full-suite reports are retained, including the complete app run. Browser session 90.68%, URL/readiness policy 91.18%, browser pane 100%, workspace browser 97.53%.
+- `python3 tool/coverage.py --report-only`: passed, 29,669 / 32,419 lines (**91.52%**). Fresh full-suite reports are retained, including the complete app run. Browser session 90.72%, URL/readiness policy 91.18%, browser pane 100%, workspace browser 97.53%.
 
 The Windows tab now unregisters its message handler before releasing its controller; the native integration fixture repeatedly creates and disposes tabs and clears the profile to cover that lifecycle in CI.
 
-A final terminal-state audit added a pending-stop regression: a stop result arriving after a load error now preserves the failed phase and keeps capture disabled. The refreshed platform suite passed all 42 tests (13 browser tests), the 5 app browser tests passed, and analyze/format checks passed.
+A final terminal-state audit added a pending-stop regression: a stop result arriving after a load error preserves the failed phase, and one arriving after a new navigation leaves that navigation loading; both keep capture disabled. The refreshed platform suite passed all 43 tests (14 browser tests), the 5 app browser tests passed, and analyze/format checks passed.
