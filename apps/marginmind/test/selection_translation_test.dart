@@ -91,7 +91,7 @@ void main() {
       expect(icons, [
         MMIcons.highlight,
         MMIcons.copy,
-        MMIcons.marginNote,
+        MMIcons.quoteBubble,
         MMIcons.addNote,
         MMIcons.mindMap,
         MMIcons.translate,

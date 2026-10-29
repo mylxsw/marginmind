@@ -298,7 +298,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     ),
                   MMToolbarButton(
                     key: const ValueKey('selection-margin-note'),
-                    icon: MMIcons.marginNote,
+                    icon: MMIcons.quoteBubble,
                     tooltip: '${l.marginNoteAction}（C）',
                     onPressed: () => _run(ReaderSelectionCommand.marginNote),
                   ),
