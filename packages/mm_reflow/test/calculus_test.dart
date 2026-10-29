@@ -31,7 +31,7 @@ void main() {
       expect(layout.pieces.skip(1).expand((p) => p.artwork).length, 7);
       final imageOffset = chapter.canonicalText.indexOf('\uFFFC');
       final box = layout.boxes(chapter.anchor(imageOffset, imageOffset + 1)).single;
-      expect(layout.hitTest(box.center), inInclusiveRange(imageOffset, imageOffset + 1));
+      expect(layout.hitTest(box.center).start, inInclusiveRange(imageOffset, imageOffset + 1));
       expect(chapter.resolves(anchor), isTrue);
       expect(anchor.toJson(), snapshot);
       await tester.pumpWidget(

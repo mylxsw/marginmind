@@ -1,0 +1,263 @@
+{
+  "host": {
+    "kind": "host",
+    "system": "Linux-6.17.0-1020-oracle-aarch64-with-glibc2.39",
+    "cpu_count": 4,
+    "rendering": "Xvfb / Mesa software rasterizer",
+    "pid": 2067598
+  },
+  "environment": {
+    "kind": "environment",
+    "profile": false,
+    "release": true,
+    "platform": "linux",
+    "pixel_ratio": 1.0,
+    "refresh_hz": 0.0,
+    "repeats": 30
+  },
+  "events": {
+    "host": 1,
+    "memory_poll": 268,
+    "environment": 1,
+    "book": 3,
+    "decode": 110,
+    "layout": 9900,
+    "frame": 1184,
+    "memory_round": 18,
+    "memory": 18,
+    "book_done": 3,
+    "stress_layout": 180,
+    "done": 1
+  },
+  "books": {
+    "28885": {
+      "samples": 2700,
+      "worst_group_p95_ms": 30.057,
+      "worst_work_p95_ms": 23.371,
+      "max_batch_ms": 8.648
+    },
+    "33283": {
+      "samples": 6660,
+      "worst_group_p95_ms": 99.714,
+      "worst_work_p95_ms": 86.734,
+      "max_batch_ms": 11.38
+    },
+    "7337": {
+      "samples": 540,
+      "worst_group_p95_ms": 26.545,
+      "worst_work_p95_ms": 24.096,
+      "max_batch_ms": 8.319
+    }
+  },
+  "stress": {
+    "long-chapter": {
+      "count": 60,
+      "p50_ms": 213.518,
+      "p95_ms": 376.393,
+      "max_ms": 492.405,
+      "max_batch_ms": 11.316
+    },
+    "huge-image": {
+      "count": 60,
+      "p50_ms": 0.013,
+      "p95_ms": 0.019,
+      "max_ms": 0.035,
+      "max_batch_ms": 0.032
+    },
+    "single-paragraph": {
+      "count": 60,
+      "p50_ms": 77.325,
+      "p95_ms": 151.261,
+      "max_ms": 192.024,
+      "max_batch_ms": 191.662
+    }
+  },
+  "frames": {
+    "cold": {
+      "build": {
+        "count": 568,
+        "p50_ms": 1.766,
+        "p95_ms": 2.262,
+        "max_ms": 13.825
+      },
+      "raster": {
+        "count": 568,
+        "p50_ms": 7.405,
+        "p95_ms": 17.305,
+        "max_ms": 69.662
+      },
+      "over_budget_percent": 5.809859154929577
+    },
+    "hot": {
+      "build": {
+        "count": 616,
+        "p50_ms": 1.771,
+        "p95_ms": 2.316,
+        "max_ms": 15.215
+      },
+      "raster": {
+        "count": 616,
+        "p50_ms": 7.232,
+        "p95_ms": 15.523,
+        "max_ms": 33.268
+      },
+      "over_budget_percent": 4.383116883116883
+    }
+  },
+  "memory": [
+    {
+      "kind": "memory",
+      "round": 0,
+      "switches": 0,
+      "book": "7337",
+      "rss_kib": 296768,
+      "pss_kib": 263088
+    },
+    {
+      "kind": "memory",
+      "round": 1,
+      "switches": 10,
+      "book": "7337",
+      "rss_kib": 288780,
+      "pss_kib": 255089
+    },
+    {
+      "kind": "memory",
+      "round": 2,
+      "switches": 20,
+      "book": "7337",
+      "rss_kib": 293996,
+      "pss_kib": 260303
+    },
+    {
+      "kind": "memory",
+      "round": 3,
+      "switches": 30,
+      "book": "7337",
+      "rss_kib": 299212,
+      "pss_kib": 265507
+    },
+    {
+      "kind": "memory",
+      "round": 4,
+      "switches": 40,
+      "book": "7337",
+      "rss_kib": 291380,
+      "pss_kib": 257686
+    },
+    {
+      "kind": "memory",
+      "round": 5,
+      "switches": 50,
+      "book": "7337",
+      "rss_kib": 296596,
+      "pss_kib": 262916
+    },
+    {
+      "kind": "memory",
+      "round": 0,
+      "switches": 0,
+      "book": "33283",
+      "rss_kib": 359320,
+      "pss_kib": 325458
+    },
+    {
+      "kind": "memory",
+      "round": 1,
+      "switches": 10,
+      "book": "33283",
+      "rss_kib": 362592,
+      "pss_kib": 328728
+    },
+    {
+      "kind": "memory",
+      "round": 2,
+      "switches": 20,
+      "book": "33283",
+      "rss_kib": 356960,
+      "pss_kib": 323098
+    },
+    {
+      "kind": "memory",
+      "round": 3,
+      "switches": 30,
+      "book": "33283",
+      "rss_kib": 360176,
+      "pss_kib": 326331
+    },
+    {
+      "kind": "memory",
+      "round": 4,
+      "switches": 40,
+      "book": "33283",
+      "rss_kib": 362704,
+      "pss_kib": 328842
+    },
+    {
+      "kind": "memory",
+      "round": 5,
+      "switches": 50,
+      "book": "33283",
+      "rss_kib": 357072,
+      "pss_kib": 323210
+    },
+    {
+      "kind": "memory",
+      "round": 0,
+      "switches": 0,
+      "book": "28885",
+      "rss_kib": 344228,
+      "pss_kib": 310366
+    },
+    {
+      "kind": "memory",
+      "round": 1,
+      "switches": 10,
+      "book": "28885",
+      "rss_kib": 349020,
+      "pss_kib": 315177
+    },
+    {
+      "kind": "memory",
+      "round": 2,
+      "switches": 20,
+      "book": "28885",
+      "rss_kib": 339680,
+      "pss_kib": 305818
+    },
+    {
+      "kind": "memory",
+      "round": 3,
+      "switches": 30,
+      "book": "28885",
+      "rss_kib": 343672,
+      "pss_kib": 309810
+    },
+    {
+      "kind": "memory",
+      "round": 4,
+      "switches": 40,
+      "book": "28885",
+      "rss_kib": 347460,
+      "pss_kib": 313598
+    },
+    {
+      "kind": "memory",
+      "round": 5,
+      "switches": 50,
+      "book": "28885",
+      "rss_kib": 337736,
+      "pss_kib": 303874
+    }
+  ],
+  "image_failures": [],
+  "anchor_failures": 0,
+  "sampled_peak_pss_kib": 440580,
+  "initial_pss_kib": 2061,
+  "first_settled_pss_kib": 263088,
+  "sampled_peak_above_first_settled_kib": 177492,
+  "frame_budget": {
+    "refresh_hz": 60,
+    "reference_only": true
+  }
+}

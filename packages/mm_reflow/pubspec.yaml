@@ -1,5 +1,5 @@
 name: mm_reflow
-description: Flutter chapter layout and reflow validation prototype.
+description: Incremental Flutter book typesetting, pagination, source geometry and bounded layout cache.
 version: 0.1.0
 publish_to: none
 resolution: workspace

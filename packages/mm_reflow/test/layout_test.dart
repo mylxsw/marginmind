@@ -22,7 +22,7 @@ void main() {
       }
       final boxes = layout.boxes(a);
       expect(boxes, isNotEmpty);
-      final hit = layout.hitTest(boxes.first.center);
+      final hit = layout.hitTest(boxes.first.center).start;
       expect(hit, inInclusiveRange(a.start, a.end));
       expect(layout.pageForOffset(a.start), inInclusiveRange(0, layout.pages.length - 1));
       expect(layout.pageForOffset(c.canonicalText.length), layout.pages.length - 1);
@@ -53,7 +53,7 @@ void main() {
     final index = c.canonicalText.indexOf('second');
     final boxes = layout.boxes(c.anchor(index, index + 6));
     expect(boxes, isNotEmpty);
-    expect(layout.hitTest(boxes.first.center), inInclusiveRange(index, index + 6));
+    expect(layout.hitTest(boxes.first.center).start, inInclusiveRange(index, index + 6));
     final imageStart = c.blocks.last.start;
     expect(layout.boxes(c.anchor(imageStart, imageStart + 1)), hasLength(1));
     final paintRecorder = ui.PictureRecorder();
@@ -68,14 +68,15 @@ void main() {
   });
   test('empty, invalid geometry and oversized row', () {
     final empty = ChapterLayout.layout(parser.parseHtml('c', ''), const LayoutSpec(width: 200));
-    expect(empty.hitTest(Offset.zero), 0);
+    expect(empty.hitTest(Offset.zero).start, 0);
     expect(empty.pages.length, 1);
     empty.dispose();
     expect(() => ChapterLayout.layout(parser.parseHtml('c', ''), const LayoutSpec(width: 0)), throwsArgumentError);
     final c = parser.parseHtml('c', '<table><tr><td>${'x ' * 500}</td></tr></table>');
     final layout = ChapterLayout.layout(c, const LayoutSpec(width: 100, pageHeight: 50));
-    expect(layout.pages.length, greaterThan(10));
-    expect(layout.hitTest(const Offset(-20, -20)), 0);
+    expect(layout.pages.length, 1);
+    expect(layout.pages.single.scrollExtent, greaterThan(500));
+    expect(layout.hitTest(const Offset(-20, -20)).start, 0);
     layout.dispose();
   });
   testWidgets('drag selects source text and repaint follows font changes', (tester) async {

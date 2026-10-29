@@ -1,0 +1,215 @@
+{
+  "baseline": "7aa0c27",
+  "container_style_present": false,
+  "table_header_identity_present": false,
+  "intrinsic_size_present": false,
+  "ir": {
+    "version": 1,
+    "normalizationVersion": 1,
+    "revision": "cf8dbc4171c5f6671b2a15d2471304c3cf5ad911882f1f64a42025be10cf4849",
+    "title": "probe",
+    "metadata": {},
+    "fixedLayout": false,
+    "spine": [
+      {
+        "id": "probe",
+        "sourceHref": "probe",
+        "canonicalText": "A汉\nheader\nbody\n￼",
+        "sourceMap": [
+          {
+            "path": "0/1/0/0/0",
+            "sourceStart": 0,
+            "sourceEnd": 1,
+            "start": 0,
+            "end": 1
+          },
+          {
+            "path": "0/1/0/0/1",
+            "sourceStart": 0,
+            "sourceEnd": 0,
+            "start": 1,
+            "end": 2
+          },
+          {
+            "path": "0/1/0/1/0/0/0/0",
+            "sourceStart": 0,
+            "sourceEnd": 6,
+            "start": 3,
+            "end": 9
+          },
+          {
+            "path": "0/1/0/1/1/0/0/0",
+            "sourceStart": 0,
+            "sourceEnd": 4,
+            "start": 10,
+            "end": 14
+          },
+          {
+            "path": "0/1/0/2",
+            "sourceStart": 0,
+            "sourceEnd": 0,
+            "start": 15,
+            "end": 16
+          }
+        ],
+        "elementOffsets": {},
+        "structure": [
+          {
+            "path": "0/1/0",
+            "tag": "section",
+            "children": [
+              {
+                "path": "0/1/0/0",
+                "tag": "p",
+                "blockId": "probe#0/1/0/0",
+                "children": []
+              },
+              {
+                "path": "0/1/0/1",
+                "tag": "table",
+                "blockId": "probe#0/1/0/1",
+                "children": []
+              },
+              {
+                "path": "0/1/0/2",
+                "tag": "img",
+                "blockId": "probe#0/1/0/2",
+                "children": []
+              }
+            ]
+          }
+        ],
+        "fonts": [],
+        "blocks": [
+          {
+            "id": "probe#0/1/0/0",
+            "kind": "paragraph",
+            "start": 0,
+            "end": 2,
+            "level": 1,
+            "style": {},
+            "sourcePath": "0/1/0/0",
+            "ordered": false,
+            "listStart": 1,
+            "runs": [
+              {
+                "text": "A",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {}
+              },
+              {
+                "text": "汉",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {},
+                "ruby": "han"
+              }
+            ],
+            "rows": []
+          },
+          {
+            "id": "probe#0/1/0/1",
+            "kind": "table",
+            "start": 3,
+            "end": 14,
+            "level": 1,
+            "style": {},
+            "sourcePath": "0/1/0/1",
+            "ordered": false,
+            "listStart": 1,
+            "runs": [
+              {
+                "text": "header",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {}
+              },
+              {
+                "text": "\n",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {}
+              },
+              {
+                "text": "body",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {}
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "rowSpan": 1,
+                  "colSpan": 1,
+                  "runs": [
+                    {
+                      "text": "header",
+                      "strong": false,
+                      "emphasis": false,
+                      "code": false,
+                      "style": {}
+                    }
+                  ]
+                }
+              ],
+              [
+                {
+                  "rowSpan": 1,
+                  "colSpan": 1,
+                  "runs": [
+                    {
+                      "text": "body",
+                      "strong": false,
+                      "emphasis": false,
+                      "code": false,
+                      "style": {}
+                    }
+                  ]
+                }
+              ]
+            ]
+          },
+          {
+            "id": "probe#0/1/0/2",
+            "kind": "image",
+            "start": 15,
+            "end": 16,
+            "level": 1,
+            "style": {},
+            "sourcePath": "0/1/0/2",
+            "ordered": false,
+            "listStart": 1,
+            "resource": "image.svg",
+            "runs": [
+              {
+                "text": "￼",
+                "strong": false,
+                "emphasis": false,
+                "code": false,
+                "style": {},
+                "resource": "image.svg"
+              }
+            ],
+            "rows": []
+          }
+        ]
+      }
+    ],
+    "toc": [],
+    "resources": [
+      {
+        "path": "image.svg",
+        "sha256": "ccd1f79635003407ee83d11083e2e4a874a0225787b63e73e9e83d595d69b896",
+        "length": 64,
+        "mime": "image/svg+xml"
+      }
+    ]
+  }
+}
