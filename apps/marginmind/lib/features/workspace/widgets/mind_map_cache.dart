@@ -495,7 +495,11 @@ class _NodeSpec {
     // one is being typed).
     final titled = card.title.isNotEmpty || editing;
     final titleRow = titled ? cache._textScaler.scale(17) + 6 : 0;
-    final source = doc == null ? null : '${doc.title} · ${l.pageNumber(a!.page)}';
+    final source = doc == null
+        ? null
+        : a!.isText
+        ? doc.title
+        : '${doc.title} · ${l.pageNumber(a.page)}';
     final cardWidth = (width ?? (card.kind == CardKind.excerpt ? cache._excerptWidthFor(card) : excerptWidth))
         .clamp(MapNode.minWidth, MapNode.maxWidth)
         .toDouble();

@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 10;
+const currentStudySetFormat = 11;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -21,6 +21,7 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 8) result = _toFormat8(result);
   if (format < 9) result = _toFormat9(result);
   if (format < 10) result = _toFormat10(result);
+  if (format < 11) result = {...result, 'format': 11};
   return result;
 }
 

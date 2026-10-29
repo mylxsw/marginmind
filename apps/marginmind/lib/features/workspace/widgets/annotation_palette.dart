@@ -25,7 +25,7 @@ class AnnotationPalettePlacement extends SingleChildLayoutDelegate {
 
 class AnnotationMoreColorsButton extends StatelessWidget {
   const AnnotationMoreColorsButton({super.key, required this.onPressed});
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

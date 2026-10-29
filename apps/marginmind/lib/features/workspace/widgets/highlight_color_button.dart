@@ -18,18 +18,24 @@ class HighlightColorButton extends ConsumerStatefulWidget {
     required this.onChanged,
     this.selected = false,
     this.compact = false,
+    this.enabled = true,
     this.onOpenChanged,
     this.onOpen,
   }) : moreOnly = false;
 
   /// A fourth inline color dot that opens the full picker directly.
-  const HighlightColorButton.more({super.key, required this.color, required this.onChanged, this.onOpenChanged})
-    : selected = false,
-      compact = false,
-      onOpen = null,
-      moreOnly = true;
+  const HighlightColorButton.more({
+    super.key,
+    required this.color,
+    required this.onChanged,
+    this.onOpenChanged,
+    this.enabled = true,
+  }) : selected = false,
+       compact = false,
+       onOpen = null,
+       moreOnly = true;
 
-  final bool moreOnly;
+  final bool moreOnly, enabled;
   final MMAnnotationColor color;
   final Future<void> Function(MMAnnotationColor) onChanged;
   final bool selected, compact;
@@ -77,14 +83,14 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
 
   @override
   Widget build(BuildContext context) => widget.moreOnly
-      ? AnnotationMoreColorsButton(onPressed: _show)
+      ? AnnotationMoreColorsButton(onPressed: widget.enabled ? _show : null)
       : MMToolbarButton(
           icon: MMIcons.highlight,
           tint: _open || widget.selected ? widget.color.color : null,
           tooltip: context.l10n.chooseHighlightColor,
           selected: _open || widget.selected,
           compact: widget.compact,
-          onPressed: _show,
+          onPressed: widget.enabled ? _show : null,
         );
 }
 

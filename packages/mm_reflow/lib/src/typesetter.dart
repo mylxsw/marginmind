@@ -110,9 +110,17 @@ class _Typesetter {
     }
 
     final index = lowerBound(start);
-    final first = _boundaries[index] == start ? start : _boundaries[index - 1];
-    final last = _boundaries[lowerBound(end)];
-    return TextAnchor(chapter.id, first, last, chapter.canonicalText.substring(first, last));
+    final firstIndex = _boundaries[index] == start ? index : index - 1;
+    final lastIndex = lowerBound(end);
+    final first = _boundaries[firstIndex], last = _boundaries[lastIndex];
+    return TextAnchor(
+      chapter.id,
+      first,
+      last,
+      chapter.canonicalText.substring(first, last),
+      prefix: chapter.canonicalText.substring(_boundaries[math.max(0, firstIndex - 32)], first),
+      suffix: chapter.canonicalText.substring(last, _boundaries[math.min(_boundaries.length - 1, lastIndex + 32)]),
+    );
   }
 
   Duration workTime = Duration.zero, maxBatchTime = Duration.zero;

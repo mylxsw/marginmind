@@ -33,6 +33,9 @@ abstract final class MMIcons {
   static const IconData folder = CupertinoIcons.folder; // folder
   static const IconData newFolder = CupertinoIcons.folder_badge_plus; // folder.badge.plus
   static const IconData trash = CupertinoIcons.trash; // trash
+  static const IconData ebook = CupertinoIcons.book;
+  static const IconData markdown = LucideIcons.hash;
+  static const IconData readingSettings = LucideIcons.aLargeSmall;
   static const IconData document = CupertinoIcons.doc_text; // doc.text
   static const IconData collections = LucideIcons.bookOpen;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
@@ -105,6 +108,7 @@ abstract final class MMIcons {
   static const IconData link = CupertinoIcons.link; // link
   static const IconData openExternal = CupertinoIcons.arrow_up_right_square; // arrow.up.right.square
   static const IconData warning = CupertinoIcons.exclamationmark_triangle; // exclamationmark.triangle
+  static const IconData shield = CupertinoIcons.shield; // shield
   static const IconData check = CupertinoIcons.checkmark; // checkmark
   static const IconData stop = CupertinoIcons.stop_fill; // stop.fill
   static const IconData microphone = CupertinoIcons.mic; // mic

@@ -360,7 +360,11 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
               ? l.exportSummary(card.title)
               : notePlainText(card.title, card.textFormat),
           sub: isExcerpt && (card.title.isNotEmpty || f?.id == id) ? quote : null,
-          meta: annotation == null ? null : l.pageNumber(annotation.page),
+          meta: annotation == null
+              ? null
+              : annotation.isText
+              ? widget.content.document(annotation.documentId)?.title
+              : l.pageNumber(annotation.page),
           dot: isExcerpt || isImage ? MMAnnotationColor.fromIndex(annotation?.colorIndex ?? 0).color : null,
           bold: bold,
           suspended: card.suspended,

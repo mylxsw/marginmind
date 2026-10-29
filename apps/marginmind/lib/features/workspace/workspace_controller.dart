@@ -1,3 +1,6 @@
+import '../../app/app_commands.dart' show ReaderSelectionCommand;
+import 'document_import.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -76,10 +79,13 @@ class ResearchNoteSavedNotice extends WorkspaceNotice {
 
 /// Ask the source pane to scroll to a highlight.
 class RevealRequest {
-  const RevealRequest(this.documentId, this.page, this.rects, this.nonce);
+  const RevealRequest(this.documentId, int page, this.rects, this.nonce) : _page = page, textAnchors = const [];
+  const RevealRequest.text(this.documentId, this.textAnchors, this.nonce) : _page = null, rects = const [];
+  final List<TextAnchor> textAnchors;
 
   final String documentId;
-  final int page;
+  final int? _page;
+  int get page => _page ?? (throw StateError('Text reveal has no page'));
   final List<PageRect> rects;
   final int nonce;
 }
@@ -132,7 +138,8 @@ class DocumentRemovedNotice extends WorkspaceNotice {
 }
 
 class ImportedNotice extends WorkspaceNotice {
-  const ImportedNotice(this.count, this.failed);
+  const ImportedNotice(this.count, this.failed, {this.errors = const {}});
+  final Map<String, DocumentImportError> errors;
 
   final int count;
   final List<String> failed;
@@ -815,21 +822,39 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (state.sidebarAutoCollapsed != value) state = state.copyWith(sidebarAutoCollapsed: value);
   }
 
-  void toggleReaderPanel() => state = state.copyWith(readerPanelVisible: !state.readerPanelVisible);
+  void toggleReaderPanel() {
+    final available = ReaderPanelMode.values.where(canShowReaderPanel).toList();
+    if (available.isEmpty) return;
+    state = state.copyWith(
+      readerPanelVisible: !state.readerPanelVisible,
+      readerPanelMode: canShowReaderPanel(state.readerPanelMode) ? state.readerPanelMode : available.first,
+    );
+  }
 
   /// Opens the reader sidebar on [mode] (the source pane comes back in
   /// map-only layout, since the user asked for it).
-  void showReaderPanel(ReaderPanelMode mode) => state = state.copyWith(
-    readerPanelVisible: true,
-    readerPanelMode: mode,
-    layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
-  );
+  void showReaderPanel(ReaderPanelMode mode) {
+    if (!canShowReaderPanel(mode)) return;
+    state = state.copyWith(
+      readerPanelVisible: true,
+      readerPanelMode: mode,
+      layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
+    );
+  }
 
-  void setReaderPanelMode(ReaderPanelMode mode) => state = state.copyWith(readerPanelMode: mode);
+  bool canShowReaderPanel(ReaderPanelMode mode) => switch (mode) {
+    ReaderPanelMode.thumbnails => activeCapabilities.thumbnails,
+    ReaderPanelMode.outline => activeCapabilities.outline,
+    ReaderPanelMode.bookmarks => activeCapabilities.bookmarks,
+    ReaderPanelMode.annotations => activeCapabilities.annotate,
+  };
+  void setReaderPanelMode(ReaderPanelMode mode) {
+    if (canShowReaderPanel(mode)) state = state.copyWith(readerPanelMode: mode);
+  }
 
   /// Opens the find bar of the active document (or focuses it again).
   void openFind() {
-    if (state.activeDocumentId == null) return;
+    if (state.activeDocumentId == null || !activeCapabilities.search) return;
     state = state.copyWith(
       findVisible: true,
       findFocusTick: state.findFocusTick + 1,
@@ -878,7 +903,37 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
 
+  DocumentCapabilities get activeCapabilities =>
+      (content.document(state.activeDocumentId ?? '') ??
+              Document(
+                id: '',
+                title: '',
+                fileName: '',
+                pageCount: 0,
+                importedAt: DateTime(1970),
+                format: DocumentFormat.unknown,
+              ))
+          .capabilities(runtime: DocumentRuntime(ocr: MMPlatformCapabilities.current.pdfOcr));
+  bool canUseTool(AnnotationTool tool) => switch (tool) {
+    AnnotationTool.select => activeCapabilities.selectText,
+    AnnotationTool.highlight || AnnotationTool.underline => activeCapabilities.annotate,
+    AnnotationTool.area => activeCapabilities.capture,
+    AnnotationTool.ink => activeCapabilities.ink,
+  };
+
+  bool canRunSelection(ReaderSelectionCommand command) => switch (command) {
+    ReaderSelectionCommand.copy || ReaderSelectionCommand.assistant => activeCapabilities.selectText,
+    ReaderSelectionCommand.highlight || ReaderSelectionCommand.deleteHighlight => activeCapabilities.annotate,
+    ReaderSelectionCommand.marginNote => activeCapabilities.marginNotes,
+    ReaderSelectionCommand.excerpt ||
+    ReaderSelectionCommand.note ||
+    ReaderSelectionCommand.locateCard => activeCapabilities.excerpt,
+  };
+
   Future<void> setTool(AnnotationTool tool) {
+    if (content.document(state.activeDocumentId ?? '') != null && !canUseTool(tool) && tool != AnnotationTool.select) {
+      return Future.value();
+    }
     if (state.tool != tool) state = state.copyWith(tool: tool, clearPending: true);
     // The pen belongs to this window and this session; it never comes back
     // armed after a restart.
@@ -954,24 +1009,38 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<ImportedNotice> importDocuments(List<({String path, String name})> files, {bool open = true}) async {
     var count = 0;
     final failed = <String>[];
-    String? lastId;
+    final errors = <String, DocumentImportError>{};
+    String? firstId;
+    final imports = ref.read(documentImportsProvider(studySetId).notifier);
     for (final f in files) {
+      final task = imports.add(f.name);
       try {
-        final info = await MMPdfEngine.inspect(f.path);
-        final stored = await _repo.importFile(studySetId, f.path);
-        final title = f.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
-        await _update((c) {
-          final (next, doc) = _editor.addDocument(c, title: title, fileName: stored, pageCount: info.pageCount);
-          lastId = doc.id;
-          return next;
-        }, undoable: false);
+        final package = await ref
+            .read(documentImporterProvider)
+            .prepare(f, id: task.id, now: ref.read(clockProvider)(), cancellation: task.cancellation);
+        final repository = _repo;
+        if (repository is! DocumentRepository) throw StateError('Document storage unavailable');
+        await _enqueue(() async {
+          final next = await (repository as DocumentRepository).importDocumentPackage(
+            studySetId,
+            package,
+            cancelled: () => task.cancelled || !ref.mounted,
+          );
+          if (ref.mounted) state = state.copyWith(content: next);
+        });
+        firstId ??= package.document.id;
         count++;
-      } catch (_) {
-        failed.add(f.name);
+      } catch (error) {
+        if (!task.cancelled) {
+          failed.add(f.name);
+          errors[f.name] = documentImportError(error);
+        }
+      } finally {
+        if (ref.mounted) imports.remove(task);
       }
     }
-    if (lastId != null && open) openDocument(lastId!);
-    return ImportedNotice(count, failed);
+    if (ref.mounted && firstId != null && open) openDocument(firstId);
+    return ImportedNotice(count, failed, errors: errors);
   }
 
   String filePath(Document doc) => _repo.resolveFile(studySetId, doc.fileName);
@@ -1025,16 +1094,26 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// The page of the active document the reader is on.
   int? get activePage {
     final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
-    return doc == null ? null : (ref.read(readingPagesProvider(studySetId))[doc.id] ?? doc.lastPage);
+    return doc == null || !doc.capabilities().zoom
+        ? null
+        : (ref.read(readingPagesProvider(studySetId))[doc.id] ?? doc.lastPage);
   }
 
   /// ⌘D: bookmarks the page being read, or removes the bookmark it has.
   Future<void> toggleBookmark() async {
     final documentId = state.activeDocumentId;
+    final position = documentId == null ? null : content.document(documentId)?.readingPosition;
+    if (documentId != null && position is TextReadingPosition) {
+      await _update((c) => _editor.toggleTextBookmark(c, documentId, position));
+      return;
+    }
     final page = activePage;
     if (documentId == null || page == null) return;
     await _update((c) => _editor.toggleBookmark(c, documentId, page));
   }
+
+  Future<void> setReadingPosition(String documentId, ReadingPosition position) =>
+      _update((c) => _editor.setReadingPosition(c, documentId, position), undoable: false);
 
   Future<void> addBookmark(String documentId, int page, String title) =>
       _update((c) => _editor.addBookmark(c, documentId, page, title: title));
@@ -1207,7 +1286,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       // With no selection, retain the most recent topic used on this page.
       final recent =
           content.annotations
-              .where((a) => a.documentId == note.documentId && a.pages.any((p) => p.page == note.page))
+              .where((a) => a.documentId == note.documentId && !a.isText && a.pages.any((p) => p.page == note.page))
               .toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       for (final annotation in recent) {
@@ -1385,11 +1464,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final target = content.noteAttachments
         .where((a) => a.noteId == noteId)
         .map((a) => a.target)
-        .whereType<PdfTarget>()
-        .where((t) => content.document(t.documentId) != null)
+        .where(
+          (t) => switch (t) {
+            PdfTarget(:final documentId) || TextTarget(:final documentId) => content.document(documentId) != null,
+            _ => false,
+          },
+        )
         .firstOrNull;
-    if (target == null) return;
-    _revealPdf(target);
+    if (target is PdfTarget) _revealPdf(target);
+    if (target is TextTarget) {
+      openDocument(target.documentId);
+      state = state.copyWith(reveal: RevealRequest.text(target.documentId, target.textAnchors, ++_revealNonce));
+    }
   }
 
   /// Selects and centers the note's card in the active map (the map comes
@@ -1417,6 +1503,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     switch (anchor.target) {
       case PdfTarget target when content.document(target.documentId) != null:
         _revealPdf(target);
+        return true;
+      case TextTarget target when content.document(target.documentId) != null:
+        openDocument(target.documentId);
+        state = state.copyWith(reveal: RevealRequest.text(target.documentId, target.textAnchors, ++_revealNonce));
         return true;
       case CardTarget(:final cardId):
         final mapId = anchor.mapId ?? state.activeMapId;
@@ -1743,7 +1833,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     openDocument(annotation.documentId);
     state = state.copyWith(
       selectedCardId: cardId,
-      reveal: RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),
+      reveal: annotation.isText
+          ? RevealRequest.text(annotation.documentId, annotation.textAnchors, ++_revealNonce)
+          : RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),
     );
     _flash(annotationId: annotation.id, cardId: cardId);
   }
@@ -2288,6 +2380,14 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       a.id == b.id &&
       a.title == b.title &&
       a.fileName == b.fileName &&
+      a.format == b.format &&
+      a.features.text == b.features.text &&
+      a.features.outline == b.features.outline &&
+      a.layout == b.layout &&
+      a.sourceFileName == b.sourceFileName &&
+      a.contentManifest == b.contentManifest &&
+      a.revision == b.revision &&
+      jsonEncode(a.origin?.toJson()) == jsonEncode(b.origin?.toJson()) &&
       a.pageCount == b.pageCount &&
       a.importedAt == b.importedAt &&
       a.cropSuggestionDismissed == b.cropSuggestionDismissed &&

@@ -400,6 +400,7 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   final doc = workspace.content.documents.where((d) => d.id == key.$2).firstOrNull;
   if (doc == null) return (language: null, hasText: null);
   final fallback = compareLanguage(doc.title);
+  if (doc.contentManifest != null) return (language: fallback, hasText: doc.features.text);
   final path = workspace.filePath(doc);
   final recognized = ref.watch(readerOcrProvider(path).select((s) => s.document));
   if (!ref.read(pdfRenderingEnabledProvider)) return (language: fallback, hasText: null);

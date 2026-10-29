@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import 'models.dart';
+import 'text_anchor.dart';
 
 enum TextFormat { plain, markdown }
 
@@ -18,6 +19,7 @@ sealed class NoteTarget {
   factory NoteTarget.fromJson(Map<String, Object?> j) => switch (j['type']) {
     'pdf' => PdfTarget.fromJson(j),
     'card' => CardTarget.fromJson(j),
+    'text' => TextTarget.fromJson(j),
     _ => throw const FormatException('Unknown note target'),
   };
 }
@@ -49,6 +51,31 @@ class PdfTarget extends NoteTarget {
 }
 
 @immutable
+class TextTarget extends NoteTarget {
+  TextTarget({required this.documentId, required List<TextAnchor> textAnchors, this.context = ''})
+    : textAnchors = List.unmodifiable(textAnchors) {
+    if (documentId.isEmpty || textAnchors.isEmpty) throw ArgumentError('Invalid text target');
+    for (final a in textAnchors) {
+      a.validate();
+    }
+  }
+  final String documentId, context;
+  final List<TextAnchor> textAnchors;
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'text',
+    'documentId': documentId,
+    'context': context,
+    'textAnchors': [for (final a in textAnchors) a.toJson()],
+  };
+  factory TextTarget.fromJson(Map<String, Object?> j) => TextTarget(
+    documentId: j['documentId'] as String,
+    context: j['context'] as String? ?? '',
+    textAnchors: [for (final a in j['textAnchors'] as List) TextAnchor.fromJson((a as Map).cast())],
+  );
+}
+
+@immutable
 class CardTarget extends NoteTarget {
   const CardTarget({required this.cardId});
   final String cardId;
@@ -64,7 +91,7 @@ class SourceAnchor {
   final NoteTarget target;
   final String? mapId;
   bool canLocate(Iterable<Document> documents, Iterable<MapNode> nodes) => switch (target) {
-    PdfTarget(:final documentId) => documents.any((d) => d.id == documentId),
+    PdfTarget(:final documentId) || TextTarget(:final documentId) => documents.any((d) => d.id == documentId),
     CardTarget(:final cardId) => nodes.any((n) => n.cardId == cardId && n.mapId == mapId),
   };
   Map<String, Object?> toJson() => {'target': target.toJson(), if (mapId != null) 'mapId': mapId};
@@ -322,17 +349,23 @@ class InkStroke {
   InkStroke({
     required this.id,
     required this.documentId,
-    required this.page,
+    int? page,
+    this.textAnchor,
     required this.tool,
     required this.colorIndex,
     required this.width,
     List<InkPoint> points = const [],
     this.ellipse,
-  }) : points = List.unmodifiable(points);
+  }) : _page = page,
+       points = List.unmodifiable(points) {
+    if ((page != null) == (textAnchor != null)) throw ArgumentError('Exactly one ink target is required');
+  }
   static const maxPoints = 10000;
   final String id;
   final String documentId;
-  final int page;
+  final int? _page;
+  final ParagraphInkAnchor? textAnchor;
+  int get page => _page ?? (throw StateError('Text ink has no PDF page'));
   final InkTool tool;
   final int colorIndex;
   final double width;
@@ -341,7 +374,7 @@ class InkStroke {
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
-    'page': page,
+    if (textAnchor != null) 'textAnchor': textAnchor!.toJson() else 'page': page,
     'tool': tool.name,
     'colorIndex': colorIndex,
     'width': width,
@@ -351,11 +384,46 @@ class InkStroke {
   factory InkStroke.fromJson(Map<String, Object?> j) => InkStroke(
     id: j['id'] as String,
     documentId: j['documentId'] as String,
-    page: j['page'] as int,
+    page: j['page'] as int?,
+    textAnchor: j['textAnchor'] == null ? null : ParagraphInkAnchor.fromJson((j['textAnchor'] as Map).cast()),
     tool: InkTool.values.byName(j['tool'] as String),
     colorIndex: j['colorIndex'] as int,
     width: (j['width'] as num).toDouble(),
     points: [for (final p in j['points'] as List? ?? []) InkPoint.fromJson((p as Map).cast())],
     ellipse: j['ellipse'] == null ? null : PageRect.fromJson((j['ellipse'] as Map).cast()),
+  );
+}
+
+/// Stroke coordinates relative to a captured paragraph, scaled by width only.
+@immutable
+class ParagraphInkAnchor {
+  ParagraphInkAnchor({
+    required this.anchor,
+    required this.blockId,
+    required this.capturedWidth,
+    required this.originX,
+    required this.originY,
+  }) {
+    anchor.validate();
+    if (blockId.isEmpty || !capturedWidth.isFinite || capturedWidth <= 0 || !originX.isFinite || !originY.isFinite) {
+      throw ArgumentError('Invalid paragraph ink anchor');
+    }
+  }
+  final TextAnchor anchor;
+  final String blockId;
+  final double capturedWidth, originX, originY;
+  Map<String, Object?> toJson() => {
+    'anchor': anchor.toJson(),
+    'blockId': blockId,
+    'capturedWidth': capturedWidth,
+    'originX': originX,
+    'originY': originY,
+  };
+  factory ParagraphInkAnchor.fromJson(Map<String, Object?> j) => ParagraphInkAnchor(
+    anchor: TextAnchor.fromJson((j['anchor'] as Map).cast()),
+    blockId: j['blockId'] as String,
+    capturedWidth: (j['capturedWidth'] as num).toDouble(),
+    originX: (j['originX'] as num).toDouble(),
+    originY: (j['originY'] as num).toDouble(),
   );
 }

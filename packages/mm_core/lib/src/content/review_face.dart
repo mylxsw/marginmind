@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'text_anchor.dart';
+
 import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
@@ -26,21 +30,27 @@ enum ReviewPrompt {
 /// The source of an excerpt, for the back of the card.
 @immutable
 class ReviewSource {
-  const ReviewSource({required this.documentId, required this.documentTitle, required this.page});
+  const ReviewSource({required this.documentId, required this.documentTitle, int? page, this.textAnchor})
+    // Preserve the existing public named page parameter.
+    // ignore: prefer_initializing_formals
+    : _page = page;
+  final TextAnchor? textAnchor;
 
   final String documentId;
   final String documentTitle;
-  final int page;
+  final int? _page;
+  int get page => _page ?? (throw StateError('Text review source has no page'));
 
   @override
   bool operator ==(Object other) =>
       other is ReviewSource &&
       other.documentId == documentId &&
       other.documentTitle == documentTitle &&
-      other.page == page;
+      other._page == _page &&
+      jsonEncode(other.textAnchor?.toJson()) == jsonEncode(textAnchor?.toJson());
 
   @override
-  int get hashCode => Object.hash(documentId, documentTitle, page);
+  int get hashCode => Object.hash(documentId, documentTitle, _page, jsonEncode(textAnchor?.toJson()));
 }
 
 @immutable
@@ -244,7 +254,12 @@ ReviewFace buildReviewFace(
   final doc = annotation == null ? null : content.document(annotation.documentId);
   final source = annotation == null || doc == null
       ? null
-      : ReviewSource(documentId: doc.id, documentTitle: doc.title, page: annotation.page);
+      : ReviewSource(
+          documentId: doc.id,
+          documentTitle: doc.title,
+          page: annotation.isText ? null : annotation.page,
+          textAnchor: annotation.textAnchors.firstOrNull,
+        );
   final back = ReviewBack(
     quote: isImage
         ? ''
@@ -278,6 +293,18 @@ ReviewFace buildReviewFace(
     );
   }
   final quote = isImage ? '' : (annotation?.quote.trim() ?? '');
+  if (annotation?.isText == true) {
+    return ReviewFace(
+      front: ReviewFront(
+        path: path,
+        prompt: ReviewPrompt.cloze,
+        before: annotation!.textAnchors.first.prefix,
+        after: annotation.textAnchors.last.suffix,
+        maskLength: quote.length,
+      ),
+      back: back,
+    );
+  }
   final top = annotation == null || annotation.pages.isEmpty || annotation.pages.first.rects.isEmpty
       ? null
       : annotation.pages.first.rects.first.top;

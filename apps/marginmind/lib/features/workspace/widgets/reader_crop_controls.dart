@@ -62,7 +62,7 @@ class CropControls extends ConsumerWidget {
     final content = ref.watch(workspaceContentProvider(studySetId)) ?? StudySetContent.empty;
     final pdf = ref.read(documentPdfProvider((studySetId, document.id)));
     final marks = <List<AnnotationPage>>[
-      for (final a in content.annotations.where((a) => a.documentId == document.id)) a.pages,
+      for (final a in content.annotations.where((a) => a.documentId == document.id && !a.isText)) a.pages,
       for (final stroke in content.inkStrokes.where((s) => s.documentId == document.id))
         [AnnotationPage(page: stroke.page, rects: cropInkBounds(stroke))],
       for (final n in content.marginNotes.where((n) => n.documentId == document.id))

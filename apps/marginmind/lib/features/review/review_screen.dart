@@ -332,7 +332,9 @@ class ReviewCardView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
+                      source.textAnchor != null
+                          ? source.documentTitle
+                          : '${source.documentTitle} · ${context.l10n.pageNumber(source.page)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: t.footnote,

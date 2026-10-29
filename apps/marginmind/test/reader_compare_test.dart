@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -492,7 +493,11 @@ void main() {
     await tester.tap(importItem);
     await tester.pumpAndSettle();
     expect(container.read(readerCompareProvider('demo-1')), isNull);
-    picks = [(path: 'imported.pdf', name: 'Imported English.pdf')];
+    final directory = await tester.runAsync(() => Directory.systemTemp.createTemp('mm_compare_import'));
+    addTearDown(() => directory!.delete(recursive: true));
+    final source = File('${directory!.path}/imported.pdf');
+    await tester.runAsync(() => source.writeAsString('%PDF-1.7'));
+    picks = [(path: source.path, name: 'Imported English.pdf')];
     await tester.tap(find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     await tester.tap(importItem);

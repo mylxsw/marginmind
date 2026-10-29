@@ -14,7 +14,7 @@ import 'format_migration.dart';
 /// ```
 /// <root>/library.json                       folders
 /// <root>/sets/<id>.mmset/studyset.json      metadata + content
-/// <root>/sets/<id>.mmset/documents/<sha1>.pdf
+/// <root>/sets/<id>.mmset/documents/<sha256>.<ext>
 /// ```
 ///
 /// Each study set is a self-contained folder ("package") that can be copied
@@ -22,7 +22,12 @@ import 'format_migration.dart';
 /// place, and writes to one set are serialized. A SQLite store (drift) can
 /// replace this behind the same ports once data grows.
 class FileLibraryStore
-    implements StudySetRepository, StudySetContentRepository, ResearchSessionRepository, ResearchSnapshotRepository {
+    implements
+        StudySetRepository,
+        StudySetContentRepository,
+        DocumentRepository,
+        ResearchSessionRepository,
+        ResearchSnapshotRepository {
   FileLibraryStore(this.root, {DateTime Function()? clock, String Function()? idGenerator})
     : _clock = clock ?? DateTime.now,
       _newId = idGenerator ?? newId;
@@ -220,15 +225,90 @@ class FileLibraryStore
     await _ensureLoaded();
     _require(studySetId);
     final source = File(sourcePath);
-    final digest = sha1.convert(await source.readAsBytes()).toString();
-    final ext = p.extension(sourcePath).toLowerCase();
-    final fileName = p.join('documents', '$digest${ext.isEmpty ? '.pdf' : ext}');
-    final target = File(p.join(_packagePath(studySetId), fileName));
-    if (!await target.exists()) {
-      await target.parent.create(recursive: true);
-      await source.copy(target.path);
-    }
+    final bytes = await source.readAsBytes();
+    final digest = sha256.convert(bytes).toString();
+    final extension = p.extension(sourcePath).toLowerCase();
+    // Legacy PDF imports and browser blob URLs have no extension.
+    final ext = extension.isEmpty ? '.pdf' : extension;
+    if (!RegExp(r'^\.[a-z0-9]+$').hasMatch(ext)) throw ArgumentError('Invalid document extension');
+    final fileName = 'documents/$digest$ext';
+    final target = File(_resolvePath(studySetId, fileName));
+    await _queueWrite(studySetId, () async {
+      if (!await target.exists()) await _atomicWrite(target, bytes);
+    });
     return fileName;
+  }
+
+  @override
+  Future<StudySetContent> importDocumentPackage(
+    String studySetId,
+    DocumentPackage package, {
+    bool Function()? cancelled,
+  }) async {
+    await _ensureLoaded();
+    late StudySetContent next;
+    await _queueWrite(studySetId, () async {
+      final record = _require(studySetId);
+      final created = <File>[];
+      void checkCancelled() {
+        if (cancelled?.call() ?? false) throw StateError('Document import cancelled');
+      }
+
+      try {
+        for (final entry in package.files.entries) {
+          checkCancelled();
+          final file = File(_resolvePath(studySetId, entry.key));
+          if (await file.exists()) {
+            if (!_sameBytes(await file.readAsBytes(), entry.value)) throw StateError('Immutable document file differs');
+          } else {
+            // A failed atomic write may leave only its temporary staging file.
+            created.add(file);
+            await _atomicWrite(file, entry.value);
+          }
+        }
+        checkCancelled();
+        final document = package.document;
+        next = record.content.copyWith(
+          documents: [
+            for (final d in record.content.documents)
+              if (d.id != document.id) d,
+            document,
+          ],
+        );
+        await _atomicWrite(
+          File(p.join(_packagePath(studySetId), 'studyset.json')),
+          utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),
+        );
+      } catch (_) {
+        for (final file in created.reversed) {
+          for (final candidate in [file, File('${file.path}.tmp')]) {
+            try {
+              if (await candidate.exists()) await candidate.delete();
+            } catch (_) {
+              /* Best effort after IO failure. */
+            }
+          }
+        }
+        rethrow;
+      }
+      _sets[studySetId] = _require(studySetId).copyWith(content: next);
+      _contentChanges.add(studySetId);
+      _libraryChanges.add(null);
+    });
+    return next;
+  }
+
+  @override
+  Future<List<int>> readDocumentFile(String studySetId, String fileName) async {
+    validateDocumentPath(fileName);
+    await _ensureLoaded();
+    _require(studySetId);
+    final bytes = await File(_resolvePath(studySetId, fileName)).readAsBytes();
+    final hash = RegExp(r'/([0-9a-f]{64})\.[a-z0-9]+$').firstMatch(fileName)?.group(1);
+    if (hash != null && sha256.convert(bytes).toString() != hash) {
+      throw const FormatException('Document resource hash mismatch');
+    }
+    return bytes;
   }
 
   @override
@@ -398,8 +478,17 @@ class FileLibraryStore
   static Future<void> _atomicWrite(File file, List<int> bytes) async {
     await file.parent.create(recursive: true);
     final tmp = File('${file.path}.tmp');
-    await tmp.writeAsBytes(bytes, flush: true);
-    await tmp.rename(file.path);
+    try {
+      await tmp.writeAsBytes(bytes, flush: true);
+      await tmp.rename(file.path);
+    } catch (_) {
+      try {
+        if (await tmp.exists()) await tmp.delete();
+      } catch (_) {
+        /* Preserve the original IO failure. */
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -496,7 +585,9 @@ class _SetRecord {
   StudySet summary(DateTime now) {
     final last = content.lastRead;
     final totalPages = content.documents.fold<int>(0, (s, d) => s + d.pageCount);
-    final readPages = content.documents.fold<int>(0, (s, d) => s + d.lastPage);
+    final readPages = content.documents
+        .where((d) => d.layout == DocumentLayout.fixed)
+        .fold<int>(0, (s, d) => s + d.lastPage);
     return StudySet(
       id: id,
       title: title,
@@ -509,7 +600,13 @@ class _SetRecord {
       reviewLogCount: content.reviewLogs.length,
       readPages: content.documents.isEmpty ? 0 : readPages,
       totalPages: totalPages,
-      lastPosition: last == null ? null : ReadingPosition(documentTitle: last.title, page: last.lastPage),
+      lastPosition: last == null || (last.layout == DocumentLayout.reflow && last.readingPosition == null)
+          ? null
+          : LastReadingPosition(
+              documentTitle: last.title,
+              page: last.readingPosition == null ? last.lastPage : null,
+              position: last.readingPosition,
+            ),
       createdAt: createdAt,
       lastOpenedAt: lastOpenedAt,
     );

@@ -142,7 +142,7 @@ class MapExporter {
       case CardKind.image:
         final a = content.annotation(card.annotationId ?? '');
         final doc = a == null ? null : content.document(a.documentId);
-        final src = doc == null ? '' : ' *(${_source(doc, a!.page)})*';
+        final src = doc == null ? '' : ' *(${_annotationSource(doc, a!)})*';
         return '![${_oneLine(card.title)}](${card.imageFileName ?? ""})$src';
       case CardKind.note:
         return _oneLine(card.title);
@@ -153,7 +153,7 @@ class MapExporter {
             .map((segment) {
               final a = content.annotation(segment.annotationId ?? '');
               final doc = a == null ? null : content.document(a.documentId);
-              final src = doc == null ? '' : ' *(${_source(doc, a!.page)})*';
+              final src = doc == null ? '' : ' *(${_annotationSource(doc, a!)})*';
               return '“${_oneLine(segment.text)}”$src';
             })
             .join('\n');
@@ -221,6 +221,9 @@ class MapExporter {
     ].join();
   }
 
+  String _annotationSource(Document doc, Annotation annotation) =>
+      annotation.isText ? '${doc.title} · ${annotation.textAnchors.first.chapterId}' : _source(doc, annotation.page);
+
   String _researchBody(Card card) {
     final note = content.researchNote(card.researchNoteId ?? '');
     if (note == null) return '';
@@ -231,6 +234,14 @@ class MapExporter {
       if (source != null) lines.add('${source.title} · ${source.url} · ${source.fetchedAt.toIso8601String()}');
     }
     for (final a in content.noteAttachments.where((a) => a.noteId == note.id)) {
+      if (a.target case TextTarget(:final documentId, :final textAnchors)) {
+        final doc = content.document(documentId);
+        if (doc != null) {
+          for (final anchor in textAnchors) {
+            lines.add('$sourceLabel：${doc.title} · ${anchor.chapterId}');
+          }
+        }
+      }
       if (a.target case PdfTarget(:final documentId, :final pages)) {
         final doc = content.document(documentId);
         if (doc != null) {
@@ -253,7 +264,7 @@ class MapExporter {
       final a = content.annotation(card.annotationId ?? '');
       final doc = a == null ? null : content.document(a.documentId);
       final text = card.title.trim().isNotEmpty ? card.title : (card.imageFileName ?? '');
-      return 'text="${_xml(text)}"${doc == null ? '' : ' _note="${_xml(_source(doc, a!.page))}"'}';
+      return 'text="${_xml(text)}"${doc == null ? '' : ' _note="${_xml(_annotationSource(doc, a!))}"'}';
     }
     // Formatting has no place in OPML: a note's text without its markup.
     if (card.kind == CardKind.note) {
@@ -266,7 +277,7 @@ class MapExporter {
     final sources = {
       for (final segment in content.segmentsOf(card))
         if (content.annotation(segment.annotationId ?? '') case final annotation?)
-          if (content.document(annotation.documentId) case final document?) _source(document, annotation.page),
+          if (content.document(annotation.documentId) case final document?) _annotationSource(document, annotation),
     };
     final note = [if (card.title.trim().isNotEmpty) quote, ...sources].join('\n');
     return 'text="${_xml(text)}"${note.isEmpty ? '' : ' _note="${_xml(note)}"'}';

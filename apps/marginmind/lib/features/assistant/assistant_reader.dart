@@ -109,7 +109,13 @@ class WorkspaceReader implements StudySetReader, ReadPermissionResolver {
     final hits = <StudySearchHit>[];
     for (final a in c.annotations) {
       if (hits.length >= limit) break;
-      if (a.quote.toLowerCase().contains(needle) && scope.allowsPage(a.documentId, a.page)) {
+      if (!a.quote.toLowerCase().contains(needle)) continue;
+      if (a.isText) {
+        if (scope.documents.contains(a.documentId)) {
+          final anchor = a.textAnchors.first;
+          hits.add(StudySearchHit(title: a.quote, locator: 'text:${a.documentId}:${anchor.chapterId}:${anchor.start}'));
+        }
+      } else if (scope.allowsPage(a.documentId, a.page)) {
         hits.add(StudySearchHit(title: a.quote, locator: 'page:${a.documentId}:${a.page}'));
       }
     }

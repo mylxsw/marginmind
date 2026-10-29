@@ -6,6 +6,7 @@ resolution: workspace
 environment:
   sdk: ^3.13.0
 dependencies:
+  mm_core: any
   crypto: ^3.0.6
   markdown: 7.3.1
   archive: 4.5.2

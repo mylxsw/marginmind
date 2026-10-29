@@ -208,7 +208,7 @@
     }
   },
   "readerEmptyTitle": "Open a document to start reading",
-  "readerEmptyMessage": "Pick a document in the sidebar, or import a PDF into this study set.",
+  "readerEmptyMessage": "Pick a document in the sidebar, or import one.",
   "readerPlaceholder": "PDF rendering arrives with the mm_pdf package. This page marks where it will appear.",
   "mapEmptyTitle": "Your excerpts will appear here",
   "mapView": "Map",
@@ -1833,5 +1833,39 @@
   "settingsBrowserGroup": "In-App Browser",
   "settingsWebsiteData": "Website Data",
   "clearAction": "Clear",
-  "browserUnsaved": "Not Saved"
+  "browserUnsaved": "Not Saved",
+  "addDocumentMenu": "Add",
+  "documentFiles": "Documents",
+  "unsupportedFile": "“{name}” isn’t supported",
+  "@unsupportedFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readingSettings": "Reading Settings",
+  "cancelImport": "Cancel Import",
+  "okAction": "OK",
+  "importFailedTitle": "Couldn’t Import “{name}”",
+  "@importFailedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importFailedMany": "{count, plural, =1{1 document couldn’t be imported} other{{count} documents couldn’t be imported}}",
+  "@importFailedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importErrorDrm": "Protected by DRM",
+  "importErrorDamaged": "The file is damaged",
+  "importErrorKfx": "KFX isn’t supported",
+  "importErrorEmpty": "No readable content",
+  "importErrorUnsupported": "Unsupported format"
 }

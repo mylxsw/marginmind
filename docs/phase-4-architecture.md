@@ -61,7 +61,7 @@ CJK/中英混排交 Flutter shaping/断行，不按字符逐个测宽。真实�
 
 Annotation 新增 `textAnchors`（可跨章），PDF 的 pages JSON 不变；两类定位必须且只能有一种。构造器与校验同时支持两种，copyWith 保留所有锚点；page/rects 兼容 getter 仅用于 PDF，流式调用抛 StateError，不伪造 page=1。改造所有公共编辑/序列化/剪贴板/导出/删除/撤销路径，按目标类型分派。`AnnotationAnchor`、`PdfTarget`、MarginNote 和 InkStroke 同样加入流式变体，避免只扩展 Annotation 后关联功能仍要求页矩形。
 
-代码当前 `currentStudySetFormat=10`，旧架构正文的 7 已过时。由 GUL-573 独占 10→11 迁移：缺 format/layout 的旧文档读为 pdf/fixed，旧标注和位置原样；新联合类型明确 discriminator，未知类型拒绝可写加载。先完整校验、备份原字节、同目录 flush+rename；未来版本拒绝写回。旧版应用拒绝 format 11，避免保存丢新字段。同步扩展 io/browser 两种存储、testing 内存仓库、复制和导出。若 main 提前占用 11，GUL-573 统一顺延并更新文档，不由各任务分别加版本。
+当前 `currentStudySetFormat=11`，GUL-573 独占并实现 10→11 迁移：缺 format/layout 的旧文档读为 pdf/fixed，旧标注和位置原样；新联合类型明确 discriminator，未知类型拒绝可写加载。先完整校验、备份原字节、同目录 flush+rename；未来版本拒绝写回。旧版应用拒绝 format 11，避免保存丢新字段。io/browser 两种存储、testing 内存仓库、复制和导出同步支持新类型；其他任务不再分别加版本。
 
 ## 6. 能力与功能
 
@@ -124,6 +124,15 @@ Web 后端使用相同逻辑键，不要求磁盘目录。原文件不可变；�
 | GUL-578 | 进阶阅读 | 消费通用位置和 boxes，不新增另一种文本锚点；段落画笔、批注、翻译和截图。 |
 
 本任务原型确认后放 mm_reflow/example；IR 最小契约先落 mm_book，由 574 接续扩展，避免 572/574 各创一份 Book。外部 API 更动由本架构文档统一更新，fixture 包含中文/emoji/表格/图片/跨章选择。
+
+### GUL-573 接口落地
+
+- `mm_core` 导出统一 `TextAnchor(chapterId, start, end, quote, {prefix, suffix, revision, normalizationVersion})`，`mm_book` 重新导出同一类型；`BookChapter.anchor(..., revision: ...)` 按字素补齐前后文。持久化前校验 UTF-16 范围，引擎不得另建锚点模型。
+- 通用位置为 `ReadingPosition` / `PdfPosition` / `TextReadingPosition`（名称避免与 Flutter `TextPosition` 冲突）；资料库原有的标题/页码摘要改名 `LastReadingPosition`。`Document.features` 保存文字层与目录特征，能力查询可注入运行时 OCR / 浏览器能力。
+- 研究关联增加 `TextTarget`；`AnnotationAnchor.textAnchors`、`MarginNote.anchor`、`InkStroke.textAnchor`（`ParagraphInkAnchor`）、书签和目录的 `position` 共用原文锚点。对照的 `sourceAlignPoints` 接受通用位置，旧 PDF `alignPoints` 保留；翻译段落增加 `textAnchor`。
+- `DocumentRepository.importDocumentPackage(setId, DocumentPackage, {cancelled})` 以同一学习集写队列提交完整版本；`readDocumentFile` 按相同逻辑路径读原文件、manifest、章节、资源和网页快照。`DocumentPackage.files` 必须包含文档引用的全部文件，路径限制在 documents/books/web；旧版本永不自动回收。
+- app 的 `DocumentImporter` 组合 `mm_book` 与上述事务，manifest 的 `spine` 项为 `{id,path,sha256}`，资源项保留原逻辑路径 `sourcePath` 并增加存储 `path`。`documentReaderBuilderProvider` / `readingSettingsHandlerProvider` 供 GUL-576 接入阅读器；接入前显示文档标题占位，不把 IR 交给 PDFium。
+- `addWebPageHandlerProvider` 默认接入 GUL-575 的 `showAddWebPage`；`canAddWebPageProvider` 同时检查处理器与 `MMPlatformCapabilities.webBrowser`。处理器被覆盖为空时菜单和快捷键入口隐藏；Web / Linux 的平台能力仍为 false。
 
 ## 10. 技术验证计划与当前结论
 

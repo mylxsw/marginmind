@@ -22,3 +22,5 @@ export 'src/external_link.dart';
 export 'src/microphone.dart';
 
 export 'src/browser.dart';
+export 'src/document_files.dart';
+export 'src/file_drop.dart';

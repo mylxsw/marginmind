@@ -48,6 +48,8 @@ class ContinueCard extends StatelessWidget {
                   Text(
                     position == null
                         ? l.libraryNoDocumentsYet
+                        : position.position is TextReadingPosition
+                        ? position.documentTitle
                         : l.libraryLastPosition(position.documentTitle, position.page),
                     style: t.footnote,
                     maxLines: 1,

@@ -21,13 +21,14 @@ class UnderlineToolButton extends ConsumerStatefulWidget {
     super.key,
     required this.studySetId,
     this.compact = false,
+    this.enabled = true,
     this.selectionAction = false,
     this.onOpenChanged,
     this.onApplied,
   });
 
   final String studySetId;
-  final bool compact, selectionAction;
+  final bool compact, selectionAction, enabled;
   final ValueChanged<bool>? onOpenChanged;
   final VoidCallback? onApplied;
 
@@ -226,7 +227,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
           compact: widget.compact,
           selected: selected,
           tint: selected ? color.color : null,
-          onPressed: _show,
+          onPressed: widget.enabled ? _show : null,
         ),
       ),
     );

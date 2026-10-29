@@ -40,3 +40,7 @@ export 'src/content/margin_anchor.dart';
 export 'src/content/translation.dart';
 
 export 'src/content/document_outline.dart';
+
+export 'src/content/document_format.dart';
+export 'src/content/text_anchor.dart';
+export 'src/content/document_repository.dart';

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
 
 import 'models.dart';
+import 'text_anchor.dart';
 
 /// Stable language codes shared by translation controls and model prompts.
 enum TranslationLanguage {
@@ -37,15 +38,23 @@ class TranslationPage {
 class TranslationParagraph {
   TranslationParagraph({
     required this.documentId,
-    required this.page,
+    int? page,
+    this.textAnchor,
     required this.index,
     required this.text,
     required this.fingerprint,
-    required List<PageRect> rects,
+    List<PageRect> rects = const [],
     this.heading = false,
-  }) : rects = List.unmodifiable(rects);
+  }) : _page = page,
+       rects = List.unmodifiable(rects) {
+    if ((page != null) == (textAnchor != null)) throw ArgumentError('Exactly one translation target is required');
+    textAnchor?.validate();
+  }
   final String documentId, text, fingerprint;
-  final int page, index;
+  final int? _page;
+  final TextAnchor? textAnchor;
+  int get page => _page ?? (throw StateError('Text translation has no page'));
+  final int index;
   final bool heading;
   final List<PageRect> rects;
   PageRect get bounds => rects.reduce(

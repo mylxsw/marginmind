@@ -56,7 +56,7 @@ class ReaderCropSession extends Notifier<ReaderCropState> {
   ];
 
   Future<void> prepare({bool refresh = false}) async {
-    if (state.busy || document == null || !_pdf.isReady) return;
+    if (state.busy || document?.capabilities().crop != true || !_pdf.isReady) return;
     if (!refresh && state.automatic != null) {
       // Readiness changed after a display-document reload; update menu state.
       state = ReaderCropState(
@@ -94,6 +94,7 @@ class ReaderCropSession extends Notifier<ReaderCropState> {
   }
 
   bool get canToggle =>
+      document?.capabilities().crop == true &&
       _pdf.isReady &&
       !state.editing &&
       !state.busy &&

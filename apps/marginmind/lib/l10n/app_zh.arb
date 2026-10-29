@@ -101,7 +101,7 @@
   "pageNumber": "第 {page} 页",
   "pageOf": "{page} / {total}",
   "readerEmptyTitle": "打开一份文档开始阅读",
-  "readerEmptyMessage": "在侧栏选择一份文档，或者向这个学习集导入 PDF。",
+  "readerEmptyMessage": "在侧栏选择文档，或导入文档。",
   "readerPlaceholder": "PDF 渲染会在 mm_pdf 包接入后出现在这里，这一页只是占位。",
   "mapEmptyTitle": "摘录会出现在这里",
   "mapView": "脑图",
@@ -1186,5 +1186,39 @@
   "settingsBrowserGroup": "内置浏览器",
   "settingsWebsiteData": "网站数据",
   "clearAction": "清除",
-  "browserUnsaved": "未保存"
+  "browserUnsaved": "未保存",
+  "addDocumentMenu": "添加",
+  "documentFiles": "文档",
+  "unsupportedFile": "不支持「{name}」",
+  "@unsupportedFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "readingSettings": "阅读设置",
+  "cancelImport": "取消导入",
+  "okAction": "好",
+  "importFailedTitle": "无法导入「{name}」",
+  "@importFailedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importFailedMany": "{count} 份文档无法导入",
+  "@importFailedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importErrorDrm": "受 DRM 保护",
+  "importErrorDamaged": "文件已损坏",
+  "importErrorKfx": "不支持 KFX 格式",
+  "importErrorEmpty": "没有可读内容",
+  "importErrorUnsupported": "不支持此格式"
 }

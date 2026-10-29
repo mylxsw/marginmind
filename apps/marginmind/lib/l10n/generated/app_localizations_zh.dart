@@ -344,7 +344,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerEmptyTitle => '打开一份文档开始阅读';
 
   @override
-  String get readerEmptyMessage => '在侧栏选择一份文档，或者向这个学习集导入 PDF。';
+  String get readerEmptyMessage => '在侧栏选择文档，或导入文档。';
 
   @override
   String get readerPlaceholder => 'PDF 渲染会在 mm_pdf 包接入后出现在这里，这一页只是占位。';
@@ -3322,4 +3322,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get browserUnsaved => '未保存';
+
+  @override
+  String get addDocumentMenu => '添加';
+
+  @override
+  String get documentFiles => '文档';
+
+  @override
+  String unsupportedFile(String name) {
+    return '不支持「$name」';
+  }
+
+  @override
+  String get readingSettings => '阅读设置';
+
+  @override
+  String get cancelImport => '取消导入';
+
+  @override
+  String get okAction => '好';
+
+  @override
+  String importFailedTitle(String name) {
+    return '无法导入「$name」';
+  }
+
+  @override
+  String importFailedMany(int count) {
+    return '$count 份文档无法导入';
+  }
+
+  @override
+  String get importErrorDrm => '受 DRM 保护';
+
+  @override
+  String get importErrorDamaged => '文件已损坏';
+
+  @override
+  String get importErrorKfx => '不支持 KFX 格式';
+
+  @override
+  String get importErrorEmpty => '没有可读内容';
+
+  @override
+  String get importErrorUnsupported => '不支持此格式';
 }

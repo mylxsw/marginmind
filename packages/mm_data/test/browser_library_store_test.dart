@@ -27,6 +27,39 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('document package stores source, book IR and snapshots using the same browser keys', () async {
+    final set = await store.create(const NewStudySet(title: 'Books', colorIndex: 0));
+    final manifest = 'books/book/v1/manifest.json';
+    final document = Document(
+      id: 'book',
+      title: 'Book',
+      fileName: manifest,
+      contentManifest: manifest,
+      sourceFileName: 'documents/source.epub',
+      pageCount: 0,
+      format: DocumentFormat.epub,
+      layout: DocumentLayout.reflow,
+      importedAt: DateTime.utc(2026),
+      revision: 'v1',
+    );
+    final package = DocumentPackage(
+      document: document,
+      files: {
+        manifest: utf8.encode('{}'),
+        'documents/source.epub': [1, 2, 3],
+        'books/book/v1/chapters/one.json': utf8.encode('{"text":"Hello"}'),
+      },
+    );
+    await store.importDocumentPackage(set.id, package);
+    await expectLater(store.importDocumentPackage(set.id, package, cancelled: () => true), throwsStateError);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.load(set.id)).documents.single.revision, 'v1');
+    expect(await store.readDocumentFile(set.id, 'documents/source.epub'), [1, 2, 3]);
+  });
+
   test('reading v8 extensions persist across IndexedDB reopen', () async {
     final set = await store.create(const NewStudySet(title: 'Reading', colorIndex: 0));
     final date = DateTime.utc(2026);
