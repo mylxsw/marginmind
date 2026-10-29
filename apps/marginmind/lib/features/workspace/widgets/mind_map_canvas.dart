@@ -1977,7 +1977,10 @@ class _NodeView extends StatelessWidget {
                                     margin: const EdgeInsets.only(top: 6, right: 6),
                                     width: 6,
                                     height: 6,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, color: segment.color.color),
+                                    // "Own words" segments have no source colour.
+                                    decoration: segment.annotationId == null
+                                        ? null
+                                        : BoxDecoration(shape: BoxShape.circle, color: segment.color.color),
                                   ),
                                   Expanded(
                                     child: Text(

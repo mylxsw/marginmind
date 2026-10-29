@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
@@ -42,6 +43,8 @@ void main() {
     controller.selectCards(ids.reversed);
     await tester.pumpAndSettle();
     expect(find.byType(MapSelectionBar), findsOneWidget);
+    // Enabled actions carry no tooltip; only a disabled one explains why.
+    expect(find.ancestor(of: find.widgetWithText(MMButton, 'Merge'), matching: find.byType(Tooltip)), findsNothing);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer();
     await mouse.moveTo(tester.getCenter(find.widgetWithText(MMButton, 'Merge')));
@@ -131,6 +134,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Second passage'), findsOneWidget);
     expect(find.text('Show Less'), findsOneWidget);
+    await settleHud(tester);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('own-words paragraphs have no source colour dot', (tester) async {
+    final excerpts = fixture();
+    final (original, topic) = StudySetEditor(
+      newId: () => 'own',
+      now: () => testNow,
+    ).addTopic(excerpts, title: 'My own words');
+    final container = await openFirstSet(tester, content: InMemoryStudySetContentRepository({'demo-1': original}));
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    controller.selectCards([excerpts.cards.first.id, topic.id]);
+    final result = await controller.mergeSelected();
+    await tester.pumpAndSettle();
+    expect(result!.reason, isNull);
+    expect(result.value!.segments.map((s) => s.text), ['First passage', 'My own words']);
+    // Each paragraph row is a 6 pt dot followed by its text.
+    Decoration? dotOf(String text) => tester
+        .widgetList<Row>(find.byType(Row))
+        .map((row) => row.children)
+        .where(
+          (c) =>
+              c.length == 2 &&
+              c.last is Expanded &&
+              switch ((c.last as Expanded).child) {
+                Text(:final data) => data == text,
+                _ => false,
+              },
+        )
+        .map((c) => (c.first as Container).decoration)
+        .single;
+    expect(dotOf('First passage'), isNotNull);
+    expect(dotOf('My own words'), isNull);
     await settleHud(tester);
     expect(tester.takeException(), isNull);
   });

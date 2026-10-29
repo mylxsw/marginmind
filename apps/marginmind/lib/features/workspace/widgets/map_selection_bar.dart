@@ -42,10 +42,12 @@ class MapSelectionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    Widget action(String label, VoidCallback? callback, String? reason) => Tooltip(
-      message: reason ?? label,
-      child: MMButton(label: label, onPressed: callback, variant: MMButtonVariant.plain),
-    );
+    // Only a disabled button explains itself; an enabled one is its label.
+    Widget action(String label, VoidCallback? callback, String? reason) {
+      final button = MMButton(label: label, onPressed: callback, variant: MMButtonVariant.plain);
+      return reason == null ? button : Tooltip(message: reason, child: button);
+    }
+
     return MMGlass(
       borderRadius: BorderRadius.circular(24),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
