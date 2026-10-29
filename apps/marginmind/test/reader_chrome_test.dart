@@ -76,7 +76,7 @@ void main() {
       await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 700);
       await drain(tester);
       expect(paintedColor(MMIcons.compare), colors.accent);
-      expect(paintedColor(MMIcons.marginNote), colors.label.withValues(alpha: .3));
+      expect(paintedColor(MMIcons.captionsBubble), colors.label.withValues(alpha: .3));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await drain(tester);

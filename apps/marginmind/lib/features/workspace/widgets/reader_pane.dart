@@ -276,7 +276,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,
-      icon: MMIcons.marginNote,
+      icon: MMIcons.captionsBubble,
       count: noteCount,
       tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
       selected: marginState.openDocuments.contains(state.activeDocumentId),

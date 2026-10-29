@@ -9,6 +9,7 @@ abstract final class MMIcons {
   static const swapSides = CupertinoIcons.arrow_right_arrow_left;
   static const alignHere = CupertinoIcons.equal;
   static const marginNote = CupertinoIcons.text_bubble;
+  static const IconData captionsBubble = CupertinoIcons.captions_bubble;
   static const IconData readerNavigation = CupertinoIcons.square_stack_3d_up;
   static const IconData actualSize = CupertinoIcons.square;
   static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;

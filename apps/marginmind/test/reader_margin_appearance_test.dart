@@ -109,7 +109,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(count('1'), findsOneWidget);
     expect(find.descendant(of: find.byType(ReaderPane), matching: find.byType(Badge)), findsNothing);
-    final icon = find.descendant(of: button, matching: find.byIcon(MMIcons.marginNote));
+    final icon = find.descendant(of: button, matching: find.byIcon(MMIcons.captionsBubble));
     final text = tester.widget<Text>(count('1'));
     expect(text.style!.fontSize, 10);
     expect(text.style!.fontWeight, FontWeight.w600);
