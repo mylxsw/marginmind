@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+PREFIX = os.environ.get('EVIDENCE_PREFIX', '')
 PKG = 'com.example.reflow_probe'
 def adb(*args):
     return subprocess.check_output(['adb', '-s', 'emulator-5554', *args], text=True)
@@ -20,7 +21,7 @@ last_memory = 0
 buffer = ''
 try:
     adb('shell','am','start','-n',f'{PKG}/.MainActivity')
-    with (HERE/'android.jsonl').open('w') as out, (HERE/'android-memory.txt').open('w') as mem:
+    with (HERE/(PREFIX+'android.jsonl')).open('w') as out, (HERE/(PREFIX+'android-memory.txt')).open('w') as mem:
         while time.monotonic()-started < 900:
             if time.monotonic()-last_memory > 5:
                 mem.write(f'elapsed={time.monotonic()-started:.3f}\n')
@@ -36,6 +37,10 @@ try:
                     value=json.loads(payload)
                     out.write(payload+'\n');out.flush()
                     if value['kind'] in ('book','book_done','done','error'): print(payload,flush=True)
+                    if value['kind']=='memory_round':
+                        mem.write('round='+str(value['round'])+' switches='+str(value['switches'])+'\n')
+                        mem.write(adb('shell','dumpsys','meminfo',PKG));mem.flush()
+                        print(payload,flush=True)
                     if value['kind']=='error': raise RuntimeError(payload)
                     if value['kind']=='done': raise SystemExit(0)
         raise TimeoutError('Harness did not complete within 900 seconds')

@@ -2,6 +2,45 @@
 
 日志入库仅清理行尾空白，测量数值未改写。
 
+## 2026-10-30 补测结论：Go（负责人限定的原型门槛）
+
+保留 Flutter 路线；本次补齐 SVG → Picture、段落/表格图片原位、Android profile 重测及 50 次切章检查。PR #100 的 Go 不等于完整 EPUB 产品验收。跨页/跨章选区、移动选择柄、无障碍归 GUL-576；LRU/generation/分块调度、长期内存及真机归 GUL-572；恶意 EPUB fuzz、nav/NCX、完整 CSS、脚注/ruby 归 GUL-574。接口和依赖见架构第 12 节。
+
+| 补测项目 | 结果 |
+| --- | --- |
+| Calculus 全部 37 个 spine，30 次 × 3 宽度 × 2 字号 | 6,660 个布局样本，最慢章/参数 p95 **30.889ms**，低于 100ms |
+| SVG 解码/缺图 | **0 unsupported_image，0 missing_image**；2,273 个 SVG 资源所在真实 EPUB 未替换；正文使用到的资源均由 mm_design 解码 |
+| 冷帧（200） | build p95 1.795ms，raster p95 4.354ms，**0/200 超预算** |
+| 热帧（200） | build p95 1.880ms，raster p95 4.585ms，**0/200 超预算** |
+| 冷加载：资源解码 + 章节首次布局 | 37 章 p95 **260.830ms**，max 269.803ms |
+| 热加载：资源解码 + 章节首次布局 | 37 章 p95 **247.865ms**，max 256.685ms |
+| 原文锚点 | 6,660/6,660 校验通过；真实段落/表格 golden、widget 命中及 16→22 字号保持锚点测试通过 |
+
+冷加载清除 SVG 编译字节缓存后执行；热加载紧接着重开同章，保留默认最多 100 项编译缓存，仍重新创建 Picture。较大章节可能超过缓存上限，所以热加载不保证全命中，不能把这两行当作纯布局或首次可交互耗时。原样本宽度 320/768/1200、字号 16/22、每参数两次热身 + 30 次、profile、宿主 GPU 均保持不变。FrameTiming 本次明确覆盖前十个含内联图片的真实章节（每章 20 次页面切换），冷轮切章清编译缓存，热轮保留缓存；每轮 200 帧，包括实际 SVG Picture 绘制。新测量原始记录为 `svg-android.jsonl`，逐章统计 `svg-chapters.csv`，汇总 `svg-summary.json`；旧记录不覆盖。
+
+简单稳定性检查：两秒静置后取相同终点章节的 PSS，不强制 GC。0/10/20/30/40/50 次切换分别为 **179041 / 178448 / 177795 / 178395 / 179019 / 178375 KiB**。五轮无持续增长，末次比基线低 666 KiB，轮间范围 1,246 KiB；此结果只覆盖短程稳定性，不证明长期无泄漏。原始 `dumpsys meminfo` 及轮次标记在 `svg-android-memory.txt`。
+
+真实测试素材是原 EPUB 的 CHAPTER I 行内 d 公式和导数表格，源路径登记在 `packages/mm_reflow/test/fixtures/calculus/README.md`。测试保留原 HTML/SVG 字节；两张 golden 使用 Flutter 测试默认 Ahem 正文字体（黑色方块），SVG 公式自身为路径，能直接检查原位和缩放。已逐图检查：行内公式在两侧正文之间，表格公式分列且无重复表后图片。
+
+明确剩余排版精度限制：ex 按 0.5em、公式垂直对齐用 middle，未实现字体实际 x-height/CSS vertical-align；表格仍为等宽列、不支持 rowspan/colspan；这些均保留图片内容和源位置，由 GUL-572/574 后续验收。当前冷加载约 0.27 秒，不满足单帧交互预算，分块调度由 GUL-572 完成，不能用 <100ms 重排数据掩盖。
+
+复现（在 example 构建，仓库根目录采集）：
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home PATH=/opt/homebrew/opt/openjdk@21/bin:$PATH flutter build apk --profile --no-pub --dart-define=BENCHMARK=true --dart-define=BOOK=33283
+adb -s emulator-5554 install -r packages/mm_reflow/example/build/app/outputs/flutter-apk/app-profile.apk
+EVIDENCE_PREFIX=svg- python3 docs/evidence/gul-570/run_android.py
+python3 docs/evidence/gul-570/summarize_svg.py
+```
+
+同一 AVD/Flutter/宿主，启动参数 `-avd mm_phone -no-window -no-audio -no-snapshot -gpu host`；日志 `svg-emulator.log` 确认 Apple M4。正式基准期间未并行启动本任务测试/编译，结果收集完成后才运行全套检查。
+
+本轮工程检查：`flutter analyze --no-pub` 无问题；`dart format --set-exit-if-changed apps packages` 504 文件、0 改动；完整 Dart/Flutter suites 通过（应用 770 pass / 21 skip），Python 工具测试 17/17，Web release 构建通过。补充 probe 基准流程测试 2/2 通过，默认 Android 参数不变，测试用显式短参数覆盖两种帧状态及内存轮次。总覆盖率 **91.47%**；新增 mm_book/mm_reflow/example 与图片适配器合计 **593/631 = 93.98%**（包含测试覆盖到的生成本地化源码），分项见 `svg-new-coverage.txt`。
+
+macOS 原生首次 21/22 通过，既有 `testArticleChannelContract` 在 `XCTAssertNotNil` 失败（`svg-native-first-result.json`）；未改该原生代码，完整重跑 **22/22 通过**，见 `svg-native-retry.log`。保留失败记录，不将重试描述为首次全绿。各命令日志均以 `svg-` 为前缀。
+
+## 2026-10-29 历史验证（以下 No-Go 已由上述补测取代）
+
 2026-10-29。结论：**No-Go（当前原型尚不能作为完整 EPUB 引擎交付）；Flutter 原生文本排版的性能和原文锚点路线已得到正向验证。**
 
 阻止 Go 的实际内容问题：技术书使用大量 SVG 公式，当前仅使用 Flutter raster codec，不能渲染 SVG；每次失败都记录 `unsupported_image`，没有伪装为图片成功。表格里的图片降级为表后块，diagnostics 明确记录。三书总计 2,927 次不支持图片的解码尝试（包括重载，不是唯一资源数）。因此“各类内容不丢失”门槛未通过，即使纯布局和帧耗时通过，也不能给完整 Go。

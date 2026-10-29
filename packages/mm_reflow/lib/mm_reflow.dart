@@ -2,7 +2,6 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:mm_book/mm_book.dart';
@@ -24,7 +23,14 @@ class LayoutPiece {
   final TextPainter? painter;
   final Rect rect;
   final int textStart, textEnd;
-  final ui.Image? image;
+  final MMBookImage? image;
+  final List<InlineArtwork> artwork = [];
+}
+
+class InlineArtwork {
+  InlineArtwork(this.image, this.rect);
+  final MMBookImage? image;
+  final Rect rect;
 }
 
 class PageSlice {
@@ -42,12 +48,54 @@ class ChapterLayout {
   final double height;
 
   /// Callers own decoded images. The layout owns and disposes its text painters.
-  factory ChapterLayout.layout(BookChapter chapter, LayoutSpec spec, {Map<String, ui.Image> images = const {}}) {
+  factory ChapterLayout.layout(BookChapter chapter, LayoutSpec spec, {Map<String, MMBookImage> images = const {}}) {
     spec.validate();
     final pieces = <LayoutPiece>[];
     final breaks = <double>[0];
     var y = 0.0;
+    final artwork = <TextPainter, List<InlineArtwork>>{};
     TextPainter textPainter(List<InlineRun> runs, double width, {double scale = 1}) {
+      final dimensions = <PlaceholderDimensions>[];
+      final inlineImages = <MMBookImage?>[];
+      double? length(String? value) {
+        final match = RegExp(r'^([0-9.]+)(px|em|ex|%)?$').firstMatch(value ?? '');
+        if (match == null) return null;
+        final n = double.tryParse(match[1]!);
+        if (n == null || n <= 0) return null;
+        return n *
+            switch (match[2]) {
+              'em' => spec.fontSize * scale,
+              'ex' => spec.fontSize * scale * .5,
+              '%' => width / 100,
+              _ => 1.0,
+            };
+      }
+
+      InlineSpan span(InlineRun run) {
+        if (run.resource != null) {
+          final image = images[run.resource];
+          final natural = image?.size ?? Size(spec.fontSize, spec.fontSize);
+          var w = length(run.width);
+          var h = length(run.height);
+          w ??= h == null ? natural.width : h * natural.width / natural.height;
+          h ??= w * natural.height / natural.width;
+          final ratio = math.min(1.0, math.min(width / w, spec.pageHeight / h));
+          final size = Size(w * ratio, h * ratio);
+          dimensions.add(PlaceholderDimensions(size: size, alignment: PlaceholderAlignment.middle));
+          inlineImages.add(image);
+          return const WidgetSpan(alignment: PlaceholderAlignment.middle, child: SizedBox());
+        }
+        return TextSpan(
+          text: run.text,
+          style: TextStyle(
+            fontWeight: run.strong ? FontWeight.bold : null,
+            fontStyle: run.emphasis ? FontStyle.italic : null,
+            fontFamily: run.code ? 'monospace' : null,
+            decoration: run.link == null ? null : TextDecoration.underline,
+          ),
+        );
+      }
+
       final painter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
@@ -56,28 +104,20 @@ class ChapterLayout {
             height: spec.lineHeight,
             color: MMReaderStyle.white.inkColor,
           ),
-          children: [
-            for (final run in runs)
-              TextSpan(
-                text: run.text,
-                style: TextStyle(
-                  fontWeight: run.strong ? FontWeight.bold : null,
-                  fontStyle: run.emphasis ? FontStyle.italic : null,
-                  fontFamily: run.code ? 'monospace' : null,
-                  decoration: run.link == null ? null : TextDecoration.underline,
-                ),
-              ),
-          ],
+          children: runs.map(span).toList(),
         ),
       );
+      painter.setPlaceholderDimensions(dimensions);
       painter.layout(maxWidth: width);
+      final boxes = painter.inlinePlaceholderBoxes ?? [];
+      artwork[painter] = [for (var i = 0; i < boxes.length; i++) InlineArtwork(inlineImages[i], boxes[i].toRect())];
       return painter;
     }
 
     for (final block in chapter.blocks) {
       if (block.kind == BlockKind.image) {
         final image = images[block.resource];
-        final aspect = image == null ? 1.5 : image.width / image.height;
+        final aspect = image == null ? 1.5 : image.size.width / image.size.height;
         final width = math.min(spec.width, spec.pageHeight * aspect);
         final h = width / aspect;
         pieces.add(LayoutPiece(block, null, Rect.fromLTWH(0, y, width, h), block.start, block.end, image: image));
@@ -90,7 +130,7 @@ class ChapterLayout {
         for (final row in block.rows) {
           final cells = <TextPainter>[];
           for (final cell in row) {
-            cells.add(textPainter([InlineRun(cell)], math.max(1, cellWidth - 8)));
+            cells.add(textPainter(cell.runs, math.max(1, cellWidth - 8)));
           }
           final rowHeight = cells.map((p) => p.height).fold(0.0, math.max) + 8;
           for (var i = 0; i < cells.length; i++) {
@@ -125,6 +165,9 @@ class ChapterLayout {
       }
       y += spec.fontSize * .5;
       breaks.add(y);
+    }
+    for (final piece in pieces) {
+      piece.artwork.addAll(artwork[piece.painter] ?? []);
     }
     // Greedy page boundaries at line/row edges. An oversized row is sliced;
     // geometry and glyphs remain identical to continuous scrolling.
@@ -215,13 +258,16 @@ class ChapterLayout {
       if (piece.rect.bottom < slice.top || piece.rect.top > slice.bottom) continue;
       if (piece.painter != null) {
         piece.painter!.paint(canvas, piece.rect.topLeft);
+        for (final art in piece.artwork) {
+          final rect = art.rect.shift(piece.rect.topLeft);
+          if (art.image != null) {
+            art.image!.paint(canvas, rect);
+          } else {
+            canvas.drawRect(rect, Paint()..color = MMColors.light.fill);
+          }
+        }
       } else if (piece.image != null) {
-        canvas.drawImageRect(
-          piece.image!,
-          Rect.fromLTWH(0, 0, piece.image!.width.toDouble(), piece.image!.height.toDouble()),
-          piece.rect,
-          Paint(),
-        );
+        piece.image!.paint(canvas, piece.rect);
       } else {
         canvas.drawRect(piece.rect, Paint()..color = MMColors.light.fill);
       }

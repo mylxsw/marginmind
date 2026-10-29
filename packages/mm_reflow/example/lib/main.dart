@@ -22,6 +22,7 @@ void main() => runApp(
 
 // Scientific parameters, not product UI presets. Reproduction commands can override them.
 const sampleIds = ['7337', '33283', '28885'];
+const onlyBook = String.fromEnvironment('BOOK');
 const autoBenchmark = bool.fromEnvironment('BENCHMARK');
 const repeats = int.fromEnvironment('REPEATS', defaultValue: 30);
 
@@ -34,7 +35,7 @@ class Probe extends StatefulWidget {
 class _ProbeState extends State<Probe> {
   Book? book;
   ChapterLayout? layout;
-  Map<String, ui.Image> images = {};
+  Map<String, MMBookImage> images = {};
   int chapter = 0, page = 0, bookIndex = 0;
   double size = 16;
   bool scroll = false, busy = false;
@@ -72,23 +73,32 @@ class _ProbeState extends State<Probe> {
     print('REFLOW ${jsonEncode(value)}');
   }
 
-  Future<Map<String, ui.Image>> decode(Book b, BookChapter c) async {
-    final result = <String, ui.Image>{};
+  Future<Map<String, MMBookImage>> decode(Book b, BookChapter c) async {
+    final result = <String, MMBookImage>{};
     for (final path
-        in c.blocks.map((b) => b.resource).whereType<String>().toSet()) {
+        in c.blocks
+            .expand(
+              (b) => [
+                b.resource,
+                ...b.runs.map((r) => r.resource),
+                ...b.rows.expand(
+                  (row) =>
+                      row.expand((cell) => cell.runs.map((r) => r.resource)),
+                ),
+              ],
+            )
+            .whereType<String>()
+            .toSet()) {
       final bytes = b.resources[path];
       if (bytes == null) {
         emit({'kind': 'missing_image', 'path': path});
         continue;
       }
       try {
-        final codec = await ui.instantiateImageCodec(
+        result[path] = await MMBookImage.decode(
           bytes,
-          targetWidth: 1024,
-          allowUpscaling: false,
+          svgImage: path.toLowerCase().endsWith('.svg'),
         );
-        result[path] = (await codec.getNextFrame()).image;
-        codec.dispose();
       } catch (_) {
         emit({'kind': 'unsupported_image', 'path': path});
       }
@@ -147,7 +157,14 @@ class _ProbeState extends State<Probe> {
     if (mounted) setState(() {});
   }
 
-  Future<void> benchmark() async {
+  Future<void> benchmark({
+    int iterations = repeats,
+    int pageChanges = 200,
+    int memoryRounds = 5,
+    int switchesPerRound = 10,
+    Duration settleDelay = const Duration(seconds: 2),
+    List<int> bookIndices = const [0, 1, 2],
+  }) async {
     if (busy) return;
     setState(() => busy = true);
     emit({
@@ -157,10 +174,11 @@ class _ProbeState extends State<Probe> {
       'platform': defaultTargetPlatform.name,
       'pixel_ratio': View.of(context).devicePixelRatio,
       'refresh_hz': View.of(context).display.refreshRate,
-      'repeats': repeats,
+      'repeats': iterations,
     });
     try {
-      for (var bi = 0; bi < sampleIds.length; bi++) {
+      for (final bi in bookIndices) {
+        if (onlyBook.isNotEmpty && sampleIds[bi] != onlyBook) continue;
         await loadBook(bi);
         if (failure != null) throw StateError(failure!);
         final b = book!;
@@ -172,10 +190,28 @@ class _ProbeState extends State<Probe> {
           'diagnostic_count': b.diagnostics.length,
         });
         for (var ci = 0; ci < b.chapters.length; ci++) {
+          MMBookImage.clearSvgCache();
+          final decodeWatch = Stopwatch()..start();
           await loadChapter(ci);
+          emit({
+            'kind': 'decode',
+            'chapter': ci,
+            'state': 'cold',
+            'us': decodeWatch.elapsedMicroseconds,
+            'images': images.length,
+          });
+          decodeWatch.reset();
+          await loadChapter(ci);
+          emit({
+            'kind': 'decode',
+            'chapter': ci,
+            'state': 'hot',
+            'us': decodeWatch.elapsedMicroseconds,
+            'images': images.length,
+          });
           final c = b.chapters[ci];
           for (final width in [320.0, 768.0, 1200.0]) {
-            for (var iteration = -2; iteration < repeats; iteration++) {
+            for (var iteration = -2; iteration < iterations; iteration++) {
               for (final fontSize in [16.0, 22.0]) {
                 final watch = Stopwatch()..start();
                 final measured = ChapterLayout.layout(
@@ -219,23 +255,67 @@ class _ProbeState extends State<Probe> {
           }
         }
         // Measure actual rendered page changes, independent of layout loops.
-        final longest = b.chapters.indexOf(
-          b.chapters.reduce(
-            (a, b) => a.canonicalText.length > b.canonicalText.length ? a : b,
-          ),
-        );
-        await loadChapter(longest);
-        frames.clear();
-        collectFrames = true;
-        for (var i = 0; i < 200; i++) {
-          setState(() => page = i % layout!.pages.length);
-          await WidgetsBinding.instance.endOfFrame;
-          await Future<void>.delayed(const Duration(milliseconds: 20));
+        final illustrated = b.chapters
+            .asMap()
+            .entries
+            .where(
+              (e) => e.value.blocks.any(
+                (block) =>
+                    block.runs.any((r) => r.resource != null) ||
+                    block.rows.any(
+                      (row) => row.any(
+                        (cell) => cell.runs.any((r) => r.resource != null),
+                      ),
+                    ),
+              ),
+            )
+            .map((e) => e.key)
+            .toList();
+        if (illustrated.isEmpty) illustrated.add(0);
+        for (final state in ['cold', 'hot']) {
+          frames.clear();
+          collectFrames = true;
+          for (var i = 0; i < pageChanges; i++) {
+            if (i % 20 == 0) {
+              if (state == 'cold') MMBookImage.clearSvgCache();
+              await loadChapter(illustrated[(i ~/ 20) % illustrated.length]);
+            }
+            setState(() => page = (i % 20) % layout!.pages.length);
+            await WidgetsBinding.instance.endOfFrame;
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          collectFrames = false;
+          for (final f in frames) {
+            emit({
+              'kind': 'frame',
+              'book': sampleIds[bi],
+              'state': state,
+              ...f,
+            });
+          }
         }
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        collectFrames = false;
-        for (final f in frames) {
-          emit({'kind': 'frame', 'book': sampleIds[bi], ...f});
+        // Ten switches per round, identical chapter sequence, fixed end chapter.
+        // PSS snapshots are collected by the host on each settled round event.
+        for (var round = 0; round <= memoryRounds; round++) {
+          if (round > 0) {
+            for (var i = 0; i < switchesPerRound; i++) {
+              await loadChapter(illustrated[i % illustrated.length]);
+              await WidgetsBinding.instance.endOfFrame;
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+            }
+          } else {
+            await loadChapter(
+              illustrated[(switchesPerRound - 1) % illustrated.length],
+            );
+          }
+          await Future<void>.delayed(settleDelay);
+          emit({
+            'kind': 'memory_round',
+            'round': round,
+            'switches': round * switchesPerRound,
+          });
+          await Future<void>.delayed(const Duration(seconds: 1));
         }
         emit({'kind': 'book_done', 'book': sampleIds[bi]});
       }

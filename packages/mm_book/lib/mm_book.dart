@@ -13,10 +13,27 @@ import 'package:xml/xml.dart';
 enum BlockKind { paragraph, heading, list, quote, code, image, table }
 
 class InlineRun {
-  const InlineRun(this.text, {this.strong = false, this.emphasis = false, this.code = false, this.link});
+  const InlineRun(
+    this.text, {
+    this.strong = false,
+    this.emphasis = false,
+    this.code = false,
+    this.link,
+    this.resource,
+    this.width,
+    this.height,
+  });
   final String text;
   final bool strong, emphasis, code;
   final String? link;
+  final String? resource, width, height;
+}
+
+class BookCell {
+  BookCell(List<InlineRun> runs) : runs = List.unmodifiable(runs);
+  final List<InlineRun> runs;
+  String get text => runs.map((r) => r.text).join();
+  int get length => text.length;
 }
 
 class BookBlock {
@@ -27,15 +44,15 @@ class BookBlock {
     required List<InlineRun> runs,
     this.level = 1,
     this.resource,
-    List<List<String>> rows = const [],
+    List<List<BookCell>> rows = const [],
   }) : runs = List.unmodifiable(runs),
-       rows = List.unmodifiable(rows.map(List<String>.unmodifiable));
+       rows = List.unmodifiable(rows.map(List<BookCell>.unmodifiable));
   final String id;
   final BlockKind kind;
   final int start, level;
   final String? resource;
   final List<InlineRun> runs;
-  final List<List<String>> rows;
+  final List<List<BookCell>> rows;
   String get text => runs.map((r) => r.text).join();
   int get end => start + text.length;
 }
@@ -145,7 +162,7 @@ class EpubParser {
       List<InlineRun> runs, {
       int level = 1,
       String? resource,
-      List<List<String>> rows = const [],
+      List<List<BookCell>> rows = const [],
     }) {
       if (runs.every((r) => r.text.trim().isEmpty)) return;
       final block = BookBlock(
@@ -187,18 +204,12 @@ class EpubParser {
             .map(
               (row) => row.children
                   .where((c) => c.localName == 'td' || c.localName == 'th')
-                  .map((c) => c.text.replaceAll(RegExp(r'\s+'), ' ').trim())
+                  .map((c) => BookCell(_inline(c, id, diagnostics, preserve: false)))
                   .toList(),
             )
             .where((r) => r.isNotEmpty)
             .toList();
-        add(BlockKind.table, [InlineRun(rows.map((r) => r.join('\t')).join('\n'))], rows: rows);
-        for (final image in node.querySelectorAll('img,image')) {
-          visit(image);
-        }
-        if (node.querySelector('img,image') != null) {
-          diagnostics?.add('Table images placed after table: $id');
-        }
+        add(BlockKind.table, [InlineRun(rows.map((r) => r.map((c) => c.text).join('\t')).join('\n'))], rows: rows);
         return;
       }
       final kind = switch (tag) {
@@ -209,13 +220,10 @@ class EpubParser {
         'pre' => BlockKind.code,
         _ => null,
       };
-      // Image-only paragraphs must remain image blocks, not empty text.
+      // Images remain inline, including image-only paragraphs.
       if (kind != null) {
-        final runs = _inline(node, preserve: kind == BlockKind.code);
+        final runs = _inline(node, id, diagnostics, preserve: kind == BlockKind.code);
         add(kind, runs, level: tag.startsWith('h') ? int.tryParse(tag.substring(1)) ?? 1 : 1);
-        for (final img in node.querySelectorAll('img,image')) {
-          visit(img);
-        }
       } else {
         for (final child in node.nodes) {
           visit(child);
@@ -230,7 +238,7 @@ class EpubParser {
   }
 }
 
-List<InlineRun> _inline(dom.Element root, {required bool preserve}) {
+List<InlineRun> _inline(dom.Element root, String id, List<String>? diagnostics, {required bool preserve}) {
   final result = <InlineRun>[];
   var previousWhitespace = true;
   void walk(dom.Node node, bool strong, bool emphasis, bool code, String? link) {
@@ -245,7 +253,24 @@ List<InlineRun> _inline(dom.Element root, {required bool preserve}) {
         previousWhitespace = text.endsWith(' ') || text.endsWith('\n');
       }
     } else if (node is dom.Element) {
-      if (const {'script', 'style', 'img', 'image', 'rt'}.contains(node.localName)) return;
+      if (const {'script', 'style', 'rt'}.contains(node.localName) || node.attributes.containsKey('hidden')) return;
+      if (node.localName == 'img' || node.localName == 'image') {
+        final src = node.attributes['src'] ?? node.attributes['href'] ?? node.attributes['xlink:href'];
+        if (src != null) {
+          try {
+            String? dimension(String name) =>
+                RegExp('$name\\s*:\\s*([^;]+)').firstMatch(node.attributes['style'] ?? '')?.group(1)?.trim() ??
+                node.attributes[name];
+            result.add(
+              InlineRun('\uFFFC', resource: _resolve(id, src), width: dimension('width'), height: dimension('height')),
+            );
+            previousWhitespace = false;
+          } on FormatException {
+            diagnostics?.add('Unsupported image URL: $src');
+          }
+        }
+        return;
+      }
       if (node.localName == 'br') {
         result.add(const InlineRun('\n'));
         previousWhitespace = true;
@@ -264,7 +289,7 @@ List<InlineRun> _inline(dom.Element root, {required bool preserve}) {
   }
 
   walk(root, false, false, preserve, null);
-  if (!preserve && result.isNotEmpty) {
+  if (!preserve && result.isNotEmpty && result.last.resource == null) {
     final last = result.removeLast();
     result.add(
       InlineRun(last.text.trimRight(), strong: last.strong, emphasis: last.emphasis, code: last.code, link: last.link),

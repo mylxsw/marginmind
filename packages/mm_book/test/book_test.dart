@@ -60,7 +60,10 @@ void main() {
     expect(c.canonicalText, contains('A\tB\n1\t2'));
     expect(c.canonicalText, isNot(contains('bad')));
     expect(c.canonicalText, isNot(contains('hidden')));
-    expect(c.blocks.where((b) => b.resource != null).map((b) => b.resource), ['OPS/img.png', 'OPS/image.png']);
+    expect(c.blocks.expand((b) => [b.resource, ...b.runs.map((r) => r.resource)]).whereType<String>(), [
+      'OPS/img.png',
+      'OPS/image.png',
+    ]);
     expect(diagnostics, hasLength(1));
     for (final b in c.blocks) {
       expect(c.canonicalText.substring(b.start, b.end), b.text);
@@ -84,17 +87,17 @@ void main() {
     expect(parser.parseHtml('main', '').blocks, isEmpty);
     expect(c.resolves(const TextAnchor('main', 0, 1, 'wrong')), isFalse);
   });
-  test('table image fallback remains explicit and diagnosed', () {
+  test('table images retain their exact cell position', () {
     final diagnostics = <String>[];
     final chapter = parser.parseHtml(
       'book/ch.xhtml',
       '<table><tr><td>cell<img src="pic.png"></td></tr></table>',
       diagnostics,
     );
-    expect(chapter.blocks.map((b) => b.kind), [BlockKind.table, BlockKind.image]);
-    expect(chapter.blocks.last.resource, 'book/pic.png');
-    expect(diagnostics.single, contains('Table images placed after table'));
-    expect(chapter.canonicalText, 'cell\n\uFFFC');
+    expect(chapter.blocks.map((b) => b.kind), [BlockKind.table]);
+    expect(chapter.blocks.single.rows.single.single.runs.last.resource, 'book/pic.png');
+    expect(diagnostics, isEmpty);
+    expect(chapter.canonicalText, 'cell\uFFFC');
     expect(() => parser.parse(epub(extra: '%2e%2e/escape')), throwsFormatException);
   });
 }

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_book/mm_book.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:mm_reflow/mm_reflow.dart';
 
 void main() {
@@ -44,7 +45,11 @@ void main() {
     final picture = recorder.endRecording();
     final image = await picture.toImage(10, 10);
     picture.dispose();
-    final layout = ChapterLayout.layout(c, const LayoutSpec(width: 200, pageHeight: 80), images: {'pic.png': image});
+    final layout = ChapterLayout.layout(
+      c,
+      const LayoutSpec(width: 200, pageHeight: 80),
+      images: {'pic.png': MMBookImage.raster(image)},
+    );
     final index = c.canonicalText.indexOf('second');
     final boxes = layout.boxes(c.anchor(index, index + 6));
     expect(boxes, isNotEmpty);

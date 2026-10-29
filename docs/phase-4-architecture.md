@@ -146,4 +146,29 @@ Go 门槛：三本书实际打开且各类内容不丢失；Android 选区/高�
 
 本次只交付最小 mm_book IR/EPUB 适配、paragraph/heading/list/quote/code/image/table 及 text/emphasis/strong/code/link，mm_reflow 分页/滚动、命中/选区/高亮/改字号与基准。MOBI、浏览器、固定版式、格式迁移、翻译都留给后续任务。原型的锚点值对象暂在 mm_book，GUL-573 接续迁到 mm_core，不能产生第二份规范文本契约。
 
-复用当前 lock 中 archive 4.5.2（MIT）、xml 7.1.0（MIT）、html 0.15.7（MIT）、markdown 7.3.1（BSD-3-Clause）；均为纯 Dart。mm_book 只引用 archive.dart 的内存 API，不引用 archive_io.dart；资源由字节输入。原型只实际依赖前三者，Markdown 解析在 GUL-574 接入时锁定 7.3.1。许可证需随发布保留，原文来自本机 pub-cache 对应版本 LICENSE；以 Web 构建验证入口的可移植性。
+复用当前 lock 中 archive 4.5.2（MIT）、xml 7.0.1（MIT）、html 0.15.7（MIT）、markdown 7.3.1（BSD-3-Clause）；均为纯 Dart。mm_book 只引用 archive.dart 的内存 API，不引用 archive_io.dart；资源由字节输入。原型只实际依赖前三者，Markdown 解析在 GUL-574 接入时锁定 7.3.1。许可证需随发布保留，原文来自本机 pub-cache 对应版本 LICENSE；以 Web 构建验证入口的可移植性。
+
+
+## 12. 接口边界 / 风险（2026-10-30 负责人裁决）
+
+保留 Flutter 路线。GUL-570 本 PR 的补充 Go 门槛限定为：SVG 解码绘制、图片原位、Calculus 全章 profile 重测（原参数，最慢章重排 p95 <100ms、超预算帧 <1%）以及至少五轮/50 次切章的简单 PSS 稳定性检查。`unsupported_image` 须为零，若有剩余必须逐项列出限制；冷/热解码与绘制成本分别保存。它不是完整 EPUB 产品验收，也不要求在本任务完成下列后续能力。
+
+| 接口/后续验收归属 | 必须验收的内容 |
+| --- | --- |
+| GUL-576 app 选区状态机 | 跨页/跨章选区、移动端选择柄、无障碍语义；消费统一 UTF-16 锚点及布局盒子。 |
+| GUL-572 引擎调度 | LRU/generation/分块调度、长期内存、真机；调用方拥有图片句柄，布局仅借用，旧布局先释放再释放图片。 |
+| GUL-574 解析器 | 恶意 EPUB fuzz、nav/NCX、完整 CSS、脚注/ruby；当前 IR 不是完整 CSS 或固定版式实现。 |
+
+原型的 `InlineRun.resource` 在原 DOM 位置占一个 U+FFFC；`BookCell.runs` 保留单元格内相同内联结构，TAB/LF 分隔规则不变。`mm_reflow` 通过 TextPainter placeholder dimensions 排版，再在 inlinePlaceholderBoxes 绘制资源，不另移图片。原型只读图片 width/height 的 px/em/ex/% 内联尺寸；ex 暂按 0.5em，公式垂直对齐采用 middle；完整字体 x-height、CSS vertical-align、复杂合并单元格交 GUL-572/574 验收。这属于排版精度限制，不是图片丢失。
+
+新增 `mm_design.MMBookImage` 封装 raster image / SVG Picture 的 decode、size、paint、dispose；不向 mm_reflow 暴露任何第三方类型。SVG 编译字节使用库的有界缓存，Picture 由章节调用方显式释放；清缓存 API 仅供冷测。
+
+| 新增或调整的锁定依赖 | 许可证 / 可移植性 | 归属 |
+| --- | --- | --- |
+| flutter_svg 2.3.2 | MIT，纯 Dart/Flutter，无原生插件 | mm_design 唯一直依赖 |
+| vector_graphics 1.2.4 | BSD-3-Clause，Flutter canvas，无原生插件 | flutter_svg 间接依赖 |
+| vector_graphics_codec 1.1.13、vector_graphics_compiler 1.3.4 | BSD-3-Clause，纯 Dart | 间接依赖 |
+| path_parsing 1.1.0 | MIT，纯 Dart | 间接依赖 |
+| xml 7.0.1 | MIT，纯 Dart；从 7.1.0 调整以满足 compiler 的 <=7.0.1 约束，不使用 dependency_overrides | mm_book / compiler 共用 |
+
+已检查下载包 pubspec 与 LICENSE；许可证副本在 evidence/gul-570/licenses，均与仓库 MIT 分发兼容。[flutter_svg 官方说明与许可证](https://pub.dev/packages/flutter_svg/versions/2.3.2)。所有解码在 Dart/Flutter 中完成，无外部转换程序。最终运行证据和剩余限制以验证报告为准；本节覆盖第 10 节原完整验收计划中超出此次 Go 的条件。
