@@ -1,0 +1,62 @@
+{
+  "7337": {
+    "layout_samples": 540,
+    "worst_chapter_p95_ms": 104.809,
+    "worst_key": [
+      "7337",
+      1,
+      320.0,
+      16.0
+    ],
+    "anchor_failures": 0,
+    "frames": 200,
+    "build_p95_ms": 2.923,
+    "raster_p95_ms": 67.497,
+    "over_budget_percent": 89.5
+  },
+  "33283": {
+    "layout_samples": 6660,
+    "worst_chapter_p95_ms": 40.659,
+    "worst_key": [
+      "33283",
+      23,
+      320.0,
+      16.0
+    ],
+    "anchor_failures": 0,
+    "frames": 200,
+    "build_p95_ms": 3.819,
+    "raster_p95_ms": 70.043,
+    "over_budget_percent": 98.0
+  },
+  "28885": {
+    "layout_samples": 2700,
+    "worst_chapter_p95_ms": 48.577,
+    "worst_key": [
+      "28885",
+      12,
+      1200.0,
+      16.0
+    ],
+    "anchor_failures": 0,
+    "frames": 200,
+    "build_p95_ms": 6.504,
+    "raster_p95_ms": 87.777,
+    "over_budget_percent": 96.0
+  },
+  "events": {
+    "environment": 1,
+    "book": 3,
+    "layout": 9900,
+    "frame": 600,
+    "book_done": 3,
+    "unsupported_image": 2927,
+    "done": 1
+  },
+  "memory": {
+    "sample_count": 16,
+    "first_pss_kib": 141409,
+    "peak_pss_kib": 194164,
+    "last_pss_kib": 171676
+  }
+}

@@ -1,0 +1,4 @@
+flutter build macos --debug stalled in RegisterWithLaunchServices (lsregister) for over 6 minutes; terminated this exact build child. No successful native test result.
+/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/mylxsw/multica_workspaces_desktop-api.multica.ai/gulu-bf089d178fd3/gul-570-d03b2e5f72fa/workdir/marginmind/apps/marginmind/build/macos/Build/Products/Debug/MarginMind.app
+
+RESOLVED: after terminating the two stuck lsregister children, the application build and xcodebuild test completed successfully (exit 0). See native-tests.log.

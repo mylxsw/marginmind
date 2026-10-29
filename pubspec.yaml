@@ -7,6 +7,9 @@ environment:
 
 workspace:
   - apps/marginmind
+  - packages/mm_book
+  - packages/mm_reflow
+  - packages/mm_reflow/example
   - packages/mm_core
   - packages/mm_design
   - packages/mm_platform
