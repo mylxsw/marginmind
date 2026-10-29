@@ -10,6 +10,8 @@ import 'map_clipboard.dart';
 import 'review.dart';
 import 'study_set_content.dart';
 
+part 'mindmap_editor.dart';
+
 /// Every change to a study set's content, as pure functions. The UI calls
 /// these through the repository; tests call them directly.
 class StudySetEditor {
@@ -33,7 +35,7 @@ class StudySetEditor {
     bool createCard = false,
     String? parentId,
   }) {
-    if (createCard && (c.map(mapId) == null || (parentId != null && c.node(parentId, mapId: mapId) == null))) {
+    if (createCard && (c.map(mapId) == null || (parentId != null && !c.isPlaced(parentId, mapId: mapId)))) {
       throw ArgumentError('Invalid research card destination');
     }
     final byEvidence = {for (final e in c.evidence) e.id: e};
@@ -310,10 +312,15 @@ class StudySetEditor {
   }
 
   /// A line from [fromId] to [toId], both placed in this map. A card cannot
-  /// relate to itself, and the same direction is drawn only once.
+  /// relate to itself; either direction of an existing pair selects that line.
   (StudySetContent, MapRelation?) addRelation(StudySetContent c, String fromId, String toId, {String label = ''}) {
-    if (fromId == toId || c.node(fromId, mapId: mapId) == null || c.node(toId, mapId: mapId) == null) return (c, null);
-    if (c.relations.any((r) => r.mapId == mapId && r.fromId == fromId && r.toId == toId)) return (c, null);
+    if (fromId == toId || !c.isPlaced(fromId, mapId: mapId) || !c.isPlaced(toId, mapId: mapId)) return (c, null);
+    final existing = c.relations
+        .where(
+          (r) => r.mapId == mapId && ((r.fromId == fromId && r.toId == toId) || (r.fromId == toId && r.toId == fromId)),
+        )
+        .firstOrNull;
+    if (existing != null) return (c, existing);
     final relation = MapRelation(id: newId(), mapId: mapId, fromId: fromId, toId: toId, label: label.trim());
     return (c.copyWith(relations: [...c.relations, relation]), relation);
   }
@@ -330,41 +337,32 @@ class StudySetEditor {
 
   /// Sums up the range of siblings spanned by [cardIds] (first to last in
   /// display order). All of them must share one parent in this map; an
-  /// identical range is not summed up twice.
+  /// overlapping ranges are rejected.
   (StudySetContent, MapSummary?) addSummary(StudySetContent c, Iterable<String> cardIds, {String label = ''}) {
-    final ids = cardIds.toSet();
-    final placed = [for (final id in ids) c.node(id, mapId: mapId)];
-    if (placed.isEmpty || placed.any((n) => n == null)) return (c, null);
-    final parentId = placed.first!.parentId;
-    if (placed.any((n) => n!.parentId != parentId)) return (c, null);
-    final covered = [
-      for (final n in c.childrenOf(parentId, mapId: mapId))
-        if (ids.contains(n.cardId)) n.cardId,
-    ];
-    final summary = MapSummary(
-      id: newId(),
-      mapId: mapId,
-      parentId: parentId,
-      fromId: covered.first,
-      toId: covered.last,
-      label: label.trim(),
-    );
-    final same = c
-        .summariesOf(mapId)
-        .any((e) => e.$1.parentId == parentId && e.$2.first == covered.first && e.$2.last == covered.last);
-    if (same) return (c, null);
-    return (c.copyWith(summaries: [...c.summaries, summary]), summary);
+    final result = createSummary(c, cardIds, label: label);
+    return (result.content, result.value);
   }
 
-  StudySetContent relabelSummary(StudySetContent c, String id, String label) =>
-      c.copyWith(summaries: [for (final s in c.summaries) s.id == id ? s.copyWith(label: label.trim()) : s]);
+  StudySetContent relabelSummary(StudySetContent c, String id, String label) {
+    final summary = c.summaries.where((s) => s.mapId == mapId && s.id == id).firstOrNull;
+    if (summary == null) return c;
+    return c.copyWith(
+      summaries: [for (final s in c.summaries) s.id == id ? s.copyWith(label: label.trim()) : s],
+      cards: [for (final card in c.cards) card.id == summary.cardId ? card.copyWith(title: label.trim()) : card],
+    );
+  }
 
-  StudySetContent removeSummary(StudySetContent c, String id) => c.copyWith(
-    summaries: [
-      for (final s in c.summaries)
-        if (s.id != id) s,
-    ],
-  );
+  StudySetContent removeSummary(StudySetContent c, String id) {
+    final summary = c.summaries.where((s) => s.mapId == mapId && s.id == id).firstOrNull;
+    if (summary == null) return c;
+    final next = c.copyWith(
+      summaries: [
+        for (final s in c.summaries)
+          if (s.id != id) s,
+      ],
+    );
+    return summary.cardId == null ? next : _removeNodes(next, _subtree(c, summary.cardId!));
+  }
 
   /// After a structural edit, a summary whose end left its parent shrinks
   /// to the covered siblings that stayed; with none left it goes away.
@@ -372,6 +370,7 @@ class StudySetEditor {
     if (!after.summaries.any((s) => s.mapId == mapId)) return after;
     var changed = false;
     final summaries = <MapSummary>[];
+    final dropped = <String>[];
     for (final s in after.summaries) {
       final old = s.mapId == mapId ? before.summaryRange(s) : null;
       if (old == null || after.summaryRange(s) != null) {
@@ -384,15 +383,23 @@ class StudySetEditor {
         for (final n in after.childrenOf(s.parentId, mapId: mapId))
           if (kept.contains(n.cardId)) n.cardId,
       ];
-      if (stayed.isNotEmpty) summaries.add(s.copyWith(fromId: stayed.first, toId: stayed.last));
+      if (stayed.isNotEmpty) {
+        summaries.add(s.copyWith(fromId: stayed.first, toId: stayed.last));
+      } else if (s.cardId != null) {
+        dropped.add(s.cardId!);
+      }
     }
-    return changed ? after.copyWith(summaries: summaries) : after;
+    var result = changed ? after.copyWith(summaries: summaries) : after;
+    for (final id in dropped) {
+      result = _removeNodes(result, _subtree(result, id));
+    }
+    return result;
   }
 
   /// Places shared content once per map; parent ids are local to that map.
   StudySetContent placeCard(StudySetContent c, String cardId, {String? parentId}) {
-    if (c.map(mapId) == null || c.card(cardId) == null || c.node(cardId, mapId: mapId) != null) return c;
-    if (parentId != null && c.node(parentId, mapId: mapId) == null) return c;
+    if (c.map(mapId) == null || c.card(cardId) == null || c.isPlaced(cardId, mapId: mapId)) return c;
+    if (parentId != null && !c.isPlaced(parentId, mapId: mapId)) return c;
     return c.copyWith(
       nodes: [
         for (final n in c.nodes) n.mapId == mapId && n.cardId == parentId ? n.copyWith(collapsed: false) : n,
@@ -455,7 +462,7 @@ class StudySetEditor {
     Map<String, String> images = const {},
     Map<String, String> snapshots = const {},
   }) {
-    if (parentId != null && c.node(parentId, mapId: mapId) == null) return (c, const []);
+    if (parentId != null && !c.isPlaced(parentId, mapId: mapId)) return (c, const []);
     var research = c;
     final copiedNotes = <String, String>{};
     final copiedSources = <String, String>{};
@@ -856,7 +863,7 @@ class StudySetEditor {
   StudySetContent removeMany(StudySetContent c, Iterable<String> cardIds) {
     final kill = <String>{};
     for (final id in cardIds.toSet()) {
-      if (c.node(id, mapId: mapId) != null) kill.addAll(_subtree(c, id));
+      if (c.isPlaced(id, mapId: mapId)) kill.addAll(_subtree(c, id));
     }
     if (kill.isEmpty) return c;
     return _removeNodes(c, kill);
@@ -867,8 +874,9 @@ class StudySetEditor {
   /// Index refers to destination siblings after removing the selection.
   /// Invalid destinations reject the entire operation, never a partial move.
   StudySetContent moveMany(StudySetContent c, Iterable<String> cardIds, String? parentId, {int? index}) {
-    if (parentId != null && c.node(parentId, mapId: mapId) == null) return c;
+    if (parentId != null && !c.isPlaced(parentId, mapId: mapId)) return c;
     final selected = cardIds.toSet();
+    if (_movesIntoDependentSummary(c, selected, parentId)) return c;
     final roots = <MapNode>[];
     void walk(String? parent) {
       for (final node in c.childrenOf(parent, mapId: mapId)) {
@@ -877,6 +885,9 @@ class StudySetEditor {
         } else {
           walk(node.cardId);
         }
+      }
+      for (final summary in c.summaries.where((s) => s.mapId == mapId && s.parentId == parent && s.cardId != null)) {
+        walk(summary.cardId);
       }
     }
 
@@ -945,6 +956,7 @@ class StudySetEditor {
     final linked = c.marginNotes.where((n) => n.nodeId == cardId).firstOrNull;
     if (linked != null) return upsertMarginNote(c, linked.copyWith(text: title, updatedAt: now()));
     return c.copyWith(
+      summaries: [for (final s in c.summaries) s.cardId == cardId ? s.copyWith(label: title.trim()) : s],
       cards: [for (final card in c.cards) card.id == cardId ? card.copyWith(title: title.trim()) : card],
     );
   }
@@ -966,8 +978,9 @@ class StudySetEditor {
   /// or its own descendants.
   StudySetContent move(StudySetContent c, String cardId, String? newParentId, {int? index}) {
     if (c.node(cardId, mapId: mapId) == null) return c;
-    if (newParentId != null && c.node(newParentId, mapId: mapId) == null) return c;
+    if (newParentId != null && !c.isPlaced(newParentId, mapId: mapId)) return c;
     if (newParentId != null && _subtree(c, cardId).contains(newParentId)) return c;
+    if (_movesIntoDependentSummary(c, [cardId], newParentId)) return c;
     final siblings = [
       for (final n in c.childrenOf(newParentId, mapId: mapId))
         if (n.cardId != cardId) n,
@@ -1253,6 +1266,10 @@ class StudySetEditor {
     return _keepSummaries(
       c,
       c.copyWith(
+        summaries: [
+          for (final s in c.summaries)
+            if (s.mapId != mapId || !kill.contains(s.cardId)) s,
+        ],
         marginNotes: [
           for (final note in c.marginNotes)
             (note.mapId ?? MindMap.defaultId) == mapId && kill.contains(note.nodeId)
@@ -1287,11 +1304,29 @@ class StudySetEditor {
 
   /// Deletes a highlight and, if it has one, its card subtree.
   StudySetContent deleteAnnotation(StudySetContent c, String annotationId) {
-    final cards = c.cards.where((card) => card.annotationId == annotationId);
+    final cards = c.cards.where(
+      (card) => card.annotationId == annotationId || card.segments.any((s) => s.annotationId == annotationId),
+    );
     var without = c;
     for (final card in cards) {
-      for (final map in c.maps) {
-        without = StudySetEditor(newId: newId, now: now, mapId: map.id).removeFromMap(without, card.id);
+      if (card.segments.length > 1) {
+        // Removing one source must not delete excerpts from other documents.
+        // Keep the captured text as own words after its highlight disappears.
+        final segments = [
+          for (final s in card.segments) s.annotationId == annotationId ? s.copyWith(annotationId: null) : s,
+        ];
+        final firstSource = segments.where((s) => s.annotationId != null).firstOrNull?.annotationId;
+        final changed = card.copyWith(
+          segments: segments,
+          annotationId: firstSource,
+          kind: firstSource == null ? CardKind.topic : card.kind,
+          title: firstSource == null ? segments.map((s) => s.text).join('\n') : card.title,
+        );
+        without = without.copyWith(cards: [for (final old in without.cards) old.id == card.id ? changed : old]);
+      } else {
+        for (final map in c.maps) {
+          without = StudySetEditor(newId: newId, now: now, mapId: map.id).removeFromMap(without, card.id);
+        }
       }
     }
     return without.copyWith(
@@ -1310,6 +1345,9 @@ class StudySetEditor {
       for (final id in frontier) {
         for (final child in c.childrenOf(id, mapId: mapId)) {
           if (result.add(child.cardId)) next.add(child.cardId);
+        }
+        for (final s in c.summaries.where((s) => s.mapId == mapId && s.parentId == id && s.cardId != null)) {
+          if (result.add(s.cardId!)) next.add(s.cardId!);
         }
       }
       frontier = next;

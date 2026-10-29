@@ -246,7 +246,11 @@ ReviewFace buildReviewFace(
       ? null
       : ReviewSource(documentId: doc.id, documentTitle: doc.title, page: annotation.page);
   final back = ReviewBack(
-    quote: isImage ? '' : (annotation?.quote.trim() ?? card.title.trim()),
+    quote: isImage
+        ? ''
+        : card.segments.isNotEmpty
+        ? card.segments.map((segment) => segment.text).join('\n')
+        : (annotation?.quote.trim() ?? card.title.trim()),
     colorIndex: annotation?.colorIndex ?? 0,
     imageFileName: isImage ? card.imageFileName : null,
     notes: notes,

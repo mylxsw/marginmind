@@ -4,6 +4,7 @@ import 'research.dart';
 import 'reading.dart';
 
 const _keepCrop = Object();
+const _keepValue = Object();
 
 /// A rectangle in PDF page coordinates (points, origin bottom-left, so
 /// `top >= bottom`). Independent of zoom and screen size.
@@ -247,6 +248,30 @@ class Annotation {
   );
 }
 
+@immutable
+class CardSegment {
+  const CardSegment({required this.text, this.annotationId});
+  final String text;
+  final String? annotationId;
+
+  CardSegment copyWith({String? text, Object? annotationId = _keepValue}) => CardSegment(
+    text: text ?? this.text,
+    annotationId: identical(annotationId, _keepValue) ? this.annotationId : annotationId as String?,
+  );
+
+  Map<String, Object?> toJson() => {'text': text, if (annotationId != null) 'annotationId': annotationId};
+
+  factory CardSegment.fromJson(Map<String, Object?> j) =>
+      CardSegment(text: j['text'] as String? ?? '', annotationId: j['annotationId'] as String?);
+}
+
+@immutable
+class AnnotationSegmentMatch {
+  const AnnotationSegmentMatch({required this.card, required this.segmentIndex});
+  final Card card;
+  final int segmentIndex;
+}
+
 enum CardKind { topic, excerpt, note, image, research }
 
 /// A node's content. Its place in the mind map is stored separately in
@@ -258,6 +283,7 @@ class Card {
     required this.kind,
     this.title = '',
     this.body = '',
+    this.segments = const [],
     this.annotationId,
     this.imageFileName,
     this.researchNoteId,
@@ -276,6 +302,7 @@ class Card {
 
   /// Optional note body; when set, review uses title as question and body as answer.
   final String body;
+  final List<CardSegment> segments;
 
   /// Set for excerpts.
   final String? annotationId;
@@ -292,14 +319,27 @@ class Card {
   /// Shared across maps; a suspended card stays out of every review queue.
   final bool suspended;
 
-  Card copyWith({String? title, String? body, List<String>? tags, bool? suspended, TextFormat? textFormat}) => Card(
+  Card copyWith({
+    String? title,
+    String? body,
+    CardKind? kind,
+    List<CardSegment>? segments,
+    Object? annotationId = _keepValue,
+    bool clearAnnotationId = false,
+    List<String>? tags,
+    bool? suspended,
+    TextFormat? textFormat,
+  }) => Card(
     id: id,
-    kind: kind,
+    kind: kind ?? this.kind,
+    segments: segments == null ? this.segments : List.unmodifiable(segments),
     title: title ?? this.title,
     body: body ?? this.body,
     tags: tags == null ? this.tags : List.unmodifiable(tags),
     suspended: suspended ?? this.suspended,
-    annotationId: annotationId,
+    annotationId: clearAnnotationId
+        ? null
+        : (identical(annotationId, _keepValue) ? this.annotationId : annotationId as String?),
     imageFileName: imageFileName,
     researchNoteId: researchNoteId,
     textFormat: textFormat ?? this.textFormat,
@@ -312,6 +352,7 @@ class Card {
     'kind': kind.name,
     'title': title,
     if (body.isNotEmpty) 'body': body,
+    if (segments.isNotEmpty) 'segments': [for (final segment in segments) segment.toJson()],
     if (annotationId != null) 'annotationId': annotationId,
     if (imageFileName != null) 'imageFileName': imageFileName,
     if (researchNoteId != null) 'researchNoteId': researchNoteId,
@@ -327,6 +368,9 @@ class Card {
     kind: CardKind.values.byName(j['kind'] as String),
     title: (j['title'] as String?) ?? '',
     body: j['body'] as String? ?? '',
+    segments: List.unmodifiable([
+      for (final v in (j['segments'] as List?) ?? const []) CardSegment.fromJson((v as Map).cast()),
+    ]),
     annotationId: j['annotationId'] as String?,
     imageFileName: j['imageFileName'] as String?,
     researchNoteId: j['researchNoteId'] as String?,
@@ -338,22 +382,47 @@ class Card {
   );
 }
 
+enum MapStructure { mind, logic, brace, tree }
+
+enum MapPalette { system, rainbow, fresh, warm, morandi, ink }
+
 /// A named map. The stable default id keeps format 1 placements unchanged.
 @immutable
 class MindMap {
-  const MindMap({required this.id, required this.title, this.density = MapDensity.full});
+  const MindMap({
+    required this.id,
+    required this.title,
+    this.density = MapDensity.full,
+    this.structure = MapStructure.mind,
+    this.palette = MapPalette.system,
+  });
   static const defaultId = 'main';
   static const main = MindMap(id: defaultId, title: '');
   final String id;
   final String title;
   final MapDensity density;
-  MindMap copyWith({String? title, MapDensity? density}) =>
-      MindMap(id: id, title: title ?? this.title, density: density ?? this.density);
-  Map<String, Object?> toJson() => {'id': id, 'title': title, 'density': density.name};
+  final MapStructure structure;
+  final MapPalette palette;
+  MindMap copyWith({String? title, MapDensity? density, MapStructure? structure, MapPalette? palette}) => MindMap(
+    id: id,
+    title: title ?? this.title,
+    density: density ?? this.density,
+    structure: structure ?? this.structure,
+    palette: palette ?? this.palette,
+  );
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'density': density.name,
+    'structure': structure.name,
+    'palette': palette.name,
+  };
   factory MindMap.fromJson(Map<String, Object?> j) => MindMap(
     id: j['id'] as String,
     title: j['title'] as String,
     density: MapDensity.values.byName(j['density'] as String? ?? 'full'),
+    structure: MapStructure.values.byName(j['structure'] as String? ?? 'mind'),
+    palette: MapPalette.values.byName(j['palette'] as String? ?? 'system'),
   );
 }
 
@@ -422,6 +491,21 @@ class MapNode {
   );
 }
 
+enum RelationArrow { end, both, none }
+
+@immutable
+class RelationControlPoint {
+  const RelationControlPoint(this.dx, this.dy);
+  final double dx;
+  final double dy;
+  Map<String, Object?> toJson() => {'dx': dx, 'dy': dy};
+  factory RelationControlPoint.fromJson(Map<String, Object?> j) => RelationControlPoint(_d(j['dx']), _d(j['dy']));
+  @override
+  bool operator ==(Object other) => other is RelationControlPoint && dx == other.dx && dy == other.dy;
+  @override
+  int get hashCode => Object.hash(dx, dy);
+}
+
 /// A labeled line between two cards of one map, drawn from [fromId] to
 /// [toId]. It belongs to the map, not to either card.
 @immutable
@@ -432,6 +516,10 @@ class MapRelation {
     required this.fromId,
     required this.toId,
     this.label = '',
+    this.arrow = RelationArrow.end,
+    this.solid = false,
+    this.control1,
+    this.control2,
   });
 
   final String id;
@@ -440,14 +528,42 @@ class MapRelation {
   final String toId;
   final String label;
 
-  MapRelation copyWith({String? label}) =>
-      MapRelation(id: id, mapId: mapId, fromId: fromId, toId: toId, label: label ?? this.label);
+  final RelationArrow arrow;
+  final bool solid;
+  final RelationControlPoint? control1;
+  final RelationControlPoint? control2;
+
+  MapRelation copyWith({
+    String? label,
+    String? fromId,
+    String? toId,
+    RelationArrow? arrow,
+    bool? solid,
+    RelationControlPoint? control1,
+    RelationControlPoint? control2,
+    bool clearControl1 = false,
+    bool clearControl2 = false,
+  }) => MapRelation(
+    id: id,
+    mapId: mapId,
+    fromId: fromId ?? this.fromId,
+    toId: toId ?? this.toId,
+    label: label ?? this.label,
+    arrow: arrow ?? this.arrow,
+    solid: solid ?? this.solid,
+    control1: clearControl1 ? null : control1 ?? this.control1,
+    control2: clearControl2 ? null : control2 ?? this.control2,
+  );
 
   Map<String, Object?> toJson() => {
     'id': id,
     'mapId': mapId,
     'fromId': fromId,
     'toId': toId,
+    'arrow': arrow.name,
+    'solid': solid,
+    if (control1 != null) 'control1': control1!.toJson(),
+    if (control2 != null) 'control2': control2!.toJson(),
     if (label.isNotEmpty) 'label': label,
   };
 
@@ -457,6 +573,10 @@ class MapRelation {
     fromId: j['fromId'] as String,
     toId: j['toId'] as String,
     label: (j['label'] as String?) ?? '',
+    arrow: RelationArrow.values.byName(j['arrow'] as String? ?? 'end'),
+    solid: j['solid'] as bool? ?? false,
+    control1: j['control1'] == null ? null : RelationControlPoint.fromJson((j['control1'] as Map).cast()),
+    control2: j['control2'] == null ? null : RelationControlPoint.fromJson((j['control2'] as Map).cast()),
   );
 }
 
@@ -469,6 +589,7 @@ class MapSummary {
     required this.id,
     this.mapId = MindMap.defaultId,
     this.parentId,
+    this.cardId,
     required this.fromId,
     required this.toId,
     this.label = '',
@@ -477,14 +598,23 @@ class MapSummary {
   final String id;
   final String mapId;
   final String? parentId;
+  final String? cardId;
   final String fromId;
   final String toId;
   final String label;
 
-  MapSummary copyWith({String? label, String? fromId, String? toId}) => MapSummary(
+  MapSummary copyWith({
+    String? label,
+    String? fromId,
+    String? toId,
+    String? cardId,
+    String? parentId,
+    bool toRoot = false,
+  }) => MapSummary(
     id: id,
     mapId: mapId,
-    parentId: parentId,
+    parentId: toRoot ? null : parentId ?? this.parentId,
+    cardId: cardId ?? this.cardId,
     fromId: fromId ?? this.fromId,
     toId: toId ?? this.toId,
     label: label ?? this.label,
@@ -493,6 +623,7 @@ class MapSummary {
   Map<String, Object?> toJson() => {
     'id': id,
     'mapId': mapId,
+    if (cardId != null) 'cardId': cardId,
     if (parentId != null) 'parentId': parentId,
     'fromId': fromId,
     'toId': toId,
@@ -503,6 +634,7 @@ class MapSummary {
     id: j['id'] as String,
     mapId: (j['mapId'] as String?) ?? MindMap.defaultId,
     parentId: j['parentId'] as String?,
+    cardId: j['cardId'] as String?,
     fromId: j['fromId'] as String,
     toId: j['toId'] as String,
     label: (j['label'] as String?) ?? '',
