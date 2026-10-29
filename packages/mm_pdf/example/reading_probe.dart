@@ -1,6 +1,6 @@
 // Run from apps/marginmind:
 // flutter run -d macos -t ../../packages/mm_pdf/example/reading_probe.dart \
-//   --dart-define=PROBE_PDF=/absolute/path/to/document.pdf
+// The bundled sample is used by default; PROBE_PDF may name a sandbox-accessible file.
 import 'dart:async';
 import 'dart:io';
 
@@ -8,16 +8,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_platform/mm_platform.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MMPdfEngine.initialize();
-  const path = String.fromEnvironment('PROBE_PDF');
+  var path = const String.fromEnvironment('PROBE_PDF');
   final PdfDocument document;
-  if (const bool.fromEnvironment('PROBE_SELF_CHECK')) {
+  if (const bool.fromEnvironment('PROBE_SELF_CHECK') || path.isEmpty) {
     final data = await rootBundle.load('assets/sample/sample.pdf');
-    document = await PdfDocument.openData(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    document = await PdfDocument.openData(bytes);
+    if (!const bool.fromEnvironment('PROBE_SELF_CHECK')) {
+      final file = File('${Directory.systemTemp.path}/marginmind-reading-probe.pdf');
+      await file.writeAsBytes(bytes);
+      path = file.path;
+    }
   } else {
     document = await PdfDocument.openFile(path);
   }
@@ -40,6 +47,7 @@ Future<void> main() async {
     await document.dispose();
     exit(0);
   }
+  await DesktopWindow.initialize(title: 'Reading probe', minimumSize: const Size(1000, 700));
   runApp(
     MaterialApp(
       home: ReadingProbe(path: path, document: document, text: text),

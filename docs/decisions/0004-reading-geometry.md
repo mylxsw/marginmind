@@ -27,7 +27,7 @@
 ```sh
 flutter test packages/mm_pdf/test/reading_probe_test.dart packages/mm_pdf/test/reading_geometry_test.dart
 # apps/marginmind 下，原生 PDFium 的可视运行入口：
-flutter run -d macos -t ../../packages/mm_pdf/example/reading_probe.dart --dart-define=PROBE_PDF=/absolute/path/to/document.pdf
+flutter run -d macos -t ../../packages/mm_pdf/example/reading_probe.dart
 # 加 --dart-define=PROBE_SELF_CHECK=true 可执行原生裁剪渲染/文本读取后自动退出。
 ```
 
