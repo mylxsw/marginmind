@@ -450,9 +450,9 @@ void main() {
       final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
       controller.selectCard(excerpt.id);
       await tester.pumpAndSettle();
-      final parent = controller.content.node(excerpt.id)!.parentId!;
+      // New excerpts go under the selected node itself, whatever its kind.
       final l = AppLocalizations.of(tester.element(find.byType(MindMapCanvas)));
-      expect(find.text(l.newExcerptTarget(controller.content.card(parent)!.title)), findsOneWidget);
+      expect(find.text(l.newExcerptTarget(excerpt.title)), findsOneWidget);
       expect(find.byKey(const ValueKey('node-add-child')), findsOneWidget);
       await settleHud(tester);
     });
