@@ -138,8 +138,11 @@ class ReflowDocument {
     List<TextAnchor> matches(Iterable<BookChapter> candidates) => [
       for (final c in candidates)
         for (final match in RegExp(RegExp.escape(anchor.quote)).allMatches(c.canonicalText))
-          if ((anchor.prefix.isEmpty || c.canonicalText.substring(0, match.start).endsWith(anchor.prefix)) &&
-              (anchor.suffix.isEmpty || c.canonicalText.substring(match.end).startsWith(anchor.suffix)))
+          // Compare context in place: copying the chapter per match is quadratic.
+          if ((anchor.prefix.isEmpty ||
+                  (match.start >= anchor.prefix.length &&
+                      c.canonicalText.startsWith(anchor.prefix, match.start - anchor.prefix.length))) &&
+              (anchor.suffix.isEmpty || c.canonicalText.startsWith(anchor.suffix, match.end)))
             if (c.anchor(match.start, match.end, revision: revision) case final candidate)
               if (candidate.start == match.start && candidate.end == match.end) candidate,
     ];

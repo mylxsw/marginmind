@@ -68,6 +68,25 @@ void main() {
       isNull,
       reason: 'Repeated quote is unresolved',
     );
+    final text = b.chapters.first.canonicalText;
+    final first = text.indexOf('anchors');
+    final disambiguated = b.resolve(
+      TextAnchor(
+        'a',
+        0,
+        7,
+        'anchors',
+        prefix: text.substring(0, first),
+        suffix: text.substring(first + 7, first + 14),
+        revision: 'old',
+      ),
+    );
+    expect((disambiguated!.start, disambiguated.end), (first, first + 7), reason: 'Context picks the repeat');
+    expect(
+      b.resolve(TextAnchor('a', 0, 7, 'anchors', prefix: 'x${text.substring(0, first)}', revision: 'old')),
+      isNull,
+      reason: 'Prefix longer than the text before the match',
+    );
     expect(b.resolve(const TextAnchor('b', 0, 5, 'UPPER', prefix: 'wrong', revision: 'old')), isNull);
     expect(b.resolve(const TextAnchor('b', 0, 0, '', revision: 'old')), isNull);
     expect(b.resolve(TextAnchor('b', 0, 5, 'WRONG', revision: b.revision)), isNull);
