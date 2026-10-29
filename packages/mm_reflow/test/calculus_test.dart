@@ -53,10 +53,59 @@ void main() {
           ),
         ),
       );
-      await expectLater(
-        find.byKey(const ValueKey('excerpt')),
-        matchesGoldenFile('goldens/calculus-${font.toInt()}.png'),
+      // Assert source order and containment, independent of platform pixels.
+      final paragraph = layout.pieces.first;
+      final painter = paragraph.painter!;
+      final art = paragraph.artwork.single;
+      final before = painter.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: imageOffset));
+      final after = painter.getBoxesForSelection(
+        TextSelection(baseOffset: imageOffset + 1, extentOffset: imageOffset + 2),
       );
+      expect(before.last.right, lessThanOrEqualTo(art.rect.left + .01));
+      expect(after.first.left, greaterThanOrEqualTo(art.rect.right - .01));
+      final line = painter.computeLineMetrics().first;
+      final lineRect = Rect.fromLTRB(
+        line.left,
+        line.baseline - line.ascent,
+        line.left + line.width,
+        line.baseline + line.descent,
+      );
+      expect(lineRect.inflate(.01).contains(art.rect.topLeft), isTrue);
+      expect(lineRect.inflate(.01).contains(art.rect.bottomRight), isTrue);
+      expect(
+        identical(art.image, images[chapter.blocks.first.runs.firstWhere((r) => r.resource != null).resource]),
+        isTrue,
+      );
+      var cellIndex = 1;
+      for (final row in chapter.blocks.last.rows) {
+        final rowPieces = layout.pieces.skip(cellIndex).take(row.length);
+        final rowHeight = rowPieces.map((p) => p.rect.height).reduce((a, b) => a > b ? a : b) + 8;
+        for (final cell in row) {
+          final piece = layout.pieces[cellIndex++];
+          // LayoutPiece.rect is the text content box. The table cell also
+          // includes 4px padding and shares the tallest content in its row.
+          final cellRect = Rect.fromLTWH(piece.rect.left - 4, piece.rect.top - 4, piece.rect.width + 8, rowHeight);
+          final resources = cell.runs.where((r) => r.resource != null).toList();
+          expect(piece.artwork.length, resources.length);
+          for (var i = 0; i < resources.length; i++) {
+            final artwork = piece.artwork[i];
+            final rect = artwork.rect.shift(piece.rect.topLeft);
+            expect(identical(artwork.image, images[resources[i].resource]), isTrue);
+            expect(
+              cellRect.inflate(.01).contains(rect.topLeft),
+              isTrue,
+              reason: 'cell $cellIndex font $font: ${piece.rect} artwork $rect',
+            );
+            expect(
+              cellRect.inflate(.01).contains(rect.bottomRight),
+              isTrue,
+              reason: 'cell $cellIndex font $font: ${piece.rect} artwork $rect',
+            );
+            if (i > 0) expect(artwork.rect.top, greaterThanOrEqualTo(piece.artwork[i - 1].rect.top));
+          }
+        }
+      }
+      expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       layout.dispose();
     }

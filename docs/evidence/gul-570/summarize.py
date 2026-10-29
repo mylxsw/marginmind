@@ -1,4 +1,5 @@
 """Summarize raw profile observations without excluding slow chapters."""
+import gzip
 import csv
 import json
 import math
@@ -7,7 +8,7 @@ from collections import defaultdict, Counter
 from pathlib import Path
 
 here=Path(__file__).resolve().parent
-records=[json.loads(l) for l in (here/'android.jsonl').read_text().splitlines()]
+records=[json.loads(l) for l in gzip.decompress((here/'android.jsonl.gz').read_bytes()).decode().splitlines()]
 assert any(r['kind']=='done' for r in records), 'Incomplete run'
 assert next(r for r in records if r['kind']=='environment')['profile'], 'Not a profile run'
 def percentile(values,p):
@@ -16,7 +17,7 @@ groups=defaultdict(list)
 for r in records:
     if r['kind']=='layout': groups[(r['book'],r['chapter'],r['width'],r['font'])].append(r)
 with (here/'chapters.csv').open('w') as f:
-    writer=csv.writer(f);writer.writerow(['book','chapter','width','font','utf16','blocks','images','tables','samples','p50_ms','p95_ms','max_ms','anchor_ok'])
+    writer=csv.writer(f, lineterminator='\n');writer.writerow(['book','chapter','width','font','utf16','blocks','images','tables','samples','p50_ms','p95_ms','max_ms','anchor_ok'])
     for key,rows in sorted(groups.items()):
         times=[r['us']/1000 for r in rows];r=rows[0]
         writer.writerow([*key,r['utf16'],r['blocks'],r['images'],r['tables'],len(rows),percentile(times,.5),percentile(times,.95),max(times),all(r['anchor_ok'] for r in rows)])

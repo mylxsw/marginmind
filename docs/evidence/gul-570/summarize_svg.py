@@ -1,4 +1,5 @@
 """Summarize the SVG follow-up without discarding slow chapters or frames."""
+import gzip
 import csv
 import json
 import math
@@ -6,7 +7,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 here = Path(__file__).resolve().parent
-rows = [json.loads(x) for x in (here/'svg-android.jsonl').read_text().splitlines()]
+rows = [json.loads(x) for x in gzip.decompress((here/'svg-android.jsonl.gz').read_bytes()).decode().splitlines()]
 assert rows[-1]['kind'] == 'done'
 env = next(r for r in rows if r['kind'] == 'environment')
 assert env['profile'] and env['repeats'] == 30
@@ -18,7 +19,7 @@ groups = defaultdict(list)
 for r in rows:
     if r['kind'] == 'layout': groups[(r['chapter'], r['width'], r['font'])].append(r)
 with (here/'svg-chapters.csv').open('w') as f:
-    w = csv.writer(f)
+    w = csv.writer(f, lineterminator='\n')
     w.writerow(['chapter', 'width', 'font', 'samples', 'p95_ms', 'max_ms', 'anchor_ok'])
     for key, values in sorted(groups.items()):
         us = [r['us']/1000 for r in values]

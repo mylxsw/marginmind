@@ -19,7 +19,7 @@ for number, title, author, role in books:
     data = urllib.request.urlopen(url, timeout=90).read()
     digest = hashlib.sha256(data).hexdigest()
     if number in pinned and digest != pinned[number]:
-        raise ValueError(f'Upstream EPUB changed for {number}: {digest}; use committed sample or review new hash')
+        raise ValueError(f'Upstream EPUB changed for {number}: {digest}; restore a matching local sample or review the new upstream hash')
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         assert z.read('mimetype') == b'application/epub+zip'
         names = z.namelist()

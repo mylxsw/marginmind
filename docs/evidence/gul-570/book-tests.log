@@ -1,7 +1,0 @@
-00:00 +0: loading test/book_test.dart
-00:00 +0: test/book_test.dart: EPUB spine, relative resources and UTF16 offsets
-00:00 +1: test/book_test.dart: supported blocks, inline whitespace, code, table and images
-00:00 +2: test/book_test.dart: reject missing, dangerous and oversized archives
-00:00 +3: test/book_test.dart: empty and grapheme boundary cases
-00:00 +4: test/book_test.dart: table image fallback remains explicit and diagnosed
-00:00 +5: All tests passed!

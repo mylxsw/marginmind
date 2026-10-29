@@ -1,4 +1,5 @@
 """Run installed profile harness; collect JSONL and PSS until done or failure."""
+import gzip
 import json
 import selectors
 import os
@@ -21,7 +22,7 @@ last_memory = 0
 buffer = ''
 try:
     adb('shell','am','start','-n',f'{PKG}/.MainActivity')
-    with (HERE/(PREFIX+'android.jsonl')).open('w') as out, (HERE/(PREFIX+'android-memory.txt')).open('w') as mem:
+    with gzip.open(HERE/(PREFIX+'android.jsonl.gz'), 'wt') as out, (HERE/(PREFIX+'android-memory.txt')).open('w') as mem:
         while time.monotonic()-started < 900:
             if time.monotonic()-last_memory > 5:
                 mem.write(f'elapsed={time.monotonic()-started:.3f}\n')
