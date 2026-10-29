@@ -3067,4 +3067,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get outlineDragHint => '拖到条目上方或下方调整顺序，拖到中间成为子目录';
+
+  @override
+  String get toolUnderline => '下划线';
+
+  @override
+  String get lineSolid => '实线';
+
+  @override
+  String get lineDashed => '虚线';
+
+  @override
+  String get lineDotted => '点线';
+
+  @override
+  String get lineWavy => '波浪线';
+
+  @override
+  String get underlinedHud => '已添加下划线';
+
+  @override
+  String get deleteUnderline => '删除下划线';
+
+  @override
+  String get underlineDeletedHud => '已删除下划线';
 }

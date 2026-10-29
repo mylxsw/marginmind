@@ -17,6 +17,7 @@ import '../workspace_controller.dart';
 import '../reader_margin.dart';
 import 'notices.dart';
 import 'highlight_color_button.dart';
+import 'underline_tool_button.dart';
 import 'selection_translation.dart';
 
 /// All reader text actions share their floating UI, focus and command handling.
@@ -43,6 +44,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   bool _busy = false;
   bool _quickOpen = false;
   bool _paletteOpen = false;
+  bool _underlineOpen = false;
   bool _translationOpen = false;
 
   @override
@@ -262,8 +264,9 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         : MMAnnotationColor.fromIndex(annotation.colorIndex);
     final c = context.mmColors;
     return TapRegion(
+      groupId: annotationTapGroup(widget.studySetId),
       onTapOutside: (_) {
-        if (!_busy && !_paletteOpen) _dismiss();
+        if (!_busy && !_paletteOpen && !_underlineOpen) _dismiss();
       },
       child: Actions(
         actions: {
@@ -298,6 +301,16 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                     },
                     onChanged: (color) => _run(ReaderSelectionCommand.highlight, color),
                   ),
+                  if (!isArea)
+                    UnderlineToolButton(
+                      key: const ValueKey('selection-underline'),
+                      studySetId: widget.studySetId,
+                      selectionAction: true,
+                      onOpenChanged: (open) {
+                        _underlineOpen = open;
+                      },
+                      onApplied: _dismiss,
+                    ),
                   const MMToolbarDivider(),
                   if (!isArea)
                     MMToolbarButton(
@@ -313,7 +326,9 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                   ),
                   MMToolbarButton(
                     icon: isHighlight ? MMIcons.trash : MMIcons.addNote,
-                    tooltip: isHighlight ? l.deleteHighlight : l.addNote,
+                    tooltip: isHighlight
+                        ? (annotation?.kind == AnnotationKind.underline ? l.deleteUnderline : l.deleteHighlight)
+                        : l.addNote,
                     onPressed: () =>
                         _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note),
                   ),

@@ -44,3 +44,5 @@ export 'src/widgets/toolbar.dart';
 export 'src/widgets/window_scaffold.dart';
 
 export 'src/widgets/context_menu_region.dart';
+
+export 'src/widgets/toolbar_preview_button.dart';

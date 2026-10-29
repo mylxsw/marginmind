@@ -542,6 +542,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
+  testWidgets('underline styles update cached overlays and remain visible when selected and zoomed', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    for (final style in AnnotationLineStyle.values) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MMPdfView(
+            filePath: 'underlines.pdf',
+            controller: controller,
+            highlights: [
+              MMPdfHighlight(
+                id: 'u',
+                page: 1,
+                rects: const [PageRect(30, 700, 150, 680), PageRect(30, 660, 110, 640)],
+                color: Colors.transparent,
+                underline: Colors.blue,
+                lineStyle: style,
+                emphasized: true,
+              ),
+            ],
+          ),
+        ),
+      );
+      await _waitReady(tester, controller);
+      await tester.pumpAndSettle();
+      for (final zoomed in [false, true]) {
+        if (zoomed) {
+          final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+          pdf.value = pdf.value.clone()..scaleByDouble(1.1, 1.1, 1, 1);
+          await tester.pumpAndSettle();
+        }
+        final painters = tester
+            .widgetList<CustomPaint>(find.byType(CustomPaint))
+            .map((w) => w.foregroundPainter ?? w.painter)
+            .whereType<MMPdfAnnotationLinePainter>()
+            .toList();
+        expect(painters.length, greaterThanOrEqualTo(2));
+        expect(painters.every((p) => p.style == style && p.color == Colors.blue), isTrue);
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
   testWidgets('equivalent highlights reuse overlays, changes invalidate only their page', (tester) async {
     final controller = MMPdfViewController();
     List<MMPdfHighlight> highlights({Color color = Colors.yellow, double right = 60, bool second = true}) => [

@@ -12,3 +12,5 @@ export 'src/reading_geometry.dart';
 export 'src/crop_geometry.dart';
 
 export 'src/margin_geometry.dart';
+
+export 'src/annotation_line.dart';

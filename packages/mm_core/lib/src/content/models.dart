@@ -170,7 +170,11 @@ class AnnotationPage {
   );
 }
 
-/// A highlight spanning one or more pages, in reading order.
+enum AnnotationKind { highlight, underline }
+
+enum AnnotationLineStyle { solid, dashed, dotted, wavy }
+
+/// A text mark spanning one or more pages, in reading order.
 @immutable
 class Annotation {
   const Annotation({
@@ -182,6 +186,8 @@ class Annotation {
     required this.quote,
     required this.colorIndex,
     required this.createdAt,
+    this.kind = AnnotationKind.highlight,
+    this.lineStyle = AnnotationLineStyle.solid,
   }) : assert(pages != null || (page != null && rects != null)),
        _pages = pages,
        _page = page,
@@ -203,12 +209,17 @@ class Annotation {
   final int colorIndex;
   final DateTime createdAt;
 
-  Annotation copyWith({int? colorIndex}) => Annotation(
+  final AnnotationKind kind;
+  final AnnotationLineStyle lineStyle;
+
+  Annotation copyWith({int? colorIndex, AnnotationKind? kind, AnnotationLineStyle? lineStyle}) => Annotation(
     id: id,
     documentId: documentId,
     pages: pages,
     quote: quote,
     colorIndex: colorIndex ?? this.colorIndex,
+    kind: kind ?? this.kind,
+    lineStyle: lineStyle ?? this.lineStyle,
     createdAt: createdAt,
   );
   Map<String, Object?> toJson() => {
@@ -217,6 +228,8 @@ class Annotation {
     'pages': [for (final p in pages) p.toJson()],
     'quote': quote,
     'colorIndex': colorIndex,
+    if (kind != AnnotationKind.highlight) 'kind': kind.name,
+    if (lineStyle != AnnotationLineStyle.solid) 'lineStyle': lineStyle.name,
     'createdAt': createdAt.toIso8601String(),
   };
   factory Annotation.fromJson(Map<String, Object?> j) => Annotation(
@@ -227,6 +240,9 @@ class Annotation {
         : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
     quote: j['quote'] as String,
     colorIndex: j['colorIndex'] as int,
+    kind: AnnotationKind.values.where((v) => v.name == j['kind']).firstOrNull ?? AnnotationKind.highlight,
+    lineStyle:
+        AnnotationLineStyle.values.where((v) => v.name == j['lineStyle']).firstOrNull ?? AnnotationLineStyle.solid,
     createdAt: DateTime.parse(j['createdAt'] as String),
   );
 }

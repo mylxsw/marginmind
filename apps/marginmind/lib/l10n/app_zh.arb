@@ -1060,5 +1060,13 @@
   "bookmarkPageOccupied": "这一页已有书签，请编辑已有书签",
   "readerInvalidPage": "请输入有效页码，最大为 {count}",
   "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
-  "outlineDragHint": "拖到条目上方或下方调整顺序，拖到中间成为子目录"
+  "outlineDragHint": "拖到条目上方或下方调整顺序，拖到中间成为子目录",
+  "toolUnderline": "下划线",
+  "lineSolid": "实线",
+  "lineDashed": "虚线",
+  "lineDotted": "点线",
+  "lineWavy": "波浪线",
+  "underlinedHud": "已添加下划线",
+  "deleteUnderline": "删除下划线",
+  "underlineDeletedHud": "已删除下划线"
 }

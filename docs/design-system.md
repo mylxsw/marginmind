@@ -93,3 +93,7 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 统一导出表单使用 `MMSizes.mapExportSheetWidth`（560 pt）和 `MMSizes.mapExportPreviewHeight`（180 pt），格式、范围、外观和倍率沿用分段控件。预览和导出使用完整内容，不继承选择、缩放、折叠或编辑状态。透明背景保留卡片底色；研究笔记沿用 `research` / `researchTint`。
 
 阅读底部导航：横向 1pt 细进度线，两端无底色箭头，页码单独居中浮在上方的小型半透明标签内。底部热区高 64pt；平时只淡显进度线，鼠标进入底部、键盘聚焦或拖动时显示完整控件。保留页码输入和拖动定位，减少动效/透明度遵循系统设置。浮动工具条与提示避开整个底部导航区域。
+
+### 文本下划线
+
+下划线设置栏使用现有胶囊工具栏，不显示组标题。三个常用色和更多颜色之后是分隔线、四个线型预览、分隔线和关闭按钮。颜色和线型只通过 tooltip / semantics 命名；按钮、色点、选中背景和尺寸跟随现有主题。`MMToolbarPreviewButton` 用于没有标准图标的视觉预览选择；`AnnotationLineStylePicker` 和 `UnderlineStyleToolbar` 在功能层组合它。共用的 `MMPdfAnnotationLinePainter` 保证预览与文档笔触一致。

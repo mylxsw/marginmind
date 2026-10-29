@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +8,7 @@ import '../../../settings/highlight_palette.dart';
 import '../../../shared/l10n.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf, inScope;
 import 'highlight_custom_color_picker.dart';
+import 'annotation_palette.dart';
 
 /// One colored brush opens the palette. Picking a swatch is the only commit.
 class HighlightColorButton extends ConsumerStatefulWidget {
@@ -61,7 +60,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
         pageBuilder: (_, _, _) => inScope(
           context,
           CustomSingleChildLayout(
-            delegate: _PalettePlacement(anchor),
+            delegate: AnnotationPalettePlacement(anchor),
             child: _HighlightColors(current: widget.color, moreOnly: widget.moreOnly),
           ),
         ),
@@ -78,7 +77,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
 
   @override
   Widget build(BuildContext context) => widget.moreOnly
-      ? _MoreColorsButton(onPressed: _show)
+      ? AnnotationMoreColorsButton(onPressed: _show)
       : MMToolbarButton(
           icon: MMIcons.highlight,
           tint: _open || widget.selected ? widget.color.color : null,
@@ -129,70 +128,9 @@ class _HighlightColorsState extends ConsumerState<_HighlightColors> {
                         selected: color == widget.current,
                         onPressed: () => Navigator.of(context).pop(color),
                       ),
-                    _MoreColorsButton(onPressed: () => setState(() => _more = true)),
+                    AnnotationMoreColorsButton(onPressed: () => setState(() => _more = true)),
                   ],
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PalettePlacement extends SingleChildLayoutDelegate {
-  _PalettePlacement(this.anchor);
-  final Rect anchor;
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      constraints.loosen().deflate(const EdgeInsets.all(8));
-  @override
-  Offset getPositionForChild(Size size, Size child) {
-    final x = (anchor.left - 6).clamp(8.0, math.max(8, size.width - child.width - 8));
-    final below = anchor.bottom + 8;
-    final y = below + child.height <= size.height - 8 ? below : anchor.top - child.height - 8;
-    return Offset(x.toDouble(), y.clamp(8.0, math.max(8, size.height - child.height - 8)).toDouble());
-  }
-
-  @override
-  bool shouldRelayout(_PalettePlacement old) => old.anchor != anchor;
-}
-
-class _MoreColorsButton extends StatelessWidget {
-  const _MoreColorsButton({required this.onPressed});
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n, c = context.mmColors;
-    return MMInteractive(
-      tooltip: l.moreHighlightColors,
-      semanticLabel: l.moreHighlightColors,
-      onTap: onPressed,
-      builder: (context, s) => Container(
-        width: MMSizes.floatingToolbarColor,
-        height: context.mmToolbarButton.height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: s.hovered || s.pressed ? c.hover : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-          border: s.focused ? Border.all(color: c.accent) : null,
-        ),
-        child: Container(
-          width: 17,
-          height: 17,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: SweepGradient(
-              colors: [
-                Color(0xFFFFCC00),
-                Color(0xFF34C759),
-                Color(0xFF007AFF),
-                Color(0xFFAF52DE),
-                Color(0xFFFF2D55),
-                Color(0xFFFFCC00),
-              ],
-            ),
-          ),
-          child: const Icon(MMIcons.add, color: Colors.white, size: 13),
         ),
       ),
     );

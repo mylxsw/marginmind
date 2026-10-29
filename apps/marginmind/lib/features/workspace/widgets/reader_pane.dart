@@ -142,6 +142,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       }
     }
 
+    ref.listen(provider.select((s) => s.tool), (_, tool) {
+      if (tool == AnnotationTool.underline) _pdf.clearSelection();
+    });
+
     ref.listen(provider.select((s) => s.findVisible), (was, visible) {
       if (visible) return;
       _pdf.clearSearch();
@@ -192,6 +196,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 marginState.popup.isEmpty)
               const SingleActivator(LogicalKeyboardKey.escape): () =>
                   ref.read(readerCompareProvider(widget.studySetId).notifier).exit(),
+            if (state.tool == AnnotationTool.underline && marginState.popup.isEmpty && !cropState.editing)
+              const SingleActivator(LogicalKeyboardKey.escape): () => controller.setTool(AnnotationTool.select),
             if (state.tool == AnnotationTool.ink && marginState.popup.isEmpty)
               const SingleActivator(LogicalKeyboardKey.escape): controller.exitInk,
           },
@@ -879,8 +885,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               id: a.id,
               page: page.page,
               rects: page.rects,
-              color: color.color.withValues(alpha: strong ? 0.5 : 0.32),
-              underline: card != null ? color.underline : null,
+              color: a.kind == AnnotationKind.underline
+                  ? Colors.transparent
+                  : color.color.withValues(alpha: strong ? 0.5 : 0.32),
+              underline: a.kind == AnnotationKind.underline || card != null ? color.underline : null,
+              lineStyle: a.kind == AnnotationKind.underline ? a.lineStyle : null,
+              marker: a.kind == AnnotationKind.underline && card != null && page == a.pages.first
+                  ? color.underline
+                  : null,
+              markerIcon: a.kind == AnnotationKind.underline ? Icons.account_tree_outlined : null,
               emphasized: a.id == state.flashAnnotationId || a.id == pendingAnnotation,
               framed: card?.kind == CardKind.image,
             );

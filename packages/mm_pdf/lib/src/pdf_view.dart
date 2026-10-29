@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart'
     show
         AnnotationPage,
+        AnnotationLineStyle,
         InkPoint,
         InkStroke,
         InkTool,
@@ -26,6 +27,7 @@ import 'package:mm_core/mm_core.dart'
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
+import 'annotation_line.dart';
 import 'cropped_document.dart';
 import 'crop_geometry.dart';
 import 'reading_geometry.dart';
@@ -85,7 +87,9 @@ class MMPdfHighlight {
     this.emphasized = false,
     this.framed = false,
     this.dashed = false,
+    this.lineStyle,
     this.marker,
+    this.markerIcon,
   });
 
   final String id;
@@ -108,9 +112,13 @@ class MMPdfHighlight {
   /// [underline] is drawn dashed: text a note is attached to, not excerpted.
   final bool dashed;
 
+  /// User underline; independent of the existing card/note status decoration.
+  final AnnotationLineStyle? lineStyle;
+
   /// A round mark in the page's right margin beside the first rect, filled
   /// with this color; tapping it is tapping the highlight.
   final Color? marker;
+  final IconData? markerIcon;
 }
 
 /// A rectangle dragged with the area tool, clamped to the page it started on.
@@ -1731,29 +1739,33 @@ class _MMPdfViewState extends State<MMPdfView> {
           Builder(
             builder: (context) {
               final rect = _overlayRect(page, scaled, r);
+              final decoration = DecoratedBox(
+                decoration: BoxDecoration(
+                  color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
+                  borderRadius: BorderRadius.circular(2),
+                  border: h.emphasized
+                      ? Border.all(color: widget.emphasisColor, width: 2)
+                      : h.framed
+                      ? Border.all(color: h.underline ?? h.color, width: 2)
+                      : h.lineStyle == null && !h.dashed && h.underline != null
+                      ? Border(bottom: BorderSide(color: h.underline!, width: 2))
+                      : null,
+                ),
+              );
               return Positioned.fromRect(
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
                   onTap: (_) => tap(h),
                   child: IgnorePointer(
-                    child: h.dashed && !h.emphasized
+                    child: h.lineStyle != null || h.dashed
                         ? CustomPaint(
-                            painter: _DashedUnderlinePainter(h.underline ?? h.color),
-                            child: ColoredBox(color: h.color),
-                          )
-                        : DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: h.framed ? h.color.withValues(alpha: h.color.a * 0.25) : h.color,
-                              borderRadius: BorderRadius.circular(2),
-                              border: h.emphasized
-                                  ? Border.all(color: widget.emphasisColor, width: 2)
-                                  : h.framed
-                                  ? Border.all(color: h.underline ?? h.color, width: 2)
-                                  : (h.underline == null
-                                        ? null
-                                        : Border(bottom: BorderSide(color: h.underline!, width: 2))),
+                            foregroundPainter: MMPdfAnnotationLinePainter(
+                              color: h.underline ?? h.color,
+                              style: h.lineStyle ?? AnnotationLineStyle.dashed,
                             ),
-                          ),
+                            child: decoration,
+                          )
+                        : decoration,
                   ),
                 ),
               );
@@ -1777,7 +1789,7 @@ class _MMPdfViewState extends State<MMPdfView> {
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
-                      child: Icon(Icons.sticky_note_2_outlined, size: size * 0.62, color: Colors.white),
+                      child: Icon(h.markerIcon ?? Icons.sticky_note_2_outlined, size: size * 0.62, color: Colors.white),
                     ),
                   ),
                 ),
@@ -2297,7 +2309,9 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
         x.emphasized != y.emphasized ||
         x.framed != y.framed ||
         x.dashed != y.dashed ||
+        x.lineStyle != y.lineStyle ||
         x.marker != y.marker ||
+        x.markerIcon != y.markerIcon ||
         x.rects.length != y.rects.length) {
       return false;
     }
@@ -2307,27 +2321,6 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
     }
   }
   return true;
-}
-
-/// A 1.5pt dashed line along the bottom edge.
-class _DashedUnderlinePainter extends CustomPainter {
-  const _DashedUnderlinePainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5;
-    final y = size.height - 0.75;
-    for (var x = 0.0; x < size.width; x += 6) {
-      canvas.drawLine(Offset(x, y), Offset(math.min(x + 3.5, size.width), y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedUnderlinePainter old) => old.color != color;
 }
 
 bool _sameStrokes(List<InkStroke> a, List<InkStroke> b) {

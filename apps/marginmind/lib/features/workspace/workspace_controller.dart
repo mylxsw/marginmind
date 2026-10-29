@@ -99,6 +99,10 @@ class ExcerptedNotice extends WorkspaceNotice {
   final String? cardId;
 }
 
+class UnderlinedNotice extends WorkspaceNotice {
+  const UnderlinedNotice();
+}
+
 class HighlightedNotice extends WorkspaceNotice {
   const HighlightedNotice();
 }
@@ -113,7 +117,8 @@ class RemovedNotice extends WorkspaceNotice {
 }
 
 class HighlightDeletedNotice extends WorkspaceNotice {
-  const HighlightDeletedNotice();
+  const HighlightDeletedNotice({this.underline = false});
+  final bool underline;
 }
 
 class UndoneNotice extends WorkspaceNotice {
@@ -154,6 +159,8 @@ class WorkspaceState {
     this.mapView = MapViewMode.map,
     this.tool = AnnotationTool.select,
     this.color = MMAnnotationColor.yellow,
+    this.underlineColor = MMAnnotationColor.blue,
+    this.underlineStyle = AnnotationLineStyle.solid,
     this.syncToMap = true,
     this.inkTool = MMPdfInkTool.freehand,
     this.inkColor = MMInkColor.red,
@@ -196,6 +203,8 @@ class WorkspaceState {
   final MapViewMode mapView;
   final AnnotationTool tool;
   final MMAnnotationColor color;
+  final MMAnnotationColor underlineColor;
+  final AnnotationLineStyle underlineStyle;
 
   /// Whether a new highlight also creates a card in the mind map.
   final bool syncToMap;
@@ -274,6 +283,8 @@ class WorkspaceState {
     MapViewMode? mapView,
     AnnotationTool? tool,
     MMAnnotationColor? color,
+    MMAnnotationColor? underlineColor,
+    AnnotationLineStyle? underlineStyle,
     bool? syncToMap,
     MMPdfInkTool? inkTool,
     MMInkColor? inkColor,
@@ -324,6 +335,8 @@ class WorkspaceState {
       mapView: mapView ?? this.mapView,
       tool: tool ?? this.tool,
       color: color ?? this.color,
+      underlineColor: underlineColor ?? this.underlineColor,
+      underlineStyle: underlineStyle ?? this.underlineStyle,
       syncToMap: syncToMap ?? this.syncToMap,
       inkTool: inkTool ?? this.inkTool,
       inkColor: inkColor ?? this.inkColor,
@@ -406,9 +419,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.listen(highlightPaletteProvider.select((s) => s.current), (_, color) {
       if (state.color != color) state = state.copyWith(color: color);
     });
+    ref.listen(settingsProvider.select((s) => (s.underlineColor, s.underlineStyle)), (_, next) {
+      state = state.copyWith(underlineColor: next.$1, underlineStyle: next.$2);
+    });
     final initialState = WorkspaceState(
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
+      underlineColor: ref.read(settingsProvider).underlineColor,
+      underlineStyle: ref.read(settingsProvider).underlineStyle,
     );
     final initial = ref.read(contentProvider(studySetId)).value;
     return initial == null ? initialState : _withTabs(initialState.copyWith(content: initial), initial);
@@ -1044,6 +1062,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// The mouse was released over selected text.
   Future<WorkspaceNotice?> onSelectionCommitted(String documentId, MMPdfSelection selection) async {
+    if (state.tool == AnnotationTool.underline) {
+      await underline(documentId, selection, addToMap: state.syncToMap);
+      return const UnderlinedNotice();
+    }
     if (state.tool == AnnotationTool.highlight) {
       return state.syncToMap
           ? excerpt(documentId, selection, state.color)
@@ -1081,6 +1103,53 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(clearPending: true);
     await ref.read(highlightPaletteProvider.notifier).record(color);
     return const HighlightedNotice();
+  }
+
+  Future<String> underline(
+    String documentId,
+    MMPdfSelection selection, {
+    bool keepPending = false,
+    bool addToMap = false,
+  }) async {
+    late String id;
+    final color = state.underlineColor;
+    final style = state.underlineStyle;
+    final parent = excerptTargetId;
+    await _update((c) {
+      final (next, annotation) = _editor.underline(
+        c,
+        documentId: documentId,
+        pages: selection.pages,
+        quote: selection.text,
+        colorIndex: color.index,
+        lineStyle: style,
+      );
+      id = annotation.id;
+      return addToMap ? _editor.attachCard(next, id, parentId: parent).$1 : next;
+    });
+    if (!keepPending) state = state.copyWith(clearPending: true);
+    return id;
+  }
+
+  /// Changing settings does not count as a highlighter color use. If a mark
+  /// is being edited, keep its floating toolbar alive across each change.
+  Future<void> styleUnderline({String? annotationId, MMAnnotationColor? color, AnnotationLineStyle? style}) async {
+    final selectedColor = color ?? state.underlineColor;
+    final selectedStyle = style ?? state.underlineStyle;
+    if (annotationId != null) {
+      await _update((c) {
+        final a = c.annotation(annotationId);
+        if (a == null ||
+            a.quote.isEmpty ||
+            (a.kind == AnnotationKind.underline &&
+                a.colorIndex == selectedColor.index &&
+                a.lineStyle == selectedStyle)) {
+          return c;
+        }
+        return _editor.restyleAnnotation(c, annotationId, colorIndex: selectedColor.index, lineStyle: selectedStyle);
+      });
+    }
+    await ref.read(settingsProvider.notifier).setUnderlineStyle(selectedColor, selectedStyle);
   }
 
   /// An area dragged with the area tool becomes an image excerpt at once.
@@ -1409,15 +1478,22 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   Future<void> recolor(String annotationId, MMAnnotationColor color) async {
+    final annotation = content.annotation(annotationId);
+    if (annotation?.kind == AnnotationKind.underline) {
+      await styleUnderline(annotationId: annotationId, color: color, style: annotation!.lineStyle);
+      state = state.copyWith(clearPending: true);
+      return;
+    }
     await _update((c) => _editor.recolor(c, annotationId, color.index));
     state = state.copyWith(clearPending: true);
     await ref.read(highlightPaletteProvider.notifier).record(color);
   }
 
   Future<HighlightDeletedNotice> deleteHighlight(String annotationId) async {
+    final underline = content.annotation(annotationId)?.kind == AnnotationKind.underline;
     await _update((c) => _editor.deleteAnnotation(c, annotationId));
     state = state.copyWith(clearPending: true);
-    return const HighlightDeletedNotice();
+    return HighlightDeletedNotice(underline: underline);
   }
 
   // ---- map --------------------------------------------------------------------

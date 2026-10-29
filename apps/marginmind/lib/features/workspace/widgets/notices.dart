@@ -30,9 +30,10 @@ void showNotice(BuildContext context, WorkspaceNotice? notice, {required String 
   final text = switch (notice) {
     ExcerptedNotice(:final targetTitle) => l.excerptedHud(targetTitle ?? rootTitle),
     HighlightedNotice() => l.highlightedHud,
+    UnderlinedNotice() => l.underlinedHud,
     AreaFailedNotice() => l.somethingWentWrong,
     RemovedNotice() => l.removedHud,
-    HighlightDeletedNotice() => l.highlightDeletedHud,
+    HighlightDeletedNotice(:final underline) => underline ? l.underlineDeletedHud : l.highlightDeletedHud,
     UndoneNotice(:final redo) => redo ? l.redoneHud : l.undoneHud,
     DocumentRemovedNotice() => l.documentRemovedHud,
     ResearchNoteSavedNotice(:final cardId, :final inSource) =>

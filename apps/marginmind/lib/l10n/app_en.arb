@@ -1707,5 +1707,13 @@
   "bookmarkPageOccupied": "This page already has a bookmark.",
   "readerInvalidPage": "Enter a valid page number up to {count}.",
   "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
-  "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest."
+  "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest.",
+  "toolUnderline": "Underline",
+  "lineSolid": "Solid",
+  "lineDashed": "Dashed",
+  "lineDotted": "Dotted",
+  "lineWavy": "Wavy",
+  "underlinedHud": "Underlined",
+  "deleteUnderline": "Delete Underline",
+  "underlineDeletedHud": "Underline Deleted"
 }

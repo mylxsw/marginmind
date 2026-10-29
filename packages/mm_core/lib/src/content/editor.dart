@@ -592,6 +592,8 @@ class StudySetEditor {
               pages: source.pages,
               quote: source.quote,
               colorIndex: source.colorIndex,
+              kind: source.kind,
+              lineStyle: source.lineStyle,
               createdAt: now(),
             ),
           );
@@ -695,6 +697,70 @@ class StudySetEditor {
       createdAt: now(),
     );
     return (c.copyWith(annotations: [...c.annotations, a]), a);
+  }
+
+  /// Reapplying to exactly the same text edits the existing underline.
+  (StudySetContent, Annotation) underline(
+    StudySetContent c, {
+    required String documentId,
+    required List<AnnotationPage> pages,
+    required String quote,
+    required int colorIndex,
+    required AnnotationLineStyle lineStyle,
+  }) {
+    if (quote.trim().isEmpty || pages.isEmpty || pages.any((p) => p.rects.isEmpty)) {
+      throw ArgumentError('An underline needs text and page rectangles');
+    }
+    final existing = c.annotations
+        .where(
+          (a) =>
+              a.kind == AnnotationKind.underline && a.documentId == documentId && _sameAnnotationPages(a.pages, pages),
+        )
+        .firstOrNull;
+    if (existing != null) {
+      if (existing.colorIndex == colorIndex && existing.lineStyle == lineStyle) return (c, existing);
+      final next = restyleAnnotation(c, existing.id, lineStyle: lineStyle, colorIndex: colorIndex);
+      return (next, next.annotation(existing.id)!);
+    }
+    final a = Annotation(
+      id: newId(),
+      documentId: documentId,
+      pages: pages,
+      quote: quote.trim(),
+      colorIndex: colorIndex,
+      kind: AnnotationKind.underline,
+      lineStyle: lineStyle,
+      createdAt: now(),
+    );
+    return (c.copyWith(annotations: [...c.annotations, a]), a);
+  }
+
+  static bool _sameAnnotationPages(List<AnnotationPage> a, List<AnnotationPage> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].page != b[i].page || a[i].rects.length != b[i].rects.length) return false;
+      for (var j = 0; j < a[i].rects.length; j++) {
+        if (a[i].rects[j] != b[i].rects[j]) return false;
+      }
+    }
+    return true;
+  }
+
+  StudySetContent restyleAnnotation(
+    StudySetContent c,
+    String id, {
+    required AnnotationLineStyle lineStyle,
+    required int colorIndex,
+  }) {
+    final original = c.annotation(id);
+    if (original == null || original.quote.isEmpty) return c;
+    final colored = original.colorIndex == colorIndex ? c : recolor(c, id, colorIndex);
+    return colored.copyWith(
+      annotations: [
+        for (final a in colored.annotations)
+          a.id == id ? a.copyWith(kind: AnnotationKind.underline, lineStyle: lineStyle) : a,
+      ],
+    );
   }
 
   /// Highlight + excerpt card + map node, in one step.

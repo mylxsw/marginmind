@@ -5749,6 +5749,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag above or below an entry to reorder; drag to its center to nest.'**
   String get outlineDragHint;
+
+  /// No description provided for @toolUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get toolUnderline;
+
+  /// No description provided for @lineSolid.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid'**
+  String get lineSolid;
+
+  /// No description provided for @lineDashed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashed'**
+  String get lineDashed;
+
+  /// No description provided for @lineDotted.
+  ///
+  /// In en, this message translates to:
+  /// **'Dotted'**
+  String get lineDotted;
+
+  /// No description provided for @lineWavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Wavy'**
+  String get lineWavy;
+
+  /// No description provided for @underlinedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Underlined'**
+  String get underlinedHud;
+
+  /// No description provided for @deleteUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Underline'**
+  String get deleteUnderline;
+
+  /// No description provided for @underlineDeletedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline Deleted'**
+  String get underlineDeletedHud;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

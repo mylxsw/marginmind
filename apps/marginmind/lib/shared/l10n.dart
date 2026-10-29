@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:mm_core/mm_core.dart' show TranslationLanguage;
+import 'package:mm_core/mm_core.dart' show TranslationLanguage, AnnotationLineStyle;
 import 'package:mm_design/mm_design.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -34,6 +34,13 @@ extension AppLocalizationsX on AppLocalizations {
     MMAnnotationColor.orange => colorOrange,
     MMAnnotationColor.purple => colorPurple,
     _ => color.hex,
+  };
+
+  String lineStyleName(AnnotationLineStyle style) => switch (style) {
+    AnnotationLineStyle.solid => lineSolid,
+    AnnotationLineStyle.dashed => lineDashed,
+    AnnotationLineStyle.dotted => lineDotted,
+    AnnotationLineStyle.wavy => lineWavy,
   };
 
   String inkColorName(MMInkColor color) => switch (color) {

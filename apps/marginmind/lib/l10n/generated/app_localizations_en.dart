@@ -3199,4 +3199,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get outlineDragHint => 'Drag above or below an entry to reorder; drag to its center to nest.';
+
+  @override
+  String get toolUnderline => 'Underline';
+
+  @override
+  String get lineSolid => 'Solid';
+
+  @override
+  String get lineDashed => 'Dashed';
+
+  @override
+  String get lineDotted => 'Dotted';
+
+  @override
+  String get lineWavy => 'Wavy';
+
+  @override
+  String get underlinedHud => 'Underlined';
+
+  @override
+  String get deleteUnderline => 'Delete Underline';
+
+  @override
+  String get underlineDeletedHud => 'Underline Deleted';
 }
