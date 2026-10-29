@@ -49,6 +49,6 @@ bool StudySetContent.isPlaced(String cardId, {String mapId = MindMap.defaultId})
 
 `AnnotationSegmentMatch` 有 `card` 和 `segmentIndex`，支持高亮反查精确段落；可按导图过滤。旧 `cardForAnnotation` 也检查全部段落。`isPlaced`、`relationsOf`、`branch` 支持概要主题。
 
-文件格式升为 9，打开旧文件时备份并把概要 `label` 迁移成主题标题，生成稳定且防冲突的 cardId。直接 `StudySetContent.fromJson` 同样兼容旧概要；新字段缺失时采用默认值。
+文件格式升为 10，打开旧文件时备份并把概要 `label` 迁移成主题标题，生成稳定且防冲突的 cardId。直接 `StudySetContent.fromJson` 同样兼容旧概要；新字段缺失时采用默认值。
 
 跨导图共享沿用既有模型：合并只改变目标导图的布局；被合并卡片如仍在其他导图使用则保留内容并暂停排期，复习记录不删除。拆分修改共享内容，因此所有包含该卡片的导图都会补齐新段落节点，第一段保留原 ID、子节点及关联线，新段落使用新 ID/排期。删除跨文档合并卡片的一处原文时，仅解除该段出处，保留文字和其余出处。
