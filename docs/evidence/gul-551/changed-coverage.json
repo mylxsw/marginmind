@@ -1,0 +1,171 @@
+{
+  "base": "8e47f3541c93c3897cbe6168ed08a99c23ef368b",
+  "covered": 652,
+  "lines": 719,
+  "percent": 90.68,
+  "files": [
+    {
+      "file": "apps/marginmind/lib/app/app_commands.dart",
+      "covered": 3,
+      "lines": 3,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/app/providers.dart",
+      "covered": 4,
+      "lines": 4,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/reader_compare.dart",
+      "covered": 191,
+      "lines": 191,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/reader_crop.dart",
+      "covered": 10,
+      "lines": 10,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart",
+      "covered": 185,
+      "lines": 190,
+      "percent": 97.37,
+      "uncovered": [
+        51,
+        52,
+        54,
+        64,
+        331
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_crop_controls.dart",
+      "covered": 8,
+      "lines": 8,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_margin_notes.dart",
+      "covered": 9,
+      "lines": 9,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_ocr_controls.dart",
+      "covered": 2,
+      "lines": 2,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "covered": 192,
+      "lines": 234,
+      "percent": 82.05,
+      "uncovered": [
+        174,
+        544,
+        545,
+        546,
+        547,
+        548,
+        598,
+        602,
+        607,
+        682,
+        683,
+        686,
+        687,
+        688,
+        689,
+        690,
+        691,
+        693,
+        694,
+        695,
+        710,
+        713,
+        714,
+        715,
+        720,
+        721,
+        768,
+        771,
+        772,
+        773,
+        774,
+        792,
+        793,
+        847,
+        848,
+        849,
+        851,
+        852,
+        853,
+        855,
+        856,
+        857
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/workspace_controller.dart",
+      "covered": 17,
+      "lines": 18,
+      "percent": 94.44,
+      "uncovered": [
+        947
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/l10n/generated/app_localizations_en.dart",
+      "covered": 17,
+      "lines": 19,
+      "percent": 89.47,
+      "uncovered": [
+        2983,
+        2986
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart",
+      "covered": 2,
+      "lines": 19,
+      "percent": 10.53,
+      "uncovered": [
+        2832,
+        2835,
+        2837,
+        2840,
+        2843,
+        2846,
+        2849,
+        2852,
+        2855,
+        2861,
+        2864,
+        2867,
+        2870,
+        2873,
+        2876,
+        2879,
+        2881
+      ]
+    },
+    {
+      "file": "packages/mm_pdf/lib/src/pdf_view.dart",
+      "covered": 12,
+      "lines": 12,
+      "percent": 100.0,
+      "uncovered": []
+    }
+  ]
+}

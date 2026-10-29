@@ -103,3 +103,11 @@ PdfReadingPosition 保存 1-based page 与原始 PDF y。内部统一转换为�
 脑图通过 `WorkspaceController` 和既有 `ReadingEditor` 的原子编辑关联，`nodeId` 仍是 cardId，`mapId` 定位所属脑图。沿用现有卡片模型：笔记文本存于 `Card.title`，摘录正文存原文；关联标题编辑回写批注，删除节点解除关联，删除批注保留卡片与出处。加入操作保持布局；父主题使用当前选择，否则取同页最近摘录的主题，最后回退根节点。
 
 原生复现入口：`apps/marginmind/example/margin_acceptance.dart`；`MARGIN_SELF_CHECK=true` 的 Dart define 启用原生保存、脑图同步、删除保留、撤销与位置检查。界面验收见 `macos-acceptance.md` 的 GUL-550 用例。
+
+## 批次 C：PDF 对照阅读
+
+`ReaderCompareSession` 持有当前 ComparePair、布局快照的生命周期、按文档保存的阅读位置和逐帧同步驱动。左右互换时交换对齐轴并保留文档位置；反向重开复用同一个持久化文档对。对齐进入既有撤销栈，同步偏好独立保存；相同位置不重复创建撤销步骤。关闭、切换和主动输入使旧驱动失效，慢写盘返回时不能重新打开已退出的对照。
+
+`documentPdfProvider` 为每份文档分配控制器，`readerPdfProvider` 继续适配当前左栏的工具栏、导航和菜单。两栏复用同一个阅读视口构建函数，选区、摘录、批注、画笔、裁边和 OCR 均携带自己的文档身份。支持 OCR 的平台每栏独立检查文档，避免右栏一直停留在占位。对照下页边强制收成标记，原展开意图保留；键盘保存批注后焦点交回阅读区。
+
+resize 按旧视口的 25% 阅读线取得原始 PDF 坐标，重新适配宽度后恢复该坐标。页码防抖计时器按文档分开，两栏滚动均能保存。菜单语言取本地 PDF 首页文字，未知时回退到文档名；AI 项保持禁用，翻译由后续批次接入。原生复现、截图和验证结果见 `docs/evidence/gul-551/validation.md`。

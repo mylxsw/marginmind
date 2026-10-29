@@ -5293,6 +5293,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added to Mind Map'**
   String get marginNoteAddedToMap;
+
+  /// No description provided for @compareReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Side by Side'**
+  String get compareReading;
+
+  /// No description provided for @compareRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get compareRecommended;
+
+  /// No description provided for @compareAiTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Translate into {language}'**
+  String compareAiTranslate(String language);
+
+  /// No description provided for @languageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get languageChinese;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageCodeZh.
+  ///
+  /// In en, this message translates to:
+  /// **'ZH'**
+  String get languageCodeZh;
+
+  /// No description provided for @languageCodeEn.
+  ///
+  /// In en, this message translates to:
+  /// **'EN'**
+  String get languageCodeEn;
+
+  /// No description provided for @compareAiOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get compareAiOffline;
+
+  /// No description provided for @compareAiNeedsOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize text first'**
+  String get compareAiNeedsOcr;
+
+  /// No description provided for @compareAiPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get compareAiPending;
+
+  /// No description provided for @compareTooNarrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Window too narrow'**
+  String get compareTooNarrow;
+
+  /// No description provided for @compareExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Side by Side'**
+  String get compareExit;
+
+  /// No description provided for @compareSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Scrolling'**
+  String get compareSync;
+
+  /// No description provided for @compareAlign.
+  ///
+  /// In en, this message translates to:
+  /// **'Align Here'**
+  String get compareAlign;
+
+  /// No description provided for @compareAlignedHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Aligned'**
+  String get compareAlignedHud;
+
+  /// No description provided for @compareSwap.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap Sides'**
+  String get compareSwap;
+
+  /// No description provided for @compareMapHiddenHud.
+  ///
+  /// In en, this message translates to:
+  /// **'Map hidden · {shortcut}'**
+  String compareMapHiddenHud(String shortcut);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

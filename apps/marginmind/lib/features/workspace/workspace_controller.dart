@@ -380,14 +380,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   final String studySetId;
   Timer? _flashTimer;
-  Timer? _pageTimer;
+  final _pageTimers = <String, Timer>{};
+  ({MMSplitMode layout, bool sidebar, bool readerPanel})? _compareRestore;
   int _revealNonce = 0;
 
   @override
   WorkspaceState build() {
     ref.onDispose(() {
       _flashTimer?.cancel();
-      _pageTimer?.cancel();
+      for (final timer in _pageTimers.values) {
+        timer.cancel();
+      }
     });
     ref.listen(contentProvider(studySetId), (_, next) {
       final c = next.value;
@@ -818,6 +821,34 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(layout: layout);
   }
 
+  /// Temporary space for two readable PDF columns; restore on exit.
+  bool beginCompareLayout(double readerWidth) {
+    _compareRestore ??= (layout: state.layout, sidebar: state.sidebarVisible, readerPanel: state.readerPanelVisible);
+    final hideMap = state.layout == MMSplitMode.split && readerWidth < 900;
+    state = state.copyWith(
+      sidebarVisible: false,
+      readerPanelVisible: false,
+      layout: hideMap || state.layout == MMSplitMode.secondary ? MMSplitMode.primary : null,
+      clearPending: true,
+    );
+    return hideMap;
+  }
+
+  void endCompareLayout() {
+    final before = _compareRestore;
+    _compareRestore = null;
+    if (before == null) return;
+    state = state.copyWith(
+      layout: before.layout,
+      sidebarVisible: before.sidebar,
+      readerPanelVisible: before.readerPanel,
+      clearPending: true,
+    );
+  }
+
+  Future<void> saveComparePair(ComparePair pair, {bool undoable = false}) =>
+      _update((c) => _editor.upsertComparePair(c, pair), undoable: undoable);
+
   void setSplitFraction(double value) => state = state.copyWith(splitFraction: value.clamp(0.1, 0.9));
 
   void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
@@ -894,7 +925,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- documents ------------------------------------------------------------
 
   /// Copies each file into the study set and adds it as a document.
-  Future<ImportedNotice> importDocuments(List<({String path, String name})> files) async {
+  Future<ImportedNotice> importDocuments(List<({String path, String name})> files, {bool open = true}) async {
     var count = 0;
     final failed = <String>[];
     String? lastId;
@@ -913,7 +944,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         failed.add(f.name);
       }
     }
-    if (lastId != null) openDocument(lastId!);
+    if (lastId != null && open) openDocument(lastId!);
     return ImportedNotice(count, failed);
   }
 
@@ -957,8 +988,8 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final pages = readingPagesProvider(studySetId);
     if (ref.read(pages)[documentId] == page) return;
     ref.read(pages.notifier).record(documentId, page);
-    _pageTimer?.cancel();
-    _pageTimer = Timer(const Duration(milliseconds: 800), () {
+    _pageTimers.remove(documentId)?.cancel();
+    _pageTimers[documentId] = Timer(const Duration(milliseconds: 800), () {
       _update((c) => _editor.setLastPage(c, documentId, page), undoable: false);
     });
   }
@@ -2079,6 +2110,7 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       identical(a.bookmarks, b.bookmarks) &&
       identical(a.inkStrokes, b.inkStrokes) &&
       identical(a.marginNotes, b.marginNotes) &&
+      identical(a.comparePairs, b.comparePairs) &&
       identical(a.researchNotes, b.researchNotes) &&
       identical(a.noteAttachments, b.noteAttachments) &&
       identical(a.evidence, b.evidence) &&

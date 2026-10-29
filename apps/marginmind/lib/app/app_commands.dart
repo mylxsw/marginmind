@@ -15,6 +15,7 @@ import '../features/workspace/widgets/reader_ocr_controls.dart';
 import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/reader_crop.dart';
 import '../features/workspace/reader_margin.dart';
+import '../features/workspace/reader_compare.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../settings/settings_window.dart';
@@ -709,13 +710,14 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final activeDoc = hasDocument
         ? ref.watch(workspaceContentProvider(workspaceId!))?.document(workspaceState.activeDocumentId!)
         : null;
+    final comparing = inWorkspace && ref.watch(readerCompareProvider(workspaceId)) != null;
     final view = <AppCommand>[
       if (hasDocument) ...[
         AppCommand(
           ref.watch(readerMarginProvider(workspaceId!)).openDocuments.contains(workspaceState.activeDocumentId)
               ? l.hideMarginNotes
               : l.showMarginNotes,
-          !_textFocused && crop?.editing != true
+          !_textFocused && crop?.editing != true && !comparing
               ? () => ref.read(readerMarginProvider(workspaceId).notifier).toggle(workspaceState.activeDocumentId!)
               : null,
           shortcut: AppShortcuts.toggleMarginNotes,
@@ -835,6 +837,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ])
           AppCommand(label, hasDocument ? () => workspace.showReaderPanel(mode) : null, shortcut: shortcut),
       ],
+      if (comparing) AppCommand(l.compareExit, () => ref.read(readerCompareProvider(workspaceId).notifier).exit()),
       if (hasDocument)
         ...readerStyleCommands(
           l,

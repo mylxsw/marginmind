@@ -22,23 +22,29 @@ final readerCropProvider = NotifierProvider.autoDispose.family<ReaderCropSession
   ReaderCropSession.new,
 );
 
+final readerDocumentCropProvider = NotifierProvider.autoDispose
+    .family<ReaderCropSession, ReaderCropState, (String, String)>(
+      (key) => ReaderCropSession(key.$1, documentId: key.$2),
+    );
+
 /// A draft stays in the reading session. Only Done writes one undoable edit.
 class ReaderCropSession extends Notifier<ReaderCropState> {
-  ReaderCropSession(this.studySetId);
+  ReaderCropSession(this.studySetId, {this.documentId});
+  final String? documentId;
   final String studySetId;
   String? _documentId;
   int _generation = 0;
   bool _committing = false;
   @override
   ReaderCropState build() {
-    _documentId = ref.watch(workspaceProvider(studySetId).select((s) => s.activeDocumentId));
+    _documentId = documentId ?? ref.watch(workspaceProvider(studySetId).select((s) => s.activeDocumentId));
     _generation++;
     _committing = false;
     return const ReaderCropState();
   }
 
   WorkspaceController get _workspace => ref.read(workspaceProvider(studySetId).notifier);
-  MMPdfViewController get _pdf => ref.read(readerPdfProvider(studySetId));
+  MMPdfViewController get _pdf => ref.read(documentPdfProvider((studySetId, _documentId)));
   Document? get document => _documentId == null ? null : _workspace.content.document(_documentId!);
 
   List<AnnotationPage> get anchors => [
@@ -206,10 +212,13 @@ class ReaderCropSession extends Notifier<ReaderCropState> {
   }
 }
 
-Future<void> toggleReaderCrop(BuildContext context, WidgetRef ref, String studySetId) async {
+Future<void> toggleReaderCrop(BuildContext context, WidgetRef ref, String studySetId, {String? documentId}) async {
   if (FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null) return;
   try {
-    final enabled = await ref.read(readerCropProvider(studySetId).notifier).toggle();
+    final session = documentId == null
+        ? ref.read(readerCropProvider(studySetId).notifier)
+        : ref.read(readerDocumentCropProvider((studySetId, documentId)).notifier);
+    final enabled = await session.toggle();
     if (enabled == null || !context.mounted) return;
     MMHud.show(
       context,

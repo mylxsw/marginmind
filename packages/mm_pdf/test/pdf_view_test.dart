@@ -250,7 +250,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
-  testWidgets('resizing the reader refits page width without losing reading position', (tester) async {
+  testWidgets('resizing the reader refits page width while preserving the original 25% reading line', (tester) async {
     final controller = MMPdfViewController();
     addTearDown(controller.dispose);
     final width = ValueNotifier<double>(760);
@@ -277,13 +277,14 @@ void main() {
     final pdf = viewer.controller!;
     await pdf.goToPage(pageNumber: 2, duration: Duration.zero);
     await tester.pumpAndSettle();
-    final y = pdf.centerPosition.dy;
+    final position = controller.readingPosition!;
     for (final size in [544.0, 760.0]) {
       width.value = size;
       // One layout frame must apply the zoom, without another input/frame.
       await tester.pump();
       expect(pdf.currentZoom, closeTo(size / 632, .001));
-      expect(pdf.centerPosition.dy, closeTo(y, 1));
+      expect(controller.readingPosition!.page, position.page);
+      expect(controller.readingPosition!.y, closeTo(position.y, 1));
       final page = pdf.layout.pageLayouts[1];
       expect(pdf.documentToLocal(page.topLeft).dx, greaterThanOrEqualTo(0));
       expect(pdf.documentToLocal(page.bottomRight).dx, lessThanOrEqualTo(size));

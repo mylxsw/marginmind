@@ -2956,4 +2956,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get marginNoteAddedToMap => 'Added to Mind Map';
+
+  @override
+  String get compareReading => 'Side by Side';
+
+  @override
+  String get compareRecommended => 'Suggested';
+
+  @override
+  String compareAiTranslate(String language) {
+    return 'AI Translate into $language';
+  }
+
+  @override
+  String get languageChinese => 'Chinese';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageCodeZh => 'ZH';
+
+  @override
+  String get languageCodeEn => 'EN';
+
+  @override
+  String get compareAiOffline => 'Offline';
+
+  @override
+  String get compareAiNeedsOcr => 'Recognize text first';
+
+  @override
+  String get compareAiPending => 'Coming soon';
+
+  @override
+  String get compareTooNarrow => 'Window too narrow';
+
+  @override
+  String get compareExit => 'Exit Side by Side';
+
+  @override
+  String get compareSync => 'Sync Scrolling';
+
+  @override
+  String get compareAlign => 'Align Here';
+
+  @override
+  String get compareAlignedHud => 'Aligned';
+
+  @override
+  String get compareSwap => 'Swap Sides';
+
+  @override
+  String compareMapHiddenHud(String shortcut) {
+    return 'Map hidden · $shortcut';
+  }
 }

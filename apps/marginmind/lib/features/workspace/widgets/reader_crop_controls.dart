@@ -14,13 +14,17 @@ import '../reader_crop.dart';
 import '../workspace_controller.dart';
 
 class CropControls extends ConsumerWidget {
-  const CropControls({super.key, required this.studySetId, required this.document});
+  const CropControls({super.key, required this.studySetId, required this.document, this.documentScoped = false});
   final String studySetId;
   final Document document;
+  final bool documentScoped;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(readerCropProvider(studySetId));
-    final session = ref.read(readerCropProvider(studySetId).notifier);
+    final provider = documentScoped
+        ? readerDocumentCropProvider((studySetId, document.id))
+        : readerCropProvider(studySetId);
+    final state = ref.watch(provider);
+    final session = ref.read(provider.notifier);
     final l = context.l10n, c = context.mmColors;
     if (!state.editing) {
       final crop = state.automatic?.all;
@@ -41,7 +45,9 @@ class CropControls extends ConsumerWidget {
             MMButton(
               label: l.cropMargins,
               variant: MMButtonVariant.primary,
-              onPressed: state.busy ? null : () => toggleReaderCrop(context, ref, studySetId),
+              onPressed: state.busy
+                  ? null
+                  : () => toggleReaderCrop(context, ref, studySetId, documentId: documentScoped ? document.id : null),
             ),
             MMIconButton(
               icon: MMIcons.close,

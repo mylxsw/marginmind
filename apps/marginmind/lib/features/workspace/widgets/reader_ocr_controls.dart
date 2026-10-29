@@ -10,9 +10,9 @@ import '../reader_ocr.dart';
 import '../workspace_controller.dart';
 
 /// Shared by the native menu and the reader's quick entry.
-Future<void> showReaderOcrOptions(BuildContext context, WidgetRef ref, String studySetId) async {
+Future<void> showReaderOcrOptions(BuildContext context, WidgetRef ref, String studySetId, {String? documentId}) async {
   final workspace = ref.read(workspaceProvider(studySetId).notifier);
-  final id = ref.read(workspaceProvider(studySetId)).activeDocumentId;
+  final id = documentId ?? ref.read(workspaceProvider(studySetId)).activeDocumentId;
   final doc = id == null ? null : workspace.content.document(id);
   if (doc == null || !ref.read(pdfOcrServiceProvider).supported) return;
   final source = workspace.filePath(doc);
