@@ -339,11 +339,6 @@ class AgentMessage extends ConsumerWidget {
             SourcesRow(message: m, numbers: numbers, studySetId: studySetId, onSource: onSource),
           for (final p in m.proposals)
             ProposalCard(key: ValueKey('proposal-${p.proposal.id}'), studySetId: studySetId, view: p),
-          if (compact && m.status == MessageStatus.done)
-            Padding(
-              padding: const EdgeInsets.only(top: MMSpacing.s),
-              child: Text(l.assistantQuickGenerated, style: t.footnote.copyWith(color: c.secondaryLabel)),
-            ),
           if (!running)
             _Tail(
               studySetId: studySetId,
@@ -739,6 +734,29 @@ class _Tail extends ConsumerWidget {
     final l = context.l10n;
     final m = message;
     final controller = ref.read(assistantControllerProvider.notifier);
+    Widget footer(Widget actions) {
+      final generated = compact && m.status == MessageStatus.done;
+      return Padding(
+        padding: EdgeInsets.only(top: generated ? MMSpacing.s : MMSpacing.xs),
+        child: generated
+            ? Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.assistantQuickGenerated,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.footnote.copyWith(color: c.secondaryLabel),
+                    ),
+                  ),
+                  const SizedBox(width: MMSpacing.s),
+                  _actions(context, actions),
+                ],
+              )
+            : _actions(context, actions),
+      );
+    }
+
     void retry() => unawaited(controller.retry(m.id).catchError((Object _) {}));
     final copy = _ActionButton(
       key: ValueKey('assistant-copy-${m.id}'),
@@ -763,13 +781,7 @@ class _Tail extends ConsumerWidget {
     );
     // Migrated research keeps its copy action without offering new writes.
     if (ref.watch(assistantControllerProvider.select((c) => c.readOnly))) {
-      return _actions(
-        context,
-        Padding(
-          padding: const EdgeInsets.only(top: MMSpacing.xs),
-          child: Wrap(children: [copy]),
-        ),
-      );
+      return footer(Wrap(children: [copy]));
     }
     if (m.status == MessageStatus.done || m.status == MessageStatus.stopped) {
       final organizes = m.text.isNotEmpty && m.proposals.isEmpty && question.skill != AssistantSkill.organize.name;
@@ -778,63 +790,59 @@ class _Tail extends ConsumerWidget {
         children: [
           if (m.status == MessageStatus.stopped)
             Text(l.assistantStopped, style: t.footnote.copyWith(color: c.secondaryLabel)),
-          if (m.text.isNotEmpty || !compact)
-            _actions(
-              context,
-              Padding(
-                padding: const EdgeInsets.only(top: MMSpacing.xs),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: [
-                    if (m.proposals.isEmpty && m.text.isNotEmpty)
-                      if (m.noteId == null)
-                        Builder(
-                          builder: (button) => _ActionButton(
-                            key: ValueKey('assistant-save-${m.id}'),
-                            icon: MMIcons.addNote,
-                            tooltip: l.assistantSaveNote,
-                            onPressed: savingNote
-                                ? null
-                                : onSaveNote ?? () => showSaveNotePopover(button, ref, studySetId, m, question),
-                          ),
-                        )
-                      else ...[
-                        _ActionButton(
-                          key: ValueKey('assistant-saved-${m.id}'),
-                          icon: MMIcons.check,
-                          tooltip: l.assistantSavedNote,
-                          onPressed: null,
-                          keepColor: true,
+          if (m.text.isNotEmpty || !compact || m.status == MessageStatus.done)
+            footer(
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  if (m.proposals.isEmpty && m.text.isNotEmpty)
+                    if (m.noteId == null)
+                      Builder(
+                        builder: (button) => _ActionButton(
+                          key: ValueKey('assistant-save-${m.id}'),
+                          icon: MMIcons.addNote,
+                          tooltip: l.assistantSaveNote,
+                          onPressed: savingNote
+                              ? null
+                              : onSaveNote ?? () => showSaveNotePopover(button, ref, studySetId, m, question),
                         ),
-                        if (!compact)
-                          _ActionButton(
-                            icon: MMIcons.locate,
-                            tooltip: l.assistantLocate,
-                            onPressed: () => ref.read(workspaceProvider(studySetId).notifier).locateNoteCard(m.noteId!),
-                          ),
-                      ],
-                    if (organizes)
+                      )
+                    else ...[
                       _ActionButton(
-                        key: ValueKey('assistant-organize-${m.id}'),
-                        icon: MMIcons.mindMap,
-                        tooltip: l.assistantAnswerToMap,
-                        onPressed: controller.busy
-                            ? null
-                            : () => unawaited(
-                                controller
-                                    .send(
-                                      l.assistantAnswerToMapPrompt(m.text),
-                                      contexts: question.contexts,
-                                      skill: AssistantSkill.organize.name,
-                                    )
-                                    .catchError((Object _) {}),
-                              ),
+                        key: ValueKey('assistant-saved-${m.id}'),
+                        icon: MMIcons.check,
+                        tooltip: l.assistantSavedNote,
+                        onPressed: null,
+                        keepColor: true,
                       ),
-                    copy,
-                    if (!compact) regenerate,
-                  ],
-                ),
+                      if (!compact)
+                        _ActionButton(
+                          icon: MMIcons.locate,
+                          tooltip: l.assistantLocate,
+                          onPressed: () => ref.read(workspaceProvider(studySetId).notifier).locateNoteCard(m.noteId!),
+                        ),
+                    ],
+                  if (organizes)
+                    _ActionButton(
+                      key: ValueKey('assistant-organize-${m.id}'),
+                      icon: MMIcons.mindMap,
+                      tooltip: l.assistantAnswerToMap,
+                      onPressed: controller.busy
+                          ? null
+                          : () => unawaited(
+                              controller
+                                  .send(
+                                    l.assistantAnswerToMapPrompt(m.text),
+                                    contexts: question.contexts,
+                                    skill: AssistantSkill.organize.name,
+                                  )
+                                  .catchError((Object _) {}),
+                            ),
+                    ),
+                  copy,
+                  if (!compact) regenerate,
+                ],
               ),
             ),
         ],
