@@ -106,7 +106,7 @@ class BrowserSession extends ChangeNotifier {
   Future<void> reload() => _command('reload');
   Future<void> stop() async {
     await _command('stop');
-    if (!_disposed) {
+    if (!_disposed && phase != BrowserPhase.failed) {
       _readiness.stop();
       _isLoading = false;
       prompt = false;

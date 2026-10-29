@@ -367,13 +367,39 @@ void main() {
     s.dispose();
   });
 
+  testWidgets('a pending stop cannot revive a failed document', (tester) async {
+    final stopped = Completer<void>();
+    final s = BrowserSession(Uri.parse('https://example.com/'));
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async {
+        if (call.method == 'stop') await stopped.future;
+        return null;
+      },
+    );
+    await event(s, 'loaded');
+    final stop = s.stop();
+    await event(s, 'failed', error: 'host');
+    stopped.complete();
+    await stop;
+    expect(s.phase, BrowserPhase.failed);
+    expect(s.loadError, BrowserLoadError.host);
+    expect(s.canCapture, isFalse);
+    s.dispose();
+  });
+
   testWidgets('load failure categories remain failed until a new navigation', (tester) async {
     final s = BrowserSession(Uri.parse('https://example.com/'));
     addTearDown(s.dispose);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      MethodChannel('marginmind/browser/${s.id}'),
+      (call) async => null,
+    );
     for (final error in BrowserLoadError.values) {
       await event(s, 'start');
       await event(s, 'failed', error: error.name);
       await event(s, 'loaded'); // Android may finish its built-in error document.
+      await s.stop(); // A pending stop must not turn a terminal error into a convertible page.
       expect(s.loadError, error);
       expect(s.phase, BrowserPhase.failed);
       expect(s.canCapture, isFalse);
