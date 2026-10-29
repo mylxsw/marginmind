@@ -2929,4 +2929,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uncroppedHud => 'Crop removed';
+
+  @override
+  String get marginNotes => 'Margin Notes';
+
+  @override
+  String get marginNoteAction => 'Comment';
+
+  @override
+  String get writeMarginNote => '+ Comment';
+
+  @override
+  String get showMarginNotes => 'Show Margin Notes';
+
+  @override
+  String get hideMarginNotes => 'Hide Margin Notes';
+
+  @override
+  String get expandMargin => 'Show Margin';
+
+  @override
+  String get cropExpandMargin => 'Crop Margins and Show Notes';
+
+  @override
+  String get marginNoteDeleted => 'Comment Deleted';
+
+  @override
+  String get marginNoteAddedToMap => 'Added to Mind Map';
 }

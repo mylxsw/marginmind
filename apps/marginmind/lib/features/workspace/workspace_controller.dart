@@ -1062,6 +1062,63 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   // ---- ink ---------------------------------------------------------------------
 
+  /// Drafts never enter persistence or the undo stack until committed.
+  Future<void> saveMarginNote(MarginNote note) => _update((c) {
+    final current = c.marginNotes.where((n) => n.id == note.id).firstOrNull;
+    return _editor.upsertMarginNote(
+      c,
+      current == null ? note : note.copyWith(nodeId: current.nodeId, mapId: current.mapId),
+    );
+  });
+
+  Future<void> deleteMarginNote(String id) => _update((c) => _editor.removeMarginNote(c, id));
+
+  Future<String?> attachMarginNote(String id) async {
+    final note = content.marginNotes.where((n) => n.id == id).firstOrNull;
+    if (note == null) return null;
+    final selected = state.selectedCardId;
+    var parent = excerptTargetId;
+    if (selected == null) {
+      // With no selection, retain the most recent topic used on this page.
+      final recent =
+          content.annotations
+              .where((a) => a.documentId == note.documentId && a.pages.any((p) => p.page == note.page))
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      for (final annotation in recent) {
+        final card = content.cardForAnnotation(annotation.id);
+        final node = card == null ? null : content.node(card.id, mapId: state.activeMapId);
+        if (node == null) continue;
+        parent = node.parentId;
+        break;
+      }
+    }
+    await _update((c) {
+      final next = _editor.attachMarginNote(c, id, parentId: parent);
+      final cardId = next.marginNotes.where((n) => n.id == id).firstOrNull?.nodeId;
+      return cardId == null ? next : _expandAncestors(next, cardId);
+    });
+    final cardId = content.marginNotes.where((n) => n.id == id).firstOrNull?.nodeId;
+    if (cardId != null) {
+      state = state.copyWith(selectedCardId: cardId, clearPending: true);
+      _flash(cardId: cardId);
+    }
+    return cardId;
+  }
+
+  Future<void> locateMarginNote(String id, {bool showMap = true}) async {
+    final note = content.marginNotes.where((n) => n.id == id).firstOrNull;
+    if (note?.nodeId == null) return;
+    if (note!.mapId != null && note.mapId != state.activeMapId) await selectMap(note.mapId!);
+    await _update((c) => _expandAncestors(c, note.nodeId!), undoable: false);
+    state = state.copyWith(
+      selectedCardId: note.nodeId,
+      locateCardTick: state.locateCardTick + 1,
+      layout: showMap ? _layoutShowingMap : state.layout,
+    );
+    _flash(cardId: note.nodeId);
+  }
+
   Future<void> setDocumentCrop(String documentId, DocumentCrop? crop) async {
     await _update((c) {
       final next = _editor.setDocumentCrop(c, documentId, crop);

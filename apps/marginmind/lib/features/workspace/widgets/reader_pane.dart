@@ -16,6 +16,8 @@ import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_find_bar.dart';
 import '../reader_crop.dart';
+import '../reader_margin.dart';
+import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
@@ -97,6 +99,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       ),
     );
+    final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+    ref.listen(readerMarginProvider(widget.studySetId).select((s) => s.deleted), (before, next) {
+      if (before != next) {
+        MMHud.show(
+          context,
+          context.l10n.marginNoteDeleted,
+          action: (context.l10n.undo, () => ref.read(provider.notifier).undo()),
+        );
+      }
+    });
+    ref.listen(readerMarginProvider(widget.studySetId).select((s) => s.errors), (before, next) {
+      if (before != next) MMHud.show(context, context.l10n.somethingWentWrong);
+    });
     final cropState = ref.watch(readerCropProvider(widget.studySetId));
     final cropSession = ref.read(readerCropProvider(widget.studySetId).notifier);
     ref.listen(readerCropProvider(widget.studySetId).select((s) => s.editing), (_, editing) {
@@ -151,8 +166,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         shortcuts: {...readerNavShortcuts, ...readerZoomShortcuts},
         child: CallbackShortcuts(
           bindings: {
+            AppShortcuts.toggleMarginNotes: () {
+              final id = ref.read(provider).activeDocumentId;
+              if (id != null) ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(id);
+            },
             AppShortcuts.toggleCrop: () => toggleReaderCrop(context, ref, widget.studySetId),
-            if (cropState.editing) ...{
+            if (marginState.popup.isNotEmpty)
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  ref.read(readerMarginProvider(widget.studySetId).notifier).close(),
+            if (cropState.editing && marginState.popup.isEmpty) ...{
               const SingleActivator(LogicalKeyboardKey.escape): cropSession.cancel,
               const SingleActivator(LogicalKeyboardKey.enter): () =>
                   completeReaderCrop(context, ref, widget.studySetId),
@@ -249,6 +271,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
+    final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+    final noteCount = controller.content.marginNotes.where((n) => n.documentId == state.activeDocumentId).length;
+    final marginButton = Badge(
+      isLabelVisible: noteCount > 0,
+      label: Text('$noteCount'),
+      child: MMToolbarButton(
+        key: const ValueKey('reader-margin'),
+        compact: compact,
+        icon: MMIcons.marginNote,
+        tooltip: AppShortcuts.tip(l.marginNotes, AppShortcuts.toggleMarginNotes),
+        selected: marginState.openDocuments.contains(state.activeDocumentId),
+        onPressed: crop.editing || document == null
+            ? null
+            : () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id),
+      ),
+    );
     final annotation = IgnorePointer(
       ignoring: crop.editing,
       child: Opacity(
@@ -263,6 +301,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           navigation,
           const SizedBox(width: MMSpacing.s),
           Flexible(child: annotation),
+          marginButton,
           const SizedBox(width: MMSpacing.s),
           PopupMenuButton<Object>(
             key: const ValueKey('reader-more'),
@@ -326,6 +365,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           icon: const Icon(MMIcons.appearance),
         ),
         annotation,
+        marginButton,
         ?progress,
       ],
     );
@@ -480,6 +520,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                                           filePath: ocr?.document?.path ?? controller.filePath(doc),
                                           controller: _pdf,
                                           crop: crop.draft ?? doc.crop,
+                                          margin: readerMargin(
+                                            context,
+                                            ref,
+                                            widget.studySetId,
+                                            doc,
+                                            style,
+                                            forceCollapsed: crop.editing,
+                                          ),
                                           cropEditorBuilder: !crop.editing
                                               ? null
                                               : (context, page, size) {

@@ -10,3 +10,5 @@ export 'src/pdf_navigation.dart';
 export 'src/reading_geometry.dart';
 
 export 'src/crop_geometry.dart';
+
+export 'src/margin_geometry.dart';
