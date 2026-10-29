@@ -27,6 +27,55 @@ void main() {
     web.window.indexedDB.deleteDatabase(database);
   });
 
+  test('reading v8 extensions persist across IndexedDB reopen', () async {
+    final set = await store.create(const NewStudySet(title: 'Reading', colorIndex: 0));
+    final date = DateTime.utc(2026);
+    await store.update(
+      set.id,
+      (c) => c.copyWith(
+        documents: [Document(id: 'a', title: 'A', fileName: 'a.pdf', pageCount: 2, importedAt: date)],
+      ),
+    );
+    await store.setDocumentCrop(set.id, 'a', DocumentCrop(all: CropInsets(left: 24)));
+    await store.upsertMarginNote(
+      set.id,
+      MarginNote(
+        id: 'n',
+        documentId: 'a',
+        page: 1,
+        lineY: 500,
+        text: 'Note',
+        colorIndex: 1,
+        createdAt: date,
+        updatedAt: date,
+      ),
+    );
+    await store.upsertComparePair(set.id, ComparePair(id: 'p', leftDocumentId: 'a', right: AiCompareTarget('zh')));
+    await Future.wait([
+      for (final fp in ['one', 'two'])
+        store.mergeTranslationParagraphs(
+          set.id,
+          TranslationCache(documentId: 'a', targetLang: 'zh', paragraphs: {fp: '译文'}, model: 'm', createdAt: date),
+        ),
+    ]);
+    final saved = await store.load(set.id);
+    expect(saved.translationCaches.single.paragraphs.length, 2);
+    await store.dispose();
+    BrowserFiles.close();
+    await BrowserFiles.open(name: database);
+    store = FileLibraryStore.browser();
+    expect((await store.load(set.id)).toJson(), saved.toJson());
+    await store.removeMarginNote(set.id, 'n');
+    await store.removeComparePair(set.id, 'p');
+    await store.removeTranslationCache(set.id, 'a', 'zh');
+    await store.setDocumentCrop(set.id, 'a', null);
+    final cleared = await store.load(set.id);
+    expect(cleared.marginNotes, isEmpty);
+    expect(cleared.comparePairs, isEmpty);
+    expect(cleared.translationCaches, isEmpty);
+    expect(cleared.document('a')!.crop, isNull);
+  });
+
   test('PDF, image, map and metadata survive closing and reopening IndexedDB', () async {
     final set = await store.create(const NewStudySet(title: 'Browser study', colorIndex: 2));
     final pdf = Uint8List.fromList(utf8.encode('%PDF-1.7 sample'));

@@ -1,7 +1,7 @@
 import 'package:mm_core/mm_core.dart';
 
 /// The format [migrateStudySet] produces and the store writes.
-const currentStudySetFormat = 7;
+const currentStudySetFormat = 8;
 
 /// Upgrades a package step by step to [currentStudySetFormat]. Keeps
 /// metadata and unknown fields intact. Missing/future versions are never
@@ -18,6 +18,7 @@ Map<String, Object?> migrateStudySet(Map<String, Object?> json) {
   if (format < 5) result = _toFormat5(result);
   if (format < 6) result = _toFormat6(result);
   if (format < 7) result = _toFormat7(result);
+  if (format < 8) result = _toFormat8(result);
   return result;
 }
 
@@ -96,6 +97,20 @@ Map<String, Object?> _toFormat7(Map<String, Object?> json) {
       ...content,
       for (final key in ['researchNotes', 'noteAttachments', 'evidence', 'researchSources', 'inkStrokes'])
         key: const [],
+    },
+  };
+}
+
+/// Format 8: reading enhancements. Never rewrite existing document coordinates.
+Map<String, Object?> _toFormat8(Map<String, Object?> json) {
+  final content = ((json['content'] as Map?) ?? const {}).cast<String, Object?>();
+  return {
+    ...json,
+    'format': 8,
+    'content': {
+      ...content,
+      for (final key in ['marginNotes', 'comparePairs', 'translationCaches'])
+        if (!content.containsKey(key)) key: const [],
     },
   };
 }

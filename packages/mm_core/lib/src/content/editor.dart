@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'models.dart';
+import 'reading.dart';
+import 'reading_editor.dart';
 import 'research.dart';
 import 'map_clipboard.dart';
 import 'review.dart';
@@ -278,6 +280,10 @@ class StudySetEditor {
         if (n.mapId == id && !c.nodes.any((other) => other.mapId != id && other.cardId == n.cardId)) n.cardId,
     };
     return c.copyWith(
+      marginNotes: [
+        for (final note in c.marginNotes)
+          (note.mapId ?? MindMap.defaultId) == id ? note.copyWith(nodeId: null, mapId: null) : note,
+      ],
       noteAttachments: [
         for (final a in c.noteAttachments)
           if (!(a.target is CardTarget && detached.contains((a.target as CardTarget).cardId))) a,
@@ -868,8 +874,13 @@ class StudySetEditor {
     );
   }
 
-  StudySetContent rename(StudySetContent c, String cardId, String title) =>
-      c.copyWith(cards: [for (final card in c.cards) card.id == cardId ? card.copyWith(title: title.trim()) : card]);
+  StudySetContent rename(StudySetContent c, String cardId, String title) {
+    final linked = c.marginNotes.where((n) => n.nodeId == cardId).firstOrNull;
+    if (linked != null) return upsertMarginNote(c, linked.copyWith(text: title, updatedAt: now()));
+    return c.copyWith(
+      cards: [for (final card in c.cards) card.id == cardId ? card.copyWith(title: title.trim()) : card],
+    );
+  }
 
   StudySetContent recolor(StudySetContent c, String annotationId, int colorIndex) => c.copyWith(
     annotations: [for (final a in c.annotations) a.id == annotationId ? a.copyWith(colorIndex: colorIndex) : a],
@@ -1020,6 +1031,20 @@ class StudySetEditor {
       next = deleteAnnotation(next, a.id);
     }
     return next.copyWith(
+      marginNotes: [
+        for (final n in next.marginNotes)
+          if (n.documentId != documentId) n,
+      ],
+      translationCaches: [
+        for (final t in next.translationCaches)
+          if (t.documentId != documentId) t,
+      ],
+      comparePairs: [
+        for (final p in next.comparePairs)
+          if (p.leftDocumentId != documentId &&
+              !(p.right is PdfCompareTarget && (p.right as PdfCompareTarget).documentId == documentId))
+            p,
+      ],
       documents: [
         for (final d in next.documents)
           if (d.id != documentId) d,
@@ -1095,6 +1120,12 @@ class StudySetEditor {
     return _keepSummaries(
       c,
       c.copyWith(
+        marginNotes: [
+          for (final note in c.marginNotes)
+            (note.mapId ?? MindMap.defaultId) == mapId && kill.contains(note.nodeId)
+                ? note.copyWith(nodeId: null, mapId: null)
+                : note,
+        ],
         relations: [
           for (final r in c.relations)
             if (r.mapId != mapId || !(kill.contains(r.fromId) || kill.contains(r.toId))) r,

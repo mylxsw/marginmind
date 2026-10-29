@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -24,7 +25,7 @@ void main() {
     final store = FileLibraryStore(root);
     final c = await store.load('legacy');
     final migrated = jsonDecode(await file.readAsString()) as Map;
-    expect(migrated['format'], 7);
+    expect(migrated['format'], currentStudySetFormat);
     for (final key in original.keys.where((k) => k != 'format' && k != 'content')) {
       expect(migrated[key], original[key]);
     }
@@ -77,7 +78,7 @@ void main() {
     await backup.writeAsBytes(source);
     store = FileLibraryStore(root);
     expect((await store.load('legacy')).cards.length, 3);
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });
 

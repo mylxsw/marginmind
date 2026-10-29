@@ -6,3 +6,5 @@ export 'src/ink.dart' show MMPdfInk, MMPdfInkDraft, MMPdfInkTool;
 export 'src/pdf_engine.dart';
 export 'src/pdf_view.dart';
 export 'src/pdf_navigation.dart';
+
+export 'src/reading_geometry.dart';

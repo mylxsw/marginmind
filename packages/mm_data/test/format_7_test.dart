@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_data/mm_data.dart';
+import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -39,7 +40,7 @@ void main() {
     final reopened = FileLibraryStore(root);
     expect((await reopened.listResearchSessions('legacy')).map((s) => s.id), ['second', 'first']);
     expect(await reopened.readResearchSnapshot('legacy', snapshot), 'retained');
-    expect((jsonDecode(await file.readAsString()) as Map)['format'], 7);
+    expect((jsonDecode(await file.readAsString()) as Map)['format'], currentStudySetFormat);
   });
 
   test('deleting a research session persists and preserves snapshots', () async {
@@ -66,7 +67,7 @@ void main() {
     final store = FileLibraryStore(root);
     final content = await store.load('legacy');
     final migrated = jsonDecode(await file.readAsString()) as Map;
-    expect(migrated['format'], 7);
+    expect(migrated['format'], currentStudySetFormat);
     for (final entry in (original['content'] as Map).entries) {
       expect(migrated['content'][entry.key], entry.value, reason: '${entry.key} unchanged');
     }
@@ -108,7 +109,7 @@ void main() {
     await backup.writeAsBytes(bytes);
     store = FileLibraryStore(root);
     expect((await store.load('legacy')).cards.length, 4);
-    expect(jsonDecode(await file.readAsString())['format'], 7);
+    expect(jsonDecode(await file.readAsString())['format'], currentStudySetFormat);
     await store.dispose();
   });
 

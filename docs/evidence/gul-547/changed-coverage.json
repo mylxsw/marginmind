@@ -1,0 +1,64 @@
+{
+  "basis": "added executable lib lines vs origin/main; package LCOV",
+  "files": [
+    {
+      "file": "packages/mm_core/lib/src/content/editor.dart",
+      "covered": 22,
+      "total": 23,
+      "uncovered": [
+        1046
+      ]
+    },
+    {
+      "file": "packages/mm_core/lib/src/content/models.dart",
+      "covered": 4,
+      "total": 4,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_core/lib/src/content/reading.dart",
+      "covered": 196,
+      "total": 196,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_core/lib/src/content/reading_editor.dart",
+      "covered": 92,
+      "total": 92,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_core/lib/src/content/reading_repository.dart",
+      "covered": 15,
+      "total": 15,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_core/lib/src/content/study_set_content.dart",
+      "covered": 9,
+      "total": 9,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_data/lib/src/format_migration.dart",
+      "covered": 8,
+      "total": 8,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_pdf/lib/src/pdf_view.dart",
+      "covered": 21,
+      "total": 21,
+      "uncovered": []
+    },
+    {
+      "file": "packages/mm_pdf/lib/src/reading_geometry.dart",
+      "covered": 53,
+      "total": 53,
+      "uncovered": []
+    }
+  ],
+  "covered": 420,
+  "total": 421,
+  "percent": 99.76
+}
