@@ -11,6 +11,7 @@ import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/settings/web_search_settings.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
+import '../features/workspace/widgets/notices.dart';
 import 'app_settings.dart';
 
 enum SettingsTab { general, reading, models, webSearch, voice }
@@ -285,6 +286,34 @@ class _GeneralPage extends ConsumerWidget {
             ),
           ],
         ),
+        if (MMPlatformCapabilities.current.webBrowser) ...[
+          const SizedBox(height: MMSpacing.m),
+          MMSettingsGroup(
+            children: [
+              MMSettingsRow(
+                label: l.browserClearData,
+                trailing: MMButton(
+                  label: l.browserClearData,
+                  onPressed: () async {
+                    final confirmed = await showConfirmSheet(
+                      context,
+                      title: l.browserClearData,
+                      message: l.browserClearConfirm,
+                      confirmLabel: l.browserClearData,
+                    );
+                    if (!confirmed || !context.mounted) return;
+                    try {
+                      await BrowserSession.clearData();
+                      if (context.mounted) MMHud.show(context, l.browserDataCleared);
+                    } catch (_) {
+                      if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
         if (showsGallery) ...[
           const SizedBox(height: MMSpacing.m),
           Align(

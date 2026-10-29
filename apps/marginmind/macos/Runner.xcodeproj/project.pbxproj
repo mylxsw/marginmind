@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		A57500000000000000000001 /* BrowserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57500000000000000000002 /* BrowserChannel.swift */; };
 		A52300000000000000000001 /* MapExportChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52300000000000000000002 /* MapExportChannel.swift */; };
 		A51900000000000000000001 /* ArticleParserChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51900000000000000000002 /* ArticleParserChannel.swift */; };
 		A52100000000000000000001 /* PdfOcr.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52100000000000000000002 /* PdfOcr.swift */; };
@@ -64,6 +65,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A57500000000000000000002 /* BrowserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserChannel.swift; sourceTree = "<group>"; };
 		A52300000000000000000002 /* MapExportChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapExportChannel.swift; sourceTree = "<group>"; };
 		A51900000000000000000002 /* ArticleParserChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleParserChannel.swift; sourceTree = "<group>"; };
 		A52100000000000000000002 /* PdfOcr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PdfOcr.swift; sourceTree = "<group>"; };
@@ -174,6 +176,7 @@
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
+				A57500000000000000000002 /* BrowserChannel.swift */,
 				A51900000000000000000002 /* ArticleParserChannel.swift */,
 				A52100000000000000000002 /* PdfOcr.swift */,
 				A52300000000000000000002 /* MapExportChannel.swift */,
@@ -364,6 +367,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
+				A57500000000000000000001 /* BrowserChannel.swift in Sources */,
 				A51900000000000000000001 /* ArticleParserChannel.swift in Sources */,
 				A52100000000000000000001 /* PdfOcr.swift in Sources */,
 				A52300000000000000000001 /* MapExportChannel.swift in Sources */,

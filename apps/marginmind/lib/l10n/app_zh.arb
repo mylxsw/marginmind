@@ -1155,5 +1155,26 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addWebPage": "添加网页…",
+  "browserAddress": "网址",
+  "browserOpen": "打开",
+  "browserUrlEmpty": "请输入网址",
+  "browserUrlInvalid": "网址无效",
+  "browserUrlScheme": "只支持 http 和 https",
+  "browserBack": "后退",
+  "browserForward": "前进",
+  "browserReload": "重新载入",
+  "browserStop": "停止",
+  "browserClose": "关闭网页",
+  "browserConvert": "转换为文档…",
+  "browserConvertShort": "转换",
+  "browserReady": "转换为文档？",
+  "browserStillLoading": "部分内容仍在加载",
+  "browserLater": "稍后",
+  "browserFailed": "无法打开页面",
+  "browserRetry": "重试",
+  "browserClearData": "清除浏览器数据",
+  "browserClearConfirm": "清除浏览器 Cookie、存储和缓存？已打开的网页将关闭。",
+  "browserDataCleared": "已清除浏览器数据"
 }

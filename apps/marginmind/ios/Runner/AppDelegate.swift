@@ -4,10 +4,14 @@ import Security
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  private var browserFactory: BrowserFactory?
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MarginMindMobile")!
     let messenger = registrar.messenger()
+    let browser = BrowserFactory(messenger: messenger)
+    browserFactory = browser
+    registrar.register(browser, withId: "marginmind/browser")
     FlutterMethodChannel(name: "marginmind/secret_store", binaryMessenger: messenger)
       .setMethodCallHandler(MobileSecrets.handle)
     FlutterMethodChannel(name: "marginmind/external_link", binaryMessenger: messenger)

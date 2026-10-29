@@ -20,3 +20,5 @@ export 'src/map_export.dart';
 export 'src/external_link.dart';
 
 export 'src/microphone.dart';
+
+export 'src/browser.dart';

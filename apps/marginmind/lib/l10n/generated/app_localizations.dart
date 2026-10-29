@@ -6049,6 +6049,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Includes {count} unselected nodes in between'**
   String summaryIncludedNodes(int count);
+
+  /// No description provided for @addWebPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Web Page…'**
+  String get addWebPage;
+
+  /// No description provided for @browserAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get browserAddress;
+
+  /// No description provided for @browserOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get browserOpen;
+
+  /// No description provided for @browserUrlEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a URL'**
+  String get browserUrlEmpty;
+
+  /// No description provided for @browserUrlInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid URL'**
+  String get browserUrlInvalid;
+
+  /// No description provided for @browserUrlScheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Only http and https are supported'**
+  String get browserUrlScheme;
+
+  /// No description provided for @browserBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get browserBack;
+
+  /// No description provided for @browserForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get browserForward;
+
+  /// No description provided for @browserReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get browserReload;
+
+  /// No description provided for @browserStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get browserStop;
+
+  /// No description provided for @browserClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Page'**
+  String get browserClose;
+
+  /// No description provided for @browserConvert.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Document…'**
+  String get browserConvert;
+
+  /// No description provided for @browserConvertShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert'**
+  String get browserConvertShort;
+
+  /// No description provided for @browserReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to document?'**
+  String get browserReady;
+
+  /// No description provided for @browserStillLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Some content is still loading'**
+  String get browserStillLoading;
+
+  /// No description provided for @browserLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get browserLater;
+
+  /// No description provided for @browserFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to Open Page'**
+  String get browserFailed;
+
+  /// No description provided for @browserRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get browserRetry;
+
+  /// No description provided for @browserClearData.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Browser Data'**
+  String get browserClearData;
+
+  /// No description provided for @browserClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear browser cookies, storage and cache? Open pages will close.'**
+  String get browserClearConfirm;
+
+  /// No description provided for @browserDataCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser data cleared'**
+  String get browserDataCleared;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

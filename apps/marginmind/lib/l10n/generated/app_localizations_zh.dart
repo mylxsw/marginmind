@@ -3229,4 +3229,67 @@ class AppLocalizationsZh extends AppLocalizations {
   String summaryIncludedNodes(int count) {
     return '包含了中间未选中的 $count 个节点';
   }
+
+  @override
+  String get addWebPage => '添加网页…';
+
+  @override
+  String get browserAddress => '网址';
+
+  @override
+  String get browserOpen => '打开';
+
+  @override
+  String get browserUrlEmpty => '请输入网址';
+
+  @override
+  String get browserUrlInvalid => '网址无效';
+
+  @override
+  String get browserUrlScheme => '只支持 http 和 https';
+
+  @override
+  String get browserBack => '后退';
+
+  @override
+  String get browserForward => '前进';
+
+  @override
+  String get browserReload => '重新载入';
+
+  @override
+  String get browserStop => '停止';
+
+  @override
+  String get browserClose => '关闭网页';
+
+  @override
+  String get browserConvert => '转换为文档…';
+
+  @override
+  String get browserConvertShort => '转换';
+
+  @override
+  String get browserReady => '转换为文档？';
+
+  @override
+  String get browserStillLoading => '部分内容仍在加载';
+
+  @override
+  String get browserLater => '稍后';
+
+  @override
+  String get browserFailed => '无法打开页面';
+
+  @override
+  String get browserRetry => '重试';
+
+  @override
+  String get browserClearData => '清除浏览器数据';
+
+  @override
+  String get browserClearConfirm => '清除浏览器 Cookie、存储和缓存？已打开的网页将关闭。';
+
+  @override
+  String get browserDataCleared => '已清除浏览器数据';
 }

@@ -3361,4 +3361,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String summaryIncludedNodes(int count) {
     return 'Includes $count unselected nodes in between';
   }
+
+  @override
+  String get addWebPage => 'Add Web Page…';
+
+  @override
+  String get browserAddress => 'URL';
+
+  @override
+  String get browserOpen => 'Open';
+
+  @override
+  String get browserUrlEmpty => 'Enter a URL';
+
+  @override
+  String get browserUrlInvalid => 'Invalid URL';
+
+  @override
+  String get browserUrlScheme => 'Only http and https are supported';
+
+  @override
+  String get browserBack => 'Back';
+
+  @override
+  String get browserForward => 'Forward';
+
+  @override
+  String get browserReload => 'Reload';
+
+  @override
+  String get browserStop => 'Stop';
+
+  @override
+  String get browserClose => 'Close Page';
+
+  @override
+  String get browserConvert => 'Convert to Document…';
+
+  @override
+  String get browserConvertShort => 'Convert';
+
+  @override
+  String get browserReady => 'Convert to document?';
+
+  @override
+  String get browserStillLoading => 'Some content is still loading';
+
+  @override
+  String get browserLater => 'Later';
+
+  @override
+  String get browserFailed => 'Unable to Open Page';
+
+  @override
+  String get browserRetry => 'Retry';
+
+  @override
+  String get browserClearData => 'Clear Browser Data';
+
+  @override
+  String get browserClearConfirm => 'Clear browser cookies, storage and cache? Open pages will close.';
+
+  @override
+  String get browserDataCleared => 'Browser data cleared';
 }

@@ -8,6 +8,7 @@ project(runner LANGUAGES CXX)
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
+  "browser_channel.cpp"
   "main.cpp"
   "utils.cpp"
   "win32_window.cpp"
@@ -38,3 +39,24 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
+
+# Pinned native WebView2 SDK; restore in the build tree, never vendor binaries.
+find_program(NUGET nuget REQUIRED)
+set(WEBVIEW2_VERSION "1.0.2903.40")
+set(WEBVIEW2_ROOT "${CMAKE_CURRENT_BINARY_DIR}/packages/Microsoft.Web.WebView2.${WEBVIEW2_VERSION}")
+if(NOT EXISTS "${WEBVIEW2_ROOT}/build/native/include/WebView2.h")
+  execute_process(COMMAND ${NUGET} install Microsoft.Web.WebView2 -Version ${WEBVIEW2_VERSION}
+    -OutputDirectory "${CMAKE_CURRENT_BINARY_DIR}/packages" -NonInteractive
+    RESULT_VARIABLE WEBVIEW2_RESTORE)
+  if(NOT WEBVIEW2_RESTORE EQUAL 0)
+    message(FATAL_ERROR "WebView2 SDK restore failed")
+  endif()
+endif()
+target_include_directories(${BINARY_NAME} PRIVATE "${WEBVIEW2_ROOT}/build/native/include")
+if(FLUTTER_TARGET_PLATFORM STREQUAL "windows-arm64")
+  set(WEBVIEW2_ARCH arm64)
+else()
+  set(WEBVIEW2_ARCH x64)
+endif()
+target_link_libraries(${BINARY_NAME} PRIVATE
+  "${WEBVIEW2_ROOT}/build/native/${WEBVIEW2_ARCH}/WebView2LoaderStatic.lib" shlwapi.lib version.lib)

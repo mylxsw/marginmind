@@ -1,4 +1,7 @@
 import '../reader_ocr.dart';
+import '../workspace_browser.dart';
+
+import 'package:mm_platform/mm_platform.dart';
 
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +55,9 @@ class WorkspaceSidebar extends ConsumerWidget {
             onContextMenu: (position) => _mapMenu(context, ref, map, position),
           ),
     ];
-    final docs = [
+    final browser = ref.watch(workspaceBrowserProvider(studySetId));
+    final browserOwner = ref.read(workspaceBrowserProvider(studySetId).notifier);
+    final docs = <Widget>[
       for (final d in documents)
         if (matches(d.title))
           MMSidebarItem(
@@ -61,11 +66,29 @@ class WorkspaceSidebar extends ConsumerWidget {
             trailing: ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
                 ? Text(l.ocrRecognized, style: context.mmText.footnote)
                 : MMCount(d.pageCount),
-            selected: d.id == state.activeDocumentId,
-            onTap: () => controller.openDocument(d.id),
+            selected: !browser.visible && d.id == state.activeDocumentId,
+            onTap: () {
+              browserOwner.hide();
+              controller.openDocument(d.id);
+            },
             onContextMenu: (position) => _documentMenu(context, ref, d, position),
           ),
     ];
+    if (browser.session case final session?) {
+      docs.add(
+        ListenableBuilder(
+          listenable: session,
+          builder: (context, _) => session.disposed
+              ? const SizedBox.shrink()
+              : MMSidebarItem(
+                  icon: MMIcons.web,
+                  label: session.title.isEmpty ? session.url.host : session.title,
+                  selected: browser.visible,
+                  onTap: browserOwner.show,
+                ),
+        ),
+      );
+    }
     final now = ref.watch(clockProvider)();
     final due = content?.dueCount(now, mapId: state.activeMapId) ?? 0;
     final learn = [
@@ -214,7 +237,15 @@ class WorkspaceSidebar extends ConsumerWidget {
               tooltip: AppShortcuts.tip(l.importDocument, AppShortcuts.importDocument),
               onPressed: () => pickAndImportDocuments(context, ref, studySetId),
             ),
-            children: docs,
+            children: [
+              if (MMPlatformCapabilities.current.webBrowser)
+                MMSidebarItem(
+                  icon: MMIcons.web,
+                  label: l.addWebPage,
+                  onTap: () => showAddWebPage(context, ref, studySetId),
+                ),
+              ...docs,
+            ],
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],

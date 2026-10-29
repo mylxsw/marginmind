@@ -120,3 +120,25 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: flutter build apk --debug
         working-directory: apps/marginmind
+
+  windows:
+    name: Build and run Windows browser
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - uses: NuGet/setup-nuget@v2
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter build windows --debug
+        working-directory: apps/marginmind
+      - run: flutter test integration_test/browser_test.dart -d windows --reporter expanded
+        working-directory: apps/marginmind
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-browser-build
+          path: apps/marginmind/build/windows/x64/runner/Debug/

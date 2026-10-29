@@ -1802,5 +1802,26 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addWebPage": "Add Web Page…",
+  "browserAddress": "URL",
+  "browserOpen": "Open",
+  "browserUrlEmpty": "Enter a URL",
+  "browserUrlInvalid": "Invalid URL",
+  "browserUrlScheme": "Only http and https are supported",
+  "browserBack": "Back",
+  "browserForward": "Forward",
+  "browserReload": "Reload",
+  "browserStop": "Stop",
+  "browserClose": "Close Page",
+  "browserConvert": "Convert to Document…",
+  "browserConvertShort": "Convert",
+  "browserReady": "Convert to document?",
+  "browserStillLoading": "Some content is still loading",
+  "browserLater": "Later",
+  "browserFailed": "Unable to Open Page",
+  "browserRetry": "Retry",
+  "browserClearData": "Clear Browser Data",
+  "browserClearConfirm": "Clear browser cookies, storage and cache? Open pages will close.",
+  "browserDataCleared": "Browser data cleared"
 }
