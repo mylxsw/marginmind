@@ -7,8 +7,7 @@ import 'package:mm_data/src/format_migration.dart';
 import 'package:test/test.dart';
 
 Map<String, Object?> legacy() {
-  final json = (jsonDecode(File('test/fixtures/format-4.json').readAsStringSync()) as Map)
-      .cast<String, Object?>();
+  final json = (jsonDecode(File('test/fixtures/format-4.json').readAsStringSync()) as Map).cast<String, Object?>();
   json['format'] = 8;
   json['futureMetadata'] = {'preserve': true};
   final content = json['content'] as Map;
@@ -48,11 +47,7 @@ void main() {
     final source = legacy();
     final content = source['content'] as Map;
     (content['cards'] as List).add({'id': 'summary-topic:summary', 'custom': true});
-    (content['summaries'] as List).add({
-      'id': 'existing',
-      'cardId': 'summary-topic:summary:1',
-      'label': 'keep',
-    });
+    (content['summaries'] as List).add({'id': 'existing', 'cardId': 'summary-topic:summary:1', 'label': 'keep'});
     final migrated = migrateStudySet(source)['content'] as Map;
     expect((migrated['summaries'] as List).first['cardId'], 'summary-topic:summary:2');
     expect((migrated['summaries'] as List).last, (content['summaries'] as List).last);
