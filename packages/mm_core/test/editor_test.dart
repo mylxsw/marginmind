@@ -38,16 +38,36 @@ void main() {
     expect(c.excerptCount, 1);
   });
 
-  test('excerpt target follows the selection', () {
+  test('excerpt target falls back to root only without a valid node in the active map', () {
     var c = withDoc();
     final (c1, topic) = editor.addTopic(c, title: 'T');
     final (c2, note) = editor.addNote(c1, text: 'N', parentId: topic.id);
     c = c2;
     expect(StudySetEditor.excerptTarget(c, null), isNull);
     expect(StudySetEditor.excerptTarget(c, topic.id), topic.id);
-    expect(StudySetEditor.excerptTarget(c, note.id), topic.id);
+    expect(StudySetEditor.excerptTarget(c, note.id), note.id);
     expect(StudySetEditor.excerptTarget(c, 'missing'), isNull);
+    expect(StudySetEditor.excerptTarget(c, note.id, mapId: 'other-map'), isNull);
+    expect(StudySetEditor.excerptTarget(c.copyWith(nodes: []), note.id), isNull);
+    expect(StudySetEditor.excerptTarget(c.copyWith(cards: []), note.id), isNull);
   });
+
+  for (final kind in CardKind.values) {
+    for (final nested in [false, true]) {
+      test('excerpt target is the selected ${kind.name} node, nested=$nested', () {
+        final (c, topic) = editor.addTopic(withDoc(), title: 'Parent');
+        final card = Card(id: 'selected', kind: kind, createdAt: DateTime(2026));
+        final content = c.copyWith(
+          cards: [...c.cards, card],
+          nodes: [
+            ...c.nodes,
+            MapNode(cardId: card.id, parentId: nested ? topic.id : null, order: 1),
+          ],
+        );
+        expect(StudySetEditor.excerptTarget(content, card.id), card.id);
+      });
+    }
+  }
 
   test('removing from the map keeps the highlight; deleting the highlight removes the card', () {
     var c = withDoc();

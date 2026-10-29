@@ -645,15 +645,14 @@ class StudySetEditor {
     );
   }
 
-  /// Where a new excerpt goes when [selectedCardId] is selected: under a
-  /// selected topic, next to a selected excerpt/note (its parent), else the
-  /// root. Returns a card id or null for the root.
+  /// New excerpts become children of the selected node, regardless of its
+  /// kind. With no valid selection in this map, they go under the root.
   static String? excerptTarget(StudySetContent c, String? selectedCardId, {String mapId = MindMap.defaultId}) {
     if (selectedCardId == null) return null;
     final card = c.card(selectedCardId);
     final node = c.node(selectedCardId, mapId: mapId);
     if (card == null || node == null) return null;
-    return card.kind == CardKind.topic ? card.id : node.parentId;
+    return card.id;
   }
 
   double _nextOrder(StudySetContent c, String? parentId) {

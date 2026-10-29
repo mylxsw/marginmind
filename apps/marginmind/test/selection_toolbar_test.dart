@@ -41,6 +41,48 @@ void main() {
       null,
     ),
   );
+  for (final target in ['root', 'topic', 'excerpt', 'note']) {
+    for (final fromHighlight in [false, true]) {
+      testWidgets('add to map makes a child of selected $target, existing highlight=$fromHighlight', (tester) async {
+        final container = await pumpApp(tester);
+        container.read(navigationProvider.notifier).openStudySet('demo-1');
+        await tester.pumpAndSettle();
+        final provider = workspaceProvider('demo-1');
+        final controller = container.read(provider.notifier);
+        final String? parentId = switch (target) {
+          'topic' => controller.content.cards.firstWhere((c) => c.kind == CardKind.topic).id,
+          'excerpt' => controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt).id,
+          'note' => (await controller.addNote('Selected note')).id,
+          _ => null,
+        };
+        if (parentId != null) await controller.toggleCollapsed(parentId);
+        controller.selectCard(parentId);
+        if (fromHighlight) {
+          await controller.highlight('c1', selection, MMAnnotationColor.yellow);
+          controller.tapHighlight(controller.content.annotations.last.id, selection.viewportRect!);
+        } else {
+          await controller.onSelectionCommitted('c1', selection);
+        }
+        await tester.pumpAndSettle();
+        expect(container.read(provider).selectedCardId, parentId);
+        final before = controller.content;
+        await tester.tap(find.byTooltip('Add to Map'));
+        await tester.pumpAndSettle();
+        final card = controller.content.cardForAnnotation(controller.content.annotations.last.id)!;
+        expect(controller.content.node(card.id)!.parentId, parentId);
+        expect(controller.content.cards.length, before.cards.length + 1);
+        expect(controller.content.annotations.length, before.annotations.length + (fromHighlight ? 0 : 1));
+        if (parentId != null) expect(controller.content.node(parentId)!.collapsed, isFalse);
+        expect(find.byType(SelectionToolbar), findsNothing);
+        await controller.undo();
+        expect(controller.content.card(card.id), isNull);
+        expect(controller.content.annotations.length, before.annotations.length);
+        await controller.redo();
+        expect(controller.content.node(card.id)!.parentId, parentId);
+        await settleHud(tester);
+      });
+    }
+  }
   for (final color in MMAnnotationColor.values) {
     testWidgets('inline palette ${color.name} highlights without creating a card', (tester) async {
       final container = await pumpApp(tester);
