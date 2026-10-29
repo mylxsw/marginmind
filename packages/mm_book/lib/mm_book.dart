@@ -25,6 +25,7 @@ part 'src/markdown.dart';
 part 'src/mobi.dart';
 part 'src/mobi_compression.dart';
 part 'src/mobi_index.dart';
+part 'src/web.dart';
 
 enum BlockKind { paragraph, heading, list, quote, code, image, table, rule, footnote }
 

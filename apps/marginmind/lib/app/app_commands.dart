@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart' show CardKind, DocumentRuntime, TextReadingPosition;
+import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -22,6 +22,7 @@ import '../features/workspace/reader_compare.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../features/workspace/workspace_browser.dart';
+import '../features/workspace/web_conversion.dart';
 import '../settings/settings_window.dart';
 import '../settings/app_settings.dart';
 import '../shared/l10n.dart';
@@ -53,17 +54,42 @@ class AppCommand {
 
 enum BrowserCommand { back, forward, reload, stop, convert, close }
 
+enum WebSourceCommand { openOriginal, refetch, review }
+
+Map<WebSourceCommand, AppCommand> webSourceCommands(
+  AppLocalizations l,
+  Document document, {
+  required bool canRefetch,
+  required VoidCallback refetch,
+  int reviewCount = 0,
+  VoidCallback? review,
+}) => document.origin == null
+    ? {}
+    : {
+        WebSourceCommand.openOriginal: AppCommand(
+          l.openOriginalPage,
+          () => const ExternalLinks().open(Uri.parse(document.origin!.url)),
+        ),
+        if (canRefetch) WebSourceCommand.refetch: AppCommand(l.refetchPage, refetch),
+        if (review != null) WebSourceCommand.review: AppCommand(l.annotationsNeedReview(reviewCount), review),
+      };
+
 Map<BrowserCommand, AppCommand> browserCommands(
   AppLocalizations l,
   BrowserSession session, {
   required VoidCallback close,
   required VoidCallback convert,
+  bool converting = false,
+  bool updating = false,
 }) => {
   BrowserCommand.back: AppCommand(l.browserBack, session.canGoBack ? session.back : null),
   BrowserCommand.forward: AppCommand(l.browserForward, session.canGoForward ? session.forward : null),
   BrowserCommand.reload: AppCommand(l.browserReload, session.reload),
   BrowserCommand.stop: AppCommand(l.browserStop, session.loading ? session.stop : null),
-  BrowserCommand.convert: AppCommand(l.browserConvert, session.canCapture ? convert : null),
+  BrowserCommand.convert: AppCommand(
+    updating ? l.browserUpdate : l.browserConvert,
+    session.canCapture && !converting ? convert : null,
+  ),
   BrowserCommand.close: AppCommand(l.browserClose, close),
 };
 
@@ -409,6 +435,24 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ),
       );
     }
+    final sourceDocument = workspace?.content.document(workspaceState?.activeDocumentId ?? '');
+    if (sourceDocument?.origin != null && workspaceId != null) {
+      final review = workspace!.content.annotations
+          .where((a) => a.documentId == sourceDocument!.id && a.needsReview)
+          .toList();
+      file.addAll(
+        webSourceCommands(
+          l,
+          sourceDocument!,
+          canRefetch: ref.watch(canAddWebPageProvider),
+          refetch: () => ref
+              .read(workspaceBrowserProvider(workspaceId).notifier)
+              .open(Uri.parse(sourceDocument.origin!.url), documentId: sourceDocument.id),
+          reviewCount: review.length,
+          review: review.isEmpty ? null : () => showWebAlignmentReview(context, review),
+        ).values,
+      );
+    }
     final browser = browserState;
     if (browser?.visible == true && browser?.session != null) {
       final session = browser!.session!;
@@ -418,6 +462,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
           l,
           session,
           close: owner.close,
+          converting: browser.converting,
+          updating: browser.replacingDocumentId != null,
           convert: () {
             final converter = ref.read(browserConverterProvider) ?? previewBrowserCapture;
             converter(context, workspaceId, session);

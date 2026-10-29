@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -8,6 +11,19 @@ import 'support/pdf_backend.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(installTestPdfBackend);
+
+  testWidgets('browser PDF bytes provide page count, locators and a rendered preview', (tester) async {
+    TestPdfRender.produceImages = true;
+    addTearDown(() => TestPdfRender.produceImages = false);
+    final result = await tester.runAsync(() => MMPdfEngine.inspectData(Uint8List.fromList([1])));
+    expect(result!.pageCount, 3);
+    expect(result.pages.length, 3);
+    expect(result.preview, isNotEmpty);
+    installTestPdfBackend(pageCount: 0);
+    final empty = await MMPdfEngine.inspectData(Uint8List.fromList([1]));
+    expect(empty.pageCount, 0);
+    expect(empty.preview, isNull);
+  });
 
   test('translation extraction keeps original page boxes and closes the document', () async {
     final paragraphs = await MMPdfEngine.translationParagraphs('any.pdf', 'doc');

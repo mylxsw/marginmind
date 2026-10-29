@@ -37,6 +37,8 @@ import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
 import 'reader_ocr_controls.dart';
+import 'web_source.dart';
+import '../web_conversion.dart';
 
 /// Source pane: document renderer, tools, document switcher and navigation.
 class ReaderPane extends ConsumerStatefulWidget {
@@ -663,6 +665,36 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     VoidCallback onDismiss, {
     int side = 0,
   }) {
+    final child = _documentViewport(context, state, controller, content, doc, rootTitle, onDismiss, side: side);
+    if (doc.origin == null) return child;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.s),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(doc.title, style: context.mmText.headline),
+              WebSourceAttribution(document: doc),
+            ],
+          ),
+        ),
+        Expanded(child: child),
+      ],
+    );
+  }
+
+  Widget _documentViewport(
+    BuildContext context,
+    WorkspaceState state,
+    WorkspaceController controller,
+    StudySetContent content,
+    Document doc,
+    String rootTitle,
+    VoidCallback onDismiss, {
+    int side = 0,
+  }) {
     if (doc.contentManifest != null) {
       return ref.watch(documentReaderBuilderProvider)?.call(context, ref, widget.studySetId, doc) ??
           MMEmptyState(icon: documentIcon(doc), title: doc.title, message: '');
@@ -1002,7 +1034,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     };
     return [
       for (final a in content.annotationsOn(documentId))
-        for (final page in a.isText ? <AnnotationPage>[] : a.pages)
+        for (final page in a.isText || a.needsReview ? <AnnotationPage>[] : a.pages)
           () {
             final color = MMAnnotationColor.fromIndex(a.colorIndex);
             final sharedCard = content.cardForAnnotation(a.id);
@@ -1161,6 +1193,26 @@ class _DocumentSwitcher extends ConsumerWidget {
     final l = context.l10n;
     final c = context.mmColors;
     final text = context.mmText.callout;
+    final active = documents.where((d) => d.id == activeDocumentId).firstOrNull;
+    final review =
+        ref
+            .watch(workspaceContentProvider(studySetId))
+            ?.annotations
+            .where((a) => a.documentId == active?.id && a.needsReview)
+            .toList() ??
+        <Annotation>[];
+    final sourceCommands = active == null
+        ? <WebSourceCommand, AppCommand>{}
+        : webSourceCommands(
+            l,
+            active,
+            canRefetch: ref.watch(canAddWebPageProvider),
+            refetch: () => ref
+                .read(workspaceBrowserProvider(studySetId).notifier)
+                .open(Uri.parse(active.origin!.url), documentId: active.id),
+            reviewCount: review.length,
+            review: review.isEmpty ? null : () => showWebAlignmentReview(context, review),
+          );
     Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
       children: [
         Icon(icon, size: 14, color: c.secondaryLabel),
@@ -1190,6 +1242,12 @@ class _DocumentSwitcher extends ConsumerWidget {
           pickAndImportDocuments(context, ref, studySetId);
         } else if (id == ':web') {
           dispatchAddWebPage(context, ref, studySetId);
+        } else if (id == ':original') {
+          sourceCommands[WebSourceCommand.openOriginal]?.onInvoke?.call();
+        } else if (id == ':refetch') {
+          sourceCommands[WebSourceCommand.refetch]?.onInvoke?.call();
+        } else if (id == ':review') {
+          sourceCommands[WebSourceCommand.review]?.onInvoke?.call();
         } else if (id.isEmpty) {
           onClose?.call();
         } else {
@@ -1210,6 +1268,14 @@ class _DocumentSwitcher extends ConsumerWidget {
         MMDropdownItem<String>(value: ':import', child: row(MMIcons.import, l.importDocument)),
         if (ref.watch(canAddWebPageProvider))
           MMDropdownItem<String>(value: ':web', child: row(MMIcons.web, l.addWebPage)),
+        if (sourceCommands.isNotEmpty) ...[
+          const PopupMenuDivider(height: MMSpacing.s),
+          MMDropdownItem<String>(value: ':original', child: row(MMIcons.web, l.openOriginalPage)),
+          if (sourceCommands.containsKey(WebSourceCommand.refetch))
+            MMDropdownItem<String>(value: ':refetch', child: row(MMIcons.history, l.refetchPage)),
+          if (sourceCommands[WebSourceCommand.review] case final command?)
+            MMDropdownItem<String>(value: ':review', child: row(MMIcons.warning, command.label)),
+        ],
         const PopupMenuDivider(height: MMSpacing.s),
         MMDropdownItem<String>(
           value: '',

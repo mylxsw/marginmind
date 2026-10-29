@@ -53,25 +53,34 @@ class InMemoryStudySetContentRepository
     bool Function()? cancelled,
   }) async {
     if (cancelled?.call() ?? false) throw StateError('Document import cancelled');
+    if (package.expectedRevision != null &&
+        _content[studySetId]?.document(package.document.id)?.revision != package.expectedRevision) {
+      throw StateError('Document version changed');
+    }
+    if (package.expectedSnapshotFile != null &&
+        _content[studySetId]?.document(package.document.id)?.origin?.snapshotFile != package.expectedSnapshotFile) {
+      throw StateError('Document capture changed');
+    }
     for (final e in package.files.entries) {
       final old = documentFiles[(studySetId, e.key)];
       if (old != null && base64Encode(old) != base64Encode(e.value)) {
         throw StateError('Immutable document file differs');
       }
     }
+    final content = _content[studySetId] ?? StudySetContent.empty;
+    final replaced = content.copyWith(
+      documents: [
+        for (final d in content.documents)
+          if (d.id != package.document.id) d,
+        package.document,
+      ],
+    );
+    final next = package.reconcile?.call(replaced) ?? replaced;
+    if (cancelled?.call() ?? false) throw StateError('Document import cancelled');
     for (final e in package.files.entries) {
       documentFiles[(studySetId, e.key)] = e.value;
     }
-    return update(
-      studySetId,
-      (c) => c.copyWith(
-        documents: [
-          for (final d in c.documents)
-            if (d.id != package.document.id) d,
-          package.document,
-        ],
-      ),
-    );
+    return update(studySetId, (_) => next);
   }
 
   @override

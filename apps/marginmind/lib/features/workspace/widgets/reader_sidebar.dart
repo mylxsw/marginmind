@@ -238,6 +238,10 @@ class _Annotations extends ConsumerWidget {
   final List<MarginNote> notes;
 
   Future<void> _open(BuildContext context, WidgetRef ref, _AnnotationEntry entry) async {
+    if (entry.highlight?.needsReview ?? false) {
+      MMHud.show(context, context.l10n.annotationNotFound, icon: MMIcons.warning);
+      return;
+    }
     final session = ref.read(readerMarginProvider(studySetId).notifier);
     if (!await session.finish() || !context.mounted) return;
     // Saving changes the margin layout. Let it consume that revision before

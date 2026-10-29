@@ -5,11 +5,14 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../shared/l10n.dart';
 import 'workspace_controller.dart';
+import 'web_conversion.dart';
 
 class WorkspaceBrowserState {
-  const WorkspaceBrowserState({this.session, this.visible = false});
+  const WorkspaceBrowserState({this.session, this.visible = false, this.replacingDocumentId, this.converting = false});
   final BrowserSession? session;
   final bool visible;
+  final String? replacingDocumentId;
+  final bool converting;
 }
 
 final workspaceBrowserProvider = NotifierProvider.autoDispose.family<WorkspaceBrowser, WorkspaceBrowserState, String>(
@@ -19,7 +22,10 @@ final workspaceBrowserProvider = NotifierProvider.autoDispose.family<WorkspaceBr
 /// GUL-577 installs the conversion sheet here. The browser owns navigation and
 /// capture; the converter owns formats, previews and study-set persistence.
 typedef BrowserConverter = Future<void> Function(BuildContext context, String studySetId, BrowserSession session);
-final browserConverterProvider = Provider<BrowserConverter?>((ref) => null);
+final browserConverterProvider = Provider<BrowserConverter?>(
+  (ref) =>
+      (context, id, session) => showWebConversion(context, ref, id, session),
+);
 
 class WorkspaceBrowser extends Notifier<WorkspaceBrowserState> {
   WorkspaceBrowser(this.studySetId);
@@ -34,21 +40,51 @@ class WorkspaceBrowser extends Notifier<WorkspaceBrowserState> {
     return const WorkspaceBrowserState();
   }
 
-  void open(Uri url) {
+  void open(Uri url, {String? documentId}) {
     if (_session == null || _session!.disposed) {
       _session = BrowserSession(url, onDataCleared: close);
       _session!.addListener(_changed);
     } else {
       _session!.navigate(url);
     }
-    state = WorkspaceBrowserState(session: _session, visible: true);
+    state = WorkspaceBrowserState(session: _session, visible: true, replacingDocumentId: documentId);
     ref.read(workspaceProvider(studySetId).notifier).setLayout(MMSplitMode.primary);
   }
 
-  void _changed() => state = WorkspaceBrowserState(session: _session, visible: state.visible);
+  void _changed() => state = WorkspaceBrowserState(
+    session: _session,
+    visible: state.visible,
+    replacingDocumentId: state.replacingDocumentId,
+    converting: state.converting,
+  );
 
-  void show() => state = WorkspaceBrowserState(session: _session, visible: true);
-  void hide() => state = WorkspaceBrowserState(session: _session);
+  void show() => state = WorkspaceBrowserState(
+    session: _session,
+    visible: true,
+    replacingDocumentId: state.replacingDocumentId,
+    converting: state.converting,
+  );
+  void hide() => state = WorkspaceBrowserState(
+    session: _session,
+    replacingDocumentId: state.replacingDocumentId,
+    converting: state.converting,
+  );
+  bool beginConversion() {
+    if (state.converting) return false;
+    state = WorkspaceBrowserState(
+      session: _session,
+      visible: state.visible,
+      replacingDocumentId: state.replacingDocumentId,
+      converting: true,
+    );
+    return true;
+  }
+
+  void endConversion() => state = WorkspaceBrowserState(
+    session: _session,
+    visible: state.visible,
+    replacingDocumentId: state.replacingDocumentId,
+  );
   void close() {
     _session?.removeListener(_changed);
     _session?.dispose();

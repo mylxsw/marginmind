@@ -617,6 +617,7 @@ class StudySetEditor {
               colorIndex: source.colorIndex,
               kind: source.kind,
               lineStyle: source.lineStyle,
+              needsReview: source.needsReview,
               createdAt: now(),
             ),
           );

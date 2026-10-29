@@ -22,9 +22,16 @@ enum DocumentFormat {
 
 enum DocumentLayout { fixed, reflow }
 
+enum WebCaptureMode { readable, original, markdown }
+
 @immutable
 class DocumentOrigin {
-  DocumentOrigin({required this.url, required this.capturedAt, this.snapshotFile}) {
+  DocumentOrigin({
+    required this.url,
+    required this.capturedAt,
+    this.snapshotFile,
+    this.mode = WebCaptureMode.readable,
+  }) {
     final uri = Uri.tryParse(url);
     if (uri == null || !{'http', 'https'}.contains(uri.scheme) || uri.host.isEmpty || uri.userInfo.isNotEmpty) {
       throw ArgumentError('Invalid document origin');
@@ -33,15 +40,18 @@ class DocumentOrigin {
   final String url;
   final DateTime capturedAt;
   final String? snapshotFile;
+  final WebCaptureMode mode;
   Map<String, Object?> toJson() => {
     'url': url,
     'capturedAt': capturedAt.toIso8601String(),
     if (snapshotFile != null) 'snapshotFile': snapshotFile,
+    'mode': mode.name,
   };
   factory DocumentOrigin.fromJson(Map<String, Object?> j) => DocumentOrigin(
     url: j['url'] as String,
     capturedAt: DateTime.parse(j['capturedAt'] as String),
     snapshotFile: j['snapshotFile'] as String?,
+    mode: WebCaptureMode.values.byName(j['mode'] as String? ?? 'readable'),
   );
 }
 

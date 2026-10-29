@@ -1209,11 +1209,35 @@
   "assistantPermissionDenied": "Denied",
   "assistantPermissionCancelled": "Request cancelled",
   "assistantPermissionPages": "{document} · pages {from}–{to}",
-  "@assistantPermissionPages": {"placeholders": {"document": {"type": "String"}, "from": {"type": "int"}, "to": {"type": "int"}}},
+  "@assistantPermissionPages": {
+    "placeholders": {
+      "document": {
+        "type": "String"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
   "assistantPermissionSelection": "Selected text · {title}",
-  "@assistantPermissionSelection": {"placeholders": {"title": {"type": "String"}}},
+  "@assistantPermissionSelection": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "assistantPermissionBranch": "Map branch · {title}",
-  "@assistantPermissionBranch": {"placeholders": {"title": {"type": "String"}}},
+  "@assistantPermissionBranch": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "assistantToolReadSelection": "Reading the selection",
   "assistantToolReadPages": "Reading pages",
   "assistantToolSearch": "Searching the study set",
@@ -1228,7 +1252,13 @@
   "assistantSaveNote": "Take Note",
   "assistantAnswerToMap": "Turn into Mind Map",
   "assistantAnswerToMapPrompt": "Turn the following answer into a mind map, preserving its main points and hierarchy. Propose map edits for review:\n\n{answer}",
-  "@assistantAnswerToMapPrompt": {"placeholders": {"answer": {"type": "String"}}},
+  "@assistantAnswerToMapPrompt": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
   "assistantSavedNote": "Saved as Note",
   "assistantLocate": "Show",
   "assistantRegenerate": "Regenerate",
@@ -1572,8 +1602,8 @@
   "assistantQuickSummarize": "Summarize Key Points",
   "assistantQuickOutline": "Create an Outline",
   "assistantQuickOutlinePrompt": "Create a clear text outline of the selected passage, organizing its main ideas and hierarchy. Show the outline in your answer without modifying the mind map.",
-  "assistantQuickAsk": "Or ask a question\u2026",
-  "assistantQuickFollowUp": "Ask more about this passage\u2026",
+  "assistantQuickAsk": "Or ask a question…",
+  "assistantQuickFollowUp": "Ask more about this passage…",
   "assistantQuickSidebar": "Continue in Sidebar",
   "assistantQuickBusy": "Another conversation is answering. You can ask when it finishes.",
   "assistantQuickChanged": "This conversation has changed. Continue viewing it in the sidebar.",
@@ -1643,7 +1673,16 @@
   "compareTranslationProgress": "Translating {done}/{total}",
   "compareTranslationSaved": "Saved",
   "compareTranslationFailed": "Translation failed",
-  "@compareTranslationProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "@compareTranslationProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "compareTranslationPageEmpty": "No text to translate on this page",
   "compareTranslationPageSaved": "Page {page} saved",
   "compareTranslationPageProgress": "Page {page} · Translating {done}/{total}",
@@ -1717,7 +1756,13 @@
   "readerSortTitle": "By Name",
   "bookmarkPageOccupied": "This page already has a bookmark.",
   "readerInvalidPage": "Enter a valid page number up to {count}.",
-  "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
+  "@readerInvalidPage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest.",
   "toolUnderline": "Underline",
   "lineSolid": "Solid",
@@ -1884,5 +1929,56 @@
   "readerRetry": "Retry",
   "readerNoOutline": "No outline",
   "readerSelectionStart": "Selection start",
-  "readerSelectionEnd": "Selection end"
+  "readerSelectionEnd": "Selection end",
+  "convertTitle": "Convert to Document",
+  "convertTitlePlaceholder": "Title",
+  "convertReadable": "Reader",
+  "convertPdf": "PDF",
+  "convertMarkdown": "Markdown",
+  "docSaving": "Saving",
+  "docSaved": "Saved “{title}”",
+  "@docSaved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "docSaveFailed": "Couldn’t Save",
+  "docUpdated": "Updated",
+  "annotationsNeedReview": "Needs Review ({count})",
+  "@annotationsNeedReview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "annotationsNeedReviewHud": "{count, plural, =1{1 highlight needs review} other{{count} highlights need review}}",
+  "@annotationsNeedReviewHud": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAction": "View",
+  "openOriginalPage": "Open Original Page",
+  "refetchPage": "Refetch Page",
+  "browserUpdate": "Update Document",
+  "webUpdatePrompt": "Update the document?",
+  "webUpdateAction": "Update",
+  "webSource": "{domain} · {date}",
+  "@webSource": {
+    "placeholders": {
+      "domain": {
+        "type": "String"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "annotationNotFound": "Passage not found"
 }

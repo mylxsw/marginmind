@@ -3418,4 +3418,72 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get readerSelectionEnd => '选区终点';
+
+  @override
+  String get convertTitle => '转换为文档';
+
+  @override
+  String get convertTitlePlaceholder => '标题';
+
+  @override
+  String get convertReadable => '阅读模式';
+
+  @override
+  String get convertPdf => 'PDF';
+
+  @override
+  String get convertMarkdown => 'Markdown';
+
+  @override
+  String get docSaving => '正在保存';
+
+  @override
+  String docSaved(String title) {
+    return '已保存「$title」';
+  }
+
+  @override
+  String get docSaveFailed => '保存失败';
+
+  @override
+  String get docUpdated => '已更新';
+
+  @override
+  String annotationsNeedReview(int count) {
+    return '需要确认 $count';
+  }
+
+  @override
+  String annotationsNeedReviewHud(int count) {
+    return '$count 处标注需要确认';
+  }
+
+  @override
+  String get viewAction => '查看';
+
+  @override
+  String get openOriginalPage => '打开原网页';
+
+  @override
+  String get refetchPage => '重新抓取';
+
+  @override
+  String get browserUpdate => '更新文档';
+
+  @override
+  String get webUpdatePrompt => '更新文档？';
+
+  @override
+  String get webUpdateAction => '更新';
+
+  @override
+  String webSource(String domain, DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.yMMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return '$domain · $dateString';
+  }
+
+  @override
+  String get annotationNotFound => '找不到原文位置';
 }

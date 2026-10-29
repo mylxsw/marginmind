@@ -263,6 +263,7 @@ class Annotation {
     required this.createdAt,
     this.kind = AnnotationKind.highlight,
     this.lineStyle = AnnotationLineStyle.solid,
+    this.needsReview = false,
   }) : _pages = pages == null
            ? null
            : List.unmodifiable(pages.map((p) => AnnotationPage(page: p.page, rects: List.unmodifiable(p.rects)))),
@@ -301,18 +302,21 @@ class Annotation {
 
   final AnnotationKind kind;
   final AnnotationLineStyle lineStyle;
+  final bool needsReview;
 
-  Annotation copyWith({int? colorIndex, AnnotationKind? kind, AnnotationLineStyle? lineStyle}) => Annotation(
-    id: id,
-    documentId: documentId,
-    pages: isText ? null : pages,
-    textAnchors: textAnchors,
-    quote: quote,
-    colorIndex: colorIndex ?? this.colorIndex,
-    kind: kind ?? this.kind,
-    lineStyle: lineStyle ?? this.lineStyle,
-    createdAt: createdAt,
-  );
+  Annotation copyWith({int? colorIndex, AnnotationKind? kind, AnnotationLineStyle? lineStyle, bool? needsReview}) =>
+      Annotation(
+        id: id,
+        documentId: documentId,
+        pages: isText ? null : pages,
+        textAnchors: textAnchors,
+        quote: quote,
+        colorIndex: colorIndex ?? this.colorIndex,
+        kind: kind ?? this.kind,
+        lineStyle: lineStyle ?? this.lineStyle,
+        createdAt: createdAt,
+        needsReview: needsReview ?? this.needsReview,
+      );
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
@@ -325,6 +329,7 @@ class Annotation {
     'colorIndex': colorIndex,
     if (kind != AnnotationKind.highlight) 'kind': kind.name,
     if (lineStyle != AnnotationLineStyle.solid) 'lineStyle': lineStyle.name,
+    if (needsReview) 'needsReview': true,
     'createdAt': createdAt.toIso8601String(),
   };
   factory Annotation.fromJson(Map<String, Object?> j) {
@@ -347,6 +352,7 @@ class Annotation {
           : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
       quote: j['quote'] as String,
       colorIndex: j['colorIndex'] as int,
+      needsReview: j['needsReview'] as bool? ?? false,
       kind: AnnotationKind.values.where((v) => v.name == j['kind']).firstOrNull ?? AnnotationKind.highlight,
       lineStyle:
           AnnotationLineStyle.values.where((v) => v.name == j['lineStyle']).firstOrNull ?? AnnotationLineStyle.solid,

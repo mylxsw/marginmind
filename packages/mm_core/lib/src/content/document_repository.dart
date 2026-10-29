@@ -6,10 +6,15 @@ import 'study_set_content.dart';
 /// One immutable version, fully prepared before any references are published.
 /// Keys use the package layout (documents/, books/, web/), on every platform.
 class DocumentPackage {
-  DocumentPackage({required this.document, required Map<String, List<int>> files})
-    : files = Map.unmodifiable(
-        files.map((key, bytes) => MapEntry(key, Uint8List.fromList(bytes).asUnmodifiableView())),
-      ) {
+  DocumentPackage({
+    required this.document,
+    required Map<String, List<int>> files,
+    this.reconcile,
+    this.expectedRevision,
+    this.expectedSnapshotFile,
+  }) : files = Map.unmodifiable(
+         files.map((key, bytes) => MapEntry(key, Uint8List.fromList(bytes).asUnmodifiableView())),
+       ) {
     if (files.isEmpty || files.values.fold<int>(0, (sum, b) => sum + b.length) > 256 * 1024 * 1024) {
       throw ArgumentError('Invalid document package size');
     }
@@ -27,6 +32,16 @@ class DocumentPackage {
   }
   final Document document;
   final Map<String, List<int>> files;
+
+  /// Runs inside the repository write queue, against the latest content.
+  /// Throwing aborts the complete version, including its resources.
+  final StudySetContent Function(StudySetContent)? reconcile;
+
+  /// Optimistic version guard for recapture, checked before any writes.
+  final String? expectedRevision;
+
+  /// Distinguishes repeated captures whose canonical content is identical.
+  final String? expectedSnapshotFile;
 }
 
 void validateDocumentPath(String path) {

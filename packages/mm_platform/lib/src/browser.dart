@@ -11,6 +11,8 @@ import 'capabilities.dart';
 
 export 'browser_policy.dart';
 
+part 'browser_document.dart';
+
 class BrowserCapture {
   const BrowserCapture({
     required this.navigationId,
@@ -47,6 +49,7 @@ class BrowserSession extends ChangeNotifier {
   late BrowserReadiness _readiness = BrowserReadiness(_now);
   Timer? _timer;
   bool _attached = false, _disposed = false, _polling = false;
+  bool _capturingDocument = false;
   bool _isLoading = true;
   bool _hasDocument = false;
   int navigationId = 0;

@@ -68,6 +68,7 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
   Widget build(BuildContext context) {
     final session = widget.session;
     final owner = ref.read(workspaceBrowserProvider(widget.studySetId).notifier);
+    final browser = ref.watch(workspaceBrowserProvider(widget.studySetId));
     final l = context.l10n;
     return ListenableBuilder(
       listenable: session,
@@ -100,7 +101,14 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                 (converter ?? previewBrowserCapture)(context, widget.studySetId, session);
               }
 
-              final commands = browserCommands(l, session, close: owner.close, convert: convert);
+              final commands = browserCommands(
+                l,
+                session,
+                close: owner.close,
+                convert: convert,
+                converting: browser.converting,
+                updating: browser.replacingDocumentId != null,
+              );
               final reload = MMIconButton(
                 icon: session.loading ? MMIcons.close : MMIcons.history,
                 tooltip: session.loading ? l.browserStop : l.browserReload,
@@ -108,11 +116,15 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
               );
               final convertButton = MMButton(
                 key: const ValueKey('browser-convert'),
-                label: compact ? l.browserConvertShort : l.browserConvert,
+                label: browser.replacingDocumentId != null
+                    ? l.browserUpdate
+                    : compact
+                    ? l.browserConvertShort
+                    : l.browserConvert,
                 variant: session.canCapture ? MMButtonVariant.primary : MMButtonVariant.secondary,
                 // The GUL-577 converter is a separate staged task. Keep the browser
                 // command available for its consumer without pretending to save data.
-                onPressed: commands[BrowserCommand.convert]!.onInvoke,
+                onPressed: browser.converting ? null : commands[BrowserCommand.convert]!.onInvoke,
               );
               return Column(
                 children: [
@@ -212,7 +224,11 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                         children: [
                           Expanded(
                             child: Text(
-                              session.phase == BrowserPhase.slow ? l.webStillLoading : l.webReadyPrompt,
+                              session.phase == BrowserPhase.slow
+                                  ? l.webStillLoading
+                                  : browser.replacingDocumentId != null
+                                  ? l.webUpdatePrompt
+                                  : l.webReadyPrompt,
                               style: context.mmText.headline,
                             ),
                           ),
@@ -221,7 +237,11 @@ class _BrowserPaneState extends ConsumerState<BrowserPane> {
                             onPressed: session.dismissPrompt,
                           ),
                           const SizedBox(width: MMSpacing.s),
-                          MMButton(label: l.webConvertAction, variant: MMButtonVariant.primary, onPressed: convert),
+                          MMButton(
+                            label: browser.replacingDocumentId != null ? l.webUpdateAction : l.webConvertAction,
+                            variant: MMButtonVariant.primary,
+                            onPressed: browser.converting ? null : convert,
+                          ),
                         ],
                       ),
                     ),

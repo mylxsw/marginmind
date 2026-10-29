@@ -47,6 +47,54 @@ void main() {
     await root.delete(recursive: true);
   });
 
+  test('reconciliation is atomic, uses latest content and guards the source version', () async {
+    await store.importDocumentPackage(setId, package('v1'));
+    final version = package('v2');
+    final update = DocumentPackage(
+      document: version.document,
+      files: version.files,
+      expectedRevision: 'v1',
+      reconcile: (content) => content.copyWith(documents: [content.documents.single.copyWith(title: 'Reconciled')]),
+    );
+    expect((await store.importDocumentPackage(setId, update)).documents.single.title, 'Reconciled');
+    await expectLater(store.importDocumentPackage(setId, update), throwsStateError);
+    final failed = package('v3');
+    await expectLater(
+      store.importDocumentPackage(
+        setId,
+        DocumentPackage(
+          document: failed.document,
+          files: failed.files,
+          expectedRevision: 'v2',
+          reconcile: (_) => throw StateError('alignment failed'),
+        ),
+      ),
+      throwsStateError,
+    );
+    expect((await store.load(setId)).documents.single.revision, 'v2');
+    expect(await File(store.resolveFile(setId, failed.document.fileName)).exists(), isFalse);
+  });
+  test('unchanged content still rejects a stale capture snapshot', () async {
+    final first = package('same');
+    await store.importDocumentPackage(setId, first);
+    const snapshot = 'web/book/capture-2/snapshot.html';
+    final updated = DocumentPackage(
+      document: first.document.copyWith(
+        origin: DocumentOrigin(
+          url: 'https://example.com',
+          capturedAt: now.add(const Duration(seconds: 1)),
+          snapshotFile: snapshot,
+        ),
+      ),
+      files: {...first.files, snapshot: utf8.encode('<p>capture 2</p>')},
+      expectedRevision: 'same',
+      expectedSnapshotFile: first.document.origin!.snapshotFile,
+    );
+    await store.importDocumentPackage(setId, updated);
+    await expectLater(store.importDocumentPackage(setId, updated), throwsStateError);
+    expect((await store.load(setId)).documents.single.origin!.snapshotFile, snapshot);
+  });
+
   test('immutable versions, original, resources and snapshot survive reopen', () async {
     final first = package('v1');
     await store.importDocumentPackage(setId, first);

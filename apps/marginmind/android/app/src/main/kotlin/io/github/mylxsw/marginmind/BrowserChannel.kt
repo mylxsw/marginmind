@@ -37,6 +37,7 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
     private var committed = false
     private var finished = false
     private var mainUrl: String? = null
+    private var cancelPrint: Runnable? = null
     private fun allowed(raw: String): Boolean {
         val uri = Uri.parse(raw)
         return uri.scheme?.lowercase() in listOf("http", "https") && !uri.host.isNullOrEmpty()
@@ -56,6 +57,7 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = !allowed(request.url.toString())
             override fun onPageStarted(view: WebView, url: String?, icon: Bitmap?) {
+                cancelPrint?.run(); cancelPrint = null
                 generation++; terminal = false; committed = false; finished = false; mainUrl = url; emit("start")
             }
             override fun onPageCommitVisible(view: WebView, url: String?) {
@@ -103,6 +105,26 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
                     try { result.success(JSONTokener(raw).nextValue().let { if (it is String) it else null }) }
                     catch (_: Exception) { result.error("script_failed", null, null) }
                 }
+                "printPdf" -> {
+                    if (cancelPrint != null) { result.error("print_busy", null, null); return@setMethodCallHandler }
+                    val expected = generation
+                    val file = try { java.io.File.createTempFile("mm-web-", ".pdf", context.cacheDir) }
+                        catch (_: Exception) { result.error("print_failed", null, null); return@setMethodCallHandler }
+                    var finished = false
+                    cancelPrint = Runnable {}
+                    try {
+                        val handle = android.print.BrowserPdf.start(web, file) { bytes ->
+                            finished = true
+                            cancelPrint = null
+                            if (closed || expected != generation || bytes == null) result.error("print_failed", null, null)
+                            else result.success(bytes)
+                        }
+                        if (!finished) cancelPrint = handle
+                    } catch (_: Exception) {
+                        file.delete(); cancelPrint = null
+                        if (!finished) result.error("print_failed", null, null)
+                    }
+                }
                 "dispose" -> { dispose(); result.success(null) }
                 else -> result.notImplemented()
             }
@@ -112,6 +134,7 @@ class NativeBrowser(context: Context, messenger: BinaryMessenger, id: Int, priva
     override fun dispose() {
         if (closed) return
         closed = true; channel.setMethodCallHandler(null); web.stopLoading()
+        cancelPrint?.run(); cancelPrint = null
         (web.parent as? android.view.ViewGroup)?.removeView(web)
         web.destroy(); onClose()
     }

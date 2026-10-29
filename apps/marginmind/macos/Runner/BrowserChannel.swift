@@ -86,10 +86,52 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
           case .failure: result(FlutterError(code: "script_failed", message: nil, details: nil))
           }
         }
+      case "printPdf": self.printPdf(result)
       case "dispose": self.close(); self.onClose(); result(nil)
       default: result(FlutterMethodNotImplemented)
       }
     }
+  }
+  private func printPdf(_ result: @escaping FlutterResult) {
+    let expected = generation
+#if os(macOS)
+    let target = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
+    defer { try? FileManager.default.removeItem(at: target) }
+    let info = NSPrintInfo.shared.copy() as! NSPrintInfo
+    info.paperSize = NSSize(width: 595.28, height: 841.89)
+    info.topMargin = 36; info.bottomMargin = 36; info.leftMargin = 36; info.rightMargin = 36
+    info.horizontalPagination = .fit; info.verticalPagination = .automatic
+    info.jobDisposition = .save
+    info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = target
+    let operation = web.printOperation(with: info)
+    operation.showsPrintPanel = false; operation.showsProgressPanel = false
+    guard operation.run(), expected == generation,
+      let size = try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+      size > 0, size <= 128 * 1024 * 1024,
+      let bytes = try? Data(contentsOf: target) else {
+      result(FlutterError(code: "print_failed", message: nil, details: nil)); return
+    }
+    result(FlutterStandardTypedData(bytes: bytes))
+#else
+    let renderer = BrowserPageRenderer()
+    renderer.addPrintFormatter(web.viewPrintFormatter(), startingAtPageAt: 0)
+    let count = renderer.numberOfPages
+    guard count > 0, count <= 2000 else {
+      result(FlutterError(code: "print_limit", message: nil, details: nil)); return
+    }
+    let bytes = NSMutableData()
+    UIGraphicsBeginPDFContextToData(bytes, renderer.paperRect, nil)
+    renderer.prepare(forDrawingPages: NSRange(location: 0, length: count))
+    for page in 0..<count {
+      UIGraphicsBeginPDFPage()
+      renderer.drawPage(at: page, in: renderer.paperRect)
+    }
+    UIGraphicsEndPDFContext()
+    guard expected == generation, bytes.length <= 128 * 1024 * 1024 else {
+      result(FlutterError(code: "print_failed", message: nil, details: nil)); return
+    }
+    result(FlutterStandardTypedData(bytes: bytes as Data))
+#endif
   }
   func close() { web.stopLoading(); web.navigationDelegate = nil; web.uiDelegate = nil; web.removeFromSuperview(); channel.setMethodCallHandler(nil) }
   static func allowed(_ url: URL?) -> Bool {
@@ -152,4 +194,8 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
 }
 #if !os(macOS)
 extension NativeBrowser: FlutterPlatformView { func view() -> UIView { web } }
+private final class BrowserPageRenderer: UIPrintPageRenderer {
+  override var paperRect: CGRect { CGRect(x: 0, y: 0, width: 595.28, height: 841.89) }
+  override var printableRect: CGRect { paperRect.insetBy(dx: 36, dy: 36) }
+}
 #endif
