@@ -1,0 +1,147 @@
+{
+  "covered": 630,
+  "lines": 707,
+  "percent": 89.11,
+  "files": {
+    "apps/marginmind/lib/features/workspace/reader_compare.dart": {
+      "covered": 44,
+      "lines": 47,
+      "uncovered": [
+        134,
+        79,
+        80
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/reader_translation.dart": {
+      "covered": 108,
+      "lines": 132,
+      "uncovered": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        26,
+        27,
+        28,
+        29,
+        32,
+        123,
+        128,
+        175,
+        180,
+        181,
+        182,
+        183,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        236
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_compare_controls.dart": {
+      "covered": 52,
+      "lines": 57,
+      "uncovered": [
+        114,
+        247,
+        248,
+        249,
+        250
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart": {
+      "covered": 10,
+      "lines": 12,
+      "uncovered": [
+        609,
+        604
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart": {
+      "covered": 219,
+      "lines": 226,
+      "uncovered": [
+        257,
+        258,
+        259,
+        261,
+        262,
+        263,
+        378
+      ]
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_en.dart": {
+      "covered": 4,
+      "lines": 4,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart": {
+      "covered": 0,
+      "lines": 4,
+      "uncovered": [
+        2884,
+        2886,
+        2889,
+        2892
+      ]
+    },
+    "packages/mm_assistant/lib/src/translation.dart": {
+      "covered": 96,
+      "lines": 97,
+      "uncovered": [
+        44
+      ]
+    },
+    "packages/mm_core/lib/src/content/translation.dart": {
+      "covered": 84,
+      "lines": 84,
+      "uncovered": []
+    },
+    "packages/mm_pdf/lib/src/pdf_engine.dart": {
+      "covered": 10,
+      "lines": 10,
+      "uncovered": []
+    },
+    "packages/mm_pdf/lib/src/pdf_view.dart": {
+      "covered": 3,
+      "lines": 34,
+      "uncovered": [
+        1570,
+        1572,
+        1573,
+        1574,
+        1575,
+        1578,
+        1579,
+        1580,
+        1581,
+        1582,
+        1583,
+        1584,
+        1586,
+        198,
+        199,
+        200,
+        201,
+        203,
+        204,
+        205,
+        206,
+        208,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        219,
+        220
+      ]
+    }
+  }
+}

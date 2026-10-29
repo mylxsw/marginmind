@@ -5395,6 +5395,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Map hidden · {shortcut}'**
   String compareMapHiddenHud(String shortcut);
+
+  /// No description provided for @compareTranslationProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating {done}/{total}'**
+  String compareTranslationProgress(int done, int total);
+
+  /// No description provided for @compareTranslationSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get compareTranslationSaved;
+
+  /// No description provided for @compareTranslationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation failed'**
+  String get compareTranslationFailed;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

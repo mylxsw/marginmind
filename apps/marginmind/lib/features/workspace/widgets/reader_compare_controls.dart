@@ -13,14 +13,23 @@ import '../../../shared/l10n.dart';
 import '../../../shared/pdf_picker.dart';
 import '../../assistant/assistant_settings.dart';
 import '../reader_compare.dart';
+import 'reader_translation_view.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
 class ReaderCompareMenu extends ConsumerWidget {
-  const ReaderCompareMenu({super.key, required this.studySetId, this.enabled = true, this.document, this.left = false});
+  const ReaderCompareMenu({
+    super.key,
+    required this.studySetId,
+    this.enabled = true,
+    this.document,
+    this.translationLanguage,
+    this.left = false,
+  });
   final String studySetId;
   final bool enabled, left;
   final Document? document;
+  final String? translationLanguage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +52,10 @@ class ReaderCompareMenu extends ConsumerWidget {
     final hasText = current == null
         ? null
         : ref.watch(compareDocumentInfoProvider((studySetId, current))).value?.hasText;
+    final targetLang = language == 'zh' ? 'en' : 'zh';
+    final cached = content.translationCaches.any(
+      (t) => t.documentId == current && t.targetLang == targetLang && t.paragraphs.isNotEmpty,
+    );
     final reason = model == null
         ? l.assistantConnectFirst
         : !(ref.watch(sharedPreferencesProvider).getBool(assistantOnlineKey(studySetId)) ??
@@ -52,7 +65,7 @@ class ReaderCompareMenu extends ConsumerWidget {
         ? l.compareAiOffline
         : hasText == false
         ? l.compareAiNeedsOcr
-        : l.compareAiPending;
+        : null;
 
     Future<void> select(String id) async {
       try {
@@ -65,7 +78,12 @@ class ReaderCompareMenu extends ConsumerWidget {
       }
     }
 
-    String? selectedId = left ? current : (pair?.right as PdfCompareTarget?)?.documentId;
+    String? selectedId = left
+        ? current
+        : switch (pair?.right) {
+            PdfCompareTarget(:final documentId) => documentId,
+            _ => null,
+          };
     return PopupMenuButton<String>(
       key: document == null
           ? const ValueKey('reader-compare')
@@ -84,6 +102,17 @@ class ReaderCompareMenu extends ConsumerWidget {
       onSelected: (value) async {
         if (value == 'exit') {
           ref.read(readerCompareProvider(studySetId).notifier).exit();
+        } else if (value == 'ai') {
+          try {
+            final hidden = await ref
+                .read(readerCompareProvider(studySetId).notifier)
+                .openAi(targetLang, readerWidth: ReaderCompareWidth.of(context));
+            if (hidden && context.mounted) {
+              MMHud.show(context, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
+            }
+          } catch (_) {
+            if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+          }
         } else if (value == 'import') {
           final files = await ref.read(pdfPickerProvider)(l.pdfFiles);
           if (files.isEmpty || !context.mounted) return;
@@ -135,31 +164,11 @@ class ReaderCompareMenu extends ConsumerWidget {
           PopupMenuItem<String>(value: 'import', height: 30, child: _menuRow(MMIcons.add, l.importPdf)),
           if (MMPlatformCapabilities.current.assistant) ...[
             const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              enabled: false,
-              height: 50,
-              child: Opacity(
-                opacity: .5,
-                child: Row(
-                  children: [
-                    const Icon(MMIcons.translate, size: 14),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            l.compareAiTranslate(language == 'zh' ? l.languageEnglish : l.languageChinese),
-                            style: context.mmText.callout,
-                          ),
-                          Text(reason, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            _AiTranslationEntry(
+              label: l.compareAiTranslate(language == 'zh' ? l.languageEnglish : l.languageChinese),
+              reason: reason,
+              cached: cached,
+              tooNarrow: tooNarrow,
             ),
           ],
           if (pair != null) ...[
@@ -202,11 +211,15 @@ class ReaderCompareMenu extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(MMIcons.document, size: 14),
+                  Icon(translationLanguage == null ? MMIcons.document : MMIcons.translate, size: 14),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      document!.title,
+                      translationLanguage == null
+                          ? document!.title
+                          : translationLanguage == 'zh'
+                          ? l.languageCodeZh
+                          : l.languageCodeEn,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.mmText.callout.copyWith(fontWeight: FontWeight.w600),
@@ -222,6 +235,60 @@ class ReaderCompareMenu extends ConsumerWidget {
 
   Widget _menuRow(IconData icon, String label) =>
       Row(children: [Icon(icon, size: 14), const SizedBox(width: 8), Text(label)]);
+}
+
+/// Mount only inside the open popup. Opening a study set must never read
+/// Keychain credentials merely to draw its toolbar.
+class _AiTranslationEntry extends PopupMenuEntry<String> {
+  const _AiTranslationEntry({required this.label, required this.reason, required this.cached, required this.tooNarrow});
+  final String label;
+  final String? reason;
+  final bool cached, tooNarrow;
+  @override
+  double get height => reason == null || cached ? 30 : 50;
+  @override
+  bool represents(String? value) => value == 'ai';
+  @override
+  State<_AiTranslationEntry> createState() => _AiTranslationEntryState();
+}
+
+class _AiTranslationEntryState extends State<_AiTranslationEntry> {
+  @override
+  Widget build(BuildContext context) => Consumer(
+    builder: (context, ref, _) {
+      final credential = !widget.cached && widget.reason == null
+          ? ref.watch(assistantCredentialStateProvider).value
+          : null;
+      final reason = widget.cached
+          ? null
+          : widget.reason ?? (credential == AssistantCredentialState.ready ? null : context.l10n.assistantConnectFirst);
+      return PopupMenuItem<String>(
+        value: 'ai',
+        enabled: !widget.tooNarrow && reason == null,
+        height: reason == null ? 30 : 50,
+        child: Opacity(
+          opacity: reason == null ? 1 : .5,
+          child: Row(
+            children: [
+              const Icon(MMIcons.translate, size: 14),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.label, style: context.mmText.callout),
+                    if (reason != null)
+                      Text(reason, style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Captured outside the toolbar so entry decisions use the full source width.
@@ -359,30 +426,35 @@ class ReaderCompareView extends ConsumerWidget {
                   onPressed: () => action(session.toggleSync),
                 ),
               ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: MMToolbarButton(
-                  compact: true,
-                  key: const ValueKey('compare-align'),
-                  icon: MMIcons.alignHere,
-                  tooltip: l.compareAlign,
-                  onPressed: () => action(() async {
-                    if (await session.align() && context.mounted) {
-                      MMHud.show(
-                        context,
-                        l.compareAlignedHud,
-                        action: (l.undo, () => ref.read(workspaceProvider(studySetId).notifier).undo()),
-                      );
-                    }
-                  }),
+              if (pair.right is PdfCompareTarget) ...[
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: MMToolbarButton(
+                    compact: true,
+                    key: const ValueKey('compare-align'),
+                    icon: MMIcons.alignHere,
+                    tooltip: l.compareAlign,
+                    onPressed: () => action(() async {
+                      if (await session.align() && context.mounted) {
+                        MMHud.show(
+                          context,
+                          l.compareAlignedHud,
+                          action: (l.undo, () => ref.read(workspaceProvider(studySetId).notifier).undo()),
+                        );
+                      }
+                    }),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
-        column((pair.right as PdfCompareTarget).documentId, 1),
+        if (pair.right is PdfCompareTarget)
+          column((pair.right as PdfCompareTarget).documentId, 1)
+        else
+          Expanded(child: ReaderTranslationView(studySetId: studySetId)),
       ],
     );
   }

@@ -7,6 +7,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
 import 'reader_margin.dart';
+import 'reader_ocr.dart';
 import 'workspace_controller.dart';
 
 ComparePair reverseComparePair(ComparePair pair) => pair.copyWith(
@@ -53,7 +54,12 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
 
   WorkspaceController get _workspace => ref.read(workspaceProvider(studySetId).notifier);
   MMPdfViewController pdf(String id) => ref.read(documentPdfProvider((studySetId, id)));
-  String? document(int side) => side == 0 ? state?.leftDocumentId : (state?.right as PdfCompareTarget?)?.documentId;
+  String? document(int side) => side == 0
+      ? state?.leftDocumentId
+      : switch (state?.right) {
+          PdfCompareTarget(:final documentId) => documentId,
+          _ => null,
+        };
 
   @override
   ComparePair? build() {
@@ -61,13 +67,18 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     ref.listen(workspaceContentProvider(studySetId), (_, content) {
       final pair = state;
       if (pair == null || content == null) return;
-      if (content.document(pair.leftDocumentId) == null || content.document(document(1)!) == null) {
+      if (content.document(pair.leftDocumentId) == null ||
+          (document(1) != null && content.document(document(1)!) == null)) {
         unawaited(exit(force: true));
         return;
       }
       final stored = content.comparePairs.where((p) => p.id == pair.id).firstOrNull;
       if (stored != null && !_writing) {
-        state = stored.leftDocumentId == pair.leftDocumentId ? stored : reverseComparePair(stored);
+        state = stored.leftDocumentId == pair.leftDocumentId
+            ? stored
+            : stored.right is PdfCompareTarget
+            ? reverseComparePair(stored)
+            : stored;
         _sync.enabled = state!.sync;
       }
     });
@@ -117,6 +128,12 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     if (current == null && left) return false;
     final leftId = current?.leftDocumentId ?? ref.read(workspaceProvider(studySetId)).activeDocumentId;
     if (leftId == null || (current == null && id == leftId)) return false;
+    if (current?.right is AiCompareTarget && left) {
+      final language =
+          ref.read(compareDocumentInfoProvider((studySetId, id))).value?.language ??
+          compareLanguage(_workspace.content.document(id)!.title);
+      return openAi(language == 'zh' ? 'en' : 'zh', documentId: id);
+    }
     if (current != null && id == document(left ? 1 : 0)) {
       await swap();
       return false;
@@ -154,7 +171,40 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     return hidden;
   }
 
+  Future<bool> openAi(String language, {String? documentId, double readerWidth = 0}) async {
+    final transition = ++_transition;
+    final id = documentId ?? state?.leftDocumentId ?? ref.read(workspaceProvider(studySetId)).activeDocumentId;
+    if (id == null ||
+        _workspace.content.document(id) == null ||
+        !await ref.read(readerMarginProvider(studySetId).notifier).finish() ||
+        !ref.mounted ||
+        transition != _transition) {
+      return false;
+    }
+    remember();
+    final saved = _workspace.content.comparePairs
+        .where(
+          (p) =>
+              p.leftDocumentId == id &&
+              p.right is AiCompareTarget &&
+              (p.right as AiCompareTarget).targetLang == language,
+        )
+        .firstOrNull;
+    final pair =
+        saved ??
+        ComparePair(id: ref.read(editorProvider).newId(), leftDocumentId: id, right: AiCompareTarget(language));
+    if (saved == null) await _workspace.saveComparePair(pair);
+    if (!ref.mounted || transition != _transition) return false;
+    final hidden = state == null && _workspace.beginCompareLayout(readerWidth);
+    _sync.dispose();
+    _sync = ReadingSync()..enabled = pair.sync;
+    state = pair;
+    if (ref.read(workspaceProvider(studySetId)).activeDocumentId != id) _workspace.openDocument(id);
+    return hidden;
+  }
+
   Future<void> swap() async {
+    if (state?.right is! PdfCompareTarget) return;
     final transition = ++_transition;
     if (state == null ||
         !await ref.read(readerMarginProvider(studySetId).notifier).finish() ||
@@ -218,7 +268,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   }
 
   ReadingAlignment? get mapping {
-    if (state == null) return null;
+    if (state?.right is! PdfCompareTarget) return null;
     final l = pdf(document(0)!).pageHeights, r = pdf(document(1)!).pageHeights;
     if (l.isEmpty || r.isEmpty) return null;
     return ReadingAlignment(leftHeights: l, rightHeights: r, points: state!.alignPoints);
@@ -262,7 +312,7 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
       final source = _queuedSide;
       _queuedSide = null;
       if (!ref.mounted || state == null) return;
-      for (final id in [document(0)!, document(1)!]) {
+      for (final id in [document(0), document(1)].whereType<String>()) {
         final position = pdf(id).readingPosition;
         if (position != null) _workspace.recordPage(id, position.page);
       }
@@ -311,10 +361,19 @@ final compareDocumentInfoProvider = FutureProvider.family<({String? language, bo
   final doc = workspace.content.documents.where((d) => d.id == key.$2).firstOrNull;
   if (doc == null) return (language: null, hasText: null);
   final fallback = compareLanguage(doc.title);
+  final path = workspace.filePath(doc);
+  final recognized = ref.watch(readerOcrProvider(path).select((s) => s.document));
   if (!ref.read(pdfRenderingEnabledProvider)) return (language: fallback, hasText: null);
   try {
-    final text = await MMPdfEngine.pageText(workspace.filePath(doc), 1);
-    return (language: compareLanguage(text ?? '') ?? fallback, hasText: text?.trim().isNotEmpty == true);
+    var text = await MMPdfEngine.pageText(recognized?.path ?? path, 1);
+    var hasText = recognized?.textPages.isNotEmpty ?? (text?.trim().isNotEmpty == true);
+    // A cover can be an image even when the remaining document has text.
+    if (!hasText && recognized == null) {
+      final paragraphs = await MMPdfEngine.translationParagraphs(path, doc.id);
+      hasText = paragraphs.isNotEmpty;
+      text = paragraphs.firstOrNull?.text;
+    }
+    return (language: compareLanguage(text ?? '') ?? fallback, hasText: hasText);
   } catch (_) {
     return (language: fallback, hasText: null);
   }

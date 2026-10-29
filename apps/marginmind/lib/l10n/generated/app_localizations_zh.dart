@@ -2880,4 +2880,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String compareMapHiddenHud(String shortcut) {
     return '已收起脑图 · $shortcut';
   }
+
+  @override
+  String compareTranslationProgress(int done, int total) {
+    return '翻译中 $done/$total';
+  }
+
+  @override
+  String get compareTranslationSaved => '已保存';
+
+  @override
+  String get compareTranslationFailed => '翻译失败';
 }

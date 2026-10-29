@@ -1,4 +1,5 @@
 import 'package:pdfrx/pdfrx.dart';
+import 'package:mm_core/mm_core.dart';
 
 import 'open_document.dart';
 
@@ -11,6 +12,27 @@ abstract final class MMPdfEngine {
     if (_initialized) return;
     await pdfrxFlutterInitialize();
     _initialized = true;
+  }
+
+  /// Extract once per session and always release the PDFium document.
+  static Future<List<TranslationParagraph>> translationParagraphs(String path, String documentId) async {
+    final doc = await openDocument(path);
+    try {
+      final pages = <TranslationPage>[];
+      for (final page in doc.pages) {
+        final text = await page.loadText();
+        if (text != null) {
+          pages.add(
+            TranslationPage(page.pageNumber, text.fullText, [
+              for (final r in text.charRects) PageRect(r.left, r.top, r.right, r.bottom),
+            ]),
+          );
+        }
+      }
+      return splitTranslationParagraphs(documentId, pages);
+    } finally {
+      await doc.dispose();
+    }
   }
 
   /// Reads the page count (and title, if the file has one) of [path].

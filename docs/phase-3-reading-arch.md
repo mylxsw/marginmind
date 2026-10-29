@@ -110,4 +110,14 @@ PdfReadingPosition 保存 1-based page 与原始 PDF y。内部统一转换为�
 
 `documentPdfProvider` 为每份文档分配控制器，`readerPdfProvider` 继续适配当前左栏的工具栏、导航和菜单。两栏复用同一个阅读视口构建函数，选区、摘录、批注、画笔、裁边和 OCR 均携带自己的文档身份。支持 OCR 的平台每栏独立检查文档，避免右栏一直停留在占位。对照下页边强制收成标记，原展开意图保留；键盘保存批注后焦点交回阅读区。
 
-resize 按旧视口的 25% 阅读线取得原始 PDF 坐标，重新适配宽度后恢复该坐标。页码防抖计时器按文档分开，两栏滚动均能保存。菜单语言取本地 PDF 首页文字，未知时回退到文档名；AI 项保持禁用，翻译由后续批次接入。原生复现、截图和验证结果见 `docs/evidence/gul-551/validation.md`。
+resize 按旧视口的 25% 阅读线取得原始 PDF 坐标，重新适配宽度后恢复该坐标。页码防抖计时器按文档分开，两栏滚动均能保存。菜单语言取本地 PDF 首页文字，未知时回退到文档名；AI 翻译由批次 D 的会话与重排文本视图承接。原生复现、截图和验证结果见 `docs/evidence/gul-551/validation.md`。
+
+## 批次 D：AI 逐段对照
+
+`mm_core/translation.dart` 定义带原始字符框的段落描述与版本 1 指纹；`MMPdfEngine.translationParagraphs` 一次打开文档提取并释放 PDFium 句柄。分行忽略零大小空格框，以真实字形纵向范围判定，避免空格或字形高低变化误切词。文档内容与坐标摘要、切分版本、稳定序号共同参与身份；重复原文不会共享错误出处。
+
+`mm_assistant/translation.dart` 提供 `ParagraphTranslator`、直接模型适配器与双并发 `TranslationSession`。预算按会话累计，并为并发输出预留额度；已收取失败、截断响应的请求额度不能靠重试重新获取。只有完成且写盘成功的段落计入进度。可见范围内优先阅读线附近，其他按距离预取；滚动不取消正在执行的请求。适配器工具为空，通过 `connectAssistant` 保留端点、凭证、超时、大小和重试边界。
+
+`ReaderTranslationController` 复用默认模型、OCR 副本与原子仓储更新；会话切换和仓储回调内均检查 generation。默认模型改变时保留缓存，部分缓存需要用新模型继续时由显式重试清空后开始，避免混合来源。`ReaderTranslationView` 保留占位阅读线锚点，双向按段落与段内比例同步，源侧主动输入撤销旧驱动；译文摘录指向原始段落，不提供批注入口。菜单与右栏均支持离线缓存，不要求连接模型才能阅读已保存内容。
+
+原生复现与测试证据见 `docs/evidence/gul-552/validation.md`。批次 C 中的 AI 占位项已由本批次接入。
