@@ -1,0 +1,117 @@
+{
+  "base": "39887650b4f76e7391b78f832a16c7359a7c0ab5",
+  "method": "Added lib lines in git diff HEAD intersected with merged LCOV DA records; declarations/non-executable lines omitted. Includes generated localizations.",
+  "covered": 676,
+  "instrumented_added_lines": 695,
+  "percent": 97.27,
+  "files": [
+    {
+      "file": "apps/marginmind/lib/app/app_commands.dart",
+      "covered": 5,
+      "instrumented_added_lines": 5,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/hint_card.dart",
+      "covered": 115,
+      "instrumented_added_lines": 116,
+      "percent": 99.14
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/hint_controls.dart",
+      "covered": 48,
+      "instrumented_added_lines": 48,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/hint_geometry.dart",
+      "covered": 41,
+      "instrumented_added_lines": 41,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/hint_painter.dart",
+      "covered": 29,
+      "instrumented_added_lines": 29,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/pdf_hints.dart",
+      "covered": 106,
+      "instrumented_added_lines": 107,
+      "percent": 99.07
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/vocabulary_screen.dart",
+      "covered": 2,
+      "instrumented_added_lines": 2,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/vocabulary/vocabulary_source_flash.dart",
+      "covered": 7,
+      "instrumented_added_lines": 7,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "covered": 83,
+      "instrumented_added_lines": 97,
+      "percent": 85.57
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reading_settings.dart",
+      "covered": 51,
+      "instrumented_added_lines": 51,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "covered": 89,
+      "instrumented_added_lines": 90,
+      "percent": 98.89
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/reflow_tools.dart",
+      "covered": 24,
+      "instrumented_added_lines": 24,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/selection_lookup.dart",
+      "covered": 15,
+      "instrumented_added_lines": 15,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/vocabulary_add_button.dart",
+      "covered": 3,
+      "instrumented_added_lines": 3,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/l10n/generated/app_localizations_en.dart",
+      "covered": 6,
+      "instrumented_added_lines": 6,
+      "percent": 100.0
+    },
+    {
+      "file": "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart",
+      "covered": 4,
+      "instrumented_added_lines": 6,
+      "percent": 66.67
+    },
+    {
+      "file": "packages/mm_pdf/lib/src/pdf_view.dart",
+      "covered": 47,
+      "instrumented_added_lines": 47,
+      "percent": 100.0
+    },
+    {
+      "file": "packages/mm_reflow/lib/src/layout.dart",
+      "covered": 1,
+      "instrumented_added_lines": 1,
+      "percent": 100.0
+    }
+  ]
+}

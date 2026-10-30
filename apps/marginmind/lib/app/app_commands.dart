@@ -1,3 +1,4 @@
+import '../features/vocabulary/hint_controls.dart';
 import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
 
@@ -151,6 +152,7 @@ abstract final class AppShortcuts {
   static SingleActivator get addNote => primaryShortcut(LogicalKeyboardKey.keyN, alt: true);
   static SingleActivator get revealSource => primaryShortcut(LogicalKeyboardKey.keyL);
   static SingleActivator get gallery => primaryShortcut(LogicalKeyboardKey.keyG, alt: true, shift: true);
+  static SingleActivator get vocabularyHints => primaryShortcut(LogicalKeyboardKey.keyU, shift: true);
   static SingleActivator get toggleMarginNotes => primaryShortcut(LogicalKeyboardKey.keyM, alt: true);
 
   static SingleActivator get toggleCrop => primaryShortcut(LogicalKeyboardKey.keyK, alt: true);
@@ -898,6 +900,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         : null;
     final comparing = inWorkspace && ref.watch(readerCompareProvider(workspaceId)) != null;
     final view = <AppCommand>[
+      AppCommand(
+        l.vocabularyHints,
+        activeDoc != null ? () => toggleVocabularyHints(context, ref, activeDoc.id) : null,
+        shortcut: AppShortcuts.vocabularyHints,
+      ),
       if (hasDocument) ...[
         AppCommand(
           ref.watch(readerMarginProvider(workspaceId!)).openDocuments.contains(workspaceState.activeDocumentId)

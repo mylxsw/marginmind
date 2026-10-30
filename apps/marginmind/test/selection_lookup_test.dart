@@ -11,6 +11,7 @@ import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/vocabulary/selection_vocabulary.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_screen.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_controller.dart';
+import 'package:marginmind/features/vocabulary/vocabulary_source_flash.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
 import 'package:marginmind/features/workspace/word_lookup.dart';
 import 'package:marginmind/features/workspace/widgets/selection_lookup.dart';
@@ -204,6 +205,7 @@ void main() {
       await tester.pumpAndSettle();
       final entries = container.read(vocabularyProvider).requireValue.entries;
       expect(entries.single.term, 'meticulous');
+      expect(container.read(vocabularyAddedFlashProvider), entries.single.id);
       expect(entries.single.contexts.single.sentence, 'She works meticulously.');
       expect(entries.single.contexts.single.studySetTitle, '认知科学入门');
       expect(find.text('学习中'), findsOneWidget);

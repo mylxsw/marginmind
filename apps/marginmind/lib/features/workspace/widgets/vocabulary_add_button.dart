@@ -1,3 +1,5 @@
+import '../../vocabulary/vocabulary_source_flash.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -46,13 +48,19 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
       )
       .firstOrNull;
 
-  Future<void> _edit(List<VocabularyEntry> Function(List<VocabularyEntry>) change, String message) async {
+  Future<void> _edit(
+    List<VocabularyEntry> Function(List<VocabularyEntry>) change,
+    String message, {
+    bool flash = false,
+  }) async {
     if (_busy) return;
     setState(() => _busy = true);
     final owner = ref.read(vocabularyProvider.notifier), l = context.l10n;
     try {
       final receipt = await owner.edit(change);
       if (!mounted) return;
+      final added = flash ? entry : null;
+      if (added != null) ref.read(vocabularyAddedFlashProvider.notifier).show(added.id);
       MMHud.show(
         context,
         message,
@@ -105,6 +113,7 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
         translation: widget.translation,
       ),
       context.l10n.vocabularyAdded,
+      flash: true,
     );
   }
 

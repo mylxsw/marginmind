@@ -3644,4 +3644,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyAddForm => '添加';
+
+  @override
+  String get vocabularyHints => '生词提示';
+
+  @override
+  String get vocabularyHintsOff => '关闭';
+
+  @override
+  String get vocabularyHintsUnderline => '下划线';
+
+  @override
+  String get vocabularyHintsGloss => '释义';
+
+  @override
+  String get vocabularyHintsHidden => '本文档隐藏';
+
+  @override
+  String get vocabularyHintsKnown => '标出已掌握';
 }

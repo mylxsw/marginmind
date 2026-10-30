@@ -188,16 +188,18 @@ class ChapterLayout {
   }
 
   /// Preserves separate bidi rectangles; never merges a line across a bidi gap.
+  /// [candidates] limits known paragraph ranges to pieces from this layout.
   List<LayoutBox> boxes(
     TextAnchor anchor, {
     int? page,
+    Iterable<LayoutPiece>? candidates,
     Offset localScroll = Offset.zero,
     Map<String, double> horizontalOffsets = const {},
   }) {
     _check();
     if (!chapter.resolves(anchor)) return const [];
     final result = <LayoutBox>[];
-    for (final piece in pieces) {
+    for (final piece in candidates ?? pieces) {
       if (piece.decorative) continue;
       final start = math.max(anchor.start, piece.textStart);
       final end = math.min(anchor.end, piece.textEnd);

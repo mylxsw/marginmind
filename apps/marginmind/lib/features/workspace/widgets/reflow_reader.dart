@@ -8,28 +8,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
-import 'package:mm_reflow/mm_reflow.dart';
 import 'package:mm_platform/mm_platform.dart';
+import 'package:mm_reflow/mm_reflow.dart';
 
-import '../../../app/navigation.dart';
 import '../../../app/app_commands.dart';
+import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
-import '../../vocabulary/vocabulary_source_flash.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
-import '../reflow_session.dart';
-import '../reader_margin.dart';
+import '../../vocabulary/hint_card.dart';
+import '../../vocabulary/hint_geometry.dart';
+import '../../vocabulary/hint_painter.dart';
+import '../../vocabulary/vocabulary_controller.dart';
+import '../../vocabulary/vocabulary_hints.dart';
+import '../../vocabulary/vocabulary_source_flash.dart';
 import '../reader_compare.dart';
+import '../reader_margin.dart';
 import '../reader_translation.dart';
 import '../reflow_geometry.dart';
-import 'reflow_tools.dart';
+import '../reflow_session.dart';
 import '../workspace_controller.dart';
+import 'notices.dart';
 import 'reader_margin_notes.dart';
 import 'reader_page_field.dart';
 import 'reflow_scroll_reader.dart';
 import 'reflow_thumbnail.dart';
+import 'reflow_tools.dart';
 import 'selection_toolbar.dart';
-import 'notices.dart';
 import 'underline_tool_button.dart';
 
 class ReflowReader extends ConsumerStatefulWidget {
@@ -42,6 +47,8 @@ class ReflowReader extends ConsumerStatefulWidget {
 
 class _ReflowReaderState extends ConsumerState<ReflowReader> {
   final _scroll = ScrollController();
+  final _vocabularyCache = VocabularyMatchCache();
+  final _vocabularyGeometry = <(ChapterLayout, int?, int, int, int, bool, String?), List<VocabularyHit>>{};
   final _viewport = GlobalKey();
   final _fixedTransform = TransformationController();
   final _surfaceKeys = <(String, int?), GlobalKey>{};
@@ -92,6 +99,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   @override
   void dispose() {
     _edgeTimer?.cancel();
+    _vocabularyCache.clear();
+    _vocabularyGeometry.clear();
     _fixedTransform.dispose();
     _focus.dispose();
     _scroll.dispose();
@@ -363,9 +372,101 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     if (commit) _commit();
   }
 
+  List<VocabularyHit> _vocabularyHits(ChapterLayout layout, int? page) {
+    final prefs = ref.read(vocabularyHintProvider);
+    final vocabulary = ref.read(vocabularyProvider).value;
+    final flashOnly = prefs.modeFor(widget.document.id) == VocabularyHintMode.off;
+    final flash = ref.read(vocabularyAddedFlashProvider);
+    if (vocabulary == null || (flashOnly && flash == null)) return [];
+    var top = layout.chapter.id == session.position?.chapterId ? session.top : 0.0;
+    var height = layout.spec.pageHeight;
+    final surface = _surfaceKeys[(layout.chapter.id, page)]?.currentContext?.findRenderObject() as RenderBox?;
+    final viewport = _viewport.currentContext?.findRenderObject() as RenderBox?;
+    if (surface?.attached == true && viewport?.attached == true && viewport!.hasSize) {
+      top = surface!.globalToLocal(viewport.localToGlobal(Offset.zero)).dy;
+      height = viewport.size.height;
+    }
+    int at(double y) {
+      var low = 0, high = layout.pages.length - 1;
+      while (low < high) {
+        final middle = (low + high) ~/ 2;
+        if (layout.pages[middle].bottom <= y) {
+          low = middle + 1;
+        } else {
+          high = middle;
+        }
+      }
+      return low;
+    }
+
+    final first = math.max(0, (page ?? at(top)) - 1);
+    final last = math.min(layout.pages.length - 1, (page ?? at(top + height)) + 1);
+    final key = (layout, page, first, last, vocabulary.version, prefs.showKnown, flashOnly ? flash : null);
+    final cached = _vocabularyGeometry[key];
+    if (cached != null) return cached;
+    final hits = vocabularyReflowHits(
+      layout,
+      flashOnly ? VocabularyMatchCache() : _vocabularyCache,
+      flashOnly ? vocabulary.entries.where((e) => e.id == flash).toList() : vocabulary.entries,
+      vocabulary.version,
+      page: page,
+      top: layout.pages[first].top,
+      bottom: layout.pages[last].bottom,
+      showKnown: prefs.showKnown,
+    );
+    // Bound geometry as well as paragraph text; disposed chapter painters are
+    // never retained by a long reading session or after a font change.
+    _vocabularyGeometry.removeWhere((k, _) => k.$1.isDisposed || k.$5 != vocabulary.version);
+    if (_vocabularyGeometry.length >= 6) _vocabularyGeometry.remove(_vocabularyGeometry.keys.first);
+    _vocabularyGeometry[key] = hits;
+    return hits;
+  }
+
+  Future<void> _showVocabulary(VocabularyHit hit, Rect bounds) async {
+    _dismiss();
+    await showVocabularyHit(
+      context,
+      studySetId: widget.studySetId,
+      anchor: bounds,
+      hit: hit,
+      occurrences: (active) async {
+        final e = ref.read(vocabularyProvider).value?.entries.where((e) => e.id == hit.entryId).firstOrNull;
+        if (e == null) return [];
+        final matcher = VocabularyMatcher([e], showKnown: true);
+        final hits = <VocabularyHit>[];
+        // Navigation indexes text on demand; it never typesets offscreen chapters.
+        for (final chapter in session.book!.chapters) {
+          for (final m in matcher.match(chapter.canonicalText)) {
+            final anchor = chapter.anchor(m.start, m.end);
+            hits.add(
+              VocabularyHit(
+                e.id,
+                chapter.id == hit.anchor?.chapterId && anchor.start == hit.anchor?.start ? hit.rects : const [],
+                anchor: anchor,
+              ),
+            );
+          }
+          await Future<void>.delayed(Duration.zero);
+          if (!mounted || !active()) return [];
+        }
+        return hits;
+      },
+      reveal: (h) async {
+        if (h.anchor case final anchor?) await _jump(session.book!.position(anchor.chapterId, anchor.start));
+      },
+    );
+  }
+
   Future<void> _tap(ChapterLayout layout, Offset point, int? page) async {
     if (!session.ready || layout.isDisposed) return;
     final state = ref.read(workspaceProvider(widget.studySetId));
+    for (final hit in _vocabularyHits(layout, page)) {
+      if (hit.rects.any((r) => r.contains(point))) {
+        final surface = _surfaceKeys[(layout.chapter.id, page)]?.currentContext?.findRenderObject() as RenderBox?;
+        await _showVocabulary(hit, hit.rects.first.shift(surface?.localToGlobal(Offset.zero) ?? Offset.zero));
+        return;
+      }
+    }
     for (final a in workspace.content.annotationsOn(widget.document.id).reversed) {
       if (!a.isText) continue;
       final anchors = a.textAnchors.map(session.book!.resolve).toList();
@@ -818,6 +919,37 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     final sourceFlash = source?.studySetId == widget.studySetId && source?.documentId == widget.document.id
         ? source?.textAnchor
         : null;
+    ref.watch(vocabularyHintProvider);
+    ref.watch(vocabularyProvider);
+    ref.watch(vocabularyAddedFlashProvider);
+    final hintHits = _vocabularyHits(layout, page);
+    final prefs = ref.watch(vocabularyHintProvider);
+    final entries = ref.watch(vocabularyProvider).value?.entries ?? <VocabularyEntry>[];
+    final hintTop = hintHits.isEmpty ? 0.0 : hintHits.first.rects.first.top - layout.spec.pageHeight;
+    final hintBottom = hintHits.isEmpty ? 0.0 : hintHits.last.rects.last.bottom;
+    final hintPainter = VocabularyHintPainter(
+      hits: hintHits,
+      entries: {for (final e in entries) e.id: e},
+      color: context.mmColors.vocabulary,
+      knownColor: context.mmColors.secondaryLabel,
+      tint: context.mmColors.vocabularyTint,
+      glossStyle: context.mmText.footnote,
+      gloss: prefs.modeFor(widget.document.id) == VocabularyHintMode.gloss,
+      lines: [
+        for (final p in layout.pieces)
+          if (!p.decorative &&
+              hintHits.isNotEmpty &&
+              (page == null
+                  ? p.rect.bottom >= hintTop && p.rect.top <= hintBottom
+                  : p.rect.bottom >= layout.pages[page].top - layout.spec.pageHeight &&
+                        p.rect.top <= layout.pages[page].bottom))
+            ...layout
+                .boxes(layout.chapter.anchor(p.textStart, p.textEnd), page: page, candidates: [p])
+                .map((b) => b.rect),
+      ],
+      flashEntry: ref.watch(vocabularyAddedFlashProvider),
+      flashOnly: prefs.modeFor(widget.document.id) == VocabularyHintMode.off,
+    );
     final selectable = widget.document.capabilities().selectText;
     final highlights = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
     final resolved = <String, List<TextAnchor>>{};
@@ -980,6 +1112,13 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                             : workspace.content.card(state.selectedCardId!)?.annotationId,
                         sourceFlash: sourceFlash == null ? null : session.book!.resolve(sourceFlash),
                         sourceFlashColor: context.mmColors.vocabularyTint,
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ReflowTransientDecoration(
+                        child: CustomPaint(key: const ValueKey('vocabulary-hints-surface'), painter: hintPainter),
                       ),
                     ),
                   ),

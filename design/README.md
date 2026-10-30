@@ -77,3 +77,7 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 列表宽使用 `MMSizes.vocabularyListWidth`（340 pt）；宽度低于 600 pt 时与手机一致推入详情，返回保留搜索和筛选。音标朗读使用 `MMIcons.speaker` 与 `MMSpeech` 系统英／美语音（仅受支持平台显示按钮），词形原形固定保留。界面文案与分组依据 `design/prototype/vocabulary.html` 场景 10–11；重新生成仅更新义项，保留用户的行间释义、笔记及词形。
 
 生词详情区块使用 11pt semibold 次级文字；例句卡片为 0.5pt 细边、10pt 圆角，原句沿用宋体，译文为 12pt 常规次级文字，来源与操作同一行。词形与添加输入框均为 20pt 高，删除按钮位于词形内部。
+
+### 全文生词提示（GUL-597）
+
+命中卡片宽 `MMSizes.vocabularyHitCardWidth`（300pt）；行间释义使用 `MMSizes.vocabularyGlossSize`（10pt），最多 8 字，仅在行间空隙足够且不会与其他释义重叠时绘制。点线复用 `MMPdfAnnotationLinePainter`，线宽 1.5pt。已掌握使用 `secondaryLabel`。查词卡片词性标签圆角使用 `MMRadii.vocabularyPos`（4pt）、`quaternaryFill` 底色。提示和新增闪烁独立于正文、标注和截图导出图层。

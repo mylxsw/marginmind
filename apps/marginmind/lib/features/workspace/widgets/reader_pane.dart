@@ -1,3 +1,6 @@
+import 'reading_settings.dart';
+import '../../vocabulary/pdf_hints.dart';
+import '../../vocabulary/hint_controls.dart';
 import '../../vocabulary/vocabulary_source_flash.dart';
 import 'reader_page_field.dart';
 import '../reflow_session.dart';
@@ -414,6 +417,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           ? null
           : () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id),
     );
+    final hintButton = document == null
+        ? const SizedBox.shrink()
+        : VocabularyHintButton(documentId: document.id, compact: compact);
     final compareButton = ReaderCompareMenu(
       studySetId: widget.studySetId,
       enabled: capabilities.parallel && !crop.editing,
@@ -432,6 +438,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           navigation,
           const SizedBox(width: MMSpacing.s),
           Flexible(child: annotation),
+          hintButton,
+          if (!capabilities.readingSettings && document != null)
+            MMToolbarButton(
+              icon: MMIcons.readingSettings,
+              tooltip: l.readingSettings,
+              onPressed: () => showReadingSettings(context, ref, widget.studySetId),
+            ),
           if (MMSizeClass.of(context) == MMSizeClass.medium) ...[marginButton, compareButton],
           const SizedBox(width: MMSpacing.s),
           if (capabilities.readingSettings)
@@ -496,6 +509,13 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           icon: const Icon(MMIcons.appearance),
         ),
         annotation,
+        hintButton,
+        if (!capabilities.readingSettings && document != null)
+          MMToolbarButton(
+            icon: MMIcons.readingSettings,
+            tooltip: l.readingSettings,
+            onPressed: () => showReadingSettings(context, ref, widget.studySetId),
+          ),
         marginButton,
         compareButton,
         ?progress,
@@ -739,130 +759,141 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               bottom: dockNavigation ? pagePillClearance + chrome.bottom : 0,
               child: !ref.watch(pdfRenderingEnabledProvider) || (ocr != null && ocr.document == null && !ocr.failed)
                   ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
-                  : MMPdfView(
-                      key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
-                      filePath: ocr?.document?.path ?? controller.filePath(doc),
-                      controller: pdf,
-                      paragraphs: translation?.paragraphs ?? const [],
-                      hoveredParagraph: translation?.hovered,
-                      onParagraphHover: !translating
-                          ? null
-                          : ref.read(readerTranslationProvider(widget.studySetId).notifier).hover,
-                      crop: crop.draft ?? doc.crop,
-                      margin: readerMargin(
-                        context,
-                        ref,
-                        widget.studySetId,
-                        doc,
-                        style,
-                        forceCollapsed: crop.editing || comparing,
-                      ),
-                      cropEditorBuilder: !crop.editing
-                          ? null
-                          : (context, page, size) {
-                              var minWidth = size.width, minHeight = size.height;
-                              for (var n = 1; n <= pdf.pageCount; n++) {
-                                if (crop.draft!.scope == CropScope.page && n != page) continue;
-                                if (crop.draft!.scope == CropScope.oddEven && n.isOdd != page.isOdd) {
-                                  continue;
+                  : PdfVocabularyHints(
+                      key: ValueKey((doc.id, ocr?.revision)),
+                      studySetId: widget.studySetId,
+                      documentId: doc.id,
+                      pdf: pdf,
+                      builder: (vocabularyHints, onVocabularyTap, vocabularyViewportChanged) => MMPdfView(
+                        key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
+                        filePath: ocr?.document?.path ?? controller.filePath(doc),
+                        controller: pdf,
+                        paragraphs: translation?.paragraphs ?? const [],
+                        hoveredParagraph: translation?.hovered,
+                        onParagraphHover: !translating
+                            ? null
+                            : ref.read(readerTranslationProvider(widget.studySetId).notifier).hover,
+                        crop: crop.draft ?? doc.crop,
+                        margin: readerMargin(
+                          context,
+                          ref,
+                          widget.studySetId,
+                          doc,
+                          style,
+                          forceCollapsed: crop.editing || comparing,
+                        ),
+                        cropEditorBuilder: !crop.editing
+                            ? null
+                            : (context, page, size) {
+                                var minWidth = size.width, minHeight = size.height;
+                                for (var n = 1; n <= pdf.pageCount; n++) {
+                                  if (crop.draft!.scope == CropScope.page && n != page) continue;
+                                  if (crop.draft!.scope == CropScope.oddEven && n.isOdd != page.isOdd) {
+                                    continue;
+                                  }
+                                  final other = pdf.pageSize(n);
+                                  if (other == null) continue;
+                                  if (other.width < minWidth) minWidth = other.width;
+                                  if (other.height < minHeight) minHeight = other.height;
                                 }
-                                final other = pdf.pageSize(n);
-                                if (other == null) continue;
-                                if (other.width < minWidth) minWidth = other.width;
-                                if (other.height < minHeight) minHeight = other.height;
-                              }
-                              return [
-                                Positioned.fill(
-                                  child: CropPageEditor(
-                                    page: page,
-                                    size: size,
-                                    crop: crop.draft!,
-                                    groupMinimum: Size(minWidth, minHeight),
-                                    onChanged: (insets) => cropSession.change(page, insets),
+                                return [
+                                  Positioned.fill(
+                                    child: CropPageEditor(
+                                      page: page,
+                                      size: size,
+                                      crop: crop.draft!,
+                                      groupMinimum: Size(minWidth, minHeight),
+                                      onChanged: (insets) => cropSession.change(page, insets),
+                                    ),
                                   ),
-                                ),
-                              ];
-                            },
-                      onReady: (_) {
-                        cropSession.prepare();
-                        compareSession.ready(doc.id);
-                        if (ocr?.document?.hasCopy != true) return;
-                        dismissSelection();
-                        pdf.search(pdf.searchQuery);
-                      },
-                      initialPage: ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
-                      backgroundColor: c.readerBackground,
-                      emphasisColor: c.accent,
-                      bottomInset: dockNavigation ? 0 : chrome.bottom,
-                      pageColorFilter: style.pageFilter,
-                      highlights: _highlights(content, doc.id, state),
-                      areaSelecting: !crop.editing && state.tool == AnnotationTool.area,
-                      inkStrokes: [
-                        for (final s in content.inkStrokes)
-                          if (s.documentId == doc.id) s,
-                      ],
-                      inkColors: _inkColors,
-                      ink: crop.editing ? null : state.ink,
-                      onInkDrawn: (draft) => controller.addInkStroke(doc.id, draft),
-                      onInkErased: controller.eraseInkStrokes,
-                      onAreaSelected: (area) async {
-                        dismissSelection();
-                        final notice = await controller.excerptArea(
-                          doc.id,
-                          area,
-                          () => pdf.captureArea(area.page, area.rect),
-                        );
-                        if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                      },
-                      onTextUnavailable: ocr == null || ocr.running
-                          ? null
-                          : (page, position) {
-                              showMMMenu(
-                                context,
-                                position: position,
-                                entries: [
-                                  MMMenuItem(l.ocrNoText, null),
-                                  MMMenuItem(l.ocrThisPage, () {
-                                    ref
-                                        .read(readerOcrProvider(source).notifier)
-                                        .recognize(page, page, PdfOcrLanguage.chineseEnglish);
-                                  }),
-                                  MMMenuItem(
-                                    l.ocrRecognize,
-                                    () => showReaderOcrOptions(context, ref, widget.studySetId, documentId: doc.id),
-                                  ),
-                                ],
-                              );
-                            },
-                      onViewportChanged: () {
-                        dismissSelection();
-                        if (comparing) compareSession.changed(side);
-                        if (translating) {
-                          ref
-                              .read(readerTranslationProvider(widget.studySetId).notifier)
-                              .sourceChanged(pdf.readingPosition);
-                        }
-                      },
-                      onPageChanged: (page, _) {
-                        dismissSelection();
-                        controller.recordPage(doc.id, page);
-                      },
-                      onSelectionChanged: (selected) {
-                        if (!selected && ref.read(provider).pending is PendingSelection) {
+                                ];
+                              },
+                        onReady: (_) {
+                          cropSession.prepare();
+                          compareSession.ready(doc.id);
+                          if (ocr?.document?.hasCopy != true) return;
                           dismissSelection();
-                        }
-                      },
-                      onHighlightTap: (id, bounds) {
-                        pdf.clearSelection();
-                        controller.tapHighlight(id, bounds);
-                      },
-                      onSelectionCommitted: (selection) async {
-                        final notice = await controller.onSelectionCommitted(doc.id, selection);
-                        if (notice != null) {
-                          await pdf.clearSelection();
+                          pdf.search(pdf.searchQuery);
+                        },
+                        initialPage: ref.read(readingPagesProvider(widget.studySetId))[doc.id] ?? doc.lastPage,
+                        backgroundColor: c.readerBackground,
+                        emphasisColor: c.accent,
+                        bottomInset: dockNavigation ? 0 : chrome.bottom,
+                        pageColorFilter: style.pageFilter,
+                        highlights: [..._highlights(content, doc.id, state), ...vocabularyHints],
+                        areaSelecting: !crop.editing && state.tool == AnnotationTool.area,
+                        inkStrokes: [
+                          for (final s in content.inkStrokes)
+                            if (s.documentId == doc.id) s,
+                        ],
+                        inkColors: _inkColors,
+                        ink: crop.editing ? null : state.ink,
+                        onInkDrawn: (draft) => controller.addInkStroke(doc.id, draft),
+                        onInkErased: controller.eraseInkStrokes,
+                        onAreaSelected: (area) async {
+                          dismissSelection();
+                          final notice = await controller.excerptArea(
+                            doc.id,
+                            area,
+                            () => pdf.captureArea(area.page, area.rect),
+                          );
                           if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
-                        }
-                      },
+                        },
+                        onTextUnavailable: ocr == null || ocr.running
+                            ? null
+                            : (page, position) {
+                                showMMMenu(
+                                  context,
+                                  position: position,
+                                  entries: [
+                                    MMMenuItem(l.ocrNoText, null),
+                                    MMMenuItem(l.ocrThisPage, () {
+                                      ref
+                                          .read(readerOcrProvider(source).notifier)
+                                          .recognize(page, page, PdfOcrLanguage.chineseEnglish);
+                                    }),
+                                    MMMenuItem(
+                                      l.ocrRecognize,
+                                      () => showReaderOcrOptions(context, ref, widget.studySetId, documentId: doc.id),
+                                    ),
+                                  ],
+                                );
+                              },
+                        onViewportChanged: () {
+                          vocabularyViewportChanged();
+                          dismissSelection();
+                          if (comparing) compareSession.changed(side);
+                          if (translating) {
+                            ref
+                                .read(readerTranslationProvider(widget.studySetId).notifier)
+                                .sourceChanged(pdf.readingPosition);
+                          }
+                        },
+                        onPageChanged: (page, _) {
+                          dismissSelection();
+                          controller.recordPage(doc.id, page);
+                        },
+                        onSelectionChanged: (selected) {
+                          if (!selected && ref.read(provider).pending is PendingSelection) {
+                            dismissSelection();
+                          }
+                        },
+                        onHighlightTap: (id, bounds) {
+                          if (id.startsWith('vocabulary:')) {
+                            onVocabularyTap(id, bounds);
+                            return;
+                          }
+                          pdf.clearSelection();
+                          controller.tapHighlight(id, bounds);
+                        },
+                        onSelectionCommitted: (selection) async {
+                          final notice = await controller.onSelectionCommitted(doc.id, selection);
+                          if (notice != null) {
+                            await pdf.clearSelection();
+                            if (context.mounted) showNotice(context, notice, rootTitle: rootTitle);
+                          }
+                        },
+                      ),
                     ),
             ),
             Positioned(
