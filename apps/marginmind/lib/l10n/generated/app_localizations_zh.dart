@@ -4170,4 +4170,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get resizeCompanionPanel => '调整面板大小';
+
+  @override
+  String noteNewMaterials(int highlights, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(notes, locale: localeName, other: '、写了 $notes 条批注', zero: '');
+    String _temp1 = intl.Intl.pluralLogic(
+      highlights,
+      locale: localeName,
+      other: '又划了 $highlights 条$_temp0',
+      zero: '又写了 $notes 条批注',
+    );
+    return '$_temp1';
+  }
+
+  @override
+  String get notePreviewUpdate => '预览更新';
+
+  @override
+  String get noteApplyUpdate => '应用更新';
+
+  @override
+  String get noteIgnoreUpdate => '忽略';
+
+  @override
+  String noteUpdateReady(int count) {
+    return '$count 处更新';
+  }
+
+  @override
+  String get noteUpdateStale => '笔记或原文已更改，请重新预览';
+
+  @override
+  String get noteUpdateApplied => '笔记已更新';
+
+  @override
+  String get noteLocalPlacement => '按原文顺序';
 }

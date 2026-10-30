@@ -18,12 +18,16 @@ NAMES = {'note-light', 'note-dark', 'export-light', 'export-dark'}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--updates', action='store_true', help='Capture incremental updates and templates')
     parser.add_argument('--ai', action='store_true', help='Capture the fake-organizer AI flow')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/evidence/gul-588')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     names = {'outline', 'generating', 'ai-on', 'ai-off'} if args.ai else NAMES
     target = 'integration_test/study_notes_ai_test.dart' if args.ai else 'integration_test/study_notes_test.dart'
+    if args.updates:
+        names = {'update-banner', 'update-preview', 'reading', 'cornell', 'review', 'review-dark'}
+        target = 'integration_test/study_notes_updates_test.dart'
     captured = set()
 
     class Capture(BaseHTTPRequestHandler):

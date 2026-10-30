@@ -1583,5 +1583,30 @@
   "noteStepVerify": "核对引用",
   "noteStopped": "已停止",
   "noteLocked": "更新时保留",
-  "resizeCompanionPanel": "调整面板大小"
+  "resizeCompanionPanel": "调整面板大小",
+  "noteNewMaterials": "{highlights, plural, =0{又写了 {notes} 条批注} other{又划了 {highlights} 条{notes, plural, =0{} other{、写了 {notes} 条批注}}}}",
+  "notePreviewUpdate": "预览更新",
+  "noteApplyUpdate": "应用更新",
+  "noteIgnoreUpdate": "忽略",
+  "noteUpdateReady": "{count} 处更新",
+  "noteUpdateStale": "笔记或原文已更改，请重新预览",
+  "noteUpdateApplied": "笔记已更新",
+  "noteLocalPlacement": "按原文顺序",
+  "@noteNewMaterials": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      }
+    }
+  },
+  "@noteUpdateReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

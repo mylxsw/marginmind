@@ -2231,5 +2231,30 @@
   "noteStepVerify": "Check references",
   "noteStopped": "Stopped",
   "noteLocked": "Keep when updating",
-  "resizeCompanionPanel": "Resize companion panel"
+  "resizeCompanionPanel": "Resize companion panel",
+  "noteNewMaterials": "{highlights, plural, =0{{notes, plural, =1{1 new note} other{{notes} new notes}}} =1{1 new highlight{notes, plural, =0{} =1{, 1 new note} other{, {notes} new notes}}} other{{highlights} new highlights{notes, plural, =0{} =1{, 1 new note} other{, {notes} new notes}}}}",
+  "notePreviewUpdate": "Preview Update",
+  "noteApplyUpdate": "Apply Update",
+  "noteIgnoreUpdate": "Ignore",
+  "noteUpdateReady": "{count} changes",
+  "noteUpdateStale": "The note or its sources changed. Preview again.",
+  "noteUpdateApplied": "Note updated",
+  "noteLocalPlacement": "In source order",
+  "@noteNewMaterials": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      }
+    }
+  },
+  "@noteUpdateReady": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
