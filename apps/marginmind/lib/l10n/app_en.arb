@@ -2176,7 +2176,5 @@
         "type": "int"
       }
     }
-  },
-  "annotationLineType": "Line Type",
-  "chooseMoreAnnotationColors": "Choose More Colors…"
+  }
 }

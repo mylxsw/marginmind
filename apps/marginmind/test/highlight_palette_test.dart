@@ -32,6 +32,12 @@ void main() {
       },
     );
     expect(palette.recent(), [custom, MMAnnotationColor.pink, MMAnnotationColor.purple]);
+    expect(palette.recent(limit: 4), [
+      custom,
+      MMAnnotationColor.pink,
+      MMAnnotationColor.purple,
+      MMAnnotationColor.yellow,
+    ]);
     expect(const HighlightPalette().recent(), MMAnnotationColor.values.take(3));
     expect(HighlightPalette(current: custom).recent(), [custom, MMAnnotationColor.yellow, MMAnnotationColor.green]);
   });

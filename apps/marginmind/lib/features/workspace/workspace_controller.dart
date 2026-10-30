@@ -181,6 +181,7 @@ class WorkspaceState {
     this.mapView = MapViewMode.map,
     this.tool = AnnotationTool.select,
     this.color = MMAnnotationColor.yellow,
+    this.underlineColor = MMAnnotationColor.blue,
     this.underlineStyle = AnnotationLineStyle.solid,
     this.syncToMap = true,
     this.inkTool = MMPdfInkTool.freehand,
@@ -229,6 +230,8 @@ class WorkspaceState {
   final MapViewMode mapView;
   final AnnotationTool tool;
   final MMAnnotationColor color;
+  /// The continuous underline tool keeps its original page-toolbar preference.
+  final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;
 
   /// Whether a new highlight also creates a card in the mind map.
@@ -316,6 +319,7 @@ class WorkspaceState {
     MapViewMode? mapView,
     AnnotationTool? tool,
     MMAnnotationColor? color,
+    MMAnnotationColor? underlineColor,
     AnnotationLineStyle? underlineStyle,
     bool? syncToMap,
     MMPdfInkTool? inkTool,
@@ -373,6 +377,7 @@ class WorkspaceState {
       mapView: mapView ?? this.mapView,
       tool: tool ?? this.tool,
       color: color ?? this.color,
+      underlineColor: underlineColor ?? this.underlineColor,
       underlineStyle: underlineStyle ?? this.underlineStyle,
       syncToMap: syncToMap ?? this.syncToMap,
       inkTool: inkTool ?? this.inkTool,
@@ -471,12 +476,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.listen(highlightPaletteProvider.select((s) => s.current), (_, color) {
       if (state.color != color) state = state.copyWith(color: color);
     });
-    ref.listen(settingsProvider.select((s) => s.underlineStyle), (_, style) {
-      state = state.copyWith(underlineStyle: style);
+    ref.listen(settingsProvider.select((s) => (s.underlineColor, s.underlineStyle)), (_, next) {
+      state = state.copyWith(underlineColor: next.$1, underlineStyle: next.$2);
     });
     final initialState = WorkspaceState(
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
+      underlineColor: ref.read(settingsProvider).underlineColor,
       underlineStyle: ref.read(settingsProvider).underlineStyle,
     );
     final initial = ref.read(contentProvider(studySetId)).value;
@@ -1017,7 +1023,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> toggleAreaTool() =>
       setTool(state.tool == AnnotationTool.area ? AnnotationTool.select : AnnotationTool.area);
 
-  /// Color is shared by text markers and never changes the active tool.
+  /// Highlighter/selection color; choosing a swatch never changes the tool.
   Future<void> setColor(MMAnnotationColor color) async {
     state = state.copyWith(color: color);
     await ref.read(highlightPaletteProvider.notifier).choose(color);
@@ -1026,15 +1032,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Color settings can edit a selected mark without dismissing its toolbar.
   Future<void> setAnnotationColor(MMAnnotationColor color, {String? annotationId}) async {
     if (!activeCapabilities.annotate) return;
+    var recolored = false;
     if (annotationId != null) {
       await _update((c) {
         final annotation = c.annotation(annotationId);
-        return annotation == null || annotation.colorIndex == color.index
-            ? c
-            : _editor.recolor(c, annotationId, color.index);
+        recolored = annotation != null && annotation.colorIndex != color.index;
+        return recolored ? _editor.recolor(c, annotationId, color.index) : c;
       });
     }
-    await setColor(color);
+    if (recolored) {
+      await ref.read(highlightPaletteProvider.notifier).record(color);
+    } else {
+      await setColor(color);
+    }
   }
 
   /// Selection actions keep the same annotation (and any linked card) alive
@@ -1086,8 +1096,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         await _update(
           (c) => c.copyWith(
             annotations: [
-              for (final a in c.annotations)
-                a.id == annotation.id ? a.copyWith(kind: kind, lineStyle: style) : a,
+              for (final a in c.annotations) a.id == annotation.id ? a.copyWith(kind: kind, lineStyle: style) : a,
             ],
           ),
         );
@@ -1376,7 +1385,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     bool addToMap = false,
   }) async {
     late String id;
-    final color = state.color;
+    final color = state.underlineColor;
     final style = state.underlineStyle;
     final parent = excerptTargetId;
     await _update((c) {
@@ -1394,14 +1403,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       return addToMap ? _editor.attachCard(next, id, parentId: parent).$1 : next;
     });
     if (!keepPending) state = state.copyWith(clearPending: true);
-    await ref.read(highlightPaletteProvider.notifier).record(color);
     return id;
   }
 
   /// Changing settings does not count as a highlighter color use. If a mark
   /// is being edited, keep its floating toolbar alive across each change.
-  Future<void> styleUnderline({String? annotationId, MMAnnotationColor? color, AnnotationLineStyle? style}) async {
-    final selectedColor = color ?? state.color;
+  Future<void> styleUnderline({
+    String? annotationId,
+    MMAnnotationColor? color,
+    AnnotationLineStyle? style,
+    bool shareColor = false,
+  }) async {
+    final selectedColor = color ?? state.underlineColor;
     final selectedStyle = style ?? state.underlineStyle;
     if (annotationId != null) {
       await _update((c) {
@@ -1417,7 +1430,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       });
     }
     await ref.read(settingsProvider.notifier).setUnderlineStyle(selectedColor, selectedStyle);
-    if (color != null) await setColor(color);
+    if (shareColor && color != null) await setColor(color);
   }
 
   /// An area dragged with the area tool becomes an image excerpt at once.

@@ -1528,7 +1528,5 @@
         "type": "int"
       }
     }
-  },
-  "annotationLineType": "线条类型",
-  "chooseMoreAnnotationColors": "选择更多颜色…"
+  }
 }

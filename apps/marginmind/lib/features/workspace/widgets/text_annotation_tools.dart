@@ -7,12 +7,11 @@ import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'annotation_color_button.dart';
 
-/// One color circle followed by two mutually exclusive text marker buttons.
+/// Selection-only controls: a color circle and two text marker actions.
 class TextAnnotationTools extends ConsumerStatefulWidget {
   const TextAnnotationTools({
     super.key,
     required this.studySetId,
-    this.selectionAction = false,
     this.compact = false,
     this.enabled = true,
     this.onOpenChanged,
@@ -20,7 +19,7 @@ class TextAnnotationTools extends ConsumerStatefulWidget {
   });
 
   final String studySetId;
-  final bool selectionAction, compact, enabled, colorOnly;
+  final bool compact, enabled, colorOnly;
   final ValueChanged<bool>? onOpenChanged;
 
   @override
@@ -36,7 +35,6 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
     try {
       final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
       await controller.applyPendingTextAnnotation(tool);
-      if (!widget.selectionAction) await controller.setTool(tool);
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);
     } finally {
@@ -47,12 +45,10 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceProvider(widget.studySetId));
-    final id = widget.selectionAction && state.pending is PendingHighlight
-        ? (state.pending as PendingHighlight).annotationId
-        : null;
+    final id = state.pending is PendingHighlight ? (state.pending as PendingHighlight).annotationId : null;
     final annotation = state.content?.annotation(id ?? '');
     final tool = annotation == null
-        ? (widget.selectionAction && state.tool != AnnotationTool.underline ? AnnotationTool.highlight : state.tool)
+        ? (state.tool == AnnotationTool.underline ? AnnotationTool.underline : AnnotationTool.highlight)
         : annotation.kind == AnnotationKind.underline
         ? AnnotationTool.underline
         : AnnotationTool.highlight;
@@ -72,7 +68,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
         ),
         if (!widget.colorOnly) ...[
           MMToolbarButton(
-            key: ValueKey(widget.selectionAction ? 'selection-highlight' : 'reader-highlight'),
+            key: const ValueKey('selection-highlight'),
             icon: MMIcons.highlight,
             tooltip: l.toolHighlight,
             compact: widget.compact,
@@ -80,7 +76,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
             onPressed: widget.enabled && !_busy ? () => _select(AnnotationTool.highlight) : null,
           ),
           MMToolbarButton(
-            key: ValueKey(widget.selectionAction ? 'selection-underline' : 'reader-underline'),
+            key: const ValueKey('selection-underline'),
             icon: MMIcons.underline,
             tooltip: l.toolUnderline,
             compact: widget.compact,

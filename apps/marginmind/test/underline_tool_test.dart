@@ -12,6 +12,7 @@ import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
+import 'package:marginmind/features/workspace/widgets/underline_style_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/highlight_palette.dart';
 import 'package:mm_core/mm_core.dart';
@@ -30,7 +31,7 @@ Future<void> componentScreenshot(WidgetTester tester, String appearance) async {
   if (output == null) return;
   final bounds = tester
       .getRect(find.byType(ReaderAnnotationTools))
-      .expandToInclude(tester.getRect(find.byKey(const ValueKey('annotation-color-palette'))))
+      .expandToInclude(tester.getRect(find.byType(UnderlineStyleToolbar)))
       .inflate(8);
   final image = (await tester.runAsync(
     () => (tester.binding.renderViews.first.debugLayer! as OffsetLayer).toImage(bounds, pixelRatio: 2),
@@ -66,7 +67,7 @@ void main() {
         .load();
   });
 
-  test('shared annotation color and underline style restore and survive undo', () async {
+  test('underline preferences restore independently of highlighter and survive undo', () async {
     final overrides = await testOverrides();
     var container = ProviderContainer(overrides: overrides);
     final provider = workspaceProvider('demo-1');
@@ -87,13 +88,13 @@ void main() {
     expect(controller.content.annotations.length, before);
     await controller.redo();
     expect(controller.content.annotations.last.kind, AnnotationKind.underline);
-    expect(container.read(highlightPaletteProvider).current.hex, '#12A4B8');
-    expect(container.read(highlightPaletteProvider).usage.values.single.count, 1);
+    expect(container.read(highlightPaletteProvider).current, MMAnnotationColor.yellow);
+    expect(container.read(highlightPaletteProvider).usage, isEmpty);
     container.dispose();
     container = ProviderContainer(overrides: overrides);
     addTearDown(container.dispose);
     expect(container.read(provider).underlineStyle, AnnotationLineStyle.wavy);
-    expect(container.read(provider).color.hex, '#12A4B8');
+    expect(container.read(provider).underlineColor.hex, '#12A4B8');
     expect(container.read(provider).tool, AnnotationTool.underline);
   });
 
@@ -141,7 +142,7 @@ void main() {
   });
 
   for (final appearance in ['light', 'dark']) {
-    testWidgets('color palette stays open, custom color is shared, Esc closes settings in $appearance', (tester) async {
+    testWidgets('compact continuous toolbar stays open, custom color works, Esc exits in $appearance', (tester) async {
       final container = await pumpApp(tester, prefs: {'settings.appearance': appearance});
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -149,11 +150,10 @@ void main() {
       final top = find.byType(ReaderAnnotationTools);
       await tester.tap(find.descendant(of: top, matching: find.byTooltip('Underline')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(AnnotationColorButton));
-      await tester.pumpAndSettle();
-      final bar = find.byKey(const ValueKey('annotation-color-palette'));
+      final bar = find.byType(UnderlineStyleToolbar);
       expect(bar, findsOneWidget);
       expect(container.read(provider).tool, AnnotationTool.underline);
+      expect(find.descendant(of: bar, matching: find.byType(Text)), findsNothing);
       for (final style in ['Dashed', 'Dotted', 'Wavy', 'Solid']) {
         await tester.tap(find.byTooltip(style));
         await tester.pumpAndSettle();
@@ -162,7 +162,7 @@ void main() {
       }
       await tester.tap(find.descendant(of: bar, matching: find.byTooltip('Green')));
       await tester.pumpAndSettle();
-      expect(container.read(provider).color, MMAnnotationColor.green);
+      expect(container.read(provider).underlineColor, MMAnnotationColor.green);
       await tester.tap(find.byTooltip('Dotted'));
       await tester.pumpAndSettle();
       await tester.tap(find.descendant(of: bar, matching: find.byTooltip('Blue')));
@@ -175,10 +175,10 @@ void main() {
       await tester.enterText(find.byKey(const ValueKey('highlight-color-hex')), '#12A4B8');
       await tester.tap(find.byKey(const ValueKey('highlight-color-apply')));
       await tester.pumpAndSettle();
-      expect(container.read(provider).color.hex, '#12A4B8');
+      expect(container.read(provider).underlineColor.hex, '#12A4B8');
       expect(bar, findsOneWidget);
-      expect(container.read(provider).color.hex, '#12A4B8');
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      expect(container.read(provider).color, MMAnnotationColor.yellow);
+      await tester.tap(find.descendant(of: bar, matching: find.byTooltip('Close')));
       await tester.pumpAndSettle();
       expect(bar, findsNothing);
       expect(container.read(provider).tool, AnnotationTool.underline);
@@ -244,8 +244,6 @@ void main() {
     final before = controller.content.annotations.length;
     await tester.tap(find.descendant(of: find.byType(ReaderAnnotationTools), matching: find.byTooltip('Underline')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AnnotationColorButton));
-    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Dotted'));
     await tester.pumpAndSettle();
     final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
@@ -255,7 +253,7 @@ void main() {
         pdf.documentToLocal(pdf.calcRectForRectInsidePage(pageNumber: 1, rect: PdfRect(x, 690, x, 690)).topLeft);
     await tester.dragFrom(at(35), at(150) - at(35), kind: PointerDeviceKind.mouse);
     await drain(tester);
-    expect(find.byKey(const ValueKey('annotation-color-palette')), findsNothing);
+    expect(find.byType(UnderlineStyleToolbar), findsNothing);
     expect(container.read(provider).tool, AnnotationTool.underline);
     expect(controller.content.annotations.length, before + 1);
     expect(controller.content.annotations.last.kind, AnnotationKind.underline);
@@ -287,7 +285,7 @@ void main() {
     expect(find.byType(SelectionToolbar), findsNothing);
     await tester.tap(find.byIcon(MMIcons.pen));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('annotation-color-palette')), findsNothing);
+    expect(find.byType(UnderlineStyleToolbar), findsNothing);
     expect(container.read(provider).tool, AnnotationTool.ink);
     await settleHud(tester);
   });

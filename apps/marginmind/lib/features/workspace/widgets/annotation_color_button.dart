@@ -6,7 +6,7 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../settings/highlight_palette.dart';
 import '../../../shared/l10n.dart';
-import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
+import '../../assistant/widgets/assistant_overlays.dart' show boundsOf, inScope;
 import '../workspace_controller.dart';
 import 'annotation_line_style_picker.dart';
 import 'annotation_palette.dart';
@@ -62,7 +62,7 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
   void _toggle() {
     if (_open) return _close();
     _previousFocus = FocusManager.instance.primaryFocus;
-    _colors = {...ref.read(highlightPaletteProvider).recent(), ...MMAnnotationColor.values}.take(5).toList();
+    _colors = ref.read(highlightPaletteProvider).recent(limit: 4);
     setState(() {
       _open = true;
       _custom = false;
@@ -80,13 +80,55 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
     try {
       if (color != null) await _controller.setAnnotationColor(color, annotationId: widget.annotationId);
       if (style != null) {
-        await _controller.styleUnderline(annotationId: widget.annotationId, color: widget.color, style: style);
+        await _controller.styleUnderline(
+          annotationId: widget.annotationId,
+          color: widget.color,
+          style: style,
+          shareColor: true,
+        );
       }
-      if (mounted && _custom) setState(() => _custom = false);
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _more() async {
+    if (_custom || _busy) return;
+    _custom = true;
+    try {
+      final anchor = boundsOf(_anchor.currentContext!);
+      final picked = await showGeneralDialog<MMAnnotationColor>(
+        context: context,
+        barrierColor: Colors.transparent,
+        barrierDismissible: true,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+        transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
+        pageBuilder: (_, _, _) => inScope(
+          context,
+          CustomSingleChildLayout(
+            delegate: AnnotationPalettePlacement(anchor),
+            child: Material(
+              type: MaterialType.transparency,
+              child: SingleChildScrollView(
+                child: HighlightCustomColorPicker(
+                  current: widget.color,
+                  onSelected: (color) => Navigator.of(context).pop(color),
+                  onCancel: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (mounted && picked != null) {
+        await _change(color: picked);
+        if (mounted) setState(() => _colors = ref.read(highlightPaletteProvider).recent(limit: 4));
+      }
+    } finally {
+      _custom = false;
     }
   }
 
@@ -97,7 +139,6 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
     final style = annotation?.lineStyle ?? state.underlineStyle;
     final colors = [..._colors];
     if (colors.isEmpty) colors.add(widget.color);
-    if (!colors.contains(widget.color)) colors[colors.length - 1] = widget.color;
     final l = context.l10n, c = context.mmColors;
     return OverlayPortal(
       controller: _overlay,
@@ -105,7 +146,9 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
         delegate: AnnotationPalettePlacement(boundsOf(_anchor.currentContext!)),
         child: TapRegion(
           groupId: annotationTapGroup(widget.studySetId),
-          onTapOutside: (_) => _close(),
+          onTapOutside: (_) {
+            if (!_custom) _close();
+          },
           child: CallbackShortcuts(
             bindings: {const SingleActivator(LogicalKeyboardKey.escape): _close},
             child: FocusScope(
@@ -114,79 +157,27 @@ class _AnnotationColorButtonState extends ConsumerState<AnnotationColorButton> {
               child: Material(
                 type: MaterialType.transparency,
                 child: SingleChildScrollView(
-                  child: _custom
-                      ? HighlightCustomColorPicker(
-                          current: widget.color,
-                          onSelected: (value) => _change(color: value),
-                          onCancel: () => setState(() => _custom = false),
-                        )
-                      : MMGlass(
-                          key: const ValueKey('annotation-color-palette'),
-                          color: c.glassOpaque,
-                          borderRadius: BorderRadius.circular(14),
-                          padding: const EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 232,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(l.galleryColors, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    for (final color in colors)
-                                      MMFloatingToolbarColor(
-                                        color: color,
-                                        tooltip: l.colorName(color),
-                                        selected: color == widget.color,
-                                        onPressed: _busy ? null : () => _change(color: color),
-                                      ),
-                                  ],
-                                ),
-                                MMInteractive(
-                                  tooltip: l.moreHighlightColors,
-                                  semanticLabel: l.moreHighlightColors,
-                                  onTap: _busy ? null : () => setState(() => _custom = true),
-                                  builder: (context, s) => Container(
-                                    constraints: BoxConstraints(minHeight: context.mmToolbarButton.height),
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    decoration: BoxDecoration(
-                                      color: s.hovered || s.pressed ? c.hover : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: s.focused ? Border.all(color: c.accent) : null,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const AnnotationMoreColorsIcon(),
-                                        const SizedBox(width: 10),
-                                        Flexible(
-                                          child: Text(l.chooseMoreAnnotationColors, style: context.mmText.callout),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (widget.underline) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    child: Divider(height: 1, color: c.separator),
-                                  ),
-                                  Text(
-                                    l.annotationLineType,
-                                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  AnnotationLineStylePicker(
-                                    value: style,
-                                    onChanged: _busy ? null : (v) => _change(style: v),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+                  key: const ValueKey('annotation-color-palette'),
+                  scrollDirection: Axis.horizontal,
+                  child: MMFloatingToolbar(
+                    children: [
+                      for (final color in colors)
+                        MMFloatingToolbarColor(
+                          color: color,
+                          tooltip: l.colorName(color),
+                          selected: color == widget.color,
+                          onPressed: _busy ? null : () => _change(color: color),
                         ),
+                      AnnotationMoreColorsButton(onPressed: _busy ? null : _more),
+                      if (widget.underline) ...[
+                        const MMToolbarDivider(),
+                        AnnotationLineStylePicker(
+                          value: style,
+                          onChanged: _busy ? null : (v) => _change(style: v),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
