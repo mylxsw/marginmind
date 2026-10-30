@@ -12,7 +12,7 @@
   --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
   --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
   --accent:#007AFF; --accentTint:rgba(0,122,255,.12);
-  --ai:#5E5CE6; --aiTint:rgba(94,92,230,.12); --aiWash:rgba(94,92,230,.06);
+  --ai:#5E5CE6; --aiTint:rgba(94,92,230,.12); --aiWash:rgba(94,92,230,.06); --onAi:#FFFFFF;
   --glass:rgba(255,255,255,.88); --hair:rgba(0,0,0,.10); --line:rgba(60,60,67,.30); --excerpt:#3A3A3C;
   --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
   --popShadow:0 10px 36px rgba(0,0,0,.16);
@@ -26,7 +26,7 @@
   --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
   --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
   --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
-  --ai:#7D7AFF; --aiTint:rgba(125,122,255,.22); --aiWash:rgba(125,122,255,.10);
+  --ai:#7D7AFF; --aiTint:rgba(125,122,255,.20); --aiWash:rgba(125,122,255,.10); --onAi:#1E1E1F;
   --glass:rgba(44,44,47,.92); --hair:rgba(255,255,255,.10); --line:rgba(235,235,245,.28); --excerpt:#D1D1D6;
   --cardShadow:0 2px 10px rgba(0,0,0,.35); --popShadow:0 12px 40px rgba(0,0,0,.5);
   --err:#FF6961; --ok:#30D158; --rootBg:#F5F5F7; --rootFg:#1D1D1F;
@@ -101,8 +101,8 @@ svg{display:block}
 @keyframes appear{from{opacity:0;transform:translateX(-10px) scale(.96)}}
 .n-ghost.off .nb{background:none;border-color:var(--line);color:var(--label3);text-decoration:line-through}
 .n-ghost.focus .nb{box-shadow:0 0 0 2px var(--ai)}
-.n-ghost .tag{font-size:10.5px;font-weight:500;color:var(--ai);background:var(--aiTint);border-radius:4px;padding:0 4px;height:16px;display:inline-flex;align-items:center}
-.n-ghost.off .tag{color:var(--label3);background:var(--fill4)}
+.n-ghost .tag{font-size:10.5px;font-weight:500;color:var(--onAi);background:var(--ai);border-radius:4px;padding:0 4px;height:16px;display:inline-flex;align-items:center}
+.n-ghost.off .tag{color:var(--label2);background:var(--fill4)}
 .n-ghost .pg{font-size:10.5px;color:var(--label2);background:var(--fill4);border-radius:4px;padding:0 4px;height:16px;display:inline-flex;align-items:center;gap:2px}
 .n-ghost .t[contenteditable=true]{outline:none;cursor:text;-webkit-user-select:text;user-select:text;text-decoration:none}
 .n-ghost .note{display:block;font-size:11.5px;font-weight:400;color:var(--label2);white-space:normal;width:220px;line-height:1.45;margin-top:2px}
@@ -137,9 +137,9 @@ svg{display:block}
 @keyframes fadeup2{from{opacity:0;transform:translateY(-4px)}}
 .ph{display:flex;align-items:center;gap:6px;padding:11px 14px 8px;font-size:12px;font-weight:600;color:var(--ai)}
 .xp{margin:0 8px 8px;border-radius:10px;background:var(--aiWash);box-shadow:inset 0 0 0 .5px var(--aiTint);padding:10px}
-.xp-main{display:flex;align-items:center;gap:8px;width:100%;height:34px;border-radius:9px;background:var(--ai);color:#fff;padding:0 12px;font-weight:600;font-size:13px}
+.xp-main{display:flex;align-items:center;gap:8px;width:100%;height:34px;border-radius:8px;background:var(--ai);color:var(--onAi);padding:0 12px;font-weight:600;font-size:13px}
 .xp-main:hover{filter:brightness(1.08)}
-.xp-main .kbd{color:rgba(255,255,255,.75)}
+.xp-main .kbd{color:var(--onAi);opacity:.75}
 .xp-sub{display:flex;gap:6px;margin-top:6px}
 .xp-sub button{flex:1;height:28px;border-radius:8px;background:var(--card);box-shadow:0 0 0 .5px var(--hair);font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px}
 .dark .xp-sub button{background:#3A3A3C}
@@ -149,7 +149,7 @@ svg{display:block}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{height:22px;padding:0 8px;border-radius:11px;font-size:11.5px;color:var(--label2);box-shadow:inset 0 0 0 .5px var(--line);display:inline-flex;align-items:center}
 .chip:hover{color:var(--label)}
-.chip.on{background:var(--ai);color:#fff;box-shadow:none}
+.chip.on{background:var(--ai);color:var(--onAi);box-shadow:none}
 .xp-row .seg button{height:20px;padding:0 8px;font-size:11.5px}
 .xp-hint{display:flex;align-items:center;gap:6px;margin-top:9px;height:28px;border-radius:8px;background:var(--card);box-shadow:inset 0 0 0 .5px var(--hair);padding:0 8px}
 .dark .xp-hint{background:#3A3A3C}
@@ -167,7 +167,7 @@ svg{display:block}
 .setup .row{display:flex;gap:6px;margin-top:10px}
 .btn{height:28px;padding:0 12px;border-radius:8px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;background:var(--fill)}
 .btn:hover{filter:brightness(.96)}
-.btn.pri{background:var(--ai);color:#fff}
+.btn.pri{background:var(--ai);color:var(--onAi)}
 .btn.blue{background:var(--accent);color:#fff}
 
 /* ---------- Whole-map plan sheet ---------- */
@@ -191,7 +191,7 @@ svg{display:block}
 #plan .ft .tot{font-size:11.5px;color:var(--label2);margin-right:auto}
 
 /* ---------- Generating / review bar (bottom of map pane) ---------- */
-#rbar{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:40;display:none;align-items:center;gap:4px;height:40px;padding:0 5px 0 12px;border-radius:20px;
+#rbar{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:40;display:none;align-items:center;gap:4px;height:40px;padding:0 5px 0 12px;border-radius:20px;
   background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),var(--popShadow);white-space:nowrap}
 #rbar.on{display:flex;animation:fadeup .18s}
 #rbar .lbl{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;padding-right:6px}
@@ -200,18 +200,18 @@ svg{display:block}
 #rbar .div{width:.5px;height:18px;background:var(--sep);margin:0 4px}
 #rbar .btn{height:30px;border-radius:15px;background:none}
 #rbar .btn:hover{background:var(--hover);filter:none}
-#rbar .btn.pri{background:var(--ai);color:#fff}
+#rbar .btn.pri{background:var(--ai);color:var(--onAi)}
 #rbar .btn.pri:hover{filter:brightness(1.08)}
 #rbar .btn .k{font-size:11px;opacity:.7;font-weight:400}
 #rbar .err{color:var(--err)}
 .spin{width:14px;height:14px;border-radius:7px;border:2px solid var(--aiTint);border-top-color:var(--ai);animation:spin .8s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 /* Adjust menu above review bar */
-#adj{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);z-index:41;width:330px;background:var(--glass);backdrop-filter:blur(30px);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);display:none;padding:10px}
+#adj{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);z-index:41;width:330px;background:var(--glass);backdrop-filter:blur(30px);border-radius:12px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);display:none;padding:10px}
 #adj.on{display:block;animation:fadeup2 .16s}
 
 .map-ctrl{position:absolute;right:12px;bottom:12px;z-index:5}
-#hud{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:10px;height:34px;padding:0 6px 0 14px;border-radius:17px;
+#hud{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:10px;height:34px;padding:0 6px 0 14px;border-radius:17px;
   background:rgba(40,40,42,.92);color:#fff;font-size:12.5px;box-shadow:0 8px 28px rgba(0,0,0,.25);white-space:nowrap}
 #hud.on{display:flex;animation:fadeup3 .2s}
 @keyframes fadeup3{from{opacity:0;transform:translate(-50%,6px)}}
@@ -517,12 +517,12 @@ function placeBars() {
   if (ids.length === 1) {
     const id = ids[0], r = rectOf(id), root = id === 'root';
     nb.innerHTML = `${btn('child', '添加子主题 ⇥')}${btn('sib', '添加同级主题 ↩')}${root ? '' : btn('rel', '关联线') + btn('del', '删除 ⌫')}<span class="div"></span>
-      ${root ? '' : btn('note', '添加笔记')}${btn('img', '插入图片')}<button class="tbtn ai" id="aiBtn" data-tip>${ic('spark')}<span class="tip">AI 助手 ⇧⌘E · 扩展想法 ⌥⇥</span></button>`;
+      ${root ? '' : btn('note', '添加笔记')}${btn('img', '插入图片')}<button class="tbtn ai" id="aiBtn" data-tip>${ic('spark')}<span class="tip">问助手 ⇧⌘E<br>扩展想法 ⌥⇥</span></button>`;
     nb.style.left = (r.x + r.w / 2) + 'px'; nb.style.top = (r.y - 42) + 'px'; nb.classList.add('on');
   } else {
     const rs = ids.map(rectOf), x = Math.min(...rs.map(r => r.x)), x2 = Math.max(...rs.map(r => r.x + r.w)), y = Math.min(...rs.map(r => r.y));
     sb.innerHTML = `<span class="cnt">已选 ${ids.length} 个</span>${btn('merge', '合并')}${btn('sum', '概要')}${btn('rel', '关联线')}<span class="cdot"></span>
-      <span class="div"></span><button class="tbtn ai" id="aiBtn" data-tip>${ic('spark')}<span class="tip">AI 助手 · 扩展想法 ⌥⇥</span></button><span class="div"></span>${btn('del', '删除 ⌫')}`;
+      <span class="div"></span><button class="tbtn ai" id="aiBtn" data-tip>${ic('spark')}<span class="tip">问助手 ⇧⌘E<br>扩展想法 ⌥⇥</span></button><span class="div"></span>${btn('del', '删除 ⌫')}`;
     sb.style.left = ((x + x2) / 2) + 'px'; sb.style.top = (y - 42) + 'px'; sb.classList.add('on');
   }
   $('#aiBtn').onclick = e => { e.stopPropagation(); openPop(); };
@@ -562,7 +562,7 @@ function renderPop() {
       <div class="xp-row"><span class="lab">方向</span><div class="chips">${dirs.map(([k, t]) => `<button class="chip${S.dir === k ? ' on' : ''}" data-dir="${k}">${t}</button>`).join('')}</div></div>
       <div class="xp-row"><span class="lab">层级</span><div class="seg" id="depth">${[1, 2, 3].map(d => `<button class="${S.depth === d ? 'on' : ''}" data-d="${d}">${d} 层</button>`).join('')}</div>
         <span style="margin-left:10px">数量</span><div class="seg" id="count">${[['few', '少'], ['mid', '适中'], ['many', '多']].map(([k, t]) => `<button class="${S.count === k ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div></div>
-      <div class="xp-hint">${ic('edit', 's')}<input id="hintIn" placeholder="补充要求（可选）" value="${esc(S.hint)}">
+      <div class="xp-hint"><input id="hintIn" placeholder="补充要求" value="${esc(S.hint)}">
         <span style="font-size:11.5px;color:var(--label2);white-space:nowrap">参考原文</span><span class="sw${S.grounded ? ' on' : ''}" id="ground"></span></div>
     </div>
     <div class="qa">
@@ -650,17 +650,17 @@ function start(kind, extra = {}) {
       }
     }
     const n0 = targets.length > 1 ? `${targets.length} 个主题` : `「${(N[targets[0]] || ghost(targets[0])).title}」`;
-    S.run.label = kind === 'branches' ? '为中心主题补新分支' : `扩展${n0}`;
+    S.run.label = kind === 'branches' ? '只加新分支' : `扩展${n0}`;
   } else if (kind === 'fill') {
     const p = parentOf[targets[0]];
     const pool = S.run.round % 2 ? [['刻意练习', 'idea', 'p.110'], ['睡眠与记忆巩固', 'why'], ['教给别人', 'action']] : [['精细加工', 'idea'], ['交错练习', 'idea'], ['反馈与纠错', 'idea', 'p.102'], ['生成效应', 'why', 'p.90']];
     for (const [title, tag, page] of pool.filter(([t]) => !kidsOf(p).some(k => (N[k] || {}).title === t)).slice(0, 3))
       q.push({ id: 'g' + (++gid), parent: p, title, tag, page });
-    S.run.targets = [p]; S.run.label = `补全「${N[p].title}」的同级主题`;
+    S.run.targets = [p]; S.run.label = '补全同级';
   } else if (kind === 'group') {
     const p = parentOf[targets[0]], id = 'g' + (++gid);
     q.push({ id, parent: p, title: targets.every(t => ['space', 'retr'].includes(t)) ? '记忆巩固策略' : '共同主题：主动加工', tag: 'idea', isParent: true, group: targets });
-    S.run.label = `为 ${targets.length} 个主题归纳上级`;
+    S.run.label = '归纳上级主题';
   } else if (kind === 'map') {
     for (const p of PLAN.filter(p => p.on)) {
       if (p.id === 'NEW') { BANK.root.auto.slice(0, p.n).forEach(([t, tag, page]) => q.push({ id: 'g' + (++gid), parent: 'root', title: t, tag, page })); continue; }
@@ -723,20 +723,20 @@ function keep() {
       N[nid].kids = g.group.slice();
     } else N[p].kids.push(nid);
   }
-  const added = accepted.length, skipped = S.ghosts.length - added;
+  const added = accepted.length;
   const t = S.run.src; S.ghosts = []; S.moves = {}; S.run = null; S.phase = 'idle'; S.focus = null;
   reindex(); S.sel = new Set(t.filter(x => N[x]));
   closeAdj(); render(); renderBar();
   Object.values(map).forEach(id => els[id] && els[id].classList.add('flash'));
   setTimeout(() => Object.values(map).forEach(id => els[id] && els[id].classList.remove('flash')), 1700);
-  hud(`已添加 ${added} 个主题${skipped ? ` · 跳过 ${skipped} 条` : ''}`, '撤销 ⌘Z', undo);
+  hud(`已添加 ${added} 个主题`, '撤销', undo);
 }
 function ghostKept(id) { const g = ghost(id); return g && g.on && (!isGhost(g.parent) || ghostKept(g.parent)); }
 function undo() {
   if (S.phase !== 'idle' || !S.undo.length) return;
   N = JSON.parse(S.undo.pop()); reindex();
   for (const id of [...S.sel]) if (!N[id]) S.sel.delete(id);
-  render(); hud('已撤销 AI 扩展');
+  render(); hud('已撤销');
 }
 function toggle(id) {
   const g = ghost(id); if (!g) return; g.on = !g.on;
@@ -783,7 +783,7 @@ function renderBar() {
     b.innerHTML = `<span class="lbl"><span class="spin"></span>${esc(S.run.label)}<small>${S.ghosts.length || ''}</small></span>
       <button class="btn" id="bStop">${ic('stop', 's')}停止 <span class="k">Esc</span></button>`;
   } else if (S.phase === 'error') {
-    b.innerHTML = `<span class="lbl err">${ic('cloudoff')}网络不可用，没有生成内容</span><span class="div"></span>
+    b.innerHTML = `<span class="lbl err">${ic('cloudoff')}网络不可用</span><span class="div"></span>
       <button class="btn" id="bRetry">${ic('redo', 's')}重试</button><button class="btn">改用本机模型</button><button class="btn" id="bX">关闭</button>`;
   } else {
     b.innerHTML = `<span class="lbl">${ic('spark')}${S.run.stopped ? '已停止' : esc(S.run.label)}<small>保留 ${kept} / ${S.ghosts.length}</small></span><span class="div"></span>
@@ -803,7 +803,7 @@ function openAdj() {
   $('#adj').innerHTML = `<div class="xp-row" style="margin-top:0"><span class="lab">方向</span><div class="chips">${dirs.map(([k, t]) => `<button class="chip${S.dir === k ? ' on' : ''}" data-dir="${k}">${t}</button>`).join('')}</div></div>
     <div class="xp-row"><span class="lab">层级</span><div class="seg">${[1, 2, 3].map(d => `<button class="${S.depth === d ? 'on' : ''}" data-d="${d}">${d} 层</button>`).join('')}</div>
     <span style="margin-left:10px">数量</span><div class="seg">${[['few', '少'], ['mid', '适中'], ['many', '多']].map(([k, t]) => `<button class="${S.count === k ? 'on' : ''}" data-c="${k}">${t}</button>`).join('')}</div></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" id="adjGo">${ic('redo', 's')}按此重新生成</button></div>`;
+    <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" id="adjGo">${ic('redo', 's')}重新生成</button></div>`;
   const a = $('#adj'); a.classList.add('on'); a.onclick = e => e.stopPropagation();
   a.querySelectorAll('[data-dir]').forEach(x => x.onclick = () => { S.dir = x.dataset.dir; openAdj(); });
   a.querySelectorAll('[data-d]').forEach(x => x.onclick = () => { S.depth = +x.dataset.d; openAdj(); });
@@ -827,10 +827,10 @@ function openCtx(e, id) {
   const label = mode === 'root' ? '扩展整张脑图…' : mode === 'multi' ? `分别扩展 ${S.sel.size} 个主题` : '扩展想法';
   const c = $('#ctx');
   c.innerHTML = `<div class="mi">添加子主题<span class="kbd">⇥</span></div><div class="mi">添加同级主题<span class="kbd">↩</span></div><div class="msep"></div>
-    <div class="mh">AI 助手</div>
+    <div class="mh">问助手</div>
     <div class="mi" id="cx">${ic('expand', 's')}${label}<span class="kbd">⌥⇥</span></div>
     ${mode === 'multi' ? `<div class="mi" id="cg">${ic('group', 's')}归纳上级主题</div>` : ''}
-    <div class="mi">${ic('q', 's')}解释这个主题</div><div class="mi">${ic('cards', 's')}为这个分支出复习题…</div><div class="mi">${ic('spark', 's')}带上它提问…<span class="kbd">⇧⌘E</span></div>
+    <div class="mi">${ic('q', 's')}解释这个主题<span class="kbd">⇧⌘E</span></div><div class="mi">${ic('sum2', 's')}整理这个分支…</div><div class="mi">${ic('cards', 's')}为这个分支出复习题…</div><div class="mi">${ic('spark', 's')}带上它自由提问…</div>
     <div class="msep"></div><div class="mi">复制<span class="kbd">⌘C</span></div><div class="mi">删除<span class="kbd">⌫</span></div>`;
   c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px'; c.classList.add('on');
   c.querySelector('#cx').onclick = () => { c.classList.remove('on'); expandShortcut(); };
@@ -916,7 +916,7 @@ const SCENES = [
     ['11', '未配置 AI', () => { reset(); S.noAi = true; syncToggles(); S.sel = new Set(['space']); render(); setTimeout(openPop, 50); },
       '<h4>未配置</h4><ul><li>沿用助手的连接卡：连接服务或使用本机模型；脑图其他操作不受影响。</li></ul>'],
     ['12', '断网', () => { reset(); S.offline = true; syncToggles(); S.sel = new Set(['space']); render(); start('children'); },
-      '<h4>失败</h4><ul><li>如实说明没有生成内容，脑图没有任何变化；可以重试或改用本机模型。</li><li>部分生成后断开：已出现的草稿保留在审阅中。</li></ul>'],
+      '<h4>失败</h4><ul><li>底部条只显示错误原因，脑图没有任何变化；可以重试或改用本机模型。</li><li>部分生成后断开：已出现的草稿保留在审阅中。</li></ul>'],
     ['13', '中途停止', () => { reset(); S.sel = new Set(['inter']); render(); start('children'); setTimeout(stop, 1500); },
       '<h4>停止</h4><ul><li>Esc / 停止后，已生成的草稿进入审阅，标题显示“已停止”。</li></ul>'],
     ['14', '没有可补充的内容', () => { reset(); S.empty = true; S.sel = new Set(['forget']); render(); start('children'); },

@@ -30,6 +30,8 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.onAccent,
     required this.research,
     required this.researchTint,
+    required this.researchWash,
+    required this.onResearch,
     required this.vocabulary,
     required this.vocabularyTint,
     required this.positive,
@@ -105,6 +107,14 @@ class MMColors extends ThemeExtension<MMColors> {
   /// [research] at 12% / 20%: research card wash, selected research controls.
   final Color researchTint;
 
+  /// [research] at 6% / 10%: AI draft nodes and the idea expansion section,
+  /// lighter than [researchTint] so a draft never reads as a selection.
+  final Color researchWash;
+
+  /// Text and icons on a solid [research] fill (white / near-black): white on
+  /// the lighter dark-mode research falls below 4.5:1.
+  final Color onResearch;
+
   /// Fixed vocabulary hue; the light shade meets 4.5:1 on white.
   final Color vocabulary;
 
@@ -167,6 +177,8 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF5E5CE6),
     researchTint: Color(0x1F5E5CE6),
+    researchWash: Color(0x0F5E5CE6),
+    onResearch: Color(0xFFFFFFFF),
     vocabulary: Color(0xFF0D8480),
     vocabularyTint: Color(0x1F0D8480),
     positive: Color(0xFF248A3D),
@@ -214,6 +226,8 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF7D7AFF),
     researchTint: Color(0x337D7AFF),
+    researchWash: Color(0x1A7D7AFF),
+    onResearch: Color(0xFF1E1E1F),
     vocabulary: Color(0xFF40C8C0),
     vocabularyTint: Color(0x2940C8C0),
     positive: Color(0xFF30D158),
@@ -268,6 +282,8 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: onAccent,
       research: research,
       researchTint: researchTint,
+      researchWash: researchWash,
+      onResearch: onResearch,
       vocabulary: vocabulary,
       vocabularyTint: vocabularyTint,
       positive: positive,
@@ -318,6 +334,8 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: c(onAccent, other.onAccent),
       research: c(research, other.research),
       researchTint: c(researchTint, other.researchTint),
+      researchWash: c(researchWash, other.researchWash),
+      onResearch: c(onResearch, other.onResearch),
       vocabulary: c(vocabulary, other.vocabulary),
       vocabularyTint: c(vocabularyTint, other.vocabularyTint),
       positive: c(positive, other.positive),

@@ -28,6 +28,11 @@ abstract final class MMRadii {
   static const double page = 3;
   static const double sheet = 22;
   static const double field = 8;
+
+  /// AI idea expansion: the popover's expansion section, and the direction
+  /// tag or page chip on a draft node.
+  static const double ideaSection = 10;
+  static const double mapDraftTag = 4;
 }
 
 abstract final class MMSizes {
@@ -142,6 +147,33 @@ abstract final class MMSizes {
   /// Toolbar search field in a compact window.
   static const double compactSearchWidth = 160;
   static const Size windowMinSize = Size(960, 600);
+
+  /// AI idea expansion (GUL-581): the popover's primary button and direction
+  /// chips, the generating / review bar above the map view controls, its
+  /// adjust menu and the whole-map plan card.
+  static const double ideaPrimaryButton = 34;
+  static const double ideaChip = 22;
+  static const double ideaBar = 40;
+  static const double ideaBarBottomInset = 64;
+  static const double ideaAdjustWidth = 330;
+  static const double ideaPlanWidth = 420;
+  static const double ideaPlanTopInset = 64;
+  static const double ideaPlanRow = 36;
+  static const Size ideaStepperButton = Size(20, 22);
+
+  /// Draft (ghost) topics: dashed outline, the hover controls above the
+  /// draft, the placeholder shown before the first draft arrives, and the
+  /// ring around the topic being expanded (halo pulses out to its max).
+  static const double mapDraftBorder = 1;
+  static const double mapDraftDash = 4;
+  static const double mapDraftDashGap = 3;
+  static const double mapDraftTag = 16;
+  static const double mapDraftControls = 24;
+  static const Size mapDraftControlButton = Size(22, 20);
+  static const Size mapDraftPlaceholder = Size(120, 30);
+  static const double mapWorkingRing = 2;
+  static const double mapWorkingHalo = 6;
+  static const double mapWorkingHaloMax = 10;
 }
 
 /// Shared geometry for the source-anchored book reader.

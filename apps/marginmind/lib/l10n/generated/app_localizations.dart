@@ -6877,6 +6877,306 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark known words'**
   String get vocabularyHintsKnown;
+
+  /// No description provided for @mapIdeaMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Ideas with AI'**
+  String get mapIdeaMenu;
+
+  /// No description provided for @mapIdeaExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Ideas'**
+  String get mapIdeaExpand;
+
+  /// No description provided for @mapIdeaExpandEach.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Expand 1 Topic} other{Expand {count} Topics}}'**
+  String mapIdeaExpandEach(int count);
+
+  /// No description provided for @mapIdeaExpandMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Whole Map…'**
+  String get mapIdeaExpandMap;
+
+  /// No description provided for @mapIdeaWholeMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Whole Map'**
+  String get mapIdeaWholeMap;
+
+  /// No description provided for @mapIdeaBranchesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'New Branches Only'**
+  String get mapIdeaBranchesOnly;
+
+  /// No description provided for @mapIdeaGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group Under New Parent'**
+  String get mapIdeaGroup;
+
+  /// No description provided for @mapIdeaFillSiblings.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill In Siblings'**
+  String get mapIdeaFillSiblings;
+
+  /// No description provided for @mapIdeaDirection.
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get mapIdeaDirection;
+
+  /// No description provided for @mapIdeaDirectionAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get mapIdeaDirectionAuto;
+
+  /// No description provided for @mapIdeaDirectionWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get mapIdeaDirectionWhy;
+
+  /// No description provided for @mapIdeaDirectionExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get mapIdeaDirectionExample;
+
+  /// No description provided for @mapIdeaDirectionCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Counterpoints'**
+  String get mapIdeaDirectionCounter;
+
+  /// No description provided for @mapIdeaDirectionQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get mapIdeaDirectionQuestion;
+
+  /// No description provided for @mapIdeaDirectionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get mapIdeaDirectionAction;
+
+  /// No description provided for @mapIdeaDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Depth'**
+  String get mapIdeaDepth;
+
+  /// No description provided for @mapIdeaDepthLevels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Level} other{{count} Levels}}'**
+  String mapIdeaDepthLevels(int count);
+
+  /// No description provided for @mapIdeaAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get mapIdeaAmount;
+
+  /// No description provided for @mapIdeaAmountFew.
+  ///
+  /// In en, this message translates to:
+  /// **'Few'**
+  String get mapIdeaAmountFew;
+
+  /// No description provided for @mapIdeaAmountSome.
+  ///
+  /// In en, this message translates to:
+  /// **'Some'**
+  String get mapIdeaAmountSome;
+
+  /// No description provided for @mapIdeaAmountMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Many'**
+  String get mapIdeaAmountMany;
+
+  /// No description provided for @mapIdeaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get mapIdeaHint;
+
+  /// No description provided for @mapIdeaGrounded.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Source'**
+  String get mapIdeaGrounded;
+
+  /// No description provided for @mapIdeaExpanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Expanding “{title}”'**
+  String mapIdeaExpanding(String title);
+
+  /// No description provided for @mapIdeaExpandingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Expanding 1 Topic} other{Expanding {count} Topics}}'**
+  String mapIdeaExpandingCount(int count);
+
+  /// No description provided for @mapIdeaStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get mapIdeaStopped;
+
+  /// No description provided for @mapIdeaDraftCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 idea} other{{count} ideas}}'**
+  String mapIdeaDraftCount(int count);
+
+  /// No description provided for @mapIdeaKeptCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{kept} of {total} kept'**
+  String mapIdeaKeptCount(int kept, int total);
+
+  /// No description provided for @mapIdeaRegenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Others'**
+  String get mapIdeaRegenerate;
+
+  /// No description provided for @mapIdeaAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust'**
+  String get mapIdeaAdjust;
+
+  /// No description provided for @mapIdeaRegenerateAdjusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get mapIdeaRegenerateAdjusted;
+
+  /// No description provided for @mapIdeaDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get mapIdeaDiscard;
+
+  /// No description provided for @mapIdeaKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Keep 1} other{Keep {count}}}'**
+  String mapIdeaKeep(int count);
+
+  /// No description provided for @mapIdeaDraftKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get mapIdeaDraftKeep;
+
+  /// No description provided for @mapIdeaDraftSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get mapIdeaDraftSkip;
+
+  /// No description provided for @mapIdeaDraftEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get mapIdeaDraftEdit;
+
+  /// No description provided for @mapIdeaDraftMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Further'**
+  String get mapIdeaDraftMore;
+
+  /// No description provided for @mapIdeaDraftSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'AI draft, {title}, {state}'**
+  String mapIdeaDraftSemantics(String title, String state);
+
+  /// No description provided for @mapIdeaDraftKept.
+  ///
+  /// In en, this message translates to:
+  /// **'kept'**
+  String get mapIdeaDraftKept;
+
+  /// No description provided for @mapIdeaDraftSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'not kept'**
+  String get mapIdeaDraftSkipped;
+
+  /// No description provided for @mapIdeaNewBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'New Branches'**
+  String get mapIdeaNewBranches;
+
+  /// No description provided for @mapIdeaAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count}'**
+  String mapIdeaAddCount(int count);
+
+  /// No description provided for @mapIdeaFewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer'**
+  String get mapIdeaFewer;
+
+  /// No description provided for @mapIdeaMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get mapIdeaMore;
+
+  /// No description provided for @mapIdeaStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get mapIdeaStart;
+
+  /// No description provided for @mapIdeaAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Added 1 topic} other{Added {count} topics}}'**
+  String mapIdeaAdded(int count);
+
+  /// No description provided for @mapIdeaBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep (↩) or discard (Esc) the AI drafts first'**
+  String get mapIdeaBlocked;
+
+  /// No description provided for @mapIdeaNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No new ideas here. Try another direction.'**
+  String get mapIdeaNothing;
+
+  /// No description provided for @mapIdeaStoppedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped before any ideas'**
+  String get mapIdeaStoppedEmpty;
+
+  /// No description provided for @mapIdeaBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The model is busy. Try again later.'**
+  String get mapIdeaBusy;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

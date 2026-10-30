@@ -3807,4 +3807,195 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vocabularyHintsKnown => 'Mark known words';
+
+  @override
+  String get mapIdeaMenu => 'Expand Ideas with AI';
+
+  @override
+  String get mapIdeaExpand => 'Expand Ideas';
+
+  @override
+  String mapIdeaExpandEach(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expand $count Topics',
+      one: 'Expand 1 Topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapIdeaExpandMap => 'Expand Whole Map…';
+
+  @override
+  String get mapIdeaWholeMap => 'Expand Whole Map';
+
+  @override
+  String get mapIdeaBranchesOnly => 'New Branches Only';
+
+  @override
+  String get mapIdeaGroup => 'Group Under New Parent';
+
+  @override
+  String get mapIdeaFillSiblings => 'Fill In Siblings';
+
+  @override
+  String get mapIdeaDirection => 'Direction';
+
+  @override
+  String get mapIdeaDirectionAuto => 'Auto';
+
+  @override
+  String get mapIdeaDirectionWhy => 'Why';
+
+  @override
+  String get mapIdeaDirectionExample => 'Examples';
+
+  @override
+  String get mapIdeaDirectionCounter => 'Counterpoints';
+
+  @override
+  String get mapIdeaDirectionQuestion => 'Questions';
+
+  @override
+  String get mapIdeaDirectionAction => 'Actions';
+
+  @override
+  String get mapIdeaDepth => 'Depth';
+
+  @override
+  String mapIdeaDepthLevels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count Levels', one: '1 Level');
+    return '$_temp0';
+  }
+
+  @override
+  String get mapIdeaAmount => 'Amount';
+
+  @override
+  String get mapIdeaAmountFew => 'Few';
+
+  @override
+  String get mapIdeaAmountSome => 'Some';
+
+  @override
+  String get mapIdeaAmountMany => 'Many';
+
+  @override
+  String get mapIdeaHint => 'Instructions';
+
+  @override
+  String get mapIdeaGrounded => 'Use Source';
+
+  @override
+  String mapIdeaExpanding(String title) {
+    return 'Expanding “$title”';
+  }
+
+  @override
+  String mapIdeaExpandingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Expanding $count Topics',
+      one: 'Expanding 1 Topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapIdeaStopped => 'Stopped';
+
+  @override
+  String mapIdeaDraftCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count ideas', one: '1 idea');
+    return '$_temp0';
+  }
+
+  @override
+  String mapIdeaKeptCount(int kept, int total) {
+    return '$kept of $total kept';
+  }
+
+  @override
+  String get mapIdeaRegenerate => 'Try Others';
+
+  @override
+  String get mapIdeaAdjust => 'Adjust';
+
+  @override
+  String get mapIdeaRegenerateAdjusted => 'Regenerate';
+
+  @override
+  String get mapIdeaDiscard => 'Discard';
+
+  @override
+  String mapIdeaKeep(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: 'Keep $count', one: 'Keep 1');
+    return '$_temp0';
+  }
+
+  @override
+  String get mapIdeaDraftKeep => 'Keep';
+
+  @override
+  String get mapIdeaDraftSkip => 'Skip';
+
+  @override
+  String get mapIdeaDraftEdit => 'Edit';
+
+  @override
+  String get mapIdeaDraftMore => 'Expand Further';
+
+  @override
+  String mapIdeaDraftSemantics(String title, String state) {
+    return 'AI draft, $title, $state';
+  }
+
+  @override
+  String get mapIdeaDraftKept => 'kept';
+
+  @override
+  String get mapIdeaDraftSkipped => 'not kept';
+
+  @override
+  String get mapIdeaNewBranches => 'New Branches';
+
+  @override
+  String mapIdeaAddCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get mapIdeaFewer => 'Fewer';
+
+  @override
+  String get mapIdeaMore => 'More';
+
+  @override
+  String get mapIdeaStart => 'Expand';
+
+  @override
+  String mapIdeaAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Added $count topics',
+      one: 'Added 1 topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get mapIdeaBlocked => 'Keep (↩) or discard (Esc) the AI drafts first';
+
+  @override
+  String get mapIdeaNothing => 'No new ideas here. Try another direction.';
+
+  @override
+  String get mapIdeaStoppedEmpty => 'Stopped before any ideas';
+
+  @override
+  String get mapIdeaBusy => 'The model is busy. Try again later.';
 }
