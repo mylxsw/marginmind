@@ -125,7 +125,7 @@ void main() {
     for (final s in ['cat', '“Cat”', "don't", 'l’été']) {
       expect(classifyVocabularySelection(s), VocabularySelectionKind.word, reason: s);
     }
-    for (final s in ['a b c d e f g h', '机器学习', 'a  b']) {
+    for (final s in ['a b c d e f g h', '机器学习', 'a  b', 'a b.', 'take for granted.', '“feedback loop,”']) {
       expect(classifyVocabularySelection(s), VocabularySelectionKind.phrase, reason: s);
     }
     for (final s in [
@@ -133,7 +133,7 @@ void main() {
       '...',
       'a b c d e f g h i',
       'a. b',
-      'a b.',
+      'deliberate. Practice',
       'a! b',
       'a? b',
       'a; b',
@@ -145,14 +145,16 @@ void main() {
       expect(classifyVocabularySelection(s), VocabularySelectionKind.sentence, reason: s);
     }
   });
-  test('English forms preserve original and model spelling before rules', () {
+  test('English fallback preserves selected spelling without guessing comparatives', () {
     List<String> forms(String s) => vocabularyForms(term: s, selected: s, language: 'en', kind: VocabularyKind.word);
-    expect(forms('try'), containsAll(['tries', 'tried', 'trying', 'trier', 'triest', 'trily']));
+    expect(forms('try'), containsAll(['tries', 'tried', 'trying']));
     expect(forms('watch'), containsAll(['watches', 'watched', 'watching']));
     expect(forms('love'), containsAll(['loved', 'loving']));
     expect(forms('run'), containsAll(['running']));
-    expect(forms('big'), containsAll(['bigger', 'biggest']));
-    expect(forms('happy'), containsAll(['happier', 'happily']));
+    expect(forms('plan'), isNot(contains('planner')));
+    expect(forms('big'), isNot(contains('bigger')));
+    expect(forms('big'), isNot(contains('biggest')));
+    expect(forms('happy'), containsAll(['happily']));
     expect(forms('tie'), contains('tying'));
     expect(forms('see'), contains('seeing'));
     expect(
@@ -170,6 +172,25 @@ void main() {
       'take off',
     ]);
     expect(vocabularyForms(term: '猫', selected: '猫', language: 'zh', kind: VocabularyKind.word), ['猫']);
+  });
+  test('supplied forms suppress local guesses while retaining lemma and selected spelling', () {
+    for (final (term, selected, supplied) in [
+      ('rule', 'RULES', ['rule', 'rules']),
+      ('plan', 'PLANNED', ['plan', 'planned']),
+      ('ring', 'RANG', ['ring', 'rang']),
+      ('big', 'BIGGEST', ['big', 'bigger', 'biggest']),
+    ]) {
+      expect(
+        vocabularyForms(term: term, selected: selected, language: 'en', kind: VocabularyKind.word, supplied: supplied),
+        unorderedEquals({term, selected.toLowerCase(), ...supplied}),
+        reason: term,
+      );
+    }
+    expect(vocabularyForms(term: 'be', selected: 'WAS', language: 'en', kind: VocabularyKind.word, supplied: ['is']), [
+      'be',
+      'was',
+      'is',
+    ]);
   });
   test('matching boundaries, longest phrases, stable collisions and original UTF16 offsets', () {
     final matcher = VocabularyMatcher([

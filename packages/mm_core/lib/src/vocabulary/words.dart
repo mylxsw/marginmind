@@ -11,9 +11,7 @@ VocabularySelectionKind classifyVocabularySelection(String selection) {
     // CJK has no whitespace word boundaries; treat it as a phrase.
     if (!vocabularyCjk.hasMatch(text)) return VocabularySelectionKind.word;
   }
-  if (text.runes.length <= 64 &&
-      text.split(RegExp(r'\s+')).length <= 8 &&
-      !RegExp(r'[.!?;:—。！？；：]').hasMatch(selection.trim())) {
+  if (text.runes.length <= 64 && text.split(RegExp(r'\s+')).length <= 8 && !RegExp(r'[.!?;:—。！？；：]').hasMatch(text)) {
     return VocabularySelectionKind.phrase;
   }
   return VocabularySelectionKind.sentence;
@@ -22,7 +20,7 @@ VocabularySelectionKind classifyVocabularySelection(String selection) {
 /// Scripts matched as substrings rather than Latin word tokens.
 final vocabularyCjk = RegExp(r'[\u3400-\u9fff\uf900-\ufaff\u3040-\u30ff]');
 
-/// Small heuristic supplement, not a lemmatizer. Model forms take priority;
+/// Heuristic fallback used only without supplied forms; never guesses comparatives.
 /// lemma and selected spelling always have reserved slots (maximum sixteen).
 List<String> vocabularyForms({
   required String term,
@@ -33,7 +31,7 @@ List<String> vocabularyForms({
 }) {
   final word = vocabularyKey(term);
   final forms = <String>{word, vocabularyKey(selected), ...supplied.map(vocabularyKey)}..remove('');
-  if (language == 'en' && kind == VocabularyKind.word && RegExp(r'^[a-z]+$').hasMatch(word)) {
+  if (supplied.isEmpty && language == 'en' && kind == VocabularyKind.word && RegExp(r'^[a-z]+$').hasMatch(word)) {
     final consonantY = RegExp(r'[^aeiou]y$').hasMatch(word);
     final sibilant = RegExp(r'(s|x|z|ch|sh)$').hasMatch(word);
     forms.add(
@@ -60,12 +58,6 @@ List<String> vocabularyForms({
           ? '${word.substring(0, word.length - 1)}ing'
           : '${stem}ing',
     );
-    final comparison = consonantY
-        ? '${word.substring(0, word.length - 1)}i'
-        : word.endsWith('e')
-        ? word.substring(0, word.length - 1)
-        : stem;
-    forms.addAll(['${comparison}er', '${comparison}est']);
     forms.add(consonantY ? '${word.substring(0, word.length - 1)}ily' : '${word}ly');
   }
   return List.unmodifiable(forms.take(16));
