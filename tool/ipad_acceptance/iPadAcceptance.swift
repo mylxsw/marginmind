@@ -195,8 +195,10 @@ import XCTest
   let document = button("Sample chapter:")
   if !document.isHittable { button("Show Sidebar").tap() }
   XCTAssertTrue(document.waitForExistence(timeout: 5)); document.tap()
+  let hideSidebar = button("Hide Sidebar")
+  if hideSidebar.exists && hideSidebar.isHittable { hideSidebar.tap() }
   button("Select").tap()
-  let line = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "人在学习新知识之后")).firstMatch
+  let line = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", "人在学习新知识之后", "在这一页上拖选任意一句话")).firstMatch
   XCTAssertTrue(line.waitForExistence(timeout: 8))
   line.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)).press(forDuration: 1.0, thenDragTo: line.coordinate(withNormalizedOffset: CGVector(dx: 0.65, dy: 0.5)))
   let copy = button("Copy")
@@ -215,7 +217,7 @@ import XCTest
   XCTAssertEqual(colors.count, 5)
   shot("35-selection-color-entry")
   app.otherElements["tablet-workspace-content"].coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.7)).tap()
-  XCTAssertFalse(copy.exists)
+  XCTAssertFalse(more.exists)
  }
 
 }

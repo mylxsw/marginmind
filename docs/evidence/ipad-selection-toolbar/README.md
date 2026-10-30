@@ -6,6 +6,10 @@
 
 回归增加 12 组场景：834×1194 / 1194×834，两种笔，手指 / stylus / 鼠标输入。按下和松开标记按钮均不打开任一颜色面板，应用一次后关闭选区工具栏，页面工具保持“选择”；重新点已有标记，只有颜色圆圈打开选色条，线型按标记类型显示。
 
-验证：应用测试 1067 通过、34 跳过；界面组件 189 通过；PDF 117 通过；静态检查无问题。iPad Release 构建和开发签名校验通过，覆盖安装成功。已备份设备的 Application Support 与 Preferences，备份保存在本地忽略目录 `build/ipad-toolbar-backup/`。
+验证：整合主分支 `9554709` 后，应用测试 **1073 通过、34 跳过**；界面组件 189 通过；PDF 117 通过；助手扩展测试 17 通过；静态检查无问题。iPad Release 构建和开发签名校验通过，最终源码重新构建并覆盖安装成功。已备份设备的 Application Support 与 Preferences，备份保存在本地忽略目录 `build/ipad-toolbar-backup/`。
 
-真机自动用例 `testSelectionColorEntryIsSeparateFromMarkerActions` 检查三个独立入口及四个最近颜色＋更多颜色图标，不创建或删除标记。运行需要设备解锁，结果写入本地 `build/iPadSelectionAcceptance.xcresult`。手指／Pencil 动作无二级面板由上述回归测试验证，真实 Pencil 手感仍由设备试用确认。
+整合回归还发现英文窄窗口中扩展选项的底部操作行溢出 3px，已让开关说明使用剩余宽度并可换行；原有英文布局测试通过。
+
+真机自动用例 `testSelectionColorEntryIsSeparateFromMarkerActions` 已通过，检查三个独立入口及四个最近颜色＋更多颜色图标，不创建或删除标记。用例兼容示例文档记忆到第 1 或第 2 页，以及文档侧栏仍展开的状态。点击选色条外侧关闭选色条，保留当前文字选区。
+
+手指／Pencil 动作无二级面板由上述回归测试验证，真实 Pencil 手感仍由设备试用确认。真机界面见 [selection-color-entry.png](selection-color-entry.png)。
