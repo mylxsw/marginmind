@@ -19,7 +19,7 @@ PhoneTab? phoneTabOf(AppRoute route, {bool mapShown = false}) => switch (route) 
   LibraryRoute() || StatsRoute(studySetId: null) => PhoneTab.library,
   WorkspaceRoute() => mapShown ? PhoneTab.map : PhoneTab.source,
   ReviewRoute() || StatsRoute() => PhoneTab.review,
-  GalleryRoute() => null,
+  GalleryRoute() || VocabularyRoute() => null,
 };
 
 /// A phone's app navigation: Library, Source, Map and Review. The last

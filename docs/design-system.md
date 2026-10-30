@@ -119,3 +119,6 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 选区在边缘停留 `MMMotion.selectionEdge`（600ms）后自动翻页；滚动模式每 `MMMotion.selectionScroll`（50ms）移动一个 `MMSpacing.xxxl`。触控选区柄热区使用 `MMSizes.touchTarget`。
 
 固定视口的缩放以拟合页面为基准，范围 `MMReaderLayout.minZoom`–`maxZoom`（0.25–16），快捷键每次乘除 `zoomStep`（1.2）；适合页面、适合宽度和实际大小使用视口尺寸计算。
+
+生词选区卡片使用 `MMSizes.vocabularyCardWidth`（360pt），已收录圆点使用 `MMSizes.vocabularyDot`（6pt）。
+实心生词按钮文字使用 `MMColors.onVocabulary`（浅色白字、深色深字），保证 4.5:1 对比度。`MMButton.foregroundColor` 用于这种语义色填充。

@@ -29,6 +29,8 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double vocabularyDot = 6;
+  static const double vocabularyCardWidth = 360;
   static const double readerMaxFitZoom = 1.4;
   static const Size readerToolbarButton = Size(30, 26);
   static const double dropdownWidth = 240;

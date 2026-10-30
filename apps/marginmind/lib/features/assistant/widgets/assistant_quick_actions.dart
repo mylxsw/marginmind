@@ -58,9 +58,10 @@ Future<bool?> showAssistantQuickActions(
 /// Keeps the toolbar in place and puts the answer below it, or above the
 /// selection if that side has more room. Long answers scroll inside the card.
 class QuickActionsPlacement extends SingleChildLayoutDelegate {
-  QuickActionsPlacement({required this.toolbar, required this.selection, required this.viewport});
+  QuickActionsPlacement({required this.toolbar, required this.selection, required this.viewport, this.maxWidth = 408});
 
   final Rect toolbar, selection, viewport;
+  final double maxWidth;
 
   Rect _bounds(Size size) => viewport.intersect(Offset.zero & size).deflate(8);
   double _bottom(Rect bounds) {
@@ -79,7 +80,7 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     final bounds = _bounds(constraints.biggest);
-    final width = math.min(408.0, math.max(0.0, bounds.width));
+    final width = math.min(maxWidth, math.max(0.0, bounds.width));
     final room = _room(bounds);
     return BoxConstraints(
       minWidth: width,
@@ -101,7 +102,7 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(QuickActionsPlacement old) =>
-      old.toolbar != toolbar || old.selection != selection || old.viewport != viewport;
+      old.toolbar != toolbar || old.selection != selection || old.viewport != viewport || old.maxWidth != maxWidth;
 }
 
 enum _QuickAction {

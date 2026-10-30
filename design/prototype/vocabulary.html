@@ -13,7 +13,7 @@
   --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
   --glass:rgba(255,255,255,.86); --glassOpaque:#F7F7F9; --hair:rgba(0,0,0,.08);
   /* Vocabulary hint colour: fixed teal, distinct from the six annotation colours and the accent. */
-  --vocab:#0E8A86; --vocabTint:rgba(14,138,134,.12); --vocabLine:rgba(14,138,134,.75);
+  --vocab:#0D8480; --onVocab:#fff; --vocabTint:rgba(14,138,134,.12); --vocabLine:rgba(14,138,134,.75);
   --positive:#248A3D; --caution:#C93400; --critical:#D70015;
   --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
@@ -25,7 +25,7 @@
   --sel:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
   --accent:#0A84FF; --accentTint:rgba(10,132,255,.20);
   --glass:rgba(50,50,53,.88); --glassOpaque:#2A2A2D; --hair:rgba(255,255,255,.10);
-  --vocab:#40C8C0; --vocabTint:rgba(64,200,192,.16); --vocabLine:rgba(64,200,192,.8);
+  --vocab:#40C8C0; --onVocab:#1D1D1F; --vocabTint:rgba(64,200,192,.16); --vocabLine:rgba(64,200,192,.8);
   --positive:#30D158; --caution:#FF9F0A; --critical:#FF453A;
 }
 *{box-sizing:border-box}
@@ -126,7 +126,7 @@ body.hint-gloss .vw.known::before{content:none}
 .ibtn.sm{width:22px;height:22px;border-radius:6px}
 .ibtn:disabled{opacity:.35}
 .ibtn.speaking{color:var(--accent)}
-.add{height:28px;padding:0 11px 0 9px;border-radius:14px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;background:var(--vocab);color:#fff;white-space:nowrap;flex:none}
+.add{height:28px;padding:0 11px 0 9px;border-radius:14px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;background:var(--vocab);color:var(--onVocab);white-space:nowrap;flex:none}
 .add:hover{filter:brightness(1.06)}.add:active{filter:brightness(.94)}
 .add.done{background:var(--vocabTint);color:var(--vocab)}
 .add:disabled{background:var(--fill);color:var(--label3)}

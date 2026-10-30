@@ -290,7 +290,23 @@ Map<ShortcutActivator, ReaderZoomIntent> get readerZoomShortcuts => {
 };
 
 /// Selection commands share their intents between menus and the floating toolbar.
-enum ReaderSelectionCommand { marginNote, excerpt, highlight, copy, note, locateCard, deleteHighlight, assistant }
+enum ReaderSelectionCommand {
+  translate,
+  marginNote,
+  excerpt,
+  highlight,
+  copy,
+  note,
+  locateCard,
+  deleteHighlight,
+  assistant,
+}
+
+class AddVocabularyIntent extends Intent {
+  const AddVocabularyIntent();
+}
+
+const addVocabularyShortcut = SingleActivator(LogicalKeyboardKey.keyS);
 
 class ReaderSelectionIntent extends Intent {
   const ReaderSelectionIntent(this.command);
@@ -298,6 +314,7 @@ class ReaderSelectionIntent extends Intent {
 }
 
 Map<ShortcutActivator, ReaderSelectionIntent> get readerSelectionShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.keyT): const ReaderSelectionIntent(ReaderSelectionCommand.translate),
   const SingleActivator(LogicalKeyboardKey.keyC): const ReaderSelectionIntent(ReaderSelectionCommand.marginNote),
   const SingleActivator(LogicalKeyboardKey.keyE): const ReaderSelectionIntent(ReaderSelectionCommand.excerpt),
   const SingleActivator(LogicalKeyboardKey.keyH): const ReaderSelectionIntent(ReaderSelectionCommand.highlight),
@@ -603,7 +620,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             workspace!.content.node(sharedHighlightCard.id, mapId: workspaceState!.activeMapId) != null
         ? sharedHighlightCard
         : null;
+    final vocabularyFocus = FocusManager.instance.primaryFocus?.context;
+    final canAddVocabulary =
+        !_textFocused && vocabularyFocus != null && Actions.maybeFind<AddVocabularyIntent>(vocabularyFocus) != null;
     edit.addAll([
+      AppCommand(
+        l.vocabularyAdd,
+        canAddVocabulary
+            ? () {
+                final focus = FocusManager.instance.primaryFocus?.context;
+                if (focus != null) Actions.maybeInvoke(focus, const AddVocabularyIntent());
+              }
+            : null,
+        shortcut: addVocabularyShortcut,
+      ),
       AppCommand(
         l.settingsVoice,
         _voiceFocused && workspaceState?.panel == RightPanel.assistant
@@ -614,6 +644,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             : null,
       ),
       for (final entry in {
+        ReaderSelectionCommand.translate: l.selectionTranslate,
         ReaderSelectionCommand.marginNote: l.marginNoteAction,
         ReaderSelectionCommand.excerpt: highlightOpen ? l.addToMapAction : l.excerptAction,
         ReaderSelectionCommand.highlight: l.highlightAction,
@@ -628,7 +659,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                           entry.key != ReaderSelectionCommand.locateCard &&
                           entry.key != ReaderSelectionCommand.deleteHighlight) ||
                       (highlightOpen &&
-                          (entry.key == ReaderSelectionCommand.marginNote ||
+                          ((entry.key == ReaderSelectionCommand.translate && highlightText) ||
+                              entry.key == ReaderSelectionCommand.marginNote ||
                               entry.key == ReaderSelectionCommand.copy ||
                               entry.key == ReaderSelectionCommand.deleteHighlight ||
                               (entry.key == ReaderSelectionCommand.excerpt && highlightCard == null) ||

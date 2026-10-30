@@ -937,6 +937,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   };
 
   bool canRunSelection(ReaderSelectionCommand command) => switch (command) {
+    ReaderSelectionCommand.translate => MMPlatformCapabilities.current.assistant && activeCapabilities.translate,
     ReaderSelectionCommand.copy => activeCapabilities.selectText,
     ReaderSelectionCommand.assistant => activeCapabilities.selectText || activeCapabilities.capture,
     ReaderSelectionCommand.highlight || ReaderSelectionCommand.deleteHighlight => activeCapabilities.annotate,

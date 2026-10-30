@@ -25,6 +25,7 @@ class MMButton extends StatelessWidget {
     this.icon,
     this.autofocus = false,
     this.color,
+    this.foregroundColor,
   });
 
   final String label;
@@ -38,6 +39,9 @@ class MMButton extends StatelessWidget {
   /// Secondary buttons ignore it.
   final Color? color;
 
+  /// Text and icon on a primary feature fill, when white lacks contrast.
+  final Color? foregroundColor;
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
@@ -48,7 +52,7 @@ class MMButton extends StatelessWidget {
       semanticLabel: label,
       builder: (context, s) {
         final (Color bg, Color fg) = switch (variant) {
-          MMButtonVariant.primary => (color ?? c.accentFill, c.onAccent),
+          MMButtonVariant.primary => (color ?? c.accentFill, foregroundColor ?? c.onAccent),
           MMButtonVariant.secondary => (c.fill, c.label),
           MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, color ?? c.label),
         };

@@ -18,7 +18,9 @@ import '../reader_margin.dart';
 import 'notices.dart';
 import 'highlight_color_button.dart';
 import 'underline_tool_button.dart';
-import 'selection_translation.dart';
+import 'selection_lookup.dart';
+import '../selection_vocabulary_context.dart';
+import '../../vocabulary/vocabulary_controller.dart';
 
 /// All reader text actions share their floating UI, focus and command handling.
 class SelectionToolbar extends ConsumerStatefulWidget {
@@ -142,6 +144,10 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
 
   Future<void> _run(ReaderSelectionCommand command, [MMAnnotationColor? color]) async {
     if (_busy || !ref.read(workspaceProvider(widget.studySetId).notifier).canRunSelection(command)) return;
+    if (command == ReaderSelectionCommand.translate) {
+      await _translate();
+      return;
+    }
     _busy = true;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     final selectedColor = color ?? ref.read(workspaceProvider(widget.studySetId)).color;
@@ -215,6 +221,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                 annotation.textAnchors,
               );
               return;
+            case ReaderSelectionCommand.translate:
             case ReaderSelectionCommand.marginNote:
             case ReaderSelectionCommand.highlight:
             case ReaderSelectionCommand.note:
@@ -280,9 +287,11 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     final rect = pending is PendingHighlight ? pending.viewportRect : selection?.viewportRect ?? Rect.zero;
     _busy = true;
     setState(() => _translationOpen = true);
+    var ask = false;
     try {
-      await showSelectionTranslation(
+      await showSelectionLookup(
         context,
+        onAsk: () => ask = true,
         studySetId: widget.studySetId,
         paragraph: TranslationParagraph(
           documentId: annotation?.documentId ?? (pending as PendingSelection).documentId,
@@ -303,6 +312,9 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         setState(() => _translationOpen = false);
         _focus.requestFocus();
       }
+    }
+    if (ask && mounted) {
+      await _ask(annotation?.documentId ?? (pending as PendingSelection).documentId, pages, quote, anchors);
     }
   }
 
@@ -459,12 +471,48 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                         : null,
                   ),
                   if (MMPlatformCapabilities.current.assistant && !isArea)
-                    MMToolbarButton(
-                      key: const ValueKey('selection-translate'),
-                      icon: MMIcons.translate,
-                      tooltip: l.selectionTranslate,
-                      selected: _translationOpen,
-                      onPressed: capabilities.translate ? _translate : null,
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        MMToolbarButton(
+                          key: const ValueKey('selection-translate'),
+                          icon: MMIcons.translate,
+                          tooltip:
+                              classifyVocabularySelection(
+                                    annotation?.quote ??
+                                        (widget.pending is PendingSelection
+                                            ? (widget.pending as PendingSelection).selection.text
+                                            : ''),
+                                  ) ==
+                                  VocabularySelectionKind.word
+                              ? l.vocabularyLookup
+                              : l.vocabularyTranslate,
+                          selected: _translationOpen,
+                          onPressed: capabilities.translate ? _translate : null,
+                        ),
+                        if ((ref.watch(vocabularyProvider).asData?.value.entries ?? <VocabularyEntry>[]).any(
+                          (e) => e.forms.contains(
+                            vocabularyKey(
+                              selectionTerm(
+                                annotation?.quote ??
+                                    (widget.pending is PendingSelection
+                                        ? (widget.pending as PendingSelection).selection.text
+                                        : ''),
+                              ),
+                            ),
+                          ),
+                        ))
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              key: const ValueKey('selection-vocabulary-dot'),
+                              width: MMSizes.vocabularyDot,
+                              height: MMSizes.vocabularyDot,
+                              decoration: BoxDecoration(color: c.vocabulary, shape: BoxShape.circle),
+                            ),
+                          ),
+                      ],
                     ),
                   if (compact)
                     MMToolbarButton(

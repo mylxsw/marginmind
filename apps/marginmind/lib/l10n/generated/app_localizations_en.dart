@@ -3636,4 +3636,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get annotationNotFound => 'Can’t find the original text';
+
+  @override
+  String get vocabularyTitle => 'Vocabulary';
+
+  @override
+  String get vocabularyLookup => 'Look up (T)';
+
+  @override
+  String get vocabularyTranslate => 'Translate (T)';
+
+  @override
+  String get vocabularyAdd => 'Add to vocabulary';
+
+  @override
+  String get vocabularyAdded => 'Added to vocabulary';
+
+  @override
+  String get vocabularyLearning => 'Learning';
+
+  @override
+  String get vocabularyKnown => 'Known';
+
+  @override
+  String get vocabularyView => 'View in vocabulary';
+
+  @override
+  String get vocabularyMarkKnown => 'Mark as known';
+
+  @override
+  String get vocabularyRemove => 'Remove from vocabulary';
+
+  @override
+  String get vocabularyExample => 'Save as example';
+
+  @override
+  String get vocabularySentence => 'Translate sentence';
+
+  @override
+  String get vocabularyDetails => 'Details ›';
+
+  @override
+  String get vocabularyLongSelection => 'Vocabulary accepts words and phrases of up to 8 words';
+
+  @override
+  String get vocabularySettings => 'Open settings';
+
+  @override
+  String get vocabularySpeak => 'Read aloud';
+
+  @override
+  String get vocabularySetup => 'No model configured';
+
+  @override
+  String get vocabularyOffline => 'Online access is off';
+
+  @override
+  String get vocabularyUK => 'UK';
+
+  @override
+  String get vocabularyUS => 'US';
 }
