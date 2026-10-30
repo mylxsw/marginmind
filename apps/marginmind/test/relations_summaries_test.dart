@@ -297,6 +297,72 @@ void main() {
     WorkspaceState state(WidgetTester tester) =>
         ProviderScope.containerOf(tester.element(find.byType(MindMapCanvas))).read(workspaceProvider('demo-1'));
 
+    for (final action in ['relation', 'connect', 'summary']) {
+      testWidgets('$action creation and label edits keep the viewport away from the root', (tester) async {
+        final controller = await open(tester);
+        await controller.setMapStructure(MapStructure.logic);
+        controller.selectCard('c3');
+        for (var i = 0; i < 5; i++) {
+          await controller.addTopic('Deep branch $i');
+        }
+        final parent = state(tester).selectedCardId!;
+        final first = await controller.addTopic('First');
+        controller.selectCard(parent);
+        final second = await controller.addTopic('Second');
+        if (action == 'connect') {
+          controller.selectCard(first.id);
+          await controller.addRelation();
+        } else {
+          controller.selectCards([first.id, second.id]);
+        }
+        await tester.pumpAndSettle();
+        await reveal(tester, find.byKey(ValueKey(first.id)));
+        final root = find.byKey(const ValueKey(rootNodeId));
+        final before = tester.getCenter(root);
+        expect(tester.getRect(find.byType(InteractiveViewer)).overlaps(tester.getRect(root)), isFalse);
+        final scale = mapScale(viewer(tester).transformationController!.value);
+
+        if (action == 'summary') {
+          await controller.addSummaryAndEdit('Summary');
+        } else if (action == 'connect') {
+          await tester.tap(find.byKey(ValueKey(second.id)));
+          await tester.pump(kDoubleTapTimeout);
+        } else {
+          await controller.addRelation();
+        }
+        await tester.pumpAndSettle();
+        final mark = state(tester).selectedMarkId;
+        expect(mark, isNotNull);
+        expect(state(tester).editingMarkId, mark);
+
+        void expectViewUnchanged() {
+          expect((tester.getCenter(root) - before).distance, lessThan(0.01));
+          expect(mapScale(viewer(tester).transformationController!.value), scale);
+          expect(
+            tester.widget<MMInteractive>(find.descendant(of: root, matching: find.byType(MMInteractive))).selected,
+            isFalse,
+            reason: 'a selected mark must not highlight the root',
+          );
+        }
+
+        expectViewUnchanged();
+        await tester.enterText(find.byType(MMInlineTextField), 'A longer label for this mark');
+        await key(tester, LogicalKeyboardKey.enter);
+        expectViewUnchanged();
+
+        controller.selectCard(first.id);
+        await tester.pumpAndSettle();
+        controller.selectMark(mark);
+        await tester.pumpAndSettle();
+        expectViewUnchanged();
+        controller.beginMarkEditing(mark!);
+        await tester.pumpAndSettle();
+        expectViewUnchanged();
+        await key(tester, LogicalKeyboardKey.escape);
+        await settleHud(tester);
+      });
+    }
+
     testWidgets('a relation is drawn between nodes, labeled in place, selected by its line and deleted', (
       tester,
     ) async {

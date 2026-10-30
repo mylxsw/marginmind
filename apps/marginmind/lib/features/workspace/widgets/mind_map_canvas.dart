@@ -275,6 +275,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _touchDragMoved = false;
   bool _touchDragCancelled = false;
 
+  /// A mark selection clears the card id too, but does not select the root.
+  String? get _selectedNodeId => widget.selectedMarkId == null ? widget.selectedCardId ?? rootNodeId : null;
+
   bool get _additive =>
       HardwareKeyboard.instance.isShiftPressed ||
       HardwareKeyboard.instance.isMetaPressed ||
@@ -555,8 +558,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
           ? widget.flashCardId!
-          : widget.selectedCardId ?? rootNodeId;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(id));
+          : _selectedNodeId;
+      if (id != null) WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVisible(id));
     }
   }
 
@@ -1469,7 +1472,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.image,
       spec.imageHeight,
       spec.suspended,
-      widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+      widget.selectedCardIds.contains(id) || id == _selectedNodeId,
       id == widget.flashCardId || widget.flashCardIds.contains(id),
       _dragging?.contains(id) ?? false,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
@@ -1520,7 +1523,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 },
                 look: look,
                 transformation: widget.transformation,
-                selected: widget.selectedCardIds.contains(id) || id == (widget.selectedCardId ?? rootNodeId),
+                selected: widget.selectedCardIds.contains(id) || id == _selectedNodeId,
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
                 longPressEnabled: id == rootNodeId,
                 onPressStart: (kind) =>
@@ -1670,7 +1673,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     } else if ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null)) {
       _lastFit = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _ensureVisible(widget.editingCardId ?? widget.selectedCardId ?? rootNodeId, settled: true);
+        final id = widget.editingCardId ?? _selectedNodeId;
+        if (mounted && id != null) _ensureVisible(id, settled: true);
       });
     }
 
