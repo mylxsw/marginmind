@@ -180,6 +180,7 @@ class WorkspaceState {
     this.sidebarQuery = '',
     this.tagFilter,
     this.selectedCardId,
+    this.rootSelected = false,
     this.selectedCardIds = const {},
     this.flashCardId,
     this.flashCardIds = const {},
@@ -232,8 +233,11 @@ class WorkspaceState {
   final String sidebarQuery;
   final String? tagFilter;
 
-  /// Selected map node; null means the root.
+  /// Selected card, or null when no card is selected.
   final String? selectedCardId;
+
+  /// The map root is selected explicitly, independently of the default insertion parent.
+  final bool rootSelected;
   final Set<String> selectedCardIds;
   final String? flashCardId;
   final Set<String> flashCardIds;
@@ -308,6 +312,7 @@ class WorkspaceState {
     String? selectedCardId,
     Set<String>? selectedCardIds,
     bool selectRoot = false,
+    bool? rootSelected,
     String? flashCardId,
     Set<String>? flashCardIds,
     int? locateCardTick,
@@ -364,6 +369,11 @@ class WorkspaceState {
           ? Set.unmodifiable({selectedCardId})
           : this.selectedCardIds,
       selectedCardId: selectRoot ? null : (selectedCardId ?? this.selectedCardId),
+      rootSelected:
+          rootSelected ??
+          (selectRoot || selectedCardId != null || selectedCardIds != null || selectedMarkId != null
+              ? false
+              : this.rootSelected),
       locateCardTick: locateCardTick ?? this.locateCardTick,
       flashCardId: clearFlash ? null : (flashCardId ?? this.flashCardId),
       flashCardIds: clearFlash ? const {} : (flashCardIds ?? this.flashCardIds),
@@ -654,6 +664,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       activeDocumentId: active,
       clearActive: active == null,
       selectRoot: selectedId == null,
+      rootSelected: s.rootSelected && mapId == s.activeMapId,
       selectedCardId: selectedId,
       selectedCardIds: selectedIds,
     );
@@ -1844,6 +1855,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   static final _imageName = RegExp(r'^images/[0-9a-f]{64}\.(png|jpg)$');
 
+  /// Selects the map root without making it a content card.
+  void selectMapRoot() => state = state.copyWith(selectRoot: true, rootSelected: true);
+
   void selectCard(String? cardId) {
     state = cardId == null ? state.copyWith(selectRoot: true) : state.copyWith(selectedCardId: cardId);
     final annotationId = cardId == null ? null : content.card(cardId)?.annotationId;
@@ -2106,6 +2120,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (_editing != null || _markEditing != null || _creating) return null;
     _creating = true;
     final previous = state.selectedCardId;
+    final previousRootSelected = state.rootSelected;
     final Card? card;
     try {
       await beginTransaction();
@@ -2122,7 +2137,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     } finally {
       _creating = false;
     }
-    _editing = _EditSession(card.id, created: true, previousSelection: previous);
+    _editing = _EditSession(
+      card.id,
+      created: true,
+      previousSelection: previous,
+      previousRootSelected: previousRootSelected,
+    );
     state = state.copyWith(editingCardId: card.id, layout: _layoutShowingMap);
     return card;
   }
@@ -2181,7 +2201,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (!ref.mounted) return;
     state = previous != null && content.card(previous) != null
         ? state.copyWith(selectedCardId: previous)
-        : state.copyWith(selectRoot: true);
+        : state.copyWith(selectRoot: true, rootSelected: session.previousRootSelected);
   }
 
   Future<void> removeCards(Iterable<String> cardIds) {
@@ -2252,7 +2272,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         target = siblings[i].cardId;
         found = true;
     }
-    if (found) selectCard(target);
+    if (found) {
+      if (target == null) {
+        selectMapRoot();
+      } else {
+        selectCard(target);
+      }
+    }
   }
 
   Future<RemovedNotice?> removeSelected() async {
@@ -2427,13 +2453,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 }
 
 class _EditSession {
-  const _EditSession(this.cardId, {required this.created, required this.previousSelection});
+  const _EditSession(
+    this.cardId, {
+    required this.created,
+    required this.previousSelection,
+    this.previousRootSelected = false,
+  });
 
   final String cardId;
 
   /// The card was added for this edit inside an open transaction.
   final bool created;
   final String? previousSelection;
+  final bool previousRootSelected;
 }
 
 class _MarkEditSession {

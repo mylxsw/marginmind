@@ -118,9 +118,11 @@ class MapNodeBar extends StatelessWidget {
     required this.onRelation,
     required this.onDelete,
     this.onAssistant,
+    this.root = false,
   });
 
   final VoidCallback onChild, onSibling, onNote, onImage, onRelation, onDelete;
+  final bool root;
 
   /// Opens the assistant's actions for the node, anchored below [anchor].
   final ValueChanged<Offset>? onAssistant;
@@ -146,9 +148,9 @@ class MapNodeBar extends StatelessWidget {
         children: [
           action('child', l.nodeBarChild, onChild, '${l.addChildTopic}  ⇥'),
           action('sibling', l.nodeBarSibling, onSibling, '${l.addSiblingAfter}  ↩'),
-          action('note', l.nodeBarNote, onNote, '${l.addNote}  ⌥⌘N'),
+          if (!root) action('note', l.nodeBarNote, onNote, '${l.addNote}  ⌥⌘N'),
           action('image', l.nodeBarImage, onImage, l.insertImage),
-          action('relation', l.selectionRelation, onRelation, '${l.addRelation}  ⌥⌘R'),
+          if (!root) action('relation', l.selectionRelation, onRelation, '${l.addRelation}  ⌥⌘R'),
           if (onAssistant != null) ...[
             const MMToolbarDivider(),
             Builder(
@@ -158,8 +160,10 @@ class MapNodeBar extends StatelessWidget {
               }, l.askAssistant),
             ),
           ],
-          const MMToolbarDivider(),
-          action('delete', l.selectionDelete, onDelete, '${l.removeFromMap}  ⌫'),
+          if (!root) ...[
+            const MMToolbarDivider(),
+            action('delete', l.selectionDelete, onDelete, '${l.removeFromMap}  ⌫'),
+          ],
         ],
       ),
     );

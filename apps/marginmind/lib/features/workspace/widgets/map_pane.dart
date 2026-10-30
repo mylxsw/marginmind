@@ -213,15 +213,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
     ];
   }
 
-  /// The toolbar above a single selected card; none for the root.
+  /// The root has only the actions that apply to the whole map.
   Widget? _nodeBar(String? cardId, VoidCallback remove) {
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     final card = cardId == null ? null : controller.content.card(cardId);
-    if (card == null) return null;
+    final root = ref.read(workspaceProvider(widget.studySetId)).rootSelected;
+    if (card == null && !root) return null;
     final assistant = _assistantEntries(card);
     return MapNodeBar(
+      root: root,
       onChild: () => addTopic(asChild: true),
-      onSibling: () => _command(MindMapCommand.siblingAfter),
+      onSibling: root ? () => addTopic(asChild: true) : () => _command(MindMapCommand.siblingAfter),
       onNote: addNote,
       onImage: () => pickAndInsertImages(context, ref, widget.studySetId),
       onRelation: controller.addRelation,
@@ -383,6 +385,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
         (s) => (
           s.activeMapId,
           s.selectedCardId,
+          s.rootSelected,
           s.selectedCardIds,
           s.mapView,
           s.flashCardId,
@@ -469,6 +472,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     mapId: state.activeMapId,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
+                    rootSelected: state.rootSelected,
+                    onSelectRoot: controller.selectMapRoot,
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     flashCardId: state.flashCardId,
@@ -535,6 +540,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     mapId: state.activeMapId,
                     rootTitle: rootTitle,
                     selectedCardId: state.selectedCardId,
+                    rootSelected: state.rootSelected,
+                    onSelectRoot: controller.selectMapRoot,
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     focusNode: _focus,

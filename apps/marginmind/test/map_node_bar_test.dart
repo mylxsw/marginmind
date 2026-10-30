@@ -1,7 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
+import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
@@ -41,7 +43,9 @@ void main() {
     });
   }
 
-  testWidgets('one selected node gets its own toolbar; several get the selection bar; the root none', (tester) async {
+  testWidgets('one selected node gets its own toolbar; several get the selection bar; no selection gets none', (
+    tester,
+  ) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     WorkspaceState state() => container.read(workspaceProvider('demo-1'));
@@ -117,7 +121,69 @@ void main() {
     });
   }
 
-  testWidgets('deselecting returns focus to the root without moving the view', (tester) async {
+  testWidgets('only an explicit root click shows its reduced menu; blank canvas clears it', (tester) async {
+    final container = await openFirstSet(tester);
+    final controller = container.read(workspaceProvider('demo-1').notifier);
+    WorkspaceState state() => container.read(workspaceProvider('demo-1'));
+    final root = find.byKey(const ValueKey(rootNodeId));
+    bool rootHighlighted() =>
+        tester.widget<MMInteractive>(find.descendant(of: root, matching: find.byType(MMInteractive))).selected;
+    expect(state().rootSelected, isFalse);
+    expect(rootHighlighted(), isFalse);
+    expect(find.byType(MapNodeBar), findsNothing);
+
+    await tester.tap(root);
+    await tester.pump(kDoubleTapTimeout);
+    await tester.pumpAndSettle();
+    expect(state().rootSelected, isTrue);
+    expect(state().selectedCardIds, isEmpty);
+    expect(rootHighlighted(), isTrue);
+    for (final action in ['child', 'sibling', 'image', 'assistant']) {
+      expect(find.byKey(ValueKey('node-bar-$action')), findsOneWidget);
+    }
+    for (final action in ['note', 'relation', 'delete']) {
+      expect(find.byKey(ValueKey('node-bar-$action')), findsNothing);
+    }
+    await tester.ensureVisible(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    expect(find.text('Organize This Branch…'), findsOneWidget);
+    await key(tester, LogicalKeyboardKey.escape);
+
+    for (final action in ['child', 'sibling']) {
+      final button = find.byKey(ValueKey('node-bar-$action'));
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+      expect(controller.content.node(state().editingCardId!)!.parentId, isNull);
+      expect(state().rootSelected, isFalse);
+      await controller.cancelEditing();
+      await tester.pumpAndSettle();
+      expect(state().rootSelected, isTrue, reason: 'cancel returns to the explicit root selection');
+    }
+
+    final canvas = tester.getRect(find.byType(MindMapCanvas));
+    final transform = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas)).transformation;
+    final before = transform.value.clone();
+    await tester.tapAt(canvas.bottomRight - const Offset(100, 100));
+    await tester.pumpAndSettle();
+    expect(state().rootSelected, isFalse);
+    expect(state().selectedCardId, isNull);
+    expect(rootHighlighted(), isFalse);
+    expect(find.byType(MapNodeBar), findsNothing);
+    expect(transform.value, before);
+
+    // With nothing selected, new content still goes under the root.
+    await key(tester, LogicalKeyboardKey.tab);
+    expect(controller.content.node(state().editingCardId!)!.parentId, isNull);
+    await controller.cancelEditing();
+    await tester.pumpAndSettle();
+    expect(state().rootSelected, isFalse);
+    expect(rootHighlighted(), isFalse);
+    await settleHud(tester);
+  });
+
+  testWidgets('deselecting leaves no node selected without moving the view', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     controller.selectCard('c3');
@@ -131,6 +197,7 @@ void main() {
     await key(tester, LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider('demo-1')).selectedCardId, isNull);
+    expect(container.read(workspaceProvider('demo-1')).rootSelected, isFalse);
     expect(view.value, before);
     await settleHud(tester);
   });

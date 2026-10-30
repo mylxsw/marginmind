@@ -98,6 +98,8 @@ class MindMapCanvas extends StatefulWidget {
     required this.onShift,
     this.onCommand,
     this.selectedCardIds = const {},
+    this.rootSelected = false,
+    this.onSelectRoot,
     this.onToggleSelection,
     this.onSelectMany,
     this.editingCardId,
@@ -175,6 +177,8 @@ class MindMapCanvas extends StatefulWidget {
   final String mapId;
   final String rootTitle;
   final String? selectedCardId;
+  final bool rootSelected;
+  final VoidCallback? onSelectRoot;
   final Set<String> selectedCardIds;
   final ValueChanged<String>? onToggleSelection;
   final ValueChanged<Set<String>>? onSelectMany;
@@ -275,8 +279,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _touchDragMoved = false;
   bool _touchDragCancelled = false;
 
-  /// A mark selection clears the card id too, but does not select the root.
-  String? get _selectedNodeId => widget.selectedMarkId == null ? widget.selectedCardId ?? rootNodeId : null;
+  String? get _selectedNodeId =>
+      widget.selectedMarkId == null ? (widget.rootSelected ? rootNodeId : widget.selectedCardId) : null;
 
   bool get _additive =>
       HardwareKeyboard.instance.isShiftPressed ||
@@ -284,6 +288,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       HardwareKeyboard.instance.isControlPressed;
 
   void _select(String? id, {required bool additive}) {
+    if (id == rootNodeId) {
+      if (widget.onSelectRoot != null) {
+        widget.onSelectRoot!();
+      } else {
+        widget.onSelect(null);
+      }
+      return;
+    }
     if (id != null && additive && widget.onToggleSelection != null) {
       widget.onToggleSelection!(id);
     } else if (id != null && additive && widget.onSelectMany != null) {
@@ -574,7 +586,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       });
     }
     final deselecting = _deselecting;
-    if (widget.selectedCardId != oldWidget.selectedCardId) _deselecting = false;
+    if (widget.selectedCardId != oldWidget.selectedCardId || widget.rootSelected != oldWidget.rootSelected) {
+      _deselecting = false;
+    }
     if (widget.locateCardTick > 0 &&
         widget.locateCardTick != oldWidget.locateCardTick &&
         widget.selectedCardId != null) {
@@ -594,8 +608,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     }
   }
 
-  /// Set when the selection returns to the root by deselecting (a tap on the
-  /// empty canvas, Esc): focus moves to the root but the view stays put.
+  /// Clearing the selection (empty canvas, Esc) leaves the viewport in place.
   bool _deselecting = false;
 
   void _deselect() {
@@ -712,8 +725,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         _centerOn(selected ?? rootNodeId, math.max(mapLocateScale, mapScale(widget.transformation.value)));
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
         widget.onCommand?.call(command);
-      case MindMapCommand.siblingAfter ||
-          MindMapCommand.siblingBefore ||
+      case MindMapCommand.siblingAfter:
+        if (widget.rootSelected) {
+          widget.onAddChild();
+        } else if (selected != null) {
+          widget.onCommand?.call(command);
+        }
+      case MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
           MindMapCommand.promote ||
           MindMapCommand.relation ||
@@ -1572,7 +1590,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     }
                     return;
                   }
-                  _select(id == rootNodeId ? null : id, additive: additive);
+                  _select(id, additive: additive);
                 },
                 onDoubleTap: id == rootNodeId
                     ? null
@@ -1600,7 +1618,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     : (position) {
                         widget.focusNode.requestFocus();
                         final selected = id == rootNodeId ? null : id;
-                        if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
+                        if (selected == null || !widget.selectedCardIds.contains(selected)) {
+                          _select(id, additive: false);
+                        }
                         widget.onContextMenu!(selected, position);
                       },
                 onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
@@ -2126,7 +2146,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     animation: Listenable.merge([widget.transformation, _motion]),
                     builder: (context, _) {
                       final selected = [
-                        for (final id in {...widget.selectedCardIds, ?widget.selectedCardId})
+                        for (final id in {
+                          ...widget.selectedCardIds,
+                          ?widget.selectedCardId,
+                          if (widget.rootSelected) rootNodeId,
+                        })
                           if (result.rects[id] case final rect?)
                             MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
                       ];

@@ -29,6 +29,8 @@ class OutlineView extends StatefulWidget {
     required this.onShift,
     this.onCommand,
     this.selectedCardIds = const {},
+    this.rootSelected = false,
+    this.onSelectRoot,
     this.onToggleSelection,
     this.editingCardId,
     this.onEditDone,
@@ -39,6 +41,8 @@ class OutlineView extends StatefulWidget {
   final String mapId;
   final String rootTitle;
   final String? selectedCardId;
+  final bool rootSelected;
+  final VoidCallback? onSelectRoot;
   final Set<String> selectedCardIds;
   final ValueChanged<String>? onToggleSelection;
   final FocusNode focusNode;
@@ -221,11 +225,13 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         if (selected != null) widget.onShift(command == MindMapCommand.up ? -1 : 1);
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
         widget.onCommand?.call(command);
-      case MindMapCommand.siblingAfter ||
-          MindMapCommand.siblingBefore ||
-          MindMapCommand.parent ||
-          MindMapCommand.promote ||
-          MindMapCommand.merge:
+      case MindMapCommand.siblingAfter:
+        if (widget.rootSelected) {
+          widget.onAddChild();
+        } else if (selected != null) {
+          widget.onCommand?.call(command);
+        }
+      case MindMapCommand.siblingBefore || MindMapCommand.parent || MindMapCommand.promote || MindMapCommand.merge:
         if (selected != null) widget.onCommand?.call(command);
       // The outline always shows the whole tree and has no viewport to fit.
       // Relations and summaries are drawn on the map only.
@@ -256,7 +262,11 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         if (children.isEmpty) return;
         target = children.first.cardId;
     }
-    widget.onSelect(target);
+    if (target == null && widget.onSelectRoot != null) {
+      widget.onSelectRoot!();
+    } else {
+      widget.onSelect(target);
+    }
   }
 
   KeyEventResult _onKey(FocusNode _, KeyEvent event) {
@@ -298,7 +308,9 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
 
   void _tap(String? id, bool additive) {
     widget.focusNode.requestFocus();
-    if (id != null && additive && widget.onToggleSelection != null) {
+    if (id == null && widget.onSelectRoot != null) {
+      widget.onSelectRoot!();
+    } else if (id != null && additive && widget.onToggleSelection != null) {
       widget.onToggleSelection!(id);
     } else {
       widget.onSelect(id);
@@ -320,7 +332,9 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
     for (final entry in _entries) {
       final card = entry.card;
       final id = card?.id;
-      final selected = id == widget.selectedCardId || (id != null && widget.selectedCardIds.contains(id));
+      final selected = id == null
+          ? widget.rootSelected
+          : id == widget.selectedCardId || widget.selectedCardIds.contains(id);
       final cached = _rows[id];
       // Identical widgets let Flutter skip the unchanged row subtrees,
       // including text layout. Only the old/new selections need updating.
@@ -398,7 +412,10 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
         onKeyEvent: _onKey,
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap: widget.focusNode.requestFocus,
+          onTap: () {
+            widget.focusNode.requestFocus();
+            widget.onSelect(null);
+          },
           // Every row is built, so any of them can be scrolled to.
           child: SingleChildScrollView(
             controller: _scroll,
