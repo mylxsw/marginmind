@@ -4194,15 +4194,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String noteUpdateReady(int count) {
-    return '$count 处更新';
+    return '新增 $count 处';
   }
 
   @override
   String get noteUpdateStale => '笔记或原文已更改，请重新预览';
 
   @override
-  String get noteUpdateApplied => '笔记已更新';
+  String noteUpdateApplied(int count) {
+    return '已更新 · 新增 $count 条';
+  }
 
   @override
   String get noteLocalPlacement => '按原文顺序';
+
+  @override
+  String get noteAddToReview => '加入复习';
+
+  @override
+  String noteUpdateChanges(int count) {
+    return '$count 处更新';
+  }
 }

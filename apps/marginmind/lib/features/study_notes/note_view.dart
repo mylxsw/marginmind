@@ -151,6 +151,13 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     try {
       await _owner.applyStudyNoteUpdate(preview, deleted: changes.deleted, sourceFingerprint: _sourceFingerprint!);
       if (mounted) {
+        final previousIds = preview.base.sections.expand((s) => s.blocks).map((b) => b.id).toSet();
+        final added = _owner.content
+            .studyNote(preview.base.id)!
+            .sections
+            .expand((s) => s.blocks)
+            .where((b) => !previousIds.contains(b.id))
+            .length;
         _cancelUpdate();
         final inserted = changes.materials.highlights.firstOrNull;
         if (inserted != null) {
@@ -164,7 +171,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
               .firstOrNull;
           if (block != null) _jump(block.id);
         }
-        _undoHud(context.l10n.noteUpdateApplied);
+        _undoHud(context.l10n.noteUpdateApplied(added));
       }
     } catch (_) {
       if (mounted) {
@@ -182,6 +189,54 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   Widget _updateBar(NoteChanges changes) {
     final l = context.l10n, c = context.mmColors;
     final preview = _update != null;
+    if (preview) {
+      final title = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(MMIcons.regenerate, size: MMSizes.dropdownIcon, color: c.secondaryLabel),
+          const SizedBox(width: MMSpacing.s),
+          Text(l.noteUpdateReady(_insertReasons.length), style: context.mmText.headline),
+        ],
+      );
+      final cancel = MMButton(
+        key: const ValueKey('note-update-cancel'),
+        label: l.cancel,
+        variant: MMButtonVariant.plain,
+        onPressed: _updateBusy ? null : _cancelUpdate,
+      );
+      final apply = MMButton(
+        key: const ValueKey('note-update-apply'),
+        label: l.noteApplyUpdate,
+        variant: MMButtonVariant.primary,
+        onPressed: _updateBusy ? null : _applyUpdate,
+      );
+      return MMGlassBar(
+        key: const ValueKey('note-update-preview-bar'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+            child: LayoutBuilder(
+              builder: (context, constraints) => constraints.maxWidth < MMSizeClass.compactMaxWidth
+                  ? Wrap(
+                      spacing: MMSpacing.s,
+                      runSpacing: MMSpacing.s,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [title, cancel, apply],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(child: title),
+                        cancel,
+                        const SizedBox(width: MMSpacing.s),
+                        apply,
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       key: const ValueKey('note-update-banner'),
       constraints: const BoxConstraints(maxWidth: MMNoteLayout.measure),
@@ -197,25 +252,22 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            preview || changes.deleted.isNotEmpty
-                ? l.noteUpdateReady(changes.count)
+            changes.deleted.isNotEmpty
+                ? l.noteUpdateChanges(changes.count)
                 : l.noteNewMaterials(changes.highlights, changes.own),
             style: context.mmText.callout,
           ),
           MMButton(
-            key: ValueKey(preview ? 'note-update-apply' : 'note-update-preview'),
-            label: preview ? l.noteApplyUpdate : l.notePreviewUpdate,
+            key: const ValueKey('note-update-preview'),
+            label: l.notePreviewUpdate,
             variant: MMButtonVariant.primary,
-            onPressed: _updateBusy
-                ? null
-                : preview
-                ? _applyUpdate
-                : _previewUpdate,
+            onPressed: _updateBusy ? null : _previewUpdate,
           ),
           MMButton(
-            key: ValueKey(preview || _updateBusy ? 'note-update-cancel' : 'note-update-ignore'),
-            label: preview || _updateBusy ? l.cancel : l.noteIgnoreUpdate,
-            onPressed: preview || _updateBusy
+            key: ValueKey(_updateBusy ? 'note-update-cancel' : 'note-update-ignore'),
+            label: _updateBusy ? l.cancel : l.noteIgnoreUpdate,
+            variant: MMButtonVariant.plain,
+            onPressed: _updateBusy
                 ? _cancelUpdate
                 : () => ref
                       .read(noteIgnoredUpdatesProvider((widget.studySetId, widget.noteId)).notifier)
@@ -849,9 +901,13 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       final ctx = a == null
           ? const NoteContext(noText: true)
           : const NoteMaterialCollector().contextFor(content, a, note.settings.contextSentences, text: _text);
-      final question =
-          section.question ??
-          l.noteRecallQuestion(resolved.documentTitle ?? '', a == null || a.isText ? '' : l.pageNumber(a.page));
+      final aiQuestion =
+          note.settings.depth != NoteDepth.none &&
+          section.question?.trim().isNotEmpty == true &&
+          section.blocks.whereType<QuoteBlock>().firstOrNull?.id == block.id;
+      final question = aiQuestion
+          ? section.question!
+          : l.noteRecallQuestion(resolved.documentTitle ?? '', a == null || a.isText ? '' : l.pageNumber(a.page));
       final review = note.template == NoteTemplate.review;
       final visible = !review || _revealedAnswers.contains(block.id);
       child = DecoratedBox(
@@ -871,7 +927,19 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (review) Text(question, style: context.mmText.headline),
+              if (review) ...[
+                if (aiQuestion)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      key: ValueKey('note-review-ai-${block.id}'),
+                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                      decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.row)),
+                      child: Text('AI', style: context.mmText.footnote.copyWith(color: c.onResearch)),
+                    ),
+                  ),
+                Text(question, key: ValueKey('note-review-question-${block.id}'), style: context.mmText.headline),
+              ],
               if (visible && block.contextOpen && ctx.before.isNotEmpty)
                 Text(ctx.before, style: MMNoteTypography.context.copyWith(color: c.secondaryLabel)),
               MMInteractive(
@@ -949,7 +1017,14 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                     tooltip: block.contextOpen ? l.noteCollapseContext : l.noteExpandContext,
                     onPressed: () => _toggleContext(note.id, block.id),
                   ),
-                  if (review) MMButton(label: l.review, onPressed: a == null ? null : () => _review(a, question)),
+                  if (review)
+                    MMButton(
+                      key: ValueKey('note-review-add-${block.id}'),
+                      label: l.noteAddToReview,
+                      variant: MMButtonVariant.plain,
+                      icon: MMIcons.review,
+                      onPressed: a == null ? null : () => _review(a, question),
+                    ),
                 ],
               ),
             ],

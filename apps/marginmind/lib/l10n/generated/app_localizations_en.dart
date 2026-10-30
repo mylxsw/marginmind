@@ -4375,15 +4375,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String noteUpdateReady(int count) {
-    return '$count changes';
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count additions', one: '1 addition');
+    return '$_temp0';
   }
 
   @override
   String get noteUpdateStale => 'The note or its sources changed. Preview again.';
 
   @override
-  String get noteUpdateApplied => 'Note updated';
+  String noteUpdateApplied(int count) {
+    return 'Updated · $count added';
+  }
 
   @override
   String get noteLocalPlacement => 'In source order';
+
+  @override
+  String get noteAddToReview => 'Add to Review';
+
+  @override
+  String noteUpdateChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count changes', one: '1 change');
+    return '$_temp0';
+  }
 }

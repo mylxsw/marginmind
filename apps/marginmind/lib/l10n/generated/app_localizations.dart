@@ -7829,7 +7829,7 @@ abstract class AppLocalizations {
   /// No description provided for @noteUpdateReady.
   ///
   /// In en, this message translates to:
-  /// **'{count} changes'**
+  /// **'{count, plural, =1{1 addition} other{{count} additions}}'**
   String noteUpdateReady(int count);
 
   /// No description provided for @noteUpdateStale.
@@ -7841,14 +7841,26 @@ abstract class AppLocalizations {
   /// No description provided for @noteUpdateApplied.
   ///
   /// In en, this message translates to:
-  /// **'Note updated'**
-  String get noteUpdateApplied;
+  /// **'Updated · {count} added'**
+  String noteUpdateApplied(int count);
 
   /// No description provided for @noteLocalPlacement.
   ///
   /// In en, this message translates to:
   /// **'In source order'**
   String get noteLocalPlacement;
+
+  /// No description provided for @noteAddToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Review'**
+  String get noteAddToReview;
+
+  /// No description provided for @noteUpdateChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change} other{{count} changes}}'**
+  String noteUpdateChanges(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -2236,9 +2236,9 @@
   "notePreviewUpdate": "Preview Update",
   "noteApplyUpdate": "Apply Update",
   "noteIgnoreUpdate": "Ignore",
-  "noteUpdateReady": "{count} changes",
+  "noteUpdateReady": "{count, plural, =1{1 addition} other{{count} additions}}",
   "noteUpdateStale": "The note or its sources changed. Preview again.",
-  "noteUpdateApplied": "Note updated",
+  "noteUpdateApplied": "Updated · {count} added",
   "noteLocalPlacement": "In source order",
   "@noteNewMaterials": {
     "placeholders": {
@@ -2256,5 +2256,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noteAddToReview": "Add to Review",
+  "noteUpdateChanges": "{count, plural, =1{1 change} other{{count} changes}}",
+  "@noteUpdateApplied": {"placeholders": {"count": {"type": "int"}}},
+  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}}
 }

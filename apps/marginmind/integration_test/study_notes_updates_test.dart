@@ -81,6 +81,7 @@ void main() {
     await owner.changeStudyNote(
       note.id,
       (n) => n.copyWith(
+        settings: NoteSettings.fromJson({...n.settings.toJson(), 'depth': 'deep'}),
         sections: [
           for (final section in n.sections)
             section == n.sections.first
@@ -123,6 +124,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('note-update-preview')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('note-update-apply')));
+    await tester.pumpAndSettle();
+    await shot('update-applied');
     await settleHud(tester);
     await shot('reading');
     await owner.changeStudyNote(note.id, (n) => n.copyWith(template: NoteTemplate.cornell));

@@ -141,6 +141,7 @@ void main() {
     expect(find.byKey(const ValueKey('note-update-badge-written')), findsOneWidget);
     await previewUpdate(tester);
     expect(find.text('In source order'), findsWidgets);
+    expect(find.text('2 additions'), findsOneWidget);
     expect(find.text('New evidence for active recall'), findsWidgets);
     expect(jsonEncode(owner.content.studyNotes.single.toJson()), before);
     await tester.tap(find.byKey(const ValueKey('note-update-cancel')));
@@ -157,6 +158,7 @@ void main() {
     expect(blocks.whereType<OwnBlock>().map((b) => b.sourceId), contains('fresh-own'));
     expect(blocks.whereType<TextBlock>().single.text, 'My corrected summary');
     expect(blocks.whereType<TextBlock>().single.edited, isTrue);
+    expect(find.text('Updated · 2 added'), findsOneWidget);
     expect(find.byKey(const ValueKey('note-update-banner')), findsNothing);
     expect(find.byKey(const ValueKey('note-update-badge-written')), findsNothing);
     expect(find.byTooltip('Keep when updating'), findsWidgets);
@@ -263,7 +265,9 @@ void main() {
       }
       if (template == NoteTemplate.review) {
         final quote = find.byKey(ValueKey('quote-${owner.content.annotations.first.id}'));
-        expect(tester.widget<MMInteractive>(quote).semanticLabel, 'Why recall?');
+        final recall =
+            'What does ${owner.content.documents.first.title} Page ${owner.content.annotations.first.page} say?';
+        expect(tester.widget<MMInteractive>(quote).semanticLabel, recall);
         expect(
           tester.widget<ImageFiltered>(find.descendant(of: quote, matching: find.byType(ImageFiltered))).enabled,
           isTrue,
@@ -275,13 +279,13 @@ void main() {
           tester.widget<ImageFiltered>(find.descendant(of: quote, matching: find.byType(ImageFiltered))).enabled,
           isFalse,
         );
-        final review = find.byWidgetPredicate((w) => w is MMButton && w.label == 'Review' && w.onPressed != null);
+        final review = find.byWidgetPredicate(
+          (w) => w is MMButton && w.label == 'Add to Review' && w.onPressed != null,
+        );
         await tester.tap(review.first);
         await tester.pumpAndSettle();
         expect(
-          owner.content.cards.any(
-            (c) => c.title == 'Why recall?' && c.body.contains(owner.content.annotations.first.quote),
-          ),
+          owner.content.cards.any((c) => c.title == recall && c.body.contains(owner.content.annotations.first.quote)),
           isTrue,
         );
       }
@@ -345,10 +349,15 @@ void main() {
     await previewUpdate(tester);
     expect(owner.content.studyNotes.single.template, NoteTemplate.review);
     final scroll = find.byKey(const ValueKey('note-scroll'));
+    final bar = find.byKey(const ValueKey('note-update-preview-bar'));
+    final barTop = tester.getTopLeft(bar);
+    expect(tester.getSize(bar).width, tester.getSize(find.byType(StudyNoteView)).width);
+    expect(tester.widget<MMGlassBar>(bar), isNotNull);
     final controller = tester.widget<SingleChildScrollView>(scroll).controller!;
     await tester.drag(scroll, const Offset(0, -200));
     await tester.pumpAndSettle();
     expect(controller.offset, greaterThan(0));
+    expect(tester.getTopLeft(bar), barTop);
     expect(find.descendant(of: scroll, matching: find.byType(TextField)), findsNothing);
     await tester.tap(find.byKey(const ValueKey('note-update-cancel')));
     await tester.pumpAndSettle();
@@ -406,4 +415,65 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('note-update-cancel')));
     await settleHud(tester);
   }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  testWidgets('section AI question appears once and each review card saves its own displayed question', (tester) async {
+    final content = updateFixture(template: NoteTemplate.review, ai: true);
+    final note = content.studyNotes.single;
+    final section = note.sections.single;
+    final c = content.copyWith(
+      studyNotes: [
+        note.copyWith(
+          sections: [
+            section.copyWith(
+              blocks: [
+                ...section.blocks,
+                const QuoteBlock(id: 'second-quote', annotationId: 'fresh'),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+    final container = await openNote(tester, content: c, size: const Size(1800, 1100));
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    expect(tester.widget<Text>(find.byKey(const ValueKey('note-review-question-quote'))).data, 'Why recall?');
+    final fallback = 'What does ${content.documents.first.title} Page ${content.annotations.last.page} say?';
+    expect(tester.widget<Text>(find.byKey(const ValueKey('note-review-question-second-quote'))).data, fallback);
+    expect(find.byKey(const ValueKey('note-review-ai-quote')), findsOneWidget);
+    expect(find.byKey(const ValueKey('note-review-ai-second-quote')), findsNothing);
+    for (final id in ['quote', 'second-quote']) {
+      final button = find.byKey(ValueKey('note-review-add-$id'));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      final widget = tester.widget<MMButton>(button);
+      expect(widget.label, 'Add to Review');
+      expect(widget.variant, MMButtonVariant.plain);
+      expect(widget.icon, MMIcons.review);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+    expect(
+      owner.content.cards.any((c) => c.title == 'Why recall?' && c.body.contains(content.annotations.first.quote)),
+      isTrue,
+    );
+    expect(
+      owner.content.cards.any((c) => c.title == fallback && c.body.contains(content.annotations.last.quote)),
+      isTrue,
+    );
+    await settleHud(tester);
+  });
+
+  testWidgets('narrow Chinese preview bar and applied count match the copy specification', (tester) async {
+    await openNote(tester, content: updateFixture(), language: 'zh', size: const Size(960, 900));
+    await previewUpdate(tester);
+    final bar = find.byKey(const ValueKey('note-update-preview-bar'));
+    expect(find.text('新增 2 处'), findsOneWidget);
+    expect(tester.getSize(bar).width, tester.getSize(find.byType(StudyNoteView)).width);
+    expect(find.descendant(of: bar, matching: find.byIcon(MMIcons.regenerate)), findsOneWidget);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('note-update-cancel'))).variant, MMButtonVariant.plain);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey('note-update-apply')));
+    await tester.pumpAndSettle();
+    expect(find.text('已更新 · 新增 2 条'), findsOneWidget);
+    await settleHud(tester);
+  });
 }

@@ -26,7 +26,7 @@ def main():
     names = {'outline', 'generating', 'ai-on', 'ai-off'} if args.ai else NAMES
     target = 'integration_test/study_notes_ai_test.dart' if args.ai else 'integration_test/study_notes_test.dart'
     if args.updates:
-        names = {'update-banner', 'update-preview', 'reading', 'cornell', 'review', 'review-dark'}
+        names = {'update-banner', 'update-preview', 'update-applied', 'reading', 'cornell', 'review', 'review-dark'}
         target = 'integration_test/study_notes_updates_test.dart'
     captured = set()
 
