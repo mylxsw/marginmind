@@ -87,8 +87,12 @@ void main() {
     expect(initial.bookReading.size, 7);
     expect(initial.articleReading.lineHeight, 0);
     expect(initial.articleReading.paged, isFalse);
+    for (final format in [DocumentFormat.epub, DocumentFormat.mobi, DocumentFormat.azw3]) {
+      expect(initial.reading(format).paged, isFalse);
+      expect(const AppSettings().reading(format).paged, isFalse);
+    }
     expect(initial.bookReading.font, ReaderFont.original);
-    final value = const ReadingSettings().copyWith(size: 5, lineHeight: 2, font: ReaderFont.sans, paged: false);
+    final value = const ReadingSettings().copyWith(size: 5, lineHeight: 2, font: ReaderFont.sans, paged: true);
     await container.read(settingsProvider.notifier).setReading(DocumentFormat.epub, value);
     expect(container.read(settingsProvider).reading(DocumentFormat.mobi), value);
     expect(container.read(settingsProvider).articleReading.size, 3);

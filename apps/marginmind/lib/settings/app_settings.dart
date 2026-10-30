@@ -33,7 +33,7 @@ class ReadingSettings {
     this.size = MMReaderTypography.defaultSize,
     this.lineHeight = 1,
     this.font = ReaderFont.original,
-    this.paged = true,
+    this.paged = false,
   });
   final int size, lineHeight;
   final ReaderFont font;
@@ -136,7 +136,7 @@ class SettingsController extends Notifier<AppSettings> {
       ),
       lineHeight: (prefs.getInt('$key.lineHeight') ?? 1).clamp(0, MMReaderTypography.lineHeights.length - 1),
       font: _parse(ReaderFont.values, prefs.getString('$key.font'), article ? ReaderFont.serif : ReaderFont.original),
-      paged: prefs.getBool('$key.paged') ?? !article,
+      paged: prefs.getBool('$key.paged') ?? false,
     );
     return AppSettings(
       bookReading: reading('settings.reading.book'),

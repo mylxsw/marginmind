@@ -15,6 +15,7 @@ import 'package:marginmind/features/workspace/widgets/reader_zoom_control.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/features/workspace/widgets/reflow_reader.dart';
+import 'package:marginmind/features/workspace/widgets/reflow_scroll_reader.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:mm_core/testing.dart';
@@ -114,6 +115,8 @@ void main() {
     workspace.openDocument(doc.id);
     await tester.pumpAndSettle();
     final session = container.read(reflowSessionProvider(('demo-1', doc.id)));
+    expect(container.read(settingsProvider).bookReading.paged, isFalse);
+    expect(find.byType(ReflowScrollReader), findsOneWidget);
     await tester.tap(find.byTooltip('Reading Settings'));
     await tester.pumpAndSettle();
     expect(find.byType(ReadingSettingsPanel), findsOneWidget);
@@ -126,6 +129,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sans'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Pages'));
+    await tester.pumpAndSettle();
+    expect(container.read(settingsProvider).bookReading.paged, isTrue);
+    expect(find.byType(ReflowScrollReader), findsNothing);
     await tester.tap(find.text('Scroll'));
     await tester.pumpAndSettle();
     expect(container.read(settingsProvider).bookReading.paged, isFalse);
@@ -166,10 +173,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('continuous scroll crosses chapters and restores a source position', (tester) async {
+  testWidgets('EPUB scrolls by default across chapters and restores a source position', (tester) async {
     final repo = InMemoryStudySetContentRepository();
     final doc = await storeBook(
       repo,
+      format: DocumentFormat.epub,
       book: Book(
         'Two chapters',
         [

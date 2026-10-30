@@ -34,7 +34,12 @@ void main() {
         [],
       ),
     );
-    final container = await pumpApp(tester, content: repo, size: const Size(1600, 800));
+    final container = await pumpApp(
+      tester,
+      content: repo,
+      size: const Size(1600, 800),
+      prefs: {'settings.reading.book.paged': true},
+    );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
     final workspace = container.read(workspaceProvider('demo-1').notifier);

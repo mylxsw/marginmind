@@ -213,7 +213,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(workspace.content.inkStrokes, isNotEmpty);
     final before = workspace.content.inkStrokes.first.toJson();
-    await c.read(settingsProvider.notifier).setReading(doc.format, const ReadingSettings(size: 6));
+    await c.read(settingsProvider.notifier).setReading(doc.format, const ReadingSettings(size: 6, paged: true));
     await tester.pumpAndSettle();
     expect(workspace.content.inkStrokes.first.toJson(), before);
     workspace.setInkTool(MMPdfInkTool.eraser);
