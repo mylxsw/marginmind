@@ -102,7 +102,7 @@ class NoteShareCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: MMSpacing.s),
-                      text(p.citation ?? '', MMShareCardStyle.caption, opacity: .5),
+                      text(p.shareCitation ?? p.citation ?? '', MMShareCardStyle.caption, opacity: .5),
                     ],
                   ),
                   NoteParagraphKind.own => Container(

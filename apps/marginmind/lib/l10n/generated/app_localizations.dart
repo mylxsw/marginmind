@@ -7963,6 +7963,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rich Text'**
   String get noteRichText;
+
+  /// No description provided for @studyNoteSavedImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get studyNoteSavedImage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

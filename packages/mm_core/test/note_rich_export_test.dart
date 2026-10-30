@@ -6,6 +6,24 @@ import 'package:test/test.dart';
 import 'study_notes_test.dart' as fixture;
 
 void main() {
+  test('consecutive points share one HTML list, including a trailing list', () {
+    final doc = NoteRichDocument('T', const [
+      NoteParagraph(NoteParagraphKind.point, 'First'),
+      NoteParagraph(NoteParagraphKind.point, 'Second <&'),
+      NoteParagraph(NoteParagraphKind.text, 'Break'),
+      NoteParagraph(NoteParagraphKind.point, 'Third', ai: 'AI'),
+    ], NoteCitationStyle.none);
+    expect('<ul>'.allMatches(doc.html), hasLength(2));
+    expect(doc.html, contains('<ul>\n<li>First</li>\n<li>Second &lt;&amp;</li>\n</ul>\n<p>Break</p>'));
+    expect(doc.html, contains('<ul>\n<li><strong>AI</strong> Third</li>\n</ul>\n</body>'));
+  });
+  test('share citations omit book brackets and separate title from location', () {
+    final doc = NoteRichDocument.resolve(fixture.content(), fixture.note());
+    final quote = doc.paragraphs.firstWhere((p) => p.kind == NoteParagraphKind.quote);
+    expect(quote.citation, startsWith('《'));
+    expect(quote.shareCitation, isNot(contains('《')));
+    expect(quote.shareCitation, contains(' · p.'));
+  });
   for (final citation in NoteCitationStyle.values) {
     test('HTML golden ${citation.name}', () {
       final document = NoteRichDocument.resolve(

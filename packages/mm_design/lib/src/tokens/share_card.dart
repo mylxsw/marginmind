@@ -14,6 +14,7 @@ abstract final class MMShareCardStyle {
   static const width = 330.0, padding = 24.0, radius = 14.0;
   static const quoteBar = 2.5, rule = .5, icon = 18.0;
   static const annotation = Color(0xffffcc00);
+  static const previewShadow = BoxShadow(color: Color(0x24000000), offset: Offset(0, 6), blurRadius: 24);
   static const title = TextStyle(fontSize: 18, fontWeight: FontWeight.w700, height: 1.4);
   static const section = TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.7);
   static const body = TextStyle(fontSize: 12, height: 1.7);

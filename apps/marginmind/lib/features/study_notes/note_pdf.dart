@@ -85,7 +85,7 @@ class NotePdf {
               : ''}${p.text}';
       var noteLines = <String>[];
       if (quote && document.citations == NoteCitationStyle.footnote) {
-        value = '[${++index}] $value';
+        value = '$value [${++index}]';
         noteLines = lines('[$index] ${p.citation ?? ''}', 9);
       }
       // Exceptionally long source names still fit: their footnote continues on
@@ -97,14 +97,17 @@ class NotePdf {
         finish();
         noteLines = noteLines.skip(35).toList();
       }
-      final needed = noteLines.length * 13.0;
       final keepNext = p.kind == NoteParagraphKind.heading ? 11 * 1.6 + 10 : 0;
-      if (y + size * 1.6 + keepNext > height - 64 - reserved - needed) finish();
-      footnotes.addAll(noteLines);
-      reserved += needed;
-      for (final line in lines(value, size, serif: quote)) {
+      if (y + size * 1.6 + keepNext > height - 64 - reserved) finish();
+      final paragraphLines = lines(value, size, serif: quote);
+      for (final (i, line) in paragraphLines.indexed) {
         final lineHeight = size * 1.6;
-        if (y + lineHeight > height - 64 - reserved) finish();
+        final needed = i == paragraphLines.length - 1 ? noteLines.length * 13.0 : 0.0;
+        if (y + lineHeight > height - 64 - reserved - needed) finish();
+        if (i == paragraphLines.length - 1) {
+          footnotes.addAll(noteLines);
+          reserved += needed;
+        }
         if (p.kind == NoteParagraphKind.own) {
           commands.add(box(margin, y - 2, width - margin * 2, lineHeight, 0xfffff3c4));
         }

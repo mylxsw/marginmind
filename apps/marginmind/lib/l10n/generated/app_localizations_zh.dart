@@ -4268,4 +4268,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noteRichText => '富文本';
+
+  @override
+  String get studyNoteSavedImage => '已存储';
 }

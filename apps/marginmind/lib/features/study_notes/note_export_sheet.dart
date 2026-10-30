@@ -15,6 +15,7 @@ import 'note_docx.dart';
 import 'note_export_preview.dart';
 import 'note_pdf.dart';
 import 'note_share_sheet.dart';
+import 'note_filename.dart';
 
 Future<void> showNoteExportSheet(
   BuildContext context,
@@ -145,8 +146,7 @@ class _NoteExportSheetState extends State<NoteExportSheet> {
         if (path == null) throw StateError('Missing image');
         attachments[entry.key] = await MMNoteFiles.read(path);
       }
-      final sanitized = widget.note.title.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f\x7f]'), '').trim();
-      final name = '${sanitized.isEmpty ? 'note' : sanitized}.$_extension';
+      final name = noteFileName(widget.note.title, _extension);
       final Uint8List bytes = switch (_target) {
         'docx' => NoteDocx.encode(_rich()),
         'pdf' => await NotePdf.encode(_rich()),

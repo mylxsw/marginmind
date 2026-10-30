@@ -4451,4 +4451,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteRichText => 'Rich Text';
+
+  @override
+  String get studyNoteSavedImage => 'Saved';
 }

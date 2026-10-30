@@ -13,10 +13,19 @@ import 'study_set_content.dart';
 enum NoteParagraphKind { title, heading, quote, own, text, point, action, question, context, source }
 
 class NoteParagraph {
-  const NoteParagraph(this.kind, this.text, {this.citation, this.colorIndex = 0, this.ai = '', this.target});
+  const NoteParagraph(
+    this.kind,
+    this.text, {
+    this.citation,
+    this.shareCitation,
+    this.colorIndex = 0,
+    this.ai = '',
+    this.target,
+  });
   final NoteParagraphKind kind;
   final String text, ai;
   final String? citation, target;
+  final String? shareCitation;
   final int colorIndex;
 }
 
@@ -72,6 +81,7 @@ class NoteRichDocument {
                 NoteParagraphKind.quote,
                 a?.quote ?? label('划线已删除', 'Highlight deleted'),
                 citation: citation,
+                shareCitation: '$title${location.isEmpty ? '' : ' · $location'}$status',
                 colorIndex: a?.colorIndex ?? 0,
               ),
             );
@@ -176,7 +186,12 @@ class NoteRichDocument {
     );
     final footnotes = <String>[];
     var index = 0;
+    var listOpen = false;
     for (final p in paragraphs) {
+      if (listOpen && p.kind != NoteParagraphKind.point) {
+        out.writeln('</ul>');
+        listOpen = false;
+      }
       final text = '${p.ai.isEmpty ? '' : '<strong>${e(p.ai)}</strong> '}${e(p.text)}';
       switch (p.kind) {
         case NoteParagraphKind.title:
@@ -197,13 +212,16 @@ class NoteRichDocument {
         case NoteParagraphKind.own:
           out.writeln('<p style="background-color:#FFF3C4;padding:8px">$text</p>');
         case NoteParagraphKind.point:
-          out.writeln('<ul><li>$text</li></ul>');
+          if (!listOpen) out.writeln('<ul>');
+          listOpen = true;
+          out.writeln('<li>$text</li>');
         case NoteParagraphKind.action:
           out.writeln('<p>☐ $text</p>');
         default:
           out.writeln('<p>${p.target == null ? text : '<a href="#${p.target}">$text</a>'}</p>');
       }
     }
+    if (listOpen) out.writeln('</ul>');
     if (footnotes.isNotEmpty) out.writeln('<ol class="footnotes">${footnotes.join()}</ol>');
     out.writeln('</body></html>');
     return out.toString();

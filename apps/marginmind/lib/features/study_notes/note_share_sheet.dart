@@ -8,6 +8,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../shared/l10n.dart';
 import 'note_share_card.dart';
+import 'note_filename.dart';
 
 Future<void> showNoteShareSheet(BuildContext context, StudySetContent content, StudyNote note) => showMMSheet<void>(
   context: context,
@@ -44,8 +45,11 @@ class _NoteShareSheetState extends State<NoteShareSheet> {
       );
       final saved = copy
           ? await (widget.copy ?? MMMapClipboard.writeImage)(bytes).then((_) => true)
-          : await (widget.save ?? (name, data) => MMNoteFiles.save(name, data))('note.png', bytes);
-      if (mounted && saved) MMHud.show(context, copy ? context.l10n.copiedHud : context.l10n.exportedHud);
+          : await (widget.save ?? (name, data) => MMNoteFiles.save(name, data))(
+              noteFileName(widget.note.title, 'png'),
+              bytes,
+            );
+      if (mounted && saved) MMHud.show(context, copy ? context.l10n.copiedHud : context.l10n.studyNoteSavedImage);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -185,14 +189,23 @@ class _NoteShareSheetState extends State<NoteShareSheet> {
       ],
     );
     final preview = Container(
-      color: context.mmColors.quaternaryFill,
+      decoration: BoxDecoration(
+        color: context.mmColors.quaternaryFill,
+        borderRadius: BorderRadius.circular(MMRadii.card),
+      ),
       padding: const EdgeInsets.all(MMSpacing.l),
       child: SingleChildScrollView(
         child: Center(
           child: hasQuotes
-              ? RepaintBoundary(
-                  key: _boundary,
-                  child: NoteShareCard(document: document, theme: _theme, scope: _scope),
+              ? DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(MMShareCardStyle.radius),
+                    boxShadow: const [MMShareCardStyle.previewShadow],
+                  ),
+                  child: RepaintBoundary(
+                    key: _boundary,
+                    child: NoteShareCard(document: document, theme: _theme, scope: _scope),
+                  ),
                 )
               : Text(l.noteNoQuotes, style: context.mmText.body),
         ),

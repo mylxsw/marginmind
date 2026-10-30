@@ -2,9 +2,9 @@
 
 样例来自 `test/note_rich_export_test.dart` 的真实导出代码：
 
-- `note.pdf` / `note.page-1.png`：A4、11pt 正文、宋体摘录、黄色划线色条、批注底纹、页眉、页码和页底脚注。由生产 `MapExportChannel.pdf` 编码，PDFKit 验证并渲染，文字可搜索。
+- `note.pdf` / `note.page-1.png`：A4、11pt 正文、宋体摘录、黄色划线色条、批注底纹、页眉、页码和页底脚注；序号置于引文末尾，跨页引文的脚注与序号同页。由生产 `MapExportChannel.pdf` 编码，PDFKit 验证并渲染，文字可搜索。
 - `note.docx` / `docx/page-1.png`：最小 OOXML，内置 Quote 样式、批注底纹、原生 footnotes 及关系表。LibreOffice 26.8.2 打开并转 PDF，再渲染检查中文和脚注。当前机器未安装 Word 或 Pages，没有做过这两种应用的实际打开测试。
-- `share-paper.png` / `share-plain.png` / `share-night.png`：Flutter RepaintBoundary 按 2× 输出，宽 660px，不含二维码或链接。系统字体仅用于截图；widget goldens 使用 Flutter 的确定性测试字体。
+- `share-paper.png` / `share-plain.png` / `share-night.png`：Flutter RepaintBoundary 按 2× 输出，宽 660px，不含二维码或链接。系统字体仅用于截图；widget goldens 使用固定英文样本，显式把宋体和系统字体别名映射到锁定 Flutter SDK 的 Ahem.ttf，并加载仓库依赖的图标字体，不依赖宿主字体或中文字体回退。
 
 复现：在 `apps/marginmind` 执行 `WRITE_NOTE_EVIDENCE=1 flutter test test/note_rich_export_test.dart`。
 输出写入本目录；生成的 `pdf-scene.json` 可以交给 `tool/note_pdf_evidence.swift`，与生产 `MapExportChannel.swift` 一起编译运行。

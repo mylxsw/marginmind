@@ -1636,5 +1636,6 @@
         "type": "int"
       }
     }
-  }
+  },
+  "studyNoteSavedImage": "已存储"
 }

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/study_notes/note_docx.dart';
 import 'package:marginmind/features/study_notes/note_export_sheet.dart';
 import 'package:marginmind/features/study_notes/note_pdf.dart';
+import 'package:marginmind/features/study_notes/note_filename.dart';
 import 'package:marginmind/features/study_notes/note_share_card.dart';
 import 'package:marginmind/features/study_notes/note_share_sheet.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
@@ -23,11 +24,12 @@ NoteRichDocument document({NoteCitationStyle citations = NoteCitationStyle.footn
   return NoteRichDocument.resolve(c, c.studyNotes.single, options: NoteExportOptions(citations: citations));
 }
 
-Widget host(Widget child, {bool dark = false}) => MaterialApp(
+Widget host(Widget child, {bool dark = false, String language = 'zh'}) => MaterialApp(
   theme: dark ? MMTheme.dark() : MMTheme.light(),
-  locale: const Locale('zh'),
+  locale: Locale(language),
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
+  builder: (_, child) => MMHudHost(child: child!),
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
 Future<void> sheet(WidgetTester tester, Widget child, {Size size = const Size(1000, 800)}) async {
@@ -50,7 +52,28 @@ Future<void> sheet(WidgetTester tester, Widget child, {Size size = const Size(10
 
 void main() {
   setUpAll(() async {
-    if (Platform.environment['WRITE_NOTE_EVIDENCE'] != '1') return;
+    await (FontLoader(
+      'packages/lucide_icons_flutter/Lucide',
+    )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
+    if (Platform.environment['WRITE_NOTE_EVIDENCE'] != '1') {
+      // Resolve the pinned SDK rather than relying on host fonts. Golden text
+      // is English so no glyph can fall back to a system CJK font.
+      final config = File('../../.dart_tool/package_config.json').absolute;
+      final packages = (jsonDecode(config.readAsStringSync()) as Map)['packages'] as List;
+      final flutter = packages.singleWhere((p) => p['name'] == 'flutter') as Map;
+      final sdk = Directory.fromUri(config.uri.resolve(flutter['rootUri'] as String)).parent.parent;
+      final bytes = ByteData.sublistView(File('${sdk.path}/packages/flutter_tools/static/Ahem.ttf').readAsBytesSync());
+      for (final family in [
+        'Songti SC',
+        'Roboto',
+        '.AppleSystemUIFont',
+        'CupertinoSystemText',
+        'CupertinoSystemDisplay',
+      ]) {
+        await (FontLoader(family)..addFont(Future.value(bytes))).load();
+      }
+      return;
+    }
     final bytes = ByteData.sublistView(File('/System/Library/Fonts/Supplemental/Arial Unicode.ttf').readAsBytesSync());
     for (final family in [
       '.AppleSystemUIFont',
@@ -65,9 +88,11 @@ void main() {
           Future.value(ByteData.sublistView(File('/System/Library/Fonts/Supplemental/Songti.ttc').readAsBytesSync())),
         ))
         .load();
-    await (FontLoader(
-      'packages/lucide_icons_flutter/Lucide',
-    )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
+  });
+  test('export and image names share title sanitizing and an empty-title fallback', () {
+    expect(noteFileName(' Notes: A/B\\C?*<>|"\x00\x7f ', 'png'), 'Notes ABC.png');
+    expect(noteFileName(' /:*? ', 'docx'), 'note.docx');
+    expect(noteFileName('中文笔记', 'pdf'), '中文笔记.pdf');
   });
   test('DOCX XML goldens and zip roundtrip contain native footnote relationship', () {
     for (final style in NoteCitationStyle.values) {
@@ -119,7 +144,12 @@ void main() {
         expect(command['y'] as double, lessThan(NotePdf.height - 20));
       }
     }
-    expect(pages.first.any((c) => c['text'] == '[1] Book p.1'), isTrue);
+    final markerPage = pages.indexWhere(
+      (p) => p.any((c) => c['serif'] == true && (c['text'] as String).endsWith('[1]')),
+    );
+    expect(markerPage, greaterThan(0));
+    expect(pages[markerPage].any((c) => c['text'] == '[1] Book p.1'), isTrue);
+    expect(pages.first.any((c) => c['text'] == '[1] Book p.1'), isFalse);
     expect(pages.first.any((c) => c['serif'] == true && c['fontSize'] == 11.0), isTrue);
     expect(pages.expand((p) => p).any((c) => c['color'] == 0xffaf52de), isTrue);
   });
@@ -169,22 +199,41 @@ void main() {
   for (final theme in MMShareCardTheme.values) {
     testWidgets('share ${theme.name} widget golden and 2x PNG', (tester) async {
       final key = GlobalKey();
+      final evidence = Platform.environment['WRITE_NOTE_EVIDENCE'] == '1';
       await tester.pumpWidget(
         host(
           Center(
             child: RepaintBoundary(
               key: key,
               child: NoteShareCard(
-                document: NoteRichDocument.resolve(
-                  noteFixture(),
-                  noteFixture().studyNotes.single,
-                  options: const NoteExportOptions(context: false, questions: false, sources: false),
-                ),
+                document: evidence
+                    ? NoteRichDocument.resolve(
+                        noteFixture(),
+                        noteFixture().studyNotes.single,
+                        options: const NoteExportOptions(context: false, questions: false, sources: false),
+                      )
+                    : NoteRichDocument(
+                        'Learning through recall',
+                        const [
+                          NoteParagraph(NoteParagraphKind.title, 'Learning through recall'),
+                          NoteParagraph(NoteParagraphKind.heading, 'Memory'),
+                          NoteParagraph(
+                            NoteParagraphKind.quote,
+                            'Recall strengthens memory.',
+                            citation: 'Learning',
+                            shareCitation: 'Learning · p.24',
+                          ),
+                          NoteParagraph(NoteParagraphKind.own, 'My original note'),
+                        ],
+                        NoteCitationStyle.inline,
+                        sourceTitles: const ['Learning'],
+                      ),
                 theme: theme,
                 scope: NoteShareScope.section,
               ),
             ),
           ),
+          language: evidence ? 'zh' : 'en',
         ),
       );
       await tester.pumpAndSettle();
@@ -224,6 +273,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('My original note'), findsNothing);
     expect(tester.widget<NoteShareCard>(find.byType(NoteShareCard)).theme, MMShareCardTheme.night);
+    final card = tester.widget<NoteShareCard>(find.byType(NoteShareCard));
+    final citation = card.document.paragraphs.firstWhere((p) => p.kind == NoteParagraphKind.quote).shareCitation;
+    expect(citation, '学习的底层逻辑 · p.24');
+    expect(find.text(citation!), findsOneWidget);
+    final boundary = find.ancestor(of: find.byType(NoteShareCard), matching: find.byType(RepaintBoundary)).first;
+    final shadow = tester.widget<DecoratedBox>(find.ancestor(of: boundary, matching: find.byType(DecoratedBox)).first);
+    expect((shadow.decoration as BoxDecoration).boxShadow, [MMShareCardStyle.previewShadow]);
+    expect(MMShareCardStyle.previewShadow.offset, const Offset(0, 6));
+    expect(MMShareCardStyle.previewShadow.blurRadius, 24);
+    expect(find.descendant(of: boundary, matching: find.byWidget(shadow)), findsNothing);
     expect(tester.takeException(), isNull);
   });
   testWidgets('oversized cards fail before allocating a raster image', (tester) async {
@@ -245,7 +304,7 @@ void main() {
         note: c.studyNotes.single,
         capture: (_) async => Uint8List.fromList([137, 80, 78, 71]),
         save: (name, bytes) async {
-          expect(name, 'note.png');
+          expect(name, '${c.studyNotes.single.title}.png');
           saves++;
           if (saves == 1) return false;
           if (saves == 2) throw StateError('Full');
@@ -261,6 +320,7 @@ void main() {
       await tester.tap(find.text('存储图片…'));
       await tester.pumpAndSettle();
       if (i == 1) expect(find.text('导出失败，请重试。'), findsOneWidget);
+      if (i == 2) expect(find.text('已存储'), findsOneWidget);
     }
     expect(saves, 3);
     await tester.tap(find.text('拷贝图片'));
