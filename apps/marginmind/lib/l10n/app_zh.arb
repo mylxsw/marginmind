@@ -1528,5 +1528,59 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noteOutlineTitle": "确认提纲",
+  "noteGenerating": "整理笔记",
+  "noteStop": "停止",
+  "noteContinue": "继续整理",
+  "noteLayoutOnly": "改为只排版",
+  "noteStepOutline": "归纳主题",
+  "noteAddSection": "添加节",
+  "noteNewSection": "新节",
+  "noteUnassigned": "未归入",
+  "noteAiUnavailable": "未配置 AI",
+  "notePreviewOutline": "先看提纲",
+  "noteAiFallback": "AI 整理失败，已按原文排版",
+  "noteShowAi": "显示 AI 标记",
+  "noteAiEdited": "AI · 已改",
+  "noteRephrase": "换一种说法",
+  "noteConcise": "更简洁",
+  "noteExpand": "展开说明",
+  "noteMakeMine": "改为我的话",
+  "noteRegenerate": "重新整理",
+  "noteAddAllReview": "全部加入复习",
+  "noteStepWrite": "撰写 {done} / {total} · 核对引用",
+  "@noteStepWrite": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSending": "{notes, plural, =0{将发送 {highlights} 条划线（约 {characters} 字）给 {model}} other{将发送 {highlights} 条划线、{notes} 条批注（约 {characters} 字）给 {model}}}",
+  "@noteSending": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      },
+      "characters": {
+        "type": "int"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStepCollect": "收集素材",
+  "noteStepContext": "补全上下文",
+  "noteStepCompose": "撰写",
+  "noteStepVerify": "核对引用",
+  "noteStopped": "已停止",
+  "noteLocked": "更新时保留"
 }

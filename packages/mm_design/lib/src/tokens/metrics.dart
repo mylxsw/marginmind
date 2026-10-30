@@ -146,6 +146,7 @@ abstract final class MMSizes {
 
   /// Toolbar search field in a compact window.
   static const double compactSearchWidth = 160;
+  static const double noteProgressSheetWidth = 820;
   static const double noteSetupSheetWidth = 640;
   static const double noteExportSheetWidth = 900;
   static const double noteExportOptionsWidth = 280;
@@ -218,6 +219,7 @@ abstract final class MMNoteLayout {
   static const double blockGap = 12;
   static const double sectionTop = 30;
   static const double sectionBottom = 10;
+  static const double aiRule = 2;
   static const double quoteBar = 3;
   static const double quoteIndent = 16;
   static const double tocWidth = 150;

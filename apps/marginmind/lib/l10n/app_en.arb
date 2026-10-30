@@ -2176,5 +2176,59 @@
         "type": "int"
       }
     }
-  }
+  },
+  "noteOutlineTitle": "Confirm outline",
+  "noteGenerating": "Organizing note",
+  "noteStop": "Stop",
+  "noteContinue": "Continue organizing",
+  "noteLayoutOnly": "Use original order",
+  "noteStepOutline": "Grouping themes",
+  "noteAddSection": "Add section",
+  "noteNewSection": "New section",
+  "noteUnassigned": "Unassigned",
+  "noteAiUnavailable": "AI not configured",
+  "notePreviewOutline": "Preview outline",
+  "noteAiFallback": "AI organization failed; used original order",
+  "noteShowAi": "Show AI markers",
+  "noteAiEdited": "AI · Edited",
+  "noteRephrase": "Rephrase",
+  "noteConcise": "Make concise",
+  "noteExpand": "Expand",
+  "noteMakeMine": "Make it mine",
+  "noteRegenerate": "Reorganize",
+  "noteAddAllReview": "Add all to review",
+  "noteStepWrite": "Writing {done} / {total} · Checking references",
+  "@noteStepWrite": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSending": "{notes, plural, =0{Send {highlights} highlights (about {characters} characters) to {model}} other{Send {highlights} highlights and {notes} notes (about {characters} characters) to {model}}}",
+  "@noteSending": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      },
+      "characters": {
+        "type": "int"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStepCollect": "Collect materials",
+  "noteStepContext": "Gather context",
+  "noteStepCompose": "Write",
+  "noteStepVerify": "Check references",
+  "noteStopped": "Stopped",
+  "noteLocked": "Keep when updating"
 }

@@ -18,9 +18,12 @@ NAMES = {'note-light', 'note-dark', 'export-light', 'export-dark'}
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--ai', action='store_true', help='Capture the fake-organizer AI flow')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/evidence/gul-588')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
+    names = {'outline', 'generating', 'ai-on', 'ai-off'} if args.ai else NAMES
+    target = 'integration_test/study_notes_ai_test.dart' if args.ai else 'integration_test/study_notes_test.dart'
     captured = set()
 
     class Capture(BaseHTTPRequestHandler):
@@ -29,7 +32,7 @@ def main():
                 url = urlparse(self.path)
                 name = url.path.removeprefix('/capture/')
                 pid = parse_qs(url.query).get('pid', [''])[0]
-                if name not in NAMES or not pid.isdecimal():
+                if name not in names or not pid.isdecimal():
                     raise ValueError('Invalid capture request')
                 script = '''import Cocoa
 let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as! [[String: Any]]
@@ -57,7 +60,7 @@ for w in windows where (w[kCGWindowOwnerPID as String] as? Int) == TARGET_PID &&
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        result = subprocess.run(['flutter', 'test', 'integration_test/study_notes_test.dart', '-d', 'macos', '--no-pub',
+        result = subprocess.run(['flutter', 'test', target, '-d', 'macos', '--no-pub',
             f'--dart-define=GUL588_SHOT_SERVER=http://127.0.0.1:{server.server_port}'], cwd=ROOT / 'apps/marginmind')
     finally:
         server.shutdown()
@@ -65,8 +68,8 @@ for w in windows where (w[kCGWindowOwnerPID as String] as? Int) == TARGET_PID &&
         thread.join()
     if result.returncode:
         raise SystemExit(result.returncode)
-    if captured != NAMES:
-        raise SystemExit(f'Missing screenshots: {sorted(NAMES - captured)}')
+    if captured != names:
+        raise SystemExit(f'Missing screenshots: {sorted(names - captured)}')
     print('Captured:', ', '.join(sorted(captured)))
 
 
