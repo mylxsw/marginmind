@@ -144,3 +144,7 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 `MMNoteTypography`：标题 24/31、节标题 17/22、正文 14/24.5、宋体摘录 15/27.75、宋体上下文 14/26。颜色复用现有窗口、正文、划线色与黄色批注底色；笔记图标为 `MMIcons.studyNote`（notebookText），导出为 `MMIcons.export`（download）。完整规格见 `docs/study-notes-ui.md`。
 
 笔记窄面板的“更多”使用 `MMDropdownSubmenu` 级联目录与版式，再列“导出笔记…”；宽面板的目录/版式显示文字和下拉箭头，导出显示图标与文字。出处列表按文档身份合并，PDF 页码去重排序，文本文档不重复列出；摘录来源带定位图标和章节 tooltip，批注来源带页码或节点标题。
+
+学习笔记 AI 整理沿用 `research` / `researchTint` 和 `onResearch`；
+`MMSizes.noteProgressSheetWidth` 为 820，`MMNoteLayout.aiRule` 为 2。
+提纲排序把手使用 `MMIcons.grip`，重新整理使用 `MMIcons.regenerate`。

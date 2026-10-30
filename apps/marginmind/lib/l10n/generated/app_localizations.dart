@@ -7627,6 +7627,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title}, p. {page}'**
   String noteSourcePage(String title, int page);
+
+  /// No description provided for @noteOutlineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm outline'**
+  String get noteOutlineTitle;
+
+  /// No description provided for @noteGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizing note'**
+  String get noteGenerating;
+
+  /// No description provided for @noteStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get noteStop;
+
+  /// No description provided for @noteContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue organizing'**
+  String get noteContinue;
+
+  /// No description provided for @noteLayoutOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Use original order'**
+  String get noteLayoutOnly;
+
+  /// No description provided for @noteStepOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouping themes'**
+  String get noteStepOutline;
+
+  /// No description provided for @noteAddSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Add section'**
+  String get noteAddSection;
+
+  /// No description provided for @noteNewSection.
+  ///
+  /// In en, this message translates to:
+  /// **'New section'**
+  String get noteNewSection;
+
+  /// No description provided for @noteUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get noteUnassigned;
+
+  /// No description provided for @noteAiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AI not configured'**
+  String get noteAiUnavailable;
+
+  /// No description provided for @notePreviewOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview outline'**
+  String get notePreviewOutline;
+
+  /// No description provided for @noteAiFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'AI organization failed; used original order'**
+  String get noteAiFallback;
+
+  /// No description provided for @noteShowAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Show AI markers'**
+  String get noteShowAi;
+
+  /// No description provided for @noteAiEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'AI · Edited'**
+  String get noteAiEdited;
+
+  /// No description provided for @noteRephrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Rephrase'**
+  String get noteRephrase;
+
+  /// No description provided for @noteConcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Make concise'**
+  String get noteConcise;
+
+  /// No description provided for @noteExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get noteExpand;
+
+  /// No description provided for @noteMakeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it mine'**
+  String get noteMakeMine;
+
+  /// No description provided for @noteRegenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorganize'**
+  String get noteRegenerate;
+
+  /// No description provided for @noteAddAllReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Add all to review'**
+  String get noteAddAllReview;
+
+  /// No description provided for @noteStepWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing {done} / {total} · Checking references'**
+  String noteStepWrite(int done, int total);
+
+  /// No description provided for @noteSending.
+  ///
+  /// In en, this message translates to:
+  /// **'{notes, plural, =0{Send {highlights} highlights (about {characters} characters) to {model}} other{Send {highlights} highlights and {notes} notes (about {characters} characters) to {model}}}'**
+  String noteSending(int highlights, int notes, int characters, String model);
+
+  /// No description provided for @noteStepCollect.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect materials'**
+  String get noteStepCollect;
+
+  /// No description provided for @noteStepContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Gather context'**
+  String get noteStepContext;
+
+  /// No description provided for @noteStepCompose.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get noteStepCompose;
+
+  /// No description provided for @noteStepVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Check references'**
+  String get noteStepVerify;
+
+  /// No description provided for @noteStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get noteStopped;
+
+  /// No description provided for @noteLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep when updating'**
+  String get noteLocked;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

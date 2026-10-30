@@ -9,6 +9,10 @@ import '../../app/providers.dart';
 import '../../shared/l10n.dart';
 import '../workspace/workspace_controller.dart';
 import 'note_text_source.dart';
+import 'note_organize_sheet.dart';
+import 'note_session.dart';
+import '../assistant/assistant_settings.dart';
+import '../../settings/settings_window.dart';
 
 String noteTemplateLabel(AppLocalizations l, NoteTemplate template) => switch (template) {
   NoteTemplate.reading => l.noteReading,
@@ -16,17 +20,102 @@ String noteTemplateLabel(AppLocalizations l, NoteTemplate template) => switch (t
   NoteTemplate.review => l.noteReview,
 };
 
-Future<void> showNoteSetupSheet(BuildContext context, WidgetRef ref, String setId, {BranchScope? branch}) =>
-    showMMSheet<void>(
-      context: context,
-      width: MMSizes.noteSetupSheetWidth,
-      builder: (_) => NoteSetupSheet(studySetId: setId, branch: branch),
-    );
+class _NoteGenerationRequest {
+  const _NoteGenerationRequest(this.title, this.scope, this.settings, this.template, this.materials, this.preview);
+  final String title;
+  final NoteScope scope;
+  final NoteSettings settings;
+  final NoteTemplate template;
+  final NoteMaterials materials;
+  final bool preview;
+}
+
+Future<void> showNoteSetupSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String setId, {
+  BranchScope? branch,
+  String? existingId,
+}) async {
+  final request = await showMMSheet<_NoteGenerationRequest>(
+    context: context,
+    width: MMSizes.noteSetupSheetWidth,
+    builder: (_) => NoteSetupSheet(studySetId: setId, branch: branch, existingId: existingId),
+  );
+  if (request == null || !context.mounted) return;
+  await showNoteOrganizeSheet(
+    context,
+    setId: setId,
+    title: request.title,
+    scope: request.scope,
+    settings: request.settings,
+    template: request.template,
+    materials: request.materials,
+    previewOutline: request.preview,
+    existingId: existingId,
+  );
+}
+
+/// Reuse the current outline and protect edits when reorganizing an existing note.
+Future<void> showNoteReorganization(BuildContext context, WidgetRef ref, String setId, String noteId) async {
+  final owner = ref.read(workspaceProvider(setId).notifier);
+  final note = owner.content.studyNote(noteId);
+  if (note == null) return;
+  final text = await loadNoteTextSource(ref, setId, owner.content, note.scope);
+  if (!context.mounted) return;
+  final materials = const NoteMaterialCollector().collect(
+    owner.content,
+    note.scope,
+    note.settings,
+    now: ref.read(clockProvider)(),
+    text: text,
+  );
+  final assigned = <String>{};
+  final outline = <NoteOutlineSection>[];
+  for (final section in note.sections) {
+    final refs = <String>[];
+    for (final block in section.blocks) {
+      final material = materials.items
+          .where(
+            (m) => switch (block) {
+              QuoteBlock() => m.isHighlight && m.sourceId == block.annotationId,
+              OwnBlock() => m.source == block.source && m.sourceId == block.sourceId,
+              _ => false,
+            },
+          )
+          .firstOrNull;
+      if (material != null && assigned.add(material.ref)) refs.add(material.ref);
+    }
+    if (refs.isNotEmpty) outline.add(NoteOutlineSection(title: section.title, why: section.why, refs: refs));
+  }
+  final remaining = NoteMaterials(
+    materials.items.where((m) => !assigned.contains(m.ref)).toList(),
+    collectedAt: materials.collectedAt,
+    catalog: materials.catalog,
+  );
+  outline.addAll((await const LocalNoteOrganizer().outline(remaining, note.settings)).sections);
+  if (!context.mounted) return;
+  await resumeNoteOrganization(
+    context,
+    NoteContinuation(
+      setId: setId,
+      title: note.title,
+      scope: note.scope,
+      settings: note.settings,
+      template: note.template,
+      materials: materials,
+      outline: NoteOutline(outline),
+      draft: NoteDraft([]),
+      noteId: noteId,
+    ),
+  );
+}
 
 class NoteSetupSheet extends ConsumerStatefulWidget {
-  const NoteSetupSheet({super.key, required this.studySetId, this.branch});
+  const NoteSetupSheet({super.key, required this.studySetId, this.branch, this.existingId});
   final String studySetId;
   final BranchScope? branch;
+  final String? existingId;
   @override
   ConsumerState<NoteSetupSheet> createState() => _NoteSetupSheetState();
 }
@@ -37,6 +126,35 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
   var _template = NoteTemplate.reading;
   var _busy = false, _failed = false;
   late final DateTime _now;
+  bool _ai = false;
+  NoteSettings? _remembered;
+  NoteDepth _lastAiDepth = NoteDepth.deep;
+  NoteTextSource _text = const NoteTextSource();
+  Future<void> _configure() async {
+    final ready = await ref.read(assistantConfiguredProvider.future);
+    if (!mounted) return;
+    final owner = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final text = await loadNoteTextSource(ref, widget.studySetId, owner.content, const WholeSet());
+    if (!mounted) return;
+    setState(() {
+      _ai = ready;
+      _text = text;
+      if (ready) {
+        final depth = _remembered?.depth ?? NoteDepth.deep;
+        _lastAiDepth = depth == NoteDepth.none ? NoteDepth.deep : depth;
+        _set(
+          depth: depth,
+          organization: widget.branch != null
+              ? NoteOrganization.map
+              : depth == NoteDepth.none
+              ? NoteOrganization.source
+              : NoteOrganization.theme,
+          completeFragments: _remembered?.completeFragments ?? true,
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +172,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
     } catch (_) {
       // Preferences from an incompatible version must not prevent local notes.
     }
+    _remembered = remembered;
     _settings = NoteSettings(
       organization: widget.branch != null
           ? NoteOrganization.map
@@ -69,21 +188,37 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
       images: remembered?.images ?? false,
       mapId: state.activeMapId,
     );
+    final existing = state.content?.studyNote(widget.existingId ?? '');
+    if (existing != null) {
+      _scope = existing.scope;
+      _template = existing.template;
+      _remembered = existing.settings;
+    }
+    _configure();
   }
 
   void _set({
     NoteOrganization? organization,
+    NoteDepth? depth,
+    bool? completeFragments,
     int? contextSentences,
     bool? marginNotes,
     bool? mapNotes,
     bool? researchNotes,
     bool? images,
   }) => setState(() {
+    var nextDepth = depth ?? _settings.depth;
+    var nextOrganization = organization ?? _settings.organization;
+    if (organization == NoteOrganization.theme && nextDepth == NoteDepth.none) nextDepth = _lastAiDepth;
+    if (nextDepth == NoteDepth.none && nextOrganization == NoteOrganization.theme) {
+      nextOrganization = NoteOrganization.source;
+    }
+    if (nextDepth != NoteDepth.none) _lastAiDepth = nextDepth;
     _settings = NoteSettings(
-      organization: organization ?? _settings.organization,
-      depth: NoteDepth.none,
+      organization: nextOrganization,
+      depth: nextDepth,
       contextSentences: contextSentences ?? _settings.contextSentences,
-      completeFragments: false,
+      completeFragments: completeFragments ?? _settings.completeFragments,
       marginNotes: marginNotes ?? _settings.marginNotes,
       mapNotes: mapNotes ?? _settings.mapNotes,
       researchNotes: researchNotes ?? _settings.researchNotes,
@@ -92,7 +227,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
     );
   });
 
-  Future<void> _generate() async {
+  Future<void> _generate({bool preview = false}) async {
     setState(() {
       _busy = true;
       _failed = false;
@@ -103,7 +238,44 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
       final text = await loadNoteTextSource(ref, widget.studySetId, owner.content, _scope);
       if (!mounted) return;
       final title = ref.read(studySetProvider(widget.studySetId))?.title ?? l.noteReading;
-      final note = await owner.organizeStudyNote(title, _scope, _settings, _template, text: text);
+      await ref.read(sharedPreferencesProvider).setString('studyNotes.settings', jsonEncode(_settings.toJson()));
+      if (_settings.depth != NoteDepth.none) {
+        final materials = const NoteMaterialCollector().collect(
+          owner.content,
+          _scope,
+          _settings,
+          now: _now,
+          text: text,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop(_NoteGenerationRequest(title, _scope, _settings, _template, materials, preview));
+        return;
+      }
+      StudyNote? note;
+      if (widget.existingId != null) {
+        final materials = const NoteMaterialCollector().collect(
+          owner.content,
+          _scope,
+          _settings,
+          now: _now,
+          text: text,
+        );
+        const local = LocalNoteOrganizer();
+        final outline = await local.outline(materials, _settings);
+        final draft = await local.write(materials, outline, _settings);
+        note = await owner.acceptNoteDraft(
+          title,
+          _scope,
+          _settings,
+          _template,
+          materials,
+          draft,
+          existingId: widget.existingId,
+          local: true,
+        );
+      } else {
+        note = await owner.organizeStudyNote(title, _scope, _settings, _template, text: text);
+      }
       if (note == null) throw StateError('Empty scope');
       await ref.read(sharedPreferencesProvider).setString('studyNotes.settings', jsonEncode(_settings.toJson()));
       if (!mounted) return;
@@ -135,7 +307,9 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
         mapId: _settings.mapId,
       ),
       now: _now,
+      text: _text,
     );
+    final sending = const NoteMaterialCollector().collect(content, _scope, _settings, now: _now, text: _text);
     int count(NoteScope scope) =>
         const NoteMaterialCollector().collect(content, scope, _settings, now: _now).highlights.length;
     Widget choice(
@@ -153,7 +327,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
         onPressed: _busy ? null : action,
       );
       return Tooltip(
-        message: ai ? l.noteNextPhase : label,
+        message: ai && !_ai ? l.noteAiUnavailable : label,
         child: thumbnail == null
             ? button
             : SizedBox(
@@ -253,15 +427,21 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
       canPop: !_busy,
       child: MMSheet(
         title: l.noteSetupTitle,
-        actions: [
+        actions: noteSheetActions(context, [
           MMButton(label: l.cancel, onPressed: _busy ? null : () => Navigator.of(context).pop()),
+          if (_ai && _settings.depth != NoteDepth.none && _settings.organization == NoteOrganization.theme)
+            MMButton(
+              key: const ValueKey('note-preview-outline'),
+              label: l.notePreviewOutline,
+              onPressed: _busy || all.highlights.isEmpty ? null : () => _generate(preview: true),
+            ),
           MMButton(
             key: const ValueKey('note-generate'),
             label: l.noteGenerate,
             variant: MMButtonVariant.primary,
-            onPressed: _busy || all.highlights.isEmpty ? null : _generate,
+            onPressed: _busy || all.highlights.isEmpty ? null : () => _generate(),
           ),
-        ],
+        ]),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * .65),
           child: SingleChildScrollView(
@@ -303,7 +483,13 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                   material('material-image', l.noteImages, OwnSource.image, _settings.images, (v) => _set(images: v)),
                 ]),
                 row(l.noteOrganization, [
-                  choice('organization-theme', l.noteTheme, false, null, ai: true),
+                  choice(
+                    'organization-theme',
+                    l.noteTheme,
+                    _settings.organization == NoteOrganization.theme,
+                    _ai ? () => _set(organization: NoteOrganization.theme) : null,
+                    ai: true,
+                  ),
                   choice(
                     'organization-source',
                     l.noteSourceOrder,
@@ -318,9 +504,26 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                   ),
                 ]),
                 row(l.noteDepth, [
-                  choice('depth-none', l.noteLocal, true, null),
-                  choice('depth-context', l.noteAiContext, false, null, ai: true),
-                  choice('depth-deep', l.noteAiDeep, false, null, ai: true),
+                  choice(
+                    'depth-none',
+                    l.noteLocal,
+                    _settings.depth == NoteDepth.none,
+                    () => _set(depth: NoteDepth.none),
+                  ),
+                  choice(
+                    'depth-context',
+                    l.noteAiContext,
+                    _settings.depth == NoteDepth.context,
+                    _ai ? () => _set(depth: NoteDepth.context) : null,
+                    ai: true,
+                  ),
+                  choice(
+                    'depth-deep',
+                    l.noteAiDeep,
+                    _settings.depth == NoteDepth.deep,
+                    _ai ? () => _set(depth: NoteDepth.deep) : null,
+                    ai: true,
+                  ),
                 ]),
                 MMFormRow(
                   label: l.noteContext,
@@ -338,7 +541,11 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                       ),
                       Text(l.noteContextSentences(_settings.contextSentences), style: context.mmText.footnote),
                       const SizedBox(height: MMSpacing.s),
-                      MMCheckbox(value: false, onChanged: null, label: l.noteComplete),
+                      MMCheckbox(
+                        value: _ai && _settings.depth != NoteDepth.none && _settings.completeFragments,
+                        onChanged: _ai && _settings.depth != NoteDepth.none ? (v) => _set(completeFragments: v) : null,
+                        label: l.noteComplete,
+                      ),
                     ],
                   ),
                 ),
@@ -352,6 +559,31 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                       thumbnail: t,
                     ),
                 ]),
+                if (!_ai)
+                  MMButton(
+                    label: l.assistantOpenSettings,
+                    onPressed: () async {
+                      await showSettings(context, tab: SettingsTab.models);
+                      if (mounted) _configure();
+                    },
+                  ),
+                if (_ai && _settings.depth != NoteDepth.none && all.highlights.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(MMSpacing.m),
+                    child: Text(
+                      l.noteSending(
+                        sending.highlights.length,
+                        sending.items.length - sending.highlights.length,
+                        sending.items.fold<int>(
+                          0,
+                          (n, m) =>
+                              n + m.text.runes.length + m.context.before.runes.length + m.context.after.runes.length,
+                        ),
+                        ref.watch(assistantDefaultModelProvider)?.model ?? '',
+                      ),
+                      style: context.mmText.footnote,
+                    ),
+                  ),
                 if (all.highlights.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(MMSpacing.l),

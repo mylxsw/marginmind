@@ -4239,4 +4239,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String noteSourcePage(String title, int page) {
     return '$title, p. $page';
   }
+
+  @override
+  String get noteOutlineTitle => 'Confirm outline';
+
+  @override
+  String get noteGenerating => 'Organizing note';
+
+  @override
+  String get noteStop => 'Stop';
+
+  @override
+  String get noteContinue => 'Continue organizing';
+
+  @override
+  String get noteLayoutOnly => 'Use original order';
+
+  @override
+  String get noteStepOutline => 'Grouping themes';
+
+  @override
+  String get noteAddSection => 'Add section';
+
+  @override
+  String get noteNewSection => 'New section';
+
+  @override
+  String get noteUnassigned => 'Unassigned';
+
+  @override
+  String get noteAiUnavailable => 'AI not configured';
+
+  @override
+  String get notePreviewOutline => 'Preview outline';
+
+  @override
+  String get noteAiFallback => 'AI organization failed; used original order';
+
+  @override
+  String get noteShowAi => 'Show AI markers';
+
+  @override
+  String get noteAiEdited => 'AI · Edited';
+
+  @override
+  String get noteRephrase => 'Rephrase';
+
+  @override
+  String get noteConcise => 'Make concise';
+
+  @override
+  String get noteExpand => 'Expand';
+
+  @override
+  String get noteMakeMine => 'Make it mine';
+
+  @override
+  String get noteRegenerate => 'Reorganize';
+
+  @override
+  String get noteAddAllReview => 'Add all to review';
+
+  @override
+  String noteStepWrite(int done, int total) {
+    return 'Writing $done / $total · Checking references';
+  }
+
+  @override
+  String noteSending(int highlights, int notes, int characters, String model) {
+    String _temp0 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: 'Send $highlights highlights and $notes notes (about $characters characters) to $model',
+      zero: 'Send $highlights highlights (about $characters characters) to $model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noteStepCollect => 'Collect materials';
+
+  @override
+  String get noteStepContext => 'Gather context';
+
+  @override
+  String get noteStepCompose => 'Write';
+
+  @override
+  String get noteStepVerify => 'Check references';
+
+  @override
+  String get noteStopped => 'Stopped';
+
+  @override
+  String get noteLocked => 'Keep when updating';
 }

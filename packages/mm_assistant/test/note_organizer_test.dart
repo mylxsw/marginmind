@@ -224,6 +224,27 @@ void main() {
     expect(client.calls, 1);
   });
 
+  test('resume starts at the next section and retains global cross-reference indexes', () async {
+    final client = ScriptClient([
+      answer(
+        '{"sections":[{"title":"next","blocks":[{"type":"quote","ref":"h2"},{"type":"xref","to":0,"text":"Earlier"}]}]}',
+      ),
+    ]);
+    final service = ModelNoteOrganizer(client: client, model: 'fake');
+    final proposed = NoteOutline([
+      ...outline.sections,
+      NoteOutlineSection(title: 'next', refs: ['h2']),
+    ]);
+    final sections = await service.writeSections(materials(2), proposed, NoteSettings(), startAt: 1).toList();
+    expect(client.calls, 1);
+    expect(sections.single.title, 'next');
+    expect(sections.single.blocks.last.to, 0);
+    final request = jsonEncode(client.requests.single.map((m) => m.toJson()).toList());
+    expect(request, contains('sectionIndex'));
+    expect(request, contains('next'));
+    service.close();
+  });
+
   test('cancellation during a request cancels transport without fallback', () async {
     final client = PendingClient();
     final service = ModelNoteOrganizer(client: client, model: 'fake');

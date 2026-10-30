@@ -2,6 +2,7 @@ import 'source_selection.dart';
 export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
 import 'document_import.dart';
+import '../study_notes/note_identity.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -230,6 +231,7 @@ class WorkspaceState {
   final MapViewMode mapView;
   final AnnotationTool tool;
   final MMAnnotationColor color;
+
   /// The continuous underline tool keeps its original page-toolbar preference.
   final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;
@@ -1622,6 +1624,51 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return created;
   }
 
+  /// Commits a validated draft against the latest content, preserving user edits.
+  Future<StudyNote?> acceptNoteDraft(
+    String title,
+    NoteScope scope,
+    NoteSettings settings,
+    NoteTemplate template,
+    NoteMaterials materials,
+    NoteDraft draft, {
+    String? existingId,
+    bool local = false,
+  }) async {
+    StudyNote? saved;
+    await _update((c) {
+      if (materials.highlights.any((m) => c.annotation(m.sourceId) == null)) return c;
+      final assembly = const NoteAssembler().assemble(
+        draft,
+        materials,
+        newId: _editor.newId,
+        generatedOrigin: local ? NoteOrigin.user : NoteOrigin.ai,
+      );
+      final old = existingId == null ? null : c.studyNote(existingId);
+      if (existingId != null && old == null) return c;
+      final now = materials.collectedAt;
+      saved = old == null
+          ? StudyNote(
+              id: _editor.newId(),
+              title: title,
+              scope: scope,
+              settings: settings,
+              template: template,
+              sections: assembly.sections,
+              unusedAnnotationIds: assembly.unusedAnnotationIds,
+              createdAt: now,
+              updatedAt: now,
+              organizedAt: now,
+            )
+          : const NoteUpdater()
+                .reorganize(old, reuseNoteIdentity(old, assembly), organizedAt: now)
+                .copyWith(settings: settings);
+      return _editor.saveStudyNote(c, saved!);
+    });
+    if (saved != null && ref.mounted) openStudyNote(saved!.id);
+    return saved;
+  }
+
   Future<void> changeStudyNote(String id, StudyNote Function(StudyNote) change) => _update((c) {
     final note = c.studyNote(id);
     return note == null ? c : _editor.saveStudyNote(c, change(note).copyWith(updatedAt: _editor.now()));
@@ -1682,14 +1729,77 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     _flash(annotationId: id);
   }
 
+  String _noteReviewAnswer(StudySetContent c, Annotation a, String answer) {
+    final location = a.isText ? const NoteMaterialCollector().sectionTitle(c, a) : 'p.${a.page}';
+    final source = [
+      c.document(a.documentId)?.title,
+      location,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+    return '$answer\n\n$source';
+  }
+
   Future<void> makeNoteReview(String annotationId, String question, String answer) => _update((c) {
     if (c.annotation(annotationId) == null) return c;
     final parent = c.cards.where((card) => card.annotationId == annotationId).firstOrNull?.id;
     final (next, card) = _editor.addNote(c, text: question, parentId: parent);
     return next.copyWith(
-      cards: [for (final value in next.cards) value.id == card.id ? value.copyWith(body: answer) : value],
+      cards: [
+        for (final value in next.cards)
+          value.id == card.id
+              ? value.copyWith(
+                  body: _noteReviewAnswer(c, c.annotation(annotationId)!, answer),
+                  annotationId: annotationId,
+                )
+              : value,
+      ],
     );
   });
+
+  Future<void> addNoteReviews(String noteId) => _update((c) {
+    final note = c.studyNote(noteId);
+    if (note == null) return c;
+    var next = c;
+    for (final section in note.sections) {
+      final question = section.question;
+      if (question == null || question.trim().isEmpty) continue;
+      final quotes = section.blocks
+          .whereType<QuoteBlock>()
+          .map((b) => c.annotation(b.annotationId))
+          .whereType<Annotation>()
+          .toList();
+      if (quotes.isEmpty) continue;
+      final answer = quotes.map((a) => _noteReviewAnswer(c, a, a.quote)).join('\n\n');
+      if (next.cards.any((card) => card.kind == CardKind.note && card.title == question && card.body == answer)) {
+        continue;
+      }
+      final (created, card) = _editor.addNote(next, text: question);
+      next = created.copyWith(
+        cards: [
+          for (final value in created.cards)
+            value.id == card.id ? value.copyWith(body: answer, annotationId: quotes.first.id) : value,
+        ],
+      );
+    }
+    return next;
+  });
+
+  Future<void> markStudyNoteBlockMine(String noteId, String blockId) => changeStudyNote(
+    noteId,
+    (note) => note.copyWith(
+      sections: [
+        for (final section in note.sections)
+          section.copyWith(
+            blocks: [
+              for (final b in section.blocks)
+                if (b.id == blockId && b is! QuoteBlock && b is! OwnBlock)
+                  StudyNoteBlock.fromJson({...b.toJson(), 'origin': NoteOrigin.user.name, 'edited': true})
+                else
+                  b,
+            ],
+          ),
+      ],
+    ),
+  );
 
   Future<void> saveStudyNote(StudyNote note) => _update((c) => _editor.saveStudyNote(c, note));
   Future<void> deleteStudyNote(String id) => _update((c) => _editor.deleteStudyNote(c, id));

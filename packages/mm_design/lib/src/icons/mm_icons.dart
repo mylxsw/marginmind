@@ -6,6 +6,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// sources can change without altering controls or their behavior.
 abstract final class MMIcons {
   static const context = LucideIcons.textQuote;
+  static const regenerate = LucideIcons.refreshCw;
+  static const grip = LucideIcons.gripVertical;
   static const studyNote = LucideIcons.notebookText;
   static const export = LucideIcons.download;
   static const IconData speaker = CupertinoIcons.speaker_2;

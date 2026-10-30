@@ -392,10 +392,9 @@ void main() {
     expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
     expect(find.bySemanticsLabel('Selection start'), findsOneWidget);
     expect(find.bySemanticsLabel('Selection end'), findsOneWidget);
-    await tester.tap(find.byTooltip('More'));
-    await tester.pumpAndSettle();
-    expect(find.text('Underline'), findsOneWidget);
-    await tester.tap(find.text('Underline'));
+    final underline = find.byKey(const ValueKey('selection-underline'));
+    expect(underline, findsOneWidget);
+    await tester.tap(underline);
     await tester.pumpAndSettle();
     expect(workspace.content.annotations.single.kind, AnnotationKind.underline);
     await settleHud(tester);

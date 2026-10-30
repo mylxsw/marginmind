@@ -1,5 +1,8 @@
 import 'dart:ui' show ImageFilter;
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:mm_assistant/mm_assistant.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +10,10 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
+import '../../app/providers.dart';
+import '../assistant/assistant_settings.dart';
+import 'note_session.dart';
+import 'note_organize_sheet.dart';
 import '../../shared/card_image.dart';
 import '../workspace/workspace_controller.dart';
 import 'note_export_sheet.dart';
@@ -29,6 +36,9 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   String? _focusedAnnotation;
   Timer? _focusTimer;
   int _loadGeneration = 0;
+  bool _aiBusy = false;
+  bool get _showAi => ref.read(noteAiMarkersProvider(widget.noteId));
+  NoteSession? _editSession;
 
   @override
   void initState() {
@@ -59,6 +69,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   @override
   void dispose() {
     _focusTimer?.cancel();
+    _editSession?.close();
     _scroll.dispose();
     super.dispose();
   }
@@ -93,6 +104,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(assistantConfiguredProvider);
+    ref.watch(noteAiMarkersProvider(widget.noteId));
     final provider = workspaceProvider(widget.studySetId);
     ref.listen(provider.select((s) => s.pending), (_, pending) {
       if (pending is! PendingHighlight) return;
@@ -113,6 +126,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
     final note = content?.studyNote(widget.noteId);
     if (note == null || content == null) return const SizedBox.shrink();
     final l = context.l10n, c = context.mmColors;
+    final continuation = ref.watch(noteContinuationsProvider)[note.id];
     final used = note.sections.expand((s) => s.blocks).whereType<QuoteBlock>().map((b) => b.annotationId).toSet();
     final unused = note.unusedAnnotationIds.where((id) => content.annotation(id) != null).toList();
     Widget toc() => Column(
@@ -159,6 +173,25 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                         style: context.mmText.headline,
                       ),
                     ),
+                    if (!compact &&
+                        note.sections
+                            .expand((s) => s.blocks)
+                            .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
+                      MMIconButton(
+                        key: const ValueKey('note-ai-markers'),
+                        icon: MMIcons.ai,
+                        tooltip: l.noteShowAi,
+                        onPressed: () {
+                          ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
+                        },
+                      ),
+                    if (!compact)
+                      MMIconButton(
+                        key: const ValueKey('note-regenerate'),
+                        icon: MMIcons.regenerate,
+                        tooltip: l.noteRegenerate,
+                        onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
+                      ),
                     if (compact)
                       MMDropdownMenuButton<String>(
                         key: const ValueKey('note-more'),
@@ -183,10 +216,22 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                 ),
                             ],
                           ),
+                          if (note.sections
+                              .expand((s) => s.blocks)
+                              .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
+                            MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
+                          if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
+                          MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
                           MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
                         ],
                         onSelected: (value) {
-                          if (value == 'export') {
+                          if (value == 'markers') {
+                            ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
+                          } else if (value == 'continue' && continuation != null) {
+                            resumeNoteOrganization(context, continuation);
+                          } else if (value == 'regenerate') {
+                            showNoteReorganization(context, ref, widget.studySetId, note.id);
+                          } else if (value == 'export') {
                             showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
                           } else if (value.startsWith('section:')) {
                             _jump(value.substring('section:'.length));
@@ -249,6 +294,15 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 ),
               ),
               Divider(height: 1, color: c.separator),
+              if (continuation != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: MMButton(
+                    key: const ValueKey('note-continue'),
+                    label: l.noteContinue,
+                    onPressed: () => resumeNoteOrganization(context, continuation),
+                  ),
+                ),
               Expanded(
                 child: Stack(
                   children: [
@@ -351,6 +405,19 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                                   Text(l.noteCornellSummary, style: context.mmText.subheadline),
                                   _cornellField(note, section, 'summary'),
                                 ],
+                              ],
+                              if (note.sections.any((s) => s.question != null)) ...[
+                                const SizedBox(height: MMSpacing.l),
+                                MMButton(
+                                  key: const ValueKey('note-all-review'),
+                                  label: l.noteAddAllReview,
+                                  onPressed: () async {
+                                    await _owner.addNoteReviews(note.id);
+                                    if (mounted) _undoHud(l.noteReviewAdded);
+                                  },
+                                ),
+                                for (final s in note.sections)
+                                  if (s.question != null) Text(s.question!, style: MMNoteTypography.body),
                               ],
                               if (used.isNotEmpty) ...[
                                 const SizedBox(height: MMNoteLayout.sectionTop),
@@ -650,7 +717,11 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       child = Container(
         padding: const EdgeInsets.all(MMSpacing.m),
         decoration: BoxDecoration(
-          color: block is OwnBlock ? MMAnnotationColor.yellow.cardTint : c.quaternaryFill,
+          color: block is OwnBlock || block.origin == NoteOrigin.user
+              ? MMAnnotationColor.yellow.cardTint
+              : _showAi && (block.origin == NoteOrigin.ai || block.origin == NoteOrigin.mixed)
+              ? c.researchTint
+              : c.quaternaryFill,
           borderRadius: BorderRadius.circular(MMRadii.card),
         ),
         child: Column(
@@ -658,6 +729,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           children: [
             NoteEditableText(
               key: ValueKey('note-edit-${block.id}'),
+              onReadTap: block is XrefBlock ? () => _jump(block.toSectionId) : null,
               text: text,
               style: MMNoteTypography.body.copyWith(color: c.label),
               onSave: (value) => _owner.editStudyNoteBlock(
@@ -679,12 +751,68 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         ),
       );
     }
+    final ai = block.origin == NoteOrigin.ai || block.origin == NoteOrigin.mixed;
+    if (ai) {
+      final body = child;
+      child = Container(
+        key: ValueKey('note-ai-block-${block.id}'),
+        padding: const EdgeInsets.only(left: MMSpacing.s),
+        decoration: BoxDecoration(
+          border: _showAi
+              ? Border(
+                  left: BorderSide(color: c.researchTint, width: MMNoteLayout.aiRule),
+                )
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_showAi)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  key: ValueKey('note-ai-tag-${block.id}'),
+                  padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                  decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.row)),
+                  child: Text(
+                    block.edited ? l.noteAiEdited : 'AI',
+                    style: context.mmText.footnote.copyWith(color: c.onResearch),
+                  ),
+                ),
+              ),
+            if (block is XrefBlock)
+              MMInteractive(
+                key: ValueKey('note-xref-${block.id}'),
+                onTap: () => _jump(block.toSectionId),
+                builder: (_, _) => body,
+              )
+            else
+              body,
+          ],
+        ),
+      );
+    }
+    if (block.edited && block is! OwnBlock && block is! QuoteBlock) {
+      child = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          child,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Tooltip(
+              message: l.noteLocked,
+              child: Icon(MMIcons.lock, size: MMSizes.dropdownIcon, color: c.secondaryLabel),
+            ),
+          ),
+        ],
+      );
+    }
     return _NoteBlockFrame(onMenu: (position) => _menu(note, block, position), child: child);
   }
 
   Future<void> _review(Annotation annotation, String question) async {
     await _owner.makeNoteReview(annotation.id, question, annotation.quote);
-    if (mounted) MMHud.show(context, context.l10n.noteReviewAdded);
+    if (mounted) _undoHud(context.l10n.noteReviewAdded);
   }
 
   Future<void> _toggleContext(String noteId, String blockId) => _owner.changeStudyNote(
@@ -720,7 +848,10 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
               : () => _owner.revealNoteAnnotation(block.annotationId),
           shortcut: '⌘L',
         ),
-        MMMenuItem(context.l10n.noteExplain, null),
+        MMMenuItem(
+          context.l10n.noteExplain,
+          ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _explain(note, block) : null,
+        ),
         const MMMenuDivider(),
         MMMenuItem(
           context.l10n.addToMapAction,
@@ -747,6 +878,33 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 },
         ),
       ],
+      if (block is! OwnBlock && block is! QuoteBlock) ...[
+        if (block.origin != NoteOrigin.user)
+          for (final mode in NoteRewrite.values)
+            MMMenuItem(
+              switch (mode) {
+                NoteRewrite.rephrase => context.l10n.noteRephrase,
+                NoteRewrite.concise => context.l10n.noteConcise,
+                NoteRewrite.expand => context.l10n.noteExpand,
+              },
+              ref.read(assistantConfiguredProvider).value == true && !_aiBusy
+                  ? () => _rewrite(note, block, mode)
+                  : null,
+            ),
+        if (block.origin != NoteOrigin.user)
+          MMMenuItem(context.l10n.noteMakeMine, () async {
+            await _owner.markStudyNoteBlockMine(note.id, block.id);
+            if (mounted) _undoHud(context.l10n.noteMakeMine);
+          }),
+        MMMenuItem(context.l10n.addToMapAction, () async {
+          await _owner.addNote(_blockText(block));
+          if (mounted) _undoHud(context.l10n.noteAddedToMap);
+        }),
+        MMMenuItem(
+          context.l10n.noteCreateReview,
+          ref.read(assistantConfiguredProvider).value == true && !_aiBusy ? () => _createAiReview(note, block) : null,
+        ),
+      ],
       if (block is OwnBlock && block.source == OwnSource.marginNote)
         MMMenuItem(context.l10n.addToMapAction, () async {
           await _owner.attachMarginNote(block.sourceId);
@@ -759,6 +917,131 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       }, destructive: true),
     ],
   );
+
+  String _blockText(StudyNoteBlock block) => switch (block) {
+    TextBlock() => block.text,
+    PointsBlock() => block.items.join('\n'),
+    XrefBlock() => block.text,
+    _ => '',
+  };
+
+  Future<void> _createAiReview(StudyNote note, StudyNoteBlock block) async {
+    if (_aiBusy) return;
+    final section = note.sections.where((s) => s.blocks.any((b) => b.id == block.id)).firstOrNull;
+    final quote = section?.blocks.whereType<QuoteBlock>().firstOrNull;
+    final annotation = quote == null ? null : _owner.content.annotation(quote.annotationId);
+    if (section == null || annotation == null) return;
+    if (section.question case final question?) {
+      await _review(annotation, question);
+      return;
+    }
+    setState(() => _aiBusy = true);
+    NoteSession? session;
+    try {
+      session = await ref.read(noteSessionFactoryProvider)();
+      if (!mounted) return;
+      _editSession = session;
+      final question = await session.reviewQuestion(
+        NoteDraftSection(
+          title: section.title,
+          blocks: [
+            NoteDraftBlock.fromJson({'type': 'paragraph', 'text': _blockText(block)}),
+          ],
+        ),
+      );
+      if (mounted) await _review(annotation, question);
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      session?.close();
+      _editSession = null;
+      if (mounted) setState(() => _aiBusy = false);
+    }
+  }
+
+  Future<void> _rewrite(StudyNote note, StudyNoteBlock block, NoteRewrite mode) async {
+    if (_aiBusy) return;
+    setState(() => _aiBusy = true);
+    NoteSession? session;
+    try {
+      session = await ref.read(noteSessionFactoryProvider)();
+      if (!mounted) return;
+      _editSession = session;
+      final text = await session.rewrite(_blockText(block), mode);
+      if (!mounted) return;
+      final current = _owner.content
+          .studyNote(note.id)
+          ?.sections
+          .expand((s) => s.blocks)
+          .where((b) => b.id == block.id)
+          .firstOrNull;
+      if (current == null || jsonEncode(current.toJson()) != jsonEncode(block.toJson())) return;
+      await _owner.editStudyNoteBlock(
+        note.id,
+        block.id,
+        text: block is PointsBlock ? null : text,
+        items: block is PointsBlock ? text.split('\n') : null,
+      );
+      if (mounted) _undoHud(context.l10n.noteAiEdited);
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      session?.close();
+      _editSession = null;
+      if (mounted) setState(() => _aiBusy = false);
+    }
+  }
+
+  Future<void> _explain(StudyNote note, QuoteBlock quote) async {
+    if (_aiBusy) return;
+    final materials = const NoteMaterialCollector().collect(
+      _owner.content,
+      note.scope,
+      note.settings,
+      now: ref.read(clockProvider)(),
+      text: _text,
+    );
+    final material = materials.highlights.where((m) => m.sourceId == quote.annotationId).firstOrNull;
+    if (material == null) return;
+    setState(() => _aiBusy = true);
+    NoteSession? session;
+    try {
+      session = await ref.read(noteSessionFactoryProvider)();
+      if (!mounted) return;
+      _editSession = session;
+      final text = await session.explain(material);
+      if (!mounted) return;
+      await _owner.changeStudyNote(
+        note.id,
+        (n) => n.copyWith(
+          sections: [
+            for (final s in n.sections)
+              s.copyWith(
+                blocks: [
+                  for (final b in s.blocks) ...[
+                    b,
+                    if (b.id == quote.id)
+                      TextBlock(
+                        id: ref.read(editorProvider).newId(),
+                        text: text,
+                        kind: TextKind.gloss,
+                        annotationId: quote.annotationId,
+                      ),
+                  ],
+                ],
+              ),
+          ],
+        ),
+      );
+      if (mounted) _undoHud(context.l10n.noteGenerated);
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.noteFailed);
+    } finally {
+      session?.close();
+      _editSession = null;
+      if (mounted) setState(() => _aiBusy = false);
+    }
+  }
 
   void _coverage(StudyNote note, StudySetContent content, Set<String> used, List<String> unused) => showMMSheet<void>(
     context: context,
@@ -882,10 +1165,11 @@ String? ownNoteText(StudySetContent content, OwnBlock block) => switch (block.so
 
 /// IME-aware in-place editing. A commit is one durable edit; Esc writes nothing.
 class NoteEditableText extends StatefulWidget {
-  const NoteEditableText({super.key, required this.text, required this.style, required this.onSave});
+  const NoteEditableText({super.key, required this.text, required this.style, required this.onSave, this.onReadTap});
   final String text;
   final TextStyle style;
   final Future<void> Function(String) onSave;
+  final VoidCallback? onReadTap;
   @override
   State<NoteEditableText> createState() => _NoteEditableTextState();
 }
@@ -936,15 +1220,20 @@ class _NoteEditableTextState extends State<NoteEditableText> {
           onCancel: () => setState(() => _editing = false),
           onTapOutside: _commit,
         )
-      : MMInteractive(
-          onTap: () {
-            _controller.text = widget.text;
-            setState(() => _editing = true);
-            _focus.requestFocus();
-          },
-          builder: (_, _) => ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: MMNoteLayout.blockButton),
-            child: Text(widget.text.isEmpty ? ' ' : widget.text, style: widget.style),
+      : GestureDetector(
+          onDoubleTap: widget.onReadTap == null ? null : _edit,
+          child: MMInteractive(
+            onTap: widget.onReadTap ?? _edit,
+            builder: (_, _) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: MMNoteLayout.blockButton),
+              child: Text(widget.text.isEmpty ? ' ' : widget.text, style: widget.style),
+            ),
           ),
         );
+
+  void _edit() {
+    _controller.text = widget.text;
+    setState(() => _editing = true);
+    _focus.requestFocus();
+  }
 }

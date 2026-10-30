@@ -4073,4 +4073,98 @@ class AppLocalizationsZh extends AppLocalizations {
   String noteSourcePage(String title, int page) {
     return '《$title》p.$page';
   }
+
+  @override
+  String get noteOutlineTitle => '确认提纲';
+
+  @override
+  String get noteGenerating => '整理笔记';
+
+  @override
+  String get noteStop => '停止';
+
+  @override
+  String get noteContinue => '继续整理';
+
+  @override
+  String get noteLayoutOnly => '改为只排版';
+
+  @override
+  String get noteStepOutline => '归纳主题';
+
+  @override
+  String get noteAddSection => '添加节';
+
+  @override
+  String get noteNewSection => '新节';
+
+  @override
+  String get noteUnassigned => '未归入';
+
+  @override
+  String get noteAiUnavailable => '未配置 AI';
+
+  @override
+  String get notePreviewOutline => '先看提纲';
+
+  @override
+  String get noteAiFallback => 'AI 整理失败，已按原文排版';
+
+  @override
+  String get noteShowAi => '显示 AI 标记';
+
+  @override
+  String get noteAiEdited => 'AI · 已改';
+
+  @override
+  String get noteRephrase => '换一种说法';
+
+  @override
+  String get noteConcise => '更简洁';
+
+  @override
+  String get noteExpand => '展开说明';
+
+  @override
+  String get noteMakeMine => '改为我的话';
+
+  @override
+  String get noteRegenerate => '重新整理';
+
+  @override
+  String get noteAddAllReview => '全部加入复习';
+
+  @override
+  String noteStepWrite(int done, int total) {
+    return '撰写 $done / $total · 核对引用';
+  }
+
+  @override
+  String noteSending(int highlights, int notes, int characters, String model) {
+    String _temp0 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '将发送 $highlights 条划线、$notes 条批注（约 $characters 字）给 $model',
+      zero: '将发送 $highlights 条划线（约 $characters 字）给 $model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noteStepCollect => '收集素材';
+
+  @override
+  String get noteStepContext => '补全上下文';
+
+  @override
+  String get noteStepCompose => '撰写';
+
+  @override
+  String get noteStepVerify => '核对引用';
+
+  @override
+  String get noteStopped => '已停止';
+
+  @override
+  String get noteLocked => '更新时保留';
 }

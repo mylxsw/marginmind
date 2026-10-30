@@ -167,10 +167,16 @@ class ModelNoteOrganizer implements NoteOrganizer {
 
   /// Each yielded section is complete and validated. Cancellation/transport
   /// failure leaves completedSections available without publishing fragments.
-  Stream<NoteDraftSection> writeSections(NoteMaterials materials, NoteOutline outline, NoteSettings settings) async* {
+  Stream<NoteDraftSection> writeSections(
+    NoteMaterials materials,
+    NoteOutline outline,
+    NoteSettings settings, {
+    int startAt = 0,
+  }) async* {
     _completed.clear();
     final sections = outline.sections.where((s) => s.refs.isNotEmpty).toList();
     for (final (index, section) in sections.indexed) {
+      if (index < startAt) continue;
       cancelToken.check();
       onProgress?.call(NoteProgress(NoteStage.write, index + 1, sections.length));
       final selected = NoteMaterials(
