@@ -119,6 +119,12 @@ abstract final class MMSizes {
   /// Minimum hit area of a control under touch input.
   static const double touchTarget = 44;
 
+  /// Painted tablet chrome is compact; its touch cells remain 44 points.
+  static const double tabletControlVisual = 32;
+  static const double tabletToolbarVisual = 36;
+  static const double tabletToolbarIcon = 18;
+  static const double tabletReaderNavigationHeight = 52;
+
   /// Smallest height of either pane when the source sits above the map.
   static const double paneMinHeight = 240;
 

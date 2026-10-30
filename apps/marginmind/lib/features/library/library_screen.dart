@@ -482,7 +482,8 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                         gridDelegate: context.mmTablet
                             ? SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
-                                mainAxisExtent: 104,
+                                mainAxisExtent:
+                                    104 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
                               )
@@ -506,7 +507,9 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 230,
-                          mainAxisExtent: context.mmTablet ? 230 : 206,
+                          mainAxisExtent: context.mmTablet
+                              ? 230 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4
+                              : 206,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 18,
                         ),

@@ -32,7 +32,8 @@ class StudySetCard extends StatelessWidget {
     final l = context.l10n;
     return MMInteractive(
       onTapDown: onSelect,
-      onDoubleTap: onOpen,
+      onTap: MMInput.of(context).touchPlatform ? onOpen : null,
+      onDoubleTap: MMInput.of(context).touchPlatform ? null : onOpen,
       selected: selected,
       builder: (context, s) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,16 +119,18 @@ class _StarButton extends StatelessWidget {
       onTap: onPressed,
       tooltip: starred ? l.unstar : l.star,
       semanticLabel: starred ? l.unstar : l.star,
-      builder: (context, s) => MMGlass(
-        blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
-        borderRadius: BorderRadius.circular(13),
-        child: SizedBox(
-          width: context.mmTablet ? MMSizes.touchTarget : 26,
-          height: context.mmTablet ? MMSizes.touchTarget : 26,
-          child: Icon(
-            starred ? MMIcons.starFill : MMIcons.star,
-            size: 13,
-            color: starred ? const Color(0xFFC79A00) : context.mmColors.label,
+      builder: (context, s) => MMControlFrame(
+        child: MMGlass(
+          blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
+          borderRadius: BorderRadius.circular(context.mmTablet ? 16 : 13),
+          child: SizedBox(
+            width: context.mmTablet ? MMSizes.tabletControlVisual : 26,
+            height: context.mmTablet ? MMSizes.tabletControlVisual : 26,
+            child: Icon(
+              starred ? MMIcons.starFill : MMIcons.star,
+              size: context.mmTablet ? MMSizes.tabletToolbarIcon : 13,
+              color: starred ? const Color(0xFFC79A00) : context.mmColors.label,
+            ),
           ),
         ),
       ),

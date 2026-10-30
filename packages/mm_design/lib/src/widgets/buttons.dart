@@ -5,6 +5,7 @@ import '../foundation/interactive.dart';
 import '../tokens/metrics.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/motion.dart';
+import 'control_frame.dart';
 
 enum MMButtonVariant {
   /// Accent fill with white text. At most one per view.
@@ -59,36 +60,41 @@ class MMButton extends StatelessWidget {
           MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, color ?? c.label),
         };
         final pressedOverlay = s.pressed ? Colors.black.withValues(alpha: 0.12) : Colors.transparent;
-        return AnimatedOpacity(
-          duration: MMMotion.quick,
-          opacity: s.enabled ? 1 : 0.4,
-          child: Container(
-            height: context.mmTablet ? MMSizes.touchTarget : 30,
-            padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
-            decoration: BoxDecoration(
-              color: Color.alphaBlend(pressedOverlay, bg),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: s.focused
-                  ? [BoxShadow(color: (color ?? c.accent).withValues(alpha: 0.5), spreadRadius: 3)]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[Icon(icon, size: 14, color: fg), const SizedBox(width: 6)],
-                // A label wider than the room it is given ends in an ellipsis.
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.headline.copyWith(
-                      color: fg,
-                      fontWeight: variant == MMButtonVariant.primary ? FontWeight.w600 : FontWeight.w500,
+        return MMControlFrame(
+          child: AnimatedOpacity(
+            duration: MMMotion.quick,
+            opacity: s.enabled ? 1 : 0.4,
+            child: Container(
+              height: context.mmTablet ? MMSizes.tabletControlVisual : 30,
+              padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
+              decoration: BoxDecoration(
+                color: Color.alphaBlend(pressedOverlay, bg),
+                borderRadius: BorderRadius.circular(context.mmTablet ? MMSizes.tabletControlVisual / 2 : 15),
+                boxShadow: s.focused
+                    ? [BoxShadow(color: (color ?? c.accent).withValues(alpha: 0.5), spreadRadius: 3)]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: context.mmTablet ? 16 : 14, color: fg),
+                    const SizedBox(width: 6),
+                  ],
+                  // A label wider than the room it is given ends in an ellipsis.
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.headline.copyWith(
+                        color: fg,
+                        fontWeight: variant == MMButtonVariant.primary ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -126,18 +132,20 @@ class MMIconButton extends StatelessWidget {
       selected: selected,
       tooltip: tooltip,
       semanticLabel: tooltip,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        width: context.mmTablet && size < MMSizes.touchTarget ? MMSizes.touchTarget : size,
-        height: context.mmTablet && size < MMSizes.touchTarget ? MMSizes.touchTarget : size,
-        decoration: BoxDecoration(
-          color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
-          borderRadius: BorderRadius.circular(size / 3.5),
-        ),
-        child: Icon(
-          icon,
-          size: iconSize,
-          color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          width: context.mmTablet && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
+          height: context.mmTablet && size <= MMSizes.touchTarget ? MMSizes.tabletControlVisual : size,
+          decoration: BoxDecoration(
+            color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
+            borderRadius: BorderRadius.circular(context.mmTablet ? MMRadii.row : size / 3.5),
+          ),
+          child: Icon(
+            icon,
+            size: context.mmTablet && iconSize < MMSizes.tabletToolbarIcon ? MMSizes.tabletToolbarIcon : iconSize,
+            color: s.enabled ? (color ?? (selected ? c.accent : c.icon)) : c.icon.withValues(alpha: 0.3),
+          ),
         ),
       ),
     );

@@ -109,6 +109,7 @@ class CropControls extends ConsumerWidget {
       children: [
         MMGlass(
           key: const ValueKey('crop-editor-toolbar'),
+          toolbar: true,
           padding: const EdgeInsets.all(MMSpacing.xs),
           child: Wrap(
             alignment: WrapAlignment.center,

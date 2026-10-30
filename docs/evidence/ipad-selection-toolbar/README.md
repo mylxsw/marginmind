@@ -1,0 +1,11 @@
+# iPad 选区工具栏版本同步
+
+2026-10-30。设备原安装版本为 0.8.0（11）。其构建来自 `codex/ipad-adaptation`，该分支没有包含 `7236e62` 的选区工具栏修正，仍通过旧的 `UnderlineToolButton(selectionAction: true)` 打开颜色／线型栏。主分支的 `TextAnnotationTools` 已将两种笔和颜色入口分开，且应用标记后关闭浮动工具栏。
+
+本次将已在设备上验收的 iPad 输入修复分支 `b36d83f` 与主分支 `3cb4336` 整合，保留选字把手、Pencil 输入、平板布局与界面尺寸修复，选区动作采用主分支实现。安装版本递增为 **0.8.0（12）**。
+
+回归增加 12 组场景：834×1194 / 1194×834，两种笔，手指 / stylus / 鼠标输入。按下和松开标记按钮均不打开任一颜色面板，应用一次后关闭选区工具栏，页面工具保持“选择”；重新点已有标记，只有颜色圆圈打开选色条，线型按标记类型显示。
+
+验证：应用测试 1067 通过、34 跳过；界面组件 189 通过；PDF 117 通过；静态检查无问题。iPad Release 构建和开发签名校验通过，覆盖安装成功。已备份设备的 Application Support 与 Preferences，备份保存在本地忽略目录 `build/ipad-toolbar-backup/`。
+
+真机自动用例 `testSelectionColorEntryIsSeparateFromMarkerActions` 检查三个独立入口及四个最近颜色＋更多颜色图标，不创建或删除标记。运行需要设备解锁，结果写入本地 `build/iPadSelectionAcceptance.xcresult`。手指／Pencil 动作无二级面板由上述回归测试验证，真实 Pencil 手感仍由设备试用确认。

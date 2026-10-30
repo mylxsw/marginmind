@@ -6,6 +6,7 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'glass.dart';
+import 'control_frame.dart';
 import 'search_field.dart';
 import 'window_scaffold.dart';
 
@@ -77,6 +78,7 @@ class MMToolbarGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MMGlass(
+      toolbar: true,
       padding: EdgeInsets.all(context.mmTablet ? 2 : (compact && !context.mmTouch ? 2 : 3)),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
@@ -121,7 +123,7 @@ class MMToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final size = compact && !context.mmTouch ? const Size(30, 26) : context.mmToolbarButton;
+    final size = compact && !context.mmTouch && !context.mmTablet ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
       selected: selected,
@@ -136,36 +138,40 @@ class MMToolbarButton extends StatelessWidget {
             : s.hovered
             ? c.hover
             : Colors.transparent;
-        return AnimatedContainer(
-          duration: MMMotion.quick,
-          height: size.height,
-          constraints: BoxConstraints(minWidth: size.width),
-          padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : (count > 0 ? MMSpacing.xs : 0)),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-            border: s.focused ? Border.all(color: c.accent, width: 2) : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null) Icon(icon, size: context.mmTablet ? 19 : 16, color: fg),
-              if (icon != null && label != null) const SizedBox(width: 6),
-              if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
-              if (count > 0) ...[
-                const SizedBox(width: MMSpacing.xxs),
-                Text(
-                  '$count',
-                  style: t.footnote.copyWith(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    color: fg,
+        return MMControlFrame(
+          child: AnimatedContainer(
+            duration: MMMotion.quick,
+            height: context.mmTablet ? MMSizes.tabletControlVisual : size.height,
+            constraints: BoxConstraints(minWidth: context.mmTablet ? MMSizes.tabletControlVisual : size.width),
+            padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : (count > 0 ? MMSpacing.xs : 0)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(
+                context.mmTablet ? MMSizes.tabletControlVisual / 2 : MMRadii.capsuleButton,
+              ),
+              border: s.focused ? Border.all(color: c.accent, width: 2) : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) Icon(icon, size: context.mmTablet ? MMSizes.tabletToolbarIcon : 16, color: fg),
+                if (icon != null && label != null) const SizedBox(width: 6),
+                if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
+                if (count > 0) ...[
+                  const SizedBox(width: MMSpacing.xxs),
+                  Text(
+                    '$count',
+                    style: t.footnote.copyWith(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                      color: fg,
+                    ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -210,6 +216,7 @@ class MMToolbarSearchField extends StatelessWidget {
     return SizedBox(
       width: width,
       child: MMGlass(
+        toolbar: true,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: MMSearchField(
           placeholder: placeholder,

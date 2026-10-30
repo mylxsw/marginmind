@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -276,6 +277,66 @@ void main() {
       annotation.colorIndex,
     );
   });
+
+  for (final size in [const Size(834, 1194), const Size(1194, 834)]) {
+    for (final pointer in [PointerDeviceKind.touch, PointerDeviceKind.stylus, PointerDeviceKind.mouse]) {
+      for (final tool in [AnnotationTool.highlight, AnnotationTool.underline]) {
+        testWidgets('iPad $size ${pointer.name}: ${tool.name} applies without opening color settings', (tester) async {
+          final container = await pumpApp(
+            tester,
+            size: size,
+            overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(false)],
+          );
+          container.read(navigationProvider.notifier).openStudySet('demo-1');
+          await tester.pumpAndSettle();
+          final provider = workspaceProvider('demo-1');
+          final controller = container.read(provider.notifier);
+          await controller.setTool(AnnotationTool.select);
+          await controller.onSelectionCommitted('c1', selection);
+          await tester.pumpAndSettle();
+          final before = controller.content.annotations.length;
+          final action = find.byKey(
+            ValueKey('selection-${tool == AnnotationTool.highlight ? 'highlight' : 'underline'}'),
+          );
+          final palette = find.byKey(const ValueKey('annotation-color-palette'));
+          final gesture = await tester.startGesture(tester.getCenter(action), kind: pointer);
+          await tester.pump();
+          expect(palette, findsNothing);
+          expect(find.byType(UnderlineStyleToolbar), findsNothing);
+          expect(find.byKey(const ValueKey('highlight-color-palette')), findsNothing);
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(controller.content.annotations.length, before + 1);
+          expect(
+            controller.content.annotations.last.kind,
+            tool == AnnotationTool.highlight ? AnnotationKind.highlight : AnnotationKind.underline,
+          );
+          expect(find.byType(SelectionToolbar), findsNothing);
+          expect(palette, findsNothing);
+          expect(find.byType(UnderlineStyleToolbar), findsNothing);
+          expect(find.byKey(const ValueKey('highlight-color-palette')), findsNothing);
+          expect(container.read(provider).tool, AnnotationTool.select);
+
+          controller.tapHighlight(controller.content.annotations.last.id, selection.viewportRect!);
+          await tester.pumpAndSettle();
+          final color = find.descendant(
+            of: find.byType(SelectionToolbar),
+            matching: find.byType(AnnotationColorButton),
+          );
+          final colorTap = await tester.startGesture(tester.getCenter(color), kind: pointer);
+          await colorTap.up();
+          await tester.pumpAndSettle();
+          expect(palette, findsOneWidget);
+          expect(
+            find.byType(AnnotationLineStylePicker),
+            tool == AnnotationTool.underline ? findsOneWidget : findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+          await settleHud(tester);
+        }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+      }
+    }
+  }
 
   for (final width in [320.0, 768.0]) {
     testWidgets('text markers and settings fit a touch screen of width $width', (tester) async {

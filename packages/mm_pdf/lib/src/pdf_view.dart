@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoTextSelectionControls, CupertinoTheme, CupertinoThemeData;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart'
@@ -34,6 +35,7 @@ import 'crop_geometry.dart';
 import 'reading_geometry.dart';
 import 'margin_geometry.dart';
 import 'ink.dart';
+import 'stylus_region.dart';
 import 'pdf_navigation.dart';
 import 'pdf_pixel_grid.dart';
 import 'preview_cache.dart';
@@ -797,6 +799,8 @@ class MMPdfView extends StatefulWidget {
     this.onSelectionCommitted,
     this.onTextUnavailable,
     this.onSelectionChanged,
+    this.useTouchSelectionHandles = false,
+    this.selectionHandleTapGroup,
     this.onHighlightTap,
     this.onViewportChanged,
     this.areaSelecting = false,
@@ -829,6 +833,12 @@ class MMPdfView extends StatefulWidget {
   final int initialPage;
   final Color backgroundColor;
   final Color emphasisColor;
+
+  /// iOS bar-and-dot handles with a 44-point drag target. Desktop keeps the viewer default.
+  final bool useTouchSelectionHandles;
+
+  /// Shares the handle gesture with its host selection toolbar.
+  final Object? selectionHandleTapGroup;
   final ColorFilter? pageColorFilter;
 
   /// Called once the document is open, with its page count.
@@ -1137,7 +1147,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     _bumpInk();
   }
 
-  void _inkUpdate(Offset local) {
+  void _inkUpdate(Offset local, {double minDistance = 1}) {
     final ink = widget.ink;
     if (ink == null) return;
     if (ink.tool == MMPdfInkTool.eraser) {
@@ -1147,7 +1157,10 @@ class _MMPdfViewState extends State<MMPdfView> {
     final live = _inkLive;
     if (live == null) return;
     // Sub-pixel jitter adds points, not shape.
-    if (_inkLastLocal != null && (local - _inkLastLocal!).distance < 1) return;
+    if (_inkLastLocal != null &&
+        ((local - _inkLastLocal!).distance == 0 || (local - _inkLastLocal!).distance < minDistance)) {
+      return;
+    }
     final hit = _pagePoint(local, page: live.$1);
     if (hit == null) return;
     _inkLastLocal = local;
@@ -1155,7 +1168,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     _bumpInk();
   }
 
-  void _inkEnd() {
+  void _inkEnd({bool stylus = false}) {
     final ink = widget.ink;
     if (ink == null) return;
     if (ink.tool == MMPdfInkTool.eraser) {
@@ -1171,7 +1184,7 @@ class _MMPdfViewState extends State<MMPdfView> {
     _inkLastLocal = null;
     _bumpInk();
     if (live == null) return;
-    final draft = _draft(ink, live.$1, live.$2);
+    final draft = _draft(ink, live.$1, live.$2, stylus: stylus);
     if (draft == null) return;
     _inkPending = [..._inkPending, (draft.page, draft.toStroke(id: '', documentId: ''))];
     _awaitParent();
@@ -1186,18 +1199,18 @@ class _MMPdfViewState extends State<MMPdfView> {
     _bumpInk();
   }
 
-  MMPdfInkDraft? _draft(MMPdfInk ink, int page, List<InkPoint> points) {
-    if (points.length < 2) return null;
+  MMPdfInkDraft? _draft(MMPdfInk ink, int page, List<InkPoint> points, {bool stylus = false}) {
+    if (points.isEmpty || (!stylus && points.length < 2)) return null;
     final xs = points.map((p) => p.x), ys = points.map((p) => p.y);
     final extent = math.max(xs.reduce(math.max) - xs.reduce(math.min), ys.reduce(math.max) - ys.reduce(math.min));
     // A click or a twitch is not a stroke.
-    if (extent < 2) return null;
+    if (extent < 2 && !(stylus && ink.tool == MMPdfInkTool.freehand)) return null;
     MMPdfInkDraft pen() => MMPdfInkDraft(
       page: page,
       tool: InkTool.pen,
       colorIndex: ink.colorIndex,
       width: ink.width,
-      points: simplifyInk(points),
+      points: simplifyInk(points, tolerance: stylus ? 0.12 : 0.3),
     );
     switch (ink.tool) {
       case MMPdfInkTool.freehand:
@@ -1339,6 +1352,10 @@ class _MMPdfViewState extends State<MMPdfView> {
   @override
   void didUpdateWidget(MMPdfView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.filePath != widget.filePath || oldWidget.crop != widget.crop) {
+      _pencilTexts.clear();
+      _pencilEpoch++;
+    }
     final cropChanged =
         (widget.cropEditorBuilder == null &&
             jsonEncode(oldWidget.crop?.toJson()) != jsonEncode(widget.crop?.toJson())) ||
@@ -1390,6 +1407,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       });
     }
     _indexHighlights();
+    if (oldWidget.ink != widget.ink || oldWidget.areaSelecting != widget.areaSelecting) _pencilEpoch++;
     if (oldWidget.filePath != widget.filePath) {
       _marginEpoch++;
       _inkLive = null;
@@ -1582,11 +1600,13 @@ class _MMPdfViewState extends State<MMPdfView> {
     _changeArea(index < 0 ? null : (index, point, point));
   }
 
-  void _areaUpdate(DragUpdateDetails d) {
+  void _areaUpdate(DragUpdateDetails d) => _areaMove(d.localPosition);
+
+  void _areaMove(Offset local) {
     final area = _area;
     if (area == null) return;
     final bounds = _controller.layout.pageLayouts[area.$1];
-    final point = _controller.localToDocument(d.localPosition);
+    final point = _controller.localToDocument(local);
     final clamped = Offset(point.dx.clamp(bounds.left, bounds.right), point.dy.clamp(bounds.top, bounds.bottom));
     _changeArea((area.$1, area.$2, clamped));
   }
@@ -1620,6 +1640,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       Rect.fromPoints(_controller.documentToLocal(area.$2), _controller.documentToLocal(area.$3));
 
   Future<void> _clearSelection() async {
+    _pencilEpoch++;
     _selectionEpoch++;
     if (_cleanSelection != null) setState(() => _cleanSelection = null);
     if (_controller.isReady) await _controller.textSelectionDelegate.clearTextSelection();
@@ -1890,7 +1911,18 @@ class _MMPdfViewState extends State<MMPdfView> {
   Widget build(BuildContext context) {
     // Page overlays and margin notes can paint beyond their layout bounds.
     // Always contain them here, including while a page scrolls under chrome.
-    return ClipRect(child: _buildViewport(context));
+    return ClipRect(
+      child: MMStylusRegion(
+        enabled: widget.useTouchSelectionHandles && widget.cropEditorBuilder == null,
+        captureOnDown: widget.ink != null || widget.areaSelecting,
+        includeMouse: true,
+        onDown: _stylusDown,
+        onMove: _stylusMove,
+        onUp: _stylusUp,
+        onCancel: _stylusCancel,
+        child: _buildViewport(context),
+      ),
+    );
   }
 
   Widget _buildViewport(BuildContext context) {
@@ -1908,7 +1940,10 @@ class _MMPdfViewState extends State<MMPdfView> {
             child: _viewer(),
           ),
         ),
-        if (widget.margin != null) Positioned.fill(child: _marginOverlay()),
+        if (widget.margin != null)
+          Positioned.fill(
+            child: widget.useTouchSelectionHandles ? MMStylusExclusion(child: _marginOverlay()) : _marginOverlay(),
+          ),
         if (widget.areaSelecting)
           Positioned.fill(
             // Translucent: wheel and trackpad scrolling still reach the
@@ -1920,11 +1955,9 @@ class _MMPdfViewState extends State<MMPdfView> {
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 dragStartBehavior: DragStartBehavior.down,
-                supportedDevices: const {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.stylus,
-                  PointerDeviceKind.invertedStylus,
-                },
+                supportedDevices: widget.useTouchSelectionHandles
+                    ? const <PointerDeviceKind>{}
+                    : const {PointerDeviceKind.mouse, PointerDeviceKind.stylus, PointerDeviceKind.invertedStylus},
                 onPanStart: _areaStart,
                 onPanUpdate: _areaUpdate,
                 onPanEnd: (_) => _areaEnd(),
@@ -1942,11 +1975,9 @@ class _MMPdfViewState extends State<MMPdfView> {
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 dragStartBehavior: DragStartBehavior.down,
-                supportedDevices: const {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.stylus,
-                  PointerDeviceKind.invertedStylus,
-                },
+                supportedDevices: widget.useTouchSelectionHandles
+                    ? const <PointerDeviceKind>{}
+                    : const {PointerDeviceKind.mouse, PointerDeviceKind.stylus, PointerDeviceKind.invertedStylus},
                 // The eraser bites on pointer down, so a click erases too;
                 // a click then ends as a cancelled drag.
                 onPanDown: ink.tool == MMPdfInkTool.eraser ? (d) => _inkStart(d.localPosition) : null,
@@ -1999,13 +2030,140 @@ class _MMPdfViewState extends State<MMPdfView> {
     );
   }
 
+  Offset? _pencilStart;
+  bool _pencilDragged = false;
+  int _pencilEpoch = 0, _pencilMove = 0;
+  final _pencilTexts = <int, Future<PdfPageText>>{};
+
+  void _stylusDown(Offset local) {
+    _pencilEpoch++;
+    _pencilStart = null;
+    _pencilDragged = false;
+    if (_ready) _controller.stopInteractiveViewerAnimation();
+    if (widget.ink != null) {
+      unawaited(_clearSelection());
+      _inkStart(local);
+      return;
+    }
+    if (widget.areaSelecting) {
+      unawaited(_clearSelection());
+      _areaStart(DragStartDetails(localPosition: local));
+      return;
+    }
+    if (!_ready) return;
+    _pencilStart = _controller.localToDocument(local);
+  }
+
+  void _stylusMove(Offset local) {
+    if (widget.ink != null) {
+      _inkUpdate(local, minDistance: .15);
+      return;
+    }
+    if (widget.areaSelecting) {
+      _areaMove(local);
+      return;
+    }
+    if (_pencilStart != null && _ready) {
+      if (!_pencilDragged) {
+        _pencilDragged = true;
+        unawaited(_clearSelection());
+      }
+      unawaited(_preciseSelection(_pencilStart!, _controller.localToDocument(local), _pencilEpoch));
+    }
+  }
+
+  void _stylusUp(Offset local) {
+    if (widget.ink != null) {
+      _inkUpdate(local, minDistance: 0);
+      _inkEnd(stylus: true);
+    } else if (widget.areaSelecting) {
+      _areaMove(local);
+      _areaEnd();
+    } else if (_pencilStart case final start? when _pencilDragged) {
+      unawaited(_preciseSelection(start, _controller.localToDocument(local), _pencilEpoch, commit: true));
+    }
+    _pencilStart = null;
+  }
+
+  void _stylusCancel() {
+    _pencilEpoch++;
+    _pencilStart = null;
+    _inkCancel();
+    _changeArea(null);
+  }
+
+  Future<PdfTextSelectionPoint?> _precisePoint(Offset point) async {
+    if (!_ready) return null;
+    final document = _controller.document;
+    final layouts = _controller.layout.pageLayouts;
+    final index = layouts.indexWhere((rect) => rect.contains(point));
+    if (index < 0) return null;
+    if (_pencilTexts.length >= 4 && !_pencilTexts.containsKey(index)) _pencilTexts.remove(_pencilTexts.keys.first);
+    PdfPageText text;
+    try {
+      text = await (_pencilTexts[index] ??= document.pages[index].loadStructuredText());
+    } catch (_) {
+      _pencilTexts.remove(index);
+      return null;
+    }
+    if (!mounted || !_ready || !identical(document, _controller.document)) return null;
+    var distance = double.infinity;
+    int? closest;
+    for (var i = 0; i < text.charRects.length; i++) {
+      final rect = text.charRects[i].toRectInDocument(page: document.pages[index], pageRect: layouts[index]);
+      if (rect.isEmpty) continue;
+      if (rect.contains(point)) return PdfTextSelectionPoint(text, i);
+      final dx = math.max(rect.left - point.dx, math.max(0.0, point.dx - rect.right));
+      final dy = math.max(rect.top - point.dy, math.max(0.0, point.dy - rect.bottom));
+      final d = dx * dx + dy * dy;
+      if (d < distance) {
+        distance = d;
+        closest = i;
+      }
+    }
+    return closest == null || distance > 144 ? null : PdfTextSelectionPoint(text, closest);
+  }
+
+  Future<void> _preciseSelection(Offset from, Offset to, int epoch, {bool word = false, bool commit = false}) async {
+    final move = ++_pencilMove;
+    final a = await _precisePoint(from), b = await _precisePoint(to);
+    if (!mounted || epoch != _pencilEpoch || move != _pencilMove || a == null || b == null) return;
+    var start = a, end = b;
+    if (word) {
+      // A PDF fragment may contain a whole Chinese line. Start with one
+      // character; only expand contiguous Latin letters/digits to a word.
+      final text = a.text.fullText;
+      var first = a.index, last = a.index;
+      final latin = RegExp(r'[A-Za-z0-9_]');
+      if (latin.hasMatch(text[first])) {
+        while (first > 0 && latin.hasMatch(text[first - 1])) {
+          first--;
+        }
+        while (last + 1 < text.length && latin.hasMatch(text[last + 1])) {
+          last++;
+        }
+      }
+      if (first > 0 && text.codeUnitAt(first) >= 0xDC00 && text.codeUnitAt(first) <= 0xDFFF) first--;
+      if (last + 1 < text.length && text.codeUnitAt(last) >= 0xD800 && text.codeUnitAt(last) <= 0xDBFF) last++;
+      start = PdfTextSelectionPoint(a.text, first);
+      end = PdfTextSelectionPoint(a.text, last);
+    }
+    await _controller.textSelectionDelegate.setTextSelectionPointRange(PdfTextSelectionRange.fromPoints(start, end));
+    if (commit && mounted && epoch == _pencilEpoch) await _commitSelection();
+  }
+
   Offset? _textDragStart;
   PointerDeviceKind? _textPointerKind;
 
   Future<void> _textPointerUp(PointerUpEvent event) async {
+    final directStylus =
+        widget.useTouchSelectionHandles &&
+        (event.kind == PointerDeviceKind.stylus ||
+            event.kind == PointerDeviceKind.invertedStylus ||
+            event.kind == PointerDeviceKind.mouse);
     final start = _textDragStart;
     _textDragStart = null;
-    unawaited(_commitSelection());
+    if (!directStylus || !_pencilDragged) unawaited(_commitSelection());
     if (start == null ||
         widget.onTextUnavailable == null ||
         !_ready ||
@@ -2246,6 +2404,55 @@ class _MMPdfViewState extends State<MMPdfView> {
     },
   );
 
+  double _selectionHandleLineHeight(PdfTextSelectionAnchor anchor) =>
+      (anchor.rect.height * _controller.currentZoom).clamp(12.0, 32.0);
+
+  Offset _touchSelectionHandleOffset(
+    BuildContext context,
+    PdfTextSelectionAnchor anchor,
+    PdfViewerTextSelectionAnchorHandleState state,
+  ) {
+    final start = anchor.type == PdfTextSelectionAnchorType.a;
+    final ltr = anchor.direction == PdfTextDirection.ltr || anchor.direction == PdfTextDirection.unknown;
+    return Offset(start == ltr ? 22 : -22, _selectionHandleLineHeight(anchor) * (start ? 1 : -1));
+  }
+
+  Widget _touchSelectionHandle(
+    BuildContext context,
+    PdfTextSelectionAnchor anchor,
+    PdfViewerTextSelectionAnchorHandleState state,
+  ) {
+    final start = anchor.type == PdfTextSelectionAnchorType.a;
+    final handle = MMStylusExclusion(
+      child: Semantics(
+        identifier: start ? 'pdf-selection-start' : 'pdf-selection-end',
+        container: true,
+        child: SizedBox.square(
+          dimension: 44,
+          child: ColoredBox(
+            color: Colors.transparent,
+            child: Align(
+              alignment: start ? Alignment.bottomCenter : Alignment.topCenter,
+              child: CupertinoTheme(
+                data: CupertinoThemeData(primaryColor: widget.emphasisColor),
+                child: Builder(
+                  builder: (context) => CupertinoTextSelectionControls().buildHandle(
+                    context,
+                    start ? TextSelectionHandleType.left : TextSelectionHandleType.right,
+                    _selectionHandleLineHeight(anchor),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return widget.selectionHandleTapGroup == null
+        ? handle
+        : TapRegion(groupId: widget.selectionHandleTapGroup, child: handle);
+  }
+
   Widget _viewer() {
     final path = widget.filePath;
     final appliedCrop = widget.crop;
@@ -2257,6 +2464,13 @@ class _MMPdfViewState extends State<MMPdfView> {
         _marginInputEpoch++;
         _textDragStart = event.localPosition;
         _textPointerKind = event.kind;
+        if (widget.useTouchSelectionHandles &&
+            (event.kind == PointerDeviceKind.stylus ||
+                event.kind == PointerDeviceKind.invertedStylus ||
+                event.kind == PointerDeviceKind.mouse)) {
+          _pencilDragged = false;
+          _pencilEpoch++;
+        }
         _selectionEpoch++;
         if (_cleanSelection != null) setState(() => _cleanSelection = null);
       },
@@ -2323,11 +2537,25 @@ class _MMPdfViewState extends State<MMPdfView> {
             pageOverlaysBuilder: _pageOverlays,
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],
+            onGeneralTap: widget.useTouchSelectionHandles
+                ? (context, controller, details) {
+                    if (details.type != PdfViewerGeneralTapType.longPress ||
+                        details.tapOn != PdfViewerPart.nonSelectedText) {
+                      return false;
+                    }
+                    final epoch = ++_pencilEpoch;
+                    unawaited(_preciseSelection(details.documentPosition, details.documentPosition, epoch, word: true));
+                    return true;
+                  }
+                : null,
             textSelectionParams: PdfTextSelectionParams(
               // Tool overlays claim mouse/Pencil drags. Keep pdfrx's touch
               // long-press selection and handles available underneath them.
               enabled: widget.cropEditorBuilder == null,
+              enableSelectionHandles: widget.useTouchSelectionHandles ? true : null,
               showContextMenuAutomatically: false,
+              buildSelectionHandle: widget.useTouchSelectionHandles ? _touchSelectionHandle : null,
+              calcSelectionHandleOffset: widget.useTouchSelectionHandles ? _touchSelectionHandleOffset : null,
               onTextSelectionChange: (selection) {
                 _selection = selection;
                 if (!selection.hasSelectedText && _cleanSelection != null) setState(() => _cleanSelection = null);
