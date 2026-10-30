@@ -13,7 +13,7 @@
   --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
   --glass:rgba(255,255,255,.88); --hair:rgba(0,0,0,.10); --excerpt:#3A3A3C; --ctx:#8E8E93;
   --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05); --popShadow:0 10px 36px rgba(0,0,0,.16);
-  --ai:#8E5BD8; --aiTint:rgba(142,91,216,.10); --own:#C98A00; --ownTint:rgba(255,204,0,.14); --ok:#248A3D; --okTint:rgba(52,199,89,.14); --err:#D70015;
+  --ai:#5E5CE6; --aiTint:rgba(94,92,230,.12); --onAi:#FFFFFF; --own:#C98A00; --ownTint:rgba(255,204,0,.14); --ok:#248A3D; --okTint:rgba(52,199,89,.14); --err:#D70015;
   --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
   --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
@@ -26,7 +26,7 @@
   --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
   --glass:rgba(44,44,47,.92); --hair:rgba(255,255,255,.10); --excerpt:#D1D1D6; --ctx:#8E8E93;
   --cardShadow:0 2px 10px rgba(0,0,0,.35); --popShadow:0 12px 40px rgba(0,0,0,.5);
-  --ai:#B38CF0; --aiTint:rgba(179,140,240,.14); --own:#FFD60A; --ownTint:rgba(255,214,10,.12); --ok:#30D158; --okTint:rgba(48,209,88,.16);
+  --ai:#7D7AFF; --aiTint:rgba(125,122,255,.20); --onAi:#1E1E1F; --own:#FFD60A; --ownTint:rgba(255,214,10,.12); --ok:#30D158; --okTint:rgba(48,209,88,.16);
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
@@ -140,10 +140,6 @@ mark.hl.flash{animation:hflash 1.8s}
 .chip.ok{background:var(--okTint);color:var(--ok);cursor:pointer}
 .chip.warn{background:rgba(255,149,0,.16);color:#B25000;cursor:pointer}
 .dark .chip.warn{color:#FFB340}
-.legend{display:flex;gap:14px;font-size:11px;color:var(--label2);padding:8px 10px;border-radius:8px;background:var(--fill4);margin-bottom:22px;align-items:center}
-.legend .lg{display:flex;align-items:center;gap:5px}
-.legend .swatch{width:3px;height:12px;border-radius:2px}
-.legend .ser{font-family:var(--serif);font-size:12px;color:var(--label)}
 .n-h2{font-size:17px;font-weight:700;margin:30px 0 10px;display:flex;align-items:baseline;gap:8px;outline:none}
 .n-h2 .num{color:var(--label3);font-weight:600;font-variant-numeric:tabular-nums}
 .blk{position:relative;margin:0 0 12px;border-radius:6px}
@@ -158,8 +154,8 @@ mark.hl.flash{animation:hflash 1.8s}
 .marks .blk.ai{padding-left:12px;margin-left:-12px;border-left:2px solid var(--aiTint)}
 .marks .blk.ai:hover{border-left-color:var(--ai)}
 .vt{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 4px;height:16px;vertical-align:1px;margin-right:4px;white-space:nowrap}
-.vt.ai{color:var(--ai);background:var(--aiTint)}
-.vt.mix{color:var(--ai);background:transparent;box-shadow:inset 0 0 0 1px var(--aiTint)}
+/* Solid chip: small research-colored text on researchTint is below 4.5:1. */
+.vt.ai,.vt.mix{color:var(--onAi);background:var(--ai)}
 .vt.own{color:var(--own);background:var(--ownTint)}
 .nomarks .vt.ai,.nomarks .vt.mix{display:none}
 .callout{background:var(--aiTint);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.7}
@@ -233,7 +229,6 @@ ul.todo li.done span.t{color:var(--label3);text-decoration:line-through}
 .pop .mi.dis{color:var(--label3)}
 .pop .msep{height:.5px;background:var(--sep);margin:4px 8px}
 .pop .mh{font-size:11px;color:var(--label3);padding:4px 10px 2px}
-.pop .why{font-size:11px;color:var(--label3);padding:0 10px 4px 34px;max-width:260px;line-height:1.4;white-space:normal}
 .cov{width:340px;padding:10px}
 .cov .row{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:7px;font-size:12px;line-height:1.5}
 .cov .row:hover{background:var(--hover)}
@@ -262,6 +257,7 @@ ul.todo li.done span.t{color:var(--label3);text-decoration:line-through}
 .opt:hover{background:var(--hover)}
 .opt.on{box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--accentTint);color:var(--accent);font-weight:500}
 .opt.dis{opacity:.4;pointer-events:none}
+.opt.fixed{pointer-events:none}
 .opt .c{font-size:11px;color:var(--label3);font-weight:400}
 .opt.on .c{color:var(--accent)}
 .help{font-size:11.5px;color:var(--label2);margin-top:6px;line-height:1.5}
@@ -301,12 +297,12 @@ ul.todo li.done span.t{color:var(--label3);text-decoration:line-through}
 .ol-top input{flex:1;border:0;background:none;font-weight:600;font-size:13.5px;outline:none;padding:3px 4px;border-radius:5px}
 .ol-top input:focus{background:var(--fill4)}
 .ol-top .why{font-size:11px;color:var(--label3);white-space:nowrap}
-.ol-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:28px;padding-left:22px}
+.ol-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:28px;margin-left:22px;border-radius:7px}
+.ol-chips:empty{border:1px dashed var(--sep)}
 .hchip{max-width:250px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px 0 7px;border-radius:7px;background:var(--fill4);box-shadow:inset 0 0 0 .5px var(--hair);font-family:var(--serif);font-size:12px;cursor:grab;white-space:nowrap;overflow:hidden}
 .hchip .d{width:7px;height:7px;border-radius:4px;flex:none}
 .hchip span{overflow:hidden;text-overflow:ellipsis}
 .hchip.drag{opacity:.4}
-.ol-empty{font-size:11.5px;color:var(--label3);padding:5px 0}
 
 /* Generating */
 .gen-wrap{display:grid;grid-template-columns:230px 1fr;gap:18px;min-height:380px}
@@ -366,7 +362,7 @@ pre.md .fm{color:var(--label3)}
 .lcard .la{font-size:12px;line-height:1.7;opacity:.85;margin:0 0 14px}
 .lcard .lsec{font-size:12px;font-weight:700;margin:16px 0 8px;opacity:.85}
 .lcard .foot{display:flex;align-items:center;gap:8px;border-top:.5px solid currentColor;border-color:rgba(127,127,127,.25);padding-top:12px;margin-top:16px;font-size:10px;opacity:.6}
-.lcard .foot img,.lcard .foot .logo{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#5E9CFF,#8E5BD8)}
+.lcard .foot img,.lcard .foot .logo{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#5E9CFF,#5E5CE6)}
 .lcard.quote{padding:34px 28px 22px}
 .lcard.quote .big{font-family:var(--serif);font-size:20px;line-height:1.7;margin:4px 0 14px}
 .lcard.quote .mark{font-family:var(--serif);font-size:44px;line-height:.6;opacity:.25}
@@ -518,6 +514,8 @@ const OWN = {
   h6: { text: '和《认知天性》说的“费力的提取”是一回事：舒适区边缘 = 需要努力。', from: '页边批注 · p.58' },
   h10: { text: '所以别等排期完美才开始，先用 FSRS 的默认值。', from: '页边批注 · p.44' },
 };
+/* Editing a margin note inside a note edits the margin note itself: there is only one copy (decision 1). */
+const ownText = h => S.ownEdits[h] ?? OWN[h].text;
 /* AI glosses: filled-in context for fragments ("这" refers to the previous sentence). */
 const GLOSS = { h9: '「这」指前文的实验：读完合上书自测的一组，一周后多记住近一半内容。' };
 /* AI-written questions per highlight (review outline, Cornell cues). */
@@ -527,6 +525,7 @@ const QS = { h1: '回想和重读，哪个更能巩固记忆？', h2: '每次从
 const qFor = h => aiOn() && QS[h] ? QS[h] : `《${docOf(h).short}》p.${HL[h].pg} 说了什么？`;
 const NEW_HLS = ['h10', 'h11'];
 const BASE_HLS = ['h1', 'h7', 'h2', 'h3', 'h9', 'h4', 'h5', 'h6', 'h8'];
+const OLDER_NOTES = [{ id: 'n0', t: '刻意练习 · 第 4 章', at: 1 }];
 const MAPS = { b1: '检索练习', b2: '间隔练习', b3: '交错与刻意练习', b4: '常见误区' };
 
 /* ---------- AI section content (demo) ---------- */
@@ -572,15 +571,17 @@ const ACTIONS = [
 /* ---------- State ---------- */
 let S;
 const DEF = { ai: true, dark: false, narrow: false };
+/* Decision 2: AI depth defaults to "deep", then follows the user's last choice. */
+const prefs = { depth: 'deep' };
 const env = { ...DEF };
 function fresh() {
   return {
     right: 'anno', sheet: null, doc: 'd1', readerOpen: true,
     hls: [...BASE_HLS], sel: new Set(BASE_HLS), colorOff: new Set(),
-    setup: { scope: 'sel', org: 'theme', tpl: 'reading', depth: 'deep', ctx: 1, mats: { hl: true, own: true, card: true, ai: false, img: false }, fixRefs: true },
+    setup: { scope: 'sel', org: prefs.depth === 'none' ? 'source' : 'theme', tpl: 'reading', depth: prefs.depth, ctx: 1, mats: { hl: true, own: true, card: true, ai: false, img: false }, fixRefs: true },
     outline: null, unassigned: [],
     note: null, tpl: 'reading', marks: true, ctxOpen: new Set(['h9']),
-    edits: {}, deleted: new Set(), alts: {}, done: new Set(), revealed: new Set(),
+    edits: {}, ownEdits: {}, deleted: new Set(), alts: {}, done: new Set(), revealed: new Set(),
     pending: null, newSince: [],
     ex: { fmt: 'md', cite: 'inline', inc: { ctx: true, own: true, ai: true, qa: true, refs: true }, aiMark: 'label' },
     share: { theme: 'paper', what: 'sec', sec: 0, hideAi: false, own: true },
@@ -610,7 +611,8 @@ document.addEventListener('mousedown', e => { if (!e.target.closest('#pop') && !
 
 /* ---------- Sidebar ---------- */
 function renderSide() {
-  const notes = S.note ? [{ id: 'n1', t: S.note.title }] : [];
+  /* A study set holds any number of notes, newest update first (decision 3). */
+  const notes = [...(S.note ? [{ id: 'n1', t: S.note.title, at: 2 }] : []), ...OLDER_NOTES].sort((a, b) => b.at - a.at);
   $('#sideInner').innerHTML = `
     <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
     <div class="sg-h">文档</div>
@@ -619,8 +621,9 @@ function renderSide() {
     <div class="sg-h">脑图</div>
     <div class="si">${ic('map')}<span class="el">主脑图</span></div>
     <div class="sg-h">笔记<button data-act="newNote" title="整理学习笔记 ⌥⌘P">${ic('plus', 'i xs')}</button></div>
-    ${notes.length ? notes.map(n => `<div class="si ${S.right === 'note' ? 'on' : ''}" data-act="openNote">${ic('note')}<span class="el">${esc(n.t)}</span>${S.newSince.length ? `<span class="nb">${S.newSince.length}</span>` : ''}</div>`).join('')
-      : `<div class="si" data-act="newNote" style="color:var(--label3)">${ic('spark')}<span class="el">整理学习笔记…</span></div>`}
+    ${notes.map(n => n.id === 'n1'
+      ? `<div class="si ${S.right === 'note' ? 'on' : ''}" data-act="openNote">${ic('note')}<span class="el">${esc(n.t)}</span>${S.newSince.length ? `<span class="nb">${S.newSince.length}</span>` : ''}</div>`
+      : `<div class="si" data-act="olderNote">${ic('note')}<span class="el">${esc(n.t)}</span></div>`).join('')}
     <div class="sg-h">学习</div>
     <div class="si">${ic('review')}<span class="el">复习</span><span class="cnt">12</span></div>
     <div class="si">${ic('chart')}<span class="el">统计</span></div>`;
@@ -631,7 +634,7 @@ function renderSide() {
 function renderTb() {
   $('#tb').innerHTML = `
     <button class="tbtn" data-act="toggleReader" title="显示 / 隐藏原文">${ic('sidebar')}</button>
-    <span class="ttl">认知天性 · 学习笔记</span><span class="sub">学习集 · 2 份文档</span>
+    <span class="ttl">认知天性 · 学习笔记</span>
     <div class="grow"></div>
     <div class="seg"><button>原文</button><button class="on">分栏</button><button>脑图</button></div>
     <div class="capsule">
@@ -647,7 +650,7 @@ function renderReader() {
   const doc = DOCS[S.doc];
   $('#page').innerHTML = doc.chapters.map(ch => `<div class="paper"><h3>${esc(ch.title)}</h3>${ch.paras.map(p => `<div class="pg">${p.pg}</div><p>${
     esc(p.t).replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, (_, id, c, txt) => S.hls.includes(id)
-      ? `<mark class="hl ${c} ${S.newSince.includes(id) ? 'new' : ''}" data-h="${id}">${txt}</mark>${OWN[id] && S.hls.includes(id) ? `<span class="mnote" title="${esc(OWN[id].text)}"></span>` : ''}`
+      ? `<mark class="hl ${c} ${S.newSince.includes(id) ? 'new' : ''}" data-h="${id}">${txt}</mark>${OWN[id] && S.hls.includes(id) ? `<span class="mnote" title="${esc(ownText(id))}"></span>` : ''}`
       : txt)}</p>`).join('')}</div>`).join('');
   $('#page').querySelectorAll('mark[data-h]').forEach(m => m.onclick = () => {
     if (S.right === 'note') { const b = document.querySelector(`#noteDoc [data-ref="${m.dataset.h}"]`); if (b) { b.scrollIntoView({ block: 'center', behavior: 'smooth' }); b.classList.remove('hlnew'); void b.offsetWidth; b.classList.add('hlnew'); } else hud('这条划线不在笔记里'); }
@@ -668,7 +671,7 @@ function renderAnno() {
   const visible = list.filter(h => !S.colorOff.has(HL[h].c));
   const selN = visible.filter(h => S.sel.has(h)).length;
   $('#right').innerHTML = `
-    <div class="anno-head"><span class="ttl">标注</span><span style="color:var(--label3);font-size:12px">${list.length} 条划线 · ${Object.keys(OWN).filter(h => S.hls.includes(h)).length} 条批注</span>
+    <div class="anno-head"><span class="ttl">标注</span>
       <div class="cfilter">${['y', 'g', 'b', 'o', 'v', 'p'].map(c => `<span data-c="${c}" class="${S.colorOff.has(c) ? '' : 'on'}" style="background:${COLOR[c]}" title="按颜色筛选"></span>`).join('')}</div>
       <div class="grow"></div>
       <button class="tbtn" data-act="selAll">${selN === visible.length ? '取消全选' : '全选'}</button>
@@ -680,8 +683,8 @@ function renderAnno() {
         <div class="chk ${S.sel.has(h) ? 'on' : ''}">${S.sel.has(h) ? ic('check', 'i xs') : ''}</div>
         <div class="bar" style="background:${COLOR[HL[h].c]}"></div>
         <div style="flex:1;min-width:0"><div class="q">${esc(HL[h].text)}</div>
-          ${OWN[h] ? `<div class="own">${esc(OWN[h].text)}</div>` : ''}
-          <div class="m"><span>p.${HL[h].pg}</span>${S.newSince.includes(h) ? '<span class="chip ok" style="cursor:default">笔记整理后新增</span>' : ''}<span class="cite" data-reveal="${h}">${ic('arrow', 'i xs')}原文</span></div></div>
+          ${OWN[h] ? `<div class="own">${esc(ownText(h))}</div>` : ''}
+          <div class="m"><span class="cite" data-reveal="${h}" title="定位原文">${ic('arrow', 'i xs')}p.${HL[h].pg}</span>${S.newSince.includes(h) ? '<span class="chip ok" style="cursor:default">新增</span>' : ''}</div></div>
       </div>`).join('');
     }).join('')}</div>
     <div id="annoBar"><span class="cnt">已选 ${selN} 条</span>
@@ -731,7 +734,7 @@ function blocksFor(sec, idx) {
   if (intro) out.push({ id: `${sec.id}:ai`, k: 'p', v: 'ai', text: intro, alt: meta?.alt });
   for (const h of sec.refs) {
     out.push({ id: `${sec.id}:q:${h}`, k: 'quote', ref: h });
-    if (m.own && OWN[h]) out.push({ id: `${sec.id}:o:${h}`, k: 'own', ref: h, text: OWN[h].text, from: OWN[h].from });
+    if (m.own && OWN[h]) out.push({ id: `${sec.id}:o:${h}`, k: 'own', ref: h, text: ownText(h), from: OWN[h].from });
   }
   if (deep() && meta?.xref) out.push({ id: `${sec.id}:x`, k: 'xref', v: 'ai', to: meta.xref.to, text: meta.xref.text });
   if (aiOn() && meta?.take && !sec.ch) out.push({ id: `${sec.id}:t`, k: 'list', v: 'ai', items: meta.take });
@@ -756,36 +759,30 @@ function quoteHtml(h, opts = {}) {
   const before = S.setup.ctx > 0 ? H.before : '', after = S.setup.ctx > 0 ? H.after : '';
   return `<div class="quote"><div class="bar" style="background:${COLOR[H.c]}"></div>
     <div>${open && before ? `<span class="cx">${esc(before)}</span>` : ''}<span class="qt ${open ? 'lit' : ''}" ${open ? `style="background:color-mix(in srgb,${COLOR[H.c]} 22%,transparent)"` : ''}>${esc(H.text)}</span>${open && after ? `<span class="cx">${esc(after)}</span>` : ''}</div>
-    <div class="src"><span class="cite" data-reveal="${h}">${ic('arrow', 'i xs')}${esc(citeText(h))}</span><span>· ${esc(H.chTitle)}</span>
-      ${(before || after) ? `<span class="cxbtn ${open ? 'on' : ''}" data-ctx="${h}">${ic('ctx', 'i xs')}${open ? '收起上下文' : '上下文'}</span>` : ''}
+    <div class="src"><span class="cite" data-reveal="${h}" title="${esc(H.chTitle)}">${ic('arrow', 'i xs')}${esc(citeText(h))}</span>
+      ${(before || after) ? `<span class="cxbtn ${open ? 'on' : ''}" data-ctx="${h}" title="${open ? '收起上下文' : '展开上下文'}">${ic('ctx', 'i xs')}</span>` : ''}
       ${S.newSince.includes(h) && !opts.pending ? '<span class="chip ok" style="cursor:default">新增</span>' : ''}</div>
     ${deep() && GLOSS[h] ? `<div class="gloss">${vtag('ai')}${esc(GLOSS[h])}</div>` : ''}</div>`;
 }
 function blockHtml(b, sec, opts = {}) {
   const gut = opts.noGut ? '' : `<button class="gut" data-pop data-blk="${b.id}" title="段落操作">${ic('more')}</button>`;
-  const lock = opts.lock && (S.edits[b.id] != null) ? `<span class="lock">${ic('lock', 'i xs')}你改过，更新时不会覆盖</span>` : '';
+  const lock = opts.lock && (S.edits[b.id] != null) ? `<span class="lock" title="更新时保留">${ic('lock', 'i xs')}</span>` : '';
   const ed = opts.noEdit ? '' : 'contenteditable="true"';
   switch (b.k) {
     case 'p': return `<div class="blk ai" data-id="${b.id}">${gut}<div class="p-ai">${vtag(voiceOf(b))}<span ${ed} data-edit="${b.id}">${esc(textOf(b))}</span>${lock}</div></div>`;
     case 'quote': return `<div class="blk" data-id="${b.id}" data-ref="${b.ref}">${gut}${quoteHtml(b.ref, opts)}</div>`;
-    case 'own': return `<div class="blk" data-id="${b.id}">${gut}<div class="ownbox"><span class="vt own">${ic('person', 'i xs')}我的批注</span><span ${ed} data-edit="${b.id}">${esc(textOf(b))}</span><div class="from">${esc(b.from)}</div></div></div>`;
+    case 'own': return `<div class="blk" data-id="${b.id}">${gut}<div class="ownbox"><span ${ed} data-own="${b.ref}">${esc(b.text)}</span><div class="from">${esc(b.from)}</div></div></div>`;
     case 'xref': { const t = S.note.secs.findIndex(s => s.id === b.to); return t < 0 ? '' : `<div class="blk ai" data-id="${b.id}">${gut}<div class="xref">${ic('link', 'i xs')}<div>${vtag(voiceOf(b))}与 <a data-goto="${b.to}">${t + 1}. ${esc(S.note.secs[t].title)}</a> ${esc(b.text)}</div></div></div>`; }
-    case 'list': return `<div class="blk ai" data-id="${b.id}">${gut}<div style="font-size:12px;font-weight:600;color:var(--label2);margin-bottom:2px">${vtag(voiceOf(b))}要点</div><ul class="tk">${b.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+    case 'list': return `<div class="blk ai" data-id="${b.id}">${gut}<div>${vtag(voiceOf(b))}</div><ul class="tk">${b.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
   }
   return '';
 }
 function headHtml() {
   const N = S.note, u = new Set(used()), miss = N.scope.filter(h => !u.has(h));
-  const nOwn = N.scope.filter(h => OWN[h] && S.setup.mats.own).length;
-  const docs = new Set(N.scope.map(h => HL[h].doc)).size;
   return `<h1 class="n-title" contenteditable="true" data-title>${esc(N.title)}</h1>
-    <div class="n-meta"><span>${docs} 份文档 · ${N.scope.length} 条划线 · ${nOwn} 条批注</span><span>整理于 ${N.generatedAt}</span>
+    <div class="n-meta"><span>${N.generatedAt}</span>
       ${miss.length ? `<span class="chip warn" data-pop data-act="coverage">${ic('warn', 'i xs')}${miss.length} 条划线未用上</span>` : `<span class="chip ok" data-pop data-act="coverage">${ic('check', 'i xs')}${N.scope.length} 条划线全部引用 · 原文未改写</span>`}</div>
-    <div class="legend"><span class="lg"><span class="swatch" style="background:var(--y)"></span><span class="ser">宋体</span> 原文</span>
-      <span class="lg"><span class="vt own" style="margin:0">${ic('person', 'i xs')}</span>我写的</span>
-      ${aiOn() ? `<span class="lg"><span class="vt ai" style="margin:0">${ic('spark', 'i xs')}AI</span>整理与解释</span>` : `<span class="lg" style="color:var(--label3)">未使用 AI · 只做了排版</span>`}
-      <div class="grow"></div>${aiOn() ? `<span class="toggle" data-act="marks"><span class="sw ${S.marks ? 'on' : ''}"></span>显示 AI 标记</span>` : ''}</div>
-    ${aiOn() ? `<div class="blk ai" data-id="sum:ai"><div class="callout">${vtag(S.edits['sum:ai'] != null ? 'mix' : 'ai')}<b>一句话总结　</b><span contenteditable="true" data-edit="sum:ai">${esc(summaryText())}</span></div></div>` : ''}`;
+    ${aiOn() ? `<div class="blk ai" data-id="sum:ai" style="margin-top:14px"><div class="callout">${vtag(S.edits['sum:ai'] != null ? 'mix' : 'ai')}<span contenteditable="true" data-edit="sum:ai">${esc(summaryText())}</span></div></div>` : ''}`;
 }
 function tailHtml() {
   const N = S.note; let h = '';
@@ -803,7 +800,6 @@ function tailHtml() {
 }
 function noteBodyReading() {
   return S.note.secs.map((s, i) => `<h2 class="n-h2" id="sec-${s.id}"><span class="num">${i + 1}</span><span contenteditable="true" data-sec="${s.id}">${esc(s.title)}</span></h2>` +
-    (s.refs.length ? '' : '<div class="blk" style="color:var(--label3);font-size:12.5px">这一节没有摘录了，可以删掉标题或从“N 条未用上”放回。</div>') +
     blocksFor(s, i).map(b => blockHtml(b, s, { lock: true })).join('')).join('');
 }
 function noteBodyCornell() {
@@ -811,9 +807,9 @@ function noteBodyCornell() {
     const meta = secMeta(s), bl = blocksFor(s, i).filter(b => b.k !== 'list' && b.k !== 'p');
     const cues = aiOn() ? s.refs.slice(0, 3).map(qFor) : [];
     return `<h2 class="n-h2" id="sec-${s.id}"><span class="num">${i + 1}</span>${esc(s.title)}</h2>
-      <div class="cornell"><div class="cue">${cues.map(c => `<div>${esc(c)}</div>`).join('')}${aiOn() ? '' : '<span style="color:var(--label3);font-size:11px">未使用 AI：提示栏可手动填写</span>'}</div>
+      <div class="cornell"><div class="cue" contenteditable="true">${cues.map(c => `<div>${esc(c)}</div>`).join('')}</div>
       <div class="body">${bl.map(b => blockHtml(b, s)).join('')}</div>
-      <div class="sum"><b>总结</b>${aiOn() && meta ? `${vtag('ai')}${esc(textOf({ id: s.id + ':ai', text: meta.ai, alt: meta.alt }))}` : '<span style="color:var(--label3)">在这里写下本节总结…</span>'}</div></div>`;
+      <div class="sum"><b>总结</b>${aiOn() && meta ? `${vtag('ai')}${esc(textOf({ id: s.id + ':ai', text: meta.ai, alt: meta.alt }))}` : '<span contenteditable="true" style="display:block;min-height:1.7em"></span>'}</div></div>`;
   }).join('');
 }
 function noteBodyReview() {
@@ -827,9 +823,10 @@ function noteBodyReview() {
 }
 function renderNote() {
   const N = S.note;
-  const body = !N.secs.length ? '<p style="color:var(--label3)">笔记里还没有摘录。</p>' : S.tpl === 'cornell' ? noteBodyCornell() : S.tpl === 'review' ? noteBodyReview() : noteBodyReading();
-  const banner = S.newSince.length && !S.pending ? `<div class="banner">${ic('plus')}<span>整理之后，你又划了 <b>${S.newSince.length} 条</b>、写了 <b>${S.newSince.filter(h => OWN[h]).length} 条</b>批注</span><div class="grow"></div><button class="btn pri" data-act="preview">预览更新</button><button class="btn ghost" data-act="dismissNew">忽略</button></div>` : '';
-  const diff = S.pending ? `<div class="diffbar">${ic('refresh')}<b>更新预览</b><span style="color:var(--label2)">新增 ${S.pending.length} 处（绿色）· 你改过的段落保持不变</span><div class="grow"></div><button class="btn ghost" data-act="cancelUpd">取消</button><button class="btn pri" data-act="applyUpd">应用更新</button></div>` : '';
+  const body = !N.secs.length ? '<p style="color:var(--label3)">没有摘录</p>' : S.tpl === 'cornell' ? noteBodyCornell() : S.tpl === 'review' ? noteBodyReview() : noteBodyReading();
+  const nNewOwn = S.newSince.filter(h => OWN[h]).length;
+  const banner = S.newSince.length && !S.pending ? `<div class="banner">${ic('plus')}<span>又划了 <b>${S.newSince.length} 条</b>${nNewOwn ? `、写了 <b>${nNewOwn} 条</b>批注` : ''}</span><div class="grow"></div><button class="btn pri" data-act="preview">预览更新</button><button class="btn ghost" data-act="dismissNew">忽略</button></div>` : '';
+  const diff = S.pending ? `<div class="diffbar">${ic('refresh')}<b>新增 ${S.pending.length} 处</b><div class="grow"></div><button class="btn ghost" data-act="cancelUpd">取消</button><button class="btn pri" data-act="applyUpd">应用更新</button></div>` : '';
   /* The floating table of contents needs room beside the 720pt column; otherwise it moves into a menu. */
   const wide = $('#right').clientWidth >= 1000;
   $('#right').classList.toggle('notoc', !wide);
@@ -838,11 +835,12 @@ function renderNote() {
     <div class="note-bar">${ic('note')}<span class="ttl">${esc(N.title)}</span><div class="grow"></div>
       ${wide ? '' : `<button class="tbtn" data-pop data-act="tocMenu">目录${ic('down', 'i xs')}</button>`}
       <button class="tbtn" data-pop data-act="tplMenu">${tplName}${ic('down', 'i xs')}</button>
-      <button class="tbtn" data-act="regen" ${env.ai ? '' : 'disabled'} title="${env.ai ? '重新整理（保留你改过的段落）' : '未配置 AI'}">${ic('refresh')}重新整理</button>
+      ${aiOn() ? `<button class="tbtn ${S.marks ? 'on' : ''}" data-act="marks" title="显示 AI 标记">${ic('spark')}</button>` : ''}
+      <button class="tbtn" data-act="regen" ${env.ai ? '' : 'disabled'} title="${env.ai ? '重新整理' : '未配置 AI'}">${ic('refresh')}重新整理</button>
       <button class="tbtn" data-act="export">${ic('export')}导出</button>
       <button class="tbtn" data-act="share">${ic('share')}分享</button></div>
     <div id="noteScroll">${diff}${banner}
-      <div id="noteDoc" class="${wide ? '' : 'notoc'} "${S.marks && aiOn() ? 'marks' : 'nomarks'}">${headHtml()}${body}${tailHtml()}</div>
+      <div id="noteDoc" class="${S.marks && aiOn() ? 'marks' : 'nomarks'}">${headHtml()}${body}${tailHtml()}</div>
       <nav id="toc"><div class="th">目录</div>${N.secs.map((s, i) => `<a data-goto="${s.id}">${i + 1}. ${esc(s.title)}</a>`).join('')}
         ${S.setup.mats.own || deep() ? '<a data-goto="act">行动清单</a>' : ''}${deep() ? '<a data-goto="qa">复习题</a>' : ''}</nav>
     </div>`;
@@ -854,10 +852,9 @@ function injectPending() {
     const at = [...document.querySelectorAll(`#noteDoc [data-id^="${p.sec}:"]`)].filter(e => /:(q|o):/.test(e.dataset.id)).pop()
       || document.getElementById('sec-' + p.sec);
     if (!at) continue;
-    const secTitle = S.note.secs.find(s => s.id === p.sec)?.title || '';
     const wrap = document.createElement('div');
     wrap.className = 'blk pending';
-    wrap.innerHTML = `<div class="ptag">${ic('plus', 'i xs')}新增 · 放入「${esc(secTitle)}」<span style="color:var(--label3);font-weight:400">${esc(p.why)}</span></div>${quoteHtml(p.h, { pending: true })}${OWN[p.h] ? `<div class="ownbox"><span class="vt own">${ic('person', 'i xs')}我的批注</span>${esc(OWN[p.h].text)}<div class="from">${esc(OWN[p.h].from)}</div></div>` : ''}`;
+    wrap.innerHTML = `<div class="ptag">${ic('plus', 'i xs')}<span style="color:var(--label3);font-weight:400">${esc(p.why)}</span></div>${quoteHtml(p.h, { pending: true })}${OWN[p.h] ? `<div class="ownbox">${esc(ownText(p.h))}<div class="from">${esc(OWN[p.h].from)}</div></div>` : ''}`;
     at.after(wrap);
   }
 }
@@ -869,6 +866,7 @@ function wireNote() {
   R.querySelectorAll('[data-edit]').forEach(el => {
     el.oninput = () => { S.edits[el.dataset.edit] = el.textContent; const tag = el.parentElement.querySelector('.vt.ai'); if (tag) { tag.className = 'vt mix'; tag.innerHTML = ic('spark', 'i xs') + 'AI · 已改'; } };
   });
+  R.querySelectorAll('[data-own]').forEach(el => el.oninput = () => { S.ownEdits[el.dataset.own] = el.textContent; renderReader(); });
   R.querySelectorAll('[data-sec]').forEach(el => el.oninput = () => { const s = S.note.secs.find(x => x.id === el.dataset.sec); if (s) s.title = el.textContent; });
   const t = R.querySelector('[data-title]'); if (t) t.oninput = () => { S.note.title = t.textContent; R.querySelector('.note-bar .ttl').textContent = t.textContent; renderSide(); };
   R.querySelectorAll('[data-todo]').forEach(c => c.onclick = () => { const i = +c.dataset.todo; S.done.has(i) ? S.done.delete(i) : S.done.add(i); keepScroll(renderNote); });
@@ -888,16 +886,16 @@ function blockMenu(id, e) {
   const f = findBlock(id); if (!f) return; const { b } = f;
   const el = document.querySelector(`.blk[data-id="${id}"]`); el && el.classList.add('menu');
   const isAi = b.v === 'ai', isQ = b.k === 'quote', noAi = !env.ai;
-  const mi = (act, icon, label, dis, why) => `<div class="mi ${dis ? 'dis' : ''}" data-m="${act}">${ic(icon)}${label}</div>${dis && why ? `<div class="why">${why}</div>` : ''}`;
+  const mi = (act, icon, label, dis, kbd) => `<div class="mi ${dis ? 'dis' : ''}" data-m="${act}" ${dis ? 'title="未配置 AI"' : ''}>${ic(icon)}${label}${kbd ? `<span class="kbd">${kbd}</span>` : ''}</div>`;
   const r = e.currentTarget.getBoundingClientRect();
   const p = openPop(
-    (isQ ? mi('ctx', 'ctx', S.ctxOpen.has(b.ref) ? '收起上下文' : '展开上下文') + mi('reveal', 'arrow', '在原文中查看 ⌘L') + mi('explain', 'spark', '解释这句话', noAi, '未配置 AI') + '<div class="msep"></div>'
+    /* The user's own words are never offered to AI rewriting, so those items are simply absent. */
+    (isQ ? mi('ctx', 'ctx', S.ctxOpen.has(b.ref) ? '收起上下文' : '展开上下文') + mi('reveal', 'arrow', '定位原文', false, '⌘L') + mi('explain', 'spark', '解释这句话', noAi) + '<div class="msep"></div>'
       : '') +
-    (isAi || b.k === 'own' ? mi('rewrite', 'refresh', '换一种说法', noAi || b.k === 'own', b.k === 'own' ? '这是你自己写的，AI 不会改写' : '未配置 AI') +
-      mi('shorter', 'short', '更简洁', noAi || b.k === 'own') + mi('longer', 'long', '展开说明', noAi || b.k === 'own') : '') +
-    (isAi ? mi('accept', 'person', '改为我的话', false) + '<div class="msep"></div>' : '') +
-    mi('map', 'map', '加入脑图') + mi('card', 'cards', '生成复习卡', noAi && !isQ, '未配置 AI') + '<div class="msep"></div>' +
-    mi('del', 'trash', isQ ? '从笔记中移除（不删划线）' : '删除这段'),
+    (isAi ? mi('rewrite', 'refresh', '换一种说法', noAi) + mi('shorter', 'short', '更简洁', noAi) + mi('longer', 'long', '展开说明', noAi) +
+      mi('accept', 'person', '改为我的话', false) + '<div class="msep"></div>' : '') +
+    mi('map', 'map', '加入脑图') + (b.k === 'own' ? '' : mi('card', 'cards', '生成复习卡', noAi && !isQ)) + '<div class="msep"></div>' +
+    mi('del', 'trash', isQ ? '从笔记中移除' : '删除这段'),
     r.left, r.bottom + 4);
   p.querySelectorAll('[data-m]:not(.dis)').forEach(m => m.onclick = () => { closePop(); blockAction(m.dataset.m, b); });
 }
@@ -910,11 +908,11 @@ function blockAction(act, b) {
       if (b.alt) { S.alts[b.id] = !S.alts[b.id]; delete S.edits[b.id]; }
       else S.edits[b.id] = act === 'shorter' ? textOf(b).replace(/，[^，。]*。?$/, '。') : textOf(b) + (act === 'longer' ? '换句话说，学习时感到“有点难”往往是好事。' : '');
       keepScroll(renderNote); hud(act === 'rewrite' ? '已换一种说法' : act === 'shorter' ? '已精简' : '已展开', '撤销', () => { delete S.edits[b.id]; S.alts[b.id] = false; keepScroll(renderNote); }); break;
-    case 'accept': S.edits[b.id] = textOf(b); keepScroll(renderNote); hud('已标为你改过的段落，更新时不会覆盖'); break;
-    case 'map': hud('已加入脑图「主脑图」', '查看', () => hud('原型：跳到脑图对应节点')); break;
+    case 'accept': S.edits[b.id] = textOf(b); keepScroll(renderNote); hud('已改为我的话', '撤销', () => { delete S.edits[b.id]; keepScroll(renderNote); }); break;
+    case 'map': hud('已加入脑图', '查看', () => hud('原型：跳到脑图对应节点')); break;
     case 'card': hud('已生成 1 张复习卡'); break;
     case 'del': S.deleted.add(b.id); if (b.k === 'quote') { for (const s of S.note.secs) s.refs = s.refs.filter(x => x !== b.ref); S.deleted.delete(b.id); }
-      keepScroll(renderNote); hud(b.k === 'quote' ? '已从笔记中移除，划线仍在原文' : '已删除', '撤销', () => restoreDel(b)); break;
+      keepScroll(renderNote); hud(b.k === 'quote' ? '已从笔记中移除' : '已删除', '撤销', () => restoreDel(b)); break;
   }
 }
 function restoreDel(b) {
@@ -927,7 +925,7 @@ function coveragePop(e) {
   const row = h => { const s = N.secs.findIndex(x => x.refs.includes(h)); return `<div class="row" data-h="${h}"><div class="bar" style="background:${COLOR[HL[h].c]}"></div><div class="t">${esc(HL[h].text)}</div><div class="w">${s >= 0 ? `第 ${s + 1} 节` : `<button class="btn" data-put="${h}" style="height:22px;padding:0 8px">放回笔记</button>`}</div></div>`; };
   const r = e.currentTarget.getBoundingClientRect();
   const miss = N.scope.filter(h => !u.has(h));
-  const p = openPop(`<div class="mh">${miss.length ? `${miss.length} 条没有用上 · 点“放回笔记”放进最相关的一节` : '每条划线都在笔记里，原文逐字引用'}</div>` + miss.map(row).join('') + (miss.length ? '<div class="msep"></div>' : '') + N.scope.filter(h => u.has(h)).map(row).join(''), r.left, r.bottom + 6, 'cov');
+  const p = openPop(miss.map(row).join('') + (miss.length ? '<div class="msep"></div>' : '') + N.scope.filter(h => u.has(h)).map(row).join(''), r.left, r.bottom + 6, 'cov');
   p.querySelectorAll('.row').forEach(rw => rw.onclick = ev => {
     const put = ev.target.closest('[data-put]');
     if (put) { const h = put.dataset.put; const tgt = N.secs.find(s => secMeta(s)?.refs.includes(h)) || N.secs.find(s => s.refs.some(x => HL[x].ch === HL[h].ch)) || N.secs[0]; tgt.refs.push(h); S.unassigned = S.unassigned.filter(x => x !== h); closePop(); keepScroll(renderNote); hud(`已放入「${tgt.title}」`); return; }
@@ -936,8 +934,8 @@ function coveragePop(e) {
 }
 function tplMenu(e) {
   const r = e.currentTarget.getBoundingClientRect();
-  const items = [['reading', '读书笔记', '标题、摘录、批注、要点'], ['cornell', '康奈尔笔记', '左栏提问、右栏摘录、底部总结'], ['review', '复习提纲', '问题在前，答案遮住，可加入复习']];
-  const p = openPop(`<div class="mh">版式 · 内容不变，随时切换</div>` + items.map(([k, n, d]) => `<div class="mi" data-t="${k}">${S.tpl === k ? ic('check') : '<span style="width:14px"></span>'}<span>${n}</span><span class="kbd">${d}</span></div>`).join(''), r.left - 120, r.bottom + 4);
+  const items = [['reading', '读书笔记'], ['cornell', '康奈尔笔记'], ['review', '复习提纲']];
+  const p = openPop(items.map(([k, n]) => `<div class="mi" data-t="${k}">${S.tpl === k ? ic('check') : '<span style="width:14px"></span>'}<span>${n}</span></div>`).join(''), r.left - 40, r.bottom + 4);
   p.querySelectorAll('[data-t]').forEach(m => m.onclick = () => { S.tpl = m.dataset.t; closePop(); renderNote(); });
 }
 
@@ -955,34 +953,30 @@ function sheetSetup() {
   const chars = hs.reduce((n, h) => n + HL[h].text.length + (st.ctx ? HL[h].before.length + HL[h].after.length : 0) + (OWN[h] && st.mats.own ? OWN[h].text.length : 0), 0) * 9;
   const nOwn = hs.filter(h => OWN[h]).length;
   const opt = (grp, k, label, extra = '', dis = false) => `<button class="opt ${st[grp] === k ? 'on' : ''} ${dis ? 'dis' : ''}" data-g="${grp}" data-k="${k}">${label}${extra ? `<span class="c">${extra}</span>` : ''}</button>`;
-  const mat = (k, label, n, dis) => `<button class="opt ${st.mats[k] && !dis ? 'on' : ''} ${dis ? 'dis' : ''}" data-mat="${k}">${st.mats[k] && !dis ? ic('check', 'i xs') : ''}${label}<span class="c">${n}</span></button>`;
+  const mat = (k, label, n, dis) => `<button class="opt ${st.mats[k] && !dis ? 'on' : ''} ${dis ? 'dis' : ''} ${k === 'hl' ? 'fixed' : ''}" data-mat="${k}">${st.mats[k] && !dis ? ic('check', 'i xs') : ''}${label}<span class="c">${n}</span></button>`;
   const org = noAi && st.org === 'theme' ? 'source' : st.org;
   $('#scrim').innerHTML = `<div class="sheet" style="width:640px">
-    <div class="sh-h">${ic('spark')}<b>整理学习笔记</b><span class="s">把划线、批注和脑图卡片整理成一篇带出处的笔记</span></div>
+    <div class="sh-h">${ic('spark')}<b>整理学习笔记</b></div>
     <div class="sh-b">
       <div class="frow"><label>范围</label><div><div class="opts">
-        ${opt('scope', 'sel', '选中的划线', S.sel.size)}${opt('scope', 'all', '整个学习集', S.hls.length)}${opt('scope', 'doc', '《认知天性》', S.hls.filter(h => HL[h].doc === 'd1').length)}${opt('scope', 'week', '最近 7 天', 6)}</div>
-        <div class="help">也可以从脑图分支右键“整理成笔记”，或在标注列表里多选。</div></div></div>
+        ${opt('scope', 'sel', '选中的划线', S.sel.size)}${opt('scope', 'all', '整个学习集', S.hls.length)}${opt('scope', 'doc', '《认知天性》', S.hls.filter(h => HL[h].doc === 'd1').length)}${opt('scope', 'week', '最近 7 天', 6)}</div></div></div>
       <div class="frow"><label>素材</label><div class="opts">
         ${mat('hl', '划线', hs.length)}${mat('own', '我的批注', nOwn)}${mat('card', '脑图笔记', 1)}${mat('ai', '已存的 AI 笔记', 1)}${mat('img', '图片卡片', 1)}</div></div>
       <div class="frow"><label>组织方式</label><div><div class="cards">
-        <div class="ocard ${org === 'theme' ? 'on' : ''} ${noAi ? 'dis' : ''}" data-g="org" data-k="theme"><span class="ai vt ai">${ic('spark', 'i xs')}AI</span><b>按主题归纳</b><div class="d">跨章节、跨文档合并相同观点</div></div>
-        <div class="ocard ${org === 'source' ? 'on' : ''}" data-g="org" data-k="source"><b>按原文顺序</b><div class="d">按文档、章节、页码排列</div></div>
-        <div class="ocard ${org === 'map' ? 'on' : ''}" data-g="org" data-k="map"><b>按脑图结构</b><div class="d">沿用你在脑图里的分支</div></div></div>
-        ${noAi ? `<div class="help warn">未配置 AI 模型，只能按原文或脑图整理。<a data-act="settings">去设置</a></div>` : ''}</div></div>
+        <div class="ocard ${org === 'theme' ? 'on' : ''} ${noAi ? 'dis' : ''}" data-g="org" data-k="theme"><span class="ai vt ai">${ic('spark', 'i xs')}AI</span><b>按主题归纳</b></div>
+        <div class="ocard ${org === 'source' ? 'on' : ''}" data-g="org" data-k="source"><b>按原文顺序</b></div>
+        <div class="ocard ${org === 'map' ? 'on' : ''}" data-g="org" data-k="map"><b>按脑图结构</b></div></div>
+        ${noAi ? `<div class="help warn">未配置 AI　<a data-act="settings">去设置</a></div>` : ''}</div></div>
       <div class="frow"><label>AI 参与</label><div><div class="opts">
-        ${opt('depth', 'none', '不用 AI，只排版')}${opt('depth', 'light', '补全上下文 + 小结', '', noAi)}${opt('depth', 'deep', '深度整理', '+ 关联、要点、复习题', noAi)}</div>
-        <div class="help">${st.depth === 'none' || noAi ? '只做排版：分组、补上下文、附出处，不发送任何内容。' : st.depth === 'light' ? 'AI 写每节开头的小结，补全指代不清的句子；原文不会被改写。' : 'AI 归纳主题、写小结与要点、标出跨章节关联、出复习题；原文逐字引用。'}</div></div></div>
+        ${opt('depth', 'none', '只排版')}${opt('depth', 'light', '补全与小结', '', noAi)}${opt('depth', 'deep', '深度整理', '', noAi)}</div></div></div>
       <div class="frow"><label>上下文</label><div>
-        <div class="range"><input type="range" min="0" max="3" value="${st.ctx}" id="ctxR"><span>每条划线前后各 <b>${st.ctx}</b> 句</span></div>
-        <label class="toggle ${noAi || st.depth === 'none' ? 'dis' : ''}" data-act="fixRefs" style="margin-top:6px"><span class="sw ${st.fixRefs && !noAi && st.depth !== 'none' ? 'on' : ''}"></span>句子不完整时（如以“这”开头），自动补全指代</label>
-        <div class="help">上下文默认折叠，点“上下文”展开；导出时可以选择是否带上。</div></div></div>
+        <div class="range"><input type="range" min="0" max="3" value="${st.ctx}" id="ctxR" aria-label="上下文句数"><span>前后 <b>${st.ctx}</b> 句</span></div>
+        <label class="toggle ${noAi || st.depth === 'none' ? 'dis' : ''}" data-act="fixRefs" style="margin-top:6px"><span class="sw ${st.fixRefs && !noAi && st.depth !== 'none' ? 'on' : ''}"></span>补全指代</label></div></div>
       <div class="frow"><label>版式</label><div class="cards">
         ${[['reading', '读书笔记', '<i class="h"></i><i class="a"></i><i class="q"></i><i class="q" style="width:70%"></i><i></i>'], ['cornell', '康奈尔笔记', '<div style="display:flex;gap:4px;height:100%"><div style="width:30%;display:flex;flex-direction:column;gap:3px"><i class="a"></i><i class="a"></i></div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><i class="q"></i><i></i><i class="q"></i></div></div>'], ['review', '复习提纲', '<i class="h" style="width:60%"></i><i style="filter:blur(1px)"></i><i class="h" style="width:55%"></i><i style="filter:blur(1px)"></i>']]
           .map(([k, n, th]) => `<div class="ocard ${st.tpl === k ? 'on' : ''}" data-g="tpl" data-k="${k}"><div class="thumb">${th}</div><b>${n}</b></div>`).join('')}</div></div>
-      ${!noAi && st.depth !== 'none' ? `<div class="privacy">${ic('shield')}<div>将发送 <b>${hs.length} 条划线</b>${st.mats.own ? `、${nOwn} 条批注` : ''}及上下文（约 ${chars.toLocaleString()} 字）给 <b>Claude Sonnet</b>（设置 › 助手）。笔记保存在本机学习集里。</div></div>` : ''}
     </div>
-    <div class="sh-f"><span class="note">${hs.length ? `${hs.length} 条划线` : '<span style="color:var(--err)">没有可整理的划线</span>'}</span><div class="grow"></div>
+    <div class="sh-f">${!noAi && st.depth !== 'none' && hs.length ? `<span class="note">${ic('shield', 'i xs')}<span>将发送 ${hs.length} 条划线${st.mats.own && nOwn ? `、${nOwn} 条批注` : ''}（约 ${chars.toLocaleString()} 字）给 Claude Sonnet</span></span>` : hs.length ? '' : '<span class="note" style="color:var(--err)">没有可整理的划线</span>'}<div class="grow"></div>
       <button class="btn" data-act="close">取消</button>
       ${!noAi && st.depth !== 'none' && org === 'theme' ? `<button class="btn" data-act="toOutline" ${hs.length ? '' : 'disabled'}>先看提纲</button>` : ''}
       <button class="btn pri" data-act="generate" ${hs.length ? '' : 'disabled'}>${ic('spark')}生成笔记</button></div></div>`;
@@ -994,7 +988,8 @@ function sheetSetup() {
     if (g === 'depth' && k === 'none' && S.setup.org === 'theme') S.setup.org = 'source';
     S.tpl = S.setup.tpl; sheetSetup();
   });
-  sh.querySelectorAll('[data-mat]').forEach(b => b.onclick = () => { const k = b.dataset.mat; if (k === 'hl') return hud('划线是笔记的主体，不能取消'); S.setup.mats[k] = !S.setup.mats[k]; sheetSetup(); });
+  /* Highlights are the note's body: always on, not toggleable. */
+  sh.querySelectorAll('[data-mat]:not(.fixed)').forEach(b => b.onclick = () => { const k = b.dataset.mat; S.setup.mats[k] = !S.setup.mats[k]; sheetSetup(); });
   $('#ctxR').oninput = e => { S.setup.ctx = +e.target.value; sheetSetup(); };
 }
 let dragH = null;
@@ -1002,16 +997,16 @@ function sheetOutline() {
   if (!S.outline) S.outline = defaultOutline().map(s => ({ ...s, refs: [...s.refs] }));
   const sec = (s, i) => `<div class="ol-sec" data-s="${s.id}" draggable="false">
       <div class="ol-top"><span class="grip" title="拖动排序" data-sgrip="${s.id}">${ic('grip')}</span><span class="n">${i + 1}</span><input value="${esc(s.title)}" data-rename="${s.id}"><span class="why">${esc(s.why || '')}</span>
-        <button class="tbtn" data-delsec="${s.id}" title="删除这一节（划线移到“未归入”）">${ic('x', 'i xs')}</button></div>
-      <div class="ol-chips" data-drop="${s.id}">${s.refs.map(chip).join('') || '<span class="ol-empty">把划线拖到这里</span>'}</div></div>`;
+        <button class="tbtn" data-delsec="${s.id}" title="删除这一节">${ic('x', 'i xs')}</button></div>
+      <div class="ol-chips" data-drop="${s.id}">${s.refs.map(chip).join('')}</div></div>`;
   const chip = h => `<span class="hchip" draggable="true" data-h="${h}" title="${esc(HL[h].text)}"><span class="d" style="background:${COLOR[HL[h].c]}"></span><span>${esc(HL[h].text)}</span></span>`;
   $('#scrim').innerHTML = `<div class="sheet" style="width:680px">
-    <div class="sh-h">${ic('spark')}<b>确认提纲</b><span class="s">AI 把 ${scopeHls().length} 条划线归成 ${S.outline.length} 节。改标题、拖动划线、调整顺序，再生成全文。</span></div>
+    <div class="sh-h">${ic('spark')}<b>确认提纲</b></div>
     <div class="sh-b" id="olBody">${S.outline.map(sec).join('')}
-      <div class="ol-sec un" data-s="un"><div class="ol-top"><span class="n"></span><b style="font-size:12.5px;color:var(--label2)">未归入</b><span class="why" style="margin-left:6px">放在这里的划线不会出现在笔记里，生成后会提醒你</span></div>
-        <div class="ol-chips" data-drop="un">${S.unassigned.map(chip).join('') || '<span class="ol-empty">没有</span>'}</div></div>
+      <div class="ol-sec un" data-s="un"><div class="ol-top"><span class="n"></span><b style="font-size:12.5px;color:var(--label2)">未归入</b></div>
+        <div class="ol-chips" data-drop="un">${S.unassigned.map(chip).join('')}</div></div>
       <button class="btn ghost" data-act="addSec">${ic('plus')}添加一节</button></div>
-    <div class="sh-f"><span class="note">${ic('check', 'i xs')}原文只会逐字引用，不会被 AI 改写</span><div class="grow"></div>
+    <div class="sh-f"><div class="grow"></div>
       <button class="btn" data-act="backSetup">返回</button><button class="btn pri" data-act="generate">${ic('spark')}生成笔记</button></div></div>`;
   const B = $('#olBody');
   B.querySelectorAll('.hchip').forEach(c => { c.ondragstart = e => { dragH = c.dataset.h; c.classList.add('drag'); e.dataTransfer.setData('text/plain', dragH); }; c.ondragend = () => c.classList.remove('drag'); });
@@ -1056,16 +1051,15 @@ function startGenerate(keepTitle) {
 }
 function sheetGen() {
   const N = S.note, AI = aiOn();
-  const steps = AI ? [['收集素材', `${N.scope.length} 条划线 · ${N.scope.filter(h => OWN[h] && S.setup.mats.own).length} 条批注`], ['补全上下文', `前后各 ${S.setup.ctx} 句${deep() ? ' · 补全 1 处指代' : ''}`],
-    [S.outline ? '按你确认的提纲' : '归纳主题', `${N.secs.length} 节`], ['撰写', '每节小结与要点'], ['核对引用', '每条原文逐字比对']]
-    : [['收集素材', `${N.scope.length} 条划线`], ['补全上下文', `前后各 ${S.setup.ctx} 句`], ['分组排版', `${N.secs.length} 节`]];
+  const steps = AI ? [['收集素材', `${N.scope.length} 条划线`], ['补全上下文'], [S.outline ? '按提纲分节' : '归纳主题', `${N.secs.length} 节`], ['撰写'], ['核对引用']]
+    : [['收集素材', `${N.scope.length} 条划线`], ['补全上下文'], ['分组排版', `${N.secs.length} 节`]];
   const blocks = [];
   N.secs.forEach((s, i) => { blocks.push(`<h2 class="n-h2"><span class="num">${i + 1}</span>${esc(s.title)}</h2>`); blocksFor(s, i).forEach(b => blocks.push(blockHtml(b, s, { noGut: true, noEdit: true }))); });
   $('#scrim').innerHTML = `<div class="sheet" style="width:820px">
-    <div class="sh-h">${AI ? ic('spark') : ic('note')}<b>${AI ? '正在整理' : '正在排版'}</b><span class="s" id="genSub">${esc(N.title)}</span></div>
-    <div class="sh-b"><div class="gen-wrap"><div class="steps" id="steps">${steps.map(([t, s], i) => `<div class="step" data-i="${i}"><span class="ico">${i + 1}</span><div>${t}<div class="sub">${s}</div></div></div>`).join('')}</div>
+    <div class="sh-h">${AI ? ic('spark') : ic('note')}<b>${AI ? '正在整理' : '正在排版'}</b></div>
+    <div class="sh-b"><div class="gen-wrap"><div class="steps" id="steps">${steps.map(([t, s], i) => `<div class="step" data-i="${i}"><span class="ico">${i + 1}</span><div>${t}${s ? `<div class="sub">${s}</div>` : ''}</div></div>`).join('')}</div>
       <div class="gen-prev ${S.marks ? 'marks' : 'nomarks'}" id="genPrev"><h1 class="n-title" style="font-size:20px">${esc(N.title)}</h1></div></div></div>
-    <div class="sh-f"><span class="note" id="genNote">${AI ? '可以随时停止，已写好的部分会保留' : '不发送任何内容'}</span><div class="grow"></div><button class="btn" data-act="stopGen">${ic('stop', 'i xs')}停止</button></div></div>`;
+    <div class="sh-f"><div class="grow"></div><button class="btn" data-act="stopGen">${ic('stop', 'i xs')}停止</button></div></div>`;
   const stepEls = [...document.querySelectorAll('.step')], prev = $('#genPrev');
   let si = 0, bi = 0;
   const setStep = i => stepEls.forEach((el, j) => { el.className = 'step ' + (j < i ? 'done' : j === i ? 'run' : ''); el.querySelector('.ico').innerHTML = j < i ? ic('check', 'i s') : j === i ? '<span class="spin"></span>' : j + 1; });
@@ -1088,8 +1082,8 @@ function sheetGen() {
 function finishGen(stopped) {
   clearInterval(genTimer); S.sheet = null; S.right = 'note'; render();
   const u = new Set(used()), miss = S.note.scope.filter(h => !u.has(h)).length;
-  if (stopped) hud('已停止，保留了写好的部分', '继续整理', () => openSheet('gen'));
-  else hud(miss ? `已生成 · ${miss} 条划线未用上，点标题下方提示查看` : `已生成 · ${S.note.scope.length} 条划线全部引用`);
+  if (stopped) hud('已停止', '继续整理', () => openSheet('gen'));
+  else hud(miss ? `已生成 · ${miss} 条划线未用上` : '已生成');
 }
 
 /* ---------- Export ---------- */
@@ -1097,7 +1091,9 @@ function mdFor(fmt) {
   const N = S.note, X = S.ex, ob = fmt === 'obsidian', lines = [];
   const aiOk = X.inc.ai && aiOn();
   const aiTag = t => X.aiMark === 'label' ? (ob ? null : `${t}（AI 整理）`) : t;
-  const cite = h => X.cite === 'none' ? '' : X.cite === 'foot' ? `[^${h}]` : ob ? ` — [[${docOf(h).short}#p${HL[h].pg}|${citeText(h)}]]` : ` —— ${citeText(h)}`;
+  const cite = h => X.cite === 'none' ? '' : X.cite === 'foot' ? `[^${h}]` : ` —— ${citeText(h)}`;
+  /* Decision 5: Obsidian page links target 书名.md#p12 — [[书名#p12|…]] resolves to that file and heading. */
+  const obLink = h => `[[${obFile(docOf(h).title)}#p${HL[h].pg}|${citeText(h)}]]`;
   if (ob) lines.push('---', `title: ${N.title}`, `source: [${[...new Set(N.scope.map(h => '"' + DOCS[HL[h].doc].title + '"'))].join(', ')}]`, 'tags: [学习笔记, 认知科学]', `created: 2026-10-30`, '---', '');
   else lines.push(`# ${N.title}`, '', `> ${new Set(N.scope.map(h => HL[h].doc)).size} 份文档 · ${N.scope.length} 条划线 · 整理于 2026-10-30`, '');
   if (aiOk && aiOn()) { if (ob) lines.push('> [!summary] AI 总结', `> ${summaryText()}`, ''); else lines.push(`**一句话总结：**${aiTag(summaryText())}`, ''); }
@@ -1107,7 +1103,7 @@ function mdFor(fmt) {
       if (b.k === 'quote') {
         const H = HL[b.ref];
         const body = (X.inc.ctx && S.ctxOpen.has(b.ref) && H.before ? `${H.before}**${H.text}**${H.after}` : H.text);
-        if (ob) lines.push(`> [!quote] ${citeText(b.ref)}`, `> ${body}${X.cite === 'foot' ? `[^${b.ref}]` : ''}`, ''); else lines.push(`> ${body}${cite(b.ref)}`, '');
+        if (ob) lines.push(`> [!quote]${X.cite === 'inline' ? ' ' + obLink(b.ref) : ''}`, `> ${body}${X.cite === 'foot' ? `[^${b.ref}]` : ''}`, ''); else lines.push(`> ${body}${cite(b.ref)}`, '');
         if (deep() && GLOSS[b.ref] && aiOk) lines.push(ob ? `> [!info] AI 补充\n> ${GLOSS[b.ref]}` : `*注：${GLOSS[b.ref]}*`, '');
       } else if (b.k === 'own' && X.inc.own) { lines.push(ob ? `> [!note] 我的批注\n> ${textOf(b)}` : `💭 **我的批注：**${textOf(b)}`, ''); }
       else if (b.k === 'p' && aiOk) { lines.push(ob && X.aiMark === 'label' ? `> [!abstract] AI 小结\n> ${textOf(b)}` : aiTag(textOf(b)) || textOf(b), ''); }
@@ -1120,10 +1116,12 @@ function mdFor(fmt) {
     lines.push('## 复习题', '');
     N.secs.map(secMeta).filter(Boolean).forEach(m => lines.push(ob ? `${m.q}\n?\n${(m.alt || '').trim()}` : `- **Q：**${m.q}`, ''));
   }
-  if (X.inc.refs) { lines.push('## 出处', ''); [...new Set(N.scope.map(h => HL[h].doc))].forEach(d => lines.push(`- ${DOCS[d].title}`)); lines.push(''); }
+  if (X.inc.refs) { lines.push('## 出处', ''); [...new Set(N.scope.map(h => HL[h].doc))].forEach(d => lines.push(ob ? `- [[${obFile(DOCS[d].title)}]]` : `- ${DOCS[d].title}`)); lines.push(''); }
   if (X.cite === 'foot') N.secs.flatMap(s => s.refs).forEach(h => lines.push(`[^${h}]: ${DOCS[HL[h].doc].title}，第 ${HL[h].pg} 页，${HL[h].chTitle}`));
   return lines.join('\n');
 }
+/** Book title as an Obsidian file name: characters Obsidian rejects in links become spaces. */
+const obFile = t => t.replace(/[\\/:*?"<>|#^[\]]/g, ' ').replace(/\s+/g, ' ').trim();
 function hlMd(md) {
   return esc(md).split('\n').map(l => /^#{1,3} /.test(l) ? `<span class="h">${l}</span>` : /^&gt; \[!(summary|abstract|info)\]/.test(l) || /（AI 整理）|^\*注：/.test(l) ? `<span class="ai">${l}</span>` : /^&gt;/.test(l) ? `<span class="qq">${l}</span>` : /^(---|title:|source:|tags:|created:)/.test(l) ? `<span class="fm">${l}</span>` : l).join('\n');
 }
@@ -1133,11 +1131,11 @@ function pdfPreview() {
   const body = N.secs.map((s, i) => `<h2>${i + 1}. ${esc(s.title)}</h2>` + blocksFor(s, i).map(b => {
     if (b.k === 'quote') { const c = X.cite === 'none' ? '' : X.cite === 'foot' ? `<sup>${++fn}</sup>` : ''; if (X.cite === 'foot') foot.push(`${fn}. ${DOCS[HL[b.ref].doc].title}，第 ${HL[b.ref].pg} 页`); return `<div class="q" style="border-color:${COLOR[HL[b.ref].c]}">${esc(HL[b.ref].text)}${c}${X.cite === 'inline' ? `<small>${esc(citeText(b.ref))}</small>` : ''}</div>`; }
     if (b.k === 'own' && X.inc.own) return `<div class="o">${esc(textOf(b))}</div>`;
-    if (b.k === 'p' && aiOk) return `<div class="a">${esc(textOf(b))}${X.aiMark === 'label' ? ' <span style="color:#8E5BD8;font-size:7.5px">AI</span>' : ''}</div>`;
+    if (b.k === 'p' && aiOk) return `<div class="a">${esc(textOf(b))}${X.aiMark === 'label' ? ' <span style="color:#5E5CE6;font-size:7.5px">AI</span>' : ''}</div>`;
     if (b.k === 'list' && aiOk) return `<ul style="margin:3px 0;padding-left:14px">${b.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
     return '';
   }).join('')).join('');
-  return `<div class="ppage"><h1>${esc(N.title)}</h1><div class="m">${N.scope.length} 条划线 · MarginMind · 2026-10-30</div>${aiOk ? `<div class="a" style="background:#F4EEFC;padding:5px 7px;border-radius:3px">${esc(summaryText())}</div>` : ''}${body}${foot.length ? `<div class="fn">${foot.join('<br>')}</div>` : ''}<div class="pn">1 / 3</div></div>`;
+  return `<div class="ppage"><h1>${esc(N.title)}</h1><div class="m">${N.scope.length} 条划线 · MarginMind · 2026-10-30</div>${aiOk ? `<div class="a" style="background:#EEEEFC;padding:5px 7px;border-radius:3px">${esc(summaryText())}</div>` : ''}${body}${foot.length ? `<div class="fn">${foot.join('<br>')}</div>` : ''}<div class="pn">1 / 3</div></div>`;
 }
 function sheetExport() {
   const X = S.ex, N = S.note;
@@ -1145,24 +1143,23 @@ function sheetExport() {
   const tg = (k, label, dis) => `<label class="toggle ${dis ? 'dis' : ''}" data-inc="${k}"><span class="sw ${X.inc[k] && !dis ? 'on' : ''}"></span>${label}</label>`;
   const opt = (g, k, l) => `<button class="opt ${X[g] === k ? 'on' : ''}" data-xg="${g}" data-k="${k}">${l}</button>`;
   const isText = X.fmt === 'md' || X.fmt === 'obsidian';
-  const ext = { md: '.md', obsidian: '.md（含附件文件夹）', pdf: '.pdf', docx: '.docx', rich: '剪贴板', img: '.png' }[X.fmt];
+  const ext = { md: '.md', obsidian: '.md', pdf: '.pdf', docx: '.docx', rich: '' }[X.fmt];
   $('#scrim').innerHTML = `<div class="sheet" style="width:900px">
-    <div class="sh-h">${ic('export')}<b>导出笔记</b><span class="s">${esc(N.title)}</span></div>
+    <div class="sh-h">${ic('export')}<b>导出笔记</b></div>
     <div class="sh-b"><div class="ex-wrap"><div class="ex-left">
       <div class="fmts">${fmts.map(([k, n, t, c]) => `<div class="fmt ${X.fmt === k ? 'on' : ''}" data-fmt="${k}"><div class="ico" style="background:${c}">${t}</div>${n}</div>`).join('')}</div>
-      <div class="ex-sec">出处标注</div><div class="opts">${opt('cite', 'inline', '页码跟在原文后')}${opt('cite', 'foot', '脚注')}${opt('cite', 'none', '不标')}</div>
+      <div class="ex-sec">出处</div><div class="opts">${opt('cite', 'inline', '页码')}${opt('cite', 'foot', '脚注')}${opt('cite', 'none', '不标')}</div>
       <div class="ex-sec">包含</div>
-      ${tg('ctx', '展开过的上下文')}${tg('own', '我的批注')}${tg('ai', 'AI 小结与要点', !aiOn())}${tg('qa', '复习题', !deep())}${tg('refs', '出处列表')}
-      <div class="ex-sec">AI 内容标记</div><div class="opts">${opt('aiMark', 'label', X.fmt === 'obsidian' ? 'Callout 标出' : '标“AI 整理”')}${opt('aiMark', 'none', '不标')}</div>
-      <div class="help">${X.fmt === 'obsidian' ? '原文、批注、AI 小结分别用 quote / note / abstract callout；页码写成指向原书笔记的链接，复习题用 Spaced Repetition 插件格式。' : X.fmt === 'rich' ? '粘贴到飞书、Notion、备忘录时保留标题、引用和列表。' : X.fmt === 'docx' ? '原文用宋体、引用样式；批注用浅黄底纹；脚注用 Word 原生脚注。' : X.fmt === 'pdf' ? 'A4，正文 11pt；原文用宋体，左侧色条为划线颜色。' : '通用 Markdown，任何编辑器都能打开。'}</div>
+      ${tg('ctx', '上下文')}${tg('own', '我的批注')}${tg('ai', 'AI 内容', !aiOn())}${tg('qa', '复习题', !deep())}${tg('refs', '出处列表')}
+      ${aiOn() && X.inc.ai ? `<div class="ex-sec">AI 标记</div><div class="opts">${opt('aiMark', 'label', '标出')}${opt('aiMark', 'none', '不标')}</div>` : ''}
     </div>
-    <div class="ex-right"><div class="ex-tag">${isText ? ic('doc', 'i xs') + `${esc(N.title)}.md` : ic('eye', 'i xs') + '预览'}<div class="grow"></div>${isText ? `${mdFor(X.fmt).length.toLocaleString()} 字符` : X.fmt === 'pdf' ? '3 页 · A4' : X.fmt === 'docx' ? '约 3 页' : ''}</div>
-      ${isText ? `<pre class="md">${hlMd(mdFor(X.fmt))}</pre>` : X.fmt === 'img' ? '<div style="padding:30px;text-align:center;color:var(--label2)">长图在“分享”里制作，可以选主题和内容。<br><br><button class="btn pri" data-act="share">打开分享</button></div>' : pdfPreview()}</div></div></div>
-    <div class="sh-f"><span class="note">${ic('shield', 'i xs')}在本机生成，不上传 · ${esc(ext)}</span><div class="grow"></div><button class="btn" data-act="close">取消</button>
-      ${isText || X.fmt === 'rich' ? `<button class="btn" data-act="copyMd">${ic('copy')}拷贝</button>` : ''}
-      ${X.fmt === 'img' || X.fmt === 'rich' ? '' : `<button class="btn pri" data-act="doExport">导出…</button>`}</div></div>`;
+    <div class="ex-right"><div class="ex-tag">${ic(isText ? 'doc' : 'eye', 'i xs')}${esc(N.title)}${esc(ext)}</div>
+      ${isText ? `<pre class="md">${hlMd(mdFor(X.fmt))}</pre>` : pdfPreview()}</div></div></div>
+    <div class="sh-f"><div class="grow"></div><button class="btn" data-act="close">取消</button>
+      ${isText ? `<button class="btn" data-act="copyMd">${ic('copy')}拷贝</button>` : ''}
+      ${X.fmt === 'rich' ? `<button class="btn pri" data-act="copyMd">${ic('copy')}拷贝</button>` : `<button class="btn pri" data-act="doExport">导出…</button>`}</div></div>`;
   const sh = $('#scrim .sheet');
-  sh.querySelectorAll('[data-fmt]').forEach(b => b.onclick = () => { X.fmt = b.dataset.fmt; sheetExport(); });
+  sh.querySelectorAll('[data-fmt]').forEach(b => b.onclick = () => { if (b.dataset.fmt === 'img') return openSheet('share'); X.fmt = b.dataset.fmt; sheetExport(); });
   sh.querySelectorAll('[data-xg]').forEach(b => b.onclick = () => { X[b.dataset.xg] = b.dataset.k; sheetExport(); });
   sh.querySelectorAll('[data-inc]').forEach(b => b.onclick = () => { X.inc[b.dataset.inc] = !X.inc[b.dataset.inc]; sheetExport(); });
 }
@@ -1175,25 +1172,23 @@ function sheetShare() {
   const Sh = S.share, N = S.note;
   const secs = N.secs, s = secs[Math.min(Sh.sec, secs.length - 1)];
   const card = () => {
-    if (!s || !s.refs.length) return '<div style="color:var(--label2);padding:40px">这一节没有摘录</div>';
-    if (Sh.what === 'quote') { const h = s.refs[0]; return `<div class="lcard quote t-${Sh.theme}"><div class="mark">“</div><div class="big">${esc(HL[h].text)}</div><div class="ls" style="margin-left:0">${esc(DOCS[HL[h].doc].title)} · p.${HL[h].pg}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(OWN[h].text)}</div>` : ''}<div class="foot"><span class="logo"></span>摘自我的 MarginMind 笔记</div></div>`; }
+    if (!s || !s.refs.length) return '<div style="color:var(--label2);padding:40px">没有摘录</div>';
+    if (Sh.what === 'quote') { const h = s.refs[0]; return `<div class="lcard quote t-${Sh.theme}"><div class="mark">“</div><div class="big">${esc(HL[h].text)}</div><div class="ls" style="margin-left:0">${esc(DOCS[HL[h].doc].title)} · p.${HL[h].pg}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(ownText(h))}</div>` : ''}<div class="foot"><span class="logo"></span>摘自我的 MarginMind 笔记</div></div>`; }
     const list = Sh.what === 'sec' ? [s] : secs;
     return `<div class="lcard t-${Sh.theme}"><div class="kick">读书笔记 · ${esc([...new Set(N.scope.map(h => DOCS[HL[h].doc].short))].join(' × '))}</div><h4>${esc(Sh.what === 'sec' ? s.title : N.title)}</h4>
       ${Sh.what === 'all' && !Sh.hideAi && aiOn() ? `<div class="la">${esc(summaryText())}</div>` : ''}
-      ${list.map(x => `${Sh.what === 'all' ? `<div class="lsec">${esc(x.title)}</div>` : ''}${!Sh.hideAi && aiOn() && Sh.what === 'sec' && secMeta(x) ? `<div class="la">${esc(textOf({ id: x.id + ':ai', text: secMeta(x).ai, alt: secMeta(x).alt }))}</div>` : ''}${x.refs.slice(0, Sh.what === 'all' ? 2 : 4).map(h => `<div class="lq">${esc(HL[h].text)}</div><div class="ls">${esc(citeText(h))}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(OWN[h].text)}</div>` : ''}`).join('')}`).join('')}
+      ${list.map(x => `${Sh.what === 'all' ? `<div class="lsec">${esc(x.title)}</div>` : ''}${!Sh.hideAi && aiOn() && Sh.what === 'sec' && secMeta(x) ? `<div class="la">${esc(textOf({ id: x.id + ':ai', text: secMeta(x).ai, alt: secMeta(x).alt }))}</div>` : ''}${x.refs.slice(0, Sh.what === 'all' ? 2 : 4).map(h => `<div class="lq">${esc(HL[h].text)}</div><div class="ls">${esc(citeText(h))}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(ownText(h))}</div>` : ''}`).join('')}`).join('')}
       <div class="foot"><span class="logo"></span>摘自我的 MarginMind 笔记<div class="grow"></div>${N.scope.length} 条划线</div></div>`;
   };
   const opt = (g, k, l) => `<button class="opt ${Sh[g] === k ? 'on' : ''}" data-sg="${g}" data-k="${k}">${l}</button>`;
   $('#scrim').innerHTML = `<div class="sheet" style="width:860px">
-    <div class="sh-h">${ic('share')}<b>分享长图</b><span class="s">适合发到微信、小红书、朋友圈</span></div>
-    <div class="sh-b"><div class="sh-wrap"><div>
-      <div class="ex-sec" style="margin-top:0">内容</div><div class="opts">${opt('what', 'quote', '一句金句')}${opt('what', 'sec', '一节')}${opt('what', 'all', '整篇摘要')}</div>
-      ${Sh.what !== 'all' ? `<div class="ex-sec">选择小节</div><select id="shSec" style="width:100%;height:28px;border-radius:7px;border:.5px solid var(--sep);background:var(--card);padding:0 6px">${secs.map((x, i) => `<option value="${i}" ${i === Sh.sec ? 'selected' : ''}>${i + 1}. ${esc(x.title)}</option>`).join('')}</select>` : ''}
-      <div class="ex-sec">主题</div><div class="opts">${opt('theme', 'paper', '纸张')}${opt('theme', 'plain', '简洁')}${opt('theme', 'night', '夜读')}</div>
-      <div class="ex-sec">显示</div>
-      <label class="toggle" data-st="own"><span class="sw ${Sh.own ? 'on' : ''}"></span>我的批注</label>
-      <label class="toggle ${aiOn() ? '' : 'dis'}" data-st="hideAi"><span class="sw ${!Sh.hideAi && aiOn() ? 'on' : ''}"></span>AI 小结</label>
-      <div class="help" style="margin-top:12px">长图只包含摘录与你选择的内容，不含学习集里的其他文档。图片在本机生成。</div>
+    <div class="sh-h">${ic('share')}<b>分享长图</b></div>
+    <div class="sh-b"><div class="sh-wrap"><div style="display:flex;flex-direction:column;gap:12px">
+      <div class="opts">${opt('what', 'quote', '一句金句')}${opt('what', 'sec', '一节')}${opt('what', 'all', '整篇摘要')}</div>
+      ${Sh.what !== 'all' ? `<select id="shSec" aria-label="小节" style="width:100%;height:28px;border-radius:7px;border:.5px solid var(--sep);background:var(--card);padding:0 6px">${secs.map((x, i) => `<option value="${i}" ${i === Sh.sec ? 'selected' : ''}>${i + 1}. ${esc(x.title)}</option>`).join('')}</select>` : ''}
+      <div class="opts">${opt('theme', 'paper', '纸张')}${opt('theme', 'plain', '简洁')}${opt('theme', 'night', '夜读')}</div>
+      <div><label class="toggle" data-st="own"><span class="sw ${Sh.own ? 'on' : ''}"></span>我的批注</label>
+      ${aiOn() ? `<label class="toggle" data-st="hideAi"><span class="sw ${!Sh.hideAi ? 'on' : ''}"></span>AI 小结</label>` : ''}</div>
     </div><div class="share-stage">${card()}</div></div></div>
     <div class="sh-f"><div class="grow"></div><button class="btn" data-act="close">完成</button><button class="btn" data-act="copyImg">${ic('copy')}拷贝图片</button><button class="btn pri" data-act="saveImg">存储图片…</button></div></div>`;
   const sh = $('#scrim .sheet');
@@ -1221,7 +1216,7 @@ function applyUpdate() {
   render();
   added.forEach(h => { const b = document.querySelector(`#noteDoc [data-ref="${h}"]`); if (b) b.classList.add('hlnew'); });
   document.querySelector(`#noteDoc [data-ref="${added[0]}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  hud(`已更新 · 新增 ${added.length} 条，你改过的段落保持不变`);
+  hud(`已更新 · 新增 ${added.length} 条`);
 }
 
 /* ---------- Actions ---------- */
@@ -1231,6 +1226,7 @@ function act(a, el, e) {
     case 'fromSel': S.setup.scope = 'sel'; S.outline = null; S.unassigned = []; openSheet('setup'); break;
     case 'selAll': { const vis = S.hls.filter(h => !S.colorOff.has(HL[h].c)); const all = vis.every(h => S.sel.has(h)); vis.forEach(h => all ? S.sel.delete(h) : S.sel.add(h)); renderAnno(); break; }
     case 'openNote': S.right = 'note'; render(); break;
+    case 'olderNote': hud('原型：打开另一篇笔记'); break;
     case 'toggleReader': S.readerOpen = !S.readerOpen; renderReader(); setTimeout(() => S.right === 'note' && keepScroll(renderNote), 280); break;
     case 'close': closeSheet(); break;
     case 'settings': hud('原型：打开 设置 › 助手'); break;
@@ -1238,14 +1234,15 @@ function act(a, el, e) {
     case 'toOutline': S.outline = null; S.unassigned = []; openSheet('outline'); break;
     case 'backSetup': openSheet('setup'); break;
     case 'addSec': S.outline.push({ id: 'u' + Date.now(), title: '新的一节', refs: [], why: '' }); sheetOutline(); setTimeout(() => { const ins = document.querySelectorAll('[data-rename]'); ins[ins.length - 1]?.select(); }, 0); break;
-    case 'generate': if (S.sheet === 'setup') { S.outline = null; S.unassigned = []; } S.edits = {}; S.deleted = new Set(); S.alts = {}; startGenerate(); break;
+    case 'generate': if (S.sheet === 'setup') { S.outline = null; S.unassigned = []; }
+      if (env.ai) prefs.depth = S.setup.depth; S.edits = {}; S.deleted = new Set(); S.alts = {}; startGenerate(); break;
     case 'stopGen': finishGen(true); break;
-    case 'export': S.ex.fmt = S.ex.fmt === 'img' ? 'md' : S.ex.fmt; openSheet('export'); break;
+    case 'export': openSheet('export'); break;
     case 'share': openSheet('share'); break;
-    case 'copyMd': navigator.clipboard?.writeText(mdFor(S.ex.fmt === 'obsidian' ? 'obsidian' : 'md')).catch(() => {}); hud(S.ex.fmt === 'rich' ? '已拷贝，可直接粘贴到飞书、Notion、备忘录' : '已拷贝 Markdown'); break;
-    case 'doExport': if (S.ex.fmt === 'md' || S.ex.fmt === 'obsidian') download(S.note.title + '.md', mdFor(S.ex.fmt)); closeSheet(); hud(S.ex.fmt === 'md' || S.ex.fmt === 'obsidian' ? '已导出（原型会真实下载 .md）' : `已导出 ${S.ex.fmt.toUpperCase()}（原型示意）`, '在访达中显示', () => hud('原型：在访达中显示')); break;
+    case 'copyMd': navigator.clipboard?.writeText(mdFor(S.ex.fmt === 'obsidian' ? 'obsidian' : 'md')).catch(() => {}); hud('已拷贝'); break;
+    case 'doExport': if (S.ex.fmt === 'md' || S.ex.fmt === 'obsidian') download(S.note.title + '.md', mdFor(S.ex.fmt)); closeSheet(); hud('已导出'); break;
     case 'copyImg': hud('已拷贝图片'); break;
-    case 'saveImg': closeSheet(); hud('已存储到“下载”（原型示意）'); break;
+    case 'saveImg': closeSheet(); hud('已存储'); break;
     case 'marks': S.marks = !S.marks; keepScroll(renderNote); break;
     case 'coverage': coveragePop(e); break;
     case 'tplMenu': tplMenu(e); break;
@@ -1255,8 +1252,8 @@ function act(a, el, e) {
     case 'preview': previewUpdate(); break;
     case 'applyUpd': applyUpdate(); break;
     case 'cancelUpd': S.pending = null; renderNote(); break;
-    case 'dismissNew': S.newSince = []; render(); hud('之后可以在“重新整理”里加入'); break;
-    case 'addReview': hud(`已加入复习 · ${S.note.secs.filter(secMeta).length} 张卡片，今天就会出现`); break;
+    case 'dismissNew': S.newSince = []; render(); break;
+    case 'addReview': hud(`已加入复习 · ${S.note.secs.filter(secMeta).length} 张`); break;
     case 'addOne': hud('已加入复习'); break;
   }
 }
@@ -1276,9 +1273,9 @@ function render() { renderSide(); renderTb(); renderReader(); renderRight(); ren
 /* ---------- Scenes ---------- */
 const SCENES = [
   { g: '开始', n: '入口：标注列表多选', set() { },
-    notes: `<h4>从划线出发</h4><ul><li>“标注”列表（⌥⌘4）支持多选、按颜色筛选，底部浮出“整理成笔记”。</li><li>其他入口：工具栏“整理笔记”、侧栏“笔记 +”、脑图分支右键“整理成笔记”、菜单 文件 › 整理学习笔记… ⌥⌘P。</li><li>笔记和脑图一样属于学习集，出现在侧栏“笔记”分组里。</li></ul><div class="lab">试试</div><ul><li>点颜色点筛选，再点“整理成笔记”。</li></ul>` },
+    notes: `<h4>从划线出发</h4><ul><li>“标注”列表（⌥⌘4）支持多选、按颜色筛选，底部浮出“整理成笔记”。</li><li>其他入口：工具栏“整理笔记”、侧栏“笔记 +”、脑图分支右键“整理成笔记”、菜单 文件 › 整理学习笔记… ⌥⌘P。</li><li>笔记和脑图一样属于学习集，出现在侧栏“笔记”分组里；一个学习集的笔记数量不限，按更新时间排序（已确认）。</li></ul><div class="lab">试试</div><ul><li>点颜色点筛选，再点“整理成笔记”。</li></ul>` },
   { g: '开始', n: '整理设置', set() { openSheet('setup'); },
-    notes: `<h4>一个表单，默认值就能用</h4><ul><li><b>范围</b>：选中的划线 / 整个学习集 / 单份文档 / 最近 7 天。</li><li><b>组织方式</b>：AI 按主题归纳（跨章节、跨书合并同一观点）/ 按原文顺序 / 按脑图结构。</li><li><b>AI 参与</b>三档，最低一档完全不发送内容。</li><li><b>上下文</b>：每条划线自动带前后句；以“这”“它”开头的残句由 AI 补全指代。</li><li>发送前写明发多少字、发给哪个模型。</li></ul><div class="lab">待确认</div><ul><li>默认 AI 档位：建议“深度整理”；首次使用时记住选择。</li></ul>` },
+    notes: `<h4>一个表单，默认值就能用</h4><ul><li><b>范围</b>：选中的划线 / 整个学习集 / 单份文档 / 最近 7 天。</li><li><b>组织方式</b>：AI 按主题归纳（跨章节、跨书合并同一观点）/ 按原文顺序 / 按脑图结构。</li><li><b>AI 参与</b>三档，最低一档完全不发送内容。</li><li><b>上下文</b>：每条划线自动带前后句；以“这”“它”开头的残句由 AI 补全指代。</li><li>发送前在页脚写明发多少字、发给哪个模型。</li></ul><div class="lab">已确认</div><ul><li>AI 参与默认“深度整理”；生成一次后记住所选档位（换场景也保留）。</li></ul>` },
   { g: '开始', n: '整理设置 · 未配置 AI', set() { env.ai = false; syncEnv(); S.setup.depth = 'none'; S.setup.org = 'source'; openSheet('setup'); },
     notes: `<h4>没有 AI 也能用</h4><ul><li>“按主题归纳”和 AI 档位变灰，给出“去设置”。</li><li>按原文或脑图排版、补前后句、附出处、导出都照常可用。</li><li>不出现隐私说明，因为什么都不发送。</li></ul>` },
   { g: 'AI 整理', n: '确认提纲：拖动调整', set() { S.outline = null; openSheet('outline'); },
@@ -1286,23 +1283,23 @@ const SCENES = [
   { g: 'AI 整理', n: '生成中', set() { S.setup.scope = 'all'; S.sel = new Set(BASE_HLS); startGenerate(); },
     notes: `<h4>看得见进度，随时可停</h4><ul><li>步骤：收集素材 → 补全上下文 → 归纳主题 → 撰写 → 核对引用。</li><li>边写边显示；停止后保留已写部分。</li><li><b>核对引用</b>：AI 只输出划线 ID，原文由应用逐字填入，所以不会出现被改写或编造的“引文”。</li></ul>` },
   { g: '笔记', n: '笔记：三种声音', set() { quickNote(); },
-    notes: `<h4>分得清谁说的</h4><ul><li>沿用“书里的话用宋体，自己的话用系统字体”，再加一种：<b>AI 写的</b>带紫色 AI 标签和左侧细线。</li><li>“显示 AI 标记”可关闭，方便阅读；导出时另有选项。</li><li>AI 段落一经修改，标签变为“AI · 已改”（对应 <code>NoteOrigin.mixed</code>），重新整理时不会覆盖。</li><li>标题下的绿色标签：所有划线都被引用、原文未改写；点开可以逐条定位。</li></ul><div class="lab">试试</div><ul><li>直接点进 AI 段落修改；右侧目录跳转小节。</li></ul>` },
+    notes: `<h4>分得清谁说的</h4><ul><li>沿用“书里的话用宋体，自己的话用系统字体”，再加一种：<b>AI 写的</b>带紫色 AI 标签和左侧细线。</li><li>笔记工具栏的 AI 按钮切换 AI 标记；导出时另有选项。</li><li>AI 段落一经修改，标签变为“AI · 已改”（对应 <code>NoteOrigin.mixed</code>），重新整理时不会覆盖。</li><li>标题下的绿色标签：所有划线都被引用、原文未改写；点开可以逐条定位。</li></ul><div class="lab">试试</div><ul><li>直接点进 AI 段落修改；右侧目录跳转小节。</li></ul>` },
   { g: '笔记', n: '上下文与出处', set() { quickNote(); setTimeout(() => { document.querySelector('[data-ref="h9"]')?.scrollIntoView({ block: 'center' }); reveal('h9'); }, 60); },
-    notes: `<h4>自动关联上下文</h4><ul><li>划线“这就是测试效应。”单独看不懂：笔记里默认展开前后句（灰色宋体），AI 在下面补一句“「这」指……”。</li><li>每条摘录都有出处：点“《认知天性》p.28”在左侧原文跳页并闪烁；点原文高亮，笔记滚到对应摘录。</li><li>跨节关联：AI 标出“与第 1 节是同一机制”，点击跳转。</li><li>我的批注（页边批注、脑图笔记）自动挂在对应摘录下面。</li></ul>` },
+    notes: `<h4>自动关联上下文</h4><ul><li>划线“这就是测试效应。”单独看不懂：笔记里默认展开前后句（灰色宋体），AI 在下面补一句“「这」指……”。</li><li>每条摘录都有出处：点“《认知天性》p.28”在左侧原文跳页并闪烁；点原文高亮，笔记滚到对应摘录。</li><li>跨节关联：AI 标出“与第 1 节是同一机制”，点击跳转。</li><li>我的批注（页边批注、脑图笔记）自动挂在对应摘录下面。在笔记里修改，会同步回原批注：左侧原文的批注标记随之更新（已确认）。</li></ul>` },
   { g: '笔记', n: '段落操作', set() { quickNote(); setTimeout(() => { const g = document.querySelector('.blk.ai .gut'); g && g.closest('.blk').scrollIntoView({ block: 'center' }); g && g.click(); }, 80); },
-    notes: `<h4>每段都能单独处理</h4><ul><li>悬停段落左侧出现 ⋯：换一种说法、更简洁、展开说明、改为我的话、加入脑图、生成复习卡、删除。</li><li>摘录：展开 / 收起上下文、在原文中查看、让 AI 解释、从笔记移除（划线保留）。</li><li>我自己写的批注，AI 不改写（菜单项变灰并说明原因）。</li><li>所有操作都可在提示条里撤销。</li></ul>` },
+    notes: `<h4>每段都能单独处理</h4><ul><li>悬停段落左侧出现 ⋯：换一种说法、更简洁、展开说明、改为我的话、加入脑图、生成复习卡、删除。</li><li>摘录：展开 / 收起上下文、在原文中查看、让 AI 解释、从笔记移除（划线保留）。</li><li>我的批注只有“加入脑图”和“删除这段”，没有 AI 改写。</li><li>所有操作都可在提示条里撤销。</li></ul>` },
   { g: '笔记', n: '版式：康奈尔笔记', set() { quickNote(); S.tpl = 'cornell'; renderNote(); },
     notes: `<h4>版式和内容分离</h4><ul><li>同一份内容可切换：读书笔记 / 康奈尔笔记 / 复习提纲。</li><li>康奈尔：左栏是 AI 提出的问题（线索），右栏是摘录与批注，底部是本节总结。</li><li>切换不改内容，修改过的段落在各版式中一致。</li></ul>` },
   { g: '笔记', n: '版式：复习提纲', set() { quickNote(); S.tpl = 'review'; renderNote(); },
     notes: `<h4>直接拿来复习</h4><ul><li>问题在前、答案（原文）遮住，点一下显示。</li><li>“加入复习”生成 FSRS 卡片，题面是问题，答案是原文并带出处。</li></ul>` },
   { g: '持续更新', n: '新划线：增量更新', set() { quickNote(); simulateNew(); render(); },
-    notes: `<h4>笔记跟着阅读长大</h4><ul><li>整理之后又划了线，笔记顶部提示“又划了 2 条”，侧栏笔记显示角标。</li><li>“预览更新”：AI 把每条放进最相关的一节（绿色），并说明理由；不重写整篇。</li><li><b>你改过的段落永远不会被覆盖</b>，带锁标记。</li><li>“忽略”后可以在“重新整理”中再加入。</li></ul><div class="lab">试试</div><ul><li>先改一段 AI 文字，再点“预览更新”→“应用更新”。</li></ul>` },
+    notes: `<h4>笔记跟着阅读长大</h4><ul><li>整理之后又划了线，笔记顶部提示“又划了 2 条”，侧栏笔记显示角标。</li><li>“预览更新”：AI 把每条放进最相关的一节（绿色），并写一句理由；不重写整篇。</li><li><b>你改过的段落永远不会被覆盖</b>，带锁标记。</li><li>“忽略”后可以在“重新整理”中再加入。</li></ul><div class="lab">试试</div><ul><li>先改一段 AI 文字，再点“预览更新”→“应用更新”。</li></ul>` },
   { g: '导出与分享', n: '导出：Markdown / Obsidian', set() { quickNote(); S.ex.fmt = 'obsidian'; openSheet('export'); },
-    notes: `<h4>导出给其他工具</h4><ul><li>Markdown：通用格式；Obsidian：frontmatter、callout、页码链接、Spaced Repetition 复习题格式。</li><li>出处：跟在原文后 / 脚注 / 不标。</li><li>可以去掉批注、AI 内容、复习题；AI 内容可标注或不标。</li><li>右侧预览就是实际文件内容。“导出”会真实下载 .md。</li></ul>` },
+    notes: `<h4>导出给其他工具</h4><ul><li>Markdown：通用格式；Obsidian：frontmatter、callout、Spaced Repetition 复习题格式。</li><li>Obsidian 页码链接指向 <code>书名.md#p12</code>，写作 <code>[[书名#p12|《书名》p.12]]</code>（已确认）。</li><li>出处：页码 / 脚注 / 不标。</li><li>可以去掉批注、AI 内容、复习题；AI 内容可标注或不标。</li><li>右侧预览就是实际文件内容。“导出”会真实下载 .md。</li></ul>` },
   { g: '导出与分享', n: '导出：PDF / Word', set() { quickNote(); S.ex.fmt = 'pdf'; S.ex.cite = 'foot'; openSheet('export'); },
     notes: `<h4>打印和提交</h4><ul><li>PDF：A4，原文宋体，左侧色条为划线颜色；Word：引用样式与原生脚注，方便继续修改或交作业。</li><li>“复制为富文本”直接粘贴到飞书、Notion、备忘录。</li></ul>` },
   { g: '导出与分享', n: '分享长图', set() { quickNote(); openSheet('share'); },
-    notes: `<h4>分享给别人看</h4><ul><li>三种内容：一句金句 / 一节 / 整篇摘要；三种主题：纸张、简洁、夜读。</li><li>可隐藏我的批注、AI 小结。</li><li>只包含所选内容，本机生成，不上传。</li></ul><div class="lab">待确认</div><ul><li>是否在长图底部加二维码或链接？建议不加，保持本地优先。</li></ul>` },
+    notes: `<h4>分享给别人看</h4><ul><li>三种内容：一句金句 / 一节 / 整篇摘要；三种主题：纸张、简洁、夜读。</li><li>可隐藏我的批注、AI 小结。</li><li>只包含所选内容，本机生成，不上传。</li></ul><div class="lab">已确认</div><ul><li>长图不加二维码或链接，页脚只有“摘自我的 MarginMind 笔记”和划线数量。</li></ul>` },
 ];
 function quickNote() {
   S.setup.scope = 'all'; S.sel = new Set(BASE_HLS); S.outline = null; S.unassigned = [];
