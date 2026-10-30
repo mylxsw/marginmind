@@ -216,7 +216,8 @@ class CardDetails extends ConsumerWidget {
 
   /// Width / height of an area's picture; a square when it is unknown.
   static double _aspect(Annotation? a) {
-    final r = a?.rects.firstOrNull;
+    if (a?.capture case final capture?) return (capture.width / capture.height).clamp(0.25, 4.0);
+    final r = a?.isText == true ? null : a?.rects.firstOrNull;
     if (r == null) return 1;
     final w = (r.right - r.left).abs(), h = (r.top - r.bottom).abs();
     return w <= 0 || h <= 0 ? 1 : (w / h).clamp(0.25, 4.0);

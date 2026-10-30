@@ -2,7 +2,7 @@
 /// rest of the app never imports pdfrx directly.
 library;
 
-export 'src/ink.dart' show MMPdfInk, MMPdfInkDraft, MMPdfInkTool;
+export 'src/ink.dart' show MMPdfInk, MMPdfInkDraft, MMPdfInkTool, inkStrokeHit, paintInk;
 export 'src/pdf_engine.dart';
 export 'src/pdf_view.dart';
 export 'src/pdf_navigation.dart';

@@ -283,11 +283,11 @@ class ReflowSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void observe(TextReadingPosition p, double localTop) {
+  void observe(TextReadingPosition p, double localTop, {bool persist = true}) {
     if (_disposed) return;
     position = p;
     top = localTop;
-    onPosition(p);
+    if (persist) onPosition(p);
     notifyListeners();
   }
 

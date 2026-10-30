@@ -596,8 +596,10 @@ class _NodeSpec {
             resizable: true,
           );
         }
-        final r = a?.rects.firstOrNull;
-        final aspect = r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left);
+        final r = a?.isText == true ? null : a?.rects.firstOrNull;
+        final aspect = a?.capture == null
+            ? (r == null || r.right <= r.left ? 0.6 : (r.top - r.bottom).abs() / (r.right - r.left))
+            : a!.capture!.height / a.capture!.width;
         // Preserve short selections' aspect ratio too, without tinted strips
         // above/below the picture. Tall images still fit within the preview.
         final imageHeight = ((cardWidth - _cardInset) * aspect).clamp(1.0, 200.0);

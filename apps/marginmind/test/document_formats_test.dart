@@ -18,6 +18,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/document_import.dart';
 import 'package:marginmind/features/workspace/document_reader.dart';
 import 'package:marginmind/features/workspace/reader_compare.dart';
+import 'package:marginmind/features/workspace/reader_translation.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
@@ -423,6 +424,9 @@ void main() {
       content: content,
       overrides: [
         documentReaderBuilderProvider.overrideWithValue((context, ref, id, doc) => const Text('Book reader adapter')),
+        // This test replaces both renderers; no source IR or PDF backend is mounted.
+        translationParagraphsProvider(('demo-1', text.id)).overrideWith((ref) async => []),
+        translationParagraphsProvider(('demo-1', base.documents.first.id)).overrideWith((ref) async => []),
       ],
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');

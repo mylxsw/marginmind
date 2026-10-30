@@ -142,6 +142,14 @@ Web 后端使用相同逻辑键，不要求磁盘目录。原文件不可变；�
 - `browserConverterProvider` 默认接入转换面板；`WorkspaceBrowser.open(url, documentId: ...)` 表示更新现有文档，按原格式保存新版本。来源、重新抓取和需确认列表由 `app_commands.dart` 定义，菜单共用；Web/Linux 继续隐藏重新抓取。
 - 原样 PDF 先限步滚动并恢复位置；macOS 使用 WKWebView 的 NSPrintOperation、iOS 使用 UIPrintPageRenderer/WebView formatter、Windows 使用 WebView2 PrintToPdf、Android 使用 WebView PrintDocumentAdapter。原生集成测试检查输出页数大于 1，不把长截图当作分页 PDF。API 依据：[Apple 打印](https://developer.apple.com/documentation/webkit/wkwebview/printoperation(with:))、[UIKit 页渲染](https://developer.apple.com/documentation/uikit/uiprintpagerenderer)、[WebView2 PDF](https://learn.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2_7)、[Android 打印适配器](https://developer.android.com/reference/android/print/PrintDocumentAdapter)。
 
+### GUL-578 接口落地
+
+- 流式页边批注从实际挂载的章节 / 页面求可见几何，regular 尺寸预留批注列；超出视口的批注合并为标记，点击显示可滚动的批注组。几何不写盘，批注与脑图继续走现有同步事务。
+- `ComparePair.sourceAlignPoints` 保存段落配对表。初始按段序配对，额外段落保持未配对；“在此对齐”替换冲突配对。`PdfPosition.y` 可选，保留 PDF 段落的页内位置；旧的仅页码 JSON 不变。两份 PDF 继续沿用既有同步方式，涉及流式文档时只通过段落表同步，版本不匹配时不跳转。
+- 对照中的流式原文临时使用滚动模式，字号 / 行距 / 字体可逐栏调整，退出恢复原偏好。翻译以文档 ID、revision、章节和原文范围生成缓存指纹，首次只请求当前段落，滚动或点击其他段落再请求；完整结果存入学习集，取消或旧版本的迟到结果不写回。
+- 段落画笔以 `ParagraphInkAnchor` 记录叶块和原文范围，点相对块左上角保存，重排只按块宽比例等比缩放。跨块分段在同一事务提交，整次手势一次撤销；无法定位的笔迹保留在“需要确认”列表。
+- 框选截取 Flutter 阅读层的可见像素（单次最多 4M 像素），保存不可变 PNG 和覆盖叶块的原文锚点。`Annotation.capture` 可选的 `TextCapture` 保留捕获尺寸、字号、行距、视口宽度和像素比，用于图片卡比例；旧标注无需此字段，复制、序列化、撤销均保留它。
+
 ## 10. 技术验证计划与当前结论
 
 已完成可运行原型和 Android ARM64 AVD profile 测量；真实数据与结论见 [验证报告](evidence/gul-570/README.md)。后续各段为完整验收协议；已完成项目、未完成项目须以验证报告为准，不能把计划视为运行结果。

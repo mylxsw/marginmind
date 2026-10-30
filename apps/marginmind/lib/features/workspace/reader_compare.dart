@@ -6,14 +6,19 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../app/providers.dart';
+import '../../settings/app_settings.dart';
 import 'reader_margin.dart';
 import 'reader_ocr.dart';
+import 'reader_paragraphs.dart';
+import 'reader_translation.dart';
+import 'reflow_session.dart';
 import 'workspace_controller.dart';
 
 ComparePair reverseComparePair(ComparePair pair) => pair.copyWith(
   leftDocumentId: (pair.right as PdfCompareTarget).documentId,
   right: PdfCompareTarget(pair.leftDocumentId),
   alignPoints: [for (final p in pair.alignPoints) AlignPoint(left: p.right, right: p.left)],
+  sourceAlignPoints: [for (final p in pair.sourceAlignPoints) SourceAlignPoint(left: p.right, right: p.left)],
 );
 
 /// The newest explicit alignment replaces older anchors that contradict it.
@@ -50,6 +55,9 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   ReadingSync _sync = ReadingSync();
   final _positions = <String, PdfReadingPosition>{};
   final _restoring = <String>{};
+  final _readings = <String, ReadingSettings>{};
+  final _sourcePositions = <String, ReadingPosition>{};
+  final _paragraphs = <String, List<TranslationParagraph>>{};
   final _scrollPositions = <String, PdfScrollPosition>{};
   int _epoch = 0;
   int _transition = 0;
@@ -126,6 +134,11 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
       document(1),
       ref.read(workspaceProvider(studySetId)).activeDocumentId,
     }.whereType<String>()) {
+      if (_workspace.content.document(id)?.contentManifest != null) {
+        final position = ref.read(reflowSessionProvider((studySetId, id))).position;
+        if (position != null) _sourcePositions[id] = position;
+        continue;
+      }
       final position = pdf(id).readingPosition;
       if (position != null) _positions[id] = position;
       final scroll = pdf(id).scrollPosition;
@@ -172,14 +185,85 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
         : saved.leftDocumentId == l
         ? saved
         : reverseComparePair(saved);
-    if (saved == null) await _workspace.saveComparePair(pair);
+    final prepared = await _prepareSourcePair(pair);
+    if (!ref.mounted || transition != _transition) return false;
+    if (saved == null || prepared != pair) await _workspace.saveComparePair(prepared);
     if (!ref.mounted || transition != _transition) return false;
     final hidden = current == null && _workspace.beginCompareLayout(readerWidth);
     _sync.dispose();
-    _sync = ReadingSync()..enabled = pair.sync;
-    state = pair;
+    _sync = ReadingSync()..enabled = prepared.sync;
+    for (final id in [l, r]) {
+      final doc = _workspace.content.document(id)!;
+      _readings.putIfAbsent(id, () => ref.read(settingsProvider).reading(doc.format));
+    }
+    state = prepared;
     if (ref.read(workspaceProvider(studySetId)).activeDocumentId != l) _workspace.openDocument(l);
     return hidden;
+  }
+
+  ReadingSettings reading(String id, DocumentFormat format) =>
+      _readings[id] ?? ref.read(settingsProvider).reading(format);
+  void setReading(String id, ReadingSettings value) {
+    if (state == null) return;
+    _readings[id] = value;
+    state = state!.copyWith();
+  }
+
+  bool get canAlignSource => usesSourceAlignment && state?.right is PdfCompareTarget;
+  bool get usesSourceAlignment =>
+      state != null &&
+      [
+        document(0),
+        document(1),
+      ].whereType<String>().any((id) => _workspace.content.document(id)?.contentManifest != null);
+
+  Future<ComparePair> _prepareSourcePair(ComparePair pair) async {
+    if (pair.right is! PdfCompareTarget) return pair;
+    final l = pair.leftDocumentId, r = (pair.right as PdfCompareTarget).documentId;
+    if (![l, r].any((id) => _workspace.content.document(id)?.contentManifest != null)) return pair;
+    final lists = await Future.wait([
+      for (final id in [l, r]) ref.read(translationParagraphsProvider((studySetId, id)).future),
+    ]);
+    if (!ref.mounted) return pair;
+    _paragraphs[l] = lists[0];
+    _paragraphs[r] = lists[1];
+    final valid = pair.sourceAlignPoints
+        .where(
+          (p) =>
+              lists[0].any((a) => sameSourcePosition(paragraphPosition(a), p.left)) &&
+              lists[1].any((a) => sameSourcePosition(paragraphPosition(a), p.right)),
+        )
+        .toList();
+    if (valid.isNotEmpty) {
+      return valid.length == pair.sourceAlignPoints.length ? pair : pair.copyWith(sourceAlignPoints: valid);
+    }
+    // Persist the initial paragraph-order pairing as an editable table. Extra
+    // paragraphs remain unpaired; no document percentage fallback is used.
+    return pair.copyWith(
+      alignPoints: [],
+      sourceAlignPoints: [
+        for (var i = 0; i < lists[0].length && i < lists[1].length; i++)
+          SourceAlignPoint(left: paragraphPosition(lists[0][i]), right: paragraphPosition(lists[1][i])),
+      ],
+    );
+  }
+
+  ReadingPosition? sourcePosition(String id) {
+    if (_workspace.content.document(id)?.contentManifest != null) {
+      return ref.read(reflowSessionProvider((studySetId, id))).position;
+    }
+    final p = pdf(id).readingPosition;
+    return p == null ? null : PdfPosition(p.page, y: p.y);
+  }
+
+  Future<void> jumpSource(String id, ReadingPosition position) async {
+    if (position is TextReadingPosition) {
+      await ref.read(reflowSessionProvider((studySetId, id))).jump(position, remember: false);
+    } else if (position is PdfPosition) {
+      await pdf(id).jumpToReadingPosition(
+        PdfReadingPosition(page: position.page, y: position.y ?? pdf(id).pageSize(position.page)?.height ?? 0),
+      );
+    }
   }
 
   Future<bool> openAi(String language, {String? documentId, double readerWidth = 0}) async {
@@ -209,6 +293,8 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     final hidden = state == null && _workspace.beginCompareLayout(readerWidth);
     _sync.dispose();
     _sync = ReadingSync()..enabled = pair.sync;
+    final doc = _workspace.content.document(id)!;
+    _readings.putIfAbsent(id, () => ref.read(settingsProvider).reading(doc.format));
     state = pair;
     if (ref.read(workspaceProvider(studySetId)).activeDocumentId != id) _workspace.openDocument(id);
     return hidden;
@@ -237,10 +323,16 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
     remember();
     _sync.dispose();
     state = null;
+    _readings.clear();
     _workspace.endCompareLayout();
   }
 
   Future<void> ready(String id) async {
+    final source = _sourcePositions.remove(id);
+    if (source != null) {
+      await jumpSource(id, source);
+      return;
+    }
     // A new viewer/document may have identical dimensions but a new origin.
     _scrollPositions.remove(id);
     final position = _positions.remove(id);
@@ -289,6 +381,21 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
   }
 
   Future<bool> align() async {
+    if (usesSourceAlignment) {
+      if (_writing || state?.right is! PdfCompareTarget) return false;
+      final l = document(0)!, r = document(1)!;
+      final lp = sourcePosition(l), rp = sourcePosition(r);
+      if (lp == null || rp == null) return false;
+      final left = paragraphAt(_paragraphs[l] ?? [], lp), right = paragraphAt(_paragraphs[r] ?? [], rp);
+      if (left == null || right == null) return false;
+      final point = SourceAlignPoint(left: paragraphPosition(left), right: paragraphPosition(right));
+      final points = insertParagraphAlignment(state!.sourceAlignPoints, point, _paragraphs[l]!, _paragraphs[r]!);
+      _epoch++;
+      _driver = null;
+      _driven = null;
+      await _save(state!.copyWith(sourceAlignPoints: points, alignPoints: [], sync: true), undoable: true);
+      return true;
+    }
     final map = mapping;
     if (map == null || _writing) return false;
     final left = pdf(document(0)!).readingPosition, right = pdf(document(1)!).readingPosition;
@@ -337,6 +444,10 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
       final source = _queuedSide;
       _queuedSide = null;
       if (!ref.mounted || state == null) return;
+      if (usesSourceAlignment) {
+        if (source != null) unawaited(_driveSource(source));
+        return;
+      }
       for (final id in [document(0), document(1)].whereType<String>()) {
         final position = pdf(id).readingPosition;
         if (position != null) _workspace.recordPage(id, position.page);
@@ -360,6 +471,36 @@ class ReaderCompareSession extends Notifier<ComparePair?> {
         }
       }
     });
+  }
+
+  Future<void> _driveSource(int side) async {
+    if (state?.sync != true || _restoring.isNotEmpty || _driver != side || _driven != null) return;
+    final id = document(side), targetId = document(1 - side);
+    if (id == null || targetId == null) return;
+    final position = sourcePosition(id);
+    final paragraph = position == null ? null : paragraphAt(_paragraphs[id] ?? [], position);
+    if (paragraph == null) return;
+    final start = paragraphPosition(paragraph);
+    final pair = state!.sourceAlignPoints
+        .where((p) => sameSourcePosition(side == 0 ? p.left : p.right, start))
+        .firstOrNull;
+    if (pair == null) return;
+    final target = side == 0 ? pair.right : pair.left;
+    final current = sourcePosition(targetId);
+    if (current != null && sameSourcePosition(current, target)) return;
+    final epoch = _epoch;
+    _driven = 1 - side;
+    try {
+      await jumpSource(targetId, target);
+      await SchedulerBinding.instance.endOfFrame;
+    } finally {
+      if (ref.mounted && epoch == _epoch) {
+        _driven = null;
+        final latest = sourcePosition(id);
+        final paragraph = latest == null ? null : paragraphAt(_paragraphs[id] ?? [], latest);
+        if (paragraph != null && !sameSourcePosition(paragraphPosition(paragraph), start)) changed(side);
+      }
+    }
   }
 
   Future<void> _drive(int side, double distance) async {
