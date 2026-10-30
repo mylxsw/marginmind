@@ -8,11 +8,18 @@ import 'highlight_color_button.dart';
 import 'underline_tool_button.dart';
 
 class ReaderAnnotationTools extends StatelessWidget {
-  const ReaderAnnotationTools({super.key, required this.state, required this.controller, this.compact = false});
+  const ReaderAnnotationTools({
+    super.key,
+    required this.state,
+    required this.controller,
+    this.compact = false,
+    this.textOnly = false,
+  });
 
   final WorkspaceState state;
   final WorkspaceController controller;
   final bool compact;
+  final bool textOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -51,16 +58,18 @@ class ReaderAnnotationTools extends StatelessWidget {
               compact: compact,
               enabled: controller.activeCapabilities.annotate,
             ),
-            tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
-            tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
-            const MMToolbarDivider(),
-            MMToolbarButton(
-              compact: compact,
-              icon: MMIcons.syncToMap,
-              tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
-              selected: state.syncToMap,
-              onPressed: controller.activeCapabilities.excerpt ? controller.toggleSyncToMap : null,
-            ),
+            if (!textOnly) ...[
+              tool(MMIcons.areaSelect, l.toolArea, AnnotationTool.area),
+              tool(MMIcons.pen, l.toolPen, AnnotationTool.ink),
+              const MMToolbarDivider(),
+              MMToolbarButton(
+                compact: compact,
+                icon: MMIcons.syncToMap,
+                tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
+                selected: state.syncToMap,
+                onPressed: controller.activeCapabilities.excerpt ? controller.toggleSyncToMap : null,
+              ),
+            ],
           ],
         ),
       ),

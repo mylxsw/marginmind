@@ -39,7 +39,9 @@ class MMSegmentedControl<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final height = context.mmTouch ? MMSizes.segmentedTouch : MMSizes.segmented;
+    final height = context.mmTablet
+        ? MMSizes.touchTarget + 4
+        : (context.mmTouch ? MMSizes.segmentedTouch : MMSizes.segmented);
     return Container(
       height: height,
       padding: const EdgeInsets.all(2),

@@ -26,6 +26,7 @@ class CropControls extends ConsumerWidget {
     final state = ref.watch(provider);
     final session = ref.read(provider.notifier);
     final l = context.l10n, c = context.mmColors;
+    if (!state.editing && context.mmTablet) return const SizedBox.shrink();
     if (!state.editing) {
       final crop = state.automatic?.all;
       if (document.crop?.enabled == true ||

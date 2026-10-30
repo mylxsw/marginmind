@@ -105,13 +105,16 @@ class _SettingsWindowState extends State<SettingsWindow> {
       );
     }
     final screen = MediaQuery.sizeOf(context);
+    final tablet = context.mmTablet;
+    final availableHeight =
+        screen.height - MediaQuery.viewInsetsOf(context).bottom - MediaQuery.paddingOf(context).vertical;
     const size = SettingsWindow.size, min = SettingsWindow.minSize;
     return Material(
       type: MaterialType.transparency,
       child: Container(
         key: const ValueKey('settings-window'),
         width: _fit(size.width, min.width, screen.width),
-        height: _fit(size.height, min.height, screen.height),
+        height: tablet ? (availableHeight * .86).clamp(260.0, 720.0) : _fit(size.height, min.height, screen.height),
         padding: const EdgeInsets.all(MMSpacing.s),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -141,7 +144,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(
-                    height: 48,
+                    height: tablet ? 56 : 48,
                     child: Row(
                       children: [
                         const SizedBox(width: MMSpacing.l),

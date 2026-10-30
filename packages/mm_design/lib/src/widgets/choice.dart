@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/interactive.dart';
+import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
@@ -36,31 +37,35 @@ class MMCheckbox extends StatelessWidget {
         child: MMInteractive(
           onTap: onChanged == null ? null : () => onChanged!(!value),
           semanticLabel: label ?? semanticLabel,
-          builder: (context, s) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: MMMotion.quick,
-                width: 15,
-                height: 15,
-                decoration: BoxDecoration(
-                  color: value ? tint : c.card,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: value ? tint : c.line, width: 1),
-                  boxShadow: s.focused ? [BoxShadow(color: tint.withValues(alpha: 0.4), spreadRadius: 2)] : null,
-                ),
-                child: value ? const Icon(MMIcons.check, size: 11, color: Colors.white) : null,
-              ),
-              if (label != null) ...[
-                const SizedBox(width: MMSpacing.s),
-                Flexible(
-                  child: Text(
-                    label!,
-                    style: context.mmText.body.copyWith(color: s.enabled ? c.label : c.secondaryLabel),
+          builder: (context, s) => _tabletTouchTarget(
+            context,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: MMMotion.quick,
+                  width: 15,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: value ? tint : c.card,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: value ? tint : c.line, width: 1),
+                    boxShadow: s.focused ? [BoxShadow(color: tint.withValues(alpha: 0.4), spreadRadius: 2)] : null,
                   ),
+                  child: value ? const Icon(MMIcons.check, size: 11, color: Colors.white) : null,
                 ),
+                if (label != null) ...[
+                  const SizedBox(width: MMSpacing.s),
+                  Flexible(
+                    child: Text(
+                      label!,
+                      style: context.mmText.body.copyWith(color: s.enabled ? c.label : c.secondaryLabel),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
+            active: onChanged != null,
           ),
         ),
       ),
@@ -85,22 +90,25 @@ class MMSwitch extends StatelessWidget {
       child: MMInteractive(
         onTap: onChanged == null ? null : () => onChanged!(!value),
         semanticLabel: semanticLabel,
-        builder: (context, s) => AnimatedContainer(
-          duration: MMMotion.quick,
-          width: 28,
-          height: 16,
-          padding: const EdgeInsets.all(2),
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          decoration: BoxDecoration(
-            color: value ? (color ?? c.accent) : c.fill,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Opacity(
-            opacity: s.enabled ? 1 : 0.5,
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        builder: (context, s) => _tabletTouchTarget(
+          context,
+          AnimatedContainer(
+            duration: MMMotion.quick,
+            width: 28,
+            height: 16,
+            padding: const EdgeInsets.all(2),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            decoration: BoxDecoration(
+              color: value ? (color ?? c.accent) : c.fill,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Opacity(
+              opacity: s.enabled ? 1 : 0.5,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              ),
             ),
           ),
         ),
@@ -148,3 +156,10 @@ class MMPill extends StatelessWidget {
     );
   }
 }
+
+Widget _tabletTouchTarget(BuildContext context, Widget visual, {bool active = true}) => context.mmTablet && active
+    ? ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: MMSizes.touchTarget, minHeight: MMSizes.touchTarget),
+        child: Center(widthFactor: 1, heightFactor: 1, child: visual),
+      )
+    : visual;

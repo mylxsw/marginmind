@@ -1341,5 +1341,6 @@
   "vocabularyHintsUnderline": "下划线",
   "vocabularyHintsGloss": "释义",
   "vocabularyHintsHidden": "本文档隐藏",
-  "vocabularyHintsKnown": "标出已掌握"
+  "vocabularyHintsKnown": "标出已掌握",
+  "resizeCompanionPanel": "调整面板大小"
 }

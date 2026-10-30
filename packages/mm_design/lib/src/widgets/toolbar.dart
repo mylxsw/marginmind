@@ -77,7 +77,7 @@ class MMToolbarGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MMGlass(
-      padding: EdgeInsets.all(compact && !context.mmTouch ? 2 : 3),
+      padding: EdgeInsets.all(context.mmTablet ? 2 : (compact && !context.mmTouch ? 2 : 3)),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -121,7 +121,7 @@ class MMToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final t = context.mmText;
-    final size = compact && !context.mmTouch ? const Size(30, 26) : context.mmToolbarButton;
+    final size = compact && !context.mmTouch && !context.mmTablet ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: onPressed,
       selected: selected,
@@ -150,7 +150,7 @@ class MMToolbarButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (icon != null) Icon(icon, size: 16, color: fg),
+              if (icon != null) Icon(icon, size: context.mmTablet ? 19 : 16, color: fg),
               if (icon != null && label != null) const SizedBox(width: 6),
               if (label != null) Text(label!, style: t.callout.copyWith(color: fg)),
               if (count > 0) ...[

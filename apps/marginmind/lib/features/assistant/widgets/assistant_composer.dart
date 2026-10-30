@@ -385,7 +385,10 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (configured && quick && _text.text.trim().isEmpty)
+              if (configured &&
+                  quick &&
+                  _text.text.trim().isEmpty &&
+                  !(context.mmTablet && MediaQuery.viewInsetsOf(context).bottom > 0))
                 Padding(
                   padding: const EdgeInsets.only(bottom: MMSpacing.xs),
                   child: Row(
@@ -467,7 +470,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             item.auto ? uiNotifier.toggleAuto(item.id) : uiNotifier.removeContext(item.id),
                       ),
                     ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 40 - 14, maxHeight: 140),
+                      constraints: BoxConstraints(minHeight: 40 - 14, maxHeight: context.mmTablet ? 80 : 140),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(MMSpacing.m, MMSpacing.s, MMSpacing.s, 6),
                         child: Semantics(
@@ -484,7 +487,7 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                               minLines: 1,
                               maxLines: null,
                               keyboardType: TextInputType.multiline,
-                              style: t.body.copyWith(height: 20 / 13, color: c.label),
+                              style: t.body.copyWith(height: context.mmTablet ? 1.4 : 20 / 13, color: c.label),
                               cursorWidth: 1.5,
                               cursorColor: c.research,
                               decoration: InputDecoration.collapsed(
@@ -506,20 +509,21 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             tooltip: '${l.assistantMention}（@）',
                             onPressed: configured && !_voice.active ? _mention : null,
                           ),
-                          _BarButton(
-                            key: const ValueKey('assistant-slash'),
-                            icon: MMIcons.command,
-                            tooltip: '${l.assistantCommands}（/）',
-                            onPressed: configured && !_voice.active
-                                ? () {
-                                    _text.value = const TextEditingValue(
-                                      text: '/',
-                                      selection: TextSelection.collapsed(offset: 1),
-                                    );
-                                    _focus.requestFocus();
-                                  }
-                                : null,
-                          ),
+                          if (!context.mmTablet)
+                            _BarButton(
+                              key: const ValueKey('assistant-slash'),
+                              icon: MMIcons.command,
+                              tooltip: '${l.assistantCommands}（/）',
+                              onPressed: configured && !_voice.active
+                                  ? () {
+                                      _text.value = const TextEditingValue(
+                                        text: '/',
+                                        selection: TextSelection.collapsed(offset: 1),
+                                      );
+                                      _focus.requestFocus();
+                                    }
+                                  : null,
+                            ),
                           _BarButton(
                             key: const ValueKey('assistant-online'),
                             icon: MMIcons.web,
@@ -529,16 +533,19 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
                             selected: conversation.online,
                             onPressed: configured ? () => unawaited(_setOnline(!conversation.online)) : null,
                           ),
-                          const Spacer(),
+                          if (!context.mmTablet) const Spacer(),
                           if (configured)
-                            Builder(
-                              builder: (button) => _BarButton(
-                                key: const ValueKey('assistant-model'),
-                                label: conversationModelLabel(ref, conversation.model),
-                                trailing: MMIcons.chevronDown,
-                                tooltip: l.assistantModel,
-                                maxLabel: 120,
-                                onPressed: () => showModelMenu(context, ref, boundsOf(button)),
+                            _tabletFlexible(
+                              context,
+                              Builder(
+                                builder: (button) => _BarButton(
+                                  key: const ValueKey('assistant-model'),
+                                  label: conversationModelLabel(ref, conversation.model),
+                                  trailing: MMIcons.chevronDown,
+                                  tooltip: l.assistantModel,
+                                  maxLabel: 120,
+                                  onPressed: () => showModelMenu(context, ref, boundsOf(button)),
+                                ),
                               ),
                             ),
                           const SizedBox(width: MMSpacing.xs),
@@ -609,7 +616,7 @@ class _QuickAction extends StatelessWidget {
         return Opacity(
           opacity: s.enabled ? 1 : .4,
           child: Container(
-            height: MMSizes.field,
+            height: context.mmTablet ? MMSizes.touchTarget : MMSizes.field,
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
             decoration: BoxDecoration(
               color: active ? c.researchTint : Colors.transparent,
@@ -665,8 +672,8 @@ class _BarButton extends StatelessWidget {
         final fg = s.enabled ? (color ?? c.icon) : c.icon.withValues(alpha: .3);
         return AnimatedContainer(
           duration: MMMotion.quick,
-          height: 26,
-          constraints: const BoxConstraints(minWidth: 26),
+          height: context.mmTablet ? MMSizes.touchTarget : 26,
+          constraints: BoxConstraints(minWidth: context.mmTablet ? MMSizes.touchTarget : 26),
           padding: EdgeInsets.symmetric(horizontal: label == null ? 0 : 6),
           decoration: BoxDecoration(
             color: s.hovered ? c.hover : Colors.transparent,
@@ -679,13 +686,16 @@ class _BarButton extends StatelessWidget {
               if (icon != null) Icon(icon, size: 14, color: fg),
               if (icon != null && label != null) const SizedBox(width: MMSpacing.xs),
               if (label != null)
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: maxLabel),
-                  child: Text(
-                    label!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.mmText.callout.copyWith(color: color ?? c.secondaryLabel),
+                _tabletFlexible(
+                  context,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxLabel),
+                    child: Text(
+                      label!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mmText.callout.copyWith(color: color ?? c.secondaryLabel),
+                    ),
                   ),
                 ),
               if (trailing != null) ...[const SizedBox(width: 3), Icon(trailing, size: 10, color: c.icon)],
@@ -716,8 +726,8 @@ class _SendButton extends StatelessWidget {
         duration: MMMotion.quick,
         opacity: running || enabled ? 1 : .35,
         child: Container(
-          width: 28,
-          height: 28,
+          width: context.mmTablet ? MMSizes.touchTarget : 28,
+          height: context.mmTablet ? MMSizes.touchTarget : 28,
           decoration: BoxDecoration(color: running ? c.label : c.research, shape: BoxShape.circle),
           child: Icon(
             running ? MMIcons.stop : MMIcons.send,
@@ -729,3 +739,5 @@ class _SendButton extends StatelessWidget {
     );
   }
 }
+
+Widget _tabletFlexible(BuildContext context, Widget child) => context.mmTablet ? Flexible(child: child) : child;

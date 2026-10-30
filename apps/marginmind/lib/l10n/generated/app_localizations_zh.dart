@@ -3662,4 +3662,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyHintsKnown => '标出已掌握';
+
+  @override
+  String get resizeCompanionPanel => '调整面板大小';
 }

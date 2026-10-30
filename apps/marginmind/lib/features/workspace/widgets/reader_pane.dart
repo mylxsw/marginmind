@@ -432,6 +432,71 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       ),
     );
     final progress = ocrSource == null ? null : ReaderOcrProgress(source: ocrSource);
+    if (context.mmTablet) {
+      return Row(
+        key: const ValueKey('tablet-reader-toolbar'),
+        children: [
+          navigation,
+          const SizedBox(width: MMSpacing.xs),
+          Flexible(
+            child: ReaderAnnotationTools(state: state, controller: controller, textOnly: true),
+          ),
+          if (MMSizeClass.of(context) != MMSizeClass.compact) compareButton,
+          MMDropdownButton<Object>(
+            key: const ValueKey('reader-more'),
+            tooltip: l.moreTools,
+            icon: const Icon(MMIcons.more),
+            width: MMSizes.readerZoomMenuWidth,
+            onSelected: (value) {
+              pageCommand(value);
+              if (value is MMReaderStyle) setStyle(value);
+              if (value is AnnotationTool) controller.setTool(value);
+              if (value == 'sync') controller.toggleSyncToMap();
+              if (value == 'margin') ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document!.id);
+              if (value == 'reading') {
+                if (capabilities.readingSettings) {
+                  settingsHandler?.call(context, ref, widget.studySetId);
+                } else {
+                  showReadingSettings(context, ref, widget.studySetId);
+                }
+              }
+              if (value == 'vocabulary' && document != null) toggleVocabularyHints(context, ref, document.id);
+            },
+            itemBuilder: (_) => [
+              MMDropdownItem<Object>(
+                value: AnnotationTool.area,
+                enabled: controller.canUseTool(AnnotationTool.area),
+                child: _menuRow(MMIcons.areaSelect, l.toolArea),
+              ),
+              MMDropdownItem<Object>(
+                value: AnnotationTool.ink,
+                enabled: controller.canUseTool(AnnotationTool.ink),
+                child: _menuRow(MMIcons.pen, l.toolPen),
+              ),
+              MMDropdownItem<Object>(
+                value: 'sync',
+                enabled: capabilities.excerpt,
+                child: _menuRow(MMIcons.syncToMap, state.syncToMap ? l.syncToMapOn : l.syncToMapOff),
+              ),
+              MMDropdownItem<Object>(
+                value: 'margin',
+                enabled: capabilities.marginNotes && document != null && !comparing,
+                child: _menuRow(MMIcons.captionsBubble, l.marginNotes),
+              ),
+              MMDropdownItem<Object>(value: 'reading', child: _menuRow(MMIcons.readingSettings, l.readingSettings)),
+              if (document != null)
+                MMDropdownItem<Object>(value: 'vocabulary', child: _menuRow(MMIcons.vocabulary, l.vocabularyHints)),
+              const PopupMenuDivider(),
+              ...zoomItems,
+              ...cropItems,
+              const PopupMenuDivider(),
+              ...styleItems,
+            ],
+          ),
+          if (progress != null) Flexible(child: progress),
+        ],
+      );
+    }
     if (MMSizeClass.of(context) != MMSizeClass.regular) {
       return Row(
         children: [
@@ -527,7 +592,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     children: [
       Icon(icon, size: MMSizes.dropdownIcon),
       const SizedBox(width: MMSpacing.s),
-      Text(label, style: context.mmText.callout),
+      if (context.mmTablet)
+        Flexible(child: Text(label, style: context.mmText.callout))
+      else
+        Text(label, style: context.mmText.callout),
     ],
   );
 
@@ -709,7 +777,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     }
     final c = context.mmColors, l = context.l10n;
     final chrome = MMChromeInsets.of(context);
-    final dockNavigation = MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500;
+    final dockNavigation = context.mmTablet || (MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500);
     final provider = workspaceProvider(widget.studySetId);
     final pdf = ref.watch(documentPdfProvider((widget.studySetId, doc.id)));
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
@@ -990,7 +1058,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                           },
                           progress: doc.pageCount > 1
                               ? SizedBox(
-                                  height: MMSizes.field - MMSpacing.xxs,
+                                  height: context.mmTablet ? MMSizes.touchTarget : MMSizes.field - MMSpacing.xxs,
                                   child: SliderTheme(
                                     data: SliderTheme.of(context).copyWith(
                                       activeTrackColor: c.secondaryLabel.withValues(
@@ -1154,6 +1222,38 @@ class _PagePill extends StatelessWidget {
       duration: MMAppearance.duration(context, MMMotion.quick),
       child: child,
     );
+    if (context.mmTablet) {
+      return Container(
+        key: const ValueKey('tablet-reader-navigation'),
+        height: MMSizes.readerNavigationHeight,
+        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
+        decoration: BoxDecoration(
+          color: c.windowBackground,
+          border: Border(top: BorderSide(color: c.separator, width: .5)),
+        ),
+        child: Row(
+          children: [
+            MMIconButton(icon: MMIcons.chevronLeft, tooltip: l.previousPage, onPressed: page > 1 ? onPrevious : null),
+            SizedBox(
+              width: 88,
+              child: Center(
+                child: ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+              ),
+            ),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (source != null) SizedBox(height: 20, child: source),
+                  if (progress != null) Flexible(child: progress!),
+                ],
+              ),
+            ),
+            MMIconButton(icon: MMIcons.chevronRight, tooltip: l.nextPage, onPressed: page < pageCount ? onNext : null),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
       child: SizedBox(

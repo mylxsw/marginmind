@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/interactive.dart';
+import '../foundation/adaptive.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
@@ -84,7 +85,7 @@ class MMSettingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = SizedBox(
-      height: height,
+      height: context.mmTablet && height < 52 ? 52 : height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
@@ -158,7 +159,7 @@ class MMPopUpButton<T> extends StatelessWidget {
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
         constraints: BoxConstraints(maxWidth: maxWidth),
-        height: 22,
+        height: context.mmTablet ? MMSizes.touchTarget : 22,
         padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
         decoration: BoxDecoration(color: s.hovered ? c.fill : c.quaternaryFill, borderRadius: BorderRadius.circular(6)),
         child: Row(

@@ -479,12 +479,20 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 28),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 420,
-                          mainAxisExtent: 88,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                        gridDelegate: context.mmTablet
+                            ? SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
+                                mainAxisExtent:
+                                    104 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              )
+                            : const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 420,
+                                mainAxisExtent: 88,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
                         delegate: SliverChildListDelegate([
                           for (final s in recent) ContinueCard(set: s, onOpen: () => open(s.id)),
                         ]),
@@ -497,9 +505,11 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(23, 0, 23, 48 + chrome.bottom),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 230,
-                          mainAxisExtent: 206,
+                          mainAxisExtent: context.mmTablet
+                              ? 230 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4
+                              : 206,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 18,
                         ),

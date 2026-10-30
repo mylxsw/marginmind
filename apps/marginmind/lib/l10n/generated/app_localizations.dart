@@ -6877,6 +6877,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark known words'**
   String get vocabularyHintsKnown;
+
+  /// No description provided for @resizeCompanionPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize companion panel'**
+  String get resizeCompanionPanel;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

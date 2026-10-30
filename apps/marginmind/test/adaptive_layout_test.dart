@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/app/phone_tabs.dart';
 import 'package:marginmind/features/library/library_screen.dart';
 import 'package:marginmind/features/review/review_screen.dart';
 import 'package:marginmind/features/review/stats_screen.dart';
@@ -70,7 +71,10 @@ Future<ProviderContainer> pumpDevice(WidgetTester tester, Device device) async {
   final container = await pumpApp(
     tester,
     size: device.size,
-    overrides: [touchPlatformProvider.overrideWithValue(device.touch)],
+    overrides: [
+      touchPlatformProvider.overrideWithValue(device.touch),
+      phoneProvider.overrideWithValue(device.touch && device.size.shortestSide < 600),
+    ],
   );
   tester.view.padding = FakeViewPadding(
     left: device.safe.left,
@@ -233,7 +237,7 @@ void main() {
   });
 
   group('touch windows', () {
-    testWidgets('iPad portrait: source above map, sidebar drawer and floating panel', (tester) async {
+    testWidgets('iPad portrait: source above map, sidebar drawer and companion panel', (tester) async {
       final container = await openWorkspace(tester, ipadPortrait);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final reader = rectOf(tester, ReaderPane);
@@ -297,18 +301,20 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('mm-drawer-scrim')).first, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Details float over the panes and leave the layout alone.
+      // Details occupy their own area and leave the saved layout alone.
       controller.showDetails('c3');
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.split);
-      final panel = find.byKey(const ValueKey('workspace-floating-panel'));
+      final panel = find.byKey(const ValueKey('tablet-workspace-panel'));
       expect(panel, findsOneWidget);
-      expect(tester.getRect(panel).width, MMSizes.rightPanelWidth);
+      expect(tester.getRect(panel).width, ipadPortrait.size.width - 16);
       expect(tester.getRect(panel).right, ipadPortrait.size.width - MMSpacing.s);
       expect(rectOf(tester, ReaderPane).width, ipadPortrait.size.width);
       await tester.tapAt(const Offset(40, 400));
       await tester.pumpAndSettle();
-      expect(container.read(workspaceProvider('demo-1')).panel, isNull);
+      expect(container.read(workspaceProvider('demo-1')).panel, RightPanel.details);
+      controller.closePanel();
+      await tester.pumpAndSettle();
       expect(panel, findsNothing);
 
       // Touch-sized toolbar buttons.
@@ -336,23 +342,26 @@ void main() {
       expect(reader.right, lessThanOrEqualTo(map.left));
       expect(reader.left, 0);
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsNothing);
-      expect(find.byKey(const ValueKey('reader-page')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('workspace-floating-panel')), findsNothing);
-      expect(rectOf(tester, MapPane).right, ipadLandscape.size.width - MMSizes.rightPanelWidth);
+      expect(
+        rectOf(tester, MapPane).overlaps(tester.getRect(find.byKey(const ValueKey('tablet-workspace-panel')))),
+        isFalse,
+      );
     });
 
-    testWidgets('iPhone: one pane at a time behind a Source | Map switch', (tester) async {
+    testWidgets('iPhone: one pane at a time behind bottom tabs', (tester) async {
       final container = await openWorkspace(tester, iphone);
       WorkspaceState state() => container.read(workspaceProvider('demo-1'));
-      final pane = find.byKey(const ValueKey('workspace-pane-switch'));
+      final pane = find.byType(PhoneTabBar);
       expect(pane, findsOneWidget);
       expect(find.byTooltip('Split'), findsNothing);
       expect(tester.getRect(find.byType(MMToolbar)).top, iphone.safe.top);
       expect(find.byType(ReaderPane).hitTestable(), findsOneWidget);
       expect(find.byType(MapPane).hitTestable(), findsNothing);
-      await tester.tap(find.descendant(of: pane, matching: find.text('Map')));
+      await tester.tap(find.byKey(const ValueKey('mm-tab-2')));
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.secondary);
       expect(find.byType(MapPane).hitTestable(), findsOneWidget);
@@ -362,7 +371,7 @@ void main() {
         tester.getRect(find.byKey(const ValueKey('map-density'))).bottom,
         lessThanOrEqualTo(iphone.size.height - iphone.safe.bottom),
       );
-      await tester.tap(find.descendant(of: pane, matching: find.text('Source')));
+      await tester.tap(find.byKey(const ValueKey('mm-tab-1')));
       await tester.pumpAndSettle();
       expect(state().layout, MMSplitMode.primary);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
@@ -388,7 +397,7 @@ void main() {
       expect(rectOf(tester, MapPane).right, iphoneLandscape.size.width - iphoneLandscape.safe.right);
     });
 
-    testWidgets('a trackpad on a touch device gets pointer-sized controls', (tester) async {
+    testWidgets('a tablet keeps stable target sizes while switching between trackpad and finger', (tester) async {
       await openWorkspace(tester, ipadLandscape);
       final assistant = find.byKey(const ValueKey('toolbar-assistant'));
       expect(tester.getSize(assistant), const Size.square(MMSizes.touchTarget));
@@ -396,7 +405,7 @@ void main() {
       await mouse.addPointer(location: const Offset(600, 500));
       await mouse.moveTo(const Offset(610, 500));
       await tester.pumpAndSettle();
-      expect(tester.getSize(assistant), MMSizes.toolbarButton);
+      expect(tester.getSize(assistant), const Size.square(MMSizes.touchTarget));
       await mouse.removePointer();
       await tester.tapAt(const Offset(610, 500));
       await tester.pumpAndSettle();

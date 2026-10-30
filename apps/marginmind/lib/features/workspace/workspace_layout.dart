@@ -1,4 +1,42 @@
+import 'package:flutter/widgets.dart';
 import 'package:mm_design/mm_design.dart';
+
+/// Tablet pane fitting is independent of the global toolbar width class.
+/// A companion panel consumes real space and never blocks the document.
+({Axis splitAxis, Axis panelAxis, MMSplitMode mode, double panelExtent}) resolveTabletWorkspaceLayout({
+  required Size size,
+  required MMSplitMode layout,
+  required bool panelOpen,
+  bool? isLandscape,
+  double panelFraction = .38,
+  double minReader = MMSizes.readerMinWidth,
+}) {
+  // A software keyboard reduces available height but does not rotate the iPad.
+  final landscape = isLandscape ?? size.width > size.height;
+  final panelAxis = landscape && size.width >= minReader + 320 + 44 ? Axis.horizontal : Axis.vertical;
+  final panelRoom = (size.height - 200).clamp(160.0, double.infinity);
+  final minPanel = panelRoom.clamp(160.0, 240.0);
+  final extent = !panelOpen
+      ? 0.0
+      : panelAxis == Axis.horizontal
+      ? (size.width * .32).clamp(320.0, 380.0)
+      : (size.height * panelFraction).clamp(minPanel, panelRoom);
+  final divider = panelOpen ? 44.0 : 0.0;
+  final width = size.width - (panelAxis == Axis.horizontal ? extent + divider : 0);
+  final height = size.height - (panelAxis == Axis.vertical ? extent + divider : 0);
+  final axis = landscape ? Axis.horizontal : Axis.vertical;
+  return (
+    splitAxis: axis,
+    panelAxis: panelAxis,
+    panelExtent: extent,
+    mode: MMSplitView.effectiveMode(
+      layout,
+      axis == Axis.horizontal ? width : height,
+      axis == Axis.horizontal ? minReader : MMSizes.paneMinHeight,
+      axis == Axis.horizontal ? MMSizes.mapMinWidth : MMSizes.paneMinHeight,
+    ),
+  );
+}
 
 /// What a workspace window of [windowWidth] shows: the sidebar, the source /
 /// map split and the right panel ([panelWidth] 0 when [panelOpen] is false).
