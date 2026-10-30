@@ -152,6 +152,17 @@ class MapNodeBar extends StatelessWidget {
               nodeIcon: MMNodeAction.sibling,
               onPressed: onSibling,
             ),
+            if (!root) ...[
+              _MapAction(
+                id: 'relation',
+                label: l.addRelation,
+                shortcut: _shortcut(MindMapCommand.relation),
+                nodeIcon: MMNodeAction.relation,
+                onPressed: onRelation,
+              ),
+              _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
+            ],
+            const MMToolbarDivider(),
             if (!root)
               _MapAction(
                 id: 'note',
@@ -161,19 +172,7 @@ class MapNodeBar extends StatelessWidget {
                 onPressed: onNote,
               ),
             _MapAction(id: 'image', label: l.insertImage, icon: MMIcons.image, onPressed: onImage),
-            if (!root)
-              _MapAction(
-                id: 'relation',
-                label: l.addRelation,
-                shortcut: _shortcut(MindMapCommand.relation),
-                nodeIcon: MMNodeAction.relation,
-                onPressed: onRelation,
-              ),
-            if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
-            if (!root) ...[
-              const MMToolbarDivider(),
-              _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
-            ],
+            if (onAssistant != null) _AssistantAction(onAssistant: onAssistant!),
           ],
         ),
       ),
