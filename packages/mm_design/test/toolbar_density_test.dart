@@ -89,9 +89,10 @@ void main() {
           final picture = (await t.runAsync(
             () => (key.currentContext!.findRenderObject() as RenderRepaintBoundary).toImage(pixelRatio: 2),
           ))!;
-          // Desktop snapshots were captured before the tablet refinement, with deterministic test fonts.
+          // Keep strict baselines per host renderer, as in note_rich_export_test.
           if (!tablet) {
-            await expectLater(picture, matchesGoldenFile('goldens/mac-controls-${dark ? 'dark' : 'light'}.png'));
+            final directory = Platform.isLinux ? 'goldens/linux' : 'goldens';
+            await expectLater(picture, matchesGoldenFile('$directory/mac-controls-${dark ? 'dark' : 'light'}.png'));
           }
           if (captureDirectory != null) {
             await t.runAsync(() async {
