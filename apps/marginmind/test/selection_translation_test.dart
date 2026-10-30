@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
-import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
+import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/selection_translation.dart';
@@ -101,6 +101,7 @@ void main() {
           .map((b) => b.icon)
           .toList();
       expect(icons, [
+        MMIcons.highlight,
         MMIcons.underline,
         MMIcons.copy,
         MMIcons.quoteBubble,
@@ -110,9 +111,9 @@ void main() {
         MMIcons.ai,
       ]);
       await screenshot(tester, 'selection-toolbar-${dark ? 'dark' : 'light'}', target: toolbar);
-      await tester.tap(find.descendant(of: toolbar, matching: find.byType(HighlightColorButton)));
+      await tester.tap(find.descendant(of: toolbar, matching: find.byType(AnnotationColorButton)));
       await tester.pumpAndSettle();
-      final palette = find.byKey(const ValueKey('highlight-custom-color-picker'));
+      final palette = find.byKey(const ValueKey('annotation-color-palette'));
       expect(palette, findsOneWidget);
       expect(find.byType(MMFloatingToolbar), findsOneWidget);
       expect(tester.getRect(palette).top, greaterThan(tester.getRect(toolbar).bottom));

@@ -4239,4 +4239,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String noteSourcePage(String title, int page) {
     return '$title, p. $page';
   }
+
+  @override
+  String get annotationLineType => 'Line Type';
+
+  @override
+  String get chooseMoreAnnotationColors => 'Choose More Colors…';
 }

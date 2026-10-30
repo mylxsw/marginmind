@@ -35,7 +35,7 @@ import 'reflow_scroll_reader.dart';
 import 'reflow_thumbnail.dart';
 import 'reflow_tools.dart';
 import 'selection_toolbar.dart';
-import 'underline_tool_button.dart';
+import 'annotation_palette.dart';
 
 class ReflowReader extends ConsumerStatefulWidget {
   const ReflowReader({super.key, required this.studySetId, required this.document});
@@ -816,7 +816,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                     MMSizes.readerNavigationHeight,
                                   ),
                                   child: SelectionToolbar(
-                                    key: ObjectKey(pending),
+                                    key: ObjectKey(pending.toolbarIdentity),
                                     studySetId: widget.studySetId,
                                     pending: pending,
                                     pdf: ref.read(readerPdfProvider(widget.studySetId)),

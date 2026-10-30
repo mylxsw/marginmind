@@ -8,7 +8,6 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
-import '../../../settings/highlight_palette.dart';
 import '../../assistant/assistant_scope.dart' show selectionContext, imageAreaContext;
 import '../../assistant/widgets/assistant_quick_actions.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
@@ -16,8 +15,8 @@ import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import '../reader_margin.dart';
 import 'notices.dart';
-import 'highlight_color_button.dart';
-import 'underline_tool_button.dart';
+import 'annotation_palette.dart';
+import 'text_annotation_tools.dart';
 import 'selection_lookup.dart';
 import '../selection_vocabulary_context.dart';
 import '../../vocabulary/vocabulary_controller.dart';
@@ -47,7 +46,6 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
   bool _busy = false;
   bool _quickOpen = false;
   bool _paletteOpen = false;
-  bool _underlineOpen = false;
   bool _translationOpen = false;
 
   @override
@@ -318,7 +316,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     }
   }
 
-  Future<void> _compactMore(bool isHighlight, bool isArea) async {
+  Future<void> _compactMore(bool isHighlight, bool isArea, bool hasCard) async {
     _paletteOpen = true;
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
@@ -329,6 +327,14 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         position: boundsOf(_moreAnchor.currentContext!).bottomRight,
         entries: [
           MMMenuItem(
+            hasCard ? l.locateCard : l.addToMapAction,
+            capabilities.excerpt
+                ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
+                : null,
+          ),
+          if (!isArea && MMPlatformCapabilities.current.assistant)
+            MMMenuItem(l.vocabularyTranslate, capabilities.translate ? _translate : null),
+          MMMenuItem(
             isHighlight ? l.deleteHighlight : l.addNote,
             capabilities.excerpt
                 ? () => _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
@@ -338,26 +344,6 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
             l.marginNoteAction,
             capabilities.marginNotes ? () => _run(ReaderSelectionCommand.marginNote) : null,
           ),
-          if (!isArea)
-            MMMenuItem(
-              l.toolUnderline,
-              capabilities.annotate
-                  ? () async {
-                      try {
-                        final pending = widget.pending;
-                        if (pending is PendingSelection) {
-                          await controller.underlineSource(pending.documentId, pending.selection);
-                        }
-                        if (pending is PendingHighlight) {
-                          await controller.styleUnderline(annotationId: pending.annotationId);
-                        }
-                        if (mounted) _dismiss();
-                      } catch (_) {
-                        if (mounted) MMHud.show(context, l.somethingWentWrong);
-                      }
-                    }
-                  : null,
-            ),
         ],
       );
     } finally {
@@ -383,15 +369,12 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         content!.node(existingCard.id, mapId: ref.watch(workspaceProvider(widget.studySetId)).activeMapId) != null;
     // An area excerpt has no text to copy.
     final isArea = annotation != null && annotation.quote.isEmpty;
-    final color = annotation == null
-        ? ref.watch(workspaceProvider(widget.studySetId).select((s) => s.color))
-        : MMAnnotationColor.fromIndex(annotation.colorIndex);
     final c = context.mmColors;
     final compact = MMSizeClass.of(context) == MMSizeClass.compact;
     return TapRegion(
       groupId: annotationTapGroup(widget.studySetId),
       onTapOutside: (_) {
-        if (!_busy && !_paletteOpen && !_underlineOpen) _dismiss();
+        if (!_busy && !_paletteOpen) _dismiss();
       },
       child: Actions(
         actions: {
@@ -410,34 +393,16 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               focusNode: _focus,
               child: MMFloatingToolbar(
                 children: [
-                  for (final recent in ref.watch(highlightPaletteProvider).recent().take(compact ? 1 : 3))
-                    MMFloatingToolbarColor(
-                      color: recent,
-                      tooltip: l.colorName(recent),
-                      selected: recent == color,
-                      onPressed: capabilities.annotate ? () => _run(ReaderSelectionCommand.highlight, recent) : null,
-                    ),
-                  HighlightColorButton.more(
+                  TextAnnotationTools(
                     enabled: capabilities.annotate,
-                    key: const ValueKey('selection-more-colors'),
-                    color: color,
+                    studySetId: widget.studySetId,
+                    selectionAction: true,
+                    colorOnly: isArea,
                     onOpenChanged: (open) {
                       _paletteOpen = open;
                       if (!open) _focus.requestFocus();
                     },
-                    onChanged: (color) => _run(ReaderSelectionCommand.highlight, color),
                   ),
-                  if (!isArea && !compact)
-                    UnderlineToolButton(
-                      enabled: capabilities.annotate,
-                      key: const ValueKey('selection-underline'),
-                      studySetId: widget.studySetId,
-                      selectionAction: true,
-                      onOpenChanged: (open) {
-                        _underlineOpen = open;
-                      },
-                      onApplied: _dismiss,
-                    ),
                   const MMToolbarDivider(),
                   if (!isArea)
                     MMToolbarButton(
@@ -463,14 +428,15 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                                 _run(isHighlight ? ReaderSelectionCommand.deleteHighlight : ReaderSelectionCommand.note)
                           : null,
                     ),
-                  MMToolbarButton(
-                    icon: MMIcons.network,
-                    tooltip: hasCard ? l.locateCard : l.addToMapAction,
-                    onPressed: capabilities.excerpt
-                        ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
-                        : null,
-                  ),
-                  if (MMPlatformCapabilities.current.assistant && !isArea)
+                  if (!compact)
+                    MMToolbarButton(
+                      icon: MMIcons.network,
+                      tooltip: hasCard ? l.locateCard : l.addToMapAction,
+                      onPressed: capabilities.excerpt
+                          ? () => _run(hasCard ? ReaderSelectionCommand.locateCard : ReaderSelectionCommand.excerpt)
+                          : null,
+                    ),
+                  if (MMPlatformCapabilities.current.assistant && !isArea && !compact)
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -519,7 +485,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       key: _moreAnchor,
                       icon: MMIcons.more,
                       tooltip: l.moreTools,
-                      onPressed: () => _compactMore(isHighlight, isArea),
+                      onPressed: () => _compactMore(isHighlight, isArea, hasCard),
                     ),
                   if (MMPlatformCapabilities.current.assistant) ...[
                     const MMToolbarDivider(),

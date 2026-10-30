@@ -5,6 +5,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 
+Object annotationTapGroup(String studySetId) => ValueKey('annotation-tools-$studySetId');
+
 class AnnotationPalettePlacement extends SingleChildLayoutDelegate {
   AnnotationPalettePlacement(this.anchor);
   final Rect anchor;
@@ -43,25 +45,32 @@ class AnnotationMoreColorsButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
           border: s.focused ? Border.all(color: c.accent) : null,
         ),
-        child: Container(
-          width: 17,
-          height: 17,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: SweepGradient(
-              colors: [
-                Color(0xFFFFCC00),
-                Color(0xFF34C759),
-                Color(0xFF007AFF),
-                Color(0xFFAF52DE),
-                Color(0xFFFF2D55),
-                Color(0xFFFFCC00),
-              ],
-            ),
-          ),
-          child: const Icon(MMIcons.add, color: Colors.white, size: 13),
-        ),
+        child: const AnnotationMoreColorsIcon(),
       ),
     );
   }
+}
+
+class AnnotationMoreColorsIcon extends StatelessWidget {
+  const AnnotationMoreColorsIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 17,
+    height: 17,
+    decoration: const BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: SweepGradient(
+        colors: [
+          Color(0xFFFFCC00),
+          Color(0xFF34C759),
+          Color(0xFF007AFF),
+          Color(0xFFAF52DE),
+          Color(0xFFFF2D55),
+          Color(0xFFFFCC00),
+        ],
+      ),
+    ),
+    child: const Icon(MMIcons.add, color: Colors.white, size: 13),
+  );
 }

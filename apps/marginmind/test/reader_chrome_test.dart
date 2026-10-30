@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
+import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -297,10 +297,10 @@ void main() {
 
   testWidgets('toolbar holds tools only; colors live in one pop-up (U-X5)', (tester) async {
     final container = await openSet(tester);
-    expect(find.byType(HighlightColorButton), findsOneWidget);
+    expect(find.byType(AnnotationColorButton), findsOneWidget);
     expect(find.byType(MMColorMenuButton), findsNothing);
     expect(find.byType(MMColorPicker), findsNothing);
-    await tester.tap(find.byType(HighlightColorButton));
+    await tester.tap(find.byType(AnnotationColorButton));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('More Colors'));
     await tester.pumpAndSettle();

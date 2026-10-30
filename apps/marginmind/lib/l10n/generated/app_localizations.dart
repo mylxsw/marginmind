@@ -7627,6 +7627,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title}, p. {page}'**
   String noteSourcePage(String title, int page);
+
+  /// No description provided for @annotationLineType.
+  ///
+  /// In en, this message translates to:
+  /// **'Line Type'**
+  String get annotationLineType;
+
+  /// No description provided for @chooseMoreAnnotationColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose More Colors…'**
+  String get chooseMoreAnnotationColors;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

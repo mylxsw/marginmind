@@ -48,7 +48,11 @@ void main() {
     expect(await controller.onSelectionCommitted('c1', selection), isNull);
     expect(controller.content.annotations, hasLength(1));
     expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
+    final pending = container.read(workspaceProvider('demo-1')).pending;
     await controller.setColor(MMAnnotationColor.blue);
+    expect(container.read(workspaceProvider('demo-1')).pending, same(pending));
+    expect(container.read(workspaceProvider('other')).tool, AnnotationTool.select);
+    await controller.setTool(AnnotationTool.highlight);
     expect(container.read(sharedPreferencesProvider).getString('settings.annotationTool'), 'highlight');
     expect(container.read(workspaceProvider('demo-1')).pending, isNull);
     expect(container.read(workspaceProvider('other')).tool, AnnotationTool.highlight);

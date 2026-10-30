@@ -4073,4 +4073,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String noteSourcePage(String title, int page) {
     return '《$title》p.$page';
   }
+
+  @override
+  String get annotationLineType => '线条类型';
+
+  @override
+  String get chooseMoreAnnotationColors => '选择更多颜色…';
 }
