@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginMind 工作区布局 · 交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii), same as cross-platform.html. */
+:root{
+  --win:#FFFFFF; --sidebar:#F2F2F6; --reader:#EDEDF0; --canvas:#FBFBFD; --card:#FFFFFF; --page:#FFFFFF; --ink:#1D1D1F; --ink2:#8E8E93;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --sel:rgba(0,0,0,.075); --hover:rgba(0,0,0,.045);
+  --accent:#007AFF; --accentFill:#0A66D0; --accentTint:rgba(0,122,255,.12);
+  --glass:rgba(255,255,255,.80); --glassStrong:rgba(255,255,255,.92); --hair:rgba(0,0,0,.08); --line:rgba(60,60,67,.30); --excerpt:#3A3A3C;
+  --root:#1D1D1F; --onRoot:#fff; --scrim:rgba(0,0,0,.22);
+  --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05); --popShadow:0 12px 40px rgba(0,0,0,.18);
+  --ai:#5E5CE6;
+  --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+}
+.dark{
+  --win:#1E1E1F; --sidebar:#2A2A2D; --reader:#1E1E1F; --canvas:#1C1C1E; --card:#2C2C2E; --page:#262628; --ink:#D1D1D6; --ink2:#8E8E93;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --sel:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
+  --glass:rgba(40,40,42,.78); --glassStrong:rgba(44,44,46,.94); --hair:rgba(255,255,255,.10); --line:rgba(235,235,245,.26); --excerpt:#D1D1D6;
+  --root:#F5F5F7; --onRoot:#1D1D1F; --scrim:rgba(0,0,0,.4);
+  --cardShadow:0 2px 10px rgba(0,0,0,.35); --popShadow:0 16px 48px rgba(0,0,0,.55);
+  --ai:#7D7AFF;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+body{background:#E9EAEE;overflow:hidden;display:flex;flex-direction:column;color:#1D1D1F}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg{display:block}
+.i{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:14px;height:14px}
+
+/* ---------- Prototype console (outside the device) ---------- */
+#top{flex:none;display:flex;align-items:center;gap:14px;padding:10px 16px;background:#fff;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
+#top h1{font-size:14px;margin:0 6px 0 0;font-weight:700;white-space:nowrap}
+.seg{display:inline-flex;background:rgba(120,120,128,.12);border-radius:8px;padding:2px;gap:2px}
+.seg button{height:26px;padding:0 10px;border-radius:6px;font-size:12px;color:#3a3a3c;white-space:nowrap}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:#000;font-weight:600}
+#metric{margin-left:auto;font-size:12px;color:#636366;font-variant-numeric:tabular-nums;white-space:nowrap}
+#metric b{color:#000}
+#stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 30% 20%,#f4f6fb,#dfe2ea)}
+#scaler{transform-origin:center center;position:relative}
+
+/* ---------- Device frames ---------- */
+.device{position:relative;background:#111;box-shadow:0 30px 80px rgba(0,0,0,.30),0 0 0 1px rgba(0,0,0,.4)}
+.device.tablet{border-radius:38px;padding:18px}
+.device.phone{border-radius:56px;padding:12px}
+.device.desktop{border-radius:12px;padding:0;background:transparent;box-shadow:0 30px 80px rgba(0,0,0,.30),0 0 0 .5px rgba(0,0,0,.35)}
+.screen{position:relative;overflow:hidden;background:var(--win);color:var(--label)}
+.tablet .screen{border-radius:22px}.phone .screen{border-radius:46px}.desktop .screen{border-radius:12px}
+.sbar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;z-index:60;pointer-events:none;color:var(--label)}
+.phone .sbar{padding:0 34px;font-size:15px}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:70}
+.homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;border-radius:3px;background:var(--label);opacity:.8;z-index:70;pointer-events:none}
+.lights{display:flex;gap:8px;flex:none}
+.lights span{width:12px;height:12px;border-radius:6px}
+
+/* ---------- App shell ---------- */
+.app{position:absolute;inset:0;display:flex;background:var(--win)}
+.side{flex:none;width:236px;margin:8px 0 8px 8px;border-radius:14px;background:var(--sidebar);box-shadow:0 0 0 .5px var(--hair);display:flex;flex-direction:column;padding:10px 8px;gap:1px;overflow:hidden;z-index:30}
+.side.overlay{position:absolute;left:0;top:0;bottom:0;margin:8px;box-shadow:var(--popShadow);width:300px;z-index:90}
+.touch .side{width:280px}
+.side .shead{display:flex;align-items:center;gap:8px;height:36px;padding:0 4px 0 6px;flex:none}
+.side .set{display:flex;align-items:center;gap:8px;padding:6px 8px;font-weight:600;font-size:14px;min-width:0}
+.side .set .ic{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.side .set span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side .search{display:flex;align-items:center;gap:6px;height:30px;margin:4px 4px 6px;padding:0 8px;border-radius:8px;background:var(--fill4);color:var(--label3)}
+.side h6{margin:12px 8px 3px;font-size:11px;color:var(--label3);font-weight:600}
+.srow{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:8px;color:var(--label);font-size:13px;width:100%;text-align:left}
+.srow:hover{background:var(--hover)}
+.srow .i{color:var(--accent)}
+.srow.on{background:var(--sel);font-weight:600}
+.srow .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .n{color:var(--label3);font-size:12px;font-variant-numeric:tabular-nums}
+.srow .badge{background:var(--accentTint);color:var(--accent);border-radius:9px;padding:0 6px;font-size:11px;font-weight:600}
+.touch .srow{height:40px;font-size:15px}
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:85}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.ws{flex:1;display:flex;min-height:0;position:relative}
+.ws.vert{flex-direction:column}
+.pane{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;flex:1}
+.pane.reader{background:var(--reader)}
+.pane.map{background:var(--canvas)}
+.divider{flex:none;width:1px;background:var(--sep);position:relative;z-index:12}
+.vert .divider{width:auto;height:1px}
+
+/* toolbar primitives */
+.tbtn{height:30px;min-width:30px;padding:0 6px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--icon);flex:none;font-size:13px}
+.tbtn:hover{background:var(--hover)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}
+.tbtn.ai{color:var(--ai)}
+.tbtn.ai.on{background:color-mix(in srgb,var(--ai) 18%,transparent)}
+.tbtn .aa{font-weight:600;font-size:14px;letter-spacing:-.02em;line-height:1}
+.touch .tbtn{height:36px;min-width:36px}
+.grp{display:inline-flex;align-items:center;gap:1px;background:var(--fill4);border-radius:10px;padding:2px;box-shadow:0 0 0 .5px var(--hair);flex:none}
+.grp .tbtn{height:26px;min-width:28px;border-radius:8px}
+.touch .grp .tbtn{height:32px;min-width:34px}
+.vsep{width:1px;height:16px;background:var(--sep);margin:0 4px;flex:none}
+.sp{flex:1;min-width:4px}
+.ttl{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* ---------- Current layout (现状) ---------- */
+.old-bar{flex:none;height:52px;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px;border-bottom:.5px solid transparent}
+.touch .old-bar{height:56px}
+.old-rtools{flex:none;display:flex;align-items:center;gap:2px;padding:8px 10px;flex-wrap:wrap}
+.old-mhead{flex:none;display:flex;align-items:center;gap:6px;padding:10px 14px}
+.old-mhead b{font-size:14px}
+.old-mseg{display:inline-flex;gap:2px;background:var(--fill4);border-radius:10px;padding:2px;margin-left:auto}
+.old-mseg button{height:28px;padding:0 10px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:4px}
+.old-mseg button.on{background:var(--sel);font-weight:600}
+.old-bottom{position:absolute;left:14px;right:12px;bottom:12px;display:flex;align-items:center;gap:8px;z-index:6}
+.old-bottom .hint{font-size:12px;color:var(--label3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.old-arrows{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:var(--glass);border-radius:18px;padding:3px;z-index:14;box-shadow:0 0 0 .5px var(--hair)}
+.old-tabbar{position:absolute;left:16px;right:16px;bottom:26px;height:60px;border-radius:30px;display:flex;padding:4px;z-index:20;background:var(--glass);backdrop-filter:blur(24px);box-shadow:0 8px 24px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.old-tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;border-radius:26px}
+.old-tabbar button.on{color:var(--accent);background:var(--accentTint);font-weight:600}
+
+/* ---------- New layout ---------- */
+/* Each pane owns one header row; the rows line up into one window toolbar.
+   Headers float on glass so content runs underneath and to the top edge. */
+.phead{position:absolute;left:0;right:0;top:0;z-index:10;display:flex;align-items:center;gap:6px;padding:0 10px;height:var(--hh);
+  padding-top:var(--st,0px);box-sizing:content-box;background:color-mix(in srgb,var(--pbg) 72%,transparent);backdrop-filter:blur(20px) saturate(1.6);
+  transition:transform 260ms cubic-bezier(.2,0,0,1),opacity 200ms}
+.phead.scrolled{box-shadow:0 .5px 0 var(--sep)}
+.reader .phead{--pbg:var(--reader)}.map .phead{--pbg:var(--canvas)}
+.hide-bars .phead.hides{transform:translateY(-100%);opacity:0}
+.hide-bars .dock{transform:translate(-50%,140%);opacity:0}
+.phead .lights{margin:0 10px 0 4px}
+.rpage{flex:1;overflow:auto;padding:calc(var(--hh) + var(--st,0px) + 8px) 18px 72px;scrollbar-width:thin}
+.old .rpage{padding-top:8px}
+.page{background:var(--page);color:var(--ink);margin:0 auto;max-width:620px;padding:48px 56px 64px;font-family:var(--serif);line-height:1.95;font-size:14.5px;box-shadow:0 0 0 .5px var(--hair)}
+.page h2{font-size:22px;margin:0 0 4px;font-weight:600}
+.page .meta{font-size:10px;color:var(--ink2);font-family:var(--sans);margin-bottom:22px}
+.page h3{font-size:15px;margin:22px 0 8px;font-weight:600}
+.page p{margin:0 0 12px;text-indent:2em;border-radius:3px;transition:background 160ms;cursor:text}
+.page p.hl-y{background:rgba(255,204,0,.38)}.page p.hl-g{background:rgba(52,199,89,.32)}.page p.hl-b{background:rgba(0,122,255,.26)}
+.dark .page p.hl-y{background:rgba(255,204,0,.22)}.dark .page p.hl-g{background:rgba(52,199,89,.20)}.dark .page p.hl-b{background:rgba(10,132,255,.22)}
+.page p.ul{text-decoration:underline;text-decoration-color:var(--p);text-decoration-thickness:2px;text-underline-offset:5px}
+.page p.flash{animation:flash 900ms}
+@keyframes flash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 3px var(--accent)}}
+.phone .page,.narrow .page{padding:22px 20px 32px;font-size:16px;box-shadow:none;background:transparent}
+.phone .rpage{padding-left:0;padding-right:0}
+
+/* page progress: thin line, page chip on hover (unchanged behavior, see README) */
+.pnav{position:absolute;left:0;right:0;bottom:0;height:56px;display:flex;align-items:flex-end;justify-content:center;padding:0 40px 14px;z-index:9}
+.pnav .track{flex:1;max-width:420px;height:2px;border-radius:1px;background:var(--fill);position:relative}
+.pnav .track i{position:absolute;left:0;top:0;bottom:0;border-radius:1px;background:var(--label3)}
+.pnav .chip{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:11px;padding:2px 8px;border-radius:9px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair);opacity:0;transition:opacity 160ms;font-variant-numeric:tabular-nums;color:var(--label2)}
+.pnav:hover .chip{opacity:1}
+
+/* map */
+.mapvp{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none}
+.mapvp.dragging{cursor:grabbing}
+.old .mapvp{position:relative;flex:1;inset:auto}
+.scene{position:absolute;left:0;top:0;transform-origin:0 0}
+.scene svg.links{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.node{position:absolute;background:var(--card);border-radius:10px;box-shadow:var(--cardShadow);padding:8px 11px;font-size:12.5px;line-height:1.45;user-select:none;border:1.5px solid transparent;cursor:default}
+.node.topic{font-weight:600;white-space:nowrap}
+.node.root{background:var(--root);color:var(--onRoot);font-weight:700;font-size:14px;white-space:nowrap;padding:11px 16px;border-radius:12px}
+.node.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentTint),var(--cardShadow)}
+.node.quote{width:220px}
+.node.quote .q{font-family:var(--serif);color:var(--excerpt);border-left:3px solid var(--y);padding-left:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.compactmap .node.quote .q{-webkit-line-clamp:1}
+.node.quote.c-g .q{border-color:var(--g)}.node.quote.c-b .q{border-color:var(--b)}
+.node .jump{position:absolute;right:4px;top:4px;width:18px;height:18px;border-radius:5px;display:none;align-items:center;justify-content:center;color:var(--accent);background:var(--card)}
+.node.quote:hover .jump{display:flex}
+.node.new{animation:pop 520ms cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.outline{position:absolute;inset:0;overflow:auto;padding:calc(var(--hh) + var(--st,0px) + 12px) 28px 80px}
+.old .outline{position:relative;inset:auto;flex:1;padding-top:8px}
+.outline .orow{display:flex;gap:8px;align-items:flex-start;padding:5px 0;line-height:1.5}
+.outline .orow .dot{width:6px;height:6px;border-radius:3px;background:var(--label3);margin-top:8px;flex:none}
+.outline .orow.q span{font-family:var(--serif);color:var(--excerpt)}
+
+/* floating map controls */
+.mctl{position:absolute;right:12px;bottom:12px;display:flex;align-items:center;gap:6px;z-index:9}
+.cap{display:inline-flex;align-items:center;gap:1px;background:var(--glass);backdrop-filter:blur(20px);border-radius:12px;padding:2px;box-shadow:0 0 0 .5px var(--hair)}
+.cap .tbtn{height:28px;min-width:28px}
+.cap .zv{min-width:44px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;color:var(--label2)}
+.touch .cap .tbtn{height:36px;min-width:36px}
+.target{position:absolute;left:12px;bottom:14px;z-index:9;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--label3);max-width:40%;white-space:nowrap}
+.target span{overflow:hidden;text-overflow:ellipsis}
+
+/* phone dock */
+.dock{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:2px;padding:5px;border-radius:26px;background:var(--glass);backdrop-filter:blur(24px) saturate(1.8);box-shadow:0 8px 24px rgba(0,0,0,.14),0 0 0 .5px var(--hair);transition:transform 260ms cubic-bezier(.2,0,0,1),opacity 200ms;white-space:nowrap}
+.dock .tbtn{height:40px;min-width:42px;border-radius:20px}
+.seg2{display:flex;background:var(--fill);border-radius:9px;padding:2px;flex:none}
+.seg2 button{height:28px;padding:0 14px;border-radius:7px;font-size:13px;color:var(--label)}
+.seg2 button.on{background:var(--win);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+.dark .seg2 button.on{background:#636366}
+
+/* popovers */
+.pop{position:absolute;z-index:100;width:268px;background:var(--glassStrong);backdrop-filter:blur(30px);border-radius:14px;padding:6px;box-shadow:var(--popShadow),0 0 0 .5px var(--hair);color:var(--label)}
+.pop .row{display:flex;align-items:center;gap:10px;min-height:32px;padding:0 10px;border-radius:8px;font-size:13px;width:100%;text-align:left}
+.pop button.row:hover{background:var(--hover)}
+.pop .row .k{margin-left:auto;color:var(--label3);font-size:12px}
+.pop .row .chk{margin-left:auto;color:var(--accent)}
+.pop hr{border:0;border-top:1px solid var(--sep);margin:5px 8px}
+.pop .zoomrow{display:flex;align-items:center;gap:4px;padding:4px 6px}
+.pop .zoomrow .zv{flex:1;text-align:center;font-variant-numeric:tabular-nums}
+.pop .swatches{display:flex;gap:10px;padding:6px 10px}
+.pop .sw{width:30px;height:30px;border-radius:15px;box-shadow:0 0 0 .5px rgba(0,0,0,.25) inset;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px}
+.pop .sw.on{box-shadow:0 0 0 2px var(--accent)}
+.pop .fits{display:flex;gap:2px;padding:2px 6px 6px}
+.pop .fits .tbtn{flex:1;height:30px}
+.touch .pop .row{min-height:44px;font-size:15px}
+.toggle{width:34px;height:20px;border-radius:10px;background:var(--fill);position:relative;margin-left:auto;flex:none;transition:background 160ms}
+.toggle::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left 160ms}
+.toggle.on{background:var(--g)}.toggle.on::after{left:16px}
+
+/* selection toolbar */
+.ftb{position:absolute;z-index:40;display:flex;gap:2px;align-items:center;background:var(--glassStrong);backdrop-filter:blur(24px);border-radius:12px;padding:4px;box-shadow:0 8px 28px rgba(0,0,0,.18),0 0 0 .5px var(--hair)}
+.ftb button{height:30px;min-width:30px;padding:0 8px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--label)}
+.ftb button:hover{background:var(--hover)}
+.ftb .dot{width:14px;height:14px;border-radius:7px}
+
+/* assistant panel */
+.assist{flex:none;width:340px;border-left:1px solid var(--sep);display:flex;flex-direction:column;background:var(--win);position:relative}
+.assist.float{position:absolute;right:8px;top:8px;bottom:8px;border:0;border-radius:14px;box-shadow:var(--popShadow);z-index:80}
+.assist .ah{display:flex;align-items:center;gap:6px;height:var(--hh);padding:var(--st,0px) 8px 0 14px;box-sizing:content-box;flex:none}
+.assist .ab{flex:1}
+.assist .composer{margin:10px;border-radius:16px;box-shadow:0 0 0 1px var(--sep);padding:10px 12px;color:var(--label3);display:flex;align-items:center;gap:8px}
+.assist .composer .in{flex:1}
+.assist .send{width:28px;height:28px;border-radius:14px;background:var(--accentFill);color:#fff;display:flex;align-items:center;justify-content:center}
+
+.toast{position:absolute;left:50%;bottom:28px;transform:translate(-50%,16px);background:rgba(30,30,32,.92);color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:all 220ms;z-index:120;white-space:nowrap;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.phone .toast{bottom:100px}
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>MarginMind · 工作区布局</h1>
+  <div class="seg" id="segScheme"></div>
+  <div class="seg" id="segDevice"></div>
+  <div class="seg" id="segTheme"></div>
+  <div id="metric"></div>
+</div>
+<div id="stage"><div id="scaler"></div></div>
+
+<script>
+/* ======================= Icons (24×24, stroke) ======================= */
+const ICON = {
+  side:'<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M9 4.5v15"/>',
+  select:'<path d="M5 3.5 18.5 10l-5.8 1.8L10.5 18z"/>',
+  marker:'<path d="m14.5 4.5 5 5L11 18H6v-5z"/><path d="M4 21h16"/>',
+  underline:'<path d="M7 4v6a5 5 0 0 0 10 0V4"/><path d="M5 20h14"/>',
+  pen:'<path d="M15.5 4.5 19.5 8.5 8 20H4v-4z"/><path d="m13.5 6.5 4 4"/>',
+  area:'<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/>',
+  sync:'<path d="M12 21v-8M12 13 6 5M12 13l6-8"/><circle cx="6" cy="4.5" r="1.3"/><circle cx="18" cy="4.5" r="1.3"/>',
+  more:'<circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/>',
+  doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  book:'<path d="M3.5 5.5C6 4.5 9 4.5 12 6.5c3-2 6-2 8.5-1v13c-2.5-1-5.5-1-8.5 1-3-2-6-2-8.5-1z"/><path d="M12 6.5v13"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+  lReader:'<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/>',
+  lSplit:'<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M12 4.5v15"/>',
+  lMap:'<rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/>',
+  sparkle:'<path d="M12 3.5 13.8 9 19.5 11 13.8 13 12 18.5 10.2 13 4.5 11 10.2 9z"/><path d="M19 3v3M17.5 4.5h3"/>',
+  assistant:'<path d="M12 3c.8 4.6 3.4 7.2 8 8-4.6.8-7.2 3.4-8 8-.8-4.6-3.4-7.2-8-8 4.6-.8 7.2-3.4 8-8z"/>',
+  tree:'<circle cx="5.5" cy="12" r="2"/><path d="M7.5 12h3M10.5 6.5v11M10.5 6.5h4M10.5 17.5h4M10.5 12h4"/><rect x="14.5" y="4.5" width="6" height="4" rx="1"/><rect x="14.5" y="10" width="6" height="4" rx="1"/><rect x="14.5" y="15.5" width="6" height="4" rx="1"/>',
+  outline:'<path d="M4 6h.01M8 6h12M8 12h.01M12 12h8M8 18h.01M12 18h8"/>',
+  brush:'<path d="M14 4.5 19.5 10 12 17.5 6.5 12z"/><path d="M6.5 12 4 14.5c-1 1-1 3 0 4s3 1 4 0l2.5-2.5"/>',
+  fit:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  center:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  minus:'<path d="M6 12h12"/>', plus:'<path d="M12 6v12M6 12h12"/>',
+  chevL:'<path d="m14.5 6-6 6 6 6"/>', chevR:'<path d="m9.5 6 6 6-6 6"/>', chevD:'<path d="m6 9.5 6 6 6-6"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  tag:'<path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.3"/>',
+  vocab:'<rect x="4.5" y="3.5" width="15" height="17" rx="2"/><path d="m9 15 3-8 3 8M10 12.5h4"/>',
+  cards:'<rect x="5" y="6" width="14" height="15" rx="2"/><path d="M8 3h8"/>',
+  collections:'<path d="M5 4v16M9 4v16M13 4l5 15.5"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  arrowUR:'<path d="M8 16 16 8M10 8h6v6"/>',
+  close:'<path d="m6 6 12 12M18 6 6 18"/>',
+  margin:'<rect x="3.5" y="5" width="17" height="12" rx="3"/><path d="m9 17-2 3.5 5-3.5M8 9.5h8M8 12.5h5"/>',
+  compare:'<rect x="3.5" y="4.5" width="7" height="15" rx="1.5"/><rect x="13.5" y="4.5" width="7" height="15" rx="1.5"/>',
+  crop:'<path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/>',
+  settings:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  actual:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9v6M14 9v6"/>',
+  fitW:'<path d="M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
+  fitP:'<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 8h6M9 12h6"/>',
+  library:'<path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="m16 5 3.5-1 3 15.5-3.5 1z"/>',
+  review:'<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M7 3h10M10 13l2 2 4-4"/>',
+};
+const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24">${ICON[n] || ''}</svg>`;
+const btn = (n, act, opts = {}) =>
+  `<button class="tbtn ${opts.on ? 'on' : ''} ${opts.cls || ''}" data-act="${act}" ${opts.arg != null ? `data-arg="${opts.arg}"` : ''} title="${opts.tip || ''}">${opts.html || ic(n)}</button>`;
+
+/* ======================= Content ======================= */
+const DOCS = [
+  { id: 'd1', icon: 'doc', title: '示例章节：遗忘曲线与间隔重复', n: 2, sections: [
+    ['一、记忆是怎样流失的', [
+      '人在学习新知识之后，记忆并不是匀速流失的。最初的几个小时里遗忘得最快，之后速度逐渐放缓，剩下的部分会保持很长时间。这条先陡后平的曲线，被称为遗忘曲线。',
+      '遗忘并不完全是坏事。大脑会主动筛掉很少被再次调用的信息，把有限的资源留给更常用的内容。问题在于，我们无法直接告诉大脑哪些内容是重要的，只能通过“再次使用”来表明它值得保留。',
+      '一个常见的误解是：读得越熟，记得越牢。事实上，流畅地读完一遍带来的熟悉感，并不等于真正记住了。熟悉感只说明我们“认得”这些内容，却不能保证在需要时把它“想起来”。']],
+    ['二、间隔重复', [
+      '间隔重复利用的正是遗忘的规律：在快要遗忘的时候复习，每一次成功的回忆都会让下一次遗忘来得更晚。因此，复习间隔可以逐步拉长，从一天、三天，到一周、一个月。',
+      '如果在刚学完时就反复复习，大脑会觉得这些内容“随手可得”，复习带来的收益很小。适当地等一等，让记忆变得有点模糊，再去把它找回来，效果反而更好。',
+      '安排复习时机，比增加复习次数更重要。一份合理的复习计划，应该根据每一条内容的掌握程度单独调整，而不是所有内容都按同一个固定日程。']],
+    ['三、主动提取', [
+      '与其把书再读一遍，不如合上书，试着把刚才读到的内容复述出来。这种“从脑子里往外拿”的练习叫作主动提取，它本身就是一种强化记忆的过程。',
+      '提取越费力，记忆被强化得越多。答错并不可怕，只要随后看到正确答案，错误的尝试同样能帮助记忆。']],
+  ]},
+  { id: 'd2', icon: 'book', title: '158-爱上跑步', n: 264, sections: [
+    ['第十一章　除了马拉松，还能参加哪些跑步赛事？', [
+      '越野跑、斯巴达、泥泞跑这些赛事，参赛者不全是跑圈的人，有很多健身、户外爱好者，很受年轻人喜欢。如果你想要成绩、认真完赛，就得提前做好功课。',
+      '2018 年 12 月，我受邀参加了一场泥泞跑总决赛，当时是作为宣传大使去的。我原以为只是带选手做做热身，没想到组委会强烈要求我也参赛，结果那一年我没有任何准备就去跑了。',
+      '比赛的难点不在距离，而在障碍。每过一个障碍，心率就会冲上去，再慢慢回落。平时只练配速的人，往往会在这种节奏变化里很快耗尽体力。']],
+  ]},
+  { id: 'd3', icon: 'globe', title: '突发：交易平台遭黑客攻击', n: 3, sections: [
+    ['事件经过', [
+      '平台在凌晨发布公告，称部分热钱包出现异常转出，已暂停充值与提现。官方表示用户资产将由安全基金全额覆盖。',
+      '安全研究人员指出，攻击者综合利用了钓鱼、多因素认证绕过和交易签名伪造等手段，整个过程持续了数月。']],
+  ]},
+];
+let nid = 100;
+const MAP = { id: 'root', t: '示例：遗忘曲线与间隔重复', kids: [
+  { id: 'a', t: '遗忘的规律', kids: [
+    { id: 'a1', q: DOCS[0].sections[0][1][0], doc: 'd1', p: '0-0', c: 'y' },
+    { id: 'a2', q: DOCS[0].sections[0][1][2], doc: 'd1', p: '0-2', c: 'g' }]},
+  { id: 'b', t: '对策一：间隔重复', kids: [
+    { id: 'b1', q: DOCS[0].sections[1][1][0], doc: 'd1', p: '1-0', c: 'y' }]},
+  { id: 'c', t: '对策二：主动提取', kids: [] },
+]};
+
+/* ======================= State ======================= */
+const S = {
+  syncInBar: true,
+  scheme: 'new',            // 'old' | 'new'
+  device: 'ipadL',          // 'mac' | 'ipadL' | 'ipadP' | 'phone'
+  theme: 'dark',
+  layout: 'split',          // 'reader' | 'split' | 'map'  (phone: 'reader' | 'map')
+  sidebar: true,
+  doc: 'd1',
+  tool: 'select',
+  color: 'y',
+  sync: true,
+  mapView: 'tree',          // 'tree' | 'outline'
+  density: 'full',
+  zoom: 1, pan: { x: 40, y: 0 }, panSet: false,
+  selNode: 'b',
+  pop: null,                // 'aa' | 'style' | 'more' | null
+  assistant: false,
+  hidden: false,            // bars hidden while reading (touch, new scheme)
+  marks: { 'd1:0-0': 'hl-y', 'd1:0-2': 'hl-g', 'd1:1-0': 'hl-y' },
+  readerStyle: 'dark',
+  ftb: null,
+};
+const DEV = {
+  mac:   { w: 1280, h: 800, cls: 'desktop', touch: false, st: 0, label: 'Mac' },
+  ipadL: { w: 1194, h: 834, cls: 'tablet', touch: true, st: 24, label: 'iPad 横屏' },
+  ipadP: { w: 834, h: 1194, cls: 'tablet', touch: true, st: 24, label: 'iPad 竖屏' },
+  phone: { w: 393, h: 852, cls: 'phone', touch: true, st: 54, label: 'iPhone' },
+};
+const dev = () => DEV[S.device];
+const isPhone = () => S.device === 'phone';
+const sidebarOverlay = () => isPhone() || S.device === 'ipadP';
+
+/* ======================= Console ======================= */
+function seg(id, items, key, after) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(([v, l]) => `<button data-v="${v}" class="${S[key] === v ? 'on' : ''}">${l}</button>`).join('');
+  el.onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[key] = b.dataset.v; after && after(); renderAll();
+  };
+}
+function renderConsole() {
+  seg('segScheme', [['old', '现状'], ['new', '新方案']], 'scheme', () => { S.pop = null; S.hidden = false; S.ftb = null; });
+  seg('segDevice', Object.entries(DEV).map(([k, d]) => [k, d.label]), 'device', () => {
+    S.pop = null; S.hidden = false; S.ftb = null; S.panSet = false;
+    S.sidebar = !sidebarOverlay();
+    if (isPhone() && S.layout === 'split') S.layout = 'reader';
+  });
+  seg('segTheme', [['light', '浅色'], ['dark', '深色']], 'theme');
+}
+
+/* ======================= Sidebar ======================= */
+function sidebar() {
+  const d = dev();
+  const lights = S.device === 'mac' ? `<div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>` : '';
+  const top = isPhone() || S.device === 'ipadP' ? `style="padding-top:${d.st + 6}px"` : (d.st ? `style="padding-top:${d.st}px"` : '');
+  return `<aside class="side ${sidebarOverlay() ? 'overlay' : ''}" ${top}>
+    <div class="shead">${lights}<span class="sp"></span>${btn('side', 'sidebar', { tip: '隐藏侧栏' })}</div>
+    <div class="set"><span class="ic">${ic('book', 's')}</span><span>Sample: Forgetting &amp; Spaced Repetition</span></div>
+    <div class="search">${ic('search', 's')}<span>搜索</span></div>
+    <h6>文档</h6>
+    ${DOCS.map(x => `<button class="srow ${x.id === S.doc ? 'on' : ''}" data-act="doc" data-arg="${x.id}">${ic(x.icon, 's')}<span class="t">${x.title}</span><span class="n">${x.n}</span></button>`).join('')}
+    <h6>脑图</h6>
+    <button class="srow on" data-act="noop">${ic('tree', 's')}<span class="t">主脑图</span></button>
+    <h6>学习</h6>
+    <button class="srow" data-act="noop">${ic('vocab', 's')}<span class="t">生词本</span><span class="n">1</span></button>
+    <button class="srow" data-act="noop">${ic('cards', 's')}<span class="t">复习</span><span class="badge">20</span></button>
+    ${isPhone() ? `<span class="sp"></span><button class="srow" data-act="noop">${ic('library', 's')}<span class="t">资料库</span></button>` : ''}
+  </aside>`;
+}
+
+/* ======================= Reader ======================= */
+function readerPage() {
+  const doc = DOCS.find(x => x.id === S.doc);
+  let html = `<div class="page"><h2>${doc.id === 'd1' ? '第二章　遗忘曲线与间隔重复' : doc.title}</h2><div class="meta">MarginMind 示例章节 · 原创文字，可自由使用</div>`;
+  doc.sections.forEach(([h, ps], si) => {
+    html += `<h3>${h}</h3>`;
+    ps.forEach((p, pi) => {
+      const k = `${doc.id}:${si}-${pi}`;
+      html += `<p data-p="${si}-${pi}" class="${S.marks[k] || ''}">${p}</p>`;
+    });
+  });
+  return html + '</div>';
+}
+const TOOLS = [['select', 'select', '选择'], ['marker', 'highlight', '高亮'], ['underline', 'underline', '下划线'], ['pen', 'ink', '画笔'], ['area', 'area', '框选']];
+function toolGroup(subset) {
+  return `<span class="grp">${TOOLS.filter(t => !subset || subset.includes(t[1])).map(([i, v, tip]) => btn(i, 'tool', { arg: v, on: S.tool === v, tip })).join('')}</span>`;
+}
+
+/* ======================= Map ======================= */
+function layoutTree() {
+  // Root on the left, one column per depth; heights estimated from content.
+  const out = [];
+  const qh = S.density === 'compact' ? 44 : 86;
+  let y = 0;
+  function place(n, depth) {
+    const x = depth === 0 ? 0 : depth === 1 ? 330 : 520;
+    if (!n.kids || !n.kids.length) {
+      const h = n.q ? qh : 36;
+      out.push({ n, x, y, h, depth }); y += h + 14; return y - h - 14 + h / 2;
+    }
+    const mids = n.kids.map(k => place(k, depth + 1));
+    const mid = (mids[0] + mids[mids.length - 1]) / 2;
+    out.push({ n, x, y: mid - 18, h: 36, depth, mid });
+    y += 10;
+    return mid;
+  }
+  place(MAP, 0);
+  return out;
+}
+function mapScene() {
+  const nodes = layoutTree();
+  return `<div class="scene" id="scene" style="transform:translate(${S.pan.x}px,${S.pan.y}px) scale(${S.zoom})"><svg class="links" id="links" width="10" height="10"></svg>
+    ${nodes.map(({ n, x, y, depth }) => {
+      if (n.q) return `<div class="node quote c-${n.c} ${S.selNode === n.id ? 'sel' : ''} ${n.fresh ? 'new' : ''}" data-node="${n.id}" style="left:${x}px;top:${y}px"><div class="q">${n.q}</div><button class="jump" data-act="jump" data-arg="${n.id}">${ic('arrowUR', 's')}</button></div>`;
+      return `<div class="node ${depth === 0 ? 'root' : 'topic'} ${S.selNode === n.id ? 'sel' : ''}" data-node="${n.id}" style="left:${x}px;top:${y}px">${n.t}</div>`;
+    }).join('')}</div>`;
+}
+function drawLinks() {
+  const scene = document.getElementById('scene'); if (!scene) return;
+  const svg = document.getElementById('links');
+  const rect = id => { const e = scene.querySelector(`[data-node="${id}"]`); return e && { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }; };
+  let d = '';
+  (function walk(n) {
+    const a = rect(n.id);
+    (n.kids || []).forEach(k => {
+      const b = rect(k.id); if (!a || !b) return;
+      const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2, mx = (x1 + x2) / 2;
+      d += `M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`;
+      walk(k);
+    });
+  })(MAP);
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="var(--line)" stroke-width="1.5"/>`;
+}
+function outlineView() {
+  let html = '';
+  (function walk(n, depth) {
+    html += `<div class="orow ${n.q ? 'q' : ''}" style="padding-left:${depth * 22}px"><i class="dot"></i><span>${n.q || n.t}</span></div>`;
+    (n.kids || []).forEach(k => walk(k, depth + 1));
+  })(MAP, 0);
+  return `<div class="outline">${html}</div>`;
+}
+function findNode(id, n = MAP, parent = null) {
+  if (n.id === id) return { n, parent };
+  for (const k of n.kids || []) { const r = findNode(id, k, n); if (r) return r; }
+  return null;
+}
+function targetTopic() {
+  const f = findNode(S.selNode);
+  if (!f) return MAP;
+  return f.n.q ? f.parent : f.n;
+}
+function zoomCap(old) {
+  return `<span class="cap">${btn('fit', 'fit', { tip: '适合窗口' })}${old ? btn('center', 'noop', { tip: '定位到中心主题' }) + '<span class="vsep"></span>' : ''}${btn('minus', 'zoom', { arg: -1, tip: '缩小' })}<span class="zv">${Math.round(S.zoom * 100)}%</span>${btn('plus', 'zoom', { arg: 1, tip: '放大' })}</span>`;
+}
+
+/* ======================= Popovers ======================= */
+function popover() {
+  if (!S.pop) return '';
+  const pos = S.popPos || { x: 20, y: 60 };
+  const style = `left:${pos.x}px;top:${pos.y}px`;
+  if (S.pop === 'aa') {
+    const styles = [['white', '#FFFFFF', '#1D1D1F'], ['dark', '#262628', '#D1D1D6'], ['paper', '#F4ECD8', '#5B4636'], ['green', '#DCEFD8', '#2E3B2C']];
+    return `<div class="pop" style="${style}" data-pop>
+      <div class="zoomrow">${btn('minus', 'noop', { tip: '缩小' })}<span class="zv">100%</span>${btn('plus', 'noop', { tip: '放大' })}</div>
+      <div class="fits">${btn('actual', 'noop', { tip: '实际大小' })}${btn('fitW', 'noop', { tip: '适合宽度', on: true })}${btn('fitP', 'noop', { tip: '适合整页' })}</div>
+      <div class="swatches">${styles.map(([k, bg, fg]) => `<button class="sw ${S.readerStyle === k ? 'on' : ''}" data-act="rstyle" data-arg="${k}" style="background:${bg};color:${fg}">文</button>`).join('')}</div>
+      <hr>
+      ${!S.syncInBar ? `<button class="row" data-act="sync">${ic('sync')}摘录同步到脑图<span class="toggle ${S.sync ? 'on' : ''}"></span></button>` : ''}
+      <button class="row" data-act="noop">${ic('margin')}页边批注<span class="k">⇧⌘M</span></button>
+      <button class="row" data-act="noop">${ic('vocab')}生词提示</button>
+      <button class="row" data-act="noop">${ic('compare')}对照阅读</button>
+      <button class="row" data-act="noop">${ic('crop')}裁边</button>
+      <hr>
+      <button class="row" data-act="noop">${ic('settings')}阅读设置…</button>
+    </div>`;
+  }
+  if (S.pop === 'style') {
+    return `<div class="pop" style="${style}" data-pop>
+      <div class="zoomrow"><span class="seg2" style="flex:1;display:flex"><button style="flex:1" class="${S.density === 'compact' ? 'on' : ''}" data-act="density" data-arg="compact">紧凑</button><button style="flex:1" class="${S.density === 'full' ? 'on' : ''}" data-act="density" data-arg="full">完整</button></span></div>
+      <hr>
+      <button class="row" data-act="noop">${ic('tree')}右侧逻辑图<span class="chk">${ic('check', 's')}</span></button>
+      <button class="row" data-act="noop">${ic('lMap')}组织结构图</button>
+      <hr>
+      <button class="row" data-act="noop">${ic('brush')}主题与配色…</button>
+      <button class="row" data-act="noop">${ic('arrowUR')}导出脑图…</button>
+    </div>`;
+  }
+  if (S.pop === 'more') {
+    return `<div class="pop" style="${style}" data-pop>
+      <button class="row" data-act="sparkle">${ic('sparkle')}整理笔记</button>
+      <button class="row" data-act="assistant">${ic('assistant')}助手</button>
+    </div>`;
+  }
+  return '';
+}
+
+/* ======================= Current layout (现状) ======================= */
+function renderOld() {
+  const d = dev(), touch = d.touch, phone = isPhone();
+  const doc = DOCS.find(x => x.id === S.doc);
+  const showReader = S.layout !== 'map', showMap = S.layout !== 'reader';
+  const vert = S.device === 'ipadP';
+  const lights = S.device === 'mac' && !S.sidebar ? `<div class="lights" style="margin-right:12px"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>` : '';
+  const bar = `<div class="old-bar" style="margin-top:${d.st}px">${lights}${S.sidebar && !sidebarOverlay() ? '' : btn('side', 'sidebar')}<span class="ttl">${doc.title}</span><span class="sp"></span>
+    ${phone ? '' : `<span class="grp">${btn('lReader', 'layout', { arg: 'reader', on: S.layout === 'reader' })}${btn('lSplit', 'layout', { arg: 'split', on: S.layout === 'split' })}${btn('lMap', 'layout', { arg: 'map', on: S.layout === 'map' })}</span>`}
+    <span class="grp">${btn('sparkle', 'sparkle', { html: ic('sparkle') + (S.device === 'mac' ? '<span style="font-weight:600;color:var(--label)">整理笔记</span>' : '') })}${btn('assistant', 'assistant', { cls: 'ai', on: S.assistant })}</span></div>`;
+  const rtools = S.device === 'mac'
+    ? `${btn('layers', 'noop')}${btn('fitW', 'noop')}${btn('noop', 'noop', { html: '<span class="aa">AA</span>' })}${btn('settings', 'noop')}${toolGroup()}${btn('sync', 'sync', { on: S.sync })}${btn('vocab', 'noop')}${btn('margin', 'noop')}${btn('compare', 'noop')}<span class="sp"></span>${btn('collections', 'noop')}`
+    : phone ? `${btn('layers', 'noop')}${toolGroup(['select', 'highlight', 'underline'])}<span class="sp"></span>${btn('more', 'noop')}${btn('collections', 'noop')}`
+    : `${btn('layers', 'noop')}${toolGroup()}${btn('sync', 'sync', { on: S.sync })}${btn('compare', 'noop')}${btn('more', 'noop')}<span class="sp"></span>${btn('collections', 'noop')}`;
+  const reader = `<section class="pane reader">
+      <div class="old-rtools">${rtools}</div>
+      <div class="rpage" id="rpage">${readerPage()}</div>
+      <div class="pnav"><div class="track"><i style="width:35%"></i></div><span class="chip">1 / ${doc.n}</span></div>
+    </section>`;
+  const map = `<section class="pane map ${S.density === 'compact' ? 'compactmap' : ''}">
+      <div class="old-mhead"><b>主脑图</b><span class="old-mseg"><button class="${S.mapView === 'tree' ? 'on' : ''}" data-act="mapview" data-arg="tree">脑图</button><button class="${S.mapView === 'outline' ? 'on' : ''}" data-act="mapview" data-arg="outline">大纲</button><button data-act="popstyle">${ic('brush', 's')}样式</button></span></div>
+      ${S.mapView === 'tree' ? `<div class="mapvp" id="mapvp">${mapScene()}</div>` : outlineView()}
+      <div class="old-bottom"><span class="hint">新摘录 → ${targetTopic().t}</span><span class="cap"><button class="tbtn ${S.density === 'compact' ? 'on' : ''}" data-act="density" data-arg="compact">紧凑</button><button class="tbtn ${S.density === 'full' ? 'on' : ''}" data-act="density" data-arg="full">完整</button></span>${zoomCap(true)}</div>
+    </section>`;
+  const arrows = showReader && showMap && !vert ? `<div class="old-arrows" style="left:${S.sidebar && !sidebarOverlay() ? 'calc(244px + (100% - 244px) / 2)' : '50%'}">${btn('chevL', 'noop')}${btn('chevR', 'noop')}</div>` : '';
+  const tabbar = phone ? `<div class="old-tabbar"><button data-act="noop">${ic('library')}资料库</button><button class="${S.layout === 'reader' ? 'on' : ''}" data-act="layout" data-arg="reader">${ic('lReader')}阅读</button><button class="${S.layout === 'map' ? 'on' : ''}" data-act="layout" data-arg="map">${ic('tree')}脑图</button><button data-act="noop">${ic('review')}复习</button></div>` : '';
+  return `<div class="app old">${S.sidebar && !sidebarOverlay() ? sidebar() : ''}
+    <div class="main">${bar}<div class="ws ${vert ? 'vert' : ''}">${showReader ? reader : ''}${showReader && showMap ? '<div class="divider"></div>' : ''}${showMap ? map : ''}</div>${arrows}</div>
+    ${assistantPanel()}${tabbar}
+    ${S.sidebar && sidebarOverlay() ? '<div class="scrim" data-act="sidebar"></div>' + sidebar() : ''}</div>`;
+}
+
+/* ======================= New layout ======================= */
+/* One row per pane, aligned into a single toolbar line:
+   reader pane  → [sidebar] [tools] [sync] [Aa]
+   map pane     → [map | outline] [style] … [layout] [AI]
+   The window-level cluster (layout + AI) lives at the trailing edge of the last pane. */
+function renderNew() {
+  const d = dev(), phone = isPhone();
+  const vert = S.device === 'ipadP' && S.layout === 'split';
+  const showReader = S.layout !== 'map', showMap = S.layout !== 'reader';
+  const sideInline = S.sidebar && !sidebarOverlay();
+  const lights = S.device === 'mac' && !sideInline ? `<div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>` : '';
+  const sideBtn = sideInline ? '' : btn('side', 'sidebar', { tip: '显示侧栏' });
+  const layoutGrp = phone ? '' : `<span class="grp">${btn('lReader', 'layout', { arg: 'reader', on: S.layout === 'reader', tip: '原文' })}${btn('lSplit', 'layout', { arg: 'split', on: S.layout === 'split', tip: '分栏' })}${btn('lMap', 'layout', { arg: 'map', on: S.layout === 'map', tip: '脑图' })}</span>`;
+  const aiGrp = `${btn('sparkle', 'sparkle', { cls: 'ai', tip: '整理笔记' })}${btn('assistant', 'assistant', { cls: 'ai', on: S.assistant, tip: '助手 ⌘J' })}`;
+  const globalCluster = `${layoutGrp}${aiGrp}`;
+  const narrowReader = S.device === 'ipadP' || (S.layout === 'split' && S.device === 'ipadL' && sideInline);
+  const lead = `${lights}${sideBtn}`;
+  S.syncInBar = !phone && (!narrowReader || vert);
+
+  const readerHead = phone ? '' :
+    `<div class="phead hides" id="rhead">${lead}${toolGroup(narrowReader && !vert ? ['select', 'highlight', 'underline', 'ink'] : null)}
+      ${S.syncInBar ? btn('sync', 'sync', { on: S.sync, tip: '摘录同步到脑图' }) : ''}
+      ${btn('aa', 'popaa', { html: '<span class="aa">Aa</span>', on: S.pop === 'aa', tip: '阅读' })}
+      <span class="sp"></span>${!showMap || vert ? globalCluster : ''}</div>`;
+  const mapLead = !showReader ? lead : '';
+  const mapHead = phone ? '' :
+    `<div class="phead" id="mhead">${mapLead}<span class="grp">${btn('tree', 'mapview', { arg: 'tree', on: S.mapView === 'tree', tip: '脑图' })}${btn('outline', 'mapview', { arg: 'outline', on: S.mapView === 'outline', tip: '大纲' })}</span>
+      ${btn('brush', 'popstyle', { on: S.pop === 'style', tip: '样式' })}<span class="sp"></span>${vert ? '' : globalCluster}</div>`;
+
+  const doc = DOCS.find(x => x.id === S.doc);
+  const reader = `<section class="pane reader ${phone ? 'narrow' : ''}">${readerHead}
+      <div class="rpage" id="rpage">${readerPage()}</div>
+      ${phone ? '' : `<div class="pnav"><div class="track"><i style="width:35%"></i></div><span class="chip">1 / ${doc.n}</span></div>`}
+    </section>`;
+  const map = `<section class="pane map ${S.density === 'compact' ? 'compactmap' : ''}" ${vert ? 'style="--st:0px"' : ''}>${mapHead}
+      ${S.mapView === 'tree' ? `<div class="mapvp" id="mapvp">${mapScene()}</div>` : outlineView()}
+      ${phone ? '' : `${S.sync && S.mapView === 'tree' ? `<div class="target">${ic('sync', 's')}<span>${targetTopic().t}</span></div>` : ''}<div class="mctl">${zoomCap(false)}</div>`}
+    </section>`;
+
+  // Phone: one slim glass bar on top, tools in a floating dock at the thumb.
+  const phoneTop = phone ? `<div class="phead hides" style="--pbg:var(--win);gap:8px">${btn('side', 'sidebar', { tip: '侧栏' })}<span class="sp"></span>
+      <span class="seg2"><button class="${S.layout === 'reader' ? 'on' : ''}" data-act="layout" data-arg="reader">原文</button><button class="${S.layout === 'map' ? 'on' : ''}" data-act="layout" data-arg="map">脑图</button></span>
+      <span class="sp"></span>${btn('more', 'popmore', { tip: '更多' })}</div>` : '';
+  const dock = phone ? (S.layout === 'reader'
+      ? `<div class="dock">${TOOLS.slice(0, 4).map(([i, v]) => btn(i, 'tool', { arg: v, on: S.tool === v })).join('')}<span class="vsep"></span>${btn('aa', 'popaa', { html: '<span class="aa">Aa</span>', on: S.pop === 'aa' })}</div>`
+      : `<div class="dock">${btn(S.mapView === 'tree' ? 'outline' : 'tree', 'mapview', { arg: S.mapView === 'tree' ? 'outline' : 'tree' })}${btn('brush', 'popstyle', { on: S.pop === 'style' })}<span class="vsep"></span>${btn('fit', 'fit')}${btn('minus', 'zoom', { arg: -1 })}${btn('plus', 'zoom', { arg: 1 })}</div>`) : '';
+
+  return `<div class="app new ${S.hidden ? 'hide-bars' : ''}" style="--hh:${d.touch ? 50 : 52}px;--st:${d.st}px">${sideInline ? sidebar() : ''}
+    <div class="main"><div class="ws ${vert ? 'vert' : ''}">${showReader ? reader : ''}${showReader && showMap ? '<div class="divider"></div>' : ''}${showMap ? map : ''}</div>${phoneTop}${dock}</div>
+    ${assistantPanel()}
+    ${S.sidebar && sidebarOverlay() ? '<div class="scrim" data-act="sidebar"></div>' + sidebar() : ''}</div>`;
+}
+function assistantPanel() {
+  if (!S.assistant) return '';
+  const floating = S.device !== 'mac' && S.device !== 'ipadL';
+  return `<div class="assist ${floating ? 'float' : ''}" style="${floating ? '--st:0px' : ''}"><div class="ah"><b style="flex:1">助手</b>${btn('close', 'assistant')}</div><div class="ab"></div>
+    <div class="composer"><span class="in">问问这份资料…</span><span class="send">${ic('chevR', 's')}</span></div></div>`;
+}
+
+/* ======================= Render ======================= */
+let toastTimer;
+function toast(msg) {
+  const t = document.querySelector('.toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1600);
+}
+function ftb() {
+  if (!S.ftb) return '';
+  return `<div class="ftb" style="left:${S.ftb.x}px;top:${S.ftb.y}px" data-pop>
+    ${['y', 'g', 'b'].map(c => `<button data-act="excerpt" data-arg="${c}" title="摘录"><span class="dot" style="background:var(--${c})"></span></button>`).join('')}
+    <span class="vsep"></span><button data-act="highlightOnly">高亮</button><button data-act="noop">复制</button><button data-act="assistant">${ic('assistant', 's')}</button></div>`;
+}
+function renderAll() {
+  renderConsole();
+  const d = dev();
+  const prevScroll = document.getElementById('rpage')?.scrollTop || 0;
+  const isNew = S.scheme === 'new';
+  const sbar = d.st ? `<div class="sbar" style="height:${d.st}px${isPhone() ? ';padding-top:6px' : ''}"><span>9:41${S.device !== 'phone' ? '　周四 10月30日' : ''}</span><span>100%</span></div>${isPhone() ? '<div class="island"></div>' : ''}` : '';
+  document.getElementById('scaler').innerHTML =
+    `<div class="device ${d.cls}"><div class="screen ${S.theme === 'dark' ? 'dark' : ''} ${d.touch ? 'touch' : ''} ${isPhone() ? 'phone' : ''}" id="screen" style="width:${d.w}px;height:${d.h}px">
+      ${sbar}${isNew ? renderNew() : renderOld()}${popover()}${ftb()}${isPhone() ? '<div class="homeind"></div>' : ''}<div class="toast"></div></div></div>`;
+  const rp = document.getElementById('rpage');
+  if (rp) { rp.scrollTop = prevScroll; rp.addEventListener('scroll', onReaderScroll, { passive: true }); }
+  applyReaderStyle();
+  if (!S.panSet) fitMap();
+  drawLinks();
+  fitStage();
+  measure();
+}
+function applyReaderStyle() {
+  const map = { white: ['#FFFFFF', '#1D1D1F'], dark: ['#262628', '#D1D1D6'], paper: ['#F4ECD8', '#5B4636'], green: ['#DCEFD8', '#2E3B2C'] };
+  const [bg, fg] = map[S.readerStyle];
+  document.querySelectorAll('.page').forEach(p => { p.style.setProperty('--page', bg); p.style.setProperty('--ink', fg); });
+  document.querySelectorAll('.pane.reader').forEach(p => p.style.background = isPhone() ? bg : '');
+  if (isPhone()) document.querySelectorAll('.pane.reader .phead').forEach(h => h.style.setProperty('--pbg', bg));
+}
+function fitStage() {
+  const stage = document.getElementById('stage');
+  stage.scrollTop = stage.scrollLeft = 0;
+  const dv = document.querySelector('.device');
+  const s = Math.min((stage.clientWidth - 48) / dv.offsetWidth, (stage.clientHeight - 48) / dv.offsetHeight, 1);
+  document.getElementById('scaler').style.transform = `scale(${s})`;
+}
+function fitMap() {
+  const vp = document.getElementById('mapvp'); if (!vp) return;
+  const scene = document.getElementById('scene');
+  let maxX = 0, maxY = 0;
+  scene.querySelectorAll('.node').forEach(n => { maxX = Math.max(maxX, n.offsetLeft + n.offsetWidth); maxY = Math.max(maxY, n.offsetTop + n.offsetHeight); });
+  const top = S.scheme === 'new' ? (dev().touch ? 50 : 52) + dev().st : 0;
+  const bottom = 56;
+  const availW = vp.clientWidth - 40, availH = vp.clientHeight - top - bottom - (isPhone() ? 90 : 0);
+  S.zoom = Math.max(isPhone() ? .45 : .8, Math.min(1, availW / maxX, availH / maxY));
+  S.pan = { x: (vp.clientWidth - maxX * S.zoom) / 2, y: top + (availH - maxY * S.zoom) / 2 };
+  S.panSet = true;
+  scene.style.transform = `translate(${S.pan.x}px,${S.pan.y}px) scale(${S.zoom})`;
+  document.querySelectorAll('.zv').forEach(z => { if (z.closest('.cap')) z.textContent = Math.round(S.zoom * 100) + '%'; });
+}
+/* Vertical space taken before the first line of the document. */
+function measure() {
+  const screen = document.getElementById('screen');
+  const page = document.querySelector('.page');
+  const m = document.getElementById('metric');
+  if (!page) { m.innerHTML = ''; return; }
+  const scale = screen.getBoundingClientRect().height / screen.offsetHeight;
+  const rp = document.getElementById('rpage');
+  const top = (page.getBoundingClientRect().top - screen.getBoundingClientRect().top) / scale + (rp ? rp.scrollTop : 0);
+  m.innerHTML = `正文起点 <b>${Math.round(top)}pt</b>　·　${dev().w}×${dev().h}`;
+}
+
+/* ======================= Interaction ======================= */
+let lastScroll = 0;
+function onReaderScroll(e) {
+  const el = e.target, y = el.scrollTop;
+  const head = el.parentElement.querySelector('.phead');
+  if (head) head.classList.toggle('scrolled', y > 4);
+  if (S.scheme === 'new' && dev().touch) {
+    const app = document.querySelector('.app');
+    if (y > lastScroll + 8 && y > 60 && !S.pop) { S.hidden = true; app.classList.add('hide-bars'); }
+    else if (y < lastScroll - 8 || y < 20) { S.hidden = false; app.classList.remove('hide-bars'); }
+  }
+  lastScroll = y;
+  // Re-rendering restores scrollTop and fires a scroll event; only a real scroll dismisses the selection toolbar.
+  if (S.ftb && Math.abs(y - S.ftb.scroll) > 4) { S.ftb = null; document.querySelector('.ftb')?.remove(); }
+}
+function screenPoint(ev) {
+  const screen = document.getElementById('screen');
+  const r = screen.getBoundingClientRect(), s = r.height / screen.offsetHeight;
+  return { x: (ev.clientX - r.left) / s, y: (ev.clientY - r.top) / s, s };
+}
+function openPop(kind, ev) {
+  if (S.pop === kind) { S.pop = null; renderAll(); return; }
+  const b = ev.target.closest('button');
+  const screen = document.getElementById('screen');
+  const r = screen.getBoundingClientRect(), s = r.height / screen.offsetHeight, br = b.getBoundingClientRect();
+  let x = (br.left - r.left) / s, y = (br.bottom - r.top) / s + 6;
+  if (isPhone() && b.closest('.dock')) y = (br.top - r.top) / s - (kind === 'aa' ? 410 : 230);
+  x = Math.min(x, screen.offsetWidth - 280);
+  S.pop = kind; S.popPos = { x: Math.max(8, x), y };
+  renderAll();
+}
+function addExcerpt(pkey, color) {
+  const [si, pi] = pkey.split('-').map(Number);
+  const doc = DOCS.find(x => x.id === S.doc);
+  S.marks[`${S.doc}:${pkey}`] = 'hl-' + color;
+  if (S.sync) {
+    const topic = targetTopic();
+    const node = { id: 'n' + (nid++), q: doc.sections[si][1][pi], doc: S.doc, p: pkey, c: color, fresh: true };
+    topic.kids = topic.kids || []; topic.kids.push(node);
+    S.selNode = topic.id;
+    S.panSet = false;
+    setTimeout(() => { node.fresh = false; }, 600);
+  }
+}
+
+document.addEventListener('click', ev => {
+  const screen = document.getElementById('screen');
+  if (!screen || !screen.contains(ev.target)) return;
+  const a = ev.target.closest('[data-act]');
+  const inPop = ev.target.closest('[data-pop]');
+  // Paragraph clicks: highlight tool excerpts directly, select tool shows the selection toolbar.
+  const para = !a && ev.target.closest('.page p');
+  if (para) {
+    if (S.tool === 'highlight' || S.tool === 'underline') {
+      if (S.tool === 'underline') S.marks[`${S.doc}:${para.dataset.p}`] = 'ul'; else addExcerpt(para.dataset.p, S.color);
+      S.pop = null; renderAll(); return;
+    }
+    const p = screenPoint(ev);
+    S.ftb = { x: Math.max(8, Math.min(p.x - 120, screen.offsetWidth - 260)), y: Math.max(8, p.y - 56), p: para.dataset.p, scroll: document.getElementById('rpage').scrollTop };
+    S.pop = null; renderAll(); return;
+  }
+  const node = !a && ev.target.closest('[data-node]');
+  if (node) { S.selNode = node.dataset.node; S.pop = null; renderAll(); return; }
+  if (!a) {
+    if ((S.pop && !inPop) || (S.ftb && !inPop)) { S.pop = null; S.ftb = null; renderAll(); }
+    else if (S.hidden && ev.target.closest('.rpage')) { S.hidden = false; document.querySelector('.app').classList.remove('hide-bars'); }
+    return;
+  }
+  const arg = a.dataset.arg;
+  switch (a.dataset.act) {
+    case 'sidebar': S.sidebar = !S.sidebar; S.panSet = false; break;
+    case 'doc': S.doc = arg; if (sidebarOverlay()) S.sidebar = false; document.getElementById('rpage') && (document.getElementById('rpage').scrollTop = 0); break;
+    case 'tool': S.tool = arg; S.ftb = null; break;
+    case 'sync': S.sync = !S.sync; break;
+    case 'layout': S.layout = arg; S.panSet = false; S.pop = null; S.hidden = false; break;
+    case 'mapview': S.mapView = arg; S.pop = null; S.panSet = false; break;
+    case 'density': S.density = arg; S.panSet = false; break;
+    case 'zoom': S.zoom = Math.max(.3, Math.min(2, +(S.zoom + (+arg) * .1).toFixed(2))); break;
+    case 'fit': S.panSet = false; break;
+    case 'popaa': return openPop('aa', ev);
+    case 'popstyle': return openPop('style', ev);
+    case 'popmore': return openPop('more', ev);
+    case 'rstyle': S.readerStyle = arg; break;
+    case 'assistant': S.assistant = !S.assistant; S.pop = null; S.ftb = null; S.panSet = false; break;
+    case 'sparkle': S.pop = null; renderAll(); toast('整理笔记'); return;
+    case 'excerpt': addExcerpt(S.ftb.p, arg); S.color = arg; S.ftb = null; break;
+    case 'highlightOnly': S.marks[`${S.doc}:${S.ftb.p}`] = 'hl-' + S.color; S.ftb = null; break;
+    case 'jump': {
+      const f = findNode(arg); if (!f) break;
+      S.doc = f.n.doc; S.selNode = arg;
+      if (S.layout === 'map') S.layout = isPhone() ? 'reader' : 'split';
+      S.panSet = false; renderAll();
+      const p = document.querySelector(`.page p[data-p="${f.n.p}"]`);
+      const rp = document.getElementById('rpage');
+      if (p && rp) { rp.scrollTop = p.offsetTop - rp.clientHeight / 2; p.classList.add('flash'); }
+      return;
+    }
+    default: break;
+  }
+  renderAll();
+});
+
+// Map pan by dragging the canvas.
+let drag = null;
+document.addEventListener('pointerdown', ev => {
+  const vp = ev.target.closest('#mapvp');
+  if (!vp || ev.target.closest('[data-node]') || ev.target.closest('button')) return;
+  const p = screenPoint(ev);
+  drag = { x: p.x, y: p.y, px: S.pan.x, py: S.pan.y, vp };
+  vp.classList.add('dragging');
+});
+document.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  const p = screenPoint(ev);
+  S.pan = { x: drag.px + p.x - drag.x, y: drag.py + p.y - drag.y };
+  document.getElementById('scene').style.transform = `translate(${S.pan.x}px,${S.pan.y}px) scale(${S.zoom})`;
+});
+document.addEventListener('pointerup', () => { if (drag) drag.vp.classList.remove('dragging'); drag = null; });
+window.addEventListener('resize', fitStage);
+
+// Deep link: ?scheme=old&device=phone&theme=light&layout=map
+const q = new URLSearchParams(location.search);
+for (const k of ['scheme', 'device', 'theme', 'layout']) if (q.get(k)) S[k] = q.get(k);
+S.sidebar = !sidebarOverlay();
+if (q.get('sidebar')) S.sidebar = q.get('sidebar') === '1';
+if (isPhone() && S.layout === 'split') S.layout = 'reader';
+renderAll();
+</script>
+</body>
+</html>
