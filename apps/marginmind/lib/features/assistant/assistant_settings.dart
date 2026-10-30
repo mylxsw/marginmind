@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
@@ -99,6 +101,7 @@ AssistantRunFactory assistantRunFactory({
   required Map<String, String?> Function() parents,
   AssistantNetwork? network,
   AssistantServicesStore? services,
+  Future<List<sdk.ImagePart>> Function(List<ContextItem>)? images,
 }) => (agent, conversation, question) async {
   final config = services == null
       ? conversation.model
@@ -112,6 +115,7 @@ AssistantRunFactory assistantRunFactory({
     return createAssistantRun(
       client: connection.client,
       model: config.model,
+      images: await images?.call(question.contexts) ?? const [],
       // “Answer without tools” turns them off for one request.
       supportsTools: config.supportsTools && conversation.model.supportsTools,
       serviceHost: Uri.parse(config.endpoint).host,

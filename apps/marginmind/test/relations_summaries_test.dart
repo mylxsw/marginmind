@@ -716,14 +716,15 @@ void main() {
         await tester.pumpAndSettle();
         expect(controller.content.relations, isEmpty);
 
-        // The toolbar's trash removes a selected mark too. The label may end at
+        // The selected node menu removes a summary too. The label may end at
         // the window's right edge: tap its start.
         await reveal(tester, find.text('Summary'));
         await tester.tapAt(tester.getRect(find.text('Summary')).centerLeft + const Offset(MMSpacing.s, 0));
         await tester.pump(kDoubleTapTimeout);
         await tester.pumpAndSettle();
         expect(state(tester).selectedCardId, controller.content.summaries.single.cardId);
-        await tester.tap(find.byTooltip('Remove from Map'));
+        await tester.ensureVisible(find.byKey(const ValueKey('node-bar-delete')));
+        await tester.tap(find.byKey(const ValueKey('node-bar-delete')));
         await tester.pumpAndSettle();
         expect(controller.content.summaries, isEmpty);
         expect(controller.content.card('c3'), isNotNull);

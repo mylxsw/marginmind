@@ -12,6 +12,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
 
 import 'helpers.dart';
+import 'map_keyboard_test.dart' show focusMap;
 
 Future<ProviderContainer> openFirstSet(WidgetTester tester, {InMemoryStudySetContentRepository? content}) async {
   final container = await pumpApp(tester, content: content);
@@ -132,7 +133,8 @@ void main() {
   testWidgets('adding a topic opens it for naming in place and saves it', (tester) async {
     final content = InMemoryStudySetContentRepository({'demo-1': demoContent()});
     await openFirstSet(tester, content: content);
-    await tester.tap(find.byKey(const ValueKey('node-add-child')));
+    await focusMap(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     expect(find.byType(MMSheet), findsNothing);
     await tester.enterText(find.byType(MMInlineTextField), '提取练习');

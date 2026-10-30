@@ -94,7 +94,9 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
     runFactory: (agent, conversation, question) async {
       final network = ref.read(assistantNetworkProvider) ?? await assistantNetworkFor(ref, studySetId, conversation);
       final workspace = ref.read(workspaceProvider(studySetId).notifier);
-      final mapId = ref.read(workspaceProvider(studySetId)).activeMapId;
+      final mapId =
+          question.contexts.map((item) => item.mapId).whereType<String>().firstOrNull ??
+          ref.read(workspaceProvider(studySetId)).activeMapId;
       // Revision and parents come from one snapshot, as the executor checks both.
       final snapshot = workspace.content;
       return assistantRunFactory(
@@ -107,6 +109,8 @@ final assistantDependenciesForProvider = Provider.family<AssistantDependencies, 
           pageText: ref.read(assistantPageTextProvider),
         ),
         documents: snapshot.documents,
+        images: (contexts) =>
+            loadAssistantNodeImages(content: snapshot, contexts: contexts, imagePath: workspace.imagePath),
         mapId: mapId,
         revision: () => assistantMapRevision(snapshot, mapId),
         parents: () => mapParents(snapshot, mapId),
@@ -388,18 +392,31 @@ ContextItem selectionContext({required String documentId, int? page, required St
   displayText: quote.trim(),
 );
 
+/// An explicitly selected screenshot remains usable even after its card was
+/// removed from a map. Its source annotation authorizes the image resource.
+ContextItem imageAreaContext({required Annotation annotation, required String cardId, required String title}) =>
+    ContextItem(
+      id: 'area-${annotation.id}',
+      kind: ContextKind.selection,
+      documentId: annotation.documentId,
+      page: annotation.page,
+      nodeId: cardId,
+      displayText: title,
+    );
+
 ContextItem nodeContext({
   required String mapId,
   required String nodeId,
   required String title,
   bool branch = false,
   bool auto = false,
+  String body = '',
 }) => ContextItem(
   id: '${auto ? 'auto-' : ''}${branch ? 'branch' : 'node'}-$mapId-$nodeId',
   kind: branch ? ContextKind.branch : ContextKind.node,
   mapId: mapId,
   nodeId: nodeId,
-  displayText: title,
+  displayText: body.isEmpty || body == title ? title : '$title\n\n$body',
   auto: auto,
 );
 

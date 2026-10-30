@@ -2240,6 +2240,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get assistantNotOnline => 'Not checked online';
 
   @override
+  String get assistantInsertChild => 'Insert as Child Node';
+
+  @override
   String get assistantSaveNote => 'Take Note';
 
   @override

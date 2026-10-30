@@ -98,6 +98,9 @@ class MindMapCanvas extends StatefulWidget {
     required this.onShift,
     this.onCommand,
     this.selectedCardIds = const {},
+    this.rootSelected = false,
+    this.onSelectRoot,
+    this.onAssistant,
     this.onToggleSelection,
     this.onSelectMany,
     this.editingCardId,
@@ -175,6 +178,9 @@ class MindMapCanvas extends StatefulWidget {
   final String mapId;
   final String rootTitle;
   final String? selectedCardId;
+  final bool rootSelected;
+  final ValueChanged<Rect>? onAssistant;
+  final VoidCallback? onSelectRoot;
   final Set<String> selectedCardIds;
   final ValueChanged<String>? onToggleSelection;
   final ValueChanged<Set<String>>? onSelectMany;
@@ -251,6 +257,7 @@ class MindMapCanvas extends StatefulWidget {
 
 class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
+  final _toolbarKey = GlobalKey();
   Timer? _hoverExit;
   void _enterNode(String id) {
     _hoverExit?.cancel();
@@ -275,8 +282,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _touchDragMoved = false;
   bool _touchDragCancelled = false;
 
-  /// A mark selection clears the card id too, but does not select the root.
-  String? get _selectedNodeId => widget.selectedMarkId == null ? widget.selectedCardId ?? rootNodeId : null;
+  String? get _selectedNodeId =>
+      widget.selectedMarkId == null ? (widget.rootSelected ? rootNodeId : widget.selectedCardId) : null;
 
   bool get _additive =>
       HardwareKeyboard.instance.isShiftPressed ||
@@ -284,6 +291,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       HardwareKeyboard.instance.isControlPressed;
 
   void _select(String? id, {required bool additive}) {
+    if (id == rootNodeId) {
+      if (widget.onSelectRoot != null) {
+        widget.onSelectRoot!();
+      } else {
+        widget.onSelect(null);
+      }
+      return;
+    }
     if (id != null && additive && widget.onToggleSelection != null) {
       widget.onToggleSelection!(id);
     } else if (id != null && additive && widget.onSelectMany != null) {
@@ -574,7 +589,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       });
     }
     final deselecting = _deselecting;
-    if (widget.selectedCardId != oldWidget.selectedCardId) _deselecting = false;
+    if (widget.selectedCardId != oldWidget.selectedCardId || widget.rootSelected != oldWidget.rootSelected) {
+      _deselecting = false;
+    }
     if (widget.locateCardTick > 0 &&
         widget.locateCardTick != oldWidget.locateCardTick &&
         widget.selectedCardId != null) {
@@ -594,8 +611,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     }
   }
 
-  /// Set when the selection returns to the root by deselecting (a tap on the
-  /// empty canvas, Esc): focus moves to the root but the view stays put.
+  /// Clearing the selection (empty canvas, Esc) leaves the viewport in place.
   bool _deselecting = false;
 
   void _deselect() {
@@ -712,8 +728,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         _centerOn(selected ?? rootNodeId, math.max(mapLocateScale, mapScale(widget.transformation.value)));
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
         widget.onCommand?.call(command);
-      case MindMapCommand.siblingAfter ||
-          MindMapCommand.siblingBefore ||
+      case MindMapCommand.siblingAfter:
+        if (widget.rootSelected) {
+          widget.onAddChild();
+        } else if (selected != null) {
+          widget.onCommand?.call(command);
+        }
+      case MindMapCommand.siblingBefore ||
           MindMapCommand.parent ||
           MindMapCommand.promote ||
           MindMapCommand.relation ||
@@ -1572,7 +1593,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     }
                     return;
                   }
-                  _select(id == rootNodeId ? null : id, additive: additive);
+                  _select(id, additive: additive);
                 },
                 onDoubleTap: id == rootNodeId
                     ? null
@@ -1600,7 +1621,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     : (position) {
                         widget.focusNode.requestFocus();
                         final selected = id == rootNodeId ? null : id;
-                        if (selected == null || !widget.selectedCardIds.contains(selected)) widget.onSelect(selected);
+                        if (selected == null || !widget.selectedCardIds.contains(selected)) {
+                          _select(id, additive: false);
+                        }
                         widget.onContextMenu!(selected, position);
                       },
                 onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null)
@@ -1730,6 +1753,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
     return Actions(
       actions: <Type, Action<Intent>>{
+        MapAssistantIntent: CallbackAction<MapAssistantIntent>(
+          onInvoke: (_) {
+            final box = _toolbarKey.currentContext?.findRenderObject();
+            if (box is RenderBox) widget.onAssistant?.call(box.localToGlobal(Offset.zero) & box.size);
+            return null;
+          },
+        ),
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
             if (field == null && _markField == null) _command(intent.command);
@@ -2126,7 +2156,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     animation: Listenable.merge([widget.transformation, _motion]),
                     builder: (context, _) {
                       final selected = [
-                        for (final id in {...widget.selectedCardIds, ?widget.selectedCardId})
+                        for (final id in {
+                          ...widget.selectedCardIds,
+                          ?widget.selectedCardId,
+                          if (widget.rootSelected) rootNodeId,
+                        })
                           if (result.rects[id] case final rect?)
                             MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
                       ];
@@ -2158,6 +2192,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                               child: CustomSingleChildLayout(
                                 delegate: _SelectionToolbarLayout(bounds),
                                 child: SingleChildScrollView(
+                                  key: _toolbarKey,
                                   scrollDirection: Axis.horizontal,
                                   child: widget.selectionToolbar!,
                                 ),
@@ -2211,51 +2246,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     ),
                   ),
                 ),
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([widget.transformation, _motion, _hovered]),
-                  builder: (context, _) {
-                    final id = _hovered.value ?? widget.selectedCardId ?? rootNodeId;
-                    final rect = result.rects[id];
-                    if (rect == null ||
-                        field != null ||
-                        _dragging != null ||
-                        widget.connectingFromId != null ||
-                        widget.selectedMarkId != null) {
-                      return const SizedBox.shrink();
-                    }
-                    final shown = _shown(id, rect);
-                    // At the node's outer top corner; in a tree, below the node
-                    // at the children's trunk.
-                    final corner = MatrixUtils.transformPoint(
-                      widget.transformation.value,
-                      result.structure == LayoutStructure.tree
-                          ? Offset(shown.left + math.min(mapTreeTrunkInset, shown.width / 2), shown.bottom)
-                          : Offset(result.leftSide.contains(id) ? shown.left : shown.right, shown.top),
-                    );
-                    return Stack(
-                      children: [
-                        Positioned(
-                          left: corner.dx - MMSpacing.l,
-                          top: corner.dy - MMSpacing.l,
-                          child: MouseRegion(
-                            onEnter: (_) => _enterNode(id),
-                            onExit: (_) => _leaveNode(id),
-                            child: _AddChildButton(
-                              label: l.addChildTopic,
-                              onPressed: () {
-                                widget.focusNode.requestFocus();
-                                widget.onSelect(id == rootNodeId ? null : id);
-                                widget.onAddChild();
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
             ],
           ),
         ),
@@ -2667,42 +2657,6 @@ class _EdgesPainter extends CustomPainter {
       old.palette != palette ||
       !identical(old.branches, branches) ||
       old.colors != colors;
-}
-
-/// Screen-sized action independent of the canvas zoom.
-class _AddChildButton extends StatelessWidget {
-  const _AddChildButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.mmColors;
-    return MMInteractive(
-      semanticLabel: label,
-      tooltip: context.l10n.addChildTopic,
-      cursor: SystemMouseCursors.click,
-      onTap: onPressed,
-      builder: (context, state) => SizedBox.square(
-        key: const ValueKey('node-add-child'),
-        dimension: MMSpacing.xxxl,
-        child: Center(
-          child: Container(
-            width: MMRadii.capsule,
-            height: MMRadii.capsule,
-            decoration: BoxDecoration(
-              color: state.pressed ? c.accent.withValues(alpha: 0.7) : c.accent,
-              shape: BoxShape.circle,
-              border: Border.all(color: c.canvas, width: 1.5),
-            ),
-            alignment: Alignment.center,
-            child: Icon(MMIcons.add, size: 10, color: c.onAccent),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.

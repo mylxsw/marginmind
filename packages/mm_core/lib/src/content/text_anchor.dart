@@ -56,7 +56,7 @@ sealed class ReadingPosition {
   const ReadingPosition();
   Map<String, Object?> toJson();
   factory ReadingPosition.fromJson(Map<String, Object?> j) => switch (j['type']) {
-    'pdf' => PdfPosition(j['page'] as int),
+    'pdf' => PdfPosition(j['page'] as int, y: (j['y'] as num?)?.toDouble()),
     'text' => TextReadingPosition(
       revision: j['revision'] as String,
       chapterId: j['chapterId'] as String,
@@ -68,12 +68,13 @@ sealed class ReadingPosition {
 }
 
 final class PdfPosition extends ReadingPosition {
-  PdfPosition(this.page) {
-    if (page < 1) throw ArgumentError('Invalid page');
+  PdfPosition(this.page, {this.y}) {
+    if (page < 1 || (y != null && (!y!.isFinite || y! < 0))) throw ArgumentError('Invalid page');
   }
   final int page;
+  final double? y;
   @override
-  Map<String, Object?> toJson() => {'type': 'pdf', 'page': page};
+  Map<String, Object?> toJson() => {'type': 'pdf', 'page': page, if (y != null) 'y': y};
 }
 
 // Names avoid colliding with Flutter's TextPosition/TextAffinity.

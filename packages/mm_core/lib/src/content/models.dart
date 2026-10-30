@@ -248,6 +248,40 @@ enum AnnotationKind { highlight, underline }
 
 enum AnnotationLineStyle { solid, dashed, dotted, wavy }
 
+/// Immutable screenshot parameters. Source anchors supply the document revision.
+@immutable
+class TextCapture {
+  TextCapture({
+    required this.width,
+    required this.height,
+    required this.fontSize,
+    required this.lineHeight,
+    required this.viewportWidth,
+    required this.pixelRatio,
+  }) {
+    if (![width, height, fontSize, lineHeight, viewportWidth, pixelRatio].every((v) => v.isFinite && v > 0)) {
+      throw ArgumentError('Invalid text capture');
+    }
+  }
+  final double width, height, fontSize, lineHeight, viewportWidth, pixelRatio;
+  Map<String, Object?> toJson() => {
+    'width': width,
+    'height': height,
+    'fontSize': fontSize,
+    'lineHeight': lineHeight,
+    'viewportWidth': viewportWidth,
+    'pixelRatio': pixelRatio,
+  };
+  factory TextCapture.fromJson(Map<String, Object?> j) => TextCapture(
+    width: _d(j['width']),
+    height: _d(j['height']),
+    fontSize: _d(j['fontSize']),
+    lineHeight: _d(j['lineHeight']),
+    viewportWidth: _d(j['viewportWidth']),
+    pixelRatio: _d(j['pixelRatio']),
+  );
+}
+
 /// A text mark spanning one or more pages, in reading order.
 @immutable
 class Annotation {
@@ -264,6 +298,7 @@ class Annotation {
     this.kind = AnnotationKind.highlight,
     this.lineStyle = AnnotationLineStyle.solid,
     this.needsReview = false,
+    this.capture,
   }) : _pages = pages == null
            ? null
            : List.unmodifiable(pages.map((p) => AnnotationPage(page: p.page, rects: List.unmodifiable(p.rects)))),
@@ -277,6 +312,7 @@ class Annotation {
     for (final anchor in textAnchors) {
       anchor.validate();
     }
+    if (capture != null && textAnchors.isEmpty) throw ArgumentError('Capture requires text anchors');
   }
 
   final String id;
@@ -303,6 +339,7 @@ class Annotation {
   final AnnotationKind kind;
   final AnnotationLineStyle lineStyle;
   final bool needsReview;
+  final TextCapture? capture;
 
   Annotation copyWith({int? colorIndex, AnnotationKind? kind, AnnotationLineStyle? lineStyle, bool? needsReview}) =>
       Annotation(
@@ -316,11 +353,13 @@ class Annotation {
         lineStyle: lineStyle ?? this.lineStyle,
         createdAt: createdAt,
         needsReview: needsReview ?? this.needsReview,
+        capture: capture,
       );
   Map<String, Object?> toJson() => {
     'id': id,
     'documentId': documentId,
     if (isText) 'targetType': 'text',
+    if (capture != null) 'capture': capture!.toJson(),
     if (isText)
       'textAnchors': [for (final a in textAnchors) a.toJson()]
     else
@@ -351,6 +390,7 @@ class Annotation {
           ? [AnnotationPage.fromJson(j)]
           : [for (final p in j['pages'] as List) AnnotationPage.fromJson((p as Map).cast())],
       quote: j['quote'] as String,
+      capture: j['capture'] == null ? null : TextCapture.fromJson((j['capture'] as Map).cast()),
       colorIndex: j['colorIndex'] as int,
       needsReview: j['needsReview'] as bool? ?? false,
       kind: AnnotationKind.values.where((v) => v.name == j['kind']).firstOrNull ?? AnnotationKind.highlight,

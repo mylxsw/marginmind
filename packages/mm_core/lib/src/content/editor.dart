@@ -613,6 +613,7 @@ class StudySetEditor {
               documentId: source.documentId,
               pages: source.isText ? null : source.pages,
               textAnchors: source.textAnchors,
+              capture: source.capture,
               quote: source.quote,
               colorIndex: source.colorIndex,
               kind: source.kind,

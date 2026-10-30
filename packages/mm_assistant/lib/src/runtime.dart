@@ -96,8 +96,10 @@ class AssistantRun {
     required this.budget,
     required this.permissions,
     this.close,
+    this.images = const [],
   });
   final StatefulAgent agent;
+  final List<ImagePart> images;
   final CitationRegistry citations;
   final ProposalHook proposals;
   final CancellationToken cancel;
@@ -137,7 +139,11 @@ class AssistantRun {
     };
     resumeDeadline();
     ModelMessage? last;
-    final iterator = StreamIterator(agent.runStream([UserMessage.text(text)], cancelToken: token));
+    final iterator = StreamIterator(
+      agent.runStream([
+        UserMessage([TextPart(text), ...images]),
+      ], cancelToken: token),
+    );
     try {
       while (await cancel.bind(iterator.moveNext())) {
         final event = iterator.current;
@@ -182,6 +188,7 @@ AssistantRun createAssistantRun({
   bool supportsTools = true,
   String serviceHost = '',
   List<String> attachedContext = const [],
+  List<ImagePart> images = const [],
   String? skill,
   AssistantNetwork? network,
   RunBudget? budget,
@@ -253,6 +260,7 @@ AssistantRun createAssistantRun({
   );
   return AssistantRun(
     agent: agent,
+    images: images,
     citations: citations,
     proposals: proposal,
     cancel: cancel,

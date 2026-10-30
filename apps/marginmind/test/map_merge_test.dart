@@ -140,7 +140,7 @@ void mergeViewportTests({bool native = false}) {
         final subscription = container.listen(provider, (_, next) => selections.add(next.selectedCardId));
         addTearDown(subscription.close);
 
-        await tester.tap(find.widgetWithText(MMButton, 'Merge'));
+        await tester.tap(find.byKey(const ValueKey('node-bar-merge')));
         for (var frame = 0; frame < 20; frame++) {
           await tester.pump(const Duration(milliseconds: 16));
           expect((tester.getTopLeft(survivor) - before).distance, lessThan(0.01));
@@ -176,15 +176,18 @@ void main() {
     controller.selectCards(ids.reversed);
     await tester.pumpAndSettle();
     expect(find.byType(MapSelectionBar), findsOneWidget);
-    // Enabled actions carry no tooltip; only a disabled one explains why.
-    expect(find.ancestor(of: find.widgetWithText(MMButton, 'Merge'), matching: find.byType(Tooltip)), findsNothing);
+    // Icon-only actions describe their name and shortcut on hover.
+    expect(
+      tester.widget<MMToolbarPreviewButton>(find.byKey(const ValueKey('node-bar-merge'))).tooltip,
+      contains('Merge'),
+    );
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer();
-    await mouse.moveTo(tester.getCenter(find.widgetWithText(MMButton, 'Merge')));
+    await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('node-bar-merge'))));
     await tester.pumpAndSettle();
     expect(tester.widget<MindMapCanvas>(find.byType(MindMapCanvas)).mergePreviewCardId, ids.first);
     await mouse.removePointer();
-    await tester.tap(find.widgetWithText(MMButton, 'Merge'));
+    await tester.tap(find.byKey(const ValueKey('node-bar-merge')));
     await tester.pumpAndSettle();
     final merged = controller.content.card(ids.first)!;
     expect(merged.segments.map((s) => s.text), ['First passage', 'Second passage']);
@@ -284,7 +287,7 @@ void main() {
     controller.selectCards(['c3', topic]);
     await tester.pumpAndSettle();
     expect(controller.mergeReason, MapEditReason.summaryTopic);
-    await tester.tap(find.widgetWithText(MMButton, 'Merge'));
+    await tester.tap(find.byKey(const ValueKey('node-bar-merge')));
     await tester.pump();
     final reason = mapEditReasonText(tester.element(find.byType(MapSelectionBar)), MapEditReason.summaryTopic);
     expect(find.text(reason), findsWidgets);

@@ -22,12 +22,15 @@ import 'assistant_panel.dart' show ModelSetupCard;
 Future<bool?> showAssistantQuickActions(
   BuildContext context, {
   required String studySetId,
-  required PendingAction pending,
+  PendingAction? pending,
   required ContextItem passage,
-  required SourceAnchor source,
+  SourceAnchor? source,
   required Rect toolbar,
   required Rect selection,
   required Rect viewport,
+  List<ContextItem> contexts = const [],
+  ({String mapId, String? parentId})? insertionTarget,
+  PanelOrigin origin = PanelOrigin.reader,
 }) => showGeneralDialog<bool>(
   context: context,
   barrierColor: Colors.transparent,
@@ -38,7 +41,15 @@ Future<bool?> showAssistantQuickActions(
     context,
     CustomSingleChildLayout(
       delegate: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
-      child: AssistantQuickActions(studySetId: studySetId, pending: pending, passage: passage, source: source),
+      child: AssistantQuickActions(
+        studySetId: studySetId,
+        pending: pending,
+        passage: passage,
+        source: source,
+        contexts: contexts,
+        insertionTarget: insertionTarget,
+        origin: origin,
+      ),
     ),
   ),
   transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
@@ -117,15 +128,21 @@ class AssistantQuickActions extends ConsumerStatefulWidget {
   const AssistantQuickActions({
     super.key,
     required this.studySetId,
-    required this.pending,
+    this.pending,
     required this.passage,
-    required this.source,
+    this.source,
+    this.contexts = const [],
+    this.insertionTarget,
+    this.origin = PanelOrigin.reader,
   });
 
   final String studySetId;
-  final PendingAction pending;
+  final PendingAction? pending;
   final ContextItem passage;
-  final SourceAnchor source;
+  final SourceAnchor? source;
+  final List<ContextItem> contexts;
+  final ({String mapId, String? parentId})? insertionTarget;
+  final PanelOrigin origin;
 
   @override
   ConsumerState<AssistantQuickActions> createState() => _AssistantQuickActionsState();
@@ -135,6 +152,12 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
   final _text = TextEditingController();
   final _focus = FocusNode();
   final _scroll = ScrollController();
+  String get _contextKey {
+    if (widget.contexts.length < 2) return widget.passage.id;
+    final ids = widget.contexts.map((item) => item.id).toList()..sort();
+    return '${widget.passage.id}:${ids.join('|')}';
+  }
+
   String? _conversationId;
   _QuickAction? _action;
   bool _menu = true, _sending = false, _saving = false;
@@ -144,7 +167,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
   void initState() {
     super.initState();
     final ui = ref.read(assistantUiProvider(widget.studySetId));
-    if (ui.quickPassageId == widget.passage.id) {
+    if (ui.quickPassageId == _contextKey) {
       _conversationId = ui.quickConversationId;
       _action = _QuickAction.values.where((a) => a.name == ui.quickAction).firstOrNull;
       _menu = _conversationId == null;
@@ -178,11 +201,17 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
         _conversationId = ref.read(assistantControllerProvider).id;
       }
       if (ref.read(assistantControllerProvider).id != _conversationId) return;
-      ref.read(assistantUiProvider(widget.studySetId).notifier).rememberAnchor(widget.passage.id, widget.source);
-      final execution = controller.send(question, contexts: [widget.passage], skill: action?.skill?.name);
+      if (widget.source case final source?) {
+        ref.read(assistantUiProvider(widget.studySetId).notifier).rememberAnchor(widget.passage.id, source);
+      }
+      final execution = controller.send(
+        question,
+        contexts: widget.contexts.isEmpty ? [widget.passage] : widget.contexts,
+        skill: action?.skill?.name,
+      );
       ref
           .read(assistantUiProvider(widget.studySetId).notifier)
-          .rememberQuickConversation(widget.passage.id, _conversationId!, action?.name);
+          .rememberQuickConversation(_contextKey, _conversationId!, action?.name);
       setState(() {
         _menu = false;
         _action = action;
@@ -207,9 +236,9 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
       askAssistant(
         ref,
         widget.studySetId,
-        origin: PanelOrigin.reader,
-        contexts: _conversationId == null ? [widget.passage] : const [],
-        anchors: _conversationId == null ? {widget.passage.id: widget.source} : const {},
+        origin: widget.origin,
+        contexts: _conversationId == null ? (widget.contexts.isEmpty ? [widget.passage] : widget.contexts) : const [],
+        anchors: _conversationId == null && widget.source != null ? {widget.passage.id: widget.source!} : const {},
       );
       if (source != null) ref.read(assistantUiProvider(widget.studySetId).notifier).openSource(source);
       Navigator.of(context).pop(true);
@@ -231,6 +260,8 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                   ? context.l10n.assistantNoteDefault
                   : noteTitleFrom(ref.read(assistantControllerProvider).title),
               anchor: widget.source,
+              mapId: widget.insertionTarget?.mapId,
+              parentId: widget.insertionTarget?.parentId,
             ),
           );
       if (mounted) MMHud.show(context, context.l10n.assistantSavedNote);
@@ -258,13 +289,15 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
         : conversation.messages.where((m) => m.role == MessageRole.user && m.requestId == answer.requestId).lastOrNull;
     final running = own && conversation.running;
     final canSend = configured.value == true && !busy && !changed;
-    ref.listen(workspaceProvider(widget.studySetId).select((s) => s.pending), (_, pending) {
-      if (identical(pending, widget.pending)) return;
-      final route = ModalRoute.of(context);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && route?.isActive == true) Navigator.of(context).removeRoute(route!);
+    if (widget.pending != null) {
+      ref.listen(workspaceProvider(widget.studySetId).select((s) => s.pending), (_, pending) {
+        if (identical(pending, widget.pending)) return;
+        final route = ModalRoute.of(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && route?.isActive == true) Navigator.of(context).removeRoute(route!);
+        });
       });
-    });
+    }
     final showingAnswer = !_menu && answer != null && question != null;
     final title = showingAnswer
         ? (question.skill == AssistantSkill.organize.name ? l.assistantAnswerToMap : _action?.title(l) ?? question.text)
@@ -343,6 +376,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                                 compact: true,
                                 onSource: (citation) => _sidebar(source: citation),
                                 onSaveNote: () => _save(answer),
+                                saveNoteTooltip: widget.insertionTarget == null ? null : l.assistantInsertChild,
                                 savingNote: _saving,
                               ),
                             ),

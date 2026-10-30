@@ -21,6 +21,7 @@ class ReflowScrollReader extends StatefulWidget {
     required this.onPosition,
     required this.onReady,
     this.selectionChapter,
+    this.onPreviewPosition,
   });
   final ReflowDocument book;
   final TextReadingPosition position;
@@ -30,12 +31,13 @@ class ReflowScrollReader extends StatefulWidget {
   final void Function(TextReadingPosition, double) onPosition;
   final VoidCallback onReady;
   final String? selectionChapter;
+  final void Function(TextReadingPosition, double)? onPreviewPosition;
   @override
   State<ReflowScrollReader> createState() => ReflowScrollReaderState();
 }
 
 class ReflowScrollReaderState extends State<ReflowScrollReader> {
-  bool _userScroll = false;
+  bool _userScroll = false, _observeQueued = false;
   final _viewport = GlobalKey();
   final _center = GlobalKey();
   final _keys = <String, GlobalKey<_ScrollChapterState>>{};
@@ -57,7 +59,7 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
   void recordPosition() => WidgetsBinding.instance.addPostFrameCallback((_) {
     if (mounted) _observe();
   });
-  void _observe() {
+  void _observe({bool persist = true}) {
     final viewport = _viewport.currentContext?.findRenderObject() as RenderBox?;
     if (viewport == null) return;
     final origin = viewport.localToGlobal(Offset.zero).dy;
@@ -75,7 +77,12 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
     final (state, y) = visible.first;
     final top = math.max(0.0, -y);
     final anchor = state.session.layout!.capture(top).position;
-    widget.onPosition(widget.book.position(anchor.chapterId, anchor.start), top);
+    final position = widget.book.position(anchor.chapterId, anchor.start);
+    if (persist) {
+      widget.onPosition(position, top);
+    } else {
+      widget.onPreviewPosition?.call(position, top);
+    }
   }
 
   Widget chapter(int index) {
@@ -97,6 +104,13 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
     onNotification: (notification) {
       if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle) _userScroll = true;
       if (notification is ScrollStartNotification && notification.dragDetails != null) _userScroll = true;
+      if (notification is ScrollUpdateNotification && _userScroll && !_observeQueued) {
+        _observeQueued = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _observeQueued = false;
+          if (mounted) _observe(persist: false);
+        });
+      }
       if (notification is ScrollEndNotification && _userScroll) {
         _userScroll = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {

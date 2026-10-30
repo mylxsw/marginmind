@@ -89,13 +89,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       return;
     }
     if (doc?.capabilities().readingSettings == true) {
-      final settings = ref.read(settingsProvider).reading(doc!.format);
+      final compare = ref.read(readerCompareProvider(widget.studySetId).notifier);
+      final comparing = ref.read(readerCompareProvider(widget.studySetId)) != null;
+      final settings = comparing
+          ? compare.reading(doc!.id, doc.format)
+          : ref.read(settingsProvider).reading(doc!.format);
       final size = switch (command) {
         ReaderZoomCommand.zoomIn => settings.size + 1,
         ReaderZoomCommand.zoomOut => settings.size - 1,
         _ => MMReaderTypography.defaultSize,
       };
-      ref.read(settingsProvider.notifier).setReading(doc.format, settings.copyWith(size: size));
+      if (comparing) {
+        compare.setReading(doc.id, settings.copyWith(size: size));
+      } else {
+        ref.read(settingsProvider.notifier).setReading(doc.format, settings.copyWith(size: size));
+      }
       return;
     }
     if (ref.read(readerCropProvider(widget.studySetId)).editing) return;

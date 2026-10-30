@@ -225,7 +225,7 @@ void main() {
 
     Color? textColor(WidgetTester tester, String text) => tester.widget<Text>(find.text(text)).style?.color;
 
-    testWidgets('a tree grows down from the root, its add-child button below the node', (tester) async {
+    testWidgets('a tree grows down from the root without a corner add button', (tester) async {
       await pump(tester, _content(structure: MapStructure.tree), selected: 'a');
       final root = node(tester, rootNodeId);
       final a = node(tester, 'a'), b = node(tester, 'b'), a1 = node(tester, 'a1');
@@ -233,9 +233,7 @@ void main() {
       expect(a.left, closeTo(root.left + 56, .5), reason: 'indented under the root');
       expect(a1.top, greaterThan(a.bottom));
       expect(b.top, greaterThan(node(tester, 'a3').bottom), reason: 'after the whole branch above it');
-      final add = tester.getRect(find.byKey(const ValueKey('node-add-child')));
-      expect(add.center.dy, closeTo(a.bottom, .5));
-      expect(add.center.dx, closeTo(a.left + mapTreeTrunkInset, .5));
+      expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
     });
 
     testWidgets('logic and brace maps grow right only; mind maps on both sides', (tester) async {

@@ -430,21 +430,23 @@ void main() {
   });
 
   group('node actions', () {
-    testWidgets('add child stays screen-sized on the selected node\'s outer top corner', (tester) async {
+    testWidgets('selected and hovered nodes have no corner add button at any zoom', (tester) async {
       final h = _Harness(tester);
       h.selection = 't2';
       await h.pump(_topics(4));
       for (final scale in [0.5, 1.17, 2.0]) {
         h.transform.value = zoomMapAt(h.transform.value, h.center, scale / h.scale);
         await tester.pumpAndSettle();
-        final mark = tester.getRect(find.byKey(const ValueKey('node-add-child')));
-        expect(mark.size, const Size(32, 32));
-        expect(mark.center.dx, closeTo(h.node('t2').left, .5));
-        expect(mark.center.dy, closeTo(h.node('t2').top, .5));
+        expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await mouse.addPointer(location: h.node('t2').center);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
+        await mouse.removePointer();
       }
     });
 
-    testWidgets('excerpt destination is a separate hint, not the add button', (tester) async {
+    testWidgets('excerpt destination hint remains without a corner add button', (tester) async {
       final container = await openFirstSet(tester);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final excerpt = controller.content.cards.firstWhere((c) => c.kind == CardKind.excerpt);
@@ -453,7 +455,7 @@ void main() {
       // New excerpts go under the selected node itself, whatever its kind.
       final l = AppLocalizations.of(tester.element(find.byType(MindMapCanvas)));
       expect(find.text(l.newExcerptTarget(excerpt.title)), findsOneWidget);
-      expect(find.byKey(const ValueKey('node-add-child')), findsOneWidget);
+      expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
       await settleHud(tester);
     });
   });

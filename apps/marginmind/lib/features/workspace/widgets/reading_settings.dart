@@ -6,10 +6,11 @@ import 'package:mm_design/mm_design.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import '../reader_compare.dart';
 
-void showReadingSettings(BuildContext context, WidgetRef ref, String setId) {
+void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Document? document}) {
   final id = ref.read(workspaceProvider(setId)).activeDocumentId;
-  final doc = id == null ? null : ref.read(workspaceProvider(setId)).content?.document(id);
+  final doc = document ?? (id == null ? null : ref.read(workspaceProvider(setId)).content?.document(id));
   if (doc == null || !doc.capabilities().readingSettings) return;
   showGeneralDialog<void>(
     context: context,
@@ -25,7 +26,7 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId) {
           padding: EdgeInsets.only(top: MMChromeInsets.of(context).top + MMSizes.touchTarget, bottom: MMSpacing.l),
           child: Material(
             type: MaterialType.transparency,
-            child: ReadingSettingsPanel(format: doc.format),
+            child: ReadingSettingsPanel(format: doc.format, studySetId: setId, documentId: doc.id),
           ),
         ),
       ),
@@ -34,14 +35,24 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId) {
 }
 
 class ReadingSettingsPanel extends ConsumerWidget {
-  const ReadingSettingsPanel({super.key, required this.format});
+  const ReadingSettingsPanel({super.key, required this.format, this.studySetId, this.documentId});
+  final String? studySetId, documentId;
   final DocumentFormat format;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
-    final value = settings.reading(format);
-    void change(ReadingSettings next) => ref.read(settingsProvider.notifier).setReading(format, next);
+    final comparing = studySetId != null && documentId != null && ref.watch(readerCompareProvider(studySetId!)) != null;
+    final comparison = comparing ? ref.read(readerCompareProvider(studySetId!).notifier) : null;
+    final value = comparison?.reading(documentId!, format) ?? settings.reading(format);
+    void change(ReadingSettings next) {
+      if (comparison != null) {
+        comparison.setReading(documentId!, next);
+      } else {
+        ref.read(settingsProvider.notifier).setReading(format, next);
+      }
+    }
+
     return MMGlass(
       padding: const EdgeInsets.all(MMSpacing.m),
       borderRadius: BorderRadius.circular(MMRadii.dropdown),
@@ -140,16 +151,18 @@ class ReadingSettingsPanel extends ConsumerWidget {
               ],
               onChanged: (v) => change(value.copyWith(font: v)),
             ),
-            const SizedBox(height: MMSpacing.s),
-            MMSegmentedControl<bool>(
-              expand: true,
-              value: value.paged,
-              segments: [
-                MMSegment(value: true, label: l.readerModePaged),
-                MMSegment(value: false, label: l.readerModeScroll),
-              ],
-              onChanged: (v) => change(value.copyWith(paged: v)),
-            ),
+            if (!comparing) ...[
+              const SizedBox(height: MMSpacing.s),
+              MMSegmentedControl<bool>(
+                expand: true,
+                value: value.paged,
+                segments: [
+                  MMSegment(value: true, label: l.readerModePaged),
+                  MMSegment(value: false, label: l.readerModeScroll),
+                ],
+                onChanged: (v) => change(value.copyWith(paged: v)),
+              ),
+            ],
             if (MMSizeClass.of(context) != MMSizeClass.regular) ...[
               const SizedBox(height: MMSpacing.s),
               Row(

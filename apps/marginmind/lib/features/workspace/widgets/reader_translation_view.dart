@@ -14,6 +14,7 @@ import '../reader_translation.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 import 'reader_compare_controls.dart';
+import 'reflow_translation_view.dart';
 
 class ReaderTranslationView extends ConsumerStatefulWidget {
   const ReaderTranslationView({super.key, required this.studySetId});
@@ -146,6 +147,10 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
 
   @override
   Widget build(BuildContext context) {
+    final source = ref.watch(readerCompareProvider(widget.studySetId))?.leftDocumentId;
+    if (ref.watch(workspaceContentProvider(widget.studySetId))?.document(source ?? '')?.contentManifest != null) {
+      return ReflowTranslationView(studySetId: widget.studySetId);
+    }
     final provider = readerTranslationProvider(widget.studySetId);
     final state = ref.watch(provider);
     final pair = ref.watch(readerCompareProvider(widget.studySetId))!;
