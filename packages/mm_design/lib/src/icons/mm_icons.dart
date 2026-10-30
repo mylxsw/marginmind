@@ -45,7 +45,7 @@ abstract final class MMIcons {
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass
   static const IconData info = CupertinoIcons.info_circle; // info.circle
   static const IconData select = CupertinoIcons.cursor_rays; // cursorarrow
-  static const IconData underline = CupertinoIcons.underline;
+  static const IconData underline = LucideIcons.pencilLine;
   static const IconData highlight = CupertinoIcons.paintbrush; // highlighter
   static const IconData mapStyle = CupertinoIcons.paintbrush; // structure and palette
   static const IconData image = CupertinoIcons.photo; // photo
