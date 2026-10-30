@@ -3855,6 +3855,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportStudyNote => '导出笔记…';
 
   @override
+  String get noteMoreOptions => '更多选项';
+
+  @override
   String get noteSetupTitle => '整理学习笔记';
 
   @override
@@ -3940,6 +3943,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noteGenerated => '已生成';
+
+  @override
+  String get noteFailureAuthentication => '模型服务验证未通过。请检查模型设置中的密钥，或改为只排版。';
+
+  @override
+  String get noteFailureTimeout => '模型响应超时。可继续整理，保留已完成的内容，也可改为只排版。';
+
+  @override
+  String get noteFailureBudget => '本次整理达到处理上限。已完成的内容会保留，可继续整理或改为只排版。';
+
+  @override
+  String get noteFailureNetwork => '无法连接模型服务。请检查网络后继续整理，或改为只排版。';
+
+  @override
+  String get noteFailureService => '模型服务繁忙或暂时不可用。可稍后继续整理，或改为只排版。';
+
+  @override
+  String get noteFailureProtocol => '模型返回的内容不完整或不受支持。可继续整理重试，或改为只排版。';
 
   @override
   String get noteFailed => '整理失败';

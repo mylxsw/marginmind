@@ -58,6 +58,15 @@ class FakeNoteOrganizer implements NoteOrganizer {
   Future<NotePlacements> place(NoteMaterials m, StudyNote n) async => NotePlacements([]);
 }
 
+class RetryingOutlineOrganizer extends FakeNoteOrganizer {
+  var attempts = 0;
+  @override
+  Future<NoteOutline> outline(NoteMaterials m, NoteSettings s) async {
+    if (attempts++ == 0) throw const ResearchFailure(ResearchFailureKind.budget, 'private diagnostic');
+    return super.outline(m, s);
+  }
+}
+
 class FakeNoteSession extends NoteSession {
   FakeNoteSession(FakeNoteOrganizer super.organizer);
   bool closed = false;
@@ -142,6 +151,10 @@ Future<ProviderContainer> openAi(
 }
 
 Future<void> generate(WidgetTester tester, {bool preview = false}) async {
+  if (preview) {
+    await tester.tap(find.byKey(const ValueKey('note-advanced')));
+    await tester.pumpAndSettle();
+  }
   await tester.tap(find.byKey(ValueKey(preview ? 'note-preview-outline' : 'note-generate')));
   await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
   await tester.pumpAndSettle();
@@ -153,6 +166,8 @@ void main() {
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('depth-deep'))).variant, MMButtonVariant.primary);
     expect(find.textContaining('Send 2 highlights'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('depth-none')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('note-advanced')));
     await tester.pumpAndSettle();
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('organization-source'))).variant, MMButtonVariant.primary);
     await tester.tap(find.byKey(const ValueKey('organization-theme')));
@@ -170,6 +185,20 @@ void main() {
     expect(owner.content.cards.any((c) => c.title == 'Why does recall help?'), isTrue);
     await settleHud(tester);
   });
+  testWidgets('outline limit explains recovery and retry generates the note', (tester) async {
+    final organizer = RetryingOutlineOrganizer();
+    final c = await openAi(tester, organizer);
+    await generate(tester);
+    expect(find.textContaining('processing limit'), findsOneWidget);
+    expect(find.textContaining('private diagnostic'), findsNothing);
+    expect(c.read(workspaceProvider('demo-1').notifier).content.studyNotes, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('note-continue')));
+    await tester.pumpAndSettle();
+    expect(organizer.attempts, 2);
+    expect(c.read(workspaceProvider('demo-1').notifier).content.studyNotes, hasLength(1));
+    await settleHud(tester);
+  });
+
   testWidgets('compact AI setup and outline wrap all footer actions without overflow', (tester) async {
     await openAi(tester, FakeNoteOrganizer(), size: const Size(400, 800));
     expect(tester.takeException(), isNull);

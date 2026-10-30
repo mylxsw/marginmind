@@ -34,7 +34,7 @@ void main() {
     final secrets = Secrets()..values[AssistantServicesStore.account('notes')] = 'fake-key';
     final organizer = await createModelNoteOrganizer(services: await store(secrets), secrets: secrets);
     expect(organizer.model, 'selected-model');
-    expect(organizer.budget.outputTokens, const ResearchBudget().outputTokens);
+    expect(organizer.budget.outputTokens, studyNoteBudget.outputTokens);
     organizer.close();
     expect(organizer.cancelToken.isCancelled, isTrue);
   });

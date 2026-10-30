@@ -21,7 +21,7 @@ Future<void> main() async {
       throw const ResearchFailure(ResearchFailureKind.invalidRequest);
     }
     final config = AssistantModel(provider: provider, model: env['NOTE_AI_MODEL']!, endpoint: env['NOTE_AI_ENDPOINT']!);
-    final connection = connectAssistant(config, env['NOTE_AI_KEY']!);
+    final connection = connectAssistant(config, env['NOTE_AI_KEY']!, budget: studyNoteBudget);
     organizer = ModelNoteOrganizer(client: connection.client, model: config.model, closeConnection: connection.close);
     final now = DateTime.utc(2026, 10, 30);
     final materials = NoteMaterials([

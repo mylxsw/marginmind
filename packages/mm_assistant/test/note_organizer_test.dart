@@ -284,7 +284,7 @@ void main() {
   test('shared deadline spans operations, starts only at first request', () async {
     var clock = date;
     final client = ScriptClient([answer(outlineJson)]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', now: () => clock);
+    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: const ResearchBudget(), now: () => clock);
     clock = clock.add(const Duration(days: 1));
     await service.outline(materials(), NoteSettings());
     clock = clock.add(const Duration(minutes: 2));
@@ -296,12 +296,44 @@ void main() {
   });
 
   test('unexpected stop and tools propagate protocol errors without retry', () async {
-    for (final response in [answer('{}', stop: 'length'), call('tool', '{}')]) {
+    for (final response in [answer('{}', stop: 'unexpected'), call('tool', '{}')]) {
       final client = ScriptClient([response]);
       final service = ModelNoteOrganizer(client: client, model: 'fake');
       await expectLater(service.outline(materials(), NoteSettings()), throwsA(failure(ResearchFailureKind.protocol)));
       expect(client.calls, 1);
     }
+  });
+
+  test('reasoning usage does not exhaust a multi-section note after its outline', () async {
+    ModelMessage reasoningAnswer(String text) => ModelMessage(
+      model: 'reasoning',
+      textOutput: text,
+      stopReason: 'stop',
+      usage: ModelUsage(promptTokens: 6780, completionTokens: 3985, totalTokens: 10765),
+    );
+    final client = ScriptClient([
+      reasoningAnswer(outlineJson),
+      for (var i = 0; i < 11; i++) reasoningAnswer(draftJson),
+    ]);
+    final service = ModelNoteOrganizer(client: client, model: 'reasoning');
+    final proposed = await service.outline(materials(56), NoteSettings());
+    final draft = await service.write(
+      materials(56),
+      NoteOutline([for (var i = 0; i < 11; i++) proposed.sections.single]),
+      NoteSettings(),
+    );
+    expect(draft.sections, hasLength(11));
+    expect(client.calls, 12);
+    expect(service.failures, isEmpty);
+  });
+
+  test('truncated model output reports the output limit without schema fallback', () async {
+    final service = ModelNoteOrganizer(
+      client: ScriptClient([answer('{}', stop: 'length')]),
+      model: 'fake',
+    );
+    await expectLater(service.outline(materials(), NoteSettings()), throwsA(failure(ResearchFailureKind.budget)));
+    expect(service.failures, isEmpty);
   });
 
   test('close cancels and releases the connection', () {

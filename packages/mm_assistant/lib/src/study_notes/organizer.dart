@@ -8,6 +8,16 @@ import 'package:mm_core/mm_core.dart';
 
 import 'schema.dart';
 
+/// Notes make one outline request and one request per section. The search
+/// budget (4K tokens / 90s for an entire run) cannot cover this workflow,
+/// especially when providers count reasoning tokens in completion usage.
+const studyNoteBudget = ResearchBudget(
+  outputTokens: 131072,
+  inputCharacters: 2000000,
+  responseBytes: 8388608,
+  duration: Duration(minutes: 15),
+);
+
 enum NoteRewrite { rephrase, concise, expand }
 
 enum NoteStage { outline, merge, write, place }
@@ -45,7 +55,7 @@ class ModelNoteOrganizer implements NoteOrganizer {
   ModelNoteOrganizer({
     required this.client,
     required this.model,
-    this.budget = const ResearchBudget(),
+    this.budget = studyNoteBudget,
     CancellationToken? cancel,
     this.onProgress,
     this.onFallback,
@@ -321,7 +331,7 @@ class ModelNoteOrganizer implements NoteOrganizer {
     cancelToken.check();
     _deadline ??= _now().add(budget.duration);
     final remaining = _deadline!.difference(_now());
-    final allowance = math.min(2048, budget.outputTokens - _output);
+    final allowance = math.min(8192, budget.outputTokens - _output);
     final characters = system.length + user.length;
     if (remaining <= Duration.zero || allowance <= 0 || _input + characters > budget.inputCharacters) {
       throw const ResearchFailure(ResearchFailureKind.budget);
@@ -346,7 +356,7 @@ class ModelNoteOrganizer implements NoteOrganizer {
               cancelToken: token,
             ),
           )
-          .timeout(remaining);
+          .timeout(remaining < const Duration(minutes: 2) ? remaining : const Duration(minutes: 2));
       cancelToken.check();
       final text = response.textOutput ?? '';
       final used = response.usage?.completionTokens;
@@ -354,6 +364,9 @@ class ModelNoteOrganizer implements NoteOrganizer {
       _bytes += utf8.encode(jsonEncode(response.toJson())).length;
       if (_output > budget.outputTokens || _bytes > budget.responseBytes) {
         throw const ResearchFailure(ResearchFailureKind.budget);
+      }
+      if ({'length', 'max_tokens'}.contains(response.stopReason)) {
+        throw const ResearchFailure(ResearchFailureKind.budget, 'outputTruncated');
       }
       if (!{'stop', 'end_turn', 'completed'}.contains(response.stopReason) || response.functionCalls.isNotEmpty) {
         throw const ResearchFailure(ResearchFailureKind.protocol);

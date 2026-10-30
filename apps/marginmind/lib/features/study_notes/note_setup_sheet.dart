@@ -124,7 +124,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
   late NoteScope _scope;
   late NoteSettings _settings;
   var _template = NoteTemplate.reading;
-  var _busy = false, _failed = false;
+  var _busy = false, _failed = false, _advanced = false;
   late final DateTime _now;
   bool _ai = false;
   NoteSettings? _remembered;
@@ -312,88 +312,15 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
     final sending = const NoteMaterialCollector().collect(content, _scope, _settings, now: _now, text: _text);
     int count(NoteScope scope) =>
         const NoteMaterialCollector().collect(content, scope, _settings, now: _now).highlights.length;
-    Widget choice(
-      String key,
-      String label,
-      bool selected,
-      VoidCallback? action, {
-      bool ai = false,
-      NoteTemplate? thumbnail,
-    }) {
-      final button = MMButton(
+    Widget choice(String key, String label, bool selected, VoidCallback? action, {bool ai = false}) => Tooltip(
+      message: ai && !_ai ? l.noteAiUnavailable : label,
+      child: MMButton(
         key: ValueKey(key),
         label: label,
         variant: selected ? MMButtonVariant.primary : MMButtonVariant.secondary,
         onPressed: _busy ? null : action,
-      );
-      return Tooltip(
-        message: ai && !_ai ? l.noteAiUnavailable : label,
-        child: thumbnail == null
-            ? button
-            : SizedBox(
-                width: MMSizes.noteTemplateCardWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MMInteractive(
-                      onTap: _busy ? null : action,
-                      semanticLabel: label,
-                      builder: (_, _) => Container(
-                        height: MMSizes.noteFormThumbHeight,
-                        padding: const EdgeInsets.all(MMSpacing.s),
-                        decoration: BoxDecoration(
-                          color: selected ? c.accentTint : c.card,
-                          borderRadius: BorderRadius.circular(MMRadii.row),
-                          border: Border.all(color: selected ? c.accent : c.separator),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (thumbnail == NoteTemplate.cornell) ...[
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    for (var i = 0; i < 3; i++)
-                                      Padding(
-                                        padding: const EdgeInsets.all(MMSpacing.xxs),
-                                        child: Container(height: MMSpacing.xxs, color: c.secondaryLabel),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              VerticalDivider(color: c.separator),
-                            ],
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Container(height: MMSpacing.xs, color: c.label),
-                                  const SizedBox(height: MMSpacing.s),
-                                  for (var i = 0; i < 3; i++)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: MMSpacing.xs),
-                                      child: Container(
-                                        height: MMSpacing.xxs,
-                                        color: thumbnail == NoteTemplate.review
-                                            ? c.separator
-                                            : MMAnnotationColor.yellow.color,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: MMSpacing.xs),
-                    button,
-                  ],
-                ),
-              ),
-      );
-    }
+      ),
+    );
 
     Widget row(String label, List<Widget> children) {
       final choices = Wrap(spacing: MMSpacing.s, runSpacing: MMSpacing.s, children: children);
@@ -429,7 +356,7 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
         title: l.noteSetupTitle,
         actions: noteSheetActions(context, [
           MMButton(label: l.cancel, onPressed: _busy ? null : () => Navigator.of(context).pop()),
-          if (_ai && _settings.depth != NoteDepth.none && _settings.organization == NoteOrganization.theme)
+          if (_advanced && _ai && _settings.depth != NoteDepth.none && _settings.organization == NoteOrganization.theme)
             MMButton(
               key: const ValueKey('note-preview-outline'),
               label: l.notePreviewOutline,
@@ -457,52 +384,6 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                   if (widget.branch case final branch?)
                     scope('scope-branch', content.card(branch.nodeId)?.title ?? '', branch),
                 ]),
-                row(l.noteMaterials, [
-                  choice('material-highlights', '${l.noteHighlights} ${all.highlights.length}', true, null),
-                  material(
-                    'material-margin',
-                    l.noteOwn,
-                    OwnSource.marginNote,
-                    _settings.marginNotes,
-                    (v) => _set(marginNotes: v),
-                  ),
-                  material(
-                    'material-map',
-                    l.noteMapNotes,
-                    OwnSource.card,
-                    _settings.mapNotes,
-                    (v) => _set(mapNotes: v),
-                  ),
-                  material(
-                    'material-ai',
-                    l.noteSavedAi,
-                    OwnSource.researchNote,
-                    _settings.researchNotes,
-                    (v) => _set(researchNotes: v),
-                  ),
-                  material('material-image', l.noteImages, OwnSource.image, _settings.images, (v) => _set(images: v)),
-                ]),
-                row(l.noteOrganization, [
-                  choice(
-                    'organization-theme',
-                    l.noteTheme,
-                    _settings.organization == NoteOrganization.theme,
-                    _ai ? () => _set(organization: NoteOrganization.theme) : null,
-                    ai: true,
-                  ),
-                  choice(
-                    'organization-source',
-                    l.noteSourceOrder,
-                    _settings.organization == NoteOrganization.source,
-                    () => _set(organization: NoteOrganization.source),
-                  ),
-                  choice(
-                    'organization-map',
-                    l.noteMapOrder,
-                    _settings.organization == NoteOrganization.map,
-                    () => _set(organization: NoteOrganization.map),
-                  ),
-                ]),
                 row(l.noteDepth, [
                   choice(
                     'depth-none',
@@ -525,30 +406,6 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                     ai: true,
                   ),
                 ]),
-                MMFormRow(
-                  label: l.noteContext,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Slider(
-                        key: const ValueKey('note-context-slider'),
-                        value: _settings.contextSentences.toDouble(),
-                        min: 0,
-                        max: 3,
-                        divisions: 3,
-                        label: l.noteContextSentences(_settings.contextSentences),
-                        onChanged: _busy ? null : (v) => _set(contextSentences: v.round()),
-                      ),
-                      Text(l.noteContextSentences(_settings.contextSentences), style: context.mmText.footnote),
-                      const SizedBox(height: MMSpacing.s),
-                      MMCheckbox(
-                        value: _ai && _settings.depth != NoteDepth.none && _settings.completeFragments,
-                        onChanged: _ai && _settings.depth != NoteDepth.none ? (v) => _set(completeFragments: v) : null,
-                        label: l.noteComplete,
-                      ),
-                    ],
-                  ),
-                ),
                 row(l.noteTemplate, [
                   for (final t in NoteTemplate.values)
                     choice(
@@ -556,9 +413,92 @@ class _NoteSetupSheetState extends ConsumerState<NoteSetupSheet> {
                       noteTemplateLabel(l, t),
                       _template == t,
                       () => setState(() => _template = t),
-                      thumbnail: t,
                     ),
                 ]),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: MMButton(
+                    key: const ValueKey('note-advanced'),
+                    label: l.noteMoreOptions,
+                    icon: _advanced ? MMIcons.chevronDown : MMIcons.chevronRight,
+                    variant: MMButtonVariant.plain,
+                    onPressed: _busy ? null : () => setState(() => _advanced = !_advanced),
+                  ),
+                ),
+                if (_advanced) ...[
+                  row(l.noteMaterials, [
+                    choice('material-highlights', '${l.noteHighlights} ${all.highlights.length}', true, null),
+                    material(
+                      'material-margin',
+                      l.noteOwn,
+                      OwnSource.marginNote,
+                      _settings.marginNotes,
+                      (v) => _set(marginNotes: v),
+                    ),
+                    material(
+                      'material-map',
+                      l.noteMapNotes,
+                      OwnSource.card,
+                      _settings.mapNotes,
+                      (v) => _set(mapNotes: v),
+                    ),
+                    material(
+                      'material-ai',
+                      l.noteSavedAi,
+                      OwnSource.researchNote,
+                      _settings.researchNotes,
+                      (v) => _set(researchNotes: v),
+                    ),
+                    material('material-image', l.noteImages, OwnSource.image, _settings.images, (v) => _set(images: v)),
+                  ]),
+                  row(l.noteOrganization, [
+                    choice(
+                      'organization-theme',
+                      l.noteTheme,
+                      _settings.organization == NoteOrganization.theme,
+                      _ai ? () => _set(organization: NoteOrganization.theme) : null,
+                      ai: true,
+                    ),
+                    choice(
+                      'organization-source',
+                      l.noteSourceOrder,
+                      _settings.organization == NoteOrganization.source,
+                      () => _set(organization: NoteOrganization.source),
+                    ),
+                    choice(
+                      'organization-map',
+                      l.noteMapOrder,
+                      _settings.organization == NoteOrganization.map,
+                      () => _set(organization: NoteOrganization.map),
+                    ),
+                  ]),
+                  MMFormRow(
+                    label: l.noteContext,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Slider(
+                          key: const ValueKey('note-context-slider'),
+                          value: _settings.contextSentences.toDouble(),
+                          min: 0,
+                          max: 3,
+                          divisions: 3,
+                          label: l.noteContextSentences(_settings.contextSentences),
+                          onChanged: _busy ? null : (v) => _set(contextSentences: v.round()),
+                        ),
+                        Text(l.noteContextSentences(_settings.contextSentences), style: context.mmText.footnote),
+                        const SizedBox(height: MMSpacing.s),
+                        MMCheckbox(
+                          value: _ai && _settings.depth != NoteDepth.none && _settings.completeFragments,
+                          onChanged: _ai && _settings.depth != NoteDepth.none
+                              ? (v) => _set(completeFragments: v)
+                              : null,
+                          label: l.noteComplete,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (!_ai)
                   MMButton(
                     label: l.assistantOpenSettings,

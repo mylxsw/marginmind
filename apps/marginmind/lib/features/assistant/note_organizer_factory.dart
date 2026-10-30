@@ -9,7 +9,7 @@ import 'assistant_settings.dart';
 Future<ModelNoteOrganizer> createModelNoteOrganizer({
   required AssistantServicesStore services,
   required SecretStore secrets,
-  ResearchBudget budget = const ResearchBudget(),
+  ResearchBudget budget = studyNoteBudget,
   void Function(NoteProgress)? onProgress,
   void Function(NoteSchemaFailure)? onFallback,
 }) async {

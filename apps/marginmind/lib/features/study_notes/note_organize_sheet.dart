@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../shared/l10n.dart';
@@ -88,6 +89,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
   NoteSession? _session;
   late NoteSettings _settings;
   String? _savedId;
+  Object? _error;
   int _generation = 0;
   bool _busy = true, _editing = false, _failed = false, _saving = false, _fallback = false;
 
@@ -115,6 +117,7 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
     setState(() {
       _busy = true;
       _failed = false;
+      _error = null;
       _editing = false;
     });
     NoteSession? session;
@@ -182,11 +185,12 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
       final message = _fallback ? context.l10n.noteAiFallback : context.l10n.noteGenerated;
       Navigator.of(context).pop();
       MMHud.show(context, message);
-    } catch (_) {
+    } catch (error) {
       if (mounted && generation == _generation) {
         setState(() {
           _busy = false;
           _failed = true;
+          _error = error;
         });
         if (_draft.isNotEmpty) {
           try {
@@ -258,8 +262,13 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
           },
         ),
       );
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _failed = true;
+          _error = error;
+        });
+      }
     }
   }
 
@@ -315,6 +324,20 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
         child: Text(text, style: MMNoteTypography.quote),
       ),
     );
+  }
+
+  String _failureMessage(BuildContext context) {
+    final l = context.l10n;
+    if (_error == null || _error is StateError || _error is FormatException) return l.noteFailed;
+    return switch (assistantFailureKind(_error!)) {
+      ResearchFailureKind.authentication => l.noteFailureAuthentication,
+      ResearchFailureKind.timeout => l.noteFailureTimeout,
+      ResearchFailureKind.budget => l.noteFailureBudget,
+      ResearchFailureKind.network => l.noteFailureNetwork,
+      ResearchFailureKind.rateLimited || ResearchFailureKind.unavailable => l.noteFailureService,
+      ResearchFailureKind.protocol || ResearchFailureKind.invalidRequest => l.noteFailureProtocol,
+      _ => l.noteFailed,
+    };
   }
 
   @override
@@ -427,47 +450,6 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
                     ),
                   ),
                 ] else ...[
-                  Wrap(
-                    spacing: MMSpacing.m,
-                    runSpacing: MMSpacing.s,
-                    children: [
-                      for (final (index, label) in [
-                        l.noteStepCollect,
-                        l.noteStepContext,
-                        l.noteStepOutline,
-                        l.noteStepCompose,
-                        l.noteStepVerify,
-                      ].indexed)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              index <
-                                      (_saving
-                                          ? 4
-                                          : _sections.isEmpty
-                                          ? 2
-                                          : 3)
-                                  ? MMIcons.check
-                                  : MMIcons.ai,
-                              size: MMSizes.dropdownIcon,
-                              color:
-                                  index <=
-                                      (_saving
-                                          ? 4
-                                          : _sections.isEmpty
-                                          ? 2
-                                          : 3)
-                                  ? context.mmColors.research
-                                  : context.mmColors.secondaryLabel,
-                            ),
-                            const SizedBox(width: MMSpacing.xs),
-                            Text(label, style: context.mmText.footnote),
-                          ],
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: MMSpacing.m),
                   if (_busy)
                     LinearProgressIndicator(
                       value: _sections.isEmpty
@@ -482,7 +464,10 @@ class _NoteOrganizeSheetState extends ConsumerState<NoteOrganizeSheet> {
                     style: context.mmText.headline,
                   ),
                   if (_failed)
-                    Text(l.noteFailed, style: context.mmText.body.copyWith(color: context.mmColors.critical)),
+                    Text(
+                      _failureMessage(context),
+                      style: context.mmText.body.copyWith(color: context.mmColors.critical),
+                    ),
                   for (final s in _draft) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),

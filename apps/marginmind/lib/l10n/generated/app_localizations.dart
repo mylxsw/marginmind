@@ -7220,6 +7220,12 @@ abstract class AppLocalizations {
   /// **'Export Note…'**
   String get exportStudyNote;
 
+  /// No description provided for @noteMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get noteMoreOptions;
+
   /// No description provided for @noteSetupTitle.
   ///
   /// In en, this message translates to:
@@ -7393,6 +7399,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Note created'**
   String get noteGenerated;
+
+  /// No description provided for @noteFailureAuthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'The model service could not verify your API key. Check model settings, or use layout only.'**
+  String get noteFailureAuthentication;
+
+  /// No description provided for @noteFailureTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The model took too long. Retry to continue from completed sections, or use layout only.'**
+  String get noteFailureTimeout;
+
+  /// No description provided for @noteFailureBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'This note reached the processing limit. Completed sections are kept; continue organizing or use layout only.'**
+  String get noteFailureBudget;
+
+  /// No description provided for @noteFailureNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the model service. Check your connection and retry, or use layout only.'**
+  String get noteFailureNetwork;
+
+  /// No description provided for @noteFailureService.
+  ///
+  /// In en, this message translates to:
+  /// **'The model service is busy or unavailable. Retry later, or use layout only.'**
+  String get noteFailureService;
+
+  /// No description provided for @noteFailureProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'The model returned an incomplete or unsupported response. Retry, or use layout only.'**
+  String get noteFailureProtocol;
 
   /// No description provided for @noteFailed.
   ///

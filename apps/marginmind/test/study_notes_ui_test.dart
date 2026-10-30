@@ -84,6 +84,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('toolbar-organize-note')));
     await tester.pumpAndSettle();
     expect(find.byType(NoteSetupSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey('organization-source')), findsNothing);
+    expect(find.byKey(const ValueKey('note-context-slider')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('note-advanced')));
+    await tester.pumpAndSettle();
     final source = tester.widget<MMButton>(find.byKey(const ValueKey('organization-source')));
     expect(source.variant, MMButtonVariant.primary);
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('organization-theme'))).onPressed, isNull);

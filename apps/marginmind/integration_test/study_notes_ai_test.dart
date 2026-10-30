@@ -120,6 +120,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('toolbar-organize-note')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('note-advanced')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('note-preview-outline')));
     await tester.pumpAndSettle();
     await shot('outline');

@@ -4021,6 +4021,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportStudyNote => 'Export Note…';
 
   @override
+  String get noteMoreOptions => 'More options';
+
+  @override
   String get noteSetupTitle => 'Organize Study Notes';
 
   @override
@@ -4106,6 +4109,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteGenerated => 'Note created';
+
+  @override
+  String get noteFailureAuthentication =>
+      'The model service could not verify your API key. Check model settings, or use layout only.';
+
+  @override
+  String get noteFailureTimeout =>
+      'The model took too long. Retry to continue from completed sections, or use layout only.';
+
+  @override
+  String get noteFailureBudget =>
+      'This note reached the processing limit. Completed sections are kept; continue organizing or use layout only.';
+
+  @override
+  String get noteFailureNetwork =>
+      'Could not reach the model service. Check your connection and retry, or use layout only.';
+
+  @override
+  String get noteFailureService => 'The model service is busy or unavailable. Retry later, or use layout only.';
+
+  @override
+  String get noteFailureProtocol =>
+      'The model returned an incomplete or unsupported response. Retry, or use layout only.';
 
   @override
   String get noteFailed => 'Could not create note';
