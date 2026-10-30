@@ -37,6 +37,7 @@ import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
+import 'underline_tool_button.dart' show annotationTapGroup;
 import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
@@ -836,6 +837,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
                         filePath: ocr?.document?.path ?? controller.filePath(doc),
                         controller: pdf,
+                        useTouchSelectionHandles: context.mmTablet,
+                        selectionHandleTapGroup: context.mmTablet ? annotationTapGroup(widget.studySetId) : null,
                         paragraphs: translation?.paragraphs ?? const [],
                         hoveredParagraph: translation?.hovered,
                         onParagraphHover: !translating

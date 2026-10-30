@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoTextSelectionControls, CupertinoTheme, CupertinoThemeData;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:mm_core/mm_core.dart'
@@ -797,6 +798,8 @@ class MMPdfView extends StatefulWidget {
     this.onSelectionCommitted,
     this.onTextUnavailable,
     this.onSelectionChanged,
+    this.useTouchSelectionHandles = false,
+    this.selectionHandleTapGroup,
     this.onHighlightTap,
     this.onViewportChanged,
     this.areaSelecting = false,
@@ -829,6 +832,12 @@ class MMPdfView extends StatefulWidget {
   final int initialPage;
   final Color backgroundColor;
   final Color emphasisColor;
+
+  /// iOS bar-and-dot handles with a 44-point drag target. Desktop keeps the viewer default.
+  final bool useTouchSelectionHandles;
+
+  /// Shares the handle gesture with its host selection toolbar.
+  final Object? selectionHandleTapGroup;
   final ColorFilter? pageColorFilter;
 
   /// Called once the document is open, with its page count.
@@ -2246,6 +2255,53 @@ class _MMPdfViewState extends State<MMPdfView> {
     },
   );
 
+  double _selectionHandleLineHeight(PdfTextSelectionAnchor anchor) =>
+      (anchor.rect.height * _controller.currentZoom).clamp(12.0, 32.0);
+
+  Offset _touchSelectionHandleOffset(
+    BuildContext context,
+    PdfTextSelectionAnchor anchor,
+    PdfViewerTextSelectionAnchorHandleState state,
+  ) {
+    final start = anchor.type == PdfTextSelectionAnchorType.a;
+    final ltr = anchor.direction == PdfTextDirection.ltr || anchor.direction == PdfTextDirection.unknown;
+    return Offset(start == ltr ? 22 : -22, _selectionHandleLineHeight(anchor) * (start ? 1 : -1));
+  }
+
+  Widget _touchSelectionHandle(
+    BuildContext context,
+    PdfTextSelectionAnchor anchor,
+    PdfViewerTextSelectionAnchorHandleState state,
+  ) {
+    final start = anchor.type == PdfTextSelectionAnchorType.a;
+    final handle = Semantics(
+      identifier: start ? 'pdf-selection-start' : 'pdf-selection-end',
+      container: true,
+      child: SizedBox.square(
+        dimension: 44,
+        child: ColoredBox(
+          color: Colors.transparent,
+          child: Align(
+            alignment: start ? Alignment.bottomCenter : Alignment.topCenter,
+            child: CupertinoTheme(
+              data: CupertinoThemeData(primaryColor: widget.emphasisColor),
+              child: Builder(
+                builder: (context) => CupertinoTextSelectionControls().buildHandle(
+                  context,
+                  start ? TextSelectionHandleType.left : TextSelectionHandleType.right,
+                  _selectionHandleLineHeight(anchor),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return widget.selectionHandleTapGroup == null
+        ? handle
+        : TapRegion(groupId: widget.selectionHandleTapGroup, child: handle);
+  }
+
   Widget _viewer() {
     final path = widget.filePath;
     final appliedCrop = widget.crop;
@@ -2328,6 +2384,8 @@ class _MMPdfViewState extends State<MMPdfView> {
               // long-press selection and handles available underneath them.
               enabled: widget.cropEditorBuilder == null,
               showContextMenuAutomatically: false,
+              buildSelectionHandle: widget.useTouchSelectionHandles ? _touchSelectionHandle : null,
+              calcSelectionHandleOffset: widget.useTouchSelectionHandles ? _touchSelectionHandleOffset : null,
               onTextSelectionChange: (selection) {
                 _selection = selection;
                 if (!selection.hasSelectedText && _cleanSelection != null) setState(() => _cleanSelection = null);
