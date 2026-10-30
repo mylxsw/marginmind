@@ -141,6 +141,7 @@ class MMTextField extends StatefulWidget {
     this.focusNode,
     this.maxLines = 1,
     this.minLines,
+    this.maxLength,
     this.obscureText = false,
     this.style,
     this.plain = false,
@@ -166,6 +167,7 @@ class MMTextField extends StatefulWidget {
        textAlign = TextAlign.right,
        maxLines = 1,
        minLines = null,
+       maxLength = null,
        _settings = true;
 
   final TextEditingController? controller;
@@ -183,6 +185,9 @@ class MMTextField extends StatefulWidget {
   /// (null: no limit); Return then starts a new line.
   final int? maxLines;
   final int? minLines;
+
+  /// Optional character limit, without a counter below the compact field.
+  final int? maxLength;
 
   /// A password or API key: the text is hidden.
   final bool obscureText;
@@ -246,12 +251,16 @@ class _MMTextFieldState extends State<MMTextField> {
         style: widget.style ?? t.body,
         maxLines: widget.maxLines,
         minLines: widget.minLines,
+        maxLength: widget.maxLength,
         obscureText: widget.obscureText,
         textAlign: widget.textAlign,
         keyboardType: widget.maxLines == 1 ? null : TextInputType.multiline,
         cursorWidth: 1.5,
         cursorHeight: 15,
-        decoration: InputDecoration.collapsed(hintText: widget.placeholder, hintStyle: t.bodySecondary),
+        decoration: InputDecoration.collapsed(
+          hintText: widget.placeholder,
+          hintStyle: t.bodySecondary,
+        ).copyWith(counterText: widget.maxLength == null ? null : ''),
       ),
     );
     final field = Container(

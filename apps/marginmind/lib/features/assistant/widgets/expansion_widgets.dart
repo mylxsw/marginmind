@@ -40,58 +40,91 @@ class ExpansionOptions extends StatelessWidget {
         hint: request.hint,
       ),
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final c = context.mmColors;
+    TableRow row(String label, Widget control) => TableRow(
       children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            for (final d in ExpansionDirection.values)
-              Semantics(
-                inMutuallyExclusiveGroup: true,
-                checked: d == request.direction,
-                child: ChoiceChip(
-                  label: Text(expansionDirectionLabel(l, d)),
-                  selected: d == request.direction,
-                  onSelected: (_) => change(direction: d),
-                  selectedColor: context.mmColors.researchWash,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-          ],
+        Padding(
+          padding: const EdgeInsets.only(right: MMSpacing.s),
+          child: Text(label, softWrap: false, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
         ),
-        Row(
-          children: [
-            Text(l.mapIdeaDepth),
-            const Spacer(),
-            for (var n = 1; n <= 3; n++)
-              TextButton(
-                onPressed: () => change(depth: n),
-                child: Text(
-                  l.mapIdeaDepthLevels(n),
-                  style: TextStyle(
-                    color: request.depth == n ? context.mmColors.research : context.mmColors.secondaryLabel,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: MMSpacing.xxs),
+          child: control,
+        ),
+      ],
+    );
+    return Table(
+      columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        row(
+          l.mapIdeaDirection,
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              for (final d in ExpansionDirection.values)
+                Semantics(
+                  inMutuallyExclusiveGroup: true,
+                  checked: d == request.direction,
+                  child: MMInteractive(
+                    key: ValueKey('expansion-direction-${d.name}'),
+                    semanticLabel: expansionDirectionLabel(l, d),
+                    selected: d == request.direction,
+                    onTap: () => change(direction: d),
+                    builder: (context, state) => Container(
+                      height: MMSizes.ideaChip,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: d == request.direction ? c.research : Colors.transparent,
+                        border: d == request.direction ? null : Border.all(color: c.line, width: .5),
+                        borderRadius: BorderRadius.circular(MMSizes.ideaChip / 2),
+                      ),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Text(
+                          expansionDirectionLabel(l, d),
+                          style: context.mmText.footnote.copyWith(
+                            color: d == request.direction
+                                ? c.onResearch
+                                : state.hovered
+                                ? c.label
+                                : c.secondaryLabel,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
-        Row(
-          children: [
-            Text(l.mapIdeaAmount),
-            const Spacer(),
-            for (final (n, label) in [(3, l.mapIdeaAmountFew), (5, l.mapIdeaAmountSome), (8, l.mapIdeaAmountMany)])
-              TextButton(
-                onPressed: () => change(breadth: n),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: request.breadth == n ? context.mmColors.research : context.mmColors.secondaryLabel,
-                  ),
-                ),
-              ),
-          ],
+        row(
+          l.mapIdeaDepth,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MMSegmentedControl<int>(
+              key: const ValueKey('expansion-depth'),
+              value: request.depth,
+              onChanged: (n) => change(depth: n),
+              segments: [for (var n = 1; n <= 3; n++) MMSegment(value: n, label: l.mapIdeaDepthLevels(n))],
+            ),
+          ),
+        ),
+        row(
+          l.mapIdeaAmount,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MMSegmentedControl<int>(
+              key: const ValueKey('expansion-amount'),
+              value: request.breadth,
+              onChanged: (n) => change(breadth: n),
+              segments: [
+                for (final (n, label) in [(3, l.mapIdeaAmountFew), (5, l.mapIdeaAmountSome), (8, l.mapIdeaAmountMany)])
+                  MMSegment(value: n, label: label),
+              ],
+            ),
+          ),
         ),
       ],
     );
@@ -154,17 +187,26 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
             ),
           ),
           ExpansionOptions(request: _request, onChanged: (r) => setState(() => _request = r)),
-          TextField(
-            maxLength: 200,
-            decoration: InputDecoration(hintText: l.mapIdeaHint, counterText: '', isDense: true),
-            onChanged: (v) => _hint = v,
-            onSubmitted: (_) => _start(),
-          ),
           Row(
             children: [
-              Text(l.mapIdeaGrounded),
-              const Spacer(),
-              Switch(value: _grounded, onChanged: (v) => setState(() => _grounded = v)),
+              Expanded(
+                child: MMTextField(
+                  maxLength: 200,
+                  placeholder: l.mapIdeaHint,
+                  semanticLabel: l.mapIdeaHint,
+                  onChanged: (v) => _hint = v,
+                  onSubmitted: (_) => _start(),
+                ),
+              ),
+              const SizedBox(width: MMSpacing.s),
+              Text(l.mapIdeaGrounded, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+              const SizedBox(width: MMSpacing.xs),
+              MMSwitch(
+                value: _grounded,
+                semanticLabel: l.mapIdeaGrounded,
+                color: c.research,
+                onChanged: (v) => setState(() => _grounded = v),
+              ),
             ],
           ),
         ],
@@ -306,7 +348,25 @@ class MapGhostNodeState extends State<MapGhostNode> {
                             style: context.mmText.footnote.copyWith(color: c.onResearch),
                           ),
                         ),
-                      if (d.page != null) Text('  ${l.pageNumber(d.page!)}', style: context.mmText.footnote),
+                      if (d.page != null) ...[
+                        if (d.tag != ExpansionDirection.auto) const SizedBox(width: 6),
+                        Container(
+                          height: MMSizes.mapDraftTag,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: c.fill,
+                            borderRadius: BorderRadius.circular(MMRadii.mapDraftTag),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(MMIcons.document, size: 10, color: c.secondaryLabel),
+                              const SizedBox(width: 3),
+                              Text('p.${d.page}', style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
               ],

@@ -1,8 +1,14 @@
 {
-  "basis": "staged added executable lines, current LCOV; latest expansion widget test replaces that source after final adjustment",
-  "covered": 834,
-  "lines": 881,
-  "percent": 94.67,
+  "basis": "PR added executable lines vs ebe067454f379e5ad5d3a1eee2684e18cebee989; fresh python3 tool/coverage.py",
+  "covered": 872,
+  "lines": 920,
+  "percent": 94.78,
+  "review": {
+    "base": "6d32391",
+    "covered": 74,
+    "lines": 76,
+    "percent": 97.37
+  },
   "files": [
     {
       "file": "apps/marginmind/lib/app/app_commands.dart",
@@ -52,24 +58,25 @@
     },
     {
       "file": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
-      "covered": 294,
-      "lines": 308,
-      "percent": 95.45,
+      "covered": 327,
+      "lines": 342,
+      "percent": 95.61,
       "uncovered": [
-        161,
-        246,
-        247,
-        253,
-        255,
-        256,
-        257,
-        258,
-        259,
-        283,
-        362,
-        363,
-        364,
-        541
+        91,
+        198,
+        288,
+        289,
+        295,
+        297,
+        298,
+        299,
+        300,
+        301,
+        325,
+        422,
+        423,
+        424,
+        601
       ]
     },
     {
@@ -139,6 +146,13 @@
         585,
         586
       ]
+    },
+    {
+      "file": "packages/mm_design/lib/src/widgets/search_field.dart",
+      "covered": 5,
+      "lines": 5,
+      "percent": 100.0,
+      "uncovered": []
     }
   ]
 }

@@ -15,6 +15,7 @@ import 'package:marginmind/features/assistant/widgets/expansion_widgets.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_design/mm_design.dart';
 
 import 'assistant_support.dart';
 import 'helpers.dart';
@@ -148,6 +149,11 @@ void main() {
     expect(app.workspace.content.card('d1'), isNull);
     await model.output.close();
     await tester.pumpAndSettle();
+    expect(find.text('p.24'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(MapGhostNode).first, matching: find.byIcon(MMIcons.document)),
+      findsOneWidget,
+    );
     await capture(tester, 'expansion-review');
     final before = app.workspace.content;
     await key(tester, LogicalKeyboardKey.tab);
@@ -291,8 +297,30 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
     expect(find.byType(ExpansionSection), findsOneWidget);
+    final options = find.byType(ExpansionOptions);
+    expect(find.descendant(of: options, matching: find.byType(Table)), findsOneWidget);
+    expect(find.descendant(of: options, matching: find.byType(MMSegmentedControl<int>)), findsNWidgets(2));
+    expect(find.descendant(of: options, matching: find.byType(ChoiceChip)), findsNothing);
+    final directionX = tester.getTopLeft(find.text('方向')).dx;
+    expect(tester.getTopLeft(find.text('层级')).dx, directionX);
+    expect(tester.getTopLeft(find.text('数量')).dx, directionX);
+    final chip = find.byKey(const ValueKey('expansion-direction-auto'));
+    final colors = tester.element(chip).mmColors;
+    BoxDecoration chipDecoration(Finder chip) =>
+        tester.widget<Container>(find.descendant(of: chip, matching: find.byType(Container)).first).decoration!
+            as BoxDecoration;
+    expect(chipDecoration(chip).color, colors.research);
+    expect(chipDecoration(chip).border, isNull);
+    expect(tester.widget<Text>(find.descendant(of: chip, matching: find.byType(Text))).style!.color, colors.onResearch);
+    final unselected = chipDecoration(find.byKey(const ValueKey('expansion-direction-example')));
+    expect(unselected.border, Border.all(color: colors.line, width: .5));
+    final sourceSwitch = find.byType(MMSwitch);
+    expect(tester.widget<MMSwitch>(sourceSwitch).color, colors.research);
+    expect(tester.getCenter(find.byType(MMTextField)).dy, tester.getCenter(sourceSwitch).dy);
+    final hintField = find.descendant(of: find.byType(MMTextField), matching: find.byType(TextField));
+    expect(tester.widget<TextField>(hintField).maxLength, 200);
     await capture(tester, 'expansion-options');
-    await tester.tap(find.widgetWithText(ChoiceChip, '例子'));
+    await tester.tap(find.byKey(const ValueKey('expansion-direction-example')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('2 层'));
     await tester.pumpAndSettle();
@@ -302,7 +330,7 @@ void main() {
       find.descendant(of: find.byType(ExpansionSection), matching: find.byType(TextField)),
       '结合编程',
     );
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byType(MMSwitch).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('扩展想法  ⌥⇥'));
     await tester.pumpAndSettle();
@@ -457,6 +485,34 @@ void main() {
     unawaited(model.output.close());
     await tester.pumpAndSettle();
     await run;
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('dark review uses research tokens and compact source page chip', (tester) async {
+    final model = ControlledExpander();
+    final app = await openAssistantApp(
+      tester,
+      prefs: {'settings.appearance': 'dark'},
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(() async => model)],
+    );
+    app.workspace.selectCard('c3');
+    await focusMap(tester);
+    final run = app.container
+        .read(expansionControllerProvider('demo-1').notifier)
+        .start(app.container.read(expansionControllerProvider('demo-1').notifier).request(MindMap.defaultId, 'c3'));
+    await tester.pumpAndSettle();
+    model.output.add(
+      const ExpansionDraft(id: 'dark1', parentRef: 'c3', title: '主动回忆', tag: ExpansionDirection.action, page: 24),
+    );
+    model.output.add(const ExpansionDraft(id: 'dark2', parentRef: 'new:dark1', title: '闭卷自测'));
+    unawaited(model.output.close());
+    await tester.pumpAndSettle();
+    await run;
+    final ghost = find.byType(MapGhostNode).first;
+    expect(Theme.of(tester.element(ghost)).brightness, Brightness.dark);
+    expect(find.text('p.24'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.descendant(of: ghost, matching: find.byIcon(MMIcons.document)));
+    expect(icon.size, 10);
+    await capture(tester, 'expansion-review-dark');
     expect(tester.takeException(), isNull);
   });
 }
