@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,7 +11,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('native browser becomes quiet, captures live DOM, and persists its app session', (tester) async {
     debugPrint('[browser] test started');
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0).timeout(const Duration(seconds: 10));
+    addTearDown(() => server.close(force: true).timeout(const Duration(seconds: 5)));
     final requests = <String>[];
     server.listen((request) async {
       requests.add(request.uri.path);
@@ -84,8 +85,8 @@ void main() {
     }
 
     Future<void> ready() async {
-      final deadline = DateTime.now().add(const Duration(seconds: 30));
-      while (session!.phase != BrowserPhase.ready && DateTime.now().isBefore(deadline)) {
+      final elapsed = Stopwatch()..start();
+      while (session!.phase != BrowserPhase.ready && elapsed.elapsed < const Duration(seconds: 30)) {
         await tester.pump(const Duration(milliseconds: 200));
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
@@ -152,8 +153,8 @@ void main() {
       final retainedUrl = session!.url;
       for (final path in ['/download', '/binary']) {
         await session!.navigate(uri.replace(path: path));
-        final deadline = DateTime.now().add(const Duration(seconds: 15));
-        while ((session!.loading || !requests.contains(path)) && DateTime.now().isBefore(deadline)) {
+        final elapsed = Stopwatch()..start();
+        while ((session!.loading || !requests.contains(path)) && elapsed.elapsed < const Duration(seconds: 15)) {
           await tester.pump(const Duration(milliseconds: 200));
           await Future<void>.delayed(const Duration(milliseconds: 100));
         }
@@ -168,8 +169,8 @@ void main() {
       await ready();
       session!.dismissPrompt();
       // Exercise a page-initiated link, which may not emit a navigation start.
-      final clickDeadline = DateTime.now().add(const Duration(seconds: 5));
-      while (DateTime.now().isBefore(clickDeadline)) {
+      final clickElapsed = Stopwatch()..start();
+      while (clickElapsed.elapsed < const Duration(seconds: 5)) {
         await tester.pump(const Duration(milliseconds: 200));
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
@@ -188,7 +189,7 @@ void main() {
       await ready();
       expect((await session!.capture(navigationId: session!.navigationId)).dom, contains('cookie:true'));
       expect(requests, containsAll(['/page', '/second']));
-      await BrowserSession.clearData();
+      await BrowserSession.clearData().timeout(const Duration(seconds: 10));
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       await mount();
@@ -198,8 +199,8 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
       await mount(uri.replace(path: '/download'));
-      final deadline = DateTime.now().add(const Duration(seconds: 15));
-      while (session!.phase != BrowserPhase.failed && DateTime.now().isBefore(deadline)) {
+      final elapsed = Stopwatch()..start();
+      while (session!.phase != BrowserPhase.failed && elapsed.elapsed < const Duration(seconds: 15)) {
         await tester.pump(const Duration(milliseconds: 200));
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
@@ -208,8 +209,7 @@ void main() {
     } finally {
       debugPrint('[browser] cleanup');
       session?.dispose();
-      await tester.pumpWidget(const SizedBox.shrink());
-      await server.close(force: true);
+      await tester.pumpWidget(const SizedBox.shrink()).timeout(const Duration(seconds: 10));
     }
   }, timeout: const Timeout(Duration(minutes: 5)));
 }

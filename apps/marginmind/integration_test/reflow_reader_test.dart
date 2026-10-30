@@ -13,7 +13,7 @@ import 'package:mm_core/testing.dart';
 import '../test/helpers.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized().defaultTestTimeout = const Timeout(Duration(minutes: 3));
   testWidgets('import → read → excerpt → resize → source', (tester) async {
     final directory = await Directory.systemTemp.createTemp('marginmind-reflow-');
     addTearDown(() => directory.delete(recursive: true));
