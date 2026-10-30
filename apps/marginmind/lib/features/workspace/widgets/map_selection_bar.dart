@@ -116,10 +116,11 @@ class MapNodeBar extends StatelessWidget {
     required this.onNote,
     required this.onImage,
     required this.onRelation,
+    required this.onDelete,
     this.onAssistant,
   });
 
-  final VoidCallback onChild, onSibling, onNote, onImage, onRelation;
+  final VoidCallback onChild, onSibling, onNote, onImage, onRelation, onDelete;
 
   /// Opens the assistant's actions for the node, anchored below [anchor].
   final ValueChanged<Offset>? onAssistant;
@@ -157,6 +158,8 @@ class MapNodeBar extends StatelessWidget {
               }, l.askAssistant),
             ),
           ],
+          const MMToolbarDivider(),
+          action('delete', l.selectionDelete, onDelete, '${l.removeFromMap}  ⌫'),
         ],
       ),
     );

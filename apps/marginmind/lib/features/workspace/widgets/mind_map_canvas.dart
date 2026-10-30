@@ -2211,51 +2211,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     ),
                   ),
                 ),
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([widget.transformation, _motion, _hovered]),
-                  builder: (context, _) {
-                    final id = _hovered.value ?? widget.selectedCardId ?? rootNodeId;
-                    final rect = result.rects[id];
-                    if (rect == null ||
-                        field != null ||
-                        _dragging != null ||
-                        widget.connectingFromId != null ||
-                        widget.selectedMarkId != null) {
-                      return const SizedBox.shrink();
-                    }
-                    final shown = _shown(id, rect);
-                    // At the node's outer top corner; in a tree, below the node
-                    // at the children's trunk.
-                    final corner = MatrixUtils.transformPoint(
-                      widget.transformation.value,
-                      result.structure == LayoutStructure.tree
-                          ? Offset(shown.left + math.min(mapTreeTrunkInset, shown.width / 2), shown.bottom)
-                          : Offset(result.leftSide.contains(id) ? shown.left : shown.right, shown.top),
-                    );
-                    return Stack(
-                      children: [
-                        Positioned(
-                          left: corner.dx - MMSpacing.l,
-                          top: corner.dy - MMSpacing.l,
-                          child: MouseRegion(
-                            onEnter: (_) => _enterNode(id),
-                            onExit: (_) => _leaveNode(id),
-                            child: _AddChildButton(
-                              label: l.addChildTopic,
-                              onPressed: () {
-                                widget.focusNode.requestFocus();
-                                widget.onSelect(id == rootNodeId ? null : id);
-                                widget.onAddChild();
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
             ],
           ),
         ),
@@ -2667,42 +2622,6 @@ class _EdgesPainter extends CustomPainter {
       old.palette != palette ||
       !identical(old.branches, branches) ||
       old.colors != colors;
-}
-
-/// Screen-sized action independent of the canvas zoom.
-class _AddChildButton extends StatelessWidget {
-  const _AddChildButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.mmColors;
-    return MMInteractive(
-      semanticLabel: label,
-      tooltip: context.l10n.addChildTopic,
-      cursor: SystemMouseCursors.click,
-      onTap: onPressed,
-      builder: (context, state) => SizedBox.square(
-        key: const ValueKey('node-add-child'),
-        dimension: MMSpacing.xxxl,
-        child: Center(
-          child: Container(
-            width: MMRadii.capsule,
-            height: MMRadii.capsule,
-            decoration: BoxDecoration(
-              color: state.pressed ? c.accent.withValues(alpha: 0.7) : c.accent,
-              shape: BoxShape.circle,
-              border: Border.all(color: c.canvas, width: 1.5),
-            ),
-            alignment: Alignment.center,
-            child: Icon(MMIcons.add, size: 10, color: c.onAccent),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.

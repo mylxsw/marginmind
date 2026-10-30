@@ -56,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('corner plus creates and edits one child under its marked node', (tester) async {
+  testWidgets('Tab and the node menu create an editable child at different zoom levels', (tester) async {
     final container = await openFirstSet(tester);
     final provider = workspaceProvider('demo-1');
     final controller = container.read(provider.notifier);
@@ -74,20 +74,22 @@ void main() {
         );
         await tester.pumpAndSettle();
         final before = controller.content.cards.map((c) => c.id).toSet();
-        final plus = find.byKey(const ValueKey('node-add-child'));
-        // Exercise the padded area outside the visible blue circle as well.
-        final bounds = tester.getRect(plus);
-        await tester.tapAt(bounds.center + Offset(0, -bounds.height * 0.4));
+        if (parent == null) {
+          await focusMap(tester);
+          await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        } else {
+          await tester.tap(find.byKey(const ValueKey('node-bar-child')));
+        }
         await tester.pumpAndSettle();
         final added = controller.content.cards.where((c) => !before.contains(c.id)).toList();
         expect(added, hasLength(1));
         expect(controller.content.node(added.single.id)!.parentId, parent);
         expect(container.read(provider).editingCardId, added.single.id);
         expect(_field, findsOneWidget);
-        tester.testTextInput.enterText('Corner child $parent $scale');
+        tester.testTextInput.enterText('New child $parent $scale');
         await tester.sendKeyEvent(LogicalKeyboardKey.enter);
         await tester.pumpAndSettle();
-        expect(controller.content.card(added.single.id)!.title, 'Corner child $parent $scale');
+        expect(controller.content.card(added.single.id)!.title, 'New child $parent $scale');
       }
     }
     await settleHud(tester);
@@ -218,10 +220,10 @@ void main() {
   testWidgets('review fixes: switching fields, menu commands, hidden map', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
-    // Finish one field, then create the next from its node's plus control.
+    // Finish one field, then create the next with Tab.
     await doubleTap(tester, find.text('对策一：间隔重复'));
     await focusMap(tester);
-    await tester.tap(find.byKey(const ValueKey('node-add-child')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     expect(_text(tester).text, 'New Topic');
     tester.testTextInput.enterText('第二个');
@@ -231,7 +233,8 @@ void main() {
 
     // Commands that change content wait while a title is typed.
     final cards = controller.content.cards.length;
-    await tester.tap(find.byKey(const ValueKey('node-add-child')));
+    await focusMap(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
@@ -288,7 +291,8 @@ void main() {
       final container = await openFirstSet(tester, content: repo);
       final before = _json(await repo.load('demo-1'));
       await _select(tester, '遗忘的规律');
-      await tester.tap(find.byKey(const ValueKey('node-add-child')));
+      await focusMap(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       expect(_text(tester).text, 'New Topic');
       expect(_text(tester).selection, const TextSelection(baseOffset: 0, extentOffset: 9));
@@ -324,7 +328,8 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
 
       // Clearing the text and confirming also drops the new node.
-      await tester.tap(find.byKey(const ValueKey('node-add-child')));
+      await focusMap(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       tester.testTextInput.enterText('  ');
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -337,7 +342,8 @@ void main() {
   testWidgets('a new topic stays open while the content stream lags behind the write', (tester) async {
     final repo = _LaggingRepository({'demo-1': demoContent()});
     final container = await openFirstSet(tester, content: repo);
-    await tester.tap(find.byKey(const ValueKey('node-add-child')));
+    await focusMap(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     await tester.pump();
     expect(_text(tester).text, 'New Topic');

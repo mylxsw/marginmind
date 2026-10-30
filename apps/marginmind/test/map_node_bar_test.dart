@@ -86,6 +86,37 @@ void main() {
     await settleHud(tester);
   });
 
+  for (final cardId in ['c3', 'c6', 'image']) {
+    testWidgets('node menu removes $cardId and undo restores it without a global delete button', (tester) async {
+      final demo = demoContent();
+      final content = demo.copyWith(
+        cards: [
+          ...demo.cards,
+          Card(id: 'image', kind: CardKind.image, title: 'Image', createdAt: testNow),
+        ],
+        nodes: [
+          ...demo.nodes,
+          const MapNode(cardId: 'image', parentId: null, order: 10),
+        ],
+      );
+      final container = await openFirstSet(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.selectCard(cardId);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Remove from Map'), findsNothing);
+      expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
+      await tester.ensureVisible(find.byKey(const ValueKey('node-bar-delete')));
+      await tester.tap(find.byKey(const ValueKey('node-bar-delete')));
+      await tester.pumpAndSettle();
+      expect(controller.content.node(cardId), isNull);
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(controller.content.node(cardId), isNotNull);
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
+    });
+  }
+
   testWidgets('deselecting returns focus to the root without moving the view', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);

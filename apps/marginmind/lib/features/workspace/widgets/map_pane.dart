@@ -23,7 +23,7 @@ import 'outline_view.dart';
 import 'map_selection_bar.dart';
 
 /// Map pane: the mind map (or outline) plus floating glass controls — map
-/// picker and view switch top-left, node actions top-right, zoom bottom-right.
+/// title and view switch at the top, node actions by the selection, zoom bottom-right.
 class MapPane extends ConsumerStatefulWidget {
   const MapPane({super.key, required this.studySetId});
 
@@ -214,7 +214,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
   }
 
   /// The toolbar above a single selected card; none for the root.
-  Widget? _nodeBar(String? cardId) {
+  Widget? _nodeBar(String? cardId, VoidCallback remove) {
     final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
     final card = cardId == null ? null : controller.content.card(cardId);
     if (card == null) return null;
@@ -225,6 +225,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
       onNote: addNote,
       onImage: () => pickAndInsertImages(context, ref, widget.studySetId),
       onRelation: controller.addRelation,
+      onDelete: remove,
       onAssistant: assistant.isEmpty
           ? null
           : (anchor) =>
@@ -445,7 +446,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 ? MindMapCanvas(
                     key: ValueKey(state.activeMapId),
                     selectionToolbar: state.selectedCardIds.length < 2
-                        ? _nodeBar(state.selectedCardId)
+                        ? _nodeBar(state.selectedCardId, remove)
                         : MapSelectionBar(
                             count: state.selectedCardIds.length,
                             mergeReason: controller.mergeReason,
@@ -602,20 +603,22 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         ),
                       ),
                     ],
-                    const SizedBox(width: MMSpacing.s),
-                    MMToolbarGroup(
-                      children: [
-                        MMToolbarButton(
-                          icon: MMIcons.trash,
-                          tooltip: l.removeFromMap,
-                          onPressed: state.selectedMarkId != null
-                              ? controller.removeSelectedMark
-                              : state.selectedCardId == null
-                              ? null
-                              : remove,
-                        ),
-                      ],
-                    ),
+                    if (outline) ...[
+                      const SizedBox(width: MMSpacing.s),
+                      MMToolbarGroup(
+                        children: [
+                          MMToolbarButton(
+                            icon: MMIcons.trash,
+                            tooltip: l.removeFromMap,
+                            onPressed: state.selectedMarkId != null
+                                ? controller.removeSelectedMark
+                                : state.selectedCardId == null
+                                ? null
+                                : remove,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 );
                 if (constraints.maxWidth < MMSizes.mapMinWidth) {
@@ -632,7 +635,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   children: [
                     Expanded(child: title),
                     // Keep controls within the pane without growing into the
-                    // canvas's touch selection controls. Show node actions first.
+                    // canvas's touch selection controls.
                     ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: constraints.maxWidth),
                       child: SingleChildScrollView(scrollDirection: Axis.horizontal, reverse: true, child: controls),
