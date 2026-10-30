@@ -89,6 +89,51 @@ Map<BrowserCommand, AppCommand> browserCommands(
   BrowserCommand.close: AppCommand(l.browserClose, close),
 };
 
+/// The same paragraph action is available in the menu and the margin gutter.
+AppCommand paragraphMarginCommand(
+  AppLocalizations l,
+  WidgetRef ref,
+  String setId,
+  String documentId, {
+  TextReadingPosition? position,
+  bool enabled = true,
+}) => AppCommand(
+  l.marginNoteAction,
+  !enabled
+      ? null
+      : () async {
+          final workspace = ref.read(workspaceProvider(setId).notifier);
+          if (workspace.content.document(documentId)?.capabilities().marginNotes != true) return;
+          if (position == null) {
+            final pending = ref.read(workspaceProvider(setId)).pending;
+            final selection = pending is PendingSelection && pending.documentId == documentId
+                ? pending.selection
+                : null;
+            final annotation = pending is PendingHighlight ? workspace.content.annotation(pending.annotationId) : null;
+            final anchors =
+                selection?.textAnchors ?? (annotation?.documentId == documentId ? annotation?.textAnchors : null);
+            if (anchors?.isNotEmpty == true) {
+              await ref
+                  .read(readerMarginProvider(setId).notifier)
+                  .start(documentId, textAnchors: anchors!, quote: selection?.text ?? annotation!.quote);
+              return;
+            }
+          }
+          final session = ref.read(reflowSessionProvider((setId, documentId)));
+          await session.initialize();
+          if (!ref.context.mounted) return;
+          final p = position ?? session.position;
+          if (p == null || session.book?.revision != p.revision) return;
+          final chapter = session.book!.chapter(p.chapterId);
+          final block = chapter?.blocks.where((b) => b.start <= p.offset && b.end >= p.offset).firstOrNull;
+          if (chapter == null || block == null || block.text.trim().isEmpty) return;
+          final anchor = chapter.anchor(block.start, block.end, revision: p.revision);
+          await ref
+              .read(readerMarginProvider(setId).notifier)
+              .start(documentId, textAnchors: [anchor], quote: anchor.quote);
+        },
+);
+
 /// Global shortcuts. Defined in macOS terms; [primaryShortcut] swaps ⌘ for
 /// Ctrl on Windows and Linux.
 abstract final class AppShortcuts {
@@ -858,6 +903,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             ocrState!.cancelling ? null : () => ref.read(readerOcrProvider(ocrSource!).notifier).cancel(),
           ),
       ],
+      if (inWorkspace && activeDoc?.contentManifest != null)
+        paragraphMarginCommand(l, ref, workspaceId, activeDoc!.id, enabled: !_textFocused && capabilities!.marginNotes),
       if (inWorkspace)
         for (final entry in readerZoomLabels.entries)
           AppCommand(
@@ -955,6 +1002,8 @@ class _AppMenusState extends ConsumerState<AppMenus> {
             shortcut: shortcut,
           ),
       ],
+      if (comparing && ref.read(readerCompareProvider(workspaceId).notifier).canAlignSource)
+        AppCommand(l.compareAlign, () => ref.read(readerCompareProvider(workspaceId).notifier).align()),
       if (comparing) AppCommand(l.compareExit, () => ref.read(readerCompareProvider(workspaceId).notifier).exit()),
       if (hasDocument)
         ...readerStyleCommands(

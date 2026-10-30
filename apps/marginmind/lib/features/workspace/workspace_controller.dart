@@ -1345,6 +1345,64 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
+  Future<WorkspaceNotice> excerptTextArea(
+    String documentId,
+    List<TextAnchor> anchors,
+    Future<Uint8List?> Function() capturePng, {
+    required TextCapture capture,
+  }) async {
+    final revision = content.document(documentId)?.revision;
+    if (anchors.isEmpty || anchors.any((a) => a.revision != revision)) return const AreaFailedNotice();
+    final String image;
+    try {
+      final png = await capturePng();
+      if (png == null) return const AreaFailedNotice();
+      image = await _repo.importImageBytes(studySetId, png);
+    } catch (_) {
+      return const AreaFailedNotice();
+    }
+    if (!ref.mounted || content.document(documentId)?.revision != revision) return const AreaFailedNotice();
+    final parent = excerptTargetId;
+    Card? card;
+    await _update((c) {
+      if (c.document(documentId)?.revision != revision) return c;
+      final annotation = Annotation(
+        id: _editor.newId(),
+        documentId: documentId,
+        textAnchors: anchors,
+        quote: '',
+        colorIndex: state.color.index,
+        createdAt: _editor.now(),
+        capture: capture,
+      );
+      final (next, created) = _editor.createImage(
+        c.copyWith(annotations: [...c.annotations, annotation]),
+        imageFileName: image,
+        annotationId: annotation.id,
+        parentId: parent,
+      );
+      card = created;
+      return next;
+    });
+    if (card == null) return const AreaFailedNotice();
+    dismissPending();
+    _flash(cardId: card!.id);
+    return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card!.id);
+  }
+
+  /// Cross-paragraph segments are one undo group and reject a stale revision.
+  Future<void> addParagraphInk(List<InkStroke> strokes) async {
+    if (strokes.isEmpty) return;
+    await _update((c) {
+      if (strokes.any(
+        (s) => s.textAnchor == null || c.document(s.documentId)?.revision != s.textAnchor!.anchor.revision,
+      )) {
+        return c;
+      }
+      return strokes.fold(c, _editor.addInkStroke);
+    });
+  }
+
   // ---- ink ---------------------------------------------------------------------
 
   /// Drafts never enter persistence or the undo stack until committed.

@@ -12,11 +12,16 @@ import 'package:mm_reflow/mm_reflow.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/navigation.dart';
+import '../../../app/app_commands.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../reflow_session.dart';
 import '../reader_margin.dart';
+import '../reader_compare.dart';
+import '../reader_translation.dart';
+import '../reflow_geometry.dart';
+import 'reflow_tools.dart';
 import '../workspace_controller.dart';
 import 'reader_margin_notes.dart';
 import 'reader_page_field.dart';
@@ -38,6 +43,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   final _scroll = ScrollController();
   final _viewport = GlobalKey();
   final _fixedTransform = TransformationController();
+  final _surfaceKeys = <(String, int?), GlobalKey>{};
+  final _surfaceLayouts = <(String, int?), ChapterLayout>{};
+  bool _marginColumn = false;
+  double _readerWidth = 0;
   double _appliedZoom = 1;
   double _interactionScale = 1;
   final _focus = FocusNode(debugLabel: 'Reflow reader');
@@ -63,6 +72,9 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(() {
+      if (mounted) setState(() {});
+    });
     _fixedTransform.addListener(() {
       if (mounted) {
         _appliedZoom = _fixedTransform.value.getMaxScaleOnAxis();
@@ -88,6 +100,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   Future<void> _configure(LayoutSpec spec) async {
     final request = ++_scrollRequest;
     await session.configure(spec);
+    if (mounted) await ref.read(readerCompareProvider(widget.studySetId).notifier).ready(widget.document.id);
     if (!mounted || request != _scrollRequest) return;
     setState(() {});
     _restoreScroll();
@@ -108,10 +121,31 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     workspace.dismissPending();
   }
 
+  void _takeInput() {
+    final pair = ref.read(readerCompareProvider(widget.studySetId));
+    if (pair == null) return;
+    ref
+        .read(readerCompareProvider(widget.studySetId).notifier)
+        .userInput(pair.leftDocumentId == widget.document.id ? 0 : 1);
+    if (pair.right is AiCompareTarget) ref.read(translationSourceInputProvider(widget.studySetId).notifier).take();
+  }
+
   Future<void> _jump(TextReadingPosition position) async {
+    _takeInput();
     _dismiss();
     final found = await session.jump(position);
     if (!found && mounted) _missing();
+    if (mounted && found) {
+      final pair = ref.read(readerCompareProvider(widget.studySetId));
+      if (pair != null) {
+        ref
+            .read(readerCompareProvider(widget.studySetId).notifier)
+            .changed(pair.leftDocumentId == widget.document.id ? 0 : 1);
+        if (pair.right is AiCompareTarget) {
+          ref.read(readerTranslationProvider(widget.studySetId).notifier).textSourceChanged(position);
+        }
+      }
+    }
     if (mounted) {
       setState(() {});
       _restoreScroll();
@@ -135,6 +169,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   }
 
   Future<void> _turn(int delta, bool paged) async {
+    _takeInput();
     if (paged) {
       _dismiss();
       await session.turn(delta * _spread);
@@ -166,7 +201,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     if (layout == null || layout.isDisposed) return Rect.zero;
     final paged =
         !widget.document.capabilities().readingSettings ||
-        ref.read(settingsProvider).reading(widget.document.format).paged;
+        (ref.read(readerCompareProvider(widget.studySetId)) == null &&
+            ref.read(settingsProvider).reading(widget.document.format).paged);
     for (final anchor in anchors) {
       for (final box in layout.boxes(anchor, page: paged ? _interactionPage ?? session.page : null)) {
         boxes.add(
@@ -399,8 +435,16 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     }
     final state = ref.watch(workspaceProvider(widget.studySetId));
     final settings = ref.watch(settingsProvider);
-    final reading = settings.reading(widget.document.format);
-    final paged = !widget.document.capabilities().readingSettings || reading.paged;
+    final pair = ref.watch(readerCompareProvider(widget.studySetId));
+    final comparing = pair != null;
+    final reading = comparing
+        ? ref
+              .read(readerCompareProvider(widget.studySetId).notifier)
+              .reading(widget.document.id, widget.document.format)
+        : settings.reading(widget.document.format);
+    final side = pair?.leftDocumentId == widget.document.id ? 0 : 1;
+    final paged = !widget.document.capabilities().readingSettings || (!comparing && reading.paged);
+    final marginState = ref.watch(readerMarginProvider(widget.studySetId));
     final style = settings.readerStyle;
     ref.listen(focusRequestsProvider, (_, request) {
       if (request?.$1 == FocusTarget.pageField && widget.document.capabilities().zoom) {
@@ -451,17 +495,25 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                     final margin = MMSizeClass.of(context) == MMSizeClass.compact
                         ? MMReaderLayout.marginCompact
                         : MMReaderLayout.margin;
+                    _marginColumn =
+                        !comparing &&
+                        MMSizeClass.of(context) == MMSizeClass.regular &&
+                        marginState.openDocuments.contains(widget.document.id) &&
+                        size.maxWidth >= MMReaderLayout.measure + MMReaderLayout.marginColumn;
+                    _readerWidth = size.maxWidth - (_marginColumn ? MMReaderLayout.marginColumn + MMSpacing.s : 0);
                     _spread =
                         widget.document.capabilities().readingSettings &&
                             paged &&
-                            size.maxWidth - 2 * margin >= MMReaderLayout.spreadMinWidth &&
+                            !comparing &&
+                            !_marginColumn &&
+                            _readerWidth - 2 * margin >= MMReaderLayout.spreadMinWidth &&
                             MMSizeClass.of(context) == MMSizeClass.regular
                         ? 2
                         : 1;
                     final width = math.max(
                       1.0,
                       math.min(
-                        (size.maxWidth - (_spread - 1) * MMReaderLayout.spreadGap) / _spread,
+                        (_readerWidth - (_spread - 1) * MMReaderLayout.spreadGap) / _spread,
                         (_spread == 2 ? MMReaderLayout.spreadMeasure : MMReaderLayout.measure) + 2 * margin,
                       ),
                     );
@@ -537,19 +589,78 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                           children: [
                             if (drawable)
                               Positioned.fill(
-                                child: paged
-                                    ? _pagedSurface(s, layout, state)
-                                    : ReflowScrollReader(
-                                        key: _scrollReader,
-                                        selectionChapter: _gestureChapter,
-                                        book: s.book!,
-                                        position: s.position!,
-                                        spec: spec,
-                                        controller: _scroll,
-                                        surface: (chapter) => _surface(chapter, null, state),
-                                        onPosition: s.observe,
-                                        onReady: _restoreScroll,
-                                      ),
+                                right: _marginColumn ? MMReaderLayout.marginColumn + MMSpacing.s : 0,
+                                child: ReflowAreaCapture(
+                                  studySetId: widget.studySetId,
+                                  documentId: widget.document.id,
+                                  spec: spec,
+                                  view: (s.viewTick, s.position?.chapterId, _scroll.hasClients ? _scroll.offset : 0.0),
+                                  anchors: (region) {
+                                    final result = <TextAnchor>[];
+                                    for (final entry in _surfaceLayouts.entries) {
+                                      final layout = entry.value;
+                                      final box =
+                                          _surfaceKeys[entry.key]?.currentContext?.findRenderObject() as RenderBox?;
+                                      if (layout.isDisposed || box == null || !box.attached) continue;
+                                      result.addAll(
+                                        captureAnchors(
+                                          layout,
+                                          Rect.fromPoints(
+                                            box.globalToLocal(region.topLeft),
+                                            box.globalToLocal(region.bottomRight),
+                                          ),
+                                          page: entry.key.$2,
+                                        ),
+                                      );
+                                    }
+                                    final unique = {
+                                      for (final anchor in result) (anchor.chapterId, anchor.start, anchor.end): anchor,
+                                    }.values.toList();
+                                    final spine = s.book!.chapters.map((c) => c.id).toList();
+                                    unique.sort((a, b) {
+                                      final order = spine.indexOf(a.chapterId).compareTo(spine.indexOf(b.chapterId));
+                                      return order == 0 ? a.start.compareTo(b.start) : order;
+                                    });
+                                    return unique;
+                                  },
+                                  child: paged
+                                      ? _pagedSurface(s, layout, state)
+                                      : ReflowScrollReader(
+                                          key: _scrollReader,
+                                          selectionChapter: _gestureChapter,
+                                          book: s.book!,
+                                          position: s.position!,
+                                          spec: spec,
+                                          controller: _scroll,
+                                          surface: (chapter) => _surface(chapter, null, state),
+                                          onPreviewPosition: (p, top) {
+                                            s.observe(p, top, persist: false);
+                                            if (comparing) {
+                                              ref.read(readerCompareProvider(widget.studySetId).notifier).changed(side);
+                                            }
+                                            if (pair?.right is AiCompareTarget) {
+                                              ref
+                                                  .read(readerTranslationProvider(widget.studySetId).notifier)
+                                                  .textSourceChanged(p);
+                                            }
+                                          },
+                                          onPosition: (p, top) {
+                                            s.observe(p, top);
+                                            if (comparing) {
+                                              ref.read(readerCompareProvider(widget.studySetId).notifier).changed(side);
+                                            }
+                                            if (pair?.right is AiCompareTarget) {
+                                              ref
+                                                  .read(readerTranslationProvider(widget.studySetId).notifier)
+                                                  .textSourceChanged(p);
+                                            }
+                                          },
+                                          onReady: () {
+                                            _restoreScroll();
+                                            if (mounted) setState(() {});
+                                          },
+                                        ),
+                                ),
                               ),
                             if (s.busy || (s.error == null && !drawable))
                               const Center(child: CircularProgressIndicator()),
@@ -620,6 +731,39 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                 bottom: 0,
                                 height: size.maxHeight * MMSizes.bottomSheetMedium,
                                 child: _sidebar(s, state),
+                              ),
+                            if (_marginColumn)
+                              Positioned(
+                                top: 0,
+                                bottom: 0,
+                                right: 0,
+                                width: MMReaderLayout.marginColumn,
+                                child: GestureDetector(
+                                  key: const ValueKey('reflow-margin-column'),
+                                  behavior: HitTestBehavior.opaque,
+                                  onTapDown: (d) {
+                                    for (final entry in _surfaceLayouts.entries) {
+                                      final layout = entry.value;
+                                      final box =
+                                          _surfaceKeys[entry.key]?.currentContext?.findRenderObject() as RenderBox?;
+                                      if (layout.isDisposed || box == null || !box.attached) continue;
+                                      final point = box.globalToLocal(d.globalPosition);
+                                      if (point.dy < 0 || point.dy > box.size.height) continue;
+                                      final anchor = layout.hitTest(
+                                        Offset(layout.spec.padding.left, point.dy),
+                                        page: entry.key.$2,
+                                      );
+                                      paragraphMarginCommand(
+                                        context.l10n,
+                                        ref,
+                                        widget.studySetId,
+                                        widget.document.id,
+                                        position: s.book!.position(anchor.chapterId, anchor.start),
+                                      ).onInvoke?.call();
+                                      break;
+                                    }
+                                  },
+                                ),
                               ),
                             ..._marginNotes(s, style, size.maxWidth, paged),
                           ],
@@ -701,14 +845,27 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
               )
               .start;
     final label = layout.chapter.anchor(math.min(start, end), math.max(start, end)).quote;
+    _surfaceLayouts.removeWhere((_, value) => value.isDisposed);
+    _surfaceKeys.removeWhere((key, value) => !_surfaceLayouts.containsKey(key) && value.currentContext == null);
+    final surfaceId = (layout.chapter.id, page);
+    _surfaceLayouts[surfaceId] = layout;
+    final key = _surfaceKeys.putIfAbsent(surfaceId, GlobalKey.new);
     return TapRegion(
+      key: key,
       groupId: annotationTapGroup(widget.studySetId),
       child: Listener(
-        onPointerDown: (_) => _focus.requestFocus(),
+        onPointerDown: (_) {
+          _focus.requestFocus();
+          _takeInput();
+        },
         onPointerSignal: (_) {
+          _takeInput();
           if (_base == null) _dismiss();
         },
-        onPointerPanZoomStart: (_) => _panZoomX = 0,
+        onPointerPanZoomStart: (_) {
+          _takeInput();
+          _panZoomX = 0;
+        },
         onPointerPanZoomUpdate: (d) {
           if (page != null && session.zoom <= 1) _panZoomX += d.panDelta.dx;
         },
@@ -794,21 +951,29 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                     },
               child: Stack(
                 children: [
-                  CustomPaint(
-                    key: ValueKey(page == null || page == session.page ? 'reflow-surface' : 'reflow-second-page'),
-                    size: Size(
-                      layout.spec.width,
-                      page == null ? layout.height + MMSizes.readerNavigationHeight : layout.spec.pageHeight,
-                    ),
-                    painter: ReflowReaderPainter(
-                      layout,
-                      page,
-                      highlights,
-                      resolved,
-                      _selection,
-                      session.currentMatch,
-                      state.flashAnnotationId,
-                      state.selectedCardId == null ? null : workspace.content.card(state.selectedCardId!)?.annotationId,
+                  ReflowTools(
+                    studySetId: widget.studySetId,
+                    documentId: widget.document.id,
+                    layout: layout,
+                    page: page,
+                    child: CustomPaint(
+                      key: ValueKey(page == null || page == session.page ? 'reflow-surface' : 'reflow-second-page'),
+                      size: Size(
+                        layout.spec.width,
+                        page == null ? layout.height + MMSizes.readerNavigationHeight : layout.spec.pageHeight,
+                      ),
+                      painter: ReflowReaderPainter(
+                        layout,
+                        page,
+                        highlights,
+                        resolved,
+                        _selection,
+                        session.currentMatch,
+                        state.flashAnnotationId,
+                        state.selectedCardId == null
+                            ? null
+                            : workspace.content.card(state.selectedCardId!)?.annotationId,
+                      ),
                     ),
                   ),
                   ..._handles(layout, page),
@@ -1025,6 +1190,15 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     }
 
     final annotations = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
+    final unresolvedInk = workspace.content.inkStrokes.where((stroke) {
+      if (stroke.documentId != widget.document.id || stroke.textAnchor == null) return false;
+      final anchor = stroke.textAnchor!;
+      final chapter = book.chapter(anchor.anchor.chapterId);
+      return anchor.anchor.revision != book.revision ||
+          chapter?.resolves(anchor.anchor) != true ||
+          !chapter!.blocks.any((b) => b.id == anchor.blockId);
+    }).toList();
+    final reviewCount = annotations.where(needsReview).length + unresolvedInk.length;
     final panel = Container(
       width: MMSizeClass.of(context) == MMSizeClass.compact
           ? double.infinity
@@ -1102,8 +1276,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                       ),
                 ],
                 ReaderPanelMode.annotations => [
-                  if (annotations.isEmpty) entry(l.noAnnotations, () {}),
-                  if (annotations.any(needsReview)) ...[
+                  if (annotations.isEmpty && unresolvedInk.isEmpty) entry(l.noAnnotations, () {}),
+                  if (reviewCount > 0) ...[
                     Padding(
                       padding: const EdgeInsets.all(MMSpacing.m),
                       child: Row(
@@ -1115,15 +1289,26 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                           ),
                           const SizedBox(width: MMSpacing.s),
                           Text(
-                            l.annotationsNeedReview(annotations.where(needsReview).length),
+                            l.annotationsNeedReview(reviewCount),
                             style: context.mmText.subheadline.copyWith(color: context.mmColors.caution),
                           ),
                         ],
                       ),
                     ),
+                    for (final stroke in unresolvedInk)
+                      entry(
+                        stroke.textAnchor!.anchor.quote,
+                        () {
+                          final chapter = book.chapter(stroke.textAnchor!.anchor.chapterId);
+                          if (chapter != null) navigate(book.position(chapter.id, 0));
+                          _missing();
+                        },
+                        subtitle: l.readerNeedsReview,
+                        onDelete: () => workspace.eraseInkStrokes({stroke.id}),
+                      ),
                     for (final a in annotations.where(needsReview))
                       entry(
-                        a.quote,
+                        a.capture == null ? a.quote : l.imageExcerpt,
                         () async {
                           final chapter = book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.firstOrNull;
                           if (chapter != null) await navigate(book.position(chapter.id, 0));
@@ -1142,7 +1327,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                   ],
                   for (final a in annotations.where((a) => !needsReview(a)))
                     entry(
-                      a.quote,
+                      a.capture == null ? a.quote : l.imageExcerpt,
                       () {
                         final anchor = book.resolve(a.textAnchors.first)!;
                         navigate(book.position(anchor.chapterId, anchor.start));
@@ -1185,45 +1370,97 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
 
   List<Widget> _marginNotes(ReflowSession s, MMReaderStyle style, double width, bool paged) {
     if (!s.ready) return [];
+    final viewport = _viewport.currentContext?.findRenderObject() as RenderBox?;
+    if (viewport == null || !viewport.hasSize) return [];
     final margin = ref.watch(readerMarginProvider(widget.studySetId));
     final notes = ref.read(readerMarginProvider(widget.studySetId).notifier).notes(widget.document.id);
-    final result = <Widget>[];
-    var previousBottom = 0.0;
+    final visible = <({MarginNote note, double y, double height})>[];
+    final cardWidth = math.max(1.0, math.min(MMReaderLayout.marginColumn, width - MMSpacing.l));
     for (final note in notes) {
-      final anchor = note.anchor?.textAnchors.firstOrNull;
+      final original = note.anchor?.textAnchors.firstOrNull;
+      final anchor = original == null ? null : s.book!.resolve(original);
       if (anchor == null) continue;
-      final box = s.layout!.reveal(anchor, page: paged ? s.page : null)?.rect;
-      if (box == null) continue;
-      final y = box.top - (paged ? 0 : (_scroll.hasClients ? _scroll.offset : 0));
-      if (y < 0 || y > s.spec!.pageHeight) continue;
-      final expanded =
-          margin.openDocuments.contains(widget.document.id) &&
-          width > MMReaderLayout.measure + MMReaderLayout.marginColumn;
-      final showing = expanded || margin.popup.contains(note.id) || margin.draft?.id == note.id;
-      if (showing) {
-        final top = math.max(y, previousBottom);
+      for (final entry in _surfaceLayouts.entries) {
+        final layout = entry.value;
+        final box = _surfaceKeys[entry.key]?.currentContext?.findRenderObject() as RenderBox?;
+        if (layout.isDisposed || box == null || !box.attached || !box.hasSize) continue;
+        final boxes = layout.boxes(anchor, page: entry.key.$2);
+        if (boxes.isEmpty) continue;
+        final point = viewport.globalToLocal(box.localToGlobal(boxes.first.rect.topRight));
+        if (point.dy < 0 || point.dy >= viewport.size.height) continue;
+        visible.add((note: note, y: point.dy, height: marginNoteHeight(context, note, cardWidth, style)));
+        break;
+      }
+    }
+    visible.sort((a, b) => a.y.compareTo(b.y));
+    final packed = packReflowNotes(
+      [for (final n in visible) (y: n.y, height: n.height)],
+      viewport.size.height,
+      MMSpacing.s,
+    );
+    final result = <Widget>[];
+    final markers = <({double y, List<MarginNote> notes})>[];
+    final popups = <MarginNote>[];
+    var popupTop = viewport.size.height;
+    for (var i = 0; i < visible.length; i++) {
+      final n = visible[i], place = packed[i];
+      final popup = margin.popup.contains(n.note.id) || margin.draft?.id == n.note.id;
+      if (popup) {
+        popups.add(n.note);
+        popupTop = math.min(popupTop, n.y);
+      } else if (_marginColumn && place.card) {
         result.add(
           Positioned(
-            top: top,
+            top: place.top,
             right: MMSpacing.s,
-            width: MMReaderLayout.marginColumn,
-            child: MarginNoteCard(key: ValueKey(note.id), studySetId: widget.studySetId, note: note, style: style),
+            width: cardWidth,
+            child: MarginNoteCard(key: ValueKey(n.note.id), studySetId: widget.studySetId, note: n.note, style: style),
           ),
         );
-        previousBottom = top + marginNoteHeight(context, note, MMReaderLayout.marginColumn, style) + MMSpacing.s;
       } else {
-        result.add(
-          Positioned(
-            top: y,
-            right: MMSpacing.xs,
-            child: MMToolbarButton(
-              icon: MMIcons.quoteBubble,
-              tooltip: context.l10n.marginNotes,
-              onPressed: () => ref.read(readerMarginProvider(widget.studySetId).notifier).show([note]),
+        final group = markers.where((m) => (m.y - n.y).abs() < MMSizes.readerToolbarButton.height).firstOrNull;
+        if (group == null) {
+          markers.add((y: n.y, notes: [n.note]));
+        } else {
+          group.notes.add(n.note);
+        }
+      }
+    }
+    for (final group in markers) {
+      result.add(
+        Positioned(
+          top: group.y.clamp(0.0, math.max(0.0, viewport.size.height - MMSizes.touchTarget)),
+          right: MMSpacing.xs,
+          child: MMToolbarButton(
+            key: ValueKey('margin-marker-${group.notes.first.id}'),
+            icon: MMIcons.quoteBubble,
+            tooltip: context.l10n.marginNotes,
+            onPressed: () => ref.read(readerMarginProvider(widget.studySetId).notifier).show(group.notes),
+          ),
+        ),
+      );
+    }
+    if (popups.isNotEmpty) {
+      final top = math.min(popupTop, viewport.size.height * (1 - MMSizes.bottomSheetMedium));
+      result.add(
+        Positioned(
+          top: top,
+          right: MMSpacing.s,
+          width: cardWidth,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: viewport.size.height - top),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final note in popups)
+                    MarginNoteCard(key: ValueKey(note.id), studySetId: widget.studySetId, note: note, style: style),
+                ],
+              ),
             ),
           ),
-        );
-      }
+        ),
+      );
     }
     return result;
   }
@@ -1252,7 +1489,7 @@ class ReflowReaderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (layout.isDisposed) return;
     for (final a in annotations) {
-      if (a.kind == AnnotationKind.underline) continue;
+      if (a.kind == AnnotationKind.underline || a.capture != null) continue;
       for (final anchor in resolved[a.id] ?? <TextAnchor>[]) {
         for (final box in layout.boxes(anchor, page: page)) {
           canvas.drawRect(

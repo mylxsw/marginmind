@@ -9,10 +9,10 @@ class SourceSelection {
       textAnchors = const [],
       text = selection.text,
       viewportRect = selection.viewportRect;
-  SourceSelection.text(List<TextAnchor> anchors, {this.viewportRect})
+  SourceSelection.text(List<TextAnchor> anchors, {this.viewportRect, String? text})
     : textAnchors = List.unmodifiable(anchors),
       pages = const [],
-      text = anchors.map((a) => a.quote).join('\n') {
+      text = text ?? anchors.map((a) => a.quote).join('\n') {
     if (anchors.isEmpty) throw ArgumentError('Missing text anchors');
     for (final a in anchors) {
       a.validate();

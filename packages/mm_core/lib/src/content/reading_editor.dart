@@ -2,6 +2,7 @@ import 'editor.dart';
 import 'models.dart';
 import 'reading.dart';
 import 'study_set_content.dart';
+import 'text_anchor.dart';
 
 /// Pure reading edits, used inside the repository's serialized update callback.
 extension ReadingEditor on StudySetEditor {
@@ -106,6 +107,19 @@ extension ReadingEditor on StudySetEditor {
     final left = _document(c, pair.leftDocumentId);
     if (pair.right case PdfCompareTarget(:final documentId)) {
       final right = _document(c, documentId);
+      bool valid(ReadingPosition position, Document doc) => switch (position) {
+        TextReadingPosition(:final revision) => doc.contentManifest != null && revision == doc.revision,
+        PdfPosition(:final page) => doc.contentManifest == null && page <= doc.pageCount,
+      };
+      final seenLeft = <String>{}, seenRight = <String>{};
+      for (final point in pair.sourceAlignPoints) {
+        if (!valid(point.left, left) ||
+            !valid(point.right, right) ||
+            !seenLeft.add(point.left.toJson().toString()) ||
+            !seenRight.add(point.right.toJson().toString())) {
+          throw ArgumentError('Invalid or duplicate source alignment');
+        }
+      }
       AlignPoint? previous;
       for (final point in pair.alignPoints) {
         if (point.left.page > left.pageCount ||

@@ -16,6 +16,7 @@ import '../../../shared/pdf_picker.dart';
 import '../../assistant/assistant_settings.dart';
 import '../reader_compare.dart';
 import 'reader_translation_view.dart';
+import 'reading_settings.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -319,6 +320,17 @@ class ReaderCompareView extends ConsumerWidget {
       key: const ValueKey('compare-floating-controls'),
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (session.usesSourceAlignment && pair.right is PdfCompareTarget)
+          MMIconButton(
+            key: const ValueKey('compare-align'),
+            icon: MMIcons.compare,
+            tooltip: l.compareAlign,
+            size: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareControl,
+            iconSize: MMSizes.dropdownIcon,
+            onPressed: () => action(() async {
+              await session.align();
+            }),
+          ),
         MMIconButton(
           size: context.mmTouch ? MMSizes.touchTarget : MMSizes.readerCompareControl,
           iconSize: MMSizes.dropdownIcon,
@@ -377,13 +389,24 @@ class ReaderCompareView extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(width: 6),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final page =
-                          ref.watch(readingPagesProvider(studySetId).select((pages) => pages[id])) ?? doc.lastPage;
-                      return Text(l.pageNumber(page), style: context.mmText.callout.copyWith(color: c.secondaryLabel));
-                    },
-                  ),
+                  if (doc.capabilities().readingSettings)
+                    MMToolbarButton(
+                      key: ValueKey('compare-settings-$id'),
+                      icon: MMIcons.readingSettings,
+                      tooltip: l.readingSettings,
+                      onPressed: () => showReadingSettings(context, ref, studySetId, document: doc),
+                    ),
+                  if (doc.contentManifest == null)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final page =
+                            ref.watch(readingPagesProvider(studySetId).select((pages) => pages[id])) ?? doc.lastPage;
+                        return Text(
+                          l.pageNumber(page),
+                          style: context.mmText.callout.copyWith(color: c.secondaryLabel),
+                        );
+                      },
+                    ),
                   if (side == 1) ...[
                     MMIconButton(
                       key: const ValueKey('compare-swap'),

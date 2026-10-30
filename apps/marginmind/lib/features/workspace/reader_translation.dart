@@ -9,6 +9,9 @@ import '../../app/providers.dart';
 import '../assistant/assistant_settings.dart';
 import 'reader_compare.dart';
 import 'reader_ocr.dart';
+import 'reader_paragraphs.dart';
+import 'reflow_document.dart';
+import 'reflow_session.dart';
 import 'workspace_controller.dart';
 
 final translationParagraphsProvider = FutureProvider.autoDispose.family<List<TranslationParagraph>, (String, String)>((
@@ -16,7 +19,16 @@ final translationParagraphsProvider = FutureProvider.autoDispose.family<List<Tra
   key,
 ) {
   final workspace = ref.read(workspaceProvider(key.$1).notifier);
-  final doc = workspace.content.document(key.$2)!;
+  ref.watch(workspaceProvider(key.$1).select((s) => s.content?.document(key.$2)?.revision));
+  final doc = workspace.content.document(key.$2);
+  if (doc == null) return Future.value(<TranslationParagraph>[]);
+  if (doc.contentManifest != null) {
+    return ReflowDocument.load(
+      ref.read(contentRepositoryProvider) as DocumentRepository,
+      key.$1,
+      doc,
+    ).then(reflowParagraphs);
+  }
   final path = workspace.filePath(doc);
   final ocr = ref.watch(readerOcrProvider(path));
   return MMPdfEngine.translationParagraphs(ocr.document?.path ?? path, doc.id);
@@ -47,6 +59,7 @@ class ReaderTranslationState {
     this.page = 1,
     this.position,
     this.hovered,
+    this.textPosition,
   });
   final List<TranslationParagraph> paragraphs;
   final Map<String, String> values;
@@ -54,7 +67,8 @@ class ReaderTranslationState {
   final int page;
   final String? hovered;
   final PdfReadingPosition? position;
-  Iterable<TranslationParagraph> get pageParagraphs => paragraphs.where((p) => p.page == page);
+  final TextReadingPosition? textPosition;
+  Iterable<TranslationParagraph> get pageParagraphs => paragraphs.where((p) => translationGroup(p) == page);
   int get done => paragraphs.where((p) => values.containsKey(p.fingerprint)).length;
   int get pageDone => pageParagraphs.where((p) => values.containsKey(p.fingerprint)).length;
   bool get complete => !loading && !failed && pageParagraphs.every((p) => values.containsKey(p.fingerprint));
@@ -65,6 +79,7 @@ class ReaderTranslationState {
     bool? failed,
     int? page,
     PdfReadingPosition? position,
+    TextReadingPosition? textPosition,
     String? hovered,
     bool clearHover = false,
   }) => ReaderTranslationState(
@@ -74,6 +89,7 @@ class ReaderTranslationState {
     failed: failed ?? this.failed,
     page: page ?? this.page,
     position: position ?? this.position,
+    textPosition: textPosition ?? this.textPosition,
     hovered: clearHover ? null : hovered ?? this.hovered,
   );
 }
@@ -111,6 +127,16 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       _cancelPage();
       if (key != null) unawaited(_load());
     });
+    ref.listen(
+      workspaceProvider(studySetId).select((s) => s.content?.documents.map((d) => '${d.id}:${d.revision}').join('|')),
+      (before, after) {
+        if (before != after && ref.read(readerCompareProvider(studySetId))?.right is AiCompareTarget) {
+          _generation++;
+          _cancelPage();
+          unawaited(_load());
+        }
+      },
+    );
     Future.microtask(() {
       if (ref.mounted && ref.read(readerCompareProvider(studySetId))?.right is AiCompareTarget) {
         final pair = ref.read(readerCompareProvider(studySetId))!;
@@ -145,13 +171,19 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
           if (cache?.paragraphs[p.fingerprint]?.trim().isNotEmpty == true)
             p.fingerprint: cache!.paragraphs[p.fingerprint]!,
       };
+      final document = ref.read(workspaceProvider(studySetId).notifier).content.document(id);
+      final textPosition = document?.contentManifest == null
+          ? null
+          : ref.read(reflowSessionProvider((studySetId, id))).position;
       final pdf = ref.read(documentPdfProvider((studySetId, id)));
-      final position = pdf.readingPosition;
+      final position = document?.contentManifest == null ? pdf.readingPosition : null;
       final fallback =
           ref.read(readingPagesProvider(studySetId))[id] ??
           ref.read(workspaceProvider(studySetId).notifier).content.document(id)?.lastPage ??
           1;
-      final page = position?.page ?? fallback;
+      final page = textPosition == null
+          ? position?.page ?? fallback
+          : translationGroup(paragraphAt(paragraphs, textPosition) ?? paragraphs.first);
       state = ReaderTranslationState(
         paragraphs: paragraphs,
         values: cached,
@@ -159,6 +191,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
         failed: paragraphs.isEmpty,
         page: page,
         position: position,
+        textPosition: textPosition,
       );
       if (paragraphs.isNotEmpty) await _translatePage(page);
     } catch (_) {
@@ -169,8 +202,15 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
   Future<void> _translatePage(int page) async {
     _cancelPage();
     final documentGeneration = _generation, pageGeneration = _pageGeneration;
-    bool current() => ref.mounted && documentGeneration == _generation && pageGeneration == _pageGeneration;
-    final paragraphs = state.paragraphs.where((p) => p.page == page).toList();
+    final pairAtStart = ref.read(readerCompareProvider(studySetId));
+    final sourceId = pairAtStart?.leftDocumentId;
+    final revision = ref.read(workspaceProvider(studySetId).notifier).content.document(sourceId ?? '')?.revision;
+    bool current() =>
+        ref.mounted &&
+        documentGeneration == _generation &&
+        pageGeneration == _pageGeneration &&
+        ref.read(workspaceProvider(studySetId).notifier).content.document(sourceId ?? '')?.revision == revision;
+    final paragraphs = state.paragraphs.where((p) => translationGroup(p) == page).toList();
     // Cached pages, including a partially cached document opened offline, do
     // not read credentials, create a connection or queue any translation.
     if (paragraphs.every((p) => state.values.containsKey(p.fingerprint))) return;
@@ -218,7 +258,9 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
         save: (p, text) async {
           if (!current()) return;
           await ref.read(contentRepositoryProvider).update(studySetId, (content) {
-            if (!current() || content.document(id) == null) return content;
+            if (!current() || content.document(id) == null || content.document(id)?.revision != revision) {
+              return content;
+            }
             return ref
                 .read(editorProvider)
                 .mergeTranslationParagraphs(
@@ -235,6 +277,11 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
         },
       );
       _session = session;
+      if (paragraphs.first.textAnchor != null) {
+        session.prioritize(paragraphs.map((p) => p.index), focus: paragraphs.first.index);
+        await session.start();
+        return;
+      }
       final pdf = ref.read(documentPdfProvider((studySetId, id)));
       final position = pdf.readingPosition;
       final initial = paragraphs.lastWhere(
@@ -264,9 +311,16 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     state = state.copyWith(position: position);
   }
 
+  void textSourceChanged(TextReadingPosition position) {
+    final p = paragraphAt(state.paragraphs, position);
+    if (p == null) return;
+    _showPage(translationGroup(p));
+    state = state.copyWith(textPosition: position);
+  }
+
   void prioritize(Iterable<int> visible, int focus) {
     final paragraph = state.paragraphs.where((p) => p.index == focus).firstOrNull;
-    if (paragraph != null) _showPage(paragraph.page, visible: visible, focus: focus);
+    if (paragraph != null) _showPage(translationGroup(paragraph), visible: visible, focus: focus);
   }
 
   void hover(String? key) => state = state.copyWith(hovered: key, clearHover: key == null);
