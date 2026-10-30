@@ -93,6 +93,14 @@ class MainFlutterWindow: NSWindow {
     } else { return nil }
   }
 
+  static func writeRichText(html: String, text: String, to pasteboard: NSPasteboard) -> Bool {
+    let item = NSPasteboardItem()
+    item.setString(html, forType: .html)
+    item.setString(text, forType: .string)
+    pasteboard.clearContents()
+    return pasteboard.writeObjects([item])
+  }
+
   override func awakeFromNib() {
     observeToolbarFullScreenTransitions()
     let flutterViewController = FlutterViewController()
@@ -132,6 +140,22 @@ class MainFlutterWindow: NSWindow {
         pasteboard.clearContents()
         if pasteboard.writeObjects([item]) { result(nil) }
         else { result(FlutterError(code: "clipboard_write", message: nil, details: nil)) }
+      case "writeRichText":
+        guard let values = call.arguments as? [String: String],
+              let html = values["html"], let text = values["text"] else {
+          result(FlutterError(code: "invalid_arguments", message: nil, details: nil)); return
+        }
+        result(Self.writeRichText(html: html, text: text, to: pasteboard) ? nil : FlutterError(code: "clipboard_write", message: nil, details: nil))
+      case "writeImage":
+        guard let values = call.arguments as? [String: Any],
+              let bytes = values["bytes"] as? FlutterStandardTypedData,
+              NSImage(data: bytes.data) != nil else {
+          result(FlutterError(code: "invalid_arguments", message: nil, details: nil)); return
+        }
+        let item = NSPasteboardItem()
+        item.setData(bytes.data, forType: .png)
+        pasteboard.clearContents()
+        result(pasteboard.writeObjects([item]) ? nil : FlutterError(code: "clipboard_write", message: nil, details: nil))
       case "readImage":
         result(Self.readImage(from: pasteboard))
       case "read":

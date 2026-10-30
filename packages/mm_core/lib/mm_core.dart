@@ -61,3 +61,4 @@ export 'src/content/note_update.dart';
 export 'src/content/note_export.dart';
 
 export 'src/assistant/expansion.dart';
+export 'src/content/note_rich_export.dart';

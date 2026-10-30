@@ -1,17 +1,33 @@
-import 'dart:typed_data';
-
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+
+import 'capabilities.dart';
+import 'file_share.dart';
 
 import 'note_files_native.dart' if (dart.library.js_interop) 'note_files_web.dart' as files;
 
 /// The system save panel and relative image assets of a portable study note.
 abstract final class MMNoteFiles {
   static Future<bool> save(String name, Uint8List bytes, {Map<String, Uint8List> attachments = const {}}) async {
+    if (MMPlatformCapabilities.current.shareFile) return const MobileFileShare().share(name, bytes);
+    final extension = p.extension(name).replaceFirst('.', '');
+    final mime = switch (extension) {
+      'pdf' => 'application/pdf',
+      'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'png' => 'image/png',
+      'html' => 'text/html',
+      _ => 'text/markdown',
+    };
+    if (kIsWeb) {
+      if (attachments.isNotEmpty) throw UnsupportedError('Image assets require a desktop export');
+      await XFile.fromData(bytes, name: name, mimeType: mime).saveTo('');
+      return true;
+    }
     final location = await getSaveLocation(
       suggestedName: name,
       acceptedTypeGroups: [
-        const XTypeGroup(label: 'Markdown', extensions: ['md']),
+        XTypeGroup(label: extension.toUpperCase(), extensions: [extension]),
       ],
     );
     if (location == null) return false;
@@ -24,7 +40,7 @@ abstract final class MMNoteFiles {
       }
       await files.write(p.dirname(location.path), entry.key, entry.value);
     }
-    await XFile.fromData(bytes, name: name, mimeType: 'text/markdown').saveTo(location.path);
+    await XFile.fromData(bytes, name: name, mimeType: mime).saveTo(location.path);
     return true;
   }
 

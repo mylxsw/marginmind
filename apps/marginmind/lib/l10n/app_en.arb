@@ -2260,5 +2260,29 @@
   "noteAddToReview": "Add to Review",
   "noteUpdateChanges": "{count, plural, =1{1 change} other{{count} changes}}",
   "@noteUpdateApplied": {"placeholders": {"count": {"type": "int"}}},
-  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}}
+  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}},
+  "noteShareTitle": "Share as Image",
+  "noteShareQuote": "Quote",
+  "noteShareSection": "Section",
+  "noteShareSummary": "Summary",
+  "noteSharePaper": "Paper",
+  "noteSharePlain": "Plain",
+  "noteShareNight": "Night",
+  "noteShareAi": "AI Summary",
+  "noteShareFooter": "From my MarginMind notes",
+  "noteSharedCount": "{count} highlights",
+  "noteNoQuotes": "No quotes",
+  "noteCopyImage": "Copy Image",
+  "noteSaveImage": "Save Image…",
+  "noteShareAction": "Share…",
+  "noteCopyRich": "Copy as Rich Text",
+  "noteCopyMarkdown": "Copy as Markdown",
+  "noteRichText": "Rich Text",
+  "@noteSharedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

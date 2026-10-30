@@ -6,6 +6,16 @@ import 'capabilities.dart';
 abstract final class MMMapClipboard {
   static const channel = MethodChannel('marginmind/map_clipboard');
 
+  static Future<void> writeRichText({required String html, required String text}) async {
+    if (!MMPlatformCapabilities.current.nativeMapClipboard) throw UnsupportedError('Rich clipboard');
+    await channel.invokeMethod<void>('writeRichText', {'html': html, 'text': text});
+  }
+
+  static Future<void> writeImage(Uint8List bytes) async {
+    if (!MMPlatformCapabilities.current.nativeMapClipboard) throw UnsupportedError('Image clipboard');
+    await channel.invokeMethod<void>('writeImage', {'bytes': bytes});
+  }
+
   /// Screenshot bytes, or a Finder image URL, copied into the package by callers.
   static Future<({Uint8List? bytes, String? path})?> readImage() async {
     if (!MMPlatformCapabilities.current.nativeMapClipboard) return null;

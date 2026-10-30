@@ -151,6 +151,8 @@ abstract final class MMSizes {
   static const double noteExportSheetWidth = 900;
   static const double noteExportOptionsWidth = 280;
   static const double noteExportBodyHeight = 520;
+  static const double noteShareSheetWidth = 860;
+  static const double noteShareOptionsWidth = 250;
   static const double noteFormThumbHeight = 56;
   static const double noteTemplateCardWidth = 128;
   static const double noteColorDot = 14;

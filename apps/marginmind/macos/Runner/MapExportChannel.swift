@@ -47,6 +47,17 @@ final class MapExportChannel {
   }
 
   static func pdf(_ args: [String: Any]) throws -> Data {
+    if let pages = args["pages"] as? [[[String: Any]]] {
+      guard !pages.isEmpty, pages.count <= 10000 else { throw ExportError.invalidScene }
+      let document = PDFDocument()
+      for commands in pages {
+        let data = try pdf(["width": args["width"] as Any, "height": args["height"] as Any, "commands": commands])
+        guard let page = PDFDocument(data: data)?.page(at: 0) else { throw ExportError.invalidScene }
+        document.insert(page, at: document.pageCount)
+      }
+      guard let data = document.dataRepresentation() else { throw ExportError.invalidScene }
+      return data
+    }
     let width = try number(args["width"]), height = try number(args["height"])
     guard width > 0, height > 0, width <= 1000000, height <= 1000000,
           let commands = args["commands"] as? [[String: Any]] else { throw ExportError.invalidScene }

@@ -4398,4 +4398,57 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count changes', one: '1 change');
     return '$_temp0';
   }
+
+  @override
+  String get noteShareTitle => 'Share as Image';
+
+  @override
+  String get noteShareQuote => 'Quote';
+
+  @override
+  String get noteShareSection => 'Section';
+
+  @override
+  String get noteShareSummary => 'Summary';
+
+  @override
+  String get noteSharePaper => 'Paper';
+
+  @override
+  String get noteSharePlain => 'Plain';
+
+  @override
+  String get noteShareNight => 'Night';
+
+  @override
+  String get noteShareAi => 'AI Summary';
+
+  @override
+  String get noteShareFooter => 'From my MarginMind notes';
+
+  @override
+  String noteSharedCount(int count) {
+    return '$count highlights';
+  }
+
+  @override
+  String get noteNoQuotes => 'No quotes';
+
+  @override
+  String get noteCopyImage => 'Copy Image';
+
+  @override
+  String get noteSaveImage => 'Save Image…';
+
+  @override
+  String get noteShareAction => 'Share…';
+
+  @override
+  String get noteCopyRich => 'Copy as Rich Text';
+
+  @override
+  String get noteCopyMarkdown => 'Copy as Markdown';
+
+  @override
+  String get noteRichText => 'Rich Text';
 }
