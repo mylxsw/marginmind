@@ -136,3 +136,11 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 ### 脑图 AI 扩展想法（GUL-606）
 
 草稿节点（`MapGhostNode`）与同标题主题同尺寸：`researchWash` 底、`MMSizes.mapDraftBorder` 1pt `research` 虚线（`mapDraftDash` 4 / `mapDraftDashGap` 3）、圆角 12；方向标签与页码 chip 高 `mapDraftTag`（16pt，圆角 `MMRadii.mapDraftTag` 4），方向标签为实心 `research` + `onResearch`。生成 / 审阅底部条高 `MMSizes.ideaBar`（40pt），下沿距脑图面板底 `ideaBarBottomInset`（64pt，避开视图控制和窗口 HUD）；调整菜单宽 `ideaAdjustWidth`（330pt）；扩展计划卡宽 `ideaPlanWidth`（420pt）、行高 `ideaPlanRow`（36pt）。弹层“扩展想法”区圆角 `MMRadii.ideaSection`（10pt），主按钮高 `ideaPrimaryButton`（34pt），方向 chip 高 `ideaChip`（22pt）。图标 `MMIcons.expandIdeas` / `groupParent` / `fillSiblings` / `adjust` 取自 Lucide。完整规格见 [mindmap-ai-expand-ui.md](mindmap-ai-expand-ui.md)。
+
+### 学习笔记（GUL-588）
+
+笔记正文使用 `MMNoteLayout`：正文宽 600、左留白 64（窄栏 20）、右留白 56、上下留白 30/120、块间距 12、引用色条 3、引用缩进 16；目录宽 150，仅在笔记面板至少 1000 时浮动。康奈尔线索栏 170，复习答案模糊半径 5。工具栏高 44。整理与导出面板宽 640/900，导出选项列 280、内容区高 520，范围不够时纵向滚动。
+
+`MMNoteTypography`：标题 24/31、节标题 17/22、正文 14/24.5、宋体摘录 15/27.75、宋体上下文 14/26。颜色复用现有窗口、正文、划线色与黄色批注底色；笔记图标为 `MMIcons.studyNote`（notebookText），导出为 `MMIcons.export`（download）。完整规格见 `docs/study-notes-ui.md`。
+
+笔记窄面板的“更多”使用 `MMDropdownSubmenu` 级联目录与版式，再列“导出笔记…”；宽面板的目录/版式显示文字和下拉箭头，导出显示图标与文字。出处列表按文档身份合并，PDF 页码去重排序，文本文档不重复列出；摘录来源带定位图标和章节 tooltip，批注来源带页码或节点标题。

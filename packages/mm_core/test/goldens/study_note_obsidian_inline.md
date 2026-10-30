@@ -10,9 +10,8 @@ created: "2026-10-30T00:00:00.000Z"
 <a id="section-1"></a>
 ## Book
 
-> [!quote]
+> [!quote] [[Book#p1|《Book》p.1]]
 > 记忆需要练习。
-> —— [[Book#p1]]
 
 > [!info] 上下文
 > 前言。
@@ -37,4 +36,4 @@ created: "2026-10-30T00:00:00.000Z"
 
 ## 出处
 
-- [[Book#p1]]
+- [[Book]]

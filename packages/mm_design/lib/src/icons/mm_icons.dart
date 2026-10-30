@@ -5,6 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// Lucide icons. Feature code refers to these names so icon
 /// sources can change without altering controls or their behavior.
 abstract final class MMIcons {
+  static const context = LucideIcons.textQuote;
+  static const studyNote = LucideIcons.notebookText;
+  static const export = LucideIcons.download;
   static const IconData speaker = CupertinoIcons.speaker_2;
   static const compare = CupertinoIcons.square_split_2x1;
   static const swapSides = CupertinoIcons.arrow_right_arrow_left;

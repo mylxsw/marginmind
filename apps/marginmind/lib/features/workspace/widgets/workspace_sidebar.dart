@@ -17,6 +17,8 @@ import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
+import '../../study_notes/note_setup_sheet.dart';
+import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
 
 /// Study set sidebar: back to the library, search, then mind maps,
@@ -34,7 +36,9 @@ class WorkspaceSidebar extends ConsumerWidget {
     final c = context.mmColors;
     final provider = workspaceProvider(studySetId);
     ref.watch(
-      provider.select((s) => (s.sidebarQuery, s.activeMapId, s.activeDocumentId, s.tagFilter, s.selectedCardId)),
+      provider.select(
+        (s) => (s.sidebarQuery, s.activeMapId, s.activeNoteId, s.activeDocumentId, s.tagFilter, s.selectedCardId),
+      ),
     );
     final state = ref.read(provider);
     final controller = ref.read(provider.notifier);
@@ -51,12 +55,53 @@ class WorkspaceSidebar extends ConsumerWidget {
             key: ValueKey('sidebar-map-${map.id}'),
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
-            selected: map.id == state.activeMapId,
+            selected: state.activeNoteId == null && map.id == state.activeMapId,
             onTap: () async {
               await controller.selectMap(map.id);
               controller.setLayout(MMSplitMode.secondary);
             },
             onContextMenu: (position) => _mapMenu(context, ref, map, position),
+          ),
+    ];
+    final orderedNotes = (content?.studyNotes ?? <StudyNote>[]).toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final notes = [
+      for (final note in orderedNotes)
+        if (matches(note.title))
+          MMSidebarItem(
+            key: ValueKey('sidebar-note-${note.id}'),
+            icon: MMIcons.studyNote,
+            label: note.title,
+            selected: state.activeNoteId == note.id,
+            onTap: () => controller.openStudyNote(note.id),
+            onContextMenu: (position) => showMMMenu(
+              context,
+              position: position,
+              entries: [
+                MMMenuItem(l.renameEllipsis, () async {
+                  final title = await showRenameSheet(context, title: l.renameEllipsis, initial: note.title);
+                  if (title != null && title.trim().isNotEmpty) {
+                    await controller.changeStudyNote(note.id, (n) => n.copyWith(title: title.trim()));
+                  }
+                }),
+                MMMenuItem(l.exportStudyNote, () => showNoteExportSheet(context, ref, studySetId, note.id)),
+                MMMenuItem(l.delete, () async {
+                  await controller.deleteStudyNote(note.id);
+                  if (context.mounted) {
+                    MMHud.show(
+                      context,
+                      l.deletedHud(note.title),
+                      action: (
+                        l.undo,
+                        () {
+                          controller.undo();
+                        },
+                      ),
+                    );
+                  }
+                }, destructive: true),
+              ],
+            ),
           ),
     ];
     final browser = ref.watch(workspaceBrowserProvider(studySetId));
@@ -279,17 +324,6 @@ class WorkspaceSidebar extends ConsumerWidget {
               ...cards,
             ],
           ),
-        if (maps.isNotEmpty)
-          MMSidebarSection(
-            title: l.sectionMaps,
-            showTrailingOnHover: true,
-            trailing: MMIconButton(
-              icon: MMIcons.add,
-              tooltip: l.newMap,
-              onPressed: () => showNewMapSheet(context, ref, studySetId),
-            ),
-            children: maps,
-          ),
         if (docs.isNotEmpty || query.isEmpty)
           MMSidebarSection(
             title: l.sectionDocuments,
@@ -314,6 +348,27 @@ class WorkspaceSidebar extends ConsumerWidget {
                     onPressed: () => pickAndImportDocuments(context, ref, studySetId),
                   ),
             children: docs,
+          ),
+        if (maps.isNotEmpty)
+          MMSidebarSection(
+            title: l.sectionMaps,
+            showTrailingOnHover: true,
+            trailing: MMIconButton(
+              icon: MMIcons.add,
+              tooltip: l.newMap,
+              onPressed: () => showNewMapSheet(context, ref, studySetId),
+            ),
+            children: maps,
+          ),
+        if (notes.isNotEmpty || query.isEmpty)
+          MMSidebarSection(
+            title: l.notesTitle,
+            trailing: MMIconButton(
+              icon: MMIcons.add,
+              tooltip: l.organizeStudyNote,
+              onPressed: () => showNoteSetupSheet(context, ref, studySetId),
+            ),
+            children: notes,
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
       ],

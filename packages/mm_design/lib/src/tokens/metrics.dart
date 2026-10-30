@@ -146,6 +146,14 @@ abstract final class MMSizes {
 
   /// Toolbar search field in a compact window.
   static const double compactSearchWidth = 160;
+  static const double noteSetupSheetWidth = 640;
+  static const double noteExportSheetWidth = 900;
+  static const double noteExportOptionsWidth = 280;
+  static const double noteExportBodyHeight = 520;
+  static const double noteFormThumbHeight = 56;
+  static const double noteTemplateCardWidth = 128;
+  static const double noteColorDot = 14;
+  static const double noteCoverageWidth = 340;
   static const Size windowMinSize = Size(960, 600);
 
   /// AI idea expansion (GUL-581): the popover's primary button and direction
@@ -196,4 +204,25 @@ abstract final class MMReaderLayout {
   static const double settingsWidth = 280;
   static const double thumbnailWidth = 112;
   static const double thumbnailHeight = 144;
+}
+
+/// Written study notes, shared by setup, reading and export surfaces.
+abstract final class MMNoteLayout {
+  static const double measure = 600;
+  static const double gutter = 64;
+  static const double gutterCompact = 20;
+  static const double trailing = 56;
+  static const double topInset = 30;
+  static const double bottomInset = 120;
+  static const double blockButton = 22;
+  static const double blockGap = 12;
+  static const double sectionTop = 30;
+  static const double sectionBottom = 10;
+  static const double quoteBar = 3;
+  static const double quoteIndent = 16;
+  static const double tocWidth = 150;
+  static const double tocMinWidth = 1000;
+  static const double barHeight = 44;
+  static const double cornellCueWidth = 170;
+  static const double answerBlur = 5;
 }

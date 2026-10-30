@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/adaptive.dart';
+import '../icons/mm_icons.dart';
+import 'buttons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 
@@ -125,4 +127,133 @@ class _MMDropdownItemState<T> extends PopupMenuItemState<T, MMDropdownItem<T>> {
       ),
     ),
   );
+}
+
+/// A dropdown whose entries can include cascading submenus. One MenuAnchor
+/// owns the entire tree so sibling hover, focus and Escape share a menu root.
+class MMDropdownMenuButton<T> extends StatefulWidget {
+  const MMDropdownMenuButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.itemBuilder,
+    this.onSelected,
+  });
+  final IconData icon;
+  final String tooltip;
+  final PopupMenuItemBuilder<T> itemBuilder;
+  final ValueChanged<T>? onSelected;
+  @override
+  State<MMDropdownMenuButton<T>> createState() => _MMDropdownMenuButtonState<T>();
+}
+
+class _MMDropdownMenuButtonState<T> extends State<MMDropdownMenuButton<T>> {
+  final _controller = MenuController();
+  void _select(T value) {
+    _controller.close();
+    widget.onSelected?.call(value);
+  }
+
+  @override
+  Widget build(BuildContext context) => _MMDropdownMenuScope<T>(
+    select: _select,
+    child: MenuAnchor(
+      controller: _controller,
+      style: _dropdownMenuStyle(context),
+      onOpen: () => setState(() {}),
+      onClose: () {
+        if (mounted) setState(() {});
+      },
+      menuChildren: [
+        for (final entry in widget.itemBuilder(context))
+          if (entry is PopupMenuItem<T>)
+            MenuItemButton(
+              style: _dropdownMenuItemStyle(context),
+              onPressed: entry.enabled && entry.value != null ? () => _select(entry.value as T) : null,
+              child: entry.child,
+            )
+          else if (entry is PopupMenuDivider)
+            const Divider()
+          else
+            entry,
+      ],
+      builder: (_, controller, _) => MMIconButton(
+        icon: widget.icon,
+        tooltip: widget.tooltip,
+        selected: controller.isOpen,
+        onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+      ),
+    ),
+  );
+}
+
+class _MMDropdownMenuScope<T> extends InheritedWidget {
+  const _MMDropdownMenuScope({required this.select, required super.child});
+  final ValueChanged<T> select;
+  @override
+  bool updateShouldNotify(_MMDropdownMenuScope<T> oldWidget) => select != oldWidget.select;
+}
+
+MenuStyle _dropdownMenuStyle(BuildContext context) {
+  final c = context.mmColors;
+  return MenuStyle(
+    backgroundColor: WidgetStatePropertyAll(c.glassOpaque),
+    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+    elevation: const WidgetStatePropertyAll(0),
+    padding: const WidgetStatePropertyAll(EdgeInsets.all(MMSpacing.xs)),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MMRadii.dropdown),
+        side: BorderSide(color: c.hairline, width: .5),
+      ),
+    ),
+  );
+}
+
+ButtonStyle _dropdownMenuItemStyle(BuildContext context) => ButtonStyle(
+  textStyle: WidgetStatePropertyAll(context.mmText.callout),
+  foregroundColor: WidgetStatePropertyAll(context.mmColors.label),
+  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs)),
+  minimumSize: WidgetStatePropertyAll(Size(0, context.mmTouch ? MMSizes.touchTarget : MMSizes.dropdownRowHeight)),
+  shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row))),
+);
+
+/// A cascading entry for MMDropdownMenuButton; leaves return through its callback.
+class MMDropdownSubmenu<T> extends PopupMenuEntry<T> {
+  const MMDropdownSubmenu({super.key, required this.label, required this.entries});
+  final String label;
+  final List<({T value, String label, bool selected})> entries;
+  @override
+  double get height => MMSizes.dropdownRowHeight;
+  @override
+  bool represents(T? value) => false;
+  @override
+  State<MMDropdownSubmenu<T>> createState() => _MMDropdownSubmenuState<T>();
+}
+
+class _MMDropdownSubmenuState<T> extends State<MMDropdownSubmenu<T>> {
+  @override
+  Widget build(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<_MMDropdownMenuScope<T>>()!;
+    return SubmenuButton(
+      style: _dropdownMenuItemStyle(context),
+      menuStyle: _dropdownMenuStyle(context),
+      submenuIcon: const WidgetStatePropertyAll(Icon(MMIcons.chevronRight, size: MMSizes.dropdownIcon)),
+      menuChildren: [
+        for (final entry in widget.entries)
+          MenuItemButton(
+            style: _dropdownMenuItemStyle(context),
+            leadingIcon: SizedBox.square(
+              dimension: MMSizes.dropdownIcon,
+              child: entry.selected
+                  ? Icon(MMIcons.check, size: MMSizes.dropdownIcon, color: context.mmColors.accent)
+                  : null,
+            ),
+            onPressed: () => scope.select(entry.value),
+            child: Text(entry.label),
+          ),
+      ],
+      child: Text(widget.label),
+    );
+  }
 }

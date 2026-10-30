@@ -3998,4 +3998,245 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapIdeaBusy => 'The model is busy. Try again later.';
+
+  @override
+  String get notesTitle => 'Notes';
+
+  @override
+  String get organizeStudyNote => 'Organize Study Notes…';
+
+  @override
+  String get organizeNotes => 'Organize Notes';
+
+  @override
+  String get organizeSelection => 'Create Study Note';
+
+  @override
+  String get exportStudyNote => 'Export Note…';
+
+  @override
+  String get noteSetupTitle => 'Organize Study Notes';
+
+  @override
+  String get noteScope => 'Scope';
+
+  @override
+  String get noteMaterials => 'Materials';
+
+  @override
+  String get noteOrganization => 'Organization';
+
+  @override
+  String get noteDepth => 'AI Contribution';
+
+  @override
+  String get noteContext => 'Context';
+
+  @override
+  String get noteTemplate => 'Layout';
+
+  @override
+  String get noteSelected => 'Selected highlights';
+
+  @override
+  String get noteWhole => 'Entire study set';
+
+  @override
+  String get noteRecent => 'Last 7 days';
+
+  @override
+  String get noteHighlights => 'Highlights';
+
+  @override
+  String get noteOwn => 'My Notes';
+
+  @override
+  String get noteMapNotes => 'Map Notes';
+
+  @override
+  String get noteSavedAi => 'Saved AI Notes';
+
+  @override
+  String get noteImages => 'Image Cards';
+
+  @override
+  String get noteTheme => 'By Theme';
+
+  @override
+  String get noteSourceOrder => 'Source Order';
+
+  @override
+  String get noteMapOrder => 'Map Structure';
+
+  @override
+  String get noteLocal => 'Format Only';
+
+  @override
+  String get noteAiContext => 'Context & Summary';
+
+  @override
+  String get noteAiDeep => 'Deep Organization';
+
+  @override
+  String get noteNextPhase => 'Available in the next release';
+
+  @override
+  String get noteComplete => 'Complete Fragments';
+
+  @override
+  String get noteReading => 'Reading Notes';
+
+  @override
+  String get noteCornell => 'Cornell Notes';
+
+  @override
+  String get noteReview => 'Review Outline';
+
+  @override
+  String get noteGenerate => 'Create Note';
+
+  @override
+  String get noteEmptyScope => 'No highlights in this scope';
+
+  @override
+  String get noteGenerated => 'Note created';
+
+  @override
+  String get noteFailed => 'Could not create note';
+
+  @override
+  String get noteUnused => 'Unused';
+
+  @override
+  String get notePutBack => 'Put Back';
+
+  @override
+  String get noteRestored => 'Added to note';
+
+  @override
+  String get noteRemoved => 'Removed from note';
+
+  @override
+  String get noteExpandContext => 'Expand Context';
+
+  @override
+  String get noteCollapseContext => 'Collapse Context';
+
+  @override
+  String get noteNoText => 'No source text';
+
+  @override
+  String get noteMissingHighlight => 'Highlight deleted';
+
+  @override
+  String get noteMissingDocument => 'Source removed';
+
+  @override
+  String get noteNotIncluded => 'This highlight is not in the note';
+
+  @override
+  String get noteRemoveBlock => 'Remove from Note';
+
+  @override
+  String get noteSources => 'Sources';
+
+  @override
+  String get noteInclude => 'Include';
+
+  @override
+  String get noteCitationPage => 'Page Numbers';
+
+  @override
+  String get noteCitationFootnote => 'Footnotes';
+
+  @override
+  String get noteCitationNone => 'None';
+
+  @override
+  String get noteAiContent => 'AI Content';
+
+  @override
+  String get noteQuestions => 'Review Questions';
+
+  @override
+  String get noteSourceList => 'Source List';
+
+  @override
+  String get noteAiMarks => 'AI Labels';
+
+  @override
+  String get noteMark => 'Show';
+
+  @override
+  String get noteUnmark => 'Hide';
+
+  @override
+  String get noteCornellSummary => 'Summary';
+
+  @override
+  String noteContextSentences(int count) {
+    return '$count surrounding sentences';
+  }
+
+  @override
+  String noteCoverage(int count) {
+    return 'All $count highlights cited · Original text preserved';
+  }
+
+  @override
+  String noteUnusedCount(int count) {
+    return '$count unused highlights';
+  }
+
+  @override
+  String noteSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String noteRecallQuestion(String title, String location) {
+    return 'What does $title $location say?';
+  }
+
+  @override
+  String get noteSelectAll => 'Select All';
+
+  @override
+  String get noteDeselectAll => 'Deselect All';
+
+  @override
+  String get noteReviewAdded => 'Created 1 review card';
+
+  @override
+  String get noteExplain => 'Explain This Passage';
+
+  @override
+  String get noteCreateReview => 'Create Review Card';
+
+  @override
+  String get noteAddedToMap => 'Added to map';
+
+  @override
+  String get noteExport => 'Export';
+
+  @override
+  String get noteMarginSource => 'Margin Note';
+
+  @override
+  String notePage(int page) {
+    return 'p.$page';
+  }
+
+  @override
+  String noteSourceTitle(String title) {
+    return '$title';
+  }
+
+  @override
+  String get notePageSeparator => ', ';
+
+  @override
+  String noteSourcePage(String title, int page) {
+    return '$title, p. $page';
+  }
 }

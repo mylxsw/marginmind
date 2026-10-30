@@ -7177,6 +7177,456 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The model is busy. Try again later.'**
   String get mapIdeaBusy;
+
+  /// No description provided for @notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesTitle;
+
+  /// No description provided for @organizeStudyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize Study Notes…'**
+  String get organizeStudyNote;
+
+  /// No description provided for @organizeNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize Notes'**
+  String get organizeNotes;
+
+  /// No description provided for @organizeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Study Note'**
+  String get organizeSelection;
+
+  /// No description provided for @exportStudyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Note…'**
+  String get exportStudyNote;
+
+  /// No description provided for @noteSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize Study Notes'**
+  String get noteSetupTitle;
+
+  /// No description provided for @noteScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get noteScope;
+
+  /// No description provided for @noteMaterials.
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get noteMaterials;
+
+  /// No description provided for @noteOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get noteOrganization;
+
+  /// No description provided for @noteDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Contribution'**
+  String get noteDepth;
+
+  /// No description provided for @noteContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get noteContext;
+
+  /// No description provided for @noteTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Layout'**
+  String get noteTemplate;
+
+  /// No description provided for @noteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected highlights'**
+  String get noteSelected;
+
+  /// No description provided for @noteWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire study set'**
+  String get noteWhole;
+
+  /// No description provided for @noteRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get noteRecent;
+
+  /// No description provided for @noteHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlights'**
+  String get noteHighlights;
+
+  /// No description provided for @noteOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'My Notes'**
+  String get noteOwn;
+
+  /// No description provided for @noteMapNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Map Notes'**
+  String get noteMapNotes;
+
+  /// No description provided for @noteSavedAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved AI Notes'**
+  String get noteSavedAi;
+
+  /// No description provided for @noteImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Image Cards'**
+  String get noteImages;
+
+  /// No description provided for @noteTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'By Theme'**
+  String get noteTheme;
+
+  /// No description provided for @noteSourceOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Order'**
+  String get noteSourceOrder;
+
+  /// No description provided for @noteMapOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Map Structure'**
+  String get noteMapOrder;
+
+  /// No description provided for @noteLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Format Only'**
+  String get noteLocal;
+
+  /// No description provided for @noteAiContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Context & Summary'**
+  String get noteAiContext;
+
+  /// No description provided for @noteAiDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Organization'**
+  String get noteAiDeep;
+
+  /// No description provided for @noteNextPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Available in the next release'**
+  String get noteNextPhase;
+
+  /// No description provided for @noteComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Fragments'**
+  String get noteComplete;
+
+  /// No description provided for @noteReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Notes'**
+  String get noteReading;
+
+  /// No description provided for @noteCornell.
+  ///
+  /// In en, this message translates to:
+  /// **'Cornell Notes'**
+  String get noteCornell;
+
+  /// No description provided for @noteReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Outline'**
+  String get noteReview;
+
+  /// No description provided for @noteGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Note'**
+  String get noteGenerate;
+
+  /// No description provided for @noteEmptyScope.
+  ///
+  /// In en, this message translates to:
+  /// **'No highlights in this scope'**
+  String get noteEmptyScope;
+
+  /// No description provided for @noteGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Note created'**
+  String get noteGenerated;
+
+  /// No description provided for @noteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create note'**
+  String get noteFailed;
+
+  /// No description provided for @noteUnused.
+  ///
+  /// In en, this message translates to:
+  /// **'Unused'**
+  String get noteUnused;
+
+  /// No description provided for @notePutBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Put Back'**
+  String get notePutBack;
+
+  /// No description provided for @noteRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to note'**
+  String get noteRestored;
+
+  /// No description provided for @noteRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from note'**
+  String get noteRemoved;
+
+  /// No description provided for @noteExpandContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand Context'**
+  String get noteExpandContext;
+
+  /// No description provided for @noteCollapseContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse Context'**
+  String get noteCollapseContext;
+
+  /// No description provided for @noteNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No source text'**
+  String get noteNoText;
+
+  /// No description provided for @noteMissingHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight deleted'**
+  String get noteMissingHighlight;
+
+  /// No description provided for @noteMissingDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Source removed'**
+  String get noteMissingDocument;
+
+  /// No description provided for @noteNotIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'This highlight is not in the note'**
+  String get noteNotIncluded;
+
+  /// No description provided for @noteRemoveBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Note'**
+  String get noteRemoveBlock;
+
+  /// No description provided for @noteSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get noteSources;
+
+  /// No description provided for @noteInclude.
+  ///
+  /// In en, this message translates to:
+  /// **'Include'**
+  String get noteInclude;
+
+  /// No description provided for @noteCitationPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Numbers'**
+  String get noteCitationPage;
+
+  /// No description provided for @noteCitationFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Footnotes'**
+  String get noteCitationFootnote;
+
+  /// No description provided for @noteCitationNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noteCitationNone;
+
+  /// No description provided for @noteAiContent.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Content'**
+  String get noteAiContent;
+
+  /// No description provided for @noteQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Questions'**
+  String get noteQuestions;
+
+  /// No description provided for @noteSourceList.
+  ///
+  /// In en, this message translates to:
+  /// **'Source List'**
+  String get noteSourceList;
+
+  /// No description provided for @noteAiMarks.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Labels'**
+  String get noteAiMarks;
+
+  /// No description provided for @noteMark.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get noteMark;
+
+  /// No description provided for @noteUnmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get noteUnmark;
+
+  /// No description provided for @noteCornellSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get noteCornellSummary;
+
+  /// No description provided for @noteContextSentences.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} surrounding sentences'**
+  String noteContextSentences(int count);
+
+  /// No description provided for @noteCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'All {count} highlights cited · Original text preserved'**
+  String noteCoverage(int count);
+
+  /// No description provided for @noteUnusedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unused highlights'**
+  String noteUnusedCount(int count);
+
+  /// No description provided for @noteSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String noteSelectedCount(int count);
+
+  /// No description provided for @noteRecallQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What does {title} {location} say?'**
+  String noteRecallQuestion(String title, String location);
+
+  /// No description provided for @noteSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get noteSelectAll;
+
+  /// No description provided for @noteDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get noteDeselectAll;
+
+  /// No description provided for @noteReviewAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Created 1 review card'**
+  String get noteReviewAdded;
+
+  /// No description provided for @noteExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain This Passage'**
+  String get noteExplain;
+
+  /// No description provided for @noteCreateReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Review Card'**
+  String get noteCreateReview;
+
+  /// No description provided for @noteAddedToMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to map'**
+  String get noteAddedToMap;
+
+  /// No description provided for @noteExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get noteExport;
+
+  /// No description provided for @noteMarginSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin Note'**
+  String get noteMarginSource;
+
+  /// No description provided for @notePage.
+  ///
+  /// In en, this message translates to:
+  /// **'p.{page}'**
+  String notePage(int page);
+
+  /// No description provided for @noteSourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}'**
+  String noteSourceTitle(String title);
+
+  /// No description provided for @notePageSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get notePageSeparator;
+
+  /// No description provided for @noteSourcePage.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, p. {page}'**
+  String noteSourcePage(String title, int page);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

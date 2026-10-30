@@ -672,6 +672,7 @@ void main() {
           await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
         }
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Add Summary'));
         await tester.tap(find.text('Add Summary'));
         await tester.pumpAndSettle();
         await key(tester, LogicalKeyboardKey.enter);
@@ -683,6 +684,7 @@ void main() {
           await tester.tap(find.text('遗忘的规律'), buttons: kSecondaryButton, kind: PointerDeviceKind.mouse);
         }
         await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Add Relationship'));
         await tester.tap(find.text('Add Relationship'));
         await tester.pumpAndSettle();
         expect(state(tester).connectingFromId, 'c3');

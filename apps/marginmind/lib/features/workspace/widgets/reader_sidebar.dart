@@ -1,3 +1,5 @@
+import '../../study_notes/note_setup_sheet.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Card;
@@ -332,13 +334,15 @@ class _Annotations extends ConsumerWidget {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
+    final colors = ref.watch(workspaceProvider(studySetId).select((s) => s.annotationColors));
+    final visibleAnnotations = annotations.where((a) => a.colorIndex > 5 || colors.contains(a.colorIndex)).toList();
     final inkPages = <int, List<InkStroke>>{};
     for (final stroke in ink) {
       (inkPages[stroke.page] ??= []).add(stroke);
     }
     final entries =
         [
-          for (final annotation in annotations) _AnnotationEntry.highlight(annotation),
+          for (final annotation in visibleAnnotations) _AnnotationEntry.highlight(annotation),
           for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
           for (final strokes in inkPages.values) _AnnotationEntry.ink(strokes),
         ]..sort((a, b) {
@@ -348,116 +352,202 @@ class _Annotations extends ConsumerWidget {
           final byCreated = a.createdAt.compareTo(b.createdAt);
           return byCreated != 0 ? byCreated : a.id.compareTo(b.id);
         });
-    if (entries.isEmpty) return _Empty(label: l.noAnnotations);
+    if (annotations.isEmpty && entries.isEmpty) return _Empty(label: l.noAnnotations);
     final reviewCount = entries.where((e) => e.needsReview).length;
+    final owner = ref.read(workspaceProvider(studySetId).notifier);
+    final selectedIds = ref.watch(workspaceProvider(studySetId).select((s) => s.selectedAnnotationIds));
+    final eligible = visibleAnnotations.where((a) => a.quote.trim().isNotEmpty).map((a) => a.id).toSet();
+    final allSelected = eligible.isNotEmpty && eligible.every(selectedIds.contains);
     final popup = ref.watch(readerMarginProvider(studySetId).select((s) => s.popup));
-    return ListView.builder(
-      padding: const EdgeInsets.all(MMSizes.sidebarInset),
-      itemCount: entries.length + (reviewCount > 0 ? 2 : 0),
-      itemBuilder: (context, index) {
-        if (reviewCount > 0) {
-          if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
-              child: Row(
-                children: [
-                  Icon(MMIcons.warning, color: c.caution, size: t.subheadline.fontSize),
-                  const SizedBox(width: MMSpacing.s),
-                  Text(l.annotationsNeedReview(reviewCount), style: t.subheadline.copyWith(color: c.caution)),
-                ],
-              ),
-            );
-          }
-          if (index == reviewCount + 1) return Divider(height: MMSpacing.m, thickness: 0.5, color: c.separator);
-          index -= index <= reviewCount ? 1 : 2;
-        }
-        final entry = entries[index];
-        final chapter = _chapter(entry, ref.read(workspaceProvider(studySetId).notifier));
-        final isInk = entry.ink.isNotEmpty;
-        final color = isInk
-            ? c.secondaryLabel
-            : MMAnnotationColor.fromIndex(entry.highlight?.colorIndex ?? entry.note!.colorIndex).color;
-        final text = entry.highlight?.quote ?? entry.note?.text ?? '';
-        final label = isInk
-            ? l.inkAnnotations
-            : (text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : text);
-        final selected = entry.note != null && popup.contains(entry.note!.id);
-        final row = MMInteractive(
-          key: ValueKey(entry.id),
-          onTap: () => _open(context, ref, entry),
-          // A tooltip's own long-press recognizer would consume the Delete menu.
-          tooltip: entry.needsReview ? null : label,
-          selected: selected,
-          semanticLabel: entry.note == null ? label : '${l.marginNoteAction}: $label',
-          semanticValue: entry.page > 0 ? l.pageNumber(entry.page) : document.title,
-          builder: (context, s) => Container(
-            constraints: BoxConstraints(minHeight: context.mmSidebarRow),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-            decoration: BoxDecoration(
-              color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
-              borderRadius: BorderRadius.circular(MMRadii.row),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
-                  child: isInk || entry.note != null
-                      ? Icon(
-                          isInk ? MMIcons.inkAnnotations : MMIcons.marginNote,
-                          size: t.callout.fontSize,
-                          color: color,
-                        )
-                      : Container(width: 3, height: context.mmSidebarRow, color: color),
+    return Column(
+      children: [
+        Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: MMSpacing.xs,
+          children: [
+            for (var i = 0; i < 6; i++)
+              MMInteractive(
+                key: ValueKey('annotation-color-$i'),
+                tooltip: l.colorName(MMAnnotationColor.fromIndex(i)),
+                onTap: () => owner.toggleAnnotationColor(i),
+                builder: (_, _) => Padding(
+                  padding: const EdgeInsets.all(MMSpacing.xs),
+                  child: Opacity(
+                    opacity: colors.contains(i) ? 1 : .35,
+                    child: Container(
+                      width: MMSizes.noteColorDot,
+                      height: MMSizes.noteColorDot,
+                      decoration: BoxDecoration(color: MMAnnotationColor.fromIndex(i).color, shape: BoxShape.circle),
+                    ),
+                  ),
                 ),
-                Expanded(
-                  child: Column(
+              ),
+            MMButton(
+              key: const ValueKey('annotations-select-all'),
+              label: allSelected ? l.noteDeselectAll : l.noteSelectAll,
+              onPressed: () => owner.selectAnnotations(
+                allSelected ? selectedIds.difference(eligible) : {...selectedIds, ...eligible},
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(MMSizes.sidebarInset),
+            itemCount: entries.length + (reviewCount > 0 ? 2 : 0),
+            itemBuilder: (context, index) {
+              if (reviewCount > 0) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
+                    child: Row(
+                      children: [
+                        Icon(MMIcons.warning, color: c.caution, size: t.subheadline.fontSize),
+                        const SizedBox(width: MMSpacing.s),
+                        Text(l.annotationsNeedReview(reviewCount), style: t.subheadline.copyWith(color: c.caution)),
+                      ],
+                    ),
+                  );
+                }
+                if (index == reviewCount + 1) return Divider(height: MMSpacing.m, thickness: 0.5, color: c.separator);
+                index -= index <= reviewCount ? 1 : 2;
+              }
+              final entry = entries[index];
+              final chapter = _chapter(entry, ref.read(workspaceProvider(studySetId).notifier));
+              final isInk = entry.ink.isNotEmpty;
+              final color = isInk
+                  ? c.secondaryLabel
+                  : MMAnnotationColor.fromIndex(entry.highlight?.colorIndex ?? entry.note!.colorIndex).color;
+              final text = entry.highlight?.quote ?? entry.note?.text ?? '';
+              final label = isInk
+                  ? l.inkAnnotations
+                  : (text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : text);
+              final selected = entry.highlight != null
+                  ? selectedIds.contains(entry.highlight!.id)
+                  : entry.note != null && popup.contains(entry.note!.id);
+              final row = MMInteractive(
+                key: ValueKey(entry.id),
+                onTap: () => !entry.needsReview && entry.highlight?.quote.trim().isNotEmpty == true
+                    ? owner.selectAnnotation(entry.highlight!.id, !selected)
+                    : _open(context, ref, entry),
+                // A tooltip's own long-press recognizer would consume the Delete menu.
+                tooltip: entry.needsReview ? null : label,
+                selected: selected,
+                semanticLabel: entry.note == null ? label : '${l.marginNoteAction}: $label',
+                semanticValue: entry.page > 0 ? l.pageNumber(entry.page) : document.title,
+                builder: (context, s) => Container(
+                  constraints: BoxConstraints(minHeight: context.mmSidebarRow),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
+                    borderRadius: BorderRadius.circular(MMRadii.row),
+                  ),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        label,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: !isInk && entry.note == null ? MMTypography.readingExcerpt : t.callout,
+                      if (entry.highlight?.quote.trim().isNotEmpty == true)
+                        Padding(
+                          padding: const EdgeInsets.only(top: MMSpacing.xs, right: MMSpacing.s),
+                          child: MMCheckbox(
+                            key: ValueKey('annotation-check-${entry.highlight!.id}'),
+                            value: selected,
+                            semanticLabel: label,
+                            onChanged: (v) => owner.selectAnnotation(entry.highlight!.id, v),
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
+                        child: isInk || entry.note != null
+                            ? Icon(
+                                isInk ? MMIcons.inkAnnotations : MMIcons.marginNote,
+                                size: t.callout.fontSize,
+                                color: color,
+                              )
+                            : Container(width: 3, height: context.mmSidebarRow, color: color),
                       ),
-                      if (isInk)
-                        Text(l.inkStrokeCount(entry.ink.length), style: t.footnote.copyWith(color: c.secondaryLabel)),
-                      if (entry.needsReview || entry.highlight?.isText == true)
-                        Text(
-                          chapter.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.footnote.copyWith(color: entry.needsReview ? c.caution : c.secondaryLabel),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              label,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: !isInk && entry.note == null ? MMTypography.readingExcerpt : t.callout,
+                            ),
+                            if (isInk)
+                              Text(
+                                l.inkStrokeCount(entry.ink.length),
+                                style: t.footnote.copyWith(color: c.secondaryLabel),
+                              ),
+                            if (entry.needsReview || entry.highlight?.isText == true)
+                              MMInteractive(
+                                key: ValueKey('annotation-source-${entry.highlight!.id}'),
+                                semanticLabel: l.revealSource,
+                                onTap: () => _open(context, ref, entry),
+                                builder: (_, _) => Text(
+                                  chapter.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: t.footnote.copyWith(color: entry.needsReview ? c.caution : c.accent),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (entry.page > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(left: MMSpacing.xs),
+                          child: MMInteractive(
+                            key: ValueKey('annotation-source-${entry.id}'),
+                            semanticLabel: l.revealSource,
+                            onTap: () => _open(context, ref, entry),
+                            builder: (_, _) => MMCount(entry.page),
+                          ),
                         ),
                     ],
                   ),
                 ),
-                if (entry.page > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: MMSpacing.xs),
-                    child: MMCount(entry.page),
-                  ),
+              );
+              return !entry.needsReview
+                  ? row
+                  : MMContextMenuRegion(
+                      onSecondaryTapUp: (details) => showMMMenu(
+                        context,
+                        position: details.globalPosition,
+                        entries: [
+                          MMMenuItem(
+                            l.delete,
+                            () => ref.read(workspaceProvider(studySetId).notifier).deleteHighlight(entry.highlight!.id),
+                            destructive: true,
+                          ),
+                        ],
+                      ),
+                      child: row,
+                    );
+            },
+          ),
+        ),
+        if (selectedIds.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(MMSpacing.s),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: MMSpacing.s,
+              runSpacing: MMSpacing.s,
+              children: [
+                Text(l.noteSelectedCount(selectedIds.length), style: t.footnote),
+                MMButton(
+                  key: const ValueKey('annotations-organize'),
+                  label: l.organizeSelection,
+                  variant: MMButtonVariant.primary,
+                  onPressed: () => showNoteSetupSheet(context, ref, studySetId),
+                ),
               ],
             ),
           ),
-        );
-        return !entry.needsReview
-            ? row
-            : MMContextMenuRegion(
-                onSecondaryTapUp: (details) => showMMMenu(
-                  context,
-                  position: details.globalPosition,
-                  entries: [
-                    MMMenuItem(
-                      l.delete,
-                      () => ref.read(workspaceProvider(studySetId).notifier).deleteHighlight(entry.highlight!.id),
-                      destructive: true,
-                    ),
-                  ],
-                ),
-                child: row,
-              );
-      },
+      ],
     );
   }
 }
