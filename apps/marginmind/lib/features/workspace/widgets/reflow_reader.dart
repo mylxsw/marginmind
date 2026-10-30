@@ -489,9 +489,12 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         return;
       }
     }
-    if (_editAnnotation(layout, point, page, tolerance: tolerance)) return;
-    for (final link in layout.links) {
-      if (!layout.boxes(link.anchor, page: page).any((b) => b.rect.contains(point))) continue;
+    final link = layout.links
+        .where((link) => layout.boxes(link.anchor, page: page).any((b) => b.rect.contains(point)))
+        .firstOrNull;
+    // Direct marks keep priority, but nearby marks must not capture a link tap.
+    if (_editAnnotation(layout, point, page, tolerance: link == null ? tolerance : 0)) return;
+    if (link != null) {
       final uri = Uri.tryParse(link.target);
       if (uri == null) return;
       if ({'https', 'http', 'mailto'}.contains(uri.scheme)) {

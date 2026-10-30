@@ -4,8 +4,8 @@ import 'dart:ui';
 /// marks. Supply newest marks first to resolve overlaps consistently. Geometry
 /// and tolerance use the same coordinates; callers scale screen-space tolerance
 /// when the reading surface is zoomed.
-String? hitAnnotation(Offset point, Iterable<(String, Rect)> lines, {double tolerance = 0}) {
-  String? nearest;
+T? hitAnnotation<T extends Object>(Offset point, Iterable<(T, Rect)> lines, {double tolerance = 0}) {
+  T? nearest;
   var distance = double.infinity;
   for (final (id, rect) in lines) {
     if (rect.isEmpty) continue;

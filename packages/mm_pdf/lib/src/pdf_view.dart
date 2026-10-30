@@ -1803,27 +1803,26 @@ class _MMPdfViewState extends State<MMPdfView> {
         widget.areaSelecting) {
       return false;
     }
-    final lines = <(String, Rect)>[];
-    final candidates = <String, MMPdfHighlight>{};
+    // Keep the page-specific highlight: one annotation id may span pages.
+    final lines = <(MMPdfHighlight, Rect)>[];
     for (final page in _controller.layout.pageLayouts.asMap().entries) {
       if (!page.value.inflate(20 / _controller.currentZoom).contains(point)) continue;
       for (final h in (_highlightsByPage[page.key + 1] ?? <MMPdfHighlight>[]).reversed) {
-        candidates[h.id] = h;
         for (final r in h.rects) {
           final rect = _originalRect(h.page, r);
           lines.add((
-            h.id,
+            h,
             Rect.fromPoints(_controller.documentToLocal(rect.topLeft), _controller.documentToLocal(rect.bottomRight)),
           ));
         }
       }
     }
-    final id = hitAnnotation(
+    final highlight = hitAnnotation(
       _controller.documentToLocal(point),
       lines,
       tolerance: _textPointerKind == PointerDeviceKind.touch ? 12 : 3,
     );
-    return id != null && _tapHighlight(candidates[id]!);
+    return highlight != null && _tapHighlight(highlight);
   }
 
   List<Widget> _highlightOverlays(BuildContext context, Rect pageRect, PdfPage page) {

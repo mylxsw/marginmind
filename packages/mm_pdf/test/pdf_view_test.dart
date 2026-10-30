@@ -1051,6 +1051,71 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
   });
+  testWidgets('near hits on a cross-page mark keep the toolbar on the hit page', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    String? tapped;
+    Rect? anchor;
+    const first = PdfRect(30, 8, 90, 0);
+    const second = PdfRect(30, 800, 90, 792);
+    const continuation = PdfRect(30, 400, 90, 380);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(
+          filePath: 'cross-page-mark.pdf',
+          controller: controller,
+          useTouchSelectionHandles: true,
+          highlights: const [
+            MMPdfHighlight(id: 'same-mark', page: 1, rects: [PageRect(30, 8, 90, 0)], color: Colors.yellow),
+            MMPdfHighlight(
+              id: 'same-mark',
+              page: 2,
+              rects: [PageRect(30, 800, 90, 792), PageRect(30, 400, 90, 380)],
+              color: Colors.yellow,
+            ),
+          ],
+          onHighlightTap: (id, bounds) {
+            tapped = id;
+            anchor = bounds;
+          },
+        ),
+      ),
+    );
+    for (var i = 0; i < 100 && !controller.isReady; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(controller.isReady, isTrue);
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    final split = pdf.layout.pageLayouts.first.bottom;
+    for (final zoom in [.5, .75]) {
+      pdf.value = Matrix4.identity()
+        ..scaleByDouble(zoom, zoom, 1, 1)
+        ..setTranslationRaw(200, 220 - split * zoom, 0);
+      await tester.pumpAndSettle();
+      for (final page in [1, 2]) {
+        final rect = pdf.calcRectForRectInsidePage(pageNumber: page, rect: page == 1 ? first : second);
+        final bounds = page == 1
+            ? rect
+            : rect.expandToInclude(pdf.calcRectForRectInsidePage(pageNumber: 2, rect: continuation));
+        final point =
+            tester.getTopLeft(find.byType(MMPdfView)) + pdf.documentToLocal(rect.centerRight) + const Offset(8, 0);
+        tapped = null;
+        anchor = null;
+        await tester.tapAt(point);
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+        expect(tapped, 'same-mark');
+        expect(
+          anchor,
+          Rect.fromPoints(pdf.documentToLocal(bounds.topLeft), pdf.documentToLocal(bounds.bottomRight)),
+          reason: 'Toolbar must use page $page bounds at zoom $zoom, not another page with the same annotation id',
+        );
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
   testWidgets('area tool reports a page rectangle, clamps to the page and keeps scrolling', (tester) async {
     final controller = MMPdfViewController();
     final areas = <MMPdfArea>[];

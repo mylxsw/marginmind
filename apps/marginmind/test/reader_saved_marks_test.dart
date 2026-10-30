@@ -6,6 +6,7 @@ import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reflow_session.dart';
 import 'package:marginmind/features/workspace/widgets/reflow_reader.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_book/mm_book.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -17,6 +18,44 @@ import 'vocabulary_screenshots.dart' show loadVocabularyScreenshotFonts;
 
 void main() {
   setUpAll(loadVocabularyScreenshotFonts);
+  for (final kind in [PointerDeviceKind.touch, PointerDeviceKind.mouse]) {
+    testWidgets('exact footnote link beside a saved mark wins over nearby matching with $kind', (tester) async {
+      final repo = InMemoryStudySetContentRepository();
+      final chapter = const EpubParser().parseHtml(
+        'main',
+        '<p>Marked<a href="#target">1</a> text</p>'
+            '<p>${'body ' * 100}</p><h2 id="target">Footnote</h2><p>${'note ' * 100}</p>',
+      );
+      final doc = await storeBook(repo, book: Book('Footnote links', [chapter], {}, []));
+      final container = await pumpApp(tester, content: repo);
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final provider = workspaceProvider('demo-1');
+      final workspace = container.read(provider.notifier);
+      workspace.openDocument(doc.id);
+      await tester.pumpAndSettle();
+      final session = container.read(reflowSessionProvider(('demo-1', doc.id)));
+      final anchor = session.book!.chapters.first.anchor(0, 6, revision: doc.revision!);
+      await workspace.highlightSource(doc.id, SourceSelection.text([anchor]), MMAnnotationColor.yellow);
+      await tester.pumpAndSettle();
+      final surface = find.byKey(const ValueKey('reflow-surface'));
+      final layout = (tester.widget<CustomPaint>(surface).painter as ReflowReaderPainter).layout;
+      final linkBox = layout.boxes(layout.links.single.anchor).first.rect;
+      final markBox = layout.boxes(anchor).first.rect;
+      final point = linkBox.centerLeft + const Offset(1, 0);
+      expect(linkBox.contains(point), isTrue);
+      expect(markBox.contains(point), isFalse);
+      expect(point.dx - markBox.right, lessThan(3));
+      await tester.tapAt(tester.getTopLeft(surface) + point, kind: kind);
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(container.read(provider).pending, isNull);
+      expect(session.position!.offset, chapter.elementOffsets['target']);
+      expect(workspace.content.annotations, hasLength(1));
+      await settleHud(tester);
+      expect(tester.takeException(), isNull);
+    });
+  }
   for (final appearance in ['light', 'dark']) {
     testWidgets('iPad edits saved marks with tap tolerance and persistent feedback in $appearance', (tester) async {
       final repo = InMemoryStudySetContentRepository();
