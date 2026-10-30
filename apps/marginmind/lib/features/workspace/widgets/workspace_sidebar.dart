@@ -18,6 +18,7 @@ import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import '../../study_notes/note_setup_sheet.dart';
+import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
 
@@ -72,6 +73,13 @@ class WorkspaceSidebar extends ConsumerWidget {
             key: ValueKey('sidebar-note-${note.id}'),
             icon: MMIcons.studyNote,
             label: note.title,
+            trailing: (ref.watch(noteChangesProvider((studySetId, note.id)))?.count ?? 0) > 0
+                ? MMBadge(
+                    '${ref.watch(noteChangesProvider((studySetId, note.id)))!.count}',
+                    key: ValueKey('note-update-badge-${note.id}'),
+                    prominent: true,
+                  )
+                : null,
             selected: state.activeNoteId == note.id,
             onTap: () => controller.openStudyNote(note.id),
             onContextMenu: (position) => showMMMenu(

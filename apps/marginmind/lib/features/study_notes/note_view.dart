@@ -13,6 +13,8 @@ import '../../shared/l10n.dart';
 import '../../app/providers.dart';
 import '../assistant/assistant_settings.dart';
 import 'note_session.dart';
+import 'note_updates.dart';
+import 'note_update_sources.dart';
 import 'note_organize_sheet.dart';
 import '../../shared/card_image.dart';
 import '../workspace/workspace_controller.dart';
@@ -37,6 +39,245 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   Timer? _focusTimer;
   int _loadGeneration = 0;
   bool _aiBusy = false;
+  bool _updateBusy = false;
+  int _updateGeneration = 0;
+  NoteSession? _updateSession;
+  NoteUpdatePreview? _update;
+  StudyNote? _previewNote;
+  NoteChanges? _previewChanges;
+  String? _sourceFingerprint;
+  final _insertReasons = <String, String>{};
+
+  void _cancelUpdate() {
+    _updateGeneration++;
+    _updateSession?.close();
+    _updateSession = null;
+    setState(() {
+      _updateBusy = false;
+      _update = null;
+      _previewNote = null;
+      _previewChanges = null;
+      _insertReasons.clear();
+    });
+  }
+
+  Future<void> _previewUpdate() async {
+    if (_updateBusy || _update != null) return;
+    final content = _owner.content;
+    final note = content.studyNote(widget.noteId);
+    if (note == null) return;
+    final changes = collectNoteChanges(
+      content,
+      note,
+      text: _text,
+      ignored: ref.read(noteIgnoredUpdatesProvider((widget.studySetId, widget.noteId))),
+    );
+    if (changes.count == 0) return;
+    final noteId = widget.noteId;
+    final generation = ++_updateGeneration;
+    final fingerprint = noteSourceFingerprint(content);
+    setState(() => _updateBusy = true);
+    NoteSession? session;
+    try {
+      final local = note.settings.depth == NoteDepth.none || !(ref.read(assistantConfiguredProvider).value ?? false);
+      if (!local && changes.materials.items.isNotEmpty) {
+        session = await ref.read(noteSessionFactoryProvider)();
+        if (!mounted || widget.noteId != noteId || generation != _updateGeneration) return;
+        _updateSession = session;
+      }
+      final organizer = session?.organizer ?? const LocalNoteOrganizer();
+      final placements = await organizer.place(changes.materials, note);
+      if (!mounted || widget.noteId != noteId || generation != _updateGeneration) return;
+      final current = _owner.content.studyNote(noteId);
+      if (current == null || !sameStudyNote(current, note) || noteSourceFingerprint(_owner.content) != fingerprint) {
+        throw StateError('Stale preview');
+      }
+      final preview = NoteUpdatePreview(base: note, materials: changes.materials, placements: placements);
+      var nextId = 0;
+      // Preview IDs never enter storage. Apply allocates durable IDs in the controller.
+      final existingIds = note.sections.expand((s) => [s.id, ...s.blocks.map((b) => b.id)]).toSet();
+      String previewId() {
+        String id;
+        do {
+          id = 'update-preview-${nextId++}';
+        } while (existingIds.contains(id));
+        return id;
+      }
+
+      final proposed = const NoteUpdater().apply(note, preview, newId: previewId);
+      final reasons = {
+        for (final placement in placements.items)
+          if (changes.materials[placement.ref] case final material?)
+            noteMaterialKey(material): local ? context.l10n.noteLocalPlacement : placement.why,
+      };
+      _insertReasons.clear();
+      for (final section in proposed.sections) {
+        for (final block in section.blocks) {
+          if (existingIds.contains(block.id)) continue;
+          final key = switch (block) {
+            QuoteBlock() => 'highlight:${block.annotationId}',
+            OwnBlock() => '${block.source.name}:${block.sourceId}',
+            _ => '',
+          };
+          _insertReasons[block.id] = reasons[key] ?? '';
+        }
+      }
+      // The preview always presents insertion positions in reading layout.
+      setState(() {
+        _update = preview;
+        _previewNote = proposed.copyWith(template: NoteTemplate.reading);
+        _previewChanges = changes;
+        _sourceFingerprint = fingerprint;
+      });
+    } catch (_) {
+      if (mounted && widget.noteId == noteId && generation == _updateGeneration) {
+        final current = _owner.content.studyNote(noteId);
+        final stale =
+            current == null || !sameStudyNote(current, note) || noteSourceFingerprint(_owner.content) != fingerprint;
+        MMHud.show(context, stale ? context.l10n.noteUpdateStale : context.l10n.noteFailed);
+      }
+    } finally {
+      session?.close();
+      if (identical(_updateSession, session)) _updateSession = null;
+      if (mounted && widget.noteId == noteId && generation == _updateGeneration) setState(() => _updateBusy = false);
+    }
+  }
+
+  Future<void> _applyUpdate() async {
+    final preview = _update;
+    final changes = _previewChanges;
+    if (preview == null || changes == null || _updateBusy) return;
+    setState(() => _updateBusy = true);
+    try {
+      await _owner.applyStudyNoteUpdate(preview, deleted: changes.deleted, sourceFingerprint: _sourceFingerprint!);
+      if (mounted) {
+        final previousIds = preview.base.sections.expand((s) => s.blocks).map((b) => b.id).toSet();
+        final added = _owner.content
+            .studyNote(preview.base.id)!
+            .sections
+            .expand((s) => s.blocks)
+            .where((b) => !previousIds.contains(b.id))
+            .length;
+        _cancelUpdate();
+        final inserted = changes.materials.highlights.firstOrNull;
+        if (inserted != null) {
+          _focusAnnotation(inserted.sourceId);
+          final block = _owner.content
+              .studyNote(preview.base.id)
+              ?.sections
+              .expand((s) => s.blocks)
+              .whereType<QuoteBlock>()
+              .where((b) => b.annotationId == inserted.sourceId)
+              .firstOrNull;
+          if (block != null) _jump(block.id);
+        }
+        _undoHud(context.l10n.noteUpdateApplied(added));
+      }
+    } catch (_) {
+      if (mounted) {
+        final current = _owner.content.studyNote(preview.base.id);
+        final stale =
+            current == null ||
+            !sameStudyNote(current, preview.base) ||
+            noteSourceFingerprint(_owner.content) != _sourceFingerprint;
+        _cancelUpdate();
+        MMHud.show(context, stale ? context.l10n.noteUpdateStale : context.l10n.noteFailed);
+      }
+    }
+  }
+
+  Widget _updateBar(NoteChanges changes) {
+    final l = context.l10n, c = context.mmColors;
+    final preview = _update != null;
+    if (preview) {
+      final title = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(MMIcons.regenerate, size: MMSizes.dropdownIcon, color: c.secondaryLabel),
+          const SizedBox(width: MMSpacing.s),
+          Text(l.noteUpdateReady(_insertReasons.length), style: context.mmText.headline),
+        ],
+      );
+      final cancel = MMButton(
+        key: const ValueKey('note-update-cancel'),
+        label: l.cancel,
+        variant: MMButtonVariant.plain,
+        onPressed: _updateBusy ? null : _cancelUpdate,
+      );
+      final apply = MMButton(
+        key: const ValueKey('note-update-apply'),
+        label: l.noteApplyUpdate,
+        variant: MMButtonVariant.primary,
+        onPressed: _updateBusy ? null : _applyUpdate,
+      );
+      return MMGlassBar(
+        key: const ValueKey('note-update-preview-bar'),
+        child: SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+            child: LayoutBuilder(
+              builder: (context, constraints) => constraints.maxWidth < MMSizeClass.compactMaxWidth
+                  ? Wrap(
+                      spacing: MMSpacing.s,
+                      runSpacing: MMSpacing.s,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [title, cancel, apply],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(child: title),
+                        cancel,
+                        const SizedBox(width: MMSpacing.s),
+                        apply,
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Container(
+      key: const ValueKey('note-update-banner'),
+      constraints: const BoxConstraints(maxWidth: MMNoteLayout.measure),
+      margin: const EdgeInsets.all(MMSpacing.s),
+      padding: const EdgeInsets.all(MMSpacing.s),
+      decoration: BoxDecoration(
+        color: c.positive.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(MMRadii.card),
+      ),
+      child: Wrap(
+        spacing: MMSpacing.s,
+        runSpacing: MMSpacing.s,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            changes.deleted.isNotEmpty
+                ? l.noteUpdateChanges(changes.count)
+                : l.noteNewMaterials(changes.highlights, changes.own),
+            style: context.mmText.callout,
+          ),
+          MMButton(
+            key: const ValueKey('note-update-preview'),
+            label: l.notePreviewUpdate,
+            variant: MMButtonVariant.primary,
+            onPressed: _updateBusy ? null : _previewUpdate,
+          ),
+          MMButton(
+            key: ValueKey(_updateBusy ? 'note-update-cancel' : 'note-update-ignore'),
+            label: _updateBusy ? l.cancel : l.noteIgnoreUpdate,
+            variant: MMButtonVariant.plain,
+            onPressed: _updateBusy
+                ? _cancelUpdate
+                : () => ref
+                      .read(noteIgnoredUpdatesProvider((widget.studySetId, widget.noteId)).notifier)
+                      .ignore(changes.keys),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _showAi => ref.read(noteAiMarkersProvider(widget.noteId));
   NoteSession? _editSession;
 
@@ -50,6 +291,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   void didUpdateWidget(StudyNoteView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.noteId != widget.noteId) {
+      _cancelUpdate();
       _keys.clear();
       _focusedAnnotation = null;
       _revealedAnswers.clear();
@@ -70,6 +312,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   void dispose() {
     _focusTimer?.cancel();
     _editSession?.close();
+    _updateSession?.close();
     _scroll.dispose();
     super.dispose();
   }
@@ -122,8 +365,17 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       _focusAnnotation(pending.annotationId);
       _jump(quote.id);
     });
+    if (ref.watch(noteUpdateRequestedProvider(widget.noteId))) {
+      final requestedId = widget.noteId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.noteId != requestedId || !ref.read(noteUpdateRequestedProvider(requestedId))) return;
+        ref.read(noteUpdateRequestedProvider(requestedId).notifier).consume();
+        _previewUpdate();
+      });
+    }
+    final changes = ref.watch(noteChangesProvider((widget.studySetId, widget.noteId)));
     final content = ref.watch(workspaceContentProvider(widget.studySetId));
-    final note = content?.studyNote(widget.noteId);
+    final note = _previewNote ?? content?.studyNote(widget.noteId);
     if (note == null || content == null) return const SizedBox.shrink();
     final l = context.l10n, c = context.mmColors;
     final continuation = ref.watch(noteContinuationsProvider)[note.id];
@@ -146,154 +398,159 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           final compact = constraints.maxWidth < MMSizes.noteSetupSheetWidth;
           return Column(
             children: [
-              SizedBox(
-                height: MMNoteLayout.barHeight,
-                child: Row(
-                  children: [
-                    const SizedBox(width: MMSpacing.m),
-                    if (compact)
-                      MMIconButton(
-                        key: const ValueKey('note-back'),
-                        icon: MMIcons.chevronLeft,
-                        tooltip: l.layoutReader,
-                        onPressed: () => _owner.setLayout(MMSplitMode.primary),
+              AbsorbPointer(
+                absorbing: _updateBusy || _update != null,
+                child: SizedBox(
+                  height: MMNoteLayout.barHeight,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: MMSpacing.m),
+                      if (compact)
+                        MMIconButton(
+                          key: const ValueKey('note-back'),
+                          icon: MMIcons.chevronLeft,
+                          tooltip: l.layoutReader,
+                          onPressed: () => _owner.setLayout(MMSplitMode.primary),
+                        ),
+                      Icon(
+                        MMIcons.studyNote,
+                        key: const ValueKey('note-toolbar-icon'),
+                        size: context.mmText.headline.fontSize,
+                        color: c.accent,
                       ),
-                    Icon(
-                      MMIcons.studyNote,
-                      key: const ValueKey('note-toolbar-icon'),
-                      size: context.mmText.headline.fontSize,
-                      color: c.accent,
-                    ),
-                    const SizedBox(width: MMSpacing.s),
-                    Expanded(
-                      child: Text(
-                        note.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.mmText.headline,
+                      const SizedBox(width: MMSpacing.s),
+                      Expanded(
+                        child: Text(
+                          note.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.mmText.headline,
+                        ),
                       ),
-                    ),
-                    if (!compact &&
-                        note.sections
-                            .expand((s) => s.blocks)
-                            .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                      MMIconButton(
-                        key: const ValueKey('note-ai-markers'),
-                        icon: MMIcons.ai,
-                        tooltip: l.noteShowAi,
-                        onPressed: () {
-                          ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
-                        },
-                      ),
-                    if (!compact)
-                      MMIconButton(
-                        key: const ValueKey('note-regenerate'),
-                        icon: MMIcons.regenerate,
-                        tooltip: l.noteRegenerate,
-                        onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
-                      ),
-                    if (compact)
-                      MMDropdownMenuButton<String>(
-                        key: const ValueKey('note-more'),
-                        tooltip: l.moreTools,
-                        icon: MMIcons.more,
-                        itemBuilder: (_) => [
-                          MMDropdownSubmenu<String>(
-                            label: l.readerOutline,
-                            entries: [
-                              for (final section in note.sections)
-                                (value: 'section:${section.id}', label: section.title, selected: false),
-                            ],
-                          ),
-                          MMDropdownSubmenu<String>(
-                            label: l.noteTemplate,
-                            entries: [
-                              for (final template in NoteTemplate.values)
-                                (
-                                  value: 'template:${template.name}',
-                                  label: noteTemplateLabel(l, template),
-                                  selected: template == note.template,
-                                ),
-                            ],
-                          ),
-                          if (note.sections
+                      if (!compact &&
+                          note.sections
                               .expand((s) => s.blocks)
                               .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                            MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
-                          if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
-                          MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
-                          MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
-                        ],
-                        onSelected: (value) {
-                          if (value == 'markers') {
+                        MMIconButton(
+                          key: const ValueKey('note-ai-markers'),
+                          icon: MMIcons.ai,
+                          tooltip: l.noteShowAi,
+                          onPressed: () {
                             ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
-                          } else if (value == 'continue' && continuation != null) {
-                            resumeNoteOrganization(context, continuation);
-                          } else if (value == 'regenerate') {
-                            showNoteReorganization(context, ref, widget.studySetId, note.id);
-                          } else if (value == 'export') {
-                            showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
-                          } else if (value.startsWith('section:')) {
-                            _jump(value.substring('section:'.length));
-                          } else if (value.startsWith('template:')) {
-                            _owner.changeStudyNote(
-                              note.id,
-                              (n) =>
-                                  n.copyWith(template: NoteTemplate.values.byName(value.substring('template:'.length))),
-                            );
-                          }
-                        },
-                      )
-                    else ...[
-                      if (!floating)
-                        MMDropdownButton<String>(
-                          key: const ValueKey('note-toc'),
-                          tooltip: l.readerOutline,
-                          itemBuilder: (_) => [
-                            for (final section in note.sections)
-                              MMDropdownItem(value: section.id, child: Text(section.title)),
-                          ],
-                          onSelected: _jump,
-                          child: _toolbarLabel(l.readerOutline),
+                          },
                         ),
-                      MMDropdownButton<NoteTemplate>(
-                        key: const ValueKey('note-template'),
-                        tooltip: l.noteTemplate,
-                        itemBuilder: (_) => [
-                          for (final template in NoteTemplate.values)
-                            MMDropdownItem(
-                              value: template,
-                              child: Row(
-                                children: [
-                                  SizedBox.square(
-                                    dimension: MMSizes.dropdownIcon,
-                                    child: template == note.template
-                                        ? Icon(MMIcons.check, size: MMSizes.dropdownIcon)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: MMSpacing.s),
-                                  Text(noteTemplateLabel(l, template)),
-                                ],
-                              ),
+                      if (!compact)
+                        MMIconButton(
+                          key: const ValueKey('note-regenerate'),
+                          icon: MMIcons.regenerate,
+                          tooltip: l.noteRegenerate,
+                          onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
+                        ),
+                      if (compact)
+                        MMDropdownMenuButton<String>(
+                          key: const ValueKey('note-more'),
+                          tooltip: l.moreTools,
+                          icon: MMIcons.more,
+                          itemBuilder: (_) => [
+                            MMDropdownSubmenu<String>(
+                              label: l.readerOutline,
+                              entries: [
+                                for (final section in note.sections)
+                                  (value: 'section:${section.id}', label: section.title, selected: false),
+                              ],
                             ),
-                        ],
-                        onSelected: (template) =>
-                            _owner.changeStudyNote(note.id, (n) => n.copyWith(template: template)),
-                        child: _toolbarLabel(noteTemplateLabel(l, note.template)),
-                      ),
-                      MMToolbarButton(
-                        key: const ValueKey('note-export'),
-                        icon: MMIcons.export,
-                        label: l.noteExport,
-                        tooltip: l.exportStudyNote,
-                        onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
-                      ),
+                            MMDropdownSubmenu<String>(
+                              label: l.noteTemplate,
+                              entries: [
+                                for (final template in NoteTemplate.values)
+                                  (
+                                    value: 'template:${template.name}',
+                                    label: noteTemplateLabel(l, template),
+                                    selected: template == note.template,
+                                  ),
+                              ],
+                            ),
+                            if (note.sections
+                                .expand((s) => s.blocks)
+                                .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
+                              MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
+                            if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
+                            MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
+                            MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
+                          ],
+                          onSelected: (value) {
+                            if (value == 'markers') {
+                              ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
+                            } else if (value == 'continue' && continuation != null) {
+                              resumeNoteOrganization(context, continuation);
+                            } else if (value == 'regenerate') {
+                              showNoteReorganization(context, ref, widget.studySetId, note.id);
+                            } else if (value == 'export') {
+                              showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
+                            } else if (value.startsWith('section:')) {
+                              _jump(value.substring('section:'.length));
+                            } else if (value.startsWith('template:')) {
+                              _owner.changeStudyNote(
+                                note.id,
+                                (n) => n.copyWith(
+                                  template: NoteTemplate.values.byName(value.substring('template:'.length)),
+                                ),
+                              );
+                            }
+                          },
+                        )
+                      else ...[
+                        if (!floating)
+                          MMDropdownButton<String>(
+                            key: const ValueKey('note-toc'),
+                            tooltip: l.readerOutline,
+                            itemBuilder: (_) => [
+                              for (final section in note.sections)
+                                MMDropdownItem(value: section.id, child: Text(section.title)),
+                            ],
+                            onSelected: _jump,
+                            child: _toolbarLabel(l.readerOutline),
+                          ),
+                        MMDropdownButton<NoteTemplate>(
+                          key: const ValueKey('note-template'),
+                          tooltip: l.noteTemplate,
+                          itemBuilder: (_) => [
+                            for (final template in NoteTemplate.values)
+                              MMDropdownItem(
+                                value: template,
+                                child: Row(
+                                  children: [
+                                    SizedBox.square(
+                                      dimension: MMSizes.dropdownIcon,
+                                      child: template == note.template
+                                          ? Icon(MMIcons.check, size: MMSizes.dropdownIcon)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: MMSpacing.s),
+                                    Text(noteTemplateLabel(l, template)),
+                                  ],
+                                ),
+                              ),
+                          ],
+                          onSelected: (template) =>
+                              _owner.changeStudyNote(note.id, (n) => n.copyWith(template: template)),
+                          child: _toolbarLabel(noteTemplateLabel(l, note.template)),
+                        ),
+                        MMToolbarButton(
+                          key: const ValueKey('note-export'),
+                          icon: MMIcons.export,
+                          label: l.noteExport,
+                          tooltip: l.exportStudyNote,
+                          onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
+                        ),
+                      ],
+                      const SizedBox(width: MMSpacing.s),
                     ],
-                    const SizedBox(width: MMSpacing.s),
-                  ],
+                  ),
                 ),
               ),
               Divider(height: 1, color: c.separator),
+              if ((_previewChanges ?? changes) case final pending? when pending.count > 0) _updateBar(pending),
               if (continuation != null)
                 Align(
                   alignment: Alignment.centerLeft,
@@ -307,129 +564,135 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                 child: Stack(
                   children: [
                     SingleChildScrollView(
+                      key: const ValueKey('note-scroll'),
                       controller: _scroll,
-                      child: Center(
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            maxWidth: MMNoteLayout.measure + MMNoteLayout.gutter + MMNoteLayout.trailing,
-                          ),
-                          padding: EdgeInsets.fromLTRB(
-                            compact ? MMNoteLayout.gutterCompact : MMNoteLayout.gutter,
-                            MMNoteLayout.topInset,
-                            compact ? MMNoteLayout.gutterCompact : MMNoteLayout.trailing,
-                            MMNoteLayout.bottomInset,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              NoteEditableText(
-                                key: ValueKey('note-title-${note.id}'),
-                                text: note.title,
-                                style: MMNoteTypography.title.copyWith(color: c.label),
-                                onSave: (v) => v.trim().isEmpty
-                                    ? Future.value()
-                                    : _owner.changeStudyNote(note.id, (n) => n.copyWith(title: v.trim())),
-                              ),
-                              const SizedBox(height: MMSpacing.s),
-                              Text(
-                                '${MaterialLocalizations.of(context).formatShortDate(note.organizedAt.toLocal())} ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(note.organizedAt.toLocal()))}',
-                                style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-                              ),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: MMInteractive(
-                                  key: const ValueKey('note-coverage'),
-                                  onTap: () => _coverage(note, content, used, unused),
-                                  builder: (_, _) => MMPill(
-                                    unused.isEmpty ? l.noteCoverage(used.length) : l.noteUnusedCount(unused.length),
-                                    color: unused.isEmpty ? c.positive : c.caution,
-                                    icon: unused.isEmpty ? MMIcons.check : MMIcons.warning,
+                      child: AbsorbPointer(
+                        absorbing: _update != null,
+                        child: Center(
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxWidth: MMNoteLayout.measure + MMNoteLayout.gutter + MMNoteLayout.trailing,
+                            ),
+                            padding: EdgeInsets.fromLTRB(
+                              compact ? MMNoteLayout.gutterCompact : MMNoteLayout.gutter,
+                              MMNoteLayout.topInset,
+                              compact ? MMNoteLayout.gutterCompact : MMNoteLayout.trailing,
+                              MMNoteLayout.bottomInset,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                NoteEditableText(
+                                  key: ValueKey('note-title-${note.id}'),
+                                  text: note.title,
+                                  style: MMNoteTypography.title.copyWith(color: c.label),
+                                  onSave: (v) => v.trim().isEmpty
+                                      ? Future.value()
+                                      : _owner.changeStudyNote(note.id, (n) => n.copyWith(title: v.trim())),
+                                ),
+                                const SizedBox(height: MMSpacing.s),
+                                Text(
+                                  '${MaterialLocalizations.of(context).formatShortDate(note.organizedAt.toLocal())} ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(note.organizedAt.toLocal()))}',
+                                  style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                                ),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: MMInteractive(
+                                    key: const ValueKey('note-coverage'),
+                                    onTap: () => _coverage(note, content, used, unused),
+                                    builder: (_, _) => MMPill(
+                                      unused.isEmpty ? l.noteCoverage(used.length) : l.noteUnusedCount(unused.length),
+                                      color: unused.isEmpty ? c.positive : c.caution,
+                                      icon: unused.isEmpty ? MMIcons.check : MMIcons.warning,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              for (final (i, section) in note.sections.indexed) ...[
-                                Padding(
-                                  key: _keys.putIfAbsent(section.id, GlobalKey.new),
-                                  padding: const EdgeInsets.only(
-                                    top: MMNoteLayout.sectionTop,
-                                    bottom: MMNoteLayout.sectionBottom,
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${i + 1}. ',
-                                        style: MMNoteTypography.heading.copyWith(color: c.secondaryLabel),
-                                      ),
-                                      Expanded(
-                                        child: NoteEditableText(
-                                          text: section.title,
-                                          style: MMNoteTypography.heading.copyWith(color: c.label),
-                                          onSave: (v) => v.trim().isEmpty
-                                              ? Future.value()
-                                              : _owner.changeStudyNote(
-                                                  note.id,
-                                                  (n) => n.copyWith(
-                                                    sections: [
-                                                      for (final s in n.sections)
-                                                        s.id == section.id ? s.copyWith(title: v.trim()) : s,
-                                                    ],
-                                                  ),
-                                                ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (note.template == NoteTemplate.cornell && !compact)
-                                  IntrinsicHeight(
+                                for (final (i, section) in note.sections.indexed) ...[
+                                  Padding(
+                                    key: _keys.putIfAbsent(section.id, GlobalKey.new),
+                                    padding: const EdgeInsets.only(
+                                      top: MMNoteLayout.sectionTop,
+                                      bottom: MMNoteLayout.sectionBottom,
+                                    ),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        SizedBox(
-                                          width: MMNoteLayout.cornellCueWidth,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(right: MMSpacing.m),
-                                            child: _cornellField(note, section, 'cue'),
+                                        Text(
+                                          '${i + 1}. ',
+                                          style: MMNoteTypography.heading.copyWith(color: c.secondaryLabel),
+                                        ),
+                                        Expanded(
+                                          child: NoteEditableText(
+                                            text: section.title,
+                                            style: MMNoteTypography.heading.copyWith(color: c.label),
+                                            onSave: (v) => v.trim().isEmpty
+                                                ? Future.value()
+                                                : _owner.changeStudyNote(
+                                                    note.id,
+                                                    (n) => n.copyWith(
+                                                      sections: [
+                                                        for (final s in n.sections)
+                                                          s.id == section.id ? s.copyWith(title: v.trim()) : s,
+                                                      ],
+                                                    ),
+                                                  ),
                                           ),
                                         ),
-                                        VerticalDivider(color: c.separator),
-                                        Expanded(child: _blocks(note, section, content)),
                                       ],
                                     ),
-                                  )
-                                else
-                                  _blocks(note, section, content),
-                                if (note.template == NoteTemplate.cornell) ...[
-                                  const SizedBox(height: MMSpacing.m),
-                                  Text(l.noteCornellSummary, style: context.mmText.subheadline),
-                                  _cornellField(note, section, 'summary'),
+                                  ),
+                                  if (note.template == NoteTemplate.cornell && !compact)
+                                    IntrinsicHeight(
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          SizedBox(
+                                            width: MMNoteLayout.cornellCueWidth,
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(right: MMSpacing.m),
+                                              child: _cornellField(note, section, 'cue'),
+                                            ),
+                                          ),
+                                          VerticalDivider(color: c.separator),
+                                          Expanded(child: _blocks(note, section, content)),
+                                        ],
+                                      ),
+                                    )
+                                  else ...[
+                                    if (note.template == NoteTemplate.cornell) _cornellField(note, section, 'cue'),
+                                    _blocks(note, section, content),
+                                  ],
+                                  if (note.template == NoteTemplate.cornell) ...[
+                                    const SizedBox(height: MMSpacing.m),
+                                    Text(l.noteCornellSummary, style: context.mmText.subheadline),
+                                    _cornellField(note, section, 'summary'),
+                                  ],
+                                ],
+                                if (note.sections.any((s) => s.question != null)) ...[
+                                  const SizedBox(height: MMSpacing.l),
+                                  MMButton(
+                                    key: const ValueKey('note-all-review'),
+                                    label: l.noteAddAllReview,
+                                    onPressed: () async {
+                                      await _owner.addNoteReviews(note.id);
+                                      if (mounted) _undoHud(l.noteReviewAdded);
+                                    },
+                                  ),
+                                  for (final s in note.sections)
+                                    if (s.question != null) Text(s.question!, style: MMNoteTypography.body),
+                                ],
+                                if (used.isNotEmpty) ...[
+                                  const SizedBox(height: MMNoteLayout.sectionTop),
+                                  Text(l.noteSources, style: context.mmText.headline.copyWith(color: c.secondaryLabel)),
+                                  for (final (i, source) in _sourceEntries(content, used).indexed)
+                                    Text(
+                                      '${i + 1}. $source',
+                                      key: ValueKey('note-source-entry-$i'),
+                                      style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                                    ),
                                 ],
                               ],
-                              if (note.sections.any((s) => s.question != null)) ...[
-                                const SizedBox(height: MMSpacing.l),
-                                MMButton(
-                                  key: const ValueKey('note-all-review'),
-                                  label: l.noteAddAllReview,
-                                  onPressed: () async {
-                                    await _owner.addNoteReviews(note.id);
-                                    if (mounted) _undoHud(l.noteReviewAdded);
-                                  },
-                                ),
-                                for (final s in note.sections)
-                                  if (s.question != null) Text(s.question!, style: MMNoteTypography.body),
-                              ],
-                              if (used.isNotEmpty) ...[
-                                const SizedBox(height: MMNoteLayout.sectionTop),
-                                Text(l.noteSources, style: context.mmText.headline.copyWith(color: c.secondaryLabel)),
-                                for (final (i, source) in _sourceEntries(content, used).indexed)
-                                  Text(
-                                    '${i + 1}. $source',
-                                    key: ValueKey('note-source-entry-$i'),
-                                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-                                  ),
-                              ],
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -454,49 +717,88 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
   // templates and participate in exports, auto-save and the same global undo stack.
   Widget _cornellField(StudyNote note, NoteSection section, String kind) {
     final id = '${section.id}:cornell:$kind';
-    final block = section.blocks.whereType<TextBlock>().where((b) => b.id == id).firstOrNull;
+    final block =
+        section.blocks.whereType<TextBlock>().where((b) => b.id == id).firstOrNull ??
+        (kind == 'summary'
+            ? section.blocks.whereType<TextBlock>().where((b) => b.kind == TextKind.summary).firstOrNull
+            : null);
+    if (kind == 'summary' && block != null) {
+      return KeyedSubtree(key: ValueKey(id), child: _block(note, section, block, _owner.content));
+    }
     return NoteEditableText(
       key: ValueKey(id),
-      text: block?.text ?? '',
+      text: block?.text ?? (kind == 'cue' ? section.question ?? '' : ''),
       style: MMNoteTypography.body.copyWith(color: context.mmColors.label),
-      onSave: (text) => _owner.changeStudyNote(
-        note.id,
-        (n) => n.copyWith(
-          sections: [
-            for (final s in n.sections)
-              s.id != section.id
-                  ? s
-                  : s.copyWith(
-                      blocks: [
-                        for (final b in s.blocks)
-                          if (b.id != id) b,
-                        TextBlock(
-                          id: id,
-                          text: text,
-                          kind: kind == 'summary' ? TextKind.summary : TextKind.paragraph,
-                          origin: NoteOrigin.user,
-                          edited: true,
-                        ),
-                      ],
-                    ),
-          ],
-        ),
-      ),
+      onSave: (text) => block != null
+          ? _owner.editStudyNoteBlock(note.id, block.id, text: text)
+          : _owner.changeStudyNote(
+              note.id,
+              (n) => n.copyWith(
+                sections: [
+                  for (final s in n.sections)
+                    s.id != section.id
+                        ? s
+                        : s.copyWith(
+                            blocks: [
+                              for (final b in s.blocks)
+                                if (b.id != id) b,
+                              TextBlock(
+                                id: id,
+                                text: text,
+                                kind: kind == 'summary' ? TextKind.summary : TextKind.paragraph,
+                                origin: NoteOrigin.user,
+                                edited: true,
+                              ),
+                            ],
+                          ),
+                ],
+              ),
+            ),
     );
   }
 
-  Widget _blocks(StudyNote note, NoteSection section, StudySetContent content) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      for (final block in section.blocks)
-        if (note.template != NoteTemplate.cornell || !block.id.startsWith('${section.id}:cornell:'))
-          Padding(
-            key: _keys.putIfAbsent(block.id, GlobalKey.new),
-            padding: const EdgeInsets.only(bottom: MMNoteLayout.blockGap),
-            child: _block(note, section, block, content),
-          ),
-    ],
-  );
+  Widget _blocks(StudyNote note, NoteSection section, StudySetContent content) {
+    final summaries = section.blocks.whereType<TextBlock>();
+    final summary =
+        summaries.where((b) => b.id == '${section.id}:cornell:summary').firstOrNull ??
+        summaries.where((b) => b.kind == TextKind.summary).firstOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final block in section.blocks)
+          if (note.template != NoteTemplate.cornell ||
+              (block.id != '${section.id}:cornell:cue' && block.id != summary?.id))
+            Padding(
+              key: _keys.putIfAbsent(block.id, GlobalKey.new),
+              padding: const EdgeInsets.only(bottom: MMNoteLayout.blockGap),
+              child: _previewBlock(note, section, block, content),
+            ),
+      ],
+    );
+  }
+
+  Widget _previewBlock(StudyNote note, NoteSection section, StudyNoteBlock block, StudySetContent content) {
+    final child = _block(note, section, block, content);
+    final reason = _insertReasons[block.id];
+    if (reason == null) return child;
+    return Container(
+      key: ValueKey('note-insert-${block.id}'),
+      padding: const EdgeInsets.all(MMSpacing.s),
+      decoration: BoxDecoration(
+        color: context.mmColors.positive.withValues(alpha: .12),
+        border: Border(
+          left: BorderSide(color: context.mmColors.positive, width: MMNoteLayout.quoteBar),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(reason, style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel)),
+          child,
+        ],
+      ),
+    );
+  }
 
   Widget _toolbarLabel(String label) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
@@ -599,9 +901,13 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       final ctx = a == null
           ? const NoteContext(noText: true)
           : const NoteMaterialCollector().contextFor(content, a, note.settings.contextSentences, text: _text);
-      final question =
-          section.question ??
-          l.noteRecallQuestion(resolved.documentTitle ?? '', a == null || a.isText ? '' : l.pageNumber(a.page));
+      final aiQuestion =
+          note.settings.depth != NoteDepth.none &&
+          section.question?.trim().isNotEmpty == true &&
+          section.blocks.whereType<QuoteBlock>().firstOrNull?.id == block.id;
+      final question = aiQuestion
+          ? section.question!
+          : l.noteRecallQuestion(resolved.documentTitle ?? '', a == null || a.isText ? '' : l.pageNumber(a.page));
       final review = note.template == NoteTemplate.review;
       final visible = !review || _revealedAnswers.contains(block.id);
       child = DecoratedBox(
@@ -621,11 +927,24 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (review) Text(question, style: context.mmText.headline),
-              if (block.contextOpen && ctx.before.isNotEmpty)
+              if (review) ...[
+                if (aiQuestion)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      key: ValueKey('note-review-ai-${block.id}'),
+                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs),
+                      decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.row)),
+                      child: Text('AI', style: context.mmText.footnote.copyWith(color: c.onResearch)),
+                    ),
+                  ),
+                Text(question, key: ValueKey('note-review-question-${block.id}'), style: context.mmText.headline),
+              ],
+              if (visible && block.contextOpen && ctx.before.isNotEmpty)
                 Text(ctx.before, style: MMNoteTypography.context.copyWith(color: c.secondaryLabel)),
               MMInteractive(
                 key: ValueKey('quote-${block.annotationId}'),
+                semanticLabel: visible ? null : question,
                 onTap: () {
                   _focusAnnotation(block.annotationId);
                   if (review) setState(() => _revealedAnswers.add(block.id));
@@ -637,14 +956,17 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                     a?.quote ?? l.noteMissingHighlight,
                     style: MMNoteTypography.quote.copyWith(
                       color: c.excerptText,
+                      decoration: _previewChanges?.deleted.contains(block.annotationId) == true
+                          ? TextDecoration.lineThrough
+                          : null,
                       backgroundColor: block.contextOpen ? color.highlight : null,
                     ),
                   ),
                 ),
               ),
-              if (block.contextOpen && ctx.after.isNotEmpty)
+              if (visible && block.contextOpen && ctx.after.isNotEmpty)
                 Text(ctx.after, style: MMNoteTypography.context.copyWith(color: c.secondaryLabel)),
-              if (block.contextOpen && (ctx.noText || ctx.unresolved))
+              if (visible && block.contextOpen && (ctx.noText || ctx.unresolved))
                 Text(l.noteNoText, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -695,7 +1017,14 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                     tooltip: block.contextOpen ? l.noteCollapseContext : l.noteExpandContext,
                     onPressed: () => _toggleContext(note.id, block.id),
                   ),
-                  if (review) MMButton(label: l.review, onPressed: a == null ? null : () => _review(a, question)),
+                  if (review)
+                    MMButton(
+                      key: ValueKey('note-review-add-${block.id}'),
+                      label: l.noteAddToReview,
+                      variant: MMButtonVariant.plain,
+                      icon: MMIcons.review,
+                      onPressed: a == null ? null : () => _review(a, question),
+                    ),
                 ],
               ),
             ],
@@ -792,7 +1121,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
         ),
       );
     }
-    if (block.edited && block is! OwnBlock && block is! QuoteBlock) {
+    if (block.edited) {
       child = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

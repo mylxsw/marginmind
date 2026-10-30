@@ -4336,4 +4336,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resizeCompanionPanel => 'Resize companion panel';
+
+  @override
+  String noteNewMaterials(int highlights, int notes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: ', $notes new notes',
+      one: ', 1 new note',
+      zero: '',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: ', $notes new notes',
+      one: ', 1 new note',
+      zero: '',
+    );
+    String _temp2 = intl.Intl.pluralLogic(notes, locale: localeName, other: '$notes new notes', one: '1 new note');
+    String _temp3 = intl.Intl.pluralLogic(
+      highlights,
+      locale: localeName,
+      other: '$highlights new highlights$_temp0',
+      one: '1 new highlight$_temp1',
+      zero: '$_temp2',
+    );
+    return '$_temp3';
+  }
+
+  @override
+  String get notePreviewUpdate => 'Preview Update';
+
+  @override
+  String get noteApplyUpdate => 'Apply Update';
+
+  @override
+  String get noteIgnoreUpdate => 'Ignore';
+
+  @override
+  String noteUpdateReady(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count additions', one: '1 addition');
+    return '$_temp0';
+  }
+
+  @override
+  String get noteUpdateStale => 'The note or its sources changed. Preview again.';
+
+  @override
+  String noteUpdateApplied(int count) {
+    return 'Updated · $count added';
+  }
+
+  @override
+  String get noteLocalPlacement => 'In source order';
+
+  @override
+  String get noteAddToReview => 'Add to Review';
+
+  @override
+  String noteUpdateChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count changes', one: '1 change');
+    return '$_temp0';
+  }
 }

@@ -1,3 +1,4 @@
+import '../study_notes/note_update_sources.dart';
 import 'source_selection.dart';
 export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
@@ -1668,6 +1669,30 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (saved != null && ref.mounted) openStudyNote(saved!.id);
     return saved;
   }
+
+  Future<void> applyStudyNoteUpdate(
+    NoteUpdatePreview preview, {
+    required Set<String> deleted,
+    required String sourceFingerprint,
+  }) => _update((c) {
+    final current = c.studyNote(preview.base.id);
+    if (current == null || noteSourceFingerprint(c) != sourceFingerprint) throw StateError('Sources changed');
+    final merged = const NoteUpdater().apply(current, preview, newId: _editor.newId);
+    return _editor.saveStudyNote(
+      c,
+      merged.copyWith(
+        sections: [
+          for (final section in merged.sections)
+            section.copyWith(
+              blocks: [
+                for (final block in section.blocks)
+                  if (block is! QuoteBlock || !deleted.contains(block.annotationId)) block,
+              ],
+            ),
+        ],
+      ),
+    );
+  });
 
   Future<void> changeStudyNote(String id, StudyNote Function(StudyNote) change) => _update((c) {
     final note = c.studyNote(id);

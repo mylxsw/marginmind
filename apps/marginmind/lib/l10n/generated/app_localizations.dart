@@ -7801,6 +7801,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resize companion panel'**
   String get resizeCompanionPanel;
+
+  /// No description provided for @noteNewMaterials.
+  ///
+  /// In en, this message translates to:
+  /// **'{highlights, plural, =0{{notes, plural, =1{1 new note} other{{notes} new notes}}} =1{1 new highlight{notes, plural, =0{} =1{, 1 new note} other{, {notes} new notes}}} other{{highlights} new highlights{notes, plural, =0{} =1{, 1 new note} other{, {notes} new notes}}}}'**
+  String noteNewMaterials(int highlights, int notes);
+
+  /// No description provided for @notePreviewUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview Update'**
+  String get notePreviewUpdate;
+
+  /// No description provided for @noteApplyUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Update'**
+  String get noteApplyUpdate;
+
+  /// No description provided for @noteIgnoreUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore'**
+  String get noteIgnoreUpdate;
+
+  /// No description provided for @noteUpdateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 addition} other{{count} additions}}'**
+  String noteUpdateReady(int count);
+
+  /// No description provided for @noteUpdateStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The note or its sources changed. Preview again.'**
+  String get noteUpdateStale;
+
+  /// No description provided for @noteUpdateApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated · {count} added'**
+  String noteUpdateApplied(int count);
+
+  /// No description provided for @noteLocalPlacement.
+  ///
+  /// In en, this message translates to:
+  /// **'In source order'**
+  String get noteLocalPlacement;
+
+  /// No description provided for @noteAddToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Review'**
+  String get noteAddToReview;
+
+  /// No description provided for @noteUpdateChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change} other{{count} changes}}'**
+  String noteUpdateChanges(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

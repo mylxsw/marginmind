@@ -1,5 +1,6 @@
 import '../features/assistant/expansion_controller.dart';
 import '../features/study_notes/note_session.dart';
+import '../features/study_notes/note_updates.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
@@ -557,6 +558,17 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       AppCommand(
         l.exportStudyNote,
         activeNote == null ? null : () => showNoteExportSheet(context, ref, workspaceId!, activeNote.id),
+      ),
+    );
+    file.add(
+      AppCommand(
+        l.notePreviewUpdate,
+        activeNote == null || (ref.watch(noteChangesProvider((workspaceId!, activeNote.id)))?.count ?? 0) == 0
+            ? null
+            : () {
+                workspace!.openStudyNote(activeNote.id);
+                ref.read(noteUpdateRequestedProvider(activeNote.id).notifier).request();
+              },
       ),
     );
     file.add(
