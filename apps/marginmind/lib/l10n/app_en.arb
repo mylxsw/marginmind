@@ -503,6 +503,13 @@
   "readerOutline": "Table of Contents",
   "readerBookmarks": "Bookmarks",
   "readerAnnotations": "Annotations",
+  "inkAnnotations": "Hand-drawn annotations",
+  "inkStrokeCount": "{count, plural, =1{1 stroke} other{{count} strokes}}",
+  "@inkStrokeCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "showReaderSidebar": "Show Page Sidebar",
   "hideReaderSidebar": "Hide Page Sidebar",
   "addBookmark": "Add Bookmark",

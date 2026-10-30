@@ -1130,6 +1130,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       String? subtitle,
       Color? subtitleColor,
       Color? color,
+      IconData? icon,
       bool selected = false,
       VoidCallback? onDelete,
       VoidCallback? onRename,
@@ -1162,6 +1163,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 Container(width: MMSpacing.xs, height: MMSpacing.xxl, color: color),
                 const SizedBox(width: MMSpacing.s),
               ],
+              if (icon != null) ...[
+                Icon(icon, size: context.mmText.callout.fontSize, color: context.mmColors.secondaryLabel),
+                const SizedBox(width: MMSpacing.s),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1190,14 +1195,67 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     }
 
     final annotations = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
-    final unresolvedInk = workspace.content.inkStrokes.where((stroke) {
-      if (stroke.documentId != widget.document.id || stroke.textAnchor == null) return false;
+    final inkChapters = <String, List<InkStroke>>{};
+    final unresolvedInk = <InkStroke>[];
+    for (final stroke in workspace.content.inkStrokes) {
+      if (stroke.documentId != widget.document.id || stroke.textAnchor == null) continue;
       final anchor = stroke.textAnchor!;
       final chapter = book.chapter(anchor.anchor.chapterId);
-      return anchor.anchor.revision != book.revision ||
+      if (anchor.anchor.revision != book.revision ||
           chapter?.resolves(anchor.anchor) != true ||
-          !chapter!.blocks.any((b) => b.id == anchor.blockId);
-    }).toList();
+          !chapter!.blocks.any((b) => b.id == anchor.blockId)) {
+        unresolvedInk.add(stroke);
+      } else {
+        // Reflow has no stable page numbers. A source chapter is the logical
+        // page; fixed-layout books store exactly one original page per chapter.
+        (inkChapters[chapter.id] ??= []).add(stroke);
+      }
+    }
+    final chapterOrder = {for (var i = 0; i < book.chapters.length; i++) book.chapters[i].id: i};
+    final annotationRows =
+        <({String chapterId, int offset, Widget row})>[
+          for (final a in annotations.where((a) => !needsReview(a)))
+            (() {
+              final anchor = book.resolve(a.textAnchors.first)!;
+              return (
+                chapterId: anchor.chapterId,
+                offset: anchor.start,
+                row: entry(
+                  a.capture == null ? a.quote : l.imageExcerpt,
+                  () {
+                    navigate(book.position(anchor.chapterId, anchor.start));
+                    workspace.tapHighlight(a.id);
+                  },
+                  onDelete: () => workspace.deleteHighlight(a.id),
+                  color: MMAnnotationColor.fromIndex(a.colorIndex).color,
+                  subtitle: book.title(book.position(anchor.chapterId, anchor.start)),
+                ),
+              );
+            })(),
+          for (final group in inkChapters.entries)
+            (() {
+              final offset = group.value.map((s) => s.textAnchor!.anchor.start).reduce(math.min);
+              final position = book.position(group.key, offset);
+              final number = chapterOrder[group.key]! + 1;
+              final location = widget.document.layout == DocumentLayout.fixed
+                  ? l.pageNumber(number)
+                  : book.title(position, fallback: '${l.researchContextChapter} $number');
+              return (
+                chapterId: group.key,
+                offset: offset,
+                row: entry(
+                  l.inkAnnotations,
+                  () => navigate(position),
+                  key: ValueKey('ink-chapter-${group.key}'),
+                  icon: MMIcons.inkFreehand,
+                  subtitle: '$location · ${l.inkStrokeCount(group.value.length)}',
+                ),
+              );
+            })(),
+        ]..sort((a, b) {
+          final byChapter = chapterOrder[a.chapterId]!.compareTo(chapterOrder[b.chapterId]!);
+          return byChapter != 0 ? byChapter : a.offset.compareTo(b.offset);
+        });
     final reviewCount = annotations.where(needsReview).length + unresolvedInk.length;
     final panel = Container(
       width: MMSizeClass.of(context) == MMSizeClass.compact
@@ -1276,7 +1334,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                       ),
                 ],
                 ReaderPanelMode.annotations => [
-                  if (annotations.isEmpty && unresolvedInk.isEmpty) entry(l.noAnnotations, () {}),
+                  if (annotations.isEmpty && unresolvedInk.isEmpty && inkChapters.isEmpty)
+                    entry(l.noAnnotations, () {}),
                   if (reviewCount > 0) ...[
                     Padding(
                       padding: const EdgeInsets.all(MMSpacing.m),
@@ -1325,18 +1384,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                       ),
                     Divider(height: MMSpacing.m, thickness: 0.5, color: context.mmColors.separator),
                   ],
-                  for (final a in annotations.where((a) => !needsReview(a)))
-                    entry(
-                      a.capture == null ? a.quote : l.imageExcerpt,
-                      () {
-                        final anchor = book.resolve(a.textAnchors.first)!;
-                        navigate(book.position(anchor.chapterId, anchor.start));
-                        workspace.tapHighlight(a.id);
-                      },
-                      onDelete: () => workspace.deleteHighlight(a.id),
-                      color: MMAnnotationColor.fromIndex(a.colorIndex).color,
-                      subtitle: book.title(book.position(a.textAnchors.first.chapterId, a.textAnchors.first.start)),
-                    ),
+                  for (final item in annotationRows) item.row,
                 ],
               },
             ),

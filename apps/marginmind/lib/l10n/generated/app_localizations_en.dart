@@ -910,6 +910,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerAnnotations => 'Annotations';
 
   @override
+  String get inkAnnotations => 'Hand-drawn annotations';
+
+  @override
+  String inkStrokeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(count, locale: localeName, other: '$count strokes', one: '1 stroke');
+    return '$_temp0';
+  }
+
+  @override
   String get showReaderSidebar => 'Show Page Sidebar';
 
   @override

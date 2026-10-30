@@ -284,6 +284,13 @@
   "readerOutline": "目录",
   "readerBookmarks": "书签",
   "readerAnnotations": "标注",
+  "inkAnnotations": "手绘标注",
+  "inkStrokeCount": "{count} 处笔迹",
+  "@inkStrokeCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "showReaderSidebar": "显示页面侧栏",
   "hideReaderSidebar": "隐藏页面侧栏",
   "addBookmark": "添加书签",

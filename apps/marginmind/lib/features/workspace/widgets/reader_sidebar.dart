@@ -101,6 +101,7 @@ class ReaderSidebar extends ConsumerWidget {
                     pdf: pdf,
                     annotations: content.annotationsOn(document.id),
                     notes: content.marginNotes.where((n) => n.documentId == document.id).toList(),
+                    ink: content.inkStrokes.where((s) => s.documentId == document.id && s.textAnchor == null).toList(),
                   ),
                 },
               ),
@@ -218,18 +219,22 @@ class _ThumbnailsState extends State<_Thumbnails> {
 // ---- annotations ----------------------------------------------------------------
 
 class _AnnotationEntry {
-  const _AnnotationEntry.highlight(Annotation value) : highlight = value, note = null;
-  const _AnnotationEntry.note(MarginNote value) : note = value, highlight = null;
+  const _AnnotationEntry.highlight(Annotation value) : highlight = value, note = null, ink = const [];
+  const _AnnotationEntry.note(MarginNote value) : note = value, highlight = null, ink = const [];
+  const _AnnotationEntry.ink(this.ink) : highlight = null, note = null;
 
   final Annotation? highlight;
   final MarginNote? note;
+  final List<InkStroke> ink;
 
-  String get id => highlight == null ? 'margin-note-${note!.id}' : 'annotation-${highlight!.id}';
-  int get page => highlight?.isText == true ? 0 : highlight?.page ?? note!.page;
+  String get id => ink.isNotEmpty
+      ? 'ink-page-$page'
+      : highlight == null
+      ? 'margin-note-${note!.id}'
+      : 'annotation-${highlight!.id}';
+  int get page => ink.isNotEmpty ? ink.first.page : (highlight?.isText == true ? 0 : highlight?.page ?? note!.page);
   bool get needsReview => highlight?.needsReview ?? false;
-  int get colorIndex => highlight?.colorIndex ?? note!.colorIndex;
-  DateTime get createdAt => highlight?.createdAt ?? note!.createdAt;
-  String get text => highlight?.quote ?? note!.text;
+  DateTime get createdAt => highlight?.createdAt ?? note?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class _Annotations extends ConsumerWidget {
@@ -239,6 +244,7 @@ class _Annotations extends ConsumerWidget {
     required this.pdf,
     required this.annotations,
     required this.notes,
+    required this.ink,
   });
 
   final Document document;
@@ -247,6 +253,7 @@ class _Annotations extends ConsumerWidget {
   final MMPdfViewController pdf;
   final List<Annotation> annotations;
   final List<MarginNote> notes;
+  final List<InkStroke> ink;
 
   Future<void> _open(BuildContext context, WidgetRef ref, _AnnotationEntry entry) async {
     final session = ref.read(readerMarginProvider(studySetId).notifier);
@@ -286,6 +293,10 @@ class _Annotations extends ConsumerWidget {
       if (entry.needsReview && context.mounted) {
         MMHud.show(context, context.l10n.annotationNotFound, icon: MMIcons.warning);
       }
+    } else if (entry.ink.isNotEmpty) {
+      await session.close();
+      if (!context.mounted) return;
+      await pdf.jumpToPage(entry.page);
     } else if (entry.note case final note?) {
       // Line notes have no quote rectangles; reveal their original PDF line.
       final rects =
@@ -321,10 +332,15 @@ class _Annotations extends ConsumerWidget {
     final l = context.l10n;
     final c = context.mmColors;
     final t = context.mmText;
+    final inkPages = <int, List<InkStroke>>{};
+    for (final stroke in ink) {
+      (inkPages[stroke.page] ??= []).add(stroke);
+    }
     final entries =
         [
           for (final annotation in annotations) _AnnotationEntry.highlight(annotation),
           for (final note in notes.where((n) => n.anchor?.textAnchors.isEmpty ?? true)) _AnnotationEntry.note(note),
+          for (final strokes in inkPages.values) _AnnotationEntry.ink(strokes),
         ]..sort((a, b) {
           if (a.needsReview != b.needsReview) return a.needsReview ? -1 : 1;
           final byPage = a.page.compareTo(b.page);
@@ -357,8 +373,14 @@ class _Annotations extends ConsumerWidget {
         }
         final entry = entries[index];
         final chapter = _chapter(entry, ref.read(workspaceProvider(studySetId).notifier));
-        final color = MMAnnotationColor.fromIndex(entry.colorIndex);
-        final label = entry.text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : entry.text;
+        final isInk = entry.ink.isNotEmpty;
+        final color = isInk
+            ? c.secondaryLabel
+            : MMAnnotationColor.fromIndex(entry.highlight?.colorIndex ?? entry.note!.colorIndex).color;
+        final text = entry.highlight?.quote ?? entry.note?.text ?? '';
+        final label = isInk
+            ? l.inkAnnotations
+            : (text.isEmpty ? (entry.note == null ? l.toolArea : l.marginNoteAction) : text);
         final selected = entry.note != null && popup.contains(entry.note!.id);
         final row = MMInteractive(
           key: ValueKey(entry.id),
@@ -380,9 +402,9 @@ class _Annotations extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
-                  child: entry.note != null
-                      ? Icon(MMIcons.marginNote, size: t.callout.fontSize, color: color.color)
-                      : Container(width: 3, height: context.mmSidebarRow, color: color.color),
+                  child: isInk || entry.note != null
+                      ? Icon(isInk ? MMIcons.inkFreehand : MMIcons.marginNote, size: t.callout.fontSize, color: color)
+                      : Container(width: 3, height: context.mmSidebarRow, color: color),
                 ),
                 Expanded(
                   child: Column(
@@ -392,8 +414,10 @@ class _Annotations extends ConsumerWidget {
                         label,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: entry.note == null ? MMTypography.readingExcerpt : t.callout,
+                        style: !isInk && entry.note == null ? MMTypography.readingExcerpt : t.callout,
                       ),
+                      if (isInk)
+                        Text(l.inkStrokeCount(entry.ink.length), style: t.footnote.copyWith(color: c.secondaryLabel)),
                       if (entry.needsReview || entry.highlight?.isText == true)
                         Text(
                           chapter.title,

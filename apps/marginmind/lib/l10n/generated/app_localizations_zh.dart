@@ -874,6 +874,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerAnnotations => '标注';
 
   @override
+  String get inkAnnotations => '手绘标注';
+
+  @override
+  String inkStrokeCount(int count) {
+    return '$count 处笔迹';
+  }
+
+  @override
   String get showReaderSidebar => '显示页面侧栏';
 
   @override

@@ -1670,6 +1670,18 @@ abstract class AppLocalizations {
   /// **'Annotations'**
   String get readerAnnotations;
 
+  /// No description provided for @inkAnnotations.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand-drawn annotations'**
+  String get inkAnnotations;
+
+  /// No description provided for @inkStrokeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 stroke} other{{count} strokes}}'**
+  String inkStrokeCount(int count);
+
   /// No description provided for @showReaderSidebar.
   ///
   /// In en, this message translates to:
