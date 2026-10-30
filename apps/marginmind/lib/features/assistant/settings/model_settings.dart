@@ -163,7 +163,7 @@ Future<ServiceProtocol?> showServiceList(BuildContext anchor) {
     barrierDismissible: true,
     barrierColor: Colors.transparent,
     barrierLabel: MaterialLocalizations.of(anchor).modalBarrierDismissLabel,
-    transitionDuration: MMMotion.quick,
+    transitionDuration: MMMotion.popup,
     pageBuilder: (context, _, _) => CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: FocusScope(

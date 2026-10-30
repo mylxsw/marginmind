@@ -51,13 +51,20 @@ class MMSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
-            onDoubleTap: chrome?.onTitleDoubleTap,
-            child: SizedBox(
-              height: MMSizes.windowButtonsHeight,
-              child: Row(children: [const Spacer(), ?topTrailing]),
+          SizedBox(
+            height: MMSizes.windowButtonsHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Title gestures belong behind controls so double-click
+                // recognition never holds a button's first click.
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
+                  onDoubleTap: chrome?.onTitleDoubleTap,
+                ),
+                Row(children: [const Spacer(), ?topTrailing]),
+              ],
             ),
           ),
           if (header != null) Padding(padding: const EdgeInsets.only(top: 10), child: header),

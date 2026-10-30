@@ -18,7 +18,7 @@ void showReadingSettings(BuildContext context, WidgetRef ref, String setId, {Doc
     barrierColor: Colors.transparent,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+    transitionDuration: MMMotion.popup,
     transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
     pageBuilder: (_, _, _) => Align(
       alignment: MMSizeClass.of(context) == MMSizeClass.compact ? Alignment.bottomCenter : Alignment.topCenter,

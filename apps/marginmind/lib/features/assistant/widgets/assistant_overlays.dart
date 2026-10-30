@@ -169,7 +169,7 @@ Future<T?> showPopupMenu<T>(
   barrierDismissible: true,
   barrierColor: Colors.transparent,
   barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: const Duration(milliseconds: 90),
+  transitionDuration: MMMotion.popup,
   pageBuilder: (context, _, _) => CustomSingleChildLayout(
     delegate: _AnchoredLayout(anchor, width),
     child: _KeyboardPopup<T>(items: items),
@@ -261,7 +261,7 @@ Future<void> showSaveNotePopover(
     barrierDismissible: true,
     barrierColor: Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+    transitionDuration: MMMotion.popup,
     pageBuilder: (dialog, _, _) => inScope(
       context,
       CustomSingleChildLayout(

@@ -394,6 +394,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
               child: MMFloatingToolbar(
                 children: [
                   TextAnnotationTools(
+                    onApplied: _dismiss,
                     enabled: capabilities.annotate,
                     studySetId: widget.studySetId,
                     colorOnly: isArea,

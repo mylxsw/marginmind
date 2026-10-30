@@ -21,7 +21,7 @@ Future<void> showVocabularyHit(
   barrierDismissible: true,
   barrierColor: Colors.transparent,
   barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+  transitionDuration: MMMotion.popup,
   pageBuilder: (_, _, _) => MMFloatingToolbarLayout(
     anchor: anchor ?? Rect.fromCenter(center: MediaQuery.sizeOf(context).center(Offset.zero), width: 1, height: 1),
     child: Material(

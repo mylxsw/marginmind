@@ -4,6 +4,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('sidebar header buttons respond immediately and leave title gestures on empty space', (tester) async {
+    var clicks = 0;
+    var zooms = 0;
+    var drags = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        home: MMWindowChrome(
+          onTitleDoubleTap: () => zooms++,
+          onDragStart: () => drags++,
+          child: Scaffold(
+            body: MMSidebar(
+              topTrailing: MMIconButton(icon: MMIcons.sidebar, tooltip: 'Hide sidebar', onPressed: () => clicks++),
+              children: const [],
+            ),
+          ),
+        ),
+      ),
+    );
+    final button = find.byTooltip('Hide sidebar');
+    await tester.tap(button, kind: PointerDeviceKind.mouse);
+    expect(clicks, 1, reason: 'a header button must not wait for the double-click timeout');
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tap(button, kind: PointerDeviceKind.mouse);
+    expect(clicks, 2);
+    await tester.pump(kDoubleTapTimeout);
+    expect(zooms, 0);
+    final title = tester.getCenter(button).translate(-100, 0);
+    await tester.tapAt(title, kind: PointerDeviceKind.mouse);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapAt(title, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(zooms, 1);
+    await tester.dragFrom(title, const Offset(80, 0));
+    await tester.pumpAndSettle();
+    expect(drags, 1);
+  });
+
   testWidgets('toolbar actions respond on release without waiting for a title double click', (tester) async {
     var opened = false;
     var zooms = 0;

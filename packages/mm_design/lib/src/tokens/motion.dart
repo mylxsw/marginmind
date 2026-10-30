@@ -1,6 +1,9 @@
 import 'package:flutter/animation.dart';
 
 abstract final class MMMotion {
+  /// Menus and anchored popovers appear fully visible in their first frame.
+  static const popup = Duration.zero;
+
   /// Hover, press, color changes.
   static const quick = Duration(milliseconds: 150);
 

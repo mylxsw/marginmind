@@ -9,6 +9,7 @@ import '../foundation/back_handler.dart';
 import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import '../tokens/motion.dart';
 import 'glass.dart';
 
 /// An entry in a context menu: [MMMenuItem] or [MMMenuDivider].
@@ -81,7 +82,7 @@ Future<void> showMMMenu(
     barrierDismissible: true,
     barrierColor: sheet ? context.mmColors.scrim : Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    transitionDuration: const Duration(milliseconds: 90),
+    transitionDuration: MMMotion.popup,
     pageBuilder: (context, _, _) => CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: FocusScope(

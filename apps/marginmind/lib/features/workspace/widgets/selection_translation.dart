@@ -31,7 +31,7 @@ Future<void> showSelectionTranslation(
   barrierColor: Colors.transparent,
   barrierDismissible: true,
   barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-  transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+  transitionDuration: MMMotion.popup,
   pageBuilder: (_, _, _) => inScope(
     context,
     CustomSingleChildLayout(

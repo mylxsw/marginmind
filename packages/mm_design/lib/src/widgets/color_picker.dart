@@ -88,7 +88,7 @@ class MMColorMenuButton extends StatelessWidget {
       barrierDismissible: true,
       barrierColor: Colors.transparent,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      transitionDuration: MMMotion.quick,
+      transitionDuration: MMMotion.popup,
       pageBuilder: (context, _, _) => CallbackShortcuts(
         bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
         child: FocusScope(

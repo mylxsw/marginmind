@@ -81,7 +81,12 @@ void main() {
     }
 
     open();
-    await tester.pumpAndSettle();
+    await tester.pump();
+    for (final fade in tester.widgetList<FadeTransition>(
+      find.ancestor(of: find.text('Select'), matching: find.byType(FadeTransition)),
+    )) {
+      expect(fade.opacity.value, 1, reason: 'context menus must be fully visible in their first frame');
+    }
     final rect = tester.getRect(find.text('Select'));
     expect(rect.right, lessThanOrEqualTo(800));
     expect(rect.bottom, lessThanOrEqualTo(600));

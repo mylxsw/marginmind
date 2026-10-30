@@ -125,7 +125,9 @@ void main() {
   }
 
   for (final appearance in ['light', 'dark']) {
-    testWidgets('three controls, contextual palette, same mark and undo in $appearance', (tester) async {
+    testWidgets('neutral actions dismiss after applying; saved marks retain editable settings in $appearance', (
+      tester,
+    ) async {
       final container = await pumpApp(tester, prefs: {'settings.appearance': appearance, 'settings.language': 'zh'});
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -139,7 +141,7 @@ void main() {
       final underline = find.byKey(const ValueKey('selection-underline'));
       expect(tester.getCenter(color).dx, lessThan(tester.getCenter(highlight).dx));
       expect(tester.getCenter(highlight).dx, lessThan(tester.getCenter(underline).dx));
-      expect(tester.widget<MMToolbarButton>(highlight).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(highlight).selected, isFalse);
       await screenshot(tester, 'toolbar-$appearance', target: toolbar);
 
       final before = controller.content.annotations.length;
@@ -165,16 +167,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.content.annotations.length, before);
       expect(container.read(provider).pending, isA<PendingSelection>());
-      expect(tester.widget<MMToolbarButton>(highlight).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(highlight).selected, isFalse);
       await screenshot(tester, 'highlight-palette-$appearance', target: palette);
       await toolbarWithPaletteScreenshot(tester, 'highlight-settings-$appearance');
 
-      // The palette stays usable while its sibling tool buttons switch modes.
+      // Applying a marker closes both toolbars; clicking the saved mark opens its settings again.
       await tester.tap(underline);
       await tester.pumpAndSettle();
       final id = controller.content.annotations.last.id;
       expect(controller.content.annotations.length, before + 1);
-      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
+      expect(container.read(provider).pending, isNull);
+      expect(toolbar, findsNothing);
+      expect(palette, findsNothing);
+      controller.tapHighlight(id, selection.viewportRect!);
+      await tester.pumpAndSettle();
+      await tester.tap(color);
+      await tester.pumpAndSettle();
+      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
       expect(find.byType(AnnotationLineStylePicker), findsOneWidget);
       expect(
         tester
@@ -189,7 +198,7 @@ void main() {
       await tester.tap(find.byTooltip('蓝色'));
       await tester.pumpAndSettle();
       expect(controller.content.annotation(id)?.colorIndex, MMAnnotationColor.blue.index);
-      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
       expect(container.read(provider).color, MMAnnotationColor.blue);
       await screenshot(tester, 'underline-palette-$appearance', target: palette);
       await toolbarWithPaletteScreenshot(tester, 'underline-settings-$appearance');
@@ -203,7 +212,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('highlight-custom-color-picker')), findsNothing);
-      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
       await tester.tap(more);
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const ValueKey('highlight-color-hex')), '#12A4B8');
@@ -218,7 +227,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
       expect(controller.content.annotations.length, before + 1);
 
       await tester.tap(highlight);
@@ -226,18 +235,16 @@ void main() {
       expect(controller.content.annotations.length, before + 1);
       expect(controller.content.annotation(id)?.kind, AnnotationKind.highlight);
       expect(find.byType(AnnotationLineStylePicker), findsNothing);
-      expect(tester.widget<MMToolbarButton>(highlight).selected, isTrue);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
       expect(palette, findsNothing);
-      expect(toolbar, findsOneWidget);
+      expect(toolbar, findsNothing);
+      expect(container.read(provider).pending, isNull);
       await controller.undo();
       await tester.pumpAndSettle();
       expect(controller.content.annotation(id)?.kind, AnnotationKind.underline);
       expect(controller.content.annotation(id)?.lineStyle, AnnotationLineStyle.wavy);
       controller.tapHighlight(id, selection.viewportRect!);
       await tester.pumpAndSettle();
-      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
       await settleHud(tester);
     });
   }
@@ -286,6 +293,9 @@ void main() {
       expect(tester.getRect(toolbar).left, greaterThanOrEqualTo(0));
       expect(tester.getRect(toolbar).right, lessThanOrEqualTo(width));
       await tester.tap(find.byKey(const ValueKey('selection-underline')));
+      await tester.pumpAndSettle();
+      expect(toolbar, findsNothing);
+      controller.tapHighlight(controller.content.annotations.last.id, selection.viewportRect!);
       await tester.pumpAndSettle();
       await tester.tap(find.descendant(of: toolbar, matching: find.byType(AnnotationColorButton)));
       await tester.pumpAndSettle();

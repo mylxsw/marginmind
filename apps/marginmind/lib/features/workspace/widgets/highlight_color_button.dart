@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,14 +66,13 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
     setState(() => _open = true);
     widget.onOpenChanged?.call(true);
     try {
-      await widget.onOpen?.call();
-      if (!mounted) return;
+      unawaited(_openTool());
       final picked = await showGeneralDialog<MMAnnotationColor>(
         context: context,
         barrierColor: Colors.transparent,
         barrierDismissible: true,
         barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-        transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+        transitionDuration: MMMotion.popup,
         pageBuilder: (_, _, _) => inScope(
           context,
           CustomSingleChildLayout(
@@ -92,6 +93,14 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
         setState(() => _open = false);
         widget.onOpenChanged?.call(false);
       }
+    }
+  }
+
+  Future<void> _openTool() async {
+    try {
+      await widget.onOpen?.call();
+    } catch (_) {
+      if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);
     }
   }
 

@@ -189,7 +189,7 @@ void main() {
     });
   }
 
-  testWidgets('selection underline creates once and edits the same mark without dismissing toolbar', (tester) async {
+  testWidgets('selection underline dismisses on apply and saved mark settings remain editable', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
@@ -203,6 +203,10 @@ void main() {
     expect(controller.content.annotations.length, before + 1);
     final id = controller.content.annotations.last.id;
     expect(container.read(provider).tool, AnnotationTool.select);
+    expect(container.read(provider).pending, isNull);
+    expect(find.byType(SelectionToolbar), findsNothing);
+    controller.tapHighlight(id, selection.viewportRect!);
+    await tester.pumpAndSettle();
     await tester.tap(find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(AnnotationColorButton)));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Dotted'));

@@ -66,6 +66,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
       _busy = true;
     });
     widget.onOpenChanged?.call(true);
+    _overlay.show();
     try {
       final controller = _controller;
       final state = ref.read(workspaceProvider(widget.studySetId));
@@ -93,7 +94,6 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
           break;
       }
       if (!widget.selectionAction) await controller.setTool(AnnotationTool.underline);
-      if (mounted && _open) _overlay.show();
     } catch (_) {
       if (mounted) {
         _close();
@@ -132,7 +132,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
         barrierColor: Colors.transparent,
         barrierDismissible: true,
         barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-        transitionDuration: MMAppearance.duration(context, MMMotion.quick),
+        transitionDuration: MMMotion.popup,
         transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
         pageBuilder: (_, _, _) => inScope(
           context,

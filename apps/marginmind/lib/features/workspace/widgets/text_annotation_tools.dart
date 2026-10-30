@@ -12,6 +12,7 @@ class TextAnnotationTools extends ConsumerStatefulWidget {
   const TextAnnotationTools({
     super.key,
     required this.studySetId,
+    required this.onApplied,
     this.compact = false,
     this.enabled = true,
     this.onOpenChanged,
@@ -19,6 +20,7 @@ class TextAnnotationTools extends ConsumerStatefulWidget {
   });
 
   final String studySetId;
+  final VoidCallback onApplied;
   final bool compact, enabled, colorOnly;
   final ValueChanged<bool>? onOpenChanged;
 
@@ -27,18 +29,25 @@ class TextAnnotationTools extends ConsumerStatefulWidget {
 }
 
 class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
-  bool _busy = false;
+  AnnotationTool? _applying;
+  bool get _busy => _applying != null;
 
   Future<void> _select(AnnotationTool tool) async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() => _applying = tool);
     try {
       final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+      final pending = ref.read(workspaceProvider(widget.studySetId)).pending;
       await controller.applyPendingTextAnnotation(tool);
+      if (mounted &&
+          pending != null &&
+          identical(ref.read(workspaceProvider(widget.studySetId)).pending?.toolbarIdentity, pending.toolbarIdentity)) {
+        widget.onApplied();
+      }
     } catch (_) {
       if (mounted) MMHud.show(context, context.l10n.somethingWentWrong, icon: MMIcons.close);
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _applying = null);
     }
   }
 
@@ -72,7 +81,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
             icon: MMIcons.highlight,
             tooltip: l.toolHighlight,
             compact: widget.compact,
-            selected: tool == AnnotationTool.highlight,
+            selected: _applying == AnnotationTool.highlight,
             onPressed: widget.enabled && !_busy ? () => _select(AnnotationTool.highlight) : null,
           ),
           MMToolbarButton(
@@ -80,7 +89,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
             icon: MMIcons.underline,
             tooltip: l.toolUnderline,
             compact: widget.compact,
-            selected: tool == AnnotationTool.underline,
+            selected: _applying == AnnotationTool.underline,
             onPressed: widget.enabled && !_busy ? () => _select(AnnotationTool.underline) : null,
           ),
         ],

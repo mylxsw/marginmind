@@ -124,15 +124,14 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('selection-highlight')));
       await tester.pumpAndSettle();
+      expect(find.byType(SelectionToolbar), findsNothing);
+      expect(container.read(workspaceProvider('demo-1')).pending, isNull);
       final annotation = controller.content.annotations.last;
       expect(controller.content.cardForAnnotation(annotation.id), isNull);
       expect(controller.content.cards.length, before.cards.length);
       expect(annotation.colorIndex, color.index);
       expect(annotation.quote, selection.text);
       expect(container.read(workspaceProvider('demo-1')).color, color);
-      expect(find.byType(SelectionToolbar), findsOneWidget);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
       await controller.undo();
       expect(controller.content.annotations.length, before.annotations.length);
       expect(controller.content.cards.length, before.cards.length);
@@ -172,11 +171,6 @@ void main() {
           );
         }
         await tester.pumpAndSettle();
-        if (!keyboard && command == ReaderSelectionCommand.highlight) {
-          expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingHighlight>());
-          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-          await tester.pumpAndSettle();
-        }
         expect(find.byType(SelectionToolbar), findsNothing);
         expect(container.read(workspaceProvider('demo-1')).pending, isNull);
         expect(

@@ -397,6 +397,10 @@ void main() {
     await tester.tap(underline);
     await tester.pumpAndSettle();
     expect(workspace.content.annotations.single.kind, AnnotationKind.underline);
+    expect(container.read(workspaceProvider('demo-1')).pending, isNull);
+    expect(find.byKey(const ValueKey('selection-underline')), findsNothing);
+    expect(find.bySemanticsLabel('Selection start'), findsNothing);
+    expect(find.bySemanticsLabel('Selection end'), findsNothing);
     await settleHud(tester);
     expect(tester.takeException(), isNull);
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
