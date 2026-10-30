@@ -89,7 +89,17 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).panel, isNull);
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
       final navigation = t.getRect(find.byKey(const ValueKey('tablet-reader-navigation')));
-      expect(navigation.overlaps(t.getRect(find.byKey(const ValueKey('pdf-placeholder-c1')))), isFalse);
+      final viewport = t.getRect(find.byKey(const ValueKey('pdf-placeholder-c1')));
+      expect(viewport.bottom, t.getRect(find.byType(ReaderPane)).bottom, reason: 'no reserved footer');
+      expect(navigation.overlaps(viewport), isTrue);
+      expect(navigation.width, 300);
+      expect(navigation.height, 44);
+      expect(navigation.center.dx, closeTo(viewport.center.dx, .01));
+      expect(viewport.bottom - navigation.bottom, 16);
+      final progress = find.byKey(const ValueKey('reader-page-progress'));
+      expect(t.getRect(progress).center.dy, closeTo(navigation.center.dy, .01));
+      expect(progress.hitTestable(), findsOneWidget);
+      expect(find.ancestor(of: progress, matching: find.byType(MMLiquidGlass)), findsOneWidget);
       expect(t.takeException(), isNull);
       await settleHud(t);
     });
