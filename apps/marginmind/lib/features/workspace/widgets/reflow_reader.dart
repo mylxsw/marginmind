@@ -14,6 +14,7 @@ import 'package:mm_platform/mm_platform.dart';
 import '../../../app/navigation.dart';
 import '../../../app/app_commands.dart';
 import '../../../app/providers.dart';
+import '../../vocabulary/vocabulary_source_flash.dart';
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
 import '../reflow_session.dart';
@@ -813,6 +814,10 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
   };
 
   Widget _surface(ChapterLayout layout, int? page, WorkspaceState state) {
+    final source = ref.watch(vocabularySourceFlashProvider);
+    final sourceFlash = source?.studySetId == widget.studySetId && source?.documentId == widget.document.id
+        ? source?.textAnchor
+        : null;
     final selectable = widget.document.capabilities().selectText;
     final highlights = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
     final resolved = <String, List<TextAnchor>>{};
@@ -973,6 +978,8 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                         state.selectedCardId == null
                             ? null
                             : workspace.content.card(state.selectedCardId!)?.annotationId,
+                        sourceFlash: sourceFlash == null ? null : session.book!.resolve(sourceFlash),
+                        sourceFlashColor: context.mmColors.vocabularyTint,
                       ),
                     ),
                   ),
@@ -1524,8 +1531,10 @@ class ReflowReaderPainter extends CustomPainter {
     this.selection,
     this.match,
     this.flash,
-    this.selected,
-  );
+    this.selected, {
+    this.sourceFlash,
+    this.sourceFlashColor,
+  });
   final ChapterLayout layout;
   final int? page;
   final List<Annotation> annotations;
@@ -1533,6 +1542,8 @@ class ReflowReaderPainter extends CustomPainter {
   final List<TextAnchor> selection;
   final TextAnchor? match;
   final String? flash, selected;
+  final TextAnchor? sourceFlash;
+  final Color? sourceFlashColor;
   @override
   void paint(Canvas canvas, Size size) {
     if (layout.isDisposed) return;
@@ -1551,6 +1562,11 @@ class ReflowReaderPainter extends CustomPainter {
     for (final anchor in [...selection, ?match]) {
       for (final box in layout.boxes(anchor, page: page)) {
         canvas.drawRect(box.rect, Paint()..color = layout.spec.readerStyle.marginNoteLine);
+      }
+    }
+    if (sourceFlash != null && sourceFlashColor != null) {
+      for (final box in layout.boxes(sourceFlash!, page: page)) {
+        canvas.drawRect(box.rect, Paint()..color = sourceFlashColor!);
       }
     }
     layout.paint(canvas, page: page);

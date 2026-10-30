@@ -7,6 +7,13 @@ sealed class AppRoute {
   const AppRoute();
 }
 
+/// Application vocabulary, optionally scoped to a study set or opened by entry ID.
+class VocabularyRoute extends AppRoute {
+  const VocabularyRoute({this.studySetId, this.entryId, required this.returnTo});
+  final String? studySetId, entryId;
+  final AppRoute returnTo;
+}
+
 class LibraryRoute extends AppRoute {
   const LibraryRoute();
 }
@@ -43,11 +50,6 @@ class GalleryRoute extends AppRoute {
   final AppRoute returnTo;
 }
 
-class VocabularyRoute extends AppRoute {
-  const VocabularyRoute({this.studySetId, this.entryId});
-  final String? studySetId, entryId;
-}
-
 class AppNavigation extends Notifier<AppRoute> {
   @override
   AppRoute build() => const LibraryRoute();
@@ -56,9 +58,6 @@ class AppNavigation extends Notifier<AppRoute> {
   /// Source, Map and Review tabs return to it from the library.
   String? get recentStudySetId => _recent;
   String? _recent;
-
-  void showVocabulary({String? studySetId, String? entryId}) =>
-      state = VocabularyRoute(studySetId: studySetId, entryId: entryId);
 
   void showLibrary() => state = const LibraryRoute();
 
@@ -72,6 +71,15 @@ class AppNavigation extends Notifier<AppRoute> {
     state = StatsRoute(studySetId);
   }
 
+  void showVocabulary({String? studySetId, String? entryId}) {
+    final previous = state;
+    state = VocabularyRoute(
+      studySetId: studySetId,
+      entryId: entryId,
+      returnTo: previous is VocabularyRoute ? previous.returnTo : previous,
+    );
+  }
+
   void showGallery() {
     if (state is! GalleryRoute) state = GalleryRoute(returnTo: state);
   }
@@ -80,7 +88,7 @@ class AppNavigation extends Notifier<AppRoute> {
     final current = state;
     state = switch (current) {
       GalleryRoute() => current.returnTo,
-      VocabularyRoute(:final studySetId?) => WorkspaceRoute(studySetId),
+      VocabularyRoute() => current.returnTo,
       StatsRoute(:final studySetId?) => WorkspaceRoute(studySetId),
       _ => const LibraryRoute(),
     };

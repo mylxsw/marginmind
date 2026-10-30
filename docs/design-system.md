@@ -122,3 +122,7 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 生词选区卡片使用 `MMSizes.vocabularyCardWidth`（360pt），已收录圆点使用 `MMSizes.vocabularyDot`（6pt）。
 实心生词按钮文字使用 `MMColors.onVocabulary`（浅色白字、深色深字），保证 4.5:1 对比度。`MMButton.foregroundColor` 用于这种语义色填充。
+
+### 生词本页面（GUL-596）
+
+列表宽使用 `MMSizes.vocabularyListWidth`（340 pt）；宽度低于 600 pt 时与手机一致推入详情，返回保留搜索和筛选。音标朗读使用 `MMIcons.volume`（系统扬声器图标）与系统英／美语音，词形原形固定保留。界面文案与分组依据 `design/prototype/vocabulary.html` 场景 10–11；重新生成仅更新义项，保留用户的行间释义、笔记及词形。

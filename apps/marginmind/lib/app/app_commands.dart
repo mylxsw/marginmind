@@ -1144,6 +1144,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       DesktopWindow.toggleFullScreen,
       shortcut: AppShortcuts.fullScreen,
     );
+    view.add(AppCommand(l.vocabularyTitle, () => nav.showVocabulary(studySetId: workspaceId)));
     // The component gallery is a developer tool.
     final help = [if (kDebugMode) AppCommand(l.componentGallery, nav.showGallery, shortcut: AppShortcuts.gallery)];
 

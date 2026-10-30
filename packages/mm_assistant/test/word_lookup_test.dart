@@ -278,6 +278,23 @@ void main() {
       expect(client.requests.first.last.toJson().toString(), contains('Progress plateaus.'));
     },
   );
+  test('explicit regeneration bypasses and replaces the cache', () async {
+    final client = ScriptClient([answer(jsonEncode(value())), answer(jsonEncode(value()..['gloss'] = '新释义'))]);
+    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    await lookup(service);
+    final fresh = await service.lookup(
+      term: 'plateaus',
+      sentence: 'Progress plateaus.',
+      sourceLanguage: 'en',
+      targetLanguage: 'zh',
+      model: model,
+      cancel: CancellationToken(),
+      refresh: true,
+    );
+    expect(client.calls, 2);
+    expect(fresh.gloss, '新释义');
+    expect(await lookup(service), same(fresh));
+  });
   test('tolerant model response is returned and cached through the lookup service', () async {
     final j = value()
       ..remove('phonetics')

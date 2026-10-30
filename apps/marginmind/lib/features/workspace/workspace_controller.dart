@@ -417,6 +417,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Timer? _flashTimer;
   final _pageTimers = <String, Timer>{};
   ({MMSplitMode layout, bool sidebar, bool readerPanel})? _compareRestore;
+  int? _deliveredPdfReveal;
+
+  /// A source route may mount after its reveal was requested. Keep delivery
+  /// across reader remounts so returning later preserves the user's new place.
+  bool claimPdfReveal(int nonce) {
+    if (_deliveredPdfReveal == nonce) return false;
+    _deliveredPdfReveal = nonce;
+    return true;
+  }
+
   int _revealNonce = 0;
 
   @override

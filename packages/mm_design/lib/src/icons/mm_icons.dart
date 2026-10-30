@@ -114,6 +114,7 @@ abstract final class MMIcons {
   static const IconData shield = CupertinoIcons.shield; // shield
   static const IconData check = CupertinoIcons.checkmark; // checkmark
   static const IconData stop = CupertinoIcons.stop_fill; // stop.fill
+  static const IconData volume = CupertinoIcons.speaker_2;
   static const IconData microphone = CupertinoIcons.mic; // mic
   static const IconData send = CupertinoIcons.arrow_up; // arrow.up
   static const IconData evidence = CupertinoIcons.quote_bubble; // quote.bubble

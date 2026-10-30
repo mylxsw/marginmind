@@ -1,3 +1,4 @@
+import '../../vocabulary/vocabulary_source_flash.dart';
 import 'reader_page_field.dart';
 import '../reflow_session.dart';
 import '../../../app/document_commands.dart';
@@ -62,6 +63,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   double? _scrubPage;
 
   MMPdfViewController get _pdf => ref.read(readerPdfProvider(widget.studySetId));
+
+  int? _vocabularyRevealNonce;
 
   @override
   void dispose() {
@@ -172,6 +175,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           s.selectedCardId,
           s.activeMapId,
           s.flashAnnotationId,
+          s.reveal,
           s.readerPanelVisible,
           s.findVisible,
           s.findFocusTick,
@@ -207,12 +211,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final doc = state.activeDocumentId == null ? null : content.document(state.activeDocumentId!);
     final rootTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
 
-    ref.listen(provider.select((s) => s.reveal), (_, reveal) {
-      if (reveal == null || reveal.textAnchors.isNotEmpty) return;
-      // After this frame the right document's viewer exists; if it is still
-      // loading, the view queues the reveal until it is ready.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _pdf.reveal(reveal.page, reveal.rects));
-    });
+    final reveal = state.reveal;
+    if (reveal != null && reveal.textAnchors.isEmpty && reveal.nonce != _vocabularyRevealNonce) {
+      _vocabularyRevealNonce = reveal.nonce;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final latest = ref.read(provider);
+        if (latest.reveal?.nonce == reveal.nonce &&
+            latest.activeDocumentId == reveal.documentId &&
+            controller.claimPdfReveal(reveal.nonce)) {
+          _pdf.reveal(reveal.page, reveal.rects);
+        }
+      });
+    }
 
     void dismissSelection() {
       if (ref.read(provider).pending != null) {
@@ -1010,7 +1021,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       PendingHighlight(:final annotationId) => annotationId,
       _ => null,
     };
+    final source = ref.watch(vocabularySourceFlashProvider);
     return [
+      if (source != null &&
+          source.studySetId == widget.studySetId &&
+          source.documentId == documentId &&
+          source.page != null)
+        MMPdfHighlight(
+          id: 'vocabulary-source-flash',
+          page: source.page!,
+          rects: source.rects,
+          color: context.mmColors.vocabularyTint,
+          emphasized: true,
+        ),
       for (final a in content.annotationsOn(documentId))
         for (final page in a.isText || a.needsReview ? <AnnotationPage>[] : a.pages)
           () {

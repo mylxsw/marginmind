@@ -67,6 +67,7 @@ abstract final class MMSizes {
   /// Color dot in a floating toolbar: hit area width and dot diameter.
   static const double floatingToolbarColor = 26;
   static const double floatingToolbarDot = 14;
+  static const double vocabularyListWidth = 340;
   static const double sidebarWidth = 236;
   static const double sidebarMinWidth = 200;
   static const double sidebarMaxWidth = 320;

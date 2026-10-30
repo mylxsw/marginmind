@@ -9,6 +9,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../features/gallery/gallery_screen.dart';
+import '../features/vocabulary/vocabulary_screen.dart';
 import '../features/library/library_screen.dart';
 import '../features/review/review_screen.dart';
 import '../features/review/stats_screen.dart';
@@ -149,14 +150,7 @@ class AppShell extends ConsumerWidget {
       WorkspaceRoute(:final studySetId) => WorkspaceScreen(key: ValueKey(studySetId), studySetId: studySetId),
       ReviewRoute(:final studySetId) => ReviewScreen(key: ValueKey('review-$studySetId'), studySetId: studySetId),
       StatsRoute(:final studySetId) => StatsScreen(key: ValueKey('stats-$studySetId'), studySetId: studySetId),
-      VocabularyRoute() => Scaffold(
-        appBar: AppBar(
-          title: Text(context.l10n.vocabularyTitle),
-          leading: BackButton(onPressed: () => ref.read(navigationProvider.notifier).back()),
-        ),
-        body: const SizedBox.expand(),
-      ),
-      GalleryRoute() => const GalleryScreen(),
+      VocabularyRoute() => VocabularyScreen(key: ValueKey(route), route: route),
     };
     final tabs = showsPhoneTabs(context);
     final switcher = AnimatedSwitcher(
