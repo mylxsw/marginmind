@@ -84,7 +84,7 @@ class TrackingDio extends DioForNative {
 }
 
 void main() {
-  test('strict typed parsing, empty phonetics, Unicode gloss and immutable lists', () {
+  test('typed parsing, empty phonetics, Unicode gloss and immutable lists', () {
     final j = value()..['gloss'] = '😀😀😀😀😀😀😀😀';
     final result = WordLookupResult.parse(jsonEncode(j));
     expect(result.lemma, 'plateau');
@@ -100,7 +100,7 @@ void main() {
   });
   test('rejects missing, wrong-type, blank, malformed and oversized fields', () {
     final invalid = <String>['not json', '```json\n{}\n```', '[]', 'null', '"text"', 'x' * 65537];
-    for (final key in value().keys) {
+    for (final key in ['lemma', 'senses', 'contextMeaning', 'sentenceTranslation']) {
       invalid.add(jsonEncode(value()..remove(key)));
       invalid.add(jsonEncode(value()..[key] = null));
       invalid.add(jsonEncode(value()..[key] = 123));
@@ -108,9 +108,7 @@ void main() {
     for (final (key, bad) in <(String, Object)>[
       ('lemma', ''),
       ('lemma', 'a' * 65),
-      ('gloss', '123456789'),
       ('senses', []),
-      ('senses', List.filled(7, {'pos': 'n', 'meaning': 'x'})),
       ('senses', [null]),
       (
         'senses',
@@ -130,11 +128,6 @@ void main() {
           {'pos': 'n', 'meaning': 'a' * 2001},
         ],
       ),
-      ('forms', List.filled(17, 'a')),
-      ('forms', [null]),
-      ('forms', ['a' * 65]),
-      ('phonetics', {'uk': '', 'us': 'a' * 129}),
-      ('phonetics', {'uk': ''}),
       ('sentenceTranslation', 'a' * 24001),
       ('contextMeaning', ' '),
     ]) {
@@ -148,6 +141,113 @@ void main() {
       );
     }
     expect(() => WordContext.parse('{}'), throwsA(failure(ResearchFailureKind.protocol)));
+  });
+  test('extracts first JSON object from fences and prose, respecting quoted braces and escapes', () {
+    final j = value()..['contextMeaning'] = 'a {brace} and "quote" and \\ slash';
+    final json = jsonEncode(j);
+    for (final text in [
+      json,
+      '```json\n$json\n```',
+      '```\n$json\n```',
+      'Here is the result:\n$json\nHope this helps.',
+      'Ignore {not JSON}. $json',
+      '$json ${jsonEncode(value()..["lemma"] = "second")}',
+    ]) {
+      expect(WordLookupResult.parse(text).context.contextMeaning, j['contextMeaning']);
+      expect(WordLookupResult.parse(text).lemma, 'plateau');
+    }
+    final context = WordContext.parse('Translation: ${jsonEncode(value())} done.');
+    expect(context.contextMeaning, '停滞期');
+    for (final text in ['{', '{"x": "unterminated', '{"x": {}} trailing {', 'prefix {} ${jsonEncode(value())}']) {
+      expect(() => WordLookupResult.parse(text), throwsA(failure(ResearchFailureKind.protocol)));
+    }
+    expect(() => WordLookupResult.parse('x' * 65536 + json), throwsA(failure(ResearchFailureKind.protocol)));
+  });
+  test('gloss truncates by rune and tolerates empty or unavailable values', () {
+    for (final gloss in ['一二三四五六七八九', '😀😀😀😀😀😀😀😀😀']) {
+      final result = WordLookupResult.parse(jsonEncode(value()..['gloss'] = gloss));
+      expect(result.gloss, String.fromCharCodes(gloss.runes.take(8)));
+    }
+    for (final gloss in ['', '  ', null, 42]) {
+      expect(WordLookupResult.parse(jsonEncode(value()..['gloss'] = gloss)).gloss, '');
+    }
+    expect(WordLookupResult.parse(jsonEncode(value()..remove('gloss'))).gloss, '');
+  });
+  test('takes first six senses and discards malformed entries without losing valid ones', () {
+    final result = WordLookupResult.parse(
+      jsonEncode(
+        value()
+          ..['senses'] = [
+            null,
+            {'pos': 'n'},
+            {'pos': '', 'meaning': 'blank'},
+            {'pos': 'n', 'meaning': 'valid'},
+            {'pos': 'x' * 33, 'meaning': 'long'},
+            {'pos': 'v', 'meaning': 'valid too'},
+            {'pos': 'n', 'meaning': 'seventh'},
+          ],
+      ),
+    );
+    expect(result.senses.map((s) => s.meaning), ['valid', 'valid too']);
+    expect(
+      WordLookupResult.parse(jsonEncode(value()..['senses'] = List.filled(9, {'pos': 'n', 'meaning': 'valid'}))).senses,
+      hasLength(6),
+    );
+    expect(
+      () => WordLookupResult.parse(
+        jsonEncode(
+          value()
+            ..['senses'] = [
+              ...List.filled(6, null),
+              {'pos': 'n', 'meaning': 'seventh'},
+            ],
+        ),
+      ),
+      throwsA(failure(ResearchFailureKind.protocol)),
+    );
+  });
+  test('normalizes first sixteen forms, filters invalid ones and always includes lemma within cap', () {
+    final result = WordLookupResult.parse(
+      jsonEncode(
+        value()
+          ..['lemma'] = 'Plateau'
+          ..['forms'] = [' PLATEAUS ', 'plateaus', null, 12, '', '  ', 'x' * 65, 'PLATEAU'],
+      ),
+    );
+    expect(result.forms, ['plateau', 'plateaus']);
+    final capped = WordLookupResult.parse(jsonEncode(value()..['forms'] = List.generate(20, (i) => 'form$i')));
+    expect(capped.forms, hasLength(16));
+    expect(capped.forms.first, 'plateau');
+    expect(capped.forms, isNot(contains('form16')));
+    expect(WordLookupResult.parse(jsonEncode(value()..['forms'] = [...List.filled(16, null), 'seventeenth'])).forms, [
+      'plateau',
+    ]);
+    for (final forms in [null, 42, <String>[]]) {
+      expect(WordLookupResult.parse(jsonEncode(value()..['forms'] = forms)).forms, ['plateau']);
+    }
+    expect(WordLookupResult.parse(jsonEncode(value()..remove('forms'))).forms, ['plateau']);
+  });
+  test('phrases and malformed optional phonetics do not invalidate dictionary data', () {
+    for (final phonetics in [
+      null,
+      'none',
+      [],
+      42,
+      {},
+      {'uk': null, 'us': 42},
+    ]) {
+      final result = WordLookupResult.parse(jsonEncode(value()..['phonetics'] = phonetics));
+      expect(result.ukPhonetic, '');
+      expect(result.usPhonetic, '');
+    }
+    final missing = WordLookupResult.parse(jsonEncode(value()..remove('phonetics')));
+    expect(missing.ukPhonetic, '');
+    expect(missing.usPhonetic, '');
+    final partial = WordLookupResult.parse(jsonEncode(value()..['phonetics'] = {'uk': '/word/'}));
+    expect(partial.ukPhonetic, '/word/');
+    expect(partial.usPhonetic, '');
+    final long = WordLookupResult.parse(jsonEncode(value()..['phonetics'] = {'us': 'a' * 129}));
+    expect(long.usPhonetic, 'a' * 128);
   });
   test(
     'canonical lemma cache, inflected aliases, target/sentence isolation, lightweight requests and clearing',
@@ -178,6 +278,26 @@ void main() {
       expect(client.requests.first.last.toJson().toString(), contains('Progress plateaus.'));
     },
   );
+  test('tolerant model response is returned and cached through the lookup service', () async {
+    final j = value()
+      ..remove('phonetics')
+      ..['gloss'] = '一二三四五六七八九'
+      ..['senses'] = [
+        null,
+        {'pos': 'n.', 'meaning': '高原'},
+      ]
+      ..['forms'] = List.generate(20, (i) => 'FORM$i');
+    final client = ScriptClient([answer('Result:\n```json\n${jsonEncode(j)}\n```')]);
+    final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));
+    final result = await lookup(service);
+    expect(result.gloss, '一二三四五六七八');
+    expect(result.ukPhonetic, '');
+    expect(result.senses.single.meaning, '高原');
+    expect(result.forms, hasLength(16));
+    expect(result.forms, contains('plateau'));
+    expect(await lookup(service), same(result));
+    expect(client.calls, 1);
+  });
   test('automatic source detection matches selection translation defaults', () async {
     final client = ScriptClient([answer(jsonEncode(value()))]);
     final service = WordLookup(connect: (_) async => AssistantConnection(client, Dio()));

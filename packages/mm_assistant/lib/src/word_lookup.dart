@@ -40,44 +40,87 @@ class WordLookupResult {
 
   factory WordLookupResult.parse(String text) {
     final j = _object(text);
-    final phonetics = j['phonetics'];
-    final senses = j['senses'], forms = j['forms'];
-    if (phonetics is! Map<String, dynamic> ||
-        senses is! List ||
-        senses.isEmpty ||
-        senses.length > 6 ||
-        forms is! List ||
-        forms.length > 16) {
-      throw const ResearchFailure(ResearchFailureKind.protocol);
+    final lemma = _string(j, 'lemma', 64);
+    final phonetics = j['phonetics'] is Map<String, dynamic> ? j['phonetics'] as Map<String, dynamic> : const {};
+    final rawSenses = j['senses'];
+    final senses = <WordSense>[];
+    if (rawSenses is List) {
+      for (final sense in rawSenses.take(6)) {
+        try {
+          senses.add(_sense(sense));
+        } on ResearchFailure {
+          // One malformed sense must not discard the remaining dictionary data.
+        }
+      }
+    }
+    if (senses.isEmpty) throw const ResearchFailure(ResearchFailureKind.protocol);
+    // Reserve a slot for the lemma, even if all sixteen supplied forms differ.
+    final forms = <String>{lemma.toLowerCase()};
+    final rawForms = j['forms'];
+    if (rawForms is List) {
+      for (final form in rawForms.take(16)) {
+        if (form is String && form.trim().isNotEmpty && form.runes.length <= 64 && forms.length < 16) {
+          forms.add(form.trim().toLowerCase());
+        }
+      }
     }
     return WordLookupResult(
-      lemma: _string(j, 'lemma', 64),
-      ukPhonetic: _string(phonetics, 'uk', 128, empty: true),
-      usPhonetic: _string(phonetics, 'us', 128, empty: true),
-      senses: [for (final sense in senses) _sense(sense)],
+      lemma: lemma,
+      ukPhonetic: _optionalString(phonetics['uk'], 128),
+      usPhonetic: _optionalString(phonetics['us'], 128),
+      senses: senses,
       context: _context(j),
-      gloss: _string(j, 'gloss', 8),
-      forms: [
-        for (final form in forms) _string({'form': form}, 'form', 64),
-      ],
+      gloss: _optionalString(j['gloss'], 8),
+      forms: forms.toList(),
     );
   }
 }
 
 Map<String, dynamic> _object(String text) {
   if (utf8.encode(text).length > 65536) throw const ResearchFailure(ResearchFailureKind.protocol);
-  try {
-    final value = jsonDecode(text);
-    if (value is Map<String, dynamic>) return value;
-  } on FormatException {
-    throw const ResearchFailure(ResearchFailureKind.protocol);
+  // Find balanced objects without mistaking braces inside JSON strings for
+  // delimiters. This also handles fenced output and short model preambles.
+  var start = -1, depth = 0;
+  var quoted = false, escaped = false;
+  for (var i = 0; i < text.length; i++) {
+    final ch = text[i];
+    if (start < 0) {
+      if (ch != '{') continue;
+      start = i;
+      depth = 1;
+      continue;
+    }
+    if (quoted) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch == r'\') {
+        escaped = true;
+      } else if (ch == '"') {
+        quoted = false;
+      }
+    } else if (ch == '"') {
+      quoted = true;
+    } else if (ch == '{') {
+      depth++;
+    } else if (ch == '}' && --depth == 0) {
+      try {
+        final value = jsonDecode(text.substring(start, i + 1));
+        if (value is Map<String, dynamic>) return value;
+      } on FormatException {
+        // A non-JSON brace pair in introductory prose is not the answer.
+      }
+      start = -1;
+    }
   }
   throw const ResearchFailure(ResearchFailureKind.protocol);
 }
 
-String _string(Map<String, dynamic> j, String key, int max, {bool empty = false}) {
+String _optionalString(dynamic value, int max) =>
+    value is String ? String.fromCharCodes(value.trim().runes.take(max)) : '';
+
+String _string(Map<String, dynamic> j, String key, int max) {
   final value = j[key];
-  if (value is! String || (!empty && value.trim().isEmpty) || value.runes.length > max) {
+  if (value is! String || value.trim().isEmpty || value.runes.length > max) {
     throw const ResearchFailure(ResearchFailureKind.protocol);
   }
   return value.trim();
