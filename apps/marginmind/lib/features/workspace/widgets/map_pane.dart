@@ -28,6 +28,9 @@ import 'outline_view.dart';
 import 'map_selection_bar.dart';
 import 'map_header.dart';
 
+// Temporarily hidden; keep the toolbar and its actions available for restoration.
+final mapCommandBarVisibleProvider = Provider<bool>((ref) => false);
+
 /// Map pane: the mind map (or outline) plus floating glass controls — map
 /// title and view switch at the top, node actions by the selection, zoom bottom-right.
 class MapPane extends ConsumerStatefulWidget {
@@ -776,7 +779,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        commands: outline
+                        commands: outline || !ref.watch(mapCommandBarVisibleProvider)
                             ? null
                             : SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
                         controls: SingleChildScrollView(

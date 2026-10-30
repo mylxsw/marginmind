@@ -34,7 +34,7 @@ class _SlowRepository extends InMemoryStudySetContentRepository {
 void commandBarTests({bool native = false}) {
   for (final child in [true, false]) {
     testWidgets('new ${child ? 'child' : 'sibling'} keeps its toolbar while the text field has focus', (tester) async {
-      final container = await openFirstSet(tester);
+      final container = await openFirstSet(tester, showMapCommandBar: true);
       final provider = workspaceProvider('demo-1');
       final controller = container.read(provider.notifier);
       controller.selectCard('c3');
@@ -61,7 +61,7 @@ void commandBarTests({bool native = false}) {
   testWidgets('fixed actions follow no selection, root, single node, multiple nodes and connection mode', (
     tester,
   ) async {
-    final container = await openFirstSet(tester);
+    final container = await openFirstSet(tester, showMapCommandBar: true);
     final controller = container.read(workspaceProvider('demo-1').notifier);
     expect(find.byType(MapCommandBar), findsOneWidget);
     final top = tester.getRect(find.byType(MapCommandBar));
@@ -100,7 +100,7 @@ void commandBarTests({bool native = false}) {
   for (final prefix in ['node-bar', 'map-command']) {
     testWidgets('$prefix saves edited text before adding another node over slow storage', (tester) async {
       final repository = _SlowRepository();
-      final container = await openFirstSet(tester, content: repository);
+      final container = await openFirstSet(tester, content: repository, showMapCommandBar: true);
       final provider = workspaceProvider('demo-1');
       final controller = container.read(provider.notifier);
       controller.selectCard('c3');
@@ -132,7 +132,7 @@ void commandBarTests({bool native = false}) {
     testWidgets('$prefix does not apply a command to the old selection after discarding an empty draft', (
       tester,
     ) async {
-      final container = await openFirstSet(tester);
+      final container = await openFirstSet(tester, showMapCommandBar: true);
       final provider = workspaceProvider('demo-1');
       final controller = container.read(provider.notifier);
       controller.selectCard('c3');

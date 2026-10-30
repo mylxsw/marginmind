@@ -22,7 +22,7 @@ void main() {
         addTearDown(tester.view.reset);
         await tester.pumpWidget(
           ProviderScope(
-            overrides: await testOverrides(),
+            overrides: [...await testOverrides(), mapCommandBarVisibleProvider.overrideWithValue(true)],
             child: MaterialApp(
               theme: MMTheme.light(),
               builder: (context, child) => MMInput(

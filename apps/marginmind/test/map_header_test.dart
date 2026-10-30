@@ -32,6 +32,9 @@ void main() {
     final provider = workspaceProvider('demo-1');
     container.read(provider.notifier).selectCard('c3');
     await tester.pumpAndSettle();
+    expect(find.byType(MapCommandBar), findsNothing);
+    expect(tester.widget<MapHeader>(find.byType(MapHeader)).hasCommands, isFalse);
+    expect(find.byType(MapNodeBar), findsOneWidget);
     final toggle = find.byKey(const ValueKey('map-multi-select'));
     expect(find.descendant(of: find.byType(MapHeader), matching: toggle), findsOneWidget);
     await tester.tap(toggle, kind: PointerDeviceKind.touch);
@@ -90,7 +93,7 @@ void main() {
     testWidgets('map header uses standard glass and consistent icons (reduce transparency: $reduce)', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: await testOverrides(),
+          overrides: [...await testOverrides(), mapCommandBarVisibleProvider.overrideWithValue(true)],
           child: MaterialApp(
             theme: MMTheme.dark(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,

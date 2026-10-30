@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
@@ -14,8 +15,16 @@ import 'package:mm_pdf/mm_pdf.dart';
 import 'helpers.dart';
 import 'map_keyboard_test.dart' show focusMap;
 
-Future<ProviderContainer> openFirstSet(WidgetTester tester, {InMemoryStudySetContentRepository? content}) async {
-  final container = await pumpApp(tester, content: content);
+Future<ProviderContainer> openFirstSet(
+  WidgetTester tester, {
+  InMemoryStudySetContentRepository? content,
+  bool showMapCommandBar = false,
+}) async {
+  final container = await pumpApp(
+    tester,
+    content: content,
+    overrides: [if (showMapCommandBar) mapCommandBarVisibleProvider.overrideWithValue(true)],
+  );
   await tester.tap(find.text('Starred'));
   await tester.pumpAndSettle();
   await doubleTap(tester, find.text('认知科学入门'));

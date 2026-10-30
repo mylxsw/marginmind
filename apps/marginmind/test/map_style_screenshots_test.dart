@@ -168,7 +168,8 @@ void main() {
       final controller = container.read(workspaceProvider('demo-1').notifier);
       controller.selectCard('e1');
       await tester.pumpAndSettle();
-      final bar = tester.getRect(find.byType(MapCommandBar));
+      expect(find.byType(MapCommandBar), findsNothing);
+      final bar = tester.getRect(find.byKey(const ValueKey('map-view-glass')));
       expect(bar.center.dy, tester.getCenter(find.byKey(const ValueKey('map-style-button'))).dy);
       final excerpt = tester.getRect(find.byKey(const ValueKey('e1')));
       controller.selectCard(null);
