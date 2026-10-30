@@ -97,4 +97,4 @@ AI 块左侧细线使用 `MMNoteLayout.aiRule`（2pt）；排序与重新整理�
 
 ## 工作区布局：一行工具栏（GUL-609）
 
-`prototype/layout-density.html` 对比现状与新布局：原文栏、脑图栏的表头合进窗口工具栏的一行，去掉文档标题和脑图标题，次要阅读功能收进 `Aa` 菜单；iPad 与 Mac 结构一致，iPhone 用顶部分段控件和拇指区浮动工具条，触屏滚动时隐藏工具栏。单文件、无依赖。设计说明见 [docs/layout-density.md](../docs/layout-density.md)。
+`prototype/layout-density.html` 是高保真交互原型，“现状”为应用实机截图，“新方案”使用 `mm_design` 令牌和应用自带图标字体。对比现状与新布局：原文栏、脑图栏的表头合进窗口工具栏的一行，去掉文档标题和脑图标题，次要阅读功能收进 `Aa` 菜单；iPad 与 Mac 结构一致，iPhone 用顶部分段控件和拇指区浮动工具条，触屏滚动时隐藏工具栏。单文件、无依赖。设计说明见 [docs/layout-density.md](../docs/layout-density.md)。
