@@ -1051,6 +1051,16 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   String filePath(Document doc) => _repo.resolveFile(studySetId, doc.fileName);
 
+  Future<void> saveWebDocument(DocumentPackage package, {required bool Function() cancelled}) => _enqueue(() async {
+    final repo = _repo;
+    if (repo is! DocumentRepository) throw StateError('Document storage unavailable');
+    await (repo as DocumentRepository).importDocumentPackage(studySetId, package, cancelled: cancelled);
+    if (ref.mounted) {
+      await _refreshContent();
+      openDocument(package.document.id);
+    }
+  });
+
   Future<void> renameDocument(String documentId, String title) {
     if (title.trim().isEmpty) return Future.value();
     return _update((c) => _editor.renameDocument(c, documentId, title));
@@ -1890,6 +1900,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     final annotation = content.annotation(segments[index].annotationId ?? '');
     if (annotation == null) return;
     openDocument(annotation.documentId);
+    if (annotation.needsReview) return;
     state = state.copyWith(
       selectedCardId: cardId,
       reveal: annotation.isText

@@ -48,8 +48,10 @@ jobs:
         working-directory: apps/marginmind
       - run: xcodebuild test -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'platform=macOS' -enableCodeCoverage YES
         working-directory: apps/marginmind
+        timeout-minutes: 20
       - run: flutter test integration_test/browser_test.dart -d macos --reporter expanded
         working-directory: apps/marginmind
+        timeout-minutes: 20
       - run: flutter test integration_test/reflow_reader_test.dart -d macos --reporter expanded
         working-directory: apps/marginmind
 
@@ -107,10 +109,12 @@ jobs:
         working-directory: apps/marginmind
       - name: Run iOS browser integration
         working-directory: apps/marginmind
+        timeout-minutes: 20
         run: |
           device_id=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; print(next(d["udid"] for ds in json.load(sys.stdin)["devices"].values() for d in ds if d["name"].startswith("iPhone")))')
+          open -a Simulator --args -CurrentDeviceUDID "$device_id"
           xcrun simctl bootstatus "$device_id" -b
-          flutter test integration_test/browser_test.dart -d "$device_id" --reporter expanded
+          flutter test integration_test/browser_test.dart -d "$device_id" --reporter expanded --verbose
 
   android:
     name: Build Android debug

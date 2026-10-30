@@ -7,6 +7,8 @@
 #include <map>
 #include <string>
 #include <functional>
+#include <fstream>
+#include <vector>
 
 using Microsoft::WRL::Callback;
 using Microsoft::WRL::ComPtr;
@@ -67,6 +69,11 @@ std::wstring Profile() {
   CoTaskMemFree(path);
   return profile;
 }
+struct TemporaryPdf {
+  explicit TemporaryPdf(const wchar_t* value) : path(value) {}
+  ~TemporaryPdf() { DeleteFileW(path.c_str()); }
+  const std::wstring path;
+};
 struct Tab : std::enable_shared_from_this<Tab> {
   std::unique_ptr<Channel> channel;
   ComPtr<ICoreWebView2Controller> controller;
@@ -194,6 +201,35 @@ struct Tab : std::enable_shared_from_this<Tab> {
             else response->Success(Value(Utf8(json))); return S_OK;
           }).Get());
         if (FAILED(hr)) response->Error("script_failed");
+        return;
+      } else if (method == "printPdf") {
+        ComPtr<ICoreWebView2_7> printer;
+        if (FAILED(self->web.As(&printer))) { result->Error("print_unavailable"); return; }
+        wchar_t directory[MAX_PATH], name[MAX_PATH];
+        const auto length = GetTempPathW(MAX_PATH, directory);
+        if (!length || length >= MAX_PATH || !GetTempFileNameW(directory, L"mmp", 0, name)) {
+          result->Error("print_failed"); return;
+        }
+        const auto file = std::make_shared<TemporaryPdf>(name);
+        const int generation = self->generation;
+        auto response = std::shared_ptr<Result>(std::move(result));
+        auto hr = printer->PrintToPdf(file->path.c_str(), nullptr,
+          Callback<ICoreWebView2PrintToPdfCompletedHandler>([self,response,file,generation](HRESULT error, BOOL success) -> HRESULT {
+            std::vector<uint8_t> bytes;
+            if (SUCCEEDED(error) && success && !self->closed && self->generation == generation) {
+              std::ifstream input(file->path.c_str(), std::ios::binary | std::ios::ate);
+              if (input) {
+                const auto length = input.tellg();
+                if (length > 0 && length <= 128 * 1024 * 1024) {
+                  bytes.resize(static_cast<size_t>(length)); input.seekg(0);
+                  if (!input.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()))) bytes.clear();
+                }
+              }
+            }
+            if (bytes.empty()) response->Error("print_failed"); else response->Success(Value(bytes));
+            return S_OK;
+          }).Get());
+        if (FAILED(hr)) response->Error("print_failed");
         return;
       } else { result->NotImplemented(); return; }
       result->Success();

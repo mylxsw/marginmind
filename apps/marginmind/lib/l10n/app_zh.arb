@@ -722,7 +722,13 @@
   "assistantSaveNote": "记笔记",
   "assistantAnswerToMap": "整理成导图",
   "assistantAnswerToMapPrompt": "把下面这条回答整理成思维导图，保留主要观点和层级，并给出可预览的导图修改建议：\n\n{answer}",
-  "@assistantAnswerToMapPrompt": {"placeholders": {"answer": {"type": "String"}}},
+  "@assistantAnswerToMapPrompt": {
+    "placeholders": {
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
   "assistantSavedNote": "已存为笔记",
   "assistantLocate": "定位",
   "assistantRegenerate": "重新生成",
@@ -1070,7 +1076,13 @@
   "readerSortTitle": "按名称排序",
   "bookmarkPageOccupied": "这一页已有书签，请编辑已有书签",
   "readerInvalidPage": "请输入有效页码，最大为 {count}",
-  "@readerInvalidPage": {"placeholders": {"count": {"type": "int"}}},
+  "@readerInvalidPage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outlineDragHint": "拖到条目上方或下方调整顺序，拖到中间成为子目录",
   "toolUnderline": "下划线",
   "lineSolid": "实线",
@@ -1238,5 +1250,56 @@
   "readerRetry": "重试",
   "readerNoOutline": "没有目录",
   "readerSelectionStart": "选区起点",
-  "readerSelectionEnd": "选区终点"
+  "readerSelectionEnd": "选区终点",
+  "convertTitle": "转换为文档",
+  "convertTitlePlaceholder": "标题",
+  "convertReadable": "阅读模式",
+  "convertPdf": "PDF",
+  "convertMarkdown": "Markdown",
+  "docSaving": "正在保存",
+  "docSaved": "已保存「{title}」",
+  "@docSaved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "docSaveFailed": "保存失败",
+  "docUpdated": "已更新",
+  "annotationsNeedReview": "需要确认 {count}",
+  "@annotationsNeedReview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "annotationsNeedReviewHud": "{count} 处标注需要确认",
+  "@annotationsNeedReviewHud": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAction": "查看",
+  "openOriginalPage": "打开原网页",
+  "refetchPage": "重新抓取",
+  "browserUpdate": "更新文档",
+  "webUpdatePrompt": "更新文档？",
+  "webUpdateAction": "更新",
+  "webSource": "{domain} · {date}",
+  "@webSource": {
+    "placeholders": {
+      "domain": {
+        "type": "String"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "annotationNotFound": "找不到原文位置"
 }

@@ -3559,4 +3559,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerSelectionEnd => 'Selection end';
+
+  @override
+  String get convertTitle => 'Convert to Document';
+
+  @override
+  String get convertTitlePlaceholder => 'Title';
+
+  @override
+  String get convertReadable => 'Reader';
+
+  @override
+  String get convertPdf => 'PDF';
+
+  @override
+  String get convertMarkdown => 'Markdown';
+
+  @override
+  String get docSaving => 'Saving';
+
+  @override
+  String docSaved(String title) {
+    return 'Saved “$title”';
+  }
+
+  @override
+  String get docSaveFailed => 'Couldn’t Save';
+
+  @override
+  String get docUpdated => 'Updated';
+
+  @override
+  String annotationsNeedReview(int count) {
+    return 'Needs Review ($count)';
+  }
+
+  @override
+  String annotationsNeedReviewHud(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count highlights need review',
+      one: '1 highlight needs review',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewAction => 'View';
+
+  @override
+  String get openOriginalPage => 'Open Original Page';
+
+  @override
+  String get refetchPage => 'Refetch Page';
+
+  @override
+  String get browserUpdate => 'Update Document';
+
+  @override
+  String get webUpdatePrompt => 'Update the document?';
+
+  @override
+  String get webUpdateAction => 'Update';
+
+  @override
+  String webSource(String domain, DateTime date) {
+    final intl.DateFormat dateDateFormat = intl.DateFormat.yMMMd(localeName);
+    final String dateString = dateDateFormat.format(date);
+
+    return '$domain · $dateString';
+  }
+
+  @override
+  String get annotationNotFound => 'Can’t find the original text';
 }

@@ -1,4 +1,8 @@
 import 'package:pdfrx/pdfrx.dart';
+
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:mm_core/mm_core.dart';
 
 import 'open_document.dart';
@@ -41,6 +45,49 @@ abstract final class MMPdfEngine {
     final doc = await openDocument(path);
     try {
       return (pageCount: doc.pages.length, title: null);
+    } finally {
+      await doc.dispose();
+    }
+  }
+
+  /// Inspect a browser print without publishing a temporary document path.
+  static Future<({int pageCount, List<TranslationPage> pages, Uint8List? preview})> inspectData(Uint8List bytes) async {
+    final doc = await PdfDocument.openData(bytes);
+    try {
+      final pages = <TranslationPage>[];
+      for (final page in doc.pages) {
+        final text = await page.loadText();
+        if (text != null) {
+          pages.add(
+            TranslationPage(page.pageNumber, text.fullText, [
+              for (final r in text.charRects) PageRect(r.left, r.top, r.right, r.bottom),
+            ]),
+          );
+        }
+      }
+      final image = doc.pages.isEmpty
+          ? null
+          : await doc.pages.first.render(
+              width: 400,
+              height: (doc.pages.first.height * 400 / doc.pages.first.width).ceil(),
+              fullWidth: 400,
+              fullHeight: doc.pages.first.height * 400 / doc.pages.first.width,
+            );
+      Uint8List? preview;
+      try {
+        if (image != null) {
+          preview = await image.createImage().then((image) async {
+            try {
+              return (await image.toByteData(format: ui.ImageByteFormat.png))?.buffer.asUint8List();
+            } finally {
+              image.dispose();
+            }
+          });
+        }
+      } finally {
+        image?.dispose();
+      }
+      return (pageCount: doc.pages.length, pages: pages, preview: preview);
     } finally {
       await doc.dispose();
     }

@@ -244,8 +244,13 @@ class _Typesetter {
       if (run.link != null || textDecoration.contains('underline')) decorations.add(TextDecoration.underline);
       if (textDecoration.contains('line-through')) decorations.add(TextDecoration.lineThrough);
       final weight = run.style['font-weight'] ?? block.style['font-weight'];
+      final systemFont = (run.style['font-family'] ?? block.style['font-family']) == 'system-ui';
+      final opacity = double.tryParse(block.style['opacity'] ?? '')?.clamp(0.0, 1.0) ?? 1.0;
       final style = TextStyle(
+        inherit: !systemFont,
         fontSize: size,
+        height: systemFont ? spec.lineHeight : null,
+        color: spec.readerStyle.inkColor.withValues(alpha: spec.readerStyle.inkColor.a * opacity),
         fontWeight: run.strong || block.kind == BlockKind.heading || weight == 'bold'
             ? FontWeight.bold
             : FontWeight.values[((int.tryParse(weight ?? '') ?? 400) ~/ 100 - 1).clamp(0, 8)],
@@ -254,8 +259,10 @@ class _Typesetter {
             : FontStyle.normal,
         fontFamily: run.code || block.kind == BlockKind.code
             ? MMTypography.mono.fontFamily
+            : systemFont
+            ? MMTypography.body.fontFamily
             : spec.fontFamily ?? _fontFamily(run.style['font-family'] ?? block.style['font-family']),
-        fontFamilyFallback: spec.fontFamily == MMReaderTypography.sans
+        fontFamilyFallback: systemFont || spec.fontFamily == MMReaderTypography.sans
             ? MMTypography.body.fontFamilyFallback
             : MMTypography.readingBody.fontFamilyFallback,
         decoration: TextDecoration.combine(decorations),

@@ -2,6 +2,7 @@ import Cocoa
 import FlutterMacOS
 import XCTest
 import CoreText
+import WebKit
 import PDFKit
 import Network
 import Security
@@ -11,6 +12,41 @@ import PDFKit
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testBrowserPdfPrintIsAsyncPaginatedAndCleansUpAfterStaleOrCancelledJobs() async throws {
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 480),
+      styleMask: [.titled], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    let web = WKWebView(frame: window.contentView!.bounds)
+    window.contentView!.addSubview(web)
+    window.makeKeyAndOrderFront(nil)
+    defer { window.close() }
+    let loaded = expectation(description: "browser print fixture loaded")
+    let navigation = BrowserPrintNavigationWaiter(loaded)
+    web.navigationDelegate = navigation
+    let paragraphs = (0..<80).map { "<p>Paragraph \($0), testing a genuinely paginated web document with readable text.</p>" }.joined()
+    web.loadHTMLString("<html><body><h1>Browser print</h1>\(paragraphs)</body></html>", baseURL: nil)
+    await fulfillment(of: [loaded], timeout: 20)
+    for mode in ["current", "stale", "cancelled"] {
+      let finished = expectation(description: "\(mode) print finished")
+      let responsive = expectation(description: "main queue remains responsive")
+      var value: Any?
+      let job = BrowserPdfPrintJob(web: web, isCurrent: { mode != "stale" },
+        didFinish: { finished.fulfill() }, completion: { value = $0 })
+      DispatchQueue.main.async { responsive.fulfill() }
+      job.start(in: window)
+      if mode == "cancelled" { job.cancel() }
+      await fulfillment(of: [responsive, finished], timeout: 45)
+      if mode == "current" {
+        let bytes = try XCTUnwrap((value as? FlutterStandardTypedData)?.data)
+        XCTAssertGreaterThan(try XCTUnwrap(PDFDocument(data: bytes)).pageCount, 1)
+      } else {
+        XCTAssertNotNil(value as? FlutterError)
+      }
+      XCTAssertFalse(FileManager.default.fileExists(atPath: job.target.path))
+    }
+    withExtendedLifetime(navigation) {}
+  }
+
   func testMapExportChannelValidationAndAllVectorCommands() async throws {
     func invoke(_ method: String, _ arguments: [String: Any]) async -> Any? {
       await withCheckedContinuation { continuation in
@@ -798,4 +834,10 @@ extension RunnerTests {
     XCTAssertEqual(failure?.code, "recognition_failed")
     withExtendedLifetime(view) {}
   }
+}
+
+private final class BrowserPrintNavigationWaiter: NSObject, WKNavigationDelegate {
+  private let loaded: XCTestExpectation
+  init(_ loaded: XCTestExpectation) { self.loaded = loaded }
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { loaded.fulfill() }
 }

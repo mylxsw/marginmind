@@ -1,17 +1,34 @@
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mm_platform/mm_platform.dart';
+import 'package:mm_pdf/mm_pdf.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('native browser becomes quiet, captures live DOM, and persists its app session', (tester) async {
+    debugPrint('[browser] test started');
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final requests = <String>[];
     server.listen((request) async {
       requests.add(request.uri.path);
+      if (request.uri.path == '/authenticated.png') {
+        if (!request.cookies.any((c) => c.name == 'mm_browser_test')) {
+          request.response.statusCode = 403;
+        } else {
+          request.response.headers.contentType = ContentType('image', 'png');
+          request.response.add(
+            base64Decode(
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jVYsAAAAASUVORK5CYII=',
+            ),
+          );
+        }
+        await request.response.close();
+        return;
+      }
       if (request.uri.path == '/image.svg') {
         request.response.headers.set('Content-Type', 'image/svg+xml');
         request.response.write(
@@ -41,9 +58,14 @@ void main() {
           ? '<a id="download" href="/download?click=1" download>Download</a>'
                 '<script>setTimeout(() => { document.body.dataset.downloadAttempt = "true"; document.getElementById("download").click(); }, 2500);</script>'
           : '';
+      final conversion = request.uri.path == '/conversion'
+          ? '<article><h1>Conversion</h1>${List.generate(80, (i) => '<p>Paragraph $i, testing live authenticated content and real paginated printing. This passage is preserved in the offline document.</p>').join()}'
+                '<img src="/authenticated.png"><p hidden>HIDDEN_SECRET</p></article><input value="FORM_SECRET">'
+          : '';
       request.response.write('''<!DOCTYPE html><html><head><title>Native browser fixture</title></head>
       <body><h1 id="live">initial</h1><p>cookie:$persisted</p><img src="/image.svg">
       $clickDownload
+      $conversion
       <script>setTimeout(() => document.getElementById('live').textContent = 'live DOM ready', 300);</script>
       </body></html>''');
       await request.response.close();
@@ -51,6 +73,7 @@ void main() {
     final uri = Uri.parse('http://localhost:${server.port}/page');
     BrowserSession? session;
     Future<void> mount([Uri? initial]) async {
+      debugPrint('[browser] mounting ${(initial ?? uri).path}');
       session = BrowserSession(initial ?? uri);
       await tester.pumpWidget(
         MaterialApp(
@@ -71,6 +94,7 @@ void main() {
         BrowserPhase.ready,
         reason: 'url=${session!.url}; id=${session!.navigationId}; error=${session!.lastErrorCode}; requests=$requests',
       );
+      debugPrint('[browser] ready ${session!.url.path}');
     }
 
     try {
@@ -81,6 +105,36 @@ void main() {
       expect(capture.dom, contains('live DOM ready'));
       expect(capture.resources.map((url) => url.path), contains('/image.svg'));
       expect(session!.prompt, isTrue);
+      await session!.navigate(uri.replace(path: '/conversion'));
+      await tester.pump(const Duration(milliseconds: 200));
+      await ready();
+      for (final mode in BrowserDocumentMode.values) {
+        debugPrint('[browser] ${mode.name}: capture begin');
+        final converted = await session!.captureDocument(
+          navigationId: session!.navigationId,
+          mode: mode,
+          onStage: (stage) => debugPrint('[browser] ${mode.name}: $stage'),
+        );
+        debugPrint(
+          '[browser] ${mode.name}: captured resources=${converted.resources.length}, pdf=${converted.pdf?.length}',
+        );
+        expect(converted.html, contains('Paragraph 79'));
+        expect(converted.resources, isNotEmpty);
+        expect(converted.snapshot, isNot(contains('FORM_SECRET')));
+        expect(converted.snapshot, isNot(contains('HIDDEN_SECRET')));
+        expect(converted.snapshot, isNot(contains('<script')));
+        if (mode == BrowserDocumentMode.original) {
+          debugPrint('[browser] original: initialize PDF engine');
+          await MMPdfEngine.initialize();
+          debugPrint('[browser] original: inspect PDF');
+          final info = await MMPdfEngine.inspectData(converted.pdf!);
+          debugPrint('[browser] original: PDF pages=${info.pageCount}, preview=${info.preview?.length}');
+          expect(info.pageCount, greaterThan(1), reason: 'Original web style must be paginated, not one tall page');
+          expect(info.preview, isNotNull);
+        }
+      }
+      debugPrint('[browser] all conversion modes complete');
+      expect(requests.where((r) => r == '/conversion').length, 1, reason: 'Never re-fetch the page URL');
       final stale = session!.navigationId;
       await session!.navigate(uri.replace(path: '/second'));
       // Navigation events are delivered asynchronously by the real engine.
@@ -152,9 +206,10 @@ void main() {
       expect(session!.phase, BrowserPhase.failed);
       expect(session!.canCapture, isFalse);
     } finally {
+      debugPrint('[browser] cleanup');
       session?.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
       await server.close(force: true);
     }
-  });
+  }, timeout: const Timeout(Duration(minutes: 5)));
 }

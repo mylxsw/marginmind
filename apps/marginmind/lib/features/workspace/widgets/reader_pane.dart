@@ -37,6 +37,7 @@ import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
 import '../reader_ocr.dart';
 import 'reader_ocr_controls.dart';
+import 'web_source.dart';
 
 /// Source pane: document renderer, tools, document switcher and navigation.
 class ReaderPane extends ConsumerStatefulWidget {
@@ -921,6 +922,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             ref.watch(readingPagesProvider(widget.studySetId).select((p) => p[doc.id])) ?? doc.lastPage;
                         return _PagePill(
                           visible: _navigationVisible,
+                          source: doc.origin == null ? null : WebSourceAttribution(document: doc),
                           page: _scrubPage?.round() ?? page,
                           editRequests: _pageFieldRequests,
                           pageCount: doc.pageCount,
@@ -1002,7 +1004,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     };
     return [
       for (final a in content.annotationsOn(documentId))
-        for (final page in a.isText ? <AnnotationPage>[] : a.pages)
+        for (final page in a.isText || a.needsReview ? <AnnotationPage>[] : a.pages)
           () {
             final color = MMAnnotationColor.fromIndex(a.colorIndex);
             final sharedCard = content.cardForAnnotation(a.id);
@@ -1068,6 +1070,7 @@ class _PagePill extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     this.progress,
+    this.source,
     required this.visible,
   });
 
@@ -1077,7 +1080,7 @@ class _PagePill extends StatelessWidget {
   final ValueChanged<int> onJump;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
-  final Widget? progress;
+  final Widget? progress, source;
   final bool visible;
 
   @override
@@ -1104,7 +1107,13 @@ class _PagePill extends StatelessWidget {
                   color: MMAppearance.reduceTransparencyOf(context) ? c.glassOpaque : c.glass.withValues(alpha: .35),
                   borderRadius: BorderRadius.circular(MMRadii.capsule),
                 ),
-                child: ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (source != null) ...[Flexible(child: source!), const SizedBox(width: MMSpacing.m)],
+                    ReaderPageField(page: page, pageCount: pageCount, onJump: onJump, editRequests: editRequests),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: MMSpacing.s),
@@ -1161,6 +1170,17 @@ class _DocumentSwitcher extends ConsumerWidget {
     final l = context.l10n;
     final c = context.mmColors;
     final text = context.mmText.callout;
+    final active = documents.where((d) => d.id == activeDocumentId).firstOrNull;
+    final sourceCommands = active == null
+        ? <WebSourceCommand, AppCommand>{}
+        : webSourceCommands(
+            l,
+            active,
+            canRefetch: ref.watch(canAddWebPageProvider),
+            refetch: () => ref
+                .read(workspaceBrowserProvider(studySetId).notifier)
+                .open(Uri.parse(active.origin!.url), documentId: active.id),
+          );
     Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
       children: [
         Icon(icon, size: 14, color: c.secondaryLabel),
@@ -1190,6 +1210,10 @@ class _DocumentSwitcher extends ConsumerWidget {
           pickAndImportDocuments(context, ref, studySetId);
         } else if (id == ':web') {
           dispatchAddWebPage(context, ref, studySetId);
+        } else if (id == ':original') {
+          sourceCommands[WebSourceCommand.openOriginal]?.onInvoke?.call();
+        } else if (id == ':refetch') {
+          sourceCommands[WebSourceCommand.refetch]?.onInvoke?.call();
         } else if (id.isEmpty) {
           onClose?.call();
         } else {
@@ -1210,6 +1234,12 @@ class _DocumentSwitcher extends ConsumerWidget {
         MMDropdownItem<String>(value: ':import', child: row(MMIcons.import, l.importDocument)),
         if (ref.watch(canAddWebPageProvider))
           MMDropdownItem<String>(value: ':web', child: row(MMIcons.web, l.addWebPage)),
+        if (sourceCommands.isNotEmpty) ...[
+          const PopupMenuDivider(height: MMSpacing.s),
+          MMDropdownItem<String>(value: ':original', child: row(MMIcons.web, l.openOriginalPage)),
+          if (sourceCommands.containsKey(WebSourceCommand.refetch))
+            MMDropdownItem<String>(value: ':refetch', child: row(MMIcons.history, l.refetchPage)),
+        ],
         const PopupMenuDivider(height: MMSpacing.s),
         MMDropdownItem<String>(
           value: '',

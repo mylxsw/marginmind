@@ -249,6 +249,14 @@ class FileLibraryStore
     late StudySetContent next;
     await _queueWrite(studySetId, () async {
       final record = _require(studySetId);
+      if (package.expectedRevision != null &&
+          record.content.document(package.document.id)?.revision != package.expectedRevision) {
+        throw StateError('Document version changed');
+      }
+      if (package.expectedSnapshotFile != null &&
+          record.content.document(package.document.id)?.origin?.snapshotFile != package.expectedSnapshotFile) {
+        throw StateError('Document capture changed');
+      }
       final created = <File>[];
       void checkCancelled() {
         if (cancelled?.call() ?? false) throw StateError('Document import cancelled');
@@ -275,6 +283,8 @@ class FileLibraryStore
             document,
           ],
         );
+        next = package.reconcile?.call(next) ?? next;
+        checkCancelled();
         await _atomicWrite(
           File(p.join(_packagePath(studySetId), 'studyset.json')),
           utf8.encode(const JsonEncoder.withIndent('  ').convert(record.copyWith(content: next).toJson())),

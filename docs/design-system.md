@@ -106,6 +106,8 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 内置浏览器地址栏使用 `MMSizes.browserAddress`（30pt）、`browserAddressTouch`（36pt）与 `browserProgressTrack`（2pt）；前置锁形 / 警告图标，底边为强调色加载线。侧栏临时条目通过 `MMSidebarItem.leading` 替换加载图标，`labelColor` 使用 `secondaryLabel`。
 
+网页转换面板使用 `MMSizes.webConversionSheetWidth`（640pt）；预览宽 `webConversionPreviewWidth`（200pt）、高 `webConversionPreviewHeight`（260pt），compact 预览高 `webConversionPreviewCompactHeight`（300pt）。标题、格式分段与预览表达转换方式；快照始终保存。
+
 
 ### 流式阅读（GUL-576）
 

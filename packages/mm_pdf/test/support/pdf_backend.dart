@@ -24,6 +24,17 @@ class _Engine implements PdfrxEntryFunctions {
   @override
   Future<void> init() async {}
   @override
+  Future<PdfDocument> openData(
+    Uint8List data, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    String? sourceName,
+    bool allowDataOwnershipTransfer = false,
+    bool useProgressiveLoading = false,
+    int? maxSizeToCacheOnMemory,
+    void Function()? onDispose,
+  }) async => _Document(pageCount, pageWidths, 800);
+  @override
   Future<PdfDocument> openFile(
     String filePath, {
     PdfPasswordProvider? passwordProvider,

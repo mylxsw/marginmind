@@ -6421,6 +6421,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selection end'**
   String get readerSelectionEnd;
+
+  /// No description provided for @convertTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to Document'**
+  String get convertTitle;
+
+  /// No description provided for @convertTitlePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get convertTitlePlaceholder;
+
+  /// No description provided for @convertReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Reader'**
+  String get convertReadable;
+
+  /// No description provided for @convertPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF'**
+  String get convertPdf;
+
+  /// No description provided for @convertMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Markdown'**
+  String get convertMarkdown;
+
+  /// No description provided for @docSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving'**
+  String get docSaving;
+
+  /// No description provided for @docSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved “{title}”'**
+  String docSaved(String title);
+
+  /// No description provided for @docSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t Save'**
+  String get docSaveFailed;
+
+  /// No description provided for @docUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get docUpdated;
+
+  /// No description provided for @annotationsNeedReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Review ({count})'**
+  String annotationsNeedReview(int count);
+
+  /// No description provided for @annotationsNeedReviewHud.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 highlight needs review} other{{count} highlights need review}}'**
+  String annotationsNeedReviewHud(int count);
+
+  /// No description provided for @viewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewAction;
+
+  /// No description provided for @openOriginalPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Original Page'**
+  String get openOriginalPage;
+
+  /// No description provided for @refetchPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Refetch Page'**
+  String get refetchPage;
+
+  /// No description provided for @browserUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Document'**
+  String get browserUpdate;
+
+  /// No description provided for @webUpdatePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the document?'**
+  String get webUpdatePrompt;
+
+  /// No description provided for @webUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get webUpdateAction;
+
+  /// No description provided for @webSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain} · {date}'**
+  String webSource(String domain, DateTime date);
+
+  /// No description provided for @annotationNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t find the original text'**
+  String get annotationNotFound;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

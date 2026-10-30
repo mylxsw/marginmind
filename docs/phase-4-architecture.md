@@ -134,6 +134,14 @@ Web 后端使用相同逻辑键，不要求磁盘目录。原文件不可变；�
 - app 的 `DocumentImporter` 组合 `mm_book` 与上述事务，manifest 的 `spine` 项为 `{id,path,sha256}`，资源项保留原逻辑路径 `sourcePath` 并增加存储 `path`。`documentReaderBuilderProvider` / `readingSettingsHandlerProvider` 供 GUL-576 接入阅读器；接入前显示文档标题占位，不把 IR 交给 PDFium。
 - `addWebPageHandlerProvider` 默认接入 GUL-575 的 `showAddWebPage`；`canAddWebPageProvider` 同时检查处理器与 `MMPlatformCapabilities.webBrowser`。处理器被覆盖为空时菜单和快捷键入口隐藏；Web / Linux 的平台能力仍为 false。
 
+### GUL-577 接口落地
+
+- `BrowserSession.captureDocument(navigationId, mode, cancelled)` 在当前 WebView 的 DOM 副本运行随包 Readability；`BrowserDocumentCapture` 携带清洗的正文、静态快照、会话内读取的本地图片字节、诊断及可选 PDF。导航代次失效时拒绝提交。快照去掉活动表单、脚本、事件和隐藏内容，CSP 禁止联网。受认证图片经浏览器 fetch 读取，不把 Cookie 交给 Dart；不可读取或不支持的图片记录诊断。
+- `WebBookParser` 负责 HTML→统一 IR 与 Markdown；`alignTextAnchor` 只接受唯一引文/上下文匹配，歧义保留旧版本。`WebDocumentConverter` 生成完整不可变包；原样 PDF 的 `contentManifest` 为 null，以保持 PDF 阅读分派，IR 快照资料仍保留在版本目录。`DocumentOrigin.mode` 保存 readable/original/markdown（旧数据默认 readable）。
+- 流式 `Document.revision` 仍等于规范 `Book.revision`，文档自定标题不改写 IR；抓取时间/快照/保存方式另生成独立的目录版本，重复抓取正文相同时也保留新快照。`DocumentPackage.expectedRevision` 和 `expectedSnapshotFile` 在写队列内检查更新目标；`reconcile` 在同一事务内对最新内容对齐，失败回滚本次资源。旧资源不回收。`Annotation.needsReview` 保留无法对齐的标注并禁止以旧 PDF 坐标绘制/跳转；文档菜单可再次查看这些引文。研究证据不随更新重写。
+- `browserConverterProvider` 默认接入转换面板；`WorkspaceBrowser.open(url, documentId: ...)` 表示更新现有文档，按原格式保存新版本。来源、重新抓取和需确认列表由 `app_commands.dart` 定义，菜单共用；Web/Linux 继续隐藏重新抓取。
+- 原样 PDF 先限步滚动并恢复位置；macOS 使用 WKWebView 的 NSPrintOperation、iOS 使用 UIPrintPageRenderer/WebView formatter、Windows 使用 WebView2 PrintToPdf、Android 使用 WebView PrintDocumentAdapter。原生集成测试检查输出页数大于 1，不把长截图当作分页 PDF。API 依据：[Apple 打印](https://developer.apple.com/documentation/webkit/wkwebview/printoperation(with:))、[UIKit 页渲染](https://developer.apple.com/documentation/uikit/uiprintpagerenderer)、[WebView2 PDF](https://learn.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2_7)、[Android 打印适配器](https://developer.android.com/reference/android/print/PrintDocumentAdapter)。
+
 ## 10. 技术验证计划与当前结论
 
 已完成可运行原型和 Android ARM64 AVD profile 测量；真实数据与结论见 [验证报告](evidence/gul-570/README.md)。后续各段为完整验收协议；已完成项目、未完成项目须以验证报告为准，不能把计划视为运行结果。
