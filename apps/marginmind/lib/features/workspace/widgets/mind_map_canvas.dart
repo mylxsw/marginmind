@@ -2547,6 +2547,7 @@ class _NodeView extends StatelessWidget {
     return MMInteractive(
       onTap: onTap,
       onDoubleTap: onDoubleTap,
+      immediateTap: true,
       selected: selected,
       builder: (context, s) => _decorated(c, bg, radius, shadow, ring, body, padding),
     );
@@ -3011,6 +3012,7 @@ class _MarkLabel extends StatelessWidget {
       child: MMInteractive(
         onTap: onTap,
         onDoubleTap: onDoubleTap,
+        immediateTap: true,
         selected: selected,
         semanticLabel: text,
         builder: (context, _) => box(Text(text, style: style)),

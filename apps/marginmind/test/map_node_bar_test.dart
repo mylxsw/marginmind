@@ -14,7 +14,38 @@ import 'helpers.dart';
 import 'map_keyboard_test.dart' show focusMap, key;
 import 'workspace_test.dart' show openFirstSet;
 
+void toolbarResponseTests({bool native = false}) {
+  for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.touch]) {
+    testWidgets('node toolbar follows each $kind selection on the next frame', (tester) async {
+      final container = await openFirstSet(tester);
+      await showWholeMap(tester);
+      final provider = workspaceProvider('demo-1');
+      final positions = <Offset>[];
+      // Returning to the first node quickly is selection, not a double click.
+      for (final id in ['c3', 'c4', 'c6', 'c3']) {
+        await tester.tap(find.byKey(ValueKey(id)), kind: kind);
+        var waited = 0;
+        while (container.read(provider).selectedCardId != id && waited < 400) {
+          await tester.pump(const Duration(milliseconds: 10));
+          waited += 10;
+        }
+        debugPrint('$kind $id selection callback delay: ${waited}ms');
+        expect(waited, 0, reason: 'selection must not wait to rule out a double click');
+        await tester.pump();
+        expect(find.byType(MapNodeBar), findsOneWidget);
+        expect(container.read(provider).editingCardId, isNull);
+        positions.add(tester.getCenter(find.byType(MapNodeBar)));
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+      expect(positions.toSet(), hasLength(3), reason: 'the toolbar follows the newly selected node');
+      await settleHud(tester);
+    }, semanticsEnabled: !native);
+  }
+}
+
 void main() {
+  toolbarResponseTests();
+
   for (final parentId in ['c3', 'c6']) {
     testWidgets('node toolbar adds an editable note under $parentId in one undo step', (tester) async {
       final container = await openFirstSet(tester);

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// Visual state passed to [MMInteractive.builder].
@@ -34,6 +37,7 @@ class MMInteractive extends StatefulWidget {
     this.onTap,
     this.onTapDown,
     this.onDoubleTap,
+    this.immediateTap = false,
     this.onSecondaryTap,
     this.selected = false,
     this.enabled = true,
@@ -51,6 +55,10 @@ class MMInteractive extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onTapDown;
   final VoidCallback? onDoubleTap;
+
+  /// Select immediately on the first tap, then activate [onDoubleTap] on the
+  /// second. Use for selection surfaces where a double tap builds on selection.
+  final bool immediateTap;
   final VoidCallback? onSecondaryTap;
   final bool selected;
   final bool enabled;
@@ -91,24 +99,51 @@ class _MMInteractiveState extends State<MMInteractive> {
       enabled: _enabled,
     );
 
-    Widget child = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: _enabled
-          ? (_) {
-              _setPressed(true);
-              widget.onTapDown?.call();
-            }
-          : null,
-      onTapUp: _enabled ? (_) => _setPressed(false) : null,
-      onTapCancel: _enabled ? () => _setPressed(false) : null,
-      onTap: _enabled ? widget.onTap : null,
-      onDoubleTap: _enabled ? widget.onDoubleTap : null,
-      onSecondaryTap: widget.onSecondaryTap,
-      // Only the content: the gesture and focus actions stay on the node.
-      child: widget.semanticLabel == null
-          ? widget.builder(context, state)
-          : ExcludeSemantics(child: widget.builder(context, state)),
-    );
+    final content = widget.semanticLabel == null
+        ? widget.builder(context, state)
+        : ExcludeSemantics(child: widget.builder(context, state));
+    Widget child = widget.immediateTap
+        ? RawGestureDetector(
+            behavior: HitTestBehavior.opaque,
+            gestures: {
+              _ImmediateTapGestureRecognizer: GestureRecognizerFactoryWithHandlers<_ImmediateTapGestureRecognizer>(
+                _ImmediateTapGestureRecognizer.new,
+                (tap) {
+                  if (!_enabled || (tap.selected && !widget.selected)) tap.resetSequence();
+                  tap
+                    ..selected = widget.selected
+                    ..onTapDown = _enabled
+                        ? (_) {
+                            _setPressed(true);
+                            widget.onTapDown?.call();
+                          }
+                        : null
+                    ..onTapUp = _enabled ? (_) => _setPressed(false) : null
+                    ..onTapCancel = _enabled ? () => _setPressed(false) : null
+                    ..onTap = _enabled ? widget.onTap : null
+                    ..onDoubleTap = _enabled ? widget.onDoubleTap : null
+                    ..onSecondaryTap = widget.onSecondaryTap;
+                },
+              ),
+            },
+            child: content,
+          )
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: _enabled
+                ? (_) {
+                    _setPressed(true);
+                    widget.onTapDown?.call();
+                  }
+                : null,
+            onTapUp: _enabled ? (_) => _setPressed(false) : null,
+            onTapCancel: _enabled ? () => _setPressed(false) : null,
+            onTap: _enabled ? widget.onTap : null,
+            onDoubleTap: _enabled ? widget.onDoubleTap : null,
+            onSecondaryTap: widget.onSecondaryTap,
+            // Only the content: the gesture and focus actions stay on the node.
+            child: content,
+          );
 
     child = FocusableActionDetector(
       focusNode: widget.focusNode,
@@ -134,6 +169,7 @@ class _MMInteractiveState extends State<MMInteractive> {
       enabled: _enabled,
       label: widget.semanticLabel,
       value: widget.semanticValue,
+      onTap: widget.immediateTap && _enabled ? widget.onTap ?? widget.onDoubleTap : null,
       child: child,
     );
 
@@ -141,5 +177,70 @@ class _MMInteractiveState extends State<MMInteractive> {
       child = Tooltip(message: widget.tooltip!, excludeFromSemantics: widget.semanticLabel != null, child: child);
     }
     return child;
+  }
+}
+
+/// A normal tap still competes with child controls, drags and long presses.
+/// Only double-tap detection changes: it never holds the first tap's arena.
+class _ImmediateTapGestureRecognizer extends TapGestureRecognizer {
+  VoidCallback? onDoubleTap;
+  bool selected = false;
+  PointerDownEvent? _lastTap;
+  Timer? _tapTimeout;
+  Timer? _minTapTime;
+  bool _doubleTap = false;
+
+  void resetSequence() {
+    _doubleTap = false;
+    _clearLastTap();
+  }
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    final last = _lastTap;
+    _doubleTap =
+        onDoubleTap != null &&
+        last != null &&
+        _minTapTime?.isActive == false &&
+        event.kind == last.kind &&
+        event.buttons == kPrimaryButton &&
+        (event.position - last.position).distance <= kDoubleTapSlop;
+    _clearLastTap();
+    super.addAllowedPointer(event);
+  }
+
+  void _clearLastTap() {
+    _lastTap = null;
+    _tapTimeout?.cancel();
+    _minTapTime?.cancel();
+  }
+
+  @override
+  void handleTapUp({required PointerDownEvent down, required PointerUpEvent up}) {
+    if (_doubleTap && onDoubleTap != null) {
+      _doubleTap = false;
+      onTapUp?.call(TapUpDetails(globalPosition: up.position, localPosition: up.localPosition, kind: up.kind));
+      invokeCallback<void>('onDoubleTap', onDoubleTap!);
+      return;
+    }
+    if (down.buttons == kPrimaryButton && onDoubleTap != null) {
+      _lastTap = down;
+      _minTapTime = Timer(kDoubleTapMinTime, () {});
+      _tapTimeout = Timer(kDoubleTapTimeout, _clearLastTap);
+    }
+    super.handleTapUp(down: down, up: up);
+  }
+
+  @override
+  void handleTapCancel({required PointerDownEvent down, PointerCancelEvent? cancel, required String reason}) {
+    _doubleTap = false;
+    _clearLastTap();
+    super.handleTapCancel(down: down, cancel: cancel, reason: reason);
+  }
+
+  @override
+  void dispose() {
+    _clearLastTap();
+    super.dispose();
   }
 }
