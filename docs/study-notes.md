@@ -270,6 +270,9 @@ class XrefBlock    extends NoteBlock { final String toSectionId; final String te
 - 存储：`StudySetContent` 新增可选的 `studyNotes` 列表；旧文件读入时为空，**不需要升级文件格式**。写入沿用现有的原子替换。
 - 撤销：笔记的编辑接入现有的编辑器撤销栈（与脑图相同的 `commit` 模式）。
 
+- **命名**：`note_format.dart` 已经导出了 `NoteBlock`，所以新笔记块的基类命名为 `StudyNoteBlock`，五种具体块的名称不变（GUL-586）。
+- **划线被删除后保留摘录**：`StudySetContent` 新增可选的 `noteSourceArchive`，只归档“已删除且仍被笔记引用”的划线文字和文档标题。归档与删除在同一次提交中写入，撤销时一起回滚；最后一个引用它的块被移除时，清理对应的归档条目。正常情况下仍然实时读取原文（GUL-586）。
+
 ### 12.2 服务
 
 | 模块 | 位置 | 职责 |
