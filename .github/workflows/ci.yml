@@ -36,7 +36,7 @@ jobs:
   macos:
     name: Build and test macOS app
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     needs: check
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
   ios:
     name: Build iOS simulator
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     needs: check
     steps:
       - uses: actions/checkout@v4
@@ -117,7 +117,7 @@ jobs:
         timeout-minutes: 10
         working-directory: apps/marginmind
       - name: Run iOS browser integration
-        timeout-minutes: 25
+        timeout-minutes: 30
         run: python3 tool/ios_browser_integration.py
       - uses: actions/upload-artifact@v4
         if: always()

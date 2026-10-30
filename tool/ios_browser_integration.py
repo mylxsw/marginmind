@@ -69,11 +69,13 @@ def main():
         # the app, rather than relying on a headless boot of a preinstalled device.
         execute('simulator', ['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', device_id])
         # Cold iOS boot, including data migration, took 5m31s in CI. Allow headroom
-        # for that work while still bounding a genuinely stuck boot.
+        # for that work while keeping a finite boot deadline.
         execute('bootstatus', ['xcrun', 'simctl', 'bootstatus', device_id, '-b'], timeout=600)
+        # The expanded conversion/PDF fixture allows five minutes for tests;
+        # also allow time to build the harness and launch the native process.
         result = execute('flutter', ['flutter', 'test', 'integration_test/browser_test.dart',
                                     '-d', device_id, '--no-pub', '--reporter', 'expanded', '--verbose'],
-                         timeout=600, cwd=ROOT / 'apps/marginmind')
+                         timeout=900, cwd=ROOT / 'apps/marginmind')
         print(result, flush=True)
         return 0
     except (OSError, ValueError, subprocess.SubprocessError) as error:

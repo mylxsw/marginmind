@@ -106,7 +106,7 @@ class IOSBrowserTests(unittest.TestCase):
         self.assertIn('--verbose', commands['flutter'])
         for _, _, timeout, _ in calls:
             self.assertGreater(timeout, 0)
-            self.assertLessEqual(timeout, 600)
+            self.assertLessEqual(timeout, 900)
         self.assertEqual(next(cwd for name, _, _, cwd in calls if name == 'flutter'), ios.ROOT / 'apps/marginmind')
 
     def test_boot_or_launch_timeout_fails_without_retry_and_collects_diagnostics(self):
