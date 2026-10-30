@@ -1254,10 +1254,15 @@ class _PagePill extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (source != null) ...[SizedBox(height: 20, child: source), const SizedBox(height: 4)],
-                MMLiquidGlass(
+                Container(
                   key: const ValueKey('tablet-reader-navigation'),
-                  color: c.glassOpaque.withValues(alpha: .68),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: MMAppearance.reduceTransparencyOf(context)
+                        ? c.glassOpaque
+                        : c.glassOpaque.withValues(alpha: .9),
+                    borderRadius: BorderRadius.circular(MMRadii.capsule),
+                  ),
                   child: SizedBox(
                     height: MMSizes.touchTarget,
                     child: Row(

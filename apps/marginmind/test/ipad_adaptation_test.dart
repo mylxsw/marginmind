@@ -99,7 +99,9 @@ void main() {
       final progress = find.byKey(const ValueKey('reader-page-progress'));
       expect(t.getRect(progress).center.dy, closeTo(navigation.center.dy, .01));
       expect(progress.hitTestable(), findsOneWidget);
-      expect(find.ancestor(of: progress, matching: find.byType(MMLiquidGlass)), findsOneWidget);
+      final capsule = find.byKey(const ValueKey('tablet-reader-navigation'));
+      expect(find.descendant(of: capsule, matching: find.byType(BackdropFilter)), findsNothing);
+      expect(find.ancestor(of: progress, matching: find.byType(MMLiquidGlass)), findsNothing);
       expect(t.takeException(), isNull);
       await settleHud(t);
     });
