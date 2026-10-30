@@ -85,7 +85,7 @@ abstract final class MMIcons {
   static const IconData statistics = CupertinoIcons.chart_bar; // chart.bar
   static const IconData tag = CupertinoIcons.tag;
   static const IconData addTopic = CupertinoIcons.plus_rectangle; // plus.rectangle
-  static const IconData copy = CupertinoIcons.doc_on_doc; // doc.on.doc
+  static const IconData copy = LucideIcons.copy;
   static const IconData addNote = CupertinoIcons.square_pencil; // square.and.pencil
   static const IconData bold = CupertinoIcons.bold; // bold
   static const IconData italic = CupertinoIcons.italic; // italic
