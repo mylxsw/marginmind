@@ -596,8 +596,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               : LayoutBuilder(
                   builder: (context, constraints) => Row(
                     children: [
-                      if (state.readerPanelVisible &&
-                          (doc.contentManifest == null || state.readerPanelMode == ReaderPanelMode.annotations))
+                      if (state.readerPanelVisible && doc.contentManifest == null)
                         Padding(
                           padding: EdgeInsets.only(bottom: chrome.bottom),
                           child: _ResizableReaderSidebar(

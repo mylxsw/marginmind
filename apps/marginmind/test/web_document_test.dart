@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/web_document.dart';
+import 'package:marginmind/features/workspace/reflow_document.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_platform/mm_platform.dart';
@@ -61,6 +62,30 @@ void main() {
       }
       await store.importDocumentPackage('set', result.package);
       expect((await store.load('set')).document(mode.name)!.title, 'My title');
+      if (document.contentManifest != null) {
+        final loaded = await ReflowDocument.load(store, 'set', document);
+        expect(loaded.revision, result.book.revision);
+        expect(loaded.chapters.single.canonicalText, result.book.chapters.single.canonicalText);
+        await expectLater(loaded.read('books/other/manifest.json'), throwsFormatException);
+        await expectLater(
+          ReflowDocument.load(store, 'set', document.copyWith(contentManifest: 'books/other/manifest.json')),
+          throwsFormatException,
+        );
+        await expectLater(
+          ReflowDocument.load(
+            store,
+            'set',
+            document.copyWith(
+              origin: DocumentOrigin(
+                url: document.origin!.url,
+                capturedAt: now,
+                snapshotFile: 'web/other/snapshot.html',
+              ),
+            ),
+          ),
+          throwsFormatException,
+        );
+      }
     }
   });
   test('recapture aligns annotations against the latest content and keeps unresolved marks', () async {

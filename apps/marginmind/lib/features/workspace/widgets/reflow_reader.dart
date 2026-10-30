@@ -953,7 +953,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
 
   Widget _sidebar(ReflowSession s, WorkspaceState state) {
     final book = s.book!, l = context.l10n;
-    bool needsReview(Annotation a) => a.textAnchors.any((anchor) => book.resolve(anchor) == null);
+    bool needsReview(Annotation a) => a.needsReview || a.textAnchors.any((anchor) => book.resolve(anchor) == null);
     final width = ref.watch(settingsProvider).readerSidebarWidth;
     final mode = state.readerPanelMode == ReaderPanelMode.thumbnails && !widget.document.capabilities().zoom
         ? ReaderPanelMode.outline
@@ -961,12 +961,15 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     Widget entry(
       String title,
       VoidCallback onTap, {
+      Key? key,
       String? subtitle,
+      Color? subtitleColor,
       Color? color,
       bool selected = false,
       VoidCallback? onDelete,
       VoidCallback? onRename,
     }) => MMContextMenuRegion(
+      key: key,
       onSecondaryTapUp: onDelete == null && onRename == null
           ? null
           : (d) => showMMMenu(
@@ -1004,7 +1007,9 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel),
+                        style: context.mmText.footnote.copyWith(
+                          color: subtitleColor ?? context.mmColors.secondaryLabel,
+                        ),
                       ),
                   ],
                 ),
@@ -1014,9 +1019,9 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         ),
       ),
     );
-    void navigate(TextReadingPosition p) {
-      _jump(p);
-      if (MMSizeClass.of(context) == MMSizeClass.compact) workspace.toggleReaderPanel();
+    Future<void> navigate(TextReadingPosition p) async {
+      await _jump(p);
+      if (mounted && MMSizeClass.of(context) == MMSizeClass.compact) workspace.toggleReaderPanel();
     }
 
     final annotations = workspace.content.annotationsOn(widget.document.id).where((a) => a.isText).toList();
@@ -1098,36 +1103,54 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 ],
                 ReaderPanelMode.annotations => [
                   if (annotations.isEmpty) entry(l.noAnnotations, () {}),
-                  if (annotations.any(needsReview))
+                  if (annotations.any(needsReview)) ...[
                     Padding(
                       padding: const EdgeInsets.all(MMSpacing.m),
-                      child: Text(
-                        '${l.readerNeedsReview} · ${annotations.where(needsReview).length}',
-                        style: context.mmText.footnote,
+                      child: Row(
+                        children: [
+                          Icon(
+                            MMIcons.warning,
+                            color: context.mmColors.caution,
+                            size: context.mmText.subheadline.fontSize,
+                          ),
+                          const SizedBox(width: MMSpacing.s),
+                          Text(
+                            l.annotationsNeedReview(annotations.where(needsReview).length),
+                            style: context.mmText.subheadline.copyWith(color: context.mmColors.caution),
+                          ),
+                        ],
                       ),
                     ),
-                  for (final a in [
-                    ...annotations.where((a) => needsReview(a)),
-                    ...annotations.where((a) => !needsReview(a)),
-                  ])
+                    for (final a in annotations.where(needsReview))
+                      entry(
+                        a.quote,
+                        () async {
+                          final chapter = book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.firstOrNull;
+                          if (chapter != null) await navigate(book.position(chapter.id, 0));
+                          if (mounted) MMHud.show(context, l.annotationNotFound, icon: MMIcons.warning);
+                        },
+                        key: ValueKey('annotation-${a.id}'),
+                        onDelete: () => workspace.deleteHighlight(a.id),
+                        color: MMAnnotationColor.fromIndex(a.colorIndex).color,
+                        subtitle: book.title(
+                          book.position((book.chapter(a.textAnchors.first.chapterId) ?? book.chapters.first).id, 0),
+                          fallback: widget.document.title,
+                        ),
+                        subtitleColor: context.mmColors.caution,
+                      ),
+                    Divider(height: MMSpacing.m, thickness: 0.5, color: context.mmColors.separator),
+                  ],
+                  for (final a in annotations.where((a) => !needsReview(a)))
                     entry(
                       a.quote,
                       () {
-                        final anchor = book.resolve(a.textAnchors.first);
-                        if (anchor == null || needsReview(a)) {
-                          final chapter = book.chapter(a.textAnchors.first.chapterId);
-                          if (chapter != null) navigate(book.position(chapter.id, 0));
-                          _missing();
-                          return;
-                        }
+                        final anchor = book.resolve(a.textAnchors.first)!;
                         navigate(book.position(anchor.chapterId, anchor.start));
                         workspace.tapHighlight(a.id);
                       },
                       onDelete: () => workspace.deleteHighlight(a.id),
                       color: MMAnnotationColor.fromIndex(a.colorIndex).color,
-                      subtitle: needsReview(a)
-                          ? l.readerNeedsReview
-                          : book.title(book.position(a.textAnchors.first.chapterId, a.textAnchors.first.start)),
+                      subtitle: book.title(book.position(a.textAnchors.first.chapterId, a.textAnchors.first.start)),
                     ),
                 ],
               },

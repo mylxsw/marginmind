@@ -19,7 +19,17 @@ class ReflowDocument {
 
   static Future<ReflowDocument> load(DocumentRepository repo, String setId, Document document) async {
     final manifest = document.contentManifest!;
-    final base = 'books/${document.id}/${document.revision}/';
+    var base = 'books/${document.id}/${document.revision}/';
+    if (document.format == DocumentFormat.web && document.origin != null) {
+      // A refetch can have identical canonical text but a different snapshot.
+      // Web packages isolate those captures without changing text revisions.
+      final capture = RegExp('^books/${RegExp.escape(document.id)}/([a-f0-9]{64})/manifest\\.json\$')
+          .firstMatch(manifest);
+      if (capture == null || document.origin!.snapshotFile != 'web/${document.id}/${capture.group(1)}/snapshot.html') {
+        throw const FormatException('Invalid web capture path');
+      }
+      base = 'books/${document.id}/${capture.group(1)}/';
+    }
     if (manifest != '${base}manifest.json') throw const FormatException('Invalid book manifest path');
     var bytesRead = 0;
     Future<List<int>> read(String path) async {

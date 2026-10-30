@@ -26,7 +26,7 @@ void main() {
       expect(source.rect.top, greaterThanOrEqualTo(layout.pieces.first.rect.bottom));
       final span = (source.painter!.text! as TextSpan).children!.first as TextSpan;
       expect(span.style!.fontSize, 15);
-      expect(span.style!.fontFamily, isNull);
+      expect(span.style!.fontFamily, MMTypography.body.fontFamily);
       expect(span.style!.inherit, isFalse);
       expect(span.style!.color, ink.inkColor.withValues(alpha: ink.inkColor.a * .6));
       expect(layout.links.single.anchor.quote, 'example.com');
