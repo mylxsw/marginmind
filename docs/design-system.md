@@ -6,6 +6,7 @@
 
 | 类 | 内容 |
 | --- | --- |
+| `MMColors.vocabulary` / `vocabularyTint` | 生词色：浅色 `#0D8480`、深色 `#40C8C0`，底色 12% / 16%，不随系统强调色变化。浅色由原型 `#0E8A86`（白底 4.20:1）微调以达到 4.5:1。图标 `MMIcons.vocabulary` 使用 Lucide `book-a`。色底上的正文使用 `label`。 |
 | `MMColors` | 语义色（`ThemeExtension`），浅色 `MMColors.light` / 深色 `MMColors.dark`。`withAccent()` 套用系统强调色。研究专用色 `research`（浅色 `#5E5CE6`、深色 `#7D7AFF`）与 `researchTint`（12% / 20%）固定，不随系统强调色变化。状态色 `positive` / `caution` / `critical`（浅色 `#248A3D` / `#C93400` / `#D70015`，深色 `#30D158` / `#FF9F0A` / `#FF453A`，即系统绿 / 橙 / 红的高对比版本）用于状态文字，底色取自身 12%（如资料的读取状态）。 |
 | `MMAnnotationColor` | 六种预设标注色与任意 RGB 自定义色。`colorIndex` 保留预设 ID 0–5，自定义色存 `0x01000000 | RGB`，通过 `fromIndex` 统一解码；`highlight`（32%）、`underline`（90%）、`cardTint`（14%）。 |
 | `MMInkColor` / `MMInkWidth` | 画笔的六色（红/橙/黄/绿/蓝/墨黑，`stroke` 为 90% 不透明）与三档粗细（1.5 / 2.5 / 4，单位 PDF 点，随页面缩放）。数据只存颜色索引和点数。 |

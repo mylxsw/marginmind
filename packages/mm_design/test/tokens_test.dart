@@ -39,6 +39,19 @@ void main() {
         expect(c.lerp(c, 0.5).research, c.research);
       });
 
+      test('vocabulary contrast, tint and fixed hue survive theme changes', () {
+        expect(contrastRatio(c.vocabulary, c.windowBackground), greaterThanOrEqualTo(4.5));
+        expect(contrastRatio(c.label, composite(c.vocabularyTint, c.card)), greaterThanOrEqualTo(4.5));
+        expect(c.vocabularyTint.toARGB32() & 0xFFFFFF, c.vocabulary.toARGB32() & 0xFFFFFF);
+        expect(c.vocabularyTint.a, closeTo(c.brightness == Brightness.light ? 0.12 : 0.16, 0.002));
+        final tinted = c.withAccent(const Color(0xFFFF9500));
+        expect(tinted.vocabulary, c.vocabulary);
+        expect(tinted.vocabularyTint, c.vocabularyTint);
+        expect(c.lerp(c, 0.5).vocabulary, c.vocabulary);
+        expect(c.lerp(c, 0.5).vocabularyTint, c.vocabularyTint);
+        expect(MMIcons.vocabulary.fontFamily, isNotEmpty);
+      });
+
       test('withAccent follows the system accent', () {
         const purple = Color(0xFFAF52DE);
         final tinted = c.withAccent(purple);

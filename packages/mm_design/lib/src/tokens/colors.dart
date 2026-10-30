@@ -30,6 +30,8 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.onAccent,
     required this.research,
     required this.researchTint,
+    required this.vocabulary,
+    required this.vocabularyTint,
     required this.positive,
     required this.caution,
     required this.critical,
@@ -103,6 +105,12 @@ class MMColors extends ThemeExtension<MMColors> {
   /// [research] at 12% / 20%: research card wash, selected research controls.
   final Color researchTint;
 
+  /// Fixed vocabulary hue; the light shade meets 4.5:1 on white.
+  final Color vocabulary;
+
+  /// Vocabulary wash at 12% / 16%.
+  final Color vocabularyTint;
+
   /// Status text on a 12% wash of itself: done / partial / failed (e.g. a
   /// source's reading state). Apple's increased-contrast system green,
   /// orange and red, so the text reads at 4.5:1.
@@ -156,6 +164,8 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF5E5CE6),
     researchTint: Color(0x1F5E5CE6),
+    vocabulary: Color(0xFF0D8480),
+    vocabularyTint: Color(0x1F0D8480),
     positive: Color(0xFF248A3D),
     caution: Color(0xFFC93400),
     critical: Color(0xFFD70015),
@@ -201,6 +211,8 @@ class MMColors extends ThemeExtension<MMColors> {
     onAccent: Color(0xFFFFFFFF),
     research: Color(0xFF7D7AFF),
     researchTint: Color(0x337D7AFF),
+    vocabulary: Color(0xFF40C8C0),
+    vocabularyTint: Color(0x2940C8C0),
     positive: Color(0xFF30D158),
     caution: Color(0xFFFF9F0A),
     critical: Color(0xFFFF453A),
@@ -253,6 +265,8 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: onAccent,
       research: research,
       researchTint: researchTint,
+      vocabulary: vocabulary,
+      vocabularyTint: vocabularyTint,
       positive: positive,
       caution: caution,
       critical: critical,
@@ -301,6 +315,8 @@ class MMColors extends ThemeExtension<MMColors> {
       onAccent: c(onAccent, other.onAccent),
       research: c(research, other.research),
       researchTint: c(researchTint, other.researchTint),
+      vocabulary: c(vocabulary, other.vocabulary),
+      vocabularyTint: c(vocabularyTint, other.vocabularyTint),
       positive: c(positive, other.positive),
       caution: c(caution, other.caution),
       critical: c(critical, other.critical),

@@ -22,3 +22,5 @@ export 'src/service_catalog.dart';
 export 'src/web_search.dart';
 
 export 'src/translation.dart';
+
+export 'src/word_lookup.dart';

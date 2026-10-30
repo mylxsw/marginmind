@@ -62,7 +62,7 @@
 | **下划线**（默认） | 1.5pt 点状下划线，生词色 |
 | 释义 | 下划线 + 词上方行距空隙里 10pt 的简短释义（≤ 8 字）；只叠加不重排，空隙不够的行退回只画下划线 |
 
-- **生词色**：固定青绿 `#0E8A86`（深色 `#40C8C0`），底色 12% / 16%。新令牌 `MMColors.vocabulary` / `vocabularyTint`，需通过 `tokens_test` 4.5:1 检查。
+- **生词色**：固定青绿 `#0E8A86`（深色 `#40C8C0`），底色 12% / 16%。新令牌 `MMColors.vocabulary` / `vocabularyTint`，需通过 `tokens_test` 4.5:1 检查。实现时浅色微调为 `#0D8480`（白底 4.54:1）：原型值在白底只有 4.20:1；色底上的正文使用 `label`。
 - **点按命中处**：轻量卡片（宽 300）：词、音标、状态胶囊、前两条义项、笔记（如有，不加前缀）；底栏 `‹ 1 / 4 ›` 切换并滚动、掌握（✓ 图标）、移出（垃圾桶图标）、详情 ›。拖选优先，拖动不弹卡片。
 - 已掌握的词默认不提示。
 - 不显示底部统计胶囊；开关状态由工具栏按钮表达。
@@ -132,7 +132,10 @@ class VocabularyContext {
 
 ## 4. 查词
 
-- `mm_assistant` 新增 `WordLookup`，复用划词翻译的模型选择、联网判断、`CancellationToken` 和 90s 超时；请求带上单词、所在句子、源 / 目标语言，要求模型返回 JSON：`lemma, phonetics{uk,us}, senses[{pos,meaning}], contextMeaning, sentenceTranslation, gloss, forms[]`。解析失败按“失败”处理，不写入生词本。
+- `mm_assistant` 新增 `WordLookup`，复用划词翻译的模型选择、联网判断、`CancellationToken` 和 90s 超时；请求带上单词、所在句子、源 / 目标语言，要求模型返回 JSON：`lemma, phonetics{uk,us}, senses[{pos,meaning}], contextMeaning, sentenceTranslation, gloss, forms[]`。
+- 解析允许 Markdown 代码块或少量前后说明文字，提取第一个完整 JSON 对象，响应仍限 64 KB。
+- 字段降级：`gloss` 按 rune 截到 8 字，可为空；`senses` 仅检查前 6 项，丢弃不合法项，无合法义项时失败；`forms` 仅检查前 16 项，丢弃非字符串、空串及超过 64 字符的项，小写去重并保证包含小写 `lemma`（总数不超过 16，优先保留原形）；`phonetics` 缺失或不是对象时，英美音标为空，缺失或非字符串的单项也为空，超长音标截到 128 字符。缺失或非字符串的 `gloss` 按空串处理，缺失或非列表的 `forms` 仅保留原形。
+- 非 JSON、缺少合法 `lemma`、无合法义项、缺少 `contextMeaning` 或 `sentenceTranslation` 时按失败处理，不写入生词本；原形、词性、释义和译文的既有长度限制仍保留。
 - 结果按 `(lemma, 目标语言, 句子指纹)` 缓存在内存；已收录的词直接用生词本里的释义，只为新句子请求 `contextMeaning` / `sentenceTranslation`。
 - **词形**：以模型返回的 `forms` 为主；本地再用一份很小的英文规则（-s/-es/-ies、-ed/-d/-ied、-ing、比较级、-ly）补全，并保证包含选中时的原词。用户可以在生词本里增删。
 - 隐私：发送给模型的只有单词和所在句子，与划词翻译相同。
