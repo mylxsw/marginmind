@@ -117,7 +117,7 @@ void main() {
     final session = container.read(reflowSessionProvider(('demo-1', doc.id)));
     expect(container.read(settingsProvider).bookReading.paged, isFalse);
     expect(find.byType(ReflowScrollReader), findsOneWidget);
-    await tester.tap(find.byTooltip('Reading Settings'));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-settings')));
     await tester.pumpAndSettle();
     expect(find.byType(ReadingSettingsPanel), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('reading-larger')));
@@ -234,7 +234,7 @@ void main() {
     await tester.pumpAndSettle();
     final fixed = find.descendant(of: find.byType(ReflowReader), matching: find.byType(InteractiveViewer));
     expect(tester.widget<InteractiveViewer>(fixed).transformationController!.value.getMaxScaleOnAxis(), 2);
-    await tester.tap(find.byKey(const ValueKey('reader-page')));
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
     final slider = find.descendant(of: find.byType(ReaderZoomSlider), matching: find.byType(Slider));
     final sourceSlider = tester.widget<Slider>(slider);

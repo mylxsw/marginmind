@@ -33,10 +33,12 @@ class MMSplitView extends StatelessWidget {
     this.minSecondaryWidth = MMSizes.mapMinWidth,
     this.collapseWhenNarrow = true,
     this.axis = Axis.horizontal,
+    this.showModeButtons = true,
   });
 
   /// [Axis.vertical] stacks the panes; the minimum sizes are then heights.
   final Axis axis;
+  final bool showModeButtons;
 
   final Widget primary;
   final Widget secondary;
@@ -86,6 +88,32 @@ class MMSplitView extends StatelessWidget {
     return (width * fraction).clamp(minPrimary, max < minPrimary ? minPrimary : max);
   }
 
+  static MMSplitGeometry resolveGeometry({
+    required double extent,
+    required MMSplitMode mode,
+    Axis axis = Axis.horizontal,
+    double fraction = .5,
+    double minPrimary = MMSizes.readerMinWidth,
+    double minSecondary = MMSizes.mapMinWidth,
+    bool collapseWhenNarrow = true,
+  }) {
+    final effective = collapseWhenNarrow ? effectiveMode(mode, extent, minPrimary, minSecondary) : mode;
+    final split = effective == MMSplitMode.split;
+    final scale = !collapseWhenNarrow && extent < minPrimary + minSecondary + 1
+        ? ((extent - 1) / (minPrimary + minSecondary)).clamp(0.0, 1.0)
+        : 1.0;
+    final primary = split ? primaryWidth(extent, fraction, minPrimary * scale, minSecondary * scale) : extent;
+    return MMSplitGeometry(
+      effective,
+      axis,
+      primary,
+      split ? (extent - primary - 1).clamp(0.0, extent) : extent,
+      split ? extent.clamp(0.0, 1.0) : 0,
+      minPrimary * scale,
+      minSecondary * scale,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
@@ -94,16 +122,22 @@ class MMSplitView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = vertical ? constraints.maxHeight : constraints.maxWidth;
-        final m = collapseWhenNarrow ? effectiveMode(mode, w, minPrimaryWidth, minSecondaryWidth) : mode;
+        final geometry = resolveGeometry(
+          extent: w,
+          mode: mode,
+          axis: axis,
+          fraction: fraction,
+          minPrimary: minPrimaryWidth,
+          minSecondary: minSecondaryWidth,
+          collapseWhenNarrow: collapseWhenNarrow,
+        );
+        final m = geometry.effectiveMode;
         final showP = m != MMSplitMode.secondary;
         final showS = m != MMSplitMode.primary;
         final split = showP && showS;
-        final scale = !collapseWhenNarrow && w < minPrimaryWidth + minSecondaryWidth + 1
-            ? ((w - 1) / (minPrimaryWidth + minSecondaryWidth)).clamp(0.0, 1.0)
-            : 1.0;
-        final minPrimary = minPrimaryWidth * scale;
-        final minSecondary = minSecondaryWidth * scale;
-        final pw = split ? primaryWidth(w, fraction, minPrimary, minSecondary) : w;
+        final minPrimary = geometry.minPrimary;
+        final minSecondary = geometry.minSecondary;
+        final pw = geometry.primaryExtent;
         Widget sized(double extent, Widget child) =>
             vertical ? SizedBox(height: extent, child: child) : SizedBox(width: extent, child: child);
         // Stacked panes each reach one end of the window's chrome.
@@ -119,13 +153,23 @@ class MMSplitView extends StatelessWidget {
               child: sized(pw, stacked ? MMChromeInsets.remove(context, removeBottom: true, child: primary) : primary),
             ),
           ),
-          if (split) sized(1, ColoredBox(color: c.separator)),
+          if (split)
+            sized(
+              geometry.dividerExtent,
+              Center(
+                child: SizedBox(
+                  width: vertical ? double.infinity : MMSizes.hairline,
+                  height: vertical ? MMSizes.hairline : double.infinity,
+                  child: ColoredBox(color: c.separator),
+                ),
+              ),
+            ),
           Offstage(
             offstage: !showS,
             child: ExcludeFocus(
               excluding: !showS,
               child: sized(
-                split ? w - pw - 1 : w,
+                split ? geometry.secondaryExtent : w,
                 stacked ? MMChromeInsets.remove(context, removeTop: true, child: secondary) : secondary,
               ),
             ),
@@ -153,7 +197,7 @@ class MMSplitView extends StatelessWidget {
               vertical
                   ? Positioned(top: pw + 0.5 - hit / 2, left: 0, right: 0, height: hit, child: divider)
                   : Positioned(left: pw + 0.5 - hit / 2, top: 0, bottom: 0, width: hit, child: divider),
-            if (onModeChanged != null && !vertical)
+            if (showModeButtons && onModeChanged != null && !vertical)
               Positioned(
                 left: split
                     ? (pw - button.width).clamp(0, w - button.width * 2)
@@ -166,7 +210,7 @@ class MMSplitView extends StatelessWidget {
               ),
             // Stacked panes: the switch sits at the right end of the divider,
             // or at the bottom right of the single pane.
-            if (onModeChanged != null && vertical)
+            if (showModeButtons && onModeChanged != null && vertical)
               Positioned(
                 right: MMSpacing.s,
                 top: split ? (pw - button.height - 6 - MMSpacing.s).clamp(0.0, w) : null,
@@ -208,4 +252,20 @@ class MMSplitView extends StatelessWidget {
       ],
     );
   }
+}
+
+@immutable
+class MMSplitGeometry {
+  const MMSplitGeometry(
+    this.effectiveMode,
+    this.axis,
+    this.primaryExtent,
+    this.secondaryExtent,
+    this.dividerExtent,
+    this.minPrimary,
+    this.minSecondary,
+  );
+  final MMSplitMode effectiveMode;
+  final Axis axis;
+  final double primaryExtent, secondaryExtent, dividerExtent, minPrimary, minSecondary;
 }

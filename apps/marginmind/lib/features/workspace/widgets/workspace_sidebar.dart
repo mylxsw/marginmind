@@ -133,7 +133,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   ? null
                   : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
                   ? Text(l.ocrRecognized, style: context.mmText.footnote)
-                  : MMCount(d.pageCount),
+                  : null,
               selected: !browser.visible && d.id == state.activeDocumentId,
               selectionStyle: context.mmTablet ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {

@@ -81,7 +81,7 @@ void main() {
     final container = await openNote(tester);
     final owner = container.read(workspaceProvider('demo-1').notifier);
     owner.selectAnnotation(owner.content.annotations.first.id, true);
-    await tester.tap(find.byKey(const ValueKey('toolbar-organize-note')));
+    await tapWorkspaceCommand(tester, 'organize-note');
     await tester.pumpAndSettle();
     expect(find.byType(NoteSetupSheet), findsOneWidget);
     expect(find.byKey(const ValueKey('organization-source')), findsNothing);
@@ -263,7 +263,7 @@ void main() {
 
   testWidgets('empty selected scope disables generation and remembered AI options stay local', (tester) async {
     await openNote(tester);
-    await tester.tap(find.byKey(const ValueKey('toolbar-organize-note')));
+    await tapWorkspaceCommand(tester, 'organize-note');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('scope-selected')));
     await tester.pumpAndSettle();

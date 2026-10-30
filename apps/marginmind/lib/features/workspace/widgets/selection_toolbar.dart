@@ -375,7 +375,15 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     return TapRegion(
       groupId: annotationTapGroup(widget.studySetId),
       onTapOutside: (_) {
-        if (!_busy && !_paletteOpen) _dismiss();
+        if (!_busy && !_paletteOpen) {
+          _dismiss();
+        } else if (!_busy) {
+          // Palette outside handlers run in the same pointer dispatch. Wait
+          // for their close callbacks before dismissing the shared selection.
+          Future<void>.microtask(() {
+            if (mounted && !_busy && !_paletteOpen) _dismiss();
+          });
+        }
       },
       child: Actions(
         actions: {

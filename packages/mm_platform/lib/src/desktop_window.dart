@@ -54,6 +54,11 @@ abstract final class DesktopWindow {
     });
   }
 
+  /// Update the system window name even when its title bar text is hidden.
+  static Future<void> setTitle(String title) async {
+    if (isDesktop) await windowManager.setTitle(title);
+  }
+
   /// Starts a native window drag (call from a pan-start on empty chrome).
   static void startDragging() {
     if (isDesktop) windowManager.startDragging();

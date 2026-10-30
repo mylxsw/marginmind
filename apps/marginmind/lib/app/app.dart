@@ -22,6 +22,7 @@ import '../shared/l10n.dart';
 import 'app_commands.dart';
 import 'navigation.dart';
 import 'phone_tabs.dart';
+import 'window_title.dart';
 
 /// Whether the app runs on a phone or tablet, where layout and controls
 /// are touch-first. Read from the host OS, not the target-platform override,
@@ -94,7 +95,7 @@ class MarginMindApp extends ConsumerWidget {
           ),
         );
       },
-      home: const AppShell(),
+      home: const WindowTitleBinding(child: AppShell()),
     );
   }
 }

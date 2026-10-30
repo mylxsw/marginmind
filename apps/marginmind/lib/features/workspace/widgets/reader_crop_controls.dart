@@ -331,7 +331,9 @@ class _CropHandleState extends State<_CropHandle> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(3),
               border: Border.all(color: context.mmColors.accent, width: focused ? 2.5 : 1.5),
-              boxShadow: const [BoxShadow(color: Color(0x4D000000), blurRadius: 3, offset: Offset(0, 1))],
+              boxShadow: context.mmColors.flat
+                  ? null
+                  : const [BoxShadow(color: Color(0x4D000000), blurRadius: 3, offset: Offset(0, 1))],
             ),
           ),
         ),

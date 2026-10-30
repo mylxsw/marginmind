@@ -66,8 +66,29 @@ class MMWindowScaffold extends StatelessWidget {
     this.sheet,
     this.toolbarBottom,
     this.extendBody = false,
-  });
+  }) : contentBuilder = null,
+       toolbarExtent = MMSizes.toolbarHeight;
 
+  const MMWindowScaffold.contentBuilder({
+    super.key,
+    required this.contentBuilder,
+    this.sidebar,
+    this.sidebarVisible = true,
+    this.sidebarWidth = MMSizes.sidebarWidth,
+    this.sidebarOverlay = false,
+    this.onSidebarDismiss,
+    this.onDragStart,
+    this.onTitleDoubleTap,
+    this.showsWindowButtons = true,
+    this.sheet,
+    this.toolbarExtent = MMSizes.paneHeaderHeight,
+  }) : toolbar = const SizedBox.shrink(),
+       body = const SizedBox.shrink(),
+       toolbarBottom = null,
+       extendBody = false;
+
+  final LayoutWidgetBuilder? contentBuilder;
+  final double toolbarExtent;
   final Widget toolbar;
   final Widget body;
   final Widget? sidebar;
@@ -103,15 +124,19 @@ class MMWindowScaffold extends StatelessWidget {
     final inline = open && !sidebarOverlay;
     final fullWidth = sidebarWidth + MMSizes.sidebarInset;
     final duration = MMAppearance.duration(context, MMMotion.layout);
-    if (MMInput.of(context).touchPlatform) return _touch(context, c, open, inline, fullWidth, duration);
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        toolbar,
-        ?toolbarBottom,
-        Expanded(child: body),
-      ],
-    );
+    if (MMInput.of(context).touchPlatform && contentBuilder == null) {
+      return _touch(context, c, open, inline, fullWidth, duration);
+    }
+    final content = contentBuilder != null
+        ? LayoutBuilder(builder: contentBuilder!)
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              toolbar,
+              ?toolbarBottom,
+              Expanded(child: body),
+            ],
+          );
     final row = _row(open, fullWidth, duration, content);
     final safe = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
@@ -187,29 +212,46 @@ class MMWindowScaffold extends StatelessWidget {
   /// The sidebar column beside [content]; [wrapSidebar] adapts the sidebar
   /// to where the row sits.
   Widget _row(bool open, double fullWidth, Duration duration, Widget content, [Widget Function(Widget)? wrapSidebar]) =>
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (sidebar != null)
-            TweenAnimationBuilder<double>(
-              tween: Tween(end: open ? fullWidth : 0),
-              duration: duration,
-              curve: MMMotion.layoutCurve,
-              builder: (context, width, child) => SizedBox(
+      TweenAnimationBuilder<double>(
+        tween: Tween(end: sidebar != null && open ? fullWidth : 0),
+        duration: duration,
+        curve: MMMotion.layoutCurve,
+        builder: (context, width, _) => Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (sidebar != null)
+              SizedBox(
                 width: width,
                 child: ClipRect(
                   child: OverflowBox(
                     alignment: Alignment.centerRight,
                     minWidth: fullWidth,
                     maxWidth: fullWidth,
-                    child: child,
+                    child: ExcludeFocus(
+                      excluding: !open,
+                      child: wrapSidebar == null ? sidebar! : wrapSidebar(sidebar!),
+                    ),
                   ),
                 ),
               ),
-              child: ExcludeFocus(excluding: !open, child: wrapSidebar == null ? sidebar! : wrapSidebar(sidebar!)),
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  final chrome = MMWindowChrome.maybeOf(context);
+                  return MMWindowChrome(
+                    toolbarLeadingInset:
+                        !MMInput.of(context).touchPlatform && showsWindowButtons && (!open || width < fullWidth - .01)
+                        ? MMSizes.windowButtonsWidth
+                        : 0,
+                    onDragStart: chrome?.onDragStart,
+                    onTitleDoubleTap: chrome?.onTitleDoubleTap,
+                    child: content,
+                  );
+                },
+              ),
             ),
-          Expanded(child: content),
-        ],
+          ],
+        ),
       );
 
   /// A touch window: the content fills it edge to edge under the glass

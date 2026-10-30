@@ -87,33 +87,25 @@ void main() {
       if (style == MMReaderStyle.white) {
         final edge = await paintedColor(tester, column, Offset(size.width + 2, 60));
         final outside = await paintedColor(tester, column, Offset(size.width + 25, 60));
-        expect(edge.r, lessThan(outside.r), reason: 'the sheet shadow reaches the outer margin edge');
+        expect(edge, sameColor(outside), reason: 'flat paper has no shadow outside its hairline');
       }
     }
     debugDisableShadows = true;
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('margin toolbar stays icon-only when documents have notes', (tester) async {
+  testWidgets('margin action stays in Aa without adding header counts', (tester) async {
     final container = await pumpApp(tester, size: const Size(1800, 1000));
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    final workspace = container.read(workspaceProvider('demo-1').notifier);
     final session = container.read(readerMarginProvider('demo-1').notifier);
-    final button = find.byKey(const ValueKey('reader-margin'));
-    expect(find.descendant(of: button, matching: find.byType(Text)), findsNothing);
     await session.start('c1', page: 1, lineY: 500);
     session.text('Saved note');
     await session.finish();
     await tester.pumpAndSettle();
-    expect(find.descendant(of: button, matching: find.byType(Text)), findsNothing);
+    expect(find.byKey(const ValueKey('reader-margin')), findsNothing);
     expect(find.descendant(of: find.byType(ReaderPane), matching: find.byType(Badge)), findsNothing);
-    await tester.tap(button);
-    await tester.pumpAndSettle();
-    expect(find.descendant(of: button, matching: find.byType(Text)), findsNothing);
-    workspace.openDocument(workspace.content.documents.last.id);
-    await tester.pumpAndSettle();
-    expect(find.descendant(of: button, matching: find.byType(Text)), findsNothing);
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-margin')));
     expect(tester.takeException(), isNull);
   });
 }

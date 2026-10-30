@@ -94,3 +94,99 @@ import 'package:mm_design/mm_design.dart';
   }
   return fit(preservePanes && sidebarVisible, MMSizes.rightPanelNarrowWidth);
 }
+
+/// Pane and header rectangles in the scaffold's content coordinate space.
+/// The scaffold has already removed its actual animated sidebar width.
+@immutable
+class WorkspaceLayoutGeometry {
+  const WorkspaceLayoutGeometry({
+    required this.sidebarExtent,
+    required this.contentRect,
+    required this.panelRect,
+    required this.readerRect,
+    required this.mapRect,
+    required this.split,
+  });
+  final double sidebarExtent;
+  final Rect contentRect, panelRect, readerRect, mapRect;
+  final MMSplitGeometry split;
+  Rect get readerHeaderRect =>
+      Rect.fromLTWH(readerRect.left, readerRect.top, readerRect.width, MMSizes.paneHeaderHeight);
+  Rect get mapHeaderRect =>
+      mapRect.isEmpty ? Rect.zero : Rect.fromLTWH(mapRect.left, mapRect.top, mapRect.width, MMSizes.paneHeaderHeight);
+
+  factory WorkspaceLayoutGeometry.resolve({
+    required Size size,
+    required MMSplitMode mode,
+    required Axis axis,
+    required double fraction,
+    required double minReader,
+    double sidebarExtent = 0,
+    double panelExtent = 0,
+    Axis panelAxis = Axis.horizontal,
+    bool tablet = false,
+    bool collapseWhenNarrow = true,
+  }) {
+    final verticalPanel = panelAxis == Axis.vertical;
+    final available = verticalPanel ? size.height : size.width;
+    final panel = panelExtent.clamp(0.0, (available - (tablet ? 44 : 0)).clamp(0.0, double.infinity));
+    final gap = panel > 0 && tablet ? MMSpacing.s : 0.0;
+    final content = Rect.fromLTWH(
+      0,
+      0,
+      (size.width - (verticalPanel ? 0 : panel + gap)).clamp(0.0, double.infinity),
+      (size.height - (verticalPanel ? panel + gap : 0)).clamp(0.0, double.infinity),
+    );
+    final panelRect = panel == 0
+        ? Rect.zero
+        : verticalPanel
+        ? Rect.fromLTWH(8, size.height - panel, size.width - 16, panel)
+        : Rect.fromLTWH(
+            size.width - panel,
+            tablet ? 8 : 0,
+            panel,
+            (size.height - (tablet ? 16 : 0)).clamp(0.0, double.infinity),
+          );
+    final split = MMSplitView.resolveGeometry(
+      extent: axis == Axis.vertical ? content.height : content.width,
+      mode: mode,
+      axis: axis,
+      fraction: fraction,
+      minPrimary: axis == Axis.vertical ? MMSizes.paneMinHeight : minReader,
+      minSecondary: axis == Axis.vertical ? MMSizes.paneMinHeight : MMSizes.mapMinWidth,
+      collapseWhenNarrow: collapseWhenNarrow,
+    );
+    final both = split.effectiveMode == MMSplitMode.split;
+    final reader = split.effectiveMode == MMSplitMode.secondary
+        ? Rect.zero
+        : !both
+        ? content
+        : axis == Axis.vertical
+        ? Rect.fromLTWH(0, 0, content.width, split.primaryExtent)
+        : Rect.fromLTWH(0, 0, split.primaryExtent, content.height);
+    final map = split.effectiveMode == MMSplitMode.primary
+        ? Rect.zero
+        : !both
+        ? content
+        : axis == Axis.vertical
+        ? Rect.fromLTWH(0, split.primaryExtent + split.dividerExtent, content.width, split.secondaryExtent)
+        : Rect.fromLTWH(split.primaryExtent + split.dividerExtent, 0, split.secondaryExtent, content.height);
+    return WorkspaceLayoutGeometry(
+      sidebarExtent: sidebarExtent,
+      contentRect: content,
+      panelRect: panelRect,
+      readerRect: reader,
+      mapRect: map,
+      split: split,
+    );
+  }
+}
+
+class WorkspaceLayoutGeometryScope extends InheritedWidget {
+  const WorkspaceLayoutGeometryScope({super.key, required this.geometry, required super.child});
+  final WorkspaceLayoutGeometry geometry;
+  static WorkspaceLayoutGeometry? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WorkspaceLayoutGeometryScope>()?.geometry;
+  @override
+  bool updateShouldNotify(WorkspaceLayoutGeometryScope oldWidget) => geometry != oldWidget.geometry;
+}

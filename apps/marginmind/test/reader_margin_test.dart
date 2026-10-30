@@ -67,7 +67,7 @@ void main() {
     await session.start('c1', existing: workspace.content.marginNotes.single);
     await drain(tester);
     await tester.enterText(find.byKey(ValueKey('margin-editor-$id')), ' ');
-    await tester.tap(find.byKey(const ValueKey('reader-margin')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-margin')));
     await drain(tester);
     expect(workspace.content.marginNotes, isEmpty);
     expect(find.text('Comment Deleted'), findsOneWidget);

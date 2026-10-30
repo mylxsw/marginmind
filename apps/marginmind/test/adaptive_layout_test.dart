@@ -246,11 +246,11 @@ void main() {
       expect(reader.width, map.width);
       expect(reader.width, ipadPortrait.size.width);
       // The toolbar starts below the status bar.
-      expect(tester.getRect(find.byType(MMToolbar)).top, ipadPortrait.safe.top);
+      expect(tester.getRect(find.byType(MMToolbar).first).top, ipadPortrait.safe.top);
       // The map runs on beneath the home indicator; its controls keep clear.
-      expect(tester.getRect(find.byType(MapPane)).bottom, ipadPortrait.size.height);
+      expect(tester.getRect(find.byType(MapPane)).bottom, ipadPortrait.size.height - ipadPortrait.safe.bottom);
       expect(
-        tester.getRect(find.byKey(const ValueKey('map-density'))).bottom,
+        tester.getRect(find.byTooltip('Zoom In').last).bottom,
         lessThanOrEqualTo(ipadPortrait.size.height - ipadPortrait.safe.bottom),
       );
 
@@ -269,10 +269,10 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).splitFraction, .5);
 
       // Either pane can take the whole window.
-      await tester.tap(find.byTooltip('Map Only').first);
+      await tester.tap(find.byKey(const ValueKey('toolbar-layout-map')));
       await tester.pumpAndSettle();
       expect(rectOf(tester, MapPane).height, greaterThan(map.height * 1.5));
-      await tester.tap(find.byTooltip('Split').first);
+      await tester.tap(find.byKey(const ValueKey('toolbar-layout-split')));
       await tester.pumpAndSettle();
 
       // The sidebar is a drawer, closed at first.
@@ -320,7 +320,7 @@ void main() {
       // Touch-sized toolbar buttons.
       expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), const Size.square(MMSizes.touchTarget));
       // The reader tools stay on one line; zoom and appearance are under More.
-      expect(find.byKey(const ValueKey('reader-page')), findsNothing);
+      expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('reader-zoom-slider')), findsOneWidget);
@@ -358,7 +358,7 @@ void main() {
       final pane = find.byType(PhoneTabBar);
       expect(pane, findsOneWidget);
       expect(find.byTooltip('Split'), findsNothing);
-      expect(tester.getRect(find.byType(MMToolbar)).top, iphone.safe.top);
+      expect(tester.getRect(find.byType(MMToolbar).first).top, iphone.safe.top);
       expect(find.byType(ReaderPane).hitTestable(), findsOneWidget);
       expect(find.byType(MapPane).hitTestable(), findsNothing);
       await tester.tap(find.byKey(const ValueKey('mm-tab-2')));
@@ -368,7 +368,7 @@ void main() {
       expect(rectOf(tester, MapPane).width, iphone.size.width);
       expect(rectOf(tester, MapPane).bottom, iphone.size.height);
       expect(
-        tester.getRect(find.byKey(const ValueKey('map-density'))).bottom,
+        tester.getRect(find.byTooltip('Zoom In').last).bottom,
         lessThanOrEqualTo(iphone.size.height - iphone.safe.bottom),
       );
       await tester.tap(find.byKey(const ValueKey('mm-tab-1')));
@@ -417,7 +417,7 @@ void main() {
       expect(find.byIcon(MMIcons.list), findsNothing);
       final search = tester.getRect(find.byType(MMToolbarSearchField));
       expect(search.width, iphone.size.width - 2 * MMSpacing.l);
-      expect(search.top, greaterThanOrEqualTo(tester.getRect(find.byType(MMToolbar)).bottom));
+      expect(search.top, greaterThanOrEqualTo(tester.getRect(find.byType(MMToolbar).first).bottom));
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       expect(find.text('Starred').hitTestable(), findsOneWidget);
@@ -453,7 +453,7 @@ void main() {
       expect(find.byType(WorkspaceSidebar).hitTestable(), findsOneWidget);
       expect(find.byKey(const ValueKey('mm-drawer-scrim')), findsNothing);
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
-      expect(find.byKey(const ValueKey('reader-page')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-more')), findsOneWidget);
       expect(tester.getSize(find.byKey(const ValueKey('toolbar-assistant'))), MMSizes.toolbarButton);
       container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
       await tester.pumpAndSettle();
@@ -469,7 +469,7 @@ void main() {
       final reader = rectOf(tester, ReaderPane);
       expect(reader.left, MMSizes.sidebarWidth + MMSizes.sidebarInset);
       expect(reader.right, lessThanOrEqualTo(rectOf(tester, MapPane).left));
-      expect(tester.getRect(find.byType(MMToolbar)).top, 0);
+      expect(tester.getRect(find.byType(MMToolbar).first).top, 0);
     });
   });
 }

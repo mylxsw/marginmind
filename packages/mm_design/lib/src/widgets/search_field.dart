@@ -285,7 +285,11 @@ class _MMTextFieldState extends State<MMTextField> {
               color: widget._settings && !focused ? Colors.transparent : c.quaternaryFill,
               borderRadius: BorderRadius.circular(MMRadii.field),
               border: Border.all(color: focused ? c.accent : Colors.transparent),
-              boxShadow: focused ? [BoxShadow(color: c.accentTint, spreadRadius: 3)] : null,
+              boxShadow: c.flat
+                  ? null
+                  : focused
+                  ? [BoxShadow(color: c.accentTint, spreadRadius: 3)]
+                  : null,
             ),
       child: input,
     );

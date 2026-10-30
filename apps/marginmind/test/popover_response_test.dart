@@ -131,7 +131,7 @@ void main() {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Reading Settings'));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-settings')));
     await tester.pump();
     expectFullyVisible(tester, find.byType(ReadingSettingsPanel));
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

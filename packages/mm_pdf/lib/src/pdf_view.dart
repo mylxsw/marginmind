@@ -44,7 +44,8 @@ import 'preview_cache.dart';
 const _pageShadow = BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 2));
 
 class _MarginPaperPainter extends CustomPainter {
-  const _MarginPaperPainter(this.viewport, this.color);
+  const _MarginPaperPainter(this.viewport, this.color, this.borderColor);
+  final Color? borderColor;
   final MMPdfMarginViewport viewport;
   final Color color;
 
@@ -65,8 +66,19 @@ class _MarginPaperPainter extends CustomPainter {
       // gets a shadow, so neither the source nor its seam is darkened.
       canvas.save();
       canvas.clipRect(paper, clipOp: ui.ClipOp.difference);
-      canvas.drawRect(paper.shift(shadow.offset), shadow.toPaint());
+      if (borderColor == null) {
+        canvas.drawRect(paper.shift(shadow.offset), shadow.toPaint());
+      }
       canvas.restore();
+      if (borderColor != null) {
+        canvas.drawRect(
+          paper.deflate(.25),
+          Paint()
+            ..color = borderColor!
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = .5,
+        );
+      }
       canvas.drawRect(Rect.fromLTRB(page.rect.right, paper.top, paper.right, paper.bottom), fill);
       if (page.extent > 0) {
         canvas.drawRect(Rect.fromLTRB(paper.left, page.rect.bottom, page.rect.right, paper.bottom), fill);
@@ -795,6 +807,7 @@ class MMPdfView extends StatefulWidget {
     this.backgroundColor = const Color(0xFFEDEDF0),
     this.emphasisColor = const Color(0xFF007AFF),
     this.pageColorFilter,
+    this.pageBorderColor,
     this.onReady,
     this.onPageChanged,
     this.onSelectionCommitted,
@@ -825,6 +838,9 @@ class MMPdfView extends StatefulWidget {
   final ValueChanged<String?>? onParagraphHover;
   final String filePath;
   final MMPdfMargin? margin;
+
+  /// When set, pages use a hairline border instead of a drop shadow.
+  final Color? pageBorderColor;
   final DocumentCrop? crop;
 
   /// Editor overlays receive original page dimensions; editing displays full pages.
@@ -1440,6 +1456,15 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   void _paintMatches(ui.Canvas canvas, Rect pageRect, PdfPage page) {
+    if (widget.pageBorderColor case final color?) {
+      canvas.drawRect(
+        pageRect.deflate(.25),
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = .5,
+      );
+    }
     canvas.save();
     canvas.clipRect(pageRect);
     _searcher?.pageTextMatchPaintCallback(canvas, pageRect, page);
@@ -1447,7 +1472,7 @@ class _MMPdfViewState extends State<MMPdfView> {
   }
 
   void _beginPagePaint(ui.Canvas canvas, Rect pageRect, PdfPage page) {
-    if (widget.margin != null && !_marginExpanded) {
+    if (widget.margin != null && !_marginExpanded && widget.pageBorderColor == null) {
       canvas.drawRect(pageRect.shift(_pageShadow.offset), _pageShadow.toPaint());
     } else if (widget.margin != null && _marginExpanded) {
       // Pixel snapping can move the rendered PDF edge inside its layout rect.
@@ -2424,7 +2449,9 @@ class _MMPdfViewState extends State<MMPdfView> {
             if (viewport.expanded)
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(painter: _MarginPaperPainter(viewport, widget.margin!.backgroundColor)),
+                  child: CustomPaint(
+                    painter: _MarginPaperPainter(viewport, widget.margin!.backgroundColor, widget.pageBorderColor),
+                  ),
                 ),
               ),
             ...widget.margin!.builder(context, viewport),
@@ -2563,7 +2590,7 @@ class _MMPdfViewState extends State<MMPdfView> {
               MediaQuery.devicePixelRatioOf(context),
             ).scale,
             // Retain pdfrx's adjacent-page prefetch and 100 MiB image-cache budget.
-            pageDropShadow: widget.margin == null ? _pageShadow : null,
+            pageDropShadow: widget.margin == null && widget.pageBorderColor == null ? _pageShadow : null,
             pageOverlaysBuilder: _pageOverlays,
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],

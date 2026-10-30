@@ -36,6 +36,12 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double hairline = .5;
+  static const double nodeStroke = 1;
+  static const double paneHeaderHeight = 52;
+  static const double phoneWorkspaceToolbarHeight = 50;
+  static const double thumbDock = 56;
+  static const Size thumbDockButton = Size(46, 44);
   static const double vocabularyChipHeight = 20;
   static const double vocabularyDot = 6;
   static const double vocabularyCardWidth = 360;
@@ -60,7 +66,6 @@ abstract final class MMSizes {
   static const double mapExportPreviewHeight = 180;
 
   /// Keep the excerpt-target hint clear of the map view controls.
-  static const double mapViewControlsReservedWidth = 380;
 
   /// The map's structure and palette popover, and its thumbnails.
   static const double mapStylePopoverWidth = 300;

@@ -9,6 +9,7 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'context_menu_region.dart';
+import 'flat_surface.dart';
 import 'window_scaffold.dart';
 
 /// Floating glass sidebar (macOS 26): inset 8 from the window edges,
@@ -37,7 +38,7 @@ class MMSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final reduce = MMAppearance.reduceTransparencyOf(context);
+    final reduce = MMAppearance.reduceTransparencyOf(context) || MMFlatSurface.of(context);
     final chrome = MMWindowChrome.maybeOf(context);
     const radius = BorderRadius.all(Radius.circular(MMRadii.sidebar));
 
@@ -45,7 +46,7 @@ class MMSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: reduce ? c.sidebarOpaque : c.sidebar,
         borderRadius: radius,
-        border: Border.all(color: c.hairline, width: 0.5),
+        border: Border.all(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: 0.5),
       ),
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       child: Column(
@@ -84,7 +85,7 @@ class MMSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [
-          for (final s in c.sidebarShadow)
+          for (final s in MMFlatSurface.of(context) ? <BoxShadow>[] : c.sidebarShadow)
             BoxShadow(color: s.color, offset: s.offset, blurRadius: s.blurRadius, blurStyle: BlurStyle.outer),
         ],
       ),

@@ -140,13 +140,13 @@ void main() {
   testWidgets('the PDF toolbar opens and closes the page sidebar', (tester) async {
     await openReader(tester);
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
-    await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-navigation')));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsOneWidget);
     expect(find.byIcon(MMIcons.outline), findsOneWidget, reason: 'empty PDFs can create their own outline');
     expect(find.byIcon(MMIcons.bookmark), findsOneWidget);
     expect(find.byIcon(MMIcons.annotations), findsOneWidget);
-    await tester.tap(find.byTooltip(RegExp('Hide Page Sidebar')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-navigation')));
     await tester.pumpAndSettle();
     expect(find.byIcon(MMIcons.thumbnails), findsNothing);
   });

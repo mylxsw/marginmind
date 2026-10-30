@@ -7,6 +7,7 @@ import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import 'control_frame.dart';
+import 'flat_surface.dart';
 
 /// Liquid Glass surface for controls that float above content: toolbar
 /// groups, floating map controls, HUDs. Never use it for content (pages,
@@ -27,6 +28,7 @@ class MMGlass extends StatelessWidget {
     this.shadows,
     this.blurSigma = 24,
     this.toolbar = false,
+    this.controlGroup = false,
   });
 
   final Widget child;
@@ -39,9 +41,33 @@ class MMGlass extends StatelessWidget {
 
   /// A 36-point painted capsule around 44-point touch cells on tablets.
   final bool toolbar;
+  final bool controlGroup;
 
   @override
   Widget build(BuildContext context) {
+    if (MMFlatSurface.of(context)) {
+      final c = context.mmColors;
+      final decoration = BoxDecoration(
+        color: controlGroup ? c.quaternaryFill : (opaqueColor ?? color ?? c.surface).withValues(alpha: 1),
+        borderRadius: borderRadius,
+        border: controlGroup ? null : Border.all(color: c.border, width: MMSizes.hairline),
+      );
+      if (toolbar && context.mmTablet) {
+        return MMControlGroupScope(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(top: 4, bottom: 4, child: DecoratedBox(decoration: decoration)),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: child),
+            ],
+          ),
+        );
+      }
+      return DecoratedBox(
+        decoration: decoration,
+        child: Padding(padding: padding, child: child),
+      );
+    }
     if (context.mmTablet) {
       final c = context.mmColors;
       final surface = BoxDecoration(
@@ -156,6 +182,16 @@ class MMLiquidGlass extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    if (MMFlatSurface.of(context)) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: (opaqueColor ?? color ?? c.surface).withValues(alpha: 1),
+          borderRadius: borderRadius,
+          border: Border.all(color: c.border, width: MMSizes.hairline),
+        ),
+        child: Padding(padding: padding, child: child),
+      );
+    }
     final dark = Theme.of(context).brightness == Brightness.dark;
     final reduce = MMAppearance.reduceTransparencyOf(context);
     final nested = onGlass(context);
@@ -234,7 +270,8 @@ class MMGlassBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.mmColors;
     final reduce = MMAppearance.reduceTransparencyOf(context);
-    final fill = reduce ? c.windowBackground : c.windowBackground.withValues(alpha: 0.62);
+    final flat = MMFlatSurface.of(context);
+    final fill = reduce || flat ? c.windowBackground : c.windowBackground.withValues(alpha: 0.62);
     final bar = DecoratedBox(
       key: const ValueKey('mm-glass-bar'),
       decoration: BoxDecoration(
@@ -243,7 +280,7 @@ class MMGlassBar extends StatelessWidget {
       ),
       child: _GlassScope(child: child),
     );
-    if (reduce || blurSigma <= 0) return bar;
+    if (reduce || flat || blurSigma <= 0) return bar;
     return ClipRect(
       child: BackdropFilter(
         filter: context.mmTablet ? ImageFilter.blur(sigmaX: 12, sigmaY: 12) : MMLiquidGlass.liquidFilter(blurSigma),

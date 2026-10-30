@@ -19,9 +19,13 @@ class MapStylePopover extends StatefulWidget {
     required this.onStructure,
     required this.onPalette,
     required this.onClose,
+    this.density = MapDensity.compact,
+    this.onDensity,
   });
 
   /// The map's own style, marked as selected.
+  final MapDensity density;
+  final ValueChanged<MapDensity>? onDensity;
   final MapStructure structure;
   final MapPalette palette;
   final ValueChanged<(MapStructure, MapPalette)?> onPreview;
@@ -68,6 +72,17 @@ class _MapStylePopoverState extends State<MapStylePopover> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            MMSegmentedControl<MapDensity>(
+              key: const ValueKey('map-density'),
+              value: widget.density,
+              expand: true,
+              onChanged: widget.onDensity,
+              segments: [
+                MMSegment(value: MapDensity.compact, label: l.densityCompact),
+                MMSegment(value: MapDensity.full, label: l.densityFull),
+              ],
+            ),
+            const SizedBox(height: MMSpacing.m),
             _Grid(
               columns: 4,
               children: [

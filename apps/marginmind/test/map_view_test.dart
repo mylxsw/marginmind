@@ -453,8 +453,7 @@ void main() {
       controller.selectCard(excerpt.id);
       await tester.pumpAndSettle();
       // New excerpts go under the selected node itself, whatever its kind.
-      final l = AppLocalizations.of(tester.element(find.byType(MindMapCanvas)));
-      expect(find.text(l.newExcerptTarget(excerpt.title)), findsOneWidget);
+      expect(find.bySemanticsLabel(excerpt.title), findsWidgets);
       expect(find.byKey(const ValueKey('node-add-child')), findsNothing);
       await settleHud(tester);
     });

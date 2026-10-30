@@ -197,7 +197,7 @@ void main() {
     final canvas = tester.getRect(find.byType(MindMapCanvas));
     final transform = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas)).transformation;
     final before = transform.value.clone();
-    await tester.tapAt(canvas.bottomRight - const Offset(100, 100));
+    await tester.tapAt(canvas.topLeft + const Offset(24, 140));
     await tester.pumpAndSettle();
     expect(state().rootSelected, isFalse);
     expect(state().selectedCardId, isNull);

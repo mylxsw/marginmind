@@ -20,8 +20,10 @@ final assistantLinksProvider = Provider<ExternalLinks>((ref) => const ExternalLi
 
 /// Routes are pushed above the window's assistant scope: [child] gets the
 /// scope of [context] back.
-Widget inScope(BuildContext context, Widget child) =>
-    UncontrolledProviderScope(container: ProviderScope.containerOf(context, listen: false), child: child);
+Widget inScope(BuildContext context, Widget child) => InheritedTheme.captureAll(
+  context,
+  UncontrolledProviderScope(container: ProviderScope.containerOf(context, listen: false), child: child),
+);
 
 enum SourceKind { web, paper, video }
 
@@ -170,9 +172,12 @@ Future<T?> showPopupMenu<T>(
   barrierColor: Colors.transparent,
   barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
   transitionDuration: MMMotion.popup,
-  pageBuilder: (context, _, _) => CustomSingleChildLayout(
-    delegate: _AnchoredLayout(anchor, width),
-    child: _KeyboardPopup<T>(items: items),
+  pageBuilder: (dialog, _, _) => InheritedTheme.captureAll(
+    context,
+    CustomSingleChildLayout(
+      delegate: _AnchoredLayout(anchor, width),
+      child: _KeyboardPopup<T>(items: items),
+    ),
   ),
   transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
 );

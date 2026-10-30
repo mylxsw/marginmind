@@ -288,7 +288,9 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                           padding: EdgeInsets.fromLTRB(54 * scale, 48 * scale, 54 * scale, 60 * scale),
                           decoration: BoxDecoration(
                             color: style.paperColor,
-                            boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 3, offset: Offset(0, 1))],
+                            boxShadow: context.mmColors.flat
+                                ? null
+                                : const [BoxShadow(color: Color(0x22000000), blurRadius: 3, offset: Offset(0, 1))],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,

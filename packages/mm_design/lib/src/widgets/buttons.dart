@@ -67,10 +67,18 @@ class MMButton extends StatelessWidget {
             child: Container(
               height: context.mmTablet ? MMSizes.tabletControlVisual : 30,
               padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
+              foregroundDecoration: c.flat && s.focused
+                  ? BoxDecoration(
+                      border: Border.all(color: c.accent, width: 2, strokeAlign: BorderSide.strokeAlignOutside),
+                      borderRadius: BorderRadius.circular(15),
+                    )
+                  : null,
               decoration: BoxDecoration(
                 color: Color.alphaBlend(pressedOverlay, bg),
                 borderRadius: BorderRadius.circular(context.mmTablet ? MMSizes.tabletControlVisual / 2 : 15),
-                boxShadow: s.focused
+                boxShadow: c.flat
+                    ? null
+                    : s.focused
                     ? [BoxShadow(color: (color ?? c.accent).withValues(alpha: 0.5), spreadRadius: 3)]
                     : null,
               ),

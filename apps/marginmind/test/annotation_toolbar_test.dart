@@ -14,7 +14,7 @@ import 'package:marginmind/features/workspace/widgets/annotation_color_button.da
 import 'package:marginmind/features/workspace/widgets/annotation_line_style_picker.dart';
 import 'package:marginmind/features/workspace/widgets/annotation_palette.dart';
 import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
-import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
+import 'package:marginmind/features/workspace/widgets/reader_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/underline_tool_button.dart';
 import 'package:marginmind/features/workspace/widgets/underline_style_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
@@ -97,7 +97,7 @@ void main() {
       final container = await pumpApp(tester, prefs: {'settings.appearance': appearance});
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
-      final top = find.byType(ReaderAnnotationTools);
+      final top = find.byType(ReaderToolbar);
       expect(find.descendant(of: top, matching: find.byType(AnnotationColorButton)), findsNothing);
       await screenshot(tester, 'page-toolbar-$appearance', target: top);
       expect(find.descendant(of: top, matching: find.byType(HighlightColorButton)), findsOneWidget);

@@ -113,7 +113,7 @@ void main() {
       _expectHighlightOn(tester, PhoneTab.map);
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
       expect(tester.getRect(find.byType(MapPane)), Offset.zero & phone.size);
-      expect(tester.getRect(find.byKey(const ValueKey('map-density'))).bottom, lessThanOrEqualTo(capsule.top));
+      expect(tester.getRect(find.byTooltip('Zoom In').last).bottom, lessThanOrEqualTo(capsule.top));
       expect(
         tester.getRect(find.byType(MMSegmentedControl<MapViewMode>)).top,
         greaterThanOrEqualTo(_toolbarGlass(tester).bottom),

@@ -103,21 +103,33 @@ class MMFloatingToolbarSwatch extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
           ),
-          child: Container(
-            width: MMSizes.floatingToolbarDot,
-            height: MMSizes.floatingToolbarDot,
-            decoration: BoxDecoration(
-              color: s.enabled ? color : color.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-              boxShadow: selected || s.focused
-                  ? [
-                      // Painted in order: the outer ring first, then the gap over it.
-                      BoxShadow(color: s.focused ? c.accent : color, spreadRadius: 3.5),
-                      BoxShadow(color: c.glassOpaque, spreadRadius: 2),
-                    ]
-                  : null,
-            ),
-          ),
+          child: !c.flat
+              ? Container(
+                  width: MMSizes.floatingToolbarDot,
+                  height: MMSizes.floatingToolbarDot,
+                  decoration: BoxDecoration(
+                    color: s.enabled ? color : color.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                    boxShadow: selected || s.focused
+                        ? [
+                            // Painted in order: the outer ring first, then the gap over it.
+                            BoxShadow(color: s.focused ? c.accent : color, spreadRadius: 3.5),
+                            BoxShadow(color: c.glassOpaque, spreadRadius: 2),
+                          ]
+                        : null,
+                  ),
+                )
+              : CustomPaint(
+                  painter: _ColorRingPainter(selected || s.focused ? (s.focused ? c.accent : color) : null),
+                  child: Container(
+                    width: MMSizes.floatingToolbarDot,
+                    height: MMSizes.floatingToolbarDot,
+                    decoration: BoxDecoration(
+                      color: s.enabled ? color : color.withValues(alpha: .3),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
         ),
       ),
     );
@@ -227,4 +239,25 @@ class _FloatingToolbarDelegate extends SingleChildLayoutDelegate {
   @override
   bool shouldRelayout(_FloatingToolbarDelegate oldDelegate) =>
       oldDelegate.anchor != anchor || oldDelegate.padding != padding || oldDelegate.avoid != avoid;
+}
+
+class _ColorRingPainter extends CustomPainter {
+  const _ColorRingPainter(this.color);
+  final Color? color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (color != null) {
+      canvas.drawCircle(
+        size.center(Offset.zero),
+        size.width / 2 + 2.75,
+        Paint()
+          ..color = color!
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ColorRingPainter oldDelegate) => color != oldDelegate.color;
 }

@@ -76,6 +76,7 @@ Future<void> showMMMenu(
     selected?.call();
     return;
   }
+  final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   final selected = await showGeneralDialog<VoidCallback>(
     context: context,
     routeSettings: const RouteSettings(name: _contextMenuRoute),
@@ -83,18 +84,20 @@ Future<void> showMMMenu(
     barrierColor: sheet ? context.mmColors.scrim : Colors.transparent,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMMotion.popup,
-    pageBuilder: (context, _, _) => CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
-      child: FocusScope(
-        autofocus: true,
-        child: sheet
-            ? _ActionSheet(entries: entries, onSelected: (selected) => Navigator.of(context).pop(selected))
-            : CustomSingleChildLayout(
-                delegate: _MenuLayout(position, anchor: anchor),
-                child: SingleChildScrollView(
-                  child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
+    pageBuilder: (context, _, _) => capturedThemes.wrap(
+      CallbackShortcuts(
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
+        child: FocusScope(
+          autofocus: true,
+          child: sheet
+              ? _ActionSheet(entries: entries, onSelected: (selected) => Navigator.of(context).pop(selected))
+              : CustomSingleChildLayout(
+                  delegate: _MenuLayout(position, anchor: anchor),
+                  child: SingleChildScrollView(
+                    child: _Menu(entries: entries, minWidth: minWidth, touch: touch),
+                  ),
                 ),
-              ),
+        ),
       ),
     ),
     transitionBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
@@ -276,7 +279,7 @@ class _Menu extends StatelessWidget {
         child: MMGlass(
           borderRadius: BorderRadius.circular(12),
           padding: const EdgeInsets.all(5),
-          color: c.glassOpaque.withValues(alpha: 0.92),
+          color: c.surface.withValues(alpha: 0.92),
           child: IntrinsicWidth(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -413,10 +416,10 @@ class _ActionSheet extends StatelessWidget {
     const radius = BorderRadius.all(Radius.circular(14));
     // A touch platform's action sheet is mobile glass over the scrim.
     Widget group(Widget child) => touch
-        ? MMLiquidGlass(borderRadius: radius, color: c.glassOpaque.withValues(alpha: 0.78), child: child)
+        ? MMLiquidGlass(borderRadius: radius, color: c.surface.withValues(alpha: 0.78), child: child)
         : Container(
             clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(color: c.glassOpaque, borderRadius: radius),
+            decoration: BoxDecoration(color: c.surface, borderRadius: radius),
             child: child,
           );
     return Material(
