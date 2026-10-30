@@ -238,7 +238,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       if (Platform.environment['WRITE_NOTE_EVIDENCE'] != '1') {
-        await expectLater(find.byKey(key), matchesGoldenFile('goldens/note_share_${theme.name}.png'));
+        // Keep exact pixel comparisons for each renderer. Even the same loaded
+        // font has different rasterization on macOS and Linux.
+        final directory = Platform.isLinux ? 'goldens/linux' : 'goldens';
+        await expectLater(find.byKey(key), matchesGoldenFile('$directory/note_share_${theme.name}.png'));
       }
       final png = await tester.runAsync(
         () => captureNoteCard(key.currentContext!.findRenderObject()! as RenderRepaintBoundary),
