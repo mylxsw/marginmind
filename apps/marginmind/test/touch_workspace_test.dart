@@ -49,8 +49,8 @@ void main() {
   testWidgets('touch selection mode remains below the map toolbar', (tester) async {
     await openFirstSet(tester);
     final selection = tester.getRect(find.byKey(const ValueKey('map-multi-select')));
-    final addTopic = tester.getRect(find.byTooltip('Add Topic'));
-    expect(selection.top, greaterThan(addTopic.bottom));
+    final style = tester.getRect(find.byKey(const ValueKey('map-style-button')));
+    expect(selection.top, greaterThan(style.bottom));
   });
 
   testWidgets('map sidebar has the same menu under touch long press', (tester) async {

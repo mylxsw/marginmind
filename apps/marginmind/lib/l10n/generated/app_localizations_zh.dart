@@ -3193,6 +3193,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nodeBarSibling => '同级';
 
   @override
+  String get nodeBarNote => '记笔记';
+
+  @override
   String get nodeBarImage => '图片';
 
   @override

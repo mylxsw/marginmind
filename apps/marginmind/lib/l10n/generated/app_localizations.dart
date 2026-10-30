@@ -5978,6 +5978,12 @@ abstract class AppLocalizations {
   /// **'Sibling'**
   String get nodeBarSibling;
 
+  /// No description provided for @nodeBarNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get nodeBarNote;
+
   /// No description provided for @nodeBarImage.
   ///
   /// In en, this message translates to:

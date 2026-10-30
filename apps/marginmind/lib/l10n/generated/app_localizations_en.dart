@@ -3325,6 +3325,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nodeBarSibling => 'Sibling';
 
   @override
+  String get nodeBarNote => 'Note';
+
+  @override
   String get nodeBarImage => 'Image';
 
   @override

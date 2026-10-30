@@ -1784,6 +1784,7 @@
   },
   "nodeBarChild": "Child",
   "nodeBarSibling": "Sibling",
+  "nodeBarNote": "Note",
   "nodeBarImage": "Image",
   "nodeBarAssistant": "AI",
   "selectionMerge": "Merge",

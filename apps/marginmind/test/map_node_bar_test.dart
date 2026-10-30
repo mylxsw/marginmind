@@ -5,12 +5,42 @@ import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
+import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 import 'map_keyboard_test.dart' show focusMap, key;
 import 'workspace_test.dart' show openFirstSet;
 
 void main() {
+  for (final parentId in ['c3', 'c6']) {
+    testWidgets('node toolbar adds an editable note under $parentId in one undo step', (tester) async {
+      final container = await openFirstSet(tester);
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      WorkspaceState state() => container.read(workspaceProvider('demo-1'));
+      expect(find.byTooltip('Add Topic'), findsNothing);
+      expect(find.byTooltip('Add Note'), findsNothing);
+      expect(find.byTooltip('Insert Image…'), findsNothing);
+
+      controller.selectCard(parentId);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('node-bar-note')));
+      await tester.pumpAndSettle();
+      final noteId = state().selectedCardId!;
+      expect(controller.content.card(noteId)!.kind, CardKind.note);
+      expect(controller.content.node(noteId)!.parentId, parentId);
+      expect(state().editingCardId, noteId);
+      await tester.enterText(find.byType(MMInlineTextField), 'My reading note');
+      await key(tester, LogicalKeyboardKey.enter);
+      expect(controller.content.card(noteId)!.title, 'My reading note');
+      await controller.undo();
+      await tester.pumpAndSettle();
+      expect(controller.content.card(noteId), isNull);
+      expect(controller.content.card(parentId), isNotNull);
+      expect(tester.takeException(), isNull);
+      await settleHud(tester);
+    });
+  }
+
   testWidgets('one selected node gets its own toolbar; several get the selection bar; the root none', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);

@@ -113,12 +113,13 @@ class MapNodeBar extends StatelessWidget {
     super.key,
     required this.onChild,
     required this.onSibling,
+    required this.onNote,
     required this.onImage,
     required this.onRelation,
     this.onAssistant,
   });
 
-  final VoidCallback onChild, onSibling, onImage, onRelation;
+  final VoidCallback onChild, onSibling, onNote, onImage, onRelation;
 
   /// Opens the assistant's actions for the node, anchored below [anchor].
   final ValueChanged<Offset>? onAssistant;
@@ -144,6 +145,7 @@ class MapNodeBar extends StatelessWidget {
         children: [
           action('child', l.nodeBarChild, onChild, '${l.addChildTopic}  ⇥'),
           action('sibling', l.nodeBarSibling, onSibling, '${l.addSiblingAfter}  ↩'),
+          action('note', l.nodeBarNote, onNote, '${l.addNote}  ⌥⌘N'),
           action('image', l.nodeBarImage, onImage, l.insertImage),
           action('relation', l.selectionRelation, onRelation, '${l.addRelation}  ⌥⌘R'),
           if (onAssistant != null) ...[

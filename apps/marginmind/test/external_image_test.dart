@@ -149,10 +149,12 @@ void main() {
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Insert Image…'));
-    await tester.pumpAndSettle();
     final provider = workspaceProvider('demo-1');
     final controller = container.read(provider.notifier);
+    controller.selectCard('c3');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('node-bar-image')));
+    await tester.pumpAndSettle();
     expect(controller.content.cards.last.imageOrigin, 'file:picked.png');
     final drop = tester.widgetList<PdfDropTarget>(find.byType(PdfDropTarget)).firstWhere((w) => w.onImageDrop != null);
     drop.onImageDrop!([(path: '/tmp/dropped.jpeg', name: 'dropped.jpeg')]);

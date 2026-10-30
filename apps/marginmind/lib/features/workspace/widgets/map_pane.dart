@@ -222,6 +222,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     return MapNodeBar(
       onChild: () => addTopic(asChild: true),
       onSibling: () => _command(MindMapCommand.siblingAfter),
+      onNote: addNote,
       onImage: () => pickAndInsertImages(context, ref, widget.studySetId),
       onRelation: controller.addRelation,
       onAssistant: assistant.isEmpty
@@ -604,8 +605,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     const SizedBox(width: MMSpacing.s),
                     MMToolbarGroup(
                       children: [
-                        MMToolbarButton(icon: MMIcons.addTopic, tooltip: l.addTopic, onPressed: addTopic),
-                        MMToolbarButton(icon: MMIcons.addNote, tooltip: l.addNote, onPressed: addNote),
                         MMToolbarButton(
                           icon: MMIcons.trash,
                           tooltip: l.removeFromMap,
@@ -723,12 +722,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            MMIconButton(
-                              icon: MMIcons.image,
-                              tooltip: l.insertImage,
-                              onPressed: () => pickAndInsertImages(context, ref, widget.studySetId),
-                            ),
-                            const MMToolbarDivider(),
                             MMIconButton(
                               icon: MMIcons.fitMap,
                               tooltip: l.fitMap,

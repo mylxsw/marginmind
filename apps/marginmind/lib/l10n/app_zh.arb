@@ -1137,6 +1137,7 @@
   },
   "nodeBarChild": "子主题",
   "nodeBarSibling": "同级",
+  "nodeBarNote": "记笔记",
   "nodeBarImage": "图片",
   "nodeBarAssistant": "AI",
   "selectionMerge": "合并",

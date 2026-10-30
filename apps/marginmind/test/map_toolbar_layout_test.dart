@@ -52,13 +52,14 @@ void main() {
         controller.setMapView(MapViewMode.outline);
         await tester.pumpAndSettle();
         expect(find.byType(MapStylePopover), findsNothing);
-        final add = find.byTooltip('Add Topic');
-        await tester.ensureVisible(add);
-        await tester.tap(add);
+        controller.selectCard('c6');
         await tester.pumpAndSettle();
-        expect(container.read(workspaceProvider('demo-1')).editingCardId, isNotNull);
+        final remove = find.byTooltip('Remove from Map');
+        await tester.ensureVisible(remove);
+        await tester.tap(remove);
+        await tester.pumpAndSettle();
+        expect(controller.content.node('c6'), isNull);
         expect(tester.takeException(), isNull);
-        await controller.cancelEditing();
         await settleHud(tester);
       });
     }
