@@ -53,7 +53,7 @@
 
 ## 复验入口
 
-应用测试位于 `apps/marginmind/test/ipad_adaptation_test.dart`，尺寸检查位于 `packages/mm_design/test/tablet_chrome_test.dart`。真机用例位于 `tool/ipad_acceptance/`，操作已经安装的 Release 应用，要求界面为英文。设置 `IPAD_DEVICE_ID` 和 `APPLE_TEAM_ID` 后，在仓库根目录运行：
+应用测试位于 `apps/marginmind/test/ipad_adaptation_test.dart`，尺寸检查位于 `packages/mm_design/test/tablet_chrome_test.dart`。真机用例位于 `tool/ipad_acceptance/`，操作已经安装的 Release 应用，支持中文和英文界面。设置 `IPAD_DEVICE_ID` 和 `APPLE_TEAM_ID` 后，在仓库根目录运行：
 
 ```sh
 xcodebuild test \

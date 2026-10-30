@@ -172,10 +172,11 @@ class _Row extends StatelessWidget {
   Widget _interactive(BuildContext context, MMColors c) {
     return MMInteractive(
       onTapDown: onSelect,
-      onDoubleTap: onOpen,
+      onTap: MMInput.of(context).touchPlatform ? onOpen : null,
+      onDoubleTap: MMInput.of(context).touchPlatform ? null : onOpen,
       selected: selected,
       builder: (context, s) => Container(
-        height: 32,
+        height: context.mmTablet ? MMSizes.touchTarget : 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: selected

@@ -345,21 +345,34 @@ class _ReflowToolsState extends ConsumerState<ReflowTools> {
         ),
         if (drawing)
           Positioned.fill(
-            child: GestureDetector(
-              key: const ValueKey('reflow-tool-surface'),
-              dragStartBehavior: DragStartBehavior.down,
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (d) => _start(d.localPosition),
-              onPanUpdate: (d) => _move(d.localPosition),
-              onPanEnd: (_) => _end(),
-              onPanCancel: _cancel,
-              child: CustomPaint(
-                painter: _DraftPainter(
-                  widget.layout,
-                  widget.page,
-                  List.of(_points),
-                  state.inkColor.stroke,
-                  state.inkWidth.points,
+            child: MMStylusRegion(
+              enabled: context.mmTablet,
+              onDown: _start,
+              onMove: _move,
+              onUp: (point) {
+                _move(point);
+                _end();
+              },
+              onCancel: _cancel,
+              child: GestureDetector(
+                key: const ValueKey('reflow-tool-surface'),
+                dragStartBehavior: DragStartBehavior.down,
+                behavior: context.mmTablet ? HitTestBehavior.translucent : HitTestBehavior.opaque,
+                supportedDevices: context.mmTablet ? const {PointerDeviceKind.mouse} : null,
+                onPanStart: (d) => _start(d.localPosition),
+                onPanUpdate: (d) => _move(d.localPosition),
+                onPanEnd: (_) => _end(),
+                onPanCancel: _cancel,
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _DraftPainter(
+                      widget.layout,
+                      widget.page,
+                      List.of(_points),
+                      state.inkColor.stroke,
+                      state.inkWidth.points,
+                    ),
+                  ),
                 ),
               ),
             ),

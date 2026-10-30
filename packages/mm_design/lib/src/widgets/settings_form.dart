@@ -7,6 +7,7 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'menu.dart';
+import 'control_frame.dart';
 
 /// Title above a settings group, like macOS System Settings.
 class MMSettingsHeader extends StatelessWidget {
@@ -156,26 +157,31 @@ class MMPopUpButton<T> extends StatelessWidget {
           : null,
       semanticLabel: semanticLabel,
       semanticValue: label,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        height: context.mmTablet ? MMSizes.touchTarget : 22,
-        padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
-        decoration: BoxDecoration(color: s.hovered ? c.fill : c.quaternaryFill, borderRadius: BorderRadius.circular(6)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: t.body.copyWith(color: enabled ? c.label : c.secondaryLabel),
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          height: context.mmTablet ? MMSizes.tabletControlVisual : 22,
+          padding: const EdgeInsets.only(left: MMSpacing.s, right: MMSpacing.xs),
+          decoration: BoxDecoration(
+            color: s.hovered ? c.fill : c.quaternaryFill,
+            borderRadius: BorderRadius.circular(context.mmTablet ? MMRadii.field : 6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.body.copyWith(color: enabled ? c.label : c.secondaryLabel),
+                ),
               ),
-            ),
-            const SizedBox(width: MMSpacing.xs),
-            Icon(MMIcons.chevronUpDown, size: 11, color: c.icon),
-          ],
+              const SizedBox(width: MMSpacing.xs),
+              Icon(MMIcons.chevronUpDown, size: context.mmTablet ? 13 : 11, color: c.icon),
+            ],
+          ),
         ),
       ),
     );

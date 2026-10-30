@@ -1,7 +1,8 @@
 import XCTest
 @MainActor final class iPadAcceptance: XCTestCase {
  let app = XCUIApplication(bundleIdentifier: "io.github.mylxsw.marginmind")
- func button(_ prefix: String) -> XCUIElement { app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] %@", prefix)).firstMatch }
+ let labels: [String: String] = ["Show Sidebar":"显示侧栏", "Hide Sidebar":"隐藏侧栏", "Source Only":"只看原文", "Split":"分栏", "Map Only":"只看脑图", "Assistant":"助手", "Close":"关闭", "Main Map":"主脑图", "Select":"选择", "Area Select":"框选", "Pen":"画笔", "More":"更多", "Copy":"拷贝", "Style":"样式", "Actual Size":"实际大小", "Settings":"设置", "General":"通用", "Models":"模型", "Default Model":"默认模型", "Appearance":"外观", "Language":"语言", "System":"跟随系统", "Light":"浅色", "Dark":"深色", "Icons":"图标", "List":"列表", "Add Child Topic":"添加子主题", "Margin Notes":"页边批注"]
+ func button(_ prefix: String) -> XCUIElement { app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] %@ OR label BEGINSWITH[c] %@", prefix, labels[prefix] ?? prefix)).firstMatch }
  func shot(_ name: String) {
   let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); image.name = name; image.lifetime = .keepAlways; add(image)
   print("IPAD_SHOT:" + name)
@@ -25,7 +26,7 @@ import XCTest
  }
  func companion(_ name: String) {
   button("Assistant").tap()
-  let close = app.buttons["Close"]
+  let close = button("Close")
   XCTAssertTrue(close.waitForExistence(timeout: 8))
   XCTAssertGreaterThanOrEqual(close.frame.height, 44)
   let content = app.otherElements["tablet-workspace-content"]
@@ -57,7 +58,7 @@ import XCTest
   }
   shot("02-reader-landscape")
   button("More").tap()
-  XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Margin Notes")).firstMatch.waitForExistence(timeout: 5))
+  XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Margin Notes", "页边批注")).firstMatch.waitForExistence(timeout: 5))
   shot("02c-reader-more")
   app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.6)).tap()
   button("Select").tap()
@@ -71,15 +72,18 @@ import XCTest
   XCTAssertTrue(handle.waitForExistence(timeout: 5))
   XCTAssertEqual(handle.frame.width, 44, accuracy: 1)
   XCTAssertEqual(handle.frame.height, 44, accuracy: 1)
+  let begin = app.otherElements["pdf-selection-start"]
+  XCTAssertTrue(begin.exists)
+  XCTAssertLessThan(abs(handle.frame.midX - begin.frame.midX), line.frame.width * 0.3)
   let endBeforeDrag = handle.frame.midX
-  handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: handle.coordinate(withNormalizedOffset: CGVector(dx: 0.0, dy: 0.5)))
+  handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: handle.coordinate(withNormalizedOffset: CGVector(dx: 1.7, dy: 0.5)))
   XCTAssertTrue(button("Copy").waitForExistence(timeout: 5))
-  XCTAssertLessThan(handle.frame.midX, endBeforeDrag - 1)
+  XCTAssertGreaterThan(handle.frame.midX, endBeforeDrag + 10)
   shot("02b-selection-landscape")
   reading.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.6)).tap()
   companion("03-assistant-landscape")
   button("Map Only").tap()
-  let zoom = app.buttons["Actual Size"]
+  let zoom = button("Actual Size")
   XCTAssertTrue(zoom.waitForExistence(timeout: 5)); zoom.tap()
   shot("04-map-before-style")
   button("Style").tap(); shot("05-map-style")
@@ -95,12 +99,45 @@ import XCTest
   companion("07-assistant-portrait")
   button("Split").tap(); shot("08-split-portrait")
  }
+ func testTabletLibraryAndSidebar() throws {
+  start(); orient(.landscapeLeft)
+  let wasList = button("List").isSelected
+  button("Icons").tap()
+  let sample = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Sample:")).allElementsBoundByIndex.filter { $0.isHittable && $0.frame.width < 300 && $0.frame.width > 100 }.first
+  XCTAssertNotNil(sample); sample!.tap()
+  XCTAssertTrue(button("Map Only").waitForExistence(timeout: 10))
+  button("Show Sidebar").tap()
+  XCTAssertTrue(button("Main Map").waitForExistence(timeout: 5))
+  XCTAssertTrue(button("Main Map").isSelected)
+  XCTAssertTrue(button("Sample chapter:").isSelected)
+  shot("30-workspace-sidebar")
+  start(); button("List").tap()
+  let row = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Sample:")).allElementsBoundByIndex.filter { $0.isHittable && $0.frame.width > 500 }.first
+  XCTAssertNotNil(row); XCTAssertGreaterThanOrEqual(row!.frame.height, 44); row!.tap()
+  XCTAssertTrue(button("Map Only").waitForExistence(timeout: 10))
+  start(); button(wasList ? "List" : "Icons").tap()
+ }
+ func testTabletSettingsMenus() throws {
+  start(); orient(.landscapeLeft)
+  button("Show Sidebar").tap(); button("Settings").tap(); button("General").tap()
+  let appearance = button("Appearance"), language = button("Language")
+  XCTAssertGreaterThanOrEqual(appearance.frame.height, 44)
+  XCTAssertEqual(appearance.frame.height, language.frame.height, accuracy: 1)
+  shot("31-settings-general")
+  let original = appearance.value as? String ?? "System"
+  appearance.tap(); shot("32-settings-appearance-menu"); button(original).tap()
+  button("Models").tap()
+  XCTAssertTrue(button("Default Model").waitForExistence(timeout: 5))
+  XCTAssertEqual(button("Default Model").frame.height, 44, accuracy: 1)
+  shot("33-settings-models")
+  button("Close").tap()
+ }
  func testSettingsKeyboard() throws {
   start(); orient(.landscapeLeft)
   button("Show Sidebar").tap()
   let settings = button("Settings")
   XCTAssertTrue(settings.waitForExistence(timeout: 5)); settings.tap()
-  XCTAssertTrue(app.buttons["Models"].waitForExistence(timeout: 5)); app.buttons["Models"].tap()
+  XCTAssertTrue(button("Models").waitForExistence(timeout: 5)); button("Models").tap()
   let service = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "claude")).firstMatch
   XCTAssertTrue(service.waitForExistence(timeout: 5)); service.tap()
   let field = app.textFields["API Key"]
@@ -111,7 +148,7 @@ import XCTest
   XCTAssertGreaterThanOrEqual(close.frame.height, 44)
   XCTAssertLessThan(close.frame.maxY, app.keyboards.firstMatch.frame.minY)
   close.tap()
-  orient(.portrait); if !settings.isHittable { button("Show Sidebar").tap() }; settings.tap(); app.buttons["Models"].tap(); service.tap(); field.tap()
+  orient(.portrait); if !settings.isHittable { button("Show Sidebar").tap() }; settings.tap(); button("Models").tap(); service.tap(); field.tap()
   XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8)); shot("10-settings-keyboard-portrait")
   XCTAssertLessThan(close.frame.maxY, app.keyboards.firstMatch.frame.minY)
   close.tap()
@@ -119,12 +156,12 @@ import XCTest
  }
  func setAppearance(_ choice: String?) -> String {
   start(); orient(.landscapeLeft)
-  button("Show Sidebar").tap(); button("Settings").tap(); app.buttons["General"].tap()
-  let appearance = app.buttons["Appearance"]
+  button("Show Sidebar").tap(); button("Settings").tap(); button("General").tap()
+  let appearance = button("Appearance")
   XCTAssertTrue(appearance.waitForExistence(timeout: 5))
   let old = appearance.value as? String ?? "System"
   if let choice, choice != old {
-   appearance.tap(); app.buttons[choice].tap()
+   appearance.tap(); button(choice).tap()
   }
   button("Close").tap()
   if button("Hide Sidebar").exists && button("Hide Sidebar").isHittable { button("Hide Sidebar").tap() }
@@ -135,7 +172,7 @@ import XCTest
   for mode in ["Light", "Dark"] {
    _ = setAppearance(mode)
    openSample(); button("Source Only").tap(); shot("20-reader-" + mode.lowercased())
-   button("Map Only").tap(); app.buttons["Actual Size"].tap()
+   button("Map Only").tap(); button("Actual Size").tap()
    let root = app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] %@", "Sample: Forgetting")).firstMatch
    XCTAssertTrue(root.waitForExistence(timeout: 5)); root.tap()
    XCTAssertTrue(button("Add Child Topic").waitForExistence(timeout: 5))
@@ -145,6 +182,12 @@ import XCTest
    orient(.portrait); button("Split").tap(); shot("23-split-" + mode.lowercased())
   }
   _ = setAppearance(original)
+ }
+
+ func testZZPreparePencil() throws {
+  start(); orient(.landscapeLeft); openSample(); button("Source Only").tap(); button("Pen").tap()
+  XCTAssertTrue(button("Pen").isSelected)
+  shot("34-pencil-ready")
  }
 
 }

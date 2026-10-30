@@ -32,7 +32,8 @@ class StudySetCard extends StatelessWidget {
     final l = context.l10n;
     return MMInteractive(
       onTapDown: onSelect,
-      onDoubleTap: onOpen,
+      onTap: MMInput.of(context).touchPlatform ? onOpen : null,
+      onDoubleTap: MMInput.of(context).touchPlatform ? null : onOpen,
       selected: selected,
       builder: (context, s) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

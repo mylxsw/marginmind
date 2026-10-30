@@ -14,3 +14,5 @@ export 'src/crop_geometry.dart';
 export 'src/margin_geometry.dart';
 
 export 'src/annotation_line.dart';
+
+export 'src/stylus_region.dart';

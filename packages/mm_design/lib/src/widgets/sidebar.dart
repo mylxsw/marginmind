@@ -157,6 +157,8 @@ class _MMSidebarSectionState extends State<MMSidebarSection> {
 /// Sidebar row (height 28; 44 under touch): accent-tinted icon, label, optional count.
 /// Selection is a gray rounded fill; text weight does not change.
 /// VoiceOver reads the label and the count once each.
+enum MMSidebarSelectionStyle { filled, marker }
+
 class MMSidebarItem extends StatelessWidget {
   const MMSidebarItem({
     super.key,
@@ -170,6 +172,7 @@ class MMSidebarItem extends StatelessWidget {
     this.iconColor,
     this.leading,
     this.labelColor,
+    this.selectionStyle = MMSidebarSelectionStyle.filled,
   });
 
   final IconData icon;
@@ -184,10 +187,30 @@ class MMSidebarItem extends StatelessWidget {
   final Color? iconColor;
   final Widget? leading;
   final Color? labelColor;
+  final MMSidebarSelectionStyle selectionStyle;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final marker = selectionStyle == MMSidebarSelectionStyle.marker;
+    final row = Row(
+      children: [
+        SizedBox(width: 18, child: leading ?? Icon(icon, size: 15, color: iconColor ?? c.accent)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: context.mmText.body.copyWith(
+              color: labelColor,
+              fontWeight: marker && selected ? FontWeight.w600 : null,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (trailing != null) ...[const SizedBox(width: 6), trailing!],
+      ],
+    );
     final item = MMInteractive(
       onTap: onTap,
       onDoubleTap: onDoubleTap,
@@ -197,25 +220,28 @@ class MMSidebarItem extends StatelessWidget {
         height: context.mmSidebarRow,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: selected ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
+          color: selected && !marker ? c.selectedRow : (s.hovered ? c.hover : Colors.transparent),
           borderRadius: BorderRadius.circular(MMRadii.row),
           border: s.focused ? Border.all(color: c.accent, width: 2) : null,
         ),
-        child: Row(
-          children: [
-            SizedBox(width: 18, child: leading ?? Icon(icon, size: 15, color: iconColor ?? c.accent)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                style: context.mmText.body.copyWith(color: labelColor),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        child: !marker
+            ? row
+            : Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.centerLeft,
+                children: [
+                  if (marker && selected)
+                    Positioned(
+                      left: -6,
+                      child: Container(
+                        width: 2,
+                        height: 18,
+                        decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(1)),
+                      ),
+                    ),
+                  row,
+                ],
               ),
-            ),
-            if (trailing != null) ...[const SizedBox(width: 6), trailing!],
-          ],
-        ),
       ),
     );
     if (onContextMenu == null) return item;
