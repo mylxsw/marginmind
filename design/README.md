@@ -90,3 +90,6 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 
 学习笔记 AI 整理使用 820pt 进度面板（`MMSizes.noteProgressSheetWidth`），
 AI 块左侧细线使用 `MMNoteLayout.aiRule`（2pt）；排序与重新整理图标来自共享 `MMIcons`。
+
+学习笔记分享使用 `MMShareCardTheme` 的纸张、简洁、夜读主题，卡片按 2× 输出。
+笔记栏低于 `MMNoteLayout.exportLabelMinWidth`（720pt）时，导出按钮只显示图标和提示，避免与 AI 操作、分享入口挤占空间。

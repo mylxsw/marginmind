@@ -550,7 +550,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                         MMToolbarButton(
                           key: const ValueKey('note-export'),
                           icon: MMIcons.export,
-                          label: l.noteExport,
+                          label: constraints.maxWidth >= MMNoteLayout.exportLabelMinWidth ? l.noteExport : null,
                           tooltip: l.exportStudyNote,
                           onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
                         ),
