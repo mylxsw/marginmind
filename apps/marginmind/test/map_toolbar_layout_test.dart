@@ -13,11 +13,11 @@ import 'helpers.dart';
 void main() {
   for (final touch in [false, true]) {
     for (final (width, height) in [
-      for (final width in [180.0, 360.0, 402.0, 435.0, 632.0])
+      for (final width in [180.0, 360.0, 402.0, 435.0, 632.0, 800.0, 960.0])
         for (final height in [240.0, 820.0]) (width, height),
     ]) {
       testWidgets('map toolbar actions remain reachable at $width × $height pt (touch: $touch)', (tester) async {
-        tester.view.physicalSize = const Size(800, 820);
+        tester.view.physicalSize = const Size(1200, 820);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         await tester.pumpWidget(
@@ -56,6 +56,15 @@ void main() {
         }
         final style = find.byKey(const ValueKey('map-style-button'));
         await tester.ensureVisible(style);
+        final commands = tester.getRect(find.byType(MapCommandBar));
+        final styleRect = tester.getRect(style);
+        if (width >= (touch ? 900 : 800)) {
+          expect(commands.center.dy, closeTo(styleRect.center.dy, 0.01));
+          expect(commands.center.dx, closeTo(width / 2, 0.01));
+          expect(commands.right, lessThanOrEqualTo(styleRect.left));
+        } else {
+          expect(commands.top, greaterThanOrEqualTo(styleRect.bottom));
+        }
         await tester.tap(style);
         await tester.pumpAndSettle();
         expect(find.byType(MapStylePopover), findsOneWidget);

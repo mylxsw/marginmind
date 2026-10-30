@@ -544,11 +544,12 @@ class _MapPaneState extends ConsumerState<MapPane> {
     return LayoutBuilder(
       builder: (context, paneConstraints) {
         final controlHeight = context.mmToolbarButton.height + 6;
+        final inlineCommands = !outline && paneConstraints.maxWidth >= (context.mmTouch ? 900 : 800);
         final narrow = paneConstraints.maxWidth - MMSpacing.m * 2 < MMSizes.mapMinWidth;
         final compactHeader = narrow && paneConstraints.maxHeight < controlHeight * 4 + MMSpacing.xxxl * 2;
         final titleHeight = MediaQuery.textScalerOf(context).scale(t.headline.fontSize!) * t.headline.height!;
         final headerHeight = narrow && !compactHeader ? titleHeight + controlHeight + MMSpacing.xs : controlHeight;
-        final commandTop = chrome.top + MMSpacing.s + headerHeight + MMSpacing.s;
+        final commandTop = chrome.top + MMSpacing.s + (inlineCommands ? 0 : headerHeight + MMSpacing.s);
         final toolbarTopInset = commandTop + controlHeight + MMSpacing.s;
         return ColoredBox(
           color: state.mapView == MapViewMode.map ? c.canvas : c.windowBackground,
@@ -750,6 +751,27 @@ class _MapPaneState extends ConsumerState<MapPane> {
                         ],
                       ],
                     );
+                    if (inlineCommands) {
+                      return Row(
+                        children: [
+                          Expanded(child: title),
+                          commandBar,
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: MMSpacing.s),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  reverse: true,
+                                  child: controls,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                     if (compactHeader) {
                       return SingleChildScrollView(scrollDirection: Axis.horizontal, child: controls);
                     }
@@ -781,7 +803,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   },
                 ),
               ),
-              if (!outline)
+              if (!outline && !inlineCommands)
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,
