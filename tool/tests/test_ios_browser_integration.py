@@ -65,6 +65,16 @@ class IOSBrowserTests(unittest.TestCase):
                 ios.run(['flutter'], timeout=1, log=Path(directory) / 'race.log')
             self.assertEqual(popen.return_value.wait.call_count, 2)
 
+    def test_macos_group_permission_error_falls_back_to_child_and_preserves_timeout(self):
+        with tempfile.TemporaryDirectory() as directory, patch('builtins.print'), \
+                patch.object(ios.subprocess, 'Popen') as popen, \
+                patch.object(ios.os, 'killpg', side_effect=PermissionError):
+            popen.return_value.wait.side_effect = [subprocess.TimeoutExpired('simctl', 1), 0]
+            with self.assertRaises(subprocess.TimeoutExpired):
+                ios.run(['simctl'], timeout=1, log=Path(directory) / 'permission.log')
+            popen.return_value.kill.assert_called_once_with()
+            self.assertEqual(popen.return_value.wait.call_count, 2)
+
     def invoke_main(self, *, failures=(), devices=None):
         calls = []
 

@@ -25,6 +25,10 @@ def run(command, *, timeout, log, cwd=ROOT):
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass  # The process group exited just as the deadline elapsed.
+            except PermissionError:
+                # macOS rejected a group signal for timed-out simctl in CI.
+                # Reap our child; main's finally shuts down its device.
+                process.kill()
             process.wait(timeout=10)
             raise
     result = log.read_text()
@@ -64,7 +68,9 @@ def main():
         # Bring up the selected simulator's UI before Flutter installs/launches
         # the app, rather than relying on a headless boot of a preinstalled device.
         execute('simulator', ['open', '-a', 'Simulator', '--args', '-CurrentDeviceUDID', device_id])
-        execute('bootstatus', ['xcrun', 'simctl', 'bootstatus', device_id, '-b'], timeout=300)
+        # Cold iOS boot, including data migration, took 5m31s in CI. Allow headroom
+        # for that work while still bounding a genuinely stuck boot.
+        execute('bootstatus', ['xcrun', 'simctl', 'bootstatus', device_id, '-b'], timeout=600)
         result = execute('flutter', ['flutter', 'test', 'integration_test/browser_test.dart',
                                     '-d', device_id, '--no-pub', '--reporter', 'expanded', '--verbose'],
                          timeout=600, cwd=ROOT / 'apps/marginmind')
