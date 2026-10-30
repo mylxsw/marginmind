@@ -1416,6 +1416,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   // ---- ink ---------------------------------------------------------------------
 
+  /// Written-note changes participate in the existing persistent undo stack.
+  Future<void> saveStudyNote(StudyNote note) => _update((c) => _editor.saveStudyNote(c, note));
+  Future<void> deleteStudyNote(String id) => _update((c) => _editor.deleteStudyNote(c, id));
+  Future<void> editStudyNoteBlock(String noteId, String blockId, {String? text, List<String>? items}) =>
+      _update((c) => _editor.editStudyNoteBlock(c, noteId, blockId, text: text, items: items));
+
   /// Drafts never enter persistence or the undo stack until committed.
   Future<void> saveMarginNote(MarginNote note) => _update((c) {
     final current = c.marginNotes.where((n) => n.id == note.id).firstOrNull;

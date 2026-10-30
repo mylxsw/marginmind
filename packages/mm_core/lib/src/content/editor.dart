@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'document_outline.dart';
+import 'note_editor.dart';
 
 import 'models.dart';
 import 'document_format.dart';
@@ -1379,6 +1380,9 @@ class StudySetEditor {
       for (final card in removed.values)
         if (card.kind == CardKind.image && card.annotationId != null) card.annotationId!,
     };
+    for (final annotationId in areas) {
+      c = archiveNoteSource(c, annotationId);
+    }
     return _keepSummaries(
       c,
       c.copyWith(
@@ -1420,6 +1424,7 @@ class StudySetEditor {
 
   /// Deletes a highlight and, if it has one, its card subtree.
   StudySetContent deleteAnnotation(StudySetContent c, String annotationId) {
+    c = archiveNoteSource(c, annotationId);
     final cards = c.cards.where(
       (card) => card.annotationId == annotationId || card.segments.any((s) => s.annotationId == annotationId),
     );

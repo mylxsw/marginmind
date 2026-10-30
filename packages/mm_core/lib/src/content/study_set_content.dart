@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'text_anchor.dart';
+import 'study_note.dart';
 
 import 'package:meta/meta.dart';
 
@@ -39,6 +40,8 @@ class StudySetContent {
     this.translationCaches = const [],
     this.bookmarks = const [],
     this.documentOutlines = const [],
+    this.studyNotes = const [],
+    this.noteSourceArchive = const [],
   });
 
   static const empty = StudySetContent();
@@ -78,6 +81,13 @@ class StudySetContent {
   /// The reader's page bookmarks, across documents.
   final List<Bookmark> bookmarks;
   final List<DocumentOutline> documentOutlines;
+
+  /// Written notes; missing in legacy study sets.
+  final List<StudyNote> studyNotes;
+
+  /// Deleted sources still referenced by a note.
+  final List<NoteSourceArchive> noteSourceArchive;
+  StudyNote? studyNote(String id) => studyNotes.where((n) => n.id == id).firstOrNull;
 
   DocumentOutline? outlineOn(String documentId) =>
       documentOutlines.where((o) => o.documentId == documentId).firstOrNull;
@@ -364,6 +374,8 @@ class StudySetContent {
     List<TranslationCache>? translationCaches,
     List<Bookmark>? bookmarks,
     List<DocumentOutline>? documentOutlines,
+    List<StudyNote>? studyNotes,
+    List<NoteSourceArchive>? noteSourceArchive,
   }) {
     return StudySetContent(
       assistantReceipts: assistantReceipts ?? this.assistantReceipts,
@@ -387,6 +399,8 @@ class StudySetContent {
       translationCaches: translationCaches ?? this.translationCaches,
       bookmarks: bookmarks ?? this.bookmarks,
       documentOutlines: documentOutlines ?? this.documentOutlines,
+      studyNotes: studyNotes ?? this.studyNotes,
+      noteSourceArchive: noteSourceArchive ?? this.noteSourceArchive,
     );
   }
 
@@ -412,6 +426,8 @@ class StudySetContent {
     'translationCaches': [for (final v in translationCaches) v.toJson()],
     'bookmarks': [for (final b in bookmarks) b.toJson()],
     'documentOutlines': [for (final o in documentOutlines) o.toJson()],
+    if (studyNotes.isNotEmpty) 'studyNotes': [for (final n in studyNotes) n.toJson()],
+    if (noteSourceArchive.isNotEmpty) 'noteSourceArchive': [for (final a in noteSourceArchive) a.toJson()],
   };
 
   factory StudySetContent.fromJson(Map<String, Object?> j) {
@@ -466,6 +482,8 @@ class StudySetContent {
       translationCaches: list('translationCaches', TranslationCache.fromJson),
       bookmarks: list('bookmarks', Bookmark.fromJson),
       documentOutlines: list('documentOutlines', DocumentOutline.fromJson),
+      studyNotes: list('studyNotes', StudyNote.fromJson),
+      noteSourceArchive: list('noteSourceArchive', NoteSourceArchive.fromJson),
     );
   }
 }

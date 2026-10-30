@@ -52,3 +52,10 @@ export 'src/vocabulary/editor.dart';
 export 'src/vocabulary/words.dart';
 
 export 'src/vocabulary/matcher.dart';
+
+export 'src/content/study_note.dart';
+export 'src/content/note_material.dart';
+export 'src/content/note_organizer.dart';
+export 'src/content/note_editor.dart';
+export 'src/content/note_update.dart';
+export 'src/content/note_export.dart';
