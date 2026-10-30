@@ -24,6 +24,7 @@
 - `python3 -m unittest discover -s tool/tests`：26 项通过。
 - `flutter analyze`：无问题；`dart format --set-exit-if-changed apps packages`：733 个文件、0 改动；`git diff --check`：通过。
 - Web 与 macOS release 截图构建通过；移除临时入口后，常规 `flutter build web --release` 也通过。
+- `flutter test integration_test/reflow_reader_test.dart -d macos --reporter expanded`：1 项通过，覆盖真实原生应用的导入、阅读、摘录、通过 Aa 调整字号和返回原文。旧的直接点击阅读设置入口已同步；本机 Xcode 有模拟器服务及前台激活提示，但 macOS 构建和测试均成功。
 
 新增回归覆盖：真实宽度溢出与命中/语义移除、文字按钮折叠和恢复、浮层扁平主题、侧栏动画和助手面板下表头/正文分隔对齐、不同设备与主题、系统标题写入顺序、旧 pane 解绑、比较阅读主文档切换和文档菜单命令。现有阅读/脑图/笔记用例同步到新入口。
 
