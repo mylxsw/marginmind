@@ -61,6 +61,28 @@ void main() {
     await expectLater(executor.apply(p, {'t'}), throwsStateError);
     await workspace.abortTransaction();
   });
+  test('100 expansion topics commit once and undo/redo with one receipt', () async {
+    final before = workspace.content.cards.length;
+    final request = ExpansionRequest(studySetId: 'demo-1', mapId: 'main', targetIds: ['main']);
+    final proposal = expansionToProposal(
+      request,
+      [for (var i = 0; i < 100; i++) ExpansionDraft(id: 'draft$i', parentRef: 'main', title: 'Expansion $i')],
+      proposalId: 'expansion',
+      baseRevision: assistantMapRevision(workspace.content, 'main'),
+    );
+    final receipt = await executor.apply(proposal, proposal.operations.map((o) => o.id).toSet());
+    expect(receipt.nodeIds, hasLength(100));
+    expect(workspace.content.cards.length, before + 100);
+    expect(workspace.content.assistantReceipts, hasLength(1));
+    await workspace.undo();
+    expect(workspace.content.cards.length, before);
+    expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
+    expect(await executor.receipt('expansion'), isNull);
+    await workspace.redo();
+    expect(workspace.content.cards.length, before + 100);
+    expect((await executor.receipt('expansion'))!.nodeIds, receipt.nodeIds);
+    expect(workspace.content.assistantReceipts, hasLength(1));
+  });
   test('an undone proposal applies again as a new undo step', () async {
     final before = workspace.content.cards.length;
     final p = MapEditProposal(

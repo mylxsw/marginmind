@@ -288,8 +288,11 @@ class ProposalHook extends AgentHook {
 }
 
 /// Temporary node references are `new:<opId>` and must refer to an earlier add.
-void validateOperations(List<MapEditOperation> ops, Map<String, String?> parents) {
-  if (ops.isEmpty || ops.length > 50) throw const FormatException('Invalid operation count');
+void validateOperations(List<MapEditOperation> ops, Map<String, String?> parents, {bool expansion = false}) {
+  if (ops.isEmpty || (!expansion && ops.length > 50)) throw const FormatException('Invalid operation count');
+  if (expansion && ops.any((op) => op.kind != MapEditKind.addTopic && op.kind != MapEditKind.move)) {
+    throw const FormatException('Invalid expansion operation');
+  }
   final graph = Map<String, String?>.of(parents);
   final ids = <String>{};
   for (final op in ops) {

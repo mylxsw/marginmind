@@ -94,7 +94,11 @@ void main() {
       await tester.pump();
       expect(inner.mmTouch, isFalse);
       expect(MMInput.of(inner).touchPlatform, isTrue);
-      expect(inner.mmToolbarButton, const Size.square(MMSizes.touchTarget), reason: 'tablet geometry stays stable with a trackpad');
+      expect(
+        inner.mmToolbarButton,
+        const Size.square(MMSizes.touchTarget),
+        reason: 'tablet geometry stays stable with a trackpad',
+      );
       await mouse.removePointer();
 
       final pen = await tester.createGesture(kind: PointerDeviceKind.stylus);

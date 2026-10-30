@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 
+import 'expansion_controller.dart' show expansionBusyProvider;
+
 export 'package:mm_assistant/mm_assistant.dart'
     show
         Conversation,
@@ -127,8 +129,8 @@ class AssistantController extends Notifier<Conversation> {
     return _open.view;
   }
 
-  /// Whether an answer is being written in any conversation of the study set.
-  bool get busy => _busy != null;
+  /// Whether a conversation or an idea expansion owns the model.
+  bool get busy => _busy != null || ref.read(expansionBusyProvider);
 
   void _publishBackground() {
     final busy = _busy;
@@ -176,7 +178,7 @@ class AssistantController extends Notifier<Conversation> {
   }) {
     final session = _open;
     if (session.view.readOnly) throw StateError('Legacy conversation is read only');
-    if (_busy != null || _disposed) throw StateError('Assistant is busy');
+    if (busy || _disposed) throw StateError('Assistant is busy');
     if (text.trim().isEmpty || text.length > 60000) throw const FormatException('Invalid question');
     final requestId = _id();
     final question = Message(
@@ -664,7 +666,7 @@ class AssistantController extends Notifier<Conversation> {
     if (state.readOnly) throw StateError('Legacy conversation is read only');
     final session = _open;
     if (retryMessageId != null) {
-      if (_busy != null) throw StateError('Assistant is busy');
+      if (busy) throw StateError('Assistant is busy');
       if (_message(retryMessageId, session).role != MessageRole.agent) throw StateError('Not an answer');
     }
     await _stop(session);

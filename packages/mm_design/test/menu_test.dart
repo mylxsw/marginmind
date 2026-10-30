@@ -74,7 +74,7 @@ void main() {
         entries: [
           MMMenuItem('Select', () => selected++, shortcut: '⌘S'),
           const MMMenuDivider(),
-          const MMMenuItem('Disabled', null),
+          const MMMenuItem('Disabled', null, disabledReason: 'Requires a common parent'),
           MMMenuItem('Delete', () => selected++, destructive: true),
         ],
       );
@@ -88,6 +88,7 @@ void main() {
     await tester.tap(find.text('Disabled'));
     await tester.pumpAndSettle();
     expect(selected, 0);
+    expect(find.byTooltip('Requires a common parent'), findsOneWidget);
     expect(find.text('Select'), findsOneWidget);
     await tester.tap(find.text('Select'));
     await tester.pumpAndSettle();

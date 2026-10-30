@@ -1,6 +1,7 @@
 # 脑图 AI 扩展想法设计方案
 
 > 建立日期：2026-10-30（GUL-581）。状态：**方案已确认，进入开发**（GUL-581 拆分执行，§7 为已定决定）。
+> 界面规格（尺寸、令牌、状态、键盘、无障碍、文案）：[`mindmap-ai-expand-ui.md`](mindmap-ai-expand-ui.md)（GUL-606）。
 > 配套高保真原型：[`design/prototype/mindmap-ai-expand.html`](../design/prototype/mindmap-ai-expand.html)。单文件、无依赖，浏览器直接打开。右侧演示控制台有 15 个场景，并可切换未配置 AI、断网和深色；画布上的操作都可以真实点按（点选、⇧ 点选、右键、⌥⇥、↩ / Esc、⌘Z）。
 > 依据：当前 `main` 的节点 AI 入口（`MapNodeBar` / `MapSelectionBar` 的 ✦ → `AssistantQuickActions`）、助手的写操作契约（`MapEditProposal`、`AssistantWrites.apply`、`MapEditReceipt`），以及 [phase-3-assistant.md](phase-3-assistant.md) 的确认原则。本文不做工时评估。
 
@@ -132,6 +133,8 @@
 ---
 
 ## 4. 技术方案
+
+最终核心契约、无总数上限的事务实现及应用接入接口见 [技术架构补充](mindmap-ai-expand-arch.md)（GUL-605）；本节示意与补充冲突时以补充为准。
 
 ### 4.1 分层
 

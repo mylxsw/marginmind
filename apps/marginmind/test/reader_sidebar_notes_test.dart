@@ -170,6 +170,10 @@ void main() {
       expect(tester.widget<MMInteractive>(row(lineNote.id)).selected, isTrue);
       await tester.tap(find.descendant(of: find.byType(ReaderSidebar), matching: find.text('A highlighted passage')));
       await drain(tester);
+      final highlight = workspace.content.annotations.firstWhere((a) => a.quote == 'A highlighted passage');
+      expect(workspace.state.selectedAnnotationIds, contains(highlight.id));
+      await tester.tap(find.byKey(ValueKey('annotation-source-annotation-${highlight.id}')));
+      await drain(tester);
       expect(pdf.currentPage, 1);
       expect(container.read(readerMarginProvider('demo-1')).popup, isEmpty);
       expect(tester.takeException(), isNull);

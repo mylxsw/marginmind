@@ -2,6 +2,7 @@ import 'source_selection.dart';
 export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
 import 'document_import.dart';
+import '../study_notes/note_identity.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -170,6 +171,10 @@ class ReadingPages extends Notifier<Map<String, int>> {
 class WorkspaceState {
   const WorkspaceState({
     this.content,
+    this.activeNoteId,
+    this.noteAnnotationId,
+    this.selectedAnnotationIds = const {},
+    this.annotationColors = const {0, 1, 2, 3, 4, 5},
     this.activeMapId = MindMap.defaultId,
     this.sidebarVisible = true,
     this.layout = MMSplitMode.split,
@@ -177,6 +182,7 @@ class WorkspaceState {
     this.mapView = MapViewMode.map,
     this.tool = AnnotationTool.select,
     this.color = MMAnnotationColor.yellow,
+    this.underlineColor = MMAnnotationColor.blue,
     this.underlineStyle = AnnotationLineStyle.solid,
     this.syncToMap = true,
     this.inkTool = MMPdfInkTool.freehand,
@@ -214,6 +220,10 @@ class WorkspaceState {
   /// Latest repository snapshot, including completed writes before stream delivery.
   final StudySetContent? content;
 
+  final String? noteAnnotationId;
+  final String? activeNoteId;
+  final Set<String> selectedAnnotationIds;
+  final Set<int> annotationColors;
   final String activeMapId;
   final bool sidebarVisible;
   final MMSplitMode layout;
@@ -221,6 +231,9 @@ class WorkspaceState {
   final MapViewMode mapView;
   final AnnotationTool tool;
   final MMAnnotationColor color;
+
+  /// The continuous underline tool keeps its original page-toolbar preference.
+  final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;
 
   /// Whether a new highlight also creates a card in the mind map.
@@ -296,6 +309,11 @@ class WorkspaceState {
 
   WorkspaceState copyWith({
     StudySetContent? content,
+    String? noteAnnotationId,
+    String? activeNoteId,
+    bool closeNote = false,
+    Set<String>? selectedAnnotationIds,
+    Set<int>? annotationColors,
     String? activeMapId,
     bool? sidebarVisible,
     MMSplitMode? layout,
@@ -303,6 +321,7 @@ class WorkspaceState {
     MapViewMode? mapView,
     AnnotationTool? tool,
     MMAnnotationColor? color,
+    MMAnnotationColor? underlineColor,
     AnnotationLineStyle? underlineStyle,
     bool? syncToMap,
     MMPdfInkTool? inkTool,
@@ -349,6 +368,10 @@ class WorkspaceState {
   }) {
     return WorkspaceState(
       content: content ?? this.content,
+      noteAnnotationId: noteAnnotationId ?? this.noteAnnotationId,
+      activeNoteId: closeNote ? null : activeNoteId ?? this.activeNoteId,
+      selectedAnnotationIds: selectedAnnotationIds ?? this.selectedAnnotationIds,
+      annotationColors: annotationColors ?? this.annotationColors,
       activeMapId: activeMapId ?? this.activeMapId,
       sidebarVisible: sidebarVisible ?? this.sidebarVisible,
       layout: layout ?? this.layout,
@@ -356,6 +379,7 @@ class WorkspaceState {
       mapView: mapView ?? this.mapView,
       tool: tool ?? this.tool,
       color: color ?? this.color,
+      underlineColor: underlineColor ?? this.underlineColor,
       underlineStyle: underlineStyle ?? this.underlineStyle,
       syncToMap: syncToMap ?? this.syncToMap,
       inkTool: inkTool ?? this.inkTool,
@@ -415,6 +439,15 @@ class WorkspaceState {
 /// Content edits go through [StudySetEditor] and are persisted by the
 /// content repository; the UI re-renders from the repository stream.
 class WorkspaceController extends Notifier<WorkspaceState> {
+  /// In-memory preview lease. Reading and document navigation remain available.
+  bool expansionPreviewActive = false;
+  void Function()? onExpansionBlocked;
+  bool _blockExpansionEdit() {
+    if (!expansionPreviewActive) return false;
+    onExpansionBlocked?.call();
+    return true;
+  }
+
   WorkspaceController(this.studySetId);
 
   final String studySetId;
@@ -454,12 +487,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     ref.listen(highlightPaletteProvider.select((s) => s.current), (_, color) {
       if (state.color != color) state = state.copyWith(color: color);
     });
-    ref.listen(settingsProvider.select((s) => s.underlineStyle), (_, style) {
-      state = state.copyWith(underlineStyle: style);
+    ref.listen(settingsProvider.select((s) => (s.underlineColor, s.underlineStyle)), (_, next) {
+      state = state.copyWith(underlineColor: next.$1, underlineStyle: next.$2);
     });
     final initialState = WorkspaceState(
       tool: ref.read(settingsProvider).annotationTool,
       color: ref.read(highlightPaletteProvider).current,
+      underlineColor: ref.read(settingsProvider).underlineColor,
       underlineStyle: ref.read(settingsProvider).underlineStyle,
     );
     final initial = ref.read(contentProvider(studySetId)).value;
@@ -564,27 +598,42 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   /// Standalone edits are implicit single-step transactions.
-  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) =>
-      _enqueue(() async {
-        StudySetContent? before;
-        final next = await _write((c) {
-          before = c;
-          return change(c);
-        });
-        if (undoable && before != null && !_sameEdits(before!, next)) {
-          if (_transactionDepth > 0) {
-            _transactionBefore ??= before;
-          } else {
-            _record(before!);
-          }
-          _syncHistory();
-        }
-        return next;
-      });
+  Future<StudySetContent> _update(
+    StudySetContent Function(StudySetContent) change, {
+    bool undoable = true,
+    bool expansion = false,
+  }) => _enqueue(() async {
+    StudySetContent? before;
+    final next = await _write((c) {
+      before = c;
+      final next = change(c);
+      if (!expansion &&
+          expansionPreviewActive &&
+          (assistantMapRevision(next, state.activeMapId) != assistantMapRevision(c, state.activeMapId) ||
+              !identical(next.relations, c.relations) ||
+              !identical(next.summaries, c.summaries))) {
+        onExpansionBlocked?.call();
+        return c;
+      }
+      return next;
+    });
+    if (undoable && before != null && !_sameEdits(before!, next)) {
+      if (_transactionDepth > 0) {
+        _transactionBefore ??= before;
+      } else {
+        _record(before!);
+      }
+      _syncHistory();
+    }
+    return next;
+  });
 
   /// Assistant adapters use the workspace writer so each proposal/save is one
   /// undo step and repository observers immediately update sidebar counts.
-  Future<StudySetContent> applyAssistantChange(StudySetContent Function(StudySetContent) change) async {
+  Future<StudySetContent> applyAssistantChange(
+    StudySetContent Function(StudySetContent) change, {
+    bool expansion = false,
+  }) async {
     if (_transactionDepth > 0 || _editing != null || _creating || _markEditing != null) {
       throw StateError('Finish the current edit first');
     }
@@ -593,7 +642,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         throw StateError('Finish the current edit first');
       }
       return change(content);
-    });
+    }, expansion: expansion);
   }
 
   Future<void> setCardBody(String id, String body, [TextFormat? format]) => _update(
@@ -623,6 +672,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
       _enqueue(() async {
+        if (_blockExpansionEdit()) return null;
         if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
         final snapshot = from.last;
         StudySetContent? current;
@@ -654,6 +704,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
     active ??= open.lastOrNull;
     final mapId = c.map(s.activeMapId) != null ? s.activeMapId : (c.maps.firstOrNull?.id ?? MindMap.defaultId);
+    final selectedAnnotations = s.selectedAnnotationIds.where((id) => c.annotation(id) != null).toSet();
     final selectionGone = s.selectedCardId != null && !c.isPlaced(s.selectedCardId!, mapId: mapId);
     final selectedIds = s.selectedCardIds.where((id) => c.isPlaced(id, mapId: mapId)).toSet();
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
@@ -664,11 +715,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         mapId == s.activeMapId &&
         selectedId == s.selectedCardId &&
         setEquals(selectedIds, s.selectedCardIds) &&
+        setEquals(selectedAnnotations, s.selectedAnnotationIds) &&
         mark == s.selectedMarkId &&
         (connecting || s.connectingFromId == null)) {
       return s;
     }
     return s.copyWith(
+      selectedAnnotationIds: selectedAnnotations,
       selectedMarkId: mark,
       clearMark: mark == null,
       clearConnecting: !connecting,
@@ -688,10 +741,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Switch only after queued writes; inline editors must finish first.
   Future<void> selectMap(String id) async {
+    if (_blockExpansionEdit()) return;
     if (_creating || _editing != null || _markEditing != null || _clipboardBusy) return;
     await _enqueue(() async {
       if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
       state = state.copyWith(
+        closeNote: true,
         activeMapId: id,
         selectRoot: true,
         clearConnecting: true,
@@ -929,7 +984,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void setSplitFraction(double value) => state = state.copyWith(splitFraction: value.clamp(0.1, 0.9));
 
-  void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
+  void setMapView(MapViewMode view) {
+    if (_blockExpansionEdit()) return;
+    state = state.copyWith(mapView: view);
+  }
 
   DocumentCapabilities get activeCapabilities =>
       (content.document(state.activeDocumentId ?? '') ??
@@ -996,7 +1054,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   Future<void> toggleAreaTool() =>
       setTool(state.tool == AnnotationTool.area ? AnnotationTool.select : AnnotationTool.area);
 
-  /// Color is shared by text markers and never changes the active tool.
+  /// Highlighter/selection color; choosing a swatch never changes the tool.
   Future<void> setColor(MMAnnotationColor color) async {
     state = state.copyWith(color: color);
     await ref.read(highlightPaletteProvider.notifier).choose(color);
@@ -1005,15 +1063,19 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Color settings can edit a selected mark without dismissing its toolbar.
   Future<void> setAnnotationColor(MMAnnotationColor color, {String? annotationId}) async {
     if (!activeCapabilities.annotate) return;
+    var recolored = false;
     if (annotationId != null) {
       await _update((c) {
         final annotation = c.annotation(annotationId);
-        return annotation == null || annotation.colorIndex == color.index
-            ? c
-            : _editor.recolor(c, annotationId, color.index);
+        recolored = annotation != null && annotation.colorIndex != color.index;
+        return recolored ? _editor.recolor(c, annotationId, color.index) : c;
       });
     }
-    await setColor(color);
+    if (recolored) {
+      await ref.read(highlightPaletteProvider.notifier).record(color);
+    } else {
+      await setColor(color);
+    }
   }
 
   /// Selection actions keep the same annotation (and any linked card) alive
@@ -1065,8 +1127,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         await _update(
           (c) => c.copyWith(
             annotations: [
-              for (final a in c.annotations)
-                a.id == annotation.id ? a.copyWith(kind: kind, lineStyle: style) : a,
+              for (final a in c.annotations) a.id == annotation.id ? a.copyWith(kind: kind, lineStyle: style) : a,
             ],
           ),
         );
@@ -1355,7 +1416,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     bool addToMap = false,
   }) async {
     late String id;
-    final color = state.color;
+    final color = state.underlineColor;
     final style = state.underlineStyle;
     final parent = excerptTargetId;
     await _update((c) {
@@ -1373,14 +1434,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       return addToMap ? _editor.attachCard(next, id, parentId: parent).$1 : next;
     });
     if (!keepPending) state = state.copyWith(clearPending: true);
-    await ref.read(highlightPaletteProvider.notifier).record(color);
     return id;
   }
 
   /// Changing settings does not count as a highlighter color use. If a mark
   /// is being edited, keep its floating toolbar alive across each change.
-  Future<void> styleUnderline({String? annotationId, MMAnnotationColor? color, AnnotationLineStyle? style}) async {
-    final selectedColor = color ?? state.color;
+  Future<void> styleUnderline({
+    String? annotationId,
+    MMAnnotationColor? color,
+    AnnotationLineStyle? style,
+    bool shareColor = false,
+  }) async {
+    final selectedColor = color ?? state.underlineColor;
     final selectedStyle = style ?? state.underlineStyle;
     if (annotationId != null) {
       await _update((c) {
@@ -1396,7 +1461,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       });
     }
     await ref.read(settingsProvider.notifier).setUnderlineStyle(selectedColor, selectedStyle);
-    if (color != null) await setColor(color);
+    if (shareColor && color != null) await setColor(color);
   }
 
   /// An area dragged with the area tool becomes an image excerpt at once.
@@ -1493,6 +1558,249 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- ink ---------------------------------------------------------------------
 
   /// Written-note changes participate in the existing persistent undo stack.
+  void focusNoteAnnotation(String id) => state = state.copyWith(noteAnnotationId: id);
+
+  void openStudyNote(String id) {
+    if (content.studyNote(id) == null) return;
+    state = state.copyWith(
+      activeNoteId: id,
+      layout: onePane ? MMSplitMode.secondary : MMSplitMode.split,
+      clearPending: true,
+    );
+  }
+
+  void selectAnnotation(String id, bool selected) => state = state.copyWith(
+    selectedAnnotationIds: {...state.selectedAnnotationIds}
+      ..removeWhere((value) => value == id)
+      ..addAll(selected ? [id] : <String>[]),
+  );
+
+  void selectAnnotations(Set<String> ids) => state = state.copyWith(selectedAnnotationIds: Set.unmodifiable(ids));
+
+  void toggleAnnotationColor(int color) {
+    final colors = {...state.annotationColors};
+    colors.contains(color) ? colors.remove(color) : colors.add(color);
+    state = state.copyWith(annotationColors: colors);
+  }
+
+  Future<StudyNote?> organizeStudyNote(
+    String title,
+    NoteScope scope,
+    NoteSettings settings,
+    NoteTemplate template, {
+    NoteTextSource text = const NoteTextSource(),
+  }) async {
+    StudyNote? created;
+    final c = content;
+    final now = _editor.now();
+    final materials = const NoteMaterialCollector().collect(c, scope, settings, now: now, text: text);
+    if (materials.highlights.isEmpty) return null;
+    final result = await const NoteOrganizationRunner().run(
+      const LocalNoteOrganizer(),
+      materials,
+      settings,
+      newId: _editor.newId,
+    );
+    created = StudyNote(
+      id: _editor.newId(),
+      title: title,
+      scope: scope,
+      settings: settings,
+      template: template,
+      sections: result.assembly.sections,
+      unusedAnnotationIds: result.assembly.unusedAnnotationIds,
+      createdAt: now,
+      updatedAt: now,
+      organizedAt: now,
+    );
+    await _update((latest) {
+      if (materials.highlights.any((m) => latest.annotation(m.sourceId) == null)) {
+        created = null;
+        return latest;
+      }
+      return _editor.saveStudyNote(latest, created!);
+    });
+    if (created != null && ref.mounted) openStudyNote(created!.id);
+    return created;
+  }
+
+  /// Commits a validated draft against the latest content, preserving user edits.
+  Future<StudyNote?> acceptNoteDraft(
+    String title,
+    NoteScope scope,
+    NoteSettings settings,
+    NoteTemplate template,
+    NoteMaterials materials,
+    NoteDraft draft, {
+    String? existingId,
+    bool local = false,
+  }) async {
+    StudyNote? saved;
+    await _update((c) {
+      if (materials.highlights.any((m) => c.annotation(m.sourceId) == null)) return c;
+      final assembly = const NoteAssembler().assemble(
+        draft,
+        materials,
+        newId: _editor.newId,
+        generatedOrigin: local ? NoteOrigin.user : NoteOrigin.ai,
+      );
+      final old = existingId == null ? null : c.studyNote(existingId);
+      if (existingId != null && old == null) return c;
+      final now = materials.collectedAt;
+      saved = old == null
+          ? StudyNote(
+              id: _editor.newId(),
+              title: title,
+              scope: scope,
+              settings: settings,
+              template: template,
+              sections: assembly.sections,
+              unusedAnnotationIds: assembly.unusedAnnotationIds,
+              createdAt: now,
+              updatedAt: now,
+              organizedAt: now,
+            )
+          : const NoteUpdater()
+                .reorganize(old, reuseNoteIdentity(old, assembly), organizedAt: now)
+                .copyWith(settings: settings);
+      return _editor.saveStudyNote(c, saved!);
+    });
+    if (saved != null && ref.mounted) openStudyNote(saved!.id);
+    return saved;
+  }
+
+  Future<void> changeStudyNote(String id, StudyNote Function(StudyNote) change) => _update((c) {
+    final note = c.studyNote(id);
+    return note == null ? c : _editor.saveStudyNote(c, change(note).copyWith(updatedAt: _editor.now()));
+  });
+
+  Future<void> removeStudyNoteBlock(String id, String blockId) => changeStudyNote(id, (note) {
+    final block = note.sections.expand((s) => s.blocks).where((b) => b.id == blockId).firstOrNull;
+    return note.copyWith(
+      sections: [for (final s in note.sections) s.copyWith(blocks: s.blocks.where((b) => b.id != blockId).toList())],
+      unusedAnnotationIds: {...note.unusedAnnotationIds, if (block is QuoteBlock) block.annotationId}.toList(),
+    );
+  });
+
+  Future<void> restoreStudyNoteQuote(String id, String annotationId) => _update((c) {
+    final note = c.studyNote(id);
+    if (note == null || c.annotation(annotationId) == null || !note.unusedAnnotationIds.contains(annotationId)) {
+      return c;
+    }
+    final quote = QuoteBlock(id: _editor.newId(), annotationId: annotationId);
+    final documentId = c.annotation(annotationId)!.documentId;
+    final materials = const NoteMaterialCollector().collect(c, const WholeSet(), note.settings, now: _editor.now());
+    final groups = {for (final m in materials.highlights) m.sourceId: m.groupKey};
+    final counts = {
+      for (final s in note.sections)
+        s.id: s.blocks.whereType<QuoteBlock>().where((b) => groups[b.annotationId] == groups[annotationId]).length,
+    };
+    NoteSection? target = note.sections.firstOrNull;
+    for (final section in note.sections) {
+      if (target == null || counts[section.id]! > counts[target.id]!) target = section;
+    }
+    return _editor.saveStudyNote(
+      c,
+      note.copyWith(
+        updatedAt: _editor.now(),
+        sections: target == null
+            ? [
+                NoteSection(id: _editor.newId(), title: c.document(documentId)!.title, blocks: [quote]),
+              ]
+            : [
+                for (final s in note.sections) s.id == target.id ? s.copyWith(blocks: [...s.blocks, quote]) : s,
+              ],
+        unusedAnnotationIds: note.unusedAnnotationIds.where((a) => a != annotationId).toList(),
+      ),
+    );
+  });
+
+  void revealNoteAnnotation(String id) {
+    final annotation = content.annotation(id);
+    if (annotation == null || annotation.needsReview) return;
+    openDocument(annotation.documentId);
+    state = state.copyWith(
+      noteAnnotationId: id,
+      layout: onePane ? MMSplitMode.primary : MMSplitMode.split,
+      reveal: annotation.isText
+          ? RevealRequest.text(annotation.documentId, annotation.textAnchors, ++_revealNonce)
+          : RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),
+    );
+    _flash(annotationId: id);
+  }
+
+  String _noteReviewAnswer(StudySetContent c, Annotation a, String answer) {
+    final location = a.isText ? const NoteMaterialCollector().sectionTitle(c, a) : 'p.${a.page}';
+    final source = [
+      c.document(a.documentId)?.title,
+      location,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+    return '$answer\n\n$source';
+  }
+
+  Future<void> makeNoteReview(String annotationId, String question, String answer) => _update((c) {
+    if (c.annotation(annotationId) == null) return c;
+    final parent = c.cards.where((card) => card.annotationId == annotationId).firstOrNull?.id;
+    final (next, card) = _editor.addNote(c, text: question, parentId: parent);
+    return next.copyWith(
+      cards: [
+        for (final value in next.cards)
+          value.id == card.id
+              ? value.copyWith(
+                  body: _noteReviewAnswer(c, c.annotation(annotationId)!, answer),
+                  annotationId: annotationId,
+                )
+              : value,
+      ],
+    );
+  });
+
+  Future<void> addNoteReviews(String noteId) => _update((c) {
+    final note = c.studyNote(noteId);
+    if (note == null) return c;
+    var next = c;
+    for (final section in note.sections) {
+      final question = section.question;
+      if (question == null || question.trim().isEmpty) continue;
+      final quotes = section.blocks
+          .whereType<QuoteBlock>()
+          .map((b) => c.annotation(b.annotationId))
+          .whereType<Annotation>()
+          .toList();
+      if (quotes.isEmpty) continue;
+      final answer = quotes.map((a) => _noteReviewAnswer(c, a, a.quote)).join('\n\n');
+      if (next.cards.any((card) => card.kind == CardKind.note && card.title == question && card.body == answer)) {
+        continue;
+      }
+      final (created, card) = _editor.addNote(next, text: question);
+      next = created.copyWith(
+        cards: [
+          for (final value in created.cards)
+            value.id == card.id ? value.copyWith(body: answer, annotationId: quotes.first.id) : value,
+        ],
+      );
+    }
+    return next;
+  });
+
+  Future<void> markStudyNoteBlockMine(String noteId, String blockId) => changeStudyNote(
+    noteId,
+    (note) => note.copyWith(
+      sections: [
+        for (final section in note.sections)
+          section.copyWith(
+            blocks: [
+              for (final b in section.blocks)
+                if (b.id == blockId && b is! QuoteBlock && b is! OwnBlock)
+                  StudyNoteBlock.fromJson({...b.toJson(), 'origin': NoteOrigin.user.name, 'edited': true})
+                else
+                  b,
+            ],
+          ),
+      ],
+    ),
+  );
+
   Future<void> saveStudyNote(StudyNote note) => _update((c) => _editor.saveStudyNote(c, note));
   Future<void> deleteStudyNote(String id) => _update((c) => _editor.deleteStudyNote(c, id));
   Future<void> editStudyNoteBlock(String noteId, String blockId, {String? text, List<String>? items}) =>
@@ -2191,6 +2499,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Starts editing a card's title (a note's text) in place. Nothing is
   /// written until [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
+    if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
     // A research card shows its note: the note is edited in the details.
     if (content.card(cardId)!.kind == CardKind.research) return showDetails(cardId);
@@ -2269,6 +2578,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Runs [create] (given the selection before it) in a transaction and opens
   /// the created card for editing. A null card aborts the transaction.
   Future<Card?> _createAndEdit(Future<Card?> Function(String? previous) create) async {
+    if (_blockExpansionEdit()) return null;
     if (_editing != null || _markEditing != null || _creating) return null;
     _creating = true;
     final previous = state.selectedCardId;
@@ -2541,6 +2851,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void beginMarkEditing(String id) {
+    if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || !_markExists(content, state.activeMapId, id)) return;
     _markEditing = _MarkEditSession(id, created: false);
     state = state.copyWith(selectRoot: true, selectedMarkId: id, editingMarkId: id, layout: _layoutShowingMap);
@@ -2652,6 +2963,8 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       a.cropSuggestionDismissed == b.cropSuggestionDismissed &&
       (identical(a.crop, b.crop) || jsonEncode(a.crop?.toJson()) == jsonEncode(b.crop?.toJson()));
   bool samePresentation(StudySetContent a, StudySetContent b) =>
+      identical(a.studyNotes, b.studyNotes) &&
+      identical(a.noteSourceArchive, b.noteSourceArchive) &&
       identical(a.cards, b.cards) &&
       identical(a.nodes, b.nodes) &&
       identical(a.maps, b.maps) &&

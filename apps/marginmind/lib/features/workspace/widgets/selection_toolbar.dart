@@ -396,7 +396,6 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                   TextAnnotationTools(
                     enabled: capabilities.annotate,
                     studySetId: widget.studySetId,
-                    selectionAction: true,
                     colorOnly: isArea,
                     onOpenChanged: (open) {
                       _paletteOpen = open;

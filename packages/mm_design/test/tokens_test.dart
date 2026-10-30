@@ -39,6 +39,24 @@ void main() {
         expect(c.lerp(c, 0.5).research, c.research);
       });
 
+      test('research wash and solid research fills keep their text readable', () {
+        expect(c.researchWash.toARGB32() & 0xFFFFFF, c.research.toARGB32() & 0xFFFFFF);
+        expect(c.researchWash.a, closeTo(c.researchTint.a / 2, 0.01));
+        // Draft titles, struck-out drafts and page chips sit on the wash.
+        final wash = composite(c.researchWash, c.canvas);
+        expect(contrastRatio(c.label, wash), greaterThanOrEqualTo(4.5));
+        expect(contrastRatio(c.secondaryLabel, wash), greaterThanOrEqualTo(4.5));
+        expect(contrastRatio(c.secondaryLabel, composite(c.quaternaryFill, wash)), greaterThanOrEqualTo(4.5));
+        // Primary button, selected chip and direction tag: solid research.
+        expect(contrastRatio(c.onResearch, c.research), greaterThanOrEqualTo(4.5));
+        final tinted = c.withAccent(const Color(0xFFFF9500));
+        expect(tinted.researchWash, c.researchWash);
+        expect(tinted.onResearch, c.onResearch);
+        final other = c == MMColors.light ? MMColors.dark : MMColors.light;
+        expect(c.lerp(other, 0).researchWash, c.researchWash);
+        expect(c.lerp(other, 1).onResearch, other.onResearch);
+      });
+
       test('vocabulary contrast, tint and fixed hue survive theme changes', () {
         expect(contrastRatio(c.vocabulary, c.windowBackground), greaterThanOrEqualTo(4.5));
         expect(contrastRatio(c.onVocabulary, c.vocabulary), greaterThanOrEqualTo(4.5));
@@ -149,6 +167,26 @@ void main() {
     expect(MMAnnotationColor.tryParse('#ABC'), isNull);
     expect(MMAnnotationColor.tryParse('#GGGGGG'), isNull);
     expect(MMAnnotationColor.tryParse('yellow'), MMAnnotationColor.yellow);
+  });
+
+  test('idea expansion geometry fits together', () {
+    // Hover controls sit inside their capsule; the bar clears the map's view
+    // controls (12 + 28) and a HUD capsule (no taller than the bar) below it.
+    expect(MMSizes.mapDraftControlButton.height, lessThan(MMSizes.mapDraftControls));
+    expect(MMSizes.mapDraftTag, lessThan(MMSizes.mapDraftPlaceholder.height));
+    expect(MMSpacing.m + MMSizes.segmented, lessThan(MMSizes.ideaBarBottomInset));
+    expect(MMHudHost.defaultBottom + MMSizes.ideaBar, lessThanOrEqualTo(MMSizes.ideaBarBottomInset));
+    expect(MMSizes.ideaStepperButton.height, lessThan(MMSizes.ideaPlanRow));
+    expect(MMSizes.ideaChip, lessThan(MMSizes.ideaPrimaryButton));
+    expect(MMSizes.mapWorkingHaloMax, greaterThan(MMSizes.mapWorkingHalo));
+    expect(MMSizes.mapDraftDash, greaterThan(MMSizes.mapDraftDashGap));
+    expect(MMRadii.mapDraftTag * 2, lessThanOrEqualTo(MMSizes.mapDraftTag));
+    expect(MMRadii.ideaSection, lessThan(MMRadii.dropdown));
+    expect(MMMotion.pulse, greaterThan(MMMotion.shimmer));
+    expect(MMMotion.shimmer, greaterThan(MMMotion.layout));
+    for (final icon in [MMIcons.expandIdeas, MMIcons.groupParent, MMIcons.fillSiblings, MMIcons.adjust]) {
+      expect(icon.fontFamily, isNotEmpty);
+    }
   });
 
   test('themes carry MMColors and drop ink splashes', () {

@@ -22,6 +22,8 @@ const _summaryLabelWidth = 200.0;
 class MindMapRenderCache {
   static const measurementCapacity = 2048;
   final _measurements = <_MeasureKey, ({Size size, int lines})>{};
+  List<ExpansionDraft> _expansionDrafts = const [];
+  Map<String, String> _expansionMoves = const {};
   StudySetContent? _content;
   String? _title;
   String? _mapId;
@@ -61,6 +63,8 @@ class MindMapRenderCache {
 
   TreeLayoutResult update({
     required StudySetContent content,
+    List<ExpansionDraft> expansionDrafts = const [],
+    Map<String, String> expansionMoves = const {},
     String mapId = MindMap.defaultId,
     required String rootTitle,
     required AppLocalizations localizations,
@@ -103,6 +107,8 @@ class MindMapRenderCache {
         _locale != locale ||
         _direction != textDirection;
     if (!environmentChanged &&
+        listEquals(_expansionDrafts, expansionDrafts) &&
+        mapEquals(_expansionMoves, expansionMoves) &&
         identical(_content, content) &&
         _title == rootTitle &&
         _mapId == mapId &&
@@ -124,6 +130,8 @@ class MindMapRenderCache {
     _textScaler = textScaler;
     _locale = locale;
     _direction = textDirection;
+    _expansionDrafts = expansionDrafts;
+    _expansionMoves = expansionMoves;
     _content = content;
     _title = rootTitle;
     _mapId = mapId;
@@ -148,7 +156,7 @@ class MindMapRenderCache {
     final children = <String?, List<MapNode>>{};
     for (final node in content.nodes) {
       if (node.mapId != mapId) continue;
-      children.putIfAbsent(node.parentId, () => []).add(node);
+      children.putIfAbsent(expansionMoves[node.cardId]?.substring(4) ?? node.parentId, () => []).add(node);
     }
     for (final siblings in children.values) {
       siblings.sort((a, b) => a.order.compareTo(b.order));
@@ -157,13 +165,40 @@ class MindMapRenderCache {
     _collapsed = {};
     _expandable = {};
     final geometry = <(String, String?, double, double)>[];
+    late LayoutNode Function(MapNode node, String parentId) existing;
+    LayoutNode ghost(ExpansionDraft d, String parentId) {
+      final spec = _NodeSpec._(
+        _Kind.topic,
+        d.title,
+        null,
+        null,
+        null,
+        Size(
+          d.id == '__expansion_placeholder__' ? 120 : 164,
+          d.id == '__expansion_placeholder__' ? 30 : (d.tag != ExpansionDirection.auto || d.page != null ? 54 : 36),
+        ),
+      );
+      _specs[d.id] = spec;
+      geometry.add((d.id, parentId, spec.size.width, spec.size.height));
+      return LayoutNode(
+        id: d.id,
+        width: spec.size.width,
+        height: spec.size.height,
+        children: [
+          for (final node in children[d.id] ?? <MapNode>[])
+            if (cards.containsKey(node.cardId)) existing(node, d.id),
+          for (final child in expansionDrafts.where((c) => c.parentRef == 'new:${d.id}')) ghost(child, d.id),
+        ],
+      );
+    }
+
     LayoutNode build(String id, String? parentId, _NodeSpec spec, {bool collapsed = false}) {
       _specs[id] = spec;
       geometry.add((id, parentId, spec.size.width, spec.size.height));
       var descendants = children[id == rootNodeId ? null : id] ?? const <MapNode>[];
       if (id != rootNodeId && descendants.isNotEmpty) {
         _expandable.add(id);
-        if (collapsed) {
+        if (collapsed && expansionDrafts.isEmpty) {
           _collapsed[id] = descendants.length;
           descendants = const [];
         }
@@ -174,29 +209,34 @@ class MindMapRenderCache {
         height: spec.size.height,
         children: [
           for (final node in descendants)
-            if (cards[node.cardId] case final card?)
-              build(
-                card.id,
-                id,
-                _NodeSpec.forCard(
-                  draft?.$1 == card.id ? card.copyWith(title: draft!.$2, textFormat: draftFormat) : card,
-                  annotations[card.annotationId],
-                  documents[annotations[card.annotationId]?.documentId],
-                  localizations,
-                  this,
-                  editing: draft?.$1 == card.id,
-                  expanded: expanded.contains(card.id),
-                  width: widthDraft?.$1 == card.id ? widthDraft!.$2 : node.width,
-                  compact: compact,
-                  note: notes[card.researchNoteId],
-                  sourceCount: notes[card.researchNoteId] == null ? 0 : sourceCount(notes[card.researchNoteId]!),
-                ),
-                collapsed: node.collapsed,
-              ),
+            if (cards.containsKey(node.cardId)) existing(node, id),
+          for (final d in expansionDrafts.where((d) => (d.parentRef == id || id == rootNodeId && d.parentRef == mapId)))
+            ghost(d, id),
         ],
       );
     }
 
+    existing = (node, parentId) {
+      final card = cards[node.cardId]!;
+      return build(
+        card.id,
+        parentId,
+        _NodeSpec.forCard(
+          draft?.$1 == card.id ? card.copyWith(title: draft!.$2, textFormat: draftFormat) : card,
+          annotations[card.annotationId],
+          documents[annotations[card.annotationId]?.documentId],
+          localizations,
+          this,
+          editing: draft?.$1 == card.id,
+          expanded: expanded.contains(card.id),
+          width: widthDraft?.$1 == card.id ? widthDraft!.$2 : node.width,
+          compact: compact,
+          note: notes[card.researchNoteId],
+          sourceCount: notes[card.researchNoteId] == null ? 0 : sourceCount(notes[card.researchNoteId]!),
+        ),
+        collapsed: node.collapsed,
+      );
+    };
     final tree = build(rootNodeId, null, _NodeSpec.root(rootTitle.isEmpty ? localizations.appName : rootTitle, this));
     String label(String id, String stored) => markDraft?.$1 == id ? markDraft!.$2 : stored;
     _relations = content.relationsOf(mapId);

@@ -5,7 +5,8 @@ import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import 'annotation_palette.dart';
-import 'text_annotation_tools.dart';
+import 'highlight_color_button.dart';
+import 'underline_tool_button.dart';
 
 class ReaderAnnotationTools extends StatelessWidget {
   const ReaderAnnotationTools({
@@ -45,7 +46,15 @@ class ReaderAnnotationTools extends StatelessWidget {
           compact: compact,
           children: [
             tool(MMIcons.select, l.toolSelect, AnnotationTool.select),
-            TextAnnotationTools(
+            HighlightColorButton(
+              color: state.color,
+              selected: state.tool == AnnotationTool.highlight,
+              compact: compact,
+              enabled: controller.activeCapabilities.annotate,
+              onOpen: () => controller.setTool(AnnotationTool.highlight),
+              onChanged: controller.setColor,
+            ),
+            UnderlineToolButton(
               studySetId: controller.studySetId,
               compact: compact,
               enabled: controller.activeCapabilities.annotate,

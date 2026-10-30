@@ -115,7 +115,7 @@ void main() {
       await tester.pumpAndSettle();
       final palette = find.byKey(const ValueKey('annotation-color-palette'));
       expect(palette, findsOneWidget);
-      expect(find.byType(MMFloatingToolbar), findsOneWidget);
+      expect(find.byType(MMFloatingToolbar), findsNWidgets(2));
       expect(tester.getRect(palette).top, greaterThan(tester.getRect(toolbar).bottom));
       await screenshot(tester, 'selection-palette-${dark ? 'dark' : 'light'}', target: palette);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);

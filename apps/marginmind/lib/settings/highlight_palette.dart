@@ -17,13 +17,13 @@ class HighlightPalette {
   final Map<MMAnnotationColor, HighlightColorUse> usage;
 
   /// Last-used colors first; unused slots keep a useful, stable default.
-  List<MMAnnotationColor> recent() {
+  List<MMAnnotationColor> recent({int limit = 3}) {
     final used = usage.keys.toList()
       ..sort((a, b) {
         final order = usage[b]!.lastUsed.compareTo(usage[a]!.lastUsed);
         return order != 0 ? order : a.index.compareTo(b.index);
       });
-    return {...used, current, ...MMAnnotationColor.values}.take(3).toList();
+    return {...used, current, ...MMAnnotationColor.values}.take(limit).toList();
   }
 
   List<MMAnnotationColor> frequent(DateTime now) {

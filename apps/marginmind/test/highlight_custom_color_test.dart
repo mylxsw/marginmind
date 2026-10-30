@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
+import 'package:marginmind/features/workspace/widgets/highlight_color_button.dart';
 import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
 import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
@@ -43,20 +44,23 @@ void main() {
   });
 
   for (final appearance in ['light', 'dark']) {
-    testWidgets('color circle stays independent; custom colors apply and are reusable in $appearance', (tester) async {
+    testWidgets('inactive brush is neutral; real custom colors apply and are reusable in $appearance', (tester) async {
       final container = await pumpApp(tester, prefs: {'settings.appearance': appearance, 'settings.language': 'zh'});
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
       final controller = container.read(workspaceProvider('demo-1').notifier);
       final tools = find.byType(ReaderAnnotationTools);
-      final brush = find.descendant(of: tools, matching: find.byType(AnnotationColorButton));
-      final button = find.byKey(const ValueKey('reader-highlight'));
+      final brush = find.descendant(of: tools, matching: find.byType(HighlightColorButton));
+      final button = find.descendant(of: brush, matching: find.byType(MMToolbarButton));
       expect(tester.widget<MMToolbarButton>(button).selected, isFalse);
       expect(tester.widget<MMToolbarButton>(button).tint, isNull);
+      final icon = find.descendant(of: brush, matching: find.byIcon(MMIcons.highlight));
+      final paint = tester.widget<RichText>(find.descendant(of: icon, matching: find.byType(RichText)));
+      expect((paint.text as TextSpan).style!.color, tester.element(tools).mmColors.label);
       await screenshot(tester, 'inactive-brush-$appearance', target: tools);
       await tester.tap(brush);
       await tester.pumpAndSettle();
-      expect(tester.widget<MMToolbarButton>(button).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(button).tint, MMAnnotationColor.yellow.color);
       await tester.tap(find.byTooltip('更多颜色'));
       await tester.pumpAndSettle();
       final picker = find.byKey(const ValueKey('highlight-custom-color-picker'));
@@ -75,10 +79,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('highlight-color-apply')));
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).color, expected);
-      expect(tester.widget<MMToolbarButton>(button).selected, isFalse);
-      expect(container.read(workspaceProvider('demo-1')).tool, AnnotationTool.select);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
+      expect(tester.widget<MMToolbarButton>(button).tint, expected.color);
       expect(container.read(highlightPaletteProvider).usage, isEmpty);
       await screenshot(tester, 'active-custom-brush-$appearance', target: tools);
       await controller.setTool(AnnotationTool.select);
@@ -110,7 +111,7 @@ void main() {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AnnotationColorButton));
+    await tester.tap(find.byType(HighlightColorButton));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('More Colors'));
     await tester.pumpAndSettle();

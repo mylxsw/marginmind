@@ -1,0 +1,85 @@
+{
+  "covered": 463,
+  "added_executable": 473,
+  "percent": 97.89,
+  "files": [
+    {
+      "source": "apps/marginmind/lib/app/app_commands.dart",
+      "covered": 1,
+      "added_executable": 1,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "source": "apps/marginmind/lib/features/assistant/expansion_context.dart",
+      "covered": 47,
+      "added_executable": 47,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "source": "apps/marginmind/lib/features/assistant/expansion_controller.dart",
+      "covered": 163,
+      "added_executable": 165,
+      "percent": 98.79,
+      "uncovered": [
+        118,
+        191
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/assistant/widgets/assistant_quick_actions.dart",
+      "covered": 5,
+      "added_executable": 5,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "source": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "covered": 130,
+      "added_executable": 132,
+      "percent": 98.48,
+      "uncovered": [
+        732,
+        767
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "covered": 47,
+      "added_executable": 49,
+      "percent": 95.92,
+      "uncovered": [
+        242,
+        351
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/mind_map_cache.dart",
+      "covered": 24,
+      "added_executable": 24,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/mind_map_canvas.dart",
+      "covered": 19,
+      "added_executable": 20,
+      "percent": 95.0,
+      "uncovered": [
+        751
+      ]
+    },
+    {
+      "source": "packages/mm_design/lib/src/widgets/menu.dart",
+      "covered": 27,
+      "added_executable": 30,
+      "percent": 90.0,
+      "uncovered": [
+        330,
+        341,
+        349
+      ]
+    }
+  ]
+}

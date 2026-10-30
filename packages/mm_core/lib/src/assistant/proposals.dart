@@ -74,7 +74,19 @@ class MapEditProposal {
     required this.mapId,
     required this.baseRevision,
     required List<MapEditOperation> operations,
-  }) : operations = List.unmodifiable(operations);
+  }) : isExpansion = false,
+       operations = List.unmodifiable(operations);
+
+  /// Host-only capability. JSON decoding deliberately cannot grant this exemption.
+  MapEditProposal.expansion({
+    required this.id,
+    required this.studySetId,
+    required this.mapId,
+    required this.baseRevision,
+    required List<MapEditOperation> operations,
+  }) : isExpansion = true,
+       operations = List.unmodifiable(operations);
+  final bool isExpansion;
   final String id, studySetId, mapId;
   final int baseRevision;
   final List<MapEditOperation> operations;

@@ -5,6 +5,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// Lucide icons. Feature code refers to these names so icon
 /// sources can change without altering controls or their behavior.
 abstract final class MMIcons {
+  static const context = LucideIcons.textQuote;
+  static const regenerate = LucideIcons.refreshCw;
+  static const grip = LucideIcons.gripVertical;
+  static const studyNote = LucideIcons.notebookText;
+  static const export = LucideIcons.download;
   static const IconData speaker = CupertinoIcons.speaker_2;
   static const compare = CupertinoIcons.square_split_2x1;
   static const swapSides = CupertinoIcons.arrow_right_arrow_left;
@@ -127,4 +132,11 @@ abstract final class MMIcons {
   static const IconData mention = CupertinoIcons.at; // at
   static const IconData command = CupertinoIcons.slash_circle; // slash.circle
   static const IconData conversation = CupertinoIcons.chat_bubble; // bubble.left
+
+  // AI idea expansion: expand a topic, group topics under a new parent,
+  // fill in missing siblings, adjust the settings while reviewing.
+  static const IconData expandIdeas = LucideIcons.listTree;
+  static const IconData groupParent = LucideIcons.group;
+  static const IconData fillSiblings = LucideIcons.listPlus;
+  static const IconData adjust = LucideIcons.slidersHorizontal;
 }

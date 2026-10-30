@@ -1342,7 +1342,246 @@
   "vocabularyHintsGloss": "释义",
   "vocabularyHintsHidden": "本文档隐藏",
   "vocabularyHintsKnown": "标出已掌握",
-  "resizeCompanionPanel": "调整面板大小",
-  "annotationLineType": "线条类型",
-  "chooseMoreAnnotationColors": "选择更多颜色…"
+  "mapIdeaMenu": "AI 扩展想法",
+  "mapIdeaExpand": "扩展想法",
+  "mapIdeaExpandEach": "分别扩展 {count} 个主题",
+  "mapIdeaExpandMap": "扩展整张脑图…",
+  "mapIdeaWholeMap": "扩展整张脑图",
+  "mapIdeaBranchesOnly": "只加新分支",
+  "mapIdeaGroup": "归纳上级主题",
+  "mapIdeaFillSiblings": "补全同级",
+  "mapIdeaDirection": "方向",
+  "mapIdeaDirectionAuto": "自动",
+  "mapIdeaDirectionWhy": "原因",
+  "mapIdeaDirectionExample": "例子",
+  "mapIdeaDirectionCounter": "反方",
+  "mapIdeaDirectionQuestion": "问题",
+  "mapIdeaDirectionAction": "行动",
+  "mapIdeaDepth": "层级",
+  "mapIdeaDepthLevels": "{count} 层",
+  "mapIdeaAmount": "数量",
+  "mapIdeaAmountFew": "少",
+  "mapIdeaAmountSome": "适中",
+  "mapIdeaAmountMany": "多",
+  "mapIdeaHint": "补充要求",
+  "mapIdeaGrounded": "参考原文",
+  "mapIdeaExpanding": "扩展「{title}」",
+  "mapIdeaExpandingCount": "扩展 {count} 个主题",
+  "mapIdeaStopped": "已停止",
+  "mapIdeaDraftCount": "{count} 条",
+  "mapIdeaKeptCount": "保留 {kept} / {total}",
+  "mapIdeaRegenerate": "换一批",
+  "mapIdeaAdjust": "调整",
+  "mapIdeaRegenerateAdjusted": "重新生成",
+  "mapIdeaDiscard": "放弃",
+  "mapIdeaKeep": "保留 {count} 条",
+  "mapIdeaDraftKeep": "保留",
+  "mapIdeaDraftSkip": "不要",
+  "mapIdeaDraftEdit": "修改",
+  "mapIdeaDraftMore": "继续扩展",
+  "mapIdeaDraftSemantics": "AI 草稿，{title}，{state}",
+  "mapIdeaDraftKept": "已保留",
+  "mapIdeaDraftSkipped": "未保留",
+  "mapIdeaNewBranches": "新分支",
+  "mapIdeaAddCount": "+{count}",
+  "mapIdeaFewer": "减少",
+  "mapIdeaMore": "增加",
+  "mapIdeaStart": "开始扩展",
+  "mapIdeaAdded": "已添加 {count} 个主题",
+  "mapIdeaBlocked": "先保留（↩）或放弃（Esc）这次 AI 扩展",
+  "mapIdeaNothing": "这里暂时没有值得补充的方向，换个方向试试",
+  "mapIdeaStoppedEmpty": "已停止，没有生成内容",
+  "mapIdeaBusy": "模型正忙，请稍后再试",
+  "notesTitle": "笔记",
+  "organizeStudyNote": "整理学习笔记…",
+  "organizeNotes": "整理笔记",
+  "organizeSelection": "整理成笔记",
+  "exportStudyNote": "导出笔记…",
+  "noteSetupTitle": "整理学习笔记",
+  "noteScope": "范围",
+  "noteMaterials": "素材",
+  "noteOrganization": "组织方式",
+  "noteDepth": "AI 参与",
+  "noteContext": "上下文",
+  "noteTemplate": "版式",
+  "noteSelected": "选中的划线",
+  "noteWhole": "整个学习集",
+  "noteRecent": "最近 7 天",
+  "noteHighlights": "划线",
+  "noteOwn": "我的批注",
+  "noteMapNotes": "脑图笔记",
+  "noteSavedAi": "已存的 AI 笔记",
+  "noteImages": "图片卡片",
+  "noteTheme": "按主题归纳",
+  "noteSourceOrder": "按原文顺序",
+  "noteMapOrder": "按脑图结构",
+  "noteLocal": "只排版",
+  "noteAiContext": "补全与小结",
+  "noteAiDeep": "深度整理",
+  "noteNextPhase": "下一期开放",
+  "noteComplete": "补全指代",
+  "noteReading": "读书笔记",
+  "noteCornell": "康奈尔笔记",
+  "noteReview": "复习提纲",
+  "noteGenerate": "生成笔记",
+  "noteEmptyScope": "这个范围还没有划线",
+  "noteGenerated": "已生成",
+  "noteFailed": "整理失败",
+  "noteUnused": "未用上",
+  "notePutBack": "放回笔记",
+  "noteRestored": "已放入笔记",
+  "noteRemoved": "已从笔记中移除",
+  "noteExpandContext": "展开上下文",
+  "noteCollapseContext": "收起上下文",
+  "noteNoText": "无原文文本",
+  "noteMissingHighlight": "划线已删除",
+  "noteMissingDocument": "原文已移除",
+  "noteNotIncluded": "这条划线不在笔记里",
+  "noteRemoveBlock": "从笔记中移除",
+  "noteSources": "出处",
+  "noteInclude": "包含",
+  "noteCitationPage": "页码",
+  "noteCitationFootnote": "脚注",
+  "noteCitationNone": "不标",
+  "noteAiContent": "AI 内容",
+  "noteQuestions": "复习题",
+  "noteSourceList": "出处列表",
+  "noteAiMarks": "AI 标记",
+  "noteMark": "标出",
+  "noteUnmark": "不标",
+  "noteCornellSummary": "总结",
+  "noteContextSentences": "前后 {count} 句",
+  "@noteContextSentences": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteCoverage": "{count} 条划线全部引用 · 原文未改写",
+  "@noteCoverage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteUnusedCount": "{count} 条划线未用上",
+  "@noteUnusedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSelectedCount": "已选 {count} 条",
+  "@noteSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteRecallQuestion": "《{title}》{location} 说了什么？",
+  "@noteRecallQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "noteSelectAll": "全选",
+  "noteDeselectAll": "取消全选",
+  "noteReviewAdded": "已生成 1 张复习卡",
+  "noteExplain": "解释这句话",
+  "noteCreateReview": "生成复习卡",
+  "noteAddedToMap": "已加入脑图",
+  "noteExport": "导出",
+  "noteMarginSource": "页边批注",
+  "notePage": "p.{page}",
+  "@notePage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSourceTitle": "《{title}》",
+  "@noteSourceTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notePageSeparator": "、",
+  "noteSourcePage": "《{title}》p.{page}",
+  "@noteSourcePage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noteOutlineTitle": "确认提纲",
+  "noteGenerating": "整理笔记",
+  "noteStop": "停止",
+  "noteContinue": "继续整理",
+  "noteLayoutOnly": "改为只排版",
+  "noteStepOutline": "归纳主题",
+  "noteAddSection": "添加节",
+  "noteNewSection": "新节",
+  "noteUnassigned": "未归入",
+  "noteAiUnavailable": "未配置 AI",
+  "notePreviewOutline": "先看提纲",
+  "noteAiFallback": "AI 整理失败，已按原文排版",
+  "noteShowAi": "显示 AI 标记",
+  "noteAiEdited": "AI · 已改",
+  "noteRephrase": "换一种说法",
+  "noteConcise": "更简洁",
+  "noteExpand": "展开说明",
+  "noteMakeMine": "改为我的话",
+  "noteRegenerate": "重新整理",
+  "noteAddAllReview": "全部加入复习",
+  "noteStepWrite": "撰写 {done} / {total} · 核对引用",
+  "@noteStepWrite": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSending": "{notes, plural, =0{将发送 {highlights} 条划线（约 {characters} 字）给 {model}} other{将发送 {highlights} 条划线、{notes} 条批注（约 {characters} 字）给 {model}}}",
+  "@noteSending": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      },
+      "characters": {
+        "type": "int"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStepCollect": "收集素材",
+  "noteStepContext": "补全上下文",
+  "noteStepCompose": "撰写",
+  "noteStepVerify": "核对引用",
+  "noteStopped": "已停止",
+  "noteLocked": "更新时保留",
+  "resizeCompanionPanel": "调整面板大小"
 }

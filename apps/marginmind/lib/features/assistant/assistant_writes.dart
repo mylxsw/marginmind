@@ -31,7 +31,10 @@ class WorkspaceMapEditExecutor implements MapEditExecutor {
   @override
   Future<MapEditReceipt> apply(MapEditProposal proposal, Set<String> selectedIds) async {
     final selection = Set<String>.of(selectedIds);
-    final next = await workspace.applyAssistantChange((c) => writes.apply(c, proposal, selection));
+    final next = await workspace.applyAssistantChange(
+      (c) => writes.apply(c, proposal, selection),
+      expansion: proposal.isExpansion,
+    );
     final result = next.assistantReceipts.firstWhere((r) => r.proposalId == proposal.id);
     workspace.flashAssistantNodes(result.nodeIds);
     return result;

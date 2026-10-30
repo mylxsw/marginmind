@@ -10,6 +10,8 @@ import 'study_set_content.dart';
 /// Portable targets supported by the pure Dart exporter.
 enum NoteExportFormat { markdown, obsidian }
 
+enum NoteExportLanguage { zh, en }
+
 /// How each quote identifies its source.
 enum NoteCitationStyle { inline, footnote, none }
 
@@ -47,15 +49,20 @@ class NoteExporter {
   NoteExportResult export(
     StudyNote note, {
     NoteExportFormat format = NoteExportFormat.markdown,
+    NoteExportLanguage language = NoteExportLanguage.zh,
     NoteExportOptions options = const NoteExportOptions(),
   }) {
+    final en = language == NoteExportLanguage.en;
+    String label(String zh, String english) => en ? english : zh;
+    String wikiTitle(String title) =>
+        title.replaceAll(RegExp(r'[\\/:*?"<>|#^\[\]\x00-\x1f]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
     final obsidian = format == NoteExportFormat.obsidian;
     final out = StringBuffer(), footnotes = <String>[], sources = <String>{};
     final attachments = <String, String>{};
     String line(String s) => s.replaceAll(RegExp(r'[\r\n]+'), ' ');
     String escape(String s) => s.replaceAllMapped(RegExp(r'[\\`*_{}\[\]<>#]'), (m) => '\\${m[0]}');
     String ai(NoteOrigin origin) => options.markAi && (origin == NoteOrigin.ai || origin == NoteOrigin.mixed)
-        ? (origin == NoteOrigin.mixed ? 'AI · 已改' : 'AI 整理')
+        ? (origin == NoteOrigin.mixed ? label('AI · 已改', 'AI · Edited') : label('AI 整理', 'AI'))
         : '';
     bool visible(StudyNoteBlock b) => options.aiContent || (b.origin != NoteOrigin.ai && b.origin != NoteOrigin.mixed);
     void prose(String value, {String? callout, String? label}) {
@@ -73,27 +80,32 @@ class NoteExporter {
 
     String citation(ResolvedNoteSource source) {
       final a = source.annotation;
-      final title = line(source.documentTitle ?? a?.documentId ?? '未知来源');
+      final title = line(source.documentTitle ?? label('未知来源', 'Unknown source'));
       final page = a != null && !a.isText ? a.page : null;
-      final location = page == null ? (a?.textAnchors.firstOrNull?.chapterId ?? '') : 'p.$page';
+      final location = page == null
+          ? (a == null ? '' : const NoteMaterialCollector().sectionTitle(content, a) ?? '')
+          : 'p.$page';
       final status = switch (source.status) {
         NoteSourceStatus.available => '',
-        NoteSourceStatus.annotationDeleted => '（划线已删除）',
-        NoteSourceStatus.documentRemoved => '（原文已移除）',
-        NoteSourceStatus.missing => '（划线已删除）',
+        NoteSourceStatus.annotationDeleted => label('（划线已删除）', ' (Highlight deleted)'),
+        NoteSourceStatus.documentRemoved => label('（原文已移除）', ' (Source removed)'),
+        NoteSourceStatus.missing => label('（划线已删除）', ' (Highlight deleted)'),
       };
       if (obsidian && page != null && source.status == NoteSourceStatus.available) {
-        final target = title.replaceAll(RegExp(r'[\[\]|#]'), '_');
-        return '[[$target#p$page]]';
+        final target = wikiTitle(title);
+        return '[[$target#p$page|${label('《$target》p.$page', '$target, p. $page')}]]';
       }
-      return '《${escape(title)}》${location.isEmpty ? '' : ' ${escape(location)}'}$status';
+      return en
+          ? '${escape(title)}${page == null ? (location.isEmpty ? '' : ', ${escape(location)}') : ', p. $page'}$status'
+          : '《${escape(title)}》${location.isEmpty ? '' : ' ${escape(location)}'}$status';
     }
 
     if (obsidian) {
       final titles = <String>{
         for (final s in note.sections)
           for (final b in s.blocks)
-            if (b is QuoteBlock) resolveNoteSource(content, b.annotationId).documentTitle ?? '未知来源',
+            if (b is QuoteBlock)
+              resolveNoteSource(content, b.annotationId).documentTitle ?? label('未知来源', 'Unknown source'),
       };
       out.writeln('---');
       out.writeln('title: ${jsonEncode(note.title)}');
@@ -103,6 +115,23 @@ class NoteExporter {
       out.writeln('---\n');
     }
     out.writeln('# ${escape(line(note.title))}\n');
+    if (!obsidian) {
+      final highlights = {
+        for (final s in note.sections)
+          for (final b in s.blocks)
+            if (b is QuoteBlock) b.annotationId,
+      };
+      final documents = {for (final id in highlights) resolveNoteSource(content, id).annotation?.documentId}
+        ..remove(null);
+      final date = note.organizedAt.toIso8601String().split('T').first;
+      out.writeln(
+        label(
+          '${documents.length} 份文档 · ${highlights.length} 条划线 · 整理于 $date',
+          '${documents.length} documents · ${highlights.length} highlights · organized $date',
+        ),
+      );
+      out.writeln();
+    }
     final sectionAnchors = {for (final (i, s) in note.sections.indexed) s.id: 'section-${i + 1}'};
     var quoteIndex = 0;
     for (final section in note.sections) {
@@ -116,17 +145,19 @@ class NoteExporter {
           case QuoteBlock():
             final resolved = resolveNoteSource(content, block.annotationId);
             final annotation = resolved.annotation;
-            final quote = annotation?.quote ?? '划线已删除';
+            final quote = annotation?.quote ?? label('划线已删除', 'Highlight deleted');
             answers.add(quote);
             final source = citation(resolved);
-            sources.add(source);
-            if (obsidian) out.writeln('> [!quote]');
+            sources.add(
+              obsidian && resolved.documentTitle != null ? '[[${wikiTitle(resolved.documentTitle!)}]]' : source,
+            );
+            if (obsidian) out.writeln('> [!quote]${options.citations == NoteCitationStyle.inline ? ' $source' : ''}');
             for (final l in quote.split('\n')) {
               out.writeln('> $l');
             }
             switch (options.citations) {
               case NoteCitationStyle.inline:
-                out.writeln('> —— $source');
+                if (!obsidian) out.writeln('> ${label('——', '—')} $source');
               case NoteCitationStyle.footnote:
                 final id = 'h${++quoteIndex}';
                 out.writeln('> [^$id]');
@@ -146,9 +177,13 @@ class NoteExporter {
                 text: textSource,
               );
               if (ctx.noText) {
-                prose('无原文文本');
+                prose(label('无原文文本', 'No source text'));
               } else if (!ctx.unresolved && (ctx.before.isNotEmpty || ctx.after.isNotEmpty)) {
-                prose([ctx.before, ctx.after].where((s) => s.isNotEmpty).join('\n'), callout: 'info', label: '上下文');
+                prose(
+                  [ctx.before, ctx.after].where((s) => s.isNotEmpty).join('\n'),
+                  callout: 'info',
+                  label: label('上下文', 'Context'),
+                );
               }
             }
           case OwnBlock():
@@ -175,7 +210,11 @@ class NoteExporter {
                 }
             }
             if (value != null) {
-              prose(value, callout: 'note', label: ai(block.origin).isEmpty ? '我的批注' : ai(block.origin));
+              prose(
+                value,
+                callout: 'note',
+                label: ai(block.origin).isEmpty ? label('我的批注', 'My Note') : ai(block.origin),
+              );
             }
           case TextBlock():
             final value = block.kind == TextKind.action ? '- [ ] ${block.text}' : block.text;
@@ -201,14 +240,15 @@ class NoteExporter {
         } else {
           prose(
             section.question!,
-            label: '复习题${ai(section.questionOrigin).isEmpty ? '' : ' · ${ai(section.questionOrigin)}'}',
+            label:
+                '${label('复习题', 'Review Questions')}${ai(section.questionOrigin).isEmpty ? '' : ' · ${ai(section.questionOrigin)}'}',
           );
         }
       }
     }
     if (footnotes.isNotEmpty) out.writeln('${footnotes.join('\n')}\n');
     if (options.sources && sources.isNotEmpty) {
-      out.writeln('## 出处\n');
+      out.writeln('## ${label('出处', 'Sources')}\n');
       for (final source in sources) {
         out.writeln('- $source');
       }

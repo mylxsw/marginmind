@@ -17,6 +17,12 @@ abstract final class MMMotion {
   /// Source ↔ card linked highlight.
   static const flash = Duration(milliseconds: 1600);
 
+  /// One beat of the ring around a topic the AI is expanding.
+  static const pulse = Duration(milliseconds: 1400);
+
+  /// One sweep of the placeholder draft shown before the first one arrives.
+  static const shimmer = Duration(milliseconds: 1100);
+
   /// HUD capsule display time.
   static const hud = Duration(milliseconds: 2400);
 

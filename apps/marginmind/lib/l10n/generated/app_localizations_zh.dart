@@ -3664,11 +3664,510 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyHintsKnown => '标出已掌握';
 
   @override
+  String get mapIdeaMenu => 'AI 扩展想法';
+
+  @override
+  String get mapIdeaExpand => '扩展想法';
+
+  @override
+  String mapIdeaExpandEach(int count) {
+    return '分别扩展 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaExpandMap => '扩展整张脑图…';
+
+  @override
+  String get mapIdeaWholeMap => '扩展整张脑图';
+
+  @override
+  String get mapIdeaBranchesOnly => '只加新分支';
+
+  @override
+  String get mapIdeaGroup => '归纳上级主题';
+
+  @override
+  String get mapIdeaFillSiblings => '补全同级';
+
+  @override
+  String get mapIdeaDirection => '方向';
+
+  @override
+  String get mapIdeaDirectionAuto => '自动';
+
+  @override
+  String get mapIdeaDirectionWhy => '原因';
+
+  @override
+  String get mapIdeaDirectionExample => '例子';
+
+  @override
+  String get mapIdeaDirectionCounter => '反方';
+
+  @override
+  String get mapIdeaDirectionQuestion => '问题';
+
+  @override
+  String get mapIdeaDirectionAction => '行动';
+
+  @override
+  String get mapIdeaDepth => '层级';
+
+  @override
+  String mapIdeaDepthLevels(int count) {
+    return '$count 层';
+  }
+
+  @override
+  String get mapIdeaAmount => '数量';
+
+  @override
+  String get mapIdeaAmountFew => '少';
+
+  @override
+  String get mapIdeaAmountSome => '适中';
+
+  @override
+  String get mapIdeaAmountMany => '多';
+
+  @override
+  String get mapIdeaHint => '补充要求';
+
+  @override
+  String get mapIdeaGrounded => '参考原文';
+
+  @override
+  String mapIdeaExpanding(String title) {
+    return '扩展「$title」';
+  }
+
+  @override
+  String mapIdeaExpandingCount(int count) {
+    return '扩展 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaStopped => '已停止';
+
+  @override
+  String mapIdeaDraftCount(int count) {
+    return '$count 条';
+  }
+
+  @override
+  String mapIdeaKeptCount(int kept, int total) {
+    return '保留 $kept / $total';
+  }
+
+  @override
+  String get mapIdeaRegenerate => '换一批';
+
+  @override
+  String get mapIdeaAdjust => '调整';
+
+  @override
+  String get mapIdeaRegenerateAdjusted => '重新生成';
+
+  @override
+  String get mapIdeaDiscard => '放弃';
+
+  @override
+  String mapIdeaKeep(int count) {
+    return '保留 $count 条';
+  }
+
+  @override
+  String get mapIdeaDraftKeep => '保留';
+
+  @override
+  String get mapIdeaDraftSkip => '不要';
+
+  @override
+  String get mapIdeaDraftEdit => '修改';
+
+  @override
+  String get mapIdeaDraftMore => '继续扩展';
+
+  @override
+  String mapIdeaDraftSemantics(String title, String state) {
+    return 'AI 草稿，$title，$state';
+  }
+
+  @override
+  String get mapIdeaDraftKept => '已保留';
+
+  @override
+  String get mapIdeaDraftSkipped => '未保留';
+
+  @override
+  String get mapIdeaNewBranches => '新分支';
+
+  @override
+  String mapIdeaAddCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get mapIdeaFewer => '减少';
+
+  @override
+  String get mapIdeaMore => '增加';
+
+  @override
+  String get mapIdeaStart => '开始扩展';
+
+  @override
+  String mapIdeaAdded(int count) {
+    return '已添加 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaBlocked => '先保留（↩）或放弃（Esc）这次 AI 扩展';
+
+  @override
+  String get mapIdeaNothing => '这里暂时没有值得补充的方向，换个方向试试';
+
+  @override
+  String get mapIdeaStoppedEmpty => '已停止，没有生成内容';
+
+  @override
+  String get mapIdeaBusy => '模型正忙，请稍后再试';
+
+  @override
+  String get notesTitle => '笔记';
+
+  @override
+  String get organizeStudyNote => '整理学习笔记…';
+
+  @override
+  String get organizeNotes => '整理笔记';
+
+  @override
+  String get organizeSelection => '整理成笔记';
+
+  @override
+  String get exportStudyNote => '导出笔记…';
+
+  @override
+  String get noteSetupTitle => '整理学习笔记';
+
+  @override
+  String get noteScope => '范围';
+
+  @override
+  String get noteMaterials => '素材';
+
+  @override
+  String get noteOrganization => '组织方式';
+
+  @override
+  String get noteDepth => 'AI 参与';
+
+  @override
+  String get noteContext => '上下文';
+
+  @override
+  String get noteTemplate => '版式';
+
+  @override
+  String get noteSelected => '选中的划线';
+
+  @override
+  String get noteWhole => '整个学习集';
+
+  @override
+  String get noteRecent => '最近 7 天';
+
+  @override
+  String get noteHighlights => '划线';
+
+  @override
+  String get noteOwn => '我的批注';
+
+  @override
+  String get noteMapNotes => '脑图笔记';
+
+  @override
+  String get noteSavedAi => '已存的 AI 笔记';
+
+  @override
+  String get noteImages => '图片卡片';
+
+  @override
+  String get noteTheme => '按主题归纳';
+
+  @override
+  String get noteSourceOrder => '按原文顺序';
+
+  @override
+  String get noteMapOrder => '按脑图结构';
+
+  @override
+  String get noteLocal => '只排版';
+
+  @override
+  String get noteAiContext => '补全与小结';
+
+  @override
+  String get noteAiDeep => '深度整理';
+
+  @override
+  String get noteNextPhase => '下一期开放';
+
+  @override
+  String get noteComplete => '补全指代';
+
+  @override
+  String get noteReading => '读书笔记';
+
+  @override
+  String get noteCornell => '康奈尔笔记';
+
+  @override
+  String get noteReview => '复习提纲';
+
+  @override
+  String get noteGenerate => '生成笔记';
+
+  @override
+  String get noteEmptyScope => '这个范围还没有划线';
+
+  @override
+  String get noteGenerated => '已生成';
+
+  @override
+  String get noteFailed => '整理失败';
+
+  @override
+  String get noteUnused => '未用上';
+
+  @override
+  String get notePutBack => '放回笔记';
+
+  @override
+  String get noteRestored => '已放入笔记';
+
+  @override
+  String get noteRemoved => '已从笔记中移除';
+
+  @override
+  String get noteExpandContext => '展开上下文';
+
+  @override
+  String get noteCollapseContext => '收起上下文';
+
+  @override
+  String get noteNoText => '无原文文本';
+
+  @override
+  String get noteMissingHighlight => '划线已删除';
+
+  @override
+  String get noteMissingDocument => '原文已移除';
+
+  @override
+  String get noteNotIncluded => '这条划线不在笔记里';
+
+  @override
+  String get noteRemoveBlock => '从笔记中移除';
+
+  @override
+  String get noteSources => '出处';
+
+  @override
+  String get noteInclude => '包含';
+
+  @override
+  String get noteCitationPage => '页码';
+
+  @override
+  String get noteCitationFootnote => '脚注';
+
+  @override
+  String get noteCitationNone => '不标';
+
+  @override
+  String get noteAiContent => 'AI 内容';
+
+  @override
+  String get noteQuestions => '复习题';
+
+  @override
+  String get noteSourceList => '出处列表';
+
+  @override
+  String get noteAiMarks => 'AI 标记';
+
+  @override
+  String get noteMark => '标出';
+
+  @override
+  String get noteUnmark => '不标';
+
+  @override
+  String get noteCornellSummary => '总结';
+
+  @override
+  String noteContextSentences(int count) {
+    return '前后 $count 句';
+  }
+
+  @override
+  String noteCoverage(int count) {
+    return '$count 条划线全部引用 · 原文未改写';
+  }
+
+  @override
+  String noteUnusedCount(int count) {
+    return '$count 条划线未用上';
+  }
+
+  @override
+  String noteSelectedCount(int count) {
+    return '已选 $count 条';
+  }
+
+  @override
+  String noteRecallQuestion(String title, String location) {
+    return '《$title》$location 说了什么？';
+  }
+
+  @override
+  String get noteSelectAll => '全选';
+
+  @override
+  String get noteDeselectAll => '取消全选';
+
+  @override
+  String get noteReviewAdded => '已生成 1 张复习卡';
+
+  @override
+  String get noteExplain => '解释这句话';
+
+  @override
+  String get noteCreateReview => '生成复习卡';
+
+  @override
+  String get noteAddedToMap => '已加入脑图';
+
+  @override
+  String get noteExport => '导出';
+
+  @override
+  String get noteMarginSource => '页边批注';
+
+  @override
+  String notePage(int page) {
+    return 'p.$page';
+  }
+
+  @override
+  String noteSourceTitle(String title) {
+    return '《$title》';
+  }
+
+  @override
+  String get notePageSeparator => '、';
+
+  @override
+  String noteSourcePage(String title, int page) {
+    return '《$title》p.$page';
+  }
+
+  @override
+  String get noteOutlineTitle => '确认提纲';
+
+  @override
+  String get noteGenerating => '整理笔记';
+
+  @override
+  String get noteStop => '停止';
+
+  @override
+  String get noteContinue => '继续整理';
+
+  @override
+  String get noteLayoutOnly => '改为只排版';
+
+  @override
+  String get noteStepOutline => '归纳主题';
+
+  @override
+  String get noteAddSection => '添加节';
+
+  @override
+  String get noteNewSection => '新节';
+
+  @override
+  String get noteUnassigned => '未归入';
+
+  @override
+  String get noteAiUnavailable => '未配置 AI';
+
+  @override
+  String get notePreviewOutline => '先看提纲';
+
+  @override
+  String get noteAiFallback => 'AI 整理失败，已按原文排版';
+
+  @override
+  String get noteShowAi => '显示 AI 标记';
+
+  @override
+  String get noteAiEdited => 'AI · 已改';
+
+  @override
+  String get noteRephrase => '换一种说法';
+
+  @override
+  String get noteConcise => '更简洁';
+
+  @override
+  String get noteExpand => '展开说明';
+
+  @override
+  String get noteMakeMine => '改为我的话';
+
+  @override
+  String get noteRegenerate => '重新整理';
+
+  @override
+  String get noteAddAllReview => '全部加入复习';
+
+  @override
+  String noteStepWrite(int done, int total) {
+    return '撰写 $done / $total · 核对引用';
+  }
+
+  @override
+  String noteSending(int highlights, int notes, int characters, String model) {
+    String _temp0 = intl.Intl.pluralLogic(
+      notes,
+      locale: localeName,
+      other: '将发送 $highlights 条划线、$notes 条批注（约 $characters 字）给 $model',
+      zero: '将发送 $highlights 条划线（约 $characters 字）给 $model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noteStepCollect => '收集素材';
+
+  @override
+  String get noteStepContext => '补全上下文';
+
+  @override
+  String get noteStepCompose => '撰写';
+
+  @override
+  String get noteStepVerify => '核对引用';
+
+  @override
+  String get noteStopped => '已停止';
+
+  @override
+  String get noteLocked => '更新时保留';
+
+  @override
   String get resizeCompanionPanel => '调整面板大小';
-
-  @override
-  String get annotationLineType => '线条类型';
-
-  @override
-  String get chooseMoreAnnotationColors => '选择更多颜色…';
 }

@@ -1,12 +1,16 @@
+import '../features/assistant/expansion_controller.dart';
+import '../features/study_notes/note_session.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
+import '../features/study_notes/note_setup_sheet.dart';
+import '../features/study_notes/note_export_sheet.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition;
+import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition, QuoteBlock;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -138,6 +142,7 @@ AppCommand paragraphMarginCommand(
 /// Global shortcuts. Defined in macOS terms; [primaryShortcut] swaps ⌘ for
 /// Ctrl on Windows and Linux.
 abstract final class AppShortcuts {
+  static SingleActivator get organizeStudyNote => primaryShortcut(LogicalKeyboardKey.keyP, alt: true);
   static SingleActivator get settings => primaryShortcut(LogicalKeyboardKey.comma);
   static SingleActivator get newStudySet => primaryShortcut(LogicalKeyboardKey.keyN);
   static SingleActivator get showLibrary => primaryShortcut(LogicalKeyboardKey.keyL, shift: true);
@@ -205,6 +210,7 @@ abstract final class AppShortcuts {
 
 /// Shared by the native menu and the focused canvas.
 enum MindMapCommand {
+  expandIdeas,
   siblingAfter,
   siblingBefore,
   child,
@@ -237,6 +243,7 @@ class MindMapIntent extends Intent {
 }
 
 Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.tab, alt: true): MindMapCommand.expandIdeas,
   primaryShortcut(LogicalKeyboardKey.keyC): MindMapCommand.copy,
   primaryShortcut(LogicalKeyboardKey.keyX): MindMapCommand.cut,
   primaryShortcut(LogicalKeyboardKey.keyV): MindMapCommand.paste,
@@ -418,6 +425,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ref.watch(
         workspaceProvider(workspaceId).select(
           (s) => (
+            s.activeNoteId,
+            s.noteAnnotationId,
+            s.selectedAnnotationIds,
             s.selectedCardId,
             s.selectedCardIds,
             s.editingCardId,
@@ -443,8 +453,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
+    final expansion = inWorkspace ? ref.watch(expansionControllerProvider(workspaceId)) : null;
     final editable =
-        workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
+        expansion == null &&
+        workspace != null &&
+        workspaceState?.editingCardId == null &&
+        workspaceState?.editingMarkId == null;
     final hasDocument =
         browserState?.visible != true &&
         workspace != null &&
@@ -531,6 +545,40 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ).values,
       );
     }
+    file.add(
+      AppCommand(
+        l.organizeStudyNote,
+        inWorkspace ? () => showNoteSetupSheet(context, ref, workspaceId) : null,
+        shortcut: AppShortcuts.organizeStudyNote,
+      ),
+    );
+    final activeNote = workspace?.content.studyNote(workspaceState?.activeNoteId ?? '');
+    file.add(
+      AppCommand(
+        l.exportStudyNote,
+        activeNote == null ? null : () => showNoteExportSheet(context, ref, workspaceId!, activeNote.id),
+      ),
+    );
+    file.add(
+      AppCommand(
+        l.noteRegenerate,
+        activeNote == null ? null : () => showNoteReorganization(context, ref, workspaceId!, activeNote.id),
+      ),
+    );
+    file.add(
+      AppCommand(
+        l.noteShowAi,
+        activeNote == null ? null : () => ref.read(noteAiMarkersProvider(activeNote.id).notifier).toggle(),
+      ),
+    );
+    file.add(
+      AppCommand(
+        l.noteAddAllReview,
+        activeNote == null || !activeNote.sections.any((s) => s.question != null)
+            ? null
+            : () => workspace!.addNoteReviews(activeNote.id),
+      ),
+    );
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.
@@ -769,6 +817,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(l.statistics, hasLogs && (inLibrary || inWorkspace) ? () => nav.showStats(workspaceId) : null),
     ];
+    final noteSourceId =
+        workspaceState?.noteAnnotationId ??
+        (workspaceState?.pending is PendingHighlight
+            ? (workspaceState!.pending! as PendingHighlight).annotationId
+            : null);
     final map = <AppCommand>[
       AppCommand(
         l.insertImage,
@@ -815,15 +868,25 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(
         l.revealSource,
-        workspace != null &&
-                selected != null &&
-                workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
+        activeNote != null
+            ? (noteSourceId != null &&
+                      workspace!.content.annotation(noteSourceId) != null &&
+                      activeNote.sections
+                          .expand((s) => s.blocks)
+                          .whereType<QuoteBlock>()
+                          .any((b) => b.annotationId == noteSourceId)
+                  ? () => workspace.revealNoteAnnotation(noteSourceId)
+                  : null)
+            : workspace != null &&
+                  selected != null &&
+                  workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
             ? () => workspace.revealCard(selected)
             : null,
         shortcut: AppShortcuts.revealSource,
       ),
     ];
     final mapLabels = {
+      MindMapCommand.expandIdeas: l.mapIdeaMenu,
       MindMapCommand.siblingAfter: l.addSiblingAfter,
       MindMapCommand.siblingBefore: l.addSiblingBefore,
       MindMapCommand.child: l.addChildTopic,
@@ -846,6 +909,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     // centering only apply to the map.
     // Relations and summaries are drawn on the map only.
     const mapOnly = {
+      MindMapCommand.expandIdeas,
       MindMapCommand.fold,
       MindMapCommand.fit,
       MindMapCommand.center,
@@ -858,13 +922,21 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       map.add(
         AppCommand(
           entry.value,
-          editable && _mapFocused && !_textFocused && !(inOutline && mapOnly.contains(entry.key))
+          editable &&
+                  _mapFocused &&
+                  !_textFocused &&
+                  !(inOutline && mapOnly.contains(entry.key)) &&
+                  (entry.key != MindMapCommand.expandIdeas ||
+                      (MMPlatformCapabilities.current.assistant &&
+                          (workspaceState?.selectedCardId != null || workspaceState?.rootSelected == true)))
               ? () {
                   final focus = FocusManager.instance.primaryFocus?.context;
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
                 }
               : null,
-          shortcut: entry.key == MindMapCommand.fit && !_mapFocused
+          shortcut:
+              (entry.key == MindMapCommand.expandIdeas && defaultTargetPlatform != TargetPlatform.macOS) ||
+                  entry.key == MindMapCommand.fit && !_mapFocused
               ? null
               : mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
         ),

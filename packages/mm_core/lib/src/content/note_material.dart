@@ -375,6 +375,9 @@ class NoteMaterialCollector {
     return s.runes.length < 12 || RegExp(r'^(这|那|它|其|此|该|上述|以上|但是|因此|所以|然而|不过|而且)').hasMatch(s);
   }
 
+  /// A human-readable source location; storage chapter IDs are never display labels.
+  String? sectionTitle(StudySetContent content, Annotation annotation) => _section(content, annotation)?.title;
+
   PdfOutlineEntry? _section(StudySetContent c, Annotation a) {
     PdfOutlineEntry? result;
     for (final e in OutlineTree.flatten(c.outlineOn(a.documentId)?.items ?? const [])) {

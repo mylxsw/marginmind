@@ -1938,7 +1938,298 @@
   "vocabularyHintsGloss": "Meaning",
   "vocabularyHintsHidden": "Hide in this document",
   "vocabularyHintsKnown": "Mark known words",
-  "resizeCompanionPanel": "Resize companion panel",
-  "annotationLineType": "Line Type",
-  "chooseMoreAnnotationColors": "Choose More Colors…"
+  "mapIdeaMenu": "Expand Ideas with AI",
+  "mapIdeaExpand": "Expand Ideas",
+  "mapIdeaExpandEach": "{count, plural, =1{Expand 1 Topic} other{Expand {count} Topics}}",
+  "@mapIdeaExpandEach": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaExpandMap": "Expand Whole Map…",
+  "mapIdeaWholeMap": "Expand Whole Map",
+  "mapIdeaBranchesOnly": "New Branches Only",
+  "mapIdeaGroup": "Group Under New Parent",
+  "mapIdeaFillSiblings": "Fill In Siblings",
+  "mapIdeaDirection": "Direction",
+  "mapIdeaDirectionAuto": "Auto",
+  "mapIdeaDirectionWhy": "Why",
+  "mapIdeaDirectionExample": "Examples",
+  "mapIdeaDirectionCounter": "Counterpoints",
+  "mapIdeaDirectionQuestion": "Questions",
+  "mapIdeaDirectionAction": "Actions",
+  "mapIdeaDepth": "Depth",
+  "mapIdeaDepthLevels": "{count, plural, =1{1 Level} other{{count} Levels}}",
+  "@mapIdeaDepthLevels": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaAmount": "Amount",
+  "mapIdeaAmountFew": "Few",
+  "mapIdeaAmountSome": "Some",
+  "mapIdeaAmountMany": "Many",
+  "mapIdeaHint": "Instructions",
+  "mapIdeaGrounded": "Use Source",
+  "mapIdeaExpanding": "Expanding “{title}”",
+  "@mapIdeaExpanding": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "mapIdeaExpandingCount": "{count, plural, =1{Expanding 1 Topic} other{Expanding {count} Topics}}",
+  "@mapIdeaExpandingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaStopped": "Stopped",
+  "mapIdeaDraftCount": "{count, plural, =1{1 idea} other{{count} ideas}}",
+  "@mapIdeaDraftCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaKeptCount": "{kept} of {total} kept",
+  "@mapIdeaKeptCount": {
+    "placeholders": {
+      "kept": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "mapIdeaRegenerate": "Try Others",
+  "mapIdeaAdjust": "Adjust",
+  "mapIdeaRegenerateAdjusted": "Regenerate",
+  "mapIdeaDiscard": "Discard",
+  "mapIdeaKeep": "{count, plural, =1{Keep 1} other{Keep {count}}}",
+  "@mapIdeaKeep": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaDraftKeep": "Keep",
+  "mapIdeaDraftSkip": "Skip",
+  "mapIdeaDraftEdit": "Edit",
+  "mapIdeaDraftMore": "Expand Further",
+  "mapIdeaDraftSemantics": "AI draft, {title}, {state}",
+  "@mapIdeaDraftSemantics": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+  "mapIdeaDraftKept": "kept",
+  "mapIdeaDraftSkipped": "not kept",
+  "mapIdeaNewBranches": "New Branches",
+  "mapIdeaAddCount": "+{count}",
+  "@mapIdeaAddCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaFewer": "Fewer",
+  "mapIdeaMore": "More",
+  "mapIdeaStart": "Expand",
+  "mapIdeaAdded": "{count, plural, =1{Added 1 topic} other{Added {count} topics}}",
+  "@mapIdeaAdded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaBlocked": "Keep (↩) or discard (Esc) the AI drafts first",
+  "mapIdeaNothing": "No new ideas here. Try another direction.",
+  "mapIdeaStoppedEmpty": "Stopped before any ideas",
+  "mapIdeaBusy": "The model is busy. Try again later.",
+  "notesTitle": "Notes",
+  "organizeStudyNote": "Organize Study Notes…",
+  "organizeNotes": "Organize Notes",
+  "organizeSelection": "Create Study Note",
+  "exportStudyNote": "Export Note…",
+  "noteSetupTitle": "Organize Study Notes",
+  "noteScope": "Scope",
+  "noteMaterials": "Materials",
+  "noteOrganization": "Organization",
+  "noteDepth": "AI Contribution",
+  "noteContext": "Context",
+  "noteTemplate": "Layout",
+  "noteSelected": "Selected highlights",
+  "noteWhole": "Entire study set",
+  "noteRecent": "Last 7 days",
+  "noteHighlights": "Highlights",
+  "noteOwn": "My Notes",
+  "noteMapNotes": "Map Notes",
+  "noteSavedAi": "Saved AI Notes",
+  "noteImages": "Image Cards",
+  "noteTheme": "By Theme",
+  "noteSourceOrder": "Source Order",
+  "noteMapOrder": "Map Structure",
+  "noteLocal": "Format Only",
+  "noteAiContext": "Context & Summary",
+  "noteAiDeep": "Deep Organization",
+  "noteNextPhase": "Available in the next release",
+  "noteComplete": "Complete Fragments",
+  "noteReading": "Reading Notes",
+  "noteCornell": "Cornell Notes",
+  "noteReview": "Review Outline",
+  "noteGenerate": "Create Note",
+  "noteEmptyScope": "No highlights in this scope",
+  "noteGenerated": "Note created",
+  "noteFailed": "Could not create note",
+  "noteUnused": "Unused",
+  "notePutBack": "Put Back",
+  "noteRestored": "Added to note",
+  "noteRemoved": "Removed from note",
+  "noteExpandContext": "Expand Context",
+  "noteCollapseContext": "Collapse Context",
+  "noteNoText": "No source text",
+  "noteMissingHighlight": "Highlight deleted",
+  "noteMissingDocument": "Source removed",
+  "noteNotIncluded": "This highlight is not in the note",
+  "noteRemoveBlock": "Remove from Note",
+  "noteSources": "Sources",
+  "noteInclude": "Include",
+  "noteCitationPage": "Page Numbers",
+  "noteCitationFootnote": "Footnotes",
+  "noteCitationNone": "None",
+  "noteAiContent": "AI Content",
+  "noteQuestions": "Review Questions",
+  "noteSourceList": "Source List",
+  "noteAiMarks": "AI Labels",
+  "noteMark": "Show",
+  "noteUnmark": "Hide",
+  "noteCornellSummary": "Summary",
+  "noteContextSentences": "{count} surrounding sentences",
+  "@noteContextSentences": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteCoverage": "All {count} highlights cited · Original text preserved",
+  "@noteCoverage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteUnusedCount": "{count} unused highlights",
+  "@noteUnusedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSelectedCount": "{count} selected",
+  "@noteSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteRecallQuestion": "What does {title} {location} say?",
+  "@noteRecallQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "noteSelectAll": "Select All",
+  "noteDeselectAll": "Deselect All",
+  "noteReviewAdded": "Created 1 review card",
+  "noteExplain": "Explain This Passage",
+  "noteCreateReview": "Create Review Card",
+  "noteAddedToMap": "Added to map",
+  "noteExport": "Export",
+  "noteMarginSource": "Margin Note",
+  "notePage": "p.{page}",
+  "@notePage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSourceTitle": "{title}",
+  "@noteSourceTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notePageSeparator": ", ",
+  "noteSourcePage": "{title}, p. {page}",
+  "@noteSourcePage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noteOutlineTitle": "Confirm outline",
+  "noteGenerating": "Organizing note",
+  "noteStop": "Stop",
+  "noteContinue": "Continue organizing",
+  "noteLayoutOnly": "Use original order",
+  "noteStepOutline": "Grouping themes",
+  "noteAddSection": "Add section",
+  "noteNewSection": "New section",
+  "noteUnassigned": "Unassigned",
+  "noteAiUnavailable": "AI not configured",
+  "notePreviewOutline": "Preview outline",
+  "noteAiFallback": "AI organization failed; used original order",
+  "noteShowAi": "Show AI markers",
+  "noteAiEdited": "AI · Edited",
+  "noteRephrase": "Rephrase",
+  "noteConcise": "Make concise",
+  "noteExpand": "Expand",
+  "noteMakeMine": "Make it mine",
+  "noteRegenerate": "Reorganize",
+  "noteAddAllReview": "Add all to review",
+  "noteStepWrite": "Writing {done} / {total} · Checking references",
+  "@noteStepWrite": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSending": "{notes, plural, =0{Send {highlights} highlights (about {characters} characters) to {model}} other{Send {highlights} highlights and {notes} notes (about {characters} characters) to {model}}}",
+  "@noteSending": {
+    "placeholders": {
+      "highlights": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      },
+      "characters": {
+        "type": "int"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "noteStepCollect": "Collect materials",
+  "noteStepContext": "Gather context",
+  "noteStepCompose": "Write",
+  "noteStepVerify": "Check references",
+  "noteStopped": "Stopped",
+  "noteLocked": "Keep when updating",
+  "resizeCompanionPanel": "Resize companion panel"
 }

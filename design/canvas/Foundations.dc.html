@@ -281,6 +281,8 @@ class Component extends DCLogic {
       ['accent.tint', 'accent 12% / 20%', 'rgba(0,122,255,.12)', 'rgba(10,132,255,.20)', '工具按钮的选中底、联动光晕'],
       ['research', '自定义（不随系统强调色）', '#5E5CE6', '#7D7AFF', '研究面板标题、研究入口、研究笔记竖线'],
       ['research.tint', 'research 12% / 20%', 'rgba(94,92,230,.12)', 'rgba(125,122,255,.20)', '研究笔记卡片底色、研究按钮选中底'],
+      ['research.wash', 'research 6% / 10%', 'rgba(94,92,230,.06)', 'rgba(125,122,255,.10)', 'AI 草稿节点底色、弹层“扩展想法”区底色'],
+      ['onResearch', '实心 research 上的文字', '#FFFFFF', '#1E1E1F', 'AI 主按钮、选中方向、草稿方向标签'],
       ['vocabulary', '自定义（不随系统强调色；浅色微调至白底 4.5:1）', '#0D8480', '#40C8C0', '生词提示、查词入口'],
       ['vocabulary.tint', 'vocabulary 12% / 16%', 'rgba(13,132,128,.12)', 'rgba(64,200,192,.16)', '查词释义底色（正文使用 label）'],
       ['positive', 'systemGreen（高对比）', '#248A3D', '#30D158', '状态文字：已提取正文、已取得字幕（底为自身 12%）'],
@@ -339,6 +341,8 @@ class Component extends DCLogic {
         { token: 'ease.quick', value: '150ms easeOut', use: '悬停、按下、颜色变化' },
         { token: 'ease.standard', value: '200ms easeInOut', use: '折叠展开、选中环、分段控件滑块' },
         { token: 'flash', value: '1600ms', use: '原文 ↔ 卡片联动：选中环 + 光晕后淡出' },
+        { token: 'pulse', value: '1400ms', use: 'AI 正在扩展的主题外圈脉冲（减少动态效果时为静止描边）' },
+        { token: 'shimmer', value: '1100ms', use: '第一条 AI 草稿到达前的占位闪烁（减少动态效果时静止）' },
         { token: 'hud', value: '2400ms', use: '提示胶囊停留时长' },
         { token: 'scroll', value: '系统弹性滚动', use: '触控板惯性与回弹，滚动条为悬浮样式' }
       ],

@@ -44,7 +44,9 @@ class AssistantWrites {
     if (content.map(proposal.mapId) == null) throw StateError('Map no longer exists');
     if (assistantMapRevision(content, proposal.mapId) != proposal.baseRevision) throw StateError('Map has changed');
     final ids = proposal.operations.map((o) => o.id).toSet();
-    if (proposal.operations.length > 50 ||
+    if ((!proposal.isExpansion && proposal.operations.length > 50) ||
+        (proposal.isExpansion &&
+            proposal.operations.any((o) => o.kind != MapEditKind.addTopic && o.kind != MapEditKind.move)) ||
         ids.length != proposal.operations.length ||
         !ids.containsAll(selected) ||
         selected.isEmpty) {

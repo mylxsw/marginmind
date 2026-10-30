@@ -107,7 +107,12 @@ void main() {
         find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(AnnotationColorButton)),
       );
       await tester.pumpAndSettle();
-      if (![MMAnnotationColor.yellow, MMAnnotationColor.green, MMAnnotationColor.blue].contains(color)) {
+      if (![
+        MMAnnotationColor.yellow,
+        MMAnnotationColor.green,
+        MMAnnotationColor.blue,
+        MMAnnotationColor.pink,
+      ].contains(color)) {
         await tester.tap(find.byTooltip('More Colors'));
         await tester.pumpAndSettle();
       }

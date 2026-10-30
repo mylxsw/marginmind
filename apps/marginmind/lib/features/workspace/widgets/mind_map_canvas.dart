@@ -15,6 +15,8 @@ import '../../../shared/l10n.dart';
 import '../../../shared/note_text.dart';
 import '../../../app/app_commands.dart';
 import '../../assistant/widgets/dashed_border.dart';
+import '../../assistant/expansion_controller.dart';
+import '../../assistant/widgets/expansion_widgets.dart';
 import 'card_field.dart';
 import 'map_drop.dart';
 import 'mind_map_geometry.dart';
@@ -136,7 +138,20 @@ class MindMapCanvas extends StatefulWidget {
     this.fitInsets,
     this.toolbarTopInset = 60,
     this.touchSelectionMode,
+    this.expansion,
+    this.onDraftToggle,
+    this.onDraftEdit,
+    this.onDraftMore,
+    this.onExpansionKeep,
+    this.onExpansionStop,
+    this.onExpansionDiscard,
   });
+
+  /// Virtual topics and their review actions; never part of [content].
+  final ExpansionPreview? expansion;
+  final ValueChanged<String>? onDraftToggle, onDraftMore;
+  final void Function(String, String)? onDraftEdit;
+  final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard;
 
   /// A structure and palette shown in place of the map's own while they are
   /// previewed; nothing is saved.
@@ -327,6 +342,19 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// make way smoothly while a title grows.
   late final _motion = AnimationController(vsync: this, duration: MMMotion.standard, value: 1);
   Map<String, Rect> _from = const {};
+  Matrix4Tween? _viewportTween;
+  late final AnimationController _viewportMotion = AnimationController(vsync: this, duration: MMMotion.layout)
+    ..addListener(() {
+      final tween = _viewportTween;
+      if (tween != null) {
+        widget.transformation.value = tween.transform(MMMotion.layoutCurve.transform(_viewportMotion.value));
+      }
+    });
+  void _manualPreviewViewport() {
+    if (widget.expansion == null) return;
+    _manualExpansionViewport = true;
+    _viewportMotion.stop();
+  }
 
   /// A merge can grow a card and rebalance whole branches. Keep its start
   /// where the user was reading, rather than anchoring that edit to the root.
@@ -446,6 +474,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     mark?.dispose();
     _autoScroll.dispose();
     _motion.dispose();
+    _viewportMotion.dispose();
     _hovered.dispose();
     super.dispose();
   }
@@ -711,7 +740,101 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
             : context.mmToolbarButton.height + (context.mmTablet ? 4 : 6) + 22 + (context.mmTablet ? 0 : MMSpacing.s)),
   );
 
+  String? _draftFocus, _draftHover;
+  final _ghostKeys = <String, GlobalKey<MapGhostNodeState>>{};
+  bool _manualExpansionViewport = false;
+  String? _previewSession;
+  String get _workingTargetRef => widget.expansion!.phase == ExpansionPhase.generating
+      ? widget.expansion!.activeTargetId ?? widget.expansion!.request.targetIds.first
+      : widget.expansion!.request.targetIds.first;
+  String get _workingTargetId => _workingTargetRef == widget.mapId
+      ? rootNodeId
+      : _workingTargetRef.startsWith('new:')
+      ? _workingTargetRef.substring(4)
+      : _workingTargetRef;
+  List<ExpansionDraft> get _drafts => [
+    ...?widget.expansion?.drafts,
+    if (widget.expansion?.phase == ExpansionPhase.generating)
+      ExpansionDraft(id: '__expansion_placeholder__', parentRef: _workingTargetRef, title: '…'),
+  ];
+  int _draftDepth(String id) {
+    var depth = 0;
+    var draft = widget.expansion!.drafts.firstWhere((d) => d.id == id);
+    while (true) {
+      final request = widget.expansion!.request;
+      if (!(request.scope == ExpansionScope.map && request.plan.containsKey('new:${draft.id}'))) depth++;
+      if (!draft.parentRef.startsWith('new:')) return depth;
+      draft = widget.expansion!.drafts.firstWhere((d) => 'new:${d.id}' == draft.parentRef);
+    }
+  }
+
+  bool _inExpansionBranch(String id) {
+    final preview = widget.expansion;
+    if (preview == null) return true;
+    final targets = preview.request.targetIds;
+    bool ancestorOf(String ancestor, String descendant) {
+      final seen = <String>{};
+      String? current = descendant;
+      while (current != null && seen.add(current)) {
+        if (current == ancestor) return true;
+        current = widget.content.node(current, mapId: widget.mapId)?.parentId;
+      }
+      return false;
+    }
+
+    return preview.request.scope == ExpansionScope.map ||
+        id == rootNodeId ||
+        targets.any((target) => ancestorOf(id, target) || ancestorOf(target, id));
+  }
+
+  void _blocked() => MMHud.show(context, context.l10n.mapIdeaBlocked);
+  KeyEventResult _expansionKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.handled;
+    final key = event.logicalKey, preview = widget.expansion!;
+    // EditableText owns all editing keys.
+    if (FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null) {
+      return KeyEventResult.ignored;
+    }
+    if (key == LogicalKeyboardKey.escape) {
+      (preview.phase == ExpansionPhase.generating ? widget.onExpansionStop : widget.onExpansionDiscard)?.call();
+    } else if (key == LogicalKeyboardKey.enter) {
+      if (preview.phase != ExpansionPhase.generating) widget.onExpansionKeep?.call();
+    } else if (preview.phase != ExpansionPhase.generating &&
+        preview.drafts.isNotEmpty &&
+        {LogicalKeyboardKey.arrowDown, LogicalKeyboardKey.arrowUp}.contains(key)) {
+      final index = preview.drafts.indexWhere((d) => d.id == _draftFocus);
+      setState(
+        () => _draftFocus =
+            preview.drafts[(index + (key == LogicalKeyboardKey.arrowDown ? 1 : -1)) % preview.drafts.length].id,
+      );
+    } else if (preview.phase != ExpansionPhase.generating && _draftFocus != null && key == LogicalKeyboardKey.space) {
+      widget.onDraftToggle?.call(_draftFocus!);
+    } else if (preview.phase != ExpansionPhase.generating && _draftFocus != null && key == LogicalKeyboardKey.f2) {
+      _ghostKeys[_draftFocus]?.currentState?.beginEdit();
+    } else if (key == LogicalKeyboardKey.tab && HardwareKeyboard.instance.isAltPressed) {
+      if (preview.phase != ExpansionPhase.generating && _draftFocus != null) widget.onDraftMore?.call(_draftFocus!);
+    } else if (mindMapShortcuts.entries.any(
+      (e) =>
+          {MindMapCommand.fit, MindMapCommand.center, MindMapCommand.copy}.contains(e.value) &&
+          e.key.accepts(event, HardwareKeyboard.instance),
+    )) {
+      final entry = mindMapShortcuts.entries.firstWhere((e) => e.key.accepts(event, HardwareKeyboard.instance));
+      _command(entry.value);
+    } else if (isTypingKey(event) ||
+        mindMapShortcuts.keys.any((a) => a.accepts(event, HardwareKeyboard.instance)) ||
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isControlPressed) {
+      _blocked();
+    }
+    return KeyEventResult.handled;
+  }
+
   void _command(MindMapCommand command) {
+    if (widget.expansion != null &&
+        !{MindMapCommand.fit, MindMapCommand.center, MindMapCommand.copy}.contains(command)) {
+      _blocked();
+      return;
+    }
     final selected = widget.selectedCardId;
     if (widget.selectedMarkId case final mark?) {
       switch (command) {
@@ -726,6 +849,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       }
     }
     switch (command) {
+      case MindMapCommand.expandIdeas:
+        widget.onCommand?.call(command);
       case MindMapCommand.child:
         widget.onAddChild();
       case MindMapCommand.edit:
@@ -784,6 +909,36 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         1,
       )
       ..scaleByDouble(scale, scale, 1, 1);
+  }
+
+  void _fitExpansion() {
+    final preview = widget.expansion, layout = _layout;
+    if (preview == null || layout == null || _viewport.isEmpty) return;
+    final rects = [
+      for (final id in [
+        ...preview.request.targetIds.map((id) => id == widget.mapId ? rootNodeId : id),
+        ..._drafts.map((d) => d.id),
+        ...preview.moves.keys,
+      ])
+        if (layout.rects[id] case final r?) _rect(r),
+    ];
+    if (rects.isEmpty) return;
+    final bounds = rects.reduce((a, b) => a.expandToInclude(b)).inflate(20);
+    final area = const EdgeInsets.fromLTRB(16, 70, 16, 120).deflateRect(Offset.zero & _viewport);
+    final shown = MatrixUtils.transformRect(widget.transformation.value, bounds);
+    if (area.contains(shown.topLeft) && area.contains(shown.bottomRight)) return;
+    final scale = math
+        .min(mapScale(widget.transformation.value), math.min(area.width / bounds.width, area.height / bounds.height))
+        .clamp(mapMinScale, mapMaxScale);
+    final target = Matrix4.identity()
+      ..translateByDouble(area.center.dx - bounds.center.dx * scale, area.center.dy - bounds.center.dy * scale, 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1);
+    if (MMAppearance.reduceMotionOf(context)) {
+      widget.transformation.value = target;
+    } else {
+      _viewportTween = Matrix4Tween(begin: widget.transformation.value.clone(), end: target);
+      _viewportMotion.forward(from: 0);
+    }
   }
 
   /// Shows the node [id] in the middle of the view at [scale].
@@ -1542,7 +1697,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.image,
       spec.imageHeight,
       spec.suspended,
-      widget.selectedCardIds.contains(id) || id == _selectedNodeId,
+      widget.expansion == null && (widget.selectedCardIds.contains(id) || id == _selectedNodeId),
       id == widget.flashCardId || widget.flashCardIds.contains(id),
       _dragging?.contains(id) ?? false,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
@@ -1593,7 +1748,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 },
                 look: look,
                 transformation: widget.transformation,
-                selected: widget.selectedCardIds.contains(id) || id == _selectedNodeId,
+                selected: widget.expansion == null && (widget.selectedCardIds.contains(id) || id == _selectedNodeId),
                 flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
                 longPressEnabled: id == rootNodeId,
                 onPressStart: (kind) =>
@@ -1688,6 +1843,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final c = context.mmColors;
     final field = this.field;
     final result = _cache.update(
+      expansionDrafts: _drafts,
+      expansionMoves: widget.expansion?.moves ?? const {},
       draft: field == null ? null : (field.id, field.controller.text),
       draftFormat: field?.note?.format,
       widthDraft: _resize,
@@ -1704,6 +1861,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       expanded: widget.expandedCardIds,
       structure: widget.previewStyle?.$1,
     );
+    if (_previewSession != widget.expansion?.proposalId) {
+      _viewportMotion.stop();
+      _previewSession = widget.expansion?.proposalId;
+      _manualExpansionViewport = false;
+      _draftFocus = null;
+    }
+    if (widget.expansion?.drafts.any((d) => d.id == _draftHover) != true) _draftHover = null;
+    if (widget.expansion?.drafts.isNotEmpty == true && _draftFocus == null) {
+      _draftFocus = widget.expansion!.drafts.first.id;
+    }
     final specs = _cache._specs;
     final palette = _mapColors(c);
     if (!identical(_branchesLayout, result)) {
@@ -1736,6 +1903,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _mergeAnchor = null;
     final sceneSize = _sceneSize(result);
     final fitting = widget.fitInsets;
+    if (widget.expansion != null && layoutChanged && !_manualExpansionViewport) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.expansion == null || _manualExpansionViewport) return;
+        _fitExpansion();
+      });
+    }
     if (fitting != null) {
       final fit = (fitting, result, _viewport);
       if (fit != _lastFit) {
@@ -1754,12 +1927,45 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
     // Built once per frame of content; the animation only moves them.
     _nodeWidgets.removeWhere((id, _) => !specs.containsKey(id));
+    final ghostById = {for (final d in _drafts) d.id: d};
+    _ghostKeys.removeWhere((id, _) => !ghostById.containsKey(id));
     final nodes = {
       for (final id in result.rects.keys)
-        if (id != field?.id) id: _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c)),
+        if (id != field?.id)
+          id: ghostById.containsKey(id)
+              ? (id == '__expansion_placeholder__'
+                    ? const ExpansionWorking(placeholder: true)
+                    : MapGhostNode(
+                        key: _ghostKeys.putIfAbsent(id, () => GlobalKey<MapGhostNodeState>()),
+                        draft: ghostById[id]!,
+                        focused: _draftFocus == id,
+                        onHover: (hovered) {
+                          if (hovered && mounted && _draftHover != id) setState(() => _draftHover = id);
+                        },
+                        onEditingChanged: () {
+                          if (mounted) setState(() {});
+                        },
+                        generating: widget.expansion!.phase == ExpansionPhase.generating,
+                        onToggle: () {
+                          setState(() => _draftFocus = id);
+                          widget.onDraftToggle?.call(id);
+                          widget.focusNode.requestFocus();
+                        },
+                        onEdit: (text) => widget.onDraftEdit?.call(id, text),
+                        onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
+                      ))
+              : widget.expansion == null
+              ? _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c))
+              : IgnorePointer(
+                  ignoring: true,
+                  child: Opacity(
+                    opacity: _inExpansionBranch(id) ? 1 : .45,
+                    child: _nodeWidget(id, specs[id]!, l, _lookOf(id, specs[id]!, palette, c)),
+                  ),
+                ),
     };
     final foldButtons = {
-      for (final id in expandable)
+      for (final id in expandable.where((_) => widget.expansion == null))
         id: _FoldButton(
           hiddenCount: collapsed[id],
           tooltip: collapsed.containsKey(id) ? l.expandNode : l.collapseNode,
@@ -1790,6 +1996,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           if ((event is! KeyDownEvent && event is! KeyRepeatEvent) || field != null || _markField != null) {
             return KeyEventResult.ignored;
           }
+          if (widget.expansion != null) return _expansionKey(event);
           final key = event.logicalKey;
           final selected = widget.selectedCardId;
           // On macOS ⌥Space types a no-break space, and the Option key can
@@ -1836,11 +2043,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           return KeyEventResult.handled;
         },
         child: Listener(
-          onPointerSignal: _pointerSignal,
+          onPointerSignal: (event) {
+            _manualPreviewViewport();
+            _pointerSignal(event);
+          },
           child: Stack(
             children: [
               Listener(
-                onPointerPanZoomStart: (_) => _pinchScale = 1,
+                onPointerPanZoomStart: (_) {
+                  _pinchScale = 1;
+                  _manualPreviewViewport();
+                },
                 onPointerPanZoomUpdate: (event) {
                   final previous = _pinchScale;
                   if (previous == null || event.scale == previous || event.scale <= 0) return;
@@ -1905,6 +2118,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   });
                 },
                 child: InteractiveViewer(
+                  onInteractionStart: (_) {
+                    _manualPreviewViewport();
+                  },
                   panEnabled: _boxStart == null && _rangePointer == null && _relationDraft == null,
                   // Zooming is handled above to preserve the pointer anchor.
                   scaleEnabled: _touchPointers.isNotEmpty,
@@ -1920,6 +2136,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     longPressHitTest: (point) => _markAt(point) != null,
                     onTapUp: (details) {
                       widget.focusNode.requestFocus();
+                      if (widget.expansion != null) return;
                       final mark = widget.onSelectMark == null ? null : _markAt(details.localPosition);
                       if (mark != null) {
                         final now = _pointerTime;
@@ -1977,6 +2194,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         palette: palette,
                                         branches: _branches,
                                         colors: c,
+                                        drafts: {
+                                          for (final d in _drafts) d.id: d.kept,
+                                          for (final id in widget.expansion?.moves.keys ?? <String>[]) id: true,
+                                        },
                                       ),
                                     ),
                                   ),
@@ -2035,6 +2256,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         ),
                                       ),
                                     ),
+                                if (widget.expansion != null)
+                                  if (result.rects[_workingTargetId] case final rect?)
+                                    Positioned.fromRect(
+                                      rect: _drawn(_workingTargetId, rect).inflate(4),
+                                      child: ExpansionWorking(
+                                        animate: widget.expansion!.phase == ExpansionPhase.generating,
+                                      ),
+                                    ),
                                 for (final e in result.summaries.entries)
                                   if (e.value.label.width > 0 &&
                                       (field == null ||
@@ -2068,7 +2297,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                             child: _markLabel(r.id, summary: false),
                                           ),
                                         ),
-                                ..._interactionWidgets(rects, obstacles),
+                                if (widget.expansion == null) ..._interactionWidgets(rects, obstacles),
                                 if (_drop case final drop?)
                                   if (drop.previewRect(rects, gap: _siblingGap, thickness: 3) case final rect?)
                                     Positioned.fromRect(
@@ -2120,7 +2349,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                       ),
                                     ),
                                   ),
-                                for (final id in expandable)
+                                for (final id in expandable.where((_) => widget.expansion == null))
                                   if (result.rects[id] case final r?)
                                     if (_shown(id, r) case final shown)
                                       if (result.leftSide.contains(id))
@@ -2142,7 +2371,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           top: shown.center.dy - 9,
                                           child: foldButtons[id]!,
                                         ),
-                                ?_resizeHandle(result, l),
+                                if (widget.expansion == null) ?_resizeHandle(result, l),
                               ],
                             );
                           },
@@ -2152,6 +2381,41 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
+              if (widget.expansion != null && widget.expansion!.phase != ExpansionPhase.generating)
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([widget.transformation, _motion]),
+                    builder: (context, _) {
+                      final id = _draftHover ?? _draftFocus;
+                      final draft = widget.expansion!.drafts.where((d) => d.id == id).firstOrNull;
+                      final rect = result.rects[id];
+                      if (draft == null || rect == null || _ghostKeys[id]?.currentState?.editing == true) {
+                        return const SizedBox.shrink();
+                      }
+                      final shown = MatrixUtils.transformRect(widget.transformation.value, _shown(id!, rect));
+                      return Stack(
+                        children: [
+                          Positioned(
+                            left: (shown.right - 76).clamp(8.0, math.max(8, _viewport.width - 84)),
+                            top: (shown.top - 28).clamp(
+                              widget.toolbarTopInset,
+                              math.max(widget.toolbarTopInset, _viewport.height - 40),
+                            ),
+                            child: ExpansionDraftControls(
+                              draft: draft,
+                              onToggle: () => widget.onDraftToggle?.call(id),
+                              onEdit: () {
+                                _ghostKeys[id]?.currentState?.beginEdit();
+                                setState(() {});
+                              },
+                              onMore: _draftDepth(id) >= 3 ? null : () => widget.onDraftMore?.call(id),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               // The marquee belongs to the viewport: the finite map scene
               // must not clip it when selecting across empty canvas space.
               if (_boxStart != null && _boxEnd != null)
@@ -2179,8 +2443,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     ),
                   ),
                 ),
-              if ((widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null) ||
-                  widget.mergePreviewCardId != null)
+              if (widget.expansion == null &&
+                  ((widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null) ||
+                      widget.mergePreviewCardId != null))
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: Listenable.merge([widget.transformation, _motion]),
@@ -2651,13 +2916,23 @@ Rect _rect(LayoutRect r) => Rect.fromLTWH(r.left, r.top, r.width, r.height);
 Rect _lerpRect(Rect? from, Rect to, double t) => from == null || t >= 1 ? to : Rect.lerp(from, to, t)!;
 
 class _EdgesPainter extends CustomPainter {
-  _EdgesPainter(this.layout, this.color, this.from, this.t, {this.palette, this.branches = const {}, this.colors});
+  _EdgesPainter(
+    this.layout,
+    this.color,
+    this.from,
+    this.t, {
+    this.palette,
+    this.branches = const {},
+    this.colors,
+    this.drafts = const {},
+  });
 
   final TreeLayoutResult layout;
 
   /// The neutral line color; branches take the [palette]'s.
   final Color color;
   final MMMapColors? palette;
+  final Map<String, bool> drafts;
   final Map<String, int> branches;
   final MMColors? colors;
 
@@ -2675,7 +2950,16 @@ class _EdgesPainter extends CustomPainter {
     for (final connector in mapConnectors(layout, _at, rootId: rootNodeId)) {
       final branch = connector.colorId == null ? null : branches[connector.colorId];
       paint.color = branch == null || palette == null || colors == null ? color : palette!.line(branch, colors!);
-      canvas.drawPath(connector.path, paint);
+      if (drafts.containsKey(connector.colorId) && colors != null) {
+        paint.color = colors!.research.withValues(alpha: drafts[connector.colorId]! ? .7 : .2);
+        for (final metric in connector.path.computeMetrics()) {
+          for (var n = 0.0; n < metric.length; n += 7) {
+            canvas.drawPath(metric.extractPath(n, math.min(n + 4, metric.length)), paint);
+          }
+        }
+      } else {
+        canvas.drawPath(connector.path, paint);
+      }
     }
   }
 
@@ -2689,7 +2973,8 @@ class _EdgesPainter extends CustomPainter {
       old.t != t ||
       old.palette != palette ||
       !identical(old.branches, branches) ||
-      old.colors != colors;
+      old.colors != colors ||
+      !mapEquals(old.drafts, drafts);
 }
 
 /// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.
