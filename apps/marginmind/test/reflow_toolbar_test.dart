@@ -76,8 +76,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('selection-assistant')));
     await tester.pumpAndSettle();
     final assistant = tester.widget<AssistantQuickActions>(find.byType(AssistantQuickActions));
-    expect(assistant.source.target, isA<TextTarget>());
-    expect((assistant.source.target as TextTarget).textAnchors.single.toJson(), anchor.toJson());
+    expect(assistant.source!.target, isA<TextTarget>());
+    expect((assistant.source!.target as TextTarget).textAnchors.single.toJson(), anchor.toJson());
     await tester.tapAt(const Offset(10, 300));
     await tester.pumpAndSettle();
     await settleHud(tester);

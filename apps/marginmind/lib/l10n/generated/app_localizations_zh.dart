@@ -2144,6 +2144,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assistantNotOnline => '未联网';
 
   @override
+  String get assistantInsertChild => '插入为子节点';
+
+  @override
   String get assistantSaveNote => '记笔记';
 
   @override

@@ -100,6 +100,7 @@ class MindMapCanvas extends StatefulWidget {
     this.selectedCardIds = const {},
     this.rootSelected = false,
     this.onSelectRoot,
+    this.onAssistant,
     this.onToggleSelection,
     this.onSelectMany,
     this.editingCardId,
@@ -178,6 +179,7 @@ class MindMapCanvas extends StatefulWidget {
   final String rootTitle;
   final String? selectedCardId;
   final bool rootSelected;
+  final ValueChanged<Rect>? onAssistant;
   final VoidCallback? onSelectRoot;
   final Set<String> selectedCardIds;
   final ValueChanged<String>? onToggleSelection;
@@ -255,6 +257,7 @@ class MindMapCanvas extends StatefulWidget {
 
 class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateMixin, CardFieldHost<MindMapCanvas> {
   bool _centered = false;
+  final _toolbarKey = GlobalKey();
   Timer? _hoverExit;
   void _enterNode(String id) {
     _hoverExit?.cancel();
@@ -1750,6 +1753,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
     return Actions(
       actions: <Type, Action<Intent>>{
+        MapAssistantIntent: CallbackAction<MapAssistantIntent>(
+          onInvoke: (_) {
+            final box = _toolbarKey.currentContext?.findRenderObject();
+            if (box is RenderBox) widget.onAssistant?.call(box.localToGlobal(Offset.zero) & box.size);
+            return null;
+          },
+        ),
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
             if (field == null && _markField == null) _command(intent.command);
@@ -2182,6 +2192,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                               child: CustomSingleChildLayout(
                                 delegate: _SelectionToolbarLayout(bounds),
                                 child: SingleChildScrollView(
+                                  key: _toolbarKey,
                                   scrollDirection: Axis.horizontal,
                                   child: widget.selectionToolbar!,
                                 ),

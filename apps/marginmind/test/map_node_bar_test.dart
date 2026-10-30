@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
+import 'package:marginmind/features/assistant/widgets/assistant_quick_actions.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
@@ -147,7 +148,7 @@ void main() {
     await tester.ensureVisible(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('Organize This Branch…'), findsOneWidget);
+    expect(find.byType(AssistantQuickActions), findsOneWidget);
     await key(tester, LogicalKeyboardKey.escape);
 
     for (final action in ['child', 'sibling']) {

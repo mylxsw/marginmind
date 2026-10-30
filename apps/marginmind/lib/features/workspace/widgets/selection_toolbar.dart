@@ -9,7 +9,7 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../app/app_commands.dart';
 import '../../../settings/highlight_palette.dart';
-import '../../assistant/assistant_scope.dart' show selectionContext;
+import '../../assistant/assistant_scope.dart' show selectionContext, imageAreaContext;
 import '../../assistant/widgets/assistant_quick_actions.dart';
 import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
 import '../../../shared/l10n.dart';
@@ -106,6 +106,40 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
     }
   }
 
+  Future<void> _askArea(Annotation annotation) async {
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final card = controller.content.cardForAnnotation(annotation.id);
+    final nodes = controller.content.nodes.where((node) => node.cardId == card?.id);
+    final activeMapId = ref.read(workspaceProvider(widget.studySetId)).activeMapId;
+    final node = nodes.where((node) => node.mapId == activeMapId).firstOrNull ?? nodes.firstOrNull;
+    final layout = context.findAncestorRenderObjectOfType<RenderCustomSingleChildLayoutBox>();
+    if (card == null || layout == null) return;
+    final origin = layout.localToGlobal(Offset.zero);
+    setState(() => _quickOpen = true);
+    final continued = await showAssistantQuickActions(
+      context,
+      studySetId: widget.studySetId,
+      pending: widget.pending,
+      passage: imageAreaContext(annotation: annotation, cardId: card.id, title: context.l10n.imageExcerpt),
+      source: SourceAnchor(
+        target: PdfTarget(documentId: annotation.documentId, pages: annotation.pages),
+      ),
+      insertionTarget: node?.mapId == activeMapId ? (mapId: activeMapId, parentId: card.id) : null,
+      toolbar: boundsOf(context),
+      selection: widget.pending is PendingHighlight
+          ? (widget.pending as PendingHighlight).viewportRect.shift(origin)
+          : boundsOf(context),
+      viewport: origin & layout.size,
+    );
+    if (!mounted) return;
+    setState(() => _quickOpen = false);
+    if (continued == true) {
+      _dismiss();
+    } else {
+      _focus.requestFocus();
+    }
+  }
+
   Future<void> _run(ReaderSelectionCommand command, [MMAnnotationColor? color]) async {
     if (_busy || !ref.read(workspaceProvider(widget.studySetId).notifier).canRunSelection(command)) return;
     _busy = true;
@@ -170,7 +204,10 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
             case ReaderSelectionCommand.deleteHighlight:
               notice = await controller.deleteHighlight(annotationId);
             case ReaderSelectionCommand.assistant:
-              if (annotation.quote.isEmpty) return;
+              if (annotation.quote.isEmpty) {
+                await _askArea(annotation);
+                return;
+              }
               await _ask(
                 annotation.documentId,
                 annotation.isText ? [] : annotation.pages,
@@ -436,7 +473,7 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
                       tooltip: l.moreTools,
                       onPressed: () => _compactMore(isHighlight, isArea),
                     ),
-                  if (MMPlatformCapabilities.current.assistant && !isArea) ...[
+                  if (MMPlatformCapabilities.current.assistant) ...[
                     const MMToolbarDivider(),
                     MMToolbarButton(
                       key: const ValueKey('selection-assistant'),

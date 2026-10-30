@@ -31,6 +31,7 @@ class OutlineView extends StatefulWidget {
     this.selectedCardIds = const {},
     this.rootSelected = false,
     this.onSelectRoot,
+    this.onAssistant,
     this.onToggleSelection,
     this.editingCardId,
     this.onEditDone,
@@ -42,6 +43,7 @@ class OutlineView extends StatefulWidget {
   final String rootTitle;
   final String? selectedCardId;
   final bool rootSelected;
+  final ValueChanged<Rect>? onAssistant;
   final VoidCallback? onSelectRoot;
   final Set<String> selectedCardIds;
   final ValueChanged<String>? onToggleSelection;
@@ -400,6 +402,13 @@ class _OutlineViewState extends State<OutlineView> with CardFieldHost<OutlineVie
     if (f != null) trackField(shown: _indices.containsKey(f.id));
     return Actions(
       actions: <Type, Action<Intent>>{
+        MapAssistantIntent: CallbackAction<MapAssistantIntent>(
+          onInvoke: (_) {
+            final box = _rowKeys[widget.selectedCardId]?.currentContext?.findRenderObject();
+            if (box is RenderBox) widget.onAssistant?.call(box.localToGlobal(Offset.zero) & box.size);
+            return null;
+          },
+        ),
         MindMapIntent: CallbackAction<MindMapIntent>(
           onInvoke: (intent) {
             if (field == null) _command(intent.command);

@@ -179,6 +179,11 @@ enum MindMapCommand {
   expand,
 }
 
+/// The local map assistant uses the same shortcut as reader quick actions.
+class MapAssistantIntent extends Intent {
+  const MapAssistantIntent();
+}
+
 class MindMapIntent extends Intent {
   const MindMapIntent(this.command);
   final MindMapCommand command;
@@ -631,13 +636,19 @@ class _AppMenusState extends ConsumerState<AppMenus> {
               : () => workspace!.setResearchReview(noteId, enabled: !workspace.content.researchReviewEnabled(noteId)),
         ),
       );
-      final selectionText = selectionOpen || (highlightOpen && highlightText);
+      final selectionText = selectionOpen || highlightOpen;
       final askCard = editable && !_textFocused && selected != null ? selected : null;
+      final askMap = editable && !_textFocused && _mapFocused && (askCard != null || workspaceState.rootSelected);
       edit.add(
         AppCommand(
           l.askAssistantEllipsis,
           selectionText && MMPlatformCapabilities.current.assistant
               ? () => invokeSelection(ReaderSelectionCommand.assistant)
+              : askMap && MMPlatformCapabilities.current.assistant
+              ? () {
+                  final focus = FocusManager.instance.primaryFocus?.context;
+                  if (focus != null) Actions.maybeInvoke(focus, const MapAssistantIntent());
+                }
               : askCard != null && MMPlatformCapabilities.current.assistant
               ? () => askAboutNode(ref, workspaceId, askCard)
               : null,

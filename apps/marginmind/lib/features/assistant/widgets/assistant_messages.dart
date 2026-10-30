@@ -111,7 +111,7 @@ String contextLabel(AppLocalizations l, ContextItem item) => switch (item.kind) 
 };
 
 IconData contextIcon(ContextItem item) => switch (item.kind) {
-  ContextKind.selection => MMIcons.highlight,
+  ContextKind.selection => item.nodeId == null ? MMIcons.highlight : MMIcons.image,
   ContextKind.page || ContextKind.document => MMIcons.document,
   _ => MMIcons.mindMap,
 };
@@ -277,6 +277,7 @@ class AgentMessage extends ConsumerWidget {
     this.compact = false,
     this.onSource,
     this.onSaveNote,
+    this.saveNoteTooltip,
     this.savingNote = false,
   });
 
@@ -289,6 +290,7 @@ class AgentMessage extends ConsumerWidget {
   final bool compact;
   final ValueChanged<Citation>? onSource;
   final VoidCallback? onSaveNote;
+  final String? saveNoteTooltip;
   final bool savingNote;
 
   @override
@@ -347,6 +349,7 @@ class AgentMessage extends ConsumerWidget {
               actionsVisible: actionsVisible,
               compact: compact,
               onSaveNote: onSaveNote,
+              saveNoteTooltip: saveNoteTooltip,
               savingNote: savingNote,
             ),
         ],
@@ -710,6 +713,7 @@ class _Tail extends ConsumerWidget {
     required this.actionsVisible,
     this.compact = false,
     this.onSaveNote,
+    this.saveNoteTooltip,
     this.savingNote = false,
   });
 
@@ -718,6 +722,7 @@ class _Tail extends ConsumerWidget {
   final Message question;
   final bool actionsVisible, compact, savingNote;
   final VoidCallback? onSaveNote;
+  final String? saveNoteTooltip;
 
   Widget _actions(BuildContext context, Widget child) => AnimatedOpacity(
     key: ValueKey('answer-actions-${message.id}'),
@@ -802,7 +807,7 @@ class _Tail extends ConsumerWidget {
                         builder: (button) => _ActionButton(
                           key: ValueKey('assistant-save-${m.id}'),
                           icon: MMIcons.addNote,
-                          tooltip: l.assistantSaveNote,
+                          tooltip: saveNoteTooltip ?? l.assistantSaveNote,
                           onPressed: savingNote
                               ? null
                               : onSaveNote ?? () => showSaveNotePopover(button, ref, studySetId, m, question),

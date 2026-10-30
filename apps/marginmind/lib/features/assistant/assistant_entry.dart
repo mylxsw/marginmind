@@ -162,7 +162,15 @@ void askAboutNode(WidgetRef ref, String studySetId, String cardId, {bool branch 
   askAssistant(
     ref,
     studySetId,
-    contexts: [nodeContext(mapId: mapId, nodeId: cardId, title: title, branch: branch)],
+    contexts: [
+      nodeContext(
+        mapId: mapId,
+        nodeId: cardId,
+        title: title,
+        branch: branch,
+        body: assistantNodeBody(workspace.content, cardId),
+      ),
+    ],
     text: text,
     skill: skill,
     origin: PanelOrigin.map,

@@ -4016,6 +4016,12 @@ abstract class AppLocalizations {
   /// **'Not checked online'**
   String get assistantNotOnline;
 
+  /// No description provided for @assistantInsertChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert as Child Node'**
+  String get assistantInsertChild;
+
   /// No description provided for @assistantSaveNote.
   ///
   /// In en, this message translates to:

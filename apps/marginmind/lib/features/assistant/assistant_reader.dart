@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dart_agent_core/dart_agent_core.dart' as sdk;
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -6,6 +10,17 @@ import '../research/research_origin.dart' show researchCardTitle;
 /// The id the map's root has in contexts and proposals: it is not a card.
 /// Same as the map canvas's root node.
 const assistantRootId = '__root__';
+
+/// Text beneath a node's display title, including titled/merged excerpts.
+String assistantNodeBody(StudySetContent content, String id) {
+  final card = content.card(id);
+  if (card == null) return '';
+  if (card.kind == CardKind.research) return content.researchNote(card.researchNoteId ?? '')?.body ?? '';
+  return [
+    if (card.kind == CardKind.excerpt) content.segmentsOf(card).map((segment) => segment.text).join('\n\n'),
+    if (card.body.isNotEmpty) card.body,
+  ].where((text) => text.isNotEmpty).join('\n\n');
+}
 
 /// The study set as the assistant may read it, one run at a time. Selected
 /// text comes from the question's own contexts, so a conversation reopened
@@ -155,8 +170,7 @@ class WorkspaceReader implements StudySetReader, ReadPermissionResolver {
   }
 
   BranchNode _branchNode(StudySetContent c, String id, String parentId) {
-    final card = c.card(id);
-    final body = card?.kind == CardKind.research ? c.researchNote(card!.researchNoteId ?? '')?.body ?? '' : '';
+    final body = assistantNodeBody(c, id);
     return BranchNode(id: id, parentId: parentId, title: researchCardTitle(c, id), body: body);
   }
 
@@ -183,3 +197,43 @@ Map<String, String?> mapParents(StudySetContent content, String mapId) => {
   for (final n in content.nodes)
     if (n.mapId == mapId) n.cardId: n.parentId ?? mapId,
 };
+
+/// Only images belonging to explicitly attached nodes or selected areas are sent. A branch or
+/// whole-map context does not upload every image under it.
+Future<List<sdk.ImagePart>> loadAssistantNodeImages({
+  required StudySetContent content,
+  required List<ContextItem> contexts,
+  required String Function(String fileName) imagePath,
+}) async {
+  final images = <sdk.ImagePart>[];
+  final names = <String>{};
+  var total = 0;
+  const maxBytes = 20 * 1024 * 1024;
+  for (final item in contexts) {
+    if (item.nodeId == null) continue;
+    final card = content.card(item.nodeId!);
+    final annotation = content.annotation(card?.annotationId ?? '');
+    final selectedNode =
+        item.kind == ContextKind.node && item.mapId != null && content.node(item.nodeId!, mapId: item.mapId!) != null;
+    final selectedArea =
+        item.kind == ContextKind.selection &&
+        annotation != null &&
+        item.id == 'area-${annotation.id}' &&
+        item.documentId == annotation.documentId &&
+        item.page == annotation.page;
+    if (!selectedNode && !selectedArea) continue;
+    final name = card?.imageFileName;
+    if (name == null || !names.add(name)) continue;
+    if (!RegExp(r'^images/[0-9a-f]{64}\.(png|jpg)$').hasMatch(name)) {
+      throw const ResearchFailure(ResearchFailureKind.unavailable, 'invalid_image');
+    }
+    final file = File(imagePath(name));
+    if (!await file.exists()) throw const ResearchFailure(ResearchFailureKind.unavailable, 'missing_image');
+    if (total + await file.length() > maxBytes) throw const ResearchFailure(ResearchFailureKind.budget, 'image_size');
+    final bytes = await file.readAsBytes();
+    total += bytes.length;
+    if (total > maxBytes) throw const ResearchFailure(ResearchFailureKind.budget, 'image_size');
+    images.add(sdk.ImagePart(base64Encode(bytes), name.endsWith('.png') ? 'image/png' : 'image/jpeg'));
+  }
+  return images;
+}

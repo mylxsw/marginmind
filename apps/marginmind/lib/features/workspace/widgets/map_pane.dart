@@ -11,8 +11,10 @@ import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
 import '../../../shared/card_image.dart';
 import '../../assistant/assistant_entry.dart';
-import '../../assistant/assistant_reader.dart' show assistantRootId;
-import '../../assistant/assistant_scope.dart' show assistantPreviewProvider;
+import '../../assistant/assistant_reader.dart' show assistantRootId, assistantNodeBody;
+import '../../assistant/assistant_scope.dart' show assistantPreviewProvider, nodeContext;
+import '../../assistant/widgets/assistant_quick_actions.dart';
+import '../../assistant/widgets/assistant_overlays.dart' show boundsOf;
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
@@ -180,8 +182,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
   List<MMMenuEntry> _assistantEntries(Card? card) {
     if (!MMPlatformCapabilities.current.assistant) return const [];
     final l = context.l10n;
-    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
-    if (card != null && researchCardTitle(content, card.id).isEmpty) return const [];
     final topic = card?.kind == CardKind.topic;
     // The root stands for the whole map: its branch is everything on it.
     void ask(AssistantSkill? skill, {bool branch = false}) => askAboutNode(
@@ -219,7 +219,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final card = cardId == null ? null : controller.content.card(cardId);
     final root = ref.read(workspaceProvider(widget.studySetId)).rootSelected;
     if (card == null && !root) return null;
-    final assistant = _assistantEntries(card);
     return MapNodeBar(
       root: root,
       onChild: () => addTopic(asChild: true),
@@ -228,11 +227,49 @@ class _MapPaneState extends ConsumerState<MapPane> {
       onImage: () => pickAndInsertImages(context, ref, widget.studySetId),
       onRelation: controller.addRelation,
       onDelete: remove,
-      onAssistant: assistant.isEmpty
-          ? null
-          : (anchor) =>
-                showMMMenu(context, position: anchor, entries: [MMMenuHeader(context.l10n.askAssistant), ...assistant]),
+      onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
     );
+  }
+
+  Future<void> _openNodeAssistant(Rect toolbar) async {
+    final state = ref.read(workspaceProvider(widget.studySetId));
+    final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final content = controller.content;
+    final id = state.rootSelected ? assistantRootId : state.selectedCardId;
+    if (id == null) return;
+    final ids = state.selectedCardIds.isEmpty ? [id] : [id, ...state.selectedCardIds.where((other) => other != id)];
+    final contexts = [
+      for (final nodeId in ids)
+        nodeContext(
+          mapId: state.activeMapId,
+          nodeId: nodeId,
+          title: nodeId == assistantRootId
+              ? mapTitle(ref, widget.studySetId, state.activeMapId)
+              : researchCardTitle(content, nodeId).isEmpty
+              ? (content.card(nodeId)?.kind == CardKind.image ? context.l10n.imageExcerpt : context.l10n.newTopicName)
+              : researchCardTitle(content, nodeId),
+          branch: nodeId == assistantRootId,
+          body: assistantNodeBody(content, nodeId),
+        ),
+    ];
+    await showAssistantQuickActions(
+      context,
+      studySetId: widget.studySetId,
+      passage: contexts.first,
+      contexts: contexts,
+      source: id == assistantRootId
+          ? null
+          : SourceAnchor(
+              mapId: state.activeMapId,
+              target: CardTarget(cardId: id),
+            ),
+      insertionTarget: (mapId: state.activeMapId, parentId: id == assistantRootId ? null : id),
+      origin: PanelOrigin.map,
+      toolbar: toolbar,
+      selection: toolbar,
+      viewport: boundsOf(context),
+    );
+    if (mounted) _focus.requestFocus();
   }
 
   void _showNodeMenu(String? cardId, Offset position, Future<void> Function() remove) {
@@ -458,6 +495,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                             onSummary: _summary,
                             onRelation: controller.addRelation,
                             onDelete: remove,
+                            onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
                             onMergeHover: (hover) {
                               if (_mergeHover != hover) setState(() => _mergeHover = hover);
                             },
@@ -474,6 +512,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     selectedCardId: state.selectedCardId,
                     rootSelected: state.rootSelected,
                     onSelectRoot: controller.selectMapRoot,
+                    onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     flashCardId: state.flashCardId,
@@ -542,6 +581,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     selectedCardId: state.selectedCardId,
                     rootSelected: state.rootSelected,
                     onSelectRoot: controller.selectMapRoot,
+                    onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
                     selectedCardIds: state.selectedCardIds,
                     onToggleSelection: controller.toggleCardSelection,
                     focusNode: _focus,

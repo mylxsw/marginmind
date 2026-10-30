@@ -719,6 +719,7 @@
   "assistantToolSkills": "选择方式",
   "assistantToolOther": "处理中",
   "assistantNotOnline": "未联网",
+  "assistantInsertChild": "插入为子节点",
   "assistantSaveNote": "记笔记",
   "assistantAnswerToMap": "整理成导图",
   "assistantAnswerToMapPrompt": "把下面这条回答整理成思维导图，保留主要观点和层级，并给出可预览的导图修改建议：\n\n{answer}",
