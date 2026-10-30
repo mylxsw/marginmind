@@ -29,7 +29,7 @@ class MemoryMapEditExecutor implements MapEditExecutor {
       throw StateError('Stale or invalid proposal');
     }
     final ops = p.operations.where((o) => selectedIds.contains(o.id)).toList();
-    validateOperations(ops, parents);
+    validateOperations(ops, parents, expansion: p.isExpansion);
     final next = Map<String, String?>.of(parents);
     final affected = <String>[];
     final temporary = <String, String>{};

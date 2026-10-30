@@ -26,3 +26,5 @@ export 'src/translation.dart';
 export 'src/word_lookup.dart';
 
 export 'src/study_notes/organizer.dart';
+
+export 'src/expansion.dart';
