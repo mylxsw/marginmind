@@ -4462,9 +4462,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get studyNoteSavedImage => 'Saved';
 
   @override
-  String get vocabularyHintsDescription => 'Mark saved vocabulary in the text';
-
-  @override
   String get vocabularyHintsPreview => 'Preview';
 
   @override

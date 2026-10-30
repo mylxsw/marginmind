@@ -33,7 +33,7 @@ final t = context.mmText;     // 已着色的文本样式
 | `MMSidebar` / `MMSidebarSection` / `MMSidebarItem` / `MMCount` / `MMBadge` | 悬浮玻璃侧栏与 28pt 行。 |
 | `MMToolbar` / `MMToolbarGroup` / `MMToolbarButton` / `MMToolbarDivider` / `MMToolbarSearchField` | 统一工具栏与玻璃胶囊按钮组；空白处拖动窗口、双击缩放。 |
 | `MMSplitView` | 两栏 + 可拖动分隔线（8pt 热区、双击复位），隐藏的面板保持挂载，但不保留键盘焦点；窗口太窄时自动只显示主面板。 |
-| `MMSegmentedControl` | 分段控件，选中段为白色浮起。偏好设置可开启 `emphasizeSelection`：选中段增加勾号，深色使用较亮的中性底，桌面高 32pt；默认样式不变。 |
+| `MMSegmentedControl` | 分段控件，选中段为白色浮起。 |
 | `MMButton` / `MMIconButton` | 胶囊按钮（主要 / 次要 / 纯文本）与面板内小图标按钮；按钮文字放不下时以省略号结尾。主要按钮可用 `color` 换成功能色（研究用 `research`），纯文本按钮的 `color` 是文字色（设置里的 `accent` 链接、`critical` 的“移除服务”）；`MMToolbarButton` 对应的是 `tint`，选中时也保持 `tint`（打开的助手）。 |
 | `MMCheckbox` / `MMSwitch` / `MMPill` | 复选框（整行可点）、小开关、状态标签（文字为给定颜色，底为其 12%；不给颜色时为中性）。 |
 | `MMSearchField` / `MMTextField` / `MMFormRow` / `MMColorPicker` | 表单控件；Esc 清空搜索。`MMTextField` 可多行（`maxLines` / `minLines`，随内容长高）、隐藏输入（`obscureText`，用于 API Key）并接收外部 `focusNode`；`plain` 用于无底色和焦点环的原地值。设置页统一用 `MMTextField.settings`：高 28、最大宽度 `MMSizes.settingsFieldWidth`（245，窄窗口随可用空间缩小）、右对齐、8pt 内边距，平时无底色和边框，只在聚焦时显示淡底、强调色边框和焦点环；必须提供空值提示和辅助功能名称，关闭自动纠错与输入建议。密钥始终隐藏，不显示明文切换按钮。 |
@@ -131,7 +131,7 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 
 ### 全文生词提示（GUL-597）
 
-设置 → 阅读使用 740×460pt 紧凑窗口、176pt 侧栏，其他设置页保留 780×560pt。生词提示与阅读偏好间隔 24pt，三档文案为“关闭 / 仅下划线 / 显示释义”，使用增强选中态。效果预览随全局模式即时变化：关闭时仅显示例句，下划线模式标记 `curious`，释义模式同时显示行间释义；点线复用 `MMPdfAnnotationLinePainter` 和 `vocabulary` 语义色。预览为只读示例，不写入生词本。窄内容区或大字号时，预览标签改为上下排布，翻译方向保留窄栏换行布局。
+设置 → 阅读使用 740×420pt 紧凑窗口、176pt 侧栏，其他设置页保留 780×560pt。生词提示使用与阅读外观相同的左标签、右下拉设置行，三档为“关闭 / 仅下划线 / 显示释义”，菜单勾选当前值，不显示额外说明文字。效果预览与下拉行间隔12pt，与下方阅读偏好间隔24pt。效果预览随全局模式即时变化：关闭时仅显示例句，下划线模式标记 `curious`，释义模式同时显示行间释义；点线复用 `MMPdfAnnotationLinePainter` 和 `vocabulary` 语义色。预览为只读示例，不写入生词本。窄内容区或大字号时，预览标签改为上下排布，翻译方向保留窄栏换行布局。
 
 命中卡片宽 `MMSizes.vocabularyHitCardWidth`（300pt）；行间释义使用 `MMSizes.vocabularyGlossSize`（10pt），最多 8 字，仅在行间空隙足够且不会与其他释义重叠时绘制。点线复用 `MMPdfAnnotationLinePainter`，线宽 1.5pt。已掌握使用 `secondaryLabel`。查词卡片词性标签圆角使用 `MMRadii.vocabularyPos`（4pt）、`quaternaryFill` 底色。提示和新增闪烁独立于正文、标注和截图导出图层。
 

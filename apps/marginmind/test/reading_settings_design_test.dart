@@ -76,20 +76,41 @@ Future<ProviderContainer> openReadingSettings(
 Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 'reading'}) async {
   final container = await openReadingSettings(tester);
   expect(tester.getSize(find.byKey(const ValueKey('settings-window'))), SettingsWindow.readingSize);
-  final modes = find.byKey(const ValueKey('vocabulary-hint-modes'));
+  final modes = find.byKey(const ValueKey('settings-vocabulary-hints'));
   final preview = find.byType(VocabularyHintPreview);
   VocabularyHintMode mode() => tester.widget<VocabularyHintPreview>(preview).mode;
   expect(mode(), VocabularyHintMode.underline);
-  expect(find.descendant(of: modes, matching: find.byIcon(MMIcons.check)), findsOneWidget);
-  expect(find.text('在正文中标记已收录的生词'), findsOneWidget);
+  expect(find.byType(MMSegmentedControl<VocabularyHintMode>), findsNothing);
+  expect(find.text('在正文中标记已收录的生词'), findsNothing);
   expect(find.text('深色'), findsOneWidget);
   expect(find.text('自动（中英互译）'), findsOneWidget);
-  expect(tester.getRect(find.byType(MMSettingsGroup)).top - tester.getRect(modes).bottom, greaterThan(50));
+  expect(tester.getRect(find.byType(MMSettingsGroup).last).top - tester.getRect(modes).bottom, greaterThan(50));
   final underlineInk = await previewInk(tester);
   expect(underlineInk, greaterThan(0));
   await captureReadingSettings(tester, '$prefix-dark-underline');
 
-  await tester.tap(find.text('显示释义'));
+  // Close controls precede menu checks because of Flutter 3.47's existing
+  // debug semantics assertion when a dialog closes after a popup was used.
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  await tester.pumpAndSettle();
+  expect(find.byType(SettingsWindow), findsNothing);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('settings-close')));
+  await tester.pumpAndSettle();
+  expect(find.byType(SettingsWindow), findsNothing);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
+  await tester.pumpAndSettle();
+
+  Focus.of(tester.element(find.text('仅下划线'))).requestFocus();
+  await tester.pump();
+  await tester.sendKeyEvent(LogicalKeyboardKey.space);
+  await tester.pumpAndSettle();
+  expect(find.text('关闭'), findsOneWidget);
+  expect(find.text('显示释义'), findsOneWidget);
+  expect(find.byIcon(MMIcons.check), findsOneWidget);
+  await captureReadingSettings(tester, '$prefix-dark-dropdown');
+  await tester.tap(find.text('显示释义').last);
   await tester.pumpAndSettle();
   expect(mode(), VocabularyHintMode.gloss);
   expect(container.read(vocabularyHintProvider).mode, VocabularyHintMode.gloss);
@@ -97,33 +118,23 @@ Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 're
   expect(await previewInk(tester), greaterThan(underlineInk), reason: 'meaning adds visible text above the underline');
   await captureReadingSettings(tester, '$prefix-dark-gloss');
 
-  await tester.tap(find.text('关闭'));
+  await tester.tap(modes);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('关闭').last);
   await tester.pumpAndSettle();
   expect(mode(), VocabularyHintMode.off);
   expect(await previewInk(tester), 0, reason: 'off removes every vocabulary decoration');
   await captureReadingSettings(tester, '$prefix-dark-off');
-  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  container.invalidate(vocabularyHintProvider);
   await tester.pumpAndSettle();
-  expect(find.byType(SettingsWindow), findsNothing);
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
-  await tester.pumpAndSettle();
-  expect(mode(), VocabularyHintMode.off, reason: 'closing and reopening preserves the actual setting');
+  expect(mode(), VocabularyHintMode.off, reason: 'reloading preferences preserves the saved setting');
 
-  // Exercise the shared focus/keyboard path, as well as pointer changes.
-  Focus.of(tester.element(find.text('仅下划线'))).requestFocus();
-  await tester.pump();
-  await tester.sendKeyEvent(LogicalKeyboardKey.space);
+  await tester.tap(modes);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('仅下划线').last);
   await tester.pumpAndSettle();
   expect(mode(), VocabularyHintMode.underline);
 
-  await tester.tap(find.byKey(const ValueKey('settings-close')));
-  await tester.pumpAndSettle();
-  expect(find.byType(SettingsWindow), findsNothing);
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: SettingsTab.reading, showsGallery: false);
-  await tester.pumpAndSettle();
-
-  // Flutter 3.47's debug semantics asserts if a dialog closes after a popup
-  // has opened above it. Keep menu checks last, as settings_test.dart does.
   await tester.tap(find.byKey(const ValueKey('settings-reader-style')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('纸质').last);

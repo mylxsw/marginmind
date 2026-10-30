@@ -29,7 +29,7 @@ class SettingsWindow extends StatefulWidget {
   const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.showsGallery = kDebugMode});
 
   static const size = Size(780, 560), minSize = Size(640, 440);
-  static const readingSize = Size(740, 460), readingMinSize = Size(640, 380);
+  static const readingSize = Size(740, 420), readingMinSize = Size(640, 380);
 
   /// Space kept between the dialog and the window edges.
   static const margin = 24.0;

@@ -346,3 +346,16 @@ final result: passed
 - [x] 三种即时预览、真实设置持久化、中英文与窄栏。
 - [x] 原生截图与设计整体、局部同画布复核。
 - [x] 相关回归测试与静态检查。
+
+# 阅读设置 · 下拉简化（2026-10-30）
+
+final result: passed
+
+本轮按用户后续要求覆盖上一节的生词分段设计：生词提示改为左标签、右下拉的设置行，移除描述文字，保留即时效果预览。阅读窗口高度由460pt收至420pt，其他设置页尺寸不变。已删除不再使用的描述翻译和前一轮新增的分段增强选项。
+
+- 视觉依据：上一轮 `docs/evidence/reading-settings/native-reading-dark-underline.png` 加本轮用户明确的下拉、删除描述要求；不是继续逐像素复刻已被修订的分段设计。
+- 组件截图：`docs/evidence/reading-settings-dropdown/reading-dark-underline.png`、`reading-dark-dropdown.png`、`reading-dark-gloss.png`、`reading-dark-off.png`，视口1280×820pt，设置窗口740×420pt，2×导出1480×840px。中英文浅深色及窄栏截图也在同目录。
+- 字体、色彩和圆角沿用现有令牌；下拉复用 `MMPopUpButton`，菜单勾选当前值，未创建新的菜单样式。检查预览仍正确对应关闭、下划线和释义；窄窗口的翻译方向继续换行，未见截断或溢出。
+- 23项相关组件与设置测试、静态检查、格式检查通过。测试覆盖键盘打开下拉、菜单当前值、三种模式、真实像素提示、偏好重载后的持久化和既有设置菜单。
+- 原生窗口测试通过，导出 `native-reading-dark-{underline,dropdown,gloss,off}.png`。`comparison-native.png` 把上一轮和本轮窗口均按宽900px等比放在同画布比较：原图1480×920px，本轮1480×840px，逻辑高度缩小40pt，未拉伸对齐。字体、分组、预览点线和菜单选中状态复核没有遗留P0/P1/P2问题；原生测试使用注入事件，未替换安装版应用。
+- macOS Release构建通过（85.1 MB）。首次并行运行两个macOS构建造成构建数据库锁冲突，串行重新运行原生测试与Release构建后均通过，没有改动产品代码来绕过构建或测试。

@@ -4279,9 +4279,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get studyNoteSavedImage => '已存储';
 
   @override
-  String get vocabularyHintsDescription => '在正文中标记已收录的生词';
-
-  @override
   String get vocabularyHintsPreview => '效果预览';
 
   @override

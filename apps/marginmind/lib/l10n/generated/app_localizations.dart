@@ -7982,12 +7982,6 @@ abstract class AppLocalizations {
   /// **'Saved'**
   String get studyNoteSavedImage;
 
-  /// No description provided for @vocabularyHintsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark saved vocabulary in the text'**
-  String get vocabularyHintsDescription;
-
   /// No description provided for @vocabularyHintsPreview.
   ///
   /// In en, this message translates to:

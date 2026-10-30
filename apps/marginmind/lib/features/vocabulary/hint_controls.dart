@@ -67,24 +67,36 @@ class VocabularyHintSettings extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(l.vocabularyHints, style: context.mmText.headline),
         if (showPreview) ...[
-          const SizedBox(height: MMSpacing.xs),
-          Text(
-            l.vocabularyHintsDescription,
-            style: context.mmText.callout.copyWith(color: context.mmColors.secondaryLabel),
+          MMSettingsGroup(
+            children: [
+              MMSettingsRow(
+                label: l.vocabularyHints,
+                trailing: MMPopUpButton<VocabularyHintMode>(
+                  key: const ValueKey('settings-vocabulary-hints'),
+                  value: hints.mode,
+                  items: vocabularyHintModes(context),
+                  semanticLabel: l.vocabularyHints,
+                  onChanged: (v) => changeVocabularyHint(context, () => owner.setMode(v)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: MMSpacing.m),
+          VocabularyHintPreview(mode: hints.mode),
+        ] else ...[
+          Text(l.vocabularyHints, style: context.mmText.headline),
+          const SizedBox(height: MMSpacing.s),
+          MMSegmentedControl<VocabularyHintMode>(
+            key: const ValueKey('vocabulary-hint-modes'),
+            expand: true,
+            value: hints.mode,
+            segments: [
+              for (final (value, label) in vocabularyHintModes(context)) MMSegment(value: value, label: label),
+            ],
+            onChanged: (v) => changeVocabularyHint(context, () => owner.setMode(v)),
           ),
         ],
-        const SizedBox(height: MMSpacing.s),
-        MMSegmentedControl<VocabularyHintMode>(
-          key: const ValueKey('vocabulary-hint-modes'),
-          expand: true,
-          emphasizeSelection: showPreview,
-          value: hints.mode,
-          segments: [for (final (value, label) in vocabularyHintModes(context)) MMSegment(value: value, label: label)],
-          onChanged: (v) => changeVocabularyHint(context, () => owner.setMode(v)),
-        ),
-        if (showPreview) ...[const SizedBox(height: MMSpacing.m), VocabularyHintPreview(mode: hints.mode)],
         if (documentId != null) ...[
           MMSettingsRow(
             leading: Text(l.vocabularyHintsHidden, style: context.mmText.body, maxLines: 2),
