@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../tokens/colors.dart';
 import '../tokens/typography.dart';
 
@@ -73,19 +74,26 @@ abstract final class MMTheme {
 
 /// Text styles resolved against the current colors.
 class MMTextStyles {
-  const MMTextStyles(this.colors);
+  const MMTextStyles(this.colors, {this.tablet = false});
 
   final MMColors colors;
+  final bool tablet;
 
-  TextStyle get largeTitle => MMTypography.largeTitle.copyWith(color: colors.label);
-  TextStyle get title2 => MMTypography.title2.copyWith(color: colors.label);
-  TextStyle get title3 => MMTypography.title3.copyWith(color: colors.label);
-  TextStyle get headline => MMTypography.headline.copyWith(color: colors.label);
-  TextStyle get body => MMTypography.body.copyWith(color: colors.label);
-  TextStyle get bodySecondary => MMTypography.body.copyWith(color: colors.secondaryLabel);
-  TextStyle get callout => MMTypography.callout.copyWith(color: colors.label);
-  TextStyle get subheadline => MMTypography.subheadline.copyWith(color: colors.secondaryLabel);
-  TextStyle get footnote => MMTypography.footnote.copyWith(color: colors.secondaryLabel);
+  TextStyle _ui(TextStyle style) {
+    if (!tablet) return style;
+    final size = style.fontSize! + 2;
+    return style.copyWith(fontSize: size, height: (size + 5) / size, letterSpacing: 0);
+  }
+
+  TextStyle get largeTitle => _ui(MMTypography.largeTitle).copyWith(color: colors.label);
+  TextStyle get title2 => _ui(MMTypography.title2).copyWith(color: colors.label);
+  TextStyle get title3 => _ui(MMTypography.title3).copyWith(color: colors.label);
+  TextStyle get headline => _ui(MMTypography.headline).copyWith(color: colors.label);
+  TextStyle get body => _ui(MMTypography.body).copyWith(color: colors.label);
+  TextStyle get bodySecondary => _ui(MMTypography.body).copyWith(color: colors.secondaryLabel);
+  TextStyle get callout => _ui(MMTypography.callout).copyWith(color: colors.label);
+  TextStyle get subheadline => _ui(MMTypography.subheadline).copyWith(color: colors.secondaryLabel);
+  TextStyle get footnote => _ui(MMTypography.footnote).copyWith(color: colors.secondaryLabel);
   TextStyle get readingBody => MMTypography.readingBody.copyWith(color: const Color(0xFF1D1D1F));
   TextStyle get readingExcerpt => MMTypography.readingExcerpt.copyWith(color: colors.excerptText);
   TextStyle get mono => MMTypography.mono.copyWith(color: colors.secondaryLabel);
@@ -94,5 +102,8 @@ class MMTextStyles {
 extension MMThemeContext on BuildContext {
   MMColors get mmColors => Theme.of(this).extension<MMColors>() ?? MMColors.light;
 
-  MMTextStyles get mmText => MMTextStyles(mmColors);
+  MMTextStyles get mmText => MMTextStyles(mmColors, tablet: mmTablet);
+
+  /// Document and map content keep their designed size independently of chrome.
+  MMTextStyles get mmContentText => MMTextStyles(mmColors);
 }

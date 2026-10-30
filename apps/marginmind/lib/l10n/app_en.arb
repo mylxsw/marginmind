@@ -1938,6 +1938,7 @@
   "vocabularyHintsGloss": "Meaning",
   "vocabularyHintsHidden": "Hide in this document",
   "vocabularyHintsKnown": "Mark known words",
+  "resizeCompanionPanel": "Resize companion panel",
   "annotationLineType": "Line Type",
   "chooseMoreAnnotationColors": "Choose More Colors…"
 }

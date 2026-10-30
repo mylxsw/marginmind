@@ -121,12 +121,14 @@ class MapNodeBar extends StatelessWidget {
     required this.onImage,
     required this.onRelation,
     required this.onDelete,
+    this.onEdit,
     this.onAssistant,
     this.root = false,
   });
 
   final VoidCallback onChild, onSibling, onNote, onImage, onRelation, onDelete;
   final bool root;
+  final VoidCallback? onEdit;
 
   /// Opens the assistant's actions for the node, anchored below [anchor].
   final ValueChanged<Rect>? onAssistant;
@@ -134,6 +136,60 @@ class MapNodeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    if (context.mmTablet) {
+      return TextFieldTapRegion(
+        child: MMToolbarGroup(
+          children: [
+            MMToolbarButton(
+              key: const ValueKey('node-bar-child'),
+              icon: MMIcons.add,
+              label: l.addChildTopic,
+              tooltip: l.addChildTopic,
+              onPressed: onChild,
+            ),
+            if (onEdit != null)
+              MMToolbarButton(
+                key: const ValueKey('node-bar-edit'),
+                icon: MMIcons.pen,
+                label: l.renameTitle,
+                tooltip: l.renameTitle,
+                onPressed: onEdit,
+              ),
+            MMDropdownButton<String>(
+              key: const ValueKey('node-bar-more'),
+              tooltip: l.moreTools,
+              icon: const Icon(MMIcons.more),
+              onSelected: (value) {
+                switch (value) {
+                  case 'sibling':
+                    onSibling();
+                  case 'relation':
+                    onRelation();
+                  case 'note':
+                    onNote();
+                  case 'image':
+                    onImage();
+                  case 'delete':
+                    onDelete();
+                }
+              },
+              itemBuilder: (_) => [
+                if (!root) MMDropdownItem(value: 'sibling', child: Text(l.addSiblingAfter)),
+                if (!root) MMDropdownItem(value: 'relation', child: Text(l.addRelation)),
+                if (!root) MMDropdownItem(value: 'note', child: Text(l.addNote)),
+                MMDropdownItem(value: 'image', child: Text(l.insertImage)),
+                if (!root)
+                  MMDropdownItem(
+                    value: 'delete',
+                    child: Text(l.removeFromMap, style: context.mmText.body.copyWith(color: context.mmColors.critical)),
+                  ),
+              ],
+            ),
+            if (onAssistant != null) _AssistantAction(onAssistant: onAssistant!),
+          ],
+        ),
+      );
+    }
     return TextFieldTapRegion(
       child: MMGlass(
         borderRadius: BorderRadius.circular(24),

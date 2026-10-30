@@ -409,10 +409,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
     expect(find.byType(MMTabBar), findsNothing);
-    // Compact all the same: the panel is a bottom sheet.
+    // Compact tablet companion remains separate from its source.
     container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('workspace-panel-sheet')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tablet-workspace-panel')), findsOneWidget);
     await settleHud(tester);
   });
 

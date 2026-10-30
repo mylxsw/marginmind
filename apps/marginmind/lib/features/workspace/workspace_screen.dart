@@ -20,6 +20,7 @@ import 'widgets/map_pane.dart';
 import 'widgets/notices.dart';
 import 'widgets/reader_pane.dart';
 import 'widgets/right_panel.dart';
+import 'widgets/tablet_workspace_panes.dart';
 import 'widgets/workspace_sidebar.dart';
 import 'workspace_layout.dart';
 
@@ -40,6 +41,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   /// Whether the sidebar drawer of a touch window is out. Touch windows
   /// start with it in, whatever the saved sidebar choice.
   bool _drawer = false;
+  double _tabletPanelFraction = .38;
 
   void _setDrawer(bool open) {
     if (_drawer != open) setState(() => _drawer = open);
@@ -108,7 +110,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             final width = constraints.maxWidth - safe.horizontal;
             final height = constraints.maxHeight - safe.vertical;
             final sizeClass = MMSizeClass.resolve(context, Size(width, height));
-            controller.panelFloats = sizeClass != MMSizeClass.regular;
+            controller.panelFloats = context.mmTablet || sizeClass != MMSizeClass.regular;
             // A landscape phone is too short to stack the panes.
             final canSplit =
                 sizeClass != MMSizeClass.medium ||
@@ -191,12 +193,31 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
   ) {
     final l = context.l10n;
     final compact = sizeClass == MMSizeClass.compact;
-    final stacked = sizeClass == MMSizeClass.medium;
+    final tablet = context.mmTablet;
+    final media = MediaQuery.sizeOf(context);
+    final safe = MediaQuery.paddingOf(context);
+    final tabletLayout = resolveTabletWorkspaceLayout(
+      size: Size(
+        media.width - safe.horizontal,
+        media.height - safe.vertical - MMSizes.toolbarHeight - MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      layout: state.layout,
+      panelOpen: state.panel != null,
+      isLandscape: media.width - safe.horizontal > media.height - safe.vertical,
+      panelFraction: _tabletPanelFraction,
+      minReader: minReader,
+    );
+    if (tablet) {
+      layout = tabletLayout.mode;
+      controller.onePane = layout != MMSplitMode.split;
+      canSplit = true;
+    }
+    final stacked = tablet ? tabletLayout.splitAxis == Axis.vertical : sizeClass == MMSizeClass.medium;
     // A phone switches panes with its bottom tabs.
     final tabs = compact && showsPhoneTabs(context);
     final split = MMSplitView(
       mode: layout,
-      onModeChanged: compact || !canSplit ? null : controller.setLayout,
+      onModeChanged: (!tablet && compact) || !canSplit ? null : controller.setLayout,
       primaryLabel: l.layoutReader,
       secondaryLabel: l.layoutMap,
       splitLabel: l.layoutSplit,
@@ -228,11 +249,29 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     final floating = sizeClass != MMSizeClass.regular;
     final paneSwitch = compact && !tabs;
     final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
+    Widget compactSwitcher(double top) => Padding(
+      padding: EdgeInsets.fromLTRB(MMSpacing.m, top, MMSpacing.m, MMSpacing.s),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
+          child: MMSegmentedControl<MMSplitMode>(
+            key: const ValueKey('workspace-pane-switch'),
+            expand: true,
+            segments: [
+              MMSegment(value: MMSplitMode.primary, label: l.paneSource),
+              MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
+            ],
+            value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
+            onChanged: controller.setLayout,
+          ),
+        ),
+      ),
+    );
     return MMWindowScaffold(
       extendBody: true,
       // A compact window has no room beside or over the panes: the panel
       // rises from the bottom.
-      sheet: compact && panel != null
+      sheet: !tablet && compact && panel != null
           ? MMBottomSheet(
               key: const ValueKey('workspace-panel-sheet'),
               expand: true,
@@ -305,28 +344,29 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
             // The panes run on beneath a touch window's glass chrome; the pane
             // switch and the right panel stay clear of it.
             final chrome = MMChromeInsets.of(context);
+            if (tablet) {
+              final panes = TabletWorkspacePanes(
+                content: split,
+                panel: panel,
+                axis: tabletLayout.panelAxis,
+                extent: tabletLayout.panelExtent,
+                onResize: (delta) => setState(() {
+                  final height = (media.height - safe.vertical - MMSizes.toolbarHeight).clamp(1.0, double.infinity);
+                  _tabletPanelFraction = (_tabletPanelFraction + delta / height).clamp(.25, .6);
+                }),
+              );
+              if (!paneSwitch) return panes;
+              return Column(
+                children: [
+                  compactSwitcher(chrome.top),
+                  Expanded(child: MMChromeInsets.remove(context, removeTop: true, child: panes)),
+                ],
+              );
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (paneSwitch)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(MMSpacing.m, chrome.top, MMSpacing.m, MMSpacing.s),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: MMSizes.paneSwitchMaxWidth),
-                        child: MMSegmentedControl<MMSplitMode>(
-                          key: const ValueKey('workspace-pane-switch'),
-                          expand: true,
-                          segments: [
-                            MMSegment(value: MMSplitMode.primary, label: l.paneSource),
-                            MMSegment(value: MMSplitMode.secondary, label: l.paneMap),
-                          ],
-                          value: layout == MMSplitMode.secondary ? MMSplitMode.secondary : MMSplitMode.primary,
-                          onChanged: controller.setLayout,
-                        ),
-                      ),
-                    ),
-                  ),
+                if (paneSwitch) compactSwitcher(chrome.top),
                 Expanded(
                   child: MMChromeInsets.remove(
                     context,

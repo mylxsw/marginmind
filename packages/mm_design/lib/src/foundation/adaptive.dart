@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 import '../tokens/metrics.dart';
 
@@ -53,6 +53,9 @@ class MMInputState {
 
   final bool touchPlatform;
   final bool phone;
+
+  /// Tablet chrome stays finger-sized even while using an attached trackpad.
+  bool get tablet => touchPlatform && !phone;
   final bool touch;
   final bool touchInput;
 
@@ -129,7 +132,17 @@ class _MMInputState extends State<MMInput> {
     onPointerDown: _follow,
     onPointerHover: _follow,
     onPointerPanZoomStart: _follow,
-    child: _MMInputScope(owner: this, state: current, child: widget.child),
+    child: _MMInputScope(
+      owner: this,
+      state: current,
+      child: widget.touchPlatform && !widget.phone
+          ? Theme(
+              data: Theme.of(context)
+                  .copyWith(visualDensity: VisualDensity.standard, materialTapTargetSize: MaterialTapTargetSize.padded),
+              child: widget.child,
+            )
+          : widget.child,
+    ),
   );
 }
 
@@ -147,12 +160,14 @@ class _MMInputScope extends InheritedWidget {
 extension MMAdaptiveSizes on BuildContext {
   bool get mmTouch => MMInput.touchOf(this);
 
-  Size get mmToolbarButton => mmTouch ? const Size.square(MMSizes.touchTarget) : MMSizes.toolbarButton;
+  bool get mmTablet => MMInput.of(this).tablet;
 
-  double get mmSidebarRow => mmTouch ? MMSizes.touchTarget : MMSizes.sidebarRow;
+  Size get mmToolbarButton => mmTouch || mmTablet ? const Size.square(MMSizes.touchTarget) : MMSizes.toolbarButton;
+
+  double get mmSidebarRow => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.sidebarRow;
 
   /// Side of an [MMIconButton] in a toolbar.
-  double get mmToolbarIcon => mmTouch ? MMSizes.touchTarget : 28;
+  double get mmToolbarIcon => mmTouch || mmTablet ? MMSizes.touchTarget : 28;
 
-  double get mmDividerHit => mmTouch ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
+  double get mmDividerHit => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
 }

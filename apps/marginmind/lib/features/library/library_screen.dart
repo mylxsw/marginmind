@@ -479,12 +479,19 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 28),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 420,
-                          mainAxisExtent: 88,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                        gridDelegate: context.mmTablet
+                            ? SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
+                                mainAxisExtent: 104,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              )
+                            : const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 420,
+                                mainAxisExtent: 88,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
                         delegate: SliverChildListDelegate([
                           for (final s in recent) ContinueCard(set: s, onOpen: () => open(s.id)),
                         ]),
@@ -497,9 +504,9 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(23, 0, 23, 48 + chrome.bottom),
                       sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 230,
-                          mainAxisExtent: 206,
+                          mainAxisExtent: context.mmTablet ? 230 : 206,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 18,
                         ),

@@ -122,8 +122,8 @@ class _StarButton extends StatelessWidget {
         blurSigma: MMInput.of(context).touchPlatform ? 0 : 24,
         borderRadius: BorderRadius.circular(13),
         child: SizedBox(
-          width: 26,
-          height: 26,
+          width: context.mmTablet ? MMSizes.touchTarget : 26,
+          height: context.mmTablet ? MMSizes.touchTarget : 26,
           child: Icon(
             starred ? MMIcons.starFill : MMIcons.star,
             size: 13,

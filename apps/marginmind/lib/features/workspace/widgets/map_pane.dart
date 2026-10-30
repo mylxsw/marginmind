@@ -266,6 +266,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     if (card == null && !root) return null;
     return MapNodeBar(
       root: root,
+      onEdit: card == null ? null : () => _runToolbarAction(() => rename(card.id)),
       onChild: () => _runToolbarAction(() => addTopic(asChild: true)),
       onSibling: () => _runToolbarAction(
         () => root
@@ -734,7 +735,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       onResize: controller.setCardWidth,
                                       previewStyle: _styleOpen ? _stylePreview : null,
                                       // The map makes way for the popover and shows all of itself.
-                                      fitInsets: _styleOpen
+                                      fitInsets: _styleOpen && !context.mmTablet
                                           ? EdgeInsets.only(
                                               top: toolbarTopInset,
                                               right: MMSizes.mapStylePopoverWidth + MMSpacing.m * 2,
@@ -844,7 +845,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 Positioned(
                   left: MMSpacing.m,
                   bottom: MMSpacing.m + chrome.bottom,
-                  right: MMSizes.mapViewControlsReservedWidth,
+                  right: context.mmTablet ? 460 : MMSizes.mapViewControlsReservedWidth,
                   child: IgnorePointer(
                     child: Text(
                       l.newExcerptTarget(
@@ -907,12 +908,17 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                   onPressed: () => _zoom(1 / 1.25),
                                 ),
                                 SizedBox(
-                                  width: 44,
+                                  width: context.mmTablet ? 56 : 44,
+                                  height: context.mmTablet ? MMSizes.touchTarget : null,
                                   child: MMInteractive(
                                     tooltip: l.pdfActualSize,
                                     semanticLabel: l.pdfActualSize,
                                     onTap: () => _zoom(1 / mapScale(_transform.value)),
-                                    builder: (context, _) => _ZoomLabel(transform: _transform, style: t.callout),
+                                    builder: (context, _) => context.mmTablet
+                                        ? Center(
+                                            child: _ZoomLabel(transform: _transform, style: t.callout),
+                                          )
+                                        : _ZoomLabel(transform: _transform, style: t.callout),
                                   ),
                                 ),
                                 MMIconButton(

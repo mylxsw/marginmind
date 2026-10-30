@@ -62,10 +62,13 @@ Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilde
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMAppearance.duration(context, MMMotion.standard),
     pageBuilder: (context, _, _) => SafeArea(
-      child: Center(
-        child: CallbackShortcuts(
-          bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
-          child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: context.mmTablet ? MediaQuery.viewInsetsOf(context).bottom : 0),
+        child: Center(
+          child: CallbackShortcuts(
+            bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
+            child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+          ),
         ),
       ),
     ),

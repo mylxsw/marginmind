@@ -1342,6 +1342,7 @@
   "vocabularyHintsGloss": "释义",
   "vocabularyHintsHidden": "本文档隐藏",
   "vocabularyHintsKnown": "标出已掌握",
+  "resizeCompanionPanel": "调整面板大小",
   "annotationLineType": "线条类型",
   "chooseMoreAnnotationColors": "选择更多颜色…"
 }

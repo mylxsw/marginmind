@@ -37,6 +37,19 @@ class MMGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.mmTablet) {
+      final c = context.mmColors;
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: opaqueColor ?? color ?? c.glassOpaque,
+          borderRadius: borderRadius,
+          border: Border.all(color: c.separator.withValues(alpha: .45), width: .5),
+          boxShadow: shadows,
+        ),
+        child: child,
+      );
+    }
     if (MMInput.of(context).touchPlatform) {
       return MMLiquidGlass(
         borderRadius: borderRadius,
@@ -214,7 +227,10 @@ class MMGlassBar extends StatelessWidget {
     );
     if (reduce || blurSigma <= 0) return bar;
     return ClipRect(
-      child: BackdropFilter(filter: MMLiquidGlass.liquidFilter(blurSigma), child: bar),
+      child: BackdropFilter(
+        filter: context.mmTablet ? ImageFilter.blur(sigmaX: 12, sigmaY: 12) : MMLiquidGlass.liquidFilter(blurSigma),
+        child: bar,
+      ),
     );
   }
 }

@@ -486,7 +486,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   Widget _fieldNode(String id, _NodeSpec spec, LayoutRect target, _NodeLook? look) {
     final f = field!;
-    final t = context.mmText;
+    final t = context.mmContentText;
     final (style, kind, maxLines) = switch (spec.kind) {
       _Kind.note => (t.body.copyWith(height: 19 / 13), CardKind.note, null),
       _Kind.excerpt => (t.headline.copyWith(height: 17 / 13), CardKind.excerpt, 1),
@@ -649,7 +649,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final meta = _cache._specs[id]?.meta;
     if (meta == null || _cache._specs[id]!.segments.isNotEmpty) return card;
     final painter = TextPainter(
-      text: TextSpan(text: meta, style: context.mmText.footnote),
+      text: TextSpan(text: meta, style: context.mmContentText.footnote),
       textDirection: TextDirection.ltr,
       maxLines: 1,
     )..layout();
@@ -706,7 +706,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   double get _topClearance => math.max(
     MMSpacing.xxxl * 2 + MMSpacing.l,
     widget.toolbarTopInset +
-        (widget.selectionToolbar == null ? 0 : context.mmToolbarButton.height + 6 + 22 + MMSpacing.s),
+        (widget.selectionToolbar == null
+            ? 0
+            : context.mmToolbarButton.height + (context.mmTablet ? 4 : 6) + 22 + (context.mmTablet ? 0 : MMSpacing.s)),
   );
 
   void _command(MindMapCommand command) {
@@ -1212,7 +1214,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   /// A label of a relation (at the middle of its line) or summary.
   Widget _markLabel(String id, {required bool summary}) {
-    final t = context.mmText;
+    final t = context.mmContentText;
     final f = _markField?.id == id ? _markField : null;
     final palette = summary ? _mapColors(context.mmColors) : null;
     final style = summary ? t.headline.copyWith(color: palette?.onSummary) : t.footnote;
@@ -2338,7 +2340,7 @@ class _NodeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final t = context.mmText;
+    final t = context.mmContentText;
     final ring = [
       if (selected || flashing) BoxShadow(color: c.accent, spreadRadius: 3),
       if (flashing) BoxShadow(color: c.accentTint, spreadRadius: 9),
@@ -2722,7 +2724,7 @@ class _ExpandToggle extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: context.mmText.footnote.copyWith(
+                style: context.mmContentText.footnote.copyWith(
                   color: tint,
                   decoration: state.hovered ? TextDecoration.underline : null,
                   decorationColor: tint,
@@ -2763,7 +2765,7 @@ class _SourceLabel extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: MMSpacing.xs, vertical: MMSpacing.xxs),
-          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.footnote),
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmContentText.footnote),
         ),
       ),
     );
@@ -2779,7 +2781,7 @@ class _CountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final t = context.mmText;
+    final t = context.mmContentText;
     return Container(
       constraints: const BoxConstraints(minWidth: 18),
       height: 18,
@@ -2806,7 +2808,7 @@ class _FoldButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final t = context.mmText;
+    final t = context.mmContentText;
     final collapsed = hiddenCount != null;
     return MMInteractive(
       onTap: onPressed,

@@ -6878,6 +6878,12 @@ abstract class AppLocalizations {
   /// **'Mark known words'**
   String get vocabularyHintsKnown;
 
+  /// No description provided for @resizeCompanionPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize companion panel'**
+  String get resizeCompanionPanel;
+
   /// No description provided for @annotationLineType.
   ///
   /// In en, this message translates to:

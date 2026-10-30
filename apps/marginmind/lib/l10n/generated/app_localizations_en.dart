@@ -3809,6 +3809,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vocabularyHintsKnown => 'Mark known words';
 
   @override
+  String get resizeCompanionPanel => 'Resize companion panel';
+
+  @override
   String get annotationLineType => 'Line Type';
 
   @override

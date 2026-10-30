@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../foundation/adaptive.dart';
 import '../foundation/interactive.dart';
+import '../tokens/metrics.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/motion.dart';
 
@@ -61,7 +63,7 @@ class MMButton extends StatelessWidget {
           duration: MMMotion.quick,
           opacity: s.enabled ? 1 : 0.4,
           child: Container(
-            height: 30,
+            height: context.mmTablet ? MMSizes.touchTarget : 30,
             padding: EdgeInsets.symmetric(horizontal: variant == MMButtonVariant.plain ? 12 : 16),
             decoration: BoxDecoration(
               color: Color.alphaBlend(pressedOverlay, bg),
@@ -126,8 +128,8 @@ class MMIconButton extends StatelessWidget {
       semanticLabel: tooltip,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
-        width: size,
-        height: size,
+        width: context.mmTablet && size < MMSizes.touchTarget ? MMSizes.touchTarget : size,
+        height: context.mmTablet && size < MMSizes.touchTarget ? MMSizes.touchTarget : size,
         decoration: BoxDecoration(
           color: s.pressed ? c.pressed : (s.hovered ? c.hover : Colors.transparent),
           borderRadius: BorderRadius.circular(size / 3.5),

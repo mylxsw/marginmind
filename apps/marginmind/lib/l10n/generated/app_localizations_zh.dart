@@ -3664,6 +3664,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyHintsKnown => '标出已掌握';
 
   @override
+  String get resizeCompanionPanel => '调整面板大小';
+
+  @override
   String get annotationLineType => '线条类型';
 
   @override
