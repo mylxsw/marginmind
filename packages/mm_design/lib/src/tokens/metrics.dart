@@ -14,6 +14,7 @@ abstract final class MMSpacing {
 
 /// Concentric radii: inner radius = outer radius − inset.
 abstract final class MMRadii {
+  static const double vocabularyCard = 10;
   static const double window = 24;
   static const double sidebar = 16;
   static const double row = 8;
@@ -29,6 +30,7 @@ abstract final class MMRadii {
 }
 
 abstract final class MMSizes {
+  static const double vocabularyChipHeight = 20;
   static const double vocabularyDot = 6;
   static const double vocabularyCardWidth = 360;
   static const double readerMaxFitZoom = 1.4;
@@ -67,6 +69,7 @@ abstract final class MMSizes {
   /// Color dot in a floating toolbar: hit area width and dot diameter.
   static const double floatingToolbarColor = 26;
   static const double floatingToolbarDot = 14;
+  static const double vocabularyListWidth = 340;
   static const double sidebarWidth = 236;
   static const double sidebarMinWidth = 200;
   static const double sidebarMaxWidth = 320;

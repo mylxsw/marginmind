@@ -13,6 +13,7 @@ import '../../settings/settings_window.dart';
 import '../../shared/l10n.dart';
 import '../../shared/pdf_drop.dart';
 import '../workspace/widgets/notices.dart';
+import '../vocabulary/vocabulary_controller.dart';
 import 'library_controller.dart';
 import 'new_study_set.dart';
 import 'sample_study_set.dart';
@@ -259,6 +260,20 @@ class _LibrarySidebar extends ConsumerWidget {
         MMSidebarSection(
           title: l.librarySection,
           children: [
+            MMSidebarItem(
+              icon: MMIcons.vocabulary,
+              label: l.vocabularyTitle,
+              trailing: MMCount(
+                ref
+                        .watch(vocabularyProvider)
+                        .value
+                        ?.entries
+                        .where((e) => e.status == VocabularyStatus.learning)
+                        .length ??
+                    0,
+              ),
+              onTap: () => ref.read(navigationProvider.notifier).showVocabulary(),
+            ),
             item(MMIcons.grid, l.libraryTitleAll, LibraryFilter.all, trailing: count(sets.length)),
             item(MMIcons.recent, l.libraryRecent, LibraryFilter.recent),
             item(MMIcons.star, l.libraryStarred, LibraryFilter.starred, trailing: count(starred)),

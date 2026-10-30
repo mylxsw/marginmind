@@ -1,9 +1,17 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('speech support is exposed only for the native macOS channel', () {
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    for (final platform in TargetPlatform.values) {
+      debugDefaultTargetPlatformOverride = platform;
+      expect(MMSpeech.supported, platform == TargetPlatform.macOS);
+    }
+  });
   const channel = MethodChannel('marginmind/speech');
   test('system speech receives the term and requested voice; stop releases it', () async {
     final calls = <MethodCall>[];

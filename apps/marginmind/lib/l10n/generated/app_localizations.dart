@@ -6673,6 +6673,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'US'**
   String get vocabularyUS;
+
+  /// No description provided for @vocabularySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search words and meanings'**
+  String get vocabularySearch;
+
+  /// No description provided for @vocabularyThisSet.
+  ///
+  /// In en, this message translates to:
+  /// **'This study set'**
+  String get vocabularyThisSet;
+
+  /// No description provided for @vocabularyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get vocabularyAll;
+
+  /// No description provided for @vocabularyToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get vocabularyToday;
+
+  /// No description provided for @vocabularyEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get vocabularyEarlier;
+
+  /// No description provided for @vocabularyNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching words'**
+  String get vocabularyNoMatch;
+
+  /// No description provided for @vocabularyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No words yet'**
+  String get vocabularyEmpty;
+
+  /// No description provided for @vocabularyOccurrences.
+  ///
+  /// In en, this message translates to:
+  /// **'Occurrences in this document'**
+  String get vocabularyOccurrences;
+
+  /// No description provided for @vocabularySenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Meanings'**
+  String get vocabularySenses;
+
+  /// No description provided for @vocabularyRegenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get vocabularyRegenerate;
+
+  /// No description provided for @vocabularyModelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'No model configured'**
+  String get vocabularyModelRequired;
+
+  /// No description provided for @vocabularyGloss.
+  ///
+  /// In en, this message translates to:
+  /// **'Inline meaning'**
+  String get vocabularyGloss;
+
+  /// No description provided for @vocabularyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get vocabularyNote;
+
+  /// No description provided for @vocabularyForms.
+  ///
+  /// In en, this message translates to:
+  /// **'Word forms'**
+  String get vocabularyForms;
+
+  /// No description provided for @vocabularyForgetForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recognizing'**
+  String get vocabularyForgetForm;
+
+  /// No description provided for @vocabularyExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get vocabularyExamples;
+
+  /// No description provided for @vocabularyNoExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'No examples.'**
+  String get vocabularyNoExamples;
+
+  /// No description provided for @vocabularyReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to source'**
+  String get vocabularyReturn;
+
+  /// No description provided for @vocabularyOpenSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Open study set ›'**
+  String get vocabularyOpenSet;
+
+  /// No description provided for @vocabularyDeleteExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete example'**
+  String get vocabularyDeleteExample;
+
+  /// No description provided for @vocabularyLearnAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn again'**
+  String get vocabularyLearnAgain;
+
+  /// No description provided for @vocabularyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete from vocabulary'**
+  String get vocabularyDelete;
+
+  /// No description provided for @vocabularyRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get vocabularyRemoved;
+
+  /// No description provided for @vocabularyExampleDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Example deleted'**
+  String get vocabularyExampleDeleted;
+
+  /// No description provided for @vocabularyRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get vocabularyRead;
+
+  /// No description provided for @vocabularyUk.
+  ///
+  /// In en, this message translates to:
+  /// **'UK'**
+  String get vocabularyUk;
+
+  /// No description provided for @vocabularyUs.
+  ///
+  /// In en, this message translates to:
+  /// **'US'**
+  String get vocabularyUs;
+
+  /// No description provided for @vocabularyAddForm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get vocabularyAddForm;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

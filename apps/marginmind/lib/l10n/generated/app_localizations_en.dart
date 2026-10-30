@@ -3705,4 +3705,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vocabularyUS => 'US';
+
+  @override
+  String get vocabularySearch => 'Search words and meanings';
+
+  @override
+  String get vocabularyThisSet => 'This study set';
+
+  @override
+  String get vocabularyAll => 'All';
+
+  @override
+  String get vocabularyToday => 'Today';
+
+  @override
+  String get vocabularyEarlier => 'Earlier';
+
+  @override
+  String get vocabularyNoMatch => 'No matching words';
+
+  @override
+  String get vocabularyEmpty => 'No words yet';
+
+  @override
+  String get vocabularyOccurrences => 'Occurrences in this document';
+
+  @override
+  String get vocabularySenses => 'Meanings';
+
+  @override
+  String get vocabularyRegenerate => 'Regenerate';
+
+  @override
+  String get vocabularyModelRequired => 'No model configured';
+
+  @override
+  String get vocabularyGloss => 'Inline meaning';
+
+  @override
+  String get vocabularyNote => 'Notes';
+
+  @override
+  String get vocabularyForms => 'Word forms';
+
+  @override
+  String get vocabularyForgetForm => 'Stop recognizing';
+
+  @override
+  String get vocabularyExamples => 'Examples';
+
+  @override
+  String get vocabularyNoExamples => 'No examples.';
+
+  @override
+  String get vocabularyReturn => 'Back to source';
+
+  @override
+  String get vocabularyOpenSet => 'Open study set ›';
+
+  @override
+  String get vocabularyDeleteExample => 'Delete example';
+
+  @override
+  String get vocabularyLearnAgain => 'Learn again';
+
+  @override
+  String get vocabularyDelete => 'Delete from vocabulary';
+
+  @override
+  String get vocabularyRemoved => 'Removed';
+
+  @override
+  String get vocabularyExampleDeleted => 'Example deleted';
+
+  @override
+  String get vocabularyRead => 'Read aloud';
+
+  @override
+  String get vocabularyUk => 'UK';
+
+  @override
+  String get vocabularyUs => 'US';
+
+  @override
+  String get vocabularyAddForm => 'Add';
 }
