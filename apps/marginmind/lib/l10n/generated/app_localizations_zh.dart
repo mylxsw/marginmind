@@ -4218,4 +4218,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String noteUpdateChanges(int count) {
     return '$count 处更新';
   }
+
+  @override
+  String get noteShareTitle => '分享长图';
+
+  @override
+  String get noteShareQuote => '一句金句';
+
+  @override
+  String get noteShareSection => '一节';
+
+  @override
+  String get noteShareSummary => '整篇摘要';
+
+  @override
+  String get noteSharePaper => '纸张';
+
+  @override
+  String get noteSharePlain => '简洁';
+
+  @override
+  String get noteShareNight => '夜读';
+
+  @override
+  String get noteShareAi => 'AI 小结';
+
+  @override
+  String get noteShareFooter => '摘自我的 MarginMind 笔记';
+
+  @override
+  String noteSharedCount(int count) {
+    return '$count 条划线';
+  }
+
+  @override
+  String get noteNoQuotes => '没有摘录';
+
+  @override
+  String get noteCopyImage => '拷贝图片';
+
+  @override
+  String get noteSaveImage => '存储图片…';
+
+  @override
+  String get noteShareAction => '分享…';
+
+  @override
+  String get noteCopyRich => '复制为富文本';
+
+  @override
+  String get noteCopyMarkdown => '拷贝为 Markdown';
+
+  @override
+  String get noteRichText => '富文本';
+
+  @override
+  String get studyNoteSavedImage => '已存储';
 }

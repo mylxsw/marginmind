@@ -82,7 +82,14 @@ class MainActivity : FlutterActivity() {
                 val file = File(directory, name).apply { writeBytes(bytes) }
                 val uri = FileProvider.getUriForFile(this, "$packageName.exports", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = if (name.endsWith(".opml")) "text/x-opml" else "text/markdown"
+                    type = when (name.substringAfterLast('.', "").lowercase()) {
+                        "opml" -> "text/x-opml"
+                        "png" -> "image/png"
+                        "pdf" -> "application/pdf"
+                        "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        "html" -> "text/html"
+                        else -> "text/markdown"
+                    }
                     putExtra(Intent.EXTRA_STREAM, uri)
                     clipData = ClipData.newRawUri(name, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

@@ -19,6 +19,7 @@ import 'note_organize_sheet.dart';
 import '../../shared/card_image.dart';
 import '../workspace/workspace_controller.dart';
 import 'note_export_sheet.dart';
+import 'note_share_sheet.dart';
 import 'note_setup_sheet.dart';
 import 'note_text_source.dart';
 
@@ -477,6 +478,7 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                             if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
                             MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
                             MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
+                            MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
                           ],
                           onSelected: (value) {
                             if (value == 'markers') {
@@ -487,6 +489,8 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                               showNoteReorganization(context, ref, widget.studySetId, note.id);
                             } else if (value == 'export') {
                               showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
+                            } else if (value == 'share') {
+                              showNoteShareSheet(context, _owner.content, note);
                             } else if (value.startsWith('section:')) {
                               _jump(value.substring('section:'.length));
                             } else if (value.startsWith('template:')) {
@@ -537,9 +541,16 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
                           child: _toolbarLabel(noteTemplateLabel(l, note.template)),
                         ),
                         MMToolbarButton(
+                          key: const ValueKey('note-share'),
+                          icon: MMIcons.share,
+                          label: floating ? l.noteShareAction.replaceAll('…', '') : null,
+                          tooltip: l.noteShareTitle,
+                          onPressed: () => showNoteShareSheet(context, _owner.content, note),
+                        ),
+                        MMToolbarButton(
                           key: const ValueKey('note-export'),
                           icon: MMIcons.export,
-                          label: l.noteExport,
+                          label: constraints.maxWidth >= MMNoteLayout.exportLabelMinWidth ? l.noteExport : null,
                           tooltip: l.exportStudyNote,
                           onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
                         ),

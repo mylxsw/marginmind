@@ -6,6 +6,7 @@ import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
 import '../features/study_notes/note_setup_sheet.dart';
 import '../features/study_notes/note_export_sheet.dart';
+import '../features/study_notes/note_share_sheet.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -589,6 +590,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         activeNote == null || !activeNote.sections.any((s) => s.question != null)
             ? null
             : () => workspace!.addNoteReviews(activeNote.id),
+      ),
+    );
+    file.add(
+      AppCommand(
+        '${l.noteShareTitle}…',
+        activeNote == null ? null : () => showNoteShareSheet(context, workspace!.content, activeNote),
       ),
     );
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));

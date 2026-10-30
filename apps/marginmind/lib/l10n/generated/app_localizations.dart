@@ -7867,6 +7867,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 change} other{{count} changes}}'**
   String noteUpdateChanges(int count);
+
+  /// No description provided for @noteShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as Image'**
+  String get noteShareTitle;
+
+  /// No description provided for @noteShareQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get noteShareQuote;
+
+  /// No description provided for @noteShareSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get noteShareSection;
+
+  /// No description provided for @noteShareSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get noteShareSummary;
+
+  /// No description provided for @noteSharePaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get noteSharePaper;
+
+  /// No description provided for @noteSharePlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain'**
+  String get noteSharePlain;
+
+  /// No description provided for @noteShareNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get noteShareNight;
+
+  /// No description provided for @noteShareAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Summary'**
+  String get noteShareAi;
+
+  /// No description provided for @noteShareFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'From my MarginMind notes'**
+  String get noteShareFooter;
+
+  /// No description provided for @noteSharedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} highlights'**
+  String noteSharedCount(int count);
+
+  /// No description provided for @noteNoQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No quotes'**
+  String get noteNoQuotes;
+
+  /// No description provided for @noteCopyImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Image'**
+  String get noteCopyImage;
+
+  /// No description provided for @noteSaveImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Image…'**
+  String get noteSaveImage;
+
+  /// No description provided for @noteShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share…'**
+  String get noteShareAction;
+
+  /// No description provided for @noteCopyRich.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Rich Text'**
+  String get noteCopyRich;
+
+  /// No description provided for @noteCopyMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as Markdown'**
+  String get noteCopyMarkdown;
+
+  /// No description provided for @noteRichText.
+  ///
+  /// In en, this message translates to:
+  /// **'Rich Text'**
+  String get noteRichText;
+
+  /// No description provided for @studyNoteSavedImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get studyNoteSavedImage;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

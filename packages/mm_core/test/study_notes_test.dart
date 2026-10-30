@@ -546,7 +546,7 @@ void main() {
           );
           expect(result.text.contains('我的心得'), on(1));
           expect(result.text.contains('主动回想。'), on(2));
-          expect(result.text.contains('怎么学习？'), on(3));
+          expect(result.text.contains('怎么学习？'), on(3) && on(2));
           expect(result.text.contains('## 出处'), on(4));
           expect(result.text.contains('前言。'), on(0));
           if (!on(5)) expect(result.text, isNot(contains('AI 整理')));

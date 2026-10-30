@@ -148,3 +148,12 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 学习笔记 AI 整理沿用 `research` / `researchTint` 和 `onResearch`；
 `MMSizes.noteProgressSheetWidth` 为 820，`MMNoteLayout.aiRule` 为 2。
 提纲排序把手使用 `MMIcons.grip`，重新整理使用 `MMIcons.regenerate`。
+
+### 学习笔记分享卡片
+
+`MMShareCardTheme` 固定使用纸张 `#FBF7EE / #2B2A27`、简洁 `#FFFFFF / #1D1D1F`、
+夜读 `#1C1C1E / #F2F2F7`，不随系统外观变化。`MMShareCardStyle` 的宽度 330、内边距 24、圆角 14，
+标题 18/700、正文 12/1.7、摘录宋体 13.5/1.8、金句宋体 20/1.7、脚注 10。
+分享面板宽 860，选项列宽 250；导出 PNG 为卡片的 2×。
+预览舞台的卡片阴影为 `MMShareCardStyle.previewShadow`（0/6/24，黑色 14%），不烘焙进导出的 PNG。
+笔记栏宽度低于 `MMNoteLayout.exportLabelMinWidth`（720）时，导出按钮只显示图标和提示，给 AI 操作与分享入口留出空间。

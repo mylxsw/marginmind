@@ -157,6 +157,8 @@ abstract final class MMSizes {
   static const double noteExportSheetWidth = 900;
   static const double noteExportOptionsWidth = 280;
   static const double noteExportBodyHeight = 520;
+  static const double noteShareSheetWidth = 860;
+  static const double noteShareOptionsWidth = 250;
   static const double noteFormThumbHeight = 56;
   static const double noteTemplateCardWidth = 128;
   static const double noteColorDot = 14;
@@ -230,6 +232,7 @@ abstract final class MMNoteLayout {
   static const double quoteIndent = 16;
   static const double tocWidth = 150;
   static const double tocMinWidth = 1000;
+  static const double exportLabelMinWidth = 720;
   static const double barHeight = 44;
   static const double cornellCueWidth = 170;
   static const double answerBlur = 5;

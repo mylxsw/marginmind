@@ -104,6 +104,32 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual((failed as? FlutterError)?.code, "export_failed")
   }
 
+  func testStudyNoteClipboardWritesHTMLAndTextTogether() {
+    let pasteboard = NSPasteboard.withUniqueName()
+    defer { pasteboard.releaseGlobally() }
+    XCTAssertTrue(MainFlutterWindow.writeRichText(html: "<h1>学习</h1>", text: "学习", to: pasteboard))
+    XCTAssertEqual(pasteboard.pasteboardItems?.count, 1)
+    XCTAssertEqual(pasteboard.string(forType: .html), "<h1>学习</h1>")
+    XCTAssertEqual(pasteboard.string(forType: .string), "学习")
+  }
+
+  func testStudyNotePDFHasA4PagesAndSearchableText() throws {
+    let pages: [[[String: Any]]] = (1...3).map { index in
+      [["type": "text", "text": "学习笔记 Page \(index)", "fontSize": 11.0,
+        "x": 48.0, "y": 76.0, "color": 0xFF222222, "serif": true]]
+    }
+    let data = try MapExportChannel.pdf(["width": 595.28, "height": 841.89, "pages": pages])
+    let document = try XCTUnwrap(PDFDocument(data: data))
+    XCTAssertEqual(document.pageCount, 3)
+    for index in 0..<3 {
+      let page = try XCTUnwrap(document.page(at: index))
+      XCTAssertEqual(page.bounds(for: .mediaBox).width, 595.28, accuracy: 0.1)
+      XCTAssertEqual(page.bounds(for: .mediaBox).height, 841.89, accuracy: 0.1)
+      XCTAssertTrue(page.string?.contains("Page \(index + 1)") == true)
+    }
+    XCTAssertThrowsError(try MapExportChannel.pdf(["width": 1, "height": 1, "pages": [] as [[[String: Any]]]]))
+  }
+
   func testMapExportVectorTextAndPNGTilePositions() throws {
     var commands: [[String: Any]] = []
     for i in 0..<500 {

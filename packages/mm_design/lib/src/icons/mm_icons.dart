@@ -9,6 +9,7 @@ abstract final class MMIcons {
   static const regenerate = LucideIcons.refreshCw;
   static const grip = LucideIcons.gripVertical;
   static const studyNote = LucideIcons.notebookText;
+  static const share = LucideIcons.share;
   static const export = LucideIcons.download;
   static const IconData speaker = CupertinoIcons.speaker_2;
   static const compare = CupertinoIcons.square_split_2x1;

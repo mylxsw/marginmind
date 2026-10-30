@@ -234,7 +234,9 @@ class NoteExporter {
             if (target != null) prose('[${escape(line(block.text))}](#$target)', label: ai(block.origin));
         }
       }
-      if (options.questions && section.question?.trim().isNotEmpty == true) {
+      if (options.questions &&
+          (options.aiContent || section.questionOrigin == NoteOrigin.user) &&
+          section.question?.trim().isNotEmpty == true) {
         if (obsidian) {
           out.writeln('${section.question}\n?\n${answers.join('\n\n')}\n');
         } else {

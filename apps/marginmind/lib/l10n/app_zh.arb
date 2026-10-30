@@ -1613,5 +1613,30 @@
   "noteAddToReview": "加入复习",
   "noteUpdateChanges": "{count} 处更新",
   "@noteUpdateApplied": {"placeholders": {"count": {"type": "int"}}},
-  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}}
+  "@noteUpdateChanges": {"placeholders": {"count": {"type": "int"}}},
+  "noteShareTitle": "分享长图",
+  "noteShareQuote": "一句金句",
+  "noteShareSection": "一节",
+  "noteShareSummary": "整篇摘要",
+  "noteSharePaper": "纸张",
+  "noteSharePlain": "简洁",
+  "noteShareNight": "夜读",
+  "noteShareAi": "AI 小结",
+  "noteShareFooter": "摘自我的 MarginMind 笔记",
+  "noteSharedCount": "{count} 条划线",
+  "noteNoQuotes": "没有摘录",
+  "noteCopyImage": "拷贝图片",
+  "noteSaveImage": "存储图片…",
+  "noteShareAction": "分享…",
+  "noteCopyRich": "复制为富文本",
+  "noteCopyMarkdown": "拷贝为 Markdown",
+  "noteRichText": "富文本",
+  "@noteSharedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "studyNoteSavedImage": "已存储"
 }

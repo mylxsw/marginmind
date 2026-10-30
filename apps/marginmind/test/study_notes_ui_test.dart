@@ -381,6 +381,40 @@ void main() {
     await settleHud(tester);
   });
 
+  testWidgets('medium note pane keeps AI, share and export actions without overflowing', (tester) async {
+    final content = noteFixture();
+    final note = content.studyNotes.single;
+    await openNote(
+      tester,
+      size: const Size(1600, 1000),
+      content: content.copyWith(
+        studyNotes: [
+          note.copyWith(
+            sections: [
+              note.sections.single.copyWith(
+                blocks: [
+                  ...note.sections.single.blocks,
+                  const TextBlock(id: 'summary', text: 'AI summary', kind: TextKind.summary),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    final width = tester.getSize(find.byType(StudyNoteView)).width;
+    expect(width, greaterThanOrEqualTo(MMSizes.noteSetupSheetWidth));
+    expect(width, lessThan(MMNoteLayout.exportLabelMinWidth));
+    expect(find.byKey(const ValueKey('note-ai-markers')), findsOneWidget);
+    expect(find.byKey(const ValueKey('note-regenerate')), findsOneWidget);
+    expect(find.byKey(const ValueKey('note-share')), findsOneWidget);
+    final export = tester.widget<MMToolbarButton>(find.byKey(const ValueKey('note-export')));
+    expect(export.label, isNull);
+    expect(export.onPressed, isNotNull);
+    expect(tester.takeException(), isNull);
+    await settleHud(tester);
+  });
+
   testWidgets('regular toolbar has labeled dropdowns, export icon and label; own sources include locations', (
     tester,
   ) async {
@@ -404,6 +438,7 @@ void main() {
     );
     await openNote(
       tester,
+      size: const Size(1800, 1000),
       content: original.copyWith(
         cards: [...original.cards, card],
         studyNotes: [note],

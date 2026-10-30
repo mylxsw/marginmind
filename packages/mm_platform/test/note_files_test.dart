@@ -1,11 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() => debugDefaultTargetPlatformOverride = TargetPlatform.macOS);
+  tearDown(() => debugDefaultTargetPlatformOverride = null);
   const channel = MethodChannel('plugins.flutter.io/file_selector');
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
@@ -35,6 +38,29 @@ void main() {
     ]) {
       await expectLater(MMNoteFiles.save('note.md', bytes, attachments: {path: bytes}), throwsArgumentError);
     }
+  });
+  test('PDF, DOCX and PNG use their own save-panel extensions', () async {
+    for (final extension in ['pdf', 'docx', 'png', 'html']) {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        expect(
+          (call.arguments as Map)['acceptedTypeGroups'],
+          contains(predicate((dynamic group) => (group as Map)['extensions'].contains(extension))),
+        );
+        return null;
+      });
+      expect(await MMNoteFiles.save('note.$extension', Uint8List.fromList([1])), isFalse);
+    }
+  });
+  test('mobile output invokes the system sharing bridge', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    const share = MethodChannel('marginmind/file_share');
+    messenger.setMockMethodCallHandler(share, (call) async {
+      expect(call.method, 'share');
+      expect((call.arguments as Map)['name'], 'note.docx');
+      return true;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(share, null));
+    expect(await MMNoteFiles.save('note.docx', Uint8List.fromList([1])), isTrue);
   });
   test('export does not follow attachment directory or file symlinks', () async {
     final directory = await Directory.systemTemp.createTemp('mm-note-safe-');
