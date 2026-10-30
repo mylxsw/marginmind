@@ -52,6 +52,7 @@ abstract final class MMIcons {
   static const IconData areaSelect = CupertinoIcons.viewfinder; // rectangle.dashed
   static const IconData pen = CupertinoIcons.pencil; // pencil.tip
   static const IconData inkFreehand = CupertinoIcons.scribble; // scribble
+  static const IconData inkAnnotations = LucideIcons.lineSquiggle;
   static const IconData inkEllipse = CupertinoIcons.circle; // circle
   static const IconData inkArrow = CupertinoIcons.arrow_up_right; // arrow.up.right
   static const IconData inkEraser = CupertinoIcons.delete_left; // delete.left (no Cupertino eraser)

@@ -403,7 +403,11 @@ class _Annotations extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4, right: MMSpacing.s),
                   child: isInk || entry.note != null
-                      ? Icon(isInk ? MMIcons.inkFreehand : MMIcons.marginNote, size: t.callout.fontSize, color: color)
+                      ? Icon(
+                          isInk ? MMIcons.inkAnnotations : MMIcons.marginNote,
+                          size: t.callout.fontSize,
+                          color: color,
+                        )
                       : Container(width: 3, height: context.mmSidebarRow, color: color),
                 ),
                 Expanded(

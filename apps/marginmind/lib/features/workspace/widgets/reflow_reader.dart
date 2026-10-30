@@ -1247,7 +1247,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                   l.inkAnnotations,
                   () => navigate(position),
                   key: ValueKey('ink-chapter-${group.key}'),
-                  icon: MMIcons.inkFreehand,
+                  icon: MMIcons.inkAnnotations,
                   subtitle: '$location · ${l.inkStrokeCount(group.value.length)}',
                 ),
               );
