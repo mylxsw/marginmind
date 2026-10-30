@@ -29,7 +29,6 @@ class SettingsWindow extends StatefulWidget {
   const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.showsGallery = kDebugMode});
 
   static const size = Size(780, 560), minSize = Size(640, 440);
-  static const readingSize = Size(740, 420), readingMinSize = Size(640, 380);
 
   /// Space kept between the dialog and the window edges.
   static const margin = 24.0;
@@ -109,9 +108,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final tablet = context.mmTablet;
     final availableHeight =
         screen.height - MediaQuery.viewInsetsOf(context).bottom - MediaQuery.paddingOf(context).vertical;
-    final reading = _tab == SettingsTab.reading;
-    final size = reading ? SettingsWindow.readingSize : SettingsWindow.size;
-    final min = reading ? SettingsWindow.readingMinSize : SettingsWindow.minSize;
+    const size = SettingsWindow.size;
+    const min = SettingsWindow.minSize;
     return Material(
       type: MaterialType.transparency,
       child: Container(

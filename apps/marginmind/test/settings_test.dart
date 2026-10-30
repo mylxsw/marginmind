@@ -142,6 +142,28 @@ void main() {
       expect(await sizeIn(const Size(600, 400)), const Size(600, 400), reason: 'never larger than the window');
     });
 
+    for (final screen in [const Size(1280, 820), const Size(700, 500), const Size(600, 400)]) {
+      testWidgets('all settings tabs keep the same bounds at $screen', (tester) async {
+        await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
+        showMMDialog<void>(
+          context: tester.element(find.byType(MMWindowScaffold)),
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: screen),
+            child: const SettingsWindow(initialTab: SettingsTab.reading, showsGallery: false),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final window = find.byKey(const ValueKey('settings-window'));
+        final bounds = tester.getRect(window);
+        for (final tab in [...SettingsTab.values, SettingsTab.reading, SettingsTab.general]) {
+          await tester.tap(find.byKey(ValueKey('settings-tab-${tab.name}')));
+          await tester.pumpAndSettle();
+          expect(tester.getRect(window), bounds, reason: 'switching to ${tab.name} keeps size and position');
+          expect(tester.takeException(), isNull);
+        }
+      });
+    }
+
     testWidgets('opaque sidebar when transparency is reduced', (tester) async {
       await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
       final context = tester.element(find.byType(MMWindowScaffold));

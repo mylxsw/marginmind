@@ -75,7 +75,7 @@ Future<ProviderContainer> openReadingSettings(
 /// Runs against both the widget renderer and the macOS window.
 Future<void> verifyReadingSettingsFlow(WidgetTester tester, {String prefix = 'reading'}) async {
   final container = await openReadingSettings(tester);
-  expect(tester.getSize(find.byKey(const ValueKey('settings-window'))), SettingsWindow.readingSize);
+  expect(tester.getSize(find.byKey(const ValueKey('settings-window'))), SettingsWindow.size);
   final modes = find.byKey(const ValueKey('settings-vocabulary-hints'));
   final preview = find.byType(VocabularyHintPreview);
   VocabularyHintMode mode() => tester.widget<VocabularyHintPreview>(preview).mode;
