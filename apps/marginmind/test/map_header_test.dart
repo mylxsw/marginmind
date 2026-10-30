@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,7 +87,7 @@ void main() {
     expect(find.text('52.0'), findsOneWidget);
   });
   for (final reduce in [false, true]) {
-    testWidgets('map header uses frosted glass and consistent icons (reduce transparency: $reduce)', (tester) async {
+    testWidgets('map header uses standard glass and consistent icons (reduce transparency: $reduce)', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: await testOverrides(),
@@ -99,14 +101,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.descendant(of: find.byType(MapCommandBar), matching: find.byType(MMLiquidGlass)), findsOneWidget);
-      expect(tester.widget(find.byKey(const ValueKey('map-view-glass'))), isA<MMLiquidGlass>());
+      expect(find.descendant(of: find.byType(MapCommandBar), matching: find.byType(MMLiquidGlass)), findsNothing);
+      expect(tester.widget(find.byKey(const ValueKey('map-view-glass'))), isA<MMGlass>());
       for (final surface in [find.byType(MapCommandBar), find.byKey(const ValueKey('map-view-glass'))]) {
         final filters = tester.widgetList<BackdropFilter>(
           find.descendant(of: surface, matching: find.byType(BackdropFilter)),
         );
         expect(filters, hasLength(reduce ? 0 : 1));
-        if (!reduce) expect(filters.single.filter, MMLiquidGlass.liquidFilter(24));
+        if (!reduce) expect(filters.single.filter, ImageFilter.blur(sigmaX: 24, sigmaY: 24));
       }
       Icon icon(String key) =>
           tester.widget<Icon>(find.descendant(of: find.byKey(ValueKey(key)), matching: find.byType(Icon)));

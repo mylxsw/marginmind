@@ -784,7 +784,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           reverse: true,
                           child: outline
                               ? controls
-                              : MMLiquidGlass(
+                              : MMGlass(
                                   key: const ValueKey('map-view-glass'),
                                   padding: const EdgeInsets.all(3),
                                   child: controls,

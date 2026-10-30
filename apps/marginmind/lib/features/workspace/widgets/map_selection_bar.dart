@@ -205,7 +205,7 @@ class MapCommandBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return TextFieldTapRegion(
-      child: MMLiquidGlass(
+      child: MMGlass(
         borderRadius: BorderRadius.circular(24),
         padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: 3),
         child: Row(
