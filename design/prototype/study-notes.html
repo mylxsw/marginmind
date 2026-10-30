@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MarginMind · 学习笔记：AI 整理与导出 · 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii), same as the other prototypes. */
+:root{
+  --win:#FFFFFF; --side:#F2F2F5; --reader:#F5F5F7; --card:#FFFFFF; --page:#FFFFFF;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff;
+  --glass:rgba(255,255,255,.88); --hair:rgba(0,0,0,.10); --excerpt:#3A3A3C; --ctx:#8E8E93;
+  --cardShadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05); --popShadow:0 10px 36px rgba(0,0,0,.16);
+  --ai:#8E5BD8; --aiTint:rgba(142,91,216,.10); --own:#C98A00; --ownTint:rgba(255,204,0,.14); --ok:#248A3D; --okTint:rgba(52,199,89,.14); --err:#D70015;
+  --y:#FFCC00; --g:#34C759; --b:#007AFF; --p:#FF2D55; --o:#FF9500; --v:#AF52DE;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+.dark{
+  --win:#1E1E1F; --side:#262628; --reader:#1E1E1F; --card:#2C2C2E; --page:#2A2A2C;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.22);
+  --glass:rgba(44,44,47,.92); --hair:rgba(255,255,255,.10); --excerpt:#D1D1D6; --ctx:#8E8E93;
+  --cardShadow:0 2px 10px rgba(0,0,0,.35); --popShadow:0 12px 40px rgba(0,0,0,.5);
+  --ai:#B38CF0; --aiTint:rgba(179,140,240,.14); --own:#FFD60A; --ownTint:rgba(255,214,10,.12); --ok:#30D158; --okTint:rgba(48,209,88,.16);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
+body{background:linear-gradient(135deg,#c9d6e8 0%,#e6dcef 50%,#f1e2d6 100%);overflow:hidden}
+body.dark{background:linear-gradient(135deg,#1b2333 0%,#2a2333 50%,#33281f 100%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+input,select,textarea{font:inherit;color:inherit}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:14px;height:14px}.i.xs{width:12px;height:12px}
+.grow{flex:1}
+.kbd{font-size:11px;color:var(--label2);margin-left:auto;padding-left:14px}
+
+#desk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px 338px 18px 18px}
+#win{position:relative;width:100%;max-width:1560px;height:100%;max-height:960px;background:var(--win);border-radius:24px;overflow:hidden;
+  box-shadow:0 0 0 .5px rgba(0,0,0,.25),0 30px 80px rgba(0,0,0,.28);display:flex}
+
+/* ---------- Sidebar (floating glass) ---------- */
+#side{width:212px;flex:none;padding:10px;display:flex;flex-direction:column}
+#side .glassbar{flex:1;border-radius:16px;background:var(--side);box-shadow:0 0 0 .5px var(--hair);padding:12px 8px;display:flex;flex-direction:column;gap:1px;overflow:auto}
+.lights{display:flex;gap:8px;padding:2px 6px 14px}.lights span{width:12px;height:12px;border-radius:6px}
+.sg-h{font-size:11px;font-weight:600;color:var(--label3);padding:10px 8px 4px;display:flex;align-items:center}
+.sg-h button{margin-left:auto;width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--icon)}
+.sg-h button:hover{background:var(--hover)}
+.si{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;border-radius:7px;font-size:13px;color:var(--label);white-space:nowrap;overflow:hidden}
+.si .i{color:var(--accent)}
+.si:hover{background:var(--hover)}
+.si.on{background:var(--fill)}
+.si .cnt{margin-left:auto;font-size:11px;color:var(--label3)}
+.si .nb{font-size:10px;font-weight:600;color:#fff;background:var(--accent);border-radius:8px;padding:0 5px;height:15px;line-height:15px;margin-left:auto}
+.si .el{overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Content column ---------- */
+#content{flex:1;display:flex;flex-direction:column;min-width:0}
+#tb{height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px 0 6px}
+#tb .ttl{font-weight:600;font-size:13px}
+#tb .sub{color:var(--label2);font-size:11.5px;margin-left:6px}
+.seg{display:inline-flex;background:var(--fill);border-radius:8px;padding:2px;gap:2px}
+.seg button{height:22px;padding:0 10px;border-radius:6px;font-size:12px;color:var(--label2);display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.dark .seg button.on{background:#636366}
+.capsule{display:flex;align-items:center;gap:2px;height:30px;padding:0 3px;border-radius:15px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair)}
+.tbtn{height:24px;min-width:24px;padding:0 7px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--label);font-size:12px;position:relative;white-space:nowrap}
+.tbtn .i{color:var(--icon)}
+.tbtn:hover{background:var(--hover)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}.tbtn.on .i{color:var(--accent)}
+.tbtn[disabled]{opacity:.38}.tbtn[disabled]:hover{background:none}
+.badge{min-width:15px;height:15px;border-radius:8px;background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:0 4px;display:inline-flex;align-items:center;justify-content:center}
+#main{flex:1;display:flex;min-height:0;border-top:.5px solid var(--sep)}
+
+/* ---------- Reader ---------- */
+#reader{width:40%;min-width:300px;max-width:560px;display:flex;flex-direction:column;background:var(--reader);border-right:.5px solid var(--sep);transition:width .25s}
+#reader.collapsed{width:0;min-width:0;border:0;overflow:hidden}
+.rbar{height:38px;display:flex;align-items:center;gap:6px;padding:0 12px;flex:none}
+.dtab{height:26px;padding:0 10px;border-radius:7px;font-size:12px;color:var(--label2);display:flex;align-items:center;gap:6px}
+.dtab.on{background:var(--fill);color:var(--label);font-weight:500}
+.dtab:hover:not(.on){background:var(--hover)}
+#page{flex:1;overflow:auto;position:relative;padding:4px 18px 40px}
+.paper{background:var(--page);border-radius:4px;box-shadow:0 0 0 .5px var(--hair),0 2px 8px rgba(0,0,0,.06);padding:30px 36px 34px;max-width:500px;margin:0 auto 14px}
+.paper h3{font-family:var(--serif);font-size:17px;margin:0 0 14px;font-weight:600}
+.paper .pg{font-size:11px;color:var(--label3);margin:14px 0 4px;text-align:right}
+.paper p{font-family:var(--serif);font-size:14.5px;line-height:27px;margin:0 0 10px;color:var(--label);text-align:justify}
+mark.hl{background:none;color:inherit;border-radius:2px;cursor:pointer;padding:1px 0}
+mark.hl.y{background:rgba(255,204,0,.36)}mark.hl.g{background:rgba(52,199,89,.30)}mark.hl.b{background:rgba(0,122,255,.24)}
+mark.hl.p{background:rgba(255,45,85,.24)}mark.hl.o{background:rgba(255,149,0,.32)}mark.hl.v{background:rgba(175,82,222,.26)}
+mark.hl.new{outline:1.5px dashed var(--ok);outline-offset:1px}
+mark.hl.flash{animation:hflash 1.8s}
+@keyframes hflash{0%,55%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.mnote{display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--y);vertical-align:1px;margin-left:3px;position:relative;cursor:pointer}
+.mnote::after{content:"";position:absolute;left:3px;right:3px;top:4px;height:1px;background:rgba(0,0,0,.45);box-shadow:0 3px 0 rgba(0,0,0,.45)}
+
+/* ---------- Right pane ---------- */
+#right{flex:1;position:relative;min-width:0;display:flex;flex-direction:column;background:var(--win)}
+
+/* Annotation list */
+.anno-head{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;flex:none;border-bottom:.5px solid var(--sep)}
+.anno-head .ttl{font-weight:600}
+.cfilter{display:flex;gap:5px;margin-left:8px}
+.cfilter span{width:14px;height:14px;border-radius:7px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15);cursor:pointer;opacity:.35}
+.cfilter span.on{opacity:1;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15),0 0 0 2px var(--win),0 0 0 3.5px var(--line,rgba(60,60,67,.3))}
+#annoList{flex:1;overflow:auto;padding:6px 12px 90px}
+.agrp{font-size:11px;font-weight:600;color:var(--label3);margin:14px 6px 6px;display:flex;gap:6px;align-items:center}
+.arow{display:flex;gap:10px;padding:9px 10px;border-radius:10px;align-items:flex-start}
+.arow:hover{background:var(--hover)}
+.arow.sel{background:var(--accentTint)}
+.chk{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--label3);flex:none;margin-top:3px;display:flex;align-items:center;justify-content:center;color:#fff}
+.chk.on{background:var(--accent);box-shadow:none}
+.arow .bar{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.arow .q{font-family:var(--serif);font-size:13.5px;line-height:21px;color:var(--excerpt)}
+.arow .m{font-size:11px;color:var(--label2);margin-top:4px;display:flex;gap:8px;align-items:center}
+.arow .own{font-size:12px;color:var(--label);background:var(--ownTint);border-radius:6px;padding:4px 7px;margin-top:6px;line-height:1.5}
+#annoBar{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;height:38px;padding:0 5px 0 14px;border-radius:19px;background:var(--glass);
+  box-shadow:0 0 0 .5px var(--hair),var(--popShadow);backdrop-filter:blur(24px) saturate(1.6);white-space:nowrap;z-index:5}
+#annoBar .cnt{font-size:12px;color:var(--label2);font-weight:500;margin-right:6px}
+.btn{height:28px;padding:0 13px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;background:var(--fill);color:var(--label);white-space:nowrap}
+.btn:hover{background:var(--pressed)}
+.btn.pri{background:var(--accent);color:#fff}.btn.pri .i{color:#fff}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.pill{border-radius:14px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.btn.ghost{background:none}.btn.ghost:hover{background:var(--hover)}
+
+/* ---------- Note view ---------- */
+.note-bar{height:44px;display:flex;align-items:center;gap:6px;padding:0 12px;flex:none;border-bottom:.5px solid var(--sep)}
+.note-bar .ttl{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+#noteScroll{flex:1;overflow:auto;position:relative}
+#noteDoc{max-width:720px;margin:0 auto;padding:30px 56px 120px 64px;position:relative}
+.n-title{font-size:24px;font-weight:700;line-height:1.3;margin:0 0 8px;outline:none}
+.n-meta{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:11.5px;color:var(--label2);margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border-radius:6px;background:var(--fill4);font-size:11px;color:var(--label2);white-space:nowrap}
+.chip.ok{background:var(--okTint);color:var(--ok);cursor:pointer}
+.chip.warn{background:rgba(255,149,0,.16);color:#B25000;cursor:pointer}
+.dark .chip.warn{color:#FFB340}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--label2);padding:8px 10px;border-radius:8px;background:var(--fill4);margin-bottom:22px;align-items:center}
+.legend .lg{display:flex;align-items:center;gap:5px}
+.legend .swatch{width:3px;height:12px;border-radius:2px}
+.legend .ser{font-family:var(--serif);font-size:12px;color:var(--label)}
+.n-h2{font-size:17px;font-weight:700;margin:30px 0 10px;display:flex;align-items:baseline;gap:8px;outline:none}
+.n-h2 .num{color:var(--label3);font-weight:600;font-variant-numeric:tabular-nums}
+.blk{position:relative;margin:0 0 12px;border-radius:6px}
+.blk .gut{position:absolute;left:-30px;top:2px;width:22px;height:22px;border-radius:6px;display:none;align-items:center;justify-content:center;color:var(--icon)}
+.blk:hover>.gut,.blk.menu>.gut{display:flex}
+.blk .gut:hover{background:var(--hover)}
+.blk.hlnew{animation:blnew 2.4s}
+@keyframes blnew{0%,60%{background:var(--okTint)}100%{background:transparent}}
+.blk.pending{background:var(--okTint);box-shadow:-4px 0 0 var(--ok);padding:6px 8px;margin-left:-8px;margin-right:-8px}
+.blk.pending .ptag{font-size:10.5px;color:var(--ok);font-weight:600;margin-bottom:4px;display:flex;gap:4px;align-items:center}
+.p-ai,.p-own{font-size:14px;line-height:1.75;outline:none}
+.marks .blk.ai{padding-left:12px;margin-left:-12px;border-left:2px solid var(--aiTint)}
+.marks .blk.ai:hover{border-left-color:var(--ai)}
+.vt{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 4px;height:16px;vertical-align:1px;margin-right:4px;white-space:nowrap}
+.vt.ai{color:var(--ai);background:var(--aiTint)}
+.vt.mix{color:var(--ai);background:transparent;box-shadow:inset 0 0 0 1px var(--aiTint)}
+.vt.own{color:var(--own);background:var(--ownTint)}
+.nomarks .vt.ai,.nomarks .vt.mix{display:none}
+.callout{background:var(--aiTint);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.7}
+.nomarks .callout{background:var(--fill4)}
+.quote{position:relative;padding:2px 0 2px 16px}
+.quote .bar{position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:2px}
+.quote .qt{font-family:var(--serif);font-size:15px;line-height:1.85;color:var(--excerpt)}
+.quote .cx{font-family:var(--serif);font-size:14px;line-height:1.85;color:var(--ctx)}
+.quote .src{display:flex;gap:6px;align-items:center;margin-top:3px;font-size:11px;color:var(--label3)}
+.cite{display:inline-flex;align-items:center;gap:3px;color:var(--accent);border-radius:4px;padding:0 3px;margin-left:-3px;cursor:pointer;font-size:11px}
+.cite:hover{background:var(--accentTint)}
+.cxbtn{display:inline-flex;align-items:center;gap:3px;border-radius:4px;padding:0 4px;cursor:pointer;color:var(--label3)}
+.cxbtn:hover{background:var(--hover);color:var(--label)}
+.cxbtn.on{color:var(--label2)}
+.gloss{margin-top:6px;font-size:12.5px;line-height:1.6;color:var(--label2);background:var(--aiTint);border-radius:7px;padding:5px 9px}
+.nomarks .gloss{background:var(--fill4)}
+.ownbox{background:var(--ownTint);border-radius:8px;padding:7px 11px;font-size:13.5px;line-height:1.7;margin:6px 0 0 16px}
+.ownbox .from{font-size:10.5px;color:var(--label3);margin-top:2px}
+.xref{font-size:13px;color:var(--label2);display:flex;gap:6px;align-items:flex-start;line-height:1.6}
+.xref a{color:var(--accent);cursor:pointer;text-decoration:none}
+.xref a:hover{text-decoration:underline}
+ul.tk{margin:0;padding-left:20px;font-size:14px;line-height:1.75}
+ul.todo{list-style:none;margin:0;padding:0;font-size:14px;line-height:1.75}
+ul.todo li{display:flex;gap:8px;align-items:flex-start}
+ul.todo .cb{width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--label3);margin-top:5px;flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff}
+ul.todo .cb.on{background:var(--ok);box-shadow:none}
+ul.todo li.done span.t{color:var(--label3);text-decoration:line-through}
+.qa{border-radius:10px;box-shadow:0 0 0 .5px var(--hair);padding:10px 12px;margin-bottom:8px;background:var(--card)}
+.qa .q{font-weight:600;font-size:13.5px;display:flex;gap:8px;align-items:flex-start}
+.qa .a{font-family:var(--serif);font-size:14px;line-height:1.75;color:var(--excerpt);margin-top:6px}
+.qa .a.hide{filter:blur(5px);cursor:pointer;user-select:none}
+.qa .acts{display:flex;gap:6px;margin-top:8px}
+.refs{font-size:12px;color:var(--label2);line-height:1.9;margin:0;padding-left:18px}
+.refs li::marker{color:var(--label3)}
+[contenteditable]{cursor:text}
+[contenteditable]:focus{box-shadow:0 0 0 2px var(--accentTint);border-radius:4px}
+
+/* Cornell */
+.cornell{display:grid;grid-template-columns:170px 1fr;border-top:1px solid var(--sep);margin:6px 0 18px}
+.cornell .cue{border-right:1px solid var(--sep);padding:10px 12px 10px 0;font-size:12.5px;line-height:1.6;color:var(--label2)}
+.cornell .cue div{margin-bottom:12px;font-weight:500}
+.cornell .cue div::before{content:"Q ";color:var(--ai);font-weight:700}
+.cornell .body{padding:10px 0 4px 16px}
+.cornell .sum{grid-column:1/3;border-top:1px solid var(--sep);padding:10px 0;font-size:13.5px;line-height:1.7}
+.cornell .sum b{font-size:11px;color:var(--label3);display:block;margin-bottom:2px}
+
+/* TOC */
+#toc{position:absolute;right:14px;top:62px;width:150px;font-size:11.5px;z-index:3}
+#toc .th{font-size:10.5px;font-weight:600;color:var(--label3);margin-bottom:6px}
+#toc a{display:block;color:var(--label2);padding:3px 0 3px 8px;border-left:2px solid var(--sep);text-decoration:none;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toc a:hover{color:var(--label)}
+#toc a.on{color:var(--accent);border-left-color:var(--accent)}
+.notoc #toc{display:none}
+.quote .qt.lit{color:var(--label);border-radius:2px}
+
+/* Banner */
+.banner{margin:12px auto 0;max-width:600px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:12px;background:var(--okTint);font-size:12.5px}
+.banner .i{color:var(--ok)}
+.banner b{font-weight:600}
+.diffbar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--glass);backdrop-filter:blur(20px);border-bottom:.5px solid var(--sep);font-size:12.5px}
+.lock{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:var(--label3);margin-left:6px}
+
+/* Block menu, popovers */
+.pop{position:fixed;z-index:80;min-width:200px;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);border-radius:10px;padding:5px;box-shadow:0 0 0 .5px var(--hair),var(--popShadow);display:none}
+.pop.on{display:block;animation:fadein .12s}
+@keyframes fadein{from{opacity:0;transform:translateY(-3px)}}
+.pop .mi{height:26px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:6px;font-size:13px;white-space:nowrap}
+.pop .mi .i{color:var(--icon)}
+.pop .mi:hover:not(.dis){background:var(--accent);color:#fff}
+.pop .mi:hover:not(.dis) .i,.pop .mi:hover:not(.dis) .kbd{color:#fff}
+.pop .mi.dis{color:var(--label3)}
+.pop .msep{height:.5px;background:var(--sep);margin:4px 8px}
+.pop .mh{font-size:11px;color:var(--label3);padding:4px 10px 2px}
+.pop .why{font-size:11px;color:var(--label3);padding:0 10px 4px 34px;max-width:260px;line-height:1.4;white-space:normal}
+.cov{width:340px;padding:10px}
+.cov .row{display:flex;gap:8px;align-items:flex-start;padding:6px 6px;border-radius:7px;font-size:12px;line-height:1.5}
+.cov .row:hover{background:var(--hover)}
+.cov .row .bar{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.cov .row .t{font-family:var(--serif);flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cov .row .w{font-size:10.5px;color:var(--label3);white-space:nowrap}
+
+/* ---------- Sheets ---------- */
+#scrim{position:absolute;inset:0;background:rgba(0,0,0,.18);z-index:50;display:none;align-items:flex-start;justify-content:center;padding-top:52px}
+.dark #scrim{background:rgba(0,0,0,.4)}
+#scrim.on{display:flex}
+.sheet{background:var(--win);border-radius:16px;box-shadow:0 0 0 .5px var(--hair),0 24px 70px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:calc(100% - 70px);animation:sheetin .22s cubic-bezier(.2,0,0,1)}
+.dark .sheet{background:#2A2A2C}
+@keyframes sheetin{from{transform:translateY(-14px);opacity:0}}
+.sh-h{padding:16px 20px 6px;display:flex;align-items:center;gap:8px}
+.sh-h b{font-size:15px}
+.sh-h .s{font-size:12px;color:var(--label2)}
+.sh-b{padding:8px 20px 14px;overflow:auto;flex:1}
+.sh-f{padding:12px 20px;border-top:.5px solid var(--sep);display:flex;align-items:center;gap:8px}
+.sh-f .note{font-size:11.5px;color:var(--label2);display:flex;align-items:center;gap:6px;line-height:1.4}
+.frow{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:start;padding:9px 0;border-bottom:.5px solid var(--sep)}
+.frow:last-child{border:0}
+.frow>label{font-size:12.5px;color:var(--label2);padding-top:5px;text-align:right}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{height:28px;padding:0 11px;border-radius:8px;box-shadow:inset 0 0 0 1px var(--sep);font-size:12.5px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.opt:hover{background:var(--hover)}
+.opt.on{box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--accentTint);color:var(--accent);font-weight:500}
+.opt.dis{opacity:.4;pointer-events:none}
+.opt .c{font-size:11px;color:var(--label3);font-weight:400}
+.opt.on .c{color:var(--accent)}
+.help{font-size:11.5px;color:var(--label2);margin-top:6px;line-height:1.5}
+.help.warn{color:#B25000}.dark .help.warn{color:#FFB340}
+.help a{color:var(--accent);cursor:pointer}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ocard{border-radius:10px;padding:10px;box-shadow:inset 0 0 0 1px var(--sep);font-size:12px;line-height:1.45;position:relative}
+.ocard:hover{background:var(--hover)}
+.ocard.on{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accentTint)}
+.ocard.dis{opacity:.4;pointer-events:none}
+.ocard b{display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:3px}
+.ocard .d{color:var(--label2);font-size:11.5px}
+.ocard .ai{position:absolute;right:8px;top:9px}
+.thumb{height:56px;border-radius:6px;background:var(--card);box-shadow:0 0 0 .5px var(--hair);margin-bottom:8px;padding:6px 7px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.dark .thumb{background:#3A3A3C}
+.thumb i{display:block;height:3px;border-radius:2px;background:var(--label3);opacity:.35}
+.thumb i.h{height:4px;width:45%;opacity:.7;background:var(--label)}
+.thumb i.q{background:var(--y);opacity:.8}
+.thumb i.a{background:var(--ai);opacity:.55}
+.toggle{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:default}
+.sw{width:28px;height:16px;border-radius:8px;background:var(--fill);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.sw.on{background:var(--ok)}.sw.on::after{left:14px}
+.toggle.dis{opacity:.4;pointer-events:none}
+.range{display:flex;align-items:center;gap:10px;font-size:12.5px}
+.range input{width:160px;accent-color:var(--accent)}
+.privacy{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;color:var(--label2);line-height:1.5;background:var(--fill4);border-radius:8px;padding:8px 10px;margin-top:10px}
+
+/* Outline sheet */
+.ol-sec{border-radius:12px;box-shadow:0 0 0 .5px var(--hair);background:var(--card);margin-bottom:8px;padding:8px 10px 10px}
+.dark .ol-sec{background:#333336}
+.ol-sec.over{box-shadow:0 0 0 2px var(--accent)}
+.ol-sec.un{background:var(--fill4);box-shadow:inset 0 0 0 1px var(--sep);border:1px dashed transparent}
+.ol-top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ol-top .grip{color:var(--label3);cursor:grab}
+.ol-top .n{color:var(--label3);font-weight:600;font-variant-numeric:tabular-nums;width:16px}
+.ol-top input{flex:1;border:0;background:none;font-weight:600;font-size:13.5px;outline:none;padding:3px 4px;border-radius:5px}
+.ol-top input:focus{background:var(--fill4)}
+.ol-top .why{font-size:11px;color:var(--label3);white-space:nowrap}
+.ol-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:28px;padding-left:22px}
+.hchip{max-width:250px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px 0 7px;border-radius:7px;background:var(--fill4);box-shadow:inset 0 0 0 .5px var(--hair);font-family:var(--serif);font-size:12px;cursor:grab;white-space:nowrap;overflow:hidden}
+.hchip .d{width:7px;height:7px;border-radius:4px;flex:none}
+.hchip span{overflow:hidden;text-overflow:ellipsis}
+.hchip.drag{opacity:.4}
+.ol-empty{font-size:11.5px;color:var(--label3);padding:5px 0}
+
+/* Generating */
+.gen-wrap{display:grid;grid-template-columns:230px 1fr;gap:18px;min-height:380px}
+.steps{display:flex;flex-direction:column;gap:2px}
+.step{display:flex;gap:8px;align-items:flex-start;padding:7px 8px;border-radius:8px;font-size:12.5px;color:var(--label3)}
+.step .ico{width:16px;height:16px;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center}
+.step.done{color:var(--label)}.step.done .ico{color:var(--ok)}
+.step.run{color:var(--label);background:var(--fill4);font-weight:500}
+.step .sub{font-size:11px;color:var(--label2);font-weight:400;margin-top:2px}
+.spin{width:12px;height:12px;border-radius:6px;border:2px solid var(--accentTint);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-prev{border-radius:10px;box-shadow:inset 0 0 0 .5px var(--hair);background:var(--page);padding:18px 22px;overflow:auto;max-height:440px}
+.gen-prev .blk{animation:fadein .3s}
+.caret{display:inline-block;width:7px;height:15px;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(2) infinite;border-radius:1px}
+@keyframes blink{50%{opacity:0}}
+
+/* Export sheet */
+.ex-wrap{display:grid;grid-template-columns:280px 1fr;gap:18px;height:520px}
+.ex-left{overflow:auto;padding-right:4px}
+.fmts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.fmt{border-radius:10px;padding:8px 6px;text-align:center;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--sep);color:var(--label2)}
+.fmt:hover{background:var(--hover)}
+.fmt.on{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accentTint);color:var(--accent);font-weight:600}
+.fmt .ico{width:28px;height:28px;margin:0 auto 4px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.ex-sec{font-size:11px;font-weight:600;color:var(--label3);margin:12px 0 6px}
+.ex-right{border-radius:12px;background:var(--reader);box-shadow:inset 0 0 0 .5px var(--hair);overflow:auto;position:relative}
+pre.md{margin:0;padding:16px 18px;font-family:var(--mono);font-size:11.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;color:var(--label)}
+pre.md .h{color:var(--accent);font-weight:600}
+pre.md .qq{color:#9A6700}.dark pre.md .qq{color:#E3B341}
+pre.md .ai{color:var(--ai)}
+pre.md .fm{color:var(--label3)}
+.ppage{width:420px;margin:18px auto;background:#fff;color:#1D1D1F;box-shadow:0 2px 12px rgba(0,0,0,.12);padding:34px 38px;font-size:9.5px;line-height:1.6;border-radius:2px}
+.ppage h1{font-size:15px;margin:0 0 4px}
+.ppage .m{color:#8E8E93;font-size:8px;margin-bottom:10px}
+.ppage h2{font-size:11px;margin:14px 0 5px}
+.ppage .q{font-family:var(--serif);border-left:2px solid #FFCC00;padding-left:8px;margin:5px 0;color:#3A3A3C}
+.ppage .q small{display:block;color:#8E8E93;font-family:var(--sans);font-size:7.5px}
+.ppage .o{background:#FFF8DB;padding:3px 6px;border-radius:3px;margin:3px 0 5px 10px}
+.ppage .a{color:#3A3A3C}
+.ppage .fn{font-size:7.5px;color:#8E8E93;border-top:.5px solid #ddd;margin-top:14px;padding-top:5px}
+.ppage .pn{text-align:center;font-size:7.5px;color:#8E8E93;margin-top:12px}
+.ex-tag{position:sticky;top:0;display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:11px;color:var(--label2);background:var(--reader);border-bottom:.5px solid var(--sep);z-index:2}
+
+/* Share */
+.sh-wrap{display:grid;grid-template-columns:250px 1fr;gap:18px;height:540px}
+.share-stage{border-radius:12px;background:var(--fill4);overflow:auto;display:flex;justify-content:center;padding:20px}
+.lcard{width:330px;border-radius:14px;padding:26px 24px 20px;flex:none;align-self:flex-start;box-shadow:0 6px 24px rgba(0,0,0,.14)}
+.lcard.t-paper{background:#FBF7EE;color:#2B2A27}
+.lcard.t-plain{background:#FFFFFF;color:#1D1D1F}
+.lcard.t-night{background:#1C1C1E;color:#F2F2F7}
+.lcard .kick{font-size:10px;letter-spacing:.08em;opacity:.55;margin-bottom:8px}
+.lcard h4{font-size:18px;margin:0 0 14px;line-height:1.35}
+.lcard .lq{font-family:var(--serif);font-size:13.5px;line-height:1.8;margin:0 0 6px;position:relative;padding-left:12px}
+.lcard .lq::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2.5px;border-radius:2px;background:currentColor;opacity:.25}
+.lcard .ls{font-size:10px;opacity:.5;margin:0 0 12px 12px}
+.lcard .lo{font-size:12px;line-height:1.65;border-radius:8px;padding:7px 10px;margin:0 0 14px;background:rgba(255,204,0,.16)}
+.lcard .la{font-size:12px;line-height:1.7;opacity:.85;margin:0 0 14px}
+.lcard .lsec{font-size:12px;font-weight:700;margin:16px 0 8px;opacity:.85}
+.lcard .foot{display:flex;align-items:center;gap:8px;border-top:.5px solid currentColor;border-color:rgba(127,127,127,.25);padding-top:12px;margin-top:16px;font-size:10px;opacity:.6}
+.lcard .foot img,.lcard .foot .logo{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#5E9CFF,#8E5BD8)}
+.lcard.quote{padding:34px 28px 22px}
+.lcard.quote .big{font-family:var(--serif);font-size:20px;line-height:1.7;margin:4px 0 14px}
+.lcard.quote .mark{font-family:var(--serif);font-size:44px;line-height:.6;opacity:.25}
+
+/* HUD */
+#hud{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;display:none;align-items:center;gap:10px;height:34px;padding:0 6px 0 14px;border-radius:17px;
+  background:rgba(40,40,42,.92);color:#fff;font-size:12.5px;box-shadow:0 8px 28px rgba(0,0,0,.25);white-space:nowrap}
+#hud.on{display:flex;animation:fadeup3 .2s}
+@keyframes fadeup3{from{opacity:0;transform:translate(-50%,6px)}}
+#hud button{height:24px;padding:0 10px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-weight:500}
+#hud button:hover{background:rgba(255,255,255,.24)}
+#hud.noact{padding-right:14px}
+
+/* Native menu (file menu demo) */
+#menuBar{position:absolute;left:0;right:0;top:0;height:0}
+
+/* ---------- Demo console ---------- */
+#demo{position:fixed;right:14px;top:14px;bottom:14px;width:310px;border-radius:16px;background:rgba(255,255,255,.82);backdrop-filter:blur(30px) saturate(1.6);
+  box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 18px 50px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:#1D1D1F;z-index:100}
+body.dark #demo{background:rgba(36,36,38,.88);color:#F5F5F7}
+#demo .dh{padding:14px 16px 10px;border-bottom:.5px solid rgba(0,0,0,.08)}
+body.dark #demo .dh{border-color:rgba(255,255,255,.08)}
+#demo .dh b{font-size:13px}
+#demo .dh .s{font-size:11.5px;opacity:.65;margin-top:3px;line-height:1.45}
+#demo .dl{flex:1;overflow:auto;padding:8px}
+#demo .grp{font-size:11px;font-weight:600;opacity:.55;margin:10px 8px 4px}
+.sc-btn{display:block;width:100%;text-align:left;padding:7px 9px;border-radius:8px;font-size:12.5px;line-height:1.35}
+.sc-btn:hover{background:rgba(120,120,128,.12)}
+.sc-btn.on{background:#007AFF;color:#fff}
+.sc-btn .n{display:inline-block;width:22px;opacity:.6;font-variant-numeric:tabular-nums}
+#notes{border-top:.5px solid rgba(0,0,0,.08);padding:12px 16px;font-size:12px;line-height:1.55;max-height:46%;overflow:auto}
+body.dark #notes{border-color:rgba(255,255,255,.08)}
+#notes h4{margin:0 0 6px;font-size:12.5px}
+#notes ul{margin:4px 0 8px;padding-left:16px}
+#notes li{margin-bottom:3px}
+#notes .lab{font-size:11px;font-weight:600;opacity:.6;margin-top:8px}
+#demo .df{display:flex;gap:6px;padding:10px 12px;border-top:.5px solid rgba(0,0,0,.08);flex-wrap:wrap}
+body.dark #demo .df{border-color:rgba(255,255,255,.08)}
+#demo .df button{flex:1;height:28px;border-radius:8px;background:rgba(120,120,128,.14);font-size:12px;min-width:80px}
+#demo .df button:hover{background:rgba(120,120,128,.24)}
+#demo .df button.on{background:#007AFF;color:#fff}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5c3-1.5 5.5-1.5 8 0v15c-2.5-1.5-5-1.5-8 0zM20 5c-3-1.5-5.5-1.5-8 0v15c2.5-1.5 5-1.5 8 0z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.2 11l7.6-4M8.2 13l7.6 4"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4"/><path d="M5 19h14"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="7" r="1"/><circle cx="15" cy="7" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="17" r="1"/><circle cx="15" cy="17" r="1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-ctx" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h16"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></symbol>
+  <symbol id="i-wand" viewBox="0 0 24 24"><path d="M5 19 16 8"/><path d="M14 6l2-2 4 4-2 2z"/><path d="M8 4v2M7 5h2M19 15v2M18 16h2"/></symbol>
+  <symbol id="i-short" viewBox="0 0 24 24"><path d="M4 8h16M4 12h10M4 16h6"/></symbol>
+  <symbol id="i-long" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h11"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4 3 20h18z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-cards" viewBox="0 0 24 24"><rect x="4" y="7" width="13" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+</svg>
+
+<div id="desk"><div id="win">
+  <aside id="side"><div class="glassbar" id="sideInner"></div></aside>
+  <div id="content">
+    <div id="tb"></div>
+    <div id="main">
+      <section id="reader"><div class="rbar" id="docTabs"></div><div id="page"></div></section>
+      <section id="right"></section>
+    </div>
+  </div>
+  <div id="scrim"></div>
+  <div id="hud"></div>
+</div></div>
+
+<div class="pop" id="pop"></div>
+
+<aside id="demo">
+  <div class="dh"><b>学习笔记 · AI 整理与导出</b><div class="s">划线、批注、脑图卡片 → 结构清楚、带出处的学习笔记 → Markdown / Obsidian / PDF / Word / 长图。所有按钮都能点；切换场景会重置数据。AI 回答为演示数据。</div></div>
+  <div class="dl" id="scList"></div>
+  <div id="notes"></div>
+  <div class="df"><button id="aiBtn">AI 已配置</button><button id="darkBtn">深色模式</button><button id="narrowBtn">窄窗口</button><button id="resetBtn">重置场景</button></div>
+</aside>
+
+<script>
+/* MarginMind 学习笔记原型。单文件、无依赖；资料与 AI 输出为演示数据。 */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const ic = (n, cls = 'i s') => `<svg class="${cls}"><use href="#i-${n}"/></svg>`;
+const COLOR = { y: '#FFCC00', g: '#34C759', b: '#007AFF', p: '#FF2D55', o: '#FF9500', v: '#AF52DE' };
+
+/* ---------- Demo documents: chapters → paragraphs; [id:color|text] marks a highlight ---------- */
+const DOCS = {
+  d1: { title: '认知天性', short: '认知天性', chapters: [
+    { id: 'c1', title: '第 1 章 学习是一种误解', paras: [
+      { pg: 12, t: '学习者普遍高估了重读的价值。[h1:y|回想比重读更有效：合上书本、试着说出刚读过的内容，记忆会被重新巩固。]重读只会带来熟悉感，而熟悉并不等于掌握。' },
+      { pg: 16, t: '[h7:p|流畅错觉让我们误以为自己已经掌握了知识。]当内容读起来很顺畅时，我们往往会停止思考，把“看得懂”当成“记得住”。' },
+    ] },
+    { id: 'c2', title: '第 2 章 要学习，先检索', paras: [
+      { pg: 23, t: '[h2:y|每一次从记忆中提取知识，都会让这条提取路径变得更牢固，下次更容易想起。]这就是为什么考试本身也是一种学习手段。' },
+      { pg: 25, t: '[h3:g|小测验本身就是学习，而不只是检验学习的工具。]低风险、频繁的小测验，比一次期末大考更能留住知识。' },
+      { pg: 28, t: '研究者让两组学生学习同样的材料：一组反复阅读，一组读完一遍后合上书自测。一周后，自测组记住的内容多出近一半。[h9:y|这就是测试效应。]它在不同年龄、不同学科中都得到了重复验证。' },
+    ] },
+    { id: 'c3', title: '第 3 章 混合练习', paras: [
+      { pg: 41, t: '把练习分散开来，比集中在一段时间里反复练习效果更好。[h4:b|间隔一段时间再练习，需要更多努力去回想，正是这份努力让记忆更持久。]' },
+      { pg: 44, t: '[h10:b|间隔不必精确：只要在稍有遗忘时再回想，就能取得大部分收益。]与其追求完美的排期，不如先让复习发生。' },
+      { pg: 47, t: '[h5:o|交错练习：把不同类型的题目混在一起练，能培养分辨问题类型的能力。]虽然当下感觉更难、进步更慢，但长期表现更好。' },
+    ] },
+  ] },
+  d2: { title: '刻意练习：如何从新手到大师', short: '刻意练习', chapters: [
+    { id: 'c4', title: '第 4 章 黄金标准', paras: [
+      { pg: 58, t: '[h6:v|刻意练习需要明确的目标、专注的投入和及时的反馈，并且总是在舒适区的边缘。]单纯的重复不会让人进步。' },
+      { pg: 61, t: '[h8:g|心理表征越丰富，越能在练习中发现自己的错误并加以纠正。]这也是高手与新手最大的差别之一。' },
+      { pg: 66, t: '[h11:v|没有反馈的练习，只是在重复自己已有的错误。]导师的价值，很大程度上在于提供及时、具体的反馈。' },
+    ] },
+  ] },
+};
+const HL = {};
+for (const [d, doc] of Object.entries(DOCS)) for (const ch of doc.chapters) ch.paras.forEach((p, pi) => {
+  const re = /\[(h\d+):(\w)\|([^\]]+)\]/g; let m;
+  while ((m = re.exec(p.t))) {
+    const before = p.t.slice(0, m.index).replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, '$3');
+    const after = p.t.slice(m.index + m[0].length).replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, '$3');
+    HL[m[1]] = { id: m[1], doc: d, ch: ch.id, chTitle: ch.title, pg: p.pg, c: m[2], text: m[3], before, after };
+  }
+});
+/* The reader's own words: margin notes and mind-map note cards. */
+const OWN = {
+  h1: { text: '我考前一直在重读课本，难怪考完就忘。下次换成合上书默写提纲。', from: '页边批注 · p.12' },
+  h4: { text: '我的复习节奏：第 1、3、7、14 天各回想一次。', from: '脑图笔记 · 间隔练习' },
+  h6: { text: '和《认知天性》说的“费力的提取”是一回事：舒适区边缘 = 需要努力。', from: '页边批注 · p.58' },
+  h10: { text: '所以别等排期完美才开始，先用 FSRS 的默认值。', from: '页边批注 · p.44' },
+};
+/* AI glosses: filled-in context for fragments ("这" refers to the previous sentence). */
+const GLOSS = { h9: '「这」指前文的实验：读完合上书自测的一组，一周后多记住近一半内容。' };
+/* AI-written questions per highlight (review outline, Cornell cues). */
+const QS = { h1: '回想和重读，哪个更能巩固记忆？', h2: '每次从记忆中提取知识，会带来什么变化？', h9: '什么是测试效应？', h3: '小测验除了检验，还有什么作用？',
+  h4: '间隔练习为什么让记忆更持久？', h10: '复习间隔需要很精确吗？', h5: '什么是交错练习？有什么好处？', h6: '刻意练习有哪几个要素？',
+  h8: '心理表征对练习有什么帮助？', h7: '什么是流畅错觉？', h11: '没有反馈的练习会怎样？' };
+const qFor = h => aiOn() && QS[h] ? QS[h] : `《${docOf(h).short}》p.${HL[h].pg} 说了什么？`;
+const NEW_HLS = ['h10', 'h11'];
+const BASE_HLS = ['h1', 'h7', 'h2', 'h3', 'h9', 'h4', 'h5', 'h6', 'h8'];
+const MAPS = { b1: '检索练习', b2: '间隔练习', b3: '交错与刻意练习', b4: '常见误区' };
+
+/* ---------- AI section content (demo) ---------- */
+const SECS = {
+  theme: [
+    { id: 's1', title: '检索：回想胜过重读', refs: ['h1', 'h2', 'h9', 'h3'], why: '4 条都在讲“主动回想”',
+      ai: '两本书反复强调同一件事：记忆不是靠“再看一遍”变牢的，而是靠一次次把它从脑子里提取出来。重读制造的是熟悉感，回想才在加固提取路径。',
+      take: ['合上书复述，比重读一遍更有效', '小测验是学习手段，不只是检验', '测试效应在不同年龄、学科都成立'],
+      q: '为什么回想比重读更能留住知识？', alt: '核心观点：把知识“取出来”比“再放进去”更能加固记忆。重读只让内容变熟，回想才让它变牢。' },
+    { id: 's2', title: '间隔：让一点遗忘帮你记得更牢', refs: ['h4'], why: '讲复习的时间安排',
+      ai: '间隔之所以有效，是因为每次复习前都已经忘掉一点，需要更费力地回想——这和第 1 节的“提取”是同一个机制。',
+      xref: { to: 's1', text: '是同一机制：间隔让每次复习都变成一次提取。' },
+      take: ['分散练习优于集中练习', '“费力”本身是信号，不是失败'],
+      q: '为什么间隔练习比集中练习效果更好？', alt: '间隔练习的关键是“稍有遗忘再回想”：遗忘让回想变得费力，而费力的回想让记忆更持久。' },
+    { id: 's3', title: '交错与刻意练习：在舒适区边缘练', refs: ['h5', 'h6', 'h8'], why: '两本书讲同一类练习方法',
+      ai: '《认知天性》的交错练习与《刻意练习》的“舒适区边缘”相互印证：让练习保持一定难度、并且能看见自己的错误，进步才会发生。',
+      take: ['把不同题型混在一起练', '目标明确、专注、及时反馈', '心理表征帮助自我纠错'],
+      q: '刻意练习有哪几个要素？', alt: '两本书都主张“有难度的练习”：交错练习让人学会分辨问题，刻意练习要求目标、专注、反馈，并始终停在舒适区边缘。' },
+    { id: 's4', title: '警惕流畅错觉', refs: ['h7'], why: '讲常见误区',
+      ai: '读得顺 ≠ 学会了。判断自己是否掌握，要看能不能不看书讲出来，而不是看书时是否觉得“都懂”。',
+      take: ['用“能否复述”检验掌握程度'],
+      q: '什么是流畅错觉？如何避免？', alt: '流畅错觉：读得顺就以为学会了。避免方法是用合上书复述来检验，而不是凭感觉。' },
+  ],
+  map: [
+    { id: 'm1', title: '检索练习', refs: ['h2', 'h3', 'h9'], why: '脑图分支' },
+    { id: 'm2', title: '间隔练习', refs: ['h4'], why: '脑图分支' },
+    { id: 'm3', title: '交错与刻意练习', refs: ['h5', 'h6', 'h8'], why: '脑图分支' },
+    { id: 'm4', title: '常见误区', refs: ['h1', 'h7'], why: '脑图分支' },
+  ],
+};
+const SUMMARY = '有效学习的共同点是“费力的提取”：合上书回想、隔一段时间再练、把题型混在一起、在舒适区边缘接受反馈。读得顺不等于学会了。';
+const summaryText = () => S.edits['sum:ai'] ?? SUMMARY;
+const CH_AI = {
+  c1: '本章拆穿了两个直觉：重读有用、读顺就是懂了。', c2: '本章提出测试效应：提取本身就在巩固记忆。',
+  c3: '本章讲练习的排布：分散和交错都更费力，但更持久。', c4: '刻意练习的四个要素：目标、专注、反馈、舒适区边缘。',
+};
+const ACTIONS = [
+  { t: '每读完一章，合上书写 5 行提纲', own: true },
+  { t: '把本笔记的复习题加入复习，按第 1、3、7、14 天回想', own: true },
+  { t: '做题时混合不同题型，不按章节顺序刷', own: false },
+];
+
+/* ---------- State ---------- */
+let S;
+const DEF = { ai: true, dark: false, narrow: false };
+const env = { ...DEF };
+function fresh() {
+  return {
+    right: 'anno', sheet: null, doc: 'd1', readerOpen: true,
+    hls: [...BASE_HLS], sel: new Set(BASE_HLS), colorOff: new Set(),
+    setup: { scope: 'sel', org: 'theme', tpl: 'reading', depth: 'deep', ctx: 1, mats: { hl: true, own: true, card: true, ai: false, img: false }, fixRefs: true },
+    outline: null, unassigned: [],
+    note: null, tpl: 'reading', marks: true, ctxOpen: new Set(['h9']),
+    edits: {}, deleted: new Set(), alts: {}, done: new Set(), revealed: new Set(),
+    pending: null, newSince: [],
+    ex: { fmt: 'md', cite: 'inline', inc: { ctx: true, own: true, ai: true, qa: true, refs: true }, aiMark: 'label' },
+    share: { theme: 'paper', what: 'sec', sec: 0, hideAi: false, own: true },
+    hudT: null,
+  };
+}
+
+/* ---------- Helpers ---------- */
+function hud(msg, act, fn) {
+  const h = $('#hud'); clearTimeout(S.hudT);
+  h.className = 'on' + (act ? '' : ' noact');
+  h.innerHTML = esc(msg) + (act ? `<button>${esc(act)}</button>` : '');
+  if (act) h.querySelector('button').onclick = () => { h.className = ''; fn(); };
+  S.hudT = setTimeout(() => h.className = '', 3200);
+}
+const docOf = h => DOCS[HL[h].doc];
+const citeText = h => `《${docOf(h).short}》p.${HL[h].pg}`;
+function closePop() { $('#pop').className = 'pop'; document.querySelectorAll('.blk.menu').forEach(b => b.classList.remove('menu')); }
+function openPop(html, x, y, cls = '') {
+  const p = $('#pop'); p.innerHTML = html; p.className = 'pop on ' + cls;
+  const r = p.getBoundingClientRect();
+  p.style.left = Math.min(x, innerWidth - r.width - 12) + 'px';
+  p.style.top = Math.min(y, innerHeight - r.height - 12) + 'px';
+  return p;
+}
+document.addEventListener('mousedown', e => { if (!e.target.closest('#pop') && !e.target.closest('[data-pop]')) closePop(); });
+
+/* ---------- Sidebar ---------- */
+function renderSide() {
+  const notes = S.note ? [{ id: 'n1', t: S.note.title }] : [];
+  $('#sideInner').innerHTML = `
+    <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+    <div class="sg-h">文档</div>
+    <div class="si ${S.right === 'anno' && S.doc === 'd1' ? 'on' : ''}" data-doc="d1">${ic('book')}<span class="el">认知天性</span><span class="cnt">${S.hls.filter(h => HL[h].doc === 'd1').length}</span></div>
+    <div class="si ${S.right === 'anno' && S.doc === 'd2' ? 'on' : ''}" data-doc="d2">${ic('book')}<span class="el">刻意练习</span><span class="cnt">${S.hls.filter(h => HL[h].doc === 'd2').length}</span></div>
+    <div class="sg-h">脑图</div>
+    <div class="si">${ic('map')}<span class="el">主脑图</span></div>
+    <div class="sg-h">笔记<button data-act="newNote" title="整理学习笔记 ⌥⌘P">${ic('plus', 'i xs')}</button></div>
+    ${notes.length ? notes.map(n => `<div class="si ${S.right === 'note' ? 'on' : ''}" data-act="openNote">${ic('note')}<span class="el">${esc(n.t)}</span>${S.newSince.length ? `<span class="nb">${S.newSince.length}</span>` : ''}</div>`).join('')
+      : `<div class="si" data-act="newNote" style="color:var(--label3)">${ic('spark')}<span class="el">整理学习笔记…</span></div>`}
+    <div class="sg-h">学习</div>
+    <div class="si">${ic('review')}<span class="el">复习</span><span class="cnt">12</span></div>
+    <div class="si">${ic('chart')}<span class="el">统计</span></div>`;
+  $('#sideInner').querySelectorAll('[data-doc]').forEach(el => el.onclick = () => { S.doc = el.dataset.doc; S.right = 'anno'; render(); });
+}
+
+/* ---------- Toolbar ---------- */
+function renderTb() {
+  $('#tb').innerHTML = `
+    <button class="tbtn" data-act="toggleReader" title="显示 / 隐藏原文">${ic('sidebar')}</button>
+    <span class="ttl">认知天性 · 学习笔记</span><span class="sub">学习集 · 2 份文档</span>
+    <div class="grow"></div>
+    <div class="seg"><button>原文</button><button class="on">分栏</button><button>脑图</button></div>
+    <div class="capsule">
+      <button class="tbtn" data-act="newNote" title="整理学习笔记 ⌥⌘P">${ic('spark')}整理笔记</button>
+    </div>`;
+}
+
+/* ---------- Reader ---------- */
+function renderReader() {
+  $('#reader').classList.toggle('collapsed', !S.readerOpen);
+  $('#docTabs').innerHTML = Object.entries(DOCS).map(([id, d]) => `<button class="dtab ${S.doc === id ? 'on' : ''}" data-doc="${id}">${ic('doc', 'i xs')}${esc(d.short)}</button>`).join('');
+  $('#docTabs').querySelectorAll('[data-doc]').forEach(b => b.onclick = () => { S.doc = b.dataset.doc; renderReader(); renderSide(); if (S.right === 'anno') renderRight(); });
+  const doc = DOCS[S.doc];
+  $('#page').innerHTML = doc.chapters.map(ch => `<div class="paper"><h3>${esc(ch.title)}</h3>${ch.paras.map(p => `<div class="pg">${p.pg}</div><p>${
+    esc(p.t).replace(/\[(h\d+):(\w)\|([^\]]+)\]/g, (_, id, c, txt) => S.hls.includes(id)
+      ? `<mark class="hl ${c} ${S.newSince.includes(id) ? 'new' : ''}" data-h="${id}">${txt}</mark>${OWN[id] && S.hls.includes(id) ? `<span class="mnote" title="${esc(OWN[id].text)}"></span>` : ''}`
+      : txt)}</p>`).join('')}</div>`).join('');
+  $('#page').querySelectorAll('mark[data-h]').forEach(m => m.onclick = () => {
+    if (S.right === 'note') { const b = document.querySelector(`#noteDoc [data-ref="${m.dataset.h}"]`); if (b) { b.scrollIntoView({ block: 'center', behavior: 'smooth' }); b.classList.remove('hlnew'); void b.offsetWidth; b.classList.add('hlnew'); } else hud('这条划线不在笔记里'); }
+  });
+}
+function reveal(h) {
+  if (!S.readerOpen) { S.readerOpen = true; }
+  S.doc = HL[h].doc; renderReader();
+  const m = document.querySelector(`#page mark[data-h="${h}"]`);
+  if (m) { m.scrollIntoView({ block: 'center', behavior: 'smooth' }); m.classList.remove('flash'); void m.offsetWidth; m.classList.add('flash'); }
+}
+
+/* ---------- Right pane: annotation list ---------- */
+function renderAnno() {
+  const list = S.hls;
+  const groups = {};
+  for (const h of list) { const k = `${docOf(h).short} · ${HL[h].chTitle}`; (groups[k] ||= []).push(h); }
+  const visible = list.filter(h => !S.colorOff.has(HL[h].c));
+  const selN = visible.filter(h => S.sel.has(h)).length;
+  $('#right').innerHTML = `
+    <div class="anno-head"><span class="ttl">标注</span><span style="color:var(--label3);font-size:12px">${list.length} 条划线 · ${Object.keys(OWN).filter(h => S.hls.includes(h)).length} 条批注</span>
+      <div class="cfilter">${['y', 'g', 'b', 'o', 'v', 'p'].map(c => `<span data-c="${c}" class="${S.colorOff.has(c) ? '' : 'on'}" style="background:${COLOR[c]}" title="按颜色筛选"></span>`).join('')}</div>
+      <div class="grow"></div>
+      <button class="tbtn" data-act="selAll">${selN === visible.length ? '取消全选' : '全选'}</button>
+    </div>
+    <div id="annoList">${Object.entries(groups).map(([k, hs]) => {
+      const vis = hs.filter(h => !S.colorOff.has(HL[h].c)); if (!vis.length) return '';
+      return `<div class="agrp">${ic('book', 'i xs')}${esc(k)}</div>` + vis.map(h => `
+      <div class="arow ${S.sel.has(h) ? 'sel' : ''}" data-h="${h}">
+        <div class="chk ${S.sel.has(h) ? 'on' : ''}">${S.sel.has(h) ? ic('check', 'i xs') : ''}</div>
+        <div class="bar" style="background:${COLOR[HL[h].c]}"></div>
+        <div style="flex:1;min-width:0"><div class="q">${esc(HL[h].text)}</div>
+          ${OWN[h] ? `<div class="own">${esc(OWN[h].text)}</div>` : ''}
+          <div class="m"><span>p.${HL[h].pg}</span>${S.newSince.includes(h) ? '<span class="chip ok" style="cursor:default">笔记整理后新增</span>' : ''}<span class="cite" data-reveal="${h}">${ic('arrow', 'i xs')}原文</span></div></div>
+      </div>`).join('');
+    }).join('')}</div>
+    <div id="annoBar"><span class="cnt">已选 ${selN} 条</span>
+      <button class="btn pri pill" data-act="fromSel" ${selN ? '' : 'disabled'}>${ic('spark')}整理成笔记</button></div>`;
+  $('#right').querySelectorAll('.arow').forEach(r => r.onclick = e => {
+    if (e.target.closest('[data-reveal]')) return reveal(e.target.closest('[data-reveal]').dataset.reveal);
+    const h = r.dataset.h; S.sel.has(h) ? S.sel.delete(h) : S.sel.add(h); renderAnno();
+  });
+  $('#right').querySelectorAll('.cfilter span').forEach(s => s.onclick = () => { const c = s.dataset.c; S.colorOff.has(c) ? S.colorOff.delete(c) : S.colorOff.add(c); renderAnno(); });
+}
+
+/* ---------- Note model ---------- */
+const aiOn = () => env.ai && S.setup.depth !== 'none';
+const deep = () => env.ai && S.setup.depth === 'deep';
+function sectionsFor() {
+  /* Sections from the confirmed outline, else from the organisation mode. */
+  /* Empty sections from the outline are dropped; their highlights were moved elsewhere on purpose. */
+  if (S.outline) return S.outline.filter(s => s.refs.length);
+  return defaultOutline();
+}
+function defaultOutline() {
+  const inScope = h => S.note ? S.note.scope.includes(h) : scopeHls().includes(h);
+  const org = S.setup.org === 'theme' && !aiOn() ? 'source' : S.setup.org;
+  if (org === 'source') {
+    const out = [];
+    for (const [d, doc] of Object.entries(DOCS)) for (const ch of doc.chapters) {
+      const refs = BASE_HLS.concat(NEW_HLS).filter(h => HL[h].ch === ch.id && inScope(h)).sort((a, b) => HL[a].pg - HL[b].pg);
+      if (refs.length) out.push({ id: ch.id, title: `${doc.short} · ${ch.title}`, refs, why: '原文章节', ch: ch.id });
+    }
+    return out;
+  }
+  return SECS[org].map(s => ({ ...s, refs: s.refs.filter(inScope) })).filter(s => s.refs.length);
+}
+function scopeHls() {
+  const all = S.hls;
+  if (S.setup.scope === 'sel') return all.filter(h => S.sel.has(h));
+  if (S.setup.scope === 'doc') return all.filter(h => HL[h].doc === 'd1');
+  if (S.setup.scope === 'week') return all.filter(h => ['h4', 'h5', 'h6', 'h8', 'h10', 'h11'].includes(h));
+  return all;
+}
+const MAP_TO_THEME = { m1: 's1', m2: 's2', m3: 's3', m4: 's4' };
+function secMeta(sec) { const id = MAP_TO_THEME[sec.id] || sec.id; return SECS.theme.find(s => s.id === id) || null; }
+/** Build blocks for one section. Ids are stable so edits survive template switches. */
+function blocksFor(sec, idx) {
+  const out = [], meta = secMeta(sec), m = S.setup.mats;
+  const intro = sec.ch ? (aiOn() ? CH_AI[sec.ch] : null) : (aiOn() && meta ? meta.ai : null);
+  if (intro) out.push({ id: `${sec.id}:ai`, k: 'p', v: 'ai', text: intro, alt: meta?.alt });
+  for (const h of sec.refs) {
+    out.push({ id: `${sec.id}:q:${h}`, k: 'quote', ref: h });
+    if (m.own && OWN[h]) out.push({ id: `${sec.id}:o:${h}`, k: 'own', ref: h, text: OWN[h].text, from: OWN[h].from });
+  }
+  if (deep() && meta?.xref) out.push({ id: `${sec.id}:x`, k: 'xref', v: 'ai', to: meta.xref.to, text: meta.xref.text });
+  if (aiOn() && meta?.take && !sec.ch) out.push({ id: `${sec.id}:t`, k: 'list', v: 'ai', items: meta.take });
+  return out.filter(b => !S.deleted.has(b.id));
+}
+function buildNote() {
+  const secs = sectionsFor();
+  const scope = [...new Set(secs.flatMap(s => s.refs).concat(S.unassigned))];
+  return {
+    title: S.note?.title || (aiOn() ? '《认知天性》学习笔记：让记忆更牢的四种练习' : '认知天性 · 划线整理'),
+    scope, secs, generatedAt: '10月30日 14:20',
+  };
+}
+const used = () => S.note.secs.flatMap(s => s.refs);
+const textOf = b => S.edits[b.id] ?? (S.alts[b.id] ? b.alt : b.text);
+const voiceOf = b => b.v === 'ai' ? (S.edits[b.id] != null ? 'mix' : 'ai') : b.v;
+
+/* ---------- Note rendering ---------- */
+function vtag(v) { return v === 'ai' ? `<span class="vt ai">${ic('spark', 'i xs')}AI</span>` : v === 'mix' ? `<span class="vt mix">${ic('spark', 'i xs')}AI · 已改</span>` : ''; }
+function quoteHtml(h, opts = {}) {
+  const H = HL[h], open = S.ctxOpen.has(h) && S.setup.ctx > 0;
+  const before = S.setup.ctx > 0 ? H.before : '', after = S.setup.ctx > 0 ? H.after : '';
+  return `<div class="quote"><div class="bar" style="background:${COLOR[H.c]}"></div>
+    <div>${open && before ? `<span class="cx">${esc(before)}</span>` : ''}<span class="qt ${open ? 'lit' : ''}" ${open ? `style="background:color-mix(in srgb,${COLOR[H.c]} 22%,transparent)"` : ''}>${esc(H.text)}</span>${open && after ? `<span class="cx">${esc(after)}</span>` : ''}</div>
+    <div class="src"><span class="cite" data-reveal="${h}">${ic('arrow', 'i xs')}${esc(citeText(h))}</span><span>· ${esc(H.chTitle)}</span>
+      ${(before || after) ? `<span class="cxbtn ${open ? 'on' : ''}" data-ctx="${h}">${ic('ctx', 'i xs')}${open ? '收起上下文' : '上下文'}</span>` : ''}
+      ${S.newSince.includes(h) && !opts.pending ? '<span class="chip ok" style="cursor:default">新增</span>' : ''}</div>
+    ${deep() && GLOSS[h] ? `<div class="gloss">${vtag('ai')}${esc(GLOSS[h])}</div>` : ''}</div>`;
+}
+function blockHtml(b, sec, opts = {}) {
+  const gut = opts.noGut ? '' : `<button class="gut" data-pop data-blk="${b.id}" title="段落操作">${ic('more')}</button>`;
+  const lock = opts.lock && (S.edits[b.id] != null) ? `<span class="lock">${ic('lock', 'i xs')}你改过，更新时不会覆盖</span>` : '';
+  const ed = opts.noEdit ? '' : 'contenteditable="true"';
+  switch (b.k) {
+    case 'p': return `<div class="blk ai" data-id="${b.id}">${gut}<div class="p-ai">${vtag(voiceOf(b))}<span ${ed} data-edit="${b.id}">${esc(textOf(b))}</span>${lock}</div></div>`;
+    case 'quote': return `<div class="blk" data-id="${b.id}" data-ref="${b.ref}">${gut}${quoteHtml(b.ref, opts)}</div>`;
+    case 'own': return `<div class="blk" data-id="${b.id}">${gut}<div class="ownbox"><span class="vt own">${ic('person', 'i xs')}我的批注</span><span ${ed} data-edit="${b.id}">${esc(textOf(b))}</span><div class="from">${esc(b.from)}</div></div></div>`;
+    case 'xref': { const t = S.note.secs.findIndex(s => s.id === b.to); return t < 0 ? '' : `<div class="blk ai" data-id="${b.id}">${gut}<div class="xref">${ic('link', 'i xs')}<div>${vtag(voiceOf(b))}与 <a data-goto="${b.to}">${t + 1}. ${esc(S.note.secs[t].title)}</a> ${esc(b.text)}</div></div></div>`; }
+    case 'list': return `<div class="blk ai" data-id="${b.id}">${gut}<div style="font-size:12px;font-weight:600;color:var(--label2);margin-bottom:2px">${vtag(voiceOf(b))}要点</div><ul class="tk">${b.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+  }
+  return '';
+}
+function headHtml() {
+  const N = S.note, u = new Set(used()), miss = N.scope.filter(h => !u.has(h));
+  const nOwn = N.scope.filter(h => OWN[h] && S.setup.mats.own).length;
+  const docs = new Set(N.scope.map(h => HL[h].doc)).size;
+  return `<h1 class="n-title" contenteditable="true" data-title>${esc(N.title)}</h1>
+    <div class="n-meta"><span>${docs} 份文档 · ${N.scope.length} 条划线 · ${nOwn} 条批注</span><span>整理于 ${N.generatedAt}</span>
+      ${miss.length ? `<span class="chip warn" data-pop data-act="coverage">${ic('warn', 'i xs')}${miss.length} 条划线未用上</span>` : `<span class="chip ok" data-pop data-act="coverage">${ic('check', 'i xs')}${N.scope.length} 条划线全部引用 · 原文未改写</span>`}</div>
+    <div class="legend"><span class="lg"><span class="swatch" style="background:var(--y)"></span><span class="ser">宋体</span> 原文</span>
+      <span class="lg"><span class="vt own" style="margin:0">${ic('person', 'i xs')}</span>我写的</span>
+      ${aiOn() ? `<span class="lg"><span class="vt ai" style="margin:0">${ic('spark', 'i xs')}AI</span>整理与解释</span>` : `<span class="lg" style="color:var(--label3)">未使用 AI · 只做了排版</span>`}
+      <div class="grow"></div>${aiOn() ? `<span class="toggle" data-act="marks"><span class="sw ${S.marks ? 'on' : ''}"></span>显示 AI 标记</span>` : ''}</div>
+    ${aiOn() ? `<div class="blk ai" data-id="sum:ai"><div class="callout">${vtag(S.edits['sum:ai'] != null ? 'mix' : 'ai')}<b>一句话总结　</b><span contenteditable="true" data-edit="sum:ai">${esc(summaryText())}</span></div></div>` : ''}`;
+}
+function tailHtml() {
+  const N = S.note; let h = '';
+  const n = N.secs.length;
+  if (S.setup.mats.own || deep()) {
+    h += `<h2 class="n-h2" id="sec-act"><span class="num">${n + 1}</span>行动清单</h2><div class="blk"><ul class="todo">${ACTIONS.filter(a => a.own || deep()).map((a, i) =>
+      `<li class="${S.done.has(i) ? 'done' : ''}"><span class="cb ${S.done.has(i) ? 'on' : ''}" data-todo="${i}">${S.done.has(i) ? ic('check', 'i xs') : ''}</span><span class="t">${a.own ? '' : vtag('ai')}${esc(a.t)}</span></li>`).join('')}</ul></div>`;
+  }
+  if (deep()) {
+    h += `<h2 class="n-h2" id="sec-qa"><span class="num">${n + 2}</span>复习题<span style="margin-left:auto"><button class="btn" data-act="addReview">${ic('cards')}全部加入复习</button></span></h2>` +
+      N.secs.map(s => secMeta(s)).filter(Boolean).map(m => `<div class="qa"><div class="q">${vtag('ai')}${esc(m.q)}</div></div>`).join('');
+  }
+  h += `<h2 class="n-h2" id="sec-ref" style="font-size:14px;color:var(--label2)">出处</h2><ol class="refs">${[...new Set(N.scope.map(x => HL[x].doc))].map(d => `<li>${esc(DOCS[d].title)} · ${N.scope.filter(x => HL[x].doc === d).map(x => 'p.' + HL[x].pg).join('、')}</li>`).join('')}</ol>`;
+  return h;
+}
+function noteBodyReading() {
+  return S.note.secs.map((s, i) => `<h2 class="n-h2" id="sec-${s.id}"><span class="num">${i + 1}</span><span contenteditable="true" data-sec="${s.id}">${esc(s.title)}</span></h2>` +
+    (s.refs.length ? '' : '<div class="blk" style="color:var(--label3);font-size:12.5px">这一节没有摘录了，可以删掉标题或从“N 条未用上”放回。</div>') +
+    blocksFor(s, i).map(b => blockHtml(b, s, { lock: true })).join('')).join('');
+}
+function noteBodyCornell() {
+  return S.note.secs.map((s, i) => {
+    const meta = secMeta(s), bl = blocksFor(s, i).filter(b => b.k !== 'list' && b.k !== 'p');
+    const cues = aiOn() ? s.refs.slice(0, 3).map(qFor) : [];
+    return `<h2 class="n-h2" id="sec-${s.id}"><span class="num">${i + 1}</span>${esc(s.title)}</h2>
+      <div class="cornell"><div class="cue">${cues.map(c => `<div>${esc(c)}</div>`).join('')}${aiOn() ? '' : '<span style="color:var(--label3);font-size:11px">未使用 AI：提示栏可手动填写</span>'}</div>
+      <div class="body">${bl.map(b => blockHtml(b, s)).join('')}</div>
+      <div class="sum"><b>总结</b>${aiOn() && meta ? `${vtag('ai')}${esc(textOf({ id: s.id + ':ai', text: meta.ai, alt: meta.alt }))}` : '<span style="color:var(--label3)">在这里写下本节总结…</span>'}</div></div>`;
+  }).join('');
+}
+function noteBodyReview() {
+  return S.note.secs.map((s, i) => `<h2 class="n-h2" id="sec-${s.id}"><span class="num">${i + 1}</span>${esc(s.title)}</h2>` +
+      s.refs.map(h => {
+        const key = s.id + h;
+        return `<div class="qa" data-ref="${h}"><div class="q">${aiOn() && QS[h] ? vtag('ai') : ''}${esc(qFor(h))}</div>
+        <div class="a ${S.revealed.has(key) ? '' : 'hide'}" data-reveal-a="${key}">${esc(HL[h].text)}</div>
+        <div class="acts"><span class="cite" data-reveal="${h}">${ic('arrow', 'i xs')}${esc(citeText(h))}</span><div class="grow"></div><button class="btn ghost" data-act="addOne">${ic('cards')}加入复习</button></div></div>`;
+      }).join('')).join('');
+}
+function renderNote() {
+  const N = S.note;
+  const body = !N.secs.length ? '<p style="color:var(--label3)">笔记里还没有摘录。</p>' : S.tpl === 'cornell' ? noteBodyCornell() : S.tpl === 'review' ? noteBodyReview() : noteBodyReading();
+  const banner = S.newSince.length && !S.pending ? `<div class="banner">${ic('plus')}<span>整理之后，你又划了 <b>${S.newSince.length} 条</b>、写了 <b>${S.newSince.filter(h => OWN[h]).length} 条</b>批注</span><div class="grow"></div><button class="btn pri" data-act="preview">预览更新</button><button class="btn ghost" data-act="dismissNew">忽略</button></div>` : '';
+  const diff = S.pending ? `<div class="diffbar">${ic('refresh')}<b>更新预览</b><span style="color:var(--label2)">新增 ${S.pending.length} 处（绿色）· 你改过的段落保持不变</span><div class="grow"></div><button class="btn ghost" data-act="cancelUpd">取消</button><button class="btn pri" data-act="applyUpd">应用更新</button></div>` : '';
+  /* The floating table of contents needs room beside the 720pt column; otherwise it moves into a menu. */
+  const wide = $('#right').clientWidth >= 1000;
+  $('#right').classList.toggle('notoc', !wide);
+  const tplName = { reading: '读书笔记', cornell: '康奈尔', review: '复习提纲' }[S.tpl];
+  $('#right').innerHTML = `
+    <div class="note-bar">${ic('note')}<span class="ttl">${esc(N.title)}</span><div class="grow"></div>
+      ${wide ? '' : `<button class="tbtn" data-pop data-act="tocMenu">目录${ic('down', 'i xs')}</button>`}
+      <button class="tbtn" data-pop data-act="tplMenu">${tplName}${ic('down', 'i xs')}</button>
+      <button class="tbtn" data-act="regen" ${env.ai ? '' : 'disabled'} title="${env.ai ? '重新整理（保留你改过的段落）' : '未配置 AI'}">${ic('refresh')}重新整理</button>
+      <button class="tbtn" data-act="export">${ic('export')}导出</button>
+      <button class="tbtn" data-act="share">${ic('share')}分享</button></div>
+    <div id="noteScroll">${diff}${banner}
+      <div id="noteDoc" class="${wide ? '' : 'notoc'} "${S.marks && aiOn() ? 'marks' : 'nomarks'}">${headHtml()}${body}${tailHtml()}</div>
+      <nav id="toc"><div class="th">目录</div>${N.secs.map((s, i) => `<a data-goto="${s.id}">${i + 1}. ${esc(s.title)}</a>`).join('')}
+        ${S.setup.mats.own || deep() ? '<a data-goto="act">行动清单</a>' : ''}${deep() ? '<a data-goto="qa">复习题</a>' : ''}</nav>
+    </div>`;
+  if (S.pending) injectPending();
+  wireNote();
+}
+function injectPending() {
+  for (const p of S.pending) {
+    const at = [...document.querySelectorAll(`#noteDoc [data-id^="${p.sec}:"]`)].filter(e => /:(q|o):/.test(e.dataset.id)).pop()
+      || document.getElementById('sec-' + p.sec);
+    if (!at) continue;
+    const secTitle = S.note.secs.find(s => s.id === p.sec)?.title || '';
+    const wrap = document.createElement('div');
+    wrap.className = 'blk pending';
+    wrap.innerHTML = `<div class="ptag">${ic('plus', 'i xs')}新增 · 放入「${esc(secTitle)}」<span style="color:var(--label3);font-weight:400">${esc(p.why)}</span></div>${quoteHtml(p.h, { pending: true })}${OWN[p.h] ? `<div class="ownbox"><span class="vt own">${ic('person', 'i xs')}我的批注</span>${esc(OWN[p.h].text)}<div class="from">${esc(OWN[p.h].from)}</div></div>` : ''}`;
+    at.after(wrap);
+  }
+}
+function wireNote() {
+  const R = $('#right');
+  R.querySelectorAll('[data-reveal]').forEach(c => c.onclick = e => { e.stopPropagation(); reveal(c.dataset.reveal); });
+  R.querySelectorAll('[data-ctx]').forEach(c => c.onclick = () => { const h = c.dataset.ctx; S.ctxOpen.has(h) ? S.ctxOpen.delete(h) : S.ctxOpen.add(h); keepScroll(renderNote); });
+  R.querySelectorAll('[data-goto]').forEach(a => a.onclick = () => { const el = document.getElementById('sec-' + a.dataset.goto); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  R.querySelectorAll('[data-edit]').forEach(el => {
+    el.oninput = () => { S.edits[el.dataset.edit] = el.textContent; const tag = el.parentElement.querySelector('.vt.ai'); if (tag) { tag.className = 'vt mix'; tag.innerHTML = ic('spark', 'i xs') + 'AI · 已改'; } };
+  });
+  R.querySelectorAll('[data-sec]').forEach(el => el.oninput = () => { const s = S.note.secs.find(x => x.id === el.dataset.sec); if (s) s.title = el.textContent; });
+  const t = R.querySelector('[data-title]'); if (t) t.oninput = () => { S.note.title = t.textContent; R.querySelector('.note-bar .ttl').textContent = t.textContent; renderSide(); };
+  R.querySelectorAll('[data-todo]').forEach(c => c.onclick = () => { const i = +c.dataset.todo; S.done.has(i) ? S.done.delete(i) : S.done.add(i); keepScroll(renderNote); });
+  R.querySelectorAll('[data-reveal-a]').forEach(a => a.onclick = () => { S.revealed.add(a.dataset.revealA); a.classList.remove('hide'); });
+  R.querySelectorAll('.gut').forEach(g => g.onclick = e => blockMenu(g.dataset.blk, e));
+  const sc = $('#noteScroll'), toc = $('#toc');
+  if (sc && toc) sc.onscroll = () => {
+    let cur = null; for (const s of S.note.secs) { const el = document.getElementById('sec-' + s.id); if (el && el.getBoundingClientRect().top < sc.getBoundingClientRect().top + 120) cur = s.id; }
+    toc.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.goto === (cur || S.note.secs[0].id)));
+    toc.style.top = (62 + sc.scrollTop) + 'px';
+  };
+  sc && sc.onscroll && sc.onscroll();
+}
+function keepScroll(fn) { const y = $('#noteScroll')?.scrollTop || 0; fn(); const sc = $('#noteScroll'); if (sc) { sc.scrollTop = y; sc.onscroll && sc.onscroll(); } }
+function findBlock(id) { for (const s of S.note.secs) { const b = blocksFor(s).find(x => x.id === id); if (b) return { b, s }; } return null; }
+function blockMenu(id, e) {
+  const f = findBlock(id); if (!f) return; const { b } = f;
+  const el = document.querySelector(`.blk[data-id="${id}"]`); el && el.classList.add('menu');
+  const isAi = b.v === 'ai', isQ = b.k === 'quote', noAi = !env.ai;
+  const mi = (act, icon, label, dis, why) => `<div class="mi ${dis ? 'dis' : ''}" data-m="${act}">${ic(icon)}${label}</div>${dis && why ? `<div class="why">${why}</div>` : ''}`;
+  const r = e.currentTarget.getBoundingClientRect();
+  const p = openPop(
+    (isQ ? mi('ctx', 'ctx', S.ctxOpen.has(b.ref) ? '收起上下文' : '展开上下文') + mi('reveal', 'arrow', '在原文中查看 ⌘L') + mi('explain', 'spark', '解释这句话', noAi, '未配置 AI') + '<div class="msep"></div>'
+      : '') +
+    (isAi || b.k === 'own' ? mi('rewrite', 'refresh', '换一种说法', noAi || b.k === 'own', b.k === 'own' ? '这是你自己写的，AI 不会改写' : '未配置 AI') +
+      mi('shorter', 'short', '更简洁', noAi || b.k === 'own') + mi('longer', 'long', '展开说明', noAi || b.k === 'own') : '') +
+    (isAi ? mi('accept', 'person', '改为我的话', false) + '<div class="msep"></div>' : '') +
+    mi('map', 'map', '加入脑图') + mi('card', 'cards', '生成复习卡', noAi && !isQ, '未配置 AI') + '<div class="msep"></div>' +
+    mi('del', 'trash', isQ ? '从笔记中移除（不删划线）' : '删除这段'),
+    r.left, r.bottom + 4);
+  p.querySelectorAll('[data-m]:not(.dis)').forEach(m => m.onclick = () => { closePop(); blockAction(m.dataset.m, b); });
+}
+function blockAction(act, b) {
+  switch (act) {
+    case 'ctx': S.ctxOpen.has(b.ref) ? S.ctxOpen.delete(b.ref) : S.ctxOpen.add(b.ref); keepScroll(renderNote); break;
+    case 'reveal': reveal(b.ref); break;
+    case 'explain': GLOSS[b.ref] = GLOSS[b.ref] || `作者在「${HL[b.ref].chTitle}」里用这句话收束前文的论证；它和本节其他摘录一起，说明“费力的回想”才让记忆变牢。`; keepScroll(renderNote); hud('已添加 AI 解释'); break;
+    case 'rewrite': case 'shorter': case 'longer':
+      if (b.alt) { S.alts[b.id] = !S.alts[b.id]; delete S.edits[b.id]; }
+      else S.edits[b.id] = act === 'shorter' ? textOf(b).replace(/，[^，。]*。?$/, '。') : textOf(b) + (act === 'longer' ? '换句话说，学习时感到“有点难”往往是好事。' : '');
+      keepScroll(renderNote); hud(act === 'rewrite' ? '已换一种说法' : act === 'shorter' ? '已精简' : '已展开', '撤销', () => { delete S.edits[b.id]; S.alts[b.id] = false; keepScroll(renderNote); }); break;
+    case 'accept': S.edits[b.id] = textOf(b); keepScroll(renderNote); hud('已标为你改过的段落，更新时不会覆盖'); break;
+    case 'map': hud('已加入脑图「主脑图」', '查看', () => hud('原型：跳到脑图对应节点')); break;
+    case 'card': hud('已生成 1 张复习卡'); break;
+    case 'del': S.deleted.add(b.id); if (b.k === 'quote') { for (const s of S.note.secs) s.refs = s.refs.filter(x => x !== b.ref); S.deleted.delete(b.id); }
+      keepScroll(renderNote); hud(b.k === 'quote' ? '已从笔记中移除，划线仍在原文' : '已删除', '撤销', () => restoreDel(b)); break;
+  }
+}
+function restoreDel(b) {
+  S.deleted.delete(b.id);
+  if (b.k === 'quote') { const sid = b.id.split(':')[0]; const s = S.note.secs.find(x => x.id === sid); if (s && !s.refs.includes(b.ref)) s.refs.push(b.ref); }
+  keepScroll(renderNote);
+}
+function coveragePop(e) {
+  const u = new Set(used()), N = S.note;
+  const row = h => { const s = N.secs.findIndex(x => x.refs.includes(h)); return `<div class="row" data-h="${h}"><div class="bar" style="background:${COLOR[HL[h].c]}"></div><div class="t">${esc(HL[h].text)}</div><div class="w">${s >= 0 ? `第 ${s + 1} 节` : `<button class="btn" data-put="${h}" style="height:22px;padding:0 8px">放回笔记</button>`}</div></div>`; };
+  const r = e.currentTarget.getBoundingClientRect();
+  const miss = N.scope.filter(h => !u.has(h));
+  const p = openPop(`<div class="mh">${miss.length ? `${miss.length} 条没有用上 · 点“放回笔记”放进最相关的一节` : '每条划线都在笔记里，原文逐字引用'}</div>` + miss.map(row).join('') + (miss.length ? '<div class="msep"></div>' : '') + N.scope.filter(h => u.has(h)).map(row).join(''), r.left, r.bottom + 6, 'cov');
+  p.querySelectorAll('.row').forEach(rw => rw.onclick = ev => {
+    const put = ev.target.closest('[data-put]');
+    if (put) { const h = put.dataset.put; const tgt = N.secs.find(s => secMeta(s)?.refs.includes(h)) || N.secs.find(s => s.refs.some(x => HL[x].ch === HL[h].ch)) || N.secs[0]; tgt.refs.push(h); S.unassigned = S.unassigned.filter(x => x !== h); closePop(); keepScroll(renderNote); hud(`已放入「${tgt.title}」`); return; }
+    closePop(); const b = document.querySelector(`#noteDoc [data-ref="${rw.dataset.h}"]`); if (b) b.scrollIntoView({ block: 'center', behavior: 'smooth' }); reveal(rw.dataset.h);
+  });
+}
+function tplMenu(e) {
+  const r = e.currentTarget.getBoundingClientRect();
+  const items = [['reading', '读书笔记', '标题、摘录、批注、要点'], ['cornell', '康奈尔笔记', '左栏提问、右栏摘录、底部总结'], ['review', '复习提纲', '问题在前，答案遮住，可加入复习']];
+  const p = openPop(`<div class="mh">版式 · 内容不变，随时切换</div>` + items.map(([k, n, d]) => `<div class="mi" data-t="${k}">${S.tpl === k ? ic('check') : '<span style="width:14px"></span>'}<span>${n}</span><span class="kbd">${d}</span></div>`).join(''), r.left - 120, r.bottom + 4);
+  p.querySelectorAll('[data-t]').forEach(m => m.onclick = () => { S.tpl = m.dataset.t; closePop(); renderNote(); });
+}
+
+/* ---------- Sheets ---------- */
+function openSheet(kind) { S.sheet = kind; renderSheet(); }
+function closeSheet() { S.sheet = null; clearInterval(genTimer); renderSheet(); }
+function renderSheet() {
+  const sc = $('#scrim');
+  if (!S.sheet) { sc.className = ''; sc.innerHTML = ''; return; }
+  sc.className = 'on';
+  ({ setup: sheetSetup, outline: sheetOutline, gen: sheetGen, export: sheetExport, share: sheetShare })[S.sheet]();
+}
+function sheetSetup() {
+  const st = S.setup, hs = scopeHls(), noAi = !env.ai;
+  const chars = hs.reduce((n, h) => n + HL[h].text.length + (st.ctx ? HL[h].before.length + HL[h].after.length : 0) + (OWN[h] && st.mats.own ? OWN[h].text.length : 0), 0) * 9;
+  const nOwn = hs.filter(h => OWN[h]).length;
+  const opt = (grp, k, label, extra = '', dis = false) => `<button class="opt ${st[grp] === k ? 'on' : ''} ${dis ? 'dis' : ''}" data-g="${grp}" data-k="${k}">${label}${extra ? `<span class="c">${extra}</span>` : ''}</button>`;
+  const mat = (k, label, n, dis) => `<button class="opt ${st.mats[k] && !dis ? 'on' : ''} ${dis ? 'dis' : ''}" data-mat="${k}">${st.mats[k] && !dis ? ic('check', 'i xs') : ''}${label}<span class="c">${n}</span></button>`;
+  const org = noAi && st.org === 'theme' ? 'source' : st.org;
+  $('#scrim').innerHTML = `<div class="sheet" style="width:640px">
+    <div class="sh-h">${ic('spark')}<b>整理学习笔记</b><span class="s">把划线、批注和脑图卡片整理成一篇带出处的笔记</span></div>
+    <div class="sh-b">
+      <div class="frow"><label>范围</label><div><div class="opts">
+        ${opt('scope', 'sel', '选中的划线', S.sel.size)}${opt('scope', 'all', '整个学习集', S.hls.length)}${opt('scope', 'doc', '《认知天性》', S.hls.filter(h => HL[h].doc === 'd1').length)}${opt('scope', 'week', '最近 7 天', 6)}</div>
+        <div class="help">也可以从脑图分支右键“整理成笔记”，或在标注列表里多选。</div></div></div>
+      <div class="frow"><label>素材</label><div class="opts">
+        ${mat('hl', '划线', hs.length)}${mat('own', '我的批注', nOwn)}${mat('card', '脑图笔记', 1)}${mat('ai', '已存的 AI 笔记', 1)}${mat('img', '图片卡片', 1)}</div></div>
+      <div class="frow"><label>组织方式</label><div><div class="cards">
+        <div class="ocard ${org === 'theme' ? 'on' : ''} ${noAi ? 'dis' : ''}" data-g="org" data-k="theme"><span class="ai vt ai">${ic('spark', 'i xs')}AI</span><b>按主题归纳</b><div class="d">跨章节、跨文档合并相同观点</div></div>
+        <div class="ocard ${org === 'source' ? 'on' : ''}" data-g="org" data-k="source"><b>按原文顺序</b><div class="d">按文档、章节、页码排列</div></div>
+        <div class="ocard ${org === 'map' ? 'on' : ''}" data-g="org" data-k="map"><b>按脑图结构</b><div class="d">沿用你在脑图里的分支</div></div></div>
+        ${noAi ? `<div class="help warn">未配置 AI 模型，只能按原文或脑图整理。<a data-act="settings">去设置</a></div>` : ''}</div></div>
+      <div class="frow"><label>AI 参与</label><div><div class="opts">
+        ${opt('depth', 'none', '不用 AI，只排版')}${opt('depth', 'light', '补全上下文 + 小结', '', noAi)}${opt('depth', 'deep', '深度整理', '+ 关联、要点、复习题', noAi)}</div>
+        <div class="help">${st.depth === 'none' || noAi ? '只做排版：分组、补上下文、附出处，不发送任何内容。' : st.depth === 'light' ? 'AI 写每节开头的小结，补全指代不清的句子；原文不会被改写。' : 'AI 归纳主题、写小结与要点、标出跨章节关联、出复习题；原文逐字引用。'}</div></div></div>
+      <div class="frow"><label>上下文</label><div>
+        <div class="range"><input type="range" min="0" max="3" value="${st.ctx}" id="ctxR"><span>每条划线前后各 <b>${st.ctx}</b> 句</span></div>
+        <label class="toggle ${noAi || st.depth === 'none' ? 'dis' : ''}" data-act="fixRefs" style="margin-top:6px"><span class="sw ${st.fixRefs && !noAi && st.depth !== 'none' ? 'on' : ''}"></span>句子不完整时（如以“这”开头），自动补全指代</label>
+        <div class="help">上下文默认折叠，点“上下文”展开；导出时可以选择是否带上。</div></div></div>
+      <div class="frow"><label>版式</label><div class="cards">
+        ${[['reading', '读书笔记', '<i class="h"></i><i class="a"></i><i class="q"></i><i class="q" style="width:70%"></i><i></i>'], ['cornell', '康奈尔笔记', '<div style="display:flex;gap:4px;height:100%"><div style="width:30%;display:flex;flex-direction:column;gap:3px"><i class="a"></i><i class="a"></i></div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><i class="q"></i><i></i><i class="q"></i></div></div>'], ['review', '复习提纲', '<i class="h" style="width:60%"></i><i style="filter:blur(1px)"></i><i class="h" style="width:55%"></i><i style="filter:blur(1px)"></i>']]
+          .map(([k, n, th]) => `<div class="ocard ${st.tpl === k ? 'on' : ''}" data-g="tpl" data-k="${k}"><div class="thumb">${th}</div><b>${n}</b></div>`).join('')}</div></div>
+      ${!noAi && st.depth !== 'none' ? `<div class="privacy">${ic('shield')}<div>将发送 <b>${hs.length} 条划线</b>${st.mats.own ? `、${nOwn} 条批注` : ''}及上下文（约 ${chars.toLocaleString()} 字）给 <b>Claude Sonnet</b>（设置 › 助手）。笔记保存在本机学习集里。</div></div>` : ''}
+    </div>
+    <div class="sh-f"><span class="note">${hs.length ? `${hs.length} 条划线` : '<span style="color:var(--err)">没有可整理的划线</span>'}</span><div class="grow"></div>
+      <button class="btn" data-act="close">取消</button>
+      ${!noAi && st.depth !== 'none' && org === 'theme' ? `<button class="btn" data-act="toOutline" ${hs.length ? '' : 'disabled'}>先看提纲</button>` : ''}
+      <button class="btn pri" data-act="generate" ${hs.length ? '' : 'disabled'}>${ic('spark')}生成笔记</button></div></div>`;
+  const sh = $('#scrim .sheet');
+  sh.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+    const { g, k } = b.dataset; S.setup[g] = k;
+    /* Topic grouping is AI work; "no AI" falls back to source order. */
+    if (g === 'org' && k === 'theme' && S.setup.depth === 'none') S.setup.depth = 'deep';
+    if (g === 'depth' && k === 'none' && S.setup.org === 'theme') S.setup.org = 'source';
+    S.tpl = S.setup.tpl; sheetSetup();
+  });
+  sh.querySelectorAll('[data-mat]').forEach(b => b.onclick = () => { const k = b.dataset.mat; if (k === 'hl') return hud('划线是笔记的主体，不能取消'); S.setup.mats[k] = !S.setup.mats[k]; sheetSetup(); });
+  $('#ctxR').oninput = e => { S.setup.ctx = +e.target.value; sheetSetup(); };
+}
+let dragH = null;
+function sheetOutline() {
+  if (!S.outline) S.outline = defaultOutline().map(s => ({ ...s, refs: [...s.refs] }));
+  const sec = (s, i) => `<div class="ol-sec" data-s="${s.id}" draggable="false">
+      <div class="ol-top"><span class="grip" title="拖动排序" data-sgrip="${s.id}">${ic('grip')}</span><span class="n">${i + 1}</span><input value="${esc(s.title)}" data-rename="${s.id}"><span class="why">${esc(s.why || '')}</span>
+        <button class="tbtn" data-delsec="${s.id}" title="删除这一节（划线移到“未归入”）">${ic('x', 'i xs')}</button></div>
+      <div class="ol-chips" data-drop="${s.id}">${s.refs.map(chip).join('') || '<span class="ol-empty">把划线拖到这里</span>'}</div></div>`;
+  const chip = h => `<span class="hchip" draggable="true" data-h="${h}" title="${esc(HL[h].text)}"><span class="d" style="background:${COLOR[HL[h].c]}"></span><span>${esc(HL[h].text)}</span></span>`;
+  $('#scrim').innerHTML = `<div class="sheet" style="width:680px">
+    <div class="sh-h">${ic('spark')}<b>确认提纲</b><span class="s">AI 把 ${scopeHls().length} 条划线归成 ${S.outline.length} 节。改标题、拖动划线、调整顺序，再生成全文。</span></div>
+    <div class="sh-b" id="olBody">${S.outline.map(sec).join('')}
+      <div class="ol-sec un" data-s="un"><div class="ol-top"><span class="n"></span><b style="font-size:12.5px;color:var(--label2)">未归入</b><span class="why" style="margin-left:6px">放在这里的划线不会出现在笔记里，生成后会提醒你</span></div>
+        <div class="ol-chips" data-drop="un">${S.unassigned.map(chip).join('') || '<span class="ol-empty">没有</span>'}</div></div>
+      <button class="btn ghost" data-act="addSec">${ic('plus')}添加一节</button></div>
+    <div class="sh-f"><span class="note">${ic('check', 'i xs')}原文只会逐字引用，不会被 AI 改写</span><div class="grow"></div>
+      <button class="btn" data-act="backSetup">返回</button><button class="btn pri" data-act="generate">${ic('spark')}生成笔记</button></div></div>`;
+  const B = $('#olBody');
+  B.querySelectorAll('.hchip').forEach(c => { c.ondragstart = e => { dragH = c.dataset.h; c.classList.add('drag'); e.dataTransfer.setData('text/plain', dragH); }; c.ondragend = () => c.classList.remove('drag'); });
+  B.querySelectorAll('[data-drop]').forEach(z => {
+    const box = z.closest('.ol-sec');
+    z.parentElement.ondragover = e => { if (!dragH) return; e.preventDefault(); box.classList.add('over'); };
+    z.parentElement.ondragleave = () => box.classList.remove('over');
+    z.parentElement.ondrop = e => { e.preventDefault(); box.classList.remove('over'); moveChip(dragH, z.dataset.drop); dragH = null; };
+  });
+  B.querySelectorAll('[data-rename]').forEach(inp => inp.oninput = () => { S.outline.find(s => s.id === inp.dataset.rename).title = inp.value; });
+  B.querySelectorAll('[data-delsec]').forEach(b => b.onclick = () => { const i = S.outline.findIndex(s => s.id === b.dataset.delsec); S.unassigned.push(...S.outline[i].refs); S.outline.splice(i, 1); sheetOutline(); });
+  /* Section reorder: drag by the grip. */
+  B.querySelectorAll('[data-sgrip]').forEach(g => {
+    const box = g.closest('.ol-sec');
+    g.onmousedown = () => box.draggable = true;
+    box.ondragstart = e => { if (dragH) return; e.dataTransfer.setData('text/sec', box.dataset.s); box.style.opacity = .4; };
+    box.ondragend = () => { box.draggable = false; box.style.opacity = 1; };
+  });
+  B.querySelectorAll('.ol-sec:not(.un)').forEach(box => {
+    box.addEventListener('dragover', e => { if (!dragH && e.dataTransfer.types.includes('text/sec')) { e.preventDefault(); box.classList.add('over'); } });
+    box.addEventListener('dragleave', () => { if (!dragH) box.classList.remove('over'); });
+    box.addEventListener('drop', e => {
+      const from = e.dataTransfer.getData('text/sec'); if (!from || dragH) return; e.preventDefault();
+      const a = S.outline.findIndex(s => s.id === from), b = S.outline.findIndex(s => s.id === box.dataset.s);
+      if (a < 0 || b < 0 || a === b) return; const [m] = S.outline.splice(a, 1); S.outline.splice(b, 0, m); sheetOutline();
+    });
+  });
+}
+function moveChip(h, to) {
+  for (const s of S.outline) s.refs = s.refs.filter(x => x !== h);
+  S.unassigned = S.unassigned.filter(x => x !== h);
+  if (to === 'un') S.unassigned.push(h); else S.outline.find(s => s.id === to).refs.push(h);
+  sheetOutline();
+}
+let genTimer = null;
+function startGenerate(keepTitle) {
+  S.note = null; S.newSince = []; S.pending = null;
+  S.note = buildNote();
+  if (keepTitle) S.note.title = keepTitle;
+  S.tpl = S.setup.tpl;
+  openSheet('gen');
+}
+function sheetGen() {
+  const N = S.note, AI = aiOn();
+  const steps = AI ? [['收集素材', `${N.scope.length} 条划线 · ${N.scope.filter(h => OWN[h] && S.setup.mats.own).length} 条批注`], ['补全上下文', `前后各 ${S.setup.ctx} 句${deep() ? ' · 补全 1 处指代' : ''}`],
+    [S.outline ? '按你确认的提纲' : '归纳主题', `${N.secs.length} 节`], ['撰写', '每节小结与要点'], ['核对引用', '每条原文逐字比对']]
+    : [['收集素材', `${N.scope.length} 条划线`], ['补全上下文', `前后各 ${S.setup.ctx} 句`], ['分组排版', `${N.secs.length} 节`]];
+  const blocks = [];
+  N.secs.forEach((s, i) => { blocks.push(`<h2 class="n-h2"><span class="num">${i + 1}</span>${esc(s.title)}</h2>`); blocksFor(s, i).forEach(b => blocks.push(blockHtml(b, s, { noGut: true, noEdit: true }))); });
+  $('#scrim').innerHTML = `<div class="sheet" style="width:820px">
+    <div class="sh-h">${AI ? ic('spark') : ic('note')}<b>${AI ? '正在整理' : '正在排版'}</b><span class="s" id="genSub">${esc(N.title)}</span></div>
+    <div class="sh-b"><div class="gen-wrap"><div class="steps" id="steps">${steps.map(([t, s], i) => `<div class="step" data-i="${i}"><span class="ico">${i + 1}</span><div>${t}<div class="sub">${s}</div></div></div>`).join('')}</div>
+      <div class="gen-prev ${S.marks ? 'marks' : 'nomarks'}" id="genPrev"><h1 class="n-title" style="font-size:20px">${esc(N.title)}</h1></div></div></div>
+    <div class="sh-f"><span class="note" id="genNote">${AI ? '可以随时停止，已写好的部分会保留' : '不发送任何内容'}</span><div class="grow"></div><button class="btn" data-act="stopGen">${ic('stop', 'i xs')}停止</button></div></div>`;
+  const stepEls = [...document.querySelectorAll('.step')], prev = $('#genPrev');
+  let si = 0, bi = 0;
+  const setStep = i => stepEls.forEach((el, j) => { el.className = 'step ' + (j < i ? 'done' : j === i ? 'run' : ''); el.querySelector('.ico').innerHTML = j < i ? ic('check', 'i s') : j === i ? '<span class="spin"></span>' : j + 1; });
+  setStep(0);
+  clearInterval(genTimer);
+  let tick = 0;
+  genTimer = setInterval(() => {
+    tick++;
+    if (si < (AI ? 3 : 2)) { if (tick % 4 === 0) { si++; setStep(si); } return; }
+    if (bi < blocks.length) {
+      const d = document.createElement('div'); d.innerHTML = blocks[bi++]; prev.append(...d.childNodes);
+      prev.querySelector('.caret')?.remove(); prev.insertAdjacentHTML('beforeend', '<span class="caret"></span>'); prev.scrollTop = prev.scrollHeight;
+      if (AI && bi > blocks.length * .55 && si === 3) { si = 4; setStep(4); }
+      return;
+    }
+    clearInterval(genTimer); setStep(steps.length); prev.querySelector('.caret')?.remove();
+    setTimeout(finishGen, 450);
+  }, 140);
+}
+function finishGen(stopped) {
+  clearInterval(genTimer); S.sheet = null; S.right = 'note'; render();
+  const u = new Set(used()), miss = S.note.scope.filter(h => !u.has(h)).length;
+  if (stopped) hud('已停止，保留了写好的部分', '继续整理', () => openSheet('gen'));
+  else hud(miss ? `已生成 · ${miss} 条划线未用上，点标题下方提示查看` : `已生成 · ${S.note.scope.length} 条划线全部引用`);
+}
+
+/* ---------- Export ---------- */
+function mdFor(fmt) {
+  const N = S.note, X = S.ex, ob = fmt === 'obsidian', lines = [];
+  const aiOk = X.inc.ai && aiOn();
+  const aiTag = t => X.aiMark === 'label' ? (ob ? null : `${t}（AI 整理）`) : t;
+  const cite = h => X.cite === 'none' ? '' : X.cite === 'foot' ? `[^${h}]` : ob ? ` — [[${docOf(h).short}#p${HL[h].pg}|${citeText(h)}]]` : ` —— ${citeText(h)}`;
+  if (ob) lines.push('---', `title: ${N.title}`, `source: [${[...new Set(N.scope.map(h => '"' + DOCS[HL[h].doc].title + '"'))].join(', ')}]`, 'tags: [学习笔记, 认知科学]', `created: 2026-10-30`, '---', '');
+  else lines.push(`# ${N.title}`, '', `> ${new Set(N.scope.map(h => HL[h].doc)).size} 份文档 · ${N.scope.length} 条划线 · 整理于 2026-10-30`, '');
+  if (aiOk && aiOn()) { if (ob) lines.push('> [!summary] AI 总结', `> ${summaryText()}`, ''); else lines.push(`**一句话总结：**${aiTag(summaryText())}`, ''); }
+  N.secs.forEach((s, i) => {
+    lines.push(`## ${i + 1}. ${s.title}`, '');
+    for (const b of blocksFor(s, i)) {
+      if (b.k === 'quote') {
+        const H = HL[b.ref];
+        const body = (X.inc.ctx && S.ctxOpen.has(b.ref) && H.before ? `${H.before}**${H.text}**${H.after}` : H.text);
+        if (ob) lines.push(`> [!quote] ${citeText(b.ref)}`, `> ${body}${X.cite === 'foot' ? `[^${b.ref}]` : ''}`, ''); else lines.push(`> ${body}${cite(b.ref)}`, '');
+        if (deep() && GLOSS[b.ref] && aiOk) lines.push(ob ? `> [!info] AI 补充\n> ${GLOSS[b.ref]}` : `*注：${GLOSS[b.ref]}*`, '');
+      } else if (b.k === 'own' && X.inc.own) { lines.push(ob ? `> [!note] 我的批注\n> ${textOf(b)}` : `💭 **我的批注：**${textOf(b)}`, ''); }
+      else if (b.k === 'p' && aiOk) { lines.push(ob && X.aiMark === 'label' ? `> [!abstract] AI 小结\n> ${textOf(b)}` : aiTag(textOf(b)) || textOf(b), ''); }
+      else if (b.k === 'list' && aiOk) { lines.push(...b.items.map(t => `- ${t}`), ''); }
+      else if (b.k === 'xref' && aiOk) { const t = N.secs.find(x => x.id === b.to); if (t) lines.push(ob ? `相关：[[#${N.secs.indexOf(t) + 1}. ${t.title}]]` : `相关：见「${t.title}」`, ''); }
+    }
+  });
+  if (S.setup.mats.own || deep()) { lines.push(`## 行动清单`, ''); ACTIONS.filter(a => a.own || deep()).forEach((a, i) => lines.push(`- [${S.done.has(i) ? 'x' : ' '}] ${a.t}`)); lines.push(''); }
+  if (X.inc.qa && deep()) {
+    lines.push('## 复习题', '');
+    N.secs.map(secMeta).filter(Boolean).forEach(m => lines.push(ob ? `${m.q}\n?\n${(m.alt || '').trim()}` : `- **Q：**${m.q}`, ''));
+  }
+  if (X.inc.refs) { lines.push('## 出处', ''); [...new Set(N.scope.map(h => HL[h].doc))].forEach(d => lines.push(`- ${DOCS[d].title}`)); lines.push(''); }
+  if (X.cite === 'foot') N.secs.flatMap(s => s.refs).forEach(h => lines.push(`[^${h}]: ${DOCS[HL[h].doc].title}，第 ${HL[h].pg} 页，${HL[h].chTitle}`));
+  return lines.join('\n');
+}
+function hlMd(md) {
+  return esc(md).split('\n').map(l => /^#{1,3} /.test(l) ? `<span class="h">${l}</span>` : /^&gt; \[!(summary|abstract|info)\]/.test(l) || /（AI 整理）|^\*注：/.test(l) ? `<span class="ai">${l}</span>` : /^&gt;/.test(l) ? `<span class="qq">${l}</span>` : /^(---|title:|source:|tags:|created:)/.test(l) ? `<span class="fm">${l}</span>` : l).join('\n');
+}
+function pdfPreview() {
+  const N = S.note, X = S.ex, aiOk = X.inc.ai && aiOn();
+  let fn = 0; const foot = [];
+  const body = N.secs.map((s, i) => `<h2>${i + 1}. ${esc(s.title)}</h2>` + blocksFor(s, i).map(b => {
+    if (b.k === 'quote') { const c = X.cite === 'none' ? '' : X.cite === 'foot' ? `<sup>${++fn}</sup>` : ''; if (X.cite === 'foot') foot.push(`${fn}. ${DOCS[HL[b.ref].doc].title}，第 ${HL[b.ref].pg} 页`); return `<div class="q" style="border-color:${COLOR[HL[b.ref].c]}">${esc(HL[b.ref].text)}${c}${X.cite === 'inline' ? `<small>${esc(citeText(b.ref))}</small>` : ''}</div>`; }
+    if (b.k === 'own' && X.inc.own) return `<div class="o">${esc(textOf(b))}</div>`;
+    if (b.k === 'p' && aiOk) return `<div class="a">${esc(textOf(b))}${X.aiMark === 'label' ? ' <span style="color:#8E5BD8;font-size:7.5px">AI</span>' : ''}</div>`;
+    if (b.k === 'list' && aiOk) return `<ul style="margin:3px 0;padding-left:14px">${b.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+    return '';
+  }).join('')).join('');
+  return `<div class="ppage"><h1>${esc(N.title)}</h1><div class="m">${N.scope.length} 条划线 · MarginMind · 2026-10-30</div>${aiOk ? `<div class="a" style="background:#F4EEFC;padding:5px 7px;border-radius:3px">${esc(summaryText())}</div>` : ''}${body}${foot.length ? `<div class="fn">${foot.join('<br>')}</div>` : ''}<div class="pn">1 / 3</div></div>`;
+}
+function sheetExport() {
+  const X = S.ex, N = S.note;
+  const fmts = [['md', 'Markdown', 'MD', '#1D1D1F'], ['obsidian', 'Obsidian', 'OB', '#7C3AED'], ['pdf', 'PDF', 'PDF', '#E5484D'], ['docx', 'Word', 'W', '#2B6CD8'], ['rich', '复制为富文本', '⌘C', '#30A46C'], ['img', '分享长图', 'IMG', '#F76B15']];
+  const tg = (k, label, dis) => `<label class="toggle ${dis ? 'dis' : ''}" data-inc="${k}"><span class="sw ${X.inc[k] && !dis ? 'on' : ''}"></span>${label}</label>`;
+  const opt = (g, k, l) => `<button class="opt ${X[g] === k ? 'on' : ''}" data-xg="${g}" data-k="${k}">${l}</button>`;
+  const isText = X.fmt === 'md' || X.fmt === 'obsidian';
+  const ext = { md: '.md', obsidian: '.md（含附件文件夹）', pdf: '.pdf', docx: '.docx', rich: '剪贴板', img: '.png' }[X.fmt];
+  $('#scrim').innerHTML = `<div class="sheet" style="width:900px">
+    <div class="sh-h">${ic('export')}<b>导出笔记</b><span class="s">${esc(N.title)}</span></div>
+    <div class="sh-b"><div class="ex-wrap"><div class="ex-left">
+      <div class="fmts">${fmts.map(([k, n, t, c]) => `<div class="fmt ${X.fmt === k ? 'on' : ''}" data-fmt="${k}"><div class="ico" style="background:${c}">${t}</div>${n}</div>`).join('')}</div>
+      <div class="ex-sec">出处标注</div><div class="opts">${opt('cite', 'inline', '页码跟在原文后')}${opt('cite', 'foot', '脚注')}${opt('cite', 'none', '不标')}</div>
+      <div class="ex-sec">包含</div>
+      ${tg('ctx', '展开过的上下文')}${tg('own', '我的批注')}${tg('ai', 'AI 小结与要点', !aiOn())}${tg('qa', '复习题', !deep())}${tg('refs', '出处列表')}
+      <div class="ex-sec">AI 内容标记</div><div class="opts">${opt('aiMark', 'label', X.fmt === 'obsidian' ? 'Callout 标出' : '标“AI 整理”')}${opt('aiMark', 'none', '不标')}</div>
+      <div class="help">${X.fmt === 'obsidian' ? '原文、批注、AI 小结分别用 quote / note / abstract callout；页码写成指向原书笔记的链接，复习题用 Spaced Repetition 插件格式。' : X.fmt === 'rich' ? '粘贴到飞书、Notion、备忘录时保留标题、引用和列表。' : X.fmt === 'docx' ? '原文用宋体、引用样式；批注用浅黄底纹；脚注用 Word 原生脚注。' : X.fmt === 'pdf' ? 'A4，正文 11pt；原文用宋体，左侧色条为划线颜色。' : '通用 Markdown，任何编辑器都能打开。'}</div>
+    </div>
+    <div class="ex-right"><div class="ex-tag">${isText ? ic('doc', 'i xs') + `${esc(N.title)}.md` : ic('eye', 'i xs') + '预览'}<div class="grow"></div>${isText ? `${mdFor(X.fmt).length.toLocaleString()} 字符` : X.fmt === 'pdf' ? '3 页 · A4' : X.fmt === 'docx' ? '约 3 页' : ''}</div>
+      ${isText ? `<pre class="md">${hlMd(mdFor(X.fmt))}</pre>` : X.fmt === 'img' ? '<div style="padding:30px;text-align:center;color:var(--label2)">长图在“分享”里制作，可以选主题和内容。<br><br><button class="btn pri" data-act="share">打开分享</button></div>' : pdfPreview()}</div></div></div>
+    <div class="sh-f"><span class="note">${ic('shield', 'i xs')}在本机生成，不上传 · ${esc(ext)}</span><div class="grow"></div><button class="btn" data-act="close">取消</button>
+      ${isText || X.fmt === 'rich' ? `<button class="btn" data-act="copyMd">${ic('copy')}拷贝</button>` : ''}
+      ${X.fmt === 'img' || X.fmt === 'rich' ? '' : `<button class="btn pri" data-act="doExport">导出…</button>`}</div></div>`;
+  const sh = $('#scrim .sheet');
+  sh.querySelectorAll('[data-fmt]').forEach(b => b.onclick = () => { X.fmt = b.dataset.fmt; sheetExport(); });
+  sh.querySelectorAll('[data-xg]').forEach(b => b.onclick = () => { X[b.dataset.xg] = b.dataset.k; sheetExport(); });
+  sh.querySelectorAll('[data-inc]').forEach(b => b.onclick = () => { X.inc[b.dataset.inc] = !X.inc[b.dataset.inc]; sheetExport(); });
+}
+function download(name, text) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- Share ---------- */
+function sheetShare() {
+  const Sh = S.share, N = S.note;
+  const secs = N.secs, s = secs[Math.min(Sh.sec, secs.length - 1)];
+  const card = () => {
+    if (!s || !s.refs.length) return '<div style="color:var(--label2);padding:40px">这一节没有摘录</div>';
+    if (Sh.what === 'quote') { const h = s.refs[0]; return `<div class="lcard quote t-${Sh.theme}"><div class="mark">“</div><div class="big">${esc(HL[h].text)}</div><div class="ls" style="margin-left:0">${esc(DOCS[HL[h].doc].title)} · p.${HL[h].pg}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(OWN[h].text)}</div>` : ''}<div class="foot"><span class="logo"></span>摘自我的 MarginMind 笔记</div></div>`; }
+    const list = Sh.what === 'sec' ? [s] : secs;
+    return `<div class="lcard t-${Sh.theme}"><div class="kick">读书笔记 · ${esc([...new Set(N.scope.map(h => DOCS[HL[h].doc].short))].join(' × '))}</div><h4>${esc(Sh.what === 'sec' ? s.title : N.title)}</h4>
+      ${Sh.what === 'all' && !Sh.hideAi && aiOn() ? `<div class="la">${esc(summaryText())}</div>` : ''}
+      ${list.map(x => `${Sh.what === 'all' ? `<div class="lsec">${esc(x.title)}</div>` : ''}${!Sh.hideAi && aiOn() && Sh.what === 'sec' && secMeta(x) ? `<div class="la">${esc(textOf({ id: x.id + ':ai', text: secMeta(x).ai, alt: secMeta(x).alt }))}</div>` : ''}${x.refs.slice(0, Sh.what === 'all' ? 2 : 4).map(h => `<div class="lq">${esc(HL[h].text)}</div><div class="ls">${esc(citeText(h))}</div>${Sh.own && OWN[h] ? `<div class="lo">${esc(OWN[h].text)}</div>` : ''}`).join('')}`).join('')}
+      <div class="foot"><span class="logo"></span>摘自我的 MarginMind 笔记<div class="grow"></div>${N.scope.length} 条划线</div></div>`;
+  };
+  const opt = (g, k, l) => `<button class="opt ${Sh[g] === k ? 'on' : ''}" data-sg="${g}" data-k="${k}">${l}</button>`;
+  $('#scrim').innerHTML = `<div class="sheet" style="width:860px">
+    <div class="sh-h">${ic('share')}<b>分享长图</b><span class="s">适合发到微信、小红书、朋友圈</span></div>
+    <div class="sh-b"><div class="sh-wrap"><div>
+      <div class="ex-sec" style="margin-top:0">内容</div><div class="opts">${opt('what', 'quote', '一句金句')}${opt('what', 'sec', '一节')}${opt('what', 'all', '整篇摘要')}</div>
+      ${Sh.what !== 'all' ? `<div class="ex-sec">选择小节</div><select id="shSec" style="width:100%;height:28px;border-radius:7px;border:.5px solid var(--sep);background:var(--card);padding:0 6px">${secs.map((x, i) => `<option value="${i}" ${i === Sh.sec ? 'selected' : ''}>${i + 1}. ${esc(x.title)}</option>`).join('')}</select>` : ''}
+      <div class="ex-sec">主题</div><div class="opts">${opt('theme', 'paper', '纸张')}${opt('theme', 'plain', '简洁')}${opt('theme', 'night', '夜读')}</div>
+      <div class="ex-sec">显示</div>
+      <label class="toggle" data-st="own"><span class="sw ${Sh.own ? 'on' : ''}"></span>我的批注</label>
+      <label class="toggle ${aiOn() ? '' : 'dis'}" data-st="hideAi"><span class="sw ${!Sh.hideAi && aiOn() ? 'on' : ''}"></span>AI 小结</label>
+      <div class="help" style="margin-top:12px">长图只包含摘录与你选择的内容，不含学习集里的其他文档。图片在本机生成。</div>
+    </div><div class="share-stage">${card()}</div></div></div>
+    <div class="sh-f"><div class="grow"></div><button class="btn" data-act="close">完成</button><button class="btn" data-act="copyImg">${ic('copy')}拷贝图片</button><button class="btn pri" data-act="saveImg">存储图片…</button></div></div>`;
+  const sh = $('#scrim .sheet');
+  sh.querySelectorAll('[data-sg]').forEach(b => b.onclick = () => { Sh[b.dataset.sg] = b.dataset.k; sheetShare(); });
+  sh.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { Sh[b.dataset.st] = !Sh[b.dataset.st]; sheetShare(); });
+  const sel = $('#shSec'); if (sel) sel.onchange = () => { Sh.sec = +sel.value; sheetShare(); };
+}
+
+/* ---------- Incremental update ---------- */
+function simulateNew() {
+  for (const h of NEW_HLS) if (!S.hls.includes(h)) S.hls.push(h);
+  S.newSince = [...NEW_HLS];
+}
+function previewUpdate() {
+  /* AI places each new highlight into the most relevant section; edited paragraphs are locked. */
+  const secFor = h => { const want = h === 'h10' ? ['s2', 'm2', 'c3'] : ['s3', 'm3', 'c4']; return S.note.secs.find(s => want.includes(s.id)) || S.note.secs[S.note.secs.length - 1]; };
+  if (S.tpl === 'review') S.tpl = 'reading';
+  S.pending = S.newSince.map(h => ({ h, sec: secFor(h).id, why: h === 'h10' ? '同样在讲复习间隔' : '同样在讲反馈' }));
+  renderNote();
+  document.querySelector('.blk.pending')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function applyUpdate() {
+  for (const p of S.pending) { const s = S.note.secs.find(x => x.id === p.sec); if (s && !s.refs.includes(p.h)) s.refs.push(p.h); if (!S.note.scope.includes(p.h)) S.note.scope.push(p.h); }
+  const added = S.pending.map(p => p.h); S.pending = null; S.newSince = [];
+  render();
+  added.forEach(h => { const b = document.querySelector(`#noteDoc [data-ref="${h}"]`); if (b) b.classList.add('hlnew'); });
+  document.querySelector(`#noteDoc [data-ref="${added[0]}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  hud(`已更新 · 新增 ${added.length} 条，你改过的段落保持不变`);
+}
+
+/* ---------- Actions ---------- */
+function act(a, el, e) {
+  switch (a) {
+    case 'newNote': S.setup.scope = S.right === 'anno' && S.sel.size && S.sel.size < S.hls.length ? 'sel' : 'all'; S.outline = null; S.unassigned = []; openSheet('setup'); break;
+    case 'fromSel': S.setup.scope = 'sel'; S.outline = null; S.unassigned = []; openSheet('setup'); break;
+    case 'selAll': { const vis = S.hls.filter(h => !S.colorOff.has(HL[h].c)); const all = vis.every(h => S.sel.has(h)); vis.forEach(h => all ? S.sel.delete(h) : S.sel.add(h)); renderAnno(); break; }
+    case 'openNote': S.right = 'note'; render(); break;
+    case 'toggleReader': S.readerOpen = !S.readerOpen; renderReader(); setTimeout(() => S.right === 'note' && keepScroll(renderNote), 280); break;
+    case 'close': closeSheet(); break;
+    case 'settings': hud('原型：打开 设置 › 助手'); break;
+    case 'fixRefs': S.setup.fixRefs = !S.setup.fixRefs; sheetSetup(); break;
+    case 'toOutline': S.outline = null; S.unassigned = []; openSheet('outline'); break;
+    case 'backSetup': openSheet('setup'); break;
+    case 'addSec': S.outline.push({ id: 'u' + Date.now(), title: '新的一节', refs: [], why: '' }); sheetOutline(); setTimeout(() => { const ins = document.querySelectorAll('[data-rename]'); ins[ins.length - 1]?.select(); }, 0); break;
+    case 'generate': if (S.sheet === 'setup') { S.outline = null; S.unassigned = []; } S.edits = {}; S.deleted = new Set(); S.alts = {}; startGenerate(); break;
+    case 'stopGen': finishGen(true); break;
+    case 'export': S.ex.fmt = S.ex.fmt === 'img' ? 'md' : S.ex.fmt; openSheet('export'); break;
+    case 'share': openSheet('share'); break;
+    case 'copyMd': navigator.clipboard?.writeText(mdFor(S.ex.fmt === 'obsidian' ? 'obsidian' : 'md')).catch(() => {}); hud(S.ex.fmt === 'rich' ? '已拷贝，可直接粘贴到飞书、Notion、备忘录' : '已拷贝 Markdown'); break;
+    case 'doExport': if (S.ex.fmt === 'md' || S.ex.fmt === 'obsidian') download(S.note.title + '.md', mdFor(S.ex.fmt)); closeSheet(); hud(S.ex.fmt === 'md' || S.ex.fmt === 'obsidian' ? '已导出（原型会真实下载 .md）' : `已导出 ${S.ex.fmt.toUpperCase()}（原型示意）`, '在访达中显示', () => hud('原型：在访达中显示')); break;
+    case 'copyImg': hud('已拷贝图片'); break;
+    case 'saveImg': closeSheet(); hud('已存储到“下载”（原型示意）'); break;
+    case 'marks': S.marks = !S.marks; keepScroll(renderNote); break;
+    case 'coverage': coveragePop(e); break;
+    case 'tplMenu': tplMenu(e); break;
+    case 'tocMenu': { const r = e.currentTarget.getBoundingClientRect(); const p = openPop(S.note.secs.map((s, i) => `<div class="mi" data-g2="${s.id}">${i + 1}. ${esc(s.title)}</div>`).join(''), r.left, r.bottom + 4);
+      p.querySelectorAll('[data-g2]').forEach(m => m.onclick = () => { closePop(); document.getElementById('sec-' + m.dataset.g2)?.scrollIntoView({ behavior: 'smooth' }); }); break; }
+    case 'regen': S.outline = S.note.secs.map(s => ({ ...s, refs: [...s.refs] })); startGenerate(S.note.title); break;
+    case 'preview': previewUpdate(); break;
+    case 'applyUpd': applyUpdate(); break;
+    case 'cancelUpd': S.pending = null; renderNote(); break;
+    case 'dismissNew': S.newSince = []; render(); hud('之后可以在“重新整理”里加入'); break;
+    case 'addReview': hud(`已加入复习 · ${S.note.secs.filter(secMeta).length} 张卡片，今天就会出现`); break;
+    case 'addOne': hud('已加入复习'); break;
+  }
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.hasAttribute('disabled')) return;
+  act(el.dataset.act, el, { currentTarget: el, target: e.target });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#pop').classList.contains('on')) closePop(); else if (S.sheet && S.sheet !== 'gen') closeSheet(); }
+  if (e.altKey && e.metaKey && e.code === 'KeyP') { e.preventDefault(); act('newNote'); }
+});
+
+/* ---------- Render ---------- */
+function renderRight() { if (S.right === 'note' && S.note) renderNote(); else renderAnno(); }
+function render() { renderSide(); renderTb(); renderReader(); renderRight(); renderSheet(); }
+
+/* ---------- Scenes ---------- */
+const SCENES = [
+  { g: '开始', n: '入口：标注列表多选', set() { },
+    notes: `<h4>从划线出发</h4><ul><li>“标注”列表（⌥⌘4）支持多选、按颜色筛选，底部浮出“整理成笔记”。</li><li>其他入口：工具栏“整理笔记”、侧栏“笔记 +”、脑图分支右键“整理成笔记”、菜单 文件 › 整理学习笔记… ⌥⌘P。</li><li>笔记和脑图一样属于学习集，出现在侧栏“笔记”分组里。</li></ul><div class="lab">试试</div><ul><li>点颜色点筛选，再点“整理成笔记”。</li></ul>` },
+  { g: '开始', n: '整理设置', set() { openSheet('setup'); },
+    notes: `<h4>一个表单，默认值就能用</h4><ul><li><b>范围</b>：选中的划线 / 整个学习集 / 单份文档 / 最近 7 天。</li><li><b>组织方式</b>：AI 按主题归纳（跨章节、跨书合并同一观点）/ 按原文顺序 / 按脑图结构。</li><li><b>AI 参与</b>三档，最低一档完全不发送内容。</li><li><b>上下文</b>：每条划线自动带前后句；以“这”“它”开头的残句由 AI 补全指代。</li><li>发送前写明发多少字、发给哪个模型。</li></ul><div class="lab">待确认</div><ul><li>默认 AI 档位：建议“深度整理”；首次使用时记住选择。</li></ul>` },
+  { g: '开始', n: '整理设置 · 未配置 AI', set() { env.ai = false; syncEnv(); S.setup.depth = 'none'; S.setup.org = 'source'; openSheet('setup'); },
+    notes: `<h4>没有 AI 也能用</h4><ul><li>“按主题归纳”和 AI 档位变灰，给出“去设置”。</li><li>按原文或脑图排版、补前后句、附出处、导出都照常可用。</li><li>不出现隐私说明，因为什么都不发送。</li></ul>` },
+  { g: 'AI 整理', n: '确认提纲：拖动调整', set() { S.outline = null; openSheet('outline'); },
+    notes: `<h4>先提纲，后成文</h4><ul><li>AI 先给出分节和每节包含的划线，并写明分组理由。</li><li>可以改标题、拖动划线到别的节、拖动左侧把手调整顺序、删除一节、添加一节。</li><li>拖到“未归入”的划线不进入笔记；生成后标题下方会提醒“N 条未用上”，可一键放回。</li><li>只在“按主题归纳”时出现；另外两种方式结构已知，直接生成。</li></ul>` },
+  { g: 'AI 整理', n: '生成中', set() { S.setup.scope = 'all'; S.sel = new Set(BASE_HLS); startGenerate(); },
+    notes: `<h4>看得见进度，随时可停</h4><ul><li>步骤：收集素材 → 补全上下文 → 归纳主题 → 撰写 → 核对引用。</li><li>边写边显示；停止后保留已写部分。</li><li><b>核对引用</b>：AI 只输出划线 ID，原文由应用逐字填入，所以不会出现被改写或编造的“引文”。</li></ul>` },
+  { g: '笔记', n: '笔记：三种声音', set() { quickNote(); },
+    notes: `<h4>分得清谁说的</h4><ul><li>沿用“书里的话用宋体，自己的话用系统字体”，再加一种：<b>AI 写的</b>带紫色 AI 标签和左侧细线。</li><li>“显示 AI 标记”可关闭，方便阅读；导出时另有选项。</li><li>AI 段落一经修改，标签变为“AI · 已改”（对应 <code>NoteOrigin.mixed</code>），重新整理时不会覆盖。</li><li>标题下的绿色标签：所有划线都被引用、原文未改写；点开可以逐条定位。</li></ul><div class="lab">试试</div><ul><li>直接点进 AI 段落修改；右侧目录跳转小节。</li></ul>` },
+  { g: '笔记', n: '上下文与出处', set() { quickNote(); setTimeout(() => { document.querySelector('[data-ref="h9"]')?.scrollIntoView({ block: 'center' }); reveal('h9'); }, 60); },
+    notes: `<h4>自动关联上下文</h4><ul><li>划线“这就是测试效应。”单独看不懂：笔记里默认展开前后句（灰色宋体），AI 在下面补一句“「这」指……”。</li><li>每条摘录都有出处：点“《认知天性》p.28”在左侧原文跳页并闪烁；点原文高亮，笔记滚到对应摘录。</li><li>跨节关联：AI 标出“与第 1 节是同一机制”，点击跳转。</li><li>我的批注（页边批注、脑图笔记）自动挂在对应摘录下面。</li></ul>` },
+  { g: '笔记', n: '段落操作', set() { quickNote(); setTimeout(() => { const g = document.querySelector('.blk.ai .gut'); g && g.closest('.blk').scrollIntoView({ block: 'center' }); g && g.click(); }, 80); },
+    notes: `<h4>每段都能单独处理</h4><ul><li>悬停段落左侧出现 ⋯：换一种说法、更简洁、展开说明、改为我的话、加入脑图、生成复习卡、删除。</li><li>摘录：展开 / 收起上下文、在原文中查看、让 AI 解释、从笔记移除（划线保留）。</li><li>我自己写的批注，AI 不改写（菜单项变灰并说明原因）。</li><li>所有操作都可在提示条里撤销。</li></ul>` },
+  { g: '笔记', n: '版式：康奈尔笔记', set() { quickNote(); S.tpl = 'cornell'; renderNote(); },
+    notes: `<h4>版式和内容分离</h4><ul><li>同一份内容可切换：读书笔记 / 康奈尔笔记 / 复习提纲。</li><li>康奈尔：左栏是 AI 提出的问题（线索），右栏是摘录与批注，底部是本节总结。</li><li>切换不改内容，修改过的段落在各版式中一致。</li></ul>` },
+  { g: '笔记', n: '版式：复习提纲', set() { quickNote(); S.tpl = 'review'; renderNote(); },
+    notes: `<h4>直接拿来复习</h4><ul><li>问题在前、答案（原文）遮住，点一下显示。</li><li>“加入复习”生成 FSRS 卡片，题面是问题，答案是原文并带出处。</li></ul>` },
+  { g: '持续更新', n: '新划线：增量更新', set() { quickNote(); simulateNew(); render(); },
+    notes: `<h4>笔记跟着阅读长大</h4><ul><li>整理之后又划了线，笔记顶部提示“又划了 2 条”，侧栏笔记显示角标。</li><li>“预览更新”：AI 把每条放进最相关的一节（绿色），并说明理由；不重写整篇。</li><li><b>你改过的段落永远不会被覆盖</b>，带锁标记。</li><li>“忽略”后可以在“重新整理”中再加入。</li></ul><div class="lab">试试</div><ul><li>先改一段 AI 文字，再点“预览更新”→“应用更新”。</li></ul>` },
+  { g: '导出与分享', n: '导出：Markdown / Obsidian', set() { quickNote(); S.ex.fmt = 'obsidian'; openSheet('export'); },
+    notes: `<h4>导出给其他工具</h4><ul><li>Markdown：通用格式；Obsidian：frontmatter、callout、页码链接、Spaced Repetition 复习题格式。</li><li>出处：跟在原文后 / 脚注 / 不标。</li><li>可以去掉批注、AI 内容、复习题；AI 内容可标注或不标。</li><li>右侧预览就是实际文件内容。“导出”会真实下载 .md。</li></ul>` },
+  { g: '导出与分享', n: '导出：PDF / Word', set() { quickNote(); S.ex.fmt = 'pdf'; S.ex.cite = 'foot'; openSheet('export'); },
+    notes: `<h4>打印和提交</h4><ul><li>PDF：A4，原文宋体，左侧色条为划线颜色；Word：引用样式与原生脚注，方便继续修改或交作业。</li><li>“复制为富文本”直接粘贴到飞书、Notion、备忘录。</li></ul>` },
+  { g: '导出与分享', n: '分享长图', set() { quickNote(); openSheet('share'); },
+    notes: `<h4>分享给别人看</h4><ul><li>三种内容：一句金句 / 一节 / 整篇摘要；三种主题：纸张、简洁、夜读。</li><li>可隐藏我的批注、AI 小结。</li><li>只包含所选内容，本机生成，不上传。</li></ul><div class="lab">待确认</div><ul><li>是否在长图底部加二维码或链接？建议不加，保持本地优先。</li></ul>` },
+];
+function quickNote() {
+  S.setup.scope = 'all'; S.sel = new Set(BASE_HLS); S.outline = null; S.unassigned = [];
+  S.note = buildNote(); S.tpl = S.setup.tpl; S.right = 'note'; S.sheet = null; render();
+}
+let cur = 0;
+function syncEnv() {
+  document.body.classList.toggle('dark', env.dark); $('#win').classList.toggle('dark', env.dark); $('#pop').classList.toggle('dark', env.dark);
+  $('#aiBtn').textContent = env.ai ? 'AI 已配置' : '未配置 AI'; $('#aiBtn').classList.toggle('on', !env.ai);
+  $('#darkBtn').classList.toggle('on', env.dark); $('#narrowBtn').classList.toggle('on', env.narrow);
+  $('#win').style.maxWidth = env.narrow ? '980px' : '';
+}
+function go(i) {
+  cur = i; clearInterval(genTimer); closePop();
+  S = fresh();
+  if (!env.ai) { S.setup.depth = 'none'; S.setup.org = 'source'; }
+  syncEnv(); render(); SCENES[i].set();
+  if (!env.ai) { S.setup.depth = 'none'; }
+  $('#notes').innerHTML = SCENES[i].notes;
+  document.querySelectorAll('.sc-btn').forEach((b, j) => b.classList.toggle('on', j === i));
+}
+let lastG = '';
+$('#scList').innerHTML = SCENES.map((s, i) => { const h = s.g !== lastG ? `<div class="grp">${s.g}</div>` : ''; lastG = s.g; return h + `<button class="sc-btn" data-i="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span>${s.n}</button>`; }).join('');
+document.querySelectorAll('.sc-btn').forEach(b => b.onclick = () => { if (+b.dataset.i === 2) env.ai = false; else if (cur === 2) env.ai = true; go(+b.dataset.i); });
+$('#darkBtn').onclick = () => { env.dark = !env.dark; syncEnv(); if (S.sheet) renderSheet(); };
+$('#narrowBtn').onclick = () => { env.narrow = !env.narrow; syncEnv(); if (S.right === 'note') keepScroll(renderNote); };
+$('#aiBtn').onclick = () => { env.ai = !env.ai; syncEnv(); if (!env.ai) { S.setup.depth = 'none'; if (S.setup.org === 'theme') S.setup.org = 'source'; } else { S.setup.depth = 'deep'; S.setup.org = 'theme'; }
+  if (S.note) S.note = { ...buildNote(), title: S.note.title };
+  render(); };
+$('#resetBtn').onclick = () => go(cur);
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => S.right === 'note' && !S.sheet && keepScroll(renderNote), 150); });
+go(0);
+</script>
+</body>
+</html>

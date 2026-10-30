@@ -189,11 +189,13 @@ class _MapAction extends StatelessWidget {
     this.icon,
     this.nodeIcon,
     this.reason,
+    this.tint,
   });
   final String id, label;
   final String? shortcut, reason;
   final IconData? icon;
   final MMNodeAction? nodeIcon;
+  final Color? tint;
   final VoidCallback onPressed;
 
   @override
@@ -202,7 +204,7 @@ class _MapAction extends StatelessWidget {
     void invoke() => reason == null ? onPressed() : MMHud.show(context, reason!, icon: MMIcons.info);
     final key = ValueKey('node-bar-$id');
     final button = nodeIcon == null
-        ? MMToolbarButton(key: key, icon: icon, tooltip: hint, onPressed: invoke)
+        ? MMToolbarButton(key: key, icon: icon, tooltip: hint, onPressed: invoke, tint: tint)
         : MMToolbarPreviewButton(
             key: key,
             tooltip: hint,
@@ -223,6 +225,7 @@ class _AssistantAction extends StatelessWidget {
     label: context.l10n.askAssistant,
     shortcut: describeShortcut(AppShortcuts.askAssistant),
     icon: MMIcons.ai,
+    tint: context.mmColors.research,
     onPressed: () {
       final box = context.findRenderObject()! as RenderBox;
       onAssistant(box.localToGlobal(Offset.zero) & box.size);

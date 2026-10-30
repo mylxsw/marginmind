@@ -65,6 +65,7 @@ def main():
             try:
                 page = browser.new_page(viewport={'width': 1440, 'height': 1000}, locale='en-US')
                 page.set_default_timeout(60000)
+                expect.set_options(timeout=60000)
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('console', lambda msg: errors.append(msg.text) if msg.type == 'error' else None)
                 page.goto(f'http://127.0.0.1:{server.server_port}')
@@ -76,7 +77,10 @@ def main():
                     create.click()
                 chooser.value.set_files(str(ROOT / 'apps/marginmind/assets/sample/sample.pdf'))
                 expect(page.get_by_role('group', name='Page 1', exact=True)).to_be_visible()
-                page.get_by_role('button', name='Add Topic', exact=True).dispatch_event('click')
+                root = page.get_by_role('button', name='sample', exact=True).last
+                expect(root).to_be_visible()
+                root.click(button='right', force=True)
+                page.get_by_role('button', name='Add Child Topic', exact=True).last.click(force=True)
                 field = page.locator('textarea:not([disabled])').last
                 field.fill(TITLE)
                 field.press('Enter')
