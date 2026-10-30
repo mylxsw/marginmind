@@ -1,3 +1,5 @@
+import 'source_selection.dart';
+export 'source_selection.dart';
 import '../../app/app_commands.dart' show ReaderSelectionCommand;
 import 'document_import.dart';
 
@@ -41,10 +43,11 @@ sealed class PendingAction {
 
 /// Text selected with the Select tool: choose excerpt / highlight / copy.
 class PendingSelection extends PendingAction {
-  const PendingSelection(this.documentId, this.selection);
+  PendingSelection(this.documentId, MMPdfSelection selection) : selection = SourceSelection.pdf(selection);
+  const PendingSelection.source(this.documentId, this.selection);
 
   final String documentId;
-  final MMPdfSelection selection;
+  final SourceSelection selection;
 }
 
 /// A clicked highlight: recolor, add to map / locate card, copy or delete.
@@ -321,6 +324,7 @@ class WorkspaceState {
     PendingAction? pending,
     bool clearPending = false,
     RevealRequest? reveal,
+    bool clearReveal = false,
     bool? canUndo,
     bool? canRedo,
     bool? sidebarAutoCollapsed,
@@ -373,7 +377,7 @@ class WorkspaceState {
       editingMarkId: clearMarkEditing ? null : (editingMarkId ?? this.editingMarkId),
       connectingFromId: clearConnecting ? null : (connectingFromId ?? this.connectingFromId),
       pending: clearPending ? null : (pending ?? this.pending),
-      reveal: reveal ?? this.reveal,
+      reveal: clearReveal ? null : reveal ?? this.reveal,
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
       sidebarAutoCollapsed: sidebarAutoCollapsed ?? this.sidebarAutoCollapsed,
@@ -985,6 +989,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     state = state.copyWith(
       openDocumentIds: open,
       activeDocumentId: id,
+      clearReveal: true,
       findVisible: id == state.activeDocumentId ? null : false,
       clearPending: true,
       layout: state.layout == MMSplitMode.secondary ? MMSplitMode.split : null,
@@ -1028,6 +1033,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
           );
           if (ref.mounted) state = state.copyWith(content: next);
         });
+        if (ref.mounted) ref.read(importedDocumentsProvider(studySetId).notifier).flash(package.document.id);
         firstId ??= package.document.id;
         count++;
       } catch (error) {
@@ -1102,18 +1108,25 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// ⌘D: bookmarks the page being read, or removes the bookmark it has.
   Future<void> toggleBookmark() async {
     final documentId = state.activeDocumentId;
-    final position = documentId == null ? null : content.document(documentId)?.readingPosition;
-    if (documentId != null && position is TextReadingPosition) {
+    final page = activePage;
+    final revision = documentId == null ? null : content.document(documentId)?.revision;
+    // Source navigation publishes its position through the same write queue.
+    await _pendingEdits;
+    if (!ref.mounted || documentId == null || content.document(documentId)?.revision != revision) return;
+    final position = content.document(documentId)?.readingPosition;
+    if (position is TextReadingPosition) {
       await _update((c) => _editor.toggleTextBookmark(c, documentId, position));
       return;
     }
-    final page = activePage;
-    if (documentId == null || page == null) return;
+    if (page == null) return;
     await _update((c) => _editor.toggleBookmark(c, documentId, page));
   }
 
-  Future<void> setReadingPosition(String documentId, ReadingPosition position) =>
-      _update((c) => _editor.setReadingPosition(c, documentId, position), undoable: false);
+  Future<void> setReadingPosition(String documentId, ReadingPosition position) => _update((c) {
+    final revision = c.document(documentId)?.revision;
+    if (position is TextReadingPosition && revision != null && position.revision != revision) return c;
+    return _editor.setReadingPosition(c, documentId, position);
+  }, undoable: false);
 
   Future<void> addBookmark(String documentId, int page, String title) =>
       _update((c) => _editor.addBookmark(c, documentId, page, title: title));
@@ -1140,28 +1153,52 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   String? get excerptTargetId => StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId);
 
   /// The mouse was released over selected text.
-  Future<WorkspaceNotice?> onSelectionCommitted(String documentId, MMPdfSelection selection) async {
+  Future<WorkspaceNotice?> onSelectionCommitted(String documentId, MMPdfSelection selection) =>
+      onSourceSelectionCommitted(documentId, SourceSelection.pdf(selection));
+
+  void _validateTextSelection(StudySetContent content, String documentId, SourceSelection selection) {
+    if (selection.textAnchors.isEmpty) return;
+    final document = content.document(documentId);
+    if (document?.contentManifest == null ||
+        document?.capabilities().selectText != true ||
+        selection.text.trim().isEmpty ||
+        selection.textAnchors.any((a) => a.revision != document!.revision)) {
+      throw ArgumentError('Stale text selection');
+    }
+  }
+
+  Future<WorkspaceNotice?> onSourceSelectionCommitted(String documentId, SourceSelection selection) async {
+    try {
+      _validateTextSelection(content, documentId, selection);
+    } on ArgumentError {
+      return null;
+    }
     if (state.tool == AnnotationTool.underline) {
-      await underline(documentId, selection, addToMap: state.syncToMap);
+      await underlineSource(documentId, selection, addToMap: state.syncToMap);
       return const UnderlinedNotice();
     }
     if (state.tool == AnnotationTool.highlight) {
       return state.syncToMap
-          ? excerpt(documentId, selection, state.color)
-          : highlight(documentId, selection, state.color);
+          ? excerptSource(documentId, selection, state.color)
+          : highlightSource(documentId, selection, state.color);
     }
-    state = state.copyWith(pending: PendingSelection(documentId, selection));
+    state = state.copyWith(pending: PendingSelection.source(documentId, selection));
     return null;
   }
 
-  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
+  Future<ExcerptedNotice> excerpt(String documentId, MMPdfSelection s, MMAnnotationColor color) =>
+      excerptSource(documentId, SourceSelection.pdf(s), color);
+
+  Future<ExcerptedNotice> excerptSource(String documentId, SourceSelection s, MMAnnotationColor color) async {
     final parent = excerptTargetId;
     late Card card;
     await _update((c) {
+      _validateTextSelection(c, documentId, s);
       final (next, created) = _editor.createExcerpt(
         c,
         documentId: documentId,
-        pages: s.pages,
+        pages: s.textAnchors.isEmpty ? s.pages : null,
+        textAnchors: s.textAnchors,
         quote: s.text,
         colorIndex: color.index,
         parentId: parent,
@@ -1175,10 +1212,23 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     return ExcerptedNotice(parent == null ? null : content.card(parent)?.title, cardId: card.id);
   }
 
-  Future<HighlightedNotice> highlight(String documentId, MMPdfSelection s, MMAnnotationColor color) async {
-    await _update(
-      (c) => _editor.highlight(c, documentId: documentId, pages: s.pages, quote: s.text, colorIndex: color.index).$1,
-    );
+  Future<HighlightedNotice> highlight(String documentId, MMPdfSelection s, MMAnnotationColor color) =>
+      highlightSource(documentId, SourceSelection.pdf(s), color);
+
+  Future<HighlightedNotice> highlightSource(String documentId, SourceSelection s, MMAnnotationColor color) async {
+    await _update((c) {
+      _validateTextSelection(c, documentId, s);
+      return _editor
+          .highlight(
+            c,
+            documentId: documentId,
+            pages: s.textAnchors.isEmpty ? s.pages : null,
+            textAnchors: s.textAnchors,
+            quote: s.text,
+            colorIndex: color.index,
+          )
+          .$1;
+    });
     state = state.copyWith(clearPending: true);
     await ref.read(highlightPaletteProvider.notifier).record(color);
     return const HighlightedNotice();
@@ -1189,16 +1239,25 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     MMPdfSelection selection, {
     bool keepPending = false,
     bool addToMap = false,
+  }) => underlineSource(documentId, SourceSelection.pdf(selection), keepPending: keepPending, addToMap: addToMap);
+
+  Future<String> underlineSource(
+    String documentId,
+    SourceSelection selection, {
+    bool keepPending = false,
+    bool addToMap = false,
   }) async {
     late String id;
     final color = state.underlineColor;
     final style = state.underlineStyle;
     final parent = excerptTargetId;
     await _update((c) {
+      _validateTextSelection(c, documentId, selection);
       final (next, annotation) = _editor.underline(
         c,
         documentId: documentId,
-        pages: selection.pages,
+        pages: selection.textAnchors.isEmpty ? selection.pages : null,
+        textAnchors: selection.textAnchors,
         quote: selection.text,
         colorIndex: color.index,
         lineStyle: style,
@@ -1282,7 +1341,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     if (note == null) return null;
     final selected = state.selectedCardId;
     var parent = excerptTargetId;
-    if (selected == null) {
+    if (selected == null && (note.anchor?.textAnchors.isEmpty ?? true)) {
       // With no selection, retain the most recent topic used on this page.
       final recent =
           content.annotations
@@ -1999,15 +2058,20 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Excerpts the selected text and opens an empty note under the new card for
   /// typing in place. The excerpt and the typed note are one undo step;
   /// cancelling or leaving the note empty leaves nothing behind.
-  Future<Card?> excerptAndEditNote(String documentId, MMPdfSelection s, MMAnnotationColor color) {
+  Future<Card?> excerptAndEditNote(String documentId, MMPdfSelection s, MMAnnotationColor color) =>
+      excerptSourceAndEditNote(documentId, SourceSelection.pdf(s), color);
+
+  Future<Card?> excerptSourceAndEditNote(String documentId, SourceSelection s, MMAnnotationColor color) {
     return _createAndEdit((_) async {
       final parent = excerptTargetId;
       late Card note;
       await _update((c) {
+        _validateTextSelection(c, documentId, s);
         final (next, excerpt) = _editor.createExcerpt(
           c,
           documentId: documentId,
-          pages: s.pages,
+          pages: s.textAnchors.isEmpty ? s.pages : null,
+          textAnchors: s.textAnchors,
           quote: s.text,
           colorIndex: color.index,
           parentId: parent,

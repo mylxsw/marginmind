@@ -380,7 +380,7 @@ Future<void> renameSavedConversation(AssistantArchive archive, String id, String
 // ---- contexts -----------------------------------------------------------------------------
 
 /// A passage of a document; its text goes with the question.
-ContextItem selectionContext({required String documentId, required int page, required String quote}) => ContextItem(
+ContextItem selectionContext({required String documentId, int? page, required String quote}) => ContextItem(
   id: 'sel-${documentId.hashCode.toUnsigned(32)}-$page-${quote.hashCode.toUnsigned(32)}',
   kind: ContextKind.selection,
   documentId: documentId,

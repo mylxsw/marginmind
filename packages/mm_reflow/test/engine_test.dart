@@ -25,6 +25,34 @@ void paint(ChapterLayout l, {int? page, Offset scroll = Offset.zero}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('publisher aliases invalidate cached paragraphs without changing source text', () async {
+    final engine = ReflowEngine();
+    final chapter = parser.parseHtml('fonts', '<p style="font-family:publisher">Publisher text.</p>');
+    final first = await engine.layout(
+      chapter,
+      spec,
+      1,
+      revision: 'r',
+      resources: LayoutResources(fontFamilies: {'publisher': 'book-one'}),
+    );
+    final second = await engine.layout(
+      chapter,
+      spec,
+      2,
+      revision: 'r',
+      resources: LayoutResources(fontFamilies: {'publisher': 'book-two'}),
+    );
+    String? family(ChapterLayout layout) =>
+        (((layout.pieces.first.painter!.text as TextSpan).children!.first as TextSpan).style!.fontFamily);
+    expect(family(first), 'book-one');
+    expect(family(second), 'book-two');
+    expect(identical(first.pieces.first.painter, second.pieces.first.painter), isFalse);
+    expect(first.chapter.canonicalText, second.chapter.canonicalText);
+    first.dispose();
+    second.dispose();
+    engine.dispose();
+  });
+
   test('complete specification keys distinguish all geometry and font inputs', () {
     const same = LayoutSpec(width: 240, pageHeight: 120);
     expect(same, spec);

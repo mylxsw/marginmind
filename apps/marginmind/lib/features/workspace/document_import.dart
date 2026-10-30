@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:mm_design/mm_design.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_book/mm_book.dart' as book;
 import 'package:mm_core/mm_core.dart';
@@ -169,4 +171,32 @@ DocumentImportError documentImportError(Object error) {
     return error.message == 'No readable content' ? DocumentImportError.empty : DocumentImportError.damaged;
   }
   return DocumentImportError.unavailable;
+}
+
+final importedDocumentsProvider = NotifierProvider.autoDispose.family<ImportedDocuments, Set<String>, String>(
+  ImportedDocuments.new,
+);
+
+class ImportedDocuments extends Notifier<Set<String>> {
+  ImportedDocuments(this.setId);
+  final String setId;
+  final _timers = <String, Timer>{};
+  @override
+  Set<String> build() {
+    ref.onDispose(() {
+      for (final t in _timers.values) {
+        t.cancel();
+      }
+    });
+    return const {};
+  }
+
+  void flash(String id) {
+    _timers.remove(id)?.cancel();
+    state = {...state, id};
+    _timers[id] = Timer(MMMotion.flash, () {
+      _timers.remove(id);
+      if (ref.mounted) state = {...state}..remove(id);
+    });
+  }
 }

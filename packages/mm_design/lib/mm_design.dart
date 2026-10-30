@@ -49,3 +49,5 @@ export 'src/widgets/context_menu_region.dart';
 export 'src/widgets/toolbar_preview_button.dart';
 
 export 'src/foundation/book_image.dart';
+
+export 'src/widgets/reader_line_spacing.dart';

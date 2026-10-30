@@ -196,6 +196,11 @@ class _Typesetter {
     return font * fallback;
   }
 
+  String? _fontFamily(String? css) {
+    final family = css?.split(',').first.replaceAll(RegExp("['\"]"), '').trim();
+    return resources.fontFamilies[family] ?? family ?? MMTypography.readingBody.fontFamily;
+  }
+
   LayoutPiece _text(
     BookBlock block,
     List<InlineRun> runs,
@@ -248,13 +253,11 @@ class _Typesetter {
             ? FontStyle.italic
             : FontStyle.normal,
         fontFamily: run.code || block.kind == BlockKind.code
-            ? 'monospace'
-            : spec.fontFamily ??
-                  (run.style['font-family'] ?? block.style['font-family'])
-                      ?.split(',')
-                      .first
-                      .replaceAll(RegExp("['\"]"), '')
-                      .trim(),
+            ? MMTypography.mono.fontFamily
+            : spec.fontFamily ?? _fontFamily(run.style['font-family'] ?? block.style['font-family']),
+        fontFamilyFallback: spec.fontFamily == MMReaderTypography.sans
+            ? MMTypography.body.fontFamilyFallback
+            : MMTypography.readingBody.fontFamilyFallback,
         decoration: TextDecoration.combine(decorations),
       );
       if (run.resource != null || run.remoteUrl != null) {

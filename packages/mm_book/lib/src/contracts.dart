@@ -166,3 +166,85 @@ String _mime(Uint8List b, String path) {
     _ => 'application/octet-stream',
   };
 }
+
+/// Decode the versioned IR, validating canonical offsets before exposing it to
+/// hit testing. Stored text is authoritative; never normalize it during reading.
+BookChapter _readChapter(Map<String, Object?> j) {
+  Map<String, String> styles(Object? v) => (v as Map? ?? {}).cast<String, String>();
+  List<InlineRun> runs(Object? value) => [
+    for (final raw in value as List)
+      InlineRun(
+        (raw as Map)['text'] as String,
+        strong: raw['strong'] as bool? ?? false,
+        emphasis: raw['emphasis'] as bool? ?? false,
+        code: raw['code'] as bool? ?? false,
+        style: styles(raw['style']),
+        ruby: raw['ruby'] as String?,
+        footnoteRef: raw['footnoteRef'] as String?,
+        remoteUrl: raw['remoteUrl'] as String?,
+        link: raw['link'] as String?,
+        resource: raw['resource'] as String?,
+        width: raw['width'] as String?,
+        height: raw['height'] as String?,
+      ),
+  ];
+  BookNode node(Map raw) => BookNode(raw['path'] as String, raw['tag'] as String, raw['blockId'] as String?, [
+    for (final c in raw['children'] as List) node(c as Map),
+  ], style: styles(raw['style']));
+  final blocks = <BookBlock>[];
+  var offset = 0;
+  for (final raw in j['blocks'] as List) {
+    final b = raw as Map;
+    if (b['start'] != offset) throw const FormatException('Invalid canonical offset');
+    final block = BookBlock(
+      id: b['id'] as String,
+      kind: BlockKind.values.byName(b['kind'] as String),
+      start: offset,
+      runs: runs(b['runs']),
+      level: b['level'] as int? ?? 1,
+      resource: b['resource'] as String?,
+      style: styles(b['style']),
+      sourcePath: b['sourcePath'] as String? ?? '',
+      ordered: b['ordered'] as bool? ?? false,
+      listStart: b['listStart'] as int? ?? 1,
+      rows: [
+        for (final row in b['rows'] as List? ?? [])
+          [
+            for (final cell in row as List)
+              BookCell(
+                runs((cell as Map)['runs']),
+                rowSpan: cell['rowSpan'] as int? ?? 1,
+                colSpan: cell['colSpan'] as int? ?? 1,
+                header: cell['header'] as bool? ?? false,
+              ),
+          ],
+      ],
+    );
+    if (b['end'] != block.end) throw const FormatException('Invalid canonical range');
+    blocks.add(block);
+    offset = block.end + 1;
+  }
+  final chapter = BookChapter(
+    j['id'] as String,
+    blocks,
+    elementOffsets: (j['elementOffsets'] as Map? ?? {}).cast<String, int>(),
+    structure: [for (final n in j['structure'] as List? ?? []) node(n as Map)],
+    fonts: [
+      for (final raw in j['fonts'] as List? ?? [])
+        BookFontFace(
+          (raw as Map)['family'] as String,
+          raw['resource'] as String,
+          raw['weight'] as String,
+          raw['style'] as String,
+        ),
+    ],
+    viewportWidth: (j['viewportWidth'] as num?)?.toDouble(),
+    viewportHeight: (j['viewportHeight'] as num?)?.toDouble(),
+  );
+  if (chapter.canonicalText != j['canonicalText'] ||
+      chapter.id.isEmpty ||
+      chapter.elementOffsets.values.any((i) => i < 0 || i > chapter.canonicalText.length)) {
+    throw const FormatException('Invalid canonical text');
+  }
+  return chapter;
+}

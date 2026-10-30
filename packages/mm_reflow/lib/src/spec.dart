@@ -71,17 +71,20 @@ class LayoutSpec {
 class LayoutResources {
   LayoutResources({
     this.revision = '',
+    Map<String, String> fontFamilies = const {},
     Map<String, MMBookImage> images = const {},
     Map<String, Size> intrinsicSizes = const {},
     Map<String, Map<String, String>> containerStyles = const {},
     Map<String, int> headerRows = const {},
-  }) : images = Map.unmodifiable(images),
+  }) : fontFamilies = Map.unmodifiable(fontFamilies),
+       images = Map.unmodifiable(images),
        intrinsicSizes = Map.unmodifiable(intrinsicSizes),
        containerStyles = Map.unmodifiable(
          containerStyles.map((k, v) => MapEntry(k, Map<String, String>.unmodifiable(v))),
        ),
        headerRows = Map.unmodifiable(headerRows);
   final String revision;
+  final Map<String, String> fontFamilies;
   final Map<String, MMBookImage> images;
   final Map<String, Size> intrinsicSizes;
   final Map<String, Map<String, String>> containerStyles;
@@ -91,6 +94,7 @@ class LayoutResources {
   // paragraph that still borrows a previous (possibly disposed) handle.
   bool matches(LayoutResources other) =>
       revision == other.revision &&
+      _sameMap(fontFamilies, other.fontFamilies) &&
       _sameMap(images, other.images) &&
       _sameMap(intrinsicSizes, other.intrinsicSizes) &&
       _sameMap(headerRows, other.headerRows) &&

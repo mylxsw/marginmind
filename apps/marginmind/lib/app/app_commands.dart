@@ -1,3 +1,4 @@
+import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
 
 import 'package:flutter/foundation.dart';
@@ -365,6 +366,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final canRead = hasDocument && (!_textFocused || _readerFocused);
     final findsInDocument = hasDocument && _readerFocused && capabilities!.search;
     final pdf = inWorkspace ? ref.read(readerPdfProvider(workspaceId)) : null;
+    final reflow = document?.contentManifest == null
+        ? null
+        : ref.read(reflowSessionProvider((workspaceId!, document!.id)));
     final bookmarkContent = workspace?.content;
     final bookmarkPage = workspace?.activePage ?? 0;
     final bookmarked =
@@ -810,7 +814,10 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         for (final entry in readerZoomLabels.entries)
           AppCommand(
             entry.value,
-            _readerFocused && !_textFocused && capabilities?.zoom == true && workspaceState?.activeDocumentId != null
+            _readerFocused &&
+                    !_textFocused &&
+                    (capabilities?.zoom == true || capabilities?.readingSettings == true) &&
+                    workspaceState?.activeDocumentId != null
                 ? () {
                     final focus = FocusManager.instance.primaryFocus?.context;
                     if (focus != null) Actions.maybeInvoke(focus, ReaderZoomIntent(entry.key));
@@ -921,12 +928,30 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final go = [
       AppCommand(
         l.findNext,
-        canRead && capabilities!.search && workspaceState.findVisible ? () => pdf!.nextMatch() : null,
+        canRead && capabilities!.search && workspaceState.findVisible
+            ? () {
+                if (reflow != null) {
+                  workspace.dismissPending();
+                  reflow.stepMatch(1);
+                } else {
+                  pdf!.nextMatch();
+                }
+              }
+            : null,
         shortcut: AppShortcuts.findNext,
       ),
       AppCommand(
         l.findPrevious,
-        canRead && capabilities!.search && workspaceState.findVisible ? () => pdf!.previousMatch() : null,
+        canRead && capabilities!.search && workspaceState.findVisible
+            ? () {
+                if (reflow != null) {
+                  workspace.dismissPending();
+                  reflow.stepMatch(-1);
+                } else {
+                  pdf!.previousMatch();
+                }
+              }
+            : null,
         shortcut: AppShortcuts.findPrevious,
       ),
       AppCommand(
@@ -936,17 +961,44 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(
         l.goBack,
-        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.goBack() : null,
+        canRead && (capabilities!.zoom || reflow != null) && !_textFocused
+            ? () {
+                if (reflow != null) {
+                  workspace.dismissPending();
+                  reflow.back();
+                } else {
+                  pdf!.goBack();
+                }
+              }
+            : null,
         shortcut: AppShortcuts.goBack,
       ),
       AppCommand(
         l.firstPage,
-        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.firstPage() : null,
+        canRead && (capabilities!.zoom || reflow != null) && !_textFocused
+            ? () {
+                if (reflow != null) {
+                  workspace.dismissPending();
+                  if (reflow.book != null) reflow.jump(reflow.book!.start);
+                } else {
+                  pdf!.firstPage();
+                }
+              }
+            : null,
         shortcut: AppShortcuts.firstPage,
       ),
       AppCommand(
         l.lastPage,
-        canRead && capabilities!.zoom && !_textFocused ? () => pdf!.lastPage() : null,
+        canRead && (capabilities!.zoom || reflow != null) && !_textFocused
+            ? () {
+                if (reflow != null) {
+                  workspace.dismissPending();
+                  if (reflow.book != null) reflow.jump(reflow.book!.end);
+                } else {
+                  pdf!.lastPage();
+                }
+              }
+            : null,
         shortcut: AppShortcuts.lastPage,
       ),
       // The page pill is part of the reader: with the map alone there is no field to focus.

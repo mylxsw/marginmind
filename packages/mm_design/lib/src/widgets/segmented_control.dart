@@ -9,11 +9,12 @@ import '../tokens/motion.dart';
 
 @immutable
 class MMSegment<T> {
-  const MMSegment({required this.value, required this.label, this.tooltip});
+  const MMSegment({required this.value, required this.label, this.tooltip, this.child});
 
   final T value;
   final String label;
   final String? tooltip;
+  final Widget? child;
 }
 
 /// macOS segmented control: the selected segment floats in white (not
@@ -76,13 +77,15 @@ class MMSegmentedControl<T> extends StatelessWidget {
                             ]
                           : null,
                     ),
-                    child: Text(
-                      seg.label,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.callout.copyWith(fontWeight: on ? FontWeight.w600 : FontWeight.w500),
-                    ),
+                    child:
+                        seg.child ??
+                        Text(
+                          seg.label,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.callout.copyWith(fontWeight: on ? FontWeight.w600 : FontWeight.w500),
+                        ),
                   );
                 },
               ),

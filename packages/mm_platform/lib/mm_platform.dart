@@ -24,3 +24,5 @@ export 'src/microphone.dart';
 export 'src/browser.dart';
 export 'src/document_files.dart';
 export 'src/file_drop.dart';
+
+export 'src/book_fonts.dart' show MMBookFonts;

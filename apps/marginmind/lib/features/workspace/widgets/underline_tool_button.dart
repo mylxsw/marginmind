@@ -74,7 +74,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
       _targetId = null;
       switch (state.pending) {
         case PendingSelection(:final documentId, :final selection):
-          _targetId = await controller.underline(
+          _targetId = await controller.underlineSource(
             documentId,
             selection,
             keepPending: widget.selectionAction,

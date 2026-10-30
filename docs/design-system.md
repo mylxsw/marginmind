@@ -105,3 +105,14 @@ PDF 导航栏与阅读外观、缩放、标注工具分组展示。目录标题�
 下划线设置栏使用现有胶囊工具栏，不显示组标题。三个常用色和更多颜色之后是分隔线、四个线型预览、分隔线和关闭按钮。颜色和线型只通过 tooltip / semantics 命名；按钮、色点、选中背景和尺寸跟随现有主题。`MMToolbarPreviewButton` 用于没有标准图标的视觉预览选择；`AnnotationLineStylePicker` 和 `UnderlineStyleToolbar` 在功能层组合它。共用的 `MMPdfAnnotationLinePainter` 保证预览与文档笔触一致。
 
 内置浏览器地址栏使用 `MMSizes.browserAddress`（30pt）、`browserAddressTouch`（36pt）与 `browserProgressTrack`（2pt）；前置锁形 / 警告图标，底边为强调色加载线。侧栏临时条目通过 `MMSidebarItem.leading` 替换加载图标，`labelColor` 使用 `secondaryLabel`。
+
+
+### 流式阅读（GUL-576）
+
+`MMReaderLayout`：正文 measure 680pt，对页每栏 spreadMeasure 600pt，正文可用宽度达到 spreadMinWidth 1000pt 时启用对页，spreadGap 64pt。左右 margin 48pt / compact 24pt；翻页 topInset 40pt / compact 28pt，滚动 scrollTopInset 36pt / compact 24pt；左右翻页 turnZone 各占 25%。页边列 marginColumn 220pt，阅读设置 settingsWidth 280pt。固定 EPUB 逐页预览使用 thumbnailWidth 112pt / thumbnailHeight 144pt；流式文档不显示缩略图。
+
+`MMReaderTypography`：字号 `[13, 14.5, 15.5, 16.5, 18, 20, 22, 25]`，默认索引 3、手机索引 4；行距 `[1.6, 1.9, 2.2]`，默认索引 1；serif 为 Songti SC，sans 为 Noto Sans，回退沿用 MMTypography。纸色、正文色使用 MMReaderStyle；高亮与下划线使用 MMAnnotationColor，下划线绘制与 PDF 共用。导入完成的条目以 accentTint 强调 MMMotion.flash 时间。
+
+选区在边缘停留 `MMMotion.selectionEdge`（600ms）后自动翻页；滚动模式每 `MMMotion.selectionScroll`（50ms）移动一个 `MMSpacing.xxxl`。触控选区柄热区使用 `MMSizes.touchTarget`。
+
+固定视口的缩放以拟合页面为基准，范围 `MMReaderLayout.minZoom`–`maxZoom`（0.25–16），快捷键每次乘除 `zoomStep`（1.2）；适合页面、适合宽度和实际大小使用视口尺寸计算。

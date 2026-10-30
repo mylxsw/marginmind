@@ -6,11 +6,24 @@ import 'package:mm_pdf/mm_pdf.dart';
 
 import '../../../shared/l10n.dart';
 
-/// A menu entry that remains open while the reader adjusts the PDF size.
+/// A menu entry that remains open while the reader adjusts page size.
 class ReaderZoomSlider extends PopupMenuEntry<Object> {
-  const ReaderZoomSlider({super.key, required this.pdf, required this.enabled});
+  const ReaderZoomSlider({super.key, required this.pdf, required this.enabled})
+    : ratio = null,
+      onZoom = null,
+      ready = null;
+  const ReaderZoomSlider.source({
+    super.key,
+    required this.ratio,
+    required this.onZoom,
+    required this.ready,
+    required this.enabled,
+  }) : pdf = null;
 
-  final MMPdfViewController pdf;
+  final MMPdfViewController? pdf;
+  final double Function()? ratio;
+  final ValueChanged<double>? onZoom;
+  final bool Function()? ready;
   final bool enabled;
 
   @override
@@ -27,7 +40,7 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
   @override
   void initState() {
     super.initState();
-    _value = (math.log(widget.pdf.zoom / widget.pdf.widthZoom) / math.ln2).clamp(-2.0, 2.0);
+    _value = (math.log((widget.ratio?.call() ?? widget.pdf!.zoom / widget.pdf!.widthZoom)) / math.ln2).clamp(-2.0, 2.0);
   }
 
   @override
@@ -50,13 +63,18 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
                   max: 2,
                   secondaryTrackValue: 0,
                   semanticFormatterCallback: (value) => '${(math.pow(2, value) * 100).round()}%',
-                  onChanged: !widget.enabled || !widget.pdf.isReady
+                  onChanged: !widget.enabled || !(widget.ready?.call() ?? widget.pdf!.isReady)
                       ? null
                       : (value) {
                           // A small center detent makes width fitting easy to recover.
                           final next = value.abs() < .06 ? 0.0 : value;
                           setState(() => _value = next);
-                          widget.pdf.setWidthZoom(math.pow(2, next).toDouble());
+                          final ratio = math.pow(2, next).toDouble();
+                          if (widget.onZoom != null) {
+                            widget.onZoom!(ratio);
+                          } else {
+                            widget.pdf!.setWidthZoom(ratio);
+                          }
                         },
                 ),
               ),

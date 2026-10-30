@@ -76,7 +76,8 @@ class _SelectionTranslationState extends ConsumerState<SelectionTranslation> {
     final sourceLanguage = _sourceLanguage, targetLanguage = _targetLanguage;
     final paragraph = TranslationParagraph(
       documentId: widget.paragraph.documentId,
-      page: widget.paragraph.page,
+      page: widget.paragraph.textAnchor == null ? widget.paragraph.page : null,
+      textAnchor: widget.paragraph.textAnchor,
       index: widget.paragraph.index,
       text: _sourceText,
       fingerprint: '',

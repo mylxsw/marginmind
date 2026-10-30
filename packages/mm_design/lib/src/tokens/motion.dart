@@ -10,6 +10,10 @@ abstract final class MMMotion {
   /// Layout switches and sidebar show/hide.
   static const layout = Duration(milliseconds: 320);
 
+  /// Selection held at the viewport edge, then continuous auto-scroll ticks.
+  static const selectionEdge = Duration(milliseconds: 600);
+  static const selectionScroll = Duration(milliseconds: 50);
+
   /// Source ↔ card linked highlight.
   static const flash = Duration(milliseconds: 1600);
 

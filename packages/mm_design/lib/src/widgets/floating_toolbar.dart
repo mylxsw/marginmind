@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../foundation/appearance.dart';
+import '../foundation/adaptive.dart';
 import '../foundation/floating_placement.dart';
 import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
@@ -85,8 +86,8 @@ class MMFloatingToolbarSwatch extends StatelessWidget {
       semanticLabel: tooltip,
       builder: (context, s) => AnimatedContainer(
         duration: MMMotion.quick,
-        width: MMSizes.floatingToolbarColor,
-        height: MMSizes.toolbarButton.height,
+        width: context.mmTouch ? MMSizes.touchTarget : MMSizes.floatingToolbarColor,
+        height: context.mmTouch ? MMSizes.touchTarget : MMSizes.toolbarButton.height,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: s.pressed

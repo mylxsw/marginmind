@@ -26,6 +26,8 @@ dependencies:
     path: ../../packages/mm_assistant
   mm_research:
     path: ../../packages/mm_research
+  mm_reflow:
+    path: ../../packages/mm_reflow
   mm_book:
     path: ../../packages/mm_book
   mm_core:

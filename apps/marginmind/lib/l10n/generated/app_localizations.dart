@@ -6313,6 +6313,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unsupported format'**
   String get importErrorUnsupported;
+
+  /// No description provided for @readerFontSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller Text'**
+  String get readerFontSmaller;
+
+  /// No description provided for @readerFontLarger.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger Text'**
+  String get readerFontLarger;
+
+  /// No description provided for @readerLineTight.
+  ///
+  /// In en, this message translates to:
+  /// **'Tight'**
+  String get readerLineTight;
+
+  /// No description provided for @readerLineNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get readerLineNormal;
+
+  /// No description provided for @readerLineLoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Loose'**
+  String get readerLineLoose;
+
+  /// No description provided for @readerFontOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get readerFontOriginal;
+
+  /// No description provided for @readerFontSerif.
+  ///
+  /// In en, this message translates to:
+  /// **'Serif'**
+  String get readerFontSerif;
+
+  /// No description provided for @readerFontSans.
+  ///
+  /// In en, this message translates to:
+  /// **'Sans'**
+  String get readerFontSans;
+
+  /// No description provided for @readerModePaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get readerModePaged;
+
+  /// No description provided for @readerModeScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll'**
+  String get readerModeScroll;
+
+  /// No description provided for @readerPositionMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Source position not found'**
+  String get readerPositionMissing;
+
+  /// No description provided for @readerLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open document'**
+  String get readerLoadFailed;
+
+  /// No description provided for @readerNeedsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Review'**
+  String get readerNeedsReview;
+
+  /// No description provided for @readerRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get readerRetry;
+
+  /// No description provided for @readerNoOutline.
+  ///
+  /// In en, this message translates to:
+  /// **'No outline'**
+  String get readerNoOutline;
+
+  /// No description provided for @readerSelectionStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection start'**
+  String get readerSelectionStart;
+
+  /// No description provided for @readerSelectionEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection end'**
+  String get readerSelectionEnd;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

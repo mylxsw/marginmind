@@ -107,6 +107,8 @@ class BookChapter {
     this.fonts = const [],
   }) : blocks = List.unmodifiable(blocks),
        canonicalText = blocks.map((b) => b.text).join('\n');
+  factory BookChapter.fromJson(Map<String, Object?> json) => _readChapter(json);
+
   final String id, canonicalText;
   final Map<String, int> elementOffsets;
   final List<BookNode> structure;

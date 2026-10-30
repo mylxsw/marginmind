@@ -50,6 +50,8 @@ jobs:
         working-directory: apps/marginmind
       - run: flutter test integration_test/browser_test.dart -d macos --reporter expanded
         working-directory: apps/marginmind
+      - run: flutter test integration_test/reflow_reader_test.dart -d macos --reporter expanded
+        working-directory: apps/marginmind
 
   web:
     name: Build and test browser storage
