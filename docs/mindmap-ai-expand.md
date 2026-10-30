@@ -1,6 +1,6 @@
 # 脑图 AI 扩展想法设计方案
 
-> 建立日期：2026-10-30（GUL-581）。状态：**设计稿待确认**，确认后再拆分开发。
+> 建立日期：2026-10-30（GUL-581）。状态：**方案已确认，进入开发**（GUL-581 拆分执行，§7 为已定决定）。
 > 配套高保真原型：[`design/prototype/mindmap-ai-expand.html`](../design/prototype/mindmap-ai-expand.html)。单文件、无依赖，浏览器直接打开。右侧演示控制台有 15 个场景，并可切换未配置 AI、断网和深色；画布上的操作都可以真实点按（点选、⇧ 点选、右键、⌥⇥、↩ / Esc、⌘Z）。
 > 依据：当前 `main` 的节点 AI 入口（`MapNodeBar` / `MapSelectionBar` 的 ✦ → `AssistantQuickActions`）、助手的写操作契约（`MapEditProposal`、`AssistantWrites.apply`、`MapEditReceipt`），以及 [phase-3-assistant.md](phase-3-assistant.md) 的确认原则。本文不做工时评估。
 
@@ -89,7 +89,7 @@
 ### 2.6 扩展整张脑图
 
 1. 选中中心主题后，点“扩展整张脑图…”（或按 ⌥⇥），先显示**扩展计划**：列出每个一级分支（以及值得补充的二级分支）、它的现状（“还是空的”“已有 2 个子主题”），以及建议新增的数量；可能会建议 1–3 个新分支。
-2. 用户可以取消某个分支，或用 −/+ 调整数量；底部显示总数，**上限 50**，与 `AssistantWrites.apply` 的单次提议上限一致。
+2. 用户可以取消某个分支，或用 −/+ 调整数量；底部显示总数。**总数不设上限**（只受每个父节点的数量档位约束）。
 3. 点“开始扩展”后，各分支依次生成（并发上限 3），统一审阅，一次保留，一步撤销。
 4. 计划本身由一次轻量调用得出（只发送结构和标题，不发送原文）；用户没有修改时，不重复请求。
 
@@ -107,7 +107,12 @@
 
 ### 2.8 界面文案
 
-遵循 [phase-3-assistant.md §9](phase-3-assistant.md)：原型里的说明性副标题（例如计划卡下面那一行）在实现时只保留会影响用户决策的部分（上限 50）。
+遵循 [phase-3-assistant.md §9](phase-3-assistant.md)：
+
+- 不加多余的次级标签和说明，让布局本身说明问题。
+- 不加多余的辅助文字、描述性文案和重复的界面微文案。
+
+原型已按此精简：弹层不显示上下文路径，计划卡没有副标题和分支状态说明，生成中不显示阶段文字，画布没有操作提示。
 
 ---
 
@@ -118,7 +123,7 @@
 | 标题长度 | 每条一个短主题：中文不超过 24 字，英文不超过 8 个词；超长时截断，并在提示词中要求简短 |
 | 语言 | 跟随目标主题的语言；补充要求里指定的语言优先 |
 | 去重 | 发送给模型的上下文里包含已有的子主题和兄弟主题；返回后在本地用规范化标题（去空白和标点、统一大小写、全角转半角）去重，同一批内部也去重 |
-| 草稿数量 | 每个父节点不超过所选数量；每次总数不超过 50，超出部分丢弃，并在底部条注明“已达上限” |
+| 草稿数量 | 每个父节点不超过所选数量；一次扩展的总数不设上限 |
 | 层级 | 1–3 层；子草稿只能挂在本次生成的父草稿下面 |
 | 节点类型 | 只新增**主题**。首批不新增笔记和复习卡；后续可在方向里加入“附说明”（写入 `addNote`） |
 | 出处 | 只有当草稿依据的是本次实际发送的某张摘录或页面时，才允许带 `page`；页码不在本次上下文中的，一律丢弃 |
@@ -179,7 +184,9 @@ ExpansionDraft? parseExpansionLine(String line, ExpansionLineContext ctx);
 MapEditProposal expansionToProposal(ExpansionRequest r, List<ExpansionDraft> drafts, {required String proposalId, required int baseRevision});
 ```
 
-`expansionToProposal` 的结果原样交给 `MapEditExecutor.apply`，因此依赖顺序、50 条上限、`baseRevision`、字段白名单和撤销凭据都复用现有校验，不另写一套。
+`expansionToProposal` 的结果交给 `MapEditExecutor.apply`，依赖顺序、`baseRevision`、字段白名单和撤销凭据都复用现有校验，不另写一套。
+
+**上限**：`AssistantWrites.apply` 目前限制单个提议最多 50 条操作（防止模型在对话里一次提出过多修改）。扩展想法不设总数上限，因此需要让扩展来源的提议绕过这一限制，同时保持“一次保留 = 一个撤销事务 + 一张凭据”。对话里 `propose_map_edits` 的 50 条限制保持不变。具体做法由技术架构子任务确定（例如给 `apply` 增加按来源区分的上限，或者在同一个事务里分块应用）。
 
 ### 4.3 模型契约：逐行 JSON（NDJSON）
 
@@ -234,7 +241,7 @@ MapEditProposal expansionToProposal(ExpansionRequest r, List<ExpansionDraft> dra
 
 | 层 | 用例 |
 | --- | --- |
-| `mm_core` | `parseExpansionLine`：合法行、未知字段、超长标题、非法 parent、超出上下文的页码、空行和半行；`expansionToProposal`：级联取消、`new:` 依赖顺序、归纳时的 move、上限 50；规范化去重 |
+| `mm_core` | `parseExpansionLine`：合法行、未知字段、超长标题、非法 parent、超出上下文的页码、空行和半行；`expansionToProposal`：级联取消、`new:` 依赖顺序、归纳时的 move、超过 50 条的扩展提议一次应用并一步撤销；规范化去重 |
 | `mm_assistant` | `ModelIdeaExpander` 用 `RecordingLLMClient` 回放：流式分块跨行、取消、网络错误分类、全部无效时报告失败；提示词快照测试 |
 | 应用层 | `ExpansionContextBuilder` 的预算截断和优先级；`ExpansionController` 的状态机（generating → review → kept / discarded / error / stopped）；widget 测试：⌥⇥、空格 / ↑↓ / F2 / ↩ / Esc、编辑被拦截、保留后 ⌘Z、草稿的语义标签 |
 | 回归 | `node_assistant_test`、`assistant_quick_actions_test`、`map_keyboard_test` 保持通过；Tab / ⇧⇥ 行为不变 |
@@ -246,14 +253,14 @@ MapEditProposal expansionToProposal(ExpansionRequest r, List<ExpansionDraft> dra
 1. **A：单个主题 · 1 层。** mm_core 数据结构和解析、`ModelIdeaExpander`、上下文构建、预览层、底部条、⌥⇥、保留和撤销。原型场景 1–4、11–15。
 2. **B：方向、层级和继续扩展。** 方向 chip、2–3 层、草稿上 ✦、换一批时排除已有内容。场景 5、6。
 3. **C：多个主题。** 分别扩展、补全同级、归纳上级（move 预览）。场景 7、8。
-4. **D：整张脑图。** 计划调用、计划卡、分支并发、50 上限提示。场景 9、10。
+4. **D：整张脑图。** 计划调用、计划卡、分支并发。场景 9、10。
 5. **E：后置。** 助手提议卡“在脑图中预览”、保存 AI 出处、“附说明”、单独的扩展模型。
 
 ---
 
-## 7. 待确认
+## 7. 已定决定（2026-10-30，项目所有者授权 GUL-581 全权负责）
 
-1. **AI 出处要不要保存？** 方案一：不保存（首批）。方案二：主题上增加一个可选字段 `origin: {kind: ai, page?}`，悬停时显示“AI 生成 · 依据 p.47”，需要为文件格式增加一个可选字段（旧文件读入时为 null）。建议先用方案一，根据使用反馈再决定。
-2. **审阅期间禁止编辑**是否可以接受？另一种做法是允许编辑，保留时再对提议做变基（只含新增操作时可以安全变基）。这种做法更复杂，收益也不明显。
-3. **快捷键 ⌥⇥** 是否可以？备选是 ⌥⌘E。
-4. 扩展整张脑图的**上限 50** 是否合适？如果需要更多，可以分轮进行，每轮都单独审阅。
+1. **首批不保存 AI 出处**：保留后写成普通主题，不改文件格式。
+2. **审阅期间禁止其他脑图编辑**：平移、缩放、阅读原文仍然可以；不做提议变基。
+3. **快捷键为 ⌥⇥**。
+4. **扩展数量不设总数上限**：只按每个父节点的数量档位（少 / 适中 / 多）约束。

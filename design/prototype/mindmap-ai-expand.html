@@ -136,7 +136,6 @@ svg{display:block}
 #pop.on{display:block;animation:fadeup2 .16s}
 @keyframes fadeup2{from{opacity:0;transform:translateY(-4px)}}
 .ph{display:flex;align-items:center;gap:6px;padding:11px 14px 8px;font-size:12px;font-weight:600;color:var(--ai)}
-.ph .ctx{font-weight:400;color:var(--label2);margin-left:auto;font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xp{margin:0 8px 8px;border-radius:10px;background:var(--aiWash);box-shadow:inset 0 0 0 .5px var(--aiTint);padding:10px}
 .xp-main{display:flex;align-items:center;gap:8px;width:100%;height:34px;border-radius:9px;background:var(--ai);color:#fff;padding:0 12px;font-weight:600;font-size:13px}
 .xp-main:hover{filter:brightness(1.08)}
@@ -177,15 +176,12 @@ svg{display:block}
 #plan.on{display:block;animation:fadeup2 .16s}
 #plan .hd{padding:14px 16px 6px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
 #plan .hd .i{color:var(--ai)}
-#plan .sub{padding:0 16px 8px;font-size:11.5px;color:var(--label2)}
 #plan .rows{padding:0 8px}
 .prow{display:flex;align-items:center;gap:10px;height:36px;padding:0 8px;border-radius:8px}
 .prow:hover{background:var(--hover)}
 .cb{width:15px;height:15px;border-radius:4px;box-shadow:inset 0 0 0 1px var(--line);flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
 .cb.on{background:var(--ai);box-shadow:none}
 .prow .nm{flex:1;font-size:12.5px;display:flex;align-items:center;gap:6px}
-.prow .why{font-size:11px;color:var(--label3)}
-.prow .why.thin{color:var(--ai)}
 .stepper{display:flex;align-items:center;height:22px;border-radius:6px;box-shadow:inset 0 0 0 .5px var(--line);font-size:11.5px;color:var(--label2)}
 .stepper button{width:20px;height:22px;display:flex;align-items:center;justify-content:center}
 .stepper button:hover{color:var(--ai)}
@@ -215,7 +211,6 @@ svg{display:block}
 #adj.on{display:block;animation:fadeup2 .16s}
 
 .map-ctrl{position:absolute;right:12px;bottom:12px;z-index:5}
-.map-hint{position:absolute;left:14px;bottom:18px;font-size:11.5px;color:var(--label2);z-index:5}
 #hud{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:10px;height:34px;padding:0 6px 0 14px;border-radius:17px;
   background:rgba(40,40,42,.92);color:#fff;font-size:12.5px;box-shadow:0 8px 28px rgba(0,0,0,.25);white-space:nowrap}
 #hud.on{display:flex;animation:fadeup3 .2s}
@@ -316,7 +311,6 @@ body.dark #demo{background:rgba(36,36,38,.88);color:#F5F5F7}
       <div id="rbar"></div>
       <div id="adj"></div>
       <div id="hud"></div>
-      <div class="map-hint" id="hint">选中节点后点 <b style="color:var(--ai)">✦</b> 或按 ⌥⇥ 扩展想法</div>
       <div class="map-ctrl capsule">
         <div class="seg" style="margin:0 2px"><button>紧凑</button><button class="on">完整</button></div>
         <button class="tbtn"><svg class="i s"><use href="#i-fit"/></svg></button>
@@ -548,7 +542,6 @@ function renderPop() {
   const pop = $('#pop'); if (!S.pop) return;
   pop.style.left = Math.max(8, S.pop.x) + 'px'; pop.style.top = S.pop.y + 'px';
   const mode = scopeMode(), ids = [...S.sel];
-  const ctx = mode === 'multi' ? `${ids.length} 个主题` : pathOf(ids[0]).join(' › ');
   let body;
   if (S.noAi) {
     body = `<div class="setup">连接 AI 服务后即可扩展想法、解释和出题。<div class="row"><button class="btn pri" id="connect">连接 AI…</button><button class="btn">使用本机模型</button></div></div>`;
@@ -577,7 +570,7 @@ function renderPop() {
       <div class="ask">或直接问一个问题…</div>
     </div>`;
   }
-  pop.innerHTML = `<div class="ph">${ic('spark', 's')}AI 助手<span class="ctx">${esc(ctx)}</span></div>${body}`;
+  pop.innerHTML = `<div class="ph">${ic('spark', 's')}AI 助手</div>${body}`;
   pop.classList.add('on');
   pop.onclick = e => e.stopPropagation();
   const on = (s, f) => { const el = pop.querySelector(s); if (el) el.onclick = f; };
@@ -597,24 +590,23 @@ function renderPop() {
 let PLAN = null;
 function openPlan() {
   PLAN = [
-    { id: 'retr', n: 3, on: true, why: '已有 2 个子主题' },
-    { id: 'space', n: 4, on: true, why: '已有 1 个子主题' },
-    { id: 'inter', n: 5, on: true, why: '还是空的', thin: true },
-    { id: 'elab', n: 4, on: true, why: '还是空的', thin: true },
-    { id: 'quiz', n: 3, on: false, why: '二级主题' },
-    { id: 'NEW', n: 3, on: true, why: '建议新分支', title: '新分支：元认知、动机…' },
+    { id: 'inter', n: 5, on: true },
+    { id: 'elab', n: 4, on: true },
+    { id: 'space', n: 4, on: true },
+    { id: 'retr', n: 3, on: true },
+    { id: 'quiz', n: 3, on: false },
+    { id: 'NEW', n: 3, on: true, title: '元认知、动机…' },
   ];
   renderPlan();
 }
 function renderPlan() {
   const tot = PLAN.filter(p => p.on).reduce((a, p) => a + p.n, 0);
   $('#plan').innerHTML = `<div class="hd">${ic('map')}扩展整张脑图</div>
-    <div class="sub">先补空的和薄的分支。每次最多 50 个新主题，保留前都可以逐条取舍。</div>
     <div class="rows">${PLAN.map((p, i) => `<div class="prow${p.id === 'NEW' ? ' newb' : ''}" data-i="${i}">
       <span class="cb${p.on ? ' on' : ''}" data-cb>${p.on ? ic('check', 'xs') : ''}</span>
-      <span class="nm">${esc(p.title || N[p.id].title)}<span class="why${p.thin ? ' thin' : ''}">${p.why}</span></span>
+      <span class="nm">${esc(p.title || N[p.id].title)}</span>
       <span class="stepper"><button data-m>−</button><span>+${p.n}</span><button data-p>+</button></span></div>`).join('')}</div>
-    <div class="ft"><span class="tot">共 ${tot} 个新主题 · ${S.depth} 层</span><button class="btn" id="planX">取消</button><button class="btn pri" id="planGo" ${tot ? '' : 'disabled style="opacity:.4"'}>${ic('spark', 's')}开始扩展</button></div>`;
+    <div class="ft"><span class="tot">+${tot}</span><button class="btn" id="planX">取消</button><button class="btn pri" id="planGo" ${tot ? '' : 'disabled style="opacity:.4"'}>${ic('spark', 's')}开始扩展</button></div>`;
   const pl = $('#plan'); pl.classList.add('on'); pl.onclick = e => e.stopPropagation();
   pl.querySelectorAll('.prow').forEach(r => {
     const p = PLAN[+r.dataset.i];
@@ -785,11 +777,10 @@ function regenerate() {
 /* ======================= Review bar ======================= */
 function renderBar() {
   const b = $('#rbar');
-  if (S.phase === 'idle') { b.classList.remove('on'); $('#hint').style.display = ''; return; }
-  $('#hint').style.display = 'none';
+  if (S.phase === 'idle') { b.classList.remove('on'); return; }
   const kept = S.ghosts.filter(g => g.on && (!isGhost(g.parent) || ghostKept(g.parent))).length;
   if (S.phase === 'generating') {
-    b.innerHTML = `<span class="lbl"><span class="spin"></span>${esc(S.run.label)}<small>${S.ghosts.length ? `${S.ghosts.length} 条` : '正在读取分支和原文…'}</small></span>
+    b.innerHTML = `<span class="lbl"><span class="spin"></span>${esc(S.run.label)}<small>${S.ghosts.length || ''}</small></span>
       <button class="btn" id="bStop">${ic('stop', 's')}停止 <span class="k">Esc</span></button>`;
   } else if (S.phase === 'error') {
     b.innerHTML = `<span class="lbl err">${ic('cloudoff')}网络不可用，没有生成内容</span><span class="div"></span>
@@ -919,7 +910,7 @@ const SCENES = [
     ['9', '中心主题 → 扩展整张脑图', () => { reset(); S.sel = new Set(['root']); render(); setTimeout(openPop, 50); },
       '<h4>整张脑图</h4><ul><li>选中中心主题时，主按钮变成“扩展整张脑图…”，先给出<b>扩展计划</b>而不是直接生成。</li><li>次要按钮“只加新分支”只为中心主题补一级分支。</li></ul>'],
     ['10', '扩展计划 → 生成 → 审阅', () => { reset(); S.sel = new Set(['root']); render(); openPlan(); },
-      '<h4>扩展计划</h4><ul><li>AI 先读结构，标出空的和薄的分支，建议每个分支加几条，并可能建议新分支。</li><li>可以取消某个分支、改数量；总数上限 50（与助手提议的上限一致）。</li><li>点“开始扩展”后，各分支依次生成，统一审阅保留。</li></ul>'],
+      '<h4>扩展计划</h4><ul><li>AI 先读结构，空的和薄的分支排在前面并默认勾选，建议每个分支加几条，并可能建议新分支。</li><li>可以取消某个分支、改数量；总数不设上限。</li><li>点“开始扩展”后，各分支依次生成，统一审阅保留。</li></ul>'],
   ]],
   ['状态与退路', [
     ['11', '未配置 AI', () => { reset(); S.noAi = true; syncToggles(); S.sel = new Set(['space']); render(); setTimeout(openPop, 50); },
