@@ -71,3 +71,9 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 ## 生词本（GUL-582）
 
 `prototype/vocabulary.html` 演示阅读时的生词学习：选中单词时「翻译」变为「查词」，查词卡片和短语翻译卡片可以**加入生词本**；加入后全文所有词形（如 plateau / plateaus）用生词色点状下划线标出，也可以切到**行间释义**，点按命中处查看释义并在本文各处之间跳转；工具栏、阅读设置和 ⇧⌘U 可以关闭提示或只在本文档隐藏；生词本页面按学习集 / 状态筛选，例句可回到原文。单文件、无依赖；演示控制台有 12 个场景。设计说明、数据模型与分期见 [docs/vocabulary.md](../docs/vocabulary.md)。
+
+### 生词本页面（GUL-596）
+
+列表宽使用 `MMSizes.vocabularyListWidth`（340 pt）；宽度低于 600 pt 时与手机一致推入详情，返回保留搜索和筛选。音标朗读使用 `MMIcons.speaker` 与 `MMSpeech` 系统英／美语音（仅受支持平台显示按钮），词形原形固定保留。界面文案与分组依据 `design/prototype/vocabulary.html` 场景 10–11；重新生成仅更新义项，保留用户的行间释义、笔记及词形。
+
+生词详情区块使用 11pt semibold 次级文字；例句卡片为 0.5pt 细边、10pt 圆角，原句沿用宋体，译文为 12pt 常规次级文字，来源与操作同一行。词形与添加输入框均为 20pt 高，删除按钮位于词形内部。

@@ -159,10 +159,11 @@ class WordLookup {
     required AssistantModel? model,
     required CancellationToken cancel,
     bool online = true,
+    bool refresh = false,
   }) async {
     final key = _validate(term, sentence, sourceLanguage, targetLanguage, model, online, cancel);
     final cached = _results[_aliases[key] ?? key];
-    if (cached != null) return cached;
+    if (!refresh && cached != null) return cached;
     final text = await _request(term, sentence, sourceLanguage, targetLanguage, model!, cancel, contextOnly: false);
     cancel.check();
     final result = WordLookupResult.parse(text);

@@ -266,11 +266,12 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                                   '${phonetic.$2 == 'en-GB' ? l.vocabularyUK : l.vocabularyUS} ${phonetic.$1}',
                                   style: t.footnote,
                                 ),
-                                MMIconButton(
-                                  icon: MMIcons.speaker,
-                                  tooltip: l.vocabularySpeak,
-                                  onPressed: () => _speak(phonetic.$2),
-                                ),
+                                if (MMSpeech.supported)
+                                  MMIconButton(
+                                    icon: MMIcons.speaker,
+                                    tooltip: l.vocabularySpeak,
+                                    onPressed: () => _speak(phonetic.$2),
+                                  ),
                               ],
                           ],
                         ),

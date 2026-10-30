@@ -3560,4 +3560,88 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyUS => '美';
+
+  @override
+  String get vocabularySearch => '搜索单词、释义';
+
+  @override
+  String get vocabularyThisSet => '本学习集';
+
+  @override
+  String get vocabularyAll => '全部';
+
+  @override
+  String get vocabularyToday => '今天';
+
+  @override
+  String get vocabularyEarlier => '更早';
+
+  @override
+  String get vocabularyNoMatch => '没有匹配的词';
+
+  @override
+  String get vocabularyEmpty => '这里还没有词';
+
+  @override
+  String get vocabularyOccurrences => '本文出现次数';
+
+  @override
+  String get vocabularySenses => '释义';
+
+  @override
+  String get vocabularyRegenerate => '重新生成';
+
+  @override
+  String get vocabularyModelRequired => '未设置模型';
+
+  @override
+  String get vocabularyGloss => '行间释义';
+
+  @override
+  String get vocabularyNote => '笔记';
+
+  @override
+  String get vocabularyForms => '词形';
+
+  @override
+  String get vocabularyForgetForm => '不再识别';
+
+  @override
+  String get vocabularyExamples => '例句';
+
+  @override
+  String get vocabularyNoExamples => '没有例句。';
+
+  @override
+  String get vocabularyReturn => '回到原文';
+
+  @override
+  String get vocabularyOpenSet => '打开学习集 ›';
+
+  @override
+  String get vocabularyDeleteExample => '删除这条例句';
+
+  @override
+  String get vocabularyLearnAgain => '重新学习';
+
+  @override
+  String get vocabularyDelete => '从生词本删除';
+
+  @override
+  String get vocabularyRemoved => '已移除';
+
+  @override
+  String get vocabularyExampleDeleted => '已删除例句';
+
+  @override
+  String get vocabularyRead => '朗读';
+
+  @override
+  String get vocabularyUk => '英';
+
+  @override
+  String get vocabularyUs => '美';
+
+  @override
+  String get vocabularyAddForm => '添加';
 }
