@@ -498,8 +498,10 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
                   border: Border.all(color: context.mmColors.separator, width: .5),
                   borderRadius: BorderRadius.circular(MMRadii.vocabularyCard),
                 ),
+                alignment: Alignment.center,
                 child: TextField(
                   key: const ValueKey('vocabulary-add-form'),
+                  textAlignVertical: TextAlignVertical.center,
                   controller: _form,
                   style: context.mmText.footnote,
                   decoration: InputDecoration.collapsed(
@@ -594,7 +596,7 @@ class _VocabularyExample extends ConsumerWidget {
         children: [
           Text.rich(
             TextSpan(
-              style: context.mmText.readingExcerpt,
+              style: context.mmText.readingExcerpt.copyWith(fontWeight: FontWeight.w400),
               children: hit == null
                   ? [TextSpan(text: source.sentence)]
                   : [
@@ -631,6 +633,8 @@ class _VocabularyExample extends ConsumerWidget {
               if (canJump)
                 MMButton(
                   label: currentSetId == source.studySetId ? l.vocabularyReturn : l.vocabularyOpenSet,
+                  color: context.mmColors.accent,
+                  icon: MMIcons.openExternal,
                   variant: MMButtonVariant.plain,
                   onPressed: () async {
                     try {

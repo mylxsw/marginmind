@@ -34,7 +34,59 @@ Future<Uint8List?> captureReflowRegion(RenderRepaintBoundary boundary, Rect regi
 }
 
 class ReflowCaptureBoundary extends RenderRepaintBoundary {
-  Future<ui.Image> capture(Rect region, double scale) => (layer! as OffsetLayer).toImage(region, pixelRatio: scale);
+  Future<ui.Image> capture(Rect region, double scale) {
+    final decorations = <_TransientDecorationLayer>[];
+    void visit(Layer current) {
+      if (current is _TransientDecorationLayer) {
+        decorations.add(current);
+        current.exclude(true);
+      }
+      if (current is ContainerLayer) {
+        var child = current.firstChild;
+        while (child != null) {
+          visit(child);
+          child = child.nextSibling;
+        }
+      }
+    }
+
+    visit(layer!);
+    // Scene construction is synchronous. Restore retained layers before any
+    // subsequent screen frame; only the exported scene omits the decorations.
+    try {
+      return Future.value((layer! as OffsetLayer).toImageSync(region, pixelRatio: scale));
+    } finally {
+      for (final decoration in decorations) {
+        decoration.exclude(false);
+      }
+    }
+  }
+}
+
+/// Reader-only paint whose layer is omitted from screenshot excerpts.
+class ReflowTransientDecoration extends SingleChildRenderObjectWidget {
+  const ReflowTransientDecoration({super.key, required super.child});
+  @override
+  RenderRepaintBoundary createRenderObject(BuildContext context) => _TransientDecorationBoundary();
+}
+
+class _TransientDecorationBoundary extends RenderRepaintBoundary {
+  @override
+  OffsetLayer updateCompositedLayer({required covariant OffsetLayer? oldLayer}) =>
+      oldLayer ?? _TransientDecorationLayer();
+}
+
+class _TransientDecorationLayer extends OffsetLayer {
+  bool _excluding = false;
+  void exclude(bool value) {
+    _excluding = value;
+    markNeedsAddToScene();
+  }
+
+  @override
+  void addToScene(ui.SceneBuilder builder) {
+    if (!_excluding) super.addToScene(builder);
+  }
 }
 
 class _CaptureBoundary extends SingleChildRenderObjectWidget {

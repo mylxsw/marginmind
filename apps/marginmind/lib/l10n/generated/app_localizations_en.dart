@@ -3789,4 +3789,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vocabularyAddForm => 'Add';
+
+  @override
+  String get vocabularyHints => 'Vocabulary hints';
+
+  @override
+  String get vocabularyHintsOff => 'Off';
+
+  @override
+  String get vocabularyHintsUnderline => 'Underline';
+
+  @override
+  String get vocabularyHintsGloss => 'Meaning';
+
+  @override
+  String get vocabularyHintsHidden => 'Hide in this document';
+
+  @override
+  String get vocabularyHintsKnown => 'Mark known words';
 }

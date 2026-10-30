@@ -23,3 +23,21 @@ class VocabularySourceFlash extends Notifier<VocabularyContext?> {
 final vocabularySourceFlashProvider = NotifierProvider<VocabularySourceFlash, VocabularyContext?>(
   VocabularySourceFlash.new,
 );
+
+/// A new saved word briefly lights up every rendered occurrence.
+class VocabularyAddedFlash extends Notifier<String?> {
+  Timer? _timer;
+  @override
+  String? build() {
+    ref.onDispose(() => _timer?.cancel());
+    return null;
+  }
+
+  void show(String id) {
+    _timer?.cancel();
+    state = id;
+    _timer = Timer(MMMotion.flash, () => state = null);
+  }
+}
+
+final vocabularyAddedFlashProvider = NotifierProvider<VocabularyAddedFlash, String?>(VocabularyAddedFlash.new);

@@ -288,7 +288,17 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(sense.pos, style: t.footnote),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: MMSpacing.xs,
+                                          vertical: MMSpacing.xxs,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: c.quaternaryFill,
+                                          borderRadius: BorderRadius.circular(MMRadii.vocabularyPos),
+                                        ),
+                                        child: Text(sense.pos, style: t.footnote),
+                                      ),
                                       const SizedBox(width: MMSpacing.s),
                                       Expanded(child: Text(sense.meaning, style: t.body)),
                                     ],
@@ -346,17 +356,28 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                                     children: [
                                       Row(
                                         children: [
-                                          Expanded(child: Text(r.context.contextMeaning, style: t.body)),
+                                          Expanded(
+                                            child: Text(
+                                              r.context.contextMeaning,
+                                              style: t.body.copyWith(fontWeight: FontWeight.w500),
+                                            ),
+                                          ),
                                           add(contextOnly: true),
                                         ],
                                       ),
                                       const SizedBox(height: MMSpacing.s),
                                       Text.rich(
                                         TextSpan(children: _highlight(_sentence.text, term, c.vocabulary)),
-                                        style: MMTypography.readingExcerpt.copyWith(color: c.label),
+                                        style: MMTypography.readingExcerpt.copyWith(
+                                          color: c.label,
+                                          fontWeight: FontWeight.w400,
+                                        ),
                                       ),
                                       const SizedBox(height: MMSpacing.s),
-                                      Text(r.context.sentenceTranslation, style: t.body),
+                                      Text(
+                                        r.context.sentenceTranslation,
+                                        style: t.callout.copyWith(color: c.secondaryLabel, fontWeight: FontWeight.w400),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -372,6 +393,8 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                             child: MMButton(
                               variant: MMButtonVariant.plain,
                               label: l.vocabularySentence,
+                              icon: MMIcons.translate,
+                              color: c.accent,
                               onPressed: () {
                                 Navigator.of(context).pop();
                                 showSelectionTranslation(
@@ -390,6 +413,7 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                               variant: MMButtonVariant.plain,
                               color: c.research,
                               label: l.askAssistant,
+                              icon: MMIcons.conversation,
                               onPressed: widget.onAsk == null
                                   ? null
                                   : () {

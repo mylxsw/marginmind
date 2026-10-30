@@ -6841,6 +6841,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get vocabularyAddForm;
+
+  /// No description provided for @vocabularyHints.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary hints'**
+  String get vocabularyHints;
+
+  /// No description provided for @vocabularyHintsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get vocabularyHintsOff;
+
+  /// No description provided for @vocabularyHintsUnderline.
+  ///
+  /// In en, this message translates to:
+  /// **'Underline'**
+  String get vocabularyHintsUnderline;
+
+  /// No description provided for @vocabularyHintsGloss.
+  ///
+  /// In en, this message translates to:
+  /// **'Meaning'**
+  String get vocabularyHintsGloss;
+
+  /// No description provided for @vocabularyHintsHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide in this document'**
+  String get vocabularyHintsHidden;
+
+  /// No description provided for @vocabularyHintsKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark known words'**
+  String get vocabularyHintsKnown;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

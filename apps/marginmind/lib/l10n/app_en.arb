@@ -12,17 +12,13 @@
   "librarySetCount": "{count, plural, =0{No study sets} =1{1 study set} other{{count} study sets}}",
   "@librarySetCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "libraryDueCount": "{count, plural, =1{1 card due} other{{count} cards due}}",
   "@libraryDueCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "libraryContinue": "Continue Learning",
@@ -53,51 +49,39 @@
   "dueBadge": "{count} due",
   "@dueBadge": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "relativeJustNow": "Just now",
   "relativeMinutes": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
   "@relativeMinutes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "relativeHours": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
   "@relativeHours": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "relativeYesterday": "Yesterday",
   "relativeDays": "{count} days ago",
   "@relativeDays": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "relativeWeeks": "{count, plural, =1{Last week} other{{count} weeks ago}}",
   "@relativeWeeks": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "relativeMonths": "{count, plural, =1{Last month} other{{count} months ago}}",
   "@relativeMonths": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "viewAsIcons": "Icons",
@@ -259,9 +243,7 @@
   "importedHud": "{count, plural, =1{Imported 1 document} other{Imported {count} documents}}",
   "@importedHud": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "importFailed": "Couldn’t open “{name}” as a PDF",
@@ -304,9 +286,7 @@
   "documentPages": "{count} pages",
   "@documentPages": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "sampleSetTitle": "Sample: Forgetting & Spaced Repetition",
@@ -372,9 +352,7 @@
   "removeDocumentMessage": "{count, plural, =0{The document will be removed from this study set.} =1{Its highlight and excerpt card will be removed too. You can undo this with ⌘Z.} other{Its {count} highlights and their excerpt cards will be removed too. You can undo this with ⌘Z.}}",
   "@removeDocumentMessage": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "renameEllipsis": "Rename…",
@@ -383,18 +361,14 @@
   "reviewCount": "{count, plural, =1{Review 1 Card} other{Review {count} Cards}}",
   "@reviewCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "reviewTitle": "Review",
   "reviewRemaining": "{count, plural, =1{1 left} other{{count} left}}",
   "@reviewRemaining": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "reviewProgress": "Review progress",
@@ -402,9 +376,7 @@
   "reviewDoneMessage": "{count, plural, =1{1 card reviewed} other{{count} cards reviewed}}",
   "@reviewDoneMessage": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "reviewNothingDueTitle": "Nothing to review",
@@ -419,33 +391,25 @@
   "intervalMinutes": "{count} min",
   "@intervalMinutes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "intervalHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@intervalHours": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "intervalDays": "{count, plural, =1{1 day} other{{count} days}}",
   "@intervalDays": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "intervalMonths": "{count, plural, =1{1 month} other{{count} months}}",
   "@intervalMonths": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "excerptInColor": "Excerpt in {color}",
@@ -588,9 +552,7 @@
         "type": "DateTime",
         "format": "MMMd"
       },
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "insertImage": "Insert Image…",
@@ -631,9 +593,7 @@
   "ocrInvalidRange": "Enter a range from 1 to {count}",
   "@ocrInvalidRange": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "ocrThisPage": "Recognize This Page",
@@ -790,9 +750,7 @@
       "parts": {
         "type": "String"
       },
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchContextSelection": "Selection",
@@ -844,9 +802,7 @@
   "researchUsedSources": "{count, plural, =1{1 source used} other{{count} sources used}}",
   "@researchUsedSources": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchErrorTimeout": "Timed out",
@@ -863,18 +819,14 @@
   "researchBadgeWeb": "Web research · {count, plural, =1{1 source used} other{{count} sources used}}",
   "@researchBadgeWeb": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchBadgeOffline": "Offline · no external sources, so no citations",
   "researchBadgeSources": "Only the {count, plural, =1{source} other{{count} sources}} you chose; no web search",
   "@researchBadgeSources": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchViewSources": "View Sources",
@@ -902,17 +854,13 @@
   "researchFailedSources": "{count, plural, =1{1 source} other{{count} sources}} couldn't be read",
   "@researchFailedSources": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchChecked": "{count} selected",
   "@researchChecked": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchClearChecked": "Deselect",
@@ -922,9 +870,7 @@
   "researchAnswerFromChosen": "Answer from {count, plural, =1{1 Chosen Source} other{{count} Chosen Sources}}",
   "@researchAnswerFromChosen": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchAnswering": "Answering…",
@@ -946,9 +892,7 @@
   "researchMerged": "{count, plural, =1{1 reprint merged} other{{count} reprints merged}}, not counted separately",
   "@researchMerged": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchRead": "Read",
@@ -994,9 +938,7 @@
   "researchClipped": "Taken ({count})",
   "@researchClipped": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchCantRead": "Couldn't read the text",
@@ -1036,9 +978,7 @@
   "researchCitations": "{count, plural, =1{1 citation} other{{count} citations}}",
   "@researchCitations": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchContinue": "Continue",
@@ -1049,9 +989,7 @@
   "researchCitationsLabel": "Citations ({count})",
   "@researchCitationsLabel": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchNoExternalBasis": "No external source",
@@ -1064,9 +1002,7 @@
   "researchSplitPoints": "Split the {count} points into child cards",
   "@researchSplitPoints": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchSaving": "Saving",
@@ -1077,9 +1013,7 @@
   "researchCardKind": "{count, plural, =0{Research note} =1{Research note · 1 source} other{Research note · {count} sources}}",
   "@researchCardKind": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchCardOpen": "Full note and citations",
@@ -1136,25 +1070,19 @@
   "researchLimitSearches": "{count, plural, =1{1 search} other{{count} searches}}",
   "@researchLimitSearches": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchLimitPages": "{count, plural, =1{1 page} other{{count} pages}}",
   "@researchLimitPages": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchLimitMinutes": "{count} min",
   "@researchLimitMinutes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "researchPrivacy": "Privacy",
@@ -1290,9 +1218,7 @@
   "assistantApply": "{count, plural, =1{Apply 1 Change} other{Apply {count} Changes}}",
   "@assistantApply": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "assistantShowInMap": "Show in Map",
@@ -1301,9 +1227,7 @@
   "assistantAppliedHud": "{count, plural, =1{Applied 1 change} other{Applied {count} changes}}",
   "@assistantAppliedHud": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "assistantPutInMap": "Put in map under “{title}”",
@@ -1370,9 +1294,7 @@
   "assistantContextCount": "{count, plural, =0{No references} =1{1 reference} other{{count} references}}",
   "@assistantContextCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "assistantManageContexts": "Manage references",
@@ -1445,9 +1367,7 @@
   "assistantQuestions": "{count, plural, =1{1 question} other{{count} questions}}",
   "@assistantQuestions": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "assistantHasNote": "has notes",
@@ -1476,9 +1396,7 @@
   "settingsServiceModels": "{count, plural, =1{1 model on} other{{count} models on}}",
   "@settingsServiceModels": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "settingsServiceNoModels": "No models yet",
@@ -1518,9 +1436,7 @@
   "settingsAddCount": "Add {count}",
   "@settingsAddCount": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "settingsOpenAiCompatible": "OpenAI Compatible",
@@ -1544,9 +1460,7 @@
   "assistantToolFailures": "{count, plural, =1{1 tool call failed} other{{count} tool calls failed}}",
   "@assistantToolFailures": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "assistantAnswerWithoutTools": "Answer Without Tools",
@@ -1633,9 +1547,7 @@
   "uncroppedHud": "Crop removed",
   "@cropHiddenAnnotations": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "marginNotes": "Margin Notes",
@@ -1766,9 +1678,7 @@
   "readerInvalidPage": "Enter a valid page number up to {count}.",
   "@readerInvalidPage": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "outlineDragHint": "Drag above or below an entry to reorder; drag to its center to nest.",
@@ -1799,30 +1709,22 @@
   "mapEditMissingSummary": "This summary is unavailable",
   "@mergeNodes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "@splitNodes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "@selectedNodes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "@mergedSources": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "@mergeCleanup": {
@@ -1852,9 +1754,7 @@
   "summaryIncludedNodes": "Includes {count} unselected nodes in between",
   "@summaryIncludedNodes": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "addWebPage": "Add Web Page…",
@@ -1912,9 +1812,7 @@
   "importFailedMany": "{count, plural, =1{1 document couldn’t be imported} other{{count} documents couldn’t be imported}}",
   "@importFailedMany": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "importErrorDrm": "Protected by DRM",
@@ -1958,17 +1856,13 @@
   "annotationsNeedReview": "Needs Review ({count})",
   "@annotationsNeedReview": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "annotationsNeedReviewHud": "{count, plural, =1{1 highlight needs review} other{{count} highlights need review}}",
   "@annotationsNeedReviewHud": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": { "type": "int" }
     }
   },
   "viewAction": "View",
@@ -2037,5 +1931,11 @@
   "vocabularyRead": "Read aloud",
   "vocabularyUk": "UK",
   "vocabularyUs": "US",
-  "vocabularyAddForm": "Add"
+  "vocabularyAddForm": "Add",
+  "vocabularyHints": "Vocabulary hints",
+  "vocabularyHintsOff": "Off",
+  "vocabularyHintsUnderline": "Underline",
+  "vocabularyHintsGloss": "Meaning",
+  "vocabularyHintsHidden": "Hide in this document",
+  "vocabularyHintsKnown": "Mark known words"
 }

@@ -23,7 +23,8 @@ import 'package:mm_core/mm_core.dart'
         PdfReadingPosition,
         CropInsets,
         DocumentCrop,
-        TranslationParagraph;
+        TranslationParagraph,
+        TranslationPage;
 import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
@@ -90,6 +91,10 @@ class MMPdfHighlight {
     this.lineStyle,
     this.marker,
     this.markerIcon,
+    this.gloss,
+    this.glossSpace = 0,
+    this.temporary = false,
+    this.glossStyle,
   });
 
   final String id;
@@ -119,6 +124,15 @@ class MMPdfHighlight {
   /// with this color; tapping it is tapping the highlight.
   final Color? marker;
   final IconData? markerIcon;
+
+  /// Temporary interlinear label. Space is measured in original PDF points;
+  /// font size remains in view points and never changes document layout.
+  final String? gloss;
+
+  /// Reader decoration excluded from document operations such as automatic crop.
+  final bool temporary;
+  final double glossSpace;
+  final TextStyle? glossStyle;
 }
 
 /// A rectangle dragged with the area tool, clamped to the page it started on.
@@ -213,6 +227,48 @@ class MMPdfViewController extends ChangeNotifier {
     final rect = rects[index];
     final point = _state!._transform(index + 1).toPdf(Offset(at.dx, at.dy.clamp(rect.top, rect.bottom)));
     return PdfReadingPosition(page: index + 1, y: point.dy.clamp(0.0, _state!._originalPage(index + 1).height));
+  }
+
+  /// Original pages intersecting the viewport, optionally including neighbors.
+  List<int> visiblePages({bool neighbors = false}) {
+    if (!isReady) return const [];
+    final viewer = _state!._controller;
+    final viewport = Offset.zero & viewer.viewSize;
+    final pages = <int>{};
+    final layouts = viewer.layout.pageLayouts;
+    for (var i = 0; i < layouts.length; i++) {
+      if (!viewport.overlaps(
+        Rect.fromPoints(viewer.documentToLocal(layouts[i].topLeft), viewer.documentToLocal(layouts[i].bottomRight)),
+      )) {
+        continue;
+      }
+      pages.add(i + 1);
+      if (neighbors && i > 0) pages.add(i);
+      if (neighbors && i + 1 < layouts.length) pages.add(i + 2);
+    }
+    return pages.toList()..sort();
+  }
+
+  /// Text and character boxes for one original page (before crop transforms).
+  Future<TranslationPage?> translationPage(int number) async {
+    final state = _state;
+    if (!isReady || number < 1 || number > pageCount) return null;
+    try {
+      final document = state!._controller.document;
+      final text = await state._originalPage(number).loadText();
+      if (_state != state ||
+          !state.mounted ||
+          !state._ready ||
+          state._controller.document != document ||
+          text == null) {
+        return null;
+      }
+      return TranslationPage(number, text.fullText, [
+        for (final r in text.charRects) PageRect(r.left, r.top, r.right, r.bottom),
+      ]);
+    } catch (_) {
+      return null;
+    }
   }
 
   List<double> get pageHeights =>
@@ -886,6 +942,7 @@ class _MMPdfViewState extends State<MMPdfView> {
       }
     }
     for (final h in widget.highlights) {
+      if (h.temporary) continue;
       for (final r in h.rects) {
         include(h.page, r);
       }
@@ -1733,6 +1790,31 @@ class _MMPdfViewState extends State<MMPdfView> {
       return true;
     }
 
+    final labels = <Rect>[];
+    Widget glossLabel(MMPdfHighlight h) {
+      final rect = _overlayRect(page, scaled, h.rects.first);
+      final scale = rect.height / (h.rects.first.top - h.rects.first.bottom);
+      if (h.glossSpace * scale < (h.glossStyle?.fontSize ?? 10) + 2) return const SizedBox.shrink();
+      final text = TextPainter(
+        text: TextSpan(text: h.gloss, style: h.glossStyle),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      final label = Rect.fromLTWH(rect.left, rect.top - text.height - 2, text.width, text.height);
+      text.dispose();
+      if (h.glossSpace * scale < label.height + 2 ||
+          label.right > scaled.width ||
+          label.top < 0 ||
+          labels.any((r) => r.overlaps(label))) {
+        return const SizedBox.shrink();
+      }
+      labels.add(label);
+      return Positioned.fromRect(
+        rect: label,
+        child: IgnorePointer(child: Text(h.gloss!, style: h.glossStyle, maxLines: 1)),
+      );
+    }
+
     final overlays = <Widget>[
       for (final h in highlights)
         for (final r in h.rects)
@@ -1771,6 +1853,8 @@ class _MMPdfViewState extends State<MMPdfView> {
               );
             },
           ),
+      for (final h in highlights)
+        if (h.gloss?.isNotEmpty == true && h.rects.isNotEmpty && h.glossStyle != null) glossLabel(h),
       for (final h in highlights)
         if (h.marker != null && h.rects.isNotEmpty)
           Builder(
@@ -2318,6 +2402,10 @@ bool _sameHighlights(List<MMPdfHighlight> a, List<MMPdfHighlight> b) {
         x.lineStyle != y.lineStyle ||
         x.marker != y.marker ||
         x.markerIcon != y.markerIcon ||
+        x.gloss != y.gloss ||
+        x.temporary != y.temporary ||
+        x.glossSpace != y.glossSpace ||
+        x.glossStyle != y.glossStyle ||
         x.rects.length != y.rects.length) {
       return false;
     }
