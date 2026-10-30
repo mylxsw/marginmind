@@ -743,10 +743,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _manualExpansionViewport = false;
   String? _previewSession;
   String get _workingTargetRef => widget.expansion!.phase == ExpansionPhase.generating
-      ? widget.expansion!.activeTargetId ?? widget.expansion!.request.targetIds.single
-      : widget.expansion!.request.targetIds.single;
-  String get _workingTargetId =>
-      _workingTargetRef.startsWith('new:') ? _workingTargetRef.substring(4) : _workingTargetRef;
+      ? widget.expansion!.activeTargetId ?? widget.expansion!.request.targetIds.first
+      : widget.expansion!.request.targetIds.first;
+  String get _workingTargetId => _workingTargetRef == widget.mapId
+      ? rootNodeId
+      : _workingTargetRef.startsWith('new:')
+      ? _workingTargetRef.substring(4)
+      : _workingTargetRef;
   List<ExpansionDraft> get _drafts => [
     ...?widget.expansion?.drafts,
     if (widget.expansion?.phase == ExpansionPhase.generating)
@@ -756,7 +759,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     var depth = 0;
     var draft = widget.expansion!.drafts.firstWhere((d) => d.id == id);
     while (true) {
-      depth++;
+      final request = widget.expansion!.request;
+      if (!(request.scope == ExpansionScope.map && request.plan.containsKey('new:${draft.id}'))) depth++;
       if (!draft.parentRef.startsWith('new:')) return depth;
       draft = widget.expansion!.drafts.firstWhere((d) => 'new:${d.id}' == draft.parentRef);
     }
@@ -765,7 +769,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _inExpansionBranch(String id) {
     final preview = widget.expansion;
     if (preview == null) return true;
-    final target = preview.request.targetIds.single;
+    final targets = preview.request.targetIds;
     bool ancestorOf(String ancestor, String descendant) {
       final seen = <String>{};
       String? current = descendant;
@@ -776,7 +780,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       return false;
     }
 
-    return id == rootNodeId || ancestorOf(id, target) || ancestorOf(target, id);
+    return preview.request.scope == ExpansionScope.map ||
+        id == rootNodeId ||
+        targets.any((target) => ancestorOf(id, target) || ancestorOf(target, id));
   }
 
   void _blocked() => MMHud.show(context, context.l10n.mapIdeaBlocked);
@@ -907,7 +913,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final preview = widget.expansion, layout = _layout;
     if (preview == null || layout == null || _viewport.isEmpty) return;
     final rects = [
-      for (final id in [preview.request.targetIds.single, ..._drafts.map((d) => d.id)])
+      for (final id in [
+        ...preview.request.targetIds.map((id) => id == widget.mapId ? rootNodeId : id),
+        ..._drafts.map((d) => d.id),
+        ...preview.moves.keys,
+      ])
         if (layout.rects[id] case final r?) _rect(r),
     ];
     if (rects.isEmpty) return;
@@ -1832,6 +1842,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     final field = this.field;
     final result = _cache.update(
       expansionDrafts: _drafts,
+      expansionMoves: widget.expansion?.moves ?? const {},
       draft: field == null ? null : (field.id, field.controller.text),
       draftFormat: field?.note?.format,
       widthDraft: _resize,
@@ -2181,7 +2192,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         palette: palette,
                                         branches: _branches,
                                         colors: c,
-                                        drafts: {for (final d in _drafts) d.id: d.kept},
+                                        drafts: {
+                                          for (final d in _drafts) d.id: d.kept,
+                                          for (final id in widget.expansion?.moves.keys ?? <String>[]) id: true,
+                                        },
                                       ),
                                     ),
                                   ),

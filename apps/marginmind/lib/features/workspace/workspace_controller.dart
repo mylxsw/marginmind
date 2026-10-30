@@ -230,6 +230,7 @@ class WorkspaceState {
   final MapViewMode mapView;
   final AnnotationTool tool;
   final MMAnnotationColor color;
+
   /// The continuous underline tool keeps its original page-toolbar preference.
   final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;

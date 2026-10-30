@@ -17,9 +17,17 @@ sealed class MMMenuEntry {
 }
 
 class MMMenuItem extends MMMenuEntry {
-  const MMMenuItem(this.label, this.onSelected, {this.destructive = false, this.shortcut, this.checked});
+  const MMMenuItem(
+    this.label,
+    this.onSelected, {
+    this.destructive = false,
+    this.shortcut,
+    this.checked,
+    this.disabledReason,
+  });
 
   final String label;
+  final String? disabledReason;
 
   /// Non-null leaves a check column: true shows the mark (pop-up buttons,
   /// the model menu).
@@ -312,53 +320,56 @@ class _MenuRow extends StatelessWidget {
     final c = context.mmColors;
     final t = context.mmText;
     final enabled = item.onSelected != null;
-    return MMInteractive(
-      onTap: !enabled
-          ? null
-          : () {
-              if (onSelected != null) {
-                onSelected!(item.onSelected!);
-              } else {
-                Navigator.of(context).pop(item.onSelected);
-              }
-            },
-      semanticLabel: item.label,
-      builder: (context, s) {
-        final highlighted = s.hovered || s.focused;
-        final fg = !enabled
-            ? c.secondaryLabel
-            : highlighted
-            ? c.onAccent
-            : item.destructive
-            ? const Color(0xFFE5484D)
-            : c.label;
-        return Container(
-          height: touch ? 44 : 24,
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          decoration: BoxDecoration(
-            color: highlighted && enabled ? c.accentFill : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            children: [
-              if (item.checked != null)
-                SizedBox(width: 20, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
-              Expanded(
-                child: Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.body.copyWith(color: fg),
+    return Tooltip(
+      message: enabled ? '' : item.disabledReason ?? '',
+      child: MMInteractive(
+        onTap: !enabled
+            ? null
+            : () {
+                if (onSelected != null) {
+                  onSelected!(item.onSelected!);
+                } else {
+                  Navigator.of(context).pop(item.onSelected);
+                }
+              },
+        semanticLabel: item.label,
+        builder: (context, s) {
+          final highlighted = s.hovered || s.focused;
+          final fg = !enabled
+              ? c.secondaryLabel
+              : highlighted
+              ? c.onAccent
+              : item.destructive
+              ? const Color(0xFFE5484D)
+              : c.label;
+          return Container(
+            height: touch ? 44 : 24,
+            padding: const EdgeInsets.symmetric(horizontal: 9),
+            decoration: BoxDecoration(
+              color: highlighted && enabled ? c.accentFill : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              children: [
+                if (item.checked != null)
+                  SizedBox(width: 20, child: item.checked! ? Icon(MMIcons.check, size: 14, color: fg) : null),
+                Expanded(
+                  child: Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.body.copyWith(color: fg),
+                  ),
                 ),
-              ),
-              if (item.shortcut != null) ...[
-                const SizedBox(width: 24),
-                Text(item.shortcut!, style: t.body.copyWith(color: highlighted ? c.onAccent : c.secondaryLabel)),
+                if (item.shortcut != null) ...[
+                  const SizedBox(width: 24),
+                  Text(item.shortcut!, style: t.body.copyWith(color: highlighted ? c.onAccent : c.secondaryLabel)),
+                ],
               ],
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 }

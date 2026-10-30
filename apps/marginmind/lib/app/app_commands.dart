@@ -907,8 +907,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
                   !(inOutline && mapOnly.contains(entry.key)) &&
                   (entry.key != MindMapCommand.expandIdeas ||
                       (MMPlatformCapabilities.current.assistant &&
-                          workspaceState?.selectedCardId != null &&
-                          workspaceState!.selectedCardIds.length <= 1))
+                          (workspaceState?.selectedCardId != null || workspaceState?.rootSelected == true)))
               ? () {
                   final focus = FocusManager.instance.primaryFocus?.context;
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));

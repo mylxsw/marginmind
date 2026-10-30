@@ -33,6 +33,7 @@ Future<bool?> showAssistantQuickActions(
   List<ContextItem> contexts = const [],
   ({String mapId, String? parentId})? insertionTarget,
   PanelOrigin origin = PanelOrigin.reader,
+  List<String>? expansionTargets,
 }) => showGeneralDialog<bool>(
   context: context,
   barrierColor: Colors.transparent,
@@ -51,6 +52,7 @@ Future<bool?> showAssistantQuickActions(
         contexts: contexts,
         insertionTarget: insertionTarget,
         origin: origin,
+        expansionTargets: expansionTargets,
       ),
     ),
   ),
@@ -137,9 +139,11 @@ class AssistantQuickActions extends ConsumerStatefulWidget {
     this.contexts = const [],
     this.insertionTarget,
     this.origin = PanelOrigin.reader,
+    this.expansionTargets,
   });
 
   final String studySetId;
+  final List<String>? expansionTargets;
   final PendingAction? pending;
   final ContextItem passage;
   final SourceAnchor? source;
@@ -384,13 +388,15 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                               ),
                             ),
                           ] else ...[
-                            if (widget.origin == PanelOrigin.map &&
-                                widget.contexts.length <= 1 &&
-                                widget.insertionTarget?.parentId != null)
+                            if (widget.origin == PanelOrigin.map && widget.insertionTarget != null)
                               ExpansionSection(
                                 studySetId: widget.studySetId,
                                 mapId: widget.insertionTarget!.mapId,
-                                targetId: widget.insertionTarget!.parentId!,
+                                targetId:
+                                    widget.expansionTargets?.first ??
+                                    widget.insertionTarget!.parentId ??
+                                    widget.insertionTarget!.mapId,
+                                targetIds: widget.expansionTargets,
                               ),
                             if (busy)
                               Padding(

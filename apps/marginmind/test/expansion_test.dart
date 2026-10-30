@@ -3,10 +3,14 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/gestures.dart' show kSecondaryMouseButton, PointerDeviceKind;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/expansion_context.dart';
+import 'package:marginmind/shared/l10n.dart';
+import 'package:marginmind/features/assistant/assistant_scope.dart' show nodeContext;
+import 'package:marginmind/features/assistant/widgets/assistant_quick_actions.dart';
 import 'package:marginmind/features/assistant/expansion_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
 import 'package:marginmind/features/assistant/assistant_services.dart';
@@ -41,6 +45,53 @@ class ControlledExpander implements IdeaExpander {
   void close() {
     closed++;
   }
+}
+
+class BatchExpander implements IdeaExpander {
+  BatchExpander(this.owner);
+  final BatchModels owner;
+  @override
+  Future<List<ExpansionPlanItem>> plan(ExpansionContext context, int breadth, CancellationToken cancel) async {
+    owner.plans++;
+    owner.planContext = context;
+    if (owner.planFailure != null) throw owner.planFailure!;
+    if (owner.planGate != null) await owner.planGate!.future;
+    return owner.items;
+  }
+
+  @override
+  Stream<ExpansionDraft> expand(ExpansionRequest request, ExpansionContext context, CancellationToken cancel) async* {
+    owner.active++;
+    owner.maximum = owner.maximum < owner.active ? owner.active : owner.maximum;
+    owner.requests.add(request);
+    try {
+      if (owner.gate != null) await owner.gate!.future;
+      cancel.check();
+      final target = context.targets.values.single;
+      final count = request.scope == ExpansionScope.group ? 1 : context.limits['T1'] ?? owner.count;
+      for (var i = 0; i < count; i++) {
+        yield ExpansionDraft(id: '${context.draftPrefix}$i', parentRef: target, title: '思路-$target-$i');
+      }
+      if (owner.failure != null) throw owner.failure!;
+    } finally {
+      owner.active--;
+    }
+  }
+
+  @override
+  void close() {
+    owner.closed++;
+  }
+}
+
+class BatchModels {
+  int active = 0, maximum = 0, closed = 0, plans = 0, count = 2;
+  final requests = <ExpansionRequest>[];
+  ExpansionContext? planContext;
+  Completer<void>? gate, planGate;
+  ResearchFailure? failure, planFailure;
+  List<ExpansionPlanItem> items = const [];
+  Future<IdeaExpander> create() async => BatchExpander(this);
 }
 
 Future<void> capture(WidgetTester tester, String name) async {
@@ -515,4 +566,492 @@ void main() {
     await capture(tester, 'expansion-review-dark');
     expect(tester.takeException(), isNull);
   });
+  testWidgets('multi targets share review, at most three calls and one transaction', (tester) async {
+    final models = BatchModels()..gate = Completer<void>();
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final ids = ['c3', 'c4', 'c6'];
+    for (var i = 0; i < 3; i++) {
+      await app.workspace.addTopic('并发分支$i');
+      ids.add(app.container.read(workspaceProvider('demo-1')).selectedCardId!);
+    }
+    final c = app.container.read(expansionControllerProvider('demo-1').notifier);
+    final before = app.workspace.content.nodes.length;
+    final run = c.start(c.request(MindMap.defaultId, ids.first, targets: ids));
+    await tester.pumpAndSettle();
+    expect(models.active, 3);
+    models.gate!.complete();
+    await tester.pumpAndSettle();
+    await run;
+    expect(models.maximum, 3);
+    expect(models.requests.length, 6);
+    expect(models.closed, 6);
+    await capture(tester, 'multi-review');
+    expect(await c.keep(), 12);
+    expect(app.workspace.content.nodes.length, before + 12);
+    await app.workspace.undo();
+    expect(app.workspace.content.nodes.length, before);
+  });
+
+  testWidgets('group preview moves existing nodes, deselection restores and keep undoes', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    final before = app.workspace.content;
+    final run = c.start(
+      c.request(
+        MindMap.defaultId,
+        'c3',
+        targets: ['c3', 'c4'],
+        scope: ExpansionScope.group,
+        commonParentId: MindMap.defaultId,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await run;
+    expect(app.container.read(p)!.moves.keys, ['c3', 'c4']);
+    expect(app.workspace.content, same(before));
+    await capture(tester, 'group-preview');
+    final draft = app.container.read(p)!.drafts.single;
+    c.toggle(draft.id, false);
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.moves, isEmpty);
+    c.toggle(draft.id, true);
+    await tester.pumpAndSettle();
+    await c.keep();
+    await tester.pumpAndSettle();
+    expect(app.workspace.content.node('c3')!.parentId, app.workspace.content.node('c4')!.parentId);
+    expect(app.workspace.content.node('c3')!.parentId, isNotNull);
+    await app.workspace.undo();
+    await tester.pumpAndSettle();
+    expect(app.workspace.content.node('c3')!.parentId, isNull);
+    expect(app.workspace.content.nodes.length, before.nodes.length);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('siblings validate common parent and use one model call', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    await tester.runAsync(
+      () => c.start(
+        c.request(
+          MindMap.defaultId,
+          'c3',
+          targets: ['c3', 'c4'],
+          scope: ExpansionScope.siblings,
+          commonParentId: MindMap.defaultId,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(models.requests.single.scope, ExpansionScope.siblings);
+    expect(app.container.read(p)!.moves, isEmpty);
+    expect(await c.keep(), 2);
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => c.start(
+        c.request(
+          MindMap.defaultId,
+          'c3',
+          targets: ['c3', 'c6'],
+          scope: ExpansionScope.group,
+          commonParentId: MindMap.defaultId,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.failure!.kind, ResearchFailureKind.invalidRequest);
+    c.discard();
+  });
+
+  testWidgets('root shortcut plans, controls are bounded, new branches remain drafts', (tester) async {
+    final models = BatchModels()
+      ..items = const [
+        ExpansionPlanItem(targetId: 'c3', add: 1, reason: 'thin'),
+        ExpansionPlanItem(targetId: 'c4', add: 8, reason: 'empty'),
+        ExpansionPlanItem(targetId: MindMap.defaultId, add: 3, reason: 'newBranch', title: '实践路径'),
+      ];
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    app.workspace.selectMapRoot();
+    await focusMap(tester);
+    await key(tester, LogicalKeyboardKey.tab, alt: true);
+    await tester.pumpAndSettle();
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    expect(find.byType(ExpansionPlanSheet), findsOneWidget);
+    expect(models.plans, 1);
+    expect(models.planContext!.targets['T1'], MindMap.defaultId);
+    expect(models.planContext!.details['T1']!.title, '认知科学入门');
+    expect(models.planContext!.details.values.every((d) => d.pages.isEmpty), isTrue);
+    expect(app.container.read(p)!.planItems.first.targetId, 'c4');
+    await capture(tester, 'map-plan');
+    await tester.tap(find.byKey(const ValueKey('plan-minus-0')));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.planItems.first.add, 7);
+    await tester.tap(find.byKey(const ValueKey('plan-plus-0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Checkbox).at(1));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.disabledPlan, {1});
+    c.updatePlan(0, add: 99);
+    c.updatePlan(1, add: -9);
+    c.updatePlan(-1, add: 2);
+    final before = app.workspace.content.nodes.length;
+    await tester.tap(find.text('开始扩展'));
+    await tester.pumpAndSettle();
+    expect(models.plans, 1);
+    expect(models.requests.length, 2);
+    expect(app.workspace.content.nodes.length, before);
+    expect(app.container.read(p)!.drafts.length, 12);
+    await capture(tester, 'map-review');
+    final branch = app.container.read(p)!.drafts.firstWhere((d) => d.parentRef == MindMap.defaultId);
+    c.toggle(branch.id, false);
+    await tester.runAsync(() => c.regenerate());
+    await tester.pumpAndSettle();
+    // Regeneration restores the planned parent and excludes old children.
+    expect(models.plans, 1);
+    expect(app.container.read(p)!.drafts.firstWhere((d) => d.id == branch.id).kept, isTrue);
+    await tester.runAsync(() => c.continueFromDraft(branch.id));
+    await tester.pumpAndSettle();
+    expect(models.requests.last.depth, 3);
+    c.discard();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('whole map over fifty drafts keeps once, undoes and redoes once', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final ids = <String>[];
+    for (var i = 0; i < 8; i++) {
+      await app.workspace.addTopic('计划分支$i');
+      ids.add(app.container.read(workspaceProvider('demo-1')).selectedCardId!);
+    }
+    models.items = [for (final id in ids) ExpansionPlanItem(targetId: id, add: 8, reason: 'empty')];
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    final before = app.workspace.content;
+    await tester.runAsync(
+      () => c.planMap(c.request(MindMap.defaultId, MindMap.defaultId, scope: ExpansionScope.map, breadth: 8)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('+64'), findsOneWidget);
+    await tester.tap(find.text('开始扩展'));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.selectedCount, 64);
+    await capture(tester, 'map-64-review');
+    expect(await c.keep(), 64);
+    await tester.pumpAndSettle();
+    expect(app.workspace.content.nodes.length, before.nodes.length + 64);
+    expect(app.workspace.content.assistantReceipts.length, 1);
+    await app.workspace.undo();
+    await tester.pumpAndSettle();
+    expect(app.workspace.content.nodes.length, before.nodes.length);
+    await app.workspace.redo();
+    await tester.pumpAndSettle();
+    expect(app.workspace.content.nodes.length, before.nodes.length + 64);
+  });
+
+  testWidgets('multi selection entry offers grouping and disables different parents', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    app.workspace.selectCards(['c3', 'c4']);
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    expect(find.text('分别扩展 2 个主题  ⌥⇥'), findsOneWidget);
+    await capture(tester, 'multi-options');
+    await tester.tap(find.text('归纳上级主题'));
+    await tester.pumpAndSettle();
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    expect(app.container.read(p)!.request.scope, ExpansionScope.group);
+    c.discard();
+    await tester.pumpAndSettle();
+    app.workspace.selectCards(['c3', 'c6']);
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    final group = tester.widget<TextButton>(find.widgetWithText(TextButton, '归纳上级主题'));
+    expect(group.onPressed, isNull);
+    expect(
+      find.byTooltip(tester.element(find.byType(ExpansionSection)).l10n.mapEditDifferentParents),
+      findsNWidgets(2),
+    );
+    await key(tester, LogicalKeyboardKey.escape);
+  });
+
+  testWidgets('plan cancellation, failure retry and partial batch failure release busy', (tester) async {
+    final models = BatchModels()..planGate = Completer<void>();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    final request = c.request(MindMap.defaultId, MindMap.defaultId, scope: ExpansionScope.map, breadth: 8);
+    final run = c.planMap(request);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(app.container.read(p)!.phase, ExpansionPhase.planning);
+    await expectLater(c.planMap(request), throwsStateError);
+    c.discard();
+    models.planGate!.complete();
+    await tester.pumpAndSettle();
+    await run;
+    expect(app.container.read(p), isNull);
+    models.planGate = null;
+    models.planFailure = const ResearchFailure(ResearchFailureKind.network);
+    await tester.runAsync(() => c.planMap(request));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.phase, ExpansionPhase.error);
+    models.planFailure = null;
+    models.items = const [ExpansionPlanItem(targetId: 'c3', add: 2, reason: 'thin')];
+    await tester.runAsync(() => c.regenerate());
+    await tester.pumpAndSettle();
+    c.updatePlan(0, enabled: false);
+    await c.startPlan();
+    expect(app.container.read(p)!.phase, ExpansionPhase.plan);
+    c.updatePlan(0, enabled: true);
+    models.failure = const ResearchFailure(ResearchFailureKind.protocol, 'noValidExpansion');
+    await tester.runAsync(() => c.startPlan());
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.phase, ExpansionPhase.stopped);
+    expect(app.container.read(p)!.drafts.length, 2);
+    expect(app.container.read(expansionBusyProvider), isFalse);
+    c.discard();
+    await tester.runAsync(() => c.planMap(request));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getBottomLeft(find.byType(MapPane)) + const Offset(30, -30));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p), isNull);
+  });
+  testWidgets('root entry offers plan and branches only; multi main and siblings actions', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    app.workspace.selectMapRoot();
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    expect(find.text('扩展整张脑图…  ⌥⇥'), findsOneWidget);
+    await capture(tester, 'root-options');
+    await tester.tap(find.text('扩展整张脑图…  ⌥⇥'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ExpansionPlanSheet), findsOneWidget);
+    expect(models.plans, 1);
+    c.discard();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('只加新分支'));
+    await tester.pumpAndSettle();
+    expect(models.plans, 1);
+    expect(models.requests.single.targetIds, [MindMap.defaultId]);
+    expect(models.requests.single.depth, 1);
+    c.discard();
+    await tester.pumpAndSettle();
+    app.workspace.selectCards(['c3', 'c4']);
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('分别扩展 2 个主题  ⌥⇥'));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.request.targetIds.toSet(), {'c3', 'c4'});
+    c.discard();
+    await tester.pumpAndSettle();
+    app.workspace.selectCards(['c3', 'c4']);
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('补全同级'));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.request.scope, ExpansionScope.siblings);
+    c.discard();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('context menu exposes grouping with reason and root expansion', (tester) async {
+    final models = BatchModels();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    app.workspace.selectCards(['c3', 'c4']);
+    await focusMap(tester);
+    await tester.tap(find.text('遗忘的规律').last, buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    expect(find.text('归纳上级主题'), findsOneWidget);
+    await tester.tap(find.text('归纳上级主题'));
+    await tester.pumpAndSettle();
+    expect(app.container.read(p)!.request.scope, ExpansionScope.group);
+    c.discard();
+    await tester.pumpAndSettle();
+    app.workspace.selectCards(['c3', 'c6']);
+    await focusMap(tester);
+    await tester.tap(find.text('遗忘的规律').last, buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    final reason = tester.element(find.byType(MapPane)).l10n.mapEditDifferentParents;
+    expect(find.byTooltip(reason), findsNWidgets(2));
+    await key(tester, LogicalKeyboardKey.escape);
+    app.workspace.selectMapRoot();
+    await focusMap(tester);
+    await tester.tap(find.text('认知科学入门').last, buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('扩展整张脑图…'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ExpansionPlanSheet), findsOneWidget);
+    c.discard();
+    await tester.pumpAndSettle();
+  });
+
+  test('map planning context stays structural with many targets and validates budget', () async {
+    var content = demoContent();
+    var i = 0;
+    final editor = StudySetEditor(newId: () => 'plan-${i++}', now: () => testNow);
+    for (var n = 0; n < 20; n++) {
+      content = editor.addTopic(content, title: '分支$n').$1;
+    }
+    final reader = WorkspaceReader(
+      content: () => content,
+      contexts: const [],
+      filePath: (d) => d.fileName,
+      pageText: (_, _) async => throw StateError('Plan must not read pages'),
+    );
+    final builder = ExpansionContextBuilder(reader);
+    final r = ExpansionRequest(
+      studySetId: 'demo-1',
+      mapId: MindMap.defaultId,
+      targetIds: [MindMap.defaultId],
+      scope: ExpansionScope.map,
+      breadth: 8,
+    );
+    final context = await builder.build(content, r);
+    expect(context.targets.length, greaterThan(20));
+    expect(context.details.values.every((d) => d.pages.isEmpty), isTrue);
+    await expectLater(builder.build(content, r, tokenBudget: 1), throwsA(isA<ResearchFailure>()));
+    await expectLater(
+      builder.build(content, ExpansionRequest(studySetId: 'demo-1', mapId: 'missing', targetIds: ['c3'])),
+      throwsA(isA<ResearchFailure>()),
+    );
+  });
+  testWidgets('stop cancels the three active calls and queued targets; restart ignores late completion', (
+    tester,
+  ) async {
+    final gate = Completer<void>(), models = BatchModels();
+    models.gate = gate;
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(models.create)],
+    );
+    final p = expansionControllerProvider('demo-1'), c = app.container.read(p.notifier);
+    final ids = ['c3', 'c4', 'c6'];
+    await app.workspace.addTopic('排队分支');
+    ids.add(app.container.read(workspaceProvider('demo-1')).selectedCardId!);
+    final first = c.start(c.request(MindMap.defaultId, ids.first, targets: ids));
+    await tester.pumpAndSettle();
+    expect(models.requests.length, 3);
+    c.stop();
+    expect(app.container.read(p), isNull);
+    expect(app.container.read(expansionBusyProvider), isFalse);
+    models.gate = null;
+    await tester.runAsync(() => c.start(c.request(MindMap.defaultId, 'c3')));
+    await tester.pumpAndSettle();
+    final current = app.container.read(p)!;
+    gate.complete();
+    await tester.pumpAndSettle();
+    await first;
+    expect(app.container.read(p), same(current));
+    expect(models.requests.length, 4);
+    expect(models.active, 0);
+    c.discard();
+    await tester.pumpAndSettle();
+  });
+  test('group context distinguishes selected topics from siblings and reads only their sources', () async {
+    var content = demoContent(), sequence = 0;
+    final editor = StudySetEditor(newId: () => 'unselected-${sequence++}', now: () => testNow);
+    final added = editor.addTopic(content, title: '未选主题');
+    content = editor
+        .createExcerpt(
+          added.$1,
+          documentId: 'c1',
+          page: 99,
+          rects: const [PageRect(10, 100, 20, 20)],
+          quote: '不应纳入归纳的内容',
+          colorIndex: 0,
+          parentId: added.$2.id,
+        )
+        .$1;
+    final reads = <int>[];
+    final reader = WorkspaceReader(
+      content: () => content,
+      contexts: const [],
+      filePath: (d) => d.fileName,
+      pageText: (_, p) async {
+        reads.add(p);
+        return 'Source $p';
+      },
+    );
+    for (final scope in [ExpansionScope.group, ExpansionScope.siblings]) {
+      reads.clear();
+      final context = await ExpansionContextBuilder(reader).build(
+        content,
+        ExpansionRequest(
+          studySetId: 'demo-1',
+          mapId: MindMap.defaultId,
+          targetIds: ['c3', 'c4'],
+          scope: scope,
+          commonParentId: MindMap.defaultId,
+        ),
+      );
+      expect(context.targets, {'T1': MindMap.defaultId});
+      expect(context.details['T1']!.children, ['遗忘的规律', '对策一：间隔重复']);
+      expect(context.details['T1']!.siblings, ['未选主题']);
+      expect(reads, [23, 24, 25]);
+    }
+  });
+  for (final parent in [null, 'c3']) {
+    testWidgets('map popup derives expansion target from insertion parent $parent', (tester) async {
+      await openAssistantApp(tester);
+      final popup = showAssistantQuickActions(
+        tester.element(find.byType(MapPane)),
+        studySetId: 'demo-1',
+        passage: nodeContext(mapId: MindMap.defaultId, nodeId: parent ?? '__root__', title: 'Topic'),
+        insertionTarget: (mapId: MindMap.defaultId, parentId: parent),
+        origin: PanelOrigin.map,
+        toolbar: const Rect.fromLTWH(1000, 100, 40, 30),
+        selection: const Rect.fromLTWH(1000, 100, 40, 30),
+        viewport: const Rect.fromLTWH(0, 0, 1400, 900),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<ExpansionSection>(find.byType(ExpansionSection)).targetId, parent ?? MindMap.defaultId);
+      await tester.tap(find.byKey(const ValueKey('quick-close')));
+      await tester.pumpAndSettle();
+      await popup;
+    });
+  }
 }
