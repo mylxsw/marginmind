@@ -105,10 +105,6 @@ body:not(.show-known) .vw.known:hover{background-color:transparent}
 body.show-known .vw.known{background-image:radial-gradient(circle,var(--label3) .8px,transparent 1px) !important}
 body.hint-gloss .vw.known::before{content:none}
 
-.reader-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;height:30px;padding:0 6px 0 12px;border-radius:15px;background:var(--glass);backdrop-filter:blur(24px);box-shadow:0 0 0 .5px var(--hair);font-size:11.5px;color:var(--label2);white-space:nowrap}
-.reader-hint .dotv{width:6px;height:6px;border-radius:3px;background:var(--vocab)}
-.reader-hint button{height:22px;padding:0 8px;border-radius:11px;color:var(--accent);font-size:11.5px}
-.reader-hint button:hover{background:var(--hover)}
 
 /* ---------- Floating toolbar + popovers ---------- */
 #layer{position:absolute;inset:0;pointer-events:none;z-index:20}
@@ -284,7 +280,6 @@ body.view-book #reader{display:none}
       <div id="content">
         <section id="reader">
           <div class="reader-scroll" id="scroll"><article class="page" id="page"></article></div>
-          <div class="reader-hint" id="readerHint"></div>
           <div id="layer"></div>
         </section>
         <section id="book"></section>
@@ -486,15 +481,7 @@ function renderChrome() {
   $('#sideCount').textContent = learning;
   const hb = $('#hintBtn');
   hb.classList.toggle('on', hintsActive());
-  $('#hintTip').textContent = (hintsActive() ? '隐藏生词提示' : '显示生词提示') + '（⇧⌘U）';
-  const n = $$('.vw:not(.known)', $('#page')).length;
-  const distinct = new Set($$('.vw:not(.known)', $('#page')).map(e => e.dataset.v)).size;
-  const rh = $('#readerHint');
-  if (S.view !== 'reader') { rh.style.display = 'none'; return; }
-  rh.style.display = '';
-  if (!hintsActive()) rh.innerHTML = `<span>生词提示已关闭${S.docOff ? '（仅本文档）' : ''}</span><button data-act="hint-on">显示</button>`;
-  else if (!n) rh.innerHTML = `<span class="dotv"></span><span>本文暂无生词本中的词</span>`;
-  else rh.innerHTML = `<span class="dotv"></span><span>本文出现 ${distinct} 个生词 · ${n} 处</span><button data-act="open-book-set">查看</button>`;
+  $('#hintTip').textContent = '生词提示（⇧⌘U）';
 }
 
 /* ---------------- Floating UI helpers ---------------- */
@@ -597,7 +584,7 @@ function wordCard(loadedEntry) {
   c.innerHTML = `<div class="card-h"><div style="flex:1"><div class="term">${esc(s.text)}</div><div class="phon"><div class="sk" style="width:120px"></div></div></div>
     <button class="ibtn" data-close title="关闭（Esc）">${ic('close', 's')}</button></div>
     <div class="senses"><div class="sk" style="width:80%"></div><div class="sk" style="width:60%"></div></div>
-    <div class="ctx"><div class="lab">${ic('info', 'xs')}在本句中</div><div class="sk" style="width:70%"></div></div>`;
+    <div class="ctx"><div class="sk" style="width:70%"></div><div class="sk" style="width:90%"></div></div>`;
   place(c, s.rect);
   setTimeout(() => { if (!c.isConnected) return; fillWordCard(c, s, sentence); place(c, s.rect); }, existing ? 120 : 650);
 }
@@ -607,31 +594,26 @@ function fillWordCard(c, s, sentence) {
   const hasThisSentence = existing && existing.contexts.some(x => x.sentence === sentence);
   const trKey = Object.keys(SENT_TR).find(k => sentence.startsWith(k));
   const hitRe = new RegExp(`\\b(${s.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'i');
-  const lemmaNote = d.term.toLowerCase() !== s.text.toLowerCase() ? `<span class="hintline">原形 <b style="color:var(--label)">${esc(d.term)}</b> · 选中的是 ${esc(s.text)}</span>` : '';
   c.innerHTML = `<div class="card-h"><div style="flex:1;min-width:0">
       <div class="term">${esc(d.term)}</div>
-      <div class="phon">${d.phon.uk ? phonHtml(d) : '<span>暂无音标</span>'}</div>
+      ${d.phon.uk ? `<div class="phon">${phonHtml(d)}</div>` : ''}
     </div>
-    ${existing ? `<button class="add done" data-act="vocab-menu" data-id="${existing.id}">${ic('star', 's', true)}已在生词本</button>`
+    ${existing ? `<button class="add done" data-act="vocab-menu" data-id="${existing.id}">${ic('star', 's', true)}${existing.status === 'known' ? '已掌握' : '学习中'}</button>`
       : `<button class="add" data-act="add-word" title="加入生词本（S）">${ic('star', 's')}加入生词本</button>`}
     <button class="ibtn" data-close title="关闭（Esc）">${ic('close', 's')}</button></div>
-    ${lemmaNote}
     <div class="senses">${d.senses.map(([p, m]) => `<div class="sense"><span class="pos">${esc(p)}</span><span>${esc(m)}</span></div>`).join('')}</div>
-    <div class="ctx"><div class="lab">${ic('info', 'xs')}在本句中<span style="flex:1"></span>${existing ? (hasThisSentence ? '<span style="font-weight:500">已收录此例句</span>' : `<button class="lnk" style="height:20px;color:var(--vocab)" data-act="add-context" data-id="${existing.id}">${ic('plus', 'xs')}收录此例句</button>`) : ''}</div>
-      <div class="mean">${esc(d.ctx)}</div>
+    <div class="ctx"><div class="lab"><span class="mean" style="flex:1;color:var(--label)">${esc(d.ctx)}</span>${existing && !hasThisSentence ? `<button class="ibtn sm" style="color:var(--vocab)" data-act="add-context" data-id="${existing.id}" title="收录为例句">${ic('plus', 's')}</button>` : ''}</div>
       <div class="src">${esc(sentence).replace(hitRe, '<b>$1</b>')}</div>
       <div class="tr">${esc(trKey ? SENT_TR[trKey] : '（演示）此处显示整句译文。')}</div></div>
-    ${existing ? `<div class="hintline"><span class="status${existing.status === 'known' ? ' known' : ''}"><span class="dot"></span>${existing.status === 'known' ? '已掌握' : '学习中'}</span>${existing.contexts.length} 条例句 · 来自 ${new Set(existing.contexts.map(x => x.set)).size} 个学习集</div>`
-      : `<div class="forms">加入后全文也会标出：${d.forms.filter(f => f !== d.term).slice(0, 4).map(f => `<span class="chip">${esc(f)}</span>`).join('') || '<span>仅原形</span>'}</div>`}
-    <div class="card-f"><button class="lnk" data-act="translate-sentence">${ic('trans', 's')}翻译整句</button><button class="lnk ai" data-act="ask">${ic('spark', 's')}问助手</button><span class="grow"></span>${existing ? `<button class="lnk" data-act="book-entry" data-id="${existing.id}">在生词本中查看 ›</button>` : '<span>AI 释义 · 默认模型</span>'}</div>`;
+    <div class="card-f"><button class="lnk" data-act="translate-sentence">${ic('trans', 's')}翻译整句</button><button class="lnk ai" data-act="ask">${ic('spark', 's')}问助手</button><span class="grow"></span>${existing ? `<button class="lnk" data-act="book-entry" data-id="${existing.id}">详情 ›</button>` : ''}</div>`;
   c._lookup = { d, sentence, hit: s.text };
 }
 function renderWordProblem(c, s, sentence) {
   const setup = S.ai === 'setup';
-  c.innerHTML = `<div class="card-h"><div style="flex:1"><div class="term">${esc(s.text)}</div><div class="phon">释义需要 AI 模型</div></div>
+  c.innerHTML = `<div class="card-h"><div style="flex:1"><div class="term">${esc(s.text)}</div></div>
     <button class="ibtn" data-close title="关闭（Esc）">${ic('close', 's')}</button></div>
-    <div class="problem">${ic(setup ? 'gear' : 'wifiOff', 'l')}<div><b>${setup ? '还没有设置模型' : '联网已关闭'}</b><br>${setup ? '在“设置 › 助手”里添加一个模型后即可查词。也可以先把它记进生词本，之后再补释义。' : '查词会把单词和所在句子发给模型。打开联网，或在设置里使用本机 Ollama 模型。'}</div></div>
-    <div class="card-f"><button class="lnk" data-act="hud:演示：打开设置 › 助手">${ic('gear', 's')}${setup ? '打开设置' : '打开联网'}</button><span class="grow"></span><button class="add" data-act="add-bare">${ic('star', 's')}仅记下单词</button></div>`;
+    <div class="problem">${ic(setup ? 'gear' : 'wifiOff', 'l')}<div><b>${setup ? '未设置模型' : '联网已关闭'}</b></div></div>
+    <div class="card-f"><button class="lnk" data-act="hud:演示：打开设置 › 助手">${ic('gear', 's')}${setup ? '打开设置' : '打开联网'}</button><span class="grow"></span><button class="add" data-act="add-bare">${ic('star', 's')}加入生词本</button></div>`;
   const lw = s.text.toLowerCase();
   c._lookup = { d: { term: lw, phon: { uk: '', us: '' }, senses: [], gloss: '', forms: [lw], ctx: '' }, sentence, hit: s.text, bare: true };
 }
@@ -644,8 +626,8 @@ function transCard() {
   const head = `<div class="card-h" style="align-items:center"><div class="lang" style="flex:1"><span class="popup">自动检测 ${ic('chev', 'xs')}</span><button class="ibtn sm" title="交换语言">${ic('swap', 's')}</button><span class="popup">简体中文 ${ic('chev', 'xs')}</span></div>
     <button class="ibtn" data-close title="关闭（Esc）">${ic('close', 's')}</button></div>`;
   if (S.ai !== 'ok') {
-    c.innerHTML = head + `<div class="problem">${ic(S.ai === 'setup' ? 'gear' : 'wifiOff', 'l')}<div><b>${S.ai === 'setup' ? '还没有设置模型' : '联网已关闭'}</b><br>与现有划词翻译一致：设置模型或打开联网后再翻译。</div></div>`
-      + (canAdd ? `<div class="card-f"><span class="grow"></span><button class="add" data-act="add-bare">${ic('star', 's')}仅记下短语</button></div>` : '');
+    c.innerHTML = head + `<div class="problem">${ic(S.ai === 'setup' ? 'gear' : 'wifiOff', 'l')}<div><b>${S.ai === 'setup' ? '未设置模型' : '联网已关闭'}</b></div></div>`
+      + (canAdd ? `<div class="card-f"><span class="grow"></span><button class="add" data-act="add-bare">${ic('star', 's')}加入生词本</button></div>` : '');
     c._lookup = { d: { term: s.text.toLowerCase(), phon: { uk: '', us: '' }, senses: [], gloss: '', forms: [s.text.toLowerCase()], ctx: '' }, sentence: sentenceOf(s.pi, s.text), hit: s.text, bare: true, kind: 'phrase' };
     place(c, s.rect); return;
   }
@@ -660,11 +642,9 @@ function transCard() {
     const words = tokenize(s.text).length;
     const addBtn = !canAdd
       ? `<button class="add" disabled data-tip style="position:relative">${ic('star', 's')}加入生词本<span class="tip" style="top:auto;bottom:calc(100% + 6px)">生词本收录单词和 ${SEL_MAX_WORDS} 个词以内的短语</span></button>`
-      : existing ? `<button class="add done" data-act="vocab-menu" data-id="${existing.id}">${ic('star', 's', true)}已在生词本</button>`
+      : existing ? `<button class="add done" data-act="vocab-menu" data-id="${existing.id}">${ic('star', 's', true)}${existing.status === 'known' ? '已掌握' : '学习中'}</button>`
       : `<button class="add" data-act="add-phrase" title="加入生词本（S）">${ic('star', 's')}加入生词本</button>`;
     c.innerHTML = head + `<div class="trans-src">${esc(s.text)}</div><div class="trans-out">${esc(out)}</div>`
-      + (canAdd && !existing ? `<div class="forms">加入后全文也会标出：${(ph ? ph.forms.filter(f => f !== key).slice(0, 3) : [key]).map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>` : '')
-      + (!canAdd ? `<div class="hintline">${ic('info', 'xs')}选中了 ${words} 个词的句子，只翻译、不收录。可以只选其中的短语再加入生词本。</div>` : '')
       + `<div class="card-f"><button class="ibtn sm" data-act="copy-tr" title="复制译文">${ic('copy', 's')}</button><button class="lnk ai" data-act="ask">${ic('spark', 's')}问助手</button><span class="grow"></span>${addBtn}</div>`;
     const sentence = sentenceOf(s.pi, s.text);
     c._lookup = { d: ph ? clone(ph) : { term: key, phon: { uk: '', us: '' }, senses: [['phr.', out]], gloss: out.length <= 8 ? out : out.slice(0, 6) + '…', forms: [key], ctx: out }, sentence, hit: s.text, kind: 'phrase' };
@@ -690,7 +670,7 @@ function addFromCard(card) {
   closeFloating();
   const occ = occurrences(entry);
   occ.forEach(e => e.classList.add('pulse'));
-  hud(hintsActive() ? `已加入生词本 · 本文标出 ${occ.length} 处` : '已加入生词本（生词提示已关闭）', '撤销', () => { removeEntry(entry.id, true); }, true);
+  hud('已加入生词本', '撤销', () => { removeEntry(entry.id, true); }, true);
   void keepSel;
 }
 function removeEntry(id, silent) {
@@ -699,14 +679,14 @@ function removeEntry(id, silent) {
   if (S.bookSel === id) S.bookSel = null;
   renderReader(); if (S.view === 'book') renderBook();
   closeFloating();
-  if (!silent) hud(`已从生词本移除「${esc(v.term)}」`, '撤销', () => { S.vocab.splice(i, 0, v); renderReader(); if (S.view === 'book') renderBook(); }, true);
+  if (!silent) hud('已移除', '撤销', () => { S.vocab.splice(i, 0, v); renderReader(); if (S.view === 'book') renderBook(); }, true);
 }
 function setStatus(id, status) {
   const v = S.vocab.find(x => x.id === id); if (!v) return;
   const prev = v.status; v.status = status;
   renderReader(); if (S.view === 'book') renderBook();
   closeFloating();
-  hud(status === 'known' ? `「${esc(v.term)}」已标为掌握，正文不再提示` : `「${esc(v.term)}」重新加入学习`, '撤销', () => { v.status = prev; renderReader(); if (S.view === 'book') renderBook(); }, true);
+  hud(status === 'known' ? '已掌握' : '学习中', '撤销', () => { v.status = prev; renderReader(); if (S.view === 'book') renderBook(); }, true);
 }
 
 /* ---------------- Occurrence popover ---------------- */
@@ -716,18 +696,17 @@ function openOccurrence(el) {
   const all = occurrences(v), i = all.indexOf(el);
   el.classList.add('cur');
   const c = document.createElement('div'); c.className = 'vpop';
-  const ctxCount = v.contexts.length;
   c.innerHTML = `<div class="card-h"><div style="flex:1;min-width:0"><div class="term">${esc(v.term)}</div>
       <div class="phon">${v.phon?.us ? `<span class="pn">${esc(v.phon.us)} ${speakBtn(v.term, 'us')}</span>` : ''}<span class="status${v.status === 'known' ? ' known' : ''}"><span class="dot"></span>${v.status === 'known' ? '已掌握' : '学习中'}</span></div></div>
       <button class="ibtn" data-close title="关闭（Esc）">${ic('close', 's')}</button></div>
-    <div class="senses">${(v.senses.length ? v.senses.slice(0, 2) : [['', '（尚未补充释义）']]).map(([p, m]) => `<div class="sense">${p ? `<span class="pos">${esc(p)}</span>` : ''}<span>${esc(m)}</span></div>`).join('')}</div>
-    ${v.note ? `<div class="hintline" style="color:var(--label2)">我的笔记：${esc(v.note)}</div>` : ''}
+    <div class="senses">${(v.senses.length ? v.senses.slice(0, 2) : [['', '—']]).map(([p, m]) => `<div class="sense">${p ? `<span class="pos">${esc(p)}</span>` : ''}<span>${esc(m)}</span></div>`).join('')}</div>
+    ${v.note ? `<div class="hintline" style="color:var(--label2)">${esc(v.note)}</div>` : ''}
     <div class="card-f" style="gap:2px">
-      <span class="nav"><button class="ibtn sm" data-act="occ-prev" ${i <= 0 ? 'disabled' : ''} title="上一处">${ic('left', 's')}</button>本文第 ${i + 1} / ${all.length} 处<button class="ibtn sm" data-act="occ-next" ${i >= all.length - 1 ? 'disabled' : ''} title="下一处">${ic('right', 's')}</button></span>
+      <span class="nav"><button class="ibtn sm" data-act="occ-prev" ${i <= 0 ? 'disabled' : ''} title="上一处">${ic('left', 's')}</button>${i + 1} / ${all.length}<button class="ibtn sm" data-act="occ-next" ${i >= all.length - 1 ? 'disabled' : ''} title="下一处">${ic('right', 's')}</button></span>
       <span class="grow"></span>
       <button class="ibtn sm" data-act="${v.status === 'known' ? 'unknown' : 'known'}" data-id="${v.id}" title="${v.status === 'known' ? '重新学习' : '标为已掌握（正文不再提示）'}">${ic('check', 's')}</button>
       <button class="ibtn sm" data-act="remove" data-id="${v.id}" title="移出生词本">${ic('trash', 's')}</button>
-      <button class="lnk" data-act="book-entry" data-id="${v.id}">详情 · ${ctxCount} 条例句 ›</button>
+      <button class="lnk" data-act="book-entry" data-id="${v.id}">详情 ›</button>
     </div>`;
   c._occ = { v, i };
   place(c, el.getBoundingClientRect(), 'below', 8);
@@ -748,10 +727,9 @@ function openAa() {
     <div class="mrow"><span class="grow">行距</span><div class="seg sm"><button>紧</button><button class="on">标准</button><button>松</button></div></div>
     <div class="msep"></div>
     <div class="mh" style="display:flex;align-items:center;gap:6px"><span style="color:var(--vocab)">${ic('vocab', 'xs')}</span>生词提示<span style="flex:1"></span><span class="kbd">⇧⌘U</span></div>
-    <div class="mrow"><div class="seg" style="flex:1" id="aaHint"><button data-v="off" ${S.hint === 'off' ? 'class="on"' : ''}>关闭</button><button data-v="underline" ${S.hint === 'underline' ? 'class="on"' : ''}>下划线</button><button data-v="gloss" ${S.hint === 'gloss' ? 'class="on"' : ''}>行间释义</button></div></div>
-    <div class="mrow hov" data-act="toggle-docoff"><span class="grow">在本文档中隐藏</span><span class="sw ${S.docOff ? 'on' : ''}"></span></div>
-    <div class="mrow hov" data-act="toggle-known"><span class="grow">也标出已掌握的词</span><span class="sw ${S.showKnown ? 'on' : ''}"></span></div>
-    <div class="mnote">提示只在阅读时叠加显示，不改动原文、不写入标注；行间放不下释义时自动只显示下划线。</div>`;
+    <div class="mrow"><div class="seg" style="flex:1" id="aaHint"><button data-v="off" ${S.hint === 'off' ? 'class="on"' : ''}>关闭</button><button data-v="underline" ${S.hint === 'underline' ? 'class="on"' : ''}>下划线</button><button data-v="gloss" ${S.hint === 'gloss' ? 'class="on"' : ''}>释义</button></div></div>
+    <div class="mrow hov" data-act="toggle-docoff"><span class="grow">本文档隐藏</span><span class="sw ${S.docOff ? 'on' : ''}"></span></div>
+    <div class="mrow hov" data-act="toggle-known"><span class="grow">标出已掌握</span><span class="sw ${S.showKnown ? 'on' : ''}"></span></div>`;
   layer().appendChild(m);
   const b = relRect($('#aaBtn').getBoundingClientRect());
   m.style.left = Math.max(12, Math.min(b.x + b.w - 280, b.bw - 292)) + 'px'; m.style.top = '6px';
@@ -766,7 +744,6 @@ function setHint(v) {
 }
 function toggleHints() {
   if (hintsActive()) setHint('off'); else setHint(S.lastHint || 'underline');
-  hud(hintsActive() ? '已显示生词提示' : '已隐藏生词提示', null, null, true);
 }
 
 /* ---------------- Vocabulary book ---------------- */
@@ -776,7 +753,7 @@ function setView(v) {
   $$('#side .row').forEach(r => r.classList.toggle('on', r.dataset.nav === v || (v === 'reader' && r.dataset.nav === 'reader')));
   $('#readerTools').style.visibility = v === 'book' ? 'hidden' : '';
   $('#tbTitle').textContent = v === 'book' ? '生词本' : DOC.title;
-  $('#tbSub').textContent = v === 'book' ? '所有学习集共用 · 数据保存在本机' : '第 1 / 3 章 · 12%';
+  $('#tbSub').textContent = v === 'book' ? '' : '第 1 / 3 章 · 12%';
   if (v === 'book') renderBook(); else renderReader();
 }
 function bookList() {
@@ -797,15 +774,13 @@ function renderBook() {
   const row = v => {
     const n = occurrencesIn(v);
     return `<div class="bk-row ${S.bookSel === v.id ? 'on' : ''}" data-book="${v.id}">
-      <div style="min-width:0;flex:1"><div class="w">${esc(v.term)}${v.kind === 'phrase' ? ' <span class="pos" style="font-style:normal">短语</span>' : ''}</div><div class="m">${esc(v.senses.map(s => s[1]).join('；') || '尚未补充释义')}</div></div>
-      <div class="meta"><span class="sd ${v.status === 'known' ? 'known' : ''}" title="${v.status === 'known' ? '已掌握' : '学习中'}"></span>${n ? `<span class="count" title="在当前文档中出现">本文 ${n}</span>` : ''}</div></div>`;
+      <div style="min-width:0;flex:1"><div class="w">${esc(v.term)}${v.kind === 'phrase' ? ' <span class="pos" style="font-style:normal">短语</span>' : ''}</div><div class="m">${esc(v.senses.map(s => s[1]).join('；') || '—')}</div></div>
+      <div class="meta"><span class="sd ${v.status === 'known' ? 'known' : ''}" title="${v.status === 'known' ? '已掌握' : '学习中'}"></span>${n ? `<span class="count" title="本文出现次数">${n}</span>` : ''}</div></div>`;
   };
   const rows = list.length ? (today.length ? `<div class="bk-group">今天</div>${today.map(row).join('')}` : '') + (older.length ? `<div class="bk-group">更早</div>${older.map(row).join('')}` : '')
-    : `<div class="empty"><div class="big">${ic('vocab', 'l')}</div><b style="color:var(--label)">${S.bookQuery ? '没有匹配的词' : '这里还没有词'}</b><span>${S.bookQuery ? '换个关键词试试。' : '阅读时选中单词或短语，在查词 / 翻译卡片里点“加入生词本”。'}</span></div>`;
-  const total = S.vocab.length, learning = S.vocab.filter(v => v.status === 'learning').length;
+    : `<div class="empty"><div class="big">${ic('vocab', 'l')}</div><b style="color:var(--label)">${S.bookQuery ? '没有匹配的词' : '这里还没有词'}</b></div>`;
   $('#book').innerHTML = `<div class="bk-list">
-      <div class="bk-head"><div class="bk-title"><b>生词本</b><span>${total} 个 · 学习中 ${learning}</span></div>
-        <div class="search">${ic('search', 's')}<input id="bkQ" placeholder="搜索单词、释义" value="${esc(S.bookQuery)}"></div>
+      <div class="bk-head"><div class="search">${ic('search', 's')}<input id="bkQ" placeholder="搜索单词、释义" value="${esc(S.bookQuery)}"></div>
         <div class="bk-filters"><div class="seg sm" id="bkScope"><button data-v="set" ${S.bookScope === 'set' ? 'class="on"' : ''}>本学习集</button><button data-v="all" ${S.bookScope === 'all' ? 'class="on"' : ''}>全部</button></div>
           <div class="seg sm" id="bkFilter" style="margin-left:auto"><button data-v="learning" ${S.bookFilter === 'learning' ? 'class="on"' : ''}>学习中</button><button data-v="known" ${S.bookFilter === 'known' ? 'class="on"' : ''}>已掌握</button><button data-v="all" ${S.bookFilter === 'all' ? 'class="on"' : ''}>全部</button></div></div>
       </div>
@@ -815,8 +790,7 @@ function renderBook() {
 }
 function renderBookDetail() {
   const v = S.vocab.find(x => x.id === S.bookSel), host = $('#bkDetail'); if (!host) return;
-  if (!v) { host.innerHTML = `<div class="empty" style="height:100%"><span>选择左侧的词查看详情</span></div>`; return; }
-  const n = occurrencesIn(v);
+  if (!v) { host.innerHTML = ''; return; }
   const ctx = v.contexts.map((c, k) => {
     const re = new RegExp(`\\b(${(c.hit || v.term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'i');
     const here = c.doc === DOC.id, otherSet = c.set !== DOC.set;
@@ -828,22 +802,19 @@ function renderBookDetail() {
   host.innerHTML = `<div class="card-h" style="align-items:center"><div style="flex:1;min-width:0">
       <div class="term">${esc(v.term)}</div>
       <div class="phon" style="margin-top:8px">${v.phon?.uk ? phonHtml(v) : ''}
-        <span class="status${v.status === 'known' ? ' known' : ''}"><span class="dot"></span>${v.status === 'known' ? '已掌握' : '学习中'}</span>
-        <span>加入于 ${fmtDate(v.added)}${n ? ` · 当前文档出现 ${n} 处` : ''}</span></div></div></div>
-    <div class="bk-sec"><h4>释义<span class="grow"></span><button class="lnk" data-act="hud:演示：结合全部例句重新生成释义">${ic('spark', 'xs')}重新生成</button></h4>
-      <div class="senses">${v.senses.length ? v.senses.map(([p, m]) => `<div class="sense"><span class="pos">${esc(p)}</span><span>${esc(m)}</span></div>`).join('') : '<span style="color:var(--label2)">尚未补充释义。设置模型后点“重新生成”，或在下面的笔记里自己写。</span>'}</div></div>
-    <div class="bk-sec"><h4>行间释义<span class="grow"></span><span style="font-weight:400;color:var(--label3)">“行间释义”模式下显示在词上方，最多 8 个字</span></h4>
+        <span class="status${v.status === 'known' ? ' known' : ''}"><span class="dot"></span>${v.status === 'known' ? '已掌握' : '学习中'}</span></div></div></div>
+    <div class="bk-sec"><h4>释义<span class="grow"></span><button class="ibtn sm" data-act="hud:演示：重新生成释义" title="重新生成">${ic('spark', 's')}</button></h4>
+      <div class="senses">${v.senses.length ? v.senses.map(([p, m]) => `<div class="sense"><span class="pos">${esc(p)}</span><span>${esc(m)}</span></div>`).join('') : '<span style="color:var(--label3)">—</span>'}</div></div>
+    <div class="bk-sec"><h4>行间释义</h4>
       <input class="note-area" style="min-height:0;height:30px;resize:none" maxlength="8" data-edit="gloss" value="${esc(v.gloss || '')}" placeholder="如：平台期"></div>
-    <div class="bk-sec"><h4>我的笔记</h4><textarea class="note-area" data-edit="note" placeholder="记下词根、搭配、易混词……">${esc(v.note || '')}</textarea></div>
-    <div class="bk-sec"><h4>识别的词形<span class="grow"></span><span style="font-weight:400;color:var(--label3)">正文中出现这些形式都会被标出</span></h4>
+    <div class="bk-sec"><h4>笔记</h4><textarea class="note-area" data-edit="note" placeholder="笔记">${esc(v.note || '')}</textarea></div>
+    <div class="bk-sec"><h4>词形</h4>
       <div class="forms">${v.forms.map((f, k) => `<span class="chip">${esc(f)}${v.forms.length > 1 ? `<button data-act="del-form" data-id="${v.id}" data-k="${k}" title="不再识别">${ic('close', 'xs')}</button>` : ''}</span>`).join('')}
-        <span class="chip" style="background:transparent;box-shadow:inset 0 0 0 .5px var(--sep)">${ic('plus', 'xs')}<input class="form-in" data-addform="${v.id}" placeholder="添加词形，回车"></span></div></div>
-    <div class="bk-sec"><h4>例句与出处 · ${v.contexts.length}</h4>${ctx || '<span style="color:var(--label2)">没有例句。</span>'}</div>
+        <span class="chip" style="background:transparent;box-shadow:inset 0 0 0 .5px var(--sep)">${ic('plus', 'xs')}<input class="form-in" data-addform="${v.id}" placeholder="添加"></span></div></div>
+    <div class="bk-sec"><h4>例句</h4>${ctx || '<span style="color:var(--label2)">没有例句。</span>'}</div>
     <div class="bk-actions"><button class="btn" data-act="${v.status === 'known' ? 'unknown' : 'known'}" data-id="${v.id}">${ic('check', 's')}${v.status === 'known' ? '重新学习' : '标为已掌握'}</button>
-      <button class="btn" data-act="hud:规划中：生词复习（FSRS，与卡片复习分开计数）">${ic('cards', 's')}加入复习</button>
       <span style="flex:1"></span><button class="btn danger" data-act="remove" data-id="${v.id}">${ic('trash', 's')}从生词本删除</button></div>`;
 }
-function fmtDate(t) { const d = new Date(t); return `${d.getMonth() + 1} 月 ${d.getDate()} 日`; }
 function jumpTo(id, k) {
   const v = S.vocab.find(x => x.id === id); const c = v?.contexts[k]; if (!c) return;
   setView('reader');
@@ -908,7 +879,7 @@ document.addEventListener('click', e => {
     const v = S.vocab.find(x => x.id === a.dataset.id), L = card._lookup || {};
     const sentence = L.sentence || sentenceOf(S.sel.pi, S.sel.text), trKey = Object.keys(SENT_TR).find(k => sentence.startsWith(k));
     v.contexts.unshift({ set: DOC.set, doc: DOC.id, docTitle: DOC.title, p: S.sel?.pi ?? 0, sentence, hit: S.sel?.text, tr: trKey ? SENT_TR[trKey] : '', at: now() });
-    fillWordCard(card, S.sel, sentence); hud(`已收录为「${esc(v.term)}」的第 ${v.contexts.length} 条例句`, null, null, true);
+    fillWordCard(card, S.sel, sentence); hud('已收录例句', null, null, true);
   }
   else if (act === 'translate-sentence') { const s = S.sel; S.sel = { ...s, text: sentenceOf(s.pi, s.text), kind: 'sentence' }; closeFloating(true); transCard(); }
   else if (act === 'ask') { closeFloating(); hud('演示：已带上选区打开助手'); }
@@ -917,10 +888,8 @@ document.addEventListener('click', e => {
   else if (act === 'unknown') setStatus(a.dataset.id, 'learning');
   else if (act === 'remove') removeEntry(a.dataset.id);
   else if (act === 'book-entry') { S.bookSel = a.dataset.id; const v = S.vocab.find(x => x.id === a.dataset.id); if (v && v.status === 'known') S.bookFilter = 'all'; S.bookScope = 'all'; setView('book'); }
-  else if (act === 'open-book-set') { S.bookScope = 'set'; S.bookFilter = 'learning'; S.bookSel = null; setView('book'); }
   else if (act === 'occ-prev') stepOccurrence(-1);
   else if (act === 'occ-next') stepOccurrence(1);
-  else if (act === 'hint-on') { S.docOff = false; setHint(S.hint === 'off' ? S.lastHint : S.hint); }
   else if (act === 'toggle-docoff') { S.docOff = !S.docOff; renderReader(); $('#aaMenu')?.remove(); openAa(); }
   else if (act === 'toggle-known') { S.showKnown = !S.showKnown; renderReader(); $('#aaMenu')?.remove(); openAa(); }
   else if (act === 'jump') jumpTo(a.dataset.id, +a.dataset.k);
@@ -983,15 +952,15 @@ const SCENES = [
   { t: '选中单词 · 浮动工具条', d: '单词时「翻译」按钮变为「查词」（T）', run: () => { setView('reader'); setTimeout(() => { selectText(1, 'meticulously'); showToolbar(); }, 60); } },
   { t: '查词卡片', d: '原形、音标、义项 + 本句语境释义与整句译文', run: () => { setView('reader'); setTimeout(() => { selectText(1, 'meticulously'); openLookup(); }, 60); } },
   { t: '加入生词本 → 全文标出', d: '加入 deliberate，4 处（含 deliberately）同时标出', run: () => { reset(true); setView('reader'); setTimeout(() => { selectText(1, 'deliberate'); openLookup(); setTimeout(() => { const c = $('.card', layer()); c && addFromCard(c); }, 800); }, 60); } },
-  { t: '短语：翻译后加入', d: '8 个词以内的短语可加入，按词形识别时态变化', run: () => { setView('reader'); setTimeout(() => { selectText(2, 'take for granted'); openLookup(); }, 60); } },
-  { t: '长句：只翻译', d: '超过 8 个词或跨句，「加入生词本」置灰并说明原因', run: () => { setView('reader'); setTimeout(() => { selectText(0, 'Yet anyone who has driven a car for twenty years knows this is not quite true'); openLookup(); }, 60); } },
-  { t: '再次查已收录的词', d: '显示「已在生词本」，可收录当前句为新例句', run: () => { setView('reader'); setTimeout(() => { selectText(3, 'plateaus'); openLookup(); }, 60); } },
-  { t: '点按正文中的生词', d: '轻量卡片：释义、本文第 n 处切换、掌握 / 移出', run: () => { setHint('underline'); setView('reader'); setTimeout(() => { const el = $('.vw[data-v="v-plateau"]'); el.scrollIntoView({ block: 'center' }); setTimeout(() => openOccurrence(el), 50); }, 60); } },
+  { t: '短语：翻译后加入', d: '8 个词以内的短语可加入', run: () => { setView('reader'); setTimeout(() => { selectText(2, 'take for granted'); openLookup(); }, 60); } },
+  { t: '长句：只翻译', d: '超过 8 个词或跨句，「加入生词本」置灰', run: () => { setView('reader'); setTimeout(() => { selectText(0, 'Yet anyone who has driven a car for twenty years knows this is not quite true'); openLookup(); }, 60); } },
+  { t: '再次查已收录的词', d: '按钮显示状态，+ 收录当前句为例句', run: () => { setView('reader'); setTimeout(() => { selectText(3, 'plateaus'); openLookup(); }, 60); } },
+  { t: '点按正文中的生词', d: '释义、本文各处切换、掌握 / 移出', run: () => { setHint('underline'); setView('reader'); setTimeout(() => { const el = $('.vw[data-v="v-plateau"]'); el.scrollIntoView({ block: 'center' }); setTimeout(() => openOccurrence(el), 50); }, 60); } },
   { t: '行间释义模式', d: '在行距空隙显示简短释义，不重排正文', run: () => { setView('reader'); setHint('gloss'); $('#scroll').scrollTop = 0; } },
   { t: '阅读设置 · 关闭提示', d: '关闭 / 下划线 / 行间释义；可只在本文档隐藏', run: () => { setView('reader'); setHint('underline'); setTimeout(openAa, 50); } },
   { t: '生词本 · 列表与详情', d: '本学习集 / 全部；学习中 / 已掌握；例句可回原文', run: () => { S.bookScope = 'all'; S.bookFilter = 'learning'; S.bookSel = 'v-tacit'; setView('book'); } },
   { t: '生词本 → 回到原文', d: '点例句的「回到原文」，跳到出处并闪烁', run: () => { S.bookScope = 'set'; S.bookFilter = 'learning'; S.bookSel = 'v-plateau'; setView('book'); setTimeout(() => jumpTo('v-plateau', 0), 900); } },
-  { t: '未设置模型时查词', d: '与划词翻译相同的问题状态，仍可先记下单词', run: () => { setAi('setup'); setView('reader'); setTimeout(() => { selectText(4, 'glamorous'); openLookup(); }, 60); } },
+  { t: '未设置模型时查词', d: '与划词翻译相同的问题状态，仍可加入', run: () => { setAi('setup'); setView('reader'); setTimeout(() => { selectText(4, 'glamorous'); openLookup(); }, 60); } },
 ];
 function renderScenes() {
   $('#scenes').innerHTML = SCENES.map((s, i) => `<button class="scn ${S.scene === i ? 'on' : ''}" data-scn="${i}"><span class="n">${i + 1}</span><span>${s.t}<small>${s.d}</small></span></button>`).join('');
