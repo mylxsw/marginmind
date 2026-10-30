@@ -150,6 +150,7 @@ class AppShell extends ConsumerWidget {
       WorkspaceRoute(:final studySetId) => WorkspaceScreen(key: ValueKey(studySetId), studySetId: studySetId),
       ReviewRoute(:final studySetId) => ReviewScreen(key: ValueKey('review-$studySetId'), studySetId: studySetId),
       StatsRoute(:final studySetId) => StatsScreen(key: ValueKey('stats-$studySetId'), studySetId: studySetId),
+      GalleryRoute() => const GalleryScreen(),
       VocabularyRoute() => VocabularyScreen(key: ValueKey(route), route: route),
     };
     final tabs = showsPhoneTabs(context);

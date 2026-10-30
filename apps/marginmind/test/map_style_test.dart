@@ -336,19 +336,28 @@ void main() {
 
     MindMapCanvas canvas(WidgetTester tester) => tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
 
+    Future<void> clickStyle(WidgetTester tester, TestGesture mouse) async {
+      final button = find.byKey(const ValueKey('map-style-button'));
+      await mouse.moveTo(tester.getCenter(button));
+      await tester.pumpAndSettle();
+      await mouse.down(tester.getCenter(button));
+      await mouse.up();
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('hover previews, leaving restores, a click applies one undo step', (tester) async {
       final (_, controller) = await open(tester);
       MindMap map() => controller.content.map(MindMap.defaultId)!;
-      await tester.tap(find.byKey(const ValueKey('map-style-button')));
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 42);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+      await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsOneWidget);
       expect(canvas(tester).fitInsets, isNotNull, reason: 'the map makes way for the popover');
       // Thumbnails only: the names are tooltips.
       expect(find.descendant(of: find.byType(MapStylePopover), matching: find.byType(Text)), findsNothing);
 
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      addTearDown(mouse.removePointer);
-      await mouse.addPointer(location: Offset.zero);
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-structure-tree'))));
       await tester.pumpAndSettle();
       expect(canvas(tester).previewStyle, (MapStructure.tree, MapPalette.system));
@@ -387,11 +396,11 @@ void main() {
 
     testWidgets('a click outside closes the popover and ends the preview', (tester) async {
       await open(tester);
-      await tester.tap(find.byKey(const ValueKey('map-style-button')));
-      await tester.pumpAndSettle();
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, pointer: 42);
       addTearDown(mouse.removePointer);
       await mouse.addPointer(location: Offset.zero);
+      await clickStyle(tester, mouse);
+      await tester.pumpAndSettle();
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-palette-ink'))));
       await tester.pumpAndSettle();
       expect(canvas(tester).previewStyle, isNotNull);
@@ -400,9 +409,9 @@ void main() {
       expect(find.byType(MapStylePopover), findsNothing);
       expect(canvas(tester).previewStyle, isNull);
       // The button opens and closes it.
-      await tester.tap(find.byKey(const ValueKey('map-style-button')));
+      await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('map-style-button')));
+      await clickStyle(tester, mouse);
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsNothing);
       await settleHud(tester);

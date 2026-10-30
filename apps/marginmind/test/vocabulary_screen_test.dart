@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -19,7 +20,6 @@ import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
-import 'package:mm_platform/mm_platform.dart';
 
 import 'helpers.dart';
 import 'vocabulary_test.dart' show FailingRepository, UnreadableRepository;
@@ -62,15 +62,8 @@ VocabularyEntry word(
   contexts: contexts ?? [source('same')],
 );
 
-class Speech extends SystemSpeech {
+class Speech {
   final calls = <String>[];
-  @override
-  Future<void> speak(String text, String locale) async {
-    calls.add('$text:$locale');
-  }
-
-  @override
-  Future<void> stop() async {}
 }
 
 class Lookup extends WordLookup {
@@ -118,6 +111,15 @@ Future<(ProviderContainer, InMemoryVocabularyRepository)> open(
   Speech? speech,
   InMemoryStudySetContentRepository? content,
 }) async {
+  const speechChannel = MethodChannel('marginmind/speech');
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(speechChannel, (call) async {
+    if (call.method == 'speak') {
+      final args = call.arguments as Map;
+      speech?.calls.add('${args['text']}:${args['language']}');
+    }
+    return null;
+  });
+  addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(speechChannel, null));
   final repo =
       repository ??
       InMemoryVocabularyRepository(
@@ -143,7 +145,6 @@ Future<(ProviderContainer, InMemoryVocabularyRepository)> open(
       if (compact) touchPlatformProvider.overrideWithValue(true),
       assistantDefaultModelProvider.overrideWithValue(lookup == null ? null : model),
       if (lookup != null) wordLookupProvider.overrideWithValue(lookup),
-      systemSpeechProvider.overrideWithValue(speech ?? Speech()),
       translationParagraphsProvider(('demo-1', 'c1')).overrideWith(
         (ref) async => [
           TranslationParagraph(documentId: 'c1', page: 1, index: 0, text: 'Cats and cats.', fingerprint: 'f'),
@@ -163,7 +164,48 @@ Future<void> tap(WidgetTester tester, Finder f) async {
 }
 
 Future<void> button(WidgetTester tester, String text) => tap(tester, find.widgetWithText(MMButton, text));
+void screenTest(String description, WidgetTesterCallback callback) {
+  testWidgets(description, callback, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+}
+
 void main() {
+  testWidgets('unsupported hosts hide pronunciation and keep phonetics', (tester) async {
+    await open(tester);
+    expect(find.byTooltip('Read aloud'), findsNothing);
+    expect(find.byIcon(MMIcons.speaker), findsNothing);
+    expect(find.textContaining('/kæt/'), findsWidgets);
+  });
+
+  screenTest('detail styling matches example cards and aligned form chips', (tester) async {
+    await open(tester);
+    for (final key in ['form-chip-cat', 'form-chip-cats', 'form-input-chip']) {
+      expect(tester.getSize(find.byKey(ValueKey(key))).height, 20);
+    }
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('form-chip-cat'))).dy,
+      tester.getTopLeft(find.byKey(const ValueKey('form-chip-cats'))).dy,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('form-chip-cats')),
+        matching: find.byKey(const ValueKey('remove-form-cats')),
+      ),
+      findsOneWidget,
+    );
+    final heading = tester.widget<Text>(find.text('Meanings'));
+    expect(heading.style?.fontSize, 11);
+    expect(heading.style?.fontWeight, FontWeight.w600);
+    expect(tester.widget<MMTextField>(find.byKey(const ValueKey('vocabulary-note'))).placeholder, isNull);
+    final card = tester.widget<Container>(find.byKey(const ValueKey('example-card-same')));
+    final decoration = card.decoration! as BoxDecoration;
+    expect((decoration.border! as Border).top.width, .5);
+    expect(decoration.borderRadius, BorderRadius.circular(10));
+    final translation = tester.widget<Text>(find.text('猫睡觉。'));
+    expect(translation.style?.fontSize, 12);
+    expect(translation.style?.fontWeight, FontWeight.w400);
+    expect(translation.style?.color, heading.style?.color);
+  });
+
   setUpAll(() async {
     if (Platform.environment['MM_SCREENSHOTS'] == null) return;
     final bytes = ByteData.sublistView(
@@ -175,10 +217,13 @@ void main() {
       'CupertinoSystemDisplay',
       'Roboto',
       'PingFang SC',
-      'Songti SC',
     ]) {
       await (FontLoader(family)..addFont(Future.value(bytes))).load();
     }
+    await (FontLoader('Songti SC')..addFont(
+          Future.value(ByteData.sublistView(File('/System/Library/Fonts/Supplemental/Songti.ttc').readAsBytesSync())),
+        ))
+        .load();
     final cache = Platform.environment['PUB_CACHE'] ?? '${Platform.environment['HOME']}/.pub-cache';
     final icons = Directory('$cache/hosted/pub.dev')
         .listSync()
@@ -192,7 +237,7 @@ void main() {
       'packages/lucide_icons_flutter/Lucide',
     )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
   });
-  testWidgets('filters, search, grouping, scope and real document counts', (tester) async {
+  screenTest('filters, search, grouping, scope and real document counts', (tester) async {
     final (c, _) = await open(
       tester,
       scoped: true,
@@ -227,7 +272,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(c.read(navigationProvider), isA<LibraryRoute>());
   });
-  testWidgets('persistent edits, Unicode limit, forms, speech and destructive undo', (tester) async {
+  screenTest('persistent edits, Unicode limit, forms, speech and destructive undo', (tester) async {
     final speech = Speech();
     final (_, repo) = await open(tester, speech: speech, entries: [word('cat')]);
     await tester.enterText(find.byKey(const ValueKey('vocabulary-gloss')), '😀😀😀😀😀😀😀😀😀');
@@ -258,7 +303,7 @@ void main() {
     expect(await repo.load(), hasLength(1));
     await settleHud(tester);
   });
-  testWidgets('compact direct known entry pushes and returns to origin', (tester) async {
+  screenTest('compact direct known entry pushes and returns to origin', (tester) async {
     final (c, _) = await open(tester, compact: true, entryId: 'dog');
     expect(find.byType(VocabularyDetail), findsOneWidget);
     await tap(tester, find.byTooltip('Back'));
@@ -270,7 +315,7 @@ void main() {
     expect(c.read(navigationProvider), isA<LibraryRoute>());
   });
   for (final text in [false, true]) {
-    testWidgets('same/cross set navigation, deleted sources, text=$text', (tester) async {
+    screenTest('same/cross set navigation, deleted sources, text=$text', (tester) async {
       final content = InMemoryStudySetContentRepository({'demo-1': demoContent(), 'demo-2': demoContent()});
       final (c, _) = await open(
         tester,
@@ -305,7 +350,7 @@ void main() {
       expect(c.read(vocabularySourceFlashProvider), isNull);
     });
   }
-  testWidgets('regenerate refreshes, handles errors and cancels on leaving', (tester) async {
+  screenTest('regenerate refreshes, handles errors and cancels on leaving', (tester) async {
     final lookup = Lookup();
     final (c, repo) = await open(tester, lookup: lookup);
     await tap(tester, find.byTooltip('Regenerate'));
@@ -325,9 +370,7 @@ void main() {
     await tester.pumpAndSettle();
     await settleHud(tester);
   });
-  testWidgets('library and workspace sidebar entries share the global learning count and retain origin', (
-    tester,
-  ) async {
+  screenTest('library and workspace sidebar entries share the global learning count and retain origin', (tester) async {
     final repo = InMemoryVocabularyRepository([word('cat'), word('dog', status: VocabularyStatus.known)]);
     addTearDown(repo.dispose);
     final c = await pumpApp(tester, vocabulary: repo);
@@ -342,13 +385,13 @@ void main() {
       word('dog', status: VocabularyStatus.known),
     ]);
     await tester.pumpAndSettle();
-    expect(tester.widget<MMCount>(find.descendant(of: row, matching: find.byType(MMCount))).value, 0);
+    expect(find.descendant(of: row, matching: find.byType(MMBadge)), findsNothing);
     await tap(tester, row);
     expect((c.read(navigationProvider) as VocabularyRoute).studySetId, 'demo-1');
     await tap(tester, find.byTooltip('Back'));
     expect(c.read(navigationProvider), isA<WorkspaceRoute>());
   });
-  testWidgets('failed saves and stale undo never overwrite newer user data', (tester) async {
+  screenTest('failed saves and stale undo never overwrite newer user data', (tester) async {
     final repo = FailingRepository();
     await repo.save([word('cat')]);
     await open(tester, repository: repo);
@@ -370,7 +413,7 @@ void main() {
     expect(find.text('Something went wrong. Please try again.'), findsOneWidget);
     await settleHud(tester);
   });
-  testWidgets('narrow desktop pushes details, empty values and form cap remain usable', (tester) async {
+  screenTest('narrow desktop pushes details, empty values and form cap remain usable', (tester) async {
     await open(
       tester,
       entries: [
@@ -378,7 +421,7 @@ void main() {
       ],
     );
     expect(find.text('No examples.'), findsOneWidget);
-    expect(tester.widget<MMTextField>(find.byKey(const ValueKey('vocabulary-add-form'))).enabled, isFalse);
+    expect(tester.widget<TextField>(find.byKey(const ValueKey('vocabulary-add-form'))).enabled, isFalse);
     tester.view.physicalSize = const Size(430, 900);
     await tester.pumpAndSettle();
     expect(find.byType(VocabularyDetail), findsNothing);
@@ -386,7 +429,7 @@ void main() {
     expect(find.byType(VocabularyDetail), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-  testWidgets('long valid phonetics and forms stay bounded in compact and narrow split layouts', (tester) async {
+  screenTest('long valid phonetics and forms stay bounded in compact and narrow split layouts', (tester) async {
     final term = 'a' * 64;
     await open(tester, compact: true, entries: [word(term, phonetic: '/${'a' * 126}/')]);
     await tap(tester, find.byKey(ValueKey('vocabulary-row-$term')));
@@ -395,7 +438,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
-  testWidgets('unreadable vocabulary reports a load failure without presenting an empty book', (tester) async {
+  screenTest('unreadable vocabulary reports a load failure without presenting an empty book', (tester) async {
     final repo = UnreadableRepository();
     final c = await pumpApp(tester, vocabulary: repo);
     addTearDown(repo.dispose);
@@ -405,7 +448,7 @@ void main() {
     expect(find.text('No words yet'), findsNothing);
   });
   for (final dark in [false, true]) {
-    testWidgets('screenshot ${dark ? 'dark' : 'light'}', (tester) async {
+    screenTest('screenshot ${dark ? 'dark' : 'light'}', (tester) async {
       await open(tester, dark: dark, chinese: true, scoped: true);
       expect(
         tester

@@ -175,7 +175,12 @@ void main() {
 
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    expect(find.byType(MMLiquidGlass), findsNothing);
+    expect(find.byKey(const ValueKey('mm-glass-bar')), findsNothing);
+    // Map controls use floating glass; desktop window chrome stays separate.
+    expect(
+      find.byType(MMLiquidGlass).evaluate().length,
+      find.descendant(of: find.byType(MapPane), matching: find.byType(MMLiquidGlass)).evaluate().length,
+    );
     expect(tester.takeException(), isNull);
   });
 }

@@ -5,6 +5,7 @@ import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/app/providers.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/widgets/reader_annotation_tools.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -120,7 +121,7 @@ void main() {
     await tester.tap(find.byIcon(MMIcons.select));
     await tester.pumpAndSettle();
     expect(container.read(provider).tool, AnnotationTool.select);
-    await tester.tap(find.byIcon(MMIcons.highlight));
+    await tester.tap(find.descendant(of: find.byType(ReaderAnnotationTools), matching: find.byIcon(MMIcons.highlight)));
     await tester.pumpAndSettle();
     expect(container.read(provider).tool, AnnotationTool.highlight);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/vocabulary/selection_vocabulary.dart';
+import 'package:marginmind/features/vocabulary/vocabulary_screen.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_controller.dart';
 import 'package:marginmind/features/workspace/reader_translation.dart';
 import 'package:marginmind/features/workspace/word_lookup.dart';
@@ -54,6 +56,7 @@ class LookupFixture extends WordLookup {
     required AssistantModel? model,
     required CancellationToken cancel,
     bool online = true,
+    bool refresh = false,
   }) {
     calls++;
     this.sentence = sentence;
@@ -140,7 +143,17 @@ Future<ProviderContainer> openLookup(
   return container;
 }
 
+void speechTest(String description, WidgetTesterCallback callback) {
+  testWidgets(description, callback, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+}
+
 void main() {
+  testWidgets('unsupported hosts hide lookup pronunciation', (tester) async {
+    await openLookup(tester, LookupFixture()..pending.complete(lookupResult));
+    expect(find.byTooltip('朗读'), findsNothing);
+    expect(find.textContaining('məˈtɪkj'), findsWidgets);
+  });
+
   setUpAll(() async {
     final output = Platform.environment['MM_SCREENSHOTS'];
     if (output == null) return;
@@ -219,7 +232,7 @@ void main() {
     });
   }
 
-  testWidgets('saved menu, new example, speech, status, removal and undo', (tester) async {
+  speechTest('saved menu, new example, speech, status, removal and undo', (tester) async {
     final source = VocabularyContext(
       id: 'before',
       studySetId: 'other',
@@ -272,7 +285,11 @@ void main() {
     expect(container.read(vocabularyProvider).requireValue.entries.single.status, VocabularyStatus.known);
     await tester.tap(find.text('详情 ›'));
     await tester.pumpAndSettle();
-    expect(container.read(navigationProvider), isA<VocabularyRoute>());
+    final route = container.read(navigationProvider) as VocabularyRoute;
+    expect(route.entryId, container.read(vocabularyProvider).requireValue.entries.single.id);
+    expect(find.byType(VocabularyScreen), findsOneWidget);
+    expect(find.byType(VocabularyDetail), findsOneWidget);
+    expect(find.text('meticulous'), findsWidgets);
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('marginmind/speech'), null);
     await settleHud(tester);
   });
@@ -433,7 +450,7 @@ void main() {
     await settleHud(tester);
   });
 
-  testWidgets('settings retry, speech failure and assistant handoff keep the card usable', (tester) async {
+  speechTest('settings retry, speech failure and assistant handoff keep the card usable', (tester) async {
     final fixture = LookupFixture();
     await openLookup(tester, fixture);
     fixture.pending.completeError(const ResearchFailure(ResearchFailureKind.timeout));

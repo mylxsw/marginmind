@@ -6560,6 +6560,120 @@ abstract class AppLocalizations {
   /// **'Vocabulary'**
   String get vocabularyTitle;
 
+  /// No description provided for @vocabularyLookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up (T)'**
+  String get vocabularyLookup;
+
+  /// No description provided for @vocabularyTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate (T)'**
+  String get vocabularyTranslate;
+
+  /// No description provided for @vocabularyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to vocabulary'**
+  String get vocabularyAdd;
+
+  /// No description provided for @vocabularyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to vocabulary'**
+  String get vocabularyAdded;
+
+  /// No description provided for @vocabularyLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning'**
+  String get vocabularyLearning;
+
+  /// No description provided for @vocabularyKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Known'**
+  String get vocabularyKnown;
+
+  /// No description provided for @vocabularyView.
+  ///
+  /// In en, this message translates to:
+  /// **'View in vocabulary'**
+  String get vocabularyView;
+
+  /// No description provided for @vocabularyMarkKnown.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as known'**
+  String get vocabularyMarkKnown;
+
+  /// No description provided for @vocabularyRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from vocabulary'**
+  String get vocabularyRemove;
+
+  /// No description provided for @vocabularyExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as example'**
+  String get vocabularyExample;
+
+  /// No description provided for @vocabularySentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate sentence'**
+  String get vocabularySentence;
+
+  /// No description provided for @vocabularyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details ›'**
+  String get vocabularyDetails;
+
+  /// No description provided for @vocabularyLongSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary accepts words and phrases of up to 8 words'**
+  String get vocabularyLongSelection;
+
+  /// No description provided for @vocabularySettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get vocabularySettings;
+
+  /// No description provided for @vocabularySpeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get vocabularySpeak;
+
+  /// No description provided for @vocabularySetup.
+  ///
+  /// In en, this message translates to:
+  /// **'No model configured'**
+  String get vocabularySetup;
+
+  /// No description provided for @vocabularyOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online access is off'**
+  String get vocabularyOffline;
+
+  /// No description provided for @vocabularyUK.
+  ///
+  /// In en, this message translates to:
+  /// **'UK'**
+  String get vocabularyUK;
+
+  /// No description provided for @vocabularyUS.
+  ///
+  /// In en, this message translates to:
+  /// **'US'**
+  String get vocabularyUS;
+
   /// No description provided for @vocabularySearch.
   ///
   /// In en, this message translates to:
@@ -6577,18 +6691,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All'**
   String get vocabularyAll;
-
-  /// No description provided for @vocabularyLearning.
-  ///
-  /// In en, this message translates to:
-  /// **'Learning'**
-  String get vocabularyLearning;
-
-  /// No description provided for @vocabularyKnown.
-  ///
-  /// In en, this message translates to:
-  /// **'Known'**
-  String get vocabularyKnown;
 
   /// No description provided for @vocabularyToday.
   ///
@@ -6692,12 +6794,6 @@ abstract class AppLocalizations {
   /// **'Delete example'**
   String get vocabularyDeleteExample;
 
-  /// No description provided for @vocabularyMarkKnown.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark as known'**
-  String get vocabularyMarkKnown;
-
   /// No description provided for @vocabularyLearnAgain.
   ///
   /// In en, this message translates to:
@@ -6745,102 +6841,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get vocabularyAddForm;
-
-  /// No description provided for @vocabularyLookup.
-  ///
-  /// In en, this message translates to:
-  /// **'Look up (T)'**
-  String get vocabularyLookup;
-
-  /// No description provided for @vocabularyTranslate.
-  ///
-  /// In en, this message translates to:
-  /// **'Translate (T)'**
-  String get vocabularyTranslate;
-
-  /// No description provided for @vocabularyAdd.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to vocabulary'**
-  String get vocabularyAdd;
-
-  /// No description provided for @vocabularyAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Added to vocabulary'**
-  String get vocabularyAdded;
-
-  /// No description provided for @vocabularyView.
-  ///
-  /// In en, this message translates to:
-  /// **'View in vocabulary'**
-  String get vocabularyView;
-
-  /// No description provided for @vocabularyRemove.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove from vocabulary'**
-  String get vocabularyRemove;
-
-  /// No description provided for @vocabularyExample.
-  ///
-  /// In en, this message translates to:
-  /// **'Save as example'**
-  String get vocabularyExample;
-
-  /// No description provided for @vocabularySentence.
-  ///
-  /// In en, this message translates to:
-  /// **'Translate sentence'**
-  String get vocabularySentence;
-
-  /// No description provided for @vocabularyDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Details ›'**
-  String get vocabularyDetails;
-
-  /// No description provided for @vocabularyLongSelection.
-  ///
-  /// In en, this message translates to:
-  /// **'Vocabulary accepts words and phrases of up to 8 words'**
-  String get vocabularyLongSelection;
-
-  /// No description provided for @vocabularySettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Open settings'**
-  String get vocabularySettings;
-
-  /// No description provided for @vocabularySpeak.
-  ///
-  /// In en, this message translates to:
-  /// **'Read aloud'**
-  String get vocabularySpeak;
-
-  /// No description provided for @vocabularySetup.
-  ///
-  /// In en, this message translates to:
-  /// **'No model configured'**
-  String get vocabularySetup;
-
-  /// No description provided for @vocabularyOffline.
-  ///
-  /// In en, this message translates to:
-  /// **'Online access is off'**
-  String get vocabularyOffline;
-
-  /// No description provided for @vocabularyUK.
-  ///
-  /// In en, this message translates to:
-  /// **'UK'**
-  String get vocabularyUK;
-
-  /// No description provided for @vocabularyUS.
-  ///
-  /// In en, this message translates to:
-  /// **'US'**
-  String get vocabularyUS;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

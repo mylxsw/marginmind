@@ -18,8 +18,6 @@ import '../workspace/workspace_controller.dart';
 import 'vocabulary_controller.dart';
 import 'vocabulary_source_flash.dart';
 
-final systemSpeechProvider = Provider<SystemSpeech>((ref) => SystemSpeech());
-
 /// A single application-level destination, also usable by lookup/hit cards via
 /// AppNavigation.showVocabulary(entryId: ...). Direct links reveal known words.
 class VocabularyScreen extends ConsumerStatefulWidget {
@@ -253,14 +251,6 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
   late final _note = TextEditingController(text: widget.entry.note);
   final _form = TextEditingController();
   CancellationToken? _cancel;
-  late final SystemSpeech _speech;
-
-  @override
-  void initState() {
-    super.initState();
-    _speech = ref.read(systemSpeechProvider);
-  }
-
   bool _busy = false;
   static const _editor = VocabularyEditor();
 
@@ -274,7 +264,7 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
   @override
   void dispose() {
     _cancel?.cancel();
-    unawaited(_speech.stop().catchError((Object _) {}));
+    unawaited(MMSpeech.stop().catchError((Object _) {}));
     _gloss.dispose();
     _note.dispose();
     _form.dispose();
@@ -357,7 +347,9 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: context.mmText.headline)),
+              Expanded(
+                child: Text(title, style: context.mmText.subheadline.copyWith(color: context.mmColors.secondaryLabel)),
+              ),
               ?action,
             ],
           ),
@@ -368,7 +360,7 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
     );
     Future<void> speak(String locale) async {
       try {
-        await _speech.speak(e.term, locale);
+        await MMSpeech.speak(e.term, language: locale);
       } catch (_) {
         if (context.mounted) MMHud.show(context, l.somethingWentWrong);
       }
@@ -399,7 +391,8 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    MMIconButton(icon: MMIcons.volume, tooltip: l.vocabularyRead, onPressed: () => speak(locale)),
+                    if (MMSpeech.supported)
+                      MMIconButton(icon: MMIcons.speaker, tooltip: l.vocabularyRead, onPressed: () => speak(locale)),
                   ],
                 ),
             MMPill(
@@ -450,7 +443,6 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
           MMTextField(
             key: const ValueKey('vocabulary-note'),
             controller: _note,
-            placeholder: l.vocabularyNote,
             maxLines: null,
             minLines: 3,
             onChanged: (v) => unawaited(_edit((entries, now) => _editor.updateNote(entries, e.id, v, now))),
@@ -463,33 +455,57 @@ class _VocabularyDetailState extends ConsumerState<VocabularyDetail> {
             runSpacing: MMSpacing.s,
             children: [
               for (final form in e.forms)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(child: MMPill(form)),
-                    if (form != e.key)
-                      MMIconButton(
-                        key: ValueKey('remove-form-$form'),
-                        icon: MMIcons.close,
-                        tooltip: l.vocabularyForgetForm,
-                        onPressed: () => _edit((entries, now) {
-                          final current = entries.where((v) => v.id == e.id).firstOrNull;
-                          return _editor.updateForms(
-                            entries,
-                            e.id,
-                            current?.forms.where((f) => f != form).toList() ?? [],
-                            now,
-                          );
-                        }),
+                Container(
+                  key: ValueKey('form-chip-$form'),
+                  height: MMSizes.vocabularyChipHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  decoration: BoxDecoration(
+                    color: context.mmColors.quaternaryFill,
+                    borderRadius: BorderRadius.circular(MMRadii.vocabularyCard),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(form, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.footnote),
                       ),
-                  ],
+                      if (form != e.key)
+                        MMIconButton(
+                          key: ValueKey('remove-form-$form'),
+                          size: 14,
+                          iconSize: 10,
+                          icon: MMIcons.close,
+                          tooltip: l.vocabularyForgetForm,
+                          onPressed: () => _edit((entries, now) {
+                            final current = entries.where((v) => v.id == e.id).firstOrNull;
+                            return _editor.updateForms(
+                              entries,
+                              e.id,
+                              current?.forms.where((f) => f != form).toList() ?? [],
+                              now,
+                            );
+                          }),
+                        ),
+                    ],
+                  ),
                 ),
-              SizedBox(
-                width: MMSizes.readerSidebarMinWidth,
-                child: MMTextField(
+              Container(
+                key: const ValueKey('form-input-chip'),
+                width: 112,
+                height: MMSizes.vocabularyChipHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 7),
+                decoration: BoxDecoration(
+                  border: Border.all(color: context.mmColors.separator, width: .5),
+                  borderRadius: BorderRadius.circular(MMRadii.vocabularyCard),
+                ),
+                child: TextField(
                   key: const ValueKey('vocabulary-add-form'),
                   controller: _form,
-                  placeholder: l.vocabularyAdd,
+                  style: context.mmText.footnote,
+                  decoration: InputDecoration.collapsed(
+                    hintText: l.vocabularyAddForm,
+                    hintStyle: context.mmText.footnote,
+                  ),
                   enabled: e.forms.length < 16,
                   onSubmitted: (v) async {
                     if (v.trim().isEmpty) return;
@@ -565,8 +581,14 @@ class _VocabularyExample extends ConsumerWidget {
     final content = exists ? ref.watch(contentProvider(source.studySetId)).value : null;
     final hit = RegExp(RegExp.escape(source.hit), caseSensitive: false).firstMatch(source.sentence);
     final canJump = content?.document(source.documentId) != null && (source.textAnchor != null || source.page != null);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),
+    return Container(
+      key: ValueKey('example-card-${source.id}'),
+      margin: const EdgeInsets.only(bottom: MMSpacing.s),
+      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: context.mmColors.separator, width: .5),
+        borderRadius: BorderRadius.circular(MMRadii.vocabularyCard),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -586,11 +608,26 @@ class _VocabularyExample extends ConsumerWidget {
             ),
           ),
           if (source.sentenceTranslation?.isNotEmpty == true)
-            Text(source.sentenceTranslation!, style: context.mmText.body),
-          Text('${source.studySetTitle} · ${source.documentTitle}', style: context.mmText.footnote),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                source.sentenceTranslation!,
+                style: context.mmText.body.copyWith(fontSize: 12, color: context.mmColors.secondaryLabel),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Row(
             children: [
+              Icon(MMIcons.document, size: 12, color: context.mmColors.secondaryLabel),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${source.studySetTitle} · ${source.documentTitle}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.mmText.footnote.copyWith(color: context.mmColors.secondaryLabel),
+                ),
+              ),
               if (canJump)
                 MMButton(
                   label: currentSetId == source.studySetId ? l.vocabularyReturn : l.vocabularyOpenSet,

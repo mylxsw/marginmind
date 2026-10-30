@@ -3505,6 +3505,63 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyTitle => '生词本';
 
   @override
+  String get vocabularyLookup => '查词（T）';
+
+  @override
+  String get vocabularyTranslate => '翻译（T）';
+
+  @override
+  String get vocabularyAdd => '加入生词本';
+
+  @override
+  String get vocabularyAdded => '已加入生词本';
+
+  @override
+  String get vocabularyLearning => '学习中';
+
+  @override
+  String get vocabularyKnown => '已掌握';
+
+  @override
+  String get vocabularyView => '在生词本中查看';
+
+  @override
+  String get vocabularyMarkKnown => '标为已掌握';
+
+  @override
+  String get vocabularyRemove => '移出生词本';
+
+  @override
+  String get vocabularyExample => '收录为例句';
+
+  @override
+  String get vocabularySentence => '翻译整句';
+
+  @override
+  String get vocabularyDetails => '详情 ›';
+
+  @override
+  String get vocabularyLongSelection => '生词本收录单词和 8 个词以内的短语';
+
+  @override
+  String get vocabularySettings => '打开设置';
+
+  @override
+  String get vocabularySpeak => '朗读';
+
+  @override
+  String get vocabularySetup => '未设置模型';
+
+  @override
+  String get vocabularyOffline => '联网已关闭';
+
+  @override
+  String get vocabularyUK => '英';
+
+  @override
+  String get vocabularyUS => '美';
+
+  @override
   String get vocabularySearch => '搜索单词、释义';
 
   @override
@@ -3512,12 +3569,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyAll => '全部';
-
-  @override
-  String get vocabularyLearning => '学习中';
-
-  @override
-  String get vocabularyKnown => '已掌握';
 
   @override
   String get vocabularyToday => '今天';
@@ -3571,9 +3622,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyDeleteExample => '删除这条例句';
 
   @override
-  String get vocabularyMarkKnown => '标为已掌握';
-
-  @override
   String get vocabularyLearnAgain => '重新学习';
 
   @override
@@ -3596,52 +3644,4 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyAddForm => '添加';
-
-  @override
-  String get vocabularyLookup => '查词（T）';
-
-  @override
-  String get vocabularyTranslate => '翻译（T）';
-
-  @override
-  String get vocabularyAdd => '加入生词本';
-
-  @override
-  String get vocabularyAdded => '已加入生词本';
-
-  @override
-  String get vocabularyView => '在生词本中查看';
-
-  @override
-  String get vocabularyRemove => '移出生词本';
-
-  @override
-  String get vocabularyExample => '收录为例句';
-
-  @override
-  String get vocabularySentence => '翻译整句';
-
-  @override
-  String get vocabularyDetails => '详情 ›';
-
-  @override
-  String get vocabularyLongSelection => '生词本收录单词和 8 个词以内的短语';
-
-  @override
-  String get vocabularySettings => '打开设置';
-
-  @override
-  String get vocabularySpeak => '朗读';
-
-  @override
-  String get vocabularySetup => '未设置模型';
-
-  @override
-  String get vocabularyOffline => '联网已关闭';
-
-  @override
-  String get vocabularyUK => '英';
-
-  @override
-  String get vocabularyUS => '美';
 }
