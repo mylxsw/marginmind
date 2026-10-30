@@ -21,6 +21,8 @@ class HighlightColorButton extends ConsumerStatefulWidget {
     this.enabled = true,
     this.onOpenChanged,
     this.onOpen,
+    this.colors,
+    this.mixed = false,
   }) : moreOnly = false;
 
   /// A fourth inline color dot that opens the full picker directly.
@@ -33,6 +35,8 @@ class HighlightColorButton extends ConsumerStatefulWidget {
   }) : selected = false,
        compact = false,
        onOpen = null,
+       colors = null,
+       mixed = false,
        moreOnly = true;
 
   final bool moreOnly, enabled;
@@ -41,6 +45,10 @@ class HighlightColorButton extends ConsumerStatefulWidget {
   final bool selected, compact;
   final ValueChanged<bool>? onOpenChanged;
   final Future<void> Function()? onOpen;
+
+  /// Optional palette for another annotation surface; PDF uses frequent colors.
+  final List<MMAnnotationColor>? colors;
+  final bool mixed;
 
   @override
   ConsumerState<HighlightColorButton> createState() => _HighlightColorButtonState();
@@ -52,6 +60,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
   Future<void> _show() async {
     if (_open) return;
     final anchor = boundsOf(context);
+    final onChanged = widget.onChanged;
     setState(() => _open = true);
     widget.onOpenChanged?.call(true);
     try {
@@ -67,12 +76,17 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
           context,
           CustomSingleChildLayout(
             delegate: AnnotationPalettePlacement(anchor),
-            child: _HighlightColors(current: widget.color, moreOnly: widget.moreOnly),
+            child: _HighlightColors(
+              current: widget.color,
+              moreOnly: widget.moreOnly,
+              colors: widget.colors,
+              mixed: widget.mixed,
+            ),
           ),
         ),
         transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
       );
-      if (mounted && picked != null) await widget.onChanged(picked);
+      if (mounted && picked != null) await onChanged(picked);
     } finally {
       if (mounted) {
         setState(() => _open = false);
@@ -86,7 +100,7 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
       ? AnnotationMoreColorsButton(onPressed: widget.enabled ? _show : null)
       : MMToolbarButton(
           icon: MMIcons.highlight,
-          tint: _open || widget.selected ? widget.color.color : null,
+          tint: (_open || widget.selected) && !widget.mixed ? widget.color.color : null,
           tooltip: context.l10n.chooseHighlightColor,
           selected: _open || widget.selected,
           compact: widget.compact,
@@ -95,9 +109,11 @@ class _HighlightColorButtonState extends ConsumerState<HighlightColorButton> {
 }
 
 class _HighlightColors extends ConsumerStatefulWidget {
-  const _HighlightColors({required this.current, this.moreOnly = false});
+  const _HighlightColors({required this.current, this.moreOnly = false, this.colors, this.mixed = false});
   final bool moreOnly;
   final MMAnnotationColor current;
+  final List<MMAnnotationColor>? colors;
+  final bool mixed;
   @override
   ConsumerState<_HighlightColors> createState() => _HighlightColorsState();
 }
@@ -109,7 +125,7 @@ class _HighlightColorsState extends ConsumerState<_HighlightColors> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final palette = ref.watch(highlightPaletteProvider);
-    final colors = palette.frequent(ref.read(clockProvider)());
+    final colors = widget.colors ?? palette.frequent(ref.read(clockProvider)());
     return CallbackShortcuts(
       bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
       child: FocusScope(
@@ -124,18 +140,21 @@ class _HighlightColorsState extends ConsumerState<_HighlightColors> {
                     onCancel: () => Navigator.of(context).pop(),
                   ),
                 )
-              : MMFloatingToolbar(
-                  key: const ValueKey('highlight-color-palette'),
-                  children: [
-                    for (final color in colors)
-                      MMFloatingToolbarColor(
-                        color: color,
-                        tooltip: l.colorName(color),
-                        selected: color == widget.current,
-                        onPressed: () => Navigator.of(context).pop(color),
-                      ),
-                    AnnotationMoreColorsButton(onPressed: () => setState(() => _more = true)),
-                  ],
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: MMFloatingToolbar(
+                    key: const ValueKey('highlight-color-palette'),
+                    children: [
+                      for (final color in colors)
+                        MMFloatingToolbarColor(
+                          color: color,
+                          tooltip: l.colorName(color),
+                          selected: !widget.mixed && color == widget.current,
+                          onPressed: () => Navigator.of(context).pop(color),
+                        ),
+                      AnnotationMoreColorsButton(onPressed: () => setState(() => _more = true)),
+                    ],
+                  ),
                 ),
         ),
       ),

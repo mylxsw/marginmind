@@ -11,6 +11,7 @@ import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../app/app_commands.dart';
 import '../../../shared/l10n.dart';
+import '../../../settings/highlight_palette.dart';
 import '../../../shared/card_image.dart';
 import '../../assistant/assistant_entry.dart';
 import '../../assistant/assistant_reader.dart' show assistantRootId, assistantNodeBody;
@@ -504,6 +505,19 @@ class _MapPaneState extends ConsumerState<MapPane> {
     // The controller's copy includes its own writes before the stream
     // delivers them, so a node created for editing is there at once.
     final content = loadedContent == null ? StudySetContent.empty : controller.content;
+    final selectedColors = <MMAnnotationColor>{};
+    if (state.selectedCardIds.length >= 2) {
+      final annotationIds = {
+        for (final card in content.cards)
+          if (state.selectedCardIds.contains(card.id))
+            for (final segment in content.segmentsOf(card)) ?segment.annotationId,
+      };
+      for (final annotation in content.annotations) {
+        if (annotationIds.contains(annotation.id)) {
+          selectedColors.add(MMAnnotationColor.fromIndex(annotation.colorIndex));
+        }
+      }
+    }
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';
     final mapTitle = content.map(state.activeMapId)?.title ?? '';
     final rootTitle = mapTitle.isEmpty ? setTitle : mapTitle;
@@ -643,12 +657,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                               onMergeHover: (hover) {
                                                 if (_mergeHover != hover) setState(() => _mergeHover = hover);
                                               },
-                                              onColor:
-                                                  state.selectedCardIds.any(
-                                                    (id) => content.card(id)?.kind == CardKind.excerpt,
-                                                  )
-                                                  ? (color) => controller.recolorCards(state.selectedCardIds, color)
+                                              onColor: selectedColors.isNotEmpty
+                                                  ? (color) async {
+                                                      await controller.recolorCards(state.selectedCardIds, color);
+                                                      if (mounted) {
+                                                        await ref.read(highlightPaletteProvider.notifier).record(color);
+                                                      }
+                                                    }
                                                   : null,
+                                              color: selectedColors.length == 1 ? selectedColors.single : null,
                                             ),
                                       mergePreviewCardId: _mergeHover ? controller.mergeSurvivorId : null,
                                       flashAnnotationId: state.flashAnnotationId,

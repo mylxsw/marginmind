@@ -17,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/widgets/annotation_palette.dart';
 import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
@@ -122,6 +123,29 @@ void main() {
     (MapStructure.tree, MapPalette.ink),
   ];
   for (final dark in [false, true]) {
+    testWidgets('node color toolbars ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
+      final container = await pumpApp(
+        tester,
+        content: InMemoryStudySetContentRepository({'demo-1': _sample()}),
+        size: const Size(1600, 900),
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.setLayout(MMSplitMode.secondary);
+      controller.selectCards(['e1', 'e2']);
+      await tester.pumpAndSettle();
+      await _save(tester, 'node-colors-collapsed-${dark ? 'dark' : 'light'}');
+      await tester.tap(find.byKey(const ValueKey('node-bar-color')), kind: ui.PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      await _save(tester, 'node-colors-palette-${dark ? 'dark' : 'light'}');
+      await tester.tap(find.byType(AnnotationMoreColorsButton), kind: ui.PointerDeviceKind.mouse);
+      await tester.pumpAndSettle();
+      await _save(tester, 'node-colors-custom-${dark ? 'dark' : 'light'}');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settleHud(tester);
+    });
     testWidgets('narrow pane frosted toolbar ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
       tester.view.physicalSize = const Size(632, 700);
       tester.view.devicePixelRatio = 1;

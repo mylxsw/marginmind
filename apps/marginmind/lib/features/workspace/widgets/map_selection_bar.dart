@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
 import '../../../app/app_commands.dart';
+import '../../../settings/highlight_palette.dart';
+import 'highlight_color_button.dart';
 
 String mapEditReasonText(BuildContext context, MapEditReason reason) {
   final l = context.l10n;
@@ -22,7 +25,7 @@ String mapEditReasonText(BuildContext context, MapEditReason reason) {
   };
 }
 
-class MapSelectionBar extends StatelessWidget {
+class MapSelectionBar extends ConsumerWidget {
   const MapSelectionBar({
     super.key,
     required this.count,
@@ -35,17 +38,22 @@ class MapSelectionBar extends StatelessWidget {
     required this.onMergeHover,
     required this.onColor,
     this.onAssistant,
+    this.color,
   });
   final int count;
   final ValueChanged<Rect>? onAssistant;
   final MapEditReason? mergeReason, summaryReason;
   final VoidCallback onMerge, onSummary, onRelation, onDelete;
   final ValueChanged<bool> onMergeHover;
-  final ValueChanged<MMAnnotationColor>? onColor;
+  final Future<void> Function(MMAnnotationColor)? onColor;
+
+  /// Null means that the selection contains different colors.
+  final MMAnnotationColor? color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final palette = ref.watch(highlightPaletteProvider);
     return MMGlass(
       borderRadius: BorderRadius.circular(24),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -83,22 +91,17 @@ class MapSelectionBar extends StatelessWidget {
             reason: count == 2 ? null : l.relationNeedsTwo,
           ),
           if (onColor != null)
-            for (final color in MMAnnotationColor.values)
-              Tooltip(
-                message: l.colorName(color),
-                child: InkWell(
-                  onTap: () => onColor!(color),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
-                    ),
-                  ),
-                ),
-              ),
+            HighlightColorButton(
+              key: const ValueKey('node-bar-color'),
+              color: color ?? palette.current,
+              mixed: color == null,
+              colors: {
+                ...MMAnnotationColor.values,
+                ...palette.recent().where((c) => c.isCustom),
+                if (color?.isCustom == true) color!,
+              }.toList(),
+              onChanged: onColor!,
+            ),
           if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
           const MMToolbarDivider(),
           _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
