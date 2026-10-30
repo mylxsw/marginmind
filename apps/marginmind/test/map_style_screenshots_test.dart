@@ -31,6 +31,7 @@ Future<void> _loadFonts() async {
     'CupertinoSystemText',
     'CupertinoSystemDisplay',
     'Roboto',
+    'PingFang SC',
     'Songti SC',
     'SF Mono',
   ]) {
@@ -116,6 +117,27 @@ void main() {
     (MapStructure.tree, MapPalette.ink),
   ];
   for (final dark in [false, true]) {
+    testWidgets('new topic toolbars ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
+      final container = await pumpApp(
+        tester,
+        content: InMemoryStudySetContentRepository({'demo-1': _sample()}),
+        size: const Size(1600, 900),
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.setLayout(MMSplitMode.secondary);
+      controller.selectCard('t1');
+      await tester.pumpAndSettle();
+      await controller.addTopicAndEdit('新主题', asChild: true);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(MMInlineTextField), '建立检索练习清单');
+      await tester.pumpAndSettle();
+      await _save(tester, 'new-topic-${dark ? 'dark' : 'light'}');
+      await controller.cancelEditing();
+      await settleHud(tester);
+    });
     for (final (structure, palette) in styles) {
       testWidgets('${structure.name} ${palette.name} ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
         final container = await pumpApp(

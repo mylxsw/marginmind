@@ -134,6 +134,7 @@ class MindMapCanvas extends StatefulWidget {
     this.onRevealSegment,
     this.previewStyle,
     this.fitInsets,
+    this.toolbarTopInset = 60,
   });
 
   /// A structure and palette shown in place of the map's own while they are
@@ -143,6 +144,9 @@ class MindMapCanvas extends StatefulWidget {
   /// While set, the whole map is kept in view within the viewport less these
   /// insets (the part a popover covers), also as a preview changes it.
   final EdgeInsets? fitInsets;
+
+  /// Bottom of the pane's fixed controls, in viewport coordinates.
+  final double toolbarTopInset;
 
   /// The selected excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
@@ -693,7 +697,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   }
 
   /// Room kept above nodes brought into view: the pane's controls float there.
-  static const _topClearance = MMSpacing.xxxl * 2 + MMSpacing.l;
+  double get _topClearance => math.max(
+    MMSpacing.xxxl * 2 + MMSpacing.l,
+    widget.toolbarTopInset +
+        (widget.selectionToolbar == null ? 0 : context.mmToolbarButton.height + 6 + 22 + MMSpacing.s),
+  );
 
   void _command(MindMapCommand command) {
     final selected = widget.selectedCardId;
@@ -2149,7 +2157,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
-              if ((widget.selectionToolbar != null && field == null && widget.connectingFromId == null) ||
+              if ((widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null) ||
                   widget.mergePreviewCardId != null)
                 Positioned.fill(
                   child: AnimatedBuilder(
@@ -2187,10 +2195,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                 ),
                               ),
                             ),
-                          if (widget.selectionToolbar != null && field == null && widget.connectingFromId == null)
+                          if (widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null)
                             Positioned.fill(
                               child: CustomSingleChildLayout(
-                                delegate: _SelectionToolbarLayout(bounds),
+                                delegate: _SelectionToolbarLayout(bounds, widget.toolbarTopInset),
                                 child: SingleChildScrollView(
                                   key: _toolbarKey,
                                   scrollDirection: Axis.horizontal,
@@ -2215,7 +2223,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       final top = MatrixUtils.transformPoint(m, shown.topLeft);
                       final bottom = MatrixUtils.transformPoint(m, shown.bottomLeft);
                       // Above the note, or below it when there is no room.
-                      final above = top.dy >= _formatBarHeight + MMSpacing.s;
+                      final above = top.dy >= widget.toolbarTopInset + _formatBarHeight + MMSpacing.s;
                       return Stack(
                         children: [
                           Positioned(
@@ -3142,8 +3150,9 @@ class _SegmentDivider extends CustomPainter {
 }
 
 class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
-  const _SelectionToolbarLayout(this.bounds);
+  const _SelectionToolbarLayout(this.bounds, this.topInset);
   final Rect bounds;
+  final double topInset;
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
       BoxConstraints(maxWidth: math.max(0, constraints.maxWidth - 16), maxHeight: constraints.maxHeight);
@@ -3151,8 +3160,8 @@ class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
   Offset getPositionForChild(Size size, Size childSize) => Offset(
     (bounds.center.dx - childSize.width / 2).clamp(8.0, math.max(8.0, size.width - childSize.width - 8)),
     // Clear of the add-child button on the node's top corner.
-    (bounds.top - childSize.height - 22).clamp(60.0, math.max(60.0, size.height - childSize.height - 8)),
+    (bounds.top - childSize.height - 22).clamp(topInset, math.max(topInset, size.height - childSize.height - 8)),
   );
   @override
-  bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds;
+  bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds || old.topInset != topInset;
 }

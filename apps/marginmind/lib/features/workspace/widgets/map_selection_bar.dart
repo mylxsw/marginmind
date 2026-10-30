@@ -131,49 +131,145 @@ class MapNodeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return MMGlass(
-      borderRadius: BorderRadius.circular(24),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _MapAction(
-            id: 'child',
-            label: l.addChildTopic,
-            shortcut: '⇥',
-            nodeIcon: MMNodeAction.child,
-            onPressed: onChild,
-          ),
-          _MapAction(
-            id: 'sibling',
-            label: l.addSiblingAfter,
-            shortcut: '↩',
-            nodeIcon: MMNodeAction.sibling,
-            onPressed: onSibling,
-          ),
-          if (!root)
+    return TextFieldTapRegion(
+      child: MMGlass(
+        borderRadius: BorderRadius.circular(24),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             _MapAction(
-              id: 'note',
-              label: l.addNote,
-              shortcut: describeShortcut(AppShortcuts.addNote),
-              icon: MMIcons.addNote,
-              onPressed: onNote,
+              id: 'child',
+              label: l.addChildTopic,
+              shortcut: '⇥',
+              nodeIcon: MMNodeAction.child,
+              onPressed: onChild,
             ),
-          _MapAction(id: 'image', label: l.insertImage, icon: MMIcons.image, onPressed: onImage),
-          if (!root)
             _MapAction(
+              id: 'sibling',
+              label: l.addSiblingAfter,
+              shortcut: '↩',
+              nodeIcon: MMNodeAction.sibling,
+              onPressed: onSibling,
+            ),
+            if (!root)
+              _MapAction(
+                id: 'note',
+                label: l.addNote,
+                shortcut: describeShortcut(AppShortcuts.addNote),
+                icon: MMIcons.addNote,
+                onPressed: onNote,
+              ),
+            _MapAction(id: 'image', label: l.insertImage, icon: MMIcons.image, onPressed: onImage),
+            if (!root)
+              _MapAction(
+                id: 'relation',
+                label: l.addRelation,
+                shortcut: _shortcut(MindMapCommand.relation),
+                nodeIcon: MMNodeAction.relation,
+                onPressed: onRelation,
+              ),
+            if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
+            if (!root) ...[
+              const MMToolbarDivider(),
+              _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Stable entry points for map commands; unavailable actions stay in place.
+class MapCommandBar extends StatelessWidget {
+  const MapCommandBar({
+    super.key,
+    this.onChild,
+    this.onSibling,
+    this.onRelation,
+    this.onSummary,
+    this.onNote,
+    this.onImage,
+    this.onTags,
+    this.onDetails,
+    this.summaryReason,
+  });
+
+  final VoidCallback? onChild, onSibling, onRelation, onSummary, onNote, onImage, onTags, onDetails;
+  final MapEditReason? summaryReason;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return TextFieldTapRegion(
+      child: MMGlass(
+        borderRadius: BorderRadius.circular(24),
+        padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'child',
+              label: l.addChildTopic,
+              shortcut: '⇥',
+              nodeIcon: MMNodeAction.child,
+              onPressed: onChild,
+            ),
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'sibling',
+              label: l.addSiblingAfter,
+              shortcut: '↩',
+              nodeIcon: MMNodeAction.sibling,
+              onPressed: onSibling,
+            ),
+            const MMToolbarDivider(),
+            _MapAction(
+              keyPrefix: 'map-command',
               id: 'relation',
               label: l.addRelation,
               shortcut: _shortcut(MindMapCommand.relation),
               nodeIcon: MMNodeAction.relation,
               onPressed: onRelation,
             ),
-          if (onAssistant != null) ...[const MMToolbarDivider(), _AssistantAction(onAssistant: onAssistant!)],
-          if (!root) ...[
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'summary',
+              label: l.addSummary,
+              shortcut: _shortcut(MindMapCommand.summary),
+              nodeIcon: MMNodeAction.summary,
+              onPressed: onSummary,
+              reason: summaryReason == null ? null : mapEditReasonText(context, summaryReason!),
+            ),
             const MMToolbarDivider(),
-            _MapAction(id: 'delete', label: l.removeFromMap, shortcut: '⌫', icon: MMIcons.trash, onPressed: onDelete),
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'note',
+              label: l.addNote,
+              shortcut: describeShortcut(AppShortcuts.addNote),
+              icon: MMIcons.addNote,
+              onPressed: onNote,
+            ),
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'image',
+              label: l.insertImage,
+              icon: MMIcons.image,
+              onPressed: onImage,
+            ),
+            _MapAction(keyPrefix: 'map-command', id: 'tags', label: l.cardTags, icon: MMIcons.tag, onPressed: onTags),
+            _MapAction(
+              keyPrefix: 'map-command',
+              id: 'details',
+              label: l.showCardDetails,
+              shortcut: describeShortcut(AppShortcuts.cardDetails),
+              icon: MMIcons.info,
+              onPressed: onDetails,
+            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -190,28 +286,30 @@ class _MapAction extends StatelessWidget {
     this.nodeIcon,
     this.reason,
     this.tint,
+    this.keyPrefix = 'node-bar',
   });
   final String id, label;
   final String? shortcut, reason;
   final IconData? icon;
   final MMNodeAction? nodeIcon;
   final Color? tint;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final String keyPrefix;
 
   @override
   Widget build(BuildContext context) {
     final hint = '$label${shortcut == null ? '' : '  $shortcut'}${reason == null ? '' : '\n$reason'}';
-    void invoke() => reason == null ? onPressed() : MMHud.show(context, reason!, icon: MMIcons.info);
-    final key = ValueKey('node-bar-$id');
+    void invoke() => reason == null ? onPressed?.call() : MMHud.show(context, reason!, icon: MMIcons.info);
+    final key = ValueKey('$keyPrefix-$id');
     final button = nodeIcon == null
-        ? MMToolbarButton(key: key, icon: icon, tooltip: hint, onPressed: invoke, tint: tint)
+        ? MMToolbarButton(key: key, icon: icon, tooltip: hint, onPressed: onPressed == null ? null : invoke, tint: tint)
         : MMToolbarPreviewButton(
             key: key,
             tooltip: hint,
-            onPressed: invoke,
+            onPressed: onPressed == null ? null : invoke,
             preview: (color) => MMNodeActionIcon(nodeIcon!, color: color),
           );
-    return reason == null ? button : Opacity(opacity: 0.45, child: button);
+    return reason == null || onPressed == null ? button : Opacity(opacity: 0.45, child: button);
   }
 }
 

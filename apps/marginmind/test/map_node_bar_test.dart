@@ -53,7 +53,7 @@ void main() {
       WorkspaceState state() => container.read(workspaceProvider('demo-1'));
       expect(find.byTooltip('Add Topic'), findsNothing);
       expect(find.byTooltip('Add Note'), findsNothing);
-      expect(find.byTooltip('Insert Image…'), findsNothing);
+      expect(find.byType(MapNodeBar), findsNothing);
 
       controller.selectCard(parentId);
       await tester.pumpAndSettle();
