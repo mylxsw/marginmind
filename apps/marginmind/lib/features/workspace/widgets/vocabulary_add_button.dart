@@ -22,12 +22,14 @@ class VocabularyAddButton extends ConsumerStatefulWidget {
     this.lookup,
     this.translation,
     this.contextOnly = false,
+    this.iconOnly = false,
   });
   final String studySetId, selected;
   final TranslationParagraph paragraph;
   final WordLookupResult? lookup;
   final String? translation;
   final bool contextOnly;
+  final bool iconOnly;
   @override
   ConsumerState<VocabularyAddButton> createState() => VocabularyAddButtonState();
 }
@@ -140,12 +142,54 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
       }
       return MMIconButton(icon: MMIcons.add, tooltip: l.vocabularyExample, onPressed: _busy ? null : add);
     }
+    final VoidCallback? onPressed = !eligible || _busy
+        ? null
+        : e == null
+        ? add
+        : () async {
+            final box = context.findRenderObject() as RenderBox;
+            await showMMMenu(
+              context,
+              position: box.localToGlobal(Offset.zero) + Offset(0, box.size.height),
+              entries: [
+                MMMenuItem(l.vocabularyView, () => _details(e.id)),
+                MMMenuItem(
+                  l.vocabularyMarkKnown,
+                  () => _edit(
+                    (items) => const VocabularyEditor().setStatus(
+                      items,
+                      e.id,
+                      VocabularyStatus.known,
+                      ref.read(clockProvider)(),
+                    ),
+                    l.vocabularyKnown,
+                  ),
+                ),
+                MMMenuItem(
+                  l.vocabularyRemove,
+                  () => _edit((items) => const VocabularyEditor().remove(items, e.id), l.vocabularyRemove),
+                ),
+              ],
+            );
+          };
+    final tooltip = !eligible
+        ? l.vocabularyLongSelection
+        : e == null
+        ? '${l.vocabularyAdd}（S）'
+        : e.status == VocabularyStatus.known
+        ? l.vocabularyKnown
+        : l.vocabularyLearning;
+    if (widget.iconOnly) {
+      return MMIconButton(
+        icon: e == null ? MMIcons.star : MMIcons.starFill,
+        tooltip: tooltip,
+        color: e == null ? null : MMInkColor.yellow.color,
+        selected: e != null,
+        onPressed: onPressed,
+      );
+    }
     return Tooltip(
-      message: !eligible
-          ? l.vocabularyLongSelection
-          : e == null
-          ? '${l.vocabularyAdd}（S）'
-          : '',
+      message: e == null || !eligible ? tooltip : '',
       child: MMButton(
         icon: e == null ? MMIcons.star : MMIcons.starFill,
         variant: e == null ? MMButtonVariant.primary : MMButtonVariant.secondary,
@@ -156,36 +200,7 @@ class VocabularyAddButtonState extends ConsumerState<VocabularyAddButton> {
             : e.status == VocabularyStatus.known
             ? l.vocabularyKnown
             : l.vocabularyLearning,
-        onPressed: !eligible || _busy
-            ? null
-            : e == null
-            ? add
-            : () async {
-                final box = context.findRenderObject() as RenderBox;
-                await showMMMenu(
-                  context,
-                  position: box.localToGlobal(Offset.zero) + Offset(0, box.size.height),
-                  entries: [
-                    MMMenuItem(l.vocabularyView, () => _details(e.id)),
-                    MMMenuItem(
-                      l.vocabularyMarkKnown,
-                      () => _edit(
-                        (items) => const VocabularyEditor().setStatus(
-                          items,
-                          e.id,
-                          VocabularyStatus.known,
-                          ref.read(clockProvider)(),
-                        ),
-                        l.vocabularyKnown,
-                      ),
-                    ),
-                    MMMenuItem(
-                      l.vocabularyRemove,
-                      () => _edit((items) => const VocabularyEditor().remove(items, e.id), l.vocabularyRemove),
-                    ),
-                  ],
-                );
-              },
+        onPressed: onPressed,
       ),
     );
   }

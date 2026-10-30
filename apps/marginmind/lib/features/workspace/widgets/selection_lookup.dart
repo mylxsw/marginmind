@@ -205,6 +205,7 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
       selected: term,
       lookup: r,
       contextOnly: contextOnly,
+      iconOnly: true,
     );
     return Actions(
       actions: {
@@ -229,216 +230,231 @@ class _SelectionLookupState extends ConsumerState<SelectionLookup> {
                 child: MMGlass(
                   key: const ValueKey('selection-lookup-result'),
                   borderRadius: BorderRadius.circular(MMRadii.sidebar),
-                  padding: const EdgeInsets.all(MMSpacing.l),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: Stack(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              saved?.term ?? r?.lemma ?? term,
-                              style: t.title2,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Flexible(child: add()),
-                          MMIconButton(
-                            icon: MMIcons.close,
-                            tooltip: l.closePanel,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                      if ((saved?.ukPhonetic ?? r?.ukPhonetic ?? '').isNotEmpty ||
-                          (saved?.usPhonetic ?? r?.usPhonetic ?? '').isNotEmpty)
-                        Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                      Padding(
+                        padding: const EdgeInsets.all(MMSpacing.l),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            for (final phonetic in [
-                              (saved?.ukPhonetic ?? r?.ukPhonetic ?? '', 'en-GB'),
-                              (saved?.usPhonetic ?? r?.usPhonetic ?? '', 'en-US'),
-                            ])
-                              if (phonetic.$1.isNotEmpty) ...[
-                                Text(
-                                  '${phonetic.$2 == 'en-GB' ? l.vocabularyUK : l.vocabularyUS} ${phonetic.$1}',
-                                  style: t.footnote,
-                                ),
-                                if (MMSpeech.supported)
-                                  MMIconButton(
-                                    icon: MMIcons.speaker,
-                                    tooltip: l.vocabularySpeak,
-                                    onPressed: () => _speak(phonetic.$2),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    saved?.term ?? r?.lemma ?? term,
+                                    style: t.title2,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
+                                ),
+                                add(),
+                                const SizedBox(width: MMSpacing.xxxl),
                               ],
-                          ],
-                        ),
-                      const SizedBox(height: MMSpacing.m),
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (final sense in (senses ?? []).take(4))
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: MMSpacing.s),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: MMSpacing.xs,
-                                          vertical: MMSpacing.xxs,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: c.quaternaryFill,
-                                          borderRadius: BorderRadius.circular(MMRadii.vocabularyPos),
-                                        ),
-                                        child: Text(sense.pos, style: t.footnote),
+                            ),
+                            if ((saved?.ukPhonetic ?? r?.ukPhonetic ?? '').isNotEmpty ||
+                                (saved?.usPhonetic ?? r?.usPhonetic ?? '').isNotEmpty)
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  for (final phonetic in [
+                                    (saved?.ukPhonetic ?? r?.ukPhonetic ?? '', 'en-GB'),
+                                    (saved?.usPhonetic ?? r?.usPhonetic ?? '', 'en-US'),
+                                  ])
+                                    if (phonetic.$1.isNotEmpty) ...[
+                                      Text(
+                                        '${phonetic.$2 == 'en-GB' ? l.vocabularyUK : l.vocabularyUS} ${phonetic.$1}',
+                                        style: t.footnote,
                                       ),
-                                      const SizedBox(width: MMSpacing.s),
-                                      Expanded(child: Text(sense.meaning, style: t.body)),
+                                      if (MMSpeech.supported)
+                                        MMIconButton(
+                                          icon: MMIcons.speaker,
+                                          tooltip: l.vocabularySpeak,
+                                          onPressed: () => _speak(phonetic.$2),
+                                        ),
                                     ],
-                                  ),
-                                ),
-                              if (_problem != null)
-                                Row(
+                                ],
+                              ),
+                            const SizedBox(height: MMSpacing.m),
+                            Flexible(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    Expanded(
-                                      child: Text(
-                                        _problem!,
-                                        style: t.body,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    MMButton(
-                                      label: l.vocabularySettings,
-                                      onPressed: () async {
-                                        await showSettings(context, tab: SettingsTab.models);
-                                        if (mounted) {
-                                          setState(() => _problem = null);
-                                          unawaited(_lookup());
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                )
-                              else if (r == null) ...[
-                                for (final width in [1.0, .8, .6])
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: MMSpacing.s),
-                                    child: FractionallySizedBox(
-                                      alignment: Alignment.centerLeft,
-                                      widthFactor: width,
-                                      child: Container(
-                                        key: ValueKey('lookup-skeleton-$width'),
-                                        height: MMSpacing.l,
-                                        decoration: BoxDecoration(
-                                          color: c.quaternaryFill,
-                                          borderRadius: BorderRadius.circular(MMRadii.row),
+                                    for (final sense in (senses ?? []).take(4))
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: MMSpacing.s),
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: MMSpacing.xs,
+                                                vertical: MMSpacing.xxs,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: c.quaternaryFill,
+                                                borderRadius: BorderRadius.circular(MMRadii.vocabularyPos),
+                                              ),
+                                              child: Text(sense.pos, style: t.footnote),
+                                            ),
+                                            const SizedBox(width: MMSpacing.s),
+                                            Expanded(child: Text(sense.meaning, style: t.body)),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  ),
-                              ] else ...[
-                                Container(
-                                  padding: const EdgeInsets.all(MMSpacing.m),
-                                  decoration: BoxDecoration(
-                                    color: c.vocabularyTint,
-                                    borderRadius: BorderRadius.circular(MMRadii.card),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
+                                    if (_problem != null)
                                       Row(
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              r.context.contextMeaning,
-                                              style: t.body.copyWith(fontWeight: FontWeight.w500),
+                                              _problem!,
+                                              style: t.body,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                          add(contextOnly: true),
+                                          MMButton(
+                                            label: l.vocabularySettings,
+                                            onPressed: () async {
+                                              await showSettings(context, tab: SettingsTab.models);
+                                              if (mounted) {
+                                                setState(() => _problem = null);
+                                                unawaited(_lookup());
+                                              }
+                                            },
+                                          ),
                                         ],
-                                      ),
-                                      const SizedBox(height: MMSpacing.s),
-                                      Text.rich(
-                                        TextSpan(children: _highlight(_sentence.text, term, c.vocabulary)),
-                                        style: MMTypography.readingExcerpt.copyWith(
-                                          color: c.label,
-                                          fontWeight: FontWeight.w400,
+                                      )
+                                    else if (r == null) ...[
+                                      for (final width in [1.0, .8, .6])
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: MMSpacing.s),
+                                          child: FractionallySizedBox(
+                                            alignment: Alignment.centerLeft,
+                                            widthFactor: width,
+                                            child: Container(
+                                              key: ValueKey('lookup-skeleton-$width'),
+                                              height: MMSpacing.l,
+                                              decoration: BoxDecoration(
+                                                color: c.quaternaryFill,
+                                                borderRadius: BorderRadius.circular(MMRadii.row),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                    ] else ...[
+                                      Container(
+                                        padding: const EdgeInsets.all(MMSpacing.m),
+                                        decoration: BoxDecoration(
+                                          color: c.vocabularyTint,
+                                          borderRadius: BorderRadius.circular(MMRadii.card),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    r.context.contextMeaning,
+                                                    style: t.body.copyWith(fontWeight: FontWeight.w500),
+                                                  ),
+                                                ),
+                                                add(contextOnly: true),
+                                              ],
+                                            ),
+                                            const SizedBox(height: MMSpacing.s),
+                                            Text.rich(
+                                              TextSpan(children: _highlight(_sentence.text, term, c.vocabulary)),
+                                              style: MMTypography.readingExcerpt.copyWith(
+                                                color: c.label,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                            const SizedBox(height: MMSpacing.s),
+                                            Text(
+                                              r.context.sentenceTranslation,
+                                              style: t.callout.copyWith(
+                                                color: c.secondaryLabel,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: MMSpacing.s),
-                                      Text(
-                                        r.context.sentenceTranslation,
-                                        style: t.callout.copyWith(color: c.secondaryLabel, fontWeight: FontWeight.w400),
-                                      ),
                                     ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: MMSpacing.m),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: MMButton(
-                              variant: MMButtonVariant.plain,
-                              label: l.vocabularySentence,
-                              icon: MMIcons.translate,
-                              color: c.accent,
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                showSelectionTranslation(
-                                  context,
-                                  studySetId: widget.studySetId,
-                                  paragraph: _sentence,
-                                  toolbar: widget.placement?.toolbar ?? Rect.zero,
-                                  selection: widget.placement?.selection ?? Rect.zero,
-                                  viewport: widget.placement?.viewport ?? Offset.zero & MediaQuery.sizeOf(context),
-                                );
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            child: MMButton(
-                              variant: MMButtonVariant.plain,
-                              color: c.research,
-                              label: l.askAssistant,
-                              icon: MMIcons.conversation,
-                              onPressed: widget.onAsk == null
-                                  ? null
-                                  : () {
-                                      Navigator.of(context).pop();
-                                      widget.onAsk!();
-                                    },
-                            ),
-                          ),
-                          if (saved != null)
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: MMButton(
-                                  variant: MMButtonVariant.plain,
-                                  label: l.vocabularyDetails,
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    ref
-                                        .read(navigationProvider.notifier)
-                                        .showVocabulary(studySetId: widget.studySetId, entryId: saved.id);
-                                  },
+                                  ],
                                 ),
                               ),
                             ),
-                        ],
+                            const SizedBox(height: MMSpacing.m),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: MMButton(
+                                    variant: MMButtonVariant.plain,
+                                    label: l.vocabularySentence,
+                                    icon: MMIcons.translate,
+                                    color: c.accent,
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      showSelectionTranslation(
+                                        context,
+                                        studySetId: widget.studySetId,
+                                        paragraph: _sentence,
+                                        toolbar: widget.placement?.toolbar ?? Rect.zero,
+                                        selection: widget.placement?.selection ?? Rect.zero,
+                                        viewport:
+                                            widget.placement?.viewport ?? Offset.zero & MediaQuery.sizeOf(context),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                Flexible(
+                                  child: MMButton(
+                                    variant: MMButtonVariant.plain,
+                                    color: c.research,
+                                    label: l.askAssistant,
+                                    icon: MMIcons.conversation,
+                                    onPressed: widget.onAsk == null
+                                        ? null
+                                        : () {
+                                            Navigator.of(context).pop();
+                                            widget.onAsk!();
+                                          },
+                                  ),
+                                ),
+                                if (saved != null)
+                                  Expanded(
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: MMButton(
+                                        variant: MMButtonVariant.plain,
+                                        label: l.vocabularyDetails,
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                          ref
+                                              .read(navigationProvider.notifier)
+                                              .showVocabulary(studySetId: widget.studySetId, entryId: saved.id);
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: MMSpacing.s,
+                        right: MMSpacing.s,
+                        child: MMIconButton(
+                          icon: MMIcons.close,
+                          tooltip: l.closePanel,
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                       ),
                     ],
                   ),
