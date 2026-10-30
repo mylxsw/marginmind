@@ -130,6 +130,16 @@ class VocabularyContext {
 - `mm_data` 的 `FileVocabularyStore` 写 `Library/vocabulary.json`（与 `sets/` 同级），`{"format":1,"entries":[…]}`；沿用学习集的“写临时文件 → flush → rename”和串行写入；未知 `format` 不载入也不改写。
 - 偏好（`SharedPreferences`）：`vocabulary.hintMode`（off / underline / gloss）、`vocabulary.lastHintMode`、`vocabulary.showKnown`、`vocabulary.hiddenDocuments`（文档 ID 列表）。
 
+### 3.1 领域与状态接口约定（GUL-593）
+
+- `key` 由词头去首尾空白、合并空白、小写得到，唯一性为 `(language, key)`；语言使用调用方提供的标准语言代码。所有集合防御性复制，JSON 忽略未知字段，但拒绝必需字段缺失、未知枚举或不一致的 key。
+- `VocabularyEditor` 接收领域实体，不依赖 `mm_assistant`。时间由调用方传入。重复加入保留原 ID、状态、释义和用户编辑，仅合并例句；例句按 `(studySetId, documentId, 合并空白后的原句)` 去重，保留不同文档中的相同句子，新的在前，最多 20 条。
+- `vocabularyForms` 先保留词头与选中原词，再保留模型词形，最后补英文规则，最多 16 个。规则是启发式补充，不是词性识别或不规则词还原；短语和非英语不补英文词尾。`updateForms` 保留词头，允许用户删除其余自动补全项。
+- `FileVocabularyStore` 在第一次保存以及后续每次保存前检查磁盘文件；损坏或未知格式均抛错，不视为空生词本。队列中的单次失败不会阻断之后的操作，只在原子写入成功后发布快照。浏览器使用现有 IndexedDB 文件适配层。
+- `vocabularyProvider` 是 `AsyncNotifierProvider<VocabularyController, VocabularyState>`；状态含 `entries/version`。`add` 可接收可选的 `WordLookupResult`，应用层将义项和整句翻译映射到领域实体；`contextMeaning` 仍是卡片的临时展示数据。失败时仍可不带 lookup 加入词与原句。其他编辑通过 `edit((entries) => VocabularyEditor().操作(...))` 调用，返回 `VocabularyUndo`。
+- `undo(receipt)` 只恢复此次受影响条目的前值；拒绝重复使用、条目已改动、或恢复后产生唯一键冲突的凭据，不覆盖其他条目的后续修改。只有持久化成功才发布新状态，生词编辑不使用学习集撤销栈。
+- `vocabularyHintProvider` 的 `defaultMode/setDefaultMode` 是“设置 › 阅读”的全局默认值接口，与 `mode/setMode` 共用 `vocabulary.hintMode`，即时作用于已打开的阅读器，不新增偏好键。`toggle` 恢复最后一个非 off 模式；`showKnown` 默认 false，`setDocumentHidden` 只控制指定文档。偏好写入失败不发布新状态，并尽力回滚底层缓存与持久化值。
+
 ## 4. 查词
 
 - `mm_assistant` 新增 `WordLookup`，复用划词翻译的模型选择、联网判断、`CancellationToken` 和 90s 超时；请求带上单词、所在句子、源 / 目标语言，要求模型返回 JSON：`lemma, phonetics{uk,us}, senses[{pos,meaning}], contextMeaning, sentenceTranslation, gloss, forms[]`。
@@ -142,7 +152,9 @@ class VocabularyContext {
 
 ## 5. 全文匹配与绘制
 
-- `VocabularyMatcher`（`mm_core`，纯函数）：把所有学习中（及“显示已掌握”时的已掌握）条目的词形建成“首词 → 候选词序列”的索引，候选按长度降序；对段落做一次分词（拉丁字母词按词边界，大小写不敏感），**最长短语优先**、命中后跳过已覆盖的词；短语的词之间只允许空白，不跨句。中文 / 日文短语按子串匹配。复杂度与段落长度线性相关。
+- `VocabularyMatcher`（`mm_core`，纯函数）：把所有学习中（及“显示已掌握”时的已掌握）条目的词形建成“首词 → 候选词序列”的索引，候选按长度降序；对段落做一次分词（拉丁字母词按词边界，大小写不敏感），**最长短语优先**、命中后跳过已覆盖的词；短语的词之间只允许空白，不跨句。中文 / 日文短语按子串匹配。避免扫描无关首词的条目。
+- 命中区间为原文 UTF-16 半开区间 `[start, end)`，不对整段转小写后再计算偏移。同起点最长匹配优先，同区间按条目 ID 确定顺序，输出不重叠。混合 CJK/英文短语也忽略英文大小写。首词索引开销与文本及同首词候选数有关；候选结果排序为 O(H log H)，不保证任意词库下严格线性。
+- `VocabularyMatchCache` 默认保留 128 个最近使用段落，缓存键用完整原文、生词本版本和 `showKnown`，避免指纹碰撞和切换已掌握可见性后复用旧结果；版本每次发布新的持久化快照递增。
 - 结果按 `(段落指纹, 生词本版本号)` 缓存；生词本变化只重算可见页及前后各一页，其余页在滚动到附近时计算。
 - **流式文档**（EPUB / MOBI / Markdown / 网页）：`mm_reflow` 的段落文本 → 命中区间 → 布局里的行框，绘制在标注装饰层，点状下划线复用 `MMPdfAnnotationLinePainter` 的 `AnnotationLineStyle.dotted`。
 - **PDF**：用划词翻译已有的每页文字与字符框（`TranslationPage`），命中区间转成 PDF 坐标矩形，交给 `MMPdfView` 的高亮叠加层画点状下划线；行间释义的可用高度取上一行底边到本行顶边的距离，不够就不画。扫描版需先识别文字（OCR 后才有字符框）。

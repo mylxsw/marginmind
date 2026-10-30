@@ -31,6 +31,7 @@ Future<void> main() async {
         assistantWebCacheProvider.overrideWithValue(storage.cache),
         studySetRepositoryProvider.overrideWithValue(store),
         contentRepositoryProvider.overrideWithValue(store),
+        vocabularyRepositoryProvider.overrideWithValue(storage.vocabulary),
       ],
       child: const MarginMindApp(),
     ),
