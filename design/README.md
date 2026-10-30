@@ -66,7 +66,7 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 
 ## 学习笔记：AI 整理与导出
 
-`prototype/study-notes.html` 演示把划线、页边批注和脑图笔记整理成一篇带出处的学习笔记：**整理设置**（范围、组织方式、AI 参与程度、上下文）、**确认提纲**（拖动划线、调整小节）、**三种声音**（宋体原文 / 我的批注 / 带 AI 标签的整理内容）、**自动关联上下文**（前后句、补全指代、跨节关联）、**增量更新**（改过的段落不会被覆盖）、**三种版式**（读书笔记 / 康奈尔 / 复习提纲），以及 **Markdown、Obsidian、PDF、Word 导出和分享长图**。单文件、无依赖；演示控制台有 14 个场景，可以切换“未配置 AI”。设计说明与数据模型见 [docs/study-notes.md](../docs/study-notes.md)。
+`prototype/study-notes.html` 演示把划线、页边批注和脑图笔记整理成一篇带出处的学习笔记：**整理设置**（范围、组织方式、AI 参与程度、上下文）、**确认提纲**（拖动划线、调整小节）、**三种声音**（宋体原文 / 我的批注 / 带 AI 标签的整理内容）、**自动关联上下文**（前后句、补全指代、跨节关联）、**增量更新**（改过的段落不会被覆盖）、**三种版式**（读书笔记 / 康奈尔 / 复习提纲），以及 **Markdown、Obsidian、PDF、Word 导出和分享长图**。单文件、无依赖；演示控制台有 14 个场景，可以切换“未配置 AI”。设计说明与数据模型见 [docs/study-notes.md](../docs/study-notes.md)，界面规格见 [docs/study-notes-ui.md](../docs/study-notes-ui.md)。
 
 ## 生词本（GUL-582）
 
