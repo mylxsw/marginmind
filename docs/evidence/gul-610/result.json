@@ -1,0 +1,61 @@
+{
+  "audit": [],
+  "screens": [
+    "mac-light-reader.png",
+    "mac-light-split.png",
+    "mac-light-map.png",
+    "mac-dark-reader.png",
+    "mac-dark-split.png",
+    "mac-dark-map.png",
+    "ipadL-light-reader.png",
+    "ipadL-light-split.png",
+    "ipadL-light-map.png",
+    "ipadL-dark-reader.png",
+    "ipadL-dark-split.png",
+    "ipadL-dark-map.png",
+    "ipadP-light-reader.png",
+    "ipadP-light-split.png",
+    "ipadP-light-map.png",
+    "ipadP-dark-reader.png",
+    "ipadP-dark-split.png",
+    "ipadP-dark-map.png",
+    "phone-light-reader.png",
+    "phone-light-map.png",
+    "phone-dark-reader.png",
+    "phone-dark-map.png"
+  ],
+  "regression": {
+    "mac/light": {
+      "steps": 30,
+      "diffs": []
+    },
+    "mac/dark": {
+      "steps": 30,
+      "diffs": []
+    },
+    "ipadL/light": {
+      "steps": 34,
+      "diffs": []
+    },
+    "ipadL/dark": {
+      "steps": 34,
+      "diffs": []
+    },
+    "ipadP/light": {
+      "steps": 34,
+      "diffs": []
+    },
+    "ipadP/dark": {
+      "steps": 34,
+      "diffs": []
+    },
+    "phone/light": {
+      "steps": 20,
+      "diffs": []
+    },
+    "phone/dark": {
+      "steps": 20,
+      "diffs": []
+    }
+  }
+}
