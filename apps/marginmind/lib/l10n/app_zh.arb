@@ -1341,5 +1341,7 @@
   "vocabularyHintsUnderline": "下划线",
   "vocabularyHintsGloss": "释义",
   "vocabularyHintsHidden": "本文档隐藏",
-  "vocabularyHintsKnown": "标出已掌握"
+  "vocabularyHintsKnown": "标出已掌握",
+  "annotationLineType": "线条类型",
+  "chooseMoreAnnotationColors": "选择更多颜色…"
 }

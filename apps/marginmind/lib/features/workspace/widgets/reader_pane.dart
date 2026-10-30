@@ -947,7 +947,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                           attachmentId: pending.attachmentId,
                         )
                       : SelectionToolbar(
-                          key: ObjectKey(pending),
+                          key: ObjectKey(pending.toolbarIdentity),
                           studySetId: widget.studySetId,
                           pending: pending,
                           pdf: pdf,

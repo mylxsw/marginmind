@@ -14,7 +14,7 @@ class AnnotationLineStylePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
       for (final style in AnnotationLineStyle.values)
         MMToolbarPreviewButton(

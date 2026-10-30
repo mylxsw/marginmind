@@ -3662,4 +3662,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyHintsKnown => '标出已掌握';
+
+  @override
+  String get annotationLineType => '线条类型';
+
+  @override
+  String get chooseMoreAnnotationColors => '选择更多颜色…';
 }

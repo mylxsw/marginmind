@@ -1937,5 +1937,7 @@
   "vocabularyHintsUnderline": "Underline",
   "vocabularyHintsGloss": "Meaning",
   "vocabularyHintsHidden": "Hide in this document",
-  "vocabularyHintsKnown": "Mark known words"
+  "vocabularyHintsKnown": "Mark known words",
+  "annotationLineType": "Line Type",
+  "chooseMoreAnnotationColors": "Choose More Colors…"
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app_commands.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/selection_toolbar.dart';
+import 'package:marginmind/features/workspace/widgets/annotation_color_button.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -84,7 +85,7 @@ void main() {
     }
   }
   for (final color in MMAnnotationColor.values) {
-    testWidgets('inline palette ${color.name} highlights without creating a card', (tester) async {
+    testWidgets('color ${color.name} only changes settings until the highlighter is applied', (tester) async {
       final container = await pumpApp(tester);
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await tester.pumpAndSettle();
@@ -97,17 +98,26 @@ void main() {
         tester.widget<MMFloatingToolbarLayout>(find.byType(MMFloatingToolbarLayout)).anchor,
         selection.viewportRect,
       );
-      expect(find.byType(MMFloatingToolbarColor), findsNWidgets(3));
+      expect(find.byType(MMFloatingToolbarColor), findsNothing);
       expect(
         find.descendant(of: find.byType(SelectionToolbar), matching: find.byIcon(MMIcons.highlight)),
-        findsNothing,
+        findsOneWidget,
       );
-      expect(find.byType(MMFloatingToolbar), findsOneWidget);
+      await tester.tap(
+        find.descendant(of: find.byType(SelectionToolbar), matching: find.byType(AnnotationColorButton)),
+      );
+      await tester.pumpAndSettle();
       if (![MMAnnotationColor.yellow, MMAnnotationColor.green, MMAnnotationColor.blue].contains(color)) {
         await tester.tap(find.byTooltip('More Colors'));
         await tester.pumpAndSettle();
       }
       await tester.tap(find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == color));
+      await tester.pumpAndSettle();
+      expect(controller.content.annotations.length, before.annotations.length);
+      expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingSelection>());
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('selection-highlight')));
       await tester.pumpAndSettle();
       final annotation = controller.content.annotations.last;
       expect(controller.content.cardForAnnotation(annotation.id), isNull);
@@ -115,7 +125,9 @@ void main() {
       expect(annotation.colorIndex, color.index);
       expect(annotation.quote, selection.text);
       expect(container.read(workspaceProvider('demo-1')).color, color);
-      expect(find.byType(SelectionToolbar), findsNothing);
+      expect(find.byType(SelectionToolbar), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
       await controller.undo();
       expect(controller.content.annotations.length, before.annotations.length);
       expect(controller.content.cards.length, before.cards.length);
@@ -150,11 +162,16 @@ void main() {
               of: find.byType(SelectionToolbar),
               matching: command == ReaderSelectionCommand.copy
                   ? find.byIcon(MMIcons.copy)
-                  : find.byWidgetPredicate((w) => w is MMFloatingToolbarColor && w.color == MMAnnotationColor.yellow),
+                  : find.byIcon(MMIcons.highlight),
             ),
           );
         }
         await tester.pumpAndSettle();
+        if (!keyboard && command == ReaderSelectionCommand.highlight) {
+          expect(container.read(workspaceProvider('demo-1')).pending, isA<PendingHighlight>());
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+        }
         expect(find.byType(SelectionToolbar), findsNothing);
         expect(container.read(workspaceProvider('demo-1')).pending, isNull);
         expect(

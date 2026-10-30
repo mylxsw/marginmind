@@ -3807,4 +3807,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vocabularyHintsKnown => 'Mark known words';
+
+  @override
+  String get annotationLineType => 'Line Type';
+
+  @override
+  String get chooseMoreAnnotationColors => 'Choose More Colors…';
 }
