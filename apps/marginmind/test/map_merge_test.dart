@@ -33,7 +33,140 @@ StudySetContent fixture({bool long = false}) {
       .$1;
 }
 
+void mergeViewportTests({bool native = false}) {
+  for (final structure in MapStructure.values) {
+    for (final zoom in [0.75, 1.5]) {
+      testWidgets('$structure long excerpt merge and history keep the reading position at $zoom zoom', (tester) async {
+        var seq = 0;
+        final editor = StudySetEditor(newId: () => 'balance${seq++}', now: () => testNow);
+        final (initial, doc) = editor.addDocument(
+          StudySetContent.empty,
+          title: 'Book',
+          fileName: 'a.pdf',
+          pageCount: 20,
+        );
+        var content = initial;
+        final ids = <String>[];
+        for (var i = 0; i < 6; i++) {
+          final (next, card) = editor.createExcerpt(
+            content,
+            documentId: doc.id,
+            page: i + 1,
+            rects: const [],
+            quote: List.filled(30, 'Passage $i').join(' '),
+            colorIndex: i,
+          );
+          content = next;
+          ids.add(card.id);
+        }
+        final container = await openFirstSet(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
+        final provider = workspaceProvider('demo-1');
+        final controller = container.read(provider.notifier);
+        await controller.setMapStructure(structure);
+        controller.selectCards([ids[2], ids[3]]);
+        await tester.pumpAndSettle();
+        final viewer = find.byType(InteractiveViewer);
+        final transform = tester.widget<InteractiveViewer>(viewer).transformationController!;
+        final survivor = find.byKey(ValueKey(ids[2]));
+        transform.value = zoomMapAt(transform.value, Offset.zero, zoom / mapScale(transform.value));
+        await tester.pumpAndSettle();
+        final delta = tester.getCenter(viewer) - tester.getCenter(survivor);
+        final matrix = transform.value;
+        transform.value = matrix.clone()
+          ..setTranslationRaw(matrix.storage[12] + delta.dx, matrix.storage[13] + delta.dy, 0);
+        await tester.pumpAndSettle();
+        final before = tester.getTopLeft(survivor);
+        Future<void> expectAnchored() async {
+          // Check painted frames too: anchoring only the final layout still
+          // lets the node fly away and return during the transition.
+          for (var frame = 0; frame < 20; frame++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            expect((tester.getTopLeft(survivor) - before).distance, lessThan(0.01));
+            expect(mapScale(transform.value), closeTo(zoom, 0.001));
+          }
+          await tester.pumpAndSettle();
+          expect(container.read(provider).selectedCardId, ids[2]);
+          expect((tester.getTopLeft(survivor) - before).distance, lessThan(0.01));
+        }
+
+        await controller.mergeSelected();
+        await expectAnchored();
+        await settleHud(tester);
+        expect(
+          (tester.getTopLeft(survivor) - before).distance,
+          lessThan(0.01),
+          reason: 'ending the merge highlight must not pan',
+        );
+        await controller.undo();
+        await expectAnchored();
+        await controller.redo();
+        await expectAnchored();
+        await settleHud(tester);
+      }, semanticsEnabled: !native);
+    }
+  }
+
+  for (final structure in MapStructure.values) {
+    for (final reverse in [false, true]) {
+      testWidgets('$structure merge preserves deep selection and viewport (reversed: $reverse)', (tester) async {
+        final container = await openFirstSet(tester);
+        final provider = workspaceProvider('demo-1');
+        final controller = container.read(provider.notifier);
+        await controller.setMapStructure(structure);
+        controller.selectCard('c3');
+        for (var i = 0; i < 8; i++) {
+          await controller.addTopic('Deep branch $i');
+        }
+        final parent = container.read(provider).selectedCardId!;
+        final first = await controller.addTopic('First');
+        controller.selectCard(parent);
+        final second = await controller.addTopic('Second');
+        final ids = [first.id, second.id];
+        controller.selectCards(reverse ? ids.reversed : ids);
+        await tester.pumpAndSettle();
+        final viewer = find.byType(InteractiveViewer);
+        final transform = tester.widget<InteractiveViewer>(viewer).transformationController!;
+        final delta = tester.getCenter(viewer) - tester.getCenter(find.byKey(ValueKey(first.id)));
+        final matrix = transform.value;
+        transform.value = matrix.clone()
+          ..setTranslationRaw(matrix.storage[12] + delta.dx, matrix.storage[13] + delta.dy, 0);
+        await tester.pumpAndSettle();
+        final root = find.byKey(const ValueKey(rootNodeId));
+        expect(tester.getRect(viewer).overlaps(tester.getRect(root)), isFalse);
+        final survivor = find.byKey(ValueKey(first.id));
+        final before = tester.getTopLeft(survivor);
+        final scale = mapScale(transform.value);
+        final selections = <String?>[];
+        final subscription = container.listen(provider, (_, next) => selections.add(next.selectedCardId));
+        addTearDown(subscription.close);
+
+        await tester.tap(find.widgetWithText(MMButton, 'Merge'));
+        for (var frame = 0; frame < 20; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+          expect((tester.getTopLeft(survivor) - before).distance, lessThan(0.01));
+          expect(tester.getRect(viewer).overlaps(tester.getRect(root)), isFalse);
+        }
+        await tester.pumpAndSettle();
+        expect(controller.content.card(first.id)!.segments, hasLength(2));
+        expect(container.read(provider).selectedCardIds, {first.id});
+        expect(selections, isNot(contains(null)), reason: 'no intermediate root selection');
+        expect(mapScale(transform.value), scale);
+        expect((tester.getTopLeft(survivor) - before).distance, lessThan(0.01));
+        expect(tester.getRect(viewer).overlaps(tester.getRect(survivor)), isTrue);
+        await settleHud(tester);
+        expect(
+          (tester.getTopLeft(survivor) - before).distance,
+          lessThan(0.01),
+          reason: 'the highlight expiry must not move the viewport',
+        );
+      }, semanticsEnabled: !native);
+    }
+  }
+}
+
 void main() {
+  mergeViewportTests();
+
   testWidgets('toolbar merge, split, undo and cross-document segment navigation', (tester) async {
     final original = fixture();
     final container = await openFirstSet(tester, content: InMemoryStudySetContentRepository({'demo-1': original}));

@@ -132,7 +132,7 @@ void main() {
   testWidgets('adding a topic opens it for naming in place and saves it', (tester) async {
     final content = InMemoryStudySetContentRepository({'demo-1': demoContent()});
     await openFirstSet(tester, content: content);
-    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await tester.tap(find.byKey(const ValueKey('node-add-child')));
     await tester.pumpAndSettle();
     expect(find.byType(MMSheet), findsNothing);
     await tester.enterText(find.byType(MMInlineTextField), '提取练习');

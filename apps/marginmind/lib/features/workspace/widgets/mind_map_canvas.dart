@@ -303,6 +303,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   late final _motion = AnimationController(vsync: this, duration: MMMotion.standard, value: 1);
   Map<String, Rect> _from = const {};
 
+  /// A merge can grow a card and rebalance whole branches. Keep its start
+  /// where the user was reading, rather than anchoring that edit to the root.
+  ({String id, Offset position})? _mergeAnchor;
+
   /// The card under the mouse; its source is shown below it.
   final _hovered = ValueNotifier<String?>(null);
 
@@ -425,14 +429,17 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   /// Records where every node is drawn now when the layout changes, so
   /// the next frames can move them to the new layout. Offsets are kept
-  /// relative to the root, which [_keepRootInPlace] holds still.
+  /// relative to the node that [_keepViewportAnchorInPlace] holds still.
   void _animateTo(TreeLayoutResult next, TreeLayoutResult? previous) {
     if (previous == null || identical(previous, next)) return;
     if (!_centered || MMAppearance.reduceMotionOf(context)) {
       _from = const {};
       return;
     }
-    final shift = _rect(next.rects[rootNodeId]!).topLeft - _rect(previous.rects[rootNodeId]!).topLeft;
+    final anchor = _mergeAnchor;
+    final shift = anchor == null
+        ? _rect(next.rects[rootNodeId]!).topLeft - _rect(previous.rects[rootNodeId]!).topLeft
+        : _rect(next.rects[anchor.id]!).topLeft - anchor.position;
     _from = {
       for (final e in next.rects.entries)
         if (previous.rects[e.key] case final old?) e.key: _drawn(e.key, old).shift(shift),
@@ -526,6 +533,28 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   @override
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final selected = widget.selectedCardId;
+    final oldCard = selected == null ? null : oldWidget.content.card(selected);
+    final newCard = selected == null ? null : widget.content.card(selected);
+    final previousRect = _layout?.rects[selected];
+    if (widget.mapId == oldWidget.mapId && oldCard != null && newCard != null && previousRect != null) {
+      final before = math.max(1, oldCard.segments.length);
+      final after = math.max(1, newCard.segments.length);
+      // Restoring a merge through undo/redo has the same layout change.
+      final merging =
+          after > before &&
+          oldWidget.content.nodes.any(
+            (n) => n.mapId == widget.mapId && !widget.content.isPlaced(n.cardId, mapId: widget.mapId),
+          );
+      final restoring =
+          after < before &&
+          widget.content.nodes.any(
+            (n) => n.mapId == widget.mapId && !oldWidget.content.isPlaced(n.cardId, mapId: widget.mapId),
+          );
+      if (merging || restoring) {
+        _mergeAnchor = (id: selected!, position: _shown(selected, previousRect).topLeft);
+      }
+    }
     syncField();
     _syncMarkField();
     if (_resizeStart == null && !identical(widget.content, oldWidget.content)) _resize = null;
@@ -554,8 +583,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       WidgetsBinding.instance.addPostFrameCallback((_) => _locate(id, tick));
     } else if (deselecting && widget.selectedCardId == null && widget.flashCardId == oldWidget.flashCardId) {
       // Deselected: nothing to bring into view.
-    } else if (_boxStart == null &&
-        (widget.selectedCardId != oldWidget.selectedCardId || widget.flashCardId != oldWidget.flashCardId)) {
+    } else if (_mergeAnchor == null &&
+        _boxStart == null &&
+        (widget.selectedCardId != oldWidget.selectedCardId ||
+            (widget.flashCardId != null && widget.flashCardId != oldWidget.flashCardId))) {
       final id = widget.flashCardId != oldWidget.flashCardId && widget.flashCardId != null
           ? widget.flashCardId!
           : _selectedNodeId;
@@ -572,11 +603,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     widget.onSelect(null);
   }
 
-  void _keepRootInPlace(TreeLayoutResult result) {
+  void _keepViewportAnchorInPlace(TreeLayoutResult result) {
     final root = result.rects[rootNodeId]!;
-    final anchor = Offset(root.left, root.top);
-    final previous = _rootAnchor;
-    _rootAnchor = anchor;
+    final rootPosition = Offset(root.left, root.top);
+    final merge = _mergeAnchor;
+    final anchor = merge == null ? rootPosition : _rect(result.rects[merge.id]!).topLeft;
+    final previous = merge?.position ?? _rootAnchor;
+    _rootAnchor = rootPosition;
     if (!_centered || previous == null || previous == anchor) return;
     final m = widget.transformation.value;
     final scale = mapScale(m);
@@ -1654,12 +1687,14 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     if (field != null) trackField(shown: specs.containsKey(field.id));
     final hadLayout = _layout != null;
     final layoutChanged = !identical(result, _layout);
+    final merging = _mergeAnchor != null;
     _animateTo(result, _layout);
     _layout = result;
     final viewportChanged = _viewport != Size(viewport.maxWidth, viewport.maxHeight);
     _viewport = Size(viewport.maxWidth, viewport.maxHeight);
     _fitOnce(result, viewport);
-    _keepRootInPlace(result);
+    _keepViewportAnchorInPlace(result);
+    _mergeAnchor = null;
     final sceneSize = _sceneSize(result);
     final fitting = widget.fitInsets;
     if (fitting != null) {
@@ -1670,7 +1705,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
           if (mounted && widget.fitInsets == fitting) _fit(fitting);
         });
       }
-    } else if ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null)) {
+    } else if (!merging && ((layoutChanged && hadLayout && _centered) || (viewportChanged && field != null))) {
       _lastFit = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final id = widget.editingCardId ?? _selectedNodeId;

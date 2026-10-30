@@ -16,6 +16,7 @@ import 'package:mm_design/mm_design.dart';
 import 'edit_transaction_test.dart' show FailingRepository;
 import 'helpers.dart';
 import 'mind_map_cache_test.dart' show fixture;
+import 'map_keyboard_test.dart' show focusMap;
 import 'workspace_test.dart' show openFirstSet;
 
 final _field = find.byType(MMInlineTextField);
@@ -217,9 +218,10 @@ void main() {
   testWidgets('review fixes: switching fields, menu commands, hidden map', (tester) async {
     final container = await openFirstSet(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);
-    // Straight from one field to a new one: typing reaches the new field.
+    // Finish one field, then create the next from its node's plus control.
     await doubleTap(tester, find.text('对策一：间隔重复'));
-    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-add-child')));
     await tester.pumpAndSettle();
     expect(_text(tester).text, 'New Topic');
     tester.testTextInput.enterText('第二个');
@@ -229,7 +231,7 @@ void main() {
 
     // Commands that change content wait while a title is typed.
     final cards = controller.content.cards.length;
-    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await tester.tap(find.byKey(const ValueKey('node-add-child')));
     await tester.pumpAndSettle();
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
@@ -286,7 +288,7 @@ void main() {
       final container = await openFirstSet(tester, content: repo);
       final before = _json(await repo.load('demo-1'));
       await _select(tester, '遗忘的规律');
-      await tester.tap(find.byIcon(MMIcons.addTopic));
+      await tester.tap(find.byKey(const ValueKey('node-add-child')));
       await tester.pumpAndSettle();
       expect(_text(tester).text, 'New Topic');
       expect(_text(tester).selection, const TextSelection(baseOffset: 0, extentOffset: 9));
@@ -322,7 +324,7 @@ void main() {
       expect(container.read(workspaceProvider('demo-1')).canUndo, isFalse);
 
       // Clearing the text and confirming also drops the new node.
-      await tester.tap(find.byIcon(MMIcons.addTopic));
+      await tester.tap(find.byKey(const ValueKey('node-add-child')));
       await tester.pumpAndSettle();
       tester.testTextInput.enterText('  ');
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -335,7 +337,7 @@ void main() {
   testWidgets('a new topic stays open while the content stream lags behind the write', (tester) async {
     final repo = _LaggingRepository({'demo-1': demoContent()});
     final container = await openFirstSet(tester, content: repo);
-    await tester.tap(find.byIcon(MMIcons.addTopic));
+    await tester.tap(find.byKey(const ValueKey('node-add-child')));
     await tester.pump();
     await tester.pump();
     expect(_text(tester).text, 'New Topic');

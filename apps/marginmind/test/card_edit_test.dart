@@ -120,7 +120,7 @@ void main() {
       final container = await openFirstSet(tester, content: repo);
       final controller = container.read(workspaceProvider('demo-1').notifier);
       await _select(tester, find.text('遗忘的规律'));
-      await tester.tap(find.byIcon(MMIcons.addNote));
+      await tester.tap(find.byKey(const ValueKey('node-bar-note')));
       await tester.pumpAndSettle();
       expect(find.byType(MMSheet), findsNothing);
       expect(_text(tester).text, 'New note');
@@ -157,7 +157,8 @@ void main() {
       final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
       final container = await openFirstSet(tester, content: repo);
       final before = _json(await repo.load('demo-1'));
-      await tester.tap(find.byIcon(MMIcons.addNote));
+      await _select(tester, find.text('遗忘的规律'));
+      await tester.tap(find.byKey(const ValueKey('node-bar-note')));
       await tester.pumpAndSettle();
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -368,11 +369,11 @@ void main() {
       await settleHud(tester);
     });
 
-    testWidgets('the toolbar and menu add topics in place; Esc leaves nothing', (tester) async {
+    testWidgets('Tab and the add shortcut create topics in place; Esc leaves nothing', (tester) async {
       final repo = InMemoryStudySetContentRepository({'demo-1': demoContent()});
       final container = await openOutline(tester, content: repo);
       final before = _json(await repo.load('demo-1'));
-      await tester.tap(find.byIcon(MMIcons.addTopic));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       expect(find.byType(MMSheet), findsNothing);
       expect(_text(tester).text, 'New Topic');
