@@ -4120,7 +4120,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noteFailureBudget =>
-      'This note reached the processing limit. Completed sections are kept; continue organizing or use layout only.';
+      'The model stopped before completing its output. Retry to continue organizing, or use layout only.';
 
   @override
   String get noteFailureNetwork =>

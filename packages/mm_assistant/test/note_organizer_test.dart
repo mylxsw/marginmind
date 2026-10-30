@@ -37,7 +37,6 @@ StudyNote note([NoteDepth depth = NoteDepth.deep]) => StudyNote(
   organizedAt: date,
 );
 Matcher failure(ResearchFailureKind kind) => isA<ResearchFailure>().having((e) => e.kind, 'kind', kind);
-const roomy = ResearchBudget(inputCharacters: 1000000, outputTokens: 100000);
 
 class PendingClient extends ScriptClient {
   PendingClient() : super([]);
@@ -72,7 +71,7 @@ void main() {
       for (var i = 0; i < 5; i++) answer('{"text":"主动回想"}'),
     ]);
     final progress = <NoteProgress>[];
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy, onProgress: progress.add);
+    final service = ModelNoteOrganizer(client: client, model: 'fake', onProgress: progress.add);
     final m = materials();
     final o = await service.outline(m, NoteSettings());
     final draft = await service.write(m, o, NoteSettings());
@@ -127,7 +126,7 @@ void main() {
       answer('{"sections":[{"title":"next","blocks":[{"type":"quote","ref":"h2","text":"fake quote"}]}]}'),
       answer('{}'),
     ]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy);
+    final service = ModelNoteOrganizer(client: client, model: 'fake');
     final o = NoteOutline([
       ...outline.sections,
       NoteOutlineSection(title: 'next', refs: ['h2']),
@@ -141,7 +140,7 @@ void main() {
 
   test('wrong section count or title retries and retains requested section', () async {
     final client = ScriptClient([answer('{"sections":[]}'), answer(draftJson)]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy);
+    final service = ModelNoteOrganizer(client: client, model: 'fake');
     expect((await service.write(materials(), outline, NoteSettings())).sections.single.title, '记忆');
     expect(client.calls, 2);
   });
@@ -182,7 +181,7 @@ void main() {
       answer(outlineJson),
     ]);
     final progress = <NoteProgress>[];
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy, onProgress: progress.add);
+    final service = ModelNoteOrganizer(client: client, model: 'fake', onProgress: progress.add);
     await service.outline(materials(201), NoteSettings());
     expect(client.calls, 3);
     expect(progress.map((p) => '${p.stage.name}:${p.current}/${p.total}'), ['outline:1/2', 'outline:2/2', 'merge:1/1']);
@@ -193,7 +192,7 @@ void main() {
 
   test('chapter batches stay separate and threshold 200 is one request', () async {
     final client = ScriptClient([for (var i = 0; i < 5; i++) answer(outlineJson)]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy);
+    final service = ModelNoteOrganizer(client: client, model: 'fake');
     await service.outline(materials(201, true), NoteSettings());
     expect(client.calls, 4);
     await service.outline(materials(200), NoteSettings());
@@ -202,7 +201,7 @@ void main() {
 
   test('place batches accumulate before returning one atomic preview', () async {
     final client = ScriptClient([answer('{"placements":[]}'), answer('{"placements":[]}')]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: roomy);
+    final service = ModelNoteOrganizer(client: client, model: 'fake');
     expect((await service.place(materials(201), note())).items, isEmpty);
     expect(client.calls, 2);
   });
@@ -259,40 +258,9 @@ void main() {
 
   test('deadline cancels transport and reports timeout', () async {
     final client = PendingClient();
-    final service = ModelNoteOrganizer(
-      client: client,
-      model: 'fake',
-      budget: const ResearchBudget(duration: Duration(milliseconds: 10)),
-    );
+    final service = ModelNoteOrganizer(client: client, model: 'fake', requestTimeout: const Duration(milliseconds: 10));
     await expectLater(service.outline(materials(), NoteSettings()), throwsA(failure(ResearchFailureKind.timeout)));
     expect(client.token!.isCancelled, isTrue);
-  });
-
-  test('input, output and byte budgets reject without local fallback', () async {
-    for (final budget in [
-      const ResearchBudget(inputCharacters: 1),
-      const ResearchBudget(outputTokens: 1),
-      const ResearchBudget(responseBytes: 1),
-    ]) {
-      final client = ScriptClient([answer(outlineJson)]);
-      final service = ModelNoteOrganizer(client: client, model: 'fake', budget: budget);
-      await expectLater(service.outline(materials(), NoteSettings()), throwsA(failure(ResearchFailureKind.budget)));
-      expect(service.failures, isEmpty);
-    }
-  });
-
-  test('shared deadline spans operations, starts only at first request', () async {
-    var clock = date;
-    final client = ScriptClient([answer(outlineJson)]);
-    final service = ModelNoteOrganizer(client: client, model: 'fake', budget: const ResearchBudget(), now: () => clock);
-    clock = clock.add(const Duration(days: 1));
-    await service.outline(materials(), NoteSettings());
-    clock = clock.add(const Duration(minutes: 2));
-    await expectLater(
-      service.write(materials(), outline, NoteSettings()),
-      throwsA(failure(ResearchFailureKind.budget)),
-    );
-    expect(client.calls, 1);
   });
 
   test('unexpected stop and tools propagate protocol errors without retry', () async {
@@ -304,27 +272,52 @@ void main() {
     }
   });
 
-  test('reasoning usage does not exhaust a multi-section note after its outline', () async {
+  test('large multi-section notes have no cumulative input, output or response quota', () async {
+    final prose = 'x' * 220000;
     ModelMessage reasoningAnswer(String text) => ModelMessage(
       model: 'reasoning',
       textOutput: text,
       stopReason: 'stop',
-      usage: ModelUsage(promptTokens: 6780, completionTokens: 3985, totalTokens: 10765),
+      usage: ModelUsage(promptTokens: 100000, completionTokens: 100000, totalTokens: 200000),
     );
+    final largeDraft = jsonEncode({
+      'sections': [
+        {
+          'title': '记忆',
+          'blocks': [
+            {'type': 'summary', 'text': prose},
+            {'type': 'quote', 'ref': 'h1'},
+          ],
+        },
+      ],
+    });
     final client = ScriptClient([
       reasoningAnswer(outlineJson),
-      for (var i = 0; i < 11; i++) reasoningAnswer(draftJson),
+      for (var i = 0; i < 40; i++) reasoningAnswer(largeDraft),
     ]);
     final service = ModelNoteOrganizer(client: client, model: 'reasoning');
-    final proposed = await service.outline(materials(56), NoteSettings());
+    final source = NoteMaterials([
+      NoteMaterial(ref: 'h1', sourceId: 'a1', text: 'a' * 60000, groupKey: 'g', groupTitle: '记忆', createdAt: date),
+    ], collectedAt: date);
+    final proposed = await service.outline(source, NoteSettings());
     final draft = await service.write(
-      materials(56),
-      NoteOutline([for (var i = 0; i < 11; i++) proposed.sections.single]),
+      source,
+      NoteOutline([for (var i = 0; i < 40; i++) proposed.sections.single]),
       NoteSettings(),
     );
-    expect(draft.sections, hasLength(11));
-    expect(client.calls, 12);
+    expect(draft.sections, hasLength(40));
+    expect(client.calls, 41);
     expect(service.failures, isEmpty);
+    expect(client.modelConfigs.every((config) => config.maxTokens == null), isTrue);
+  });
+
+  test('each request gets its own timeout without a session deadline', () async {
+    final client = ScriptClient([answer(outlineJson), answer(draftJson)]);
+    final service = ModelNoteOrganizer(client: client, model: 'fake', requestTimeout: const Duration(milliseconds: 20));
+    final proposed = await service.outline(materials(), NoteSettings());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    expect((await service.write(materials(), proposed, NoteSettings())).sections, hasLength(1));
+    expect(client.calls, 2);
   });
 
   test('truncated model output reports the output limit without schema fallback', () async {
@@ -343,7 +336,7 @@ void main() {
     expect(closed, isTrue);
     expect(service.cancelToken.isCancelled, isTrue);
     expect(
-      () => ModelNoteOrganizer(client: ScriptClient([]), model: 'fake', budget: const ResearchBudget(outputTokens: 0)),
+      () => ModelNoteOrganizer(client: ScriptClient([]), model: 'fake', requestTimeout: Duration.zero),
       throwsA(failure(ResearchFailureKind.invalidRequest)),
     );
   });

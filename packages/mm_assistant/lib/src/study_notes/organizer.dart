@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 
 import 'package:dart_agent_core/dart_agent_core.dart';
 import 'package:dio/dio.dart';
@@ -8,15 +7,8 @@ import 'package:mm_core/mm_core.dart';
 
 import 'schema.dart';
 
-/// Notes make one outline request and one request per section. The search
-/// budget (4K tokens / 90s for an entire run) cannot cover this workflow,
-/// especially when providers count reasoning tokens in completion usage.
-const studyNoteBudget = ResearchBudget(
-  outputTokens: 131072,
-  inputCharacters: 2000000,
-  responseBytes: 8388608,
-  duration: Duration(minutes: 15),
-);
+/// A stalled request can be retried without limiting the whole note session.
+const studyNoteRequestTimeout = Duration(minutes: 2);
 
 enum NoteRewrite { rephrase, concise, expand }
 
@@ -48,34 +40,31 @@ class NoteSendEstimate {
   final String model;
 }
 
-/// One user-initiated session (outline followed by write shares one budget).
+/// One cancellable user-initiated session with no cumulative usage quota.
 /// The host owns settings/Keychain and injects its existing assistant client.
 /// Do not run concurrent operations on the same instance.
 class ModelNoteOrganizer implements NoteOrganizer {
   ModelNoteOrganizer({
     required this.client,
     required this.model,
-    this.budget = studyNoteBudget,
+    this.requestTimeout = studyNoteRequestTimeout,
     CancellationToken? cancel,
     this.onProgress,
     this.onFallback,
     this.closeConnection,
-    DateTime Function()? now,
-  }) : cancelToken = cancel ?? CancellationToken(),
-       _now = now ?? DateTime.now {
-    budget.validate();
+  }) : cancelToken = cancel ?? CancellationToken() {
+    if (requestTimeout <= Duration.zero) {
+      throw const ResearchFailure(ResearchFailureKind.invalidRequest);
+    }
   }
 
   final LLMClient client;
   final String model;
-  final ResearchBudget budget;
+  final Duration requestTimeout;
   final CancellationToken cancelToken;
   final void Function(NoteProgress)? onProgress;
   final void Function(NoteSchemaFailure)? onFallback;
   final void Function()? closeConnection;
-  final DateTime Function() _now;
-  DateTime? _deadline;
-  int _input = 0, _output = 0, _bytes = 0;
   final _failures = <NoteSchemaFailure>[];
   final _completed = <NoteDraftSection>[];
   List<NoteSchemaFailure> get failures => List.unmodifiable(_failures);
@@ -329,16 +318,6 @@ class ModelNoteOrganizer implements NoteOrganizer {
 
   Future<String> _generate(String system, String user) async {
     cancelToken.check();
-    _deadline ??= _now().add(budget.duration);
-    final remaining = _deadline!.difference(_now());
-    final allowance = math.min(8192, budget.outputTokens - _output);
-    final characters = system.length + user.length;
-    if (remaining <= Duration.zero || allowance <= 0 || _input + characters > budget.inputCharacters) {
-      throw const ResearchFailure(ResearchFailureKind.budget);
-    }
-    _input += characters;
-    // Charge the reservation even on failed requests (usage may be unknown).
-    _output += allowance;
     final token = CancelToken();
     var finished = false;
     unawaited(
@@ -352,19 +331,13 @@ class ModelNoteOrganizer implements NoteOrganizer {
             client.generate(
               [SystemMessage(system), UserMessage.text(user)],
               tools: const [],
-              modelConfig: ModelConfig(model: model, maxTokens: allowance, extra: {'store': false}),
+              modelConfig: ModelConfig(model: model, extra: {'store': false}),
               cancelToken: token,
             ),
           )
-          .timeout(remaining < const Duration(minutes: 2) ? remaining : const Duration(minutes: 2));
+          .timeout(requestTimeout);
       cancelToken.check();
       final text = response.textOutput ?? '';
-      final used = response.usage?.completionTokens;
-      _output += (used != null && used >= 0 ? used : utf8.encode(text).length) - allowance;
-      _bytes += utf8.encode(jsonEncode(response.toJson())).length;
-      if (_output > budget.outputTokens || _bytes > budget.responseBytes) {
-        throw const ResearchFailure(ResearchFailureKind.budget);
-      }
       if ({'length', 'max_tokens'}.contains(response.stopReason)) {
         throw const ResearchFailure(ResearchFailureKind.budget, 'outputTruncated');
       }

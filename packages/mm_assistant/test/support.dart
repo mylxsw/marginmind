@@ -11,6 +11,7 @@ class ScriptClient implements LLMClient {
   int calls = 0;
   final requests = <List<LLMMessage>>[];
   final toolRequests = <List<Tool>>[];
+  final modelConfigs = <ModelConfig>[];
   @override
   Future<ModelMessage> generate(
     List<LLMMessage> messages, {
@@ -21,6 +22,7 @@ class ScriptClient implements LLMClient {
     CancelToken? cancelToken,
   }) async {
     requests.add(messages);
+    modelConfigs.add(modelConfig);
     toolRequests.add(List.of(tools ?? []));
     return replies[calls++];
   }

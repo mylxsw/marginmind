@@ -3951,7 +3951,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noteFailureTimeout => '模型响应超时。可继续整理，保留已完成的内容，也可改为只排版。';
 
   @override
-  String get noteFailureBudget => '本次整理达到处理上限。已完成的内容会保留，可继续整理或改为只排版。';
+  String get noteFailureBudget => '模型单次输出未完成。可继续整理重试，或改为只排版。';
 
   @override
   String get noteFailureNetwork => '无法连接模型服务。请检查网络后继续整理，或改为只排版。';

@@ -9,22 +9,21 @@ import 'assistant_settings.dart';
 Future<ModelNoteOrganizer> createModelNoteOrganizer({
   required AssistantServicesStore services,
   required SecretStore secrets,
-  ResearchBudget budget = studyNoteBudget,
+  Duration requestTimeout = studyNoteRequestTimeout,
   void Function(NoteProgress)? onProgress,
   void Function(NoteSchemaFailure)? onFallback,
 }) async {
-  budget.validate();
   final model = (await services.load()).configuration;
   if (model == null) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
   final key = await assistantModelKey(secrets, model);
   if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
     throw const ResearchFailure(ResearchFailureKind.authentication);
   }
-  final connection = connectAssistant(model, key ?? '', budget: budget);
+  final connection = connectAssistant(model, key ?? '', budget: null, requestTimeout: requestTimeout);
   return ModelNoteOrganizer(
     client: connection.client,
     model: model.model,
-    budget: budget,
+    requestTimeout: requestTimeout,
     onProgress: onProgress,
     onFallback: onFallback,
     closeConnection: connection.close,

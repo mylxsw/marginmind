@@ -55,13 +55,18 @@ class AssistantConnection {
 /// Compatible/Ollama accept a base URL or a complete chat endpoint.
 /// The safe adapter pins the resolved endpoint; SDKs receive its base.
 /// Retries only received 429/5xx, never network exceptions or partial streams.
+/// A null budget disables session duration/byte quotas for multi-section notes;
+/// requestTimeout still applies to each individual request.
 AssistantConnection connectAssistant(
   AssistantModel config,
   String key, {
-  ResearchBudget budget = const ResearchBudget(),
+  ResearchBudget? budget = const ResearchBudget(),
+  Duration? requestTimeout,
   HttpClientAdapter? adapter,
 }) {
   suppressAssistantDiagnostics();
+  final timeout = requestTimeout ?? budget?.duration ?? const Duration(minutes: 2);
+  if (timeout <= Duration.zero) throw const ResearchFailure(ResearchFailureKind.invalidRequest);
   final Uri configured;
   try {
     configured = Uri.parse(config.endpoint.trim());
@@ -117,31 +122,25 @@ AssistantConnection connectAssistant(
   final address = endpoint.toString();
   final base = address.substring(0, address.length - suffix.length);
   final client = switch (config.provider) {
-    AssistantProvider.gemini => GeminiClient(apiKey: key, client: dio, maxRetries: 0, timeout: budget.duration),
-    AssistantProvider.claude => ClaudeClient(
-      apiKey: key,
-      baseUrl: base,
-      client: dio,
-      maxRetries: 0,
-      timeout: budget.duration,
-    ),
+    AssistantProvider.gemini => GeminiClient(apiKey: key, client: dio, maxRetries: 0, timeout: timeout),
+    AssistantProvider.claude => ClaudeClient(apiKey: key, baseUrl: base, client: dio, maxRetries: 0, timeout: timeout),
     AssistantProvider.responses => ResponsesClient(
       apiKey: key,
       baseUrl: base,
       client: dio,
       maxRetries: 0,
-      timeout: budget.duration,
+      timeout: timeout,
       autoPreviousResponseId: false,
     ),
-    _ => OpenAIClient(apiKey: key, baseUrl: base, client: dio, maxRetries: 0, timeout: budget.duration),
+    _ => OpenAIClient(apiKey: key, baseUrl: base, client: dio, maxRetries: 0, timeout: timeout),
   };
   // Set AFTER SDK initialization: configureProxy may otherwise replace adapter.
   dio.httpClientAdapter = _BoundedAdapter(
     adapter ?? IOHttpClientAdapter(createHttpClient: () => policy.createClient()),
-    budget.responseBytes,
+    budget?.responseBytes,
     normalizeNames: config.provider == AssistantProvider.compatible || config.provider == AssistantProvider.ollama,
   );
-  final deadline = DateTime.now().add(budget.duration);
+  final deadline = budget == null ? null : DateTime.now().add(budget.duration);
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
@@ -159,7 +158,7 @@ AssistantConnection connectAssistant(
             options.path = endpoint.replace(path: '${endpoint.path}/models/${config.model}:$action').toString();
           }
         }
-        if (!allowed || DateTime.now().isAfter(deadline)) {
+        if (!allowed || (deadline != null && DateTime.now().isAfter(deadline))) {
           handler.reject(
             DioException(requestOptions: options, error: const ResearchFailure(ResearchFailureKind.invalidRequest)),
           );
@@ -177,7 +176,7 @@ AssistantConnection connectAssistant(
           final delay = seconds == null
               ? Duration(milliseconds: 500 * (1 << attempt))
               : Duration(seconds: seconds.clamp(0, 30));
-          if (DateTime.now().add(delay).isBefore(deadline)) {
+          if (deadline == null || DateTime.now().add(delay).isBefore(deadline)) {
             final token = error.requestOptions.cancelToken;
             await Future.any([Future<void>.delayed(delay), if (token != null) token.whenCancel.then<void>((_) {})]);
             if (token?.isCancelled != true) {
@@ -202,7 +201,7 @@ AssistantConnection connectAssistant(
 class _BoundedAdapter implements HttpClientAdapter {
   _BoundedAdapter(this.inner, this.maximum, {this.normalizeNames = false});
   final HttpClientAdapter inner;
-  final int maximum;
+  final int? maximum;
   final bool normalizeNames;
   int bytes = 0;
   @override
@@ -213,8 +212,10 @@ class _BoundedAdapter implements HttpClientAdapter {
   ) async {
     final response = await inner.fetch(options, requestStream, cancelFuture);
     response.stream = response.stream.map((chunk) {
-      bytes += chunk.length;
-      if (bytes > maximum) throw const ResearchFailure(ResearchFailureKind.budget);
+      if (maximum case final limit?) {
+        bytes += chunk.length;
+        if (bytes > limit) throw const ResearchFailure(ResearchFailureKind.budget);
+      }
       return chunk;
     });
     if (normalizeNames && response.statusCode == 200 && options.responseType == ResponseType.stream) {

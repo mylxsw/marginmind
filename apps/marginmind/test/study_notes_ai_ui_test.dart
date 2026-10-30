@@ -62,7 +62,7 @@ class RetryingOutlineOrganizer extends FakeNoteOrganizer {
   var attempts = 0;
   @override
   Future<NoteOutline> outline(NoteMaterials m, NoteSettings s) async {
-    if (attempts++ == 0) throw const ResearchFailure(ResearchFailureKind.budget, 'private diagnostic');
+    if (attempts++ == 0) throw const ResearchFailure(ResearchFailureKind.budget, 'outputTruncated');
     return super.outline(m, s);
   }
 }
@@ -185,12 +185,12 @@ void main() {
     expect(owner.content.cards.any((c) => c.title == 'Why does recall help?'), isTrue);
     await settleHud(tester);
   });
-  testWidgets('outline limit explains recovery and retry generates the note', (tester) async {
+  testWidgets('model truncation explains recovery and retry generates the note', (tester) async {
     final organizer = RetryingOutlineOrganizer();
     final c = await openAi(tester, organizer);
     await generate(tester);
-    expect(find.textContaining('processing limit'), findsOneWidget);
-    expect(find.textContaining('private diagnostic'), findsNothing);
+    expect(find.textContaining('model stopped'), findsOneWidget);
+    expect(find.textContaining('outputTruncated'), findsNothing);
     expect(c.read(workspaceProvider('demo-1').notifier).content.studyNotes, isEmpty);
     await tester.tap(find.byKey(const ValueKey('note-continue')));
     await tester.pumpAndSettle();

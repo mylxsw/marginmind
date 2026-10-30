@@ -413,6 +413,61 @@ void main() {
     expect(retry.calls, 1);
     conn.close();
   });
+  test('note connections omit token caps and accept cumulative responses over the old byte limit', () async {
+    final body = 'x' * 3000000;
+    final adapter = Adapter((options, n) {
+      final request = options.data is String ? jsonDecode(options.data) : options.data;
+      expect(request.containsKey('max_tokens'), isFalse);
+      expect(request.containsKey('max_completion_tokens'), isFalse);
+      return ResponseBody.fromString(
+        jsonEncode({
+          'model': 'model',
+          'choices': [
+            {
+              'index': 0,
+              'message': {
+                'role': 'assistant',
+                'content': jsonEncode({
+                  'sections': [
+                    {
+                      'title': body,
+                      'refs': ['h1'],
+                    },
+                  ],
+                }),
+              },
+              'finish_reason': 'stop',
+            },
+          ],
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: ['application/json'],
+        },
+      );
+    });
+    final connection = connectAssistant(
+      config(AssistantProvider.compatible),
+      'key',
+      budget: null,
+      requestTimeout: const Duration(seconds: 2),
+      adapter: adapter,
+    );
+    addTearDown(connection.close);
+    final organizer = ModelNoteOrganizer(client: connection.client, model: 'model');
+    final now = DateTime.utc(2026);
+    final source = NoteMaterials([
+      NoteMaterial(ref: 'h1', sourceId: 'a1', text: 'source', groupKey: 'g', groupTitle: 'title', createdAt: now),
+    ], collectedAt: now);
+    for (var i = 0; i < 3; i++) {
+      final outline = await organizer.outline(source, NoteSettings());
+      expect(outline.sections.single.title.length, body.length);
+    }
+    expect(adapter.calls, 3);
+    await expectLater(connection.dio.post('https://example.com/elsewhere'), throwsA(isA<DioException>()));
+    expect(adapter.calls, 3);
+  });
+
   test('configuration rejects non HTTPS, wrong paths and unauthorized local endpoints', () {
     for (final c in [
       const AssistantModel(

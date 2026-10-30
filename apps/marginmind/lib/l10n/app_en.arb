@@ -2079,7 +2079,7 @@
   "noteGenerated": "Note created",
   "noteFailureAuthentication": "The model service could not verify your API key. Check model settings, or use layout only.",
   "noteFailureTimeout": "The model took too long. Retry to continue from completed sections, or use layout only.",
-  "noteFailureBudget": "This note reached the processing limit. Completed sections are kept; continue organizing or use layout only.",
+  "noteFailureBudget": "The model stopped before completing its output. Retry to continue organizing, or use layout only.",
   "noteFailureNetwork": "Could not reach the model service. Check your connection and retry, or use layout only.",
   "noteFailureService": "The model service is busy or unavailable. Retry later, or use layout only.",
   "noteFailureProtocol": "The model returned an incomplete or unsupported response. Retry, or use layout only.",

@@ -7415,7 +7415,7 @@ abstract class AppLocalizations {
   /// No description provided for @noteFailureBudget.
   ///
   /// In en, this message translates to:
-  /// **'This note reached the processing limit. Completed sections are kept; continue organizing or use layout only.'**
+  /// **'The model stopped before completing its output. Retry to continue organizing, or use layout only.'**
   String get noteFailureBudget;
 
   /// No description provided for @noteFailureNetwork.
