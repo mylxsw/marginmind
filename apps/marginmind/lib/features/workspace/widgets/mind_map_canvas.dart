@@ -2067,19 +2067,6 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           ),
                                         ),
                                 ..._interactionWidgets(rects, obstacles),
-                                if (_boxStart != null && _boxEnd != null)
-                                  Positioned.fromRect(
-                                    rect: Rect.fromPoints(_boxStart!, _boxEnd!),
-                                    child: IgnorePointer(
-                                      child: DecoratedBox(
-                                        key: const ValueKey('map-selection-box'),
-                                        decoration: BoxDecoration(
-                                          color: c.accentTint,
-                                          border: Border.all(color: c.accent),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                 if (_drop case final drop?)
                                   if (drop.previewRect(rects, gap: _siblingGap, thickness: 3) case final rect?)
                                     Positioned.fromRect(
@@ -2163,6 +2150,33 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   ),
                 ),
               ),
+              // The marquee belongs to the viewport: the finite map scene
+              // must not clip it when selecting across empty canvas space.
+              if (_boxStart != null && _boxEnd != null)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: widget.transformation,
+                      builder: (context, _) => Stack(
+                        children: [
+                          Positioned.fromRect(
+                            rect: MatrixUtils.transformRect(
+                              widget.transformation.value,
+                              Rect.fromPoints(_boxStart!, _boxEnd!),
+                            ),
+                            child: DecoratedBox(
+                              key: const ValueKey('map-selection-box'),
+                              decoration: BoxDecoration(
+                                color: c.accentTint,
+                                border: Border.all(color: c.accent),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               if ((widget.selectionToolbar != null && field?.note == null && widget.connectingFromId == null) ||
                   widget.mergePreviewCardId != null)
                 Positioned.fill(
