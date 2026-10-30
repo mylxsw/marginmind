@@ -1,3 +1,4 @@
+import '../../vocabulary/vocabulary_controller.dart';
 import '../document_import.dart';
 import '../../../app/document_commands.dart';
 import '../../../shared/document_icon.dart';
@@ -136,7 +137,23 @@ class WorkspaceSidebar extends ConsumerWidget {
     }
     final now = ref.watch(clockProvider)();
     final due = content?.dueCount(now, mapId: state.activeMapId) ?? 0;
+    final vocabularyCount =
+        ref
+            .watch(vocabularyProvider)
+            .asData
+            ?.value
+            .entries
+            .where((e) => e.status == VocabularyStatus.learning)
+            .length ??
+        0;
     final learn = [
+      if (matches(l.vocabularyTitle))
+        MMSidebarItem(
+          icon: MMIcons.vocabulary,
+          label: l.vocabularyTitle,
+          trailing: vocabularyCount > 0 ? MMBadge('$vocabularyCount') : null,
+          onTap: () => ref.read(navigationProvider.notifier).showVocabulary(studySetId: studySetId),
+        ),
       if (matches(l.review))
         MMSidebarItem(
           icon: MMIcons.review,

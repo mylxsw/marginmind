@@ -108,6 +108,9 @@ class MMColors extends ThemeExtension<MMColors> {
   /// Fixed vocabulary hue; the light shade meets 4.5:1 on white.
   final Color vocabulary;
 
+  /// Text on a solid vocabulary action; dark teal needs dark ink.
+  Color get onVocabulary => brightness == Brightness.dark ? light.label : onAccent;
+
   /// Vocabulary wash at 12% / 16%.
   final Color vocabularyTint;
 

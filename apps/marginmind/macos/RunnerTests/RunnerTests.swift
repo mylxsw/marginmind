@@ -12,6 +12,31 @@ import PDFKit
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testSpeechChannelValidatesInputAndStopsBeforeSpeaking() {
+    var events = [String]()
+    var reply: Any?
+    let stop = { events.append("stop") }
+    let speak: (String, String) -> Bool = { term, language in
+      events.append("speak:\(term):\(language)"); return true
+    }
+    SpeechChannel.handle(FlutterMethodCall(methodName: "speak", arguments: ["text": "meticulous", "language": "en-GB"]),
+      result: { reply = $0 }, stop: stop, speak: speak)
+    XCTAssertNil(reply)
+    XCTAssertEqual(events, ["stop", "speak:meticulous:en-GB"])
+    SpeechChannel.handle(FlutterMethodCall(methodName: "stop", arguments: nil), result: { reply = $0 }, stop: stop, speak: speak)
+    XCTAssertEqual(events.last, "stop")
+    let invalid: [Any?] = [nil, [:], ["text": "", "language": "en"], ["text": String(repeating: "x", count: 65), "language": "en"]]
+    for arguments in invalid {
+      SpeechChannel.handle(FlutterMethodCall(methodName: "speak", arguments: arguments), result: { reply = $0 }, stop: stop, speak: speak)
+      XCTAssertEqual((reply as? FlutterError)?.code, "invalid")
+    }
+    SpeechChannel.handle(FlutterMethodCall(methodName: "speak", arguments: ["text": "word", "language": "en-US"]),
+      result: { reply = $0 }, stop: stop, speak: { _, _ in false })
+    XCTAssertEqual((reply as? FlutterError)?.code, "speech")
+    SpeechChannel.handle(FlutterMethodCall(methodName: "unknown", arguments: nil), result: { reply = $0 }, stop: stop, speak: speak)
+    XCTAssertTrue((reply as? NSObject) === FlutterMethodNotImplemented)
+  }
+
   func testBrowserPdfPrintIsAsyncPaginatedAndCleansUpAfterStaleOrCancelledJobs() async throws {
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 480),
       styleMask: [.titled], backing: .buffered, defer: false)

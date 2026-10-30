@@ -135,7 +135,7 @@ void main() {
       expect(find.descendant(of: header, matching: find.byIcon(MMIcons.copy)), findsNothing);
       expect(find.text('复制译文'), findsOneWidget);
       expect(tester.getRect(copy).top, greaterThan(tester.getRect(scroll).bottom));
-      expect(tester.getRect(copy).right, closeTo(tester.getRect(popup).right - 14, .1));
+      expect(tester.getRect(copy).left, closeTo(tester.getRect(popup).left + 14, .1));
       await screenshot(tester, 'selection-translation-${dark ? 'dark' : 'light'}', target: popup);
       String? copied;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -206,7 +206,9 @@ void main() {
     translators.first.pending.completeError(StateError('fixture failure'));
     await tester.pumpAndSettle();
     expect(find.text('Translation failed. Check your model settings or connection and retry.'), findsOneWidget);
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-close')));
     await tester.pump();
     translators.last.pending.complete(const ParagraphTranslation('Complete translation'));
     await tester.pumpAndSettle();
@@ -221,7 +223,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('selection-translate')));
     await tester.pumpAndSettle();
-    expect(find.text('Configure a model first'), findsOneWidget);
+    expect(find.text('No model configured'), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     final context = tester.element(find.byType(SelectionToolbar));
@@ -263,7 +265,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('selection-translate')));
     await tester.pumpAndSettle();
-    expect(find.text('You are offline. Enable online access or select a local model, then retry.'), findsOneWidget);
+    expect(find.text('Online access is off'), findsOneWidget);
     expect(calls, 0);
   });
 
@@ -512,8 +514,8 @@ void main() {
       final scroll = find.byKey(const ValueKey('selection-translation-scroll'));
       final copyBounds = tester.getRect(copy);
       expect(copyBounds.top, greaterThan(tester.getRect(scroll).bottom));
-      expect(copyBounds.bottom, closeTo(tester.getRect(popup).bottom - 14, .1));
-      expect(copyBounds.right, closeTo(tester.getRect(popup).right - 14, .1));
+      expect(copyBounds.bottom, closeTo(tester.getRect(popup).bottom - 16, .1));
+      expect(copyBounds.left, closeTo(tester.getRect(popup).left + 14, .1));
       if (long) {
         final position = tester
             .state<ScrollableState>(find.descendant(of: scroll, matching: find.byType(Scrollable)).first)

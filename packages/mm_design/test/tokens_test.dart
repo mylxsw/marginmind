@@ -41,6 +41,7 @@ void main() {
 
       test('vocabulary contrast, tint and fixed hue survive theme changes', () {
         expect(contrastRatio(c.vocabulary, c.windowBackground), greaterThanOrEqualTo(4.5));
+        expect(contrastRatio(c.onVocabulary, c.vocabulary), greaterThanOrEqualTo(4.5));
         expect(contrastRatio(c.label, composite(c.vocabularyTint, c.card)), greaterThanOrEqualTo(4.5));
         expect(c.vocabularyTint.toARGB32() & 0xFFFFFF, c.vocabulary.toARGB32() & 0xFFFFFF);
         expect(c.vocabularyTint.a, closeTo(c.brightness == Brightness.light ? 0.12 : 0.16, 0.002));

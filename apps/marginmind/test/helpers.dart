@@ -38,6 +38,7 @@ StudySetContent demoContent() {
 Future<List<Override>> testOverrides({
   Map<String, Object> prefs = const {},
   bool renderPdf = false,
+  VocabularyRepository? vocabulary,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
   PdfPicker? pdfPicker,
@@ -45,6 +46,7 @@ Future<List<Override>> testOverrides({
   SharedPreferences.setMockInitialValues(prefs);
   final instance = await SharedPreferences.getInstance();
   return [
+    vocabularyRepositoryProvider.overrideWithValue(vocabulary ?? InMemoryVocabularyRepository()),
     sharedPreferencesProvider.overrideWithValue(instance),
     clockProvider.overrideWithValue(() => testNow),
     pdfRenderingEnabledProvider.overrideWithValue(renderPdf),
@@ -67,6 +69,7 @@ Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   Map<String, Object> prefs = const {},
   bool renderPdf = false,
+  VocabularyRepository? vocabulary,
   List<StudySet>? sets,
   InMemoryStudySetContentRepository? content,
   PdfPicker? pdfPicker,
@@ -81,6 +84,7 @@ Future<ProviderContainer> pumpApp(
     sets: sets,
     content: content,
     renderPdf: renderPdf,
+    vocabulary: vocabulary,
     pdfPicker: pdfPicker,
   );
   await tester.pumpWidget(ProviderScope(overrides: [...base, ...overrides], child: const MarginMindApp()));

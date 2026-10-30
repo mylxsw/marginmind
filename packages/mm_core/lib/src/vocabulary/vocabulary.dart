@@ -130,6 +130,8 @@ class VocabularyEntry {
 
   /// Editable fields; identity and creation time stay stable.
   VocabularyEntry copyWith({
+    String? ukPhonetic,
+    String? usPhonetic,
     List<String>? forms,
     List<VocabularySense>? senses,
     String? gloss,
@@ -150,8 +152,8 @@ class VocabularyEntry {
     note: note ?? this.note,
     status: status ?? this.status,
     contexts: contexts ?? this.contexts,
-    ukPhonetic: ukPhonetic,
-    usPhonetic: usPhonetic,
+    ukPhonetic: ukPhonetic ?? this.ukPhonetic,
+    usPhonetic: usPhonetic ?? this.usPhonetic,
   );
   Map<String, Object?> toJson() => {
     'id': id,

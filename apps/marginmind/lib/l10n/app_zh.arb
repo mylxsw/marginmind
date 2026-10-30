@@ -1302,5 +1302,25 @@
       }
     }
   },
-  "annotationNotFound": "找不到原文位置"
+  "annotationNotFound": "找不到原文位置",
+  "vocabularyTitle": "生词本",
+  "vocabularyLookup": "查词（T）",
+  "vocabularyTranslate": "翻译（T）",
+  "vocabularyAdd": "加入生词本",
+  "vocabularyAdded": "已加入生词本",
+  "vocabularyLearning": "学习中",
+  "vocabularyKnown": "已掌握",
+  "vocabularyView": "在生词本中查看",
+  "vocabularyMarkKnown": "标为已掌握",
+  "vocabularyRemove": "移出生词本",
+  "vocabularyExample": "收录为例句",
+  "vocabularySentence": "翻译整句",
+  "vocabularyDetails": "详情 ›",
+  "vocabularyLongSelection": "生词本收录单词和 8 个词以内的短语",
+  "vocabularySettings": "打开设置",
+  "vocabularySpeak": "朗读",
+  "vocabularySetup": "未设置模型",
+  "vocabularyOffline": "联网已关闭",
+  "vocabularyUK": "英",
+  "vocabularyUS": "美"
 }

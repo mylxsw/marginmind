@@ -4,6 +4,7 @@ import Security
 import LocalAuthentication
 
 class MainFlutterWindow: NSWindow {
+  private var speech: SpeechChannel?
   private var mapExport: MapExportChannel?
   private var articleParser: ArticleParserChannel?
   private var pdfOcr: PdfOcrChannel?
@@ -111,6 +112,7 @@ class MainFlutterWindow: NSWindow {
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
     externalLink = ExternalLinkChannel(messenger: flutterViewController.engine.binaryMessenger)
 
+    speech = SpeechChannel(messenger: flutterViewController.engine.binaryMessenger)
     let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
       binaryMessenger: flutterViewController.engine.binaryMessenger)
     mapClipboard = clipboard
@@ -433,4 +435,36 @@ final class SecretStoreChannel {
   private static func requiresAuthentication(_ status: OSStatus) -> Bool {
     status == errSecInteractionNotAllowed || status == errSecAuthFailed || status == errSecUserCanceled
   }
+}
+
+/// One synthesizer per window; replacing a term stops the previous utterance.
+final class SpeechChannel {
+  private let synthesizer = NSSpeechSynthesizer()
+  private let channel: FlutterMethodChannel
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(name: "marginmind/speech", binaryMessenger: messenger)
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else { result(nil); return }
+      Self.handle(call, result: result, stop: { self.synthesizer.stopSpeaking() }, speak: { text, language in
+        let voice = NSSpeechSynthesizer.availableVoices.first {
+          NSSpeechSynthesizer.attributes(forVoice: $0)[.localeIdentifier] as? String == language.replacingOccurrences(of: "-", with: "_")
+        }
+        self.synthesizer.setVoice(voice)
+        return self.synthesizer.startSpeaking(text)
+      })
+    }
+  }
+  static func handle(_ call: FlutterMethodCall, result: FlutterResult,
+                     stop: () -> Void, speak: (String, String) -> Bool) {
+    if call.method == "stop" { stop(); result(nil); return }
+    guard call.method == "speak" else { result(FlutterMethodNotImplemented); return }
+    guard let args = call.arguments as? [String: String], let text = args["text"],
+          let language = args["language"], !text.isEmpty, text.count <= 64 else {
+      result(FlutterError(code: "invalid", message: nil, details: nil)); return
+    }
+    stop()
+    if speak(text, language) { result(nil) }
+    else { result(FlutterError(code: "speech", message: nil, details: nil)) }
+  }
+  deinit { synthesizer.stopSpeaking() }
 }

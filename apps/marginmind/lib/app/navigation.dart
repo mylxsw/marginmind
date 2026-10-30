@@ -43,6 +43,11 @@ class GalleryRoute extends AppRoute {
   final AppRoute returnTo;
 }
 
+class VocabularyRoute extends AppRoute {
+  const VocabularyRoute({this.studySetId, this.entryId});
+  final String? studySetId, entryId;
+}
+
 class AppNavigation extends Notifier<AppRoute> {
   @override
   AppRoute build() => const LibraryRoute();
@@ -51,6 +56,9 @@ class AppNavigation extends Notifier<AppRoute> {
   /// Source, Map and Review tabs return to it from the library.
   String? get recentStudySetId => _recent;
   String? _recent;
+
+  void showVocabulary({String? studySetId, String? entryId}) =>
+      state = VocabularyRoute(studySetId: studySetId, entryId: entryId);
 
   void showLibrary() => state = const LibraryRoute();
 
@@ -72,6 +80,7 @@ class AppNavigation extends Notifier<AppRoute> {
     final current = state;
     state = switch (current) {
       GalleryRoute() => current.returnTo,
+      VocabularyRoute(:final studySetId?) => WorkspaceRoute(studySetId),
       StatsRoute(:final studySetId?) => WorkspaceRoute(studySetId),
       _ => const LibraryRoute(),
     };

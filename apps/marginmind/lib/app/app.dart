@@ -149,6 +149,13 @@ class AppShell extends ConsumerWidget {
       WorkspaceRoute(:final studySetId) => WorkspaceScreen(key: ValueKey(studySetId), studySetId: studySetId),
       ReviewRoute(:final studySetId) => ReviewScreen(key: ValueKey('review-$studySetId'), studySetId: studySetId),
       StatsRoute(:final studySetId) => StatsScreen(key: ValueKey('stats-$studySetId'), studySetId: studySetId),
+      VocabularyRoute() => Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.vocabularyTitle),
+          leading: BackButton(onPressed: () => ref.read(navigationProvider.notifier).back()),
+        ),
+        body: const SizedBox.expand(),
+      ),
       GalleryRoute() => const GalleryScreen(),
     };
     final tabs = showsPhoneTabs(context);

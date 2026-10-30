@@ -1982,5 +1982,25 @@
       }
     }
   },
-  "annotationNotFound": "Can’t find the original text"
+  "annotationNotFound": "Can’t find the original text",
+  "vocabularyTitle": "Vocabulary",
+  "vocabularyLookup": "Look up (T)",
+  "vocabularyTranslate": "Translate (T)",
+  "vocabularyAdd": "Add to vocabulary",
+  "vocabularyAdded": "Added to vocabulary",
+  "vocabularyLearning": "Learning",
+  "vocabularyKnown": "Known",
+  "vocabularyView": "View in vocabulary",
+  "vocabularyMarkKnown": "Mark as known",
+  "vocabularyRemove": "Remove from vocabulary",
+  "vocabularyExample": "Save as example",
+  "vocabularySentence": "Translate sentence",
+  "vocabularyDetails": "Details ›",
+  "vocabularyLongSelection": "Vocabulary accepts words and phrases of up to 8 words",
+  "vocabularySettings": "Open settings",
+  "vocabularySpeak": "Read aloud",
+  "vocabularySetup": "No model configured",
+  "vocabularyOffline": "Online access is off",
+  "vocabularyUK": "UK",
+  "vocabularyUS": "US"
 }
