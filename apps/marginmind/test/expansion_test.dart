@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Card;
+import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart' show kSecondaryMouseButton, PointerDeviceKind;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -94,11 +95,11 @@ class BatchModels {
   Future<IdeaExpander> create() async => BatchExpander(this);
 }
 
-Future<void> capture(WidgetTester tester, String name) async {
+Future<void> capture(WidgetTester tester, String name, {Finder? region}) async {
   final output = Platform.environment['MM_SCREENSHOTS'];
   if (output == null) return;
   Directory(output).createSync(recursive: true);
-  final pane = tester.renderObject<RenderBox>(find.byType(MapPane));
+  final pane = tester.renderObject<RenderBox>(region ?? find.byType(MapPane));
   final image = await tester.runAsync(
     () => (tester.binding.renderViews.first.debugLayer! as OffsetLayer).toImage(
       pane.localToGlobal(Offset.zero) & pane.size,
@@ -336,6 +337,116 @@ void main() {
     expect(find.byType(ExpansionSection), findsNothing);
     expect(app.container.read(expansionControllerProvider('demo-1')), isNull);
   });
+  for (final (language, appearance) in [('zh', 'light'), ('zh', 'dark'), ('en', 'dark')]) {
+    testWidgets('expansion options layout $language $appearance', (tester) async {
+      final app = await openAssistantApp(
+        tester,
+        size: language == 'en' ? const Size(1100, 760) : const Size(1400, 1000),
+        prefs: {'settings.language': language, 'settings.appearance': appearance},
+      );
+      app.workspace.selectCard('c3');
+      await focusMap(tester);
+      await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('expansion-start')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await capture(
+        tester,
+        'expansion-options-$language-$appearance',
+        region: find.byKey(const ValueKey('assistant-quick-actions')),
+      );
+      await tester.tap(find.byKey(const ValueKey('quick-close')));
+      await tester.pumpAndSettle();
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
+  testWidgets('selected two levels survive model completion, preview, keep and undo', (tester) async {
+    final client = ScriptClient([
+      answer('{"ref":"a","parent":"T1","title":"主动回忆"}'),
+      answer('{"ref":"b","parent":"a","title":"闭卷自测"}'),
+    ]);
+    final app = await openAssistantApp(
+      tester,
+      realWrites: true,
+      overrides: [
+        ideaExpanderFactoryProvider.overrideWithValue(
+          () async => ModelIdeaExpander(AssistantConnection(client, Dio()), 'test'),
+        ),
+      ],
+    );
+    app.workspace.selectCard('c3');
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2 层'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(find.byKey(const ValueKey('expansion-start')));
+      for (var i = 0; i < 100; i++) {
+        if (app.container.read(expansionControllerProvider('demo-1'))?.phase != ExpansionPhase.generating) return;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      fail('Expansion did not finish');
+    });
+    await tester.pumpAndSettle();
+    final state = app.container.read(expansionControllerProvider('demo-1'))!;
+    expect(state.phase, ExpansionPhase.review);
+    expect(state.failure, isNull);
+    expect(state.drafts, hasLength(2));
+    expect(state.drafts.last.parentRef, 'new:${state.drafts.first.id}');
+    expect(client.calls, 2);
+    expect(find.byType(MapGhostNode), findsNWidgets(2));
+    await capture(tester, 'expansion-two-level-preview');
+    final before = app.workspace.content;
+    final controller = app.container.read(expansionControllerProvider('demo-1').notifier);
+    expect(await controller.keep(), 2);
+    final parent = app.workspace.content.cards.singleWhere((c) => c.title == '主动回忆');
+    final child = app.workspace.content.cards.singleWhere((c) => c.title == '闭卷自测');
+    expect(app.workspace.content.node(child.id)!.parentId, parent.id);
+    await app.workspace.undo();
+    expect(app.workspace.content.cards.length, before.cards.length);
+    await settleHud(tester);
+  });
+  testWidgets('unfinished depth is visible while partial drafts stay reviewable', (tester) async {
+    final model = ControlledExpander();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(() async => model)],
+    );
+    final controller = app.container.read(expansionControllerProvider('demo-1').notifier);
+    final run = controller.start(controller.request(MindMap.defaultId, 'c3', depth: 2));
+    await tester.pumpAndSettle();
+    model.output.add(const ExpansionDraft(id: 'partial', parentRef: 'c3', title: '未完成的分支'));
+    model.output.addError(const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth'));
+    unawaited(model.output.close());
+    await tester.pumpAndSettle();
+    await run;
+    expect(find.text('部分分支未达到所选层级，可换一批重试'), findsOneWidget);
+    expect(app.container.read(expansionControllerProvider('demo-1'))!.phase, ExpansionPhase.stopped);
+    expect(find.byType(MapGhostNode), findsOneWidget);
+    controller.discard();
+    await tester.pumpAndSettle();
+  });
+  testWidgets('global duplicate filtering cannot mark an incomplete branch as complete', (tester) async {
+    final model = ControlledExpander();
+    final app = await openAssistantApp(
+      tester,
+      overrides: [ideaExpanderFactoryProvider.overrideWithValue(() async => model)],
+    );
+    final controller = app.container.read(expansionControllerProvider('demo-1').notifier);
+    final run = controller.start(controller.request(MindMap.defaultId, 'c3', depth: 2));
+    await tester.pumpAndSettle();
+    model.output.add(const ExpansionDraft(id: 'parent', parentRef: 'c3', title: '新主题'));
+    model.output.add(const ExpansionDraft(id: 'duplicate', parentRef: 'new:parent', title: '对策一：间隔重复'));
+    unawaited(model.output.close());
+    await tester.pumpAndSettle();
+    await run;
+    final state = app.container.read(expansionControllerProvider('demo-1'))!;
+    expect(state.drafts, hasLength(1));
+    expect(state.phase, ExpansionPhase.stopped);
+    expect(state.failure?.code, 'incompleteDepth');
+    controller.discard();
+    await tester.pumpAndSettle();
+  });
   testWidgets('options entry remembers settings and adjusted retry uses them', (tester) async {
     final first = ControlledExpander(), second = ControlledExpander();
     var call = 0;
@@ -349,12 +460,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ExpansionSection), findsOneWidget);
     final options = find.byType(ExpansionOptions);
-    expect(find.descendant(of: options, matching: find.byType(Table)), findsOneWidget);
     expect(find.descendant(of: options, matching: find.byType(MMSegmentedControl<int>)), findsNWidgets(2));
     expect(find.descendant(of: options, matching: find.byType(ChoiceChip)), findsNothing);
-    final directionX = tester.getTopLeft(find.text('方向')).dx;
-    expect(tester.getTopLeft(find.text('层级')).dx, directionX);
-    expect(tester.getTopLeft(find.text('数量')).dx, directionX);
+    expect(tester.getTopLeft(find.text('层级')).dy, tester.getTopLeft(find.text('数量')).dy);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('expansion-depth'))).dy,
+      tester.getTopLeft(find.byKey(const ValueKey('expansion-amount'))).dy,
+    );
     final chip = find.byKey(const ValueKey('expansion-direction-auto'));
     final colors = tester.element(chip).mmColors;
     BoxDecoration chipDecoration(Finder chip) =>
@@ -367,7 +479,8 @@ void main() {
     expect(unselected.border, Border.all(color: colors.line, width: .5));
     final sourceSwitch = find.byType(MMSwitch);
     expect(tester.widget<MMSwitch>(sourceSwitch).color, colors.research);
-    expect(tester.getCenter(find.byType(MMTextField)).dy, tester.getCenter(sourceSwitch).dy);
+    expect(tester.getCenter(find.byType(MMTextField)).dy, lessThan(tester.getCenter(sourceSwitch).dy));
+    expect(tester.getCenter(find.byKey(const ValueKey('expansion-start'))).dy, tester.getCenter(sourceSwitch).dy);
     final hintField = find.descendant(of: find.byType(MMTextField), matching: find.byType(TextField));
     expect(tester.widget<TextField>(hintField).maxLength, 200);
     await capture(tester, 'expansion-options');
@@ -383,7 +496,7 @@ void main() {
     );
     await tester.tap(find.byType(MMSwitch).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('扩展想法  ⌥⇥'));
+    await tester.tap(find.byKey(const ValueKey('expansion-start')));
     await tester.pumpAndSettle();
     expect(first.requests.single.depth, 2);
     expect(first.requests.single.breadth, 8);
@@ -780,7 +893,7 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('分别扩展 2 个主题  ⌥⇥'), findsOneWidget);
+    expect(find.text('分别扩展 2 个主题'), findsOneWidget);
     await capture(tester, 'multi-options');
     await tester.tap(find.text('归纳上级主题'));
     await tester.pumpAndSettle();
@@ -792,7 +905,7 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    final group = tester.widget<TextButton>(find.widgetWithText(TextButton, '归纳上级主题'));
+    final group = tester.widget<MMButton>(find.widgetWithText(MMButton, '归纳上级主题'));
     expect(group.onPressed, isNull);
     expect(
       find.byTooltip(tester.element(find.byType(ExpansionSection)).l10n.mapEditDifferentParents),
@@ -856,9 +969,9 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('扩展整张脑图…  ⌥⇥'), findsOneWidget);
+    expect(find.text('扩展整张脑图…'), findsOneWidget);
     await capture(tester, 'root-options');
-    await tester.tap(find.text('扩展整张脑图…  ⌥⇥'));
+    await tester.tap(find.byKey(const ValueKey('expansion-start')));
     await tester.pumpAndSettle();
     expect(find.byType(ExpansionPlanSheet), findsOneWidget);
     expect(models.plans, 1);
@@ -877,7 +990,7 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('分别扩展 2 个主题  ⌥⇥'));
+    await tester.tap(find.byKey(const ValueKey('expansion-start')));
     await tester.pumpAndSettle();
     expect(app.container.read(p)!.request.targetIds.toSet(), {'c3', 'c4'});
     c.discard();

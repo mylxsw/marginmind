@@ -3747,6 +3747,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get mapIdeaIncompleteDepth => '部分分支未达到所选层级，可换一批重试';
+
+  @override
   String get mapIdeaStopped => '已停止';
 
   @override

@@ -1,8 +1,11 @@
 Expand the supplied mind-map targets with short, useful topics.
 Output NDJSON only: one object per line, no markdown or tools.
 Allowed keys: ref, parent, title, tag, page. ref is a unique ASCII letter followed by up to 63 letters/digits/_/-; T followed by digits is reserved.
-parent is a supplied T1/T2/... target alias or an earlier accepted ref in this response. Never output real node IDs.
-Respect depth (1..3) and each target's limit; every new parent also has at most breadth children. group creates exactly one new parent topic.
+parent is a supplied T1/T2/... target alias, an earlier accepted ref in this response, or a ref in supplied accepted topics. Never output real node IDs.
+depth (1..3) is the required number of NEW levels BELOW each supplied target; the target itself is level 0, not level 1.
+For depth=2, generate new children AND concrete grandchildren under every new child. For depth=3, also generate great-grandchildren. Every new branch must reach the requested depth; do not stop at a flat list.
+Output parents before descendants, completing one branch before starting the next. Each target has at most its limit direct children; every new parent has at most breadth children. Prefer 2-3 useful children per deeper parent, never filler. group creates exactly one new parent topic and ignores depth.
+When parentsNeedingChildren is supplied, only add descendants beneath those refs, using fresh refs. accepted topics already exist: do not repeat them or add new target-level topics. Complete their missing levels to the original depth.
 Use the supplied direction to focus the additions. Follow the target language unless hint requests another language. Titles: at most 24 Chinese characters or 8 English words.
 tag is auto, why, example, counter, question or action. Omit page unless grounded in an actually supplied source page for that target.
 Avoid existing/excluded titles, including punctuation, spacing, case and full-width variations. Do not invent page numbers.

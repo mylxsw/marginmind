@@ -7028,6 +7028,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Expanding 1 Topic} other{Expanding {count} Topics}}'**
   String mapIdeaExpandingCount(int count);
 
+  /// No description provided for @mapIdeaIncompleteDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Some branches are missing levels. Try again.'**
+  String get mapIdeaIncompleteDepth;
+
   /// No description provided for @mapIdeaStopped.
   ///
   /// In en, this message translates to:

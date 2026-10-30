@@ -10,8 +10,11 @@ import 'providers.dart';
 const expansionSystemPrompt = '''Expand the supplied mind-map targets with short, useful topics.
 Output NDJSON only: one object per line, no markdown or tools.
 Allowed keys: ref, parent, title, tag, page. ref is a unique ASCII letter followed by up to 63 letters/digits/_/-; T followed by digits is reserved.
-parent is a supplied T1/T2/... target alias or an earlier accepted ref in this response. Never output real node IDs.
-Respect depth (1..3) and each target's limit; every new parent also has at most breadth children. group creates exactly one new parent topic.
+parent is a supplied T1/T2/... target alias, an earlier accepted ref in this response, or a ref in supplied accepted topics. Never output real node IDs.
+depth (1..3) is the required number of NEW levels BELOW each supplied target; the target itself is level 0, not level 1.
+For depth=2, generate new children AND concrete grandchildren under every new child. For depth=3, also generate great-grandchildren. Every new branch must reach the requested depth; do not stop at a flat list.
+Output parents before descendants, completing one branch before starting the next. Each target has at most its limit direct children; every new parent has at most breadth children. Prefer 2-3 useful children per deeper parent, never filler. group creates exactly one new parent topic and ignores depth.
+When parentsNeedingChildren is supplied, only add descendants beneath those refs, using fresh refs. accepted topics already exist: do not repeat them or add new target-level topics. Complete their missing levels to the original depth.
 Use the supplied direction to focus the additions. Follow the target language unless hint requests another language. Titles: at most 24 Chinese characters or 8 English words.
 tag is auto, why, example, counter, question or action. Omit page unless grounded in an actually supplied source page for that target.
 Avoid existing/excluded titles, including punctuation, spacing, case and full-width variations. Do not invent page numbers.
@@ -126,6 +129,8 @@ class ModelIdeaExpander implements IdeaExpander {
     // A parser per target keeps breadth/depth/ref state local to that branch.
     final parsers = <String, ExpansionLineContext>{};
     final refTargets = <String, String>{};
+    final depths = <String, int>{}, parentsWithChildren = <String>{};
+    final accepted = <Map<String, Object?>>[];
     final batchTitles = context.existingTitles.map(normalizeExpansionTitle).toSet();
     for (final alias in context.targets.keys) {
       parsers[alias] = ExpansionLineContext(
@@ -138,8 +143,7 @@ class ModelIdeaExpander implements IdeaExpander {
         onInvalid: onInvalidLine,
       );
     }
-    var count = 0;
-    await for (final line in _lines(expansionSystemPrompt, {
+    final payload = <String, Object?>{
       ...context.payload(grounded: request.grounded),
       'scope': request.scope.name,
       'direction': request.direction.name,
@@ -148,37 +152,76 @@ class ModelIdeaExpander implements IdeaExpander {
       'limits': limits,
       'hint': request.hint,
       'grounded': request.grounded,
-    }, cancel)) {
-      Object? raw;
-      try {
-        raw = jsonDecode(line);
-      } on FormatException {
-        onInvalidLine?.call('json');
-        continue;
+    };
+    final resources = _ExpansionResources(budget);
+    Set<String>? repairParents;
+    // At most one completion request for each missing level. Parser state and
+    // provenance survive across responses; no fabricated intermediate topics.
+    for (var attempt = 0; attempt < request.depth; attempt++) {
+      final previousCount = accepted.length;
+      final allowedParents = repairParents == null ? null : {...repairParents};
+      await for (final line in _lines(
+        expansionSystemPrompt,
+        {
+          ...payload,
+          if (repairParents != null) 'accepted': accepted,
+          if (repairParents != null) 'parentsNeedingChildren': repairParents.toList(),
+        },
+        cancel,
+        resources: resources,
+      )) {
+        Object? raw;
+        try {
+          raw = jsonDecode(line);
+        } on FormatException {
+          onInvalidLine?.call('json');
+          continue;
+        }
+        if (raw is! Map<String, dynamic>) {
+          onInvalidLine?.call('fields');
+          continue;
+        }
+        final parent = raw['parent'], ref = raw['ref'];
+        if (allowedParents != null && !allowedParents.contains(parent)) {
+          onInvalidLine?.call('repairParent');
+          continue;
+        }
+        final alias = parsers.containsKey(parent) ? parent : refTargets[parent];
+        if (alias == null || refTargets.containsKey(ref)) {
+          onInvalidLine?.call('parentOrRef');
+          continue;
+        }
+        final title = raw['title'];
+        if (title is String && batchTitles.contains(normalizeExpansionTitle(expansionTitle(title)))) {
+          onInvalidLine?.call('duplicate');
+          continue;
+        }
+        final draft = parseExpansionLine(line, parsers[alias]!);
+        if (draft == null) continue;
+        refTargets[ref as String] = alias as String;
+        depths[ref] = (depths[parent] ?? 0) + 1;
+        parentsWithChildren.add(parent as String);
+        allowedParents?.add(ref);
+        accepted.add({
+          'ref': ref,
+          'parent': parent,
+          'title': draft.title,
+          'tag': draft.tag.name,
+          if (draft.page != null) 'page': draft.page,
+        });
+        batchTitles.add(normalizeExpansionTitle(draft.title));
+        yield draft;
       }
-      if (raw is! Map<String, dynamic>) {
-        onInvalidLine?.call('fields');
-        continue;
-      }
-      final parent = raw['parent'], ref = raw['ref'];
-      final alias = parsers.containsKey(parent) ? parent : refTargets[parent];
-      if (alias == null || refTargets.containsKey(ref)) {
-        onInvalidLine?.call('parentOrRef');
-        continue;
-      }
-      final title = raw['title'];
-      if (title is String && batchTitles.contains(normalizeExpansionTitle(expansionTitle(title)))) {
-        onInvalidLine?.call('duplicate');
-        continue;
-      }
-      final draft = parseExpansionLine(line, parsers[alias]!);
-      if (draft == null) continue;
-      refTargets[ref as String] = alias as String;
-      batchTitles.add(normalizeExpansionTitle(draft.title));
-      count++;
-      yield draft;
+      if (accepted.isEmpty) throw const ResearchFailure(ResearchFailureKind.protocol, 'noValidExpansion');
+      if (request.scope == ExpansionScope.group) return;
+      repairParents = {
+        for (final entry in depths.entries)
+          if (entry.value < request.depth && !parentsWithChildren.contains(entry.key)) entry.key,
+      };
+      if (repairParents.isEmpty) return;
+      if (allowedParents != null && accepted.length == previousCount) break;
     }
-    if (count == 0) throw const ResearchFailure(ResearchFailureKind.protocol, 'noValidExpansion');
+    throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth');
   }
 
   @override
@@ -215,11 +258,18 @@ class ModelIdeaExpander implements IdeaExpander {
     return List.unmodifiable(items);
   }
 
-  Stream<String> _lines(String system, Map<String, Object?> payload, CancellationToken cancel) async* {
+  Stream<String> _lines(
+    String system,
+    Map<String, Object?> payload,
+    CancellationToken cancel, {
+    _ExpansionResources? resources,
+  }) async* {
     budget.validate();
     cancel.check();
     final input = jsonEncode(payload);
     if (input.length + system.length > budget.inputCharacters) throw const ResearchFailure(ResearchFailureKind.budget);
+    final limits = resources ?? _ExpansionResources(budget);
+    if (!DateTime.now().isBefore(limits.deadline)) throw const ResearchFailure(ResearchFailureKind.timeout);
     final token = CancelToken();
     _active.add(token);
     var finished = false;
@@ -228,16 +278,15 @@ class ModelIdeaExpander implements IdeaExpander {
         if (!finished) token.cancel();
       }),
     );
-    final deadline = DateTime.now().add(budget.duration);
     // Attach all race handlers before checking cancellation; bind() checks
     // synchronously and could otherwise leave a newly-created future unobserved.
     Future<T> wait<T>(Future<T> future) => Future.any([
       future,
       token.whenCancel.then<T>((_) => throw const ResearchFailure(ResearchFailureKind.cancelled)),
       cancel.whenCancelled.then<T>((_) => throw const ResearchFailure(ResearchFailureKind.cancelled)),
-    ]).timeout(deadline.difference(DateTime.now()));
+    ]).timeout(limits.deadline.difference(DateTime.now()));
     StreamIterator<StreamingMessage>? iterator;
-    var buffer = '', bytes = 0, oversized = false;
+    var buffer = '', oversized = false;
     String? stop;
     try {
       final source = await wait(
@@ -258,8 +307,8 @@ class ModelIdeaExpander implements IdeaExpander {
         if (message.functionCalls.isNotEmpty) throw const ResearchFailure(ResearchFailureKind.toolProtocol);
         stop = message.stopReason ?? stop;
         final text = message.textOutput ?? '';
-        bytes += utf8.encode(text).length;
-        if (bytes > budget.responseBytes || (message.usage?.completionTokens ?? 0) > budget.outputTokens) {
+        limits.bytes += utf8.encode(text).length;
+        if (limits.bytes > budget.responseBytes || (message.usage?.completionTokens ?? 0) > budget.outputTokens) {
           throw const ResearchFailure(ResearchFailureKind.budget);
         }
         final pieces = text.split('\n');
@@ -303,6 +352,13 @@ class ModelIdeaExpander implements IdeaExpander {
     }
     connection.close();
   }
+}
+
+/// Completion requests share the original call's time and response-byte budget.
+class _ExpansionResources {
+  _ExpansionResources(ResearchBudget budget) : deadline = DateTime.now().add(budget.duration);
+  final DateTime deadline;
+  int bytes = 0;
 }
 
 ResearchFailure expansionFailure(Object error) {

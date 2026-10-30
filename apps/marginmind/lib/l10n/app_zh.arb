@@ -1367,6 +1367,7 @@
   "mapIdeaGrounded": "参考原文",
   "mapIdeaExpanding": "扩展「{title}」",
   "mapIdeaExpandingCount": "扩展 {count} 个主题",
+  "mapIdeaIncompleteDepth": "部分分支未达到所选层级，可换一批重试",
   "mapIdeaStopped": "已停止",
   "mapIdeaDraftCount": "{count} 条",
   "mapIdeaKeptCount": "保留 {kept} / {total}",
