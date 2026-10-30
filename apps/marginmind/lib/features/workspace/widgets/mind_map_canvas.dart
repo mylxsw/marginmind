@@ -1200,7 +1200,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                   () => widget.onUpdateRelation?.call(relation.copyWith(solid: !relation.solid)),
                 ),
                 button(Icons.edit, l.editMarkLabel, () => widget.onEditMark?.call(relation.id)),
-                button(Icons.delete_outline, l.deleteRelation, () => widget.onDeleteMark?.call()),
+                button(MMIcons.trash, l.deleteRelation, () => widget.onDeleteMark?.call()),
               ],
             ),
           ),
