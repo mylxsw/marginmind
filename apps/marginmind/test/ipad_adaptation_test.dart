@@ -75,6 +75,10 @@ void main() {
       await t.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).panel, RightPanel.assistant);
       if (size.height > size.width) {
+        final grip = t.getRect(find.byKey(const ValueKey('tablet-panel-resize')));
+        expect(grip.size, const Size.square(44));
+        expect(t.getRect(panel).contains(grip.center), isTrue);
+        expect(grip.overlaps(t.getRect(find.byKey(const ValueKey('tablet-reader-navigation')))), isFalse);
         final before = t.getSize(panel).height;
         await t.drag(find.byKey(const ValueKey('tablet-panel-resize')), const Offset(0, -70));
         await t.pumpAndSettle();
@@ -142,6 +146,29 @@ void main() {
       expect(t.takeException(), isNull);
       await t.tap(find.byKey(const ValueKey('settings-close')));
       await t.pumpAndSettle();
+      await settleHud(t);
+    });
+  }
+
+  for (final width in [500.0, 834.0]) {
+    testWidgets('tablet $width: reader commands use available pane width', (t) async {
+      final container = await tablet(t, Size(width, 1194));
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.setLayout(MMSplitMode.primary);
+      await t.pumpAndSettle();
+      final area = find.byWidgetPredicate((w) => w is MMToolbarButton && w.icon == MMIcons.areaSelect);
+      if (width >= 834) {
+        expect(area, findsOneWidget);
+        await t.tap(area);
+      } else {
+        expect(area, findsNothing);
+        await t.tap(find.byKey(const ValueKey('reader-more')));
+        await t.pumpAndSettle();
+        await t.tap(find.byWidgetPredicate((w) => w is MMDropdownItem && w.value == AnnotationTool.area));
+      }
+      await t.pumpAndSettle();
+      expect(container.read(workspaceProvider('demo-1')).tool, AnnotationTool.area);
+      expect(t.takeException(), isNull);
       await settleHud(t);
     });
   }

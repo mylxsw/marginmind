@@ -13,7 +13,7 @@ import 'package:mm_design/mm_design.dart';
 }) {
   // A software keyboard reduces available height but does not rotate the iPad.
   final landscape = isLandscape ?? size.width > size.height;
-  final panelAxis = landscape && size.width >= minReader + 320 + 44 ? Axis.horizontal : Axis.vertical;
+  final panelAxis = landscape && size.width >= minReader + 320 + 8 ? Axis.horizontal : Axis.vertical;
   final panelRoom = (size.height - 200).clamp(160.0, double.infinity);
   final minPanel = panelRoom.clamp(160.0, 240.0);
   final extent = !panelOpen
@@ -21,7 +21,7 @@ import 'package:mm_design/mm_design.dart';
       : panelAxis == Axis.horizontal
       ? (size.width * .32).clamp(320.0, 380.0)
       : (size.height * panelFraction).clamp(minPanel, panelRoom);
-  final divider = panelOpen ? 44.0 : 0.0;
+  final divider = panelOpen ? 8.0 : 0.0;
   final width = size.width - (panelAxis == Axis.horizontal ? extent + divider : 0);
   final height = size.height - (panelAxis == Axis.vertical ? extent + divider : 0);
   final axis = landscape ? Axis.horizontal : Axis.vertical;

@@ -6,6 +6,7 @@ import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import 'control_frame.dart';
 
 /// Liquid Glass surface for controls that float above content: toolbar
 /// groups, floating map controls, HUDs. Never use it for content (pages,
@@ -25,6 +26,7 @@ class MMGlass extends StatelessWidget {
     this.opaqueColor,
     this.shadows,
     this.blurSigma = 24,
+    this.toolbar = false,
   });
 
   final Widget child;
@@ -35,20 +37,36 @@ class MMGlass extends StatelessWidget {
   final List<BoxShadow>? shadows;
   final double blurSigma;
 
+  /// A 36-point painted capsule around 44-point touch cells on tablets.
+  final bool toolbar;
+
   @override
   Widget build(BuildContext context) {
     if (context.mmTablet) {
       final c = context.mmColors;
-      return Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: opaqueColor ?? color ?? c.glassOpaque,
-          borderRadius: borderRadius,
-          border: Border.all(color: c.separator.withValues(alpha: .45), width: .5),
-          boxShadow: shadows,
-        ),
-        child: child,
+      final surface = BoxDecoration(
+        color: opaqueColor ?? color ?? c.glassOpaque,
+        borderRadius: toolbar ? BorderRadius.circular(MMRadii.capsule) : borderRadius,
+        border: Border.all(color: c.hairline, width: .5),
+        boxShadow: shadows,
       );
+      if (toolbar) {
+        const inset = (MMSizes.touchTarget - MMSizes.tabletToolbarVisual) / 2;
+        return MMControlGroupScope(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                top: inset,
+                bottom: inset,
+                child: DecoratedBox(decoration: surface),
+              ),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: child),
+            ],
+          ),
+        );
+      }
+      return Container(padding: padding, decoration: surface, child: child);
     }
     if (MMInput.of(context).touchPlatform) {
       return MMLiquidGlass(

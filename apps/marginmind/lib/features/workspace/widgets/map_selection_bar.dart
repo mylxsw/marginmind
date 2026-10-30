@@ -55,6 +55,7 @@ class MapSelectionBar extends ConsumerWidget {
     final l = context.l10n;
     final palette = ref.watch(highlightPaletteProvider);
     return MMGlass(
+      toolbar: true,
       borderRadius: BorderRadius.circular(24),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       child: Row(
@@ -192,6 +193,7 @@ class MapNodeBar extends StatelessWidget {
     }
     return TextFieldTapRegion(
       child: MMGlass(
+        toolbar: true,
         borderRadius: BorderRadius.circular(24),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         child: Row(
@@ -262,6 +264,7 @@ class MapCommandBar extends StatelessWidget {
     final l = context.l10n;
     return TextFieldTapRegion(
       child: MMGlass(
+        toolbar: true,
         borderRadius: BorderRadius.circular(24),
         padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: 3),
         child: Row(

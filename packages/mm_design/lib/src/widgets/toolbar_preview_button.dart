@@ -5,6 +5,7 @@ import '../foundation/interactive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
+import 'control_frame.dart';
 
 /// A toolbar choice with a visual preview instead of an icon or label.
 /// Uses the same dimensions, interaction states and focus ring as toolbar buttons.
@@ -30,28 +31,30 @@ class MMToolbarPreviewButton extends StatelessWidget {
       semanticLabel: tooltip,
       selected: selected,
       onTap: onPressed,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        width: context.mmToolbarButton.width,
-        height: context.mmToolbarButton.height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected
-              ? c.accentTint
-              : s.pressed
-              ? c.pressed
-              : s.hovered
-              ? c.hover
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-          border: s.focused ? Border.all(color: c.accent, width: 2) : null,
-        ),
-        child: preview(
-          !s.enabled
-              ? c.label.withValues(alpha: 0.3)
-              : selected
-              ? c.accent
-              : c.label,
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          width: context.mmTablet ? MMSizes.tabletControlVisual : context.mmToolbarButton.width,
+          height: context.mmTablet ? MMSizes.tabletControlVisual : context.mmToolbarButton.height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? c.accentTint
+                : s.pressed
+                ? c.pressed
+                : s.hovered
+                ? c.hover
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+            border: s.focused ? Border.all(color: c.accent, width: 2) : null,
+          ),
+          child: preview(
+            !s.enabled
+                ? c.label.withValues(alpha: 0.3)
+                : selected
+                ? c.accent
+                : c.label,
+          ),
         ),
       ),
     );

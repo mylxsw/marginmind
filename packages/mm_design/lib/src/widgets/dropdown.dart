@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import 'control_frame.dart';
 
 /// Shared anchored dropdown, based on the reader's document comparison menu.
 /// Rich entries (such as a live slider) use the same surface as command lists.
@@ -39,7 +40,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final button = context.mmTouch ? context.mmToolbarButton : MMSizes.readerToolbarButton;
+    final button = (context.mmTouch || context.mmTablet) ? context.mmToolbarButton : MMSizes.readerToolbarButton;
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
@@ -71,7 +72,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MMRadii.row)),
         ),
         iconSize: MMSpacing.l,
-        icon: widget.icon,
+        icon: context.mmTablet ? null : widget.icon,
         color: c.glassOpaque,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -89,7 +90,33 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
           widget.onSelected?.call(value);
         },
         itemBuilder: widget.itemBuilder,
-        child: widget.child,
+        borderRadius: context.mmTablet ? BorderRadius.circular(16) : null,
+        child: context.mmTablet
+            ? Semantics(
+                button: true,
+                enabled: widget.enabled,
+                child: MMControlFrame(
+                  child:
+                      widget.child ??
+                      Container(
+                        width: MMSizes.tabletControlVisual,
+                        height: MMSizes.tabletControlVisual,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _open ? c.accentTint : Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: IconTheme(
+                          data: IconThemeData(
+                            size: MMSizes.tabletToolbarIcon,
+                            color: !widget.enabled ? c.label.withValues(alpha: .3) : (_open ? c.accent : c.label),
+                          ),
+                          child: widget.icon ?? const Icon(Icons.more_vert),
+                        ),
+                      ),
+                ),
+              )
+            : widget.child,
       ),
     );
   }
@@ -120,7 +147,9 @@ class _MMDropdownItemState<T> extends PopupMenuItemState<T, MMDropdownItem<T>> {
     child: IconTheme.merge(
       data: IconThemeData(size: MMSizes.dropdownIcon, color: context.mmColors.label),
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: context.mmTouch ? MMSizes.touchTarget : widget.height),
+        constraints: BoxConstraints(
+          minHeight: context.mmTouch || context.mmTablet ? MMSizes.touchTarget : widget.height,
+        ),
         child: super.build(context),
       ),
     ),

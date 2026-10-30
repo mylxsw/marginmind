@@ -94,7 +94,11 @@ void main() {
       await tester.pump();
       expect(inner.mmTouch, isFalse);
       expect(MMInput.of(inner).touchPlatform, isTrue);
-      expect(inner.mmToolbarButton, const Size.square(MMSizes.touchTarget), reason: 'tablet geometry stays stable with a trackpad');
+      expect(
+        inner.mmToolbarButton,
+        const Size.square(MMSizes.touchTarget),
+        reason: 'tablet geometry stays stable with a trackpad',
+      );
       await mouse.removePointer();
 
       final pen = await tester.createGesture(kind: PointerDeviceKind.stylus);
@@ -163,7 +167,7 @@ void main() {
       expect(tester.getSize(find.byKey(const ValueKey('color'))).height, MMSizes.touchTarget);
       expect(tester.getSize(find.byKey(const ValueKey('row'))).height, MMSizes.touchTarget);
       final segments = find.byKey(const ValueKey('segments'));
-      expect(tester.getSize(segments), const Size(300, MMSizes.touchTarget + 4));
+      expect(tester.getSize(segments), const Size(300, MMSizes.touchTarget));
       final a = tester.getSize(find.ancestor(of: find.text('A'), matching: find.byType(AnimatedContainer)).first);
       expect(a.width, closeTo((300 - 4) / 2, .01));
     });

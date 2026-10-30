@@ -8,6 +8,7 @@ import '../tokens/annotation_colors.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'glass.dart';
+import 'control_frame.dart';
 
 /// Row of the six annotation colors (Finder-tag style). The selected dot
 /// gets a ring of its own color.
@@ -118,32 +119,34 @@ class MMColorMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final dense = compact && !context.mmTouch;
+    final dense = compact && !context.mmTouch && !context.mmTablet;
     final size = dense ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: () => _open(context),
       tooltip: tooltip,
       semanticLabel: tooltip,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        height: size.height,
-        constraints: BoxConstraints(minWidth: size.width),
-        decoration: BoxDecoration(
-          color: s.pressed
-              ? c.pressed
-              : s.hovered
-              ? c.hover
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-        ),
-        alignment: Alignment.center,
-        child: Container(
-          width: dense ? 12 : 14,
-          height: dense ? 12 : 14,
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          height: context.mmTablet ? MMSizes.tabletControlVisual : size.height,
+          constraints: BoxConstraints(minWidth: context.mmTablet ? MMSizes.tabletControlVisual : size.width),
           decoration: BoxDecoration(
-            color: selected.color,
-            shape: BoxShape.circle,
-            boxShadow: s.focused ? [BoxShadow(color: c.accent, spreadRadius: 2)] : null,
+            color: s.pressed
+                ? c.pressed
+                : s.hovered
+                ? c.hover
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+          ),
+          alignment: Alignment.center,
+          child: Container(
+            width: dense ? 12 : 14,
+            height: dense ? 12 : 14,
+            decoration: BoxDecoration(
+              color: selected.color,
+              shape: BoxShape.circle,
+              boxShadow: s.focused ? [BoxShadow(color: c.accent, spreadRadius: 2)] : null,
+            ),
           ),
         ),
       ),

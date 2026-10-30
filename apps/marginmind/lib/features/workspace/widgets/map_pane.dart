@@ -790,6 +790,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                               ? controls
                               : MMGlass(
                                   key: const ValueKey('map-view-glass'),
+                                  toolbar: true,
                                   padding: const EdgeInsets.all(3),
                                   child: controls,
                                 ),
@@ -883,6 +884,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           ),
                           const SizedBox(width: MMSpacing.s),
                           MMGlass(
+                            toolbar: true,
                             borderRadius: BorderRadius.circular(16),
                             padding: const EdgeInsets.all(3),
                             child: Row(

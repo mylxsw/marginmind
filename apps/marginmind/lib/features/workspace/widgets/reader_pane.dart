@@ -434,68 +434,77 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     );
     final progress = ocrSource == null ? null : ReaderOcrProgress(source: ocrSource);
     if (context.mmTablet) {
-      return Row(
-        key: const ValueKey('tablet-reader-toolbar'),
-        children: [
-          navigation,
-          const SizedBox(width: MMSpacing.xs),
-          Flexible(
-            child: ReaderAnnotationTools(state: state, controller: controller, textOnly: true),
-          ),
-          if (MMSizeClass.of(context) != MMSizeClass.compact) compareButton,
-          MMDropdownButton<Object>(
-            key: const ValueKey('reader-more'),
-            tooltip: l.moreTools,
-            icon: const Icon(MMIcons.more),
-            width: MMSizes.readerZoomMenuWidth,
-            onSelected: (value) {
-              pageCommand(value);
-              if (value is MMReaderStyle) setStyle(value);
-              if (value is AnnotationTool) controller.setTool(value);
-              if (value == 'sync') controller.toggleSyncToMap();
-              if (value == 'margin') ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document!.id);
-              if (value == 'reading') {
-                if (capabilities.readingSettings) {
-                  settingsHandler?.call(context, ref, widget.studySetId);
-                } else {
-                  showReadingSettings(context, ref, widget.studySetId);
-                }
-              }
-              if (value == 'vocabulary' && document != null) toggleVocabularyHints(context, ref, document.id);
-            },
-            itemBuilder: (_) => [
-              MMDropdownItem<Object>(
-                value: AnnotationTool.area,
-                enabled: controller.canUseTool(AnnotationTool.area),
-                child: _menuRow(MMIcons.areaSelect, l.toolArea),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final extended = constraints.maxWidth >= 460 && progress == null;
+          return Row(
+            key: const ValueKey('tablet-reader-toolbar'),
+            children: [
+              navigation,
+              const SizedBox(width: MMSpacing.xs),
+              Flexible(
+                child: ReaderAnnotationTools(state: state, controller: controller, textOnly: !extended),
               ),
-              MMDropdownItem<Object>(
-                value: AnnotationTool.ink,
-                enabled: controller.canUseTool(AnnotationTool.ink),
-                child: _menuRow(MMIcons.pen, l.toolPen),
+              if (MMSizeClass.of(context) != MMSizeClass.compact) compareButton,
+              MMDropdownButton<Object>(
+                key: const ValueKey('reader-more'),
+                tooltip: l.moreTools,
+                icon: const Icon(MMIcons.more),
+                width: MMSizes.readerZoomMenuWidth,
+                onSelected: (value) {
+                  pageCommand(value);
+                  if (value is MMReaderStyle) setStyle(value);
+                  if (value is AnnotationTool) controller.setTool(value);
+                  if (value == 'sync') controller.toggleSyncToMap();
+                  if (value == 'margin') {
+                    ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document!.id);
+                  }
+                  if (value == 'reading') {
+                    if (capabilities.readingSettings) {
+                      settingsHandler?.call(context, ref, widget.studySetId);
+                    } else {
+                      showReadingSettings(context, ref, widget.studySetId);
+                    }
+                  }
+                  if (value == 'vocabulary' && document != null) toggleVocabularyHints(context, ref, document.id);
+                },
+                itemBuilder: (_) => [
+                  if (!extended) ...[
+                    MMDropdownItem<Object>(
+                      value: AnnotationTool.area,
+                      enabled: controller.canUseTool(AnnotationTool.area),
+                      child: _menuRow(MMIcons.areaSelect, l.toolArea),
+                    ),
+                    MMDropdownItem<Object>(
+                      value: AnnotationTool.ink,
+                      enabled: controller.canUseTool(AnnotationTool.ink),
+                      child: _menuRow(MMIcons.pen, l.toolPen),
+                    ),
+                    MMDropdownItem<Object>(
+                      value: 'sync',
+                      enabled: capabilities.excerpt,
+                      child: _menuRow(MMIcons.syncToMap, state.syncToMap ? l.syncToMapOn : l.syncToMapOff),
+                    ),
+                  ],
+                  MMDropdownItem<Object>(
+                    value: 'margin',
+                    enabled: capabilities.marginNotes && document != null && !comparing,
+                    child: _menuRow(MMIcons.captionsBubble, l.marginNotes),
+                  ),
+                  MMDropdownItem<Object>(value: 'reading', child: _menuRow(MMIcons.readingSettings, l.readingSettings)),
+                  if (document != null)
+                    MMDropdownItem<Object>(value: 'vocabulary', child: _menuRow(MMIcons.vocabulary, l.vocabularyHints)),
+                  const PopupMenuDivider(),
+                  ...zoomItems,
+                  ...cropItems,
+                  const PopupMenuDivider(),
+                  ...styleItems,
+                ],
               ),
-              MMDropdownItem<Object>(
-                value: 'sync',
-                enabled: capabilities.excerpt,
-                child: _menuRow(MMIcons.syncToMap, state.syncToMap ? l.syncToMapOn : l.syncToMapOff),
-              ),
-              MMDropdownItem<Object>(
-                value: 'margin',
-                enabled: capabilities.marginNotes && document != null && !comparing,
-                child: _menuRow(MMIcons.captionsBubble, l.marginNotes),
-              ),
-              MMDropdownItem<Object>(value: 'reading', child: _menuRow(MMIcons.readingSettings, l.readingSettings)),
-              if (document != null)
-                MMDropdownItem<Object>(value: 'vocabulary', child: _menuRow(MMIcons.vocabulary, l.vocabularyHints)),
-              const PopupMenuDivider(),
-              ...zoomItems,
-              ...cropItems,
-              const PopupMenuDivider(),
-              ...styleItems,
+              if (progress != null) Flexible(child: progress),
             ],
-          ),
-          if (progress != null) Flexible(child: progress),
-        ],
+          );
+        },
       );
     }
     if (MMSizeClass.of(context) != MMSizeClass.regular) {
@@ -779,6 +788,10 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final c = context.mmColors, l = context.l10n;
     final chrome = MMChromeInsets.of(context);
     final dockNavigation = context.mmTablet || (MMInput.of(context).phone && MediaQuery.sizeOf(context).height < 500);
+    final navigationBottom = context.mmTablet ? 0.0 : _pagePillBottom;
+    final navigationClearance = context.mmTablet
+        ? (doc.origin == null ? MMSizes.tabletReaderNavigationHeight : MMSizes.readerNavigationHeight)
+        : pagePillClearance;
     final provider = workspaceProvider(widget.studySetId);
     final pdf = ref.watch(documentPdfProvider((widget.studySetId, doc.id)));
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
@@ -825,7 +838,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         child: Stack(
           children: [
             Positioned.fill(
-              bottom: dockNavigation ? pagePillClearance + chrome.bottom : 0,
+              bottom: dockNavigation ? navigationClearance + chrome.bottom : 0,
               child: !ref.watch(pdfRenderingEnabledProvider) || (ocr != null && ocr.document == null && !ocr.failed)
                   ? ColoredBox(key: ValueKey('pdf-placeholder-${doc.id}'), color: c.readerBackground)
                   : PdfVocabularyHints(
@@ -1005,7 +1018,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             if (state.pending case final PendingAction pending when _pendingDocument(content, pending) == doc.id)
               Positioned.fill(
                 child: MMFloatingToolbarLayout(
-                  avoid: (viewport) => _pagePillArea(viewport, chrome.bottom),
+                  avoid: (viewport) => context.mmTablet
+                      ? Rect.fromLTWH(
+                          0,
+                          viewport.height - chrome.bottom - navigationClearance,
+                          viewport.width,
+                          navigationClearance,
+                        )
+                      : _pagePillArea(viewport, chrome.bottom),
                   anchor: switch (pending) {
                     PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                     PendingHighlight(:final viewportRect) => viewportRect,
@@ -1030,7 +1050,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               Positioned(
                 left: 0,
                 right: 0,
-                bottom: _pagePillBottom + chrome.bottom,
+                bottom: navigationBottom + chrome.bottom,
                 child: MouseRegion(
                   key: const ValueKey('reader-page-navigation'),
                   onEnter: (_) => setState(() => _hoveringNavigation = true),
@@ -1228,7 +1248,7 @@ class _PagePill extends StatelessWidget {
     if (context.mmTablet) {
       return Container(
         key: const ValueKey('tablet-reader-navigation'),
-        height: MMSizes.readerNavigationHeight,
+        height: source == null ? MMSizes.tabletReaderNavigationHeight : MMSizes.readerNavigationHeight,
         padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s),
         decoration: BoxDecoration(
           color: c.windowBackground,

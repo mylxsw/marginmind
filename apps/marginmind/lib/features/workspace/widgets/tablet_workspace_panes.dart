@@ -36,31 +36,10 @@ class TabletWorkspacePanes extends StatelessWidget {
             container: true,
             explicitChildNodes: true,
             identifier: 'tablet-workspace-content',
-            child: content,
+            child: MMChromeInsets.remove(context, removeBottom: panel != null && axis == Axis.vertical, child: content),
           ),
         ),
         if (panel != null) ...[
-          LayoutId(
-            id: _Slot.handle,
-            child: Semantics(
-              label: context.l10n.resizeCompanionPanel,
-              onIncrease: axis == Axis.vertical ? () => onResize(44) : null,
-              onDecrease: axis == Axis.vertical ? () => onResize(-44) : null,
-              excludeSemantics: true,
-              child: GestureDetector(
-                key: const ValueKey('tablet-panel-resize'),
-                behavior: HitTestBehavior.opaque,
-                onVerticalDragUpdate: axis == Axis.vertical ? (d) => onResize(-d.delta.dy) : null,
-                child: Center(
-                  child: Container(
-                    width: axis == Axis.vertical ? 36 : 1,
-                    height: axis == Axis.vertical ? 4 : double.infinity,
-                    decoration: BoxDecoration(color: c.separator, borderRadius: BorderRadius.circular(2)),
-                  ),
-                ),
-              ),
-            ),
-          ),
           LayoutId(
             id: _Slot.panel,
             child: MMChromeInsets.remove(
@@ -73,13 +52,42 @@ class TabletWorkspacePanes extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: c.windowBackground,
                   borderRadius: BorderRadius.circular(MMRadii.sidebar),
-                  border: Border.all(color: c.separator, width: .5),
+                  border: Border.all(color: c.hairline, width: .5),
                 ),
                 child: Semantics(
                   container: true,
                   explicitChildNodes: true,
                   identifier: 'tablet-workspace-panel',
                   child: panel,
+                ),
+              ),
+            ),
+          ),
+          LayoutId(
+            id: _Slot.handle,
+            child: Semantics(
+              label: context.l10n.resizeCompanionPanel,
+              identifier: 'tablet-panel-resize',
+              onIncrease: axis == Axis.vertical ? () => onResize(44) : null,
+              onDecrease: axis == Axis.vertical ? () => onResize(-44) : null,
+              excludeSemantics: true,
+              child: IgnorePointer(
+                ignoring: axis == Axis.horizontal,
+                child: GestureDetector(
+                  key: const ValueKey('tablet-panel-resize'),
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: axis == Axis.vertical ? (d) => onResize(-d.delta.dy) : null,
+                  child: Align(
+                    alignment: axis == Axis.vertical ? Alignment.topCenter : Alignment.center,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: axis == Axis.vertical ? 6 : 0),
+                      child: Container(
+                        width: axis == Axis.vertical ? 36 : 1,
+                        height: axis == Axis.vertical ? 4 : double.infinity,
+                        decoration: BoxDecoration(color: c.separator, borderRadius: BorderRadius.circular(2)),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -101,13 +109,14 @@ class _TabletPanesLayout extends MultiChildLayoutDelegate {
     final vertical = axis == Axis.vertical;
     final available = vertical ? size.height - top - bottom : size.width;
     final panel = open ? extent.clamp(0.0, (available - 44).clamp(0.0, double.infinity)) : 0.0;
-    final handle = open ? 44.0 : 0.0;
+    final gap = open ? (8.0) : 0.0;
+    final handle = vertical ? 44.0 : gap;
     layoutChild(
       _Slot.content,
       BoxConstraints.tight(
         Size(
-          vertical ? size.width : (size.width - panel - handle).clamp(0.0, double.infinity),
-          vertical ? (size.height - panel - handle).clamp(0.0, double.infinity) : size.height,
+          vertical ? size.width : (size.width - panel - gap).clamp(0.0, double.infinity),
+          vertical ? (size.height - (open ? bottom : 0) - panel - gap).clamp(0.0, double.infinity) : size.height,
         ),
       ),
     );
@@ -130,14 +139,16 @@ class _TabletPanesLayout extends MultiChildLayoutDelegate {
       _Slot.handle,
       BoxConstraints.tight(
         Size(
-          vertical ? size.width : handle,
+          vertical ? MMSizes.touchTarget : handle,
           vertical ? handle : (size.height - top - bottom).clamp(0.0, double.infinity),
         ),
       ),
     );
     positionChild(
       _Slot.handle,
-      vertical ? Offset(0, size.height - bottom - panel - handle) : Offset(size.width - panel - handle, top),
+      vertical
+          ? Offset((size.width - MMSizes.touchTarget) / 2, size.height - bottom - panel)
+          : Offset(size.width - panel - gap, top),
     );
   }
 

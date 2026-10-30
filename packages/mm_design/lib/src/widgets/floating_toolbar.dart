@@ -9,6 +9,7 @@ import '../tokens/annotation_colors.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'toolbar.dart';
+import 'control_frame.dart';
 
 /// Horizontal glass bar that floats over content next to a selection. Fill it
 /// with [MMToolbarButton]s, [MMFloatingToolbarColor]s and [MMToolbarDivider]s;
@@ -84,32 +85,38 @@ class MMFloatingToolbarSwatch extends StatelessWidget {
       selected: selected,
       tooltip: tooltip,
       semanticLabel: tooltip,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        width: context.mmTouch ? MMSizes.touchTarget : MMSizes.floatingToolbarColor,
-        height: context.mmTouch ? MMSizes.touchTarget : MMSizes.toolbarButton.height,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: s.pressed
-              ? c.pressed
-              : s.hovered
-              ? c.hover
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(MMRadii.capsuleButton),
-        ),
-        child: Container(
-          width: MMSizes.floatingToolbarDot,
-          height: MMSizes.floatingToolbarDot,
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          width: context.mmTablet
+              ? MMSizes.tabletControlVisual
+              : (context.mmTouch ? MMSizes.touchTarget : MMSizes.floatingToolbarColor),
+          height: context.mmTablet
+              ? MMSizes.tabletControlVisual
+              : (context.mmTouch ? MMSizes.touchTarget : MMSizes.toolbarButton.height),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: s.enabled ? color : color.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-            boxShadow: selected || s.focused
-                ? [
-                    // Painted in order: the outer ring first, then the gap over it.
-                    BoxShadow(color: s.focused ? c.accent : color, spreadRadius: 3.5),
-                    BoxShadow(color: c.glassOpaque, spreadRadius: 2),
-                  ]
-                : null,
+            color: s.pressed
+                ? c.pressed
+                : s.hovered
+                ? c.hover
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+          ),
+          child: Container(
+            width: MMSizes.floatingToolbarDot,
+            height: MMSizes.floatingToolbarDot,
+            decoration: BoxDecoration(
+              color: s.enabled ? color : color.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+              boxShadow: selected || s.focused
+                  ? [
+                      // Painted in order: the outer ring first, then the gap over it.
+                      BoxShadow(color: s.focused ? c.accent : color, spreadRadius: 3.5),
+                      BoxShadow(color: c.glassOpaque, spreadRadius: 2),
+                    ]
+                  : null,
+            ),
           ),
         ),
       ),
@@ -141,26 +148,28 @@ class MMFloatingToolbarStrokeWidth extends StatelessWidget {
       selected: selected,
       tooltip: tooltip,
       semanticLabel: tooltip,
-      builder: (context, s) => AnimatedContainer(
-        duration: MMMotion.quick,
-        width: MMSizes.floatingToolbarColor,
-        height: MMSizes.floatingToolbarColor,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected
-              ? c.accentTint
-              : s.pressed
-              ? c.pressed
-              : s.hovered
-              ? c.hover
-              : Colors.transparent,
-          shape: BoxShape.circle,
-          border: s.focused ? Border.all(color: c.accent, width: 2) : null,
-        ),
-        child: Container(
-          width: width * 2 + 2,
-          height: width * 2 + 2,
-          decoration: BoxDecoration(color: selected ? c.accent : c.label, shape: BoxShape.circle),
+      builder: (context, s) => MMControlFrame(
+        child: AnimatedContainer(
+          duration: MMMotion.quick,
+          width: context.mmTablet ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
+          height: context.mmTablet ? MMSizes.tabletControlVisual : MMSizes.floatingToolbarColor,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? c.accentTint
+                : s.pressed
+                ? c.pressed
+                : s.hovered
+                ? c.hover
+                : Colors.transparent,
+            shape: BoxShape.circle,
+            border: s.focused ? Border.all(color: c.accent, width: 2) : null,
+          ),
+          child: Container(
+            width: width * 2 + 2,
+            height: width * 2 + 2,
+            decoration: BoxDecoration(color: selected ? c.accent : c.label, shape: BoxShape.circle),
+          ),
         ),
       ),
     );
