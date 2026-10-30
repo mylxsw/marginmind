@@ -60,3 +60,35 @@ place 示例：
 上下文按 UTF-16 锚点匹配章节正文；文本不匹配则 `unresolved`，没有文本则 `noText`。PDF 重复文字无法唯一定位、跨页引文与逐页文本拼接结果无法精确匹配、以及没有字符位置的章节起始页，保守地不提供上下文，不猜测章节边界。应用可以提供更准确的已解析文本后重新收集。残句由本地规则判断，原文不改写。
 
 导出是纯函数：`NoteExportResult.attachments` 返回目标相对路径 → 学习集资源路径，调用方实际复制图片到附件目录。YAML 使用 JSON 标量/数组语法安全转义；出处页码链接为 `[[书名#p12]]`。默认中文导出标题属于导出文件内容，不新增界面文案。PDF、Word、富文本和 UI 不在本任务范围。
+
+## 模型实现（GUL-589）
+
+`mm_assistant.ModelNoteOrganizer` 实现原端口，应用使用
+`features/assistant/note_organizer_factory.dart:createModelNoteOrganizer` 从现有
+`AssistantServicesStore` 选择模型，通过 `assistantModelKey` 读取原钥匙串账户，复用
+`connectAssistant`。实现放在纯 Dart 的 `mm_assistant`，便于直接用假 `LLMClient` 测试；
+应用仅负责平台配置，不引入另一套 Key 或设置。
+
+- 一个实例对应一次用户整理会话，outline/write 共用 `ResearchBudget` 的输入、输出、响应字节和总时限。
+  等待用户编辑提纲也计入已开始的会话时限；继续整理时由宿主创建新会话。
+- `estimate(materials)` 在发送前返回划线数、其他素材数、原文及上下文字数、模型名。
+  字数是源材料预估，不是累计请求预算；协议、schema、重试和多轮请求也计入实际预算。
+- `writeSections` 返回 `Stream<NoteDraftSection>`：每个请求写一节，整节通过校验后立即发出；
+  `write` 是其兼容聚合接口。空提纲节跳过，跨节引用按过滤后的全局节序号解释。
+- `onProgress` 提供阶段及 1-based `current/total`。超过 200 条划线按章节分批，单章过大再切分，
+  保持原短 ID；先生成批次提纲，再合并。只排版和按原文/脑图组织的提纲走本地规则。
+- 每次结构错误只重试一次；outline/place 回退到 `LocalNoteOrganizer`，通过 `onFallback` 和
+  `failures` 暴露 `NoteSchemaFailure`。outline 失败后 write 使用本地输出；write 失败时保留已经
+  发出的节，当前及后续节仅输出本地引用。宿主应监听此诊断，不以领域 runner 的 `usedFallback`
+  推断模型服务内部是否回退。返回的内容仍需交给 `NoteAssembler` 核对 ID 和重复引用。
+- `cancel()` 中止当前请求；`completedSections` 保留完整节。网络、预算、截断和取消不会触发
+  结构回退。宿主在结束会话时调用 `close()` 释放连接。
+- `explain`、`rewrite`（rephrase/concise/expand）、`reviewQuestion` 返回校验后的文字。
+  编辑类操作结构错误两次后抛 `NoteSchemaFailure`，由宿主保留原段落，不伪造本地解释。
+- 提示词嵌入与契约同源的 schema；输出由领域 DTO 严格校验；额外校验单节响应及互斥插入锚点。
+  `schema.dart` 与 JSON 契约的一致性由测试检查。没有工具调用，原文仅作为不可信数据发送。
+
+真实接口复现入口：在 `packages/mm_assistant` 下运行
+`dart run tool/note_organizer_smoke.dart`，通过本地秘密管理器注入
+`NOTE_AI_PROVIDER=claude|compatible`、`NOTE_AI_ENDPOINT`、`NOTE_AI_MODEL`、`NOTE_AI_KEY`。
+脚本使用两条自写的示例学习材料，只输出模型名、提纲、笔记 JSON 和回退操作名，不打印 Key 或原始请求错误。
