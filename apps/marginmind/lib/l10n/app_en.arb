@@ -1937,5 +1937,107 @@
   "vocabularyHintsUnderline": "Underline",
   "vocabularyHintsGloss": "Meaning",
   "vocabularyHintsHidden": "Hide in this document",
-  "vocabularyHintsKnown": "Mark known words"
+  "vocabularyHintsKnown": "Mark known words",
+  "mapIdeaMenu": "Expand Ideas with AI",
+  "mapIdeaExpand": "Expand Ideas",
+  "mapIdeaExpandEach": "{count, plural, =1{Expand 1 Topic} other{Expand {count} Topics}}",
+  "@mapIdeaExpandEach": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaExpandMap": "Expand Whole Map…",
+  "mapIdeaWholeMap": "Expand Whole Map",
+  "mapIdeaBranchesOnly": "New Branches Only",
+  "mapIdeaGroup": "Group Under New Parent",
+  "mapIdeaFillSiblings": "Fill In Siblings",
+  "mapIdeaDirection": "Direction",
+  "mapIdeaDirectionAuto": "Auto",
+  "mapIdeaDirectionWhy": "Why",
+  "mapIdeaDirectionExample": "Examples",
+  "mapIdeaDirectionCounter": "Counterpoints",
+  "mapIdeaDirectionQuestion": "Questions",
+  "mapIdeaDirectionAction": "Actions",
+  "mapIdeaDepth": "Depth",
+  "mapIdeaDepthLevels": "{count, plural, =1{1 Level} other{{count} Levels}}",
+  "@mapIdeaDepthLevels": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaAmount": "Amount",
+  "mapIdeaAmountFew": "Few",
+  "mapIdeaAmountSome": "Some",
+  "mapIdeaAmountMany": "Many",
+  "mapIdeaHint": "Instructions",
+  "mapIdeaGrounded": "Use Source",
+  "mapIdeaExpanding": "Expanding “{title}”",
+  "@mapIdeaExpanding": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "mapIdeaExpandingCount": "{count, plural, =1{Expanding 1 Topic} other{Expanding {count} Topics}}",
+  "@mapIdeaExpandingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaStopped": "Stopped",
+  "mapIdeaDraftCount": "{count, plural, =1{1 idea} other{{count} ideas}}",
+  "@mapIdeaDraftCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaKeptCount": "{kept} of {total} kept",
+  "@mapIdeaKeptCount": {
+    "placeholders": {
+      "kept": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "mapIdeaRegenerate": "Try Others",
+  "mapIdeaAdjust": "Adjust",
+  "mapIdeaRegenerateAdjusted": "Regenerate",
+  "mapIdeaDiscard": "Discard",
+  "mapIdeaKeep": "{count, plural, =1{Keep 1} other{Keep {count}}}",
+  "@mapIdeaKeep": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaDraftKeep": "Keep",
+  "mapIdeaDraftSkip": "Skip",
+  "mapIdeaDraftEdit": "Edit",
+  "mapIdeaDraftMore": "Expand Further",
+  "mapIdeaDraftSemantics": "AI draft, {title}, {state}",
+  "@mapIdeaDraftSemantics": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+  "mapIdeaDraftKept": "kept",
+  "mapIdeaDraftSkipped": "not kept",
+  "mapIdeaNewBranches": "New Branches",
+  "mapIdeaAddCount": "+{count}",
+  "@mapIdeaAddCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaFewer": "Fewer",
+  "mapIdeaMore": "More",
+  "mapIdeaStart": "Expand",
+  "mapIdeaAdded": "{count, plural, =1{Added 1 topic} other{Added {count} topics}}",
+  "@mapIdeaAdded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "mapIdeaBlocked": "Keep (↩) or discard (Esc) the AI drafts first",
+  "mapIdeaNothing": "No new ideas here. Try another direction.",
+  "mapIdeaStoppedEmpty": "Stopped before any ideas",
+  "mapIdeaBusy": "The model is busy. Try again later."
 }

@@ -84,4 +84,4 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 
 ## 脑图 AI 扩展想法（GUL-581）
 
-`prototype/mindmap-ai-expand.html` 演示在脑图上用 AI 扩展想法：选中主题后点 ✦ 或按 ⌥⇥，AI 的结果以**虚线草稿节点**流式出现在脑图上；可以逐条取舍、改字、在草稿上继续扩展，↩ 一次保留（一步撤销），Esc 放弃。多选时可以分别扩展、归纳上级主题、补全同级；选中中心主题时，先给出扩展计划（总数不设上限），再扩展整张脑图。单文件、无依赖；演示控制台有 15 个场景，可切换未配置 AI、断网和深色。设计说明与技术方案见 [docs/mindmap-ai-expand.md](../docs/mindmap-ai-expand.md)。
+`prototype/mindmap-ai-expand.html` 演示在脑图上用 AI 扩展想法：选中主题后点 ✦ 或按 ⌥⇥，AI 的结果以**虚线草稿节点**流式出现在脑图上；可以逐条取舍、改字、在草稿上继续扩展，↩ 一次保留（一步撤销），Esc 放弃。多选时可以分别扩展、归纳上级主题、补全同级；选中中心主题时，先给出扩展计划（总数不设上限），再扩展整张脑图。单文件、无依赖；演示控制台有 15 个场景，可切换未配置 AI、断网和深色。设计说明与技术方案见 [docs/mindmap-ai-expand.md](../docs/mindmap-ai-expand.md)，界面规格见 [docs/mindmap-ai-expand-ui.md](../docs/mindmap-ai-expand-ui.md)。

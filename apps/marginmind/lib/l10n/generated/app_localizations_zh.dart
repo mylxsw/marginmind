@@ -3662,4 +3662,174 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get vocabularyHintsKnown => '标出已掌握';
+
+  @override
+  String get mapIdeaMenu => 'AI 扩展想法';
+
+  @override
+  String get mapIdeaExpand => '扩展想法';
+
+  @override
+  String mapIdeaExpandEach(int count) {
+    return '分别扩展 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaExpandMap => '扩展整张脑图…';
+
+  @override
+  String get mapIdeaWholeMap => '扩展整张脑图';
+
+  @override
+  String get mapIdeaBranchesOnly => '只加新分支';
+
+  @override
+  String get mapIdeaGroup => '归纳上级主题';
+
+  @override
+  String get mapIdeaFillSiblings => '补全同级';
+
+  @override
+  String get mapIdeaDirection => '方向';
+
+  @override
+  String get mapIdeaDirectionAuto => '自动';
+
+  @override
+  String get mapIdeaDirectionWhy => '原因';
+
+  @override
+  String get mapIdeaDirectionExample => '例子';
+
+  @override
+  String get mapIdeaDirectionCounter => '反方';
+
+  @override
+  String get mapIdeaDirectionQuestion => '问题';
+
+  @override
+  String get mapIdeaDirectionAction => '行动';
+
+  @override
+  String get mapIdeaDepth => '层级';
+
+  @override
+  String mapIdeaDepthLevels(int count) {
+    return '$count 层';
+  }
+
+  @override
+  String get mapIdeaAmount => '数量';
+
+  @override
+  String get mapIdeaAmountFew => '少';
+
+  @override
+  String get mapIdeaAmountSome => '适中';
+
+  @override
+  String get mapIdeaAmountMany => '多';
+
+  @override
+  String get mapIdeaHint => '补充要求';
+
+  @override
+  String get mapIdeaGrounded => '参考原文';
+
+  @override
+  String mapIdeaExpanding(String title) {
+    return '扩展「$title」';
+  }
+
+  @override
+  String mapIdeaExpandingCount(int count) {
+    return '扩展 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaStopped => '已停止';
+
+  @override
+  String mapIdeaDraftCount(int count) {
+    return '$count 条';
+  }
+
+  @override
+  String mapIdeaKeptCount(int kept, int total) {
+    return '保留 $kept / $total';
+  }
+
+  @override
+  String get mapIdeaRegenerate => '换一批';
+
+  @override
+  String get mapIdeaAdjust => '调整';
+
+  @override
+  String get mapIdeaRegenerateAdjusted => '重新生成';
+
+  @override
+  String get mapIdeaDiscard => '放弃';
+
+  @override
+  String mapIdeaKeep(int count) {
+    return '保留 $count 条';
+  }
+
+  @override
+  String get mapIdeaDraftKeep => '保留';
+
+  @override
+  String get mapIdeaDraftSkip => '不要';
+
+  @override
+  String get mapIdeaDraftEdit => '修改';
+
+  @override
+  String get mapIdeaDraftMore => '继续扩展';
+
+  @override
+  String mapIdeaDraftSemantics(String title, String state) {
+    return 'AI 草稿，$title，$state';
+  }
+
+  @override
+  String get mapIdeaDraftKept => '已保留';
+
+  @override
+  String get mapIdeaDraftSkipped => '未保留';
+
+  @override
+  String get mapIdeaNewBranches => '新分支';
+
+  @override
+  String mapIdeaAddCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get mapIdeaFewer => '减少';
+
+  @override
+  String get mapIdeaMore => '增加';
+
+  @override
+  String get mapIdeaStart => '开始扩展';
+
+  @override
+  String mapIdeaAdded(int count) {
+    return '已添加 $count 个主题';
+  }
+
+  @override
+  String get mapIdeaBlocked => '先保留（↩）或放弃（Esc）这次 AI 扩展';
+
+  @override
+  String get mapIdeaNothing => '这里暂时没有值得补充的方向，换个方向试试';
+
+  @override
+  String get mapIdeaStoppedEmpty => '已停止，没有生成内容';
+
+  @override
+  String get mapIdeaBusy => '模型正忙，请稍后再试';
 }
