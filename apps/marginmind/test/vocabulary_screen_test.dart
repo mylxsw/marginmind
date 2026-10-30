@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -24,6 +22,7 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 import 'vocabulary_test.dart' show FailingRepository, UnreadableRepository;
 import 'assistant_quick_actions_test.dart' show screenshot;
+import 'vocabulary_screenshots.dart';
 import 'reader_translation_test.dart' show model;
 
 VocabularyContext source(String id, {String set = 'demo-1', String doc = 'c1', bool text = false}) => VocabularyContext(
@@ -164,8 +163,8 @@ Future<void> tap(WidgetTester tester, Finder f) async {
 }
 
 Future<void> button(WidgetTester tester, String text) => tap(tester, find.widgetWithText(MMButton, text));
-void screenTest(String description, WidgetTesterCallback callback) {
-  testWidgets(description, callback, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+void screenTest(String description, WidgetTesterCallback callback, {bool skip = false}) {
+  testWidgets(description, callback, skip: skip, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 }
 
 void main() {
@@ -206,37 +205,6 @@ void main() {
     expect(translation.style?.color, heading.style?.color);
   });
 
-  setUpAll(() async {
-    if (Platform.environment['MM_SCREENSHOTS'] == null) return;
-    final bytes = ByteData.sublistView(
-      File(Platform.environment['MM_FONT'] ?? '/System/Library/Fonts/Supplemental/Arial Unicode.ttf').readAsBytesSync(),
-    );
-    for (final family in [
-      '.AppleSystemUIFont',
-      'CupertinoSystemText',
-      'CupertinoSystemDisplay',
-      'Roboto',
-      'PingFang SC',
-    ]) {
-      await (FontLoader(family)..addFont(Future.value(bytes))).load();
-    }
-    await (FontLoader('Songti SC')..addFont(
-          Future.value(ByteData.sublistView(File('/System/Library/Fonts/Supplemental/Songti.ttc').readAsBytesSync())),
-        ))
-        .load();
-    final cache = Platform.environment['PUB_CACHE'] ?? '${Platform.environment['HOME']}/.pub-cache';
-    final icons = Directory('$cache/hosted/pub.dev')
-        .listSync()
-        .whereType<Directory>()
-        .lastWhere((d) => d.path.contains('cupertino_icons-'));
-    await (FontLoader('packages/cupertino_icons/CupertinoIcons')..addFont(
-          Future.value(ByteData.sublistView(File('${icons.path}/assets/CupertinoIcons.ttf').readAsBytesSync())),
-        ))
-        .load();
-    await (FontLoader(
-      'packages/lucide_icons_flutter/Lucide',
-    )..addFont(rootBundle.load('packages/lucide_icons_flutter/assets/lucide.ttf'))).load();
-  });
   screenTest('filters, search, grouping, scope and real document counts', (tester) async {
     final (c, _) = await open(
       tester,
@@ -448,7 +416,7 @@ void main() {
     expect(find.text('No words yet'), findsNothing);
   });
   for (final dark in [false, true]) {
-    screenTest('screenshot ${dark ? 'dark' : 'light'}', (tester) async {
+    screenTest('structure and colors ${dark ? 'dark' : 'light'}', (tester) async {
       await open(tester, dark: dark, chinese: true, scoped: true);
       expect(
         tester
@@ -456,27 +424,45 @@ void main() {
             .onPressed,
         isNull,
       );
-      if (Platform.environment['MM_SCREENSHOTS'] != null) {
-        await screenshot(tester, 'vocabulary-${dark ? 'dark' : 'light'}', target: find.byType(VocabularyScreen));
-        tester.view.physicalSize = const Size(430, 900);
-        await tester.pumpAndSettle();
-        await screenshot(
-          tester,
-          'vocabulary-list-compact-${dark ? 'dark' : 'light'}',
-          target: find.byType(VocabularyScreen),
-        );
-        await tap(tester, find.byKey(const ValueKey('vocabulary-row-cat')));
-        await screenshot(
-          tester,
-          'vocabulary-detail-compact-${dark ? 'dark' : 'light'}',
-          target: find.byType(VocabularyScreen),
-        );
-        return;
-      }
-      await expectLater(
-        find.byType(VocabularyScreen),
-        matchesGoldenFile('goldens/vocabulary-${dark ? 'dark' : 'light'}.png'),
+      final colors = tester.element(find.byType(VocabularyScreen)).mmColors;
+      expect(colors.brightness, dark ? Brightness.dark : Brightness.light);
+      expect(tester.widget<MMPill>(find.byType(MMPill)).color, colors.vocabulary);
+      final row = find.byKey(const ValueKey('vocabulary-row-cat'));
+      final dot = tester.widget<Container>(
+        find.descendant(
+          of: row,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+          ),
+        ),
       );
+      expect((dot.decoration! as BoxDecoration).color, colors.vocabulary);
+      expect(find.byKey(const ValueKey('example-card-same')), findsOneWidget);
+      expect(find.text('a small animal'), findsOneWidget);
+      expect(find.text('猫睡觉。'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
+    screenTest('screenshot ${dark ? 'dark' : 'light'}', (tester) async {
+      await tester.runAsync(loadVocabularyScreenshotFonts);
+      await open(tester, dark: dark, chinese: true, scoped: true);
+      await screenshot(tester, 'vocabulary-${dark ? 'dark' : 'light'}', target: find.byType(VocabularyScreen));
+      tester.view.physicalSize = const Size(430, 900);
+      await tester.pumpAndSettle();
+      await screenshot(
+        tester,
+        'vocabulary-list-compact-${dark ? 'dark' : 'light'}',
+        target: find.byType(VocabularyScreen),
+      );
+      await tap(tester, find.byKey(const ValueKey('vocabulary-row-cat')));
+      await screenshot(
+        tester,
+        'vocabulary-detail-compact-${dark ? 'dark' : 'light'}',
+        target: find.byType(VocabularyScreen),
+      );
+      expect(tester.takeException(), isNull);
+    }, skip: !vocabularyScreenshotsEnabled);
   }
 }

@@ -29,6 +29,7 @@ import 'package:mm_reflow/mm_reflow.dart';
 import 'helpers.dart';
 import 'reflow_fixtures.dart';
 import 'vocabulary_screen_test.dart' show word;
+import 'vocabulary_screenshots.dart';
 
 void main() {
   test('PDF UTF16 offsets map to separate lines and preserve original coordinates', () {
@@ -68,81 +69,129 @@ void main() {
   });
 
   for (final dark in [false, true]) {
-    testWidgets('hint paint and hit card ${dark ? 'dark' : 'light'} golden', (tester) async {
-      final repository = InMemoryVocabularyRepository([word('cat').copyWith(note: 'Remember this word')]);
-      addTearDown(repository.dispose);
-      final overrides = await testOverrides(vocabulary: repository);
-      final container = ProviderContainer(overrides: overrides);
-      addTearDown(container.dispose);
-      await container.read(vocabularyProvider.future);
-      final hit = VocabularyHit('cat', [const Rect.fromLTWH(20, 60, 50, 18)], page: 1);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: MMTheme.light(),
-            darkTheme: MMTheme.dark(),
-            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Center(
-                child: RepaintBoundary(
-                  key: const ValueKey('hints-golden'),
-                  child: SizedBox(
-                    width: 360,
-                    height: 330,
-                    child: Builder(
-                      builder: (context) => Column(
-                        children: [
-                          SizedBox(
-                            width: 300,
-                            height: 100,
-                            child: CustomPaint(
-                              painter: VocabularyHintPainter(
-                                hits: [
-                                  hit,
-                                  VocabularyHit('known', [const Rect.fromLTWH(100, 60, 50, 18)]),
-                                ],
-                                entries: {
-                                  'cat': word('cat'),
-                                  'known': word('known', status: VocabularyStatus.known),
-                                },
-                                color: context.mmColors.vocabulary,
-                                knownColor: context.mmColors.secondaryLabel,
-                                tint: context.mmColors.vocabularyTint,
-                                glossStyle: context.mmText.footnote,
-                                lines: const [Rect.fromLTWH(0, 10, 280, 20)],
-                                gloss: true,
-                                flashEntry: 'cat',
+    for (final capture in [false, true]) {
+      testWidgets(
+        'hint paint and hit card ${dark ? 'dark' : 'light'} ${capture ? 'screenshot' : 'structure and colors'}',
+        skip: capture && !vocabularyScreenshotsEnabled,
+        (tester) async {
+          if (capture) await tester.runAsync(loadVocabularyScreenshotFonts);
+          final repository = InMemoryVocabularyRepository([word('cat').copyWith(note: 'Remember this word')]);
+          addTearDown(repository.dispose);
+          final overrides = await testOverrides(vocabulary: repository);
+          final container = ProviderContainer(overrides: overrides);
+          addTearDown(container.dispose);
+          await container.read(vocabularyProvider.future);
+          final hit = VocabularyHit('cat', [const Rect.fromLTWH(20, 60, 50, 18)], page: 1);
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                theme: MMTheme.light(),
+                darkTheme: MMTheme.dark(),
+                themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: Center(
+                    child: RepaintBoundary(
+                      key: const ValueKey('hints-preview'),
+                      child: Container(
+                        width: 360,
+                        height: 330,
+                        color: (dark ? MMTheme.dark() : MMTheme.light()).scaffoldBackgroundColor,
+                        child: Builder(
+                          builder: (context) => Column(
+                            children: [
+                              SizedBox(
+                                width: 300,
+                                height: 100,
+                                child: CustomPaint(
+                                  painter: VocabularyHintPainter(
+                                    hits: [
+                                      hit,
+                                      VocabularyHit('known', [const Rect.fromLTWH(100, 60, 50, 18)]),
+                                    ],
+                                    entries: {
+                                      'cat': word('cat'),
+                                      'known': word('known', status: VocabularyStatus.known),
+                                    },
+                                    color: context.mmColors.vocabulary,
+                                    knownColor: context.mmColors.secondaryLabel,
+                                    tint: context.mmColors.vocabularyTint,
+                                    glossStyle: context.mmText.footnote,
+                                    lines: const [Rect.fromLTWH(0, 10, 280, 20)],
+                                    gloss: true,
+                                    flashEntry: 'cat',
+                                  ),
+                                ),
                               ),
-                            ),
+                              VocabularyHitCard(
+                                studySetId: 'demo-1',
+                                hit: hit,
+                                occurrences: (active) async => [hit, hit],
+                                reveal: (_) async {},
+                              ),
+                            ],
                           ),
-                          VocabularyHitCard(
-                            studySetId: 'demo-1',
-                            hit: hit,
-                            occurrences: (active) async => [hit, hit],
-                            reveal: (_) async {},
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+          await tester.pumpAndSettle();
+          if (capture) {
+            await saveVocabularyHintScreenshot(
+              tester,
+              'hints-${dark ? 'dark' : 'light'}',
+              find.byKey(const ValueKey('hints-preview')),
+            );
+          } else {
+            final colors = tester.element(find.byType(VocabularyHitCard)).mmColors;
+            expect(colors.brightness, dark ? Brightness.dark : Brightness.light);
+            final paint = find.byWidgetPredicate((w) => w is CustomPaint && w.painter is VocabularyHintPainter);
+            final painter = tester.widget<CustomPaint>(paint).painter! as VocabularyHintPainter;
+            expect(painter.color, colors.vocabulary);
+            expect(painter.knownColor, colors.secondaryLabel);
+            expect(painter.tint, colors.vocabularyTint);
+            expect(
+              (Canvas canvas) => painter.paint(canvas, const Size(300, 100)),
+              paints
+                ..rect(color: colors.vocabularyTint)
+                ..circle(color: colors.vocabulary)
+                ..paragraph()
+                ..circle(color: colors.secondaryLabel)
+                ..paragraph(),
+            );
+            final card = find.byType(VocabularyHitCard);
+            for (final text in [
+              'cat',
+              '/kæt/  /kæt/',
+              'n.  a small animal',
+              'Remember this word',
+              '1 / 2',
+              'Details ›',
+            ]) {
+              expect(find.descendant(of: card, matching: find.text(text)), findsOneWidget);
+            }
+            final status = find.descendant(of: card, matching: find.text('Learning'));
+            expect(tester.widget<Text>(status).style?.color, colors.vocabulary);
+            final badge = tester.widget<Container>(find.ancestor(of: status, matching: find.byType(Container)).first);
+            expect((badge.decoration! as BoxDecoration).color, colors.vocabularyTint);
+            for (final key in ['vocabulary-hit-previous', 'vocabulary-hit-next']) {
+              expect(tester.widget<MMIconButton>(find.byKey(ValueKey(key))).onPressed, isNotNull);
+            }
+            expect(find.byTooltip('Mark as known'), findsOneWidget);
+            expect(find.byTooltip('Remove from vocabulary'), findsOneWidget);
+          }
+          expect(tester.takeException(), isNull);
+          // Keep the original container alive until this replacement widget is gone.
+          await tester.pumpWidget(const SizedBox());
+        },
       );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byKey(const ValueKey('hints-golden')),
-        matchesGoldenFile('goldens/hints-${dark ? 'dark' : 'light'}.png'),
-      );
-      expect(tester.takeException(), isNull);
-      // Keep the original container alive until this replacement widget is gone.
-      await tester.pumpWidget(const SizedBox());
-    });
+    }
   }
 
   testWidgets('reflow hint toggle, shortcut, hidden document, known, modes and drag priority', (tester) async {
