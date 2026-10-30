@@ -135,6 +135,7 @@ class MindMapCanvas extends StatefulWidget {
     this.previewStyle,
     this.fitInsets,
     this.toolbarTopInset = 60,
+    this.touchSelectionMode,
   });
 
   /// A structure and palette shown in place of the map's own while they are
@@ -147,6 +148,10 @@ class MindMapCanvas extends StatefulWidget {
 
   /// Bottom of the pane's fixed controls, in viewport coordinates.
   final double toolbarTopInset;
+
+  /// When supplied, the pane provides the touch selection control in its
+  /// measured header, instead of a separate floating button.
+  final bool? touchSelectionMode;
 
   /// The selected excerpt, image or research note was resized (P2-C06) by
   /// its handle; null width when the handle is double-clicked (default).
@@ -280,7 +285,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   Offset? _boxStart;
   Offset? _boxEnd;
   Set<String> _boxInitial = {};
-  bool _touchSelection = false;
+  bool _localTouchSelection = false;
+  bool get _touchSelection => widget.touchSelectionMode ?? _localTouchSelection;
   final _touchPointers = <int>{};
   Offset? _touchDragOrigin;
   bool _touchDragMoved = false;
@@ -2239,7 +2245,9 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     },
                   ),
                 ),
-              if (MMInput.touchInputOf(context) && (widget.onToggleSelection != null || widget.onSelectMany != null))
+              if (widget.touchSelectionMode == null &&
+                  MMInput.touchInputOf(context) &&
+                  (widget.onToggleSelection != null || widget.onSelectMany != null))
                 Positioned(
                   top: MMSizes.toolbarHeight + MMSpacing.xl,
                   right: MMSpacing.s,
@@ -2250,7 +2258,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       label: l.mapMultiSelect,
                       icon: _touchSelection ? MMIcons.check : Icons.checklist,
                       variant: _touchSelection ? MMButtonVariant.primary : MMButtonVariant.secondary,
-                      onPressed: () => setState(() => _touchSelection = !_touchSelection),
+                      onPressed: () => setState(() => _localTouchSelection = !_localTouchSelection),
                     ),
                   ),
                 ),

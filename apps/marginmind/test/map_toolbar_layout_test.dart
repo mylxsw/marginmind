@@ -58,12 +58,9 @@ void main() {
         await tester.ensureVisible(style);
         final commands = tester.getRect(find.byType(MapCommandBar));
         final styleRect = tester.getRect(style);
-        if (width >= (touch ? 900 : 800)) {
+        if (width >= 800 && !touch) {
           expect(commands.center.dy, closeTo(styleRect.center.dy, 0.01));
-          expect(commands.center.dx, closeTo(width / 2, 0.01));
           expect(commands.right, lessThanOrEqualTo(styleRect.left));
-        } else {
-          expect(commands.top, greaterThanOrEqualTo(styleRect.bottom));
         }
         await tester.tap(style);
         await tester.pumpAndSettle();

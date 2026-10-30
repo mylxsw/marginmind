@@ -12,9 +12,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
+import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
+import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
@@ -117,6 +122,41 @@ void main() {
     (MapStructure.tree, MapPalette.ink),
   ];
   for (final dark in [false, true]) {
+    testWidgets('narrow pane frosted toolbar ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
+      tester.view.physicalSize = const Size(632, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: await testOverrides(content: InMemoryStudySetContentRepository({'demo-1': _sample()})),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: dark ? MMTheme.dark() : MMTheme.light(),
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: MapPane(studySetId: 'demo-1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(tester.element(find.byType(MapPane)));
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.selectCard('e1');
+      await tester.pumpAndSettle();
+      final bar = tester.getRect(find.byType(MapCommandBar));
+      expect(bar.center.dy, tester.getCenter(find.byKey(const ValueKey('map-style-button'))).dy);
+      final excerpt = tester.getRect(find.byKey(const ValueKey('e1')));
+      controller.selectCard(null);
+      await tester.pumpAndSettle();
+      final transform = tester.widget<MindMapCanvas>(find.byType(MindMapCanvas)).transformation;
+      final delta = bar.center - excerpt.center;
+      transform.value = transform.value.clone()
+        ..setTranslationRaw(transform.value.storage[12] + delta.dx, transform.value.storage[13] + delta.dy, 0);
+      await tester.pumpAndSettle();
+      await _save(tester, 'narrow-toolbar-${dark ? 'dark' : 'light'}');
+      await settleHud(tester);
+    });
     testWidgets('new topic toolbars ${dark ? 'dark' : 'light'}', skip: skip, (tester) async {
       final container = await pumpApp(
         tester,

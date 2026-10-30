@@ -25,6 +25,7 @@ import 'map_export_sheet.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
+import 'map_header.dart';
 
 /// Map pane: the mind map (or outline) plus floating glass controls — map
 /// title and view switch at the top, node actions by the selection, zoom bottom-right.
@@ -39,6 +40,8 @@ class MapPane extends ConsumerStatefulWidget {
 
 class _MapPaneState extends ConsumerState<MapPane> {
   bool _mergeHover = false;
+  final _headerGeometry = MapHeaderGeometry();
+  bool _touchSelection = false;
   bool _toolbarBusy = false;
   Completer<void>? _pendingEditCommit;
 
@@ -543,136 +546,237 @@ class _MapPaneState extends ConsumerState<MapPane> {
     );
     return LayoutBuilder(
       builder: (context, paneConstraints) {
-        final controlHeight = context.mmToolbarButton.height + 6;
-        final inlineCommands = !outline && paneConstraints.maxWidth >= (context.mmTouch ? 900 : 800);
-        final narrow = paneConstraints.maxWidth - MMSpacing.m * 2 < MMSizes.mapMinWidth;
-        final compactHeader = narrow && paneConstraints.maxHeight < controlHeight * 4 + MMSpacing.xxxl * 2;
-        final titleHeight = MediaQuery.textScalerOf(context).scale(t.headline.fontSize!) * t.headline.height!;
-        final headerHeight = narrow && !compactHeader ? titleHeight + controlHeight + MMSpacing.xs : controlHeight;
-        final commandTop = chrome.top + MMSpacing.s + (inlineCommands ? 0 : headerHeight + MMSpacing.s);
-        final toolbarTopInset = commandTop + controlHeight + MMSpacing.s;
+        final controls = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MMSegmentedControl<MapViewMode>(
+              value: state.mapView,
+              onChanged: controller.setMapView,
+              segments: [
+                MMSegment(value: MapViewMode.map, label: l.mapView),
+                MMSegment(value: MapViewMode.outline, label: l.outlineView),
+              ],
+            ),
+            if (!outline) ...[
+              const SizedBox(width: MMSpacing.s),
+              CompositedTransformTarget(
+                link: _styleLink,
+                child: TapRegion(
+                  groupId: _styleRegion,
+                  child: MMToolbarButton(
+                    key: const ValueKey('map-style-button'),
+                    icon: MMIcons.mapStyle,
+                    label: l.mapStyle,
+                    tooltip: l.mapStyle,
+                    selected: _styleOpen,
+                    onPressed: _toggleStyle,
+                  ),
+                ),
+              ),
+              if (MMInput.touchInputOf(context)) ...[
+                const SizedBox(width: MMSpacing.s),
+                MMToolbarButton(
+                  key: const ValueKey('map-multi-select'),
+                  icon: _touchSelection ? MMIcons.check : Icons.checklist,
+                  label: l.mapMultiSelect,
+                  tooltip: l.mapMultiSelect,
+                  selected: _touchSelection,
+                  onPressed: () => setState(() => _touchSelection = !_touchSelection),
+                ),
+              ],
+            ],
+            if (outline) ...[
+              const SizedBox(width: MMSpacing.s),
+              MMToolbarGroup(
+                children: [
+                  MMToolbarButton(
+                    icon: MMIcons.trash,
+                    tooltip: l.removeFromMap,
+                    onPressed: state.selectedMarkId != null
+                        ? controller.removeSelectedMark
+                        : state.selectedCardId == null
+                        ? null
+                        : remove,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
         return ColoredBox(
           color: state.mapView == MapViewMode.map ? c.canvas : c.windowBackground,
           child: Stack(
             children: [
               Positioned.fill(
-                top: outline ? chrome.top : 0,
-                bottom: outline ? chrome.bottom : 0,
-                child: state.mapView == MapViewMode.map
-                    ? MindMapCanvas(
-                        key: ValueKey(state.activeMapId),
-                        toolbarTopInset: toolbarTopInset,
-                        selectionToolbar: state.selectedCardIds.length < 2
-                            ? _nodeBar(state.selectedCardId, remove)
-                            : MapSelectionBar(
-                                count: state.selectedCardIds.length,
-                                mergeReason: controller.mergeReason,
-                                summaryReason: controller.summaryReason,
-                                onMerge: _merge,
-                                onSummary: _summary,
-                                onRelation: controller.addRelation,
-                                onDelete: remove,
-                                onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
-                                onMergeHover: (hover) {
-                                  if (_mergeHover != hover) setState(() => _mergeHover = hover);
-                                },
-                                onColor: state.selectedCardIds.any((id) => content.card(id)?.kind == CardKind.excerpt)
-                                    ? (color) => controller.recolorCards(state.selectedCardIds, color)
-                                    : null,
+                child: CustomMultiChildLayout(
+                  delegate: MapPaneHeaderLayout(_headerGeometry, top: chrome.top + MMSpacing.s),
+                  children: [
+                    LayoutId(
+                      id: MapPaneSlot.canvas,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final toolbarTopInset = _headerGeometry.toolbarTopInset;
+                          return SizedBox.expand(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                top: outline ? chrome.top : 0,
+                                bottom: outline ? chrome.bottom : 0,
                               ),
-                        mergePreviewCardId: _mergeHover ? controller.mergeSurvivorId : null,
-                        flashAnnotationId: state.flashAnnotationId,
-                        onRevealSegment: controller.revealSegment,
-                        content: content,
-                        mapId: state.activeMapId,
-                        rootTitle: rootTitle,
-                        selectedCardId: state.selectedCardId,
-                        rootSelected: state.rootSelected,
-                        onSelectRoot: controller.selectMapRoot,
-                        onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
-                        selectedCardIds: state.selectedCardIds,
-                        onToggleSelection: controller.toggleCardSelection,
-                        flashCardId: state.flashCardId,
-                        flashCardIds: state.flashCardIds,
-                        locateCardTick: state.locateCardTick > _handledLocateTick ? state.locateCardTick : 0,
-                        onLocated: (tick) {
-                          if (tick > _handledLocateTick) _handledLocateTick = tick;
+                              child: state.mapView == MapViewMode.map
+                                  ? MindMapCanvas(
+                                      key: ValueKey(state.activeMapId),
+                                      toolbarTopInset: toolbarTopInset,
+                                      touchSelectionMode: _touchSelection,
+                                      selectionToolbar: state.selectedCardIds.length < 2
+                                          ? _nodeBar(state.selectedCardId, remove)
+                                          : MapSelectionBar(
+                                              count: state.selectedCardIds.length,
+                                              mergeReason: controller.mergeReason,
+                                              summaryReason: controller.summaryReason,
+                                              onMerge: _merge,
+                                              onSummary: _summary,
+                                              onRelation: controller.addRelation,
+                                              onDelete: remove,
+                                              onAssistant: MMPlatformCapabilities.current.assistant
+                                                  ? _openNodeAssistant
+                                                  : null,
+                                              onMergeHover: (hover) {
+                                                if (_mergeHover != hover) setState(() => _mergeHover = hover);
+                                              },
+                                              onColor:
+                                                  state.selectedCardIds.any(
+                                                    (id) => content.card(id)?.kind == CardKind.excerpt,
+                                                  )
+                                                  ? (color) => controller.recolorCards(state.selectedCardIds, color)
+                                                  : null,
+                                            ),
+                                      mergePreviewCardId: _mergeHover ? controller.mergeSurvivorId : null,
+                                      flashAnnotationId: state.flashAnnotationId,
+                                      onRevealSegment: controller.revealSegment,
+                                      content: content,
+                                      mapId: state.activeMapId,
+                                      rootTitle: rootTitle,
+                                      selectedCardId: state.selectedCardId,
+                                      rootSelected: state.rootSelected,
+                                      onSelectRoot: controller.selectMapRoot,
+                                      onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
+                                      selectedCardIds: state.selectedCardIds,
+                                      onToggleSelection: controller.toggleCardSelection,
+                                      flashCardId: state.flashCardId,
+                                      flashCardIds: state.flashCardIds,
+                                      locateCardTick: state.locateCardTick > _handledLocateTick
+                                          ? state.locateCardTick
+                                          : 0,
+                                      onLocated: (tick) {
+                                        if (tick > _handledLocateTick) _handledLocateTick = tick;
+                                      },
+                                      transformation: _transform,
+                                      focusNode: _focus,
+                                      loaded: loadedContent != null,
+                                      onSelect: controller.selectCard,
+                                      onReveal: controller.revealCard,
+                                      onRename: rename,
+                                      onDelete: remove,
+                                      onSelectMany: controller.selectCards,
+                                      onMove: (id, parent, index) => controller.moveCards(
+                                        state.selectedCardIds.contains(id) ? state.selectedCardIds : [id],
+                                        parent,
+                                        index: index,
+                                      ),
+                                      onToggleCollapsed: controller.toggleCollapsed,
+                                      onNavigate: controller.selectNeighbor,
+                                      onShift: controller.shiftSelected,
+                                      onAddChild: () => addTopic(asChild: true),
+                                      onCommand: _command,
+                                      editingCardId: state.editingCardId,
+                                      onEditDone: controller.finishEditing,
+                                      onEditCancel: controller.cancelEditing,
+                                      onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
+                                      selectedMarkId: state.selectedMarkId,
+                                      editingMarkId: state.editingMarkId,
+                                      connectingFromId: state.connectingFromId,
+                                      onSelectMark: controller.selectMark,
+                                      onEditMark: controller.beginMarkEditing,
+                                      onDeleteMark: controller.removeSelectedMark,
+                                      onMarkEditDone: controller.finishMarkEditing,
+                                      onMarkEditCancel: controller.cancelMarkEditing,
+                                      onConnect: controller.connectTo,
+                                      onAdjustSummary: controller.adjustSummaryRange,
+                                      onUpdateRelation: controller.updateRelation,
+                                      onReverseRelation: controller.reverseRelation,
+                                      onCancelConnect: controller.cancelConnecting,
+                                      onMarkContextMenu: _showMarkMenu,
+                                      excerptTargetId: excerptTargetId,
+                                      previewCardIds: ref.watch(assistantPreviewProvider(widget.studySetId)),
+                                      expandedCardIds: state.expandedCardIds,
+                                      onToggleExpanded: controller.toggleExpanded,
+                                      onOpenDetails: controller.showDetails,
+                                      onResize: controller.setCardWidth,
+                                      previewStyle: _styleOpen ? _stylePreview : null,
+                                      // The map makes way for the popover and shows all of itself.
+                                      fitInsets: _styleOpen
+                                          ? EdgeInsets.only(
+                                              top: toolbarTopInset,
+                                              right: MMSizes.mapStylePopoverWidth + MMSpacing.m * 2,
+                                              bottom: chrome.bottom + MMSizes.toolbarHeight,
+                                            )
+                                          : null,
+                                    )
+                                  : OutlineView(
+                                      key: ValueKey(state.activeMapId),
+                                      content: content,
+                                      mapId: state.activeMapId,
+                                      rootTitle: rootTitle,
+                                      selectedCardId: state.selectedCardId,
+                                      rootSelected: state.rootSelected,
+                                      onSelectRoot: controller.selectMapRoot,
+                                      onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
+                                      selectedCardIds: state.selectedCardIds,
+                                      onToggleSelection: controller.toggleCardSelection,
+                                      focusNode: _focus,
+                                      onSelect: controller.selectCard,
+                                      onReveal: controller.revealCard,
+                                      onRename: rename,
+                                      onDelete: remove,
+                                      onAddChild: () => addTopic(asChild: true),
+                                      onShift: controller.shiftSelected,
+                                      onCommand: _command,
+                                      editingCardId: state.editingCardId,
+                                      onEditDone: controller.finishEditing,
+                                      onEditCancel: controller.cancelEditing,
+                                    ),
+                            ),
+                          );
                         },
-                        transformation: _transform,
-                        focusNode: _focus,
-                        loaded: loadedContent != null,
-                        onSelect: controller.selectCard,
-                        onReveal: controller.revealCard,
-                        onRename: rename,
-                        onDelete: remove,
-                        onSelectMany: controller.selectCards,
-                        onMove: (id, parent, index) => controller.moveCards(
-                          state.selectedCardIds.contains(id) ? state.selectedCardIds : [id],
-                          parent,
-                          index: index,
-                        ),
-                        onToggleCollapsed: controller.toggleCollapsed,
-                        onNavigate: controller.selectNeighbor,
-                        onShift: controller.shiftSelected,
-                        onAddChild: () => addTopic(asChild: true),
-                        onCommand: _command,
-                        editingCardId: state.editingCardId,
-                        onEditDone: controller.finishEditing,
-                        onEditCancel: controller.cancelEditing,
-                        onContextMenu: (id, position) => _showNodeMenu(id, position, remove),
-                        selectedMarkId: state.selectedMarkId,
-                        editingMarkId: state.editingMarkId,
-                        connectingFromId: state.connectingFromId,
-                        onSelectMark: controller.selectMark,
-                        onEditMark: controller.beginMarkEditing,
-                        onDeleteMark: controller.removeSelectedMark,
-                        onMarkEditDone: controller.finishMarkEditing,
-                        onMarkEditCancel: controller.cancelMarkEditing,
-                        onConnect: controller.connectTo,
-                        onAdjustSummary: controller.adjustSummaryRange,
-                        onUpdateRelation: controller.updateRelation,
-                        onReverseRelation: controller.reverseRelation,
-                        onCancelConnect: controller.cancelConnecting,
-                        onMarkContextMenu: _showMarkMenu,
-                        excerptTargetId: excerptTargetId,
-                        previewCardIds: ref.watch(assistantPreviewProvider(widget.studySetId)),
-                        expandedCardIds: state.expandedCardIds,
-                        onToggleExpanded: controller.toggleExpanded,
-                        onOpenDetails: controller.showDetails,
-                        onResize: controller.setCardWidth,
-                        previewStyle: _styleOpen ? _stylePreview : null,
-                        // The map makes way for the popover and shows all of itself.
-                        fitInsets: _styleOpen
-                            ? EdgeInsets.only(
-                                top: toolbarTopInset,
-                                right: MMSizes.mapStylePopoverWidth + MMSpacing.m * 2,
-                                bottom: chrome.bottom + MMSizes.toolbarHeight,
-                              )
-                            : null,
-                      )
-                    : OutlineView(
-                        key: ValueKey(state.activeMapId),
-                        content: content,
-                        mapId: state.activeMapId,
-                        rootTitle: rootTitle,
-                        selectedCardId: state.selectedCardId,
-                        rootSelected: state.rootSelected,
-                        onSelectRoot: controller.selectMapRoot,
-                        onAssistant: MMPlatformCapabilities.current.assistant ? _openNodeAssistant : null,
-                        selectedCardIds: state.selectedCardIds,
-                        onToggleSelection: controller.toggleCardSelection,
-                        focusNode: _focus,
-                        onSelect: controller.selectCard,
-                        onReveal: controller.revealCard,
-                        onRename: rename,
-                        onDelete: remove,
-                        onAddChild: () => addTopic(asChild: true),
-                        onShift: controller.shiftSelected,
-                        onCommand: _command,
-                        editingCardId: state.editingCardId,
-                        onEditDone: controller.finishEditing,
-                        onEditCancel: controller.cancelEditing,
                       ),
+                    ),
+                    LayoutId(
+                      id: MapPaneSlot.header,
+                      child: MapHeader(
+                        title: Text(
+                          mapTitle.isEmpty ? l.mainMap : mapTitle,
+                          style: t.headline,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        commands: outline
+                            ? null
+                            : SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
+                        controls: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: outline
+                              ? controls
+                              : MMLiquidGlass(
+                                  key: const ValueKey('map-view-glass'),
+                                  padding: const EdgeInsets.all(3),
+                                  child: controls,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (content.nodes.every((n) => n.mapId != state.activeMapId) && state.mapView == MapViewMode.map)
                 Positioned(
@@ -681,136 +785,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   bottom: 72 + chrome.bottom,
                   child: IgnorePointer(
                     child: Text(l.mapEmptyTitle, textAlign: TextAlign.center, style: t.headline),
-                  ),
-                ),
-              Positioned(
-                left: MMSpacing.m,
-                right: MMSpacing.m,
-                top: MMSpacing.s + chrome.top,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final title = SizedBox(
-                      height: narrow ? titleHeight : controlHeight,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          mapTitle.isEmpty ? l.mainMap : mapTitle,
-                          style: t.headline,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    );
-                    final controls = Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        MMSegmentedControl<MapViewMode>(
-                          value: state.mapView,
-                          onChanged: controller.setMapView,
-                          segments: [
-                            MMSegment(value: MapViewMode.map, label: l.mapView),
-                            MMSegment(value: MapViewMode.outline, label: l.outlineView),
-                          ],
-                        ),
-                        if (!outline) ...[
-                          const SizedBox(width: MMSpacing.s),
-                          CompositedTransformTarget(
-                            link: _styleLink,
-                            child: TapRegion(
-                              groupId: _styleRegion,
-                              child: MMToolbarGroup(
-                                children: [
-                                  MMToolbarButton(
-                                    key: const ValueKey('map-style-button'),
-                                    icon: MMIcons.mapStyle,
-                                    label: l.mapStyle,
-                                    tooltip: l.mapStyle,
-                                    selected: _styleOpen,
-                                    onPressed: _toggleStyle,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (outline) ...[
-                          const SizedBox(width: MMSpacing.s),
-                          MMToolbarGroup(
-                            children: [
-                              MMToolbarButton(
-                                icon: MMIcons.trash,
-                                tooltip: l.removeFromMap,
-                                onPressed: state.selectedMarkId != null
-                                    ? controller.removeSelectedMark
-                                    : state.selectedCardId == null
-                                    ? null
-                                    : remove,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    );
-                    if (inlineCommands) {
-                      return Row(
-                        children: [
-                          Expanded(child: title),
-                          commandBar,
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: MMSpacing.s),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  reverse: true,
-                                  child: controls,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    }
-                    if (compactHeader) {
-                      return SingleChildScrollView(scrollDirection: Axis.horizontal, child: controls);
-                    }
-                    if (narrow) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          title,
-                          const SizedBox(height: MMSpacing.xs),
-                          SingleChildScrollView(scrollDirection: Axis.horizontal, child: controls),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(child: title),
-                        // Keep controls within the pane without growing into the
-                        // canvas's touch selection controls.
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            reverse: true,
-                            child: controls,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              if (!outline && !inlineCommands)
-                Positioned(
-                  left: MMSpacing.m,
-                  right: MMSpacing.m,
-                  top: commandTop,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
                   ),
                 ),
               if (_styleOpen && !outline && map != null)
