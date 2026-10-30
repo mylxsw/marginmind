@@ -1,0 +1,158 @@
+{
+  "basis": "PR added executable lines vs ebe067454f379e5ad5d3a1eee2684e18cebee989; fresh python3 tool/coverage.py",
+  "covered": 872,
+  "lines": 920,
+  "percent": 94.78,
+  "review": {
+    "base": "6d32391",
+    "covered": 74,
+    "lines": 76,
+    "percent": 97.37
+  },
+  "files": [
+    {
+      "file": "apps/marginmind/lib/app/app_commands.dart",
+      "covered": 13,
+      "lines": 13,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/assistant_controller.dart",
+      "covered": 3,
+      "lines": 3,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/assistant_writes.dart",
+      "covered": 3,
+      "lines": 3,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/expansion_context.dart",
+      "covered": 69,
+      "lines": 69,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/expansion_controller.dart",
+      "covered": 164,
+      "lines": 167,
+      "percent": 98.2,
+      "uncovered": [
+        96,
+        97,
+        251
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/widgets/assistant_quick_actions.dart",
+      "covered": 8,
+      "lines": 8,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart",
+      "covered": 327,
+      "lines": 342,
+      "percent": 95.61,
+      "uncovered": [
+        91,
+        198,
+        288,
+        289,
+        295,
+        297,
+        298,
+        299,
+        300,
+        301,
+        325,
+        422,
+        423,
+        424,
+        601
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/map_pane.dart",
+      "covered": 70,
+      "lines": 80,
+      "percent": 87.5,
+      "uncovered": [
+        238,
+        239,
+        658,
+        746,
+        747,
+        748,
+        750,
+        751,
+        752,
+        753
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/mind_map_cache.dart",
+      "covered": 17,
+      "lines": 17,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/mind_map_canvas.dart",
+      "covered": 168,
+      "lines": 186,
+      "percent": 90.32,
+      "uncovered": [
+        791,
+        807,
+        813,
+        814,
+        817,
+        818,
+        826,
+        827,
+        1929,
+        1930,
+        1936,
+        1937,
+        1938,
+        1939,
+        2390,
+        2391,
+        2392,
+        2393
+      ]
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/widgets/outline_view.dart",
+      "covered": 1,
+      "lines": 1,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    {
+      "file": "apps/marginmind/lib/features/workspace/workspace_controller.dart",
+      "covered": 24,
+      "lines": 26,
+      "percent": 92.31,
+      "uncovered": [
+        585,
+        586
+      ]
+    },
+    {
+      "file": "packages/mm_design/lib/src/widgets/search_field.dart",
+      "covered": 5,
+      "lines": 5,
+      "percent": 100.0,
+      "uncovered": []
+    }
+  ]
+}

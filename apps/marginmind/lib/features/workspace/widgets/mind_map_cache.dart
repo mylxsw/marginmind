@@ -22,6 +22,7 @@ const _summaryLabelWidth = 200.0;
 class MindMapRenderCache {
   static const measurementCapacity = 2048;
   final _measurements = <_MeasureKey, ({Size size, int lines})>{};
+  List<ExpansionDraft> _expansionDrafts = const [];
   StudySetContent? _content;
   String? _title;
   String? _mapId;
@@ -61,6 +62,7 @@ class MindMapRenderCache {
 
   TreeLayoutResult update({
     required StudySetContent content,
+    List<ExpansionDraft> expansionDrafts = const [],
     String mapId = MindMap.defaultId,
     required String rootTitle,
     required AppLocalizations localizations,
@@ -103,6 +105,7 @@ class MindMapRenderCache {
         _locale != locale ||
         _direction != textDirection;
     if (!environmentChanged &&
+        listEquals(_expansionDrafts, expansionDrafts) &&
         identical(_content, content) &&
         _title == rootTitle &&
         _mapId == mapId &&
@@ -124,6 +127,7 @@ class MindMapRenderCache {
     _textScaler = textScaler;
     _locale = locale;
     _direction = textDirection;
+    _expansionDrafts = expansionDrafts;
     _content = content;
     _title = rootTitle;
     _mapId = mapId;
@@ -157,13 +161,35 @@ class MindMapRenderCache {
     _collapsed = {};
     _expandable = {};
     final geometry = <(String, String?, double, double)>[];
+    LayoutNode ghost(ExpansionDraft d, String parentId) {
+      final spec = _NodeSpec._(
+        _Kind.topic,
+        d.title,
+        null,
+        null,
+        null,
+        Size(
+          d.id == '__expansion_placeholder__' ? 120 : 164,
+          d.id == '__expansion_placeholder__' ? 30 : (d.tag != ExpansionDirection.auto || d.page != null ? 54 : 36),
+        ),
+      );
+      _specs[d.id] = spec;
+      geometry.add((d.id, parentId, spec.size.width, spec.size.height));
+      return LayoutNode(
+        id: d.id,
+        width: spec.size.width,
+        height: spec.size.height,
+        children: [for (final child in expansionDrafts.where((c) => c.parentRef == 'new:${d.id}')) ghost(child, d.id)],
+      );
+    }
+
     LayoutNode build(String id, String? parentId, _NodeSpec spec, {bool collapsed = false}) {
       _specs[id] = spec;
       geometry.add((id, parentId, spec.size.width, spec.size.height));
       var descendants = children[id == rootNodeId ? null : id] ?? const <MapNode>[];
       if (id != rootNodeId && descendants.isNotEmpty) {
         _expandable.add(id);
-        if (collapsed) {
+        if (collapsed && expansionDrafts.isEmpty) {
           _collapsed[id] = descendants.length;
           descendants = const [];
         }
@@ -193,6 +219,7 @@ class MindMapRenderCache {
                 ),
                 collapsed: node.collapsed,
               ),
+          for (final d in expansionDrafts.where((d) => d.parentRef == id)) ghost(d, id),
         ],
       );
     }

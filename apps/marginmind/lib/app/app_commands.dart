@@ -1,3 +1,4 @@
+import '../features/assistant/expansion_controller.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
@@ -208,6 +209,7 @@ abstract final class AppShortcuts {
 
 /// Shared by the native menu and the focused canvas.
 enum MindMapCommand {
+  expandIdeas,
   siblingAfter,
   siblingBefore,
   child,
@@ -240,6 +242,7 @@ class MindMapIntent extends Intent {
 }
 
 Map<SingleActivator, MindMapCommand> get mindMapShortcuts => {
+  const SingleActivator(LogicalKeyboardKey.tab, alt: true): MindMapCommand.expandIdeas,
   primaryShortcut(LogicalKeyboardKey.keyC): MindMapCommand.copy,
   primaryShortcut(LogicalKeyboardKey.keyX): MindMapCommand.cut,
   primaryShortcut(LogicalKeyboardKey.keyV): MindMapCommand.paste,
@@ -449,8 +452,12 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     final selected = workspaceState?.selectedCardId;
     // While a title is typed in place, commands that change the content
     // wait: they would land in the edit's undo step and be lost on Esc.
+    final expansion = inWorkspace ? ref.watch(expansionControllerProvider(workspaceId)) : null;
     final editable =
-        workspace != null && workspaceState?.editingCardId == null && workspaceState?.editingMarkId == null;
+        expansion == null &&
+        workspace != null &&
+        workspaceState?.editingCardId == null &&
+        workspaceState?.editingMarkId == null;
     final hasDocument =
         browserState?.visible != true &&
         workspace != null &&
@@ -858,6 +865,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
     ];
     final mapLabels = {
+      MindMapCommand.expandIdeas: l.mapIdeaMenu,
       MindMapCommand.siblingAfter: l.addSiblingAfter,
       MindMapCommand.siblingBefore: l.addSiblingBefore,
       MindMapCommand.child: l.addChildTopic,
@@ -880,6 +888,7 @@ class _AppMenusState extends ConsumerState<AppMenus> {
     // centering only apply to the map.
     // Relations and summaries are drawn on the map only.
     const mapOnly = {
+      MindMapCommand.expandIdeas,
       MindMapCommand.fold,
       MindMapCommand.fit,
       MindMapCommand.center,
@@ -892,13 +901,22 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       map.add(
         AppCommand(
           entry.value,
-          editable && _mapFocused && !_textFocused && !(inOutline && mapOnly.contains(entry.key))
+          editable &&
+                  _mapFocused &&
+                  !_textFocused &&
+                  !(inOutline && mapOnly.contains(entry.key)) &&
+                  (entry.key != MindMapCommand.expandIdeas ||
+                      (MMPlatformCapabilities.current.assistant &&
+                          workspaceState?.selectedCardId != null &&
+                          workspaceState!.selectedCardIds.length <= 1))
               ? () {
                   final focus = FocusManager.instance.primaryFocus?.context;
                   if (focus != null) Actions.maybeInvoke(focus, MindMapIntent(entry.key));
                 }
               : null,
-          shortcut: entry.key == MindMapCommand.fit && !_mapFocused
+          shortcut:
+              (entry.key == MindMapCommand.expandIdeas && defaultTargetPlatform != TargetPlatform.macOS) ||
+                  entry.key == MindMapCommand.fit && !_mapFocused
               ? null
               : mindMapShortcuts.entries.where((e) => e.value == entry.key).firstOrNull?.key,
         ),

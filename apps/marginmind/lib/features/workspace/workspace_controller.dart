@@ -437,6 +437,15 @@ class WorkspaceState {
 /// Content edits go through [StudySetEditor] and are persisted by the
 /// content repository; the UI re-renders from the repository stream.
 class WorkspaceController extends Notifier<WorkspaceState> {
+  /// In-memory preview lease. Reading and document navigation remain available.
+  bool expansionPreviewActive = false;
+  void Function()? onExpansionBlocked;
+  bool _blockExpansionEdit() {
+    if (!expansionPreviewActive) return false;
+    onExpansionBlocked?.call();
+    return true;
+  }
+
   WorkspaceController(this.studySetId);
 
   final String studySetId;
@@ -587,27 +596,42 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   /// Standalone edits are implicit single-step transactions.
-  Future<StudySetContent> _update(StudySetContent Function(StudySetContent) change, {bool undoable = true}) =>
-      _enqueue(() async {
-        StudySetContent? before;
-        final next = await _write((c) {
-          before = c;
-          return change(c);
-        });
-        if (undoable && before != null && !_sameEdits(before!, next)) {
-          if (_transactionDepth > 0) {
-            _transactionBefore ??= before;
-          } else {
-            _record(before!);
-          }
-          _syncHistory();
-        }
-        return next;
-      });
+  Future<StudySetContent> _update(
+    StudySetContent Function(StudySetContent) change, {
+    bool undoable = true,
+    bool expansion = false,
+  }) => _enqueue(() async {
+    StudySetContent? before;
+    final next = await _write((c) {
+      before = c;
+      final next = change(c);
+      if (!expansion &&
+          expansionPreviewActive &&
+          (assistantMapRevision(next, state.activeMapId) != assistantMapRevision(c, state.activeMapId) ||
+              !identical(next.relations, c.relations) ||
+              !identical(next.summaries, c.summaries))) {
+        onExpansionBlocked?.call();
+        return c;
+      }
+      return next;
+    });
+    if (undoable && before != null && !_sameEdits(before!, next)) {
+      if (_transactionDepth > 0) {
+        _transactionBefore ??= before;
+      } else {
+        _record(before!);
+      }
+      _syncHistory();
+    }
+    return next;
+  });
 
   /// Assistant adapters use the workspace writer so each proposal/save is one
   /// undo step and repository observers immediately update sidebar counts.
-  Future<StudySetContent> applyAssistantChange(StudySetContent Function(StudySetContent) change) async {
+  Future<StudySetContent> applyAssistantChange(
+    StudySetContent Function(StudySetContent) change, {
+    bool expansion = false,
+  }) async {
     if (_transactionDepth > 0 || _editing != null || _creating || _markEditing != null) {
       throw StateError('Finish the current edit first');
     }
@@ -616,7 +640,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         throw StateError('Finish the current edit first');
       }
       return change(content);
-    });
+    }, expansion: expansion);
   }
 
   Future<void> setCardBody(String id, String body, [TextFormat? format]) => _update(
@@ -646,6 +670,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   Future<UndoneNotice?> _travel(List<StudySetContent> from, List<StudySetContent> to, {required bool redo}) =>
       _enqueue(() async {
+        if (_blockExpansionEdit()) return null;
         if (_transactionDepth > 0 || _clipboardBusy || from.isEmpty) return null;
         final snapshot = from.last;
         StudySetContent? current;
@@ -714,6 +739,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   /// Switch only after queued writes; inline editors must finish first.
   Future<void> selectMap(String id) async {
+    if (_blockExpansionEdit()) return;
     if (_creating || _editing != null || _markEditing != null || _clipboardBusy) return;
     await _enqueue(() async {
       if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
@@ -956,7 +982,10 @@ class WorkspaceController extends Notifier<WorkspaceState> {
 
   void setSplitFraction(double value) => state = state.copyWith(splitFraction: value.clamp(0.1, 0.9));
 
-  void setMapView(MapViewMode view) => state = state.copyWith(mapView: view);
+  void setMapView(MapViewMode view) {
+    if (_blockExpansionEdit()) return;
+    state = state.copyWith(mapView: view);
+  }
 
   DocumentCapabilities get activeCapabilities =>
       (content.document(state.activeDocumentId ?? '') ??
@@ -2360,6 +2389,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Starts editing a card's title (a note's text) in place. Nothing is
   /// written until [finishEditing], so the whole edit is one undo step.
   void beginEditing(String cardId) {
+    if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || content.card(cardId) == null) return;
     // A research card shows its note: the note is edited in the details.
     if (content.card(cardId)!.kind == CardKind.research) return showDetails(cardId);
@@ -2438,6 +2468,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// Runs [create] (given the selection before it) in a transaction and opens
   /// the created card for editing. A null card aborts the transaction.
   Future<Card?> _createAndEdit(Future<Card?> Function(String? previous) create) async {
+    if (_blockExpansionEdit()) return null;
     if (_editing != null || _markEditing != null || _creating) return null;
     _creating = true;
     final previous = state.selectedCardId;
@@ -2710,6 +2741,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   void beginMarkEditing(String id) {
+    if (_blockExpansionEdit()) return;
     if (_editing != null || _markEditing != null || _creating || !_markExists(content, state.activeMapId, id)) return;
     _markEditing = _MarkEditSession(id, created: false);
     state = state.copyWith(selectRoot: true, selectedMarkId: id, editingMarkId: id, layout: _layoutShowingMap);

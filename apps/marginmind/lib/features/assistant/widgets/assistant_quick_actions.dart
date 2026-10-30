@@ -14,6 +14,8 @@ import '../assistant_entry.dart';
 import '../assistant_scope.dart';
 import '../assistant_settings.dart';
 import 'assistant_messages.dart';
+import 'expansion_widgets.dart';
+import '../expansion_controller.dart';
 import 'assistant_overlays.dart';
 import 'assistant_panel.dart' show ModelSetupCard;
 
@@ -283,7 +285,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
     final configured = ref.watch(assistantConfiguredProvider);
     final own = _conversationId != null && conversation.id == _conversationId;
     final changed = _conversationId != null && !own;
-    final busy = conversation.running || background != null || _sending;
+    final busy = conversation.running || background != null || _sending || ref.watch(expansionBusyProvider);
     final answer = own ? conversation.messages.where((m) => m.role == MessageRole.agent).lastOrNull : null;
     final question = answer == null
         ? null
@@ -382,6 +384,14 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
                               ),
                             ),
                           ] else ...[
+                            if (widget.origin == PanelOrigin.map &&
+                                widget.contexts.length <= 1 &&
+                                widget.insertionTarget?.parentId != null)
+                              ExpansionSection(
+                                studySetId: widget.studySetId,
+                                mapId: widget.insertionTarget!.mapId,
+                                targetId: widget.insertionTarget!.parentId!,
+                              ),
                             if (busy)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),

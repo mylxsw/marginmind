@@ -5,6 +5,22 @@ import 'package:mm_design/mm_design.dart';
 import 'harness.dart';
 
 void main() {
+  testWidgets('compact text field enforces optional length without a counter', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      harness(
+        Center(
+          child: SizedBox(width: 240, child: MMTextField(controller: controller, maxLength: 3)),
+        ),
+      ),
+    );
+    await tester.enterText(find.byType(TextField), 'abcde');
+    await tester.pump();
+    expect(controller.text, 'abc');
+    expect(find.text('3/3'), findsNothing);
+    expect(tester.getSize(find.byType(MMTextField)).height, MMSizes.field);
+  });
   testWidgets('checkbox and switch toggle; disabled ones do not', (tester) async {
     var checked = false;
     var on = true;
