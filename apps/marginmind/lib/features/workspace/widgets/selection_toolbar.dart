@@ -251,7 +251,8 @@ class _SelectionToolbarState extends ConsumerState<SelectionToolbar> {
         MMHud.show(context, context.l10n.copiedHud);
         controller.dismissPending();
       } else {
-        final notice = command == ReaderSelectionCommand.highlight
+        final notice =
+            command == ReaderSelectionCommand.highlight && !ref.read(workspaceProvider(widget.studySetId)).syncToMap
             ? await controller.highlightSource(pending.documentId, pending.selection, selectedColor)
             : await controller.excerptSource(pending.documentId, pending.selection, selectedColor);
         if (mounted) showNotice(context, notice, rootTitle: rootTitle);

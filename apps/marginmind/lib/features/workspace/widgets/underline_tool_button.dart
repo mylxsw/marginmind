@@ -77,7 +77,7 @@ class _UnderlineToolButtonState extends ConsumerState<UnderlineToolButton> {
             documentId,
             selection,
             keepPending: widget.selectionAction,
-            addToMap: !widget.selectionAction && state.syncToMap,
+            addToMap: state.syncToMap,
           );
         case PendingHighlight(:final annotationId):
           final annotation = controller.content.annotation(annotationId);

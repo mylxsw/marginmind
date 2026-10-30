@@ -995,6 +995,62 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 200));
   });
+  testWidgets('touch can tap or long-press near saved PDF marks at different zooms', (tester) async {
+    final controller = MMPdfViewController();
+    addTearDown(controller.dispose);
+    String? tapped;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MMPdfView(
+          filePath: 'touch-marks.pdf',
+          controller: controller,
+          useTouchSelectionHandles: true,
+          highlights: const [
+            MMPdfHighlight(id: 'older', page: 1, rects: [PageRect(30, 700, 90, 680)], color: Colors.yellow),
+            MMPdfHighlight(
+              id: 'newer',
+              page: 1,
+              rects: [PageRect(30, 670, 90, 650)],
+              color: Colors.transparent,
+              underline: Colors.blue,
+              lineStyle: AnnotationLineStyle.solid,
+            ),
+          ],
+          onHighlightTap: (id, _) => tapped = id,
+        ),
+      ),
+    );
+    for (var i = 0; i < 100 && !controller.isReady; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    final pdf = tester.widget<PdfViewer>(find.byType(PdfViewer)).controller!;
+    for (final zoom in [1.0, 1.6]) {
+      if (zoom != 1) {
+        pdf.value = pdf.value.clone()..scaleByDouble(zoom, zoom, 1, 1);
+        await tester.pumpAndSettle();
+      }
+      for (final (id, rect) in [
+        ('older', const PdfRect(30, 700, 90, 680)),
+        ('newer', const PdfRect(30, 670, 90, 650)),
+      ]) {
+        final bounds = pdf.calcRectForRectInsidePage(pageNumber: 1, rect: rect);
+        final near =
+            tester.getTopLeft(find.byType(MMPdfView)) + pdf.documentToLocal(bounds.centerRight) + const Offset(8, 0);
+        tapped = null;
+        await tester.tapAt(near);
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+        expect(tapped, id);
+        tapped = null;
+        await tester.longPressAt(near);
+        await tester.pumpAndSettle();
+        expect(tapped, id);
+      }
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 200));
+  });
   testWidgets('area tool reports a page rectangle, clamps to the page and keeps scrolling', (tester) async {
     final controller = MMPdfViewController();
     final areas = <MMPdfArea>[];

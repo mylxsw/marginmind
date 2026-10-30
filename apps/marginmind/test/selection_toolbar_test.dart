@@ -127,8 +127,8 @@ void main() {
       expect(find.byType(SelectionToolbar), findsNothing);
       expect(container.read(workspaceProvider('demo-1')).pending, isNull);
       final annotation = controller.content.annotations.last;
-      expect(controller.content.cardForAnnotation(annotation.id), isNull);
-      expect(controller.content.cards.length, before.cards.length);
+      expect(controller.content.cardForAnnotation(annotation.id), isNotNull);
+      expect(controller.content.cards.length, before.cards.length + 1);
       expect(annotation.colorIndex, color.index);
       expect(annotation.quote, selection.text);
       expect(container.read(workspaceProvider('demo-1')).color, color);
@@ -144,48 +144,54 @@ void main() {
     ReaderSelectionCommand.copy,
   ]) {
     for (final keyboard in [false, true]) {
-      if (command == ReaderSelectionCommand.excerpt && !keyboard) continue;
-      testWidgets('$command keyboard=$keyboard', (tester) async {
-        final container = await pumpApp(tester);
-        container.read(navigationProvider.notifier).openStudySet('demo-1');
-        await tester.pumpAndSettle();
-        final controller = container.read(workspaceProvider('demo-1').notifier);
-        final before = controller.content;
-        await controller.onSelectionCommitted('c1', selection);
-        await tester.pumpAndSettle();
-        if (keyboard) {
-          final shortcut =
-              readerSelectionShortcuts.entries.firstWhere((e) => e.value.command == command).key as SingleActivator;
-          final modifier = shortcut.meta ? LogicalKeyboardKey.metaLeft : LogicalKeyboardKey.controlLeft;
-          if (shortcut.meta || shortcut.control) await tester.sendKeyDownEvent(modifier);
-          await tester.sendKeyEvent(shortcut.trigger);
-          if (shortcut.meta || shortcut.control) await tester.sendKeyUpEvent(modifier);
-        } else {
-          await tester.tap(
-            find.descendant(
-              of: find.byType(SelectionToolbar),
-              matching: command == ReaderSelectionCommand.copy
-                  ? find.byIcon(MMIcons.copy)
-                  : find.byIcon(MMIcons.highlight),
-            ),
+      for (final sync in [false, true]) {
+        if (command == ReaderSelectionCommand.excerpt && !keyboard) continue;
+        testWidgets('$command keyboard=$keyboard sync=$sync', (tester) async {
+          final container = await pumpApp(tester);
+          container.read(navigationProvider.notifier).openStudySet('demo-1');
+          await tester.pumpAndSettle();
+          final controller = container.read(workspaceProvider('demo-1').notifier);
+          if (!sync) controller.toggleSyncToMap();
+          final before = controller.content;
+          await controller.onSelectionCommitted('c1', selection);
+          await tester.pumpAndSettle();
+          if (keyboard) {
+            final shortcut =
+                readerSelectionShortcuts.entries.firstWhere((e) => e.value.command == command).key as SingleActivator;
+            final modifier = shortcut.meta ? LogicalKeyboardKey.metaLeft : LogicalKeyboardKey.controlLeft;
+            if (shortcut.meta || shortcut.control) await tester.sendKeyDownEvent(modifier);
+            await tester.sendKeyEvent(shortcut.trigger);
+            if (shortcut.meta || shortcut.control) await tester.sendKeyUpEvent(modifier);
+          } else {
+            await tester.tap(
+              find.descendant(
+                of: find.byType(SelectionToolbar),
+                matching: command == ReaderSelectionCommand.copy
+                    ? find.byIcon(MMIcons.copy)
+                    : find.byIcon(MMIcons.highlight),
+              ),
+            );
+          }
+          await tester.pumpAndSettle();
+          expect(find.byType(SelectionToolbar), findsNothing);
+          expect(container.read(workspaceProvider('demo-1')).pending, isNull);
+          expect(
+            controller.content.annotations.length,
+            before.annotations.length + (command == ReaderSelectionCommand.copy ? 0 : 1),
           );
-        }
-        await tester.pumpAndSettle();
-        expect(find.byType(SelectionToolbar), findsNothing);
-        expect(container.read(workspaceProvider('demo-1')).pending, isNull);
-        expect(
-          controller.content.annotations.length,
-          before.annotations.length + (command == ReaderSelectionCommand.copy ? 0 : 1),
-        );
-        expect(
-          controller.content.cards.length,
-          before.cards.length + (command == ReaderSelectionCommand.excerpt ? 1 : 0),
-        );
-        if (command == ReaderSelectionCommand.copy) {
-          expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, selection.text);
-        }
-        await settleHud(tester);
-      });
+          expect(
+            controller.content.cards.length,
+            before.cards.length +
+                (command == ReaderSelectionCommand.excerpt || (command == ReaderSelectionCommand.highlight && sync)
+                    ? 1
+                    : 0),
+          );
+          if (command == ReaderSelectionCommand.copy) {
+            expect((await Clipboard.getData(Clipboard.kTextPlain))?.text, selection.text);
+          }
+          await settleHud(tester);
+        });
+      }
     }
   }
   for (final outcome in ['save', 'cancel', 'empty']) {

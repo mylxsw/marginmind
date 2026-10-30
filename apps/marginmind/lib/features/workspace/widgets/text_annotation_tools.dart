@@ -81,7 +81,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
             icon: MMIcons.highlight,
             tooltip: l.toolHighlight,
             compact: widget.compact,
-            selected: _applying == AnnotationTool.highlight,
+            selected: _applying == AnnotationTool.highlight || (annotation != null && tool == AnnotationTool.highlight),
             onPressed: widget.enabled && !_busy ? () => _select(AnnotationTool.highlight) : null,
           ),
           MMToolbarButton(
@@ -89,7 +89,7 @@ class _TextAnnotationToolsState extends ConsumerState<TextAnnotationTools> {
             icon: MMIcons.underline,
             tooltip: l.toolUnderline,
             compact: widget.compact,
-            selected: _applying == AnnotationTool.underline,
+            selected: _applying == AnnotationTool.underline || (annotation != null && tool == AnnotationTool.underline),
             onPressed: widget.enabled && !_busy ? () => _select(AnnotationTool.underline) : null,
           ),
         ],

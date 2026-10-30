@@ -457,7 +457,29 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     );
   }
 
-  Future<void> _tap(ChapterLayout layout, Offset point, int? page) async {
+  bool _editAnnotation(ChapterLayout layout, Offset point, int? page, {double tolerance = 0}) {
+    if (!session.ready || layout.isDisposed) return false;
+    final resolved = <String, List<TextAnchor>>{};
+    final lines = <(String, Rect)>[];
+    for (final a in workspace.content.annotationsOn(widget.document.id).reversed) {
+      if (!a.isText) continue;
+      final anchors = a.textAnchors.map(session.book!.resolve).toList();
+      if (anchors.any((a) => a == null)) continue;
+      resolved[a.id] = anchors.cast<TextAnchor>();
+      for (final anchor in resolved[a.id]!) {
+        lines.addAll(layout.boxes(anchor, page: page).map((box) => (a.id, box.rect)));
+      }
+    }
+    final id = hitAnnotation(point, lines, tolerance: tolerance / _interactionScale);
+    if (id == null) return false;
+    setState(() => _selection = []);
+    _base = null;
+    _gestureChapter = null;
+    workspace.tapHighlight(id, _bounds(resolved[id]!));
+    return true;
+  }
+
+  Future<void> _tap(ChapterLayout layout, Offset point, int? page, {double tolerance = 0}) async {
     if (!session.ready || layout.isDisposed) return;
     final state = ref.read(workspaceProvider(widget.studySetId));
     for (final hit in _vocabularyHits(layout, page)) {
@@ -467,17 +489,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         return;
       }
     }
-    for (final a in workspace.content.annotationsOn(widget.document.id).reversed) {
-      if (!a.isText) continue;
-      final anchors = a.textAnchors.map(session.book!.resolve).toList();
-      if (anchors.any((a) => a == null)) continue;
-      final boxes = [for (final anchor in anchors.cast<TextAnchor>()) ...layout.boxes(anchor, page: page)];
-      if (boxes.any((b) => b.rect.contains(point))) {
-        setState(() => _selection = []);
-        workspace.tapHighlight(a.id, _bounds(anchors.cast<TextAnchor>()));
-        return;
-      }
-    }
+    if (_editAnnotation(layout, point, page, tolerance: tolerance)) return;
     for (final link in layout.links) {
       if (!layout.boxes(link.anchor, page: page).any((b) => b.rect.contains(point))) continue;
       final uri = Uri.tryParse(link.target);
@@ -959,7 +971,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
     }
     void tap(TapUpDetails d) {
       _activate(layout, d.globalPosition, d.localPosition, page);
-      _tap(layout, d.localPosition, page);
+      _tap(layout, d.localPosition, page, tolerance: d.kind == PointerDeviceKind.touch ? 12 : 3);
     }
 
     void word(TapDownDetails d) {
@@ -1047,6 +1059,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                 ? null
                 : (d) {
                     _activate(layout, d.globalPosition, d.localPosition, page);
+                    if (_editAnnotation(layout, d.localPosition, page, tolerance: 12)) return;
                     _word(layout, d.localPosition, page, commit: false);
                     _base = _selection.firstOrNull;
                     _gestureChapter = layout.chapter.id;
@@ -1110,6 +1123,11 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                         state.selectedCardId == null
                             ? null
                             : workspace.content.card(state.selectedCardId!)?.annotationId,
+                        editing: switch (state.pending) {
+                          PendingHighlight(:final annotationId) => annotationId,
+                          _ => null,
+                        },
+                        editingColor: context.mmColors.accent,
                         sourceFlash: sourceFlash == null ? null : session.book!.resolve(sourceFlash),
                         sourceFlashColor: context.mmColors.vocabularyTint,
                       ),
@@ -1673,6 +1691,8 @@ class ReflowReaderPainter extends CustomPainter {
     this.selected, {
     this.sourceFlash,
     this.sourceFlashColor,
+    this.editing,
+    this.editingColor,
   });
   final ChapterLayout layout;
   final int? page;
@@ -1681,6 +1701,8 @@ class ReflowReaderPainter extends CustomPainter {
   final List<TextAnchor> selection;
   final TextAnchor? match;
   final String? flash, selected;
+  final String? editing;
+  final Color? editingColor;
   final TextAnchor? sourceFlash;
   final Color? sourceFlashColor;
   @override
@@ -1721,7 +1743,15 @@ class ReflowReaderPainter extends CustomPainter {
             ).paint(canvas, box.rect.size);
             canvas.restore();
           }
-          if (a.id == flash) {
+          if (a.id == editing) {
+            canvas.drawRRect(
+              RRect.fromRectAndRadius(box.rect.inflate(2), const Radius.circular(3)),
+              Paint()
+                ..color = editingColor ?? MMAnnotationColor.fromIndex(a.colorIndex).underline
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2,
+            );
+          } else if (a.id == flash) {
             canvas.drawRect(
               box.rect.inflate(MMSpacing.xxs),
               Paint()

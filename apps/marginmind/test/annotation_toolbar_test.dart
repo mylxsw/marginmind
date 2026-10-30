@@ -184,7 +184,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(color);
       await tester.pumpAndSettle();
-      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
       expect(find.byType(AnnotationLineStylePicker), findsOneWidget);
       expect(
         tester
@@ -199,7 +199,7 @@ void main() {
       await tester.tap(find.byTooltip('蓝色'));
       await tester.pumpAndSettle();
       expect(controller.content.annotation(id)?.colorIndex, MMAnnotationColor.blue.index);
-      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
       expect(container.read(provider).color, MMAnnotationColor.blue);
       await screenshot(tester, 'underline-palette-$appearance', target: palette);
       await toolbarWithPaletteScreenshot(tester, 'underline-settings-$appearance');
@@ -213,7 +213,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('highlight-custom-color-picker')), findsNothing);
-      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
       await tester.tap(more);
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const ValueKey('highlight-color-hex')), '#12A4B8');
@@ -228,7 +228,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
       expect(controller.content.annotations.length, before + 1);
 
       await tester.tap(highlight);
@@ -245,7 +245,7 @@ void main() {
       expect(controller.content.annotation(id)?.lineStyle, AnnotationLineStyle.wavy);
       controller.tapHighlight(id, selection.viewportRect!);
       await tester.pumpAndSettle();
-      expect(tester.widget<MMToolbarButton>(underline).selected, isFalse);
+      expect(tester.widget<MMToolbarButton>(underline).selected, isTrue);
       await settleHud(tester);
     });
   }

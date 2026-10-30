@@ -30,6 +30,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'excerpt_text.dart';
 import 'annotation_line.dart';
+import 'annotation_hit.dart';
 import 'cropped_document.dart';
 import 'crop_geometry.dart';
 import 'reading_geometry.dart';
@@ -1784,6 +1785,47 @@ class _MMPdfViewState extends State<MMPdfView> {
     ];
   }
 
+  bool _tapHighlight(MMPdfHighlight h) {
+    if (widget.ink != null || widget.cropEditorBuilder != null || widget.areaSelecting) return false;
+    _selectionEpoch++;
+    final bounds = h.rects.map((r) => _originalRect(h.page, r)).reduce((a, b) => a.expandToInclude(b));
+    widget.onHighlightTap?.call(
+      h.id,
+      Rect.fromPoints(_controller.documentToLocal(bounds.topLeft), _controller.documentToLocal(bounds.bottomRight)),
+    );
+    return true;
+  }
+
+  bool _tapNearbyHighlight(Offset point) {
+    if (widget.onHighlightTap == null ||
+        widget.ink != null ||
+        widget.cropEditorBuilder != null ||
+        widget.areaSelecting) {
+      return false;
+    }
+    final lines = <(String, Rect)>[];
+    final candidates = <String, MMPdfHighlight>{};
+    for (final page in _controller.layout.pageLayouts.asMap().entries) {
+      if (!page.value.inflate(20 / _controller.currentZoom).contains(point)) continue;
+      for (final h in (_highlightsByPage[page.key + 1] ?? <MMPdfHighlight>[]).reversed) {
+        candidates[h.id] = h;
+        for (final r in h.rects) {
+          final rect = _originalRect(h.page, r);
+          lines.add((
+            h.id,
+            Rect.fromPoints(_controller.documentToLocal(rect.topLeft), _controller.documentToLocal(rect.bottomRight)),
+          ));
+        }
+      }
+    }
+    final id = hitAnnotation(
+      _controller.documentToLocal(point),
+      lines,
+      tolerance: _textPointerKind == PointerDeviceKind.touch ? 12 : 3,
+    );
+    return id != null && _tapHighlight(candidates[id]!);
+  }
+
   List<Widget> _highlightOverlays(BuildContext context, Rect pageRect, PdfPage page) {
     final scaled = pageRect.size;
     final highlights = _highlightsByPage[page.pageNumber];
@@ -1798,19 +1840,6 @@ class _MMPdfViewState extends State<MMPdfView> {
       _overlayCache[page.pageNumber] = cached;
       return cached.$4;
     }
-    bool tap(MMPdfHighlight h) {
-      // With the pen out, a click on a highlight is drawing.
-      if (widget.ink != null || widget.cropEditorBuilder != null) return false;
-      // Cancel a pending text-selection commit from this click.
-      _selectionEpoch++;
-      final bounds = h.rects.map((r) => _originalRect(h.page, r)).reduce((a, b) => a.expandToInclude(b));
-      widget.onHighlightTap?.call(
-        h.id,
-        Rect.fromPoints(_controller.documentToLocal(bounds.topLeft), _controller.documentToLocal(bounds.bottomRight)),
-      );
-      return true;
-    }
-
     final labels = <Rect>[];
     Widget glossLabel(MMPdfHighlight h) {
       final rect = _overlayRect(page, scaled, h.rects.first);
@@ -1858,7 +1887,8 @@ class _MMPdfViewState extends State<MMPdfView> {
               return Positioned.fromRect(
                 rect: rect.inflate(1),
                 child: PdfOverlayInteractionRegion(
-                  onTap: (_) => tap(h),
+                  onTap: (_) => _tapHighlight(h),
+                  onLongPress: (_) => _tapHighlight(h),
                   child: IgnorePointer(
                     child: h.lineStyle != null || h.dashed
                         ? CustomPaint(
@@ -1890,7 +1920,8 @@ class _MMPdfViewState extends State<MMPdfView> {
                 width: size,
                 height: size,
                 child: PdfOverlayInteractionRegion(
-                  onTap: (_) => tap(h),
+                  onTap: (_) => _tapHighlight(h),
+                  onLongPress: (_) => _tapHighlight(h),
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(color: h.marker, shape: BoxShape.circle),
@@ -2537,17 +2568,21 @@ class _MMPdfViewState extends State<MMPdfView> {
             pageOverlaysBuilder: _pageOverlays,
             pageBackgroundPaintCallbacks: [_beginPagePaint],
             pagePaintCallbacks: [_paintMatches, _endPagePaint],
-            onGeneralTap: widget.useTouchSelectionHandles
-                ? (context, controller, details) {
-                    if (details.type != PdfViewerGeneralTapType.longPress ||
-                        details.tapOn != PdfViewerPart.nonSelectedText) {
-                      return false;
-                    }
-                    final epoch = ++_pencilEpoch;
-                    unawaited(_preciseSelection(details.documentPosition, details.documentPosition, epoch, word: true));
-                    return true;
-                  }
-                : null,
+            onGeneralTap: (context, controller, details) {
+              if ((details.type == PdfViewerGeneralTapType.tap || details.type == PdfViewerGeneralTapType.longPress) &&
+                  details.tapOn != PdfViewerPart.selectedText &&
+                  _tapNearbyHighlight(details.documentPosition)) {
+                return true;
+              }
+              if (!widget.useTouchSelectionHandles ||
+                  details.type != PdfViewerGeneralTapType.longPress ||
+                  details.tapOn != PdfViewerPart.nonSelectedText) {
+                return false;
+              }
+              final epoch = ++_pencilEpoch;
+              unawaited(_preciseSelection(details.documentPosition, details.documentPosition, epoch, word: true));
+              return true;
+            },
             textSelectionParams: PdfTextSelectionParams(
               // Tool overlays claim mouse/Pencil drags. Keep pdfrx's touch
               // long-press selection and handles available underneath them.

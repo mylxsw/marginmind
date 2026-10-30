@@ -1089,6 +1089,9 @@ class WorkspaceController extends Notifier<WorkspaceState> {
       final selection = pending.selection;
       final color = state.color;
       final style = state.underlineStyle;
+      final sync = state.syncToMap;
+      final parent = excerptTargetId;
+      String? cardId;
       await _update((c) {
         _validateTextSelection(c, pending.documentId, selection);
         final (next, annotation) = tool == AnnotationTool.underline
@@ -1110,8 +1113,12 @@ class WorkspaceController extends Notifier<WorkspaceState> {
                 colorIndex: color.index,
               );
         id = annotation.id;
-        return next;
+        if (!sync) return next;
+        final (attached, card) = _editor.attachCard(next, id, parentId: parent);
+        cardId = card.id;
+        return _expandAncestors(attached, card.id);
       });
+      if (cardId != null) _flash(cardId: cardId!);
       if (identical(state.pending, pending)) {
         state = state.copyWith(
           pending: PendingHighlight.fromSelection(id, selection.viewportRect ?? Rect.zero, pending.toolbarIdentity),

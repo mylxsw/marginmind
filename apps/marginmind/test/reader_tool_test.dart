@@ -97,6 +97,40 @@ void main() {
     expect(container.read(provider).pending, isNull);
   });
 
+  for (final sync in [true, false]) {
+    for (final tool in [AnnotationTool.highlight, AnnotationTool.underline]) {
+      test('selection $tool respects sync=$sync and undo keeps mark/card atomic', () async {
+        final container = ProviderContainer(overrides: await testOverrides());
+        addTearDown(container.dispose);
+        final provider = workspaceProvider('demo-1');
+        container.listen(provider, (_, _) {});
+        await container.read(contentProvider('demo-1').future);
+        final controller = container.read(provider.notifier);
+        if (!sync) controller.toggleSyncToMap();
+        final before = controller.content;
+        await controller.onSelectionCommitted('c1', selection);
+        await controller.applyPendingTextAnnotation(tool);
+        final annotation = controller.content.annotations.last;
+        expect(controller.content.annotations.length, before.annotations.length + 1);
+        final card = controller.content.cardForAnnotation(annotation.id);
+        expect(card != null, sync);
+        if (sync) expect(controller.content.node(card!.id, mapId: container.read(provider).activeMapId), isNotNull);
+        // Editing the saved mark never creates another card or annotation.
+        await controller.applyPendingTextAnnotation(
+          tool == AnnotationTool.highlight ? AnnotationTool.underline : AnnotationTool.highlight,
+        );
+        expect(controller.content.annotations.length, before.annotations.length + 1);
+        expect(controller.content.cards.length, before.cards.length + (sync ? 1 : 0));
+        await controller.undo(); // restyle
+        await controller.undo(); // create mark and optional map card
+        expect(controller.content.annotations.length, before.annotations.length);
+        expect(controller.content.cards.length, before.cards.length);
+        await controller.redo();
+        expect(controller.content.cardForAnnotation(annotation.id) != null, sync);
+      });
+    }
+  }
+
   testWidgets('shortcut and toolbar choose the same tool and selection behavior', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).openStudySet('demo-1');
