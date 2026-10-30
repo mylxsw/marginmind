@@ -200,6 +200,7 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
 final class BrowserPdfPrintJob: NSObject {
   let target: URL
   private let operation: NSPrintOperation
+  private let printSession: PMPrintSession
   private let isCurrent: () -> Bool
   private let didFinish: () -> Void
   private var completion: FlutterResult?
@@ -218,12 +219,15 @@ final class BrowserPdfPrintJob: NSObject {
     info.horizontalPagination = .fit; info.verticalPagination = .automatic
     info.jobDisposition = .save
     info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = target
-    operation = web.printOperation(with: info)
+    let operation = web.printOperation(with: info)
+    self.operation = operation
+    printSession = unsafeBitCast(operation.printInfo.pmPrintSession(), to: PMPrintSession.self)
     super.init()
     operation.view?.frame = NSRect(origin: .zero, size: info.paperSize)
     operation.showsPrintPanel = false
     operation.showsProgressPanel = false
-    operation.canSpawnSeparateThread = false
+    // runModal still blocks its caller when thread spawning is disabled.
+    operation.canSpawnSeparateThread = true
   }
 
   func start(in window: NSWindow) {
@@ -238,17 +242,24 @@ final class BrowserPdfPrintJob: NSObject {
   }
 
   func cancel() {
-    let session = unsafeBitCast(operation.printInfo.pmPrintSession(), to: PMPrintSession.self)
-    _ = PMSessionSetError(session, OSStatus(kPMCancel))
+    _ = PMSessionSetError(printSession, OSStatus(kPMCancel))
     finish(FlutterError(code: "print_cancelled", message: nil, details: nil))
   }
 
   @objc private func didRun(_ operation: NSPrintOperation, success: Bool, contextInfo: UnsafeMutableRawPointer?) {
+    // AppKit can call the delegate on its printing thread. Flutter replies,
+    // cancellation state and tab ownership belong to the platform thread.
+    DispatchQueue.main.async {
+      self.complete(success: success)
+      if let contextInfo = contextInfo { Unmanaged<BrowserPdfPrintJob>.fromOpaque(contextInfo).release() }
+    }
+  }
+
+  private func complete(success: Bool) {
     defer {
       didFinish()
       // A cancelled operation may have produced its file after cancel().
       try? FileManager.default.removeItem(at: target)
-      if let contextInfo = contextInfo { Unmanaged<BrowserPdfPrintJob>.fromOpaque(contextInfo).release() }
     }
     guard completion != nil else { return }
     guard success, isCurrent(),
