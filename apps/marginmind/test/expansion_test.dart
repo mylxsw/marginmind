@@ -8,9 +8,13 @@ import 'package:flutter/gestures.dart' show kSecondaryMouseButton, PointerDevice
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:marginmind/features/assistant/assistant_settings.dart';
+import 'package:marginmind/features/assistant/assistant_controller.dart';
 import 'package:marginmind/features/assistant/expansion_context.dart';
 import 'package:marginmind/shared/l10n.dart';
-import 'package:marginmind/features/assistant/assistant_scope.dart' show nodeContext;
+import 'package:marginmind/features/assistant/assistant_scope.dart' show nodeContext, MemoryConversationArchive;
 import 'package:marginmind/features/assistant/widgets/assistant_quick_actions.dart';
 import 'package:marginmind/features/assistant/expansion_controller.dart';
 import 'package:marginmind/features/assistant/assistant_reader.dart';
@@ -95,14 +99,16 @@ class BatchModels {
   Future<IdeaExpander> create() async => BatchExpander(this);
 }
 
-Future<void> capture(WidgetTester tester, String name, {Finder? region}) async {
+Future<void> capture(WidgetTester tester, String name, {Finder? region, Rect? clip}) async {
   final output = Platform.environment['MM_SCREENSHOTS'];
   if (output == null) return;
   Directory(output).createSync(recursive: true);
-  final pane = tester.renderObject<RenderBox>(region ?? find.byType(MapPane));
+  final pane = tester.renderObject<RenderBox>(
+    region ?? (clip == null ? find.byType(MapPane) : find.byKey(const ValueKey('quick-actions-layer'))),
+  );
   final image = await tester.runAsync(
     () => (tester.binding.renderViews.first.debugLayer! as OffsetLayer).toImage(
-      pane.localToGlobal(Offset.zero) & pane.size,
+      clip ?? pane.localToGlobal(Offset.zero) & pane.size,
       pixelRatio: 2,
     ),
   );
@@ -342,23 +348,161 @@ void main() {
       final app = await openAssistantApp(
         tester,
         size: language == 'en' ? const Size(1100, 760) : const Size(1400, 1000),
-        prefs: {'settings.language': language, 'settings.appearance': appearance},
+        prefs: {'settings.language': language, 'settings.appearance': appearance, 'expansion.demo-1.depth': 2},
       );
       app.workspace.selectCard('c3');
       await focusMap(tester);
       await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('expansion-start')), findsOneWidget);
+      // Real glyph extents are meaningful only when the evidence fonts are loaded;
+      // the default widget-test Ahem font intentionally uses square glyphs.
+      if (language == 'en' && Platform.environment['MM_SCREENSHOTS'] != null) {
+        final label = find.text('Counterpoints');
+        expect(tester.renderObject<RenderParagraph>(label).didExceedMaxLines, isFalse);
+      }
       expect(tester.takeException(), isNull);
       await capture(
         tester,
         'expansion-options-$language-$appearance',
-        region: find.byKey(const ValueKey('assistant-quick-actions')),
+        clip: tester
+            .getRect(find.byKey(const ValueKey('assistant-quick-actions')))
+            .expandToInclude(tester.getRect(find.byKey(const ValueKey('expansion-settings'))))
+            .inflate(8),
       );
+      await tester.tap(find.byKey(const ValueKey('expansion-close')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('quick-close')));
       await tester.pumpAndSettle();
     }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
   }
+  testWidgets('side settings hover, keyboard dismissal and parent actions remain usable', (tester) async {
+    final app = await openAssistantApp(tester);
+    app.workspace.selectCard('c3');
+    await focusMap(tester);
+    await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ExpansionSection), findsNothing);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('quick-expand-ideas'))));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    final menu = tester.getRect(find.byKey(const ValueKey('assistant-quick-actions')));
+    final settings = tester.getRect(find.byKey(const ValueKey('expansion-settings')));
+    expect(settings.left - menu.right, closeTo(8, .01));
+    expect(settings.top, menu.top);
+    expect(settings.right, lessThanOrEqualTo(tester.view.physicalSize.width));
+    await mouse.moveTo(Offset.zero);
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('expansion-settings')), matching: find.byType(TextField)),
+      '补充一些具体原因',
+    );
+    await key(tester, LogicalKeyboardKey.arrowLeft, alt: true);
+    expect(find.byType(ExpansionSection), findsOneWidget, reason: 'Option+Left keeps its native text editing meaning');
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(find.byType(ExpansionSection), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-quick-actions')), findsOneWidget);
+    await key(tester, LogicalKeyboardKey.arrowRight);
+    expect(find.byType(ExpansionSection), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('expansion-close')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-action-explain')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ExpansionSection), findsNothing);
+    expect(find.byKey(const ValueKey('assistant-quick-actions')), findsOneWidget);
+    expect(app.container.read(expansionControllerProvider('demo-1')), isNull);
+    await tester.tap(find.byKey(const ValueKey('quick-close')));
+    await tester.pumpAndSettle();
+    await mouse.removePointer();
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  testWidgets('narrow window replaces menu, preserves settings and restores parent on Back', (tester) async {
+    tester.view.physicalSize = const Size(600, 760);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...await testOverrides(),
+          assistantConfiguredProvider.overrideWith((ref) async => true),
+          assistantDependenciesProvider.overrideWithValue(
+            AssistantDependencies(
+              studySetId: 'demo-1',
+              model: unconfiguredAssistantModel,
+              storage: MemoryConversationArchive(),
+              runFactory: (_, _, _) async => throw UnimplementedError(),
+              executor: RecordingExecutor(),
+              notes: MemoryNoteSaver(),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: MMTheme.dark(),
+          locale: const Locale('zh'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const Scaffold(body: Text('popup-anchor')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final popup = showAssistantQuickActions(
+      tester.element(find.text('popup-anchor')),
+      studySetId: 'demo-1',
+      passage: nodeContext(mapId: MindMap.defaultId, nodeId: 'c3', title: 'Topic'),
+      insertionTarget: (mapId: MindMap.defaultId, parentId: 'c3'),
+      origin: PanelOrigin.map,
+      toolbar: const Rect.fromLTWH(530, 80, 40, 30),
+      selection: const Rect.fromLTWH(530, 80, 40, 30),
+      viewport: const Rect.fromLTWH(0, 0, 600, 760),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('quick-input')), '保留这段输入');
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('quick-close')).hitTestable(), findsNothing);
+    expect(find.byKey(const ValueKey('expansion-back')).hitTestable(), findsOneWidget);
+    final settings = tester.getRect(find.byKey(const ValueKey('expansion-settings')));
+    expect(settings.left, greaterThanOrEqualTo(0));
+    expect(settings.right, lessThanOrEqualTo(600));
+    await capture(tester, 'expansion-options-narrow', clip: settings.inflate(6));
+    await tester.tap(find.text('2 层'));
+    await tester.enterText(
+      find.descendant(of: find.byKey(const ValueKey('expansion-settings')), matching: find.byType(TextField)),
+      '更具体一些',
+    );
+    tester.view.physicalSize = const Size(800, 760);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('quick-close')).hitTestable(), findsOneWidget);
+    expect(tester.widget<MMSegmentedControl<int>>(find.byKey(const ValueKey('expansion-depth'))).value, 2);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: find.byKey(const ValueKey('expansion-settings')), matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '更具体一些',
+    );
+    tester.view.physicalSize = const Size(600, 760);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('expansion-back')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byKey(const ValueKey('quick-input'))).controller!.text, '保留这段输入');
+    await tester.tap(find.byKey(const ValueKey('quick-close')));
+    await tester.pumpAndSettle();
+    await popup;
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('selected two levels survive model completion, preview, keep and undo', (tester) async {
     final client = ScriptClient([
       answer('{"ref":"a","parent":"T1","title":"主动回忆"}'),
@@ -376,6 +520,8 @@ void main() {
     app.workspace.selectCard('c3');
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('2 层'));
     await tester.pumpAndSettle();
@@ -458,14 +604,16 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
     expect(find.byType(ExpansionSection), findsOneWidget);
     final options = find.byType(ExpansionOptions);
     expect(find.descendant(of: options, matching: find.byType(MMSegmentedControl<int>)), findsNWidgets(2));
     expect(find.descendant(of: options, matching: find.byType(ChoiceChip)), findsNothing);
-    expect(tester.getTopLeft(find.text('层级')).dy, tester.getTopLeft(find.text('数量')).dy);
+    expect(tester.getTopLeft(find.text('层级')).dx, tester.getTopLeft(find.text('数量')).dx);
     expect(
-      tester.getTopLeft(find.byKey(const ValueKey('expansion-depth'))).dy,
-      tester.getTopLeft(find.byKey(const ValueKey('expansion-amount'))).dy,
+      tester.getTopLeft(find.byKey(const ValueKey('expansion-depth'))).dx,
+      tester.getTopLeft(find.byKey(const ValueKey('expansion-amount'))).dx,
     );
     final chip = find.byKey(const ValueKey('expansion-direction-auto'));
     final colors = tester.element(chip).mmColors;
@@ -893,7 +1041,9 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('分别扩展 2 个主题'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
+    expect(find.text('分别扩展 2 个主题'), findsNWidgets(2));
     await capture(tester, 'multi-options');
     await tester.tap(find.text('归纳上级主题'));
     await tester.pumpAndSettle();
@@ -904,6 +1054,8 @@ void main() {
     app.workspace.selectCards(['c3', 'c6']);
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
     await tester.pumpAndSettle();
     final group = tester.widget<MMButton>(find.widgetWithText(MMButton, '归纳上级主题'));
     expect(group.onPressed, isNull);
@@ -969,7 +1121,9 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
-    expect(find.text('扩展整张脑图…'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
+    expect(find.text('扩展整张脑图…'), findsNWidgets(2));
     await capture(tester, 'root-options');
     await tester.tap(find.byKey(const ValueKey('expansion-start')));
     await tester.pumpAndSettle();
@@ -978,6 +1132,8 @@ void main() {
     c.discard();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('只加新分支'));
     await tester.pumpAndSettle();
@@ -990,6 +1146,8 @@ void main() {
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('expansion-start')));
     await tester.pumpAndSettle();
     expect(app.container.read(p)!.request.targetIds.toSet(), {'c3', 'c4'});
@@ -998,6 +1156,8 @@ void main() {
     app.workspace.selectCards(['c3', 'c4']);
     await focusMap(tester);
     await tester.tap(find.byKey(const ValueKey('node-bar-assistant')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('补全同级'));
     await tester.pumpAndSettle();
@@ -1160,6 +1320,8 @@ void main() {
         selection: const Rect.fromLTWH(1000, 100, 40, 30),
         viewport: const Rect.fromLTWH(0, 0, 1400, 900),
       );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('quick-expand-ideas')));
       await tester.pumpAndSettle();
       expect(tester.widget<ExpansionSection>(find.byType(ExpansionSection)).targetId, parent ?? MindMap.defaultId);
       await tester.tap(find.byKey(const ValueKey('quick-close')));

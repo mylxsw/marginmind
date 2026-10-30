@@ -7148,6 +7148,12 @@ abstract class AppLocalizations {
   /// **'More'**
   String get mapIdeaMore;
 
+  /// No description provided for @mapIdeaGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get mapIdeaGenerate;
+
   /// No description provided for @mapIdeaStart.
   ///
   /// In en, this message translates to:

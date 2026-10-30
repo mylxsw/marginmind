@@ -47,108 +47,108 @@ class ExpansionOptions extends StatelessWidget {
       ),
     );
     final c = context.mmColors;
-    Widget option(String label, Widget control) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    final directionColumns = l.localeName == 'zh' ? 3 : 2;
+    TableRow row(String label, Widget control, {bool top = false, bool last = false}) => TableRow(
       children: [
-        Text(label, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-        const SizedBox(height: MMSpacing.xs),
-        control,
+        TableCell(
+          verticalAlignment: top ? TableCellVerticalAlignment.top : TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.only(right: 12, top: top ? 7 : 0, bottom: last ? 0 : 18),
+            child: Text(label, softWrap: false, style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.only(bottom: last ? 0 : 18),
+          child: control,
+        ),
       ],
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Table(
+      columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
-        Wrap(
-          spacing: MMSpacing.xs,
-          runSpacing: MMSpacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: MMSpacing.xs),
-              child: Text(l.mapIdeaDirection, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-            ),
-            for (final d in ExpansionDirection.values)
-              Semantics(
-                inMutuallyExclusiveGroup: true,
-                checked: d == request.direction,
-                child: MMInteractive(
-                  key: ValueKey('expansion-direction-${d.name}'),
-                  semanticLabel: expansionDirectionLabel(l, d),
-                  selected: d == request.direction,
-                  onTap: () => change(direction: d),
-                  builder: (context, state) => Container(
-                    height: 24,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: d == request.direction ? c.research : (state.hovered ? c.hover : Colors.transparent),
-                      border: d == request.direction ? null : Border.all(color: c.line, width: .5),
-                      borderRadius: BorderRadius.circular(MMRadii.row),
-                    ),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Text(
-                        expansionDirectionLabel(l, d),
-                        style: context.mmText.footnote.copyWith(
-                          color: d == request.direction ? c.onResearch : c.secondaryLabel,
-                        ),
-                      ),
-                    ),
-                  ),
+        row(
+          l.mapIdeaDirection,
+          Column(
+            children: [
+              for (var start = 0; start < ExpansionDirection.values.length; start += directionColumns) ...[
+                if (start > 0) const SizedBox(height: 6),
+                Row(
+                  children: [
+                    for (var i = start; i < start + directionColumns; i++) ...[
+                      if (i > start) const SizedBox(width: 6),
+                      Expanded(child: _direction(context, ExpansionDirection.values[i], change)),
+                    ],
+                  ],
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: MMSpacing.m),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final depth = option(
-              l.mapIdeaDepth,
-              MMSegmentedControl<int>(
-                expand: true,
-                key: const ValueKey('expansion-depth'),
-                value: request.depth,
-                onChanged: (n) => change(depth: n),
-                segments: [for (var n = 1; n <= 3; n++) MMSegment(value: n, label: l.mapIdeaDepthLevels(n))],
-              ),
-            );
-            final amount = option(
-              l.mapIdeaAmount,
-              MMSegmentedControl<int>(
-                expand: true,
-                key: const ValueKey('expansion-amount'),
-                value: request.breadth,
-                onChanged: (n) => change(breadth: n),
-                segments: [
-                  for (final (n, label) in [
-                    (3, l.mapIdeaAmountFew),
-                    (5, l.mapIdeaAmountSome),
-                    (8, l.mapIdeaAmountMany),
-                  ])
-                    MMSegment(value: n, label: label),
-                ],
-              ),
-            );
-            // English labels need more room than the short Chinese labels.
-            if (constraints.maxWidth < 300 || l.localeName != 'zh') {
-              return Column(
-                children: [
-                  depth,
-                  const SizedBox(height: MMSpacing.s),
-                  amount,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: depth),
-                const SizedBox(width: MMSpacing.m),
-                Expanded(child: amount),
               ],
-            );
-          },
+            ],
+          ),
+          top: true,
+        ),
+        row(
+          l.mapIdeaDepth,
+          MMSegmentedControl<int>(
+            expand: true,
+            key: const ValueKey('expansion-depth'),
+            value: request.depth,
+            onChanged: (n) => change(depth: n),
+            segments: [for (var n = 1; n <= 3; n++) MMSegment(value: n, label: l.mapIdeaDepthLevels(n))],
+          ),
+        ),
+        row(
+          l.mapIdeaAmount,
+          MMSegmentedControl<int>(
+            expand: true,
+            key: const ValueKey('expansion-amount'),
+            value: request.breadth,
+            onChanged: (n) => change(breadth: n),
+            segments: [
+              for (final (n, label) in [(3, l.mapIdeaAmountFew), (5, l.mapIdeaAmountSome), (8, l.mapIdeaAmountMany)])
+                MMSegment(value: n, label: label),
+            ],
+          ),
+          last: true,
         ),
       ],
+    );
+  }
+
+  Widget _direction(
+    BuildContext context,
+    ExpansionDirection direction,
+    void Function({ExpansionDirection? direction, int? depth, int? breadth}) change,
+  ) {
+    final c = context.mmColors;
+    final selected = direction == request.direction;
+    final label = expansionDirectionLabel(context.l10n, direction);
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      checked: selected,
+      child: MMInteractive(
+        key: ValueKey('expansion-direction-${direction.name}'),
+        semanticLabel: label,
+        tooltip: label,
+        selected: selected,
+        onTap: () => change(direction: direction),
+        builder: (context, state) => Container(
+          height: context.mmTouch ? MMSizes.touchTarget : 30,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: selected ? c.research : (state.hovered ? c.hover : Colors.transparent),
+            border: selected ? null : Border.all(color: c.line, width: .5),
+            borderRadius: BorderRadius.circular(MMRadii.row),
+            boxShadow: state.focused ? [BoxShadow(color: c.research.withValues(alpha: .3), spreadRadius: 2)] : null,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.mmText.footnote.copyWith(color: selected ? c.onResearch : c.secondaryLabel),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -160,7 +160,11 @@ class ExpansionSection extends ConsumerStatefulWidget {
     required this.mapId,
     required this.targetId,
     this.targetIds,
+    required this.onClose,
+    this.compact = false,
   });
+  final VoidCallback onClose;
+  final bool compact;
   final String studySetId, mapId, targetId;
   final List<String>? targetIds;
   @override
@@ -170,7 +174,7 @@ class ExpansionSection extends ConsumerStatefulWidget {
 class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
   late ExpansionRequest _request;
   String _hint = '';
-  bool _grounded = true;
+  bool _grounded = true, _hintFocused = false;
   @override
   void initState() {
     super.initState();
@@ -236,131 +240,174 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
         : (widget.targetIds?.length ?? 1) > 1
         ? l.mapIdeaExpandEach(widget.targetIds!.length)
         : l.mapIdeaExpand;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: MMSpacing.s),
-      child: Container(
-        padding: const EdgeInsets.all(MMSpacing.m),
-        decoration: BoxDecoration(
-          color: c.fill,
-          border: Border.all(color: c.separator, width: .5),
-          borderRadius: BorderRadius.circular(MMRadii.ideaSection),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): widget.onClose},
+      child: FocusScope(
+        autofocus: true,
+        child: Material(
+          key: const ValueKey('expansion-settings'),
+          color: c.glassOpaque,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: c.separator, width: .5),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  widget.targetId == widget.mapId ? MMIcons.network : MMIcons.expandIdeas,
-                  size: 15,
-                  color: c.research,
-                ),
-                const SizedBox(width: MMSpacing.s),
-                Expanded(child: Text(title, style: context.mmText.headline)),
-              ],
-            ),
-            const SizedBox(height: MMSpacing.m),
-            ExcludeFocus(
-              excluding: busy,
-              child: IgnorePointer(
-                ignoring: busy,
-                child: AnimatedOpacity(
-                  opacity: busy ? .45 : 1,
-                  duration: MMMotion.quick,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ExpansionOptions(request: _request, onChanged: (r) => setState(() => _request = r)),
-                      const SizedBox(height: MMSpacing.m),
-                      MMTextField(
-                        maxLength: 200,
-                        placeholder: l.mapIdeaHint,
-                        semanticLabel: l.mapIdeaHint,
-                        onChanged: (v) => _hint = v,
-                        onSubmitted: (_) => _start(),
+                Row(
+                  children: [
+                    if (widget.compact)
+                      MMIconButton(
+                        key: const ValueKey('expansion-back'),
+                        icon: MMIcons.chevronLeft,
+                        tooltip: l.back,
+                        onPressed: widget.onClose,
+                        size: 24,
+                      )
+                    else
+                      Icon(
+                        widget.targetId == widget.mapId ? MMIcons.network : MMIcons.expandIdeas,
+                        size: 16,
+                        color: c.research,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: MMSpacing.m),
-            Row(
-              children: [
-                MMSwitch(
-                  value: _grounded,
-                  semanticLabel: l.mapIdeaGrounded,
-                  color: c.research,
-                  onChanged: busy ? null : (v) => setState(() => _grounded = v),
-                ),
-                const SizedBox(width: MMSpacing.xs),
-                Expanded(
-                  child: Text(l.mapIdeaGrounded, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                ),
-                MMInteractive(
-                  key: const ValueKey('expansion-start'),
-                  onTap: busy ? null : () => _start(),
-                  autofocus: true,
-                  semanticLabel: title,
-                  builder: (context, state) => Opacity(
-                    opacity: state.enabled ? 1 : .45,
-                    child: Container(
-                      height: MMInput.touchInputOf(context) ? MMSizes.touchTarget : MMSizes.ideaPrimaryButton,
-                      padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
-                      decoration: BoxDecoration(
-                        color: Color.alphaBlend(
-                          state.pressed ? c.pressed : (state.hovered ? c.hover : Colors.transparent),
-                          c.research,
-                        ),
-                        borderRadius: BorderRadius.circular(MMRadii.row),
-                        boxShadow: state.focused
-                            ? [BoxShadow(color: c.research.withValues(alpha: .25), spreadRadius: 2)]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(l.mapIdeaExpand, style: context.mmText.headline.copyWith(color: c.onResearch)),
-                          const SizedBox(width: MMSpacing.m),
-                          Text(
-                            '⌥⇥',
-                            style: context.mmText.footnote.copyWith(color: c.onResearch.withValues(alpha: .7)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (widget.targetId == widget.mapId)
-              MMButton(
-                label: l.mapIdeaBranchesOnly,
-                variant: MMButtonVariant.plain,
-                onPressed: busy ? null : () => _start(branchesOnly: true),
-              ),
-            if ((widget.targetIds?.length ?? 1) > 1) ...[
-              const SizedBox(height: MMSpacing.s),
-              Row(
-                children: [
-                  for (final (scope, label) in [
-                    (ExpansionScope.group, l.mapIdeaGroup),
-                    (ExpansionScope.siblings, l.mapIdeaFillSiblings),
-                  ])
+                    const SizedBox(width: MMSpacing.s),
                     Expanded(
-                      child: Tooltip(
-                        message: _commonParent == null ? l.mapEditDifferentParents : '',
-                        child: MMButton(
-                          label: label,
-                          variant: MMButtonVariant.plain,
-                          onPressed: _commonParent == null || busy ? null : () => _start(scope: scope),
+                      child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: context.mmText.headline),
+                    ),
+                    if (!widget.compact) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(6)),
+                        child: Text('⌥⇥', style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+                      ),
+                      const SizedBox(width: MMSpacing.s),
+                    ],
+                    MMIconButton(
+                      key: const ValueKey('expansion-close'),
+                      icon: MMIcons.close,
+                      tooltip: l.closePanel,
+                      onPressed: widget.onClose,
+                      size: 24,
+                    ),
+                  ],
+                ),
+                Divider(height: 28, color: c.separator, thickness: .5),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: ExcludeFocus(
+                      excluding: busy,
+                      child: IgnorePointer(
+                        ignoring: busy,
+                        child: Opacity(
+                          opacity: busy ? .45 : 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ExpansionOptions(request: _request, onChanged: (r) => setState(() => _request = r)),
+                              const SizedBox(height: 22),
+                              Focus(
+                                canRequestFocus: false,
+                                onFocusChange: (focused) => setState(() => _hintFocused = focused),
+                                child: Container(
+                                  key: const ValueKey('expansion-hint'),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: _hintFocused ? c.research : c.line, width: .5),
+                                    borderRadius: BorderRadius.circular(MMRadii.row),
+                                  ),
+                                  child: MMTextField(
+                                    plain: true,
+                                    maxLength: 200,
+                                    placeholder: l.mapIdeaHint,
+                                    semanticLabel: l.mapIdeaHint,
+                                    onChanged: (v) => _hint = v,
+                                    onSubmitted: (_) => _start(),
+                                  ),
+                                ),
+                              ),
+                              if (widget.targetId == widget.mapId) ...[
+                                const SizedBox(height: MMSpacing.s),
+                                MMButton(
+                                  label: l.mapIdeaBranchesOnly,
+                                  variant: MMButtonVariant.plain,
+                                  onPressed: busy ? null : () => _start(branchesOnly: true),
+                                ),
+                              ],
+                              if ((widget.targetIds?.length ?? 1) > 1) ...[
+                                const SizedBox(height: MMSpacing.s),
+                                for (final (scope, label) in [
+                                  (ExpansionScope.group, l.mapIdeaGroup),
+                                  (ExpansionScope.siblings, l.mapIdeaFillSiblings),
+                                ])
+                                  Tooltip(
+                                    message: _commonParent == null ? l.mapEditDifferentParents : '',
+                                    child: MMButton(
+                                      label: label,
+                                      variant: MMButtonVariant.plain,
+                                      onPressed: _commonParent == null || busy ? null : () => _start(scope: scope),
+                                    ),
+                                  ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                ],
-              ),
-            ],
-          ],
+                  ),
+                ),
+                Divider(height: 28, color: c.separator, thickness: .5),
+                Row(
+                  children: [
+                    MMSwitch(
+                      value: _grounded,
+                      semanticLabel: l.mapIdeaGrounded,
+                      color: c.research,
+                      onChanged: busy ? null : (v) => setState(() => _grounded = v),
+                    ),
+                    const SizedBox(width: MMSpacing.xs),
+                    Expanded(
+                      child: Text(l.mapIdeaGrounded, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+                    ),
+                    MMInteractive(
+                      key: const ValueKey('expansion-start'),
+                      onTap: busy ? null : () => _start(),
+                      autofocus: true,
+                      semanticLabel: title,
+                      builder: (context, state) => Opacity(
+                        opacity: state.enabled ? 1 : .45,
+                        child: Container(
+                          height: context.mmTouch ? MMSizes.touchTarget : 32,
+                          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
+                          decoration: BoxDecoration(
+                            color: Color.alphaBlend(
+                              state.pressed ? c.pressed : (state.hovered ? c.hover : Colors.transparent),
+                              c.research,
+                            ),
+                            borderRadius: BorderRadius.circular(MMRadii.row),
+                            boxShadow: state.focused
+                                ? [BoxShadow(color: c.research.withValues(alpha: .25), spreadRadius: 2)]
+                                : null,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(l.mapIdeaGenerate, style: context.mmText.headline.copyWith(color: c.onResearch)),
+                              const SizedBox(width: MMSpacing.s),
+                              Icon(MMIcons.returnKey, size: 12, color: c.onResearch.withValues(alpha: .7)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

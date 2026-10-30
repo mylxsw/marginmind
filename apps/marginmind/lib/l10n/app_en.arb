@@ -2030,6 +2030,7 @@
   },
   "mapIdeaFewer": "Fewer",
   "mapIdeaMore": "More",
+  "mapIdeaGenerate": "Expand",
   "mapIdeaStart": "Expand",
   "mapIdeaAdded": "{count, plural, =1{Added 1 topic} other{Added {count} topics}}",
   "@mapIdeaAdded": {

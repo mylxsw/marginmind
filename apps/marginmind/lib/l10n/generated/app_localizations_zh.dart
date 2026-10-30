@@ -3817,6 +3817,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapIdeaMore => '增加';
 
   @override
+  String get mapIdeaGenerate => '扩展';
+
+  @override
   String get mapIdeaStart => '开始扩展';
 
   @override

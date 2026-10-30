@@ -3977,6 +3977,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapIdeaMore => 'More';
 
   @override
+  String get mapIdeaGenerate => 'Expand';
+
+  @override
   String get mapIdeaStart => 'Expand';
 
   @override

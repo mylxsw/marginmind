@@ -121,6 +121,7 @@ abstract final class MMIcons {
   static const IconData check = CupertinoIcons.checkmark; // checkmark
   static const IconData stop = CupertinoIcons.stop_fill; // stop.fill
   static const IconData microphone = CupertinoIcons.mic; // mic
+  static const IconData returnKey = LucideIcons.cornerDownLeft;
   static const IconData send = CupertinoIcons.arrow_up; // arrow.up
   static const IconData evidence = CupertinoIcons.quote_bubble; // quote.bubble
   static const IconData summarize = CupertinoIcons.text_alignleft; // text.alignleft

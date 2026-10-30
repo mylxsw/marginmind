@@ -51,6 +51,7 @@ Map<String, String> _ideaStrings(AppLocalizations l) => {
   'fewer': l.mapIdeaFewer,
   'more': l.mapIdeaMore,
   'start': l.mapIdeaStart,
+  'generate': l.mapIdeaGenerate,
   'added': l.mapIdeaAdded(5),
   'blocked': l.mapIdeaBlocked,
   'nothing': l.mapIdeaNothing,

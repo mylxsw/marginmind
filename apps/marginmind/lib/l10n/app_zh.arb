@@ -1387,6 +1387,7 @@
   "mapIdeaAddCount": "+{count}",
   "mapIdeaFewer": "减少",
   "mapIdeaMore": "增加",
+  "mapIdeaGenerate": "扩展",
   "mapIdeaStart": "开始扩展",
   "mapIdeaAdded": "已添加 {count} 个主题",
   "mapIdeaBlocked": "先保留（↩）或放弃（Esc）这次 AI 扩展",

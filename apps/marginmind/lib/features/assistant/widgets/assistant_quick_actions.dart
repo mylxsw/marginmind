@@ -42,9 +42,9 @@ Future<bool?> showAssistantQuickActions(
   transitionDuration: MMMotion.popup,
   pageBuilder: (_, _, _) => inScope(
     context,
-    CustomSingleChildLayout(
-      delegate: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
-      child: AssistantQuickActions(
+    _QuickActionsLayer(
+      placement: QuickActionsPlacement(toolbar: toolbar, selection: selection, viewport: viewport),
+      menuBuilder: (open, showExpansion, closeExpansion) => AssistantQuickActions(
         studySetId: studySetId,
         pending: pending,
         passage: passage,
@@ -53,7 +53,20 @@ Future<bool?> showAssistantQuickActions(
         insertionTarget: insertionTarget,
         origin: origin,
         expansionTargets: expansionTargets,
+        expansionOpen: open,
+        onOpenExpansion: showExpansion,
+        onCloseExpansion: closeExpansion,
       ),
+      expansionBuilder: origin == PanelOrigin.map && insertionTarget != null
+          ? (compact, close) => ExpansionSection(
+              studySetId: studySetId,
+              mapId: insertionTarget.mapId,
+              targetId: expansionTargets?.first ?? insertionTarget.parentId ?? insertionTarget.mapId,
+              targetIds: expansionTargets,
+              compact: compact,
+              onClose: close,
+            )
+          : null,
     ),
   ),
   transitionBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
@@ -109,6 +122,98 @@ class QuickActionsPlacement extends SingleChildLayoutDelegate {
       old.toolbar != toolbar || old.selection != selection || old.viewport != viewport || old.maxWidth != maxWidth;
 }
 
+class _QuickActionsLayer extends StatefulWidget {
+  const _QuickActionsLayer({required this.placement, required this.menuBuilder, this.expansionBuilder});
+  final QuickActionsPlacement placement;
+  final Widget Function(bool, VoidCallback, VoidCallback) menuBuilder;
+  final Widget Function(bool, VoidCallback)? expansionBuilder;
+  @override
+  State<_QuickActionsLayer> createState() => _QuickActionsLayerState();
+}
+
+class _QuickActionsLayerState extends State<_QuickActionsLayer> {
+  bool _expansionOpen = false;
+  void _closeExpansion() => setState(() => _expansionOpen = false);
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final compact = constraints.maxWidth - 16 < QuickActionsSidePlacement.combinedWidth;
+      final hideMenu = compact && _expansionOpen;
+      return CustomMultiChildLayout(
+        key: const ValueKey('quick-actions-layer'),
+        delegate: QuickActionsSidePlacement(placement: widget.placement, compact: compact),
+        children: [
+          LayoutId(
+            id: 'menu',
+            child: ExcludeSemantics(
+              excluding: hideMenu,
+              child: ExcludeFocus(
+                excluding: hideMenu,
+                child: IgnorePointer(
+                  ignoring: hideMenu,
+                  child: Opacity(
+                    opacity: hideMenu ? 0 : 1,
+                    child: widget.menuBuilder(
+                      _expansionOpen,
+                      () => setState(() => _expansionOpen = true),
+                      _closeExpansion,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (_expansionOpen && widget.expansionBuilder != null)
+            LayoutId(id: 'expansion', child: widget.expansionBuilder!(compact, _closeExpansion)),
+        ],
+      );
+    },
+  );
+}
+
+/// Both surfaces share a route so the parent menu remains interactive. On a
+/// narrow window the settings replace it in place, preserving its state.
+class QuickActionsSidePlacement extends MultiChildLayoutDelegate {
+  QuickActionsSidePlacement({required this.placement, required this.compact});
+  final QuickActionsPlacement placement;
+  final bool compact;
+  static const menuWidth = 280.0, settingsWidth = 340.0, gap = 8.0;
+  static const combinedWidth = menuWidth + settingsWidth + gap;
+  @override
+  void performLayout(Size size) {
+    final anchoredBounds = placement._bounds(size);
+    // Like a native submenu, the pair may cross a split-pane divider while
+    // remaining inside the window. The parent alone stays anchored to its pane.
+    final bounds = Rect.fromLTRB(8, anchoredBounds.top, size.width - 8, anchoredBounds.bottom);
+    final menu = layoutChild('menu', placement.getConstraintsForChild(BoxConstraints.tight(size)).loosen());
+    var menuOffset = placement.getPositionForChild(size, menu);
+    if (hasChild('expansion')) {
+      final width = math.min(settingsWidth, math.max(0.0, bounds.width));
+      final settings = layoutChild(
+        'expansion',
+        BoxConstraints(minWidth: width, maxWidth: width, maxHeight: math.min(540, math.max(0.0, bounds.height))),
+      );
+      if (compact) {
+        positionChild('expansion', placement.getPositionForChild(size, settings));
+      } else {
+        final total = menu.width + gap + settings.width;
+        final x = menuOffset.dx.clamp(bounds.left, math.max(bounds.left, bounds.right - total));
+        final y = menuOffset.dy.clamp(
+          bounds.top,
+          math.max(bounds.top, bounds.bottom - math.max(menu.height, settings.height)),
+        );
+        menuOffset = Offset(x.toDouble(), y.toDouble());
+        positionChild('expansion', Offset((x + menu.width + gap).toDouble(), y.toDouble()));
+      }
+    }
+    positionChild('menu', menuOffset);
+  }
+
+  @override
+  bool shouldRelayout(QuickActionsSidePlacement old) =>
+      compact != old.compact || placement.shouldRelayout(old.placement);
+}
+
 enum _QuickAction {
   explain(AssistantSkill.explain),
   translate(AssistantSkill.translate),
@@ -140,8 +245,13 @@ class AssistantQuickActions extends ConsumerStatefulWidget {
     this.insertionTarget,
     this.origin = PanelOrigin.reader,
     this.expansionTargets,
+    this.expansionOpen = false,
+    this.onOpenExpansion,
+    this.onCloseExpansion,
   });
 
+  final bool expansionOpen;
+  final VoidCallback? onOpenExpansion, onCloseExpansion;
   final String studySetId;
   final List<String>? expansionTargets;
   final PendingAction? pending;
@@ -159,6 +269,9 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
   final _text = TextEditingController();
   final _focus = FocusNode();
   final _scroll = ScrollController();
+  final _expansionFocus = FocusNode();
+  Timer? _expansionHover;
+  bool _suppressExpansionHover = false;
   String get _contextKey {
     if (widget.contexts.length < 2) return widget.passage.id;
     final ids = widget.contexts.map((item) => item.id).toList()..sort();
@@ -182,7 +295,18 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
   }
 
   @override
+  void didUpdateWidget(AssistantQuickActions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expansionOpen && !widget.expansionOpen) {
+      _suppressExpansionHover = true;
+      _expansionFocus.requestFocus();
+    }
+  }
+
+  @override
   void dispose() {
+    _expansionHover?.cancel();
+    _expansionFocus.dispose();
     _text.dispose();
     _focus.dispose();
     _scroll.dispose();
@@ -193,6 +317,7 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
     final controller = ref.read(assistantControllerProvider.notifier);
     final question = action?.prompt(context.l10n) ?? _text.text.trim();
     if (_sending || controller.busy || question.isEmpty) return;
+    widget.onCloseExpansion?.call();
     setState(() {
       _sending = true;
       _error = null;
@@ -309,197 +434,240 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
     final title = showingAnswer
         ? (question.skill == AssistantSkill.organize.name ? l.assistantAnswerToMap : _action?.title(l) ?? question.text)
         : l.assistantQuickTitle;
-    return CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).pop()},
-      child: Focus(
-        autofocus: true,
-        child: Material(
-          key: const ValueKey('assistant-quick-actions'),
-          color: c.glassOpaque,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: c.separator, width: .5),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    if (showingAnswer)
+    return SizedBox(
+      width: widget.origin == PanelOrigin.map && _menu ? QuickActionsSidePlacement.menuWidth : 408,
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            if (widget.expansionOpen) {
+              widget.onCloseExpansion?.call();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        },
+        child: Focus(
+          autofocus: true,
+          child: Material(
+            key: const ValueKey('assistant-quick-actions'),
+            color: c.glassOpaque,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: c.separator, width: .5),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      if (showingAnswer)
+                        MMIconButton(
+                          icon: MMIcons.chevronLeft,
+                          tooltip: l.back,
+                          onPressed: running ? null : () => setState(() => _menu = true),
+                        ),
+                      Icon(MMIcons.ai, size: 17, color: c.research),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.headline.copyWith(color: c.label),
+                        ),
+                      ),
                       MMIconButton(
-                        icon: MMIcons.chevronLeft,
-                        tooltip: l.back,
-                        onPressed: running ? null : () => setState(() => _menu = true),
+                        key: const ValueKey('quick-close'),
+                        icon: MMIcons.close,
+                        tooltip: l.closePanel,
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                    Icon(MMIcons.ai, size: 17, color: c.research),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.headline.copyWith(color: c.label),
-                      ),
-                    ),
-                    MMIconButton(
-                      key: const ValueKey('quick-close'),
-                      icon: MMIcons.close,
-                      tooltip: l.closePanel,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Scrollbar(
-                    controller: _scroll,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
-                      key: const ValueKey('quick-content'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: Scrollbar(
                       controller: _scroll,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (configured.isLoading)
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(l.assistantThinking, style: t.body),
-                            ),
-                          if (configured.hasError || (!configured.isLoading && configured.value != true))
-                            const ModelSetupCard(inline: true)
-                          else if (changed)
-                            Text(l.assistantQuickChanged, style: t.body.copyWith(color: c.secondaryLabel))
-                          else if (showingAnswer) ...[
-                            Divider(height: 12, color: c.separator),
-                            SelectionArea(
-                              child: AgentMessage(
-                                studySetId: widget.studySetId,
-                                message: answer,
-                                question: question,
-                                compact: true,
-                                onSource: (citation) => _sidebar(source: citation),
-                                onSaveNote: () => _save(answer),
-                                saveNoteTooltip: widget.insertionTarget == null ? null : l.assistantInsertChild,
-                                savingNote: _saving,
-                              ),
-                            ),
-                          ] else ...[
-                            if (widget.origin == PanelOrigin.map && widget.insertionTarget != null)
-                              ExpansionSection(
-                                studySetId: widget.studySetId,
-                                mapId: widget.insertionTarget!.mapId,
-                                targetId:
-                                    widget.expansionTargets?.first ??
-                                    widget.insertionTarget!.parentId ??
-                                    widget.insertionTarget!.mapId,
-                                targetIds: widget.expansionTargets,
-                              ),
-                            if (busy)
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        key: const ValueKey('quick-content'),
+                        controller: _scroll,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (configured.isLoading)
                               Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Text(l.assistantQuickBusy, style: t.callout.copyWith(color: c.secondaryLabel)),
+                                padding: const EdgeInsets.all(16),
+                                child: Text(l.assistantThinking, style: t.body),
                               ),
-                            for (final action in _QuickAction.values)
-                              _ActionRow(
-                                key: ValueKey('quick-action-${action.name}'),
-                                icon: action.icon,
-                                title: action.title(l),
-                                onTap: canSend ? () => _send(action) : null,
+                            if (configured.hasError || (!configured.isLoading && configured.value != true))
+                              const ModelSetupCard(inline: true)
+                            else if (changed)
+                              Text(l.assistantQuickChanged, style: t.body.copyWith(color: c.secondaryLabel))
+                            else if (showingAnswer) ...[
+                              Divider(height: 12, color: c.separator),
+                              SelectionArea(
+                                child: AgentMessage(
+                                  studySetId: widget.studySetId,
+                                  message: answer,
+                                  question: question,
+                                  compact: true,
+                                  onSource: (citation) => _sidebar(source: citation),
+                                  onSaveNote: () => _save(answer),
+                                  saveNoteTooltip: widget.insertionTarget == null ? null : l.assistantInsertChild,
+                                  savingNote: _saving,
+                                ),
+                              ),
+                            ] else ...[
+                              if (widget.origin == PanelOrigin.map && widget.insertionTarget != null) ...[
+                                MouseRegion(
+                                  onEnter: (_) {
+                                    _expansionHover?.cancel();
+                                    if (!canSend || _suppressExpansionHover || widget.expansionOpen) return;
+                                    _expansionHover = Timer(const Duration(milliseconds: 180), () {
+                                      if (mounted) widget.onOpenExpansion?.call();
+                                    });
+                                  },
+                                  onExit: (_) {
+                                    _expansionHover?.cancel();
+                                    _suppressExpansionHover = false;
+                                  },
+                                  child: CallbackShortcuts(
+                                    bindings: {
+                                      const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+                                        if (canSend) widget.onOpenExpansion?.call();
+                                      },
+                                    },
+                                    child: _ActionRow(
+                                      key: const ValueKey('quick-expand-ideas'),
+                                      verticalPadding: 10,
+                                      icon: MMIcons.expandIdeas,
+                                      title: widget.expansionTargets != null && widget.expansionTargets!.length > 1
+                                          ? l.mapIdeaExpandEach(widget.expansionTargets!.length)
+                                          : (widget.expansionTargets?.first ??
+                                                    widget.insertionTarget!.parentId ??
+                                                    widget.insertionTarget!.mapId) ==
+                                                widget.insertionTarget!.mapId
+                                          ? l.mapIdeaExpandMap
+                                          : l.mapIdeaExpand,
+                                      selected: widget.expansionOpen,
+                                      focusNode: _expansionFocus,
+                                      onTap: canSend ? widget.onOpenExpansion : null,
+                                    ),
+                                  ),
+                                ),
+                                Divider(height: 12, color: c.separator, thickness: .5),
+                              ],
+                              if (busy)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(l.assistantQuickBusy, style: t.callout.copyWith(color: c.secondaryLabel)),
+                                ),
+                              for (final action in _QuickAction.values)
+                                _ActionRow(
+                                  key: ValueKey('quick-action-${action.name}'),
+                                  icon: action.icon,
+                                  title: action.title(l),
+                                  verticalPadding: widget.origin == PanelOrigin.map ? 10 : 8,
+                                  onTap: canSend ? () => _send(action) : null,
+                                ),
+                            ],
+                            if (_error != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Text(_error!, style: t.callout.copyWith(color: c.critical)),
                               ),
                           ],
-                          if (_error != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text(_error!, style: t.callout.copyWith(color: c.critical)),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        key: const ValueKey('quick-composer'),
-                        height: 36,
-                        padding: const EdgeInsets.all(3),
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: c.separator),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 8, right: 6),
-                                child: TextField(
-                                  key: const ValueKey('quick-input'),
-                                  controller: _text,
-                                  focusNode: _focus,
-                                  enabled: canSend,
-                                  style: t.body.copyWith(color: c.label),
-                                  maxLength: 60000,
-                                  decoration: InputDecoration(
-                                    hintText: _conversationId == null ? l.assistantQuickAsk : l.assistantQuickFollowUp,
-                                    hintStyle: t.body.copyWith(color: c.secondaryLabel),
-                                    isDense: true,
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero,
-                                    counterText: '',
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          key: const ValueKey('quick-composer'),
+                          height: 36,
+                          padding: const EdgeInsets.all(3),
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: c.separator),
+                            borderRadius: BorderRadius.circular(widget.origin == PanelOrigin.map && _menu ? 8 : 18),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 8, right: 6),
+                                  child: TextField(
+                                    key: const ValueKey('quick-input'),
+                                    controller: _text,
+                                    focusNode: _focus,
+                                    enabled: canSend,
+                                    style: t.body.copyWith(color: c.label),
+                                    maxLength: 60000,
+                                    decoration: InputDecoration(
+                                      hintText: _conversationId == null
+                                          ? l.assistantQuickAsk
+                                          : l.assistantQuickFollowUp,
+                                      hintStyle: t.body.copyWith(color: c.secondaryLabel),
+                                      isDense: true,
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                      counterText: '',
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                    onSubmitted: (_) => _send(),
                                   ),
-                                  onChanged: (_) => setState(() {}),
-                                  onSubmitted: (_) => _send(),
                                 ),
                               ),
-                            ),
-                            ClipOval(
-                              key: const ValueKey('quick-send-surface'),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
-                                ),
-                                child: MMIconButton(
-                                  key: const ValueKey('quick-send'),
-                                  size: 28,
-                                  icon: running ? MMIcons.stop : MMIcons.send,
-                                  tooltip: running ? l.assistantStop : l.assistantSend,
-                                  color: c.onAccent,
-                                  onPressed: running
-                                      ? () => unawaited(
-                                          ref
-                                              .read(assistantControllerProvider.notifier)
-                                              .stop()
-                                              .catchError((Object _) {}),
-                                        )
-                                      : canSend && _text.text.trim().isNotEmpty
-                                      ? () => _send()
-                                      : null,
+                              ClipOval(
+                                key: const ValueKey('quick-send-surface'),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: running || (canSend && _text.text.trim().isNotEmpty) ? c.research : c.fill,
+                                  ),
+                                  child: MMIconButton(
+                                    key: const ValueKey('quick-send'),
+                                    size: 28,
+                                    icon: running ? MMIcons.stop : MMIcons.send,
+                                    tooltip: running ? l.assistantStop : l.assistantSend,
+                                    color: c.onAccent,
+                                    onPressed: running
+                                        ? () => unawaited(
+                                            ref
+                                                .read(assistantControllerProvider.notifier)
+                                                .stop()
+                                                .catchError((Object _) {}),
+                                          )
+                                        : canSend && _text.text.trim().isNotEmpty
+                                        ? () => _send()
+                                        : null,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    MMIconButton(
-                      key: const ValueKey('quick-sidebar'),
-                      icon: MMIcons.sidebarRight,
-                      tooltip: l.assistantQuickSidebar,
-                      size: 32,
-                      onPressed: _sending ? null : () => _sidebar(),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 6),
+                      MMIconButton(
+                        key: const ValueKey('quick-sidebar'),
+                        icon: MMIcons.sidebarRight,
+                        tooltip: l.assistantQuickSidebar,
+                        size: 32,
+                        onPressed: _sending ? null : () => _sidebar(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -509,11 +677,22 @@ class _AssistantQuickActionsState extends ConsumerState<AssistantQuickActions> {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({super.key, required this.icon, required this.title, this.onTap});
+  const _ActionRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.onTap,
+    this.selected = false,
+    this.focusNode,
+    this.verticalPadding = 8,
+  });
 
+  final double verticalPadding;
   final IconData icon;
   final String title;
   final VoidCallback? onTap;
+  final bool selected;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -521,18 +700,20 @@ class _ActionRow extends StatelessWidget {
     final t = context.mmText;
     return MMInteractive(
       onTap: onTap,
+      selected: selected,
+      focusNode: focusNode,
       semanticLabel: title,
       builder: (context, s) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: verticalPadding),
         decoration: BoxDecoration(
-          color: s.hovered || s.focused ? c.researchTint : Colors.transparent,
+          color: selected || s.hovered || s.focused ? c.hover : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         child: Opacity(
           opacity: s.enabled ? 1 : .4,
           child: Row(
             children: [
-              Icon(icon, size: 16, color: c.icon),
+              Icon(icon, size: 16, color: selected ? c.research : c.icon),
               const SizedBox(width: 10),
               Expanded(child: Text(title, style: t.body)),
               Icon(MMIcons.chevronRight, size: 11, color: c.secondaryLabel),
