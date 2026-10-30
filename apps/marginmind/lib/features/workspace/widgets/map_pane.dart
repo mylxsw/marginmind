@@ -212,12 +212,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
     }
   }
 
-  Future<void> _expandIdeas() async {
+  Future<void> _expandIdeas({ExpansionScope scope = ExpansionScope.children}) async {
     if (!MMPlatformCapabilities.current.assistant) return;
     final state = ref.read(workspaceProvider(widget.studySetId));
     if (state.mapView != MapViewMode.map ||
-        state.selectedCardIds.length > 1 ||
-        state.selectedCardId == null ||
+        (!state.rootSelected && state.selectedCardId == null) ||
         state.editingCardId != null ||
         state.selectedMarkId != null) {
       return;
@@ -230,12 +229,40 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final current = ref.read(workspaceProvider(widget.studySetId));
     if (current.activeMapId != state.activeMapId ||
         current.selectedCardId != state.selectedCardId ||
+        current.rootSelected != state.rootSelected ||
+        !setEquals(current.selectedCardIds, state.selectedCardIds) ||
         current.mapView != MapViewMode.map) {
       return;
     }
     final controller = ref.read(expansionControllerProvider(widget.studySetId).notifier);
     try {
-      await controller.start(controller.request(state.activeMapId, state.selectedCardId!));
+      final ids = state.rootSelected
+          ? [state.activeMapId]
+          : state.selectedCardIds.isEmpty
+          ? [state.selectedCardId!]
+          : state.selectedCardIds.toList();
+      final parents = {
+        for (final id in ids)
+          ref
+                  .read(workspaceProvider(widget.studySetId).notifier)
+                  .content
+                  .node(id, mapId: state.activeMapId)
+                  ?.parentId ??
+              state.activeMapId,
+      };
+      final request = controller.request(
+        state.activeMapId,
+        ids.first,
+        targets: ids,
+        scope: state.rootSelected ? ExpansionScope.map : scope,
+        breadth: state.rootSelected ? 8 : null,
+        commonParentId: {ExpansionScope.group, ExpansionScope.siblings}.contains(scope) ? parents.single : null,
+      );
+      if (state.rootSelected) {
+        await controller.planMap(request);
+      } else {
+        await controller.start(request);
+      }
     } on StateError {
       if (mounted) MMHud.show(context, context.l10n.mapIdeaBusy);
     }
@@ -298,19 +325,34 @@ class _MapPaneState extends ConsumerState<MapPane> {
     );
     if (card == null) {
       return [
+        MMMenuItem(l.mapIdeaExpandMap, () => _expandIdeas()),
         MMMenuItem(l.assistantOrganizeBranch, () => ask(AssistantSkill.organize, branch: true)),
         MMMenuItem(l.assistantQuizBranch, () => ask(AssistantSkill.quiz, branch: true)),
       ];
     }
+    final selection = ref.read(workspaceProvider(widget.studySetId));
+    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
+    final sameParent =
+        {for (final id in selection.selectedCardIds) content.node(id, mapId: selection.activeMapId)?.parentId}.length ==
+        1;
     return [
-      if (ref.read(workspaceProvider(widget.studySetId)).selectedCardIds.length <= 1)
-        MMMenuItem(
-          l.mapIdeaExpand,
-          _expandIdeas,
-          shortcut: defaultTargetPlatform == TargetPlatform.macOS
-              ? describeShortcut(const SingleActivator(LogicalKeyboardKey.tab, alt: true))
-              : null,
-        ),
+      if (selection.selectedCardIds.length > 1)
+        for (final (scope, label) in [
+          (ExpansionScope.group, l.mapIdeaGroup),
+          (ExpansionScope.siblings, l.mapIdeaFillSiblings),
+        ])
+          MMMenuItem(
+            label,
+            sameParent ? () => _expandIdeas(scope: scope) : null,
+            disabledReason: sameParent ? null : l.mapEditDifferentParents,
+          ),
+      MMMenuItem(
+        l.mapIdeaExpand,
+        () => _expandIdeas(),
+        shortcut: defaultTargetPlatform == TargetPlatform.macOS
+            ? describeShortcut(const SingleActivator(LogicalKeyboardKey.tab, alt: true))
+            : null,
+      ),
       MMMenuItem(
         topic ? l.assistantExplainTopic : l.assistantExplainCard,
         () => ask(AssistantSkill.explain),
@@ -383,6 +425,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
             ),
       insertionTarget: (mapId: state.activeMapId, parentId: id == assistantRootId ? null : id),
       origin: PanelOrigin.map,
+      expansionTargets: state.rootSelected ? [state.activeMapId] : ids,
       toolbar: toolbar,
       selection: toolbar,
       viewport: boundsOf(context),
@@ -585,8 +628,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
           if (mounted) MMHud.show(context, context.l10n.mapIdeaStoppedEmpty);
         });
       }
-      if (next?.phase == ExpansionPhase.review && next!.drafts.isEmpty ||
-          next?.failure?.message == 'noValidExpansion') {
+      if (next != null &&
+          next.drafts.isEmpty &&
+          (next.phase == ExpansionPhase.review || next.failure?.message == 'noValidExpansion')) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !identical(ref.read(expansionControllerProvider(widget.studySetId)), next)) return;
           ref.read(expansionControllerProvider(widget.studySetId).notifier).discard();
@@ -917,7 +961,18 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   ],
                 ),
               ),
-              if (expansion != null)
+              if (expansion?.isMapPlan == true)
+                Positioned(
+                  top: MMSizes.ideaPlanTopInset,
+                  left: 16,
+                  right: 16,
+                  bottom: 100,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ExpansionPlanSheet(studySetId: widget.studySetId),
+                  ),
+                ),
+              if (expansion != null && !expansion.isMapPlan)
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,

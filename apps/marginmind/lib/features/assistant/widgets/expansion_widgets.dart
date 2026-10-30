@@ -8,6 +8,8 @@ import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
 import '../assistant_controller.dart';
+import '../../workspace/workspace_controller.dart';
+import '../../research/research_origin.dart' show researchCardTitle;
 import '../assistant_services.dart';
 import '../expansion_controller.dart';
 import 'dashed_border.dart';
@@ -33,6 +35,10 @@ class ExpansionOptions extends StatelessWidget {
         studySetId: request.studySetId,
         mapId: request.mapId,
         targetIds: request.targetIds,
+        scope: request.scope,
+        commonParentId: request.commonParentId,
+        plan: request.plan,
+        round: request.round,
         direction: direction ?? request.direction,
         depth: depth ?? request.depth,
         breadth: breadth ?? request.breadth,
@@ -104,6 +110,7 @@ class ExpansionOptions extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: MMSegmentedControl<int>(
+              expand: true,
               key: const ValueKey('expansion-depth'),
               value: request.depth,
               onChanged: (n) => change(depth: n),
@@ -116,6 +123,7 @@ class ExpansionOptions extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: MMSegmentedControl<int>(
+              expand: true,
               key: const ValueKey('expansion-amount'),
               value: request.breadth,
               onChanged: (n) => change(breadth: n),
@@ -132,8 +140,15 @@ class ExpansionOptions extends StatelessWidget {
 }
 
 class ExpansionSection extends ConsumerStatefulWidget {
-  const ExpansionSection({super.key, required this.studySetId, required this.mapId, required this.targetId});
+  const ExpansionSection({
+    super.key,
+    required this.studySetId,
+    required this.mapId,
+    required this.targetId,
+    this.targetIds,
+  });
   final String studySetId, mapId, targetId;
+  final List<String>? targetIds;
   @override
   ConsumerState<ExpansionSection> createState() => _ExpansionSectionState();
 }
@@ -149,7 +164,7 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
     _grounded = _request.grounded;
   }
 
-  void _start() {
+  void _start({ExpansionScope scope = ExpansionScope.children, bool branchesOnly = false}) {
     if (ref.read(assistantControllerProvider.notifier).busy ||
         ref.read(expansionControllerProvider(widget.studySetId)) != null) {
       return;
@@ -158,14 +173,41 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
     final request = controller.request(
       widget.mapId,
       widget.targetId,
+      targets: widget.targetIds,
+      scope: scope,
+      commonParentId: {ExpansionScope.group, ExpansionScope.siblings}.contains(scope) ? _commonParent : null,
       direction: _request.direction,
-      depth: _request.depth,
+      depth: branchesOnly ? 1 : _request.depth,
       breadth: _request.breadth,
       grounded: _grounded,
       hint: String.fromCharCodes(_hint.runes.take(200)),
     );
     Navigator.of(context).pop();
-    controller.start(request);
+    if (widget.targetId == widget.mapId && !branchesOnly && scope == ExpansionScope.children) {
+      controller.planMap(
+        controller.request(
+          widget.mapId,
+          widget.mapId,
+          scope: ExpansionScope.map,
+          breadth: 8,
+          depth: request.depth,
+          direction: request.direction,
+          grounded: request.grounded,
+          hint: request.hint,
+        ),
+      );
+    } else {
+      controller.start(request);
+    }
+  }
+
+  String? get _commonParent {
+    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
+    final parents = {
+      for (final id in widget.targetIds ?? [widget.targetId])
+        content.node(id, mapId: widget.mapId)?.parentId ?? widget.mapId,
+    };
+    return parents.length == 1 ? parents.single : null;
   }
 
   @override
@@ -180,12 +222,40 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
             width: double.infinity,
             height: MMSizes.ideaPrimaryButton,
             child: FilledButton.icon(
-              onPressed: ref.watch(expansionBusyProvider) ? null : _start,
-              icon: const Icon(MMIcons.expandIdeas, size: 16),
-              label: Text('${l.mapIdeaExpand}  ⌥⇥'),
+              onPressed: ref.watch(expansionBusyProvider) ? null : () => _start(),
+              icon: Icon(widget.targetId == widget.mapId ? MMIcons.network : MMIcons.expandIdeas, size: 16),
+              label: Text(
+                '${widget.targetId == widget.mapId
+                    ? l.mapIdeaExpandMap
+                    : (widget.targetIds?.length ?? 1) > 1
+                    ? l.mapIdeaExpandEach(widget.targetIds!.length)
+                    : l.mapIdeaExpand}  ⌥⇥',
+              ),
               style: FilledButton.styleFrom(backgroundColor: c.research, foregroundColor: c.onResearch),
             ),
           ),
+          if (widget.targetId == widget.mapId)
+            TextButton(onPressed: () => _start(branchesOnly: true), child: Text(l.mapIdeaBranchesOnly)),
+          if ((widget.targetIds?.length ?? 1) > 1)
+            Row(
+              children: [
+                for (final (scope, label) in [
+                  (ExpansionScope.group, l.mapIdeaGroup),
+                  (ExpansionScope.siblings, l.mapIdeaFillSiblings),
+                ])
+                  Expanded(
+                    child: Tooltip(
+                      message: _commonParent == null ? l.mapEditDifferentParents : '',
+                      child: TextButton(
+                        onPressed: _commonParent == null || ref.watch(expansionBusyProvider)
+                            ? null
+                            : () => _start(scope: scope),
+                        child: Text(label),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ExpansionOptions(request: _request, onChanged: (r) => setState(() => _request = r)),
           Row(
             children: [
@@ -632,6 +702,151 @@ class ExpansionDraftControls extends StatelessWidget {
           if (onMore != null)
             MMIconButton(size: size, iconSize: 14, icon: MMIcons.ai, tooltip: l.mapIdeaDraftMore, onPressed: onMore),
         ],
+      ),
+    );
+  }
+}
+
+class ExpansionPlanSheet extends ConsumerWidget {
+  const ExpansionPlanSheet({super.key, required this.studySetId});
+  final String studySetId;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(expansionControllerProvider(studySetId))!;
+    final controller = ref.read(expansionControllerProvider(studySetId).notifier);
+    final content = ref.read(workspaceProvider(studySetId).notifier).content;
+    final l = context.l10n, c = context.mmColors;
+    final busy =
+        ref.watch(expansionBusyProvider) ||
+        ref.watch(assistantControllerProvider).running ||
+        ref.watch(assistantBackgroundProvider) != null;
+    final total = [
+      for (var i = 0; i < s.planItems.length; i++)
+        if (!s.disabledPlan.contains(i)) s.planItems[i].add + (s.planItems[i].title == null ? 0 : 1),
+    ].fold(0, (a, b) => a + b);
+    return TapRegion(
+      onTapOutside: (_) => controller.discard(),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): controller.discard,
+          const SingleActivator(LogicalKeyboardKey.enter): () => controller.startPlan(),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Material(
+            key: const ValueKey('expansion-plan'),
+            color: Colors.transparent,
+            child: MMGlass(
+              borderRadius: BorderRadius.circular(MMRadii.dropdown),
+              child: SizedBox(
+                width: MMSizes.ideaPlanWidth,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(MMIcons.network, size: 16, color: c.research),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(l.mapIdeaWholeMap, style: context.mmText.headline)),
+                          MMIconButton(icon: MMIcons.close, tooltip: l.cancel, onPressed: controller.discard),
+                        ],
+                      ),
+                      if (s.phase == ExpansionPhase.planning)
+                        const Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())
+                      else if (s.phase == ExpansionPhase.error)
+                        Row(
+                          children: [
+                            Icon(MMIcons.warning, size: 16, color: c.critical),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                s.failure?.kind == ResearchFailureKind.network
+                                    ? l.assistantErrorNetwork
+                                    : l.assistantErrorFailed,
+                              ),
+                            ),
+                            TextButton(onPressed: () => controller.regenerate(), child: Text(l.assistantRetry)),
+                          ],
+                        )
+                      else ...[
+                        Flexible(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                for (var i = 0; i < s.planItems.length; i++)
+                                  SizedBox(
+                                    height: MMSizes.ideaPlanRow,
+                                    child: Row(
+                                      children: [
+                                        Checkbox(
+                                          value: !s.disabledPlan.contains(i),
+                                          activeColor: c.research,
+                                          onChanged: (v) => controller.updatePlan(i, enabled: v),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            s.planItems[i].title ?? researchCardTitle(content, s.planItems[i].targetId),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        MMIconButton(
+                                          size: MMSizes.ideaStepperButton.width,
+                                          iconSize: 12,
+                                          key: ValueKey('plan-minus-$i'),
+                                          icon: MMIcons.zoomOut,
+                                          tooltip: l.mapIdeaFewer,
+                                          onPressed: s.disabledPlan.contains(i) || s.planItems[i].add == 1
+                                              ? null
+                                              : () => controller.updatePlan(i, add: s.planItems[i].add - 1),
+                                        ),
+                                        SizedBox(
+                                          width: 28,
+                                          child: Center(child: Text(l.mapIdeaAddCount(s.planItems[i].add))),
+                                        ),
+                                        MMIconButton(
+                                          size: MMSizes.ideaStepperButton.width,
+                                          iconSize: 12,
+                                          key: ValueKey('plan-plus-$i'),
+                                          icon: MMIcons.zoomIn,
+                                          tooltip: l.mapIdeaMore,
+                                          onPressed: s.disabledPlan.contains(i) || s.planItems[i].add == 8
+                                              ? null
+                                              : () => controller.updatePlan(i, add: s.planItems[i].add + 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l.mapIdeaAddCount(total),
+                                style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                              ),
+                            ),
+                            TextButton(onPressed: controller.discard, child: Text(l.cancel)),
+                            FilledButton(
+                              onPressed: total == 0 || busy ? null : () => controller.startPlan(),
+                              style: FilledButton.styleFrom(backgroundColor: c.research, foregroundColor: c.onResearch),
+                              child: Text(l.mapIdeaStart),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
