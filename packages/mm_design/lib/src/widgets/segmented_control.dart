@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../foundation/interactive.dart';
+import '../icons/mm_icons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import '../tokens/colors.dart';
 import '../tokens/motion.dart';
 import 'control_frame.dart';
 
@@ -27,6 +29,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.expand = false,
+    this.emphasizeSelection = false,
   });
 
   final List<MMSegment<T>> segments;
@@ -36,12 +39,41 @@ class MMSegmentedControl<T> extends StatelessWidget {
   /// Fill the available width with equal segments.
   final bool expand;
 
+  /// A visible neutral fill and checkmark for preference choices.
+  final bool emphasizeSelection;
+
+  Color _selectedColor(MMColors colors) => emphasizeSelection && colors.brightness == Brightness.dark
+      ? Color.alphaBlend(colors.secondaryLabel.withValues(alpha: .32), colors.card)
+      : colors.card;
+
+  Widget _content(BuildContext context, MMSegment<T> segment, bool selected) {
+    final content =
+        segment.child ??
+        Text(
+          segment.label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: context.mmText.callout.copyWith(fontWeight: selected ? FontWeight.w600 : FontWeight.w500),
+        );
+    if (!emphasizeSelection || !selected) return content;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(MMIcons.check, size: 12, color: context.mmColors.label),
+        const SizedBox(width: 6),
+        Flexible(child: content),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final t = context.mmText;
     if (context.mmTablet) return _tablet(context);
-    final height = context.mmTouch ? MMSizes.segmentedTouch : MMSizes.segmented;
+    final height = context.mmTouch
+        ? MMSizes.segmentedTouch
+        : MMSizes.segmented + (emphasizeSelection ? MMSpacing.xs : 0);
     return Container(
       height: height,
       padding: const EdgeInsets.all(2),
@@ -66,7 +98,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: on ? c.card : (s.hovered ? c.hover : Colors.transparent),
+                      color: on ? _selectedColor(c) : (s.hovered ? c.hover : Colors.transparent),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: on
                           ? [
@@ -79,15 +111,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
                             ]
                           : null,
                     ),
-                    child:
-                        seg.child ??
-                        Text(
-                          seg.label,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.callout.copyWith(fontWeight: on ? FontWeight.w600 : FontWeight.w500),
-                        ),
+                    child: _content(context, seg, on),
                   );
                 },
               ),
@@ -134,7 +158,9 @@ class MMSegmentedControl<T> extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: seg.value == value ? c.card : (state.hovered ? c.hover : Colors.transparent),
+                            color: seg.value == value
+                                ? _selectedColor(c)
+                                : (state.hovered ? c.hover : Colors.transparent),
                             borderRadius: BorderRadius.circular(grouped ? 16 : 14),
                             boxShadow: seg.value == value
                                 ? [
@@ -146,17 +172,7 @@ class MMSegmentedControl<T> extends StatelessWidget {
                                   ]
                                 : null,
                           ),
-                          child:
-                              seg.child ??
-                              Text(
-                                seg.label,
-                                maxLines: 1,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                style: context.mmText.callout.copyWith(
-                                  fontWeight: seg.value == value ? FontWeight.w600 : FontWeight.w500,
-                                ),
-                              ),
+                          child: _content(context, seg, seg.value == value),
                         ),
                       ),
                     ),

@@ -5555,7 +5555,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectionTranslationAutomatic.
   ///
   /// In en, this message translates to:
-  /// **'Automatic (Chinese ↔ English)'**
+  /// **'Auto (Chinese ↔ English)'**
   String get selectionTranslationAutomatic;
 
   /// No description provided for @selectionTranslationEnglishToChinese.
@@ -7981,6 +7981,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved'**
   String get studyNoteSavedImage;
+
+  /// No description provided for @vocabularyHintsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark saved vocabulary in the text'**
+  String get vocabularyHintsDescription;
+
+  /// No description provided for @vocabularyHintsPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get vocabularyHintsPreview;
+
+  /// No description provided for @vocabularyHintsPreviewMeaning.
+  ///
+  /// In en, this message translates to:
+  /// **'inquisitive'**
+  String get vocabularyHintsPreviewMeaning;
+
+  /// No description provided for @settingsReadingPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading preferences'**
+  String get settingsReadingPreferences;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

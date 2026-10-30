@@ -1630,7 +1630,7 @@
   "moreHighlightColors": "More Colors",
   "selectionTranslate": "Translate",
   "selectionTranslationDirection": "Selection Translation Direction",
-  "selectionTranslationAutomatic": "Automatic (Chinese ↔ English)",
+  "selectionTranslationAutomatic": "Auto (Chinese ↔ English)",
   "selectionTranslationEnglishToChinese": "English → Chinese",
   "selectionTranslationChineseToEnglish": "Chinese → English",
   "selectionTranslationLoading": "Translating…",
@@ -2287,5 +2287,9 @@
       }
     }
   },
-  "studyNoteSavedImage": "Saved"
+  "studyNoteSavedImage": "Saved",
+  "vocabularyHintsDescription": "Mark saved vocabulary in the text",
+  "vocabularyHintsPreview": "Preview",
+  "vocabularyHintsPreviewMeaning": "inquisitive",
+  "settingsReadingPreferences": "Reading preferences"
 }

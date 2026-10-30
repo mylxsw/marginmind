@@ -980,7 +980,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerStyleWhite => '白色';
 
   @override
-  String get readerStyleDark => '黑暗';
+  String get readerStyleDark => '深色';
 
   @override
   String get readerStylePaper => '纸质';
@@ -2970,7 +2970,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get selectionTranslationDirection => '划词翻译方向';
 
   @override
-  String get selectionTranslationAutomatic => '自动判断（中英互译）';
+  String get selectionTranslationAutomatic => '自动（中英互译）';
 
   @override
   String get selectionTranslationEnglishToChinese => '英文 → 中文';
@@ -3652,10 +3652,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get vocabularyHintsOff => '关闭';
 
   @override
-  String get vocabularyHintsUnderline => '下划线';
+  String get vocabularyHintsUnderline => '仅下划线';
 
   @override
-  String get vocabularyHintsGloss => '释义';
+  String get vocabularyHintsGloss => '显示释义';
 
   @override
   String get vocabularyHintsHidden => '本文档隐藏';
@@ -4277,4 +4277,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get studyNoteSavedImage => '已存储';
+
+  @override
+  String get vocabularyHintsDescription => '在正文中标记已收录的生词';
+
+  @override
+  String get vocabularyHintsPreview => '效果预览';
+
+  @override
+  String get vocabularyHintsPreviewMeaning => '好奇的';
+
+  @override
+  String get settingsReadingPreferences => '阅读偏好';
 }

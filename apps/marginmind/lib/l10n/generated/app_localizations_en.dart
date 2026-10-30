@@ -3102,7 +3102,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectionTranslationDirection => 'Selection Translation Direction';
 
   @override
-  String get selectionTranslationAutomatic => 'Automatic (Chinese ↔ English)';
+  String get selectionTranslationAutomatic => 'Auto (Chinese ↔ English)';
 
   @override
   String get selectionTranslationEnglishToChinese => 'English → Chinese';
@@ -4460,4 +4460,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studyNoteSavedImage => 'Saved';
+
+  @override
+  String get vocabularyHintsDescription => 'Mark saved vocabulary in the text';
+
+  @override
+  String get vocabularyHintsPreview => 'Preview';
+
+  @override
+  String get vocabularyHintsPreviewMeaning => 'inquisitive';
+
+  @override
+  String get settingsReadingPreferences => 'Reading preferences';
 }

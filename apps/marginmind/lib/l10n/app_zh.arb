@@ -323,7 +323,7 @@
   "statsUpcoming": "未来 30 天",
   "pdfOptions": "PDF 操作",
   "readerStyleWhite": "白色",
-  "readerStyleDark": "黑暗",
+  "readerStyleDark": "深色",
   "readerStylePaper": "纸质",
   "readerStyleGreen": "浅绿",
   "readerZoom": "页面",
@@ -1034,7 +1034,7 @@
   "moreHighlightColors": "更多颜色",
   "selectionTranslate": "翻译",
   "selectionTranslationDirection": "划词翻译方向",
-  "selectionTranslationAutomatic": "自动判断（中英互译）",
+  "selectionTranslationAutomatic": "自动（中英互译）",
   "selectionTranslationEnglishToChinese": "英文 → 中文",
   "selectionTranslationChineseToEnglish": "中文 → 英文",
   "selectionTranslationLoading": "正在翻译…",
@@ -1338,8 +1338,8 @@
   "vocabularyAddForm": "添加",
   "vocabularyHints": "生词提示",
   "vocabularyHintsOff": "关闭",
-  "vocabularyHintsUnderline": "下划线",
-  "vocabularyHintsGloss": "释义",
+  "vocabularyHintsUnderline": "仅下划线",
+  "vocabularyHintsGloss": "显示释义",
   "vocabularyHintsHidden": "本文档隐藏",
   "vocabularyHintsKnown": "标出已掌握",
   "mapIdeaMenu": "AI 扩展想法",
@@ -1639,5 +1639,9 @@
       }
     }
   },
-  "studyNoteSavedImage": "已存储"
+  "studyNoteSavedImage": "已存储",
+  "vocabularyHintsDescription": "在正文中标记已收录的生词",
+  "vocabularyHintsPreview": "效果预览",
+  "vocabularyHintsPreviewMeaning": "好奇的",
+  "settingsReadingPreferences": "阅读偏好"
 }

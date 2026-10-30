@@ -29,11 +29,12 @@ class SettingsWindow extends StatefulWidget {
   const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.showsGallery = kDebugMode});
 
   static const size = Size(780, 560), minSize = Size(640, 440);
+  static const readingSize = Size(740, 460), readingMinSize = Size(640, 380);
 
   /// Space kept between the dialog and the window edges.
   static const margin = 24.0;
 
-  static const sidebarWidth = 196.0;
+  static const sidebarWidth = 176.0;
 
   final SettingsTab initialTab;
 
@@ -108,7 +109,9 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final tablet = context.mmTablet;
     final availableHeight =
         screen.height - MediaQuery.viewInsetsOf(context).bottom - MediaQuery.paddingOf(context).vertical;
-    const size = SettingsWindow.size, min = SettingsWindow.minSize;
+    final reading = _tab == SettingsTab.reading;
+    final size = reading ? SettingsWindow.readingSize : SettingsWindow.size;
+    final min = reading ? SettingsWindow.readingMinSize : SettingsWindow.minSize;
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -359,7 +362,10 @@ class _ReadingPage extends ConsumerWidget {
     final direction = ref.watch(settingsProvider.select((s) => s.selectionTranslationDirection));
     return SettingsPage(
       children: [
-        const VocabularyHintSettings(),
+        const VocabularyHintSettings(showPreview: true),
+        const SizedBox(height: MMSpacing.xxl),
+        Text(l.settingsReadingPreferences, style: context.mmText.headline),
+        const SizedBox(height: MMSpacing.s),
         MMSettingsGroup(
           children: [
             MMSettingsRow(
