@@ -59,3 +59,5 @@ export 'src/content/note_organizer.dart';
 export 'src/content/note_editor.dart';
 export 'src/content/note_update.dart';
 export 'src/content/note_export.dart';
+
+export 'src/assistant/expansion.dart';
