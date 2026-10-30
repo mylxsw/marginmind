@@ -12,7 +12,7 @@ abstract final class MMIcons {
   static const marginNote = CupertinoIcons.text_bubble;
   static const IconData quoteBubble = CupertinoIcons.quote_bubble;
   static const IconData captionsBubble = CupertinoIcons.captions_bubble;
-  static const IconData readerNavigation = CupertinoIcons.square_stack_3d_up;
+  static const IconData readerNavigation = LucideIcons.layers2;
   static const IconData actualSize = CupertinoIcons.square;
   static const IconData fitMap = CupertinoIcons.arrow_up_left_arrow_down_right;
   static const IconData fitWidth = CupertinoIcons.arrow_left_right;
