@@ -369,13 +369,23 @@ class ExpansionController extends Notifier<ExpansionPreview?> {
             _expanders.add(expander);
             cancel.check();
             final rejected = <String>{};
+            final depths = {for (final id in context.targets.values) id: 0};
+            final parentsWithChildren = <String>{};
             await for (final draft in expander.expand(r, context, cancel)) {
               if (_disposed || epoch != _generation) return;
               if (rejected.contains(draft.parentRef) || !titles.add(normalizeExpansionTitle(draft.title))) {
                 rejected.add('new:${draft.id}');
                 continue;
               }
+              depths['new:${draft.id}'] = (depths[draft.parentRef] ?? 0) + 1;
+              parentsWithChildren.add(draft.parentRef);
               state = state!.copyWith(drafts: List.unmodifiable([...state!.drafts, draft]));
+            }
+            // Audit the visible tree too: global deduplication can remove a
+            // child that was valid within the model's smaller context.
+            if (r.scope != ExpansionScope.group &&
+                depths.entries.any((e) => e.value > 0 && e.value < r.depth && !parentsWithChildren.contains(e.key))) {
+              throw const ResearchFailure(ResearchFailureKind.protocol, 'incompleteDepth');
             }
           } catch (error) {
             failure ??= error is ResearchFailure ? error : const ResearchFailure(ResearchFailureKind.unavailable);

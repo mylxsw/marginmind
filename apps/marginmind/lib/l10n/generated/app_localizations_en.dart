@@ -3905,6 +3905,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get mapIdeaIncompleteDepth => 'Some branches are missing levels. Try again.';
+
+  @override
   String get mapIdeaStopped => 'Stopped';
 
   @override

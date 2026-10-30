@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 
 import 'support.dart';
 
-final req = ExpansionRequest(studySetId: 'private-set', mapId: 'private-map', targetIds: ['private-node'], depth: 3);
+final req = ExpansionRequest(studySetId: 'private-set', mapId: 'private-map', targetIds: ['private-node']);
 ExpansionContext context() => ExpansionContext(
   targets: {'T1': 'private-node'},
   details: {
@@ -35,12 +35,128 @@ void main() {
     // SDK 2.1.8 only records generate(); replay synthesizes one stream chunk.
     for (final source in [RecordedChunks(recording), ReplayLLMClient(store: store)]) {
       final invalid = <String>[];
-      final drafts = await expander(source, invalid: invalid.add).expand(req, context(), CancellationToken()).toList();
+      final twoLevels = ExpansionRequest(
+        studySetId: 'private-set',
+        mapId: 'private-map',
+        targetIds: ['private-node'],
+        depth: 2,
+      );
+      final drafts = await expander(
+        source,
+        invalid: invalid.add,
+      ).expand(twoLevels, context(), CancellationToken()).toList();
       expect(drafts.map((d) => d.title), ['New', 'Child']);
       expect(drafts.first.page, 47);
       expect(drafts.last.parentRef, 'new:${drafts.first.id}');
       expect(invalid, ['json']);
     }
+  });
+  test('flat two-level output is completed under each new child, with provenance', () async {
+    final request = ExpansionRequest(studySetId: 'set', mapId: 'map', targetIds: ['private-node'], depth: 2);
+    final client = ScriptClient([
+      answer('$first\n{"ref":"b","parent":"T1","title":"Another"}'),
+      answer(
+        [
+          '{"ref":"root","parent":"T1","title":"Unwanted new root"}',
+          '{"ref":"c","parent":"a","title":"Concrete detail","page":47}',
+          '{"ref":"d","parent":"b","title":"Second detail","page":99}',
+          '{"ref":"e","parent":"c","title":"Too deep"}',
+        ].join('\n'),
+      ),
+    ]);
+    final values = await expander(client).expand(request, context(), CancellationToken()).toList();
+    expect(values.map((d) => d.title), ['New', 'Another', 'Concrete detail', 'Second detail']);
+    expect(values[2].parentRef, 'new:${values[0].id}');
+    expect(values[3].parentRef, 'new:${values[1].id}');
+    expect(values[2].page, 47);
+    expect(values[3].page, isNull);
+    expect(client.calls, 2);
+    final payload =
+        jsonDecode((client.requests[1].last as UserMessage).contents.whereType<TextPart>().single.text) as Map;
+    expect(payload['parentsNeedingChildren'], ['a', 'b']);
+    expect(payload['accepted'], hasLength(2));
+    expect(
+      jsonEncode(client.requests.map((r) => r.map((m) => m.toJson()).toList()).toList()),
+      isNot(contains('private-')),
+    );
+  });
+  test('complete three-level tree needs one call; incomplete tree is completed in bounded rounds', () async {
+    final request = ExpansionRequest(studySetId: 's', mapId: 'm', targetIds: ['private-node'], depth: 3);
+    const child = '{"ref":"b","parent":"a","title":"Child"}';
+    const leaf = '{"ref":"c","parent":"b","title":"Leaf"}';
+    for (final replies in [
+      [answer('$first\n$child\n$leaf')],
+      [answer(first), answer(child), answer(leaf)],
+    ]) {
+      final client = ScriptClient(replies);
+      final values = await expander(client).expand(request, context(), CancellationToken()).toList();
+      expect(values, hasLength(3));
+      expect(client.calls, replies.length);
+      expect(values[2].parentRef, 'new:${values[1].id}');
+    }
+  });
+  test('only incomplete branches are repaired and failure retains the partial drafts', () async {
+    final request = ExpansionRequest(studySetId: 's', mapId: 'm', targetIds: ['private-node'], depth: 2);
+    final client = ScriptClient([
+      answer('$first\n{"ref":"b","parent":"T1","title":"Other branch"}\n{"ref":"c","parent":"a","title":"Ready"}'),
+      answer('{"ref":"d","parent":"a","title":"Wrong branch"}'),
+    ]);
+    final values = <ExpansionDraft>[];
+    await expectLater(
+      expander(client).expand(request, context(), CancellationToken()).forEach(values.add),
+      throwsA(isA<ResearchFailure>().having((e) => e.code, 'code', 'incompleteDepth')),
+    );
+    expect(values, hasLength(3));
+    expect(client.calls, 2);
+  });
+  test('group ignores requested depth and repair cancellation preserves streamed topics', () async {
+    final group = ExpansionRequest(
+      studySetId: 's',
+      mapId: 'm',
+      targetIds: ['private-node'],
+      commonParentId: 'parent',
+      scope: ExpansionScope.group,
+      depth: 3,
+    );
+    final client = ScriptClient([answer(first)]);
+    expect(await expander(client).expand(group, context(), CancellationToken()).toList(), hasLength(1));
+    expect(client.calls, 1);
+    final request = ExpansionRequest(studySetId: 's', mapId: 'm', targetIds: ['private-node'], depth: 2);
+    final cancel = CancellationToken(), opened = Completer<void>();
+    final silent = StreamController<StreamingMessage>();
+    var calls = 0;
+    final model = expander(
+      StreamClient((_) {
+        if (calls++ == 0) return Stream.value(StreamingMessage(modelMessage: answer(first)));
+        opened.complete();
+        return silent.stream;
+      }),
+    );
+    final values = <ExpansionDraft>[];
+    final check = expectLater(
+      model.expand(request, context(), cancel).forEach(values.add),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled)),
+    );
+    await opened.future;
+    cancel.cancel();
+    await check;
+    expect(values, hasLength(1));
+    await silent.close();
+  });
+  test('completion requests share the response byte budget', () async {
+    final request = ExpansionRequest(studySetId: 's', mapId: 'm', targetIds: ['private-node'], depth: 2);
+    const child = '{"ref":"b","parent":"a","title":"Child"}';
+    final client = ScriptClient([answer(first), answer(child)]);
+    final values = <ExpansionDraft>[];
+    await expectLater(
+      expander(
+        client,
+        budget: ResearchBudget(responseBytes: utf8.encode(first + child).length - 1),
+      ).expand(request, context(), CancellationToken()).forEach(values.add),
+      throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
+    );
+    expect(client.calls, 2);
+    expect(values, hasLength(1));
   });
   test('prompt snapshots and no host IDs or tools in requests', () async {
     final client = ScriptClient([answer(first)]);

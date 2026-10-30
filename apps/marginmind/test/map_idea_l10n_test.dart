@@ -31,6 +31,7 @@ Map<String, String> _ideaStrings(AppLocalizations l) => {
   'expanding': l.mapIdeaExpanding('Spacing'),
   'expandingCount': l.mapIdeaExpandingCount(2),
   'stopped': l.mapIdeaStopped,
+  'incompleteDepth': l.mapIdeaIncompleteDepth,
   'draftCount': l.mapIdeaDraftCount(4),
   'keptCount': l.mapIdeaKeptCount(3, 5),
   'regenerate': l.mapIdeaRegenerate,

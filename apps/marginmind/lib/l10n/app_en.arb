@@ -1983,6 +1983,7 @@
       "count": { "type": "int" }
     }
   },
+  "mapIdeaIncompleteDepth": "Some branches are missing levels. Try again.",
   "mapIdeaStopped": "Stopped",
   "mapIdeaDraftCount": "{count, plural, =1{1 idea} other{{count} ideas}}",
   "@mapIdeaDraftCount": {
