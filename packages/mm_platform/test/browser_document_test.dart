@@ -12,9 +12,11 @@ void main() {
     bool missing = false,
     bool badPdf = false,
     bool changeOnPrint = false,
+    bool pendingStages = false,
   }) async {
     final session = BrowserSession(Uri.parse('https://example.com/'));
     var printed = false;
+    var polls = 0;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
       MethodChannel('marginmind/browser/${session.id}'),
       (call) async {
@@ -28,6 +30,7 @@ void main() {
           return jsonEncode({'url': printed && changeOnPrint ? 'https://example.com/new' : session.url.toString()});
         }
         if (script.startsWith('JSON.stringify(globalThis[')) {
+          if (pendingStages && polls++ < 2) return jsonEncode({'pending': true, 'stage': 'images'});
           return jsonEncode(
             fail
                 ? {'error': 'capture_failed'}
@@ -79,6 +82,13 @@ void main() {
       (await s.captureDocument(navigationId: s.navigationId, mode: BrowserDocumentMode.markdown)).snapshot,
       '<p>Snapshot</p>',
     );
+  });
+  test('capture diagnostics report changing stages once, including the native print boundary', () async {
+    final s = await setup(pendingStages: true);
+    addTearDown(s.dispose);
+    final stages = <String>[];
+    await s.captureDocument(navigationId: s.navigationId, mode: BrowserDocumentMode.original, onStage: stages.add);
+    expect(stages, ['loading-reader', 'extracting', 'images', 'printing', 'complete']);
   });
   test('errors, stale data, invalid PDF and cancellation never yield partial captures', () async {
     for (final options in [0, 1, 2, 3, 4]) {

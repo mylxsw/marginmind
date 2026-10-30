@@ -47,7 +47,7 @@ String browserDocumentScript(String readability, String token, {required bool or
   // Leave time for serialization and the Dart-side 45 second deadline.
   const imageDeadline = performance.now() + 40000;
   const restore = () => {if(original && location.href===initialUrl) scrollTo(x,y);};
-  const job = {cancel: () => {abort.abort(); restore();}};
+  const job = {stage: original ? 'scrolling' : 'extracting', cancel: () => {abort.abort(); restore();}};
   globalThis[key] = job;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   (async () => {
@@ -69,6 +69,7 @@ String browserDocumentScript(String readability, String token, {required bool or
         } finally {restore();}
       }
       if (document.documentElement.outerHTML.length > 16*1024*1024) throw Error('dom_limit');
+      job.stage='extracting';
       const clone = document.cloneNode(true), source = document.querySelectorAll('img');
       clone.querySelectorAll('img').forEach((node,i) => {
         const live = source[i];
@@ -110,6 +111,7 @@ String browserDocumentScript(String readability, String token, {required bool or
       clean(body);
       const resources = {}, diagnostics = [], byUrl = new Map();
       let total=0, count=0;
+      job.stage='images';
       for (const root of [body,clone]) {
         for (const img of root.querySelectorAll('img')) {
           if(abort.signal.aborted || location.href!==initialUrl) {abort.abort();throw Error('cancelled');}
@@ -176,6 +178,7 @@ String browserDocumentScript(String readability, String token, {required bool or
         }
       }
       const meta=clone.createElement('meta');meta.setAttribute('http-equiv','Content-Security-Policy');
+      job.stage='serializing';
       meta.setAttribute('content',"default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; form-action 'none'");
       clone.head.prepend(meta);
       if(abort.signal.aborted || location.href!==initialUrl) throw Error('cancelled');

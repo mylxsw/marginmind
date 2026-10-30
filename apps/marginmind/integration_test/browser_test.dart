@@ -10,6 +10,7 @@ import 'package:mm_pdf/mm_pdf.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('native browser becomes quiet, captures live DOM, and persists its app session', (tester) async {
+    debugPrint('[browser] test started');
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final requests = <String>[];
     server.listen((request) async {
@@ -72,6 +73,7 @@ void main() {
     final uri = Uri.parse('http://localhost:${server.port}/page');
     BrowserSession? session;
     Future<void> mount([Uri? initial]) async {
+      debugPrint('[browser] mounting ${(initial ?? uri).path}');
       session = BrowserSession(initial ?? uri);
       await tester.pumpWidget(
         MaterialApp(
@@ -92,6 +94,7 @@ void main() {
         BrowserPhase.ready,
         reason: 'url=${session!.url}; id=${session!.navigationId}; error=${session!.lastErrorCode}; requests=$requests',
       );
+      debugPrint('[browser] ready ${session!.url.path}');
     }
 
     try {
@@ -106,19 +109,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       await ready();
       for (final mode in BrowserDocumentMode.values) {
-        final converted = await session!.captureDocument(navigationId: session!.navigationId, mode: mode);
+        debugPrint('[browser] ${mode.name}: capture begin');
+        final converted = await session!.captureDocument(
+          navigationId: session!.navigationId,
+          mode: mode,
+          onStage: (stage) => debugPrint('[browser] ${mode.name}: $stage'),
+        );
+        debugPrint(
+          '[browser] ${mode.name}: captured resources=${converted.resources.length}, pdf=${converted.pdf?.length}',
+        );
         expect(converted.html, contains('Paragraph 79'));
         expect(converted.resources, isNotEmpty);
         expect(converted.snapshot, isNot(contains('FORM_SECRET')));
         expect(converted.snapshot, isNot(contains('HIDDEN_SECRET')));
         expect(converted.snapshot, isNot(contains('<script')));
         if (mode == BrowserDocumentMode.original) {
+          debugPrint('[browser] original: initialize PDF engine');
           await MMPdfEngine.initialize();
+          debugPrint('[browser] original: inspect PDF');
           final info = await MMPdfEngine.inspectData(converted.pdf!);
+          debugPrint('[browser] original: PDF pages=${info.pageCount}, preview=${info.preview?.length}');
           expect(info.pageCount, greaterThan(1), reason: 'Original web style must be paginated, not one tall page');
           expect(info.preview, isNotNull);
         }
       }
+      debugPrint('[browser] all conversion modes complete');
       expect(requests.where((r) => r == '/conversion').length, 1, reason: 'Never re-fetch the page URL');
       final stale = session!.navigationId;
       await session!.navigate(uri.replace(path: '/second'));
@@ -191,9 +206,10 @@ void main() {
       expect(session!.phase, BrowserPhase.failed);
       expect(session!.canCapture, isFalse);
     } finally {
+      debugPrint('[browser] cleanup');
       session?.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
       await server.close(force: true);
     }
-  });
+  }, timeout: const Timeout(Duration(minutes: 5)));
 }

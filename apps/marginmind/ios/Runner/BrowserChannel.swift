@@ -1,5 +1,6 @@
 #if os(macOS)
 import Cocoa
+import ApplicationServices
 import FlutterMacOS
 #else
 import UIKit
@@ -52,6 +53,10 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
   private let channel: FlutterMethodChannel
   private let onClose: () -> Void
   private var generation = 0
+  private var closed = false
+#if os(macOS)
+  private var pdfPrint: BrowserPdfPrintJob?
+#endif
   private var activeNavigation: WKNavigation?
   private let world = WKContentWorld.world(name: "MarginMindBrowser")
   init(id: Int64, messenger: FlutterBinaryMessenger, onClose: @escaping () -> Void) {
@@ -95,23 +100,15 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
   private func printPdf(_ result: @escaping FlutterResult) {
     let expected = generation
 #if os(macOS)
-    let target = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
-    defer { try? FileManager.default.removeItem(at: target) }
-    let info = NSPrintInfo.shared.copy() as! NSPrintInfo
-    info.paperSize = NSSize(width: 595.28, height: 841.89)
-    info.topMargin = 36; info.bottomMargin = 36; info.leftMargin = 36; info.rightMargin = 36
-    info.horizontalPagination = .fit; info.verticalPagination = .automatic
-    info.jobDisposition = .save
-    info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = target
-    let operation = web.printOperation(with: info)
-    operation.showsPrintPanel = false; operation.showsProgressPanel = false
-    guard operation.run(), expected == generation,
-      let size = try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-      size > 0, size <= 128 * 1024 * 1024,
-      let bytes = try? Data(contentsOf: target) else {
-      result(FlutterError(code: "print_failed", message: nil, details: nil)); return
+    guard pdfPrint == nil, let window = web.window, !closed else {
+      result(FlutterError(code: "print_unavailable", message: nil, details: nil)); return
     }
-    result(FlutterStandardTypedData(bytes: bytes))
+    let job = BrowserPdfPrintJob(web: web, isCurrent: { [weak self] in
+      guard let self = self else { return false }
+      return !self.closed && self.generation == expected
+    }, didFinish: { [weak self] in self?.pdfPrint = nil }, completion: result)
+    pdfPrint = job
+    job.start(in: window)
 #else
     let renderer = BrowserPageRenderer()
     renderer.addPrintFormatter(web.viewPrintFormatter(), startingAtPageAt: 0)
@@ -133,7 +130,12 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
     result(FlutterStandardTypedData(bytes: bytes as Data))
 #endif
   }
-  func close() { web.stopLoading(); web.navigationDelegate = nil; web.uiDelegate = nil; web.removeFromSuperview(); channel.setMethodCallHandler(nil) }
+  func close() {
+    closed = true
+#if os(macOS)
+    pdfPrint?.cancel()
+#endif
+    web.stopLoading(); web.navigationDelegate = nil; web.uiDelegate = nil; web.removeFromSuperview(); channel.setMethodCallHandler(nil) }
   static func allowed(_ url: URL?) -> Bool {
     guard let url = url else { return false }
     return ["http", "https"].contains(url.scheme?.lowercased() ?? "") && url.host?.isEmpty == false
@@ -192,6 +194,81 @@ final class NativeBrowser: NSObject, WKNavigationDelegate, WKUIDelegate {
     decisionHandler: @escaping (WKPermissionDecision) -> Void) { decisionHandler(.deny) }
 #endif
 }
+#if os(macOS)
+/// Retained through AppKit's completion callback even if the tab closes.
+/// WKWebView printing must yield the main run loop while WebKit paginates.
+final class BrowserPdfPrintJob: NSObject {
+  let target: URL
+  private let operation: NSPrintOperation
+  private let isCurrent: () -> Bool
+  private let didFinish: () -> Void
+  private var completion: FlutterResult?
+  private var timeout: DispatchWorkItem?
+
+  init(web: WKWebView, isCurrent: @escaping () -> Bool, didFinish: @escaping () -> Void,
+    completion: @escaping FlutterResult) {
+    let target = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".pdf")
+    self.target = target
+    self.didFinish = didFinish
+    self.isCurrent = isCurrent
+    self.completion = completion
+    let info = NSPrintInfo.shared.copy() as! NSPrintInfo
+    info.paperSize = NSSize(width: 595.28, height: 841.89)
+    info.topMargin = 36; info.bottomMargin = 36; info.leftMargin = 36; info.rightMargin = 36
+    info.horizontalPagination = .fit; info.verticalPagination = .automatic
+    info.jobDisposition = .save
+    info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = target
+    operation = web.printOperation(with: info)
+    super.init()
+    operation.view?.frame = NSRect(origin: .zero, size: info.paperSize)
+    operation.showsPrintPanel = false
+    operation.showsProgressPanel = false
+    operation.canSpawnSeparateThread = false
+  }
+
+  func start(in window: NSWindow) {
+    let deadline = DispatchWorkItem { [weak self] in self?.cancel() }
+    timeout = deadline
+    DispatchQueue.main.asyncAfter(deadline: .now() + 40, execute: deadline)
+    // AppKit does not own our delegate. Balance this retain in didRun, also
+    // when cancellation has already completed the Flutter call.
+    let context = Unmanaged.passRetained(self).toOpaque()
+    operation.runModal(for: window, delegate: self,
+      didRun: #selector(didRun(_:success:contextInfo:)), contextInfo: context)
+  }
+
+  func cancel() {
+    let session = unsafeBitCast(operation.printInfo.pmPrintSession(), to: PMPrintSession.self)
+    _ = PMSessionSetError(session, OSStatus(kPMCancel))
+    finish(FlutterError(code: "print_cancelled", message: nil, details: nil))
+  }
+
+  @objc private func didRun(_ operation: NSPrintOperation, success: Bool, contextInfo: UnsafeMutableRawPointer?) {
+    defer {
+      didFinish()
+      // A cancelled operation may have produced its file after cancel().
+      try? FileManager.default.removeItem(at: target)
+      if let contextInfo = contextInfo { Unmanaged<BrowserPdfPrintJob>.fromOpaque(contextInfo).release() }
+    }
+    guard completion != nil else { return }
+    guard success, isCurrent(),
+      let size = try? target.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+      size > 0, size <= 128 * 1024 * 1024,
+      let bytes = try? Data(contentsOf: target) else {
+      finish(FlutterError(code: "print_failed", message: nil, details: nil)); return
+    }
+    finish(FlutterStandardTypedData(bytes: bytes))
+  }
+
+  private func finish(_ value: Any?) {
+    timeout?.cancel(); timeout = nil
+    let callback = completion
+    completion = nil
+    try? FileManager.default.removeItem(at: target)
+    callback?(value)
+  }
+}
+#endif
 #if !os(macOS)
 extension NativeBrowser: FlutterPlatformView { func view() -> UIView { web } }
 private final class BrowserPageRenderer: UIPrintPageRenderer {

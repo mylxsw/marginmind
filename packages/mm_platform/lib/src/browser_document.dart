@@ -34,6 +34,7 @@ extension BrowserDocumentConversion on BrowserSession {
     required int navigationId,
     BrowserDocumentMode mode = BrowserDocumentMode.readable,
     bool Function()? cancelled,
+    void Function(String stage)? onStage,
   }) async {
     final token = 'mmCapture_${DateTime.now().microsecondsSinceEpoch}';
     void check() {
@@ -57,13 +58,22 @@ extension BrowserDocumentConversion on BrowserSession {
     if (_capturingDocument) throw StateError('capture_busy');
     _capturingDocument = true;
     try {
+      onStage?.call('loading-reader');
       final script = await rootBundle.loadString('packages/mm_platform/assets/readability/Readability.js');
       check();
+      onStage?.call('extracting');
       await evaluate(browserDocumentScript(script, token, original: mode == BrowserDocumentMode.original));
       final deadline = DateTime.now().add(const Duration(seconds: 45));
+      String? stage;
       Map<String, dynamic> data;
       while (true) {
-        data = await evaluate('JSON.stringify(globalThis[${jsonEncode(token)}]?.result || {pending:true})');
+        data = await evaluate(
+          'JSON.stringify(globalThis[${jsonEncode(token)}]?.result || {pending:true,stage:globalThis[${jsonEncode(token)}]?.stage})',
+        );
+        if (data['stage'] is String && data['stage'] != stage) {
+          stage = data['stage'] as String;
+          onStage?.call(stage);
+        }
         if (data['pending'] != true) break;
         if (DateTime.now().isAfter(deadline)) throw TimeoutException('capture_timeout');
         await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -89,6 +99,7 @@ extension BrowserDocumentConversion on BrowserSession {
       Uint8List? pdf;
       if (mode == BrowserDocumentMode.original) {
         check();
+        onStage?.call('printing');
         pdf = await _channel.invokeMethod<Uint8List>('printPdf').timeout(const Duration(seconds: 45));
         check();
         if (pdf == null ||
@@ -101,6 +112,7 @@ extension BrowserDocumentConversion on BrowserSession {
         final current = await evaluate('JSON.stringify({url:location.href})');
         if (current['url'] != data['url']) throw StateError('stale_capture');
       }
+      onStage?.call('complete');
       return BrowserDocumentCapture(
         url: url,
         title: data['title'] as String,
