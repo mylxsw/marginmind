@@ -149,3 +149,9 @@ macOS 上资料库在应用沙盒的 Application Support 目录：`~/Library/Con
 PDF-only 笔记可进入整图/学习集复习；分支与标签筛选通过可见研究卡匹配，不混入无关分支。
 题面取 ResearchNote.question，答案实时投影正文及固定版本的引用。删除笔记删除载体，撤销
 恢复载体和已有排期；复制新笔记默认不加入复习。无需新增持久化字段或升级格式。
+
+### 应用级生词本（GUL-593）
+
+生词本不属于学习集包，也不随学习集导出。`mm_core/src/vocabulary/` 定义不可变实体、纯编辑、选区分类、词形补全、匹配及 `VocabularyRepository` 端口；内存实现从 `testing.dart` 导出。`mm_data/FileVocabularyStore` 在 Library 根目录保存独立的 `vocabulary.json`，复用原子写与串行提交约定，浏览器经相同文件适配层落到 IndexedDB。
+
+应用的 `features/vocabulary/vocabulary_controller.dart` 提供 `vocabularyProvider`，以仓库成功提交为状态来源，维护匹配版本和带冲突检测的撤销凭据；AI 查词结果只在此处转换为领域数据。`vocabulary_hints.dart` 提供 `vocabularyHintProvider`，管理全局默认提示模式、最近模式、已掌握可见性与按文档隐藏偏好。`app/storage_native.dart` / `storage_web.dart` 创建仓库，`main.dart` 注入 `app/providers.dart` 的端口。依赖仍为 `apps → mm_data / mm_assistant → mm_core`，领域层不反向引用 AI、Flutter 或偏好插件。

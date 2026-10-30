@@ -44,3 +44,11 @@ export 'src/content/document_outline.dart';
 export 'src/content/document_format.dart';
 export 'src/content/text_anchor.dart';
 export 'src/content/document_repository.dart';
+
+export 'src/vocabulary/vocabulary.dart';
+
+export 'src/vocabulary/editor.dart';
+
+export 'src/vocabulary/words.dart';
+
+export 'src/vocabulary/matcher.dart';

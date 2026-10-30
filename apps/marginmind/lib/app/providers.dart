@@ -62,3 +62,8 @@ final readerPdfProvider = Provider.family<MMPdfViewController, String>((ref, stu
   final id = ref.watch(workspaceProvider(studySetId).select((s) => s.activeDocumentId));
   return ref.watch(documentPdfProvider((studySetId, id)));
 });
+
+/// Application-wide vocabulary, provided by the storage composition root.
+final vocabularyRepositoryProvider = Provider<VocabularyRepository>(
+  (ref) => throw UnimplementedError('Override vocabularyRepositoryProvider in main()'),
+);
