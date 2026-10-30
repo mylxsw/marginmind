@@ -294,8 +294,9 @@ class _ExpansionSectionState extends ConsumerState<ExpansionSection> {
                   onChanged: busy ? null : (v) => setState(() => _grounded = v),
                 ),
                 const SizedBox(width: MMSpacing.xs),
-                Text(l.mapIdeaGrounded, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                const Spacer(),
+                Expanded(
+                  child: Text(l.mapIdeaGrounded, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+                ),
                 MMInteractive(
                   key: const ValueKey('expansion-start'),
                   onTap: busy ? null : () => _start(),
