@@ -2039,5 +2039,142 @@
   "mapIdeaBlocked": "Keep (↩) or discard (Esc) the AI drafts first",
   "mapIdeaNothing": "No new ideas here. Try another direction.",
   "mapIdeaStoppedEmpty": "Stopped before any ideas",
-  "mapIdeaBusy": "The model is busy. Try again later."
+  "mapIdeaBusy": "The model is busy. Try again later.",
+  "notesTitle": "Notes",
+  "organizeStudyNote": "Organize Study Notes…",
+  "organizeNotes": "Organize Notes",
+  "organizeSelection": "Create Study Note",
+  "exportStudyNote": "Export Note…",
+  "noteSetupTitle": "Organize Study Notes",
+  "noteScope": "Scope",
+  "noteMaterials": "Materials",
+  "noteOrganization": "Organization",
+  "noteDepth": "AI Contribution",
+  "noteContext": "Context",
+  "noteTemplate": "Layout",
+  "noteSelected": "Selected highlights",
+  "noteWhole": "Entire study set",
+  "noteRecent": "Last 7 days",
+  "noteHighlights": "Highlights",
+  "noteOwn": "My Notes",
+  "noteMapNotes": "Map Notes",
+  "noteSavedAi": "Saved AI Notes",
+  "noteImages": "Image Cards",
+  "noteTheme": "By Theme",
+  "noteSourceOrder": "Source Order",
+  "noteMapOrder": "Map Structure",
+  "noteLocal": "Format Only",
+  "noteAiContext": "Context & Summary",
+  "noteAiDeep": "Deep Organization",
+  "noteNextPhase": "Available in the next release",
+  "noteComplete": "Complete Fragments",
+  "noteReading": "Reading Notes",
+  "noteCornell": "Cornell Notes",
+  "noteReview": "Review Outline",
+  "noteGenerate": "Create Note",
+  "noteEmptyScope": "No highlights in this scope",
+  "noteGenerated": "Note created",
+  "noteFailed": "Could not create note",
+  "noteUnused": "Unused",
+  "notePutBack": "Put Back",
+  "noteRestored": "Added to note",
+  "noteRemoved": "Removed from note",
+  "noteExpandContext": "Expand Context",
+  "noteCollapseContext": "Collapse Context",
+  "noteNoText": "No source text",
+  "noteMissingHighlight": "Highlight deleted",
+  "noteMissingDocument": "Source removed",
+  "noteNotIncluded": "This highlight is not in the note",
+  "noteRemoveBlock": "Remove from Note",
+  "noteSources": "Sources",
+  "noteInclude": "Include",
+  "noteCitationPage": "Page Numbers",
+  "noteCitationFootnote": "Footnotes",
+  "noteCitationNone": "None",
+  "noteAiContent": "AI Content",
+  "noteQuestions": "Review Questions",
+  "noteSourceList": "Source List",
+  "noteAiMarks": "AI Labels",
+  "noteMark": "Show",
+  "noteUnmark": "Hide",
+  "noteCornellSummary": "Summary",
+  "noteContextSentences": "{count} surrounding sentences",
+  "@noteContextSentences": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteCoverage": "All {count} highlights cited · Original text preserved",
+  "@noteCoverage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteUnusedCount": "{count} unused highlights",
+  "@noteUnusedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSelectedCount": "{count} selected",
+  "@noteSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noteRecallQuestion": "What does {title} {location} say?",
+  "@noteRecallQuestion": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "noteSelectAll": "Select All",
+  "noteDeselectAll": "Deselect All",
+  "noteReviewAdded": "Created 1 review card",
+  "noteExplain": "Explain This Passage",
+  "noteCreateReview": "Create Review Card",
+  "noteAddedToMap": "Added to map",
+  "noteExport": "Export",
+  "noteMarginSource": "Margin Note",
+  "notePage": "p.{page}",
+  "@notePage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      }
+    }
+  },
+  "noteSourceTitle": "{title}",
+  "@noteSourceTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notePageSeparator": ", ",
+  "noteSourcePage": "{title}, p. {page}",
+  "@noteSourcePage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "page": {
+        "type": "int"
+      }
+    }
+  }
 }

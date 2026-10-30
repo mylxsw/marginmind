@@ -162,6 +162,10 @@ class ReadingPages extends Notifier<Map<String, int>> {
 class WorkspaceState {
   const WorkspaceState({
     this.content,
+    this.activeNoteId,
+    this.noteAnnotationId,
+    this.selectedAnnotationIds = const {},
+    this.annotationColors = const {0, 1, 2, 3, 4, 5},
     this.activeMapId = MindMap.defaultId,
     this.sidebarVisible = true,
     this.layout = MMSplitMode.split,
@@ -207,6 +211,10 @@ class WorkspaceState {
   /// Latest repository snapshot, including completed writes before stream delivery.
   final StudySetContent? content;
 
+  final String? noteAnnotationId;
+  final String? activeNoteId;
+  final Set<String> selectedAnnotationIds;
+  final Set<int> annotationColors;
   final String activeMapId;
   final bool sidebarVisible;
   final MMSplitMode layout;
@@ -290,6 +298,11 @@ class WorkspaceState {
 
   WorkspaceState copyWith({
     StudySetContent? content,
+    String? noteAnnotationId,
+    String? activeNoteId,
+    bool closeNote = false,
+    Set<String>? selectedAnnotationIds,
+    Set<int>? annotationColors,
     String? activeMapId,
     bool? sidebarVisible,
     MMSplitMode? layout,
@@ -344,6 +357,10 @@ class WorkspaceState {
   }) {
     return WorkspaceState(
       content: content ?? this.content,
+      noteAnnotationId: noteAnnotationId ?? this.noteAnnotationId,
+      activeNoteId: closeNote ? null : activeNoteId ?? this.activeNoteId,
+      selectedAnnotationIds: selectedAnnotationIds ?? this.selectedAnnotationIds,
+      annotationColors: annotationColors ?? this.annotationColors,
       activeMapId: activeMapId ?? this.activeMapId,
       sidebarVisible: sidebarVisible ?? this.sidebarVisible,
       layout: layout ?? this.layout,
@@ -651,6 +668,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     }
     active ??= open.lastOrNull;
     final mapId = c.map(s.activeMapId) != null ? s.activeMapId : (c.maps.firstOrNull?.id ?? MindMap.defaultId);
+    final selectedAnnotations = s.selectedAnnotationIds.where((id) => c.annotation(id) != null).toSet();
     final selectionGone = s.selectedCardId != null && !c.isPlaced(s.selectedCardId!, mapId: mapId);
     final selectedIds = s.selectedCardIds.where((id) => c.isPlaced(id, mapId: mapId)).toSet();
     final selectedId = selectionGone ? selectedIds.lastOrNull : s.selectedCardId;
@@ -661,11 +679,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         mapId == s.activeMapId &&
         selectedId == s.selectedCardId &&
         setEquals(selectedIds, s.selectedCardIds) &&
+        setEquals(selectedAnnotations, s.selectedAnnotationIds) &&
         mark == s.selectedMarkId &&
         (connecting || s.connectingFromId == null)) {
       return s;
     }
     return s.copyWith(
+      selectedAnnotationIds: selectedAnnotations,
       selectedMarkId: mark,
       clearMark: mark == null,
       clearConnecting: !connecting,
@@ -689,6 +709,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
     await _enqueue(() async {
       if (!ref.mounted || _clipboardBusy || content.map(id) == null) return;
       state = state.copyWith(
+        closeNote: true,
         activeMapId: id,
         selectRoot: true,
         clearConnecting: true,
@@ -1417,6 +1438,141 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   // ---- ink ---------------------------------------------------------------------
 
   /// Written-note changes participate in the existing persistent undo stack.
+  void focusNoteAnnotation(String id) => state = state.copyWith(noteAnnotationId: id);
+
+  void openStudyNote(String id) {
+    if (content.studyNote(id) == null) return;
+    state = state.copyWith(
+      activeNoteId: id,
+      layout: onePane ? MMSplitMode.secondary : MMSplitMode.split,
+      clearPending: true,
+    );
+  }
+
+  void selectAnnotation(String id, bool selected) => state = state.copyWith(
+    selectedAnnotationIds: {...state.selectedAnnotationIds}
+      ..removeWhere((value) => value == id)
+      ..addAll(selected ? [id] : <String>[]),
+  );
+
+  void selectAnnotations(Set<String> ids) => state = state.copyWith(selectedAnnotationIds: Set.unmodifiable(ids));
+
+  void toggleAnnotationColor(int color) {
+    final colors = {...state.annotationColors};
+    colors.contains(color) ? colors.remove(color) : colors.add(color);
+    state = state.copyWith(annotationColors: colors);
+  }
+
+  Future<StudyNote?> organizeStudyNote(
+    String title,
+    NoteScope scope,
+    NoteSettings settings,
+    NoteTemplate template, {
+    NoteTextSource text = const NoteTextSource(),
+  }) async {
+    StudyNote? created;
+    final c = content;
+    final now = _editor.now();
+    final materials = const NoteMaterialCollector().collect(c, scope, settings, now: now, text: text);
+    if (materials.highlights.isEmpty) return null;
+    final result = await const NoteOrganizationRunner().run(
+      const LocalNoteOrganizer(),
+      materials,
+      settings,
+      newId: _editor.newId,
+    );
+    created = StudyNote(
+      id: _editor.newId(),
+      title: title,
+      scope: scope,
+      settings: settings,
+      template: template,
+      sections: result.assembly.sections,
+      unusedAnnotationIds: result.assembly.unusedAnnotationIds,
+      createdAt: now,
+      updatedAt: now,
+      organizedAt: now,
+    );
+    await _update((latest) {
+      if (materials.highlights.any((m) => latest.annotation(m.sourceId) == null)) {
+        created = null;
+        return latest;
+      }
+      return _editor.saveStudyNote(latest, created!);
+    });
+    if (created != null && ref.mounted) openStudyNote(created!.id);
+    return created;
+  }
+
+  Future<void> changeStudyNote(String id, StudyNote Function(StudyNote) change) => _update((c) {
+    final note = c.studyNote(id);
+    return note == null ? c : _editor.saveStudyNote(c, change(note).copyWith(updatedAt: _editor.now()));
+  });
+
+  Future<void> removeStudyNoteBlock(String id, String blockId) => changeStudyNote(id, (note) {
+    final block = note.sections.expand((s) => s.blocks).where((b) => b.id == blockId).firstOrNull;
+    return note.copyWith(
+      sections: [for (final s in note.sections) s.copyWith(blocks: s.blocks.where((b) => b.id != blockId).toList())],
+      unusedAnnotationIds: {...note.unusedAnnotationIds, if (block is QuoteBlock) block.annotationId}.toList(),
+    );
+  });
+
+  Future<void> restoreStudyNoteQuote(String id, String annotationId) => _update((c) {
+    final note = c.studyNote(id);
+    if (note == null || c.annotation(annotationId) == null || !note.unusedAnnotationIds.contains(annotationId)) {
+      return c;
+    }
+    final quote = QuoteBlock(id: _editor.newId(), annotationId: annotationId);
+    final documentId = c.annotation(annotationId)!.documentId;
+    final materials = const NoteMaterialCollector().collect(c, const WholeSet(), note.settings, now: _editor.now());
+    final groups = {for (final m in materials.highlights) m.sourceId: m.groupKey};
+    final counts = {
+      for (final s in note.sections)
+        s.id: s.blocks.whereType<QuoteBlock>().where((b) => groups[b.annotationId] == groups[annotationId]).length,
+    };
+    NoteSection? target = note.sections.firstOrNull;
+    for (final section in note.sections) {
+      if (target == null || counts[section.id]! > counts[target.id]!) target = section;
+    }
+    return _editor.saveStudyNote(
+      c,
+      note.copyWith(
+        updatedAt: _editor.now(),
+        sections: target == null
+            ? [
+                NoteSection(id: _editor.newId(), title: c.document(documentId)!.title, blocks: [quote]),
+              ]
+            : [
+                for (final s in note.sections) s.id == target.id ? s.copyWith(blocks: [...s.blocks, quote]) : s,
+              ],
+        unusedAnnotationIds: note.unusedAnnotationIds.where((a) => a != annotationId).toList(),
+      ),
+    );
+  });
+
+  void revealNoteAnnotation(String id) {
+    final annotation = content.annotation(id);
+    if (annotation == null || annotation.needsReview) return;
+    openDocument(annotation.documentId);
+    state = state.copyWith(
+      noteAnnotationId: id,
+      layout: onePane ? MMSplitMode.primary : MMSplitMode.split,
+      reveal: annotation.isText
+          ? RevealRequest.text(annotation.documentId, annotation.textAnchors, ++_revealNonce)
+          : RevealRequest(annotation.documentId, annotation.page, annotation.rects, ++_revealNonce),
+    );
+    _flash(annotationId: id);
+  }
+
+  Future<void> makeNoteReview(String annotationId, String question, String answer) => _update((c) {
+    if (c.annotation(annotationId) == null) return c;
+    final parent = c.cards.where((card) => card.annotationId == annotationId).firstOrNull?.id;
+    final (next, card) = _editor.addNote(c, text: question, parentId: parent);
+    return next.copyWith(
+      cards: [for (final value in next.cards) value.id == card.id ? value.copyWith(body: answer) : value],
+    );
+  });
+
   Future<void> saveStudyNote(StudyNote note) => _update((c) => _editor.saveStudyNote(c, note));
   Future<void> deleteStudyNote(String id) => _update((c) => _editor.deleteStudyNote(c, id));
   Future<void> editStudyNoteBlock(String noteId, String blockId, {String? text, List<String>? items}) =>
@@ -2576,6 +2732,8 @@ final workspaceContentProvider = Provider.family<StudySetContent?, String>((ref,
       a.cropSuggestionDismissed == b.cropSuggestionDismissed &&
       (identical(a.crop, b.crop) || jsonEncode(a.crop?.toJson()) == jsonEncode(b.crop?.toJson()));
   bool samePresentation(StudySetContent a, StudySetContent b) =>
+      identical(a.studyNotes, b.studyNotes) &&
+      identical(a.noteSourceArchive, b.noteSourceArchive) &&
       identical(a.cards, b.cards) &&
       identical(a.nodes, b.nodes) &&
       identical(a.maps, b.maps) &&

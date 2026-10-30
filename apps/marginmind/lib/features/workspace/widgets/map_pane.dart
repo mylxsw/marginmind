@@ -23,6 +23,7 @@ import '../workspace_controller.dart';
 import 'mind_map_canvas.dart';
 import 'notices.dart';
 import 'map_export_sheet.dart';
+import '../../study_notes/note_setup_sheet.dart';
 import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
@@ -347,6 +348,15 @@ class _MapPaneState extends ConsumerState<MapPane> {
           const MMMenuDivider(),
         ],
         if (card != null) ...[
+          MMMenuItem(
+            l.organizeSelection,
+            () => showNoteSetupSheet(
+              context,
+              ref,
+              widget.studySetId,
+              branch: BranchScope(ref.read(workspaceProvider(widget.studySetId)).activeMapId, card.id),
+            ),
+          ),
           MMMenuItem(l.exportBranch, () => showMapExportSheet(context, ref, widget.studySetId, branchId: card.id)),
           MMMenuItem(l.cardTags, () => showCardTagsSheet(context, ref, widget.studySetId, card.id)),
           MMMenuItem(

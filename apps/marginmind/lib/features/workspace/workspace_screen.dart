@@ -16,6 +16,8 @@ import '../../shared/pdf_drop.dart';
 import '../assistant/assistant_entry.dart';
 import '../assistant/widgets/assistant_panel.dart';
 import 'workspace_controller.dart';
+import '../study_notes/note_view.dart';
+import '../study_notes/note_setup_sheet.dart';
 import 'widgets/map_pane.dart';
 import 'widgets/notices.dart';
 import 'widgets/reader_pane.dart';
@@ -75,6 +77,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     ref.watch(
       provider.select(
         (s) => (
+          s.activeNoteId,
           s.sidebarVisible,
           s.layout,
           s.splitFraction,
@@ -133,6 +136,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               sizeClass: sizeClass,
               windowHeight: height - MMSizes.toolbarHeight,
             );
+            controller.onePane =
+                controller.onePane || (state.layout == MMSplitMode.split && shown.mode != MMSplitMode.split);
             final collapsed = !touchPlatform && state.sidebarVisible && !shown.sidebarVisible;
             if (collapsed != state.sidebarAutoCollapsed) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -148,7 +153,11 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 doc,
                 setTitle,
                 shown.sidebarVisible,
-                shown.mode,
+                state.content?.studyNote(state.activeNoteId ?? '') != null &&
+                        state.layout == MMSplitMode.split &&
+                        shown.mode == MMSplitMode.primary
+                    ? MMSplitMode.secondary
+                    : shown.mode,
                 minReader,
                 shown.panelWidth,
                 sizeClass,
@@ -222,7 +231,9 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
         },
         onImageDrop: (files) =>
             insertImageFiles(context, ref, widget.studySetId, [for (final file in files) file.path]),
-        child: MapPane(studySetId: widget.studySetId),
+        child: state.content?.studyNote(state.activeNoteId ?? '') != null
+            ? StudyNoteView(studySetId: widget.studySetId, noteId: state.activeNoteId!)
+            : MapPane(studySetId: widget.studySetId),
       ),
     );
     final floating = sizeClass != MMSizeClass.regular;
@@ -283,9 +294,16 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                 ),
               ],
             ),
-          if (MMPlatformCapabilities.current.assistant)
-            MMToolbarGroup(
-              children: [
+          MMToolbarGroup(
+            children: [
+              MMToolbarButton(
+                key: const ValueKey('toolbar-organize-note'),
+                icon: MMIcons.ai,
+                label: compact || touchPlatform ? null : l.organizeNotes,
+                tooltip: AppShortcuts.tip(l.organizeNotes, AppShortcuts.organizeStudyNote),
+                onPressed: () => showNoteSetupSheet(context, ref, widget.studySetId),
+              ),
+              if (MMPlatformCapabilities.current.assistant)
                 MMToolbarButton(
                   key: const ValueKey('toolbar-assistant'),
                   icon: MMIcons.ai,
@@ -294,8 +312,8 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                   selected: state.panel == RightPanel.assistant,
                   onPressed: () => toggleAssistant(ref, widget.studySetId),
                 ),
-              ],
-            ),
+            ],
+          ),
         ],
       ),
       body: ExcerptViewScope(

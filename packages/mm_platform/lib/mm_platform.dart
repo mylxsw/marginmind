@@ -28,3 +28,4 @@ export 'src/file_drop.dart';
 export 'src/book_fonts.dart' show MMBookFonts;
 
 export 'src/speech.dart';
+export 'src/note_files.dart';

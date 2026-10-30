@@ -49,3 +49,11 @@ abstract final class MMReaderTypography {
   static const serif = 'Songti SC';
   static const sans = 'Noto Sans';
 }
+
+abstract final class MMNoteTypography {
+  static final title = MMTypography.title2.copyWith(fontSize: 24, height: 31 / 24);
+  static final heading = MMTypography.headline.copyWith(fontSize: 17, height: 22 / 17);
+  static final body = MMTypography.body.copyWith(fontSize: 14, height: 24.5 / 14);
+  static final quote = MMTypography.readingBody.copyWith(fontSize: 15, height: 27.75 / 15);
+  static final context = MMTypography.readingBody.copyWith(fontSize: 14, height: 26 / 14);
+}

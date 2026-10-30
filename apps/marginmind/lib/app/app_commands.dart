@@ -1,12 +1,14 @@
 import '../features/vocabulary/hint_controls.dart';
 import '../features/workspace/reflow_session.dart';
 import 'document_commands.dart';
+import '../features/study_notes/note_setup_sheet.dart';
+import '../features/study_notes/note_export_sheet.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition;
+import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition, QuoteBlock;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -138,6 +140,7 @@ AppCommand paragraphMarginCommand(
 /// Global shortcuts. Defined in macOS terms; [primaryShortcut] swaps ⌘ for
 /// Ctrl on Windows and Linux.
 abstract final class AppShortcuts {
+  static SingleActivator get organizeStudyNote => primaryShortcut(LogicalKeyboardKey.keyP, alt: true);
   static SingleActivator get settings => primaryShortcut(LogicalKeyboardKey.comma);
   static SingleActivator get newStudySet => primaryShortcut(LogicalKeyboardKey.keyN);
   static SingleActivator get showLibrary => primaryShortcut(LogicalKeyboardKey.keyL, shift: true);
@@ -418,6 +421,9 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ref.watch(
         workspaceProvider(workspaceId).select(
           (s) => (
+            s.activeNoteId,
+            s.noteAnnotationId,
+            s.selectedAnnotationIds,
             s.selectedCardId,
             s.selectedCardIds,
             s.editingCardId,
@@ -531,6 +537,20 @@ class _AppMenusState extends ConsumerState<AppMenus> {
         ).values,
       );
     }
+    file.add(
+      AppCommand(
+        l.organizeStudyNote,
+        inWorkspace ? () => showNoteSetupSheet(context, ref, workspaceId) : null,
+        shortcut: AppShortcuts.organizeStudyNote,
+      ),
+    );
+    final activeNote = workspace?.content.studyNote(workspaceState?.activeNoteId ?? '');
+    file.add(
+      AppCommand(
+        l.exportStudyNote,
+        activeNote == null ? null : () => showNoteExportSheet(context, ref, workspaceId!, activeNote.id),
+      ),
+    );
     file.add(AppCommand(l.exportMap, inWorkspace ? () => showMapExportSheet(context, ref, workspaceId) : null));
     Future<void> undoOrRedo({required bool redo}) async {
       // A focused text field keeps ⌘Z for its own text.
@@ -769,6 +789,11 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(l.statistics, hasLogs && (inLibrary || inWorkspace) ? () => nav.showStats(workspaceId) : null),
     ];
+    final noteSourceId =
+        workspaceState?.noteAnnotationId ??
+        (workspaceState?.pending is PendingHighlight
+            ? (workspaceState!.pending! as PendingHighlight).annotationId
+            : null);
     final map = <AppCommand>[
       AppCommand(
         l.insertImage,
@@ -815,9 +840,18 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       ),
       AppCommand(
         l.revealSource,
-        workspace != null &&
-                selected != null &&
-                workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
+        activeNote != null
+            ? (noteSourceId != null &&
+                      workspace!.content.annotation(noteSourceId) != null &&
+                      activeNote.sections
+                          .expand((s) => s.blocks)
+                          .whereType<QuoteBlock>()
+                          .any((b) => b.annotationId == noteSourceId)
+                  ? () => workspace.revealNoteAnnotation(noteSourceId)
+                  : null)
+            : workspace != null &&
+                  selected != null &&
+                  workspace.content.annotation(workspace.content.card(selected)?.annotationId ?? '') != null
             ? () => workspace.revealCard(selected)
             : null,
         shortcut: AppShortcuts.revealSource,

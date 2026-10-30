@@ -82,6 +82,8 @@ C05 导出表单尺寸：`MMSizes.mapExportSheetWidth` 560 pt，`MMSizes.mapExpo
 
 命中卡片宽 `MMSizes.vocabularyHitCardWidth`（300pt）；行间释义使用 `MMSizes.vocabularyGlossSize`（10pt），最多 8 字，仅在行间空隙足够且不会与其他释义重叠时绘制。点线复用 `MMPdfAnnotationLinePainter`，线宽 1.5pt。已掌握使用 `secondaryLabel`。查词卡片词性标签圆角使用 `MMRadii.vocabularyPos`（4pt）、`quaternaryFill` 底色。提示和新增闪烁独立于正文、标注和截图导出图层。
 
+学习笔记一期使用 `MMNoteLayout`、`MMNoteTypography` 和现有语义颜色；600pt 正文、1000pt 浮动目录阈值、640/900pt 设置与导出面板。规格与令牌清单以 `docs/study-notes-ui.md` 和 `docs/design-system.md` 为准；不在组件中复制原型 CSS 的固定颜色。
+
 ## 脑图 AI 扩展想法（GUL-581）
 
 `prototype/mindmap-ai-expand.html` 演示在脑图上用 AI 扩展想法：选中主题后点 ✦ 或按 ⌥⇥，AI 的结果以**虚线草稿节点**流式出现在脑图上；可以逐条取舍、改字、在草稿上继续扩展，↩ 一次保留（一步撤销），Esc 放弃。多选时可以分别扩展、归纳上级主题、补全同级；选中中心主题时，先给出扩展计划（总数不设上限），再扩展整张脑图。单文件、无依赖；演示控制台有 15 个场景，可切换未配置 AI、断网和深色。设计说明与技术方案见 [docs/mindmap-ai-expand.md](../docs/mindmap-ai-expand.md)，界面规格见 [docs/mindmap-ai-expand-ui.md](../docs/mindmap-ai-expand-ui.md)。
