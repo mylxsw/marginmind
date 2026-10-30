@@ -6,6 +6,14 @@ import 'package:mm_design/mm_design.dart';
 import 'helpers.dart';
 
 void main() {
+  testWidgets('gallery exposes vocabulary color and tint', (tester) async {
+    final container = await pumpApp(tester);
+    container.read(navigationProvider.notifier).showGallery();
+    await tester.pumpAndSettle();
+    expect(find.text('vocabulary'), findsOneWidget);
+    expect(find.text('vocabularyTint'), findsOneWidget);
+  });
+
   testWidgets('gallery floating toolbar follows the dragged selection and picks colors', (tester) async {
     final container = await pumpApp(tester);
     container.read(navigationProvider.notifier).showGallery();

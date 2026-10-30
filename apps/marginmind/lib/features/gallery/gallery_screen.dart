@@ -101,6 +101,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       'accent': c.accent,
       'accentFill': c.accentFill,
       'accentTint': c.accentTint,
+      'vocabulary': c.vocabulary,
+      'vocabularyTint': c.vocabularyTint,
       'line': c.line,
     };
     Widget swatch(String name, Color color) => SizedBox(
