@@ -1,7 +1,9 @@
 import '../content/research.dart';
+import '../content/models.dart';
+import '../content/map_generation.dart';
 
-/// Model fields are deliberately closed: no delete, raw document edits or map IDs.
-enum MapEditKind { addTopic, addNote, addReviewCard, move, rename }
+/// Conversation decoding stays closed; excerpt/remove require a host document capability.
+enum MapEditKind { addTopic, addNote, addReviewCard, move, rename, addExcerpt, remove }
 
 class MapEditOperation {
   const MapEditOperation({
@@ -13,11 +15,19 @@ class MapEditOperation {
     this.body,
     this.question,
     this.answer,
+    this.annotationId,
+    this.source,
+    this.reason,
   });
+  final String? annotationId, reason;
+  final CardSource? source;
   final String id;
   final MapEditKind kind;
   final String? nodeId, parentId, title, body, question, answer;
   Map<String, Object?> toJson() => {
+    if (annotationId != null) 'annotationId': annotationId,
+    if (source != null) 'source': source!.toJson(),
+    if (reason != null) 'reason': reason,
     'id': id,
     'kind': kind.name,
     if (nodeId != null) 'nodeId': nodeId,
@@ -27,8 +37,20 @@ class MapEditOperation {
     if (question != null) 'question': question,
     if (answer != null) 'answer': answer,
   };
-  factory MapEditOperation.fromJson(Map<String, dynamic> j) {
-    const keys = {'id', 'kind', 'nodeId', 'parentId', 'title', 'body', 'question', 'answer'};
+  factory MapEditOperation.fromJson(Map<String, dynamic> j, {bool documentGeneration = false}) {
+    const keys = {
+      'id',
+      'kind',
+      'nodeId',
+      'parentId',
+      'title',
+      'body',
+      'question',
+      'answer',
+      'annotationId',
+      'source',
+      'reason',
+    };
     if (j.keys.any((k) => !keys.contains(k))) throw const FormatException('Unknown operation field');
     String? value(String key) {
       final v = j[key];
@@ -38,6 +60,9 @@ class MapEditOperation {
     }
 
     final op = MapEditOperation(
+      annotationId: value('annotationId'),
+      reason: value('reason'),
+      source: j['source'] == null ? null : CardSource.fromJson((j['source'] as Map).cast()),
       id: value('id') ?? (throw const FormatException('Missing id')),
       kind: MapEditKind.values.byName(value('kind') ?? ''),
       nodeId: value('nodeId'),
@@ -47,19 +72,27 @@ class MapEditOperation {
       question: value('question'),
       answer: value('answer'),
     );
+    if (!documentGeneration &&
+        (op.kind == MapEditKind.addExcerpt || op.kind == MapEditKind.remove || op.source != null)) {
+      throw const FormatException('Document-only operation');
+    }
     final requiredFields = switch (op.kind) {
       MapEditKind.addTopic => [op.parentId, op.title],
       MapEditKind.addNote => [op.parentId, op.title, op.body],
       MapEditKind.addReviewCard => [op.parentId, op.question, op.answer],
       MapEditKind.move => [op.nodeId, op.parentId],
       MapEditKind.rename => [op.nodeId, op.title],
+      MapEditKind.addExcerpt => [op.parentId, op.annotationId],
+      MapEditKind.remove => [op.nodeId, op.reason],
     };
     final allowed = switch (op.kind) {
-      MapEditKind.addTopic => {'id', 'kind', 'parentId', 'title'},
+      MapEditKind.addTopic => {'id', 'kind', 'parentId', 'title', if (documentGeneration) 'source'},
       MapEditKind.addNote => {'id', 'kind', 'parentId', 'title', 'body'},
       MapEditKind.addReviewCard => {'id', 'kind', 'parentId', 'question', 'answer'},
       MapEditKind.move => {'id', 'kind', 'nodeId', 'parentId'},
       MapEditKind.rename => {'id', 'kind', 'nodeId', 'title'},
+      MapEditKind.addExcerpt => {'id', 'kind', 'parentId', 'annotationId'},
+      MapEditKind.remove => {'id', 'kind', 'nodeId', 'reason'},
     };
     if (j.keys.any((k) => !allowed.contains(k))) throw const FormatException('Field not allowed for operation');
     if (requiredFields.contains(null)) throw const FormatException('Missing operation field');
@@ -74,7 +107,9 @@ class MapEditProposal {
     required this.mapId,
     required this.baseRevision,
     required List<MapEditOperation> operations,
-  }) : isExpansion = false,
+  }) : generation = null,
+       createMap = null,
+       isExpansion = false,
        operations = List.unmodifiable(operations);
 
   /// Host-only capability. JSON decoding deliberately cannot grant this exemption.
@@ -84,8 +119,25 @@ class MapEditProposal {
     required this.mapId,
     required this.baseRevision,
     required List<MapEditOperation> operations,
-  }) : isExpansion = true,
+  }) : generation = null,
+       createMap = null,
+       isExpansion = true,
        operations = List.unmodifiable(operations);
+
+  /// Host capability, deliberately never restored by JSON decoding.
+  MapEditProposal.document({
+    required this.id,
+    required this.studySetId,
+    required this.mapId,
+    required this.baseRevision,
+    required List<MapEditOperation> operations,
+    required MapGeneration this.generation,
+    this.createMap,
+  }) : isExpansion = false,
+       operations = List.unmodifiable(operations);
+  final MapGeneration? generation;
+  final MindMap? createMap;
+  bool get isDocumentGeneration => generation != null;
   final bool isExpansion;
   final String id, studySetId, mapId;
   final int baseRevision;

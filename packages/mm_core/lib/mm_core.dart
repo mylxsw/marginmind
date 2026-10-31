@@ -64,6 +64,8 @@ export 'src/content/note_export.dart';
 export 'src/assistant/expansion.dart';
 export 'src/content/note_rich_export.dart';
 
+export 'src/content/map_generation.dart';
+export 'src/assistant/map_generation.dart';
 export 'src/content/translation_content.dart';
 export 'src/content/translation_job.dart';
 export 'src/content/translation_state.dart';

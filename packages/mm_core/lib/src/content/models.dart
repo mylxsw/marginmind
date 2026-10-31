@@ -2,6 +2,7 @@
 import 'package:meta/meta.dart';
 
 import 'research.dart';
+import 'map_generation.dart';
 import 'reading.dart';
 import 'document_format.dart';
 import 'text_anchor.dart';
@@ -438,6 +439,7 @@ class Card {
     this.body = '',
     this.segments = const [],
     this.annotationId,
+    this.source,
     this.imageFileName,
     this.researchNoteId,
     this.textFormat = TextFormat.plain,
@@ -447,6 +449,7 @@ class Card {
     required this.createdAt,
   });
 
+  final CardSource? source;
   final String id;
   final CardKind kind;
 
@@ -473,6 +476,7 @@ class Card {
   final bool suspended;
 
   Card copyWith({
+    Object? source = _keepValue,
     String? title,
     String? body,
     CardKind? kind,
@@ -483,6 +487,7 @@ class Card {
     bool? suspended,
     TextFormat? textFormat,
   }) => Card(
+    source: identical(source, _keepValue) ? this.source : source as CardSource?,
     id: id,
     kind: kind ?? this.kind,
     segments: segments == null ? this.segments : List.unmodifiable(segments),
@@ -501,6 +506,7 @@ class Card {
   );
 
   Map<String, Object?> toJson() => {
+    if (source != null) 'source': source!.toJson(),
     'id': id,
     'kind': kind.name,
     'title': title,
@@ -517,6 +523,7 @@ class Card {
   };
 
   factory Card.fromJson(Map<String, Object?> j) => Card(
+    source: j['source'] == null ? null : CardSource.fromJson((j['source'] as Map).cast()),
     id: j['id'] as String,
     kind: CardKind.values.byName(j['kind'] as String),
     title: (j['title'] as String?) ?? '',
@@ -545,18 +552,27 @@ class MindMap {
   const MindMap({
     required this.id,
     required this.title,
+    this.generation,
     this.density = MapDensity.full,
     this.structure = MapStructure.mind,
     this.palette = MapPalette.system,
   });
   static const defaultId = 'main';
   static const main = MindMap(id: defaultId, title: '');
+  final MapGeneration? generation;
   final String id;
   final String title;
   final MapDensity density;
   final MapStructure structure;
   final MapPalette palette;
-  MindMap copyWith({String? title, MapDensity? density, MapStructure? structure, MapPalette? palette}) => MindMap(
+  MindMap copyWith({
+    Object? generation = _keepValue,
+    String? title,
+    MapDensity? density,
+    MapStructure? structure,
+    MapPalette? palette,
+  }) => MindMap(
+    generation: identical(generation, _keepValue) ? this.generation : generation as MapGeneration?,
     id: id,
     title: title ?? this.title,
     density: density ?? this.density,
@@ -564,6 +580,7 @@ class MindMap {
     palette: palette ?? this.palette,
   );
   Map<String, Object?> toJson() => {
+    if (generation != null) 'generation': generation!.toJson(),
     'id': id,
     'title': title,
     'density': density.name,
@@ -571,6 +588,7 @@ class MindMap {
     'palette': palette.name,
   };
   factory MindMap.fromJson(Map<String, Object?> j) => MindMap(
+    generation: j['generation'] == null ? null : MapGeneration.fromJson((j['generation'] as Map).cast()),
     id: j['id'] as String,
     title: j['title'] as String,
     density: MapDensity.values.byName(j['density'] as String? ?? 'full'),
