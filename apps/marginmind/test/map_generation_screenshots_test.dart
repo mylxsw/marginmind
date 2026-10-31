@@ -230,12 +230,14 @@ void main() {
         ],
       );
       final sourceContent = multiDocumentContent();
-      final content = sourceContent.copyWith(nodes: [
-        ...sourceContent.nodes,
-        for (final node in sourceContent.nodes)
-          if (sourceContent.card(node.cardId)?.kind == CardKind.topic)
-            MapNode(cardId: node.cardId, mapId: 'memory', parentId: node.parentId, order: node.order),
-      ]);
+      final content = sourceContent.copyWith(
+        nodes: [
+          ...sourceContent.nodes,
+          for (final node in sourceContent.nodes)
+            if (sourceContent.card(node.cardId)?.kind == CardKind.topic)
+              MapNode(cardId: node.cardId, mapId: 'memory', parentId: node.parentId, order: node.order),
+        ],
+      );
       final c = await openWorkspace(
         tester,
         content: InMemoryStudySetContentRepository({'demo-1': content}),

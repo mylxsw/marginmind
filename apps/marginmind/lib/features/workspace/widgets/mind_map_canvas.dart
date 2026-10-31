@@ -784,8 +784,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       : _workingTargetRef;
   List<ExpansionDraft> get _drafts => [
     ...?widget.expansion?.drafts,
-    if (widget.expansion?.phase == ExpansionPhase.generating &&
-        (widget.skeletons == null || widget.skeletons!.isEmpty))
+    if (widget.expansion?.phase == ExpansionPhase.generating && (widget.skeletons == null || widget.skeletons!.isEmpty))
       ExpansionDraft(id: '__expansion_placeholder__', parentRef: _workingTargetRef, title: '…'),
   ];
   int _draftDepth(String id) {
@@ -1844,7 +1843,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         }
                         widget.onContextMenu!(selected, position);
                       },
-                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
+                onReveal:
+                    spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
                     ? () => widget.onReveal(id)
                     : null,
                 revealLabel: l.revealSource,
