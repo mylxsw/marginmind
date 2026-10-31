@@ -144,6 +144,7 @@ class FullTranslationState {
     this.job,
     this.paragraphs = const [],
     this.values = const {},
+    this.segments = const {},
     this.segmentStates = const {},
     this.runningKeys = const {},
     this.retries = const {},
@@ -160,6 +161,7 @@ class FullTranslationState {
   final TranslationJob? job;
   final List<TranslationParagraph> paragraphs;
   final Map<String, String> values;
+  final Map<String, TranslationSegment> segments;
   final Map<String, TranslationSegmentState> segmentStates;
   final Set<String> runningKeys;
   final Map<String, int> retries;
@@ -277,6 +279,7 @@ class FullTranslationState {
     bool clearJob = false,
     List<TranslationParagraph>? paragraphs,
     Map<String, String>? values,
+    Map<String, TranslationSegment>? segments,
     Map<String, TranslationSegmentState>? segmentStates,
     Set<String>? runningKeys,
     Map<String, int>? retries,
@@ -293,6 +296,7 @@ class FullTranslationState {
     job: clearJob ? null : job ?? this.job,
     paragraphs: paragraphs ?? this.paragraphs,
     values: values ?? this.values,
+    segments: segments ?? this.segments,
     segmentStates: segmentStates ?? this.segmentStates,
     runningKeys: runningKeys ?? this.runningKeys,
     retries: retries ?? this.retries,
@@ -356,6 +360,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
         clearJob: initialJob == null,
         paragraphs: paragraphs,
         values: scheduler.values,
+        segments: scheduler.segments,
         segmentStates: {for (final p in paragraphs) p.fingerprint: scheduler.segmentState(p)},
         runningKeys: scheduler.state.runningKeys,
         retries: scheduler.state.retries,
@@ -376,6 +381,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       job: s.job,
       clearJob: s.job == null,
       values: s.values,
+      segments: _scheduler!.segments,
       segmentStates: {for (final p in state.paragraphs) p.fingerprint: _scheduler!.segmentState(p)},
       runningKeys: s.runningKeys,
       retries: s.retries,
@@ -451,7 +457,28 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   }
 
   Future<void> retry([TranslationParagraph? paragraph]) async {
-    unawaited(_scheduler?.retry(paragraph));
+    await _scheduler?.retry(paragraph);
+  }
+
+  Future<void> editParagraph(TranslationParagraph paragraph, String text) async {
+    await _loading;
+    final scheduler = _scheduler;
+    if (scheduler == null) throw StateError('Translation unavailable');
+    await scheduler.edit(paragraph, text);
+  }
+
+  Future<Future<void> Function()?> retranslateParagraph(TranslationParagraph paragraph) async {
+    await _loading;
+    final scheduler = _scheduler;
+    if (scheduler == null) return null;
+    final key = scheduler.keyOf(paragraph);
+    final old = scheduler.segments[key];
+    await scheduler.retranslate(paragraph);
+    final updated = scheduler.segments[key];
+    if (old == null || updated == null || identical(old, updated) || updated.origin != TranslationOrigin.ai) {
+      return null;
+    }
+    return () => scheduler.restore(old, replacing: updated);
   }
 
   Future<void> translatePage(int page) async {
@@ -472,6 +499,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     state = state.copyWith(
       clearJob: true,
       values: const {},
+      segments: const {},
       segmentStates: const {},
       runningKeys: const {},
       retries: const {},

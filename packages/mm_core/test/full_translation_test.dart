@@ -203,6 +203,13 @@ void main() {
     expect(state(task: job(), running: {s.key}), TranslationSegmentState.running);
     expect(
       state(
+        task: job(state: TranslationJobState.done),
+        running: {s.key},
+      ),
+      TranslationSegmentState.running,
+    );
+    expect(
+      state(
         task: job(state: TranslationJobState.stopped),
         running: {s.key},
       ),

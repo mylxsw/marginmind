@@ -95,11 +95,14 @@ class TranslationScheduler {
   DateTime? _last429, _lastSaved;
   Future<void>? _runFuture;
   Future<void> _writes = Future.value();
+  Future<void> _segmentWrites = Future.value();
+  final _editVersions = <String, int>{};
   TranslationJob? _job;
   Object? _failure;
   TranslationUsage _usage = TranslationUsage();
 
   TranslationJob? get job => _job;
+  Map<String, TranslationSegment> get segments => Map.unmodifiable(_segments);
   Object? get failure => _failure;
   Stream<TranslationSchedulerState> get states => _events.stream;
   Map<String, String> get values => {
@@ -274,6 +277,61 @@ class TranslationScheduler {
       }
     }
     _emit();
+  }
+
+  /// User edits are journal entries, outside the content undo stack.
+  Future<void> edit(TranslationParagraph p, String text) async {
+    if (_closed || _closingRequested) throw StateError('Scheduler closed');
+    final old = _segments[keyOf(p)];
+    if (old == null ||
+        text.trim().isEmpty ||
+        p.documentId != documentId ||
+        !paragraphs.any((q) => q.fingerprint == p.fingerprint && q.text == p.text)) {
+      throw ArgumentError('Invalid paragraph edit');
+    }
+    final key = keyOf(p);
+    await _append(
+      TranslationSegment(
+        key: key,
+        fingerprint: p.fingerprint,
+        page: _page(p),
+        index: p.index,
+        text: text.trim(),
+        model: old.model,
+        profile: old.profile,
+        origin: TranslationOrigin.edited,
+        at: _now(),
+      ),
+    );
+  }
+
+  /// Appends the old value; a stale HUD cannot overwrite a later edit.
+  Future<void> restore(TranslationSegment old, {required TranslationSegment replacing}) async {
+    if (_closed || _closingRequested) return;
+    final key = old.key;
+    if (!identical(_segments[key], replacing)) return;
+    await _append(old, replacing: replacing);
+  }
+
+  Future<void> _append(
+    TranslationSegment segment, {
+    int? editVersion,
+    bool replaceEdited = true,
+    TranslationSegment? replacing,
+  }) async {
+    final write = _segmentWrites.then((_) async {
+      if (editVersion != null && (_editVersions[segment.key] ?? 0) != editVersion) return;
+      if (!replaceEdited && _segments[segment.key]?.origin == TranslationOrigin.edited) return;
+      if (replacing != null && !identical(_segments[segment.key], replacing)) return;
+      await store.append(documentId, language, segment);
+      if (editVersion == null) _editVersions[segment.key] = (_editVersions[segment.key] ?? 0) + 1;
+      _segments[segment.key] = segment;
+      _completed.add(segment.key);
+      _clearFailures(paragraphs.firstWhere((p) => keyOf(p) == segment.key));
+      _emit();
+    });
+    _segmentWrites = write.catchError((Object _) {});
+    await write;
   }
 
   Future<void> retranslate(TranslationParagraph p) => _explicit(p, replace: true);
@@ -461,6 +519,7 @@ class TranslationScheduler {
     bool bulkJobRunning() => bulkJobId == null || (_job?.id == bulkJobId && _job?.state == TranslationJobState.running);
     bool canAttempt() =>
         !_closed && !_closingRequested && _online && (explicit || (bulkJobRunning() && _gate && slot < concurrency));
+    final editVersions = {for (final p in pack) keyOf(p): _editVersions[keyOf(p)] ?? 0};
     // Capture provenance before awaiting: edits to requirements affect later requests.
     final note = _job?.note ?? '';
     final profile = translationProfile(note, promptVersion: _job?.promptVersion ?? 1);
@@ -534,11 +593,7 @@ class TranslationScheduler {
             origin: TranslationOrigin.ai,
             at: _now(),
           );
-          await store.append(documentId, language, segment);
-          _segments[segment.key] = segment;
-          _completed.add(segment.key);
-          _clearFailures(p);
-          _emit();
+          await _append(segment, editVersion: editVersions[segment.key], replaceEdited: explicit);
         }
         await _persist();
         return;
@@ -766,6 +821,7 @@ class TranslationScheduler {
       await _runFuture;
     } finally {
       await Future.wait(_active.values.toSet());
+      await _segmentWrites;
       try {
         await _persist(force: true);
       } finally {

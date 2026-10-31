@@ -9481,6 +9481,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percent}%'**
   String phoneReaderPercent(int percent);
+
+  /// No description provided for @translationRetranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Retranslate'**
+  String get translationRetranslate;
+
+  /// No description provided for @translationEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Translation'**
+  String get translationEdit;
+
+  /// No description provided for @translationRetranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Retranslated'**
+  String get translationRetranslated;
+
+  /// No description provided for @translationEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Manually edited'**
+  String get translationEdited;
+
+  /// No description provided for @translationParagraphFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Untranslated · {reason}'**
+  String translationParagraphFailed(String reason);
+
+  /// No description provided for @translationEditSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes Saved'**
+  String get translationEditSaved;
+
+  /// No description provided for @translationCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation Copied'**
+  String get translationCopied;
+
+  /// No description provided for @translationRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Translations Removed'**
+  String get translationRemoved;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

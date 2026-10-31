@@ -5396,4 +5396,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String phoneReaderPercent(int percent) {
     return '$percent%';
   }
+
+  @override
+  String get translationRetranslate => 'Retranslate';
+
+  @override
+  String get translationEdit => 'Edit Translation';
+
+  @override
+  String get translationRetranslated => 'Retranslated';
+
+  @override
+  String get translationEdited => 'Manually edited';
+
+  @override
+  String translationParagraphFailed(String reason) {
+    return 'Untranslated · $reason';
+  }
+
+  @override
+  String get translationEditSaved => 'Changes Saved';
+
+  @override
+  String get translationCopied => 'Translation Copied';
+
+  @override
+  String get translationRemoved => 'Translations Removed';
 }
