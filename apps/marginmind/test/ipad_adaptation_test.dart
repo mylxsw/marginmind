@@ -73,10 +73,14 @@ void main() {
       await t.pumpAndSettle();
       final grip = find.byKey(const ValueKey('split-divider-grip'));
       expect(grip, findsOneWidget);
+      expect(t.getSize(grip), const Size(32, 2));
+      final restingGrip = t.widget<Container>(grip).decoration! as BoxDecoration;
+      expect(restingGrip.border, isNull);
       final divider = find.byWidgetPredicate((w) => w is MouseRegion && w.cursor == SystemMouseCursors.resizeRow);
       expect(t.getSize(divider).height, 44);
       final readerBefore = t.getRect(find.byType(ReaderPane));
-      expect(t.getCenter(grip).dy, closeTo(readerBefore.bottom + .5, .01));
+      expect(t.getCenter(grip).dy, closeTo(readerBefore.bottom + 6.5, .01));
+      await screenshot(t, 'divider-$appearance', target: divider);
       await screenshot(t, 'split-$appearance', target: find.byType(AppShell));
       // Grab away from the tiny visual grip: the whole seam is a touch target.
       await t.dragFrom(t.getCenter(grip) + const Offset(100, 0), const Offset(0, 90));
@@ -85,7 +89,9 @@ void main() {
       final gesture = await t.startGesture(t.getCenter(grip));
       await t.pump();
       final box = t.widget<Container>(grip).decoration! as BoxDecoration;
-      expect(box.color, t.element(grip).mmColors.accentTint);
+      expect(box.color, isNot(restingGrip.color));
+      expect(box.border, isNull);
+      expect(t.getSize(grip), const Size(32, 2));
       await screenshot(t, 'split-grabbed-$appearance', target: find.byType(AppShell));
       await gesture.up();
       await t.pumpAndSettle();

@@ -303,31 +303,18 @@ class _SplitDividerState extends State<_SplitDivider> {
             child: SizedBox.expand(
               child: widget.showGrip
                   ? Center(
-                      child: RotatedBox(
-                        quarterTurns: widget.vertical ? 0 : 1,
-                        child: Container(
-                          key: const ValueKey('split-divider-grip'),
-                          width: 72,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: active ? c.accentTint : c.surface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: active ? c.accent : c.border),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (var i = 0; i < 2; i++)
-                                Container(
-                                  width: 28,
-                                  height: 2,
-                                  margin: EdgeInsets.symmetric(vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: active ? c.accent : c.secondaryLabel,
-                                    borderRadius: BorderRadius.circular(1),
-                                  ),
-                                ),
-                            ],
+                      child: Padding(
+                        padding: widget.vertical ? const EdgeInsets.only(top: 12) : const EdgeInsets.only(left: 12),
+                        child: RotatedBox(
+                          quarterTurns: widget.vertical ? 0 : 1,
+                          child: Container(
+                            key: const ValueKey('split-divider-grip'),
+                            width: 32,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: Color.lerp(c.windowBackground, c.secondaryLabel, active ? .8 : .5),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
                           ),
                         ),
                       ),
