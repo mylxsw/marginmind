@@ -30,6 +30,7 @@ class FullTranslationCapsule extends ConsumerWidget {
     if (job == null) {
       return Semantics(
         button: true,
+        excludeSemantics: true,
         label: l.fullTranslationCapsule,
         child: Tooltip(
           message: l.fullTranslationMenu,
@@ -138,6 +139,7 @@ class FullTranslationCapsule extends ConsumerWidget {
 
     return Semantics(
       button: true,
+      excludeSemantics: true,
       label: semanticLabel.isNotEmpty ? semanticLabel : text,
       child: Builder(
         builder: (capsuleContext) => GestureDetector(
