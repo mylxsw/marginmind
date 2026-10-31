@@ -497,7 +497,12 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
     final Widget status = _checking
         ? const SizedBox(width: 10, height: 10, child: CupertinoActivityIndicator(radius: 5))
         : !s.enabled
-        ? Text(l.settingsServiceOff, style: t.footnote.copyWith(color: c.secondaryLabel))
+        ? Text(
+            l.settingsServiceOff,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.footnote.copyWith(color: c.secondaryLabel),
+          )
         : _failure != null
         ? Row(
             key: const ValueKey('service-failure'),
@@ -517,6 +522,8 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
           )
         : Text(
             s.models.isEmpty ? l.settingsServiceNoModels : l.settingsServiceModels(enabled),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: t.footnote.copyWith(color: c.secondaryLabel),
           );
     final header = MMInteractive(
@@ -524,7 +531,13 @@ class _ServiceCardState extends ConsumerState<ServiceCard> {
       onTap: widget.onToggle,
       semanticValue: widget.open ? '▾' : '▸',
       builder: (context, state) => Container(
-        height: 52,
+        constraints: BoxConstraints(
+          minHeight: 52,
+          maxHeight: context.mmTouchPlatform
+              ? ((MediaQuery.textScalerOf(context).scale(15) + MediaQuery.textScalerOf(context).scale(13)) * 1.4 + 12)
+                    .clamp(52.0, 200.0)
+              : 52,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [

@@ -1,0 +1,114 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/mobile_polish_test.dart: iPhone 402×874: library title fits and search still filters
+00:01 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:02 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: small iPhone 320×568: every screen lays out without overflow
+00:03 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: tabs switch library, source, map and review without overflow (variant: TargetPlatform.iOS)
+00:03 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: tabs switch library, source, map and review without overflow (variant: TargetPlatform.iOS)
+00:03 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: setup scope, material toggles, local-only organization and layouts
+00:03 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: setup scope, material toggles, local-only organization and layouts
+00:03 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a write that cannot be read back never says saved or enables search
+00:03 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a write that cannot be read back never says saved or enables search
+00:03 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a write that cannot be read back never says saved or enables search
+00:03 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1600.0
+00:03 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1600.0
+00:04 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: iPhone 402×874: every screen lays out without overflow
+00:04 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: the assistant and card details rise as a bottom sheet (variant: TargetPlatform.iOS)
+00:04 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: note renders quotes, edits synchronize and source navigation survives undo
+00:04 +21: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: note renders quotes, edits synchronize and source navigation survives undo
+00:04 +22: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: note renders quotes, edits synchronize and source navigation survives undo
+00:05 +23: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: note renders quotes, edits synchronize and source navigation survives undo
+00:05 +24: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: note renders quotes, edits synchronize and source navigation survives undo
+00:05 +25: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:05 +26: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: iPhone 402×874: system back closes menus, sheets and editing before going up (variant: TargetPlatform.iOS)
+00:05 +27: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: unsupported hosts hide pronunciation and keep phonetics
+00:05 +28: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: unsupported hosts hide pronunciation and keep phonetics
+00:05 +29: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: unsupported hosts hide pronunciation and keep phonetics
+00:06 +30: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:06 +31: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:06 +32: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:06 +33: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:06 +34: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:06 +35: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:06 +36: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:06 +37: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:06 +38: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:06 +39: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +40: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +41: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +42: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +43: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +44: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:07 +45: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: expanded references restore automatic items and remove manual items without changing the draft
+00:07 +46: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: expanded references restore automatic items and remove manual items without changing the draft
+00:07 +47: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: iPad Pro 13" portrait 1032×1376: every screen lays out without overflow
+00:07 +48: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: iPad Pro 13" portrait 1032×1376: every screen lays out without overflow
+00:07 +49: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: iPad Pro 13" portrait 1032×1376: every screen lays out without overflow
+00:07 +50: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: persistent edits, Unicode limit, forms, speech and destructive undo (variant: TargetPlatform.macOS)
+00:07 +51: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:07 +52: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: tabs switch library, source, map and review without overflow (variant: TargetPlatform.android)
+00:08 +53: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: tabs switch library, source, map and review without overflow (variant: TargetPlatform.android)
+00:08 +54: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_layout_test.dart: Android 411×914: tabs switch library, source, map and review without overflow (variant: TargetPlatform.android)
+00:08 +55: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: configuration changes keep shortcuts and references in the existing bottom input
+00:08 +56: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: configuration changes keep shortcuts and references in the existing bottom input
+00:08 +57: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: configuration changes keep shortcuts and references in the existing bottom input
+00:08 +58: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at landscape
+00:08 +59: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: compact More exposes TOC and layout submenus, changes layouts and exports
+00:08 +60: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/study_notes_ui_test.dart: compact More exposes TOC and layout submenus, changes layouts and exports
+00:08 +61: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: new service → key → fetch models → enable → default → listed in the model menu
+00:08 +62: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: same/cross set navigation, deleted sources, text=false (variant: TargetPlatform.macOS)
+00:08 +63: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: same/cross set navigation, deleted sources, text=false (variant: TargetPlatform.macOS)
+00:09 +64: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: same/cross set navigation, deleted sources, text=false (variant: TargetPlatform.macOS)
+00:09 +65: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: losing credential access keeps existing answers and page links usable
+00:09 +66: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: losing credential access keeps existing answers and page links usable
+00:09 +67: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: losing credential access keeps existing answers and page links usable
+00:09 +68: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a service card: failure reason, hidden key, address, rename, remove model, off, remove
+00:09 +69: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a service card: failure reason, hidden key, address, rename, remove model, off, remove
+00:09 +70: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a service card: failure reason, hidden key, address, rename, remove model, off, remove
+00:09 +71: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: a service card: failure reason, hidden key, address, rename, remove model, off, remove
+00:09 +72: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: desktop 960×600: every screen lays out without overflow
+00:09 +73: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +74: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +75: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +76: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +77: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +78: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:09 +79: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:10 +80: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: add models: a listing failure says why; added models are marked
+00:10 +81: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: add models: a listing failure says why; added models are marked
+00:10 +82: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +83: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +84: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +85: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +86: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +87: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +88: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +89: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +90: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +91: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +92: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows iPad portrait: source above map, sidebar drawer and companion panel
+00:10 +93: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: narrow desktop pushes details, empty values and form cap remain usable (variant: TargetPlatform.macOS)
+00:10 +94: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: web search: unconfigured or an external service, independent of the model
+00:11 +95: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: web search: unconfigured or an external service, independent of the model
+00:11 +96: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: web search: unconfigured or an external service, independent of the model
+00:11 +97: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: web search: unconfigured or an external service, independent of the model
+00:11 +98: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: web search: unconfigured or an external service, independent of the model
+00:11 +99: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/vocabulary_screen_test.dart: structure and colors light (variant: TargetPlatform.macOS)
+00:11 +100: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a landscape phone shows one pane without split controls
+00:11 +100 ~1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a landscape phone shows one pane without split controls
+00:11 +101 ~1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a landscape phone shows one pane without split controls
+00:11 +101 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a landscape phone shows one pane without split controls
+00:11 +102 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_settings_ui_test.dart: an unconfigured assistant routes to models and updates after setup
+00:11 +103 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a tablet keeps stable target sizes while switching between trackpad and finger
+00:11 +104 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a tablet keeps stable target sizes while switching between trackpad and finger
+00:11 +105 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows a tablet keeps stable target sizes while switching between trackpad and finger
+00:11 +106 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows library on a phone: drawer sidebar and a narrow toolbar
+00:11 +107 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: touch windows library on iPad portrait: sort without its label
+00:11 +108 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: desktop windows a narrow desktop window keeps the desktop layout
+00:12 +109 ~2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/adaptive_layout_test.dart: desktop windows a wide desktop window is unchanged
+00:12 +110 ~2: All tests passed!

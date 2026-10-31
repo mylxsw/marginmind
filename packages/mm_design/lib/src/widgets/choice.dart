@@ -168,7 +168,8 @@ class MMPill extends StatelessWidget {
   }
 }
 
-Widget _tabletTouchTarget(BuildContext context, Widget visual, {bool active = true}) => context.mmTablet && active
+Widget _tabletTouchTarget(BuildContext context, Widget visual, {bool active = true}) =>
+    context.mmTouchPlatform && active
     ? ConstrainedBox(
         constraints: const BoxConstraints(minWidth: MMSizes.touchTarget, minHeight: MMSizes.touchTarget),
         child: Center(widthFactor: 1, heightFactor: 1, child: visual),

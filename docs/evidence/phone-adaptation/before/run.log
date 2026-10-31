@@ -1,0 +1,28 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_adaptation_test.dart
+Running Xcode build...
+Xcode build done.                                           36.0s
+00:00 +0: phone screens remain usable with the shared tablet design
+PHONE_SHOT:01-library
+PHONE_SHOT:02-settings-general
+PHONE_SHOT:02-settings-reading
+PHONE_SHOT:02-settings-models
+PHONE_SHOT:02-settings-webSearch
+PHONE_SHOT:02-settings-voice
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/541B8464-FFC3-4599-9ACD-FF93CD9CB719/Library/Application Support/Library/sets/d7613b720a346bfbe429bf841d2962a9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (6 ms)
+PHONE_SHOT:03-reader
+PHONE_SHOT:04-reader-outline
+PHONE_SHOT:05-assistant
+PHONE_SHOT:06-map
+PHONE_SHOT:07-workspace-sidebar
+PHONE_SHOT:08-note-setup
+PHONE_SHOT:09-vocabulary
+PHONE_SHOT:10-review
+PHONE_SHOT:11-statistics
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/541B8464-FFC3-4599-9ACD-FF93CD9CB719/Library/Application Support/Library/sets/d7613b720a346bfbe429bf841d2962a9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (6 ms)
+PHONE_SHOT:12-reader-dark
+PHONE_SHOT:13-map-dark
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/541B8464-FFC3-4599-9ACD-FF93CD9CB719/Library/Application Support/Library/sets/d7613b720a346bfbe429bf841d2962a9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (8 ms)
+PHONE_SHOT:14-reader-landscape
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/1D2671DC-BC40-4C0D-97C2-CCA836DB70BB/data/Containers/Data/Application/541B8464-FFC3-4599-9ACD-FF93CD9CB719/Library/Application Support/Library/sets/d7613b720a346bfbe429bf841d2962a9.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (17 ms)
+01:57 +1: (tearDownAll)
+01:58 +1: All tests passed!

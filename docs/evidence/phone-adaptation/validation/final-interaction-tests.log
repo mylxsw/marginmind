@@ -1,0 +1,14 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:01 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1000.0
+00:01 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:01 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1600.0
+00:02 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: model menu stays above its button at window width 1600.0
+00:02 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: one row of shortcuts; typing hides them while keeping the reference summary
+00:03 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: more can be cancelled with Esc; choosing Translate sends the attached selection once
+00:04 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: expanded references restore automatic items and remove manual items without changing the draft
+00:04 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: configuration changes keep shortcuts and references in the existing bottom input
+00:05 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: losing credential access keeps existing answers and page links usable
+00:06 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow light panel
+00:07 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/assistant_composer_ui_test.dart: many long references stay bounded in a narrow dark panel
+00:07 +12: All tests passed!

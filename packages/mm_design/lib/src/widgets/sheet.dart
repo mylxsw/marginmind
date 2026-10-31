@@ -68,7 +68,7 @@ Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilde
     pageBuilder: (context, _, _) => capturedThemes.wrap(
       SafeArea(
         child: Padding(
-          padding: EdgeInsets.only(bottom: context.mmTablet ? MediaQuery.viewInsetsOf(context).bottom : 0),
+          padding: EdgeInsets.only(bottom: context.mmTouchPlatform ? MediaQuery.viewInsetsOf(context).bottom : 0),
           child: Center(
             child: CallbackShortcuts(
               bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},

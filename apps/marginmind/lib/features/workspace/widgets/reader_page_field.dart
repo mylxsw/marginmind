@@ -67,12 +67,19 @@ class _ReaderPageFieldState extends State<ReaderPageField> {
       return MMInteractive(
         onTap: _start,
         semanticLabel: l.pageNumberField,
-        builder: (context, _) => context.mmTablet
+        builder: (context, _) => context.mmTouchPlatform
             ? SizedBox(
                 height: MMSizes.touchTarget,
-                child: Center(child: Text(l.pageOf(widget.page, widget.pageCount), style: style)),
+                child: Center(
+                  child: Text(
+                    l.pageOf(widget.page, widget.pageCount),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: style,
+                  ),
+                ),
               )
-            : Text(l.pageOf(widget.page, widget.pageCount), style: style),
+            : Text(l.pageOf(widget.page, widget.pageCount), maxLines: 1, overflow: TextOverflow.ellipsis, style: style),
       );
     }
     final digits = '${widget.pageCount}'.length;

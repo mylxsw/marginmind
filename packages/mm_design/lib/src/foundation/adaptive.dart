@@ -135,7 +135,7 @@ class _MMInputState extends State<MMInput> {
     child: _MMInputScope(
       owner: this,
       state: current,
-      child: widget.touchPlatform && !widget.phone
+      child: widget.touchPlatform
           ? Theme(
               data: Theme.of(context)
                   .copyWith(visualDensity: VisualDensity.standard, materialTapTargetSize: MaterialTapTargetSize.padded),
@@ -162,21 +162,25 @@ extension MMAdaptiveSizes on BuildContext {
 
   bool get mmTablet => MMInput.of(this).tablet;
 
+  /// Shared phone/tablet component style; keep [mmTablet] for pane layout.
+  /// Unlike live input, this stays stable when a pointer is attached.
+  bool get mmTouchPlatform => MMInput.of(this).touchPlatform;
+
   Size get mmToolbarButton => MMThumbDockScope.of(this)
       ? MMSizes.thumbDockButton
-      : mmTouch || mmTablet
+      : mmTouch || mmTouchPlatform
       ? const Size.square(MMSizes.touchTarget)
       : MMSizes.toolbarButton;
 
   /// Same compact outer inset for grouped, floating and custom toolbars.
-  EdgeInsets get mmToolbarPadding => EdgeInsets.all(mmTablet ? MMToolbarSpacing.inset : 3);
+  EdgeInsets get mmToolbarPadding => EdgeInsets.all(mmTouchPlatform ? MMToolbarSpacing.inset : 3);
 
-  double get mmSidebarRow => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.sidebarRow;
+  double get mmSidebarRow => mmTouch || mmTouchPlatform ? MMSizes.touchTarget : MMSizes.sidebarRow;
 
   /// Side of an [MMIconButton] in a toolbar.
-  double get mmToolbarIcon => mmTouch || mmTablet ? MMSizes.touchTarget : 28;
+  double get mmToolbarIcon => mmTouch || mmTouchPlatform ? MMSizes.touchTarget : 28;
 
-  double get mmDividerHit => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
+  double get mmDividerHit => mmTouch || mmTouchPlatform ? MMSizes.touchTarget : MMSizes.dividerHitWidth;
 }
 
 /// Gives the phone's workspace dock its own touch metrics.

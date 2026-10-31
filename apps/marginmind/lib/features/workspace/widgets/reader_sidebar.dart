@@ -65,19 +65,22 @@ class ReaderSidebar extends ConsumerWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: MMSpacing.s),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (final (value, icon, label, shortcut) in tabs)
-                      MMToolbarButton(
-                        icon: icon,
-                        tooltip: AppShortcuts.tip(label, shortcut),
-                        selected: value == shown,
-                        onPressed: controller.canShowReaderPanel(value)
-                            ? () => controller.setReaderPanelMode(value)
-                            : null,
-                      ),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (final (value, icon, label, shortcut) in tabs)
+                        MMToolbarButton(
+                          icon: icon,
+                          tooltip: AppShortcuts.tip(label, shortcut),
+                          selected: value == shown,
+                          onPressed: controller.canShowReaderPanel(value)
+                              ? () => controller.setReaderPanelMode(value)
+                              : null,
+                        ),
+                    ],
+                  ),
                 ),
               ),
               Divider(height: 1, thickness: 1, color: c.separator),

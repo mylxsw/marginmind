@@ -9,14 +9,12 @@ import '../tokens/metrics.dart';
 import 'control_frame.dart';
 import 'flat_surface.dart';
 
-/// Liquid Glass surface for controls that float above content: toolbar
+/// Surface for controls that float above content: toolbar
 /// groups, floating map controls, HUDs. Never use it for content (pages,
 /// cards) and never stack glass on glass.
 ///
-/// On a touch platform it is the richer mobile material ([MMLiquidGlass]);
-/// a glass inside another touch glass surface only tints, so the backdrop
-/// is blurred once. Falls back to an opaque fill when "Reduce transparency"
-/// is on.
+/// Phones and tablets share the compact, opaque iPad control surface.
+/// Pointer platforms keep their existing blur and accessibility fallback.
 class MMGlass extends StatelessWidget {
   const MMGlass({
     super.key,
@@ -52,7 +50,7 @@ class MMGlass extends StatelessWidget {
         borderRadius: borderRadius,
         border: controlGroup ? null : Border.all(color: c.border, width: MMSizes.hairline),
       );
-      if (toolbar && context.mmTablet) {
+      if (toolbar && context.mmTouchPlatform) {
         return MMControlGroupScope(
           child: Stack(
             alignment: Alignment.center,
@@ -71,7 +69,7 @@ class MMGlass extends StatelessWidget {
         child: Padding(padding: padding, child: child),
       );
     }
-    if (context.mmTablet) {
+    if (context.mmTouchPlatform) {
       final c = context.mmColors;
       final surface = BoxDecoration(
         color: opaqueColor ?? color ?? c.glassOpaque,
@@ -98,17 +96,9 @@ class MMGlass extends StatelessWidget {
           ),
         );
       }
-      return Container(padding: padding, decoration: surface, child: child);
-    }
-    if (MMInput.of(context).touchPlatform) {
-      return MMLiquidGlass(
-        borderRadius: borderRadius,
-        padding: padding,
-        color: color,
-        opaqueColor: opaqueColor,
-        shadows: shadows,
-        blurSigma: blurSigma,
-        child: child,
+      return DecoratedBox(
+        decoration: surface,
+        child: Padding(padding: padding, child: child),
       );
     }
     final c = context.mmColors;
@@ -150,8 +140,8 @@ List<BoxShadow> _outer(List<BoxShadow> shadows) => [
 
 /// The mobile glass material: the backdrop blurred with raised saturation,
 /// a lighter fill, a soft sheen from the top and a rim that catches light
-/// on the upper edge. [MMGlass] uses it on touch platforms; desktop glass
-/// stays as it is.
+/// on the upper edge. An explicit opt-in material; shared controls use
+/// the opaque phone/tablet surface in [MMGlass].
 ///
 /// Inside another [MMLiquidGlass] or an [MMGlassBar] it skips the backdrop
 /// and only tints. With "Reduce transparency" it is an opaque fill.
@@ -289,7 +279,9 @@ class MMGlassBar extends StatelessWidget {
     if (reduce || flat || blurSigma <= 0) return bar;
     return ClipRect(
       child: BackdropFilter(
-        filter: context.mmTablet ? ImageFilter.blur(sigmaX: 12, sigmaY: 12) : MMLiquidGlass.liquidFilter(blurSigma),
+        filter: context.mmTouchPlatform
+            ? ImageFilter.blur(sigmaX: 12, sigmaY: 12)
+            : MMLiquidGlass.liquidFilter(blurSigma),
         child: bar,
       ),
     );

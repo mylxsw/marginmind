@@ -48,7 +48,7 @@ void main() {
       ) async {
         await _window(
           tester,
-          const Center(child: MMGlass(child: Text('glass'))),
+          const Center(child: MMLiquidGlass(child: Text('glass'))),
           brightness: brightness,
         );
         expect(find.byType(MMLiquidGlass), findsOneWidget);
@@ -68,9 +68,9 @@ void main() {
       await _window(
         tester,
         const Center(
-          child: MMGlass(
+          child: MMLiquidGlass(
             padding: EdgeInsets.all(8),
-            child: MMGlass(child: Text('inner')),
+            child: MMLiquidGlass(child: Text('inner')),
           ),
         ),
       );
@@ -83,7 +83,7 @@ void main() {
     });
 
     testWidgets('a zero blur only tints', (tester) async {
-      await _window(tester, const Center(child: MMGlass(blurSigma: 0, child: Text('badge'))));
+      await _window(tester, const Center(child: MMLiquidGlass(blurSigma: 0, child: Text('badge'))));
       expect(_backdrops(tester), isEmpty);
       await _window(tester, const MMGlassBar(blurSigma: 0, child: Text('bar')));
       expect(_backdrops(tester), isEmpty);
@@ -95,7 +95,7 @@ void main() {
         const Column(
           children: [
             MMGlassBar(child: Text('bar')),
-            MMGlass(child: Text('glass')),
+            MMLiquidGlass(child: Text('glass')),
           ],
         ),
         reduceTransparency: true,
@@ -340,7 +340,7 @@ void main() {
   });
 
   group('sheets', () {
-    testWidgets('a touch bottom sheet is glass; a pointer one stays opaque', (tester) async {
+    testWidgets('phone and pointer bottom sheets use opaque surfaces', (tester) async {
       const sheet = Stack(
         children: [Positioned.fill(child: MMBottomSheet(child: SizedBox(height: 120)))],
       );
@@ -349,15 +349,15 @@ void main() {
         find.ancestor(of: find.byKey(const ValueKey('mm-bottom-sheet')), matching: find.byType(MMLiquidGlass)),
         findsNothing,
       );
-      expect(tester.widget(find.byKey(const ValueKey('mm-bottom-sheet'))), isA<MMLiquidGlass>());
-      expect(_backdrops(tester), hasLength(1));
+      expect(tester.widget(find.byKey(const ValueKey('mm-bottom-sheet'))), isA<DecoratedBox>());
+      expect(_backdrops(tester), isEmpty);
 
       await _window(tester, sheet, touch: false);
       expect(tester.widget(find.byKey(const ValueKey('mm-bottom-sheet'))), isA<DecoratedBox>());
       expect(_backdrops(tester), isEmpty);
     });
 
-    testWidgets('a touch action sheet puts its groups on glass', (tester) async {
+    testWidgets('a touch action sheet uses the shared opaque material', (tester) async {
       late BuildContext context;
       await _window(
         tester,
@@ -376,7 +376,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.descendant(of: find.byKey(const ValueKey('mm-action-sheet')), matching: find.byType(MMLiquidGlass)),
-        findsNWidgets(2),
+        findsNothing,
       );
     });
   });

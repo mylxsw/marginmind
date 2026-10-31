@@ -158,6 +158,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
   bool _styleOpen = false;
   (MapStructure, MapPalette)? _stylePreview;
   final _styleLink = LayerLink();
+  final _styleButton = GlobalKey();
   static const _styleRegion = 'map-style';
 
   Future<void> _showStyleDialog() async {
@@ -811,6 +812,21 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
     final mapPane = LayoutBuilder(
       builder: (context, paneConstraints) {
+        final styleWidth = phone
+            ? (paneConstraints.maxWidth - MMSpacing.m * 2).clamp(0.0, MMSizes.mapStylePopoverWidth)
+            : MMSizes.mapStylePopoverWidth;
+        var styleOffsetX = 0.0;
+        if (phone && _styleOpen) {
+          final button = _styleButton.currentContext?.findRenderObject() as RenderBox?;
+          if (button != null && button.hasSize) {
+            final right = button.localToGlobal(Offset(button.size.width, 0)).dx;
+            final pane = context.findRenderObject() as RenderBox?;
+            final left = pane?.localToGlobal(Offset.zero).dx ?? 0;
+            final minimum = left + MMSpacing.m + styleWidth;
+            final maximum = left + paneConstraints.maxWidth - MMSpacing.m;
+            styleOffsetX = right.clamp(minimum, maximum < minimum ? minimum : maximum) - right;
+          }
+        }
         final controls = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1096,6 +1112,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       id: 'map-style',
                                       priority: 60,
                                       child: CompositedTransformTarget(
+                                        key: _styleButton,
                                         link: _styleLink,
                                         child: TapRegion(
                                           groupId: _styleRegion,
@@ -1262,27 +1279,39 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     showWhenUnlinked: false,
                     targetAnchor: phone ? Alignment.topRight : Alignment.bottomRight,
                     followerAnchor: phone ? Alignment.bottomRight : Alignment.topRight,
-                    offset: Offset(0, phone ? -MMSpacing.s : MMSpacing.s),
+                    offset: Offset(styleOffsetX, phone ? -MMSpacing.s : MMSpacing.s),
                     child: TapRegion(
                       groupId: _styleRegion,
                       onTapOutside: (_) => _closeStyle(),
                       child: SizedBox(
-                        width: MMSizes.mapStylePopoverWidth,
-                        child: MapStylePopover(
-                          density: map.density,
-                          onDensity: controller.setMapDensity,
-                          structure: map.structure,
-                          palette: map.palette,
-                          onPreview: (style) => setState(() => _stylePreview = style),
-                          onStructure: (structure) {
-                            setState(() => _stylePreview = null);
-                            controller.setMapStructure(structure);
-                          },
-                          onPalette: (palette) {
-                            setState(() => _stylePreview = null);
-                            controller.setMapPalette(palette);
-                          },
-                          onClose: _closeStyle,
+                        width: styleWidth,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: phone
+                                ? (paneConstraints.maxHeight - chrome.vertical - MMSpacing.m * 2).clamp(
+                                    80.0,
+                                    double.infinity,
+                                  )
+                                : double.infinity,
+                          ),
+                          child: SingleChildScrollView(
+                            child: MapStylePopover(
+                              density: map.density,
+                              onDensity: controller.setMapDensity,
+                              structure: map.structure,
+                              palette: map.palette,
+                              onPreview: (style) => setState(() => _stylePreview = style),
+                              onStructure: (structure) {
+                                setState(() => _stylePreview = null);
+                                controller.setMapStructure(structure);
+                              },
+                              onPalette: (palette) {
+                                setState(() => _stylePreview = null);
+                                controller.setMapPalette(palette);
+                              },
+                              onClose: _closeStyle,
+                            ),
+                          ),
                         ),
                       ),
                     ),

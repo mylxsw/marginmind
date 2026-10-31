@@ -125,7 +125,7 @@ class MMColorMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
-    final dense = compact && !context.mmTouch && !context.mmTablet;
+    final dense = compact && !context.mmTouch && !context.mmTouchPlatform;
     final size = dense ? const Size(30, 26) : context.mmToolbarButton;
     return MMInteractive(
       onTap: () => _open(context),
@@ -134,15 +134,15 @@ class MMColorMenuButton extends StatelessWidget {
       builder: (context, s) => MMControlFrame(
         child: AnimatedContainer(
           duration: MMMotion.quick,
-          height: context.mmTablet ? MMSizes.tabletControlVisual : size.height,
-          constraints: BoxConstraints(minWidth: context.mmTablet ? MMSizes.tabletControlVisual : size.width),
+          height: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.height,
+          constraints: BoxConstraints(minWidth: context.mmTouchPlatform ? MMSizes.tabletControlVisual : size.width),
           decoration: BoxDecoration(
             color: s.pressed
                 ? c.pressed
                 : s.hovered
                 ? c.hover
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(context.mmTablet ? 16 : MMRadii.capsuleButton),
+            borderRadius: BorderRadius.circular(context.mmTouchPlatform ? 16 : MMRadii.capsuleButton),
           ),
           alignment: Alignment.center,
           child: Container(

@@ -4,13 +4,13 @@ import '../foundation/adaptive.dart';
 import '../tokens/metrics.dart';
 
 /// Compact visible controls retain a full, non-overlapping touch cell.
-/// Pointer platforms keep their existing layout unchanged.
+/// Phone and tablet controls share the same style. Pointer platforms keep their existing layout unchanged.
 class MMControlFrame extends StatelessWidget {
   const MMControlFrame({super.key, required this.child});
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => !context.mmTablet
+  Widget build(BuildContext context) => !context.mmTouchPlatform
       ? child
       : ConstrainedBox(
           constraints: const BoxConstraints(minWidth: MMSizes.touchTarget, minHeight: MMSizes.touchTarget),

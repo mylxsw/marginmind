@@ -1,0 +1,23 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart
+00:00 +0: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +1: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +2: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +3: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +4: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +5: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +6: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:00 +7: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:01 +8: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:02 +9: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 320pt
+00:06 +10: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: canvas summary topics and details render in all structures, palettes and appearances
+00:07 +11: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:07 +12: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:07 +13: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:07 +14: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/phone_popover_layout_test.dart: phone map style stays on screen at 390pt
+00:07 +15: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: style popover in the map pane hover previews, leaving restores, a click applies one undo step
+00:08 +16: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: style popover in the map pane hover previews, leaving restores, a click applies one undo step
+00:11 +17: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: style popover in the map pane a click outside closes the popover and ends the preview
+00:12 +18: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: export is drawn in the map structure
+00:12 +19: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: export is drawn in the map palette, light or dark
+00:12 +20: /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/test/map_style_test.dart: export the system palette keeps the export look
+00:12 +21: All tests passed!

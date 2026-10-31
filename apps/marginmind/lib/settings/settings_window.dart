@@ -40,6 +40,19 @@ class SettingsWindow extends StatefulWidget {
 }
 
 class _SettingsWindowState extends State<SettingsWindow> {
+  final _activeSection = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSection();
+  }
+
+  void _revealSection() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    final section = _activeSection.currentContext;
+    if (section != null) Scrollable.ensureVisible(section, alignment: .5);
+  });
+
   late SettingsTab _tab =
       MMPlatformCapabilities.current.externalCredentials ||
           [SettingsTab.general, SettingsTab.reading].contains(widget.initialTab)
@@ -85,14 +98,45 @@ class _SettingsWindowState extends State<SettingsWindow> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(MMSpacing.m, MMSpacing.xs, MMSpacing.m, MMSpacing.s),
-                child: MMSegmentedControl<SettingsTab>(
-                  key: const ValueKey('settings-sections'),
-                  expand: true,
-                  segments: [for (final (tab, _, label) in tabs) MMSegment(value: tab, label: label)],
-                  value: _tab,
-                  onChanged: (tab) => setState(() => _tab = tab),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(l.settingsTitle, style: context.mmText.title3)),
+                    MMIconButton(
+                      key: const ValueKey('settings-close'),
+                      icon: MMIcons.close,
+                      tooltip: l.closePanel,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                  ],
                 ),
               ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
+                child: MMSegmentedControl<SettingsTab>(
+                  key: const ValueKey('settings-sections'),
+                  segments: [
+                    for (final (tab, _, label) in tabs)
+                      MMSegment(
+                        value: tab,
+                        label: label,
+                        child: Text(
+                          label,
+                          key: tab == _tab ? _activeSection : null,
+                          style: context.mmText.callout.copyWith(
+                            fontWeight: tab == _tab ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                  ],
+                  value: _tab,
+                  onChanged: (tab) {
+                    setState(() => _tab = tab);
+                    _revealSection();
+                  },
+                ),
+              ),
+              const SizedBox(height: MMSpacing.s),
               Expanded(child: page),
             ],
           ),

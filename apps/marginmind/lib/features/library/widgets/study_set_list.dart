@@ -176,7 +176,7 @@ class _Row extends StatelessWidget {
       onDoubleTap: MMInput.of(context).touchPlatform ? null : onOpen,
       selected: selected,
       builder: (context, s) => Container(
-        height: context.mmTablet ? MMSizes.touchTarget : 32,
+        height: context.mmTouchPlatform ? MMSizes.touchTarget : 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: selected

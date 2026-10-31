@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
-import 'glass.dart';
 
 /// A sheet rising from the bottom of a compact window. Its handle drags it:
 /// down far enough dismisses it. With [expand] it has a medium and a full
 /// height to drag between; otherwise it fits its content. While the soft
 /// keyboard is up the sheet sits on it, and an [expand] sheet takes the
 /// full height. Fills its parent, which should cover the window. On a
-/// touch platform it is made of the mobile glass material.
+/// touch platform it shares the opaque material of tablet panels.
 class MMBottomSheet extends StatefulWidget {
   const MMBottomSheet({super.key, required this.child, this.onDismiss, this.expand = false, this.scrim = false});
 
@@ -23,10 +21,6 @@ class MMBottomSheet extends StatefulWidget {
 
   /// Draws its own tap-to-dismiss scrim (in-tree panels; routes bring one).
   final bool scrim;
-
-  /// Opacity of the glass fill on a touch platform: enough for the text and
-  /// fields of a sheet to read over any content.
-  static const double sheetOpacity = 0.82;
 
   /// Whether [context] is inside a bottom sheet: frames such as `MMSheet`
   /// leave the card to the sheet.
@@ -150,25 +144,16 @@ class _MMBottomSheetState extends State<MMBottomSheet> {
                 ),
         );
         const radius = BorderRadius.vertical(top: Radius.circular(MMRadii.sheet));
-        final sheet = MMInput.of(context).touchPlatform
-            ? MMLiquidGlass(
-                key: const ValueKey('mm-bottom-sheet'),
-                borderRadius: radius,
-                color: c.windowBackground.withValues(alpha: MMBottomSheet.sheetOpacity),
-                opaqueColor: c.windowBackground,
-                shadows: c.sheetShadow,
-                child: frame,
-              )
-            : DecoratedBox(
-                key: const ValueKey('mm-bottom-sheet'),
-                decoration: BoxDecoration(
-                  color: c.windowBackground,
-                  borderRadius: radius,
-                  border: Border(top: BorderSide(color: c.hairline, width: 0.5)),
-                  boxShadow: c.sheetShadow,
-                ),
-                child: frame,
-              );
+        final sheet = DecoratedBox(
+          key: const ValueKey('mm-bottom-sheet'),
+          decoration: BoxDecoration(
+            color: c.windowBackground,
+            borderRadius: radius,
+            border: Border(top: BorderSide(color: c.hairline, width: 0.5)),
+            boxShadow: c.sheetShadow,
+          ),
+          child: frame,
+        );
         return Stack(
           children: [
             if (widget.scrim)

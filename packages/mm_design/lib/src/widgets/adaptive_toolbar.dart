@@ -133,7 +133,7 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
           hidden: _hidden,
           compacted: _compacted,
           spacing: widget.spacing,
-          groupItemSpacing: widget.groupItemSpacing ?? (context.mmTablet ? MMToolbarSpacing.item : null),
+          groupItemSpacing: widget.groupItemSpacing ?? (context.mmTouchPlatform ? MMToolbarSpacing.item : null),
           menuBeforeId: widget.menuBeforeId,
           trailingIds: widget.trailingIds,
           groups: widget.groups,
@@ -146,7 +146,7 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
                 debugLabel: 'toolbar-item:${item.id}',
                 skipTraversal: true,
                 child: item.compactChild == null
-                    ? context.mmTablet && widget.groups.any((group) => group.contains(item.id))
+                    ? context.mmTouchPlatform && widget.groups.any((group) => group.contains(item.id))
                           ? MMControlGroupScope(child: item.child)
                           : item.child
                     : _ToolbarVariant(

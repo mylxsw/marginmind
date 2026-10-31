@@ -3,14 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
-  for (final tablet in [false, true]) {
-    testWidgets('${tablet ? 'tablet' : 'Mac'} settings pop-up separates paint from its hit target', (t) async {
+  for (final device in ['Mac', 'tablet', 'phone']) {
+    final tablet = device != 'Mac';
+    testWidgets('$device settings pop-up separates paint from its hit target', (t) async {
       String selected = 'Light';
       await t.pumpWidget(
         MaterialApp(
           theme: MMTheme.light(),
           home: MMInput(
             touchPlatform: tablet,
+            phone: device == 'phone',
             child: Scaffold(
               body: Center(
                 child: MMPopUpButton<String>(

@@ -924,7 +924,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     children: [
       Icon(icon, size: MMSizes.dropdownIcon),
       const SizedBox(width: MMSpacing.s),
-      if (context.mmTablet)
+      if (context.mmTouchPlatform)
         Flexible(child: Text(label, style: context.mmText.callout))
       else
         Text(label, style: context.mmText.callout),
@@ -1223,8 +1223,8 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         pageSpacing: MMInput.of(context).phone ? 0 : 16,
                         filePath: ocr?.document?.path ?? controller.filePath(doc),
                         controller: pdf,
-                        useTouchSelectionHandles: context.mmTablet,
-                        selectionHandleTapGroup: context.mmTablet ? annotationTapGroup(widget.studySetId) : null,
+                        useTouchSelectionHandles: context.mmTouchPlatform,
+                        selectionHandleTapGroup: context.mmTouchPlatform ? annotationTapGroup(widget.studySetId) : null,
                         paragraphs: translation?.paragraphs ?? const [],
                         hoveredParagraph: translation?.hovered,
                         onParagraphHover: !translating
@@ -1404,8 +1404,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               Positioned.fill(
                 child: MMFloatingToolbarLayout(
                   padding: EdgeInsets.only(top: chrome.top, bottom: chrome.bottom),
-                  avoid: (viewport) =>
-                      _pagePillArea(viewport, chrome.bottom, tablet: context.mmTablet, source: doc.origin != null),
+                  avoid: (viewport) => _pagePillArea(
+                    viewport,
+                    chrome.bottom,
+                    tablet: context.mmTouchPlatform,
+                    source: doc.origin != null,
+                  ),
                   anchor: switch (pending) {
                     PendingSelection(:final selection) => selection.viewportRect ?? Rect.zero,
                     PendingHighlight(:final viewportRect) => viewportRect,
@@ -1437,7 +1441,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     key: const ValueKey('reader-page-navigation'),
                     // The floating tablet control must leave the document on
                     // either side of the capsule available for input.
-                    hitTestBehavior: context.mmTablet ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
+                    hitTestBehavior: context.mmTouchPlatform ? HitTestBehavior.deferToChild : HitTestBehavior.opaque,
                     onEnter: (_) => setState(() => _hoveringNavigation = true),
                     onExit: (_) => setState(() => _hoveringNavigation = false),
                     child: Focus(
@@ -1467,19 +1471,21 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                             },
                             progress: doc.pageCount > 1
                                 ? SizedBox(
-                                    height: context.mmTablet ? MMSizes.touchTarget : MMSizes.field - MMSpacing.xxs,
+                                    height: context.mmTouchPlatform
+                                        ? MMSizes.touchTarget
+                                        : MMSizes.field - MMSpacing.xxs,
                                     child: SliderTheme(
                                       data: SliderTheme.of(context).copyWith(
-                                        activeTrackColor: context.mmTablet
+                                        activeTrackColor: context.mmTouchPlatform
                                             ? c.accent
                                             : c.secondaryLabel.withValues(alpha: _navigationVisible ? .65 : .3),
                                         inactiveTrackColor: c.secondaryLabel.withValues(
                                           alpha: _navigationVisible ? .2 : .12,
                                         ),
-                                        thumbColor: context.mmTablet ? c.label : c.secondaryLabel,
+                                        thumbColor: context.mmTouchPlatform ? c.label : c.secondaryLabel,
                                         overlayColor: c.secondaryLabel.withValues(alpha: .1),
                                         trackHeight: MMSizes.readerProgressTrack,
-                                        trackShape: context.mmTablet
+                                        trackShape: context.mmTouchPlatform
                                             ? const RoundedRectSliderTrackShape()
                                             : const RectangularSliderTrackShape(),
                                         thumbShape: RoundSliderThumbShape(
@@ -1638,7 +1644,7 @@ class _PagePill extends StatelessWidget {
       duration: MMAppearance.duration(context, MMMotion.quick),
       child: child,
     );
-    if (context.mmTablet) {
+    if (context.mmTouchPlatform) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Center(
@@ -1659,32 +1665,39 @@ class _PagePill extends StatelessWidget {
                   ),
                   child: SizedBox(
                     height: MMSizes.touchTarget,
-                    child: Row(
-                      children: [
-                        MMIconButton(
-                          icon: MMIcons.chevronLeft,
-                          tooltip: l.previousPage,
-                          onPressed: page > 1 ? onPrevious : null,
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minWidth: 72),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: ReaderPageField(
-                              page: page,
-                              pageCount: pageCount,
-                              onJump: onJump,
-                              editRequests: editRequests,
-                            ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final narrow = constraints.maxWidth < 240;
+                        final pageField = Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: ReaderPageField(
+                            key: const ValueKey('reader-page-badge'),
+                            page: page,
+                            pageCount: pageCount,
+                            onJump: onJump,
+                            editRequests: editRequests,
                           ),
-                        ),
-                        Expanded(child: progress ?? const SizedBox.shrink()),
-                        MMIconButton(
-                          icon: MMIcons.chevronRight,
-                          tooltip: l.nextPage,
-                          onPressed: page < pageCount ? onNext : null,
-                        ),
-                      ],
+                        );
+                        return Row(
+                          children: [
+                            MMIconButton(
+                              icon: MMIcons.chevronLeft,
+                              tooltip: l.previousPage,
+                              onPressed: page > 1 ? onPrevious : null,
+                            ),
+                            if (narrow)
+                              Expanded(child: pageField)
+                            else
+                              ConstrainedBox(constraints: const BoxConstraints(minWidth: 72), child: pageField),
+                            if (!narrow) Expanded(child: progress ?? const SizedBox.shrink()),
+                            MMIconButton(
+                              icon: MMIcons.chevronRight,
+                              tooltip: l.nextPage,
+                              onPressed: page < pageCount ? onNext : null,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),

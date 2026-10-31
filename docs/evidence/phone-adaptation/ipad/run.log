@@ -1,0 +1,14 @@
+00:00 +0: loading /Users/mylxsw/Workspace/codes/vibe/marginmind/apps/marginmind/integration_test/phone_adaptation_test.dart
+Running Xcode build...
+Xcode build done.                                           23.7s
+00:00 +0: phone screens remain usable with the shared tablet design
+PHONE_SHOT:01-library:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+PHONE_SHOT:02-settings-general:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+PHONE_SHOT:02-settings-reading:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Application Support/Library/sets/ea0f940692bc00200911f6ed5af25307.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (42 ms)
+PdfDocument initial load: PdfDocumentRefKey(/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Application Support/Library/sets/ea0f940692bc00200911f6ed5af25307.mmset/documents/db3f8d325616a005d40efca6f99b498c97a1e001bb04f7bdf7924b003d6e7a1f.pdf) (5 ms)
+PHONE_SHOT:03-reader:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+PHONE_SHOT:05-assistant:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+PHONE_SHOT:06-map:/Users/mylxsw/Library/Developer/CoreSimulator/Devices/C416D876-F307-4C8F-8F0E-80D03552D07D/data/Containers/Data/Application/7641377B-E926-4BCD-8AF8-84C1C6684382/Library/Caches/phone-ui-shot
+00:57 +1: (tearDownAll)
+00:58 +1: All tests passed!

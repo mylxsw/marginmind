@@ -479,7 +479,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 28),
                       sliver: SliverGrid(
-                        gridDelegate: context.mmTablet
+                        gridDelegate: context.mmTouchPlatform
                             ? SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: ((MediaQuery.sizeOf(context).width - 56) / 340).floor().clamp(1, 3),
                                 mainAxisExtent:
@@ -507,7 +507,7 @@ class _LibraryBodyState extends ConsumerState<_LibraryBody> {
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                           maxCrossAxisExtent: 230,
-                          mainAxisExtent: context.mmTablet
+                          mainAxisExtent: context.mmTouchPlatform
                               ? 230 + (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0.0, 80.0) * 4
                               : 206,
                           crossAxisSpacing: 14,

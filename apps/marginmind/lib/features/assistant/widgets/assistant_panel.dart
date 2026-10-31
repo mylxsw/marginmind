@@ -154,7 +154,7 @@ class AssistantPanel extends ConsumerWidget {
     if (ui.history) {
       body = ConversationHistory(studySetId: studySetId);
     } else if (!configured && conversation.messages.isEmpty) {
-      body = const Center(child: ModelSetupCard());
+      body = const Center(child: SingleChildScrollView(child: ModelSetupCard()));
     } else if (conversation.messages.isEmpty) {
       body = AssistantSuggestions(studySetId: studySetId);
     } else {
@@ -241,7 +241,7 @@ class AssistantHeader extends ConsumerWidget {
     var shown = title.trim().isEmpty ? l.assistant : title.trim();
     if (shown.runes.length > 24) shown = '${String.fromCharCodes(shown.runes.take(24))}…';
     return Container(
-      height: context.mmTablet ? 52 : MMSizes.toolbarGroupHeight + MMSpacing.s,
+      height: context.mmTouchPlatform ? 52 : MMSizes.toolbarGroupHeight + MMSpacing.s,
       padding: const EdgeInsets.only(left: MMSpacing.s + 2, right: MMSpacing.s),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.separator)),
@@ -257,7 +257,11 @@ class AssistantHeader extends ConsumerWidget {
                   width: MMSpacing.xl,
                   height: MMSpacing.xl,
                   decoration: BoxDecoration(color: c.research, borderRadius: BorderRadius.circular(MMRadii.excerpt)),
-                  child: Icon(MMIcons.ai, size: context.mmTablet ? 16 : context.mmToolbarIcon, color: Colors.white),
+                  child: Icon(
+                    MMIcons.ai,
+                    size: context.mmTouchPlatform ? 16 : context.mmToolbarIcon,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: MMSpacing.s),
                 Expanded(
@@ -288,7 +292,7 @@ class AssistantHeader extends ConsumerWidget {
             tooltip: l.assistantNewConversation,
             onPressed: () => startNewConversation(ref, studySetId),
           ),
-          if (context.mmTablet)
+          if (context.mmTouchPlatform)
             MMIconButton(
               key: const ValueKey('assistant-close'),
               icon: MMIcons.close,

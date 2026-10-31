@@ -57,6 +57,7 @@ const desktop = (name: 'desktop 1280×800', size: Size(1280, 800), safe: EdgeIns
 const desktopMin = (name: 'desktop 960×600', size: Size(960, 600), safe: EdgeInsets.zero, touch: false);
 
 const devices = <Device>[
+  (name: 'small iPhone 320×568', size: Size(320, 568), safe: EdgeInsets.fromLTRB(0, 20, 0, 0), touch: true),
   iphone,
   iphoneLandscape,
   ipadTwoThirds,
