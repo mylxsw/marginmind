@@ -18,6 +18,7 @@ import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/map_updates.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
@@ -61,7 +62,8 @@ class WorkspaceSidebar extends ConsumerWidget {
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
             trailing: () {
-              final isGenerating = mapGen != null &&
+              final isGenerating =
+                  mapGen != null &&
                   mapGen.request.mapId == map.id &&
                   (mapGen.phase == MapGenerationPhase.reading || mapGen.phase == MapGenerationPhase.streaming);
               if (isGenerating) {
@@ -71,16 +73,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
                 );
               }
-              final hasUpdates = map.generation != null &&
-                  mapSourcesChanged(map.generation!, [
-                    for (final s in map.generation!.sources)
-                      MapSource(
-                        documentId: s.documentId,
-                        chapters: s.chapters,
-                        fingerprint: content?.document(s.documentId) == null ? '' : s.fingerprint,
-                        readThrough: s.readThrough,
-                      ),
-                  ]);
+              final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
               if (hasUpdates) {
                 return Semantics(
                   label: l.mapHasUpdates,
@@ -167,8 +160,10 @@ class WorkspaceSidebar extends ConsumerWidget {
               icon: documentIcon(d),
               label: d.title,
               trailing: () {
-                final hasMap = content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == d.id) == true) == true;
-                final hasOcr = !d.capabilities().readingSettings &&
+                final hasMap =
+                    content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == d.id) == true) == true;
+                final hasOcr =
+                    !d.capabilities().readingSettings &&
                     ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true;
                 if (hasMap && hasOcr) {
                   return Row(
@@ -471,12 +466,7 @@ class WorkspaceSidebar extends ConsumerWidget {
         MMMenuItem(l.open, () => controller.openDocument(doc.id)),
         MMMenuItem(
           l.mapGenerateDocumentMenu,
-          () => showGenerateMapSheet(
-            context,
-            ref,
-            studySetId,
-            preselectedDocId: doc.id,
-          ),
+          () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
         ),
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);

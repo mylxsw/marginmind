@@ -31,7 +31,14 @@ MapChapterInput chapter({String id = 'chapter', String prefix = 'draft-'}) => Ma
   textByPage: {1: 'source $id'},
   annotations: {'A1': 'quote'},
 );
-MapBuildInput build(MapLinePhase phase, List<MapLine> points) => MapBuildInput(
+MapBuildInput build(
+  MapLinePhase phase,
+  List<MapLine> points, {
+  bool onlyNewContent = true,
+  List<String> titleConstraints = const [],
+}) => MapBuildInput(
+  onlyNewContent: onlyNewContent,
+  titleConstraints: titleConstraints,
   title: 'Map',
   generation: MapGeneration(
     sources: [MapSource(documentId: 'private-document', fingerprint: 'hash', readThrough: 2)],
@@ -56,6 +63,21 @@ const point = '{"k":"point","id":"p1","title":"First","doc":"D1","page":1,"marks
 const topic = '{"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}';
 final cancelled = isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled);
 void main() {
+  test('update scope and edited titles reach the model without host ids', () async {
+    for (final onlyNew in [true, false]) {
+      final client = ScriptClient([answer('{"op":"rename","node":"N1","title":"Revised"}')]);
+      final model = generator(client);
+      final input = build(MapLinePhase.diff, [], onlyNewContent: onlyNew, titleConstraints: ['User title']);
+      await model.update(input, CancellationToken()).toList();
+      final text = (client.requests.single.last as UserMessage).contents.whereType<TextPart>().single.text;
+      final payload = jsonDecode(text) as Map;
+      expect(payload['scope'], contains(onlyNew ? 'new material only' : 'entire map'));
+      expect(payload['preserveTitles'], ['User title']);
+      expect(text, isNot(contains('private-')));
+      await model.close();
+    }
+  });
+
   MapLine p(String id, [String? parent]) =>
       MapLine(id: id, kind: MapLineKind.point, title: id, parentId: parent == null ? 'private-map' : 'new:$parent');
   test('budget fitting removes deepest then latest, preserving ancestor closure and input order', () {

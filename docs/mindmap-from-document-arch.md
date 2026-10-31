@@ -51,8 +51,9 @@ abstract interface class MapGenerator {
 每个流输出**已经过 parseMapLine 校验**的行，按到达顺序 yield。控制器先对章节调用 readChapter，最多并发 3 个；收集可用要点后调用 generate 或 update。并发、缓存与单章重试归控制器，适配器不隐藏多章调度。
 
 - `MapChapterInput(chapterId, documentAlias, context, textByPage, annotations, organization, instructions)`：一章/分段的实际文字；annotations 为标注别名 → 已裁剪的原文和批注。chapterId 在本学习集的本次计划内唯一（文档 ID + 章节 ID + 分段序号），仅用于本地调度。
-- `MapBuildInput(title, generation, context, points, existingTitles, existingParents)`：第二段仅发送要点；existingTitles/Parents 的键为 N1…，父为 N…/ROOT。generation 携带组织方式、层数、要求，不能直接序列化给模型。
+- `MapBuildInput(title, generation, context, points, existingTitles, existingParents, onlyNewContent, titleConstraints)`：第二段仅发送要点；existingTitles/Parents 的键为 N1…，父为 N…/ROOT。generation 携带组织方式、层数、要求，不能直接序列化给模型。
 - `MapLineContext(phase, mapId, draftPrefix, documents, pages, nodes, annotations, protectedNodeIds, existingTitles, maxDepth, rootParentId)`：本地解析状态。documents=D1…→真实文档 ID；nodes=N1…→卡片 ID；annotations=A1…→标注 ID；pages=文档别名→本次输入实际携带的页集合；protectedNodeIds 是真实卡片 ID 集合。其余别名表仅留本地。生成到已有分支时 rootParentId=该分支真实 ID，模型仍使用 ROOT；缺省 ROOT 映射 mapId。事务再次校验分支属于目标图。
+- GUL-627 补充：`onlyNewContent` 默认 true，将更新范围作为明确的模型输入；`titleConstraints` 是审阅中改过的标题列表，换一批时传入，不发送草稿 ID，也不改写保存的用户要求。更新使用已有节点别名及保护集合，所有选中差异仍通过 `diffToProposal` 一次提交。
 - `draftPrefix` 对会话、代次、章节/重试调用唯一；每次请求创建全新 context，不复用已经消耗 ref 的实例。existingTitles 包含全图、已保留草稿和前轮排除标题；控制器跨并发章节合并时再去重。
 
 适配器只显式提取模型需要的文本与别名；不序列化 MapGeneration、MapLine 或 context。第二段将 point.source.documentId 与 point.marks 反查为 D…/A…，为要点重新分配 p1…及父引用，不发送真实 ID。第二段 pages 白名单来自成功要点所依据的实际输入页，按文档分别保留，不能把多文档页码做无归属并集。
