@@ -155,6 +155,42 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   }
 }
 
+/// Non-interactive section title; excluded from keyboard command navigation.
+class MMDropdownHeader<T> extends PopupMenuEntry<T> {
+  const MMDropdownHeader(this.label, {super.key});
+  final String label;
+  @override
+  double get height => MMSizes.dropdownRowHeight;
+  @override
+  bool represents(T? value) => false;
+  @override
+  State<MMDropdownHeader<T>> createState() => _MMDropdownHeaderState<T>();
+}
+
+class _MMDropdownHeaderState<T> extends State<MMDropdownHeader<T>> {
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(minHeight: widget.height),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        heightFactor: 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+          child: Text(
+            widget.label,
+            style: context.mmText.footnote.copyWith(
+              color: context.mmColors.secondaryLabel,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Compact command row with rounded hover/focus feedback and touch sizing.
 class MMDropdownItem<T> extends PopupMenuItem<T> {
   const MMDropdownItem({

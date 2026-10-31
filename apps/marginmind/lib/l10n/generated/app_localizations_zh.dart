@@ -995,6 +995,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get readerAppearance => '阅读外观';
 
   @override
+  String get readerMenuReading => '阅读辅助';
+
+  @override
+  String get readerMenuPage => '页面显示';
+
+  @override
+  String get readerMenuTools => '工具与工作区';
+
+  @override
   String get research => '研究';
 
   @override

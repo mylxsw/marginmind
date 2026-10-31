@@ -12,7 +12,7 @@ abstract final class MMIcons {
   static const share = LucideIcons.share;
   static const export = LucideIcons.download;
   static const IconData speaker = CupertinoIcons.speaker_2;
-  static const compare = CupertinoIcons.square_split_2x1;
+  static const compare = LucideIcons.columns2;
   static const swapSides = CupertinoIcons.arrow_right_arrow_left;
   static const alignHere = CupertinoIcons.equal;
   static const marginNote = CupertinoIcons.text_bubble;
@@ -142,4 +142,25 @@ abstract final class MMIcons {
   static const IconData groupParent = LucideIcons.group;
   static const IconData fillSiblings = LucideIcons.listPlus;
   static const IconData adjust = LucideIcons.slidersHorizontal;
+}
+
+/// Lucide vocabulary for reader commands, including toolbar overflow entries.
+abstract final class MMReaderIcons {
+  static const select = LucideIcons.mousePointer2;
+  static const pen = LucideIcons.pencil;
+  static const area = LucideIcons.scan;
+  static const syncToMap = LucideIcons.gitBranch;
+  static const marginNote = LucideIcons.messageSquareText;
+  static const actualSize = LucideIcons.square;
+  static const fitWidth = LucideIcons.moveHorizontal;
+  static const fitPage = LucideIcons.maximize;
+  static const crop = LucideIcons.crop;
+  static const white = LucideIcons.sun;
+  static const dark = LucideIcons.moon;
+  static const paper = LucideIcons.scrollText;
+  static const green = LucideIcons.leaf;
+  static const zoomIn = LucideIcons.plus;
+  static const zoomOut = LucideIcons.minus;
+  static const layoutReader = LucideIcons.fileText;
+  static const assistant = LucideIcons.sparkles;
 }

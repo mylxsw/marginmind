@@ -306,7 +306,19 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       menuEntry: MMDropdownItem<VoidCallback>(
         key: ValueKey('workspace-command-$id'),
         value: invoke,
-        child: Text(label),
+        child: Row(
+          children: [
+            Icon(switch (id) {
+              'layout-reader' => MMReaderIcons.layoutReader,
+              'layout-split' => MMIcons.compare,
+              'assistant' => MMReaderIcons.assistant,
+              _ => icon,
+            }, size: MMSizes.dropdownIcon),
+            const SizedBox(width: MMSpacing.s),
+            Expanded(child: Text(label)),
+            if (selected) const Icon(MMIcons.check, size: MMSizes.dropdownIcon),
+          ],
+        ),
       ),
     );
     final globalActions = <MMToolbarItem>[

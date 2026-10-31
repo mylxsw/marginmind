@@ -32,6 +32,7 @@ class MMAdaptiveToolbar extends StatefulWidget {
     required this.menuLabel,
     this.menuIcon,
     this.menuKey,
+    this.overflowLabel,
     this.menuBeforeId,
     this.trailingIds = const {},
     this.groups = const [],
@@ -42,6 +43,7 @@ class MMAdaptiveToolbar extends StatefulWidget {
   final String menuLabel;
   final Widget? menuIcon;
   final Key? menuKey;
+  final String? overflowLabel;
   final String? menuBeforeId;
   final Set<String> trailingIds;
   final List<Set<String>> groups;
@@ -160,8 +162,12 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
                 icon: widget.menuIcon,
                 width: MMSizes.readerZoomMenuWidth,
                 itemBuilder: (_) => [
+                  if (_hidden.isNotEmpty && widget.overflowLabel != null)
+                    MMDropdownHeader<VoidCallback>(widget.overflowLabel!),
                   for (final item in widget.items)
                     if (_hidden.contains(item.id)) item.menuEntry,
+                  if (_hidden.isNotEmpty && widget.overflowLabel != null && widget.menuEntries.isNotEmpty)
+                    const PopupMenuDivider(),
                   ...widget.menuEntries,
                 ],
                 onSelected: (command) => command(),

@@ -189,23 +189,35 @@ class ReaderCompareMenu extends ConsumerWidget {
         ],
       ],
       child: menuLabel != null
-          ? Row(children: [const Icon(MMIcons.compare), const SizedBox(width: 8), Text(menuLabel!)])
+          ? Row(
+              children: [
+                const Icon(MMIcons.compare, size: MMSizes.dropdownIcon),
+                const SizedBox(width: MMSpacing.s),
+                Text(menuLabel!),
+              ],
+            )
           : document == null
-          ? Container(
-              width: buttonSize.width,
-              height: buttonSize.height,
-              decoration: BoxDecoration(
-                color: pair == null ? Colors.transparent : c.accentTint,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                MMIcons.compare,
-                size: 16,
-                color: !enabled
-                    ? c.label.withValues(alpha: .3)
-                    : pair != null
-                    ? c.accent
-                    : c.label,
+          ? Semantics(
+              button: true,
+              enabled: enabled,
+              selected: pair != null,
+              child: Container(
+                width: buttonSize.width,
+                height: buttonSize.height,
+                decoration: BoxDecoration(
+                  color: pair == null ? Colors.transparent : c.accentTint,
+                  borderRadius: BorderRadius.circular(MMRadii.row),
+                ),
+                child: Icon(
+                  MMIcons.compare,
+                  semanticLabel: l.compareReading,
+                  size: context.mmTablet ? MMSizes.tabletToolbarIcon : MMSpacing.l,
+                  color: !enabled
+                      ? c.label.withValues(alpha: .3)
+                      : pair != null
+                      ? c.accent
+                      : c.label,
+                ),
               ),
             )
           : SizedBox(

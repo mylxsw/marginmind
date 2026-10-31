@@ -1032,6 +1032,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerAppearance => 'Reading Appearance';
 
   @override
+  String get readerMenuReading => 'Reading Aids';
+
+  @override
+  String get readerMenuPage => 'Page Display';
+
+  @override
+  String get readerMenuTools => 'Tools & Workspace';
+
+  @override
   String get research => 'Research';
 
   @override

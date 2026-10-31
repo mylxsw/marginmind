@@ -33,11 +33,13 @@ class WorkspaceToolbar extends StatelessWidget {
     required this.menuEntries,
     required this.label,
     this.menuIcon,
+    this.overflowLabel,
   });
   final List<MMToolbarItem> items;
   final List<PopupMenuEntry<VoidCallback>> menuEntries;
   final String label;
   final Widget? menuIcon;
+  final String? overflowLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +83,12 @@ class WorkspaceToolbar extends StatelessWidget {
                 child: MMAdaptiveToolbar(
                   items: [...items, if (ownsActions && scope != null) ...scope.actions],
                   menuLabel: label,
+                  overflowLabel: overflowLabel,
                   spacing: phone ? MMSpacing.xs : MMSpacing.s,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {
+                    if (menuIcon != null) 'compare',
                     if (menuIcon != null) 'documents',
                     if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
                     ':menu',

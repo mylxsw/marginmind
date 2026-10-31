@@ -430,7 +430,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         selected: selected,
         child: Row(
           children: [
-            if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: MMSpacing.s)],
+            if (icon != null) ...[Icon(icon, size: MMSizes.dropdownIcon), const SizedBox(width: MMSpacing.s)],
             Expanded(child: Text(label)),
             if (selected) const Icon(MMIcons.check, size: 14),
           ],
@@ -453,6 +453,35 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
       onClose: document == null ? null : () => controller.closeDocument(document.id),
     );
     final items = <MMToolbarItem>[
+      MMToolbarItem(
+        id: 'navigation',
+        priority: 90,
+        child: MMToolbarButton(
+          key: const ValueKey('reader-navigation'),
+          icon: MMIcons.readerNavigation,
+          tooltip: AppShortcuts.tip(
+            state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+            AppShortcuts.toggleReaderSidebar,
+          ),
+          selected: state.readerPanelVisible,
+          onPressed: command(
+            'reader-navigation',
+            capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
+                ? controller.toggleReaderPanel
+                : null,
+            selected: state.readerPanelVisible,
+          ),
+        ),
+        menuEntry: entry(
+          state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+          capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
+              ? controller.toggleReaderPanel
+              : null,
+          selected: state.readerPanelVisible,
+          icon: MMIcons.readerNavigation,
+          id: 'reader-navigation',
+        ),
+      ),
       for (final (tool, icon, label, priority) in tools)
         MMToolbarItem(
           id: tool.name,
@@ -491,7 +520,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             label,
             !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
             selected: state.tool == tool,
-            icon: icon,
+            icon: switch (tool) {
+              AnnotationTool.select => MMReaderIcons.select,
+              AnnotationTool.ink => MMReaderIcons.pen,
+              AnnotationTool.area => MMReaderIcons.area,
+              _ => icon,
+            },
             id: 'tool-${tool.name}',
           ),
         ),
@@ -512,8 +546,26 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
           capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
           selected: state.syncToMap,
+          icon: MMReaderIcons.syncToMap,
         ),
       ),
+      if (!MMInput.of(context).phone && MMSizeClass.of(context) != MMSizeClass.compact)
+        MMToolbarItem(
+          id: 'compare',
+          priority: 80,
+          child: ReaderCompareMenu(studySetId: widget.studySetId, enabled: capabilities.parallel && !crop.editing),
+          menuEntry: PopupMenuItem<VoidCallback>(
+            enabled: false,
+            height: MMSizes.dropdownRowHeight,
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.s, vertical: MMSpacing.xs),
+            child: ReaderCompareMenu(
+              studySetId: widget.studySetId,
+              enabled: capabilities.parallel && !crop.editing,
+              menuLabel: l.compareReading,
+              onInvoked: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ),
       MMToolbarItem(
         id: 'documents',
         priority: 70,
@@ -521,46 +573,43 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         menuEntry: entry(
           l.switchDocument,
           () => showMMMenu(context, position: Offset.zero, entries: documents.menuEntries(context, ref)),
+          icon: MMIcons.collections,
         ),
       ),
     ];
-    // Preserve rich controls (zoom slider, comparison and OCR) inside More.
+    // Rich zoom controls remain available alongside grouped reader commands.
     final menuEntries = <PopupMenuEntry<VoidCallback>>[
-      entry(
-        state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
-        capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
-            ? controller.toggleReaderPanel
-            : null,
-        selected: state.readerPanelVisible,
-        id: 'reader-navigation',
-      ),
+      MMDropdownHeader<VoidCallback>(l.readerMenuReading),
       entry(
         l.marginNotes,
         capabilities.marginNotes && document != null && !crop.editing && !comparing
             ? () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id)
             : null,
         selected: marginState.openDocuments.contains(state.activeDocumentId),
+        icon: MMReaderIcons.marginNote,
         id: 'reader-margin',
       ),
       if (document != null)
-        entry(l.vocabularyHints, () => toggleVocabularyHints(context, ref, document.id), id: 'vocabulary-hint-toggle'),
-      entry(l.readingSettings, () {
-        if (capabilities.readingSettings) {
-          settingsHandler?.call(context, ref, widget.studySetId);
-        } else {
-          showReadingSettings(context, ref, widget.studySetId);
-        }
-      }, id: 'reader-settings'),
-      PopupMenuItem<VoidCallback>(
-        enabled: false,
-        child: ReaderCompareMenu(
-          studySetId: widget.studySetId,
-          enabled: capabilities.parallel && !crop.editing,
-          menuLabel: l.compareReading,
-          onInvoked: () => Navigator.of(context).pop(),
+        entry(
+          l.vocabularyHints,
+          () => toggleVocabularyHints(context, ref, document.id),
+          icon: MMIcons.vocabulary,
+          id: 'vocabulary-hint-toggle',
         ),
+      entry(
+        l.readingSettings,
+        () {
+          if (capabilities.readingSettings) {
+            settingsHandler?.call(context, ref, widget.studySetId);
+          } else {
+            showReadingSettings(context, ref, widget.studySetId);
+          }
+        },
+        icon: MMIcons.readingSettings,
+        id: 'reader-settings',
       ),
       const PopupMenuDivider(),
+      MMDropdownHeader<VoidCallback>(l.readerMenuPage),
       PopupMenuItem<VoidCallback>(
         enabled: false,
         child: document?.contentManifest != null
@@ -579,13 +628,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
             : ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
       ),
       for (final command in [
-        (ReaderZoomCommand.actualSize, l.pdfActualSize),
-        (ReaderZoomCommand.fitWidth, l.pdfFitWidth),
-        (ReaderZoomCommand.fitPage, l.pdfFitPage),
+        (ReaderZoomCommand.actualSize, l.pdfActualSize, MMReaderIcons.actualSize),
+        (ReaderZoomCommand.fitWidth, l.pdfFitWidth, MMReaderIcons.fitWidth),
+        (ReaderZoomCommand.fitPage, l.pdfFitPage, MMReaderIcons.fitPage),
       ])
-        entry(command.$2, capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null),
-      entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, id: 'reader-crop'),
+        entry(command.$2, capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null, icon: command.$3),
+      entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, icon: MMReaderIcons.crop, id: 'reader-crop'),
       const PopupMenuDivider(),
+      MMDropdownHeader<VoidCallback>(l.readerAppearance),
       for (final value in MMReaderStyle.values)
         MMDropdownItem<VoidCallback>(
           value: () => setStyle(value),
@@ -596,7 +646,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return ReaderAnnotationTools(
       state: state,
       controller: controller,
-      child: ReaderToolbar(items: items, menuEntries: menuEntries, label: l.moreTools),
+      child: ReaderToolbar(
+        items: items,
+        menuEntries: menuEntries,
+        label: l.moreTools,
+        overflowLabel: l.readerMenuTools,
+      ),
     );
   }
 
@@ -881,15 +936,12 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final c = context.mmColors;
     return Row(
       children: [
-        Container(
-          width: MMSpacing.l,
-          height: MMSpacing.l,
-          decoration: BoxDecoration(
-            color: value.paperColor,
-            border: Border.all(color: c.separator),
-            borderRadius: BorderRadius.circular(MMRadii.page),
-          ),
-        ),
+        Icon(switch (value) {
+          MMReaderStyle.white => MMReaderIcons.white,
+          MMReaderStyle.dark => MMReaderIcons.dark,
+          MMReaderStyle.paper => MMReaderIcons.paper,
+          MMReaderStyle.green => MMReaderIcons.green,
+        }, size: MMSizes.dropdownIcon),
         const SizedBox(width: MMSpacing.s),
         Text(switch (value) {
           MMReaderStyle.white => l.readerStyleWhite,
@@ -898,7 +950,20 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
           MMReaderStyle.green => l.readerStyleGreen,
         }, style: context.mmText.callout),
         const Spacer(),
-        if (selected) Icon(MMIcons.check, color: c.accent, size: MMSizes.dropdownIcon),
+        Container(
+          width: MMSizes.dropdownIcon,
+          height: MMSizes.dropdownIcon,
+          decoration: BoxDecoration(
+            color: value.paperColor,
+            border: Border.all(color: c.separator),
+            borderRadius: BorderRadius.circular(MMRadii.page),
+          ),
+        ),
+        const SizedBox(width: MMSpacing.s),
+        SizedBox.square(
+          dimension: MMSizes.dropdownIcon,
+          child: selected ? Icon(MMIcons.check, color: c.accent, size: MMSizes.dropdownIcon) : null,
+        ),
       ],
     );
   }

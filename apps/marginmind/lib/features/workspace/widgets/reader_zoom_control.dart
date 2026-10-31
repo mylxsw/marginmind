@@ -54,7 +54,7 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
           Text('${(math.pow(2, _value) * 100).round()}%', style: context.mmText.callout),
           Row(
             children: [
-              Icon(MMIcons.zoomOut, size: MMSpacing.l, semanticLabel: context.l10n.zoomOut),
+              Icon(MMReaderIcons.zoomOut, size: MMSpacing.l, semanticLabel: context.l10n.zoomOut),
               Expanded(
                 child: Slider(
                   key: const ValueKey('reader-zoom-slider'),
@@ -78,7 +78,7 @@ class _ReaderZoomSliderState extends State<ReaderZoomSlider> {
                         },
                 ),
               ),
-              Icon(MMIcons.zoomIn, size: MMSpacing.l, semanticLabel: context.l10n.zoomIn),
+              Icon(MMReaderIcons.zoomIn, size: MMSpacing.l, semanticLabel: context.l10n.zoomIn),
             ],
           ),
         ],

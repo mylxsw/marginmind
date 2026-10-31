@@ -1904,6 +1904,24 @@ abstract class AppLocalizations {
   /// **'Reading Appearance'**
   String get readerAppearance;
 
+  /// No description provided for @readerMenuReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Aids'**
+  String get readerMenuReading;
+
+  /// No description provided for @readerMenuPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page Display'**
+  String get readerMenuPage;
+
+  /// No description provided for @readerMenuTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools & Workspace'**
+  String get readerMenuTools;
+
   /// No description provided for @research.
   ///
   /// In en, this message translates to:
