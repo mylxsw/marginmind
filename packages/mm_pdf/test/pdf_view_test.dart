@@ -732,7 +732,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
-  testWidgets('commits viewport bounds, cancels stale selection and reports scrolling', (tester) async {
+  testWidgets('commits after one frame, cancels stale selection and reports scrolling', (tester) async {
     final controller = MMPdfViewController();
     MMPdfSelection? committed;
     var viewportChanges = 0;
@@ -764,7 +764,7 @@ void main() {
         .widgetList<Listener>(find.descendant(of: find.byType(MMPdfView), matching: find.byType(Listener)))
         .firstWhere((w) => w.onPointerUp != null);
     listener.onPointerUp!(const PointerUpEvent());
-    await tester.pump(const Duration(milliseconds: 130));
+    await tester.pump();
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
     await tester.pump();
     expect(committed, isNotNull);

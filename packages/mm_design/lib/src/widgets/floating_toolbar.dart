@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../foundation/appearance.dart';
 import '../foundation/adaptive.dart';
 import '../foundation/floating_placement.dart';
 import '../foundation/interactive.dart';
@@ -23,22 +22,16 @@ class MMFloatingToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: MMAppearance.duration(context, MMMotion.quick),
-      curve: MMMotion.quickCurve,
-      builder: (context, t, child) => Opacity(opacity: t, child: child),
-      child: Semantics(
-        container: true,
-        explicitChildNodes: true,
-        // A floating surface must cover the content beneath it. Toolbar
-        // groups use a translucent control fill in flat workspaces.
-        child: FocusTraversalGroup(
-          child: MMGlass(
-            toolbar: true,
-            padding: EdgeInsets.all(context.mmTablet ? 2 : 3),
-            child: Row(mainAxisSize: MainAxisSize.min, children: children),
-          ),
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      // A floating surface must cover the content beneath it. Toolbar
+      // groups use a translucent control fill in flat workspaces.
+      child: FocusTraversalGroup(
+        child: MMGlass(
+          toolbar: true,
+          padding: EdgeInsets.all(context.mmTablet ? 2 : 3),
+          child: Row(mainAxisSize: MainAxisSize.min, children: children),
         ),
       ),
     );

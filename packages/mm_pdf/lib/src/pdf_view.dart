@@ -1702,8 +1702,8 @@ class _MMPdfViewState extends State<MMPdfView> {
   Future<void> _commitSelection() async {
     if ((widget.areaSelecting || widget.ink != null) && _textPointerKind != PointerDeviceKind.touch) return;
     final epoch = ++_selectionEpoch;
-    // pdfrx settles the selection a frame after the pointer is released.
-    await Future<void>.delayed(const Duration(milliseconds: 120));
+    // Let pdfrx finish pointer-up selection updates without a fixed delay.
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted || epoch != _selectionEpoch) return;
     final selection = _controller.isReady ? _controller.textSelectionDelegate : _selection;
     if (selection == null || !selection.hasSelectedText) return;

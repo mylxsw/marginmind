@@ -170,7 +170,7 @@ void main() {
   );
 
   for (final brightness in Brightness.values) {
-    testWidgets('flat floating toolbar covers contrasting content in ${brightness.name}', (tester) async {
+    testWidgets('flat floating toolbar covers content from its first frame in ${brightness.name}', (tester) async {
       final boundaryKey = GlobalKey();
       await tester.pumpWidget(
         harness(
@@ -198,7 +198,6 @@ void main() {
           brightness: brightness,
         ),
       );
-      await tester.pumpAndSettle();
       final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(boundaryKey));
       final rect = tester.getRect(find.byType(MMFloatingToolbar));
       final point = boundary.globalToLocal(Offset(rect.center.dx, rect.top + 2));
@@ -243,8 +242,6 @@ void main() {
       for (final icon in [MMIcons.copy, MMIcons.addNote]) {
         expect(tester.widget<Icon>(find.byIcon(icon)).color, colors.label);
       }
-      // Fully faded in.
-      expect(tester.widget<Opacity>(find.byType(Opacity).first).opacity, 1);
     });
   }
 
