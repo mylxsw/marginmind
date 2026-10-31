@@ -425,9 +425,11 @@ class MapGhostNode extends StatefulWidget {
     required this.onEdit,
     required this.onMore,
     this.onHover,
+    this.sourceChip,
     this.onEditingChanged,
   });
   final ExpansionDraft draft;
+  final Widget? sourceChip;
   final bool focused, generating;
   final VoidCallback onToggle;
   final ValueChanged<String> onEdit;
@@ -552,7 +554,7 @@ class MapGhostNodeState extends State<MapGhostNode> {
                         ),
                       if (d.page != null) ...[
                         if (d.tag != ExpansionDirection.auto) const SizedBox(width: 6),
-                        MapSourceChip(page: d.page!),
+                        widget.sourceChip ?? MapSourceChip(page: d.page!),
                       ],
                     ],
                   ),
