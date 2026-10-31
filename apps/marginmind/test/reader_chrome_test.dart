@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
-import 'package:marginmind/features/workspace/reader_compare.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
@@ -24,7 +23,7 @@ Future<ProviderContainer> openSet(WidgetTester tester, {Size size = const Size(1
   return container;
 }
 
-MMToolbar toolbar(WidgetTester tester) => tester.widget<MMToolbar>(find.byType(MMToolbar));
+String windowTitle(WidgetTester tester) => tester.widget<Title>(find.byType(Title).last).title;
 
 bool selected(WidgetTester tester, IconData icon) => tester
     .widget<MMToolbarButton>(
@@ -54,30 +53,16 @@ void main() {
         return (text.text as TextSpan).style!.color;
       }
 
-      for (final icon in [
-        MMIcons.readerNavigation,
-        MMIcons.zoomControl,
-        MMIcons.crop,
-        MMIcons.appearance,
-        MMIcons.highlight,
-        MMIcons.areaSelect,
-        MMIcons.pen,
-        MMIcons.compare,
-      ]) {
+      for (final icon in [MMIcons.highlight, MMIcons.areaSelect, MMIcons.pen]) {
         expect(paintedColor(icon), colors.label, reason: 'Enabled toolbar icons use one foreground');
       }
       expect(paintedColor(MMIcons.select), colors.accent);
-      final menu = find.byKey(const ValueKey('reader-appearance'));
-      await tester.tap(menu);
+      await tester.tap(find.byKey(const ValueKey('reader-more')));
       await tester.pumpAndSettle();
-      expect(paintedColor(MMIcons.appearance), colors.accent);
+      expect(find.text('White'), findsOneWidget);
+      expect(find.byKey(const ValueKey('reader-margin')), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      expect(paintedColor(MMIcons.appearance), colors.label);
-      await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 700);
-      await drain(tester);
-      expect(paintedColor(MMIcons.compare), colors.accent);
-      expect(paintedColor(MMIcons.captionsBubble), colors.label.withValues(alpha: .3));
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await drain(tester);
@@ -88,12 +73,11 @@ void main() {
     testWidgets('title is the document on one line without a page subtitle or single-document tab bar', (tester) async {
       final container = await openSet(tester);
       expect(container.read(provider).openDocumentIds, hasLength(1));
-      final bar = toolbar(tester);
-      expect(bar.title, '学习的底层逻辑');
-      expect(bar.subtitle, isNull);
-      final title = tester.widget<Text>(find.descendant(of: find.byType(MMToolbar), matching: find.text(bar.title)));
-      expect(title.maxLines, 1);
-      expect(title.overflow, TextOverflow.ellipsis);
+      expect(windowTitle(tester), '学习的底层逻辑 — 认知科学入门 — MarginMind');
+      for (final bar in tester.widgetList<MMToolbar>(find.byType(MMToolbar))) {
+        expect(bar.title, isEmpty);
+        expect(bar.subtitle, isNull);
+      }
       // The reader pane has no tab bar, so the document name is not repeated.
       expect(find.descendant(of: find.byType(ReaderPane), matching: find.text('学习的底层逻辑')), findsNothing);
     });
@@ -109,8 +93,7 @@ void main() {
         expect(find.descendant(of: switcher, matching: find.byIcon(MMIcons.chevronDown)), findsNothing);
         final reader = find.byType(ReaderPane);
         expect(find.descendant(of: reader, matching: find.text('学习的底层逻辑')), findsNothing);
-        // The compact button remains at the far right of the reader tools.
-        expect(tester.getRect(switcher).right, closeTo(tester.getRect(reader).right - MMSpacing.m, 0.1));
+        expect(tester.getRect(switcher).right, lessThanOrEqualTo(tester.getRect(reader).right));
 
         await tester.tap(switcher);
         await tester.pumpAndSettle();
@@ -130,7 +113,7 @@ void main() {
         await tester.tap(other);
         await tester.pumpAndSettle();
         expect(container.read(provider).activeDocumentId, 'c2');
-        expect(toolbar(tester).title, '论文：检索练习效应');
+        expect(windowTitle(tester), '论文：检索练习效应 — 认知科学入门 — MarginMind');
         expect(container.read(provider).openDocumentIds, ['c1', 'c2']);
 
         await tester.tap(switcher);
@@ -179,14 +162,14 @@ void main() {
 
     testWidgets('reader tools control the sidebar and appearance separately', (tester) async {
       final container = await openSet(tester);
-      final menu = find.byKey(const ValueKey('reader-appearance'));
+      final menu = find.byKey(const ValueKey('reader-more'));
       expect(find.descendant(of: find.byType(ReaderPane), matching: menu), findsOneWidget);
-      expect(find.descendant(of: find.byType(MMToolbar), matching: menu), findsNothing);
+      expect(find.descendant(of: find.byType(MMToolbar), matching: menu), findsOneWidget);
       expect(container.read(provider).readerPanelVisible, isFalse);
-      await tester.tap(find.byTooltip(RegExp('Show Page Sidebar')));
+      await tapReaderCommand(tester, find.byKey(const ValueKey('reader-navigation')));
       await tester.pumpAndSettle();
       expect(container.read(provider).readerPanelVisible, isTrue);
-      await tester.tap(find.byTooltip(RegExp('Hide Page Sidebar')));
+      await tapReaderCommand(tester, find.byKey(const ValueKey('reader-navigation')));
       await tester.pumpAndSettle();
       expect(container.read(provider).readerPanelVisible, isFalse);
       for (final (label, style) in [
@@ -203,7 +186,7 @@ void main() {
         await tester.tap(menu);
         await tester.pumpAndSettle();
         expect(find.text(label), findsOneWidget);
-        expect(find.byIcon(MMIcons.check), findsOneWidget);
+        expect(find.byIcon(MMIcons.check), findsWidgets);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pumpAndSettle();
       }

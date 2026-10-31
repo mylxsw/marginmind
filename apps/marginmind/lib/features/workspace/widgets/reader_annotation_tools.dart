@@ -15,8 +15,10 @@ class ReaderAnnotationTools extends StatelessWidget {
     required this.controller,
     this.compact = false,
     this.textOnly = false,
+    this.child,
   });
 
+  final Widget? child;
   final WorkspaceState state;
   final WorkspaceController controller;
   final bool compact;
@@ -24,6 +26,7 @@ class ReaderAnnotationTools extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (child != null) return TapRegion(groupId: annotationTapGroup(controller.studySetId), child: child!);
     final l = context.l10n;
     MMToolbarButton tool(IconData icon, String label, AnnotationTool value) => MMToolbarButton(
       icon: icon,

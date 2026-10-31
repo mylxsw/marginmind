@@ -213,7 +213,9 @@ List<Widget> _page(
                       bottomRight: Radius.circular(9),
                       bottomLeft: Radius.circular(3),
                     ),
-                    boxShadow: const [BoxShadow(color: Color(0x2E000000), blurRadius: 3, offset: Offset(0, 1))],
+                    boxShadow: context.mmColors.flat
+                        ? null
+                        : const [BoxShadow(color: Color(0x2E000000), blurRadius: 3, offset: Offset(0, 1))],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -467,13 +469,15 @@ class _MarginNoteCardState extends ConsumerState<MarginNoteCard> {
                     color: hovered || editing ? color.color : const Color(0x14000000),
                     width: hovered || editing ? 1.5 : .5,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: hovered ? .12 : .06),
-                      blurRadius: hovered ? 14 : 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+                  boxShadow: context.mmColors.flat
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: hovered ? .12 : .06),
+                            blurRadius: hovered ? 14 : 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                 ),
                 child: Stack(
                   children: [

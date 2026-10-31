@@ -1,3 +1,5 @@
+import '../workspace/widgets/workspace_toolbar.dart';
+
 import 'dart:ui' show ImageFilter;
 import 'dart:async';
 import 'dart:convert';
@@ -396,171 +398,206 @@ class _StudyNoteViewState extends ConsumerState<StudyNoteView> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final floating = constraints.maxWidth >= MMNoteLayout.tocMinWidth;
+          final scope = WorkspaceToolbarScope.maybeOf(context);
+          final globalMenu = scope?.ownsActions == true;
           final compact = constraints.maxWidth < MMSizes.noteSetupSheetWidth;
+          Widget mergeHeader(Widget header) {
+            if (scope == null) return header;
+            return MMToolbar.content(
+              semanticLabel: note.title,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: scope.ownsLeading ? MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0 : 0,
+                ),
+                child: Row(
+                  children: [
+                    if (scope.ownsLeading && scope.leading != null) scope.leading!,
+                    Expanded(child: header),
+                    if (globalMenu) ...[
+                      for (final action in scope.actions)
+                        if (action.id == 'assistant') action.child,
+                    ],
+                    if (globalMenu)
+                      MMDropdownButton<VoidCallback>(
+                        key: const ValueKey('note-workspace-more'),
+                        tooltip: l.moreTools,
+                        icon: const Icon(MMIcons.more),
+                        onSelected: (command) => command(),
+                        itemBuilder: (_) => [for (final action in scope.actions) action.menuEntry],
+                      ),
+                    if (globalMenu) const SizedBox(width: MMSpacing.s),
+                  ],
+                ),
+              ),
+            );
+          }
+
           return Column(
             children: [
-              AbsorbPointer(
-                absorbing: _updateBusy || _update != null,
-                child: SizedBox(
-                  height: MMNoteLayout.barHeight,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: MMSpacing.m),
-                      if (compact)
-                        MMIconButton(
-                          key: const ValueKey('note-back'),
-                          icon: MMIcons.chevronLeft,
-                          tooltip: l.layoutReader,
-                          onPressed: () => _owner.setLayout(MMSplitMode.primary),
+              mergeHeader(
+                AbsorbPointer(
+                  absorbing: _updateBusy || _update != null,
+                  child: SizedBox(
+                    height: MMNoteLayout.barHeight,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: MMSpacing.m),
+                        if (compact)
+                          MMIconButton(
+                            key: const ValueKey('note-back'),
+                            icon: MMIcons.chevronLeft,
+                            tooltip: l.layoutReader,
+                            onPressed: () => _owner.setLayout(MMSplitMode.primary),
+                          ),
+                        Icon(
+                          MMIcons.studyNote,
+                          key: const ValueKey('note-toolbar-icon'),
+                          size: context.mmText.headline.fontSize,
+                          color: c.accent,
                         ),
-                      Icon(
-                        MMIcons.studyNote,
-                        key: const ValueKey('note-toolbar-icon'),
-                        size: context.mmText.headline.fontSize,
-                        color: c.accent,
-                      ),
-                      const SizedBox(width: MMSpacing.s),
-                      Expanded(
-                        child: Text(
-                          note.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.mmText.headline,
+                        const SizedBox(width: MMSpacing.s),
+                        Expanded(
+                          child: Text(
+                            note.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.mmText.headline,
+                          ),
                         ),
-                      ),
-                      if (!compact &&
-                          note.sections
-                              .expand((s) => s.blocks)
-                              .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                        MMIconButton(
-                          key: const ValueKey('note-ai-markers'),
-                          icon: MMIcons.ai,
-                          tooltip: l.noteShowAi,
-                          onPressed: () {
-                            ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
-                          },
-                        ),
-                      if (!compact)
-                        MMIconButton(
-                          key: const ValueKey('note-regenerate'),
-                          icon: MMIcons.regenerate,
-                          tooltip: l.noteRegenerate,
-                          onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
-                        ),
-                      if (compact)
-                        MMDropdownMenuButton<String>(
-                          key: const ValueKey('note-more'),
-                          tooltip: l.moreTools,
-                          icon: MMIcons.more,
-                          itemBuilder: (_) => [
-                            MMDropdownSubmenu<String>(
-                              label: l.readerOutline,
-                              entries: [
-                                for (final section in note.sections)
-                                  (value: 'section:${section.id}', label: section.title, selected: false),
-                              ],
-                            ),
-                            MMDropdownSubmenu<String>(
-                              label: l.noteTemplate,
-                              entries: [
-                                for (final template in NoteTemplate.values)
-                                  (
-                                    value: 'template:${template.name}',
-                                    label: noteTemplateLabel(l, template),
-                                    selected: template == note.template,
-                                  ),
-                              ],
-                            ),
-                            if (note.sections
+                        if (!compact &&
+                            note.sections
                                 .expand((s) => s.blocks)
                                 .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
-                              MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
-                            if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
-                            MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
-                            MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
-                            MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
-                          ],
-                          onSelected: (value) {
-                            if (value == 'markers') {
+                          MMIconButton(
+                            key: const ValueKey('note-ai-markers'),
+                            icon: MMIcons.ai,
+                            tooltip: l.noteShowAi,
+                            onPressed: () {
                               ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
-                            } else if (value == 'continue' && continuation != null) {
-                              resumeNoteOrganization(context, continuation);
-                            } else if (value == 'regenerate') {
-                              showNoteReorganization(context, ref, widget.studySetId, note.id);
-                            } else if (value == 'export') {
-                              showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
-                            } else if (value == 'share') {
-                              showNoteShareSheet(context, _owner.content, note);
-                            } else if (value.startsWith('section:')) {
-                              _jump(value.substring('section:'.length));
-                            } else if (value.startsWith('template:')) {
-                              _owner.changeStudyNote(
-                                note.id,
-                                (n) => n.copyWith(
-                                  template: NoteTemplate.values.byName(value.substring('template:'.length)),
-                                ),
-                              );
-                            }
-                          },
-                        )
-                      else ...[
-                        if (!floating)
-                          MMDropdownButton<String>(
-                            key: const ValueKey('note-toc'),
-                            tooltip: l.readerOutline,
-                            itemBuilder: (_) => [
-                              for (final section in note.sections)
-                                MMDropdownItem(value: section.id, child: Text(section.title)),
-                            ],
-                            onSelected: _jump,
-                            child: _toolbarLabel(l.readerOutline),
+                            },
                           ),
-                        MMDropdownButton<NoteTemplate>(
-                          key: const ValueKey('note-template'),
-                          tooltip: l.noteTemplate,
-                          itemBuilder: (_) => [
-                            for (final template in NoteTemplate.values)
-                              MMDropdownItem(
-                                value: template,
-                                child: Row(
-                                  children: [
-                                    SizedBox.square(
-                                      dimension: MMSizes.dropdownIcon,
-                                      child: template == note.template
-                                          ? Icon(MMIcons.check, size: MMSizes.dropdownIcon)
-                                          : null,
-                                    ),
-                                    const SizedBox(width: MMSpacing.s),
-                                    Text(noteTemplateLabel(l, template)),
-                                  ],
-                                ),
+                        if (!compact)
+                          MMIconButton(
+                            key: const ValueKey('note-regenerate'),
+                            icon: MMIcons.regenerate,
+                            tooltip: l.noteRegenerate,
+                            onPressed: () => showNoteReorganization(context, ref, widget.studySetId, note.id),
+                          ),
+                        if (compact)
+                          MMDropdownMenuButton<String>(
+                            key: const ValueKey('note-more'),
+                            tooltip: l.moreTools,
+                            icon: MMIcons.more,
+                            itemBuilder: (_) => [
+                              MMDropdownSubmenu<String>(
+                                label: l.readerOutline,
+                                entries: [
+                                  for (final section in note.sections)
+                                    (value: 'section:${section.id}', label: section.title, selected: false),
+                                ],
                               ),
-                          ],
-                          onSelected: (template) =>
-                              _owner.changeStudyNote(note.id, (n) => n.copyWith(template: template)),
-                          child: _toolbarLabel(noteTemplateLabel(l, note.template)),
-                        ),
-                        MMToolbarButton(
-                          key: const ValueKey('note-share'),
-                          icon: MMIcons.share,
-                          label: floating ? l.noteShareAction.replaceAll('…', '') : null,
-                          tooltip: l.noteShareTitle,
-                          onPressed: () => showNoteShareSheet(context, _owner.content, note),
-                        ),
-                        MMToolbarButton(
-                          key: const ValueKey('note-export'),
-                          icon: MMIcons.export,
-                          label: constraints.maxWidth >= MMNoteLayout.exportLabelMinWidth ? l.noteExport : null,
-                          tooltip: l.exportStudyNote,
-                          onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
-                        ),
+                              MMDropdownSubmenu<String>(
+                                label: l.noteTemplate,
+                                entries: [
+                                  for (final template in NoteTemplate.values)
+                                    (
+                                      value: 'template:${template.name}',
+                                      label: noteTemplateLabel(l, template),
+                                      selected: template == note.template,
+                                    ),
+                                ],
+                              ),
+                              if (note.sections
+                                  .expand((s) => s.blocks)
+                                  .any((b) => b.origin == NoteOrigin.ai || b.origin == NoteOrigin.mixed))
+                                MMDropdownItem(value: 'markers', child: Text(l.noteShowAi)),
+                              if (continuation != null) MMDropdownItem(value: 'continue', child: Text(l.noteContinue)),
+                              MMDropdownItem(value: 'regenerate', child: Text(l.noteRegenerate)),
+                              MMDropdownItem(value: 'export', child: Text(l.exportStudyNote)),
+                              MMDropdownItem(value: 'share', child: Text('${l.noteShareTitle}…')),
+                            ],
+                            onSelected: (value) {
+                              if (value == 'markers') {
+                                ref.read(noteAiMarkersProvider(widget.noteId).notifier).toggle();
+                              } else if (value == 'continue' && continuation != null) {
+                                resumeNoteOrganization(context, continuation);
+                              } else if (value == 'regenerate') {
+                                showNoteReorganization(context, ref, widget.studySetId, note.id);
+                              } else if (value == 'export') {
+                                showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text);
+                              } else if (value == 'share') {
+                                showNoteShareSheet(context, _owner.content, note);
+                              } else if (value.startsWith('section:')) {
+                                _jump(value.substring('section:'.length));
+                              } else if (value.startsWith('template:')) {
+                                _owner.changeStudyNote(
+                                  note.id,
+                                  (n) => n.copyWith(
+                                    template: NoteTemplate.values.byName(value.substring('template:'.length)),
+                                  ),
+                                );
+                              }
+                            },
+                          )
+                        else ...[
+                          if (!floating)
+                            MMDropdownButton<String>(
+                              key: const ValueKey('note-toc'),
+                              tooltip: l.readerOutline,
+                              itemBuilder: (_) => [
+                                for (final section in note.sections)
+                                  MMDropdownItem(value: section.id, child: Text(section.title)),
+                              ],
+                              onSelected: _jump,
+                              child: _toolbarLabel(l.readerOutline),
+                            ),
+                          MMDropdownButton<NoteTemplate>(
+                            key: const ValueKey('note-template'),
+                            tooltip: l.noteTemplate,
+                            itemBuilder: (_) => [
+                              for (final template in NoteTemplate.values)
+                                MMDropdownItem(
+                                  value: template,
+                                  child: Row(
+                                    children: [
+                                      SizedBox.square(
+                                        dimension: MMSizes.dropdownIcon,
+                                        child: template == note.template
+                                            ? Icon(MMIcons.check, size: MMSizes.dropdownIcon)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: MMSpacing.s),
+                                      Text(noteTemplateLabel(l, template)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                            onSelected: (template) =>
+                                _owner.changeStudyNote(note.id, (n) => n.copyWith(template: template)),
+                            child: _toolbarLabel(noteTemplateLabel(l, note.template)),
+                          ),
+                          MMToolbarButton(
+                            key: const ValueKey('note-share'),
+                            icon: MMIcons.share,
+                            label: floating ? l.noteShareAction.replaceAll('…', '') : null,
+                            tooltip: l.noteShareTitle,
+                            onPressed: () => showNoteShareSheet(context, _owner.content, note),
+                          ),
+                          MMToolbarButton(
+                            key: const ValueKey('note-export'),
+                            icon: MMIcons.export,
+                            label: constraints.maxWidth >= MMNoteLayout.exportLabelMinWidth ? l.noteExport : null,
+                            tooltip: l.exportStudyNote,
+                            onPressed: () => showNoteExportSheet(context, ref, widget.studySetId, note.id, text: _text),
+                          ),
+                        ],
+                        const SizedBox(width: MMSpacing.s),
                       ],
-                      const SizedBox(width: MMSpacing.s),
-                    ],
+                    ),
                   ),
                 ),
               ),
-              Divider(height: 1, color: c.separator),
+              Divider(height: c.flat ? MMSizes.hairline : 1, color: c.separator),
               if ((_previewChanges ?? changes) case final pending? when pending.count > 0) _updateBar(pending),
               if (continuation != null)
                 Align(

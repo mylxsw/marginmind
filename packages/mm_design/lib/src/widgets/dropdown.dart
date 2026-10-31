@@ -5,6 +5,7 @@ import '../icons/mm_icons.dart';
 import 'buttons.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import 'flat_surface.dart';
 import 'control_frame.dart';
 
 /// Shared anchored dropdown, based on the reader's document comparison menu.
@@ -19,8 +20,11 @@ class MMDropdownButton<T> extends StatefulWidget {
     this.width = MMSizes.dropdownWidth,
     this.icon,
     this.child,
+    this.onOpened,
+    this.onClosed,
   });
 
+  final VoidCallback? onOpened, onClosed;
   final PopupMenuItemBuilder<T> itemBuilder;
   final PopupMenuItemSelected<T>? onSelected;
   final String? tooltip;
@@ -37,6 +41,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
 
   void _closed() {
     if (mounted) setState(() => _open = false);
+    widget.onClosed?.call();
   }
 
   @override
@@ -57,6 +62,7 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
       child: PopupMenuButton<T>(
         // Show the complete list together. Material's default 300ms size
         // expansion and staggered row fades delay scanning desktop menus.
+        routeSettings: const RouteSettings(name: 'mm-dropdown'),
         popUpAnimationStyle: AnimationStyle.noAnimation,
         enabled: widget.enabled,
         tooltip: widget.tooltip,
@@ -75,17 +81,20 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
         ),
         iconSize: MMSpacing.l,
         icon: context.mmTablet ? null : widget.icon,
-        color: c.glassOpaque,
+        color: c.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(MMRadii.dropdown),
-          side: BorderSide(color: c.hairline, width: .5),
+          side: BorderSide(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: .5),
         ),
         clipBehavior: Clip.antiAlias,
         menuPadding: const EdgeInsets.all(MMSpacing.xs),
-        onOpened: () => setState(() => _open = true),
+        onOpened: () {
+          setState(() => _open = true);
+          widget.onOpened?.call();
+        },
         onCanceled: _closed,
         onSelected: (value) {
           _closed();
@@ -226,14 +235,14 @@ class _MMDropdownMenuScope<T> extends InheritedWidget {
 MenuStyle _dropdownMenuStyle(BuildContext context) {
   final c = context.mmColors;
   return MenuStyle(
-    backgroundColor: WidgetStatePropertyAll(c.glassOpaque),
+    backgroundColor: WidgetStatePropertyAll(c.surface),
     surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
     elevation: const WidgetStatePropertyAll(0),
     padding: const WidgetStatePropertyAll(EdgeInsets.all(MMSpacing.xs)),
     shape: WidgetStatePropertyAll(
       RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(MMRadii.dropdown),
-        side: BorderSide(color: c.hairline, width: .5),
+        side: BorderSide(color: MMFlatSurface.of(context) ? c.border : c.hairline, width: .5),
       ),
     ),
   );

@@ -1973,7 +1973,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         ),
     };
 
-    return Actions(
+    final content = Actions(
       actions: <Type, Action<Intent>>{
         MapAssistantIntent: CallbackAction<MapAssistantIntent>(
           onInvoke: (_) {
@@ -2548,6 +2548,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         ),
       ),
     );
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTapUp: (_) {
+        if (widget.expansion == null) {
+          widget.focusNode.requestFocus();
+          _deselect();
+        }
+      },
+      child: content,
+    );
   }
 }
 
@@ -2859,45 +2869,58 @@ class _NodeView extends StatelessWidget {
     Widget body,
     EdgeInsets padding,
   ) {
-    return AnimatedContainer(
-      duration: MMMotion.standard,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(radius),
-        border: look?.border == null ? null : Border.all(color: look!.border!, width: _outlineWidth),
-        boxShadow: [...shadow, ...ring],
-      ),
-      // The reveal button sits in the right padding, inside the node's box
-      // so it receives clicks.
-      child: Stack(
-        children: [
-          if (spec.kind == _Kind.research)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 3,
-              child: ClipRRect(
-                borderRadius: BorderRadius.horizontal(left: Radius.circular(radius)),
-                child: ColoredBox(color: c.research),
+    final flatRadius = c.flat && spec.kind == _Kind.topic
+        ? MMRadii.row
+        : c.flat && spec.kind == _Kind.root
+        ? MMRadii.card
+        : radius;
+    final flatBorder =
+        look?.border ??
+        (spec.kind == _Kind.excerpt || spec.kind == _Kind.image || spec.kind == _Kind.research ? c.border : null);
+    return CustomPaint(
+      foregroundPainter: c.flat
+          ? _FlatNodeStroke(flatRadius, flatBorder, selected || flashing ? c.accent : null)
+          : null,
+      child: AnimatedContainer(
+        duration: MMMotion.standard,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(flatRadius),
+          border: c.flat || look?.border == null ? null : Border.all(color: look!.border!, width: _outlineWidth),
+          boxShadow: c.flat ? null : [...shadow, ...ring],
+        ),
+        // The reveal button sits in the right padding, inside the node's box
+        // so it receives clicks.
+        child: Stack(
+          children: [
+            if (spec.kind == _Kind.research)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 3,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.horizontal(left: Radius.circular(radius)),
+                  child: ColoredBox(color: c.research),
+                ),
               ),
+            Positioned.fill(
+              child: Padding(padding: padding, child: body),
             ),
-          Positioned.fill(
-            child: Padding(padding: padding, child: body),
-          ),
-          if (onReveal != null)
-            Positioned(
-              top: padding.top - 3,
-              right: padding.right - 30,
-              child: MMIconButton(
-                icon: MMIcons.revealSource,
-                tooltip: revealLabel,
-                size: 22,
-                iconSize: 11,
-                onPressed: onReveal,
+            if (onReveal != null)
+              Positioned(
+                top: padding.top - 3,
+                right: padding.right - 30,
+                child: MMIconButton(
+                  icon: MMIcons.revealSource,
+                  tooltip: revealLabel,
+                  size: 22,
+                  iconSize: 11,
+                  onPressed: onReveal,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3314,7 +3337,8 @@ class _MarkLabel extends StatelessWidget {
       decoration: BoxDecoration(
         color: summary ? fill ?? Color.alphaBlend(c.fill, c.canvas) : c.canvas,
         borderRadius: BorderRadius.circular(summary ? MMRadii.card : MMRadii.excerpt),
-        boxShadow: [if (selected) BoxShadow(color: c.accent, spreadRadius: 2)],
+        border: c.flat && selected ? Border.all(color: c.accent, width: 2) : null,
+        boxShadow: c.flat ? null : [if (selected) BoxShadow(color: c.accent, spreadRadius: 2)],
       ),
       child: Padding(
         padding: summary
@@ -3473,4 +3497,36 @@ class _SelectionToolbarLayout extends SingleChildLayoutDelegate {
   );
   @override
   bool shouldRelayout(_SelectionToolbarLayout old) => old.bounds != bounds || old.topInset != topInset;
+}
+
+/// Strokes never consume the node's measured text width.
+class _FlatNodeStroke extends CustomPainter {
+  const _FlatNodeStroke(this.radius, this.border, this.selection);
+  final double radius;
+  final Color? border, selection;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    if (border case final color?) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect.deflate(.5), Radius.circular(radius)),
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
+    if (selection case final color?) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect.inflate(3), Radius.circular(radius + 3)),
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_FlatNodeStroke old) => old.radius != radius || old.border != border || old.selection != selection;
 }

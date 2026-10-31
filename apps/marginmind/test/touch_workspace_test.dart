@@ -46,12 +46,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('touch selection mode remains reachable beside the map toolbar', (tester) async {
+  testWidgets('touch selection mode remains reachable in the map menu', (tester) async {
     await openFirstSet(tester);
-    final selection = tester.getRect(find.byKey(const ValueKey('map-multi-select')));
-    final style = tester.getRect(find.byKey(const ValueKey('map-style-button')));
-    expect(selection.center.dy, closeTo(style.center.dy, 1));
-    expect(selection.overlaps(style), isFalse);
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
+    final select = find.text('Multiple Selection');
+    expect(select, findsOneWidget);
+    await tester.tap(select);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('map sidebar has the same menu under touch long press', (tester) async {

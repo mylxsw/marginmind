@@ -30,7 +30,8 @@ class MMColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ring = context.mmColors.card;
+    final c = context.mmColors;
+    final ring = c.card;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -50,7 +51,12 @@ class MMColorPicker extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: color.color,
                   shape: BoxShape.circle,
-                  boxShadow: color == selected || s.focused
+                  border: c.flat && (color == selected || s.focused)
+                      ? Border.all(color: s.focused ? c.accent : color.color, width: 1.5, strokeAlign: 4)
+                      : null,
+                  boxShadow: c.flat
+                      ? null
+                      : color == selected || s.focused
                       ? [BoxShadow(color: color.color, spreadRadius: 3.5), BoxShadow(color: ring, spreadRadius: 2)]
                       : null,
                 ),
@@ -145,7 +151,14 @@ class MMColorMenuButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected.color,
               shape: BoxShape.circle,
-              boxShadow: s.focused ? [BoxShadow(color: c.accent, spreadRadius: 2)] : null,
+              border: c.flat && s.focused
+                  ? Border.all(color: c.accent, width: 2, strokeAlign: BorderSide.strokeAlignOutside)
+                  : null,
+              boxShadow: c.flat
+                  ? null
+                  : s.focused
+                  ? [BoxShadow(color: c.accent, spreadRadius: 2)]
+                  : null,
             ),
           ),
         ),

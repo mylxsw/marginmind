@@ -355,8 +355,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(MapStylePopover), findsOneWidget);
       expect(canvas(tester).fitInsets, isNotNull, reason: 'the map makes way for the popover');
-      // Thumbnails only: the names are tooltips.
-      expect(find.descendant(of: find.byType(MapStylePopover), matching: find.byType(Text)), findsNothing);
+      // Structure and palette names remain tooltips; density is explicit.
+      expect(find.descendant(of: find.byType(MapStylePopover), matching: find.byType(Text)), findsNWidgets(2));
 
       await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('map-structure-tree'))));
       await tester.pumpAndSettle();

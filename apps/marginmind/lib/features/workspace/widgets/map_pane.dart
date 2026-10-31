@@ -33,6 +33,8 @@ import 'map_style_popover.dart';
 import 'outline_view.dart';
 import 'map_selection_bar.dart';
 import 'map_header.dart';
+import 'workspace_toolbar.dart';
+import '../workspace_pane_chrome_controller.dart';
 
 // Temporarily hidden; keep the toolbar and its actions available for restoration.
 final mapCommandBarVisibleProvider = Provider<bool>((ref) => false);
@@ -49,6 +51,17 @@ class MapPane extends ConsumerStatefulWidget {
 }
 
 class _MapPaneState extends ConsumerState<MapPane> {
+  WorkspacePaneChromeController? _paneChrome;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = WorkspacePaneChromeScope.maybeOf(context);
+    if (!identical(next, _paneChrome)) {
+      _paneChrome?.unbindMap(this);
+      _paneChrome = next;
+    }
+  }
+
   bool _mergeHover = false;
   WorkspaceController? _expansionWorkspace;
   void _showExpansionBlocked() {
@@ -145,6 +158,44 @@ class _MapPaneState extends ConsumerState<MapPane> {
   final _styleLink = LayerLink();
   static const _styleRegion = 'map-style';
 
+  Future<void> _showStyleDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialog) => Consumer(
+        builder: (context, ref, _) {
+          final state = ref.watch(workspaceProvider(widget.studySetId));
+          final map = state.content?.map(state.activeMapId);
+          if (map == null) return const SizedBox.shrink();
+          final controller = ref.read(workspaceProvider(widget.studySetId).notifier);
+          return Center(
+            child: SizedBox(
+              width: MMSizes.mapStylePopoverWidth,
+              child: MapStylePopover(
+                structure: map.structure,
+                palette: map.palette,
+                density: map.density,
+                onDensity: controller.setMapDensity,
+                onPreview: (style) {
+                  if (mounted) setState(() => _stylePreview = style);
+                },
+                onStructure: (structure) {
+                  setState(() => _stylePreview = null);
+                  controller.setMapStructure(structure);
+                },
+                onPalette: (palette) {
+                  setState(() => _stylePreview = null);
+                  controller.setMapPalette(palette);
+                },
+                onClose: () => Navigator.of(dialog).pop(),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (mounted) setState(() => _stylePreview = null);
+  }
+
   void _toggleStyle() => _styleOpen ? _closeStyle() : setState(() => _styleOpen = true);
 
   void _closeStyle() {
@@ -162,6 +213,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
 
   @override
   void dispose() {
+    _paneChrome?.unbindMap(this);
     if (_expansionWorkspace?.onExpansionBlocked == _showExpansionBlocked) {
       _expansionWorkspace?.onExpansionBlocked = null;
     }
@@ -664,7 +716,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final mapTitle = content.map(state.activeMapId)?.title ?? '';
     final rootTitle = mapTitle.isEmpty ? setTitle : mapTitle;
     // Where new excerpts go, marked on the map once there is a document.
-    final excerptTargetId = content.documents.isEmpty
+    final excerptTargetId = content.documents.isEmpty || !state.syncToMap
         ? null
         : StudySetEditor.excerptTarget(content, state.selectedCardId, mapId: state.activeMapId) ?? rootNodeId;
 
@@ -676,6 +728,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
     // The map runs on beneath a touch window's glass chrome; its controls
     // and the outline keep clear of it.
     final chrome = MMChromeInsets.of(context);
+    final merged = WorkspaceToolbarScope.maybeOf(context) != null;
     final outline = state.mapView != MapViewMode.map;
     final map = content.map(state.activeMapId);
     final single = state.selectedCardIds.length <= 1 && state.selectedCardId != null;
@@ -701,6 +754,26 @@ class _MapPaneState extends ConsumerState<MapPane> {
           : null,
       onDetails: target && single ? () => _runToolbarAction(() => controller.showDetails(state.selectedCardId!)) : null,
     );
+    _paneChrome?.bindMap(
+      this,
+      WorkspacePaneCommands(state.activeMapId, {
+        'fit': WorkspacePaneCommand(() => _viewCommand(MindMapCommand.fit)),
+        'center': WorkspacePaneCommand(() => _viewCommand(MindMapCommand.center)),
+        'zoom-in': WorkspacePaneCommand(() => _zoom(1.25)),
+        'zoom-out': WorkspacePaneCommand(() => _zoom(1 / 1.25)),
+        'actual-size': WorkspacePaneCommand(() => _zoom(1 / mapScale(_transform.value))),
+        'style': WorkspacePaneCommand(_toggleStyle, selected: _styleOpen),
+      }),
+    );
+    void viewCommand(String id, VoidCallback fallback) {
+      final adapter = _paneChrome?.map;
+      if (adapter == null) {
+        fallback();
+      } else {
+        adapter.execute(id);
+      }
+    }
+
     return LayoutBuilder(
       builder: (context, paneConstraints) {
         final controls = Row(
@@ -772,7 +845,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
             children: [
               Positioned.fill(
                 child: CustomMultiChildLayout(
-                  delegate: MapPaneHeaderLayout(_headerGeometry, top: chrome.top + MMSpacing.s),
+                  delegate: MapPaneHeaderLayout(
+                    _headerGeometry,
+                    top: chrome.top + (merged ? 0 : MMSpacing.s),
+                    merged: merged,
+                  ),
                   children: [
                     LayoutId(
                       id: MapPaneSlot.canvas,
@@ -782,7 +859,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                           return SizedBox.expand(
                             child: Padding(
                               padding: EdgeInsets.only(
-                                top: outline ? chrome.top : 0,
+                                top: outline ? _headerGeometry.toolbarTopInset : 0,
                                 bottom: outline ? chrome.bottom : 0,
                               ),
                               child: state.mapView == MapViewMode.map
@@ -936,29 +1013,117 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     ),
                     LayoutId(
                       id: MapPaneSlot.header,
-                      child: MapHeader(
-                        title: Text(
-                          mapTitle.isEmpty ? l.mainMap : mapTitle,
-                          style: t.headline,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        commands: outline || !ref.watch(mapCommandBarVisibleProvider)
-                            ? null
-                            : SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
-                        controls: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          reverse: true,
-                          child: outline
-                              ? controls
-                              : MMGlass(
-                                  key: const ValueKey('map-view-glass'),
-                                  toolbar: true,
-                                  padding: const EdgeInsets.all(3),
-                                  child: controls,
+                      child: merged
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                WorkspaceToolbar(
+                                  label: l.moreTools,
+                                  items: [
+                                    MMToolbarItem(
+                                      id: 'map-view',
+                                      priority: 70,
+                                      child: MMSegmentedControl<MapViewMode>(
+                                        value: state.mapView,
+                                        segments: [
+                                          MMSegment(value: MapViewMode.map, label: l.mapView),
+                                          MMSegment(value: MapViewMode.outline, label: l.outlineView),
+                                        ],
+                                        onChanged: expansion == null ? controller.setMapView : null,
+                                      ),
+                                      menuEntry: MMDropdownItem<VoidCallback>(
+                                        value: () =>
+                                            controller.setMapView(outline ? MapViewMode.map : MapViewMode.outline),
+                                        enabled: expansion == null,
+                                        child: Text(outline ? l.mapView : l.outlineView),
+                                      ),
+                                    ),
+                                    MMToolbarItem(
+                                      id: 'map-style',
+                                      priority: 60,
+                                      child: CompositedTransformTarget(
+                                        link: _styleLink,
+                                        child: TapRegion(
+                                          groupId: _styleRegion,
+                                          child: MMToolbarButton(
+                                            key: const ValueKey('map-style-button'),
+                                            icon: MMIcons.mapStyle,
+                                            tooltip: l.mapStyle,
+                                            selected: _styleOpen,
+                                            onPressed: map == null ? null : _toggleStyle,
+                                          ),
+                                        ),
+                                      ),
+                                      menuEntry: MMDropdownItem<VoidCallback>(
+                                        value: _showStyleDialog,
+                                        enabled: map != null,
+                                        child: Text(l.mapStyle),
+                                      ),
+                                    ),
+                                  ],
+                                  menuEntries: [
+                                    for (final command in [
+                                      (l.addChildTopic, commandBar.onChild),
+                                      (l.addSiblingAfter, commandBar.onSibling),
+                                      (l.addRelation, commandBar.onRelation),
+                                      (l.addSummary, commandBar.onSummary),
+                                      (l.addNote, commandBar.onNote),
+                                      (l.insertImage, commandBar.onImage),
+                                      (l.cardTags, commandBar.onTags),
+                                      (l.showCardDetails, commandBar.onDetails),
+                                    ])
+                                      MMDropdownItem<VoidCallback>(
+                                        value: command.$2,
+                                        enabled: command.$2 != null,
+                                        child: Text(command.$1),
+                                      ),
+                                    MMDropdownItem<VoidCallback>(
+                                      value: () => viewCommand('center', () => _viewCommand(MindMapCommand.center)),
+                                      child: Text(l.centerCurrentNode),
+                                    ),
+                                    if (MMInput.touchInputOf(context))
+                                      MMDropdownItem<VoidCallback>(
+                                        value: () => setState(() => _touchSelection = !_touchSelection),
+                                        child: Text(l.mapMultiSelect),
+                                      ),
+                                    if (outline)
+                                      MMDropdownItem<VoidCallback>(
+                                        value: remove,
+                                        enabled: state.selectedCardId != null,
+                                        child: Text(l.removeFromMap),
+                                      ),
+                                  ],
                                 ),
-                        ),
-                      ),
+                                if (ref.watch(mapCommandBarVisibleProvider) && !outline)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: MMSpacing.s),
+                                    child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
+                                  ),
+                              ],
+                            )
+                          : MapHeader(
+                              title: Text(
+                                mapTitle.isEmpty ? l.mainMap : mapTitle,
+                                style: t.headline,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              commands: outline || !ref.watch(mapCommandBarVisibleProvider)
+                                  ? null
+                                  : SingleChildScrollView(scrollDirection: Axis.horizontal, child: commandBar),
+                              controls: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                reverse: true,
+                                child: outline
+                                    ? controls
+                                    : MMGlass(
+                                        key: const ValueKey('map-view-glass'),
+                                        toolbar: true,
+                                        padding: const EdgeInsets.all(3),
+                                        child: controls,
+                                      ),
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -994,7 +1159,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     child: Text(l.mapEmptyTitle, textAlign: TextAlign.center, style: t.headline),
                   ),
                 ),
-              if (_styleOpen && !outline && map != null)
+              if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(
                   left: 0,
                   top: 0,
@@ -1010,6 +1175,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                       child: SizedBox(
                         width: MMSizes.mapStylePopoverWidth,
                         child: MapStylePopover(
+                          density: map.density,
+                          onDensity: controller.setMapDensity,
                           structure: map.structure,
                           palette: map.palette,
                           onPreview: (style) => setState(() => _stylePreview = style),
@@ -1027,101 +1194,101 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     ),
                   ),
                 ),
-              if (state.mapView == MapViewMode.map && excerptTargetId != null)
-                Positioned(
-                  left: MMSpacing.m,
-                  bottom: MMSpacing.m + chrome.bottom,
-                  right: context.mmTablet ? 460 : MMSizes.mapViewControlsReservedWidth,
-                  child: IgnorePointer(
-                    child: Text(
-                      l.newExcerptTarget(
-                        excerptTargetId == rootNodeId ? rootTitle : content.card(excerptTargetId)?.title ?? '',
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.footnote.copyWith(color: c.secondaryLabel),
-                    ),
-                  ),
-                ),
               if (state.mapView == MapViewMode.map)
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,
                   bottom: MMSpacing.m + chrome.bottom,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      reverse: true,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          MMSegmentedControl<MapDensity>(
-                            key: const ValueKey('map-density'),
-                            value: content.map(state.activeMapId)?.density == MapDensity.full
-                                ? MapDensity.full
-                                : MapDensity.compact,
-                            onChanged: controller.setMapDensity,
-                            segments: [
-                              MMSegment(value: MapDensity.compact, label: l.densityCompact),
-                              MMSegment(value: MapDensity.full, label: l.densityFull),
-                            ],
-                          ),
-                          const SizedBox(width: MMSpacing.s),
-                          MMGlass(
-                            toolbar: true,
-                            borderRadius: BorderRadius.circular(16),
-                            padding: const EdgeInsets.all(3),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                MMIconButton(
-                                  icon: MMIcons.fitMap,
-                                  tooltip: l.fitMap,
-                                  onPressed: () => _viewCommand(MindMapCommand.fit),
-                                ),
-                                MMIconButton(
-                                  icon: MMIcons.locate,
-                                  tooltip: l.centerCurrentNode,
-                                  onPressed: () => _viewCommand(MindMapCommand.center),
-                                ),
-                                const MMToolbarDivider(),
-                                MMIconButton(
-                                  icon: MMIcons.zoomOut,
-                                  tooltip: l.zoomOut,
-                                  size: 26,
-                                  iconSize: 13,
-                                  color: c.label,
-                                  onPressed: () => _zoom(1 / 1.25),
-                                ),
-                                SizedBox(
-                                  width: context.mmTablet ? 56 : 44,
-                                  height: context.mmTablet ? MMSizes.touchTarget : null,
-                                  child: MMInteractive(
-                                    tooltip: l.pdfActualSize,
-                                    semanticLabel: l.pdfActualSize,
-                                    onTap: () => _zoom(1 / mapScale(_transform.value)),
-                                    builder: (context, _) => context.mmTablet
-                                        ? Center(
-                                            child: _ZoomLabel(transform: _transform, style: t.callout),
-                                          )
-                                        : _ZoomLabel(transform: _transform, style: t.callout),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: excerptTargetId == null
+                            ? const SizedBox.shrink()
+                            : Align(
+                                alignment: Alignment.centerLeft,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(maxWidth: paneConstraints.maxWidth * .45),
+                                  child: Row(
+                                    children: [
+                                      Icon(MMIcons.syncToMap, size: 12, color: c.secondaryLabel),
+                                      const SizedBox(width: MMSpacing.xs),
+                                      Flexible(
+                                        child: _ExcerptTargetLabel(
+                                          title: excerptTargetId == rootNodeId
+                                              ? rootTitle
+                                              : content.card(excerptTargetId)?.title ?? '',
+                                          style: t.footnote,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                MMIconButton(
-                                  icon: MMIcons.zoomIn,
-                                  tooltip: l.zoomIn,
-                                  size: 26,
-                                  iconSize: 13,
-                                  color: c.label,
-                                  onPressed: () => _zoom(1.25),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
                       ),
-                    ),
+                      const SizedBox(width: MMSpacing.s),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: (paneConstraints.maxWidth - MMSpacing.m * 2 - MMSpacing.s).clamp(
+                            0.0,
+                            double.infinity,
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              MMGlass(
+                                toolbar: true,
+                                borderRadius: BorderRadius.circular(16),
+                                padding: const EdgeInsets.all(3),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    MMIconButton(
+                                      icon: MMIcons.fitMap,
+                                      tooltip: l.fitMap,
+                                      onPressed: () => viewCommand('fit', () => _viewCommand(MindMapCommand.fit)),
+                                    ),
+                                    MMIconButton(
+                                      icon: MMIcons.zoomOut,
+                                      tooltip: l.zoomOut,
+                                      size: 26,
+                                      iconSize: 13,
+                                      color: c.label,
+                                      onPressed: () => viewCommand('zoom-out', () => _zoom(1 / 1.25)),
+                                    ),
+                                    SizedBox(
+                                      width: context.mmTablet ? 56 : 44,
+                                      height: context.mmTablet ? MMSizes.touchTarget : null,
+                                      child: MMInteractive(
+                                        tooltip: l.pdfActualSize,
+                                        semanticLabel: l.pdfActualSize,
+                                        onTap: () => _zoom(1 / mapScale(_transform.value)),
+                                        builder: (context, _) => context.mmTablet
+                                            ? Center(
+                                                child: _ZoomLabel(transform: _transform, style: t.callout),
+                                              )
+                                            : _ZoomLabel(transform: _transform, style: t.callout),
+                                      ),
+                                    ),
+                                    MMIconButton(
+                                      icon: MMIcons.zoomIn,
+                                      tooltip: l.zoomIn,
+                                      size: 26,
+                                      iconSize: 13,
+                                      color: c.label,
+                                      onPressed: () => viewCommand('zoom-in', () => _zoom(1.25)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -1184,4 +1351,45 @@ class _ZoomLabelState extends State<_ZoomLabel> {
   @override
   Widget build(BuildContext context) =>
       Text('${(mapScale(widget.transform.value) * 100).round()}%', textAlign: TextAlign.center, style: widget.style);
+}
+
+class _ExcerptTargetLabel extends StatelessWidget {
+  const _ExcerptTargetLabel({required this.title, required this.style});
+  final String title;
+  final TextStyle style;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: title,
+    child: SizedBox(
+      width: double.infinity,
+      height: MediaQuery.textScalerOf(context).scale(style.fontSize!) * 1.6,
+      child: CustomPaint(
+        painter: _TargetLabelPainter(title, style, Directionality.of(context), MediaQuery.textScalerOf(context)),
+      ),
+    ),
+  );
+}
+
+class _TargetLabelPainter extends CustomPainter {
+  _TargetLabelPainter(this.title, this.style, this.direction, this.scaler);
+  final String title;
+  final TextStyle style;
+  final TextDirection direction;
+  final TextScaler scaler;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final text = TextPainter(
+      text: TextSpan(text: title, style: style),
+      textDirection: direction,
+      textScaler: scaler,
+      maxLines: 1,
+      ellipsis: '…',
+    )..layout(maxWidth: size.width);
+    text.paint(canvas, Offset(0, (size.height - text.height) / 2));
+    text.dispose();
+  }
+
+  @override
+  bool shouldRepaint(_TargetLabelPainter old) =>
+      old.title != title || old.style != style || old.direction != direction || old.scaler != scaler;
 }

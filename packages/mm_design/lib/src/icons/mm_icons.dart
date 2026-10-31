@@ -47,6 +47,7 @@ abstract final class MMIcons {
   static const IconData document = CupertinoIcons.doc_text; // doc.text
   static const IconData collections = LucideIcons.libraryBig;
   static const IconData studySet = CupertinoIcons.book_fill; // books.vertical.fill
+  static const organizeNote = LucideIcons.notebookPen;
   static const IconData ai = CupertinoIcons.sparkles; // sparkles
   static const IconData research = CupertinoIcons.doc_text_search; // text.magnifyingglass
   static const IconData info = CupertinoIcons.info_circle; // info.circle

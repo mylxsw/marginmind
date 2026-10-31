@@ -49,8 +49,19 @@ class MMCheckbox extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: value ? tint : c.card,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: value ? tint : c.line, width: 1),
-                    boxShadow: s.focused ? [BoxShadow(color: tint.withValues(alpha: 0.4), spreadRadius: 2)] : null,
+                    border: Border.all(
+                      color: c.flat && s.focused
+                          ? c.accent
+                          : value
+                          ? tint
+                          : c.line,
+                      width: c.flat && s.focused ? 2 : 1,
+                    ),
+                    boxShadow: c.flat
+                        ? null
+                        : s.focused
+                        ? [BoxShadow(color: tint.withValues(alpha: 0.4), spreadRadius: 2)]
+                        : null,
                   ),
                   child: value ? const Icon(MMIcons.check, size: 11, color: Colors.white) : null,
                 ),

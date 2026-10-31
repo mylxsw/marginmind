@@ -143,7 +143,7 @@ Future<ProviderContainer> openAi(
   );
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('toolbar-organize-note')));
+  await tapWorkspaceCommand(tester, 'organize-note');
   await tester.pumpAndSettle();
   await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 100)));
   await tester.pumpAndSettle();

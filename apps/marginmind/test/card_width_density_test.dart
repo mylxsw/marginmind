@@ -266,6 +266,8 @@ void main() {
     testWidgets('the density control switches the map without changing any text', (tester) async {
       final (_, controller) = await open(tester);
       final before = controller.content.cards;
+      await tester.tap(find.byKey(const ValueKey('map-style-button')));
+      await tester.pumpAndSettle();
       expect(controller.content.map(MindMap.defaultId)!.density, MapDensity.full);
       await tester.tap(find.text('Compact'));
       await tester.pumpAndSettle();

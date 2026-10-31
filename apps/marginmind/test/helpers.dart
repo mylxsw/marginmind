@@ -1,9 +1,11 @@
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/providers.dart';
+import 'package:marginmind/app/window_title.dart';
 import 'package:marginmind/shared/pdf_picker.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_core/testing.dart';
@@ -47,6 +49,7 @@ Future<List<Override>> testOverrides({
   SharedPreferences.setMockInitialValues(prefs);
   final instance = await SharedPreferences.getInstance();
   return [
+    windowTitleSinkProvider.overrideWithValue((_) async {}),
     vocabularyRepositoryProvider.overrideWithValue(vocabulary ?? InMemoryVocabularyRepository()),
     sharedPreferencesProvider.overrideWithValue(instance),
     clockProvider.overrideWithValue(clock ?? () => testNow),
@@ -150,5 +153,29 @@ Matcher sameColor(Color expected) => predicate<Color>(
 /// Reveal the complete fixture before pointer tests address distant nodes.
 Future<void> showWholeMap(WidgetTester tester) async {
   await tester.tap(find.byTooltip('Show Entire Map'));
+  await tester.pumpAndSettle();
+}
+
+/// Commands that moved into Aa remain covered through their actual menu path.
+Future<void> tapReaderCommand(WidgetTester tester, Finder command) async {
+  if (command.hitTestable().evaluate().isEmpty) {
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
+    await tester.pumpAndSettle();
+  }
+  await tester.ensureVisible(command.last);
+  await tester.tap(command.last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapWorkspaceCommand(WidgetTester tester, String id) async {
+  final direct = find.byKey(ValueKey('toolbar-$id')).hitTestable();
+  if (direct.evaluate().isNotEmpty) {
+    await tester.tap(direct.first);
+  } else {
+    final menu = find.byKey(const ValueKey('note-workspace-more')).hitTestable();
+    await tester.tap(menu);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('workspace-command-$id')).hitTestable());
+  }
   await tester.pumpAndSettle();
 }

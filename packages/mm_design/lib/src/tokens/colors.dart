@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 @immutable
 class MMColors extends ThemeExtension<MMColors> {
   const MMColors({
+    this.flat = false,
     required this.brightness,
     required this.windowBackground,
     required this.sidebar,
@@ -52,6 +53,7 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.sheetShadow,
   });
 
+  final bool flat;
   final Brightness brightness;
 
   /// Shared workspace backdrop — window, toolbar, PDF surround and mind map.
@@ -134,6 +136,10 @@ class MMColors extends ThemeExtension<MMColors> {
   /// Floating control glass.
   final Color glass;
   final Color glassOpaque;
+
+  Color get surface => glassOpaque;
+  Color get border => brightness == Brightness.dark ? const Color(0x1FFFFFFF) : const Color(0x1F000000);
+  Color get selectedSegment => brightness == Brightness.dark ? const Color(0xFF636366) : Colors.white;
   final Color glassHighlight;
   final Color hairline;
 
@@ -257,11 +263,12 @@ class MMColors extends ThemeExtension<MMColors> {
   }
 
   @override
-  MMColors copyWith({Color? accent, Color? accentFill, Color? accentTint}) {
+  MMColors copyWith({Color? accent, Color? accentFill, Color? accentTint, bool? flat}) {
     return MMColors(
+      flat: flat ?? this.flat,
       brightness: brightness,
       windowBackground: windowBackground,
-      sidebar: sidebar,
+      sidebar: (flat ?? this.flat) ? sidebarOpaque : sidebar,
       sidebarOpaque: sidebarOpaque,
       readerBackground: readerBackground,
       canvas: canvas,
@@ -292,16 +299,16 @@ class MMColors extends ThemeExtension<MMColors> {
       glass: glass,
       glassOpaque: glassOpaque,
       glassHighlight: glassHighlight,
-      hairline: hairline,
+      hairline: (flat ?? this.flat) ? border : hairline,
       line: line,
       excerptText: excerptText,
       rootNode: rootNode,
       onRootNode: onRootNode,
       scrim: scrim,
-      glassShadow: glassShadow,
-      cardShadow: cardShadow,
-      sidebarShadow: sidebarShadow,
-      sheetShadow: sheetShadow,
+      glassShadow: (flat ?? this.flat) ? const [] : glassShadow,
+      cardShadow: (flat ?? this.flat) ? const [] : cardShadow,
+      sidebarShadow: (flat ?? this.flat) ? const [] : sidebarShadow,
+      sheetShadow: (flat ?? this.flat) ? const [] : sheetShadow,
     );
   }
 
@@ -311,6 +318,7 @@ class MMColors extends ThemeExtension<MMColors> {
     Color c(Color a, Color b) => Color.lerp(a, b, t)!;
     List<BoxShadow> s(List<BoxShadow> a, List<BoxShadow> b) => BoxShadow.lerpList(a, b, t)!;
     return MMColors(
+      flat: t < .5 ? flat : other.flat,
       brightness: t < 0.5 ? brightness : other.brightness,
       windowBackground: c(windowBackground, other.windowBackground),
       sidebar: c(sidebar, other.sidebar),

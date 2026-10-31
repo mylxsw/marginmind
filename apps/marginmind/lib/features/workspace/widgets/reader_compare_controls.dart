@@ -28,8 +28,12 @@ class ReaderCompareMenu extends ConsumerWidget {
     this.document,
     this.translationLanguage,
     this.left = false,
+    this.menuLabel,
+    this.onInvoked,
   });
   final String studySetId;
+  final String? menuLabel;
+  final VoidCallback? onInvoked;
   final bool enabled, left;
   final Document? document;
   final String? translationLanguage;
@@ -95,30 +99,34 @@ class ReaderCompareMenu extends ConsumerWidget {
       tooltip: document == null ? l.compareReading : l.switchDocument,
       width: MMSizes.dropdownWideWidth,
       onSelected: (value) async {
-        if (value == 'exit') {
-          ref.read(readerCompareProvider(studySetId).notifier).exit();
-        } else if (value == 'ai') {
-          try {
-            final hidden = await ref
-                .read(readerCompareProvider(studySetId).notifier)
-                .openAi(targetLang, readerWidth: ReaderCompareWidth.of(context));
-            if (hidden && context.mounted) {
-              MMHud.show(context, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
+        try {
+          if (value == 'exit') {
+            ref.read(readerCompareProvider(studySetId).notifier).exit();
+          } else if (value == 'ai') {
+            try {
+              final hidden = await ref
+                  .read(readerCompareProvider(studySetId).notifier)
+                  .openAi(targetLang, readerWidth: ReaderCompareWidth.of(context));
+              if (hidden && context.mounted) {
+                MMHud.show(context, l.compareMapHiddenHud(describeShortcut(AppShortcuts.view2)));
+              }
+            } catch (_) {
+              if (context.mounted) MMHud.show(context, l.somethingWentWrong);
             }
-          } catch (_) {
-            if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+          } else if (value == 'import') {
+            final files = await ref.read(pdfPickerProvider)(l.documentFiles);
+            if (files.isEmpty || !context.mounted) return;
+            final before = workspace.content.documents.map((d) => d.id).toSet();
+            final notice = await workspace.importDocuments(files, open: false);
+            final imported = workspace.content.documents.where((d) => !before.contains(d.id)).lastOrNull;
+            if (!context.mounted) return;
+            if (notice.failed.isNotEmpty) showNotice(context, notice, rootTitle: '');
+            if (imported != null && !tooNarrow) await select(imported.id);
+          } else {
+            await select(value);
           }
-        } else if (value == 'import') {
-          final files = await ref.read(pdfPickerProvider)(l.documentFiles);
-          if (files.isEmpty || !context.mounted) return;
-          final before = workspace.content.documents.map((d) => d.id).toSet();
-          final notice = await workspace.importDocuments(files, open: false);
-          final imported = workspace.content.documents.where((d) => !before.contains(d.id)).lastOrNull;
-          if (!context.mounted) return;
-          if (notice.failed.isNotEmpty) showNotice(context, notice, rootTitle: '');
-          if (imported != null && !tooNarrow) await select(imported.id);
-        } else {
-          await select(value);
+        } finally {
+          if (context.mounted) onInvoked?.call();
         }
       },
       itemBuilder: (_) => [
@@ -180,7 +188,9 @@ class ReaderCompareMenu extends ConsumerWidget {
           ],
         ],
       ],
-      child: document == null
+      child: menuLabel != null
+          ? Row(children: [const Icon(MMIcons.compare), const SizedBox(width: 8), Text(menuLabel!)])
+          : document == null
           ? Container(
               width: buttonSize.width,
               height: buttonSize.height,
@@ -289,13 +299,15 @@ class _AiTranslationEntryState extends State<_AiTranslationEntry> {
 }
 
 /// Captured outside the toolbar so entry decisions use the full source width.
-class ReaderCompareWidth extends InheritedWidget {
+class ReaderCompareWidth extends InheritedTheme {
   const ReaderCompareWidth({super.key, required this.width, required super.child});
   final double width;
   static double of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ReaderCompareWidth>()?.width ?? 0;
   @override
   bool updateShouldNotify(ReaderCompareWidth oldWidget) => width != oldWidget.width;
+  @override
+  Widget wrap(BuildContext context, Widget child) => ReaderCompareWidth(width: width, child: child);
 }
 
 class ReaderCompareView extends ConsumerWidget {

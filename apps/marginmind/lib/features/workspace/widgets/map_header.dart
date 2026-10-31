@@ -13,7 +13,8 @@ class MapHeaderGeometry {
 /// Measure the floating header before laying out the canvas, while painting
 /// it afterward. The canvas receives the actual clearance in the same frame.
 class MapPaneHeaderLayout extends MultiChildLayoutDelegate {
-  MapPaneHeaderLayout(this.geometry, {required this.top});
+  MapPaneHeaderLayout(this.geometry, {required this.top, this.merged = false});
+  final bool merged;
   final MapHeaderGeometry geometry;
   final double top;
 
@@ -21,10 +22,13 @@ class MapPaneHeaderLayout extends MultiChildLayoutDelegate {
   void performLayout(Size size) {
     final header = layoutChild(
       MapPaneSlot.header,
-      BoxConstraints(maxWidth: math.max(0, size.width - MMSpacing.m * 2), maxHeight: math.max(0, size.height - top)),
+      BoxConstraints(
+        maxWidth: math.max(0, size.width - (merged ? 0 : MMSpacing.m * 2)),
+        maxHeight: math.max(0, size.height - top),
+      ),
     );
-    positionChild(MapPaneSlot.header, Offset(MMSpacing.m, top));
-    geometry.toolbarTopInset = top + header.height + MMSpacing.s;
+    positionChild(MapPaneSlot.header, Offset(merged ? 0 : MMSpacing.m, top));
+    geometry.toolbarTopInset = top + header.height + (merged ? 0 : MMSpacing.s);
     // Changing the reserved height also invalidates the canvas LayoutBuilder
     // when only a header child reflows (for example after a font loads).
     layoutChild(

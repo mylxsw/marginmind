@@ -103,7 +103,7 @@ void main() {
     await drain(tester);
     expect(workspace.content.document('c1')!.crop!.toJson(), saved);
     expect(workspace.content.document('c1')!.cropSuggestionDismissed, true);
-    await tester.tap(find.byKey(const ValueKey('reader-crop')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-crop')));
     await tester.pumpAndSettle();
     expect(find.text(l.cropAdjust), findsNothing);
     expect(find.byKey(const ValueKey('crop-editor-toolbar')), findsOneWidget);
@@ -135,7 +135,7 @@ void main() {
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await drain(tester);
       final workspace = container.read(workspaceProvider('demo-1').notifier);
-      await tester.tap(find.byKey(const ValueKey('reader-crop')));
+      await tapReaderCommand(tester, find.byKey(const ValueKey('reader-crop')));
       await drain(tester);
       final toolbar = find.byKey(const ValueKey('crop-editor-toolbar'));
       final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));

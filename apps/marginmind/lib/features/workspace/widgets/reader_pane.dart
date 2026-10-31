@@ -4,7 +4,6 @@ import '../../vocabulary/hint_controls.dart';
 import '../../vocabulary/vocabulary_source_flash.dart';
 import 'reader_page_field.dart';
 import '../reflow_session.dart';
-import '../../../app/document_commands.dart';
 import '../../../shared/document_icon.dart';
 import '../document_reader.dart';
 
@@ -37,6 +36,12 @@ import 'reader_margin_notes.dart';
 import 'reader_crop_controls.dart';
 import 'reader_sidebar.dart';
 import 'reader_annotation_tools.dart';
+import 'reader_toolbar.dart';
+import 'document_switcher.dart';
+import 'workspace_toolbar.dart';
+import '../workspace_pane_chrome_controller.dart';
+import 'highlight_color_button.dart';
+import 'underline_tool_button.dart';
 import 'annotation_palette.dart' show annotationTapGroup;
 import 'reader_ink_toolbar.dart';
 import 'selection_toolbar.dart';
@@ -55,6 +60,17 @@ class ReaderPane extends ConsumerStatefulWidget {
 }
 
 class _ReaderPaneState extends ConsumerState<ReaderPane> {
+  WorkspacePaneChromeController? _paneChrome;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = WorkspacePaneChromeScope.maybeOf(context);
+    if (!identical(next, _paneChrome)) {
+      _paneChrome?.unbindReader(this);
+      _paneChrome = next;
+    }
+  }
+
   final _focus = FocusNode(debugLabel: 'PDF reader', skipTraversal: true);
 
   /// Counts the menu's "Go to Page…" requests; the page field opens on each.
@@ -72,6 +88,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
 
   @override
   void dispose() {
+    _paneChrome?.unbindReader(this);
     _focus.dispose();
     super.dispose();
   }
@@ -133,6 +150,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final browser = ref.watch(workspaceBrowserProvider(widget.studySetId));
     final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
     final content = ref.watch(workspaceContentProvider(widget.studySetId)) ?? StudySetContent.empty;
+    Widget browserChrome(Widget child) => WorkspaceToolbarScope.maybeOf(context) == null
+        ? child
+        : Column(
+            children: [
+              WorkspaceToolbar(items: const [], menuEntries: const [], label: context.l10n.moreTools),
+              Expanded(child: child),
+            ],
+          );
     return Stack(
       children: [
         Offstage(
@@ -142,20 +167,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         if (browser.session case final session?)
           Offstage(
             offstage: !browser.visible,
-            child: BrowserPane(
-              key: ValueKey(session.id),
-              studySetId: widget.studySetId,
-              session: session,
-              visible: browser.visible,
-              documentSwitcher: _DocumentSwitcher(
+            child: browserChrome(
+              BrowserPane(
+                key: ValueKey(session.id),
                 studySetId: widget.studySetId,
-                documents: content.documents,
-                activeDocumentId: null,
-                onOpen: (id) {
-                  ref.read(workspaceBrowserProvider(widget.studySetId).notifier).hide();
-                  workspace.openDocument(id);
-                },
-                onClose: null,
+                session: session,
+                visible: browser.visible,
+                documentSwitcher: DocumentSwitcher(
+                  studySetId: widget.studySetId,
+                  documents: content.documents,
+                  activeDocumentId: null,
+                  onOpen: (id) {
+                    ref.read(workspaceBrowserProvider(widget.studySetId).notifier).hide();
+                    workspace.openDocument(id);
+                  },
+                  onClose: null,
+                ),
               ),
             ),
           ),
@@ -334,6 +361,230 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
   /// must; a narrower one keeps one line and moves zoom and appearance into
   /// "More".
   Widget _toolbar(
+    BuildContext context,
+    WorkspaceState state,
+    WorkspaceController controller,
+    MMReaderStyle style,
+    String? ocrSource,
+  ) {
+    if (WorkspaceToolbarScope.maybeOf(context) == null) {
+      return _legacyToolbar(context, state, controller, style, ocrSource);
+    }
+    final l = context.l10n;
+    final capabilities = controller.activeCapabilities;
+    final settingsHandler = ref.watch(readingSettingsHandlerProvider);
+    final comparing = ref.watch(readerCompareProvider(widget.studySetId)) != null;
+    final crop = ref.watch(readerCropProvider(widget.studySetId));
+    final cropSession = ref.read(readerCropProvider(widget.studySetId).notifier);
+    final document = controller.content.documents.where((d) => d.id == state.activeDocumentId).firstOrNull;
+    void pageCommand(Object value) {
+      if (value is ReaderZoomCommand) _zoom(value);
+      if (value == 'crop-adjust') cropSession.adjust();
+    }
+
+    final canAdjustCrop = capabilities.crop && !crop.editing && !crop.busy && _pdf.isReady;
+    void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
+    final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+
+    final commands = <String, WorkspacePaneCommand>{};
+    VoidCallback? command(String id, VoidCallback? invoke, {bool selected = false}) {
+      commands[id] = WorkspacePaneCommand(invoke, selected: selected);
+      if (invoke == null) return null;
+      return () {
+        final adapter = _paneChrome?.reader;
+        if (adapter == null) {
+          invoke();
+        } else {
+          adapter.execute(id);
+        }
+      };
+    }
+
+    PopupMenuEntry<VoidCallback> entry(
+      String label,
+      VoidCallback? action, {
+      bool selected = false,
+      IconData? icon,
+      String? id,
+    }) => MMDropdownItem<VoidCallback>(
+      key: id == null ? null : ValueKey(id),
+      value: command(id ?? label, action, selected: selected),
+      enabled: action != null,
+      child: Semantics(
+        selected: selected,
+        child: Row(
+          children: [
+            if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: MMSpacing.s)],
+            Expanded(child: Text(label)),
+            if (selected) const Icon(MMIcons.check, size: 14),
+          ],
+        ),
+      ),
+    );
+    final tools = [
+      (AnnotationTool.select, MMIcons.select, l.toolSelect, 60),
+      (AnnotationTool.highlight, MMIcons.highlight, l.toolHighlight, 50),
+      (AnnotationTool.underline, MMIcons.underline, l.toolUnderline, 40),
+      (AnnotationTool.ink, MMIcons.pen, l.toolPen, 30),
+      (AnnotationTool.area, MMIcons.areaSelect, l.toolArea, 10),
+    ];
+    final documents = DocumentSwitcher(
+      studySetId: widget.studySetId,
+      documents: controller.content.documents,
+      activeDocumentId: state.activeDocumentId,
+      primaryCompare: comparing,
+      onOpen: controller.openDocument,
+      onClose: document == null ? null : () => controller.closeDocument(document.id),
+    );
+    final items = <MMToolbarItem>[
+      for (final (tool, icon, label, priority) in tools)
+        MMToolbarItem(
+          id: tool.name,
+          priority: priority,
+          child: IgnorePointer(
+            ignoring: crop.editing,
+            child: Opacity(
+              opacity: crop.editing ? .3 : 1,
+              child: tool == AnnotationTool.highlight
+                  ? HighlightColorButton(
+                      color: state.color,
+                      selected: state.tool == tool,
+                      enabled: capabilities.annotate && !crop.editing,
+                      onOpen: () => controller.setTool(tool),
+                      onChanged: controller.setColor,
+                    )
+                  : tool == AnnotationTool.underline
+                  ? UnderlineToolButton(studySetId: widget.studySetId, enabled: capabilities.annotate && !crop.editing)
+                  : MMToolbarButton(
+                      icon: icon,
+                      tooltip: switch (tool) {
+                        AnnotationTool.area => AppShortcuts.tip(label, AppShortcuts.toggleAreaTool),
+                        AnnotationTool.ink => AppShortcuts.tip(label, AppShortcuts.toggleInkTool),
+                        _ => label,
+                      },
+                      selected: state.tool == tool,
+                      onPressed: command(
+                        'tool-${tool.name}',
+                        !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
+                        selected: state.tool == tool,
+                      ),
+                    ),
+            ),
+          ),
+          menuEntry: entry(
+            label,
+            !crop.editing && controller.canUseTool(tool) ? () => controller.setTool(tool) : null,
+            selected: state.tool == tool,
+            icon: icon,
+            id: 'tool-${tool.name}',
+          ),
+        ),
+      MMToolbarItem(
+        id: 'sync',
+        priority: 20,
+        child: MMToolbarButton(
+          icon: MMIcons.syncToMap,
+          tooltip: state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
+          selected: state.syncToMap,
+          onPressed: command(
+            'sync',
+            capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
+            selected: state.syncToMap,
+          ),
+        ),
+        menuEntry: entry(
+          state.syncToMap ? l.syncToMapOn : l.syncToMapOff,
+          capabilities.excerpt && !crop.editing ? controller.toggleSyncToMap : null,
+          selected: state.syncToMap,
+        ),
+      ),
+      MMToolbarItem(
+        id: 'documents',
+        priority: 70,
+        child: documents,
+        menuEntry: entry(
+          l.switchDocument,
+          () => showMMMenu(context, position: Offset.zero, entries: documents.menuEntries(context, ref)),
+        ),
+      ),
+    ];
+    // Preserve rich controls (zoom slider, comparison and OCR) inside Aa.
+    final menuEntries = <PopupMenuEntry<VoidCallback>>[
+      entry(
+        state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
+        capabilities.thumbnails || capabilities.outline || capabilities.bookmarks || capabilities.annotate
+            ? controller.toggleReaderPanel
+            : null,
+        selected: state.readerPanelVisible,
+        id: 'reader-navigation',
+      ),
+      entry(
+        l.marginNotes,
+        capabilities.marginNotes && document != null && !crop.editing && !comparing
+            ? () => ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(document.id)
+            : null,
+        selected: marginState.openDocuments.contains(state.activeDocumentId),
+        id: 'reader-margin',
+      ),
+      if (document != null)
+        entry(l.vocabularyHints, () => toggleVocabularyHints(context, ref, document.id), id: 'vocabulary-hint-toggle'),
+      entry(l.readingSettings, () {
+        if (capabilities.readingSettings) {
+          settingsHandler?.call(context, ref, widget.studySetId);
+        } else {
+          showReadingSettings(context, ref, widget.studySetId);
+        }
+      }, id: 'reader-settings'),
+      PopupMenuItem<VoidCallback>(
+        enabled: false,
+        child: ReaderCompareMenu(
+          studySetId: widget.studySetId,
+          enabled: capabilities.parallel && !crop.editing,
+          menuLabel: l.compareReading,
+          onInvoked: () => Navigator.of(context).pop(),
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<VoidCallback>(
+        enabled: false,
+        child: document?.contentManifest != null
+            ? ReaderZoomSlider.source(
+                ratio: () {
+                  final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
+                  return session.zoom / session.widthZoom;
+                },
+                ready: () => ref.read(reflowSessionProvider((widget.studySetId, document!.id))).ready,
+                onZoom: (ratio) {
+                  final session = ref.read(reflowSessionProvider((widget.studySetId, document!.id)));
+                  session.zoomTo(ratio * session.widthZoom);
+                },
+                enabled: capabilities.zoom && !crop.editing,
+              )
+            : ReaderZoomSlider(pdf: _pdf, enabled: capabilities.zoom && !crop.editing),
+      ),
+      for (final command in [
+        (ReaderZoomCommand.actualSize, l.pdfActualSize),
+        (ReaderZoomCommand.fitWidth, l.pdfFitWidth),
+        (ReaderZoomCommand.fitPage, l.pdfFitPage),
+      ])
+        entry(command.$2, capabilities.zoom && !crop.editing ? () => pageCommand(command.$1) : null),
+      entry(l.cropMargins, canAdjustCrop ? cropSession.adjust : null, id: 'reader-crop'),
+      const PopupMenuDivider(),
+      for (final value in MMReaderStyle.values)
+        MMDropdownItem<VoidCallback>(
+          value: () => setStyle(value),
+          child: _styleRow(context, value, selected: value == style),
+        ),
+    ];
+    _paneChrome?.bindReader(this, WorkspacePaneCommands(state.activeDocumentId, commands));
+    return ReaderAnnotationTools(
+      state: state,
+      controller: controller,
+      child: ReaderToolbar(items: items, appearanceEntries: menuEntries, label: l.readerAppearance),
+    );
+  }
+
+  Widget _legacyToolbar(
     BuildContext context,
     WorkspaceState state,
     WorkspaceController controller,
@@ -661,7 +912,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (content.documents.isNotEmpty)
+        if (WorkspaceToolbarScope.maybeOf(context) != null)
+          _toolbar(context, state, controller, style, ocr?.running == true ? source : null)
+        else if (content.documents.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.xxs),
             child: Row(
@@ -673,7 +926,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 ),
                 const SizedBox(width: MMSpacing.s),
                 if (ref.watch(readerCompareProvider(widget.studySetId)) == null)
-                  _DocumentSwitcher(
+                  DocumentSwitcher(
                     studySetId: widget.studySetId,
                     documents: content.documents,
                     activeDocumentId: doc?.id,
@@ -683,6 +936,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
               ],
             ),
           ),
+        if (ocr?.running == true) ReaderOcrProgress(source: source!),
         if (ocr != null)
           ReaderOcrControls(
             key: ValueKey(source),
@@ -844,6 +1098,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       pdf: pdf,
                       builder: (vocabularyHints, onVocabularyTap, vocabularyViewportChanged) => MMPdfView(
                         key: ocr == null || ocr.revision == 0 ? ValueKey(doc.id) : ValueKey((doc.id, ocr.revision)),
+                        pageBorderColor: context.mmColors.border,
                         filePath: ocr?.document?.path ?? controller.filePath(doc),
                         controller: pdf,
                         useTouchSelectionHandles: context.mmTablet,
@@ -1353,109 +1608,6 @@ class _PagePill extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Lists every document, including ones not yet opened in this session.
-class _DocumentSwitcher extends ConsumerWidget {
-  const _DocumentSwitcher({
-    required this.studySetId,
-    required this.documents,
-    required this.activeDocumentId,
-    required this.onOpen,
-    required this.onClose,
-  });
-
-  final String studySetId;
-  final List<Document> documents;
-  final String? activeDocumentId;
-  final ValueChanged<String> onOpen;
-  final VoidCallback? onClose;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    final c = context.mmColors;
-    final text = context.mmText.callout;
-    final active = documents.where((d) => d.id == activeDocumentId).firstOrNull;
-    final sourceCommands = active == null
-        ? <WebSourceCommand, AppCommand>{}
-        : webSourceCommands(
-            l,
-            active,
-            canRefetch: ref.watch(canAddWebPageProvider),
-            refetch: () => ref
-                .read(workspaceBrowserProvider(studySetId).notifier)
-                .open(Uri.parse(active.origin!.url), documentId: active.id),
-          );
-    Widget row(IconData icon, String label, {bool selected = false, bool enabled = true}) => Row(
-      children: [
-        Icon(icon, size: 14, color: c.secondaryLabel),
-        const SizedBox(width: MMSpacing.s),
-        Expanded(
-          child: Tooltip(
-            message: label,
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: enabled ? text : text.copyWith(color: c.secondaryLabel),
-            ),
-          ),
-        ),
-        const SizedBox(width: MMSpacing.s),
-        SizedBox(width: 14, child: selected ? Icon(MMIcons.check, size: 14, color: c.accent) : null),
-      ],
-    );
-    return MMDropdownButton<String>(
-      key: const ValueKey('reader-documents'),
-      tooltip: l.switchDocument,
-      width: MMSizes.dropdownWideWidth,
-      icon: Icon(MMIcons.collections, color: c.label, semanticLabel: l.switchDocument),
-      onSelected: (id) {
-        if (id == ':import') {
-          pickAndImportDocuments(context, ref, studySetId);
-        } else if (id == ':web') {
-          dispatchAddWebPage(context, ref, studySetId);
-        } else if (id == ':original') {
-          sourceCommands[WebSourceCommand.openOriginal]?.onInvoke?.call();
-        } else if (id == ':refetch') {
-          sourceCommands[WebSourceCommand.refetch]?.onInvoke?.call();
-        } else if (id.isEmpty) {
-          onClose?.call();
-        } else {
-          onOpen(id);
-        }
-      },
-      itemBuilder: (_) => [
-        for (final document in documents)
-          MMDropdownItem<String>(
-            value: document.id,
-            labelTextStyle: WidgetStatePropertyAll(text),
-            child: Semantics(
-              selected: document.id == activeDocumentId,
-              child: row(documentIcon(document), document.title, selected: document.id == activeDocumentId),
-            ),
-          ),
-        const PopupMenuDivider(height: MMSpacing.s),
-        MMDropdownItem<String>(value: ':import', child: row(MMIcons.import, l.importDocument)),
-        if (ref.watch(canAddWebPageProvider))
-          MMDropdownItem<String>(value: ':web', child: row(MMIcons.web, l.addWebPage)),
-        if (sourceCommands.isNotEmpty) ...[
-          const PopupMenuDivider(height: MMSpacing.s),
-          MMDropdownItem<String>(value: ':original', child: row(MMIcons.web, l.openOriginalPage)),
-          if (sourceCommands.containsKey(WebSourceCommand.refetch))
-            MMDropdownItem<String>(value: ':refetch', child: row(MMIcons.history, l.refetchPage)),
-        ],
-        const PopupMenuDivider(height: MMSpacing.s),
-        MMDropdownItem<String>(
-          value: '',
-          enabled: onClose != null,
-          labelTextStyle: WidgetStatePropertyAll(text),
-          child: row(MMIcons.close, l.closeCurrentDocument, enabled: onClose != null),
-        ),
-      ],
     );
   }
 }

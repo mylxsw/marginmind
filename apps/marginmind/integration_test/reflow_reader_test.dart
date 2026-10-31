@@ -86,7 +86,7 @@ ${List.generate(30, (i) => 'Paragraph $i: Read, select, annotate and return to t
     expect(annotation.isText, isTrue);
     final original = annotation.textAnchors.first.toJson();
     await shot('04-excerpt');
-    await tester.tap(find.byTooltip('Reading Settings'));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-settings')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reading-larger')));
     await tester.pumpAndSettle();

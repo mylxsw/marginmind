@@ -30,6 +30,8 @@ export 'src/widgets/empty_state.dart';
 export 'src/widgets/floating_toolbar.dart';
 export 'src/widgets/form_row.dart';
 export 'src/widgets/glass.dart';
+export 'src/widgets/flat_surface.dart';
+export 'src/widgets/adaptive_toolbar.dart';
 export 'src/widgets/hud.dart';
 export 'src/widgets/inline_text_field.dart';
 export 'src/widgets/menu.dart';

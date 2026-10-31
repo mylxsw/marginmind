@@ -1,0 +1,90 @@
+import 'package:flutter/material.dart';
+import 'package:mm_design/mm_design.dart';
+
+import '../workspace_layout.dart';
+
+/// Global commands are scoped to their owning pane. Both the header and body
+/// receive the split's exact constraints, including sidebar animation frames.
+class WorkspaceToolbarScope extends InheritedWidget {
+  const WorkspaceToolbarScope({
+    super.key,
+    required super.child,
+    required this.actions,
+    this.primary = true,
+    required this.leading,
+    required this.ownsActions,
+    required this.ownsLeading,
+  });
+  final List<MMToolbarItem> actions;
+  final Widget? leading;
+  final bool ownsActions, ownsLeading;
+  final bool primary;
+  static WorkspaceToolbarScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<WorkspaceToolbarScope>();
+  @override
+  bool updateShouldNotify(WorkspaceToolbarScope oldWidget) => true;
+}
+
+class WorkspaceToolbar extends StatelessWidget {
+  const WorkspaceToolbar({
+    super.key,
+    required this.items,
+    required this.menuEntries,
+    required this.label,
+    this.menuIcon,
+  });
+  final List<MMToolbarItem> items;
+  final List<PopupMenuEntry<VoidCallback>> menuEntries;
+  final String label;
+  final Widget? menuIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = WorkspaceToolbarScope.maybeOf(context);
+    final geometry = WorkspaceLayoutGeometryScope.maybeOf(context);
+    final ownsLeading = geometry == null
+        ? scope?.ownsLeading == true
+        : scope?.primary == true || geometry.split.effectiveMode == MMSplitMode.secondary;
+    final ownsActions = geometry == null
+        ? scope?.ownsActions == true
+        : scope?.primary == true
+        ? geometry.split.axis == Axis.vertical || geometry.split.effectiveMode == MMSplitMode.primary
+        : geometry.split.axis == Axis.horizontal || geometry.split.effectiveMode == MMSplitMode.secondary;
+    final leading = ownsLeading ? scope?.leading : null;
+    final inset = ownsLeading ? MMWindowChrome.maybeOf(context)?.toolbarLeadingInset ?? 0 : 0.0;
+    return ColoredBox(
+      color: context.mmColors.windowBackground,
+      child: MMToolbar.content(
+        semanticLabel: label,
+        child: Padding(
+          padding: EdgeInsets.only(left: (context.mmTablet ? 16 : 12) + inset, right: context.mmTablet ? 16 : 12),
+          child: Row(
+            children: [
+              if (leading != null) ...[leading, const SizedBox(width: MMSpacing.s)],
+              Expanded(
+                child: MMAdaptiveToolbar(
+                  items: [...items, if (ownsActions && scope != null) ...scope.actions],
+                  menuLabel: label,
+                  menuIcon: menuIcon,
+                  menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
+                  menuBeforeId: menuIcon == null ? null : 'documents',
+                  trailingIds: {
+                    if (menuIcon != null) 'documents',
+                    if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
+                    if (menuIcon == null) ':menu',
+                  },
+                  groups: [
+                    if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
+                    {'layout-reader', 'layout-split', 'layout-map'},
+                    {'organize-note', 'assistant'},
+                  ],
+                  menuEntries: menuEntries,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

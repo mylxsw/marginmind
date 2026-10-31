@@ -133,6 +133,8 @@ void main() {
     );
     c.read(navigationProvider.notifier).openStudySet('demo-1');
     await frames(tester);
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
+    await frames(tester);
     final info = c.read(compareDocumentInfoProvider(('demo-1', 'c1'))).value;
     expect(info!.hasText, true);
     expect(info.language, 'en');
@@ -142,7 +144,7 @@ void main() {
   testWidgets('AI menu enters, progress, complete, cache, hover on either side and exit', (tester) async {
     final t = TestTranslator();
     final c = await setup(tester, t, render: true);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('AI Translate into English'), findsOneWidget);
     expect(find.text('Coming soon'), findsNothing);
@@ -286,7 +288,7 @@ void main() {
       prefs: {'assistant.online': false},
       data: compareFixture().copyWith(translationCaches: [cache]),
     );
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('AI Translate into English'));
     await frames(tester);
@@ -458,7 +460,7 @@ void main() {
     final c = await setup(tester, t);
     c.read(workspaceProvider('demo-1').notifier).openDocument('c2');
     await frames(tester);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('AI Translate into Chinese'), findsOneWidget);
     await tester.tap(find.text('AI Translate into Chinese'));
@@ -477,7 +479,7 @@ void main() {
   testWidgets('missing model, offline cloud model, scan each disable with reason', (tester) async {
     final t = TestTranslator();
     await setup(tester, t, selected: null);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Configure a model first'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -492,14 +494,14 @@ void main() {
       ),
       prefs: {'assistant.online': false},
     );
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Offline'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await frames(tester);
     await setup(tester, t, hasText: false);
     await frames(tester);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Recognize text first'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

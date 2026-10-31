@@ -206,19 +206,22 @@ class _SheetScope extends InheritedWidget {
 /// sheets and dialogs. Dragging it down pops it like Esc does.
 Future<T?> showMMBottomSheet<T>({required BuildContext context, required WidgetBuilder builder}) {
   final c = context.mmColors;
+  final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: false,
     barrierColor: c.scrim,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMAppearance.duration(context, MMMotion.standard),
-    pageBuilder: (context, _, _) => CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
-      child: FocusScope(
-        autofocus: true,
-        child: MMBottomSheet(
-          onDismiss: () => Navigator.of(context).maybePop(),
-          child: Builder(builder: builder),
+    pageBuilder: (context, _, _) => capturedThemes.wrap(
+      CallbackShortcuts(
+        bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
+        child: FocusScope(
+          autofocus: true,
+          child: MMBottomSheet(
+            onDismiss: () => Navigator.of(context).maybePop(),
+            child: Builder(builder: builder),
+          ),
         ),
       ),
     ),

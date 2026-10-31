@@ -30,13 +30,13 @@ void main() {
     await drain(tester);
     final pdf = container.read(readerPdfProvider('demo-1'));
     expect(pdf.isReady, true);
-    await tester.tap(find.byKey(const ValueKey('reader-page')));
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
     await tester.pumpAndSettle();
     final slider = find.byKey(const ValueKey('reader-zoom-slider'));
     expect(slider, findsOneWidget);
     final l = AppLocalizations.of(tester.element(find.byType(ReaderPane)));
     expect(find.text(l.cropAdjust), findsNothing);
-    expect(find.text(l.cropMargins), findsNothing);
+    expect(find.text(l.cropMargins), findsOneWidget);
     final baseline = pdf.widthZoom;
     final control = tester.widget<Slider>(slider);
     control.onChanged!(1);
@@ -52,7 +52,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(slider, findsNothing);
-    await tester.tap(find.byKey(const ValueKey('reader-crop')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-crop')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('crop-editor-toolbar')), findsOneWidget);
     expect(find.text(l.cropAdjust), findsNothing);

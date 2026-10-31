@@ -14,7 +14,24 @@ import 'window_scaffold.dart';
 /// glass control groups on the right. Dragging empty space moves the window;
 /// double-clicking it zooms, like a native title bar.
 class MMToolbar extends StatelessWidget {
-  const MMToolbar({super.key, required this.title, this.subtitle, this.actions = const [], this.leading});
+  const MMToolbar({super.key, required this.title, this.subtitle, this.actions = const [], this.leading})
+    : child = null,
+      semanticLabel = null,
+      height = MMSizes.toolbarHeight;
+
+  const MMToolbar.content({
+    super.key,
+    required this.child,
+    required this.semanticLabel,
+    this.height = MMSizes.paneHeaderHeight,
+  }) : title = '',
+       subtitle = null,
+       actions = const [],
+       leading = null;
+
+  final Widget? child;
+  final String? semanticLabel;
+  final double height;
 
   final String title;
   final String? subtitle;
@@ -26,7 +43,7 @@ class MMToolbar extends StatelessWidget {
     final t = context.mmText;
     final chrome = MMWindowChrome.maybeOf(context);
     return SizedBox(
-      height: MMSizes.toolbarHeight,
+      height: height,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -37,31 +54,34 @@ class MMToolbar extends StatelessWidget {
             onPanStart: chrome?.onDragStart == null ? null : (_) => chrome!.onDragStart!(),
             onDoubleTap: chrome?.onTitleDoubleTap,
           ),
-          AnimatedPadding(
-            duration: MMMotion.layout,
-            curve: MMMotion.layoutCurve,
-            padding: EdgeInsets.only(left: 20 + (chrome?.toolbarLeadingInset ?? 0), right: 12),
-            child: Row(
-              children: [
-                if (leading != null) ...[leading!, const SizedBox(width: 8)],
-                Expanded(
-                  child: IgnorePointer(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(title, style: t.title3, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        if (subtitle != null)
-                          Text(subtitle!, style: t.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ],
+          if (child != null)
+            Semantics(label: semanticLabel, container: true, child: child!)
+          else
+            AnimatedPadding(
+              duration: MMMotion.layout,
+              curve: MMMotion.layoutCurve,
+              padding: EdgeInsets.only(left: 20 + (chrome?.toolbarLeadingInset ?? 0), right: 12),
+              child: Row(
+                children: [
+                  if (leading != null) ...[leading!, const SizedBox(width: 8)],
+                  Expanded(
+                    child: IgnorePointer(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: t.title3, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          if (subtitle != null)
+                            Text(subtitle!, style: t.footnote, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
-              ],
+                  const SizedBox(width: 16),
+                  for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -79,6 +99,7 @@ class MMToolbarGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return MMGlass(
       toolbar: true,
+      controlGroup: true,
       padding: EdgeInsets.all(context.mmTablet ? 2 : (compact && !context.mmTouch ? 2 : 3)),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
@@ -132,7 +153,7 @@ class MMToolbarButton extends StatelessWidget {
       builder: (context, s) {
         final fg = !s.enabled ? c.label.withValues(alpha: 0.3) : (selected ? (tint ?? c.accent) : (tint ?? c.label));
         final bg = selected
-            ? c.accentTint
+            ? (tint == c.research ? c.researchTint : c.accentTint)
             : s.pressed
             ? c.pressed
             : s.hovered

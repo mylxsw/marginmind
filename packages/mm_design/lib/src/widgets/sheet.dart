@@ -14,22 +14,25 @@ import 'bottom_sheet.dart';
 Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder builder, double width = 460}) {
   if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
   final c = context.mmColors;
+  final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: false,
     barrierColor: c.scrim,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMAppearance.duration(context, MMMotion.standard),
-    pageBuilder: (context, _, _) => SafeArea(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: MMSizes.toolbarHeight + 8, left: 16, right: 16),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: width),
-            child: CallbackShortcuts(
-              bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
-              child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+    pageBuilder: (context, _, _) => capturedThemes.wrap(
+      SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(top: MMSizes.toolbarHeight + 8, left: 16, right: 16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: width),
+              child: CallbackShortcuts(
+                bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
+                child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+              ),
             ),
           ),
         ),
@@ -55,19 +58,22 @@ Future<T?> showMMSheet<T>({required BuildContext context, required WidgetBuilder
 Future<T?> showMMDialog<T>({required BuildContext context, required WidgetBuilder builder}) {
   if (MMSizeClass.of(context) == MMSizeClass.compact) return showMMBottomSheet<T>(context: context, builder: builder);
   final reduceMotion = MMAppearance.reduceMotionOf(context);
+  final capturedThemes = InheritedTheme.capture(from: context, to: Navigator.of(context, rootNavigator: true).context);
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: false,
     barrierColor: mmDialogScrim,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     transitionDuration: MMAppearance.duration(context, MMMotion.standard),
-    pageBuilder: (context, _, _) => SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: context.mmTablet ? MediaQuery.viewInsetsOf(context).bottom : 0),
-        child: Center(
-          child: CallbackShortcuts(
-            bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
-            child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+    pageBuilder: (context, _, _) => capturedThemes.wrap(
+      SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: context.mmTablet ? MediaQuery.viewInsetsOf(context).bottom : 0),
+          child: Center(
+            child: CallbackShortcuts(
+              bindings: {const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop()},
+              child: FocusScope(autofocus: true, child: Builder(builder: builder)),
+            ),
           ),
         ),
       ),

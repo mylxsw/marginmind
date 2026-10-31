@@ -7,6 +7,7 @@ import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'control_frame.dart';
+import 'flat_surface.dart';
 
 @immutable
 class MMSegment<T> {
@@ -66,9 +67,14 @@ class MMSegmentedControl<T> extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: on ? c.card : (s.hovered ? c.hover : Colors.transparent),
+                      color: on
+                          ? (MMFlatSurface.of(context) ? c.selectedSegment : c.card)
+                          : (s.hovered ? c.hover : Colors.transparent),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: on
+                      border: on && MMFlatSurface.of(context)
+                          ? Border.all(color: c.border, width: MMSizes.hairline)
+                          : null,
+                      boxShadow: on && !MMFlatSurface.of(context)
                           ? [
                               BoxShadow(color: Colors.black.withValues(alpha: 0.06), spreadRadius: 0.5),
                               BoxShadow(
@@ -134,9 +140,14 @@ class MMSegmentedControl<T> extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: seg.value == value ? c.card : (state.hovered ? c.hover : Colors.transparent),
+                            color: seg.value == value
+                                ? (MMFlatSurface.of(context) ? c.selectedSegment : c.card)
+                                : (state.hovered ? c.hover : Colors.transparent),
                             borderRadius: BorderRadius.circular(grouped ? 16 : 14),
-                            boxShadow: seg.value == value
+                            border: seg.value == value && MMFlatSurface.of(context)
+                                ? Border.all(color: c.border, width: MMSizes.hairline)
+                                : null,
+                            boxShadow: seg.value == value && !MMFlatSurface.of(context)
                                 ? [
                                     BoxShadow(
                                       color: Colors.black.withValues(alpha: .08),

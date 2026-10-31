@@ -53,6 +53,29 @@ class FailingCompareRepository extends InMemoryStudySetContentRepository {
 }
 
 void main() {
+  testWidgets('workspace document menu switches the primary comparison document by ID', (tester) async {
+    installTestPdfBackend();
+    final container = await pumpApp(
+      tester,
+      renderPdf: true,
+      size: const Size(1600, 1000),
+      content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}),
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await drain(tester);
+    await container.read(readerCompareProvider('demo-1').notifier).select('c2', readerWidth: 1600);
+    await drain(tester);
+    await tester.tap(find.byKey(const ValueKey('reader-documents')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('第 3 章讲义').last);
+    await drain(tester);
+    final pair = container.read(readerCompareProvider('demo-1'))!;
+    expect(pair.leftDocumentId, 'third');
+    expect((pair.right as PdfCompareTarget).documentId, 'c2');
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, 'third');
+    expect(tester.takeException(), isNull);
+  });
+
   setUp(() {
     installTestPdfBackend();
     TestPdfRender.produceImages = true;
@@ -107,7 +130,7 @@ void main() {
     final session = container.read(readerCompareProvider('demo-1').notifier);
     workspace.toggleReaderPanel();
     await drain(tester);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Suggested'), findsNWidgets(2));
     await tester.tap(find.text('Learning and memory.pdf').last);
@@ -119,7 +142,11 @@ void main() {
     expect(state.layout, MMSplitMode.primary);
     final left = session.pdf('c1'), right = session.pdf('c2');
     expect(left.isReady && right.isReady, true);
-    expect(tester.widget<MMToolbarButton>(find.byKey(const ValueKey('reader-margin'))).onPressed, isNull);
+    await tester.tap(find.byKey(const ValueKey('reader-more')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<PopupMenuItem<VoidCallback>>(find.byKey(const ValueKey('reader-margin'))).enabled, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('compare-sync')));
     await drain(tester);
     expect(container.read(readerCompareProvider('demo-1'))!.sync, false);
@@ -485,7 +512,7 @@ void main() {
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Configure a model first'), findsOneWidget);
     expect(find.text('Suggested'), findsNothing);
@@ -498,7 +525,7 @@ void main() {
     final source = File('${directory!.path}/imported.pdf');
     await tester.runAsync(() => source.writeAsString('%PDF-1.7'));
     picks = [(path: source.path, name: 'Imported English.pdf')];
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     await tester.tap(importItem);
     await drain(tester);
@@ -507,7 +534,7 @@ void main() {
     final workspace = container.read(workspaceProvider('demo-1').notifier);
     expect(workspace.content.documents.length, 2);
     expect((pair.right as PdfCompareTarget).documentId, workspace.content.documents.last.id);
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Exit Side by Side'));
     await tester.pumpAndSettle();
@@ -524,7 +551,7 @@ void main() {
     );
     container.read(navigationProvider.notifier).openStudySet('demo-1');
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tapReaderCommand(tester, find.byKey(const ValueKey('reader-compare')));
     await tester.pumpAndSettle();
     expect(find.text('Window too narrow'), findsOneWidget);
     final item = tester.widget<PopupMenuItem<String>>(
