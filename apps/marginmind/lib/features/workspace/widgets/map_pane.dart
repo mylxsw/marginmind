@@ -820,7 +820,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 ),
               ),
               if (MMInput.touchInputOf(context)) ...[
-                const SizedBox(width: MMSpacing.s),
+                SizedBox(width: context.mmTablet ? MMToolbarSpacing.item : MMSpacing.s),
                 MMToolbarButton(
                   key: const ValueKey('map-multi-select'),
                   icon: _touchSelection ? MMIcons.check : Icons.checklist,
@@ -1184,7 +1184,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                     : MMGlass(
                                         key: const ValueKey('map-view-glass'),
                                         toolbar: true,
-                                        padding: const EdgeInsets.all(3),
+                                        padding: context.mmToolbarPadding,
                                         child: controls,
                                       ),
                               ),
@@ -1309,7 +1309,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                 MMGlass(
                                   toolbar: true,
                                   borderRadius: BorderRadius.circular(16),
-                                  padding: const EdgeInsets.all(3),
+                                  padding: context.mmToolbarPadding,
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1326,8 +1326,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         color: c.label,
                                         onPressed: () => viewCommand('zoom-out', () => _zoom(1 / 1.25)),
                                       ),
-                                      SizedBox(
-                                        width: context.mmTablet ? 56 : 44,
+                                      Container(
+                                        constraints: const BoxConstraints(minWidth: MMSizes.touchTarget),
+                                        padding: EdgeInsets.symmetric(horizontal: context.mmTablet ? MMSpacing.xs : 0),
+                                        width: context.mmTablet ? null : 44,
                                         height: context.mmTablet ? MMSizes.touchTarget : null,
                                         child: MMInteractive(
                                           tooltip: l.pdfActualSize,

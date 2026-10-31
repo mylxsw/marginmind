@@ -84,8 +84,7 @@ class WorkspaceToolbar extends StatelessWidget {
                   items: [...items, if (ownsActions && scope != null) ...scope.actions],
                   menuLabel: label,
                   overflowLabel: overflowLabel,
-                  spacing: phone ? MMSpacing.xs : MMSpacing.s,
-                  groupItemSpacing: context.mmTablet ? 0 : null,
+                  spacing: phone ? MMSpacing.xs : MMToolbarSpacing.group,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {
@@ -98,6 +97,10 @@ class WorkspaceToolbar extends StatelessWidget {
                       ? const []
                       : [
                           if (menuIcon != null) {'select', 'highlight', 'underline', 'ink', 'area', 'sync'},
+                          if (context.mmTablet) ...[
+                            {'map-view', 'map-style'},
+                            {'compare', 'documents'},
+                          ],
                           {'layout-reader', 'layout-split', 'layout-map'},
                           {'organize-note', 'assistant'},
                         ],

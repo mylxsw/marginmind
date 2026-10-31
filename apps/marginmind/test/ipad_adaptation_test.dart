@@ -5,6 +5,8 @@ import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/widgets/mind_map_canvas.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/map_pane.dart';
+import 'package:marginmind/features/workspace/widgets/map_selection_bar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/workspace_layout.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -37,7 +39,11 @@ void main() {
         t,
         size: const Size(834, 1194),
         prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
-        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(false)],
+        overrides: [
+          touchPlatformProvider.overrideWithValue(true),
+          phoneProvider.overrideWithValue(false),
+          mapCommandBarVisibleProvider.overrideWithValue(true),
+        ],
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
       await t.pumpAndSettle();
@@ -54,13 +60,23 @@ void main() {
         expect(cell.height, 44);
         if (i > 0) expect(cell.left, t.getRect(cells[i - 1]).right, reason: 'no extra gap within the tool group');
       }
+      final mapToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).last);
+      final view = find.byWidget(mapToolbar.items.firstWhere((item) => item.id == 'map-view').child);
+      final style = find.byKey(const ValueKey('map-style-button'));
+      expect(t.getRect(style).left, t.getRect(view).right, reason: 'map tools follow the same compact rhythm');
+      final appearance = dark ? 'dark' : 'light';
+      controller.selectCards({'c3', 'c4'});
+      await t.pumpAndSettle();
+      expect(find.byType(MapSelectionBar), findsOneWidget);
+      await screenshot(t, 'shared-tools-$appearance', target: find.byType(AppShell));
+      controller.selectCards({});
+      await t.pumpAndSettle();
       final grip = find.byKey(const ValueKey('split-divider-grip'));
       expect(grip, findsOneWidget);
       final divider = find.byWidgetPredicate((w) => w is MouseRegion && w.cursor == SystemMouseCursors.resizeRow);
       expect(t.getSize(divider).height, 44);
       final readerBefore = t.getRect(find.byType(ReaderPane));
       expect(t.getCenter(grip).dy, closeTo(readerBefore.bottom + .5, .01));
-      final appearance = dark ? 'dark' : 'light';
       await screenshot(t, 'split-$appearance', target: find.byType(AppShell));
       // Grab away from the tiny visual grip: the whole seam is a touch target.
       await t.dragFrom(t.getCenter(grip) + const Offset(100, 0), const Offset(0, 90));

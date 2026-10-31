@@ -58,7 +58,10 @@ class MMGlass extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               Positioned.fill(top: 4, bottom: 4, child: DecoratedBox(decoration: decoration)),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: child),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: MMToolbarSpacing.inset),
+                child: child,
+              ),
             ],
           ),
         );
@@ -87,7 +90,10 @@ class MMGlass extends StatelessWidget {
                 bottom: inset,
                 child: DecoratedBox(decoration: surface),
               ),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: child),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: MMToolbarSpacing.inset),
+                child: child,
+              ),
             ],
           ),
         );

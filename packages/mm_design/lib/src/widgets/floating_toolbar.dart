@@ -30,7 +30,7 @@ class MMFloatingToolbar extends StatelessWidget {
       child: FocusTraversalGroup(
         child: MMGlass(
           toolbar: true,
-          padding: EdgeInsets.all(context.mmTablet ? 2 : 3),
+          padding: context.mmToolbarPadding,
           child: Row(mainAxisSize: MainAxisSize.min, children: children),
         ),
       ),

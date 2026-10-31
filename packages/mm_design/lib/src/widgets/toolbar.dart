@@ -78,7 +78,10 @@ class MMToolbar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) SizedBox(width: context.mmTablet ? MMToolbarSpacing.group : 10),
+                    actions[i],
+                  ],
                 ],
               ),
             ),
@@ -100,7 +103,7 @@ class MMToolbarGroup extends StatelessWidget {
     return MMGlass(
       toolbar: true,
       controlGroup: true,
-      padding: EdgeInsets.all(context.mmTablet ? 2 : (compact && !context.mmTouch ? 2 : 3)),
+      padding: compact && !context.mmTouch && !context.mmTablet ? const EdgeInsets.all(2) : context.mmToolbarPadding,
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
@@ -225,7 +228,7 @@ class MMToolbarDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 18,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: EdgeInsets.symmetric(horizontal: context.mmTablet ? (MMToolbarSpacing.group - 1) / 2 : 4),
       color: context.mmColors.separator,
     );
   }

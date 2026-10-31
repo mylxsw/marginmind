@@ -168,6 +168,9 @@ extension MMAdaptiveSizes on BuildContext {
       ? const Size.square(MMSizes.touchTarget)
       : MMSizes.toolbarButton;
 
+  /// Same compact outer inset for grouped, floating and custom toolbars.
+  EdgeInsets get mmToolbarPadding => EdgeInsets.all(mmTablet ? MMToolbarSpacing.inset : 3);
+
   double get mmSidebarRow => mmTouch || mmTablet ? MMSizes.touchTarget : MMSizes.sidebarRow;
 
   /// Side of an [MMIconButton] in a toolbar.

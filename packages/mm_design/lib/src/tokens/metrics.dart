@@ -12,6 +12,14 @@ abstract final class MMSpacing {
   static const double xxxl = 32;
 }
 
+/// Shared iPad toolbar rhythm. Touch cells remain at least 44 pt wide;
+/// spacing is added only between groups, never between adjacent tools.
+abstract final class MMToolbarSpacing {
+  static const double item = 0;
+  static const double group = 8;
+  static const double inset = 2;
+}
+
 /// Concentric radii: inner radius = outer radius − inset.
 abstract final class MMRadii {
   static const double vocabularyCard = 10;

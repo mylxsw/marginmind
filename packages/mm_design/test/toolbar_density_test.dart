@@ -7,6 +7,67 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
 
 void main() {
+  testWidgets('iPad toolbar families share compact cells with separate edge hit targets', (t) async {
+    final taps = <String>[];
+    List<Widget> buttons(String kind) => [
+      for (final id in ['a', 'b'])
+        MMToolbarButton(
+          key: ValueKey('$kind-$id'),
+          icon: MMIcons.add,
+          tooltip: '$kind-$id',
+          onPressed: () => taps.add('$kind-$id'),
+        ),
+    ];
+    final adaptive = buttons('adaptive');
+    await t.pumpWidget(
+      MaterialApp(
+        theme: MMTheme.light(),
+        home: MMInput(
+          touchPlatform: true,
+          child: Scaffold(
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                MMToolbarGroup(key: const ValueKey('group'), children: buttons('group')),
+                MMFloatingToolbar(key: const ValueKey('floating'), children: buttons('floating')),
+                SizedBox(
+                  width: 180,
+                  height: 52,
+                  child: MMAdaptiveToolbar(
+                    menuLabel: 'More',
+                    groups: const [
+                      {'a', 'b'},
+                    ],
+                    items: [
+                      for (var i = 0; i < 2; i++)
+                        MMToolbarItem(
+                          id: i == 0 ? 'a' : 'b',
+                          child: adaptive[i],
+                          menuEntry: MMDropdownItem<VoidCallback>(value: () {}, child: Text('Command $i')),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.pumpAndSettle();
+    for (final kind in ['group', 'floating', 'adaptive']) {
+      final a = t.getRect(find.byKey(ValueKey('$kind-a')));
+      final b = t.getRect(find.byKey(ValueKey('$kind-b')));
+      expect(a.size, const Size(44, 44));
+      expect(b.left, a.right);
+      await t.tapAt(a.topRight + const Offset(-1, 2));
+      await t.tapAt(b.topLeft + const Offset(1, 2));
+      expect(taps.sublist(taps.length - 2), ['$kind-a', '$kind-b']);
+    }
+    expect(t.getSize(find.byKey(const ValueKey('group'))), t.getSize(find.byKey(const ValueKey('floating'))));
+    expect(t.takeException(), isNull);
+  });
+
   for (final tablet in [false, true]) {
     for (final dark in [false, true]) {
       testWidgets('${tablet ? 'ipad' : 'mac'} ${dark ? 'dark' : 'light'}', (t) async {

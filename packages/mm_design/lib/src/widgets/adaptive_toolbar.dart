@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../tokens/metrics.dart';
+import '../foundation/adaptive.dart';
 import '../theme/mm_theme.dart';
 import 'dropdown.dart';
+import 'control_frame.dart';
 
 /// Lower priorities move into the menu first. Commands retain one identity
 /// regardless of whether they are painted inline or invoked from the menu.
@@ -131,7 +133,7 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
           hidden: _hidden,
           compacted: _compacted,
           spacing: widget.spacing,
-          groupItemSpacing: widget.groupItemSpacing,
+          groupItemSpacing: widget.groupItemSpacing ?? (context.mmTablet ? MMToolbarSpacing.item : null),
           menuBeforeId: widget.menuBeforeId,
           trailingIds: widget.trailingIds,
           groups: widget.groups,
@@ -144,7 +146,9 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
                 debugLabel: 'toolbar-item:${item.id}',
                 skipTraversal: true,
                 child: item.compactChild == null
-                    ? item.child
+                    ? context.mmTablet && widget.groups.any((group) => group.contains(item.id))
+                          ? MMControlGroupScope(child: item.child)
+                          : item.child
                     : _ToolbarVariant(
                         children: [
                           Focus(debugLabel: 'toolbar-variant:${item.id}:full', skipTraversal: true, child: item.child),
