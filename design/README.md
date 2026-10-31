@@ -98,3 +98,7 @@ AI 块左侧细线使用 `MMNoteLayout.aiRule`（2pt）；排序与重新整理�
 ## 工作区布局：一行工具栏（GUL-609）
 
 `prototype/layout-density.html` 是高保真交互原型，“现状”为应用实机截图，“新方案”使用 `mm_design` 令牌和应用自带图标字体。对比现状与新布局：原文栏、脑图栏的表头合进窗口工具栏的一行，去掉文档标题和脑图标题，次要阅读功能收进 `Aa` 菜单；iPad 与 Mac 结构一致，iPhone 用顶部分段控件和拇指区浮动工具条，触屏滚动时隐藏工具栏。单文件、无依赖。设计说明见 [docs/layout-density.md](../docs/layout-density.md)。
+
+## 导出文档副本（GUL-602）
+
+`prototype/document-export.html` 演示把读过、标过的 PDF、EPUB、Markdown 导出成一份带标注的副本：阅读器「⋯」、文件菜单（⇧⌘S）和侧栏右键共用一个**导出副本**面板，左列回答“副本里留什么”（高亮可按颜色筛选、下划线、页边批注、画笔、目录与书签，各带数量），右侧是**与导出结果一致的实时预览**；PDF 可选页面范围、裁边，以及“可编辑注释 / 合并到页面”和“页边 / 文末”批注；EPUB 保留原格式（批注成为弹出脚注）或转为 PDF。尺寸与导出笔记相同（`noteExportSheetWidth` 900、`noteExportOptionsWidth` 280、`noteExportBodyHeight` 520）。单文件、无依赖；演示控制台有 19 个场景（入口、PDF、电子书与 Markdown、受保护 / 无标注 / 待确认等状态、导出中 / 完成 / 失败、iPad、iPhone），可切换浅色 / 深色。设计说明、内容映射与架构见 [docs/document-export.md](../docs/document-export.md)。
