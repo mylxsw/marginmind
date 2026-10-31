@@ -88,8 +88,10 @@ void main() {
           expect(map.top, greaterThan(reader.bottom));
         }
         expect(find.byType(BackdropFilter), findsNothing);
+        expect(find.byKey(const ValueKey('map-style-button')), findsNothing);
+        expect(find.byKey(const ValueKey('map-style-menu')), findsNothing);
         expect(find.byKey(const ValueKey('map-density')), findsNothing);
-        await tester.tap(find.byKey(const ValueKey('map-style-button')));
+        await toggleMapStyle(tester);
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('map-density')), findsOneWidget);
         await tester.tap(find.text('Full'));

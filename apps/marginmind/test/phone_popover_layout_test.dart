@@ -4,6 +4,8 @@ import 'package:marginmind/features/workspace/widgets/map_style_popover.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
+import 'helpers.dart';
+
 import 'phone_layout_test.dart' show Phone, openStudySet;
 
 void main() {
@@ -31,7 +33,7 @@ void main() {
       final container = await openStudySet(tester, phone);
       container.read(workspaceProvider('demo-1').notifier).setLayout(MMSplitMode.secondary);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('map-style-button')).hitTestable().first);
+      await toggleMapStyle(tester);
       await tester.pumpAndSettle();
       final popup = find.byType(MapStylePopover);
       expect(popup, findsOneWidget);
@@ -49,7 +51,7 @@ void main() {
           : const FakeViewPadding(top: 44, bottom: 34);
       await tester.pumpAndSettle();
       if (popup.evaluate().isEmpty) {
-        await tester.tap(find.byKey(const ValueKey('map-style-button')).hitTestable().first);
+        await toggleMapStyle(tester);
         await tester.pumpAndSettle();
       }
       final moved = tester.getRect(find.ancestor(of: popup, matching: find.byType(SingleChildScrollView)).first);

@@ -198,3 +198,11 @@ Future<void> tapWorkspaceCommand(WidgetTester tester, String id) async {
   }
   await tester.pumpAndSettle();
 }
+
+/// Opens (or closes) the style panel through the workspace More menu.
+Future<void> toggleMapStyle(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('map-more')).hitTestable().first);
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const ValueKey('map-style-menu')).hitTestable());
+  await tester.pumpAndSettle();
+}

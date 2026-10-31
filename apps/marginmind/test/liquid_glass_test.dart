@@ -117,7 +117,7 @@ void main() {
       expect(find.descendant(of: find.byType(MapPane), matching: find.byType(BackdropFilter)), findsNothing);
       final mapDock = tester.getRect(find.byType(MMThumbDockScope));
       expect(tester.getRect(find.byTooltip('Zoom In').last).bottom, lessThanOrEqualTo(mapDock.bottom));
-      expect(mapDock.contains(tester.getCenter(find.byKey(const ValueKey('map-style-button')))), isTrue);
+      expect(mapDock.contains(tester.getCenter(find.byKey(const ValueKey('map-more')))), isTrue);
       container.read(workspaceProvider('demo-1').notifier).setMapView(MapViewMode.outline);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

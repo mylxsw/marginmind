@@ -63,8 +63,8 @@ void main() {
       }
       final mapToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).last);
       final view = find.byWidget(mapToolbar.items.firstWhere((item) => item.id == 'map-view').child);
-      final style = find.byKey(const ValueKey('map-style-button'));
-      expect(t.getRect(style).left, t.getRect(view).right, reason: 'map tools follow the same compact rhythm');
+      expect(find.byKey(const ValueKey('map-style-button')), findsNothing);
+      expect(t.getRect(view).width, greaterThan(0));
       final readerToolbar = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).first);
       Rect readerAction(String id) =>
           t.getRect(find.byWidget(readerToolbar.items.firstWhere((item) => item.id == id).child));
@@ -230,11 +230,11 @@ void main() {
       canvas.transformation.value = saved.clone();
       await t.pumpAndSettle();
       final before = canvas.transformation.value.clone();
-      await t.tap(find.byKey(const ValueKey('map-style-button')));
+      await toggleMapStyle(t);
       await t.pumpAndSettle();
       expect(t.widget<MindMapCanvas>(find.byType(MindMapCanvas)).fitInsets, isNull);
       expect(canvas.transformation.value.storage, before.storage);
-      await t.tap(find.byKey(const ValueKey('map-style-button')));
+      await toggleMapStyle(t);
       await t.pumpAndSettle();
       expect(canvas.transformation.value.storage, before.storage);
     }

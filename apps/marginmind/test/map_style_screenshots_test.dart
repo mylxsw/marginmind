@@ -219,7 +219,7 @@ void main() {
         await controller.setMapPalette(palette);
         await tester.pumpAndSettle();
         // Shows the style popover, which fits the whole map beside it.
-        await tester.tap(find.byKey(const ValueKey('map-style-button')));
+        await toggleMapStyle(tester);
         await tester.pumpAndSettle();
         await _save(tester, '${structure.name}-${palette.name}-${dark ? 'dark' : 'light'}');
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);

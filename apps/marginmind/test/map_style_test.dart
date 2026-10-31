@@ -337,12 +337,7 @@ void main() {
     MindMapCanvas canvas(WidgetTester tester) => tester.widget<MindMapCanvas>(find.byType(MindMapCanvas));
 
     Future<void> clickStyle(WidgetTester tester, TestGesture mouse) async {
-      final button = find.byKey(const ValueKey('map-style-button'));
-      await mouse.moveTo(tester.getCenter(button));
-      await tester.pumpAndSettle();
-      await mouse.down(tester.getCenter(button));
-      await mouse.up();
-      await tester.pumpAndSettle();
+      await toggleMapStyle(tester);
     }
 
     testWidgets('hover previews, leaving restores, a click applies one undo step', (tester) async {

@@ -181,7 +181,9 @@ void main() {
     controller.closePanel();
     controller.selectCard(null);
     await idle(tester);
-    await tester.tap(find.byKey(const ValueKey('map-style-button')).hitTestable().first);
+    await tester.tap(find.byKey(const ValueKey('map-more')).hitTestable().first);
+    await idle(tester);
+    await tester.tap(find.byKey(const ValueKey('map-style-menu')).hitTestable());
     await shot('06c-map-style');
     await tester.tapAt(const Offset(20, 180));
     controller.setMapView(MapViewMode.outline);
