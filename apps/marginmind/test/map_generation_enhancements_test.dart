@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide Card;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/assistant/map_generation_cache.dart';
 import 'package:marginmind/features/assistant/map_generation_context.dart';
@@ -9,6 +10,7 @@ import 'package:marginmind/features/map_generation/map_generation_controller.dar
 import 'package:marginmind/features/map_generation/map_quote.dart';
 import 'package:marginmind/features/map_generation/widgets/map_source_range.dart';
 import 'package:marginmind/features/map_generation/widgets/generate_map_sheet.dart';
+import 'package:marginmind/features/map_generation/widgets/map_generation_bar.dart';
 import 'package:marginmind/features/workspace/reader_ocr.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -28,6 +30,26 @@ import 'reflow_fixtures.dart';
 import 'package:marginmind/features/workspace/reflow_document.dart';
 
 void main() {
+  test('footer counts valid pages once, including nested chapter ranges', () {
+    final entries = OutlineTree.flatten(const [
+      PdfOutlineEntry(
+        id: 'part',
+        title: 'Part',
+        page: 0,
+        children: [
+          PdfOutlineEntry(id: 'a', title: 'A', page: 1),
+          PdfOutlineEntry(id: 'b', title: 'B', page: 3),
+        ],
+      ),
+      PdfOutlineEntry(id: 'page-summary', title: 'Summary', page: 4),
+    ]).toList();
+    expect(mapSelectedPages(pdf(), entries, null), isEmpty);
+    expect(mapSelectedPages(pdf(), entries, []), {1, 2, 3, 4});
+    expect(mapSelectedPages(pdf(), entries, ['part', 'a']), {1, 2, 3});
+    expect(mapSelectedPages(pdf(), entries, ['page-summary']), {4});
+    expect(mapSelectedPages(pdf(), [], ['page-2', 'page-2', 'page-9']), {2});
+  });
+
   test('page range restricts inputs and persists range, rejects invalid page', () async {
     final builder = DocumentDigestBuilder(DigestReader({1: 'one', 2: 'two', 3: 'three', 4: 'four'}));
     final content = StudySetContent(documents: [pdf()]);
@@ -137,9 +159,8 @@ void main() {
     expect(await memory.sizeBytes(), 0);
   });
 
-  testWidgets('range switches, empty chapter selection and invalid page range', (tester) async {
+  testWidgets('range contents select all/none and validate fixed-width page fields', (tester) async {
     List<String>? selected = [];
-    await pumpApp(tester);
     Future<void> show(List<PdfOutlineEntry> entries) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -147,7 +168,14 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: MapSourceRange(document: pdf(), entries: entries, onChanged: (s) => selected = s),
+            body: StatefulBuilder(
+              builder: (context, update) => MapSourceRange(
+                document: pdf(),
+                entries: entries,
+                selection: selected,
+                onChanged: (value) => update(() => selected = value),
+              ),
+            ),
           ),
         ),
       );
@@ -155,28 +183,25 @@ void main() {
     }
 
     await show(const [PdfOutlineEntry(id: 'c1', title: 'One', page: 1)]);
-    await tester.tap(find.byType(MMSwitch));
-    await tester.pumpAndSettle();
-    expect(selected, isNull);
-    await tester.tap(find.byType(MMCheckbox));
-    await tester.pump();
-    expect(selected, ['c1']);
+    expect(tester.widget<MMCheckbox>(find.byType(MMCheckbox)).value, isTrue);
     await tester.tap(find.byType(MMCheckbox));
     await tester.pump();
     expect(selected, isNull);
-    await tester.tap(find.byType(MMSwitch));
+    await tester.tap(find.byType(MMCheckbox));
     await tester.pump();
     expect(selected, isEmpty);
     await tester.pumpWidget(const SizedBox());
+    selected = [];
     await show([]);
-    await tester.tap(find.byType(MMSwitch));
-    await tester.pump();
-    expect(selected, ['page-1', 'page-2', 'page-3', 'page-4']);
+    expect(tester.getSize(find.byType(MMTextField).first).width, MMSizes.mapGeneratePageFieldWidth);
     await tester.enterText(find.byType(TextField).first, '0');
     expect(selected, isNull);
     await tester.enterText(find.byType(TextField).first, '2');
     await tester.enterText(find.byType(TextField).last, '3');
     expect(selected, ['page-2', 'page-3']);
+    await tester.enterText(find.byType(TextField).first, '1');
+    await tester.enterText(find.byType(TextField).last, '4');
+    expect(selected, isEmpty);
   });
 
   for (final withOutline in [true, false]) {
@@ -222,11 +247,12 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
       await tester.pumpAndSettle();
+      expect(find.byType(MapSourceRange), findsNothing);
+      await tester.tap(find.byKey(ValueKey('map-range-toggle-${doc.id}')));
       final range = find.byType(MapSourceRange);
-      await tester.tap(find.descendant(of: range, matching: find.byType(MMSwitch)));
       await tester.pumpAndSettle();
       if (withOutline) {
-        await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).last);
+        await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).first);
       } else {
         final fields = find.descendant(of: range, matching: find.byType(TextField));
         await tester.enterText(fields.first, '0');
@@ -238,6 +264,12 @@ void main() {
         await tester.enterText(fields.first, '3');
       }
       await tester.pump();
+      final check = tester.widget<MMCheckbox>(find.byKey(ValueKey('map-document-check-${doc.id}')));
+      expect(check.mixed, isTrue);
+      expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '2 页');
+      await tester.tap(find.byKey(ValueKey('map-range-toggle-${doc.id}')));
+      await tester.pump();
+      expect(find.byType(MapSourceRange), findsNothing);
       final sheet = find.byType(GenerateMapSheet);
       await tester.tap(find.descendant(of: sheet, matching: find.byType(MMSwitch)).last);
       await tester.tap(find.byKey(const ValueKey('map-generate-sheet-start-button')));
@@ -251,6 +283,95 @@ void main() {
       expect(container.read(workspaceProvider('demo-1').notifier).content.annotations, base.annotations);
     });
   }
+
+  testWidgets('range toggle belongs to the single document row and multi-selection hides it', (tester) async {
+    await harness.openWorkspace(tester);
+    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.pumpAndSettle();
+    final sheet = find.byType(GenerateMapSheet);
+    expect(
+      find.descendant(of: sheet, matching: find.byWidgetPredicate((w) => w is Text && w.data == '学习的底层逻辑')),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Material>(find.descendant(of: sheet, matching: find.byType(Material)).first).color,
+      tester.element(sheet).mmColors.windowBackground,
+    );
+    await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
+    await tester.pump();
+    expect(find.byType(MapSourceRange), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.byType(MMSwitch)), findsNWidgets(2));
+    await tester.tap(find.byKey(const ValueKey('map-document-check-c2')));
+    await tester.pumpAndSettle();
+    expect(find.byType(MapSourceRange), findsNothing);
+    expect(find.byKey(const ValueKey('map-range-toggle-c1')), findsNothing);
+    expect(find.byKey(const ValueKey('map-range-toggle-c2')), findsNothing);
+    expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '42 页');
+  });
+
+  testWidgets('scanned source has the specified independent banner and disables the sheet before generation', (
+    tester,
+  ) async {
+    final ocr = FakeOcr()..document = const PdfOcrDocument(path: '/scan.pdf', pageCount: 30, textPages: {});
+    final container = await harness.openWorkspace(
+      tester,
+      pageText: (_, _) async => '',
+      overrides: [pdfOcrServiceProvider.overrideWithValue(ocr)],
+    );
+    final banner = find.byKey(const ValueKey('map-ocr-banner'));
+    expect(banner, findsOneWidget);
+    expect(tester.getSize(banner).height, MMSizes.mapDocumentBanner);
+    expect(find.descendant(of: banner, matching: find.byIcon(MMReaderIcons.area)), findsOneWidget);
+    expect(find.descendant(of: banner, matching: find.text('先识别文字才能生成')), findsOneWidget);
+    final recognize = tester.widget<MMButton>(find.byKey(const ValueKey('map-ocr-recognize')));
+    expect(recognize.label, '识别文字');
+    expect(recognize.variant, MMButtonVariant.primary);
+    expect(find.descendant(of: banner, matching: find.text('取消')), findsNothing);
+    final border = (tester.widget<Container>(banner).decoration! as BoxDecoration).border! as Border;
+    expect(border.top.width, MMSizes.hairline);
+    await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+    await tester.pumpAndSettle();
+    final sheet = find.byType(GenerateMapSheet);
+    expect(find.descendant(of: sheet, matching: find.byIcon(MMReaderIcons.area)), findsNWidgets(2));
+    expect(find.descendant(of: sheet, matching: find.text('需先识别文字')), findsNWidgets(2));
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNull);
+    expect(find.descendant(of: sheet, matching: find.byTooltip('先识别文字才能生成')), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '0 页');
+    expect(find.byKey(const ValueKey('map-range-toggle-c1')), findsNothing);
+    expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
+    await harness.key(tester, LogicalKeyboardKey.escape);
+    await container.read(workspaceProvider('demo-1').notifier).addMap('Scan');
+    await tester.pumpAndSettle();
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-empty-state-start-button'))).onPressed, isNull);
+    await harness.key(tester, LogicalKeyboardKey.enter, primary: true);
+    expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
+    await tester.tap(find.byKey(const ValueKey('map-ocr-recognize')));
+    await tester.pumpAndSettle();
+    expect(find.text('范围'), findsOneWidget);
+    await harness.key(tester, LogicalKeyboardKey.escape);
+    await tester.tap(find.byKey(const ValueKey('map-ocr-close')));
+    await tester.pumpAndSettle();
+    expect(banner, findsNothing);
+    // A fresh request must surface OCR again after a previously dismissed notice.
+    await harness.runGeneration(
+      tester,
+      () => container
+          .read(mapGenerationControllerProvider('demo-1').notifier)
+          .start(
+            const MapGenerationRequest(
+              studySetId: 'demo-1',
+              mapId: 'scan',
+              title: 'Scan',
+              sources: [MapDocumentSelection(documentId: 'c1')],
+            ),
+          ),
+    );
+    expect(banner, findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('map-ocr-close')));
+    await tester.pumpAndSettle();
+    expect(container.read(mapGenerationControllerProvider('demo-1')), isNull);
+    expect(banner, findsNothing);
+  });
 
   testWidgets('cache settings shows bytes and clears all study set caches', (tester) async {
     final cache = MapDigestCache(null);
@@ -266,7 +387,11 @@ void main() {
     showSettings(context, tab: SettingsTab.maps);
     await tester.pumpAndSettle();
     expect(find.textContaining(' B'), findsOneWidget);
-    await tester.tap(find.text('Clear Generation Cache'));
+    expect(
+      find.ancestor(of: find.byKey(const ValueKey('map-cache-clear')), matching: find.byType(MMSettingsRow)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('map-cache-clear')));
     await tester.pumpAndSettle();
     expect(await cache.sizeBytes(), 0);
     expect(find.text('0 B'), findsOneWidget);
@@ -398,7 +523,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(container.read(mapGenerationControllerProvider('demo-1'))!.needsTextDocumentId, 'c1');
-    expect(find.text('识别文字…'), findsWidgets);
+    expect(find.byKey(const ValueKey('map-ocr-recognize')), findsOneWidget);
+    expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-ocr-recognize'))).label, '识别文字');
+    expect(find.descendant(of: find.byType(MapGenerationBar), matching: find.text('先识别文字才能生成')), findsNothing);
     expect(fake.calls, isEmpty);
     final workspace = container.read(workspaceProvider('demo-1').notifier);
     final source = workspace.filePath(workspace.content.document('c1')!);

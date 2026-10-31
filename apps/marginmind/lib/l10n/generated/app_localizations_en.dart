@@ -5398,8 +5398,5 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mapCacheTitle => 'Chapter digest cache';
-
-  @override
   String get mapCacheClearFailed => 'Could not clear cache';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -8,6 +9,7 @@ import '../../../shared/l10n.dart';
 import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
+import '../../workspace/reader_ocr.dart';
 import '../map_generation_controller.dart';
 import 'generate_map_sheet.dart';
 
@@ -110,7 +112,18 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
   /// the user asks for a map, never just because the empty map is shown.
   bool _needsSetup = false;
 
+  bool _scanned({bool listen = false}) {
+    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final document = workspace.content.document(_documentId());
+    if (document == null || document.format != DocumentFormat.pdf) return false;
+    final source = workspace.filePath(document);
+    if (listen) ref.watch(readerOcrInspectionProvider(source));
+    final ocr = listen ? ref.watch(readerOcrProvider(source)) : ref.read(readerOcrProvider(source));
+    return ocr.document?.textPages.isEmpty == true;
+  }
+
   Future<void> _startGeneration() async {
+    if (_scanned()) return;
     final docId = _documentId();
     if (docId.isEmpty) return;
     final configured = await ref.read(assistantConfiguredProvider.future);
@@ -160,6 +173,7 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
     final isUnconfigured = _needsSetup;
 
     final docTitle = _documentTitle();
+    final scanned = _scanned(listen: true);
 
     final suggestions = [
       l.mapGenerateSuggestExam,
@@ -264,12 +278,15 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
                                   variant: MMButtonVariant.plain,
                                   onPressed: _openSettings,
                                 ),
-                                MMButton(
-                                  key: const ValueKey('map-empty-state-start-button'),
-                                  label: l.mapGenerateStart,
-                                  color: c.research,
-                                  variant: MMButtonVariant.primary,
-                                  onPressed: _startGeneration,
+                                Tooltip(
+                                  message: scanned ? l.mapBannerNeedsOcr : '',
+                                  child: MMButton(
+                                    key: const ValueKey('map-empty-state-start-button'),
+                                    label: l.mapGenerateStart,
+                                    color: c.research,
+                                    variant: MMButtonVariant.primary,
+                                    onPressed: scanned ? null : _startGeneration,
+                                  ),
                                 ),
                               ],
                             ),

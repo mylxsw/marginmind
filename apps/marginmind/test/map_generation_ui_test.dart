@@ -229,7 +229,7 @@ void main() {
       final switches = tester
           .widgetList<MMSwitch>(find.descendant(of: sheet, matching: find.byType(MMSwitch)))
           .toList();
-      expect(switches.length, 3);
+      expect(switches.length, 2);
       expect(switches.last.onChanged, isNotNull);
 
       // Toggle document 2 on

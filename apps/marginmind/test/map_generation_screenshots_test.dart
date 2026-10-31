@@ -14,6 +14,7 @@ import 'package:marginmind/features/map_generation/map_generation_controller.dar
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_core/mm_core.dart' hide Card;
 import 'package:mm_core/testing.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import 'helpers.dart';
 import 'document_map_navigation_test.dart' show multiDocumentContent;
@@ -128,7 +129,7 @@ void main() {
   for (final dark in [false, true]) {
     final mode = dark ? 'dark' : 'light';
 
-    testWidgets('Capture enhancements scenes 2 and 14 ($mode)', skip: _skip, (tester) async {
+    testWidgets('Capture enhancements scene 2 ($mode)', skip: _skip, (tester) async {
       final ocr = FakeOcr();
       final base = demoContent();
       final first = base.documents.first;
@@ -155,7 +156,7 @@ void main() {
           ],
         ),
       });
-      final container = await harness.openWorkspace(
+      await harness.openWorkspace(
         tester,
         content: content,
         prefs: {if (dark) 'settings.appearance': 'dark'},
@@ -164,33 +165,34 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
       final range = find.byType(MapSourceRange).first;
-      await tester.tap(find.descendant(of: range, matching: find.byType(MMSwitch)));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).first);
+      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(2));
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(1));
+      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(3));
       await tester.tap(find.byType(MMSwitch).last);
       await tester.pumpAndSettle();
       await _save(tester, 'scene_2_chapters_$mode');
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      await harness.runGeneration(
+    });
+
+    testWidgets('Capture enhancements scene 14 ($mode)', skip: _skip, (tester) async {
+      final ocr = FakeOcr()..document = const PdfOcrDocument(path: '/scan.pdf', pageCount: 30, textPages: {});
+      final container = await harness.openWorkspace(
         tester,
-        () => container
-            .read(mapGenerationControllerProvider('demo-1').notifier)
-            .start(
-              const MapGenerationRequest(
-                studySetId: 'demo-1',
-                mapId: 'scan-map',
-                title: '学习的底层逻辑',
-                sources: [MapDocumentSelection(documentId: 'c1')],
-              ),
-            ),
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+        overrides: [pdfOcrServiceProvider.overrideWithValue(ocr)],
       );
+      final workspace = container.read(workspaceProvider('demo-1').notifier);
+      final document = workspace.content.documents.first;
+      await workspace.addMap(document.title);
       await tester.pumpAndSettle();
-      expect(find.text('识别文字…'), findsWidgets);
+      expect(find.byKey(const ValueKey('map-ocr-banner')), findsOneWidget);
       await _save(tester, 'scene_14_scan_$mode');
+      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNull);
+      await _save(tester, 'scene_14_scan_sheet_$mode');
     });
 
     testWidgets('Capture Scenes 1, 2, 3, 5, 7 ($mode mode)', skip: _skip, (tester) async {

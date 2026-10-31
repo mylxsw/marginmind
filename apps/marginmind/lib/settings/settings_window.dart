@@ -482,23 +482,19 @@ class _MapCacheSettingsState extends ConsumerState<MapCacheSettings> {
       ),
       style: context.mmText.callout,
     );
-    final clear = MMButton(
-      label: context.l10n.settingsMapClearCache,
-      onPressed: _clearing || !size.hasValue ? null : _clear,
-    );
-    return Padding(
-      padding: const EdgeInsets.all(MMSpacing.m),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return MMSettingsRow(
+      leading: Text(context.l10n.settingsMapClearCache, style: context.mmText.body),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Expanded(child: Text(context.l10n.mapCacheTitle, style: context.mmText.body)),
-              usage,
-            ],
+          usage,
+          const SizedBox(width: MMSpacing.s),
+          MMIconButton(
+            key: const ValueKey('map-cache-clear'),
+            icon: MMIcons.trash,
+            tooltip: context.l10n.settingsMapClearCache,
+            onPressed: _clearing || !size.hasValue ? null : _clear,
           ),
-          const SizedBox(height: MMSpacing.s),
-          Align(alignment: Alignment.centerRight, child: clear),
         ],
       ),
     );

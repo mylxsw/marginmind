@@ -10,6 +10,7 @@ import '../../../shared/l10n.dart';
 import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
+import '../../workspace/reader_ocr.dart';
 import '../map_generation_controller.dart';
 import 'map_source_range.dart';
 
@@ -69,6 +70,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   bool _includeAnnotations = true;
   bool _extractQuotes = false;
   final _ranges = <String, List<String>?>{};
+  String? _expandedDocument;
   String _destination = 'new'; // 'new' or 'branch'
   late final TextEditingController _titleController;
   late final TextEditingController _instructionsController;
@@ -146,6 +148,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
       } else {
         _selectedDocs.remove(docId);
       }
+      _expandedDocument = null;
       if (!_userTouchedOrganization) {
         _organization = _selectedDocs.length > 1 ? MapOrganization.topic : MapOrganization.chapter;
       }
@@ -165,12 +168,23 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     return MapDocumentSelection(documentId: id, chapters: _ranges[id] ?? previous?.chapters ?? []);
   }
 
+  List<String>? _range(String id, StudySetContent content, String mapId) =>
+      _ranges.containsKey(id) ? _ranges[id] : _selection(id, content, mapId).chapters;
+
+  bool _scanned(Document document) {
+    if (document.format != DocumentFormat.pdf) return false;
+    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
+    return ref.read(readerOcrProvider(workspace.filePath(document))).document?.textPages.isEmpty == true;
+  }
+
   Future<void> _start() async {
     if (_selectedDocs.isEmpty ||
         _starting ||
         _selectedDocs.any((id) => _ranges.containsKey(id) && _ranges[id] == null)) {
       return;
     }
+    final content = ref.read(workspaceProvider(widget.studySetId).notifier).content;
+    if (content.documents.any((doc) => _selectedDocs.contains(doc.id) && _scanned(doc))) return;
     _starting = true;
     final credential = await ref.read(assistantCredentialStateProvider.future);
     if (!mounted) return;
@@ -250,13 +264,32 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     // Compute mark count on selected docs
     final markCount = snapshot.annotations.where((a) => _selectedDocs.contains(a.documentId)).length;
 
-    // Total pages
-    final totalPages = _selectedDocs.fold<int>(0, (sum, id) => sum + (snapshot.document(id)?.pageCount ?? 0));
+    final outlines = <String, List<PdfOutlineEntry>>{};
+    final scanned = <String>{};
+    for (final doc in documents) {
+      if (_selectedDocs.contains(doc.id)) {
+        outlines[doc.id] = ref.watch(mapDocumentOutlineProvider((widget.studySetId, doc.id))).value ?? [];
+      }
+      if (doc.format == DocumentFormat.pdf) {
+        final source = workspace.filePath(doc);
+        ref.watch(readerOcrInspectionProvider(source));
+        final ocr = ref.watch(readerOcrProvider(source));
+        if (ocr.document?.textPages.isEmpty == true) scanned.add(doc.id);
+      }
+    }
+    final hasScanned = _selectedDocs.any(scanned.contains);
+    final totalPages = documents
+        .where((doc) => _selectedDocs.contains(doc.id) && !scanned.contains(doc.id))
+        .fold<int>(
+          0,
+          (sum, doc) =>
+              sum + mapSelectedPages(doc, outlines[doc.id] ?? [], _range(doc.id, snapshot, wsState.activeMapId)).length,
+        );
 
     return CallbackShortcuts(
       bindings: {primaryShortcut(LogicalKeyboardKey.enter): _start},
       child: Material(
-        color: c.surface,
+        color: c.windowBackground,
         borderRadius: BorderRadius.circular(MMRadii.sheet),
         clipBehavior: Clip.antiAlias,
         child: Padding(
@@ -326,44 +359,107 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                                       (m) => m.generation?.sources.any((s) => s.documentId == doc.id) == true,
                                     );
 
-                                    return SizedBox(
-                                      height: MMSizes.mapGenerateDocumentRow,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                                        child: Row(
-                                          children: [
-                                            MMCheckbox(
-                                              value: isSelected,
-                                              color: c.research,
-                                              semanticLabel: doc.title,
-                                              onChanged: isLast ? null : (val) => _onToggleDoc(doc.id, val),
+                                    final range = _range(doc.id, snapshot, wsState.activeMapId);
+                                    final entries = outlines[doc.id] ?? <PdfOutlineEntry>[];
+                                    final single = isSelected && _selectedDocs.length == 1;
+                                    final isScanned = scanned.contains(doc.id);
+                                    final partial = isSelected && range?.isNotEmpty == true;
+                                    final count = mapSelectedChapters(entries, range).length;
+                                    final label = range?.isEmpty == true
+                                        ? l.mapGenerateWholeDocument
+                                        : entries.isNotEmpty
+                                        ? l.mapGenerateChapterCount(count, entries.length)
+                                        : l.mapGeneratePages(mapSelectedPages(doc, entries, range).length);
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          height: MMSizes.mapGenerateDocumentRow,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                                            child: Row(
+                                              children: [
+                                                MMCheckbox(
+                                                  key: ValueKey('map-document-check-${doc.id}'),
+                                                  value: isSelected && range != null,
+                                                  mixed: partial,
+                                                  color: c.research,
+                                                  semanticLabel: doc.title,
+                                                  onChanged: isSelected && (partial || range == null)
+                                                      ? (_) => setState(() => _ranges[doc.id] = [])
+                                                      : isLast
+                                                      ? null
+                                                      : (val) => _onToggleDoc(doc.id, val),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Icon(
+                                                  isScanned
+                                                      ? MMReaderIcons.area
+                                                      : doc.format == DocumentFormat.pdf
+                                                      ? MMIcons.document
+                                                      : MMIcons.ebook,
+                                                  size: 14,
+                                                  color: c.icon,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    doc.title,
+                                                    style: t.body,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                if (single && !isScanned) ...[
+                                                  MMInteractive(
+                                                    key: ValueKey('map-range-toggle-${doc.id}'),
+                                                    semanticLabel: label,
+                                                    onTap: () => setState(
+                                                      () => _expandedDocument = _expandedDocument == doc.id
+                                                          ? null
+                                                          : doc.id,
+                                                    ),
+                                                    builder: (context, state) => Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Text(label, style: t.callout.copyWith(color: c.accent)),
+                                                        const SizedBox(width: MMSpacing.xs),
+                                                        Icon(MMIcons.chevronDown, size: 10, color: c.accent),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: MMSpacing.s),
+                                                ],
+                                                if (isScanned) ...[
+                                                  Icon(MMIcons.warning, size: 12, color: c.caution),
+                                                  const SizedBox(width: MMSpacing.xs),
+                                                  Text(
+                                                    l.mapGenerateNeedsOcr,
+                                                    style: t.callout.copyWith(color: c.caution),
+                                                  ),
+                                                ] else ...[
+                                                  if (hasMap) ...[
+                                                    Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+                                                    const SizedBox(width: 6),
+                                                  ],
+                                                  Text(
+                                                    l.mapGeneratePages(doc.pageCount),
+                                                    style: t.callout.copyWith(color: c.secondaryLabel),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
-                                            const SizedBox(width: 10),
-                                            Icon(
-                                              doc.format == DocumentFormat.pdf ? MMIcons.document : MMIcons.ebook,
-                                              size: 14,
-                                              color: c.icon,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                doc.title,
-                                                style: t.body,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (hasMap) ...[
-                                              Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
-                                              const SizedBox(width: 6),
-                                            ],
-                                            Text(
-                                              l.mapGeneratePages(doc.pageCount),
-                                              style: t.callout.copyWith(color: c.secondaryLabel),
-                                            ),
-                                          ],
+                                          ),
                                         ),
-                                      ),
+                                        if (single && !isScanned && _expandedDocument == doc.id)
+                                          MapSourceRange(
+                                            key: ValueKey('map-range-${doc.id}'),
+                                            document: doc,
+                                            entries: entries,
+                                            selection: range,
+                                            onChanged: (value) => setState(() => _ranges[doc.id] = value),
+                                          ),
+                                      ],
                                     );
                                   },
                                 ),
@@ -373,27 +469,6 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                         ],
                       ),
 
-                      TableRow(
-                        children: [
-                          const SizedBox.shrink(),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: MMSpacing.m),
-                            child: Column(
-                              children: [
-                                for (final doc in documents.where((d) => _selectedDocs.contains(d.id)))
-                                  MapSourceRange(
-                                    key: ValueKey('map-range-${doc.id}'),
-                                    document: doc,
-                                    initial: _selection(doc.id, snapshot, wsState.activeMapId).chapters,
-                                    entries:
-                                        ref.watch(mapDocumentOutlineProvider((widget.studySetId, doc.id))).value ?? [],
-                                    onChanged: (range) => setState(() => _ranges[doc.id] = range),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                       // Organization row
                       TableRow(
                         children: [
@@ -618,7 +693,11 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                     children: [
                       Icon(MMIcons.document, size: 14, color: c.secondaryLabel),
                       const SizedBox(width: 4),
-                      Text(l.mapGeneratePages(totalPages), style: t.callout.copyWith(color: c.secondaryLabel)),
+                      Text(
+                        l.mapGeneratePages(totalPages),
+                        key: const ValueKey('map-range-page-count'),
+                        style: t.callout.copyWith(color: c.secondaryLabel),
+                      ),
                       const Spacer(),
                       MMButton(
                         label: l.cancel,
@@ -626,14 +705,18 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       const SizedBox(width: 8),
-                      MMButton(
-                        key: const ValueKey('map-generate-sheet-start-button'),
-                        label: l.mapGenerateStart,
-                        color: c.research,
-                        variant: MMButtonVariant.primary,
-                        onPressed: _selectedDocs.any((id) => _ranges.containsKey(id) && _ranges[id] == null)
-                            ? null
-                            : _start,
+                      Tooltip(
+                        message: hasScanned ? l.mapBannerNeedsOcr : '',
+                        child: MMButton(
+                          key: const ValueKey('map-generate-sheet-start-button'),
+                          label: l.mapGenerateStart,
+                          color: c.research,
+                          variant: MMButtonVariant.primary,
+                          onPressed:
+                              hasScanned || _selectedDocs.any((id) => _ranges.containsKey(id) && _ranges[id] == null)
+                              ? null
+                              : _start,
+                        ),
                       ),
                     ],
                   ),

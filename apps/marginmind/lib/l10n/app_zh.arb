@@ -2128,6 +2128,5 @@
   "phoneReaderExitTools": "结束标注",
   "phoneReaderPercent": "{percent}%",
   "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
-  "mapCacheTitle": "章节要点缓存",
   "mapCacheClearFailed": "清除缓存失败"
 }
