@@ -134,11 +134,12 @@ void main() {
         ),
         dark: dark,
       );
+      final goldenDirectory = Platform.isLinux ? 'goldens/linux' : 'goldens';
       await expectLater(
         find.byKey(const ValueKey('evidence')),
         matchesGoldenFile(
           Platform.environment['MM_SCREENSHOTS'] == null
-              ? 'goldens/phone_glass_${dark ? 'dark' : 'light'}.png'
+              ? '$goldenDirectory/phone_glass_${dark ? 'dark' : 'light'}.png'
               : '../../../docs/evidence/gul-630/phone-glass-${dark ? 'dark' : 'light'}.png',
         ),
       );
