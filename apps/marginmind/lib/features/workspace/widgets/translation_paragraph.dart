@@ -77,8 +77,12 @@ class _TranslationParagraphViewState extends ConsumerState<TranslationParagraphV
   }
 
   Future<void> _save() => _run(() async {
-    if (_text.text.trim().isEmpty) return;
-    await _controller.editParagraph(widget.paragraph, _text.text);
+    final value = _text.text.trim();
+    if (value.isEmpty || value == widget.value) {
+      setState(() => _editing = false);
+      return;
+    }
+    await _controller.editParagraph(widget.paragraph, value);
     if (mounted) {
       setState(() => _editing = false);
       MMHud.show(context, context.l10n.translationEditSaved);

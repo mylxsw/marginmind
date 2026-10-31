@@ -17,6 +17,19 @@ flutter test --no-pub test/translation_paragraph_test.dart \
 
 自审覆盖入口到持久化及 reader 更新、空编辑与 IME、键盘保存/换行/放弃、离线/失败、相同文本复用、异步与关闭、作用域和凭证边界。修复了重译在途时覆盖新编辑、过期撤销覆盖后续编辑、失败写入丢弃后续付费结果、离开 reader 后 HUD 操作访问已销毁状态、切换目标语言时编辑串写，以及编辑标记进入选区的问题。编辑标记在可选文本外；摘录卡片沿用译文正文与原文 PDF 段落定位。
 
+## Review 修正（PR #157）
+
+Enter 保存时先 trim：内容为空或与当前译文相同，直接退出编辑并保留旧值；不访问编辑控制器、不追加日志、不显示保存 HUD，也不会把 AI 译文误标为手动修改。
+
+新增四个 widget 回归：原样保存、仅改变首尾空白、空字符串、纯空白。均验证编辑框关闭、显示值与 `store.entries` 不变、持久化出处仍为 AI、没有 ✎ 或保存 HUD；原有编辑/键盘/拷贝综合用例中的空文本断言同步更新。
+
+- `dart analyze`：No issues found。
+- 两个变更 Dart 文件的 `dart format --output=none --set-exit-if-changed`：0 改动；`git diff --check` 通过。
+- 下述七个翻译文件的最终覆盖率测试：**71 项通过**，其中段落 **15 项**；原有 Enter、⌘Enter 保存、Shift+Enter 换行、Esc、拷贝及持久化回归仍通过。
+- 重新执行 `python3 tool/coverage.py`：前八个包通过，随后在 `mm_design` 的 `393x852 phone materials light` golden 失败（217 通过、1 失败），退出 1；该差异已在独立 main 复现，未改其 golden。后续包沿用下述既有完整报告，不宣称本次全量通过。
+- `python3 tool/coverage.py --report-only`：**通过，91.52%（51,519 / 56,295）**；PR 新增/变更可执行行 **226/240（94.17%）**。丢弃应用旧报告的整个段落组件记录，使用本次 71 项测试的新记录，再合并源码未变部分的既有报告；`changed-coverage.json` 的 SHA-256 同步更新。
+- 自审检查了空值/trim/未修改分支、重复 Enter 的 busy 守卫、实际编辑保存链路、异步和销毁、安全与文档一致性；修复 review 指出的两处行为偏差，没有新增资源或异步任务。
+
 ## 验证记录
 
 - `dart analyze`：No issues found。
@@ -57,7 +70,7 @@ flutter test --no-pub test/mind_map_cache_test.dart \
 
 ## 新增/变更覆盖率
 
-相对 `d2d7a049` 新增或变更的可执行生产 Dart 行：**224/238（94.12%）**，要求 ≥80%。逐文件未命中行见 `changed-coverage.json`。统计取 `git diff --unified=0 d2d7a049` 的新增行与 LCOV 执行行交集，排除测试与生成的 l10n；没有调整命中数或阈值。
+相对 `d2d7a049` 新增或变更的可执行生产 Dart 行：**226/240（94.17%）**，要求 ≥80%。逐文件未命中行见 `changed-coverage.json`。统计取 `git diff --unified=0 d2d7a049` 的新增行与 LCOV 执行行交集，排除测试与生成的 l10n；没有调整命中数或阈值。
 
 ## 全量结果与报告合并
 
@@ -81,7 +94,7 @@ flutter test --no-pub test/adaptive_layout_test.dart \
 
 | Package | Covered / lines | Coverage |
 | --- | ---: | ---: |
-| apps/marginmind | 33604 / 37467 | 89.69% |
+| apps/marginmind | 33606 / 37469 | 89.69% |
 | packages/mm_assistant | 2762 / 2835 | 97.43% |
 | packages/mm_book | 1300 / 1364 | 95.31% |
 | packages/mm_core | 5854 / 6002 | 97.53% |
@@ -92,6 +105,6 @@ flutter test --no-pub test/adaptive_layout_test.dart \
 | packages/mm_platform | 609 / 656 | 92.84% |
 | packages/mm_reflow | 1058 / 1115 | 94.89% |
 | packages/mm_research | 637 / 655 | 97.25% |
-| **Total** | **51517 / 56293** | **91.52%** |
+| **Total** | **51519 / 56295** | **91.52%** |
 
 Required: 80%.

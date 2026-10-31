@@ -47,7 +47,7 @@ TranslationJob task({Map<String, TranslationFailure> failures = const {}}) => Tr
   updatedAt: now,
   failures: failures,
 );
-Future<Journal> seed({bool failed = false}) async {
+Future<Journal> seed({bool failed = false, TranslationOrigin origin = TranslationOrigin.edited}) async {
   final store = Journal();
   for (final p in paragraphs('c1')) {
     if (failed && p.index == 0) continue;
@@ -62,7 +62,7 @@ Future<Journal> seed({bool failed = false}) async {
         text: 'Manual translation ${p.index}.',
         model: 'fixture',
         profile: '',
-        origin: TranslationOrigin.edited,
+        origin: origin,
         at: now,
       ),
     );
@@ -155,6 +155,38 @@ void main() {
     await frames(tester);
   });
 
+  for (final input in ['Manual translation 0.', ' \nManual translation 0.\t ', '', ' \n\t ']) {
+    testWidgets('Enter closes an unchanged or empty edit without saving: ${input.replaceAll('\n', r'\n')}', (
+      tester,
+    ) async {
+      final store = await seed(origin: TranslationOrigin.ai), translator = TestTranslator();
+      final initialEntries = List<TranslationSegment>.of(store.entries);
+      final c = await setup(tester, translator, storage: store);
+      await c.read(readerCompareProvider('demo-1').notifier).openAi('en');
+      await frames(tester);
+      final mouse = await hover(tester);
+      await tester.tap(find.byTooltip('Edit Translation'));
+      await tester.pump();
+      final editor = find.byKey(const ValueKey('translation-editor-0'));
+      await tester.enterText(editor, input);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await frames(tester);
+      expect(editor, findsNothing);
+      expect(find.text('Manual translation 0.'), findsOneWidget);
+      expect(store.entries, initialEntries);
+      expect(
+        (await store.load('c1', 'en')).segments[textKey(paragraphs('c1').first.text, 'en')]!.origin,
+        TranslationOrigin.ai,
+      );
+      expect(find.byKey(const ValueKey('translation-edited-0')), findsNothing);
+      expect(find.text('Changes Saved'), findsNothing);
+      expect(translator.calls, isEmpty);
+      await mouse.removePointer();
+      await tester.pumpWidget(const SizedBox());
+      await frames(tester);
+    });
+  }
+
   testWidgets('editor saves Enter and command Enter, keeps shift Enter, cancels Escape, and copies', (tester) async {
     final store = await seed(), translator = TestTranslator();
     final c = await setup(tester, translator, storage: store);
@@ -181,7 +213,14 @@ void main() {
     await tester.enterText(editor, ' ');
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
-    expect(editor, findsOneWidget);
+    expect(editor, findsNothing);
+    expect(find.text('Manual translation 0.'), findsOneWidget);
+    expect(store.entries.length, 3);
+    await mouse.moveTo(Offset.zero);
+    await mouse.moveTo(tester.getCenter(find.byKey(const ValueKey('translation-paragraph-0'))));
+    await tester.pump();
+    await tester.tap(find.byTooltip('Edit Translation'));
+    await tester.pump();
     await tester.enterText(editor, 'User revision');
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
