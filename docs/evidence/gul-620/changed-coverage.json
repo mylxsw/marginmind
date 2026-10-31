@@ -1,0 +1,68 @@
+{
+  "base": "d2d7a049f38914210763b7c7ac33c8d88a624e33",
+  "covered": 226,
+  "lines": 240,
+  "percent": 94.17,
+  "files": {
+    "apps/marginmind/lib/features/workspace/full_translation.dart": {
+      "covered": 17,
+      "lines": 18,
+      "percent": 94.44,
+      "uncovered": [
+        466
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart": {
+      "covered": 3,
+      "lines": 3,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart": {
+      "covered": 20,
+      "lines": 20,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart": {
+      "covered": 147,
+      "lines": 160,
+      "percent": 91.88,
+      "uncovered": [
+        65,
+        102,
+        111,
+        124,
+        125,
+        126,
+        127,
+        128,
+        189,
+        190,
+        191,
+        255,
+        256
+      ]
+    },
+    "packages/mm_assistant/lib/src/translation_scheduler.dart": {
+      "covered": 38,
+      "lines": 38,
+      "percent": 100.0,
+      "uncovered": []
+    },
+    "packages/mm_core/lib/src/content/translation_state.dart": {
+      "covered": 1,
+      "lines": 1,
+      "percent": 100.0,
+      "uncovered": []
+    }
+  },
+  "source_sha256": {
+    "apps/marginmind/lib/features/workspace/full_translation.dart": "458a2b93f0bbd3e92df1dc92fba21885477b555d05ea07304a207bc1cc1a8946",
+    "apps/marginmind/lib/features/workspace/widgets/full_translation_panel.dart": "e86290689b8161212122ed217fdd46e9f4c17c1dd93fd9ecff54de3403ffcb32",
+    "apps/marginmind/lib/features/workspace/widgets/reader_translation_view.dart": "2d793bfdb72fdfaccdf58bd0782c736fb36328a9b86ebf9a11f1667d219fd2ff",
+    "apps/marginmind/lib/features/workspace/widgets/translation_paragraph.dart": "276fade0d6665960c8a9a7d41dc25630e7113a83ae245910288f5ba614991958",
+    "packages/mm_assistant/lib/src/translation_scheduler.dart": "ed5ad335e42383bdd5d4f57a26683332caffba2e8385d5792a6f5f57bdded73f",
+    "packages/mm_core/lib/src/content/translation_state.dart": "725667c4f5cf664a88930a96cc637b6e0c55df29ad0d405f5bc83decd9c25589"
+  }
+}

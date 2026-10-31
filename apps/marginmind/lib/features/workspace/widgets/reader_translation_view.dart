@@ -20,6 +20,7 @@ import 'full_translation_strip.dart';
 import 'notices.dart';
 import 'reader_compare_controls.dart';
 import 'reflow_translation_view.dart';
+import 'translation_paragraph.dart';
 
 class ReaderTranslationView extends ConsumerStatefulWidget {
   const ReaderTranslationView({super.key, required this.studySetId});
@@ -516,43 +517,39 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                     color: state.hovered == p.fingerprint ? c.accent.withValues(alpha: .09) : marked(p),
                     borderRadius: BorderRadius.circular(2),
                   ),
-                  child: state.values.containsKey(p.fingerprint)
-                      ? SelectableText(
-                          state.values[p.fingerprint]!,
-                          style: MMTypography.readingBody.copyWith(
-                            color: style.inkColor,
-                            fontSize: 16.5 * scale,
-                            height: 1.7,
-                            fontWeight: p.heading ? FontWeight.w600 : FontWeight.normal,
-                          ),
-                          contextMenuBuilder: (context, editable) => AdaptiveTextSelectionToolbar.buttonItems(
-                            anchors: editable.contextMenuAnchors,
-                            buttonItems: [
-                              ...editable.contextMenuButtonItems,
-                              ContextMenuButtonItem(label: l.excerptAction, onPressed: () => _mark(p, editable, false)),
-                              ContextMenuButtonItem(
-                                label: l.highlightAction,
-                                onPressed: () => _mark(p, editable, true),
-                              ),
-                            ],
-                          ),
-                        )
-                      : FadeTransition(
-                          opacity: Tween<double>(begin: .3, end: .6).animate(_shimmer),
-                          child: SizedBox(
-                            height: (p.bounds.top - p.bounds.bottom) * scale,
-                            child: Align(
-                              alignment: Alignment.topLeft,
-                              child: Container(
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: c.quaternaryFill,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
+                  child: TranslationParagraphView(
+                    studySetId: widget.studySetId,
+                    language: language,
+                    paragraph: p,
+                    value: state.values[p.fingerprint],
+                    style: MMTypography.readingBody.copyWith(
+                      color: style.inkColor,
+                      fontSize: 16.5 * scale,
+                      height: 1.7,
+                      fontWeight: p.heading ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    contextMenuBuilder: (context, editable) => AdaptiveTextSelectionToolbar.buttonItems(
+                      anchors: editable.contextMenuAnchors,
+                      buttonItems: [
+                        ...editable.contextMenuButtonItems,
+                        ContextMenuButtonItem(label: l.excerptAction, onPressed: () => _mark(p, editable, false)),
+                        ContextMenuButtonItem(label: l.highlightAction, onPressed: () => _mark(p, editable, true)),
+                      ],
+                    ),
+                    placeholder: FadeTransition(
+                      opacity: Tween<double>(begin: .3, end: .6).animate(_shimmer),
+                      child: SizedBox(
+                        height: (p.bounds.top - p.bounds.bottom) * scale,
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Container(
+                            height: double.infinity,
+                            decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(4)),
                           ),
                         ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
           const SizedBox(height: 28),

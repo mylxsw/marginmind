@@ -34,6 +34,8 @@ TranslationSegmentState deriveTranslationSegmentState(
     return TranslationSegmentState.none;
   }
   if (job.failures.containsKey(paragraph.fingerprint)) return TranslationSegmentState.failed;
+  // Explicit paragraph retries can run after the full task has completed.
+  if (job.state == TranslationJobState.done && runningKeys.contains(key)) return TranslationSegmentState.running;
   if (!job.isActive) return TranslationSegmentState.none;
   if (runningKeys.contains(key)) return TranslationSegmentState.running;
   if (job.batch.range.contains(paragraph.page)) return TranslationSegmentState.queued;

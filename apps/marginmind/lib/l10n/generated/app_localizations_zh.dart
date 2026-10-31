@@ -5207,4 +5207,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String phoneReaderPercent(int percent) {
     return '$percent%';
   }
+
+  @override
+  String get translationRetranslate => '重新翻译';
+
+  @override
+  String get translationEdit => '修改译文';
+
+  @override
+  String get translationRetranslated => '已重新翻译';
+
+  @override
+  String get translationEdited => '已手动修改';
+
+  @override
+  String translationParagraphFailed(String reason) {
+    return '未译 · $reason';
+  }
+
+  @override
+  String get translationEditSaved => '已保存修改';
+
+  @override
+  String get translationCopied => '已拷贝译文';
+
+  @override
+  String get translationRemoved => '已移除译文';
 }

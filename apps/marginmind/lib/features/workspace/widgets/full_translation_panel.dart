@@ -595,7 +595,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
             if (ok && context.mounted) {
               final nav = Navigator.of(context);
               await controller.removeTranslations();
-              if (nav.mounted) nav.pop();
+              if (nav.mounted) {
+                nav.pop();
+                MMHud.show(nav.context, l.translationRemoved);
+              }
             }
           },
         ),

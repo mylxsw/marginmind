@@ -2824,5 +2824,14 @@
   "phoneReaderCollapse": "Collapse",
   "phoneReaderExitTools": "Finish annotating",
   "phoneReaderPercent": "{percent}%",
-  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "translationRetranslate": "Retranslate",
+  "translationEdit": "Edit Translation",
+  "translationRetranslated": "Retranslated",
+  "translationEdited": "Manually edited",
+  "translationParagraphFailed": "Untranslated · {reason}",
+  "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "translationEditSaved": "Changes Saved",
+  "translationCopied": "Translation Copied",
+  "translationRemoved": "Translations Removed"
 }

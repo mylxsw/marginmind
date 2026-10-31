@@ -2148,5 +2148,14 @@
   "phoneReaderCollapse": "收起",
   "phoneReaderExitTools": "结束标注",
   "phoneReaderPercent": "{percent}%",
-  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "translationRetranslate": "重新翻译",
+  "translationEdit": "修改译文",
+  "translationRetranslated": "已重新翻译",
+  "translationEdited": "已手动修改",
+  "translationParagraphFailed": "未译 · {reason}",
+  "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "translationEditSaved": "已保存修改",
+  "translationCopied": "已拷贝译文",
+  "translationRemoved": "已移除译文"
 }
