@@ -128,7 +128,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 semanticLabel: l.librarySection,
                 height: MMSizes.toolbarHeight,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l),
                   child: Row(
                     children: [
                       SizedBox.square(
@@ -231,7 +231,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(88),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, MMSpacing.s),
+                  padding: const EdgeInsets.fromLTRB(MMSpacing.l, 0, MMSpacing.l, MMSpacing.s),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
