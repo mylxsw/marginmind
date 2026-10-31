@@ -1760,5 +1760,9 @@
   "appIconDockHint": "更换 Dock 图标，访达中保留默认图标。",
   "appIconHomeHint": "更换主屏幕图标，系统可能显示确认提示。",
   "appIconChanging": "正在更换图标…",
-  "appIconChangeFailed": "图标更换失败，请重试。"
+  "appIconChangeFailed": "图标更换失败，请重试。",
+  "phoneGlassTitle": "手机 Liquid Glass",
+  "phoneGlassRegular": "标准",
+  "phoneGlassThick": "厚材质",
+  "phoneGlassOpaque": "不透明"
 }

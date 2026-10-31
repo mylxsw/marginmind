@@ -202,6 +202,27 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   List<Widget> _controls(BuildContext context) {
     final l = context.l10n;
     return [
+      _title(context, l.phoneGlassTitle),
+      Wrap(
+        spacing: MMSpacing.l,
+        runSpacing: MMSpacing.l,
+        children: [
+          for (final style in MMPhoneGlass.values)
+            for (final reduce in [false, true])
+              MMAppearance(
+                reduceTransparency: reduce,
+                child: MMLiquidGlass(
+                  phoneStyle: style,
+                  borderRadius: BorderRadius.circular(MMRadii.phoneTabBar),
+                  padding: const EdgeInsets.all(MMSpacing.l),
+                  child: Text(
+                    '${style == MMPhoneGlass.regular ? l.phoneGlassRegular : l.phoneGlassThick}${reduce ? ' · ${l.phoneGlassOpaque}' : ''}',
+                    style: context.mmText.body,
+                  ),
+                ),
+              ),
+        ],
+      ),
       _title(context, 'MMToolbarGroup · MMToolbarButton'),
       Wrap(
         spacing: 12,

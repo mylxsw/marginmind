@@ -20,6 +20,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Controls'));
     await tester.pumpAndSettle();
+    expect(find.text('Phone Liquid Glass'), findsOneWidget);
+    expect(
+      tester.widgetList<MMLiquidGlass>(find.byType(MMLiquidGlass)).where((glass) => glass.phoneStyle != null),
+      hasLength(4),
+    );
     await tester.scrollUntilVisible(find.byType(MMFloatingToolbar), 200, scrollable: find.byType(Scrollable).last);
     await tester.pumpAndSettle();
 

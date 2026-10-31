@@ -4694,4 +4694,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appIconChangeFailed => '图标更换失败，请重试。';
+
+  @override
+  String get phoneGlassTitle => '手机 Liquid Glass';
+
+  @override
+  String get phoneGlassRegular => '标准';
+
+  @override
+  String get phoneGlassThick => '厚材质';
+
+  @override
+  String get phoneGlassOpaque => '不透明';
 }
