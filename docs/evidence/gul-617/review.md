@@ -8,14 +8,14 @@ GUL-617 review 修订验证（2026-10-31）
 - 停止后到达的段落错误不写入 failures。
 - 停止后的无效打包响应不发出拆分请求，显式单段请求仍能成功。
 
-合并 main `6de9263`，解决 `packages/mm_core/lib/testing.dart` 冲突，同时保留 `in_memory_translation_store.dart` 与 `map_generator.dart` 两条导出。
+合并 main `fb4b6e3`。`packages/mm_core/lib/testing.dart` 同时保留 `in_memory_translation_store.dart` 与 `map_generator.dart`；main 随后新增脑图引擎造成的 `packages/mm_assistant/lib/mm_assistant.dart` 冲突也已解决，同时保留 `translation_scheduler.dart` 与 `map_generation.dart`。
 
 实际验证：
 
 | 命令 / 工作目录 | 结果 |
 | --- | --- |
 | `dart analyze packages/mm_assistant packages/mm_core packages/mm_data apps/marginmind` / 根目录 | 无告警 |
-| `dart test --coverage=coverage` / `packages/mm_assistant`（事先清空 coverage） | 254 项通过 |
+| `dart test --coverage=coverage` / `packages/mm_assistant`（事先清空 coverage） | 266 项通过 |
 | `dart test test/translation_scheduler_test.dart` / `packages/mm_assistant` | 27 项通过 |
 | `dart test` / `packages/mm_core` | 319 项通过 |
 | `dart test` / `packages/mm_data` | 77 项通过 |

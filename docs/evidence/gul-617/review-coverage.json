@@ -1,6 +1,6 @@
 {
   "review_base": "d9d687a60832332e0a9c7d886faebfb56eb1280b",
-  "merged_main": "6de92638af0c1fd61b70d084eb6db5688584e259",
+  "merged_main": "fb4b6e3519abd3614f2c99b2e0c654294b1cc50b",
   "source": "packages/mm_assistant/lib/src/translation_scheduler.dart",
   "new_covered": 12,
   "new_lines": 12,
