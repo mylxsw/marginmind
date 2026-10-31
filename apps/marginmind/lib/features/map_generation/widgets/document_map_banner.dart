@@ -68,6 +68,7 @@ class DocumentMapBanner extends ConsumerWidget {
     final generate = MMButton(
       key: const ValueKey('document-map-generate'),
       label: l.mapBannerGenerate,
+      variant: MMButtonVariant.primary,
       onPressed: busy
           ? null
           : () async {

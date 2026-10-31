@@ -425,6 +425,10 @@ void main() {
     c.read(expansionBusyProvider.notifier).set(true);
     await tester.pumpAndSettle();
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('document-map-generate'))).onPressed, isNull);
+    expect(
+      tester.widget<MMButton>(find.byKey(const ValueKey('document-map-generate'))).variant,
+      MMButtonVariant.primary,
+    );
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('document-map-merge'))).onPressed, isNull);
     c.read(expansionBusyProvider.notifier).set(false);
     await tester.pumpAndSettle();
