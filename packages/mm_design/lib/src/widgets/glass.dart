@@ -6,6 +6,7 @@ import '../foundation/adaptive.dart';
 import '../foundation/appearance.dart';
 import '../theme/mm_theme.dart';
 import '../tokens/metrics.dart';
+import '../tokens/phone_glass.dart';
 import 'control_frame.dart';
 import 'flat_surface.dart';
 
@@ -155,6 +156,7 @@ class MMLiquidGlass extends StatelessWidget {
     this.opaqueColor,
     this.shadows,
     this.blurSigma = 24,
+    this.phoneStyle,
   });
 
   final Widget child;
@@ -164,6 +166,9 @@ class MMLiquidGlass extends StatelessWidget {
   final Color? opaqueColor;
   final List<BoxShadow>? shadows;
   final double blurSigma;
+
+  /// Opt-in preview/material. Callers gate usage to phone + compact layouts.
+  final MMPhoneGlass? phoneStyle;
 
   /// How much the backdrop's saturation rises under the blur.
   static const double saturation = 1.8;
@@ -191,22 +196,32 @@ class MMLiquidGlass extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final reduce = MMAppearance.reduceTransparencyOf(context);
     final nested = onGlass(context);
+    final style = phoneStyle;
     final fill = reduce
-        ? (opaqueColor ?? c.glassOpaque)
+        ? (style == null
+              ? (opaqueColor ?? c.glassOpaque)
+              : (opaqueColor ?? MMPhoneGlass.opaque(dark)).withValues(alpha: 1))
         : nested
         ? (dark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.55))
-        : (color ?? c.glass.withValues(alpha: c.glass.a * fillOpacity));
+        : (color ?? style?.fill(dark) ?? c.glass.withValues(alpha: c.glass.a * fillOpacity));
 
     Widget surface = CustomPaint(
-      foregroundPainter: reduce ? null : _RimPainter(borderRadius: borderRadius, dark: dark),
+      foregroundPainter: reduce ? null : _RimPainter(borderRadius: borderRadius, dark: dark, phone: style != null),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: fill,
           borderRadius: borderRadius,
-          border: Border.all(color: c.hairline, width: 0.5),
+          border: Border.all(color: style == null ? c.hairline : MMPhoneGlass.edge(dark), width: 0.5),
         ),
         child: DecoratedBox(
-          decoration: BoxDecoration(borderRadius: borderRadius, gradient: reduce ? null : _sheen(dark)),
+          decoration: BoxDecoration(
+            borderRadius: borderRadius,
+            gradient: reduce
+                ? null
+                : style == null
+                ? _sheen(dark)
+                : MMPhoneGlass.sheen(dark),
+          ),
           child: Padding(
             padding: padding,
             child: _GlassScope(child: child),
@@ -215,11 +230,27 @@ class MMLiquidGlass extends StatelessWidget {
       ),
     );
     if (!reduce && !nested && blurSigma > 0) {
-      surface = BackdropFilter(filter: liquidFilter(blurSigma), child: surface);
+      surface = BackdropFilter(filter: style == null ? liquidFilter(blurSigma) : phoneFilter(style), child: surface);
     }
     return DecoratedBox(
-      decoration: BoxDecoration(borderRadius: borderRadius, boxShadow: _outer(shadows ?? c.glassShadow)),
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: _outer(shadows ?? (style == null ? c.glassShadow : MMPhoneGlass.shadows(dark))),
+      ),
       child: ClipRRect(borderRadius: borderRadius, child: surface),
+    );
+  }
+
+  static ImageFilter phoneFilter(MMPhoneGlass style) {
+    final matrix = saturationMatrix(style.saturation);
+    for (var row = 0; row < 3; row++) {
+      for (var column = 0; column < 3; column++) {
+        matrix[row * 5 + column] *= style.brightness;
+      }
+    }
+    return ImageFilter.compose(
+      outer: ImageFilter.blur(sigmaX: style.blur, sigmaY: style.blur),
+      inner: ColorFilter.matrix(matrix),
     );
   }
 
@@ -298,10 +329,11 @@ class _GlassScope extends InheritedWidget {
 /// The light-catching rim of [MMLiquidGlass]: bright along the top edge,
 /// fading down the sides.
 class _RimPainter extends CustomPainter {
-  _RimPainter({required this.borderRadius, required this.dark});
+  _RimPainter({required this.borderRadius, required this.dark, this.phone = false});
 
   final BorderRadius borderRadius;
   final bool dark;
+  final bool phone;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -309,19 +341,23 @@ class _RimPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.white.withValues(alpha: dark ? 0.32 : 0.9),
-          Colors.white.withValues(alpha: dark ? 0.06 : 0.2),
-          Colors.white.withValues(alpha: dark ? 0.12 : 0.4),
-        ],
-        stops: const [0, 0.55, 1],
-      ).createShader(rect);
+      ..shader =
+          (phone
+                  ? MMPhoneGlass.rim(dark)
+                  : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: dark ? 0.32 : 0.9),
+                        Colors.white.withValues(alpha: dark ? 0.06 : 0.2),
+                        Colors.white.withValues(alpha: dark ? 0.12 : 0.4),
+                      ],
+                      stops: const [0, 0.55, 1],
+                    ))
+              .createShader(rect);
     canvas.drawRRect(borderRadius.toRRect(rect).deflate(0.5), paint);
   }
 
   @override
-  bool shouldRepaint(_RimPainter old) => old.borderRadius != borderRadius || old.dark != dark;
+  bool shouldRepaint(_RimPainter old) => old.borderRadius != borderRadius || old.dark != dark || old.phone != phone;
 }

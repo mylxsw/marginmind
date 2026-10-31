@@ -4916,4 +4916,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appIconChangeFailed => 'Could not change the icon. Please try again.';
+
+  @override
+  String get phoneGlassTitle => 'Phone Liquid Glass';
+
+  @override
+  String get phoneGlassRegular => 'Regular';
+
+  @override
+  String get phoneGlassThick => 'Thick';
+
+  @override
+  String get phoneGlassOpaque => 'Opaque';
 }
