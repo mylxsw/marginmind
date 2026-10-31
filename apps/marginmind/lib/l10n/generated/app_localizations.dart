@@ -7244,6 +7244,558 @@ abstract class AppLocalizations {
   /// **'The model is busy. Try again later.'**
   String get mapIdeaBusy;
 
+  /// No description provided for @mapGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Map'**
+  String get mapGenerate;
+
+  /// No description provided for @mapGenerateMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate from Document…'**
+  String get mapGenerateMenu;
+
+  /// No description provided for @mapGenerateDocumentMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Map…'**
+  String get mapGenerateDocumentMenu;
+
+  /// No description provided for @mapGenerateUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get mapGenerateUpdate;
+
+  /// No description provided for @mapGenerateRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating'**
+  String get mapGenerateRunning;
+
+  /// No description provided for @mapGenerateReviewing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing'**
+  String get mapGenerateReviewing;
+
+  /// No description provided for @mapHasUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'New material'**
+  String get mapHasUpdates;
+
+  /// No description provided for @mapHasMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Has a map'**
+  String get mapHasMap;
+
+  /// No description provided for @mapGenerateFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a Map from “{document}”'**
+  String mapGenerateFrom(String document);
+
+  /// No description provided for @mapGenerateSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get mapGenerateSettings;
+
+  /// No description provided for @mapGenerateStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get mapGenerateStart;
+
+  /// No description provided for @mapGenerateBlank.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Blank'**
+  String get mapGenerateBlank;
+
+  /// No description provided for @mapGenerateSuggestExam.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus on Exam Points'**
+  String get mapGenerateSuggestExam;
+
+  /// No description provided for @mapGenerateSuggestExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain Each Topic'**
+  String get mapGenerateSuggestExplain;
+
+  /// No description provided for @mapGenerateSuggestQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Key Quotes'**
+  String get mapGenerateSuggestQuotes;
+
+  /// No description provided for @mapGenerateSuggestExamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Examples'**
+  String get mapGenerateSuggestExamples;
+
+  /// No description provided for @mapGenerateDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get mapGenerateDocuments;
+
+  /// No description provided for @mapGeneratePages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 page} other{{count} pages}}'**
+  String mapGeneratePages(int count);
+
+  /// No description provided for @mapGenerateSegments.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 part} other{{count} parts}}'**
+  String mapGenerateSegments(int count);
+
+  /// No description provided for @mapGenerateNeedsOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs text recognition'**
+  String get mapGenerateNeedsOcr;
+
+  /// No description provided for @mapGenerateWholeDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire Document'**
+  String get mapGenerateWholeDocument;
+
+  /// No description provided for @mapGenerateChapterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} chapters'**
+  String mapGenerateChapterCount(int selected, int total);
+
+  /// No description provided for @mapGenerateOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get mapGenerateOrganization;
+
+  /// No description provided for @mapGenerateByChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'By Chapter'**
+  String get mapGenerateByChapter;
+
+  /// No description provided for @mapGenerateByTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'By Concept'**
+  String get mapGenerateByTopic;
+
+  /// No description provided for @mapGenerateMergeByTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge by Concept'**
+  String get mapGenerateMergeByTopic;
+
+  /// No description provided for @mapGenerateByQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'By Question'**
+  String get mapGenerateByQuestion;
+
+  /// No description provided for @mapGenerateDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail'**
+  String get mapGenerateDetail;
+
+  /// No description provided for @mapGenerateDetailBrief.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief'**
+  String get mapGenerateDetailBrief;
+
+  /// No description provided for @mapGenerateDetailMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get mapGenerateDetailMedium;
+
+  /// No description provided for @mapGenerateDetailFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed'**
+  String get mapGenerateDetailFull;
+
+  /// No description provided for @mapGenerateEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'{levels} levels · about {count} topics'**
+  String mapGenerateEstimate(int levels, int count);
+
+  /// No description provided for @mapGenerateContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get mapGenerateContent;
+
+  /// No description provided for @mapGenerateMyMarks.
+  ///
+  /// In en, this message translates to:
+  /// **'My Highlights and Notes'**
+  String get mapGenerateMyMarks;
+
+  /// No description provided for @mapGenerateMarkCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}'**
+  String mapGenerateMarkCount(int count);
+
+  /// No description provided for @mapGenerateQuotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Quotes'**
+  String get mapGenerateQuotes;
+
+  /// No description provided for @mapGenerateTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate To'**
+  String get mapGenerateTarget;
+
+  /// No description provided for @mapGenerateTargetNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Map'**
+  String get mapGenerateTargetNew;
+
+  /// No description provided for @mapGenerateTargetBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'New Branch of This Map'**
+  String get mapGenerateTargetBranch;
+
+  /// No description provided for @mapGenerateTargetReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace “{title}”'**
+  String mapGenerateTargetReplace(String title);
+
+  /// No description provided for @mapGenerateInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get mapGenerateInstructions;
+
+  /// No description provided for @mapGenerateReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading “{document}”'**
+  String mapGenerateReading(String document);
+
+  /// No description provided for @mapGenerateBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Building Map'**
+  String get mapGenerateBuilding;
+
+  /// No description provided for @mapGenerateTopicCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 topic} other{{count} topics}}'**
+  String mapGenerateTopicCount(int count);
+
+  /// No description provided for @mapGenerateQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get mapGenerateQueued;
+
+  /// No description provided for @mapGenerateChapterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'“{chapter}” failed'**
+  String mapGenerateChapterFailed(String chapter);
+
+  /// No description provided for @mapGenerateBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep (↩) or discard (Esc) the generated map first'**
+  String get mapGenerateBlocked;
+
+  /// No description provided for @mapGenerateCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Created “{title}” · 1 topic} other{Created “{title}” · {count} topics}}'**
+  String mapGenerateCreated(String title, int count);
+
+  /// No description provided for @mapGenerateNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable structure. Try another organization.'**
+  String get mapGenerateNothing;
+
+  /// No description provided for @mapGenerateStoppedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped before any topics'**
+  String get mapGenerateStoppedEmpty;
+
+  /// No description provided for @mapGenerateDraftSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'AI draft, {title}, page {page}, {state}'**
+  String mapGenerateDraftSemantics(String title, int page, String state);
+
+  /// No description provided for @mapGenerateReadProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Read {done} of {total} chapters'**
+  String mapGenerateReadProgress(int done, int total);
+
+  /// No description provided for @mapGenerateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ready to review, 1 topic} other{Ready to review, {count} topics}}'**
+  String mapGenerateReady(int count);
+
+  /// No description provided for @mapSourceSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{document}, page {page}'**
+  String mapSourceSemantics(String document, int page);
+
+  /// No description provided for @mapBannerNoMap.
+  ///
+  /// In en, this message translates to:
+  /// **'“{document}” has no map'**
+  String mapBannerNoMap(String document);
+
+  /// No description provided for @mapBannerGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'New Map'**
+  String get mapBannerGenerate;
+
+  /// No description provided for @mapBannerMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to This Map'**
+  String get mapBannerMerge;
+
+  /// No description provided for @mapBannerNeedsOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize text to generate a map'**
+  String get mapBannerNeedsOcr;
+
+  /// No description provided for @mapFollowSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to “{title}”'**
+  String mapFollowSwitched(String title);
+
+  /// No description provided for @mapUpdateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Map'**
+  String get mapUpdateTitle;
+
+  /// No description provided for @mapUpdateSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get mapUpdateSources;
+
+  /// No description provided for @mapUpdateAddDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Document'**
+  String get mapUpdateAddDocument;
+
+  /// No description provided for @mapUpdateSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Since Last Generated'**
+  String get mapUpdateSince;
+
+  /// No description provided for @mapUpdateNewHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'New highlights'**
+  String get mapUpdateNewHighlights;
+
+  /// No description provided for @mapUpdateNewNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'New notes'**
+  String get mapUpdateNewNotes;
+
+  /// No description provided for @mapUpdateReadTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Read to'**
+  String get mapUpdateReadTo;
+
+  /// No description provided for @mapUpdateReadRange.
+  ///
+  /// In en, this message translates to:
+  /// **'p.{from} → p.{to}'**
+  String mapUpdateReadRange(int from, int to);
+
+  /// No description provided for @mapUpdateScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get mapUpdateScope;
+
+  /// No description provided for @mapUpdateScopeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Material Only'**
+  String get mapUpdateScopeNew;
+
+  /// No description provided for @mapUpdateScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Rework Everything'**
+  String get mapUpdateScopeAll;
+
+  /// No description provided for @mapUpdateProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 edited topic stays as is} other{{count} edited topics stay as they are}}'**
+  String mapUpdateProtected(int count);
+
+  /// No description provided for @mapUpdatePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview Changes'**
+  String get mapUpdatePreview;
+
+  /// No description provided for @mapUpdateNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to update'**
+  String get mapUpdateNothing;
+
+  /// No description provided for @mapDiffAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get mapDiffAdded;
+
+  /// No description provided for @mapDiffRenamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed'**
+  String get mapDiffRenamed;
+
+  /// No description provided for @mapDiffMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved'**
+  String get mapDiffMoved;
+
+  /// No description provided for @mapDiffRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested Removals'**
+  String get mapDiffRemoved;
+
+  /// No description provided for @mapDiffTagNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get mapDiffTagNew;
+
+  /// No description provided for @mapDiffTagMovedFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {from}'**
+  String mapDiffTagMovedFrom(String from);
+
+  /// No description provided for @mapDiffTagRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get mapDiffTagRemove;
+
+  /// No description provided for @mapDiffMoveRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} → {to}'**
+  String mapDiffMoveRoute(String from, String to);
+
+  /// No description provided for @mapDiffExcerpt.
+  ///
+  /// In en, this message translates to:
+  /// **'Excerpt: {text}'**
+  String mapDiffExcerpt(String text);
+
+  /// No description provided for @mapDiffProtected.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected'**
+  String get mapDiffProtected;
+
+  /// No description provided for @mapUpdateApply.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Apply 1} other{Apply {count}}}'**
+  String mapUpdateApply(int count);
+
+  /// No description provided for @mapUpdateApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Updated 1 item} other{Updated {count} items}}'**
+  String mapUpdateApplied(int count);
+
+  /// No description provided for @mapUpdateBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply (↩) or discard (Esc) the update first'**
+  String get mapUpdateBlocked;
+
+  /// No description provided for @mapDiffAddSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested addition, {title}'**
+  String mapDiffAddSemantics(String title);
+
+  /// No description provided for @mapDiffRenameSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested rename, {old} to {title}'**
+  String mapDiffRenameSemantics(String old, String title);
+
+  /// No description provided for @mapDiffMoveSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested move, {title}, from {from} to {to}'**
+  String mapDiffMoveSemantics(String title, String from, String to);
+
+  /// No description provided for @mapDiffRemoveSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested removal, {title}, {reason}'**
+  String mapDiffRemoveSemantics(String title, String reason);
+
+  /// No description provided for @settingsMapFollowDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Maps with Documents'**
+  String get settingsMapFollowDocument;
+
+  /// No description provided for @settingsMapClearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Generation Cache'**
+  String get settingsMapClearCache;
+
   /// No description provided for @notesTitle.
   ///
   /// In en, this message translates to:

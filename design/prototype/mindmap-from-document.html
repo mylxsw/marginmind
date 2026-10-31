@@ -119,22 +119,22 @@ svg{display:block}
 .node.card .ft{display:flex;align-items:center;justify-content:space-between;margin-top:5px;padding:0 2px;font-size:11px;color:var(--label3)}
 .src{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:9px;font:500 11px/1 var(--sans);color:var(--label2);background:var(--fill4)}
 .src i{width:6px;height:6px;border-radius:3px;display:inline-block}
-.node:hover .src{color:var(--accent)}
+.node:hover .src{color:var(--label);background:var(--fill)}
 .scene.kept .node:not(:hover):not(.sel):not(.card) .src{display:none}
 /* AI draft — same as GUL-581 MapGhostNode: research 1pt dashed + half researchTint */
 .node.draft{background:color-mix(in srgb,var(--ai) 6%,var(--canvas));outline:1px dashed var(--ai);outline-offset:-1px;color:var(--label)}
 .node.draft.card{border-color:transparent}
-.node.draft .src{color:var(--ai);background:var(--aiTint)}
 .node.off{opacity:.42;outline-color:var(--label3)}
 .node.off .tt{text-decoration:line-through}
 .node.sel{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--accent)}
 .node.focus{box-shadow:0 0 0 2px var(--canvas),0 0 0 4px var(--ai)}
-.node .tag{font:600 10px/1 var(--sans);padding:3px 5px;border-radius:4px;background:var(--aiTint);color:var(--ai)}
+.node .tag{font:600 10px/1 var(--sans);padding:3px 5px;border-radius:4px;background:var(--ai);color:var(--onAi)}
 .node .tag.rm{background:var(--fill);color:var(--label2)}
 .node .old{position:absolute;left:10px;top:-15px;font:400 11px/1 var(--sans);color:var(--label3);text-decoration:line-through;white-space:nowrap}
-.node.rm .tt{text-decoration:line-through;color:var(--label3)}
-.node.rm{outline:1px dashed var(--label3);outline-offset:-1px;background:transparent}
-.node.rm.on{opacity:1}
+/* Suggested removal: unchecked keeps the topic; checked (will be removed) strikes it through. */
+.node.rm{outline:1px dashed var(--label2);outline-offset:-1px}
+.node.rm.on{background:transparent}
+.node.rm.on .tt{text-decoration:line-through;color:var(--label3)}
 .node .lock{position:absolute;left:-8px;top:-8px;width:18px;height:18px;border-radius:9px;background:var(--surface);border:.5px solid var(--border);color:var(--label2);display:flex;align-items:center;justify-content:center}
 .node.skel{background:var(--fill4);color:var(--label3);font-weight:500}
 .node.skel.n{animation:bl 1.2s infinite}
@@ -160,7 +160,8 @@ svg{display:block}
 .ask .row{display:flex;align-items:center;gap:6px;margin-top:6px}
 .chip{height:24px;padding:0 9px;border-radius:12px;background:var(--fill4);font-size:12px;color:var(--label);display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
 .chip:hover{background:var(--fill)}
-.chip.on{background:var(--aiTint);color:var(--ai)}
+.chip.on{background:var(--ai);color:var(--onAi)}
+.chip .i.src-i{color:var(--ai)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
 .btn{height:28px;padding:0 12px;border-radius:14px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
 .btn:hover{background:var(--hover)}
@@ -176,7 +177,7 @@ svg{display:block}
 .banner>.i{color:var(--ai)}
 
 /* ---------- Bottom bar (generation / review) ---------- */
-.gbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:8px;height:44px;padding:0 6px 0 14px;border-radius:22px;background:var(--surface);border:.5px solid var(--border);white-space:nowrap}
+.gbar{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:8px;height:40px;padding:0 5px 0 12px;border-radius:20px;background:var(--surface);border:.5px solid var(--border);white-space:nowrap}
 .gbar .t{font-weight:600}
 .gbar .m{color:var(--label2);font-variant-numeric:tabular-nums}
 .gbar .vd{width:1px;height:18px;background:var(--sep);margin:0 2px}
@@ -222,11 +223,6 @@ svg{display:block}
 .cb.mix{background:var(--accent);border-color:var(--accent);color:#fff}
 .cb .i{width:12px;height:12px;stroke-width:2.4}
 .radios{display:flex;gap:8px}
-.rcard{flex:1;border:1px solid var(--sep);border-radius:10px;padding:9px 10px;cursor:pointer;background:var(--fill4)}
-.rcard b{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
-.rcard small{display:block;color:var(--label2);font-size:11.5px;line-height:15px;margin-top:3px}
-.rcard.on{outline:2px solid var(--accent);outline-offset:-2px;background:var(--surface)}
-.rcard.on b{color:var(--accent)}
 .sw{width:28px;height:16px;border-radius:8px;background:var(--fill);position:relative;flex:none;cursor:pointer}
 .sw::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:6px;background:#fff;transition:left .15s}
 .sw.on{background:var(--accent)}.sw.on::after{left:14px}
@@ -514,23 +510,23 @@ function genButton(m) {
 
 function emptyState() {
   const d = DOCS[S.doc];
-  if (S.noAi) return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3>从「${d.title}」生成脑图</h3><div class="sub">需要先连接一个模型</div>
-    <div class="conn"><b>连接 AI 服务</b><div class="sub" style="color:var(--label2);font-size:12px">Claude、OpenAI、兼容接口，或本机 Ollama</div><div style="display:flex;gap:8px"><button class="btn acc">连接服务…</button><button class="btn sec">使用本机模型</button></div></div>
+  if (S.noAi) return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3 style="margin-bottom:18px">从「${d.title}」生成脑图</h3>
+    <div class="conn"><b>连接 AI 服务</b><div style="display:flex;gap:8px"><button class="btn acc">连接服务…</button><button class="btn sec">使用本机模型</button></div></div>
     <div style="margin-top:14px"><button class="btn">新建空白主题</button></div></div>`;
-  const chips = ['侧重考试要点', '每个主题附一句解释', '保留原文关键句', '用英文'];
-  return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3>从「${d.title}」生成脑图</h3><div class="sub">${d.kind === 'scan' ? `扫描版 ${d.pages} 页 · 识别文字后可以生成` : `全文 ${d.pages} 页 · 你的 12 条高亮会放进对应主题`}</div>
-    <div class="ask ${S.askFocus ? 'focus' : ''}"><textarea placeholder="补充要求（可选），例如：按考试大纲组织，只要两层">${esc(S.ask)}</textarea>
+  const chips = ['侧重考试要点', '每个主题附一句解释', '保留原文关键句', '举例说明'];
+  return `<div class="empty"><div class="glyph">${ic('wand', 'l')}</div><h3 style="margin-bottom:18px">从「${d.title}」生成脑图</h3>
+    <div class="ask ${S.askFocus ? 'focus' : ''}"><textarea placeholder="补充要求">${esc(S.ask)}</textarea>
       <div class="row"><button class="btn" data-act="openSheet">${ic('tune', 's')}设置</button><span style="flex:1"></span><button class="btn pri" data-act="start" ${d.kind === 'scan' ? 'disabled' : ''}>生成 <span class="k">⌘↩</span></button></div></div>
     <div class="chips">${chips.map(c => `<span class="chip ${S.chipsOn.has(c) ? 'on' : ''}" data-act="chip" data-arg="${c}">${c}</span>`).join('')}</div>
-    <div style="margin-top:22px;color:var(--label3);font-size:12px">或 <button class="btn" style="height:22px;padding:0 6px;color:var(--accent);font-size:12px">新建空白主题</button></div></div>`;
+    <div style="margin-top:22px"><button class="btn" style="height:22px;padding:0 6px;color:var(--accent);font-size:12px">新建空白主题</button></div></div>`;
 }
 
 function banner() {
   if (S.banner === 'unlinked') {
     const d = DOCS[S.doc];
-    return `<div class="banner">${ic('wand')}<span class="t"><b>${d.title}</b> 还没有脑图</span><button class="btn pri" data-act="bannerNew">生成新脑图</button><button class="btn sec" data-act="bannerMerge">${ic('merge', 's')}并入当前脑图</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
+    return `<div class="banner">${ic('wand')}<span class="t">「<b>${d.title}</b>」还没有脑图</span><button class="btn pri" data-act="bannerNew">生成新脑图</button><button class="btn sec" data-act="bannerMerge">${ic('merge', 's')}并入当前脑图</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
   }
-  if (S.banner === 'scan') return `<div class="banner">${ic('scan')}<span class="t"><b>课堂讲义（扫描）</b> 是扫描版，先识别文字才能生成</span><button class="btn pri">识别文字</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
+  if (S.banner === 'scan') return `<div class="banner">${ic('scan')}<span class="t">先识别文字才能生成</span><button class="btn pri">识别文字</button><button class="tb" data-act="closeBanner">${ic('x', 's')}</button></div>`;
   return '';
 }
 
@@ -538,13 +534,13 @@ function bar() {
   const d = DOCS[S.doc];
   if (S.mode === 'reading') {
     const n = d.chapters.length, k = Math.min(S.progress, n);
-    if (S.offline) return `<div class="gbar"><span class="err">${ic('cloudoff', 's')}</span><span class="t">网络不可用，没有生成内容</span><span class="vd"></span><button class="btn">重试</button><button class="btn">改用本机模型</button><button class="btn sec" data-act="discard">关闭</button></div>`;
+    if (S.offline) return `<div class="gbar"><span class="err">${ic('cloudoff', 's')}</span><span class="t">网络不可用</span><span class="vd"></span><button class="btn">重试</button><button class="btn">改用本机模型</button><button class="btn sec" data-act="discard">关闭</button></div>`;
     return `<div class="gbar"><span class="spin"></span><span class="t">阅读「${d.title}」</span><span class="steps">${d.chapters.map((_, i) => `<i class="${i < k ? 'd' : i === k ? 'n' : ''}"></i>`).join('')}</span><span class="m">${d.chapters[Math.min(k, n - 1)]}</span><span class="vd"></span><button class="btn" data-act="discard">${ic('stop', 's')}停止 <span class="k">Esc</span></button></div>`;
   }
   if (S.mode === 'stream') return `<div class="gbar"><span class="spin"></span><span class="t">生成脑图</span><span class="m">${countTopics(S.tree, true)} 个主题</span><span class="vd"></span><button class="btn" data-act="finish">${ic('stop', 's')}停止 <span class="k">Esc</span></button></div>`;
   if (S.mode === 'review') {
     const kept = countTopics(S.tree, false);
-    const fail = S.failed ? `<span class="err" style="display:flex;align-items:center;gap:4px">${ic('warn', 's')}6.6 提取 没有生成</span><button class="btn" data-act="retry">重试</button><span class="vd"></span>` : '';
+    const fail = S.failed ? `<span class="err" style="display:flex;align-items:center;gap:4px">${ic('warn', 's')}「6.6 提取」未生成</span><button class="btn" data-act="retry">重试</button><span class="vd"></span>` : '';
     return `<div class="gbar">${fail}<span class="t">${S.merge ? '记忆与遗忘' : '新脑图'}</span><span class="m">保留 ${kept} 个主题</span>${S.merge ? `<span class="vd"></span><span class="legend"><span><i style="background:var(--d1)"></i>第6章</span><span><i style="background:var(--d2)"></i>第7章</span></span>` : ''}<span class="vd"></span>
       <button class="btn" data-act="regen">${ic('redo', 's')}换一批</button><button class="btn ${S.pop === 'adjust' ? 'sec' : ''}" data-act="openAdjust">${ic('tune', 's')}调整</button><button class="btn" data-act="discard">放弃 <span class="k">Esc</span></button><button class="btn pri" data-act="keep">保留 <span class="k">↩</span></button></div>`;
   }
@@ -570,46 +566,45 @@ function sheet() {
     const on = S.sheetDocs.includes(id), x = d[id];
     const info = x.kind === 'scan' ? `<span class="r">${ic('warn', 's')}扫描版 · 需先识别文字</span>` : x.kind === 'book' ? `<span class="r">约 ${x.pages} 页 · 分 9 段阅读</span>` : `<span class="r">${x.pages} 页${S.maps.find(m => m.docs.includes(id)) ? ' · 已有脑图' : ''}</span>`;
     const scope = on && id === 'd1' && S.sheetScope ? x.chapters.map((c, i) => `<div class="drow sub"><span class="cb ${i < 5 ? 'on' : ''}">${i < 5 ? ic('check') : ''}</span><span class="t">${c}</span><span class="r">p.${[3, 12, 19, 26, 33, 40][i]}</span></div>`).join('') : '';
-    return `<div class="drow ${x.kind === 'scan' ? 'warn' : ''}"><span class="cb ${on ? (id === 'd1' && S.sheetScope ? 'mix' : 'on') : ''}" data-act="sheetDoc" data-arg="${id}">${on ? ic(id === 'd1' && S.sheetScope ? 'minus' : 'check') : ''}</span>${ic(x.kind === 'book' ? 'book' : x.kind === 'scan' ? 'scan' : 'doc', 's')}<span class="t">${x.title}${on && id === 'd1' ? `<small>${S.sheetScope ? '5 / 6 章' : '全文'} · <a style="color:var(--accent)" data-act="scope">${S.sheetScope ? '收起' : '选择章节'}</a></small>` : ''}</span>${info}</div>${scope}`;
+    return `<div class="drow ${x.kind === 'scan' ? 'warn' : ''}"><span class="cb ${on ? (id === 'd1' && S.sheetScope ? 'mix' : 'on') : ''}" data-act="sheetDoc" data-arg="${id}">${on ? ic(id === 'd1' && S.sheetScope ? 'minus' : 'check') : ''}</span>${ic(x.kind === 'book' ? 'book' : x.kind === 'scan' ? 'scan' : 'doc', 's')}<span class="t">${x.title}${on && id === 'd1' && S.sheetDocs.length === 1 ? ` <a style="color:var(--accent);font-size:12px;margin-left:6px;cursor:pointer" data-act="scope">${S.sheetScope ? '5 / 6 章' : '全文'} ▾</a>` : ''}</span>${info}</div>${scope}`;
   };
   const multi = S.sheetDocs.length > 1;
-  const orgs = [['chapter', '按原文章节', '一级主题对应章节，适合教材'], ['topic', multi ? '按主题合并' : '按主题重组', multi ? '跨文档归并相同的概念' : '打破章节，按概念归类'], ['question', '按问题组织', '每个分支回答一个问题，适合复习']];
+  const orgs = [['chapter', '按原文章节'], ['topic', multi ? '按主题合并' : '按主题重组'], ['question', '按问题组织']];
   const detail = ['概要', '适中', '详细'];
   const pages = S.sheetDocs.reduce((s, id) => s + (d[id].kind === 'scan' ? 0 : d[id].pages), 0);
   return `<div class="sheet"><h3>${ic('wand')}生成脑图</h3><div class="form">
     <div class="k">文档</div><div class="doclist">${['d1', 'd2', 'd3', 'd4'].map(docRow).join('')}</div>
-    <div class="k">组织方式</div><div class="radios">${orgs.map(([k, t, s]) => `<div class="rcard ${S.org === k ? 'on' : ''}" data-act="org" data-arg="${k}"><b>${t}</b><small>${s}</small></div>`).join('')}</div>
+    <div class="k">组织方式</div><div><span class="segc">${orgs.map(([k, t]) => `<button class="${S.org === k ? 'on' : ''}" data-act="org" data-arg="${k}">${t}</button>`).join('')}</span></div>
     <div class="k">详细程度</div><div style="display:flex;align-items:center;gap:12px"><span class="segc">${detail.map((t, i) => `<button class="${S.detail === i + 1 ? 'on' : ''}" data-act="detail" data-arg="${i + 1}">${t}</button>`).join('')}</span><span class="estimate">${['2 层 · 约 20 个主题', '3 层 · 约 40 个主题', '4 层 · 约 80 个主题'][S.detail - 1]}</span></div>
     <div class="k">内容</div><div><div class="swrow"><span class="t">放入我的高亮和批注</span><small>12 条</small><span class="sw ${S.mine ? 'on' : ''}" data-act="sw" data-arg="mine"></span></div>
-      <div class="swrow"><span class="t">摘录原文关键句</span><small>在原文上用虚线标出</small><span class="sw ${S.quotes ? 'on' : ''}" data-act="sw" data-arg="quotes"></span></div></div>
+      <div class="swrow"><span class="t">摘录原文关键句</span><span class="sw ${S.quotes ? 'on' : ''}" data-act="sw" data-arg="quotes"></span></div></div>
     <div class="k">生成到</div><div style="display:flex;gap:8px;align-items:center"><span class="mmsel">${S.target === 'new' ? `新脑图「${multi ? '记忆与遗忘' : '第6章 记忆'}」` : '当前脑图的新分支'}${ic('down', 's')}</span></div>
-    <div class="k">要求</div><div class="ask"><textarea placeholder="例如：按考试大纲组织；概念下面放例子；用英文">${esc(S.ask)}</textarea></div>
+    <div class="k">要求</div><div class="ask"><textarea>${esc(S.ask)}</textarea></div>
   </div>
-  <div class="foot" style="margin-top:18px"><span class="estimate">${ic('doc', 's')}${pages} 页${S.sheetDocs.includes('d4') ? ' · 讲义需先识别文字' : ''}</span><span class="sp"></span><button class="btn sec" data-act="closeSheet">取消</button><button class="btn pri" data-act="start" ${S.sheetDocs.includes('d4') ? 'disabled' : ''}>生成 <span class="k">⌘↩</span></button></div></div>`;
+  <div class="foot" style="margin-top:18px"><span class="estimate">${ic('doc', 's')}${pages} 页</span><span class="sp"></span><button class="btn sec" data-act="closeSheet">取消</button><button class="btn pri" data-act="start" ${S.sheetDocs.includes('d4') ? 'disabled title="先识别文字才能生成"' : ''}>生成 <span class="k">⌘↩</span></button></div></div>`;
 }
 
 function updatePop() {
   return `<div class="pop" style="right:150px;top:50px"><h4>${ic('wand')}更新脑图</h4>
     <div class="lbl">依据</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip on">${ic('doc', 's')}第6章 记忆</span><span class="chip">${ic('plus', 's')}添加文档</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">${ic('doc', 's src-i')}第6章 记忆</span><span class="chip">${ic('plus', 's')}添加文档</span></div>
     <div class="lbl">上次生成之后</div>
     <div class="kv">${ic('hl', 's')}新增高亮<span class="r">5</span></div>
     <div class="kv">${ic('pen', 's')}新增批注<span class="r">2</span></div>
     <div class="kv">${ic('doc', 's')}读到<span class="r">p.38 → p.46</span></div>
     <div class="lbl">范围</div>
     <span class="segc"><button class="on">只处理新内容</button><button>全文重新梳理</button></span>
-    <div class="lbl">要求</div>
-    <div class="ask focus"><textarea>补充提取练习一节，例子放到对应概念下面</textarea></div>
+    <div class="ask focus" style="margin-top:12px"><textarea placeholder="补充要求">补充提取练习一节，例子放到对应概念下面</textarea></div>
     <div class="prot" style="margin:12px 0 0">${ic('lock', 's')}<span>你改过、添加的 7 个节点保持不变</span></div>
-    <div class="foot"><span class="sp"></span><button class="btn sec" data-act="closePop">取消</button><button class="btn pri" data-act="diff">预览更改 <span class="k">⌘↩</span></button></div></div>`;
+    <div class="foot"><span class="sp"></span><button class="btn pri" data-act="diff">预览更改 <span class="k">⌘↩</span></button></div></div>`;
 }
 
 function adjustPop() {
   return `<div class="pop" style="left:50%;bottom:72px;transform:translateX(-50%)"><h4>${ic('tune')}调整</h4>
     <div class="lbl">组织方式</div><span class="segc"><button class="on">按原文章节</button><button>按主题重组</button><button>按问题</button></span>
     <div class="lbl">详细程度</div><span class="segc"><button>概要</button><button class="on">适中</button><button>详细</button></span>
-    <div class="lbl">要求</div><div class="ask focus"><textarea>每个概念下面加一个生活中的例子</textarea></div>
-    <div class="foot"><span class="sp"></span><button class="btn sec" data-act="closePop">取消</button><button class="btn pri" data-act="regen">重新生成</button></div></div>`;
+    <div class="ask focus" style="margin-top:12px"><textarea placeholder="补充要求">每个概念下面加一个生活中的例子</textarea></div>
+    <div class="foot"><span class="sp"></span><button class="btn pri" data-act="regen">${ic('redo', 's')}重新生成</button></div></div>`;
 }
 
 function diffPanel() {
@@ -617,15 +612,15 @@ function diffPanel() {
   const item = (r) => {
     const o = r[3], on = !S.diffOff.has(r[0]);
     const title = o.card ? `摘录：${o.card.q.slice(0, 16)}…` : r[2];
-    const sub = o.diff === 'ren' ? `<small><s>${o.old}</s></small>` : o.diff === 'mv' ? `<small>从「${o.from}」移到「提取与提取练习」</small>` : o.diff === 'rm' ? `<small>${o.why}</small>` : o.card ? '<small>你的新高亮</small>' : `<small>在「${(T_DIFF.find(x => x[0] === r[1]) || [, , ''])[2]}」下</small>`;
+    const sub = o.diff === 'ren' ? `<small><s>${o.old}</s></small>` : o.diff === 'mv' ? `<small>从「${o.from}」移到「提取与提取练习」</small>` : o.diff === 'rm' ? `<small>${o.why}</small>` : '';
     return `<div class="crow ${S.diffFocus === r[0] ? 'on' : ''}" data-act="diffRow" data-arg="${r[0]}"><span class="cb ${on ? 'on ai' : ''}" data-act="diffCb" data-arg="${r[0]}">${on ? ic('check') : ''}</span><span class="t">${esc(title)}${sub}</span><span class="src" data-act="src" data-arg="${o.p}">p.${o.p}</span></div>`;
   };
   const g = (k, t) => { const rs = rows(k); return `<div class="cgrp">${t}<span class="n">${rs.length}</span></div>${rs.map(item).join('')}`; };
   const n = T_DIFF.filter(r => r[3].diff && !S.diffOff.has(r[0])).length;
-  return `<aside class="panel"><div class="ph">${ic('wand')}更新脑图<span style="flex:1"></span><button class="tb" data-act="discard">${ic('x', 's')}</button></div>
+  return `<aside class="panel"><div class="ph">${ic('wand')}更新脑图</div>
     <div class="pb">${g('new', '新增')}${g('ren', '改名')}${g('mv', '移动')}${g('rm', '建议删除')}
-    <div class="prot">${ic('lock', 's')}<span>「工作记忆（Baddeley 模型）」等 7 个你改过或添加的节点不会被改写，也不会被建议删除。</span></div></div>
-    <div class="pf"><button class="btn" data-act="regen">${ic('redo', 's')}换一批</button><span class="sp"></span><button class="btn sec" data-act="discard">放弃</button><button class="btn pri" data-act="applyDiff">应用 ${n} 项 <span class="k">↩</span></button></div></aside>`;
+    <div class="prot">${ic('lock', 's')}<span>你改过、添加的 7 个节点保持不变</span></div></div>
+    <div class="pf"><button class="btn" data-act="regen">${ic('redo', 's')}换一批</button><span class="sp"></span><button class="btn sec" data-act="discard">放弃 <span class="k">Esc</span></button><button class="btn pri" data-act="applyDiff">应用 ${n} 项 <span class="k">↩</span></button></div></aside>`;
 }
 
 /* ---------- Map layout (right-growing tree, measured) ---------- */
@@ -705,7 +700,7 @@ function base() {
 const KEPT = () => [{ id: 'm1', title: '第6章 记忆', docs: ['d1'] }];
 const SCENES = [
   { g: '生成', t: '空脑图：一句话生成', set() { S.askFocus = true; },
-    n: ['学习集里还没有脑图内容时，脑图栏直接给出入口：标题写明依据的文档（当前打开的那份），一行补充要求，回车生成。', '常用要求做成可点的建议，点了追加到输入框；“设置”打开完整设置。', '“你的 12 条高亮会放进对应主题”：已有标注直接参与生成，不会被丢掉。'] },
+    n: ['学习集里还没有脑图内容时，脑图栏直接给出入口：标题写明依据的文档（当前打开的那份），一行补充要求，回车生成。', '常用要求做成可点的建议，点了追加到输入框；“设置”打开完整设置。', '已有的高亮和批注直接参与生成，挂进对应主题，不会被丢掉。'] },
   { g: '生成', t: '生成设置', set() { S.sheet = true; S.sheetScope = true; S.ask = '侧重考试要点，每个概念附一句解释'; },
     n: ['可多选文档；单个文档可以只选部分章节（来自 PDF 目录，没有目录时按页码范围）。', '组织方式：按原文章节（默认，适合教材）/ 按主题重组 / 按问题组织；多选文档时第二项变成“按主题合并”。', '详细程度决定层数，右侧给出预计规模，不设硬上限。', '扫描版、超长电子书在列表里直接标出处理方式；扫描版需先识别文字，所以选中时“生成”不可用。', '设置按学习集记住，下次一句话生成时沿用。'] },
   { g: '生成', t: '生成中 · 通读全文', set() { S.mode = 'reading'; S.progress = 3; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], busy: true }]; S.map = 'm1'; },
@@ -727,9 +722,9 @@ const SCENES = [
   { g: '更新', t: '文档有新内容', set() { S.mode = 'kept'; S.tree = T_D1; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], stale: true }]; S.map = 'm1'; S.page = 41; S.pop = 'update'; },
     n: ['生成后又读了一段、加了 5 条高亮和 2 条批注：工具栏“更新”出现紫点，侧栏脑图行同样标出。不弹窗打扰。', '点“更新”：列出上次生成之后的变化。默认只处理新内容（便宜、快、不扰动已有结构），也可以全文重新梳理。', '可以添加另一份文档作为新的依据，也可以只写一句要求（如“把例子放到概念下面”）。', '你改过和自己添加的节点受保护，这里直接说明数量。'] },
   { g: '更新', t: '审阅更新（差异）', set() { S.mode = 'diff'; S.layout = 'map'; S.tree = T_DIFF; S.maps = [{ id: 'm1', title: '第6章 记忆', docs: ['d1'], stale: true }]; S.map = 'm1'; S.diffFocus = 'f1'; },
-    n: ['更新以差异的方式出现在现有脑图上：新增 = 虚线草稿，改名 = 上方删除线显示旧名，移动 = 紫色实线并标出原位置，建议删除 = 灰色删除线。', '右侧列表与画布联动，可以逐项取舍；“建议删除”默认不勾选，只有 AI 生成且你没动过的节点才可能被建议删除。', '带锁的节点是你改过的，AI 不会改写它们。', '应用 = 一个撤销事务；放弃 = 脑图完全不变。审阅期间禁止其他脑图编辑（同 AI 扩展想法）。'] },
+    n: ['更新以差异的方式出现在现有脑图上：新增 = 虚线草稿，改名 = 上方删除线显示旧名，移动 = 紫色实线并标出原位置，建议删除 = 灰色虚线（勾选后划删除线）。', '右侧列表与画布联动，可以逐项取舍；“建议删除”默认不勾选，只有 AI 生成且你没动过的节点才可能被建议删除。', '带锁的节点是你改过的，AI 不会改写它们。', '应用 = 一个撤销事务；放弃 = 脑图完全不变。审阅期间禁止其他脑图编辑（同 AI 扩展想法）。'] },
   { g: '退路', t: '部分章节失败', set() { S.mode = 'review'; S.tree = T_D1.filter(r => true); S.failed = true; S.maps = KEPT(); S.map = 'm1'; },
-    n: ['某一章超时或输出无效时，其他章节照常进入审阅；底部条标出没生成的章节，可以单独重试。', '断网：底部条显示“网络不可用，没有生成内容 · 重试 · 改用本机模型”，脑图不变（右下“断网”开关可预览）。'] },
+    n: ['某一章超时或输出无效时，其他章节照常进入审阅；底部条标出没生成的章节，可以单独重试。', '断网：底部条显示“网络不可用 · 重试 · 改用本机模型”，脑图不变（右下“断网”开关可预览）。'] },
   { g: '退路', t: '扫描版文档', set() { S.mode = 'empty'; S.doc = 'd4'; S.banner = 'scan'; },
     n: ['扫描版 PDF 没有文字层：先用本机识别（已有功能）再生成，识别完成后自动继续。', '未配置 AI：空状态换成连接卡（右下“未配置 AI”开关可预览）。'] },
 ];

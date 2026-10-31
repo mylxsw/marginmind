@@ -19,6 +19,7 @@ export 'src/tokens/colors.dart';
 export 'src/tokens/ink.dart';
 export 'src/tokens/map_palette.dart';
 export 'src/tokens/reader_style.dart';
+export 'src/tokens/source_colors.dart';
 export 'src/tokens/metrics.dart';
 export 'src/tokens/motion.dart';
 export 'src/tokens/typography.dart';

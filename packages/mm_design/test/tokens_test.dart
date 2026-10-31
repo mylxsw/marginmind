@@ -189,6 +189,50 @@ void main() {
     }
   });
 
+  test('mind map from document geometry fits together', () {
+    // The sheet holds its label column; the diff panel leaves the map its
+    // minimum width beside it on a regular window.
+    expect(MMSizes.mapGenerateLabelWidth * 4, lessThan(MMSizes.mapGenerateSheetWidth));
+    expect(MMSizes.mapGenerateSheetWidth, MMSizes.noteSetupSheetWidth);
+    expect(
+      MMSizes.mapDiffPanelWidth + MMSizes.mapMinWidth,
+      lessThanOrEqualTo(MMSizes.windowMinSize.width - MMSizes.sidebarWidth),
+    );
+    expect(MMSizes.mapUpdatePopoverWidth, lessThan(MMSizes.mapGenerateSheetWidth));
+    expect(MMSizes.mapGenerateChapterRow, lessThan(MMSizes.mapGenerateDocumentRow));
+    expect(MMSizes.mapDocumentBanner, lessThanOrEqualTo(MMSizes.touchTarget));
+    expect(MMSizes.mapEmptyGlyph, lessThan(MMSizes.mapEmptyStateWidth));
+    expect(MMRadii.mapEmptyGlyph * 2, lessThan(MMSizes.mapEmptyGlyph));
+    // Pill-shaped page chip; the document dot and diff tags fit inside it.
+    expect(MMRadii.mapSourceChip * 2, MMSizes.mapSourceChip);
+    expect(MMSizes.mapSourceDot, lessThan(MMSizes.mapSourceChip));
+    expect(MMSizes.mapDraftTag, lessThan(MMSizes.mapSourceChip));
+    expect(MMSizes.mapUpdateBadge + MMSizes.mapUpdateBadgeRing * 2, lessThan(MMSizes.toolbarButton.height / 2));
+    expect(MMSizes.mapProtectedBadge, MMSizes.mapSourceChip);
+    expect(MMSizes.mapReadingStep.width, greaterThan(MMSizes.mapReadingStep.height));
+    expect(MMMotion.breathe, greaterThan(MMMotion.layout));
+    expect(MMMotion.breathe, lessThan(MMMotion.pulse));
+    for (final icon in [MMIcons.generateMap, MMIcons.mergeIntoMap]) {
+      expect(icon.fontFamily, isNotEmpty);
+    }
+    expect(MMIcons.generateMap, isNot(MMIcons.ai));
+    expect(MMIcons.generateMap, isNot(MMIcons.organizeNote));
+    expect(MMIcons.generateMap, isNot(MMIcons.organize));
+  });
+
+  test('source document dots are distinct per appearance and cycle', () {
+    for (final colors in [MMSourceColors.light, MMSourceColors.dark]) {
+      expect(colors.toSet(), hasLength(colors.length));
+      for (final color in colors) {
+        expect(color.a, 1.0);
+      }
+    }
+    expect(MMSourceColors.light, hasLength(MMSourceColors.dark.length));
+    expect(MMSourceColors.of(Brightness.light, 0), MMSourceColors.light.first);
+    expect(MMSourceColors.of(Brightness.dark, 1), MMSourceColors.dark[1]);
+    expect(MMSourceColors.of(Brightness.light, MMSourceColors.light.length), MMSourceColors.light.first);
+  });
+
   test('themes carry MMColors and drop ink splashes', () {
     final light = MMTheme.light();
     final dark = MMTheme.dark(systemAccent: const Color(0xFFFF9500));

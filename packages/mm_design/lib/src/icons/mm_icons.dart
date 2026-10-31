@@ -143,6 +143,12 @@ abstract final class MMIcons {
   static const IconData groupParent = LucideIcons.group;
   static const IconData fillSiblings = LucideIcons.listPlus;
   static const IconData adjust = LucideIcons.slidersHorizontal;
+
+  // Mind map from a document: generate / update the map (distinct from the
+  // assistant's sparkles and organize notes' notebook-pen), merge another
+  // document into the current map.
+  static const IconData generateMap = LucideIcons.wandSparkles;
+  static const IconData mergeIntoMap = LucideIcons.merge;
 }
 
 /// Lucide vocabulary for reader commands, including toolbar overflow entries.
