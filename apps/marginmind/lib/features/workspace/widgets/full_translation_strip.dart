@@ -28,15 +28,6 @@ class FullTranslationStrip extends ConsumerWidget {
     final l = context.l10n;
     final provider = fullTranslationProvider((studySetId, documentId, targetLang));
 
-    ref.listen(provider, (prev, next) {
-      if (prev?.job?.id == next.job?.id &&
-          prev?.job?.state == TranslationJobState.offline &&
-          next.job?.state == TranslationJobState.running &&
-          context.mounted) {
-        MMHud.show(context, context.l10n.fullTranslationHudNetworkRestored);
-      }
-    });
-
     final state = ref.watch(provider);
     final job = state.job;
     if (job == null) return const SizedBox.shrink();
@@ -61,8 +52,21 @@ class FullTranslationStrip extends ConsumerWidget {
     switch (job.state) {
       case TranslationJobState.error:
         final isNoModel = job.errorKind == 'model' || (job.errorKind == null && defaultModel == null);
+        final isStorageError = job.errorKind == 'storage';
         iconColor = c.critical;
-        if (isNoModel) {
+        if (isStorageError) {
+          icon = MMIcons.warning;
+          message = Text(l.fullTranslationStripStorage, style: TextStyle(fontSize: 12.5, height: 1.35, color: c.label));
+          actions = [
+            MMButton(
+              key: const Key('full_translation_strip_retry'),
+              label: l.fullTranslationStripRetry,
+              variant: MMButtonVariant.plain,
+              color: c.accent,
+              onPressed: controller.resume,
+            ),
+          ];
+        } else if (isNoModel) {
           icon = MMIcons.warning;
           message = Text(l.fullTranslationStripNoModel, style: TextStyle(fontSize: 12.5, height: 1.35, color: c.label));
           actions = [

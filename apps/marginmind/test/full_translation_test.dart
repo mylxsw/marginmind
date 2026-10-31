@@ -1111,6 +1111,45 @@ void main() {
         await _capture(tester, key, 'strip-no-model-${dark ? 'dark' : 'light'}');
       }
 
+      // 2b. Quota errorKind renders Key strip with Open Settings and Retry
+      {
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'quota'),
+        );
+        await tester.pumpWidget(buildStrip(GlobalKey(), mock, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('API Key 无效，已暂停'), findsOneWidget);
+        expect(find.textContaining('已译内容已保存'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsOneWidget);
+      }
+
+      // 2c. Storage errorKind renders storage strip with Retry only (no Open Settings or saved note)
+      {
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'storage'),
+        );
+        await tester.pumpWidget(buildStrip(GlobalKey(), mock, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('无法保存译文，已暂停'), findsOneWidget);
+        expect(find.textContaining('API Key 无效，已暂停'), findsNothing);
+        expect(find.textContaining('已译内容已保存'), findsNothing);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsNothing);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('full_translation_strip_retry')));
+        await tester.pump();
+        expect(mock.resumed, true);
+      }
+
       // 3. Offline strip - Light & Dark
       for (final dark in [false, true]) {
         final key = GlobalKey();

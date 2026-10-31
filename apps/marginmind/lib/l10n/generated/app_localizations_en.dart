@@ -5372,6 +5372,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationStripNoModel => 'No AI model available, paused';
 
   @override
+  String get fullTranslationStripStorage => 'Couldn\'t save translation, paused';
+
+  @override
   String get fullTranslationStripOffline => 'Network unavailable, resumes automatically when online';
 
   @override

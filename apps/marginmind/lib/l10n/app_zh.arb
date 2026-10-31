@@ -2119,6 +2119,7 @@
   "fullTranslationStripBadKey": "API Key 无效，已暂停",
   "fullTranslationStripSavedNote": "已译内容已保存",
   "fullTranslationStripNoModel": "没有可用的模型，已暂停",
+  "fullTranslationStripStorage": "无法保存译文，已暂停",
   "fullTranslationStripOffline": "网络不可用，联网后自动继续",
   "fullTranslationStripBudget": "已用 {tokens} token，超出预估 50%",
   "@fullTranslationStripBudget": {

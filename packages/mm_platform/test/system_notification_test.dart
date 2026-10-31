@@ -35,6 +35,17 @@ void main() {
     expect(calls.single.method, 'notify');
     expect(calls.single.arguments, {'title': '全文翻译完成', 'body': 'Learning and memory'});
 
+    calls.clear();
+    final longTitle = 'T' * 300;
+    final longBody = 'B' * 600;
+    expect(await MMSystemNotification.show(title: longTitle, body: longBody), isTrue);
+    expect(calls.length, 1);
+    final args = calls.single.arguments as Map<dynamic, dynamic>;
+    expect((args['title'] as String).length, 256);
+    expect((args['title'] as String).endsWith('…'), isTrue);
+    expect((args['body'] as String).length, 512);
+    expect((args['body'] as String).endsWith('…'), isTrue);
+
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (_) async {
       throw PlatformException(code: 'notification');
     });

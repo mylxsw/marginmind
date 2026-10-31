@@ -9434,6 +9434,12 @@ abstract class AppLocalizations {
   /// **'No AI model available, paused'**
   String get fullTranslationStripNoModel;
 
+  /// No description provided for @fullTranslationStripStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save translation, paused'**
+  String get fullTranslationStripStorage;
+
   /// No description provided for @fullTranslationStripOffline.
   ///
   /// In en, this message translates to:

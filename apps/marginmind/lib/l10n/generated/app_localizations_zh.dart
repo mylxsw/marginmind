@@ -5149,6 +5149,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationStripNoModel => '没有可用的模型，已暂停';
 
   @override
+  String get fullTranslationStripStorage => '无法保存译文，已暂停';
+
+  @override
   String get fullTranslationStripOffline => '网络不可用，联网后自动继续';
 
   @override
