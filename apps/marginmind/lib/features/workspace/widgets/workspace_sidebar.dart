@@ -22,8 +22,8 @@ import '../../study_notes/note_updates.dart';
 import '../../study_notes/note_export_sheet.dart';
 import 'notices.dart';
 
-/// Study set sidebar: back to the library, search, then mind maps,
-/// documents and learning tools. Search filters every section at once.
+/// Study set sidebar: documents, mind maps, notes and learning tools,
+/// followed by matching cards and tags. Search filters every section at once.
 class WorkspaceSidebar extends ConsumerWidget {
   const WorkspaceSidebar({super.key, required this.studySetId, required this.searchFocus});
 
@@ -231,10 +231,8 @@ class WorkspaceSidebar extends ConsumerWidget {
         ? state.tagFilter
         : null;
     final tags = [
-      if (tagFilter != null)
-        MMSidebarItem(icon: MMIcons.tag, label: l.allTags, onTap: () => controller.filterTag(null)),
       for (final tag in tagNames)
-        if (matches(tag) || tag == tagFilter)
+        if (matches(tag) || tag.toLowerCase() == tagFilter?.toLowerCase())
           MMSidebarItem(
             key: ValueKey('sidebar-tag-$tag'),
             icon: MMIcons.tag,
@@ -277,7 +275,7 @@ class WorkspaceSidebar extends ConsumerWidget {
               : controller.selectCard(card.id),
         ),
     ];
-    final empty = maps.isEmpty && docs.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
+    final empty = maps.isEmpty && docs.isEmpty && notes.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;
 
     return MMSidebar(
       topTrailing: MMIconButton(
@@ -326,15 +324,6 @@ class WorkspaceSidebar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Text(l.noSidebarMatches, textAlign: TextAlign.center, style: t.footnote),
           ),
-        if (tags.isNotEmpty) MMSidebarSection(title: l.sectionTags, children: tags),
-        if (cards.isNotEmpty || tagFilter != null)
-          MMSidebarSection(
-            title: l.sectionCards,
-            children: [
-              if (cards.isEmpty) Text(l.noSidebarMatches, style: t.footnote),
-              ...cards,
-            ],
-          ),
         if (docs.isNotEmpty || query.isEmpty)
           MMSidebarSection(
             title: l.sectionDocuments,
@@ -382,6 +371,14 @@ class WorkspaceSidebar extends ConsumerWidget {
             children: notes,
           ),
         if (learn.isNotEmpty) MMSidebarSection(title: l.sectionLearn, children: learn),
+        if (cards.isNotEmpty) MMSidebarSection(title: l.sectionCards, children: cards),
+        if (tags.isNotEmpty)
+          _SidebarTags(
+            key: ValueKey((studySetId, state.activeMapId)),
+            tags: tags,
+            filtered: tagFilter != null,
+            onClear: () => controller.filterTag(null),
+          ),
       ],
     );
   }
@@ -426,6 +423,53 @@ class WorkspaceSidebar extends ConsumerWidget {
           final notice = await controller.removeDocument(doc.id);
           if (context.mounted) showNotice(context, notice, rootTitle: '');
         }, destructive: true),
+      ],
+    );
+  }
+}
+
+class _SidebarTags extends StatefulWidget {
+  const _SidebarTags({super.key, required this.tags, required this.filtered, required this.onClear});
+
+  final List<MMSidebarItem> tags;
+  final bool filtered;
+  final VoidCallback onClear;
+
+  @override
+  State<_SidebarTags> createState() => _SidebarTagsState();
+}
+
+class _SidebarTagsState extends State<_SidebarTags> {
+  static const _previewCount = 10;
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final tags = widget.tags;
+    final visible = _expanded ? tags : tags.take(_previewCount).toList();
+    // Keep the active filter visible when collapsing a longer tag list.
+    final selected = tags.indexWhere((tag) => tag.selected);
+    if (!_expanded && selected >= _previewCount) visible[_previewCount - 1] = tags[selected];
+    return MMSidebarSection(
+      title: l.sectionTags,
+      children: [
+        MMSidebarItem(
+          key: const ValueKey('sidebar-all-tags'),
+          icon: MMIcons.tag,
+          label: l.allTags,
+          selected: !widget.filtered,
+          onTap: widget.onClear,
+        ),
+        ...visible,
+        if (tags.length > _previewCount)
+          MMSidebarItem(
+            key: const ValueKey('sidebar-tags-expand'),
+            icon: _expanded ? MMIcons.chevronUp : MMIcons.chevronDown,
+            label: _expanded ? l.collapseSection : l.expandSection,
+            trailing: _expanded ? null : MMCount(tags.length - _previewCount),
+            onTap: () => setState(() => _expanded = !_expanded),
+          ),
       ],
     );
   }

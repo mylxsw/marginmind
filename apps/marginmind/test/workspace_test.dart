@@ -88,7 +88,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'zzz');
     await tester.pumpAndSettle();
     expect(inSidebar('遗忘的规律'), findsNothing);
-    expect(inSidebar('No matches'), findsOneWidget);
+    expect(inSidebar('Cards'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '');
     await tester.tap(inSidebar('All Tags'));
     await tester.pumpAndSettle();
