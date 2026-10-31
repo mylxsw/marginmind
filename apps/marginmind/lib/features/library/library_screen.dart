@@ -236,7 +236,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_filterTitle(view.query.filter, folders), style: context.mmText.phoneLargeTitle),
+                      Text(
+                        isPhoneCompact && view.query.filter is AllFilter
+                            ? l.librarySection
+                            : _filterTitle(view.query.filter, folders),
+                        style: context.mmText.phoneLargeTitle,
+                      ),
                       const SizedBox(height: 8),
                       MMToolbarSearchField(
                         placeholder: l.search,
