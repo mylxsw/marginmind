@@ -1,0 +1,83 @@
+{
+  "basis": "Git added lines vs origin/main intersected with fresh application LCOV",
+  "covered": 446,
+  "executable": 457,
+  "percent": 97.59,
+  "files": {
+    "apps/marginmind/lib/features/assistant/widgets/expansion_widgets.dart": {
+      "covered": 1,
+      "executable": 1,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/map_generation/document_map_navigation.dart": {
+      "covered": 40,
+      "executable": 40,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/map_generation/map_generation_controller.dart": {
+      "covered": 24,
+      "executable": 27,
+      "uncovered": [
+        236,
+        239,
+        509
+      ]
+    },
+    "apps/marginmind/lib/features/map_generation/widgets/document_map_banner.dart": {
+      "covered": 82,
+      "executable": 82,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/map_generation/widgets/generate_map_sheet.dart": {
+      "covered": 195,
+      "executable": 201,
+      "uncovered": [
+        272,
+        415,
+        464,
+        561,
+        562,
+        582
+      ]
+    },
+    "apps/marginmind/lib/features/map_generation/widgets/map_generation_bar.dart": {
+      "covered": 32,
+      "executable": 33,
+      "uncovered": [
+        108
+      ]
+    },
+    "apps/marginmind/lib/features/workspace/widgets/map_pane.dart": {
+      "covered": 8,
+      "executable": 8,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/workspace/widgets/mind_map_cache.dart": {
+      "covered": 5,
+      "executable": 5,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/workspace/widgets/mind_map_canvas.dart": {
+      "covered": 20,
+      "executable": 20,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/features/workspace/workspace_controller.dart": {
+      "covered": 17,
+      "executable": 17,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/settings/app_settings.dart": {
+      "covered": 5,
+      "executable": 5,
+      "uncovered": []
+    },
+    "apps/marginmind/lib/settings/settings_window.dart": {
+      "covered": 17,
+      "executable": 18,
+      "uncovered": [
+        58
+      ]
+    }
+  }
+}
