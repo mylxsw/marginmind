@@ -100,25 +100,20 @@ class _TagContentPaneState extends ConsumerState<TagContentPane> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(MMIcons.tag, size: MMSpacing.xxl, color: c.accent),
-                                const SizedBox(width: MMSpacing.xxl),
+                                Icon(MMIcons.tag, size: MMSpacing.xl, color: c.accent),
+                                const SizedBox(width: MMSpacing.m),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Tooltip(
                                         message: tag,
-                                        child: Text(
-                                          tag,
-                                          style: t.largeTitle.copyWith(fontWeight: FontWeight.w700),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                        child: Text(tag, style: t.title3, maxLines: 2, overflow: TextOverflow.ellipsis),
                                       ),
                                       const SizedBox(height: MMSpacing.xs),
                                       Text(
                                         l.tagNodesInMap(results.length),
-                                        style: t.body.copyWith(color: c.secondaryLabel),
+                                        style: t.footnote.copyWith(color: c.secondaryLabel),
                                       ),
                                     ],
                                   ),
@@ -126,7 +121,7 @@ class _TagContentPaneState extends ConsumerState<TagContentPane> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: MMSpacing.xxl),
+                          const SizedBox(height: MMSpacing.l),
                           Divider(height: MMSizes.hairline, thickness: MMSizes.hairline, color: c.separator),
                           Expanded(
                             child: results.isEmpty
@@ -213,7 +208,7 @@ class _TagResultRow extends StatelessWidget {
       tooltip: l.viewInMap,
       onTap: onTap,
       builder: (context, state) => Container(
-        padding: const EdgeInsets.symmetric(vertical: MMSpacing.l),
+        padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),
         decoration: BoxDecoration(
           color: state.hovered || state.pressed ? c.hover : null,
           borderRadius: BorderRadius.circular(MMRadii.row),
@@ -223,8 +218,8 @@ class _TagResultRow extends StatelessWidget {
           builder: (context, constraints) => Row(
             children: [
               Container(
-                width: MMSizes.noticeBadge,
-                height: MMSizes.noticeBadge,
+                width: MMSpacing.xxl,
+                height: MMSpacing.xxl,
                 decoration: BoxDecoration(color: c.fill, borderRadius: BorderRadius.circular(MMRadii.row)),
                 child: Icon(
                   switch (card.kind) {
@@ -234,20 +229,20 @@ class _TagResultRow extends StatelessWidget {
                     CardKind.note => MMIcons.studyNote,
                     CardKind.research => MMIcons.research,
                   },
-                  size: MMSpacing.l,
+                  size: MMSizes.dropdownIcon,
                   color: c.label,
                 ),
               ),
-              const SizedBox(width: MMSpacing.l),
+              const SizedBox(width: MMSpacing.m),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: t.title3, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(title, style: t.headline, maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: MMSpacing.xs),
                     Text(
                       path,
-                      style: t.callout.copyWith(color: c.secondaryLabel, fontWeight: FontWeight.w400),
+                      style: t.footnote.copyWith(color: c.secondaryLabel),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
