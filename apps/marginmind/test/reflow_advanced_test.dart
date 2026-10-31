@@ -518,20 +518,23 @@ void main() {
     final first = translators.single;
     first.pending.values.single.complete(ParagraphTranslation('译文', tokens: 2));
     await frames(tester);
-    expect((await repo.load('demo-1')).translationCaches.single.paragraphs, hasLength(1));
+    expect((await (await repo.translationStore('demo-1')).load(doc.id, 'zh')).segments, hasLength(1));
     final next = paragraphPosition(paragraphs[1]) as TextReadingPosition;
     await tester.tap(find.byKey(const ValueKey('translation-paragraph-1')));
     await frames(tester);
     expect(sameSourcePosition(c.read(reflowSessionProvider(('demo-1', doc.id))).position!, next), isTrue);
-    expect(translators, hasLength(2));
-    expect(translators.last.calls, [1]);
+    expect(translators, hasLength(1));
+    expect(translators.single.calls, [0, 1]);
     final late = translators.last;
     controller.textSourceChanged(paragraphPosition(paragraphs[2]) as TextReadingPosition);
     await frames(tester);
-    expect(late.closed, isTrue);
-    late.pending.values.single.complete(ParagraphTranslation('late', tokens: 2));
+    expect(late.closed, isFalse);
+    late.pending[1]!.complete(ParagraphTranslation('late', tokens: 2));
     await frames(tester);
-    expect((await repo.load('demo-1')).translationCaches.single.paragraphs.values, isNot(contains('late')));
+    expect(
+      (await (await repo.translationStore('demo-1')).load(doc.id, 'zh')).segments.values.map((s) => s.text),
+      contains('late'),
+    );
     await c.read(readerCompareProvider('demo-1').notifier).exit();
     await frames(tester);
     for (final t in translators) {
@@ -586,9 +589,9 @@ void main() {
     w.openDocument(doc.id);
     await tester.pumpAndSettle();
     final opening = c.read(readerCompareProvider('demo-1').notifier).openAi('zh');
-    await tester.pumpAndSettle();
+    await frames(tester);
     await opening;
-    await tester.pumpAndSettle();
+    await frames(tester);
     final session = c.read(reflowSessionProvider(('demo-1', doc.id)));
     final translated = find.descendant(of: find.byType(ReflowTranslationView), matching: find.byType(CustomScrollView));
     await tester.sendEventToBinding(

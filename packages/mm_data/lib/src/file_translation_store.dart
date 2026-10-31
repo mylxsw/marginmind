@@ -145,7 +145,7 @@ class FileTranslationStore implements TranslationStore {
     try {
       var job = TranslationJob.fromJson((jsonDecode(await file.readAsString()) as Map).cast());
       if (job.documentId != documentId || job.targetLang != targetLang) return null;
-      if (job.state == TranslationJobState.running) {
+      if (job.state == TranslationJobState.running || job.state == TranslationJobState.offline) {
         job = job.copyWith(state: TranslationJobState.paused, pauseReason: TranslationPauseReason.quit);
       }
       return job;
@@ -196,6 +196,7 @@ class FileTranslationStore implements TranslationStore {
   /// Read-only legacy bridge. Exact fingerprint/document/language matches are
   /// copied to content keys; new-format values (especially edits) always win.
   /// Call after segmentation, before estimating or requesting missing text.
+  @override
   Future<TranslationSnapshot> importLegacy(
     String documentId,
     String targetLang, {
@@ -209,14 +210,14 @@ class FileTranslationStore implements TranslationStore {
       for (final cache in legacy) {
         if (cache.documentId != documentId || cache.targetLang != targetLang) continue;
         for (final paragraph in inputs) {
-          if (paragraph.documentId != documentId || paragraph.textAnchor != null) continue;
+          if (paragraph.documentId != documentId) continue;
           final key = textKey(paragraph.text, targetLang);
           final text = cache.paragraphs[paragraph.fingerprint];
-          if (known.containsKey(key) || text == null) continue;
+          if (known.containsKey(key) || text == null || text.trim().isEmpty) continue;
           final segment = TranslationSegment(
             key: key,
             fingerprint: paragraph.fingerprint,
-            page: paragraph.page,
+            page: paragraph.textAnchor == null ? paragraph.page : paragraph.index + 1,
             index: paragraph.index,
             text: text,
             model: cache.model,

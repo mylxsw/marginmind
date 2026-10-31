@@ -29,4 +29,5 @@ export 'src/study_notes/organizer.dart';
 
 export 'src/expansion.dart';
 
+export 'src/translation_scheduler.dart';
 export 'src/map_generation.dart';

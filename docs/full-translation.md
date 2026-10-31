@@ -249,7 +249,7 @@ stateDiagram-v2
 ### 7.3 恢复规则
 
 - **进度以 `segments.jsonl` 为准**，`job.json` 只记录设置、批次游标与失败原因。重新打开时：切分文档 → 每段按 `textKey` 查译文 → 得到 done / reused；`failures` 中的段落为 failed；其余在当前批次内的为 queued。
-- 加载时 `state == running` 一律改为 `paused`（`pauseReason: quit`）。
+- 加载时 `state` 为 `running` 或 `offline` 一律改为 `paused`（`pauseReason: quit`）。
 - `job.json` 损坏：任务视为 stopped，译文不受影响。
 
 ### 7.4 生命周期
@@ -346,8 +346,17 @@ stateDiagram-v2
 
 - `FileLibraryStore.translationStore(setId)` 返回学习集作用域的 `FileTranslationStore`，供调度器持有；文档删除后，已持有的实例也会拒绝迟到的追加/任务保存。清理目录失败记在 `translationCleanupErrors`，下次打开重试，不影响已经提交的编辑或学习集加载。
 - `TranslationStore.load(documentId, targetLang)` 返回 `TranslationSnapshot`：最新值映射、完整行数、中间损坏行数、尾部丢弃标记、覆盖行数。`needsCorruptionWarning` / `needsCompaction` 分别实现 > 1% / > 30% 阈值；调度器空闲时调用 `compact`，不另启无人管理的后台写入。
-- `loadJob` 返回 `null` 代表没有可恢复的任务（不存在、损坏或版本不支持，行为等同 stopped）。running 记录加载成 paused/quit；review 原样保留。段落状态由 `deriveTranslationSegmentState` 重建，已保存译文优先于旧失败记录；重开缓存记为 reused，本次成功键可通过 `completedKeys` 标记为 done。
+- `loadJob` 返回 `null` 代表没有可恢复的任务（不存在、损坏或版本不支持，行为等同 stopped）。running / offline 记录加载成 paused/quit；review 原样保留。段落状态由 `deriveTranslationSegmentState` 重建，已保存译文优先于旧失败记录；重开缓存记为 reused，本次成功键可通过 `completedKeys` 标记为 done。
 - 切分后先调用 `importLegacy(documentId, targetLang, paragraphs: ..., caches: content.translationCaches)`：只迁移 fingerprint 精确命中的项，新存储优先，旧 JSON 不变。之后调度器统一写新存储。显式移除某语言译文时，在文档目录保存 `.removed-legacy-<lang>` 标记，避免下次打开又从只读旧缓存恢复已移除的译文；删除文档会一并删除标记。
 - `translationMarginFingerprints` 需要整份文档的页高（包含空白页）：页顶/底 10% 内、位置误差 ≤ 3 PDF 点、至少两页且占比 ≥ 30%。要求两页是为了避免单页文档的所有边缘内容被误当作重复页眉。
 - `translationSkipReason` 接受可靠的 `detectedLanguage`；缺省使用本地脚本/常用词启发式，短文本、混合语言、无法确定简繁的汉字等保留为未知并发送。为什么不同：规范未指定语言检测器，不能把共享文字系统直接等同于目标语言而漏译；后续可接入更准确的检测器，端口无需改变。语言代码按 `TranslationLanguage.code` 精确匹配。
 - NFC 使用纯 Dart 的 `unorm_dart`，原生 JSONL 解析放在 isolate；浏览器沿用 IndexedDB 原子提交适配，不宣称具有文件系统 fsync 语义。
+
+## 16. 第 2 阶段接口约定（GUL-617）
+
+- `TranslationScheduler` 由学习集窗口的 `translationSchedulersProvider(setId)` 注册表按 `(documentId, targetLang)` 复用；`get` 接收当前切分与内容快照，文档 revision 变化时先排空旧实例再替换。关闭学习集暂停任务，排空在途结果后释放连接；切页只替换按需页集合，不丢弃已付费结果。旧 `TranslationSession` 保留兼容接口，阅读入口已迁移到新调度器。
+- `initialize` 导入存储快照并恢复任务，**不发请求**。`start` / `resume` / `continueBatch` 返回本轮排空的 Future；`pause` / `stop` 立即关闸，在途响应继续落盘。`demand` 在任何未结束全文任务下均不发请求；`retry(paragraph)` / `retranslate(paragraph)` 明确绕过批次闸门，与批量请求共用内容键去重，但使用独立并发位。`states` 提供不可变快照，`segmentState` 提供段落状态。
+- 宿主将系统网络事件送入 `setOnline`；离线时不再发请求，联网只恢复 offline，保留用户暂停。重开时 running / offline 都恢复为 paused/quit。`TranslationJob.errorKind` 可选且只用于 error，兼容无该字段的旧记录；原因包含 authentication / quota / model / invalidRequest，另有 storage 用于本地持久化失败。
+- 调度器按页打包（最多 2400 源字符、12 段），编号不匹配或拒绝时拆单；失败响应的用量也进入账本，缺失用量使用保守估算。账本有 2s 尾沿写入，检查点、暂停、停止、排空强制写入。文件写入失败立即停止自动调度，避免因为落盘失败重复购买译文。
+- 翻译连接使用 `connectAssistant(perRequestBudget: true, retryRequests: false)`，每个请求独立计算超时与字节上限，避免长任务耗尽原会话限制；取消超时请求后才进入退避。源文本哈希与不发送判定在原生 isolate 计算；浏览器不支持 isolate 时同步计算，沿用存储层的浏览器能力边界。
+- 对照阅读只写新存储，旧 `translationCaches` 按 fingerprint 精确命中后只读迁移，编辑过的值优先；换模型或要求不使已有译文失效。流式文档仍只做现有按需翻译，存储 page 字段使用段落分组序号，不增加全文翻译入口。为什么不同：规范本期排除流式全文任务，但现有重排对照也需要沿用同一缓存与调度链路。

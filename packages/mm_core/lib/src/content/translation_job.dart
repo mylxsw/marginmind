@@ -77,6 +77,7 @@ class TranslationJob {
     this.promptVersion = 1,
     required this.state,
     this.pauseReason,
+    this.errorKind,
     required this.batch,
     TranslationUsage? usage,
     required this.estimateTokens,
@@ -96,12 +97,14 @@ class TranslationJob {
         estimateTokens < 0 ||
         !range.contains(batch.range.from) ||
         !range.contains(batch.range.to) ||
-        (pauseReason != null && state != TranslationJobState.paused)) {
+        (pauseReason != null && state != TranslationJobState.paused) ||
+        (errorKind != null && (state != TranslationJobState.error || errorKind!.isEmpty))) {
       throw ArgumentError('Invalid translation job');
     }
   }
   final String id, documentId, targetLang, note, model;
   final String? sourceLang;
+  final String? errorKind;
   final TranslationRange range;
   final TranslationMode mode;
   final int batchSize, promptVersion, estimateTokens;
@@ -126,6 +129,7 @@ class TranslationJob {
     int? promptVersion,
     TranslationJobState? state,
     TranslationPauseReason? pauseReason,
+    String? errorKind,
     TranslationBatch? batch,
     TranslationUsage? usage,
     int? estimateTokens,
@@ -145,6 +149,7 @@ class TranslationJob {
     promptVersion: promptVersion ?? this.promptVersion,
     state: state ?? this.state,
     pauseReason: pauseReason ?? (state == null ? this.pauseReason : null),
+    errorKind: errorKind ?? (state == null ? this.errorKind : null),
     batch: batch ?? this.batch,
     usage: usage ?? this.usage,
     estimateTokens: estimateTokens ?? this.estimateTokens,
@@ -169,6 +174,7 @@ class TranslationJob {
     'promptVersion': promptVersion,
     'state': state.name,
     'pauseReason': pauseReason?.name,
+    'errorKind': errorKind,
     'batch': batch.toJson(),
     'usage': usage.toJson(),
     'estimateTokens': estimateTokens,
@@ -194,6 +200,7 @@ class TranslationJob {
       promptVersion: j['promptVersion'] as int,
       state: TranslationJobState.values.byName(j['state'] as String),
       pauseReason: j['pauseReason'] == null ? null : TranslationPauseReason.values.byName(j['pauseReason'] as String),
+      errorKind: j['errorKind'] as String?,
       batch: TranslationBatch.fromJson(j['batch'] as Map),
       usage: TranslationUsage.fromJson(j['usage'] as Map),
       estimateTokens: j['estimateTokens'] as int,

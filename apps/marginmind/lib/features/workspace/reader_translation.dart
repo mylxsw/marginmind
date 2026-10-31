@@ -13,6 +13,7 @@ import 'reader_paragraphs.dart';
 import 'reflow_document.dart';
 import 'reflow_session.dart';
 import 'workspace_controller.dart';
+import 'translation_schedulers.dart';
 
 final translationParagraphsProvider = FutureProvider.autoDispose.family<List<TranslationParagraph>, (String, String)>((
   ref,
@@ -46,7 +47,10 @@ final paragraphTranslatorProvider = Provider<Future<ParagraphTranslator> Functio
     if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
       throw const ResearchFailure(ResearchFailureKind.authentication);
     }
-    return ModelParagraphTranslator(connectAssistant(model, key ?? '', budget: _pageTranslationBudget), model.model);
+    return ModelParagraphTranslator(
+      connectAssistant(model, key ?? '', budget: _pageTranslationBudget, retryRequests: false, perRequestBudget: true),
+      model.model,
+    );
   };
 });
 
@@ -100,20 +104,21 @@ final readerTranslationProvider = NotifierProvider.autoDispose
 class ReaderTranslationController extends Notifier<ReaderTranslationState> {
   ReaderTranslationController(this.studySetId);
   final String studySetId;
-  TranslationSession? _session;
+  TranslationScheduler? _session;
+  StreamSubscription<TranslationSchedulerState>? _subscription;
   int _generation = 0, _pageGeneration = 0;
   String? _identity;
-  bool _modelChanged = false;
 
   void _cancelPage() {
     _pageGeneration++;
-    _session?.cancel();
-    _session = null;
+    if (_session != null) unawaited(_session!.demand(const []));
   }
 
   @override
   ReaderTranslationState build() {
+    ref.watch(translationSchedulersProvider(studySetId));
     ref.onDispose(() {
+      unawaited(_subscription?.cancel());
       _generation++;
       _cancelPage();
     });
@@ -160,17 +165,16 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       // missing paragraphs are ever passed to a model.
       final paragraphs = await ref.read(translationParagraphsProvider((studySetId, id)).future);
       if (!current()) return;
-      final cache = ref
-          .read(workspaceProvider(studySetId).notifier)
-          .content
-          .translationCaches
-          .where((c) => c.documentId == id && c.targetLang == language)
-          .firstOrNull;
-      final cached = <String, String>{
-        for (final p in paragraphs)
-          if (cache?.paragraphs[p.fingerprint]?.trim().isNotEmpty == true)
-            p.fingerprint: cache!.paragraphs[p.fingerprint]!,
-      };
+      final session = await ref
+          .read(translationSchedulersProvider(studySetId))
+          .get(id, language, paragraphs, content: ref.read(workspaceProvider(studySetId).notifier).content);
+      if (!current()) return;
+      await _subscription?.cancel();
+      _session = session;
+      _subscription = session.states.listen((event) {
+        if (current()) state = state.copyWith(values: event.values, failed: event.failure != null);
+      });
+      final cached = session.values;
       final document = ref.read(workspaceProvider(studySetId).notifier).content.document(id);
       final textPosition = document?.contentManifest == null
           ? null
@@ -216,80 +220,28 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     if (paragraphs.every((p) => state.values.containsKey(p.fingerprint))) return;
     final pair = ref.read(readerCompareProvider(studySetId));
     if (pair?.right is! AiCompareTarget) return;
-    final id = pair!.leftDocumentId, language = (pair.right as AiCompareTarget).targetLang;
+    if (_session?.job?.isActive == true) return;
     try {
       final model = ref.read(assistantDefaultModelProvider);
-      final modelId = model == null ? '' : '${model.serviceId ?? model.provider.name}/${model.model}';
-      final cache = ref
-          .read(workspaceProvider(studySetId).notifier)
-          .content
-          .translationCaches
-          .where((c) => c.documentId == id && c.targetLang == language)
-          .firstOrNull;
-      _modelChanged = cache != null && cache.model != modelId;
-      if (model == null ||
-          _modelChanged ||
-          (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
+      if (model == null || (!assistantOnlineDefault(ref, studySetId) && model.provider != AssistantProvider.ollama)) {
         if (current()) state = state.copyWith(failed: true);
         return;
       }
-      final translator = await ref.read(paragraphTranslatorProvider)(model);
-      if (!current()) {
-        translator.close();
-        return;
-      }
-      late TranslationSession session;
-      session = TranslationSession(
-        // A fresh, bounded session belongs to one explicitly viewed page.
-        // Reading a finished page for minutes cannot expire the next page's budget.
-        paragraphs: paragraphs,
-        language: language,
-        translator: translator,
-        budget: _pageTranslationBudget,
-        cached: state.values,
-        changed: () {
-          if (current()) {
-            state = state.copyWith(
-              values: Map.unmodifiable({...state.values, ...session.values}),
-              failed: session.failure != null,
-            );
-          }
-        },
-        save: (p, text) async {
-          if (!current()) return;
-          await ref.read(contentRepositoryProvider).update(studySetId, (content) {
-            if (!current() || content.document(id) == null || content.document(id)?.revision != revision) {
-              return content;
-            }
-            return ref
-                .read(editorProvider)
-                .mergeTranslationParagraphs(
-                  content,
-                  TranslationCache(
-                    documentId: id,
-                    targetLang: language,
-                    model: modelId,
-                    createdAt: cache?.createdAt ?? ref.read(clockProvider)(),
-                    paragraphs: {p.fingerprint: text},
-                  ),
-                );
-          });
-        },
-      );
-      _session = session;
+      final session = _session;
+      if (session == null || !current() || session.job?.isActive == true) return;
       if (paragraphs.first.textAnchor != null) {
         session.prioritize(paragraphs.map((p) => p.index), focus: paragraphs.first.index);
-        await session.start();
+        await session.demand([page]);
         return;
       }
-      final pdf = ref.read(documentPdfProvider((studySetId, id)));
+      final pdf = ref.read(documentPdfProvider((studySetId, sourceId!)));
       final position = pdf.readingPosition;
       final initial = paragraphs.lastWhere(
         (p) => p.bounds.top >= (position?.y ?? double.infinity),
         orElse: () => paragraphs.first,
       );
       session.prioritize(pdf.visibleParagraphs(paragraphs), focus: initial.index);
-      await session.start();
+      await session.demand([page]);
     } catch (_) {
       if (current()) state = state.copyWith(failed: true);
     }
@@ -331,20 +283,14 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
       return;
     }
     if (_session != null) {
-      await _session!.retry();
+      if (_session!.job?.isActive == true) return;
+      for (final p in state.pageParagraphs.where((p) => !state.values.containsKey(p.fingerprint)).toList()) {
+        await _session!.retry(p);
+      }
       return;
     }
-    if (_modelChanged) {
-      final pair = ref.read(readerCompareProvider(studySetId));
-      if (pair?.right is! AiCompareTarget) return;
-      await ref
-          .read(contentRepositoryProvider)
-          .removeTranslationCache(studySetId, pair!.leftDocumentId, (pair.right as AiCompareTarget).targetLang);
-      await _load();
-    } else {
-      state = state.copyWith(failed: false);
-      await _translatePage(state.page);
-    }
+    state = state.copyWith(failed: false);
+    await _translatePage(state.page);
   }
 }
 

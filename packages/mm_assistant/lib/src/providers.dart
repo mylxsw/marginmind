@@ -56,13 +56,16 @@ class AssistantConnection {
 /// The safe adapter pins the resolved endpoint; SDKs receive its base.
 /// Retries only received 429/5xx, never network exceptions or partial streams.
 /// A null budget disables session duration/byte quotas for multi-section notes;
-/// requestTimeout still applies to each individual request.
+/// requestTimeout still applies to each individual request. Long-lived translation
+/// schedulers use perRequestBudget and own retries to keep calls and usage aligned.
 AssistantConnection connectAssistant(
   AssistantModel config,
   String key, {
   ResearchBudget? budget = const ResearchBudget(),
   Duration? requestTimeout,
   HttpClientAdapter? adapter,
+  bool retryRequests = true,
+  bool perRequestBudget = false,
 }) {
   suppressAssistantDiagnostics();
   final timeout = requestTimeout ?? budget?.duration ?? const Duration(minutes: 2);
@@ -138,9 +141,10 @@ AssistantConnection connectAssistant(
   dio.httpClientAdapter = _BoundedAdapter(
     adapter ?? IOHttpClientAdapter(createHttpClient: () => policy.createClient()),
     budget?.responseBytes,
+    perRequestBudget: perRequestBudget,
     normalizeNames: config.provider == AssistantProvider.compatible || config.provider == AssistantProvider.ollama,
   );
-  final deadline = budget == null ? null : DateTime.now().add(budget.duration);
+  final deadline = budget == null || perRequestBudget ? null : DateTime.now().add(budget.duration);
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
@@ -171,7 +175,7 @@ AssistantConnection connectAssistant(
       onError: (error, handler) async {
         final status = error.response?.statusCode;
         final attempt = error.requestOptions.extra['assistant.retry'] as int? ?? 0;
-        if (status != null && (status == 429 || status >= 500) && attempt < 2) {
+        if (retryRequests && status != null && (status == 429 || status >= 500) && attempt < 2) {
           final seconds = int.tryParse(error.response?.headers.value('retry-after') ?? '');
           final delay = seconds == null
               ? Duration(milliseconds: 500 * (1 << attempt))
@@ -199,10 +203,10 @@ AssistantConnection connectAssistant(
 }
 
 class _BoundedAdapter implements HttpClientAdapter {
-  _BoundedAdapter(this.inner, this.maximum, {this.normalizeNames = false});
+  _BoundedAdapter(this.inner, this.maximum, {this.normalizeNames = false, this.perRequestBudget = false});
   final HttpClientAdapter inner;
   final int? maximum;
-  final bool normalizeNames;
+  final bool normalizeNames, perRequestBudget;
   int bytes = 0;
   @override
   Future<ResponseBody> fetch(
@@ -210,11 +214,13 @@ class _BoundedAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    var requestBytes = 0;
     final response = await inner.fetch(options, requestStream, cancelFuture);
     response.stream = response.stream.map((chunk) {
       if (maximum case final limit?) {
-        bytes += chunk.length;
-        if (bytes > limit) throw const ResearchFailure(ResearchFailureKind.budget);
+        requestBytes += chunk.length;
+        bytes += perRequestBudget ? 0 : chunk.length;
+        if ((perRequestBudget ? requestBytes : bytes) > limit) throw const ResearchFailure(ResearchFailureKind.budget);
       }
       return chunk;
     });

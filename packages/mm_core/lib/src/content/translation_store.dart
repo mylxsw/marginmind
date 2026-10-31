@@ -1,4 +1,6 @@
 import 'translation_job.dart';
+import 'translation.dart';
+import 'reading.dart';
 
 /// How a stored paragraph was produced.
 enum TranslationOrigin { ai, edited, legacy }
@@ -83,6 +85,14 @@ abstract interface class TranslationStore {
   /// Reads latest successful values and corruption counts.
   Future<TranslationSnapshot> load(String documentId, String targetLang);
 
+  /// Imports only exact legacy fingerprint matches; newer stored edits win.
+  Future<TranslationSnapshot> importLegacy(
+    String documentId,
+    String targetLang, {
+    required Iterable<TranslationParagraph> paragraphs,
+    required Iterable<TranslationCache> caches,
+  });
+
   /// Durably appends one value before completing (native storage uses fsync).
   /// Explicit edits/retranslations may replace edited values; the scheduler
   /// must never send a cached key for a bulk operation.
@@ -92,7 +102,7 @@ abstract interface class TranslationStore {
   Future<void> compact(String documentId, String targetLang);
 
   /// Missing/corrupt jobs return null (no active job, equivalent to stopped).
-  /// Persisted running jobs are returned paused with pauseReason quit.
+  /// Persisted running/offline jobs are returned paused with pauseReason quit.
   Future<TranslationJob?> loadJob(String documentId, String targetLang);
 
   /// Atomically and durably replaces the small job record.
@@ -100,4 +110,9 @@ abstract interface class TranslationStore {
 
   /// Removes all state for the pair; does not modify legacy studyset.json.
   Future<void> remove(String documentId, String targetLang);
+}
+
+/// Repository-owned translation stores follow the lifetime of a study set.
+abstract interface class TranslationStoreRepository {
+  Future<TranslationStore> translationStore(String studySetId);
 }
