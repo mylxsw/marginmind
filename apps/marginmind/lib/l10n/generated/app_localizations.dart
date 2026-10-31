@@ -9415,6 +9415,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full translation, {percent}%, batch {batch}, {done} / {total} pages'**
   String fullTranslationCapsuleA11y(int percent, int batch, int done, int total);
+
+  /// No description provided for @phoneGlassTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Liquid Glass'**
+  String get phoneGlassTitle;
+
+  /// No description provided for @phoneGlassRegular.
+  ///
+  /// In en, this message translates to:
+  /// **'Regular'**
+  String get phoneGlassRegular;
+
+  /// No description provided for @phoneGlassThick.
+  ///
+  /// In en, this message translates to:
+  /// **'Thick'**
+  String get phoneGlassThick;
+
+  /// No description provided for @phoneGlassOpaque.
+  ///
+  /// In en, this message translates to:
+  /// **'Opaque'**
+  String get phoneGlassOpaque;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

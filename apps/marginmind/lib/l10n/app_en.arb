@@ -2791,5 +2791,9 @@
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
-  }
+  },
+  "phoneGlassTitle": "Phone Liquid Glass",
+  "phoneGlassRegular": "Regular",
+  "phoneGlassThick": "Thick",
+  "phoneGlassOpaque": "Opaque"
 }

@@ -5138,4 +5138,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String fullTranslationCapsuleA11y(int percent, int batch, int done, int total) {
     return '全文翻译，$percent%，第 $batch 批，$done / $total 页';
   }
+
+  @override
+  String get phoneGlassTitle => '手机 Liquid Glass';
+
+  @override
+  String get phoneGlassRegular => '标准';
+
+  @override
+  String get phoneGlassThick => '厚材质';
+
+  @override
+  String get phoneGlassOpaque => '不透明';
 }

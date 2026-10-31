@@ -5361,4 +5361,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String fullTranslationCapsuleA11y(int percent, int batch, int done, int total) {
     return 'Full translation, $percent%, batch $batch, $done / $total pages';
   }
+
+  @override
+  String get phoneGlassTitle => 'Phone Liquid Glass';
+
+  @override
+  String get phoneGlassRegular => 'Regular';
+
+  @override
+  String get phoneGlassThick => 'Thick';
+
+  @override
+  String get phoneGlassOpaque => 'Opaque';
 }
