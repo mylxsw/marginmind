@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginMind 导出文档副本 · 高保真原型（GUL-602）</title>
+<style>
+/* MMColors.light / MMColors.dark (packages/mm_design/lib/src/tokens/colors.dart) with the flat-surface
+   tokens of docs/layout-density.md (surface / border / selSeg). Same variable names as layout-density.html. */
+.light{
+  --window:#FFFFFF; --sidebar:#F2F2F6; --reader:#FFFFFF; --canvas:#FFFFFF;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.16); --fill4:rgba(120,120,128,.08);
+  --selRow:rgba(0,0,0,.075); --hover:rgba(0,0,0,.043); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --onAccent:#fff; --critical:#FF3B30; --caution:#C27C0E; --cautionTint:rgba(255,159,10,.14);
+  --research:#5E5CE6; --surface:#FFFFFF; --border:rgba(0,0,0,.12); --selSeg:#FFFFFF; --line:rgba(60,60,67,.24);
+  --root:#1D1D1F; --onRoot:#FFFFFF; --scrim:rgba(0,0,0,.18); --stage:#F4F4F6; --menubar:rgba(246,246,246,.96);
+}
+.dark{
+  --window:#1E1E1F; --sidebar:#2C2C2F; --reader:#1E1E1F; --canvas:#1E1E1F;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.32); --fill4:rgba(118,118,128,.14);
+  --selRow:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.20); --onAccent:#fff; --critical:#FF453A; --caution:#FFB340; --cautionTint:rgba(255,179,64,.16);
+  --research:#7D7AFF; --surface:#323235; --border:rgba(255,255,255,.12); --selSeg:#636366; --line:rgba(235,235,245,.22);
+  --root:#F5F5F7; --onRoot:#1D1D1F; --scrim:rgba(0,0,0,.35); --stage:#262628; --menubar:rgba(40,40,42,.96);
+}
+:root{
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Noto Sans CJK SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","Noto Serif CJK SC","Noto Serif SC","STSong","SimSun",serif;
+  --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{background:#E4E5EA;overflow:hidden;display:flex}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Console ---------- */
+#stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#scaler{transform-origin:center center;flex:none}
+#console{width:300px;flex:none;background:#fff;border-left:1px solid rgba(0,0,0,.08);display:flex;flex-direction:column;font-size:12px;color:#1d1d1f}
+#console header{padding:14px 16px 10px;border-bottom:1px solid rgba(0,0,0,.06)}
+#console header b{font-size:13px;display:block;margin-bottom:2px}
+#console header span{color:#636366}
+.cseg{display:inline-flex;background:rgba(120,120,128,.12);border-radius:8px;padding:2px;gap:2px;margin-top:10px}
+.cseg button{height:24px;padding:0 10px;border-radius:6px;color:#3a3a3c;white-space:nowrap}
+.cseg button.on{background:#fff;color:#000;font-weight:600;box-shadow:0 0 0 .5px rgba(0,0,0,.1)}
+#scenes{flex:1;overflow:auto;padding:6px 8px 16px}
+#scenes h4{margin:12px 8px 4px;font-size:11px;color:#8e8e93;font-weight:600}
+#scenes button{display:block;width:100%;text-align:left;padding:6px 8px;border-radius:7px;line-height:16px}
+#scenes button:hover{background:rgba(0,0,0,.04)}
+#scenes button.on{background:rgba(0,122,255,.1);color:#0a5fd0}
+#scenes button i{font-style:normal;color:#8e8e93;font-variant-numeric:tabular-nums;margin-right:6px}
+#scenes button small{display:block;color:#8e8e93;margin-left:22px;font-size:11px}
+#scenes button.on small{color:#4a7fc8}
+
+/* ---------- Devices ---------- */
+.device{position:relative;background:#0b0b0c}
+.device.desktop{border-radius:12px;outline:.5px solid rgba(0,0,0,.4)}
+.device.tablet{border-radius:40px;padding:16px}
+.device.phone{border-radius:58px;padding:12px}
+.screen{position:relative;overflow:hidden;background:var(--window);color:var(--label);font-size:13px;line-height:16px}
+.desktop .screen{border-radius:12px}.tablet .screen{border-radius:24px}.phone .screen{border-radius:47px}
+.menubar{position:absolute;left:0;right:0;top:0;height:24px;background:var(--menubar);display:flex;align-items:center;gap:18px;padding:0 16px;font-size:13px;z-index:120;border-bottom:.5px solid var(--sep)}
+.menubar b{font-weight:700}.menubar span.on{background:var(--accent);color:#fff;border-radius:4px;padding:1px 8px;margin:0 -8px}
+.menubar .r{margin-left:auto;color:var(--label2)}
+.sbar{position:absolute;left:0;right:0;top:0;height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;font-weight:600;z-index:60;pointer-events:none}
+.phone .sbar{height:54px;padding:0 36px 0 44px;font-size:16px}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:124px;height:36px;border-radius:20px;background:#000;z-index:200}
+.homeind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:138px;height:5px;border-radius:3px;background:var(--label);opacity:.85;z-index:200}
+
+/* ---------- Workspace (simplified; see layout-density.html for the full toolbar spec) ---------- */
+.app{position:absolute;left:0;right:0;bottom:0;background:var(--window)}
+.side{position:absolute;left:8px;top:8px;bottom:8px;width:236px;border-radius:16px;background:var(--sidebar);border:.5px solid var(--border);padding:0 10px 10px;z-index:30}
+.side .shd{height:44px;display:flex;align-items:center;gap:8px;padding-left:4px}
+.lights{display:flex;gap:8px}.lights span{width:12px;height:12px;border-radius:6px}
+.side .setrow{display:flex;align-items:center;gap:8px;height:30px;padding:0 6px}
+.side .setrow .badge{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center}
+.side .setrow b{font-size:13px}
+.side h6{margin:14px 10px 4px;font-size:11px;color:var(--label2);font-weight:600}
+.srow{display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:8px;width:100%;text-align:left;position:relative}
+.srow .i{color:var(--accent)}.srow.on{background:var(--selRow)}.srow.ctx{outline:2px solid var(--accent);outline-offset:-2px}
+.srow .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{position:absolute;top:0;right:0;bottom:0;left:252px;display:flex}
+.pane{position:relative;overflow:hidden;flex:1 1 0;min-width:0}
+.pane.reader{flex:1.45 1 0;background:var(--reader)}
+.divider{width:1px;background:var(--sep);flex:none}
+.phead{position:absolute;left:0;right:0;top:0;height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;z-index:10;background:var(--window)}
+.tb{height:30px;min-width:32px;border-radius:15px;display:inline-flex;align-items:center;justify-content:center;gap:4px;color:var(--label);position:relative}
+.tb:hover{background:var(--hover)}.tb.on{background:var(--accentTint);color:var(--accent)}.tb.open{background:var(--pressed)}
+.tb.lbl{padding:0 10px;font-size:12px;font-weight:500}
+.grp{display:inline-flex;align-items:center;padding:3px;border-radius:18px;background:var(--fill4)}
+.pnum{white-space:nowrap;font-size:12px;color:var(--label2);font-variant-numeric:tabular-nums;padding:0 4px}
+.segc{display:inline-flex;height:28px;padding:2px;border-radius:14px;background:var(--fill4);flex:none}
+.segc button{height:24px;padding:0 12px;border-radius:12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.segc button.on{background:var(--selSeg);outline:.5px solid var(--border);outline-offset:-.5px}
+.segc button[disabled]{opacity:.35;cursor:default}
+.readbody{position:absolute;left:0;right:0;top:52px;bottom:0;display:flex;justify-content:center;padding-top:12px;overflow:hidden}
+.mapbody{position:absolute;left:0;right:0;top:52px;bottom:0}
+.node{position:absolute;font-size:12px;line-height:16px}
+.node.root{background:var(--root);color:var(--onRoot);border-radius:10px;padding:8px 14px;font-weight:600;font-size:14px}
+.node.ex{width:170px;background:var(--window);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-family:var(--serif);font-size:12px;line-height:18px}
+.node.ex i{display:block;width:18px;height:3px;border-radius:2px;margin-bottom:5px}
+
+/* ---------- Page (always the original paper colors: export ignores the reader style) ---------- */
+.pgwrap{position:relative;flex:none}
+.pg{position:absolute;left:0;top:0;transform-origin:0 0;background:#fff;color:#1d1d1f;outline:.5px solid rgba(0,0,0,.16);overflow:hidden}
+.pg .body{position:absolute;left:0;top:0;bottom:0;padding:44px;font-family:var(--serif);font-size:11px;line-height:19px}
+.pg.crop .body{padding:18px 20px;font-size:12.4px;line-height:21px}
+.pg .run{display:flex;justify-content:space-between;font-family:var(--sans);font-size:8px;line-height:10px;color:#8e8e93;margin-bottom:14px}
+.pg.crop .run{margin-bottom:8px}
+.pg h3{font-family:var(--sans);font-size:14px;line-height:20px;margin:0 0 12px;font-weight:700}
+.pg p{margin:0 0 9px;text-indent:2em;position:relative}
+.pg .ext{position:absolute;top:0;bottom:0;right:0;background:#FAFAFA;border-left:.5px solid rgba(0,0,0,.08)}
+.pg svg.lead{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.mnote{position:absolute;font-family:var(--sans);font-size:9px;line-height:13px;color:#3a3a3c;background:#fff;border:.5px solid rgba(0,0,0,.14);border-left:2.5px solid;border-radius:5px;padding:5px 7px}
+.mk{position:relative;border-radius:1.5px}
+.hl{padding:1px 0}
+sup.fn{font-family:var(--sans);font-size:7.5px;line-height:0;color:#0A66D0;font-weight:700;margin-left:1px;position:relative;cursor:default}
+.editable .mk:hover{outline:1.5px solid rgba(0,122,255,.75);outline-offset:1px}
+.editable .mk:hover::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 4px);background:#1d1d1f;color:#fff;font:600 8.5px/12px var(--sans);padding:2px 6px;border-radius:4px;white-space:nowrap;z-index:5;text-indent:0}
+.ink{position:absolute;pointer-events:none;overflow:visible}
+.endp h3{margin-bottom:14px}
+.endp .en{display:flex;gap:8px;margin-bottom:11px;font-family:var(--sans);font-size:9.5px;line-height:14px}
+.endp .en b{color:#0A66D0;font-size:9px;min-width:12px}
+.endp .en q{display:block;font-family:var(--serif);font-size:10px;line-height:15px;color:#3a3a3c;border-left:2.5px solid;padding-left:6px;margin-bottom:3px;quotes:none}
+.endp .en small{color:#8e8e93;font-size:8.5px}
+
+/* ---------- Menus, HUD, save panel ---------- */
+.menu{position:absolute;background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:5px;min-width:230px;font-size:13px;z-index:110;color:var(--label)}
+.mi{height:24px;padding:0 9px;border-radius:5px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mi .i{color:var(--icon)}
+.mi:hover,.mi.hot{background:var(--accent);color:#fff}.mi:hover .i,.mi.hot .i{color:#fff}
+.mi.dis{opacity:.35;pointer-events:none}.mi.red{color:var(--critical)}
+.mi .k{margin-left:auto;padding-left:24px;color:var(--label2);font-size:12px}.mi:hover .k,.mi.hot .k{color:rgba(255,255,255,.8)}
+.mi .chk{width:14px;text-align:center}
+.msep{height:1px;background:var(--sep);margin:5px 9px}
+.mhint{position:absolute;z-index:111;background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.hud{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:var(--surface);border:.5px solid var(--border);border-radius:22px;padding:0 8px 0 14px;height:44px;font-size:13px;font-weight:500;z-index:130}
+.hud .i{color:#34C759}.hud button{color:var(--accent);padding:0 10px;height:30px;border-radius:15px}.hud button:hover{background:var(--hover)}
+.savep{position:absolute;left:50%;top:0;transform:translateX(-50%);width:470px;background:var(--surface);border:.5px solid var(--border);border-top:0;border-radius:0 0 12px 12px;padding:18px 20px 16px;z-index:125;font-size:13px}
+.savep .f{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.savep .f label{width:60px;text-align:right;color:var(--label2)}
+.savep .f div{flex:1;height:24px;border-radius:6px;border:.5px solid var(--border);background:var(--window);display:flex;align-items:center;padding:0 8px}
+.savep .f div.sel{border:2px solid var(--accent);background:var(--accentTint)}
+
+/* ---------- Sheet (MMSheet, flat: surface + hairline, no shadow) ---------- */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:90}
+.sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:900px;background:var(--surface);border:.5px solid var(--border);border-radius:22px;padding:20px 22px 18px;z-index:95;color:var(--label)}
+.sh-t{display:flex;align-items:baseline;gap:12px}
+.sh-t b{font-size:15px;line-height:20px;font-weight:700}
+.sh-t span{margin-left:auto;font-size:11px;color:var(--label2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;display:flex;align-items:center;gap:5px}
+.sh-b{display:flex;gap:16px;height:520px;margin-top:18px}
+.sh-b.busy .opts,.sh-b.busy .pv{opacity:.4;pointer-events:none}
+.opts{width:280px;flex:none;overflow:auto;padding:0 4px 8px 0;margin-top:-12px}
+.gt{font-size:11px;line-height:14px;font-weight:600;color:var(--label2);margin:12px 2px 6px;display:flex;align-items:center}
+.gt button{margin-left:auto;color:var(--accent);font-weight:500}
+.fmts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fmt{border-radius:10px;padding:8px 6px 6px;text-align:center;font-size:11px;line-height:14px;box-shadow:inset 0 0 0 1px var(--sep);color:var(--label)}
+.fmt:hover{background:var(--hover)}
+.fmt.on{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accentTint);color:var(--accent);font-weight:600}
+.fmt svg.i{width:28px;height:28px;stroke-width:1.4;display:block;margin:0 auto 3px;color:var(--icon)}
+.fmt.on svg.i{color:var(--accent)}
+.fmt small{display:block;font-size:10px;color:var(--label2);font-weight:400;height:13px}
+.list{border-radius:10px;background:var(--fill4);overflow:hidden}
+.row{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;position:relative}
+.row+.row,.row+.sub,.sub+.row{border-top:.5px solid var(--sep)}
+.row .i{color:var(--icon)}
+.row .n{flex:1;white-space:nowrap}
+.row .c{color:var(--label2);font-variant-numeric:tabular-nums;font-size:12px}
+.row.dis .n,.row.dis .i,.row.dis .c{opacity:.4}
+.row .why{font-size:10.5px;color:var(--accent);white-space:nowrap}
+.sw{width:30px;height:18px;border-radius:9px;background:var(--fill);position:relative;flex:none;transition:background 160ms}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:7px;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.12);transition:transform 160ms}
+.sw.on{background:var(--accent)}.sw.on::after{transform:translateX(12px)}
+.sw[disabled]{opacity:.35;cursor:default}
+.sub{padding:6px 10px 9px 34px}
+.dots{display:flex;gap:12px}
+.dot{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--label2);font-variant-numeric:tabular-nums}
+.dot i{width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff}
+.dot i svg{width:12px;height:12px;stroke-width:3}
+.dot.off i{background:transparent!important;box-shadow:inset 0 0 0 1.5px var(--c)}
+.dot.off i svg{display:none}
+.segw{display:flex}.segw .segc{width:100%}.segw .segc button{flex:1;justify-content:center;padding:0 6px}
+.cap{font-size:11px;line-height:15px;color:var(--label2);margin:6px 2px 0}
+.fld{margin-top:8px;height:26px;border-radius:7px;border:.5px solid var(--border);background:var(--window);display:flex;align-items:center;padding:0 8px;font-size:12px}
+.fld input{border:0;outline:0;background:none;font:inherit;color:var(--label);flex:1;min-width:0}
+.fld.bad{border:1.5px solid var(--critical)}
+.err{font-size:11px;color:var(--critical);margin:4px 2px 0}
+.banner{display:flex;gap:8px;align-items:flex-start;background:var(--cautionTint);color:var(--label);border-radius:10px;padding:8px 10px;font-size:11.5px;line-height:16px;margin-top:12px}
+.banner .i{color:var(--caution);margin-top:0}
+.notice{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--label2);margin:12px 2px 0}
+.notice .i{color:var(--caution);width:14px;height:14px}
+.notice button{margin-left:auto;color:var(--accent)}
+
+.pv{flex:1;min-width:0;background:var(--reader);border-radius:12px;border:.5px solid var(--sep);display:flex;flex-direction:column;overflow:hidden}
+.pv-h{height:36px;flex:none;display:flex;align-items:center;gap:4px;padding:0 6px 0 12px;border-bottom:.5px solid var(--sep);font-size:11px}
+.pv-h .fn{flex:1;min-width:0;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-h .fn svg{width:12px;height:12px;color:var(--icon)}
+.pv-h .tb{height:24px;min-width:24px;border-radius:12px}.pv-h .tb svg{width:14px;height:14px}
+.pv-h .tb[disabled]{opacity:.3;pointer-events:none}
+.pv-h .pn{font-variant-numeric:tabular-nums;color:var(--label2);min-width:62px;text-align:center}
+.badge2{font-size:10px;color:var(--label2);background:var(--fill4);border-radius:8px;padding:1px 7px;margin-right:4px;white-space:nowrap}
+.pv-s{flex:1;position:relative;display:flex;background:var(--stage);overflow:hidden}
+.pv-s .center{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+.rail{width:120px;flex:none;background:var(--sidebar);border-right:.5px solid var(--sep);padding:10px 6px;font-size:10px;line-height:13px;overflow:hidden;color:var(--label)}
+.rail b{display:block;font-size:9.5px;color:var(--label2);margin:0 4px 6px}
+.rail div{padding:3px 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail div.on{background:var(--selRow)}.rail div.k{padding-left:12px;color:var(--label2)}
+.rail .bm{display:flex;align-items:center;gap:4px}.rail .bm svg{width:9px;height:9px;color:var(--critical)}
+.sh-f{display:flex;align-items:center;gap:8px;margin-top:18px;min-height:28px}
+.sh-f .st{flex:1;font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums}
+.btn{height:28px;padding:0 14px;border-radius:14px;font-size:13px;font-weight:500;background:var(--fill4);color:var(--label);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--fill)}
+.btn.pri{background:var(--accent);color:#fff}.btn.pri:hover{filter:brightness(1.07)}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.prog{width:180px;height:4px;border-radius:2px;background:var(--fill);overflow:hidden}.prog i{display:block;height:100%;background:var(--accent);transition:width 120ms linear}
+.failrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--critical)}
+.failrow .i{width:14px;height:14px}
+
+/* EPUB / Markdown previews */
+.rf{width:380px;background:#fff;color:#1d1d1f;font-family:var(--serif);font-size:13px;line-height:23px;padding:28px 30px 40px;margin:20px auto;outline:.5px solid rgba(0,0,0,.14);border-radius:4px}
+.rf h3{font-family:var(--sans);font-size:17px;line-height:24px;margin:0 0 16px}
+.rf p{margin:0 0 12px;text-indent:2em;position:relative}
+.rf sup.fn{font-size:9px}
+.rf .pop{display:none;position:absolute;left:0;transform:translateX(-85%);top:16px;width:220px;background:#fff;border:.5px solid rgba(0,0,0,.2);border-radius:10px;padding:9px 11px;font:12px/17px var(--sans);color:#1d1d1f;text-indent:0;z-index:9;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.rf sup.fn:hover .pop,.rf sup.fn.show .pop{display:block}
+.rf .chend{border-top:.5px solid rgba(0,0,0,.15);margin-top:18px;padding-top:10px;font-family:var(--sans);font-size:11.5px;line-height:17px}
+.rf .chend div{margin-bottom:6px}.rf .chend b{color:#0A66D0;margin-right:5px}
+.scrollpv{flex:1;overflow:auto}
+pre.md{margin:0;padding:16px 18px;font:11.5px/19px var(--mono);color:var(--label);white-space:pre-wrap;word-break:break-all}
+pre.md .h{color:var(--accent);font-weight:600}pre.md .t{color:var(--caution)}pre.md .f{color:var(--research)}pre.md .q{color:var(--label2)}
+
+/* touch (iPad / iPhone) */
+.touch .row{min-height:44px;font-size:15px}.touch .sw{width:46px;height:28px;border-radius:14px}.touch .sw::after{width:24px;height:24px;border-radius:12px}.touch .sw.on::after{transform:translateX(18px)}
+.touch .segc{height:34px;border-radius:17px}.touch .segc button{height:30px;border-radius:15px;font-size:13px}
+.touch .gt{font-size:13px}.touch .btn{height:36px;border-radius:18px;font-size:15px;padding:0 18px}
+.touch .fmt{font-size:12px}
+.bsheet{position:absolute;left:0;right:0;bottom:0;top:58px;background:var(--surface);border-radius:28px 28px 0 0;border-top:.5px solid var(--border);z-index:95;display:flex;flex-direction:column;color:var(--label)}
+.bsheet .grab{width:36px;height:5px;border-radius:3px;background:var(--fill);margin:6px auto 0;flex:none}
+.bsheet .bt{display:flex;align-items:center;padding:8px 16px 10px;flex:none}
+.bsheet .bt b{flex:1;text-align:center;font-size:17px;font-weight:600}
+.bsheet .bt button{color:var(--accent);font-size:16px;width:60px;text-align:left}
+.bsheet .bb{flex:1;overflow:auto;padding:0 16px 16px}
+.bsheet .bf{flex:none;padding:10px 16px 34px;border-top:.5px solid var(--sep)}
+.bsheet .bf .btn{width:100%;justify-content:center;height:50px;border-radius:14px;font-size:17px}
+.hfmts{display:flex;gap:8px}.hfmts .fmt{flex:1}
+</style>
+</head>
+<body>
+<div id="stage"><div id="scaler"></div></div>
+<aside id="console">
+  <header><b>导出文档副本 · GUL-602</b><span>选项可点；预览即导出结果</span><br>
+    <div class="cseg" id="theme"><button data-t="light">浅色</button><button data-t="dark">深色</button></div>
+  </header>
+  <div id="scenes"></div>
+</aside>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-md" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></symbol>
+  <symbol id="i-hl" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
+  <symbol id="i-ul" viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M13 8H7"/><path d="M17 12H7"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol>
+  <symbol id="i-toc" viewBox="0 0 24 24"><path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></symbol>
+  <symbol id="i-bm" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-checkc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M4.04 4.65a.5.5 0 0 1 .61-.61l15.5 5.25a.5.5 0 0 1 .03.94l-6.34 2.36a1 1 0 0 0-.59.59l-2.36 6.34a.5.5 0 0 1-.94-.03Z"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.94 14.06 8 20l-1.94-5.94L0 12l6.06-1.94L8 4l1.94 6.06L16 12z" transform="translate(3 -1) scale(.85)"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="5" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M9 11l6.5-5M9 13l6.5 5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+</svg>
+<script>
+'use strict';
+const ic = (n, cls = '') => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// MMAnnotationColor: yellow, green, blue, pink, orange, purple
+const COLORS = ['#FFCC00', '#34C759', '#007AFF', '#FF2D55', '#FF9500', '#AF52DE'];
+const CNAME = ['黄', '绿', '蓝', '粉', '橙', '紫'];
+const rgba = (hex, a) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+
+/* ---------------- Demo documents (original demo text) ---------------- */
+const FILLER = [
+  '记忆研究里最朴素的发现，往往也是最难被日常习惯接受的。我们习惯把学习想成一件需要“坐得住”的事，于是把时间堆在一起，换来一种踏实的感觉。',
+  '可是踏实感和学会之间并没有必然联系。真正决定一段知识能否留下来的，是它在之后被调用了多少次，以及每一次调用离上一次有多远。',
+  '这也解释了为什么考前通宵往往能撑过第二天的考试，却在一个月后几乎什么也不剩：那些知识从来没有被要求在不同的时间、不同的情境里再出现一次。',
+  '如果把每一次回想看作一次投票，那么记忆就是票数的累积，而间隔则决定了每一票的分量。离上一次越远、回想越吃力，这一票就越重。',
+  '在实验室之外，这条规律同样成立。语言学习者、医学生、音乐学徒，各自用不同的方式发现了它，只是很少有人把它说得这样直白。',
+  '于是问题不再是“要不要复习”，而是“什么时候复习、用什么方式复习”。这两个问题的答案，构成了接下来几章的主线。',
+];
+const PDF = {
+  id: 'pdf', title: '记忆的形状', ext: 'pdf', kind: 'pdf', pages: 248, crop: true,
+  chapters: [[1, '前言'], [3, '第一章 记忆是重建'], [11, '第二章 遗忘不是失败'], [29, '第三章 提取练习'], [38, '第四章 间隔'], [46, '第五章 交错'], [64, '第六章 情境'], [81, '第七章 理解与记忆'], [95, '第八章 动机'], [108, '第九章 睡眠'], [131, '第十章 把它们放在一起'], [236, '注释与参考']],
+  bookmarks: [['艾宾浩斯曲线', 12], ['合意困难', 13], ['交错练习实验', 47]],
+  content: {
+    12: { paras: [
+      { t: '我们总以为记忆像仓库，放进去的东西会原样待在那里，只是偶尔找不到。事实恰好相反：记忆更像一条河，每一次回想都会改变它的河道。',
+        m: [{ id: 'a1', s: '每一次回想都会改变它的河道', k: 'hl', c: 0, note: '和第一章的“重构”呼应——回忆本身就是一次编辑。' }] },
+      { t: '十九世纪末，艾宾浩斯用无意义音节测试自己，画出了第一条遗忘曲线。曲线最陡的部分出现在学习后的头一个小时，之后逐渐平缓。真正让人意外的不是遗忘之快，而是它的规律之稳定。',
+        m: [{ id: 'a2', s: '曲线最陡的部分出现在学习后的头一个小时', k: 'ul', c: 2, ls: 'solid' }, { id: 'a3', s: '它的规律之稳定', k: 'hl', c: 1, review: true }], ink: { kind: 'bracket', c: 3 } },
+      { t: '规律意味着可以预测，可以预测就意味着可以干预。如果知道一段记忆将在什么时候变得模糊，就可以恰好在那之前把它重新取出来。',
+        m: [{ id: 'a4', s: '恰好在那之前把它重新取出来', k: 'hl', c: 0, note: '间隔重复的核心：不是多复习，而是在快忘时复习。' }] },
+      { t: '这种干预并不需要更长的时间，只需要更好的时机。三次分散在一周里的十分钟，往往胜过一次连续的半小时。',
+        m: [{ id: 'a5', s: '三次分散在一周里的十分钟', k: 'ul', c: 3, ls: 'wavy' }] },
+      { t: FILLER[0] },
+    ] },
+    13: { paras: [
+      { t: '然而时机只是一半。另一半在于取出的方式。重读一遍笔记，和合上书本试着复述，是两种完全不同的练习。', m: [{ id: 'b1', s: '合上书本试着复述', k: 'hl', c: 2 }] },
+      { t: '前者让人产生熟悉感，熟悉感又很容易被误认为掌握。后者让人难受，因为它会暴露出哪里其实还不会——而正是这种难受，把记忆刻得更深。',
+        m: [{ id: 'b2', s: '熟悉感又很容易被误认为掌握', k: 'hl', c: 0, note: '自己复习时最常犯的错：看着眼熟就跳过。' }, { id: 'b3', s: '正是这种难受，把记忆刻得更深', k: 'ul', c: 4, ls: 'dashed' }] },
+      { t: '研究者把这种现象称为“合意困难”。困难本身不是目的，但适度的困难会迫使大脑重新组织线索，而重新组织的过程就是学习。',
+        m: [{ id: 'b4', s: '适度的困难会迫使大脑重新组织线索', k: 'hl', c: 1, review: true }], ink: { kind: 'loop', c: 2 } },
+      { t: FILLER[1] }, { t: FILLER[3] },
+    ] },
+    47: { paras: [
+      { t: '把不同类型的题目混在一起练习，起初会让成绩变差。学生会抱怨，老师会动摇，连研究者自己也一度怀疑实验设计出了问题。' },
+      { t: '但几周之后再测，交错练习的那一组明显领先。原因在于，混合迫使人在每一道题前先判断“这是哪一类”，而这个判断正是考试真正要求的能力。',
+        m: [{ id: 'c1', s: '这个判断正是考试真正要求的能力', k: 'hl', c: 3, note: '用在复习上：按标签随机抽，而不是按章节顺序。' }] },
+      { t: FILLER[4] }, { t: FILLER[2] },
+    ] },
+    113: { paras: [
+      { t: '睡眠并不是学习的暂停键。慢波睡眠期间，海马体会把白天的片段重新播放，像是在夜里替我们复习了一遍。', m: [{ id: 'd1', s: '像是在夜里替我们复习了一遍', k: 'hl', c: 0 }] },
+      { t: '这意味着，学习之后的那一晚和学习本身同样重要。熬夜换来的额外两小时，常常抵不上被它挤掉的那一段睡眠。', m: [{ id: 'd2', s: '抵不上被它挤掉的那一段睡眠', k: 'ul', c: 1, ls: 'solid' }] },
+      { t: FILLER[5] }, { t: FILLER[3] },
+    ] },
+  },
+};
+const EPUB = {
+  id: 'epub', title: '刻意的间隔', ext: 'epub', kind: 'reflow',
+  chapters: ['序', '1 · 为什么要隔开', '2 · 让复习变成提问', '3 · 计划与弹性', '4 · 工具', '5 · 当你忘了', '后记'],
+  bookmarks: [['十分之一法则', 1]],
+  content: {
+    1: { paras: [
+      { t: '连续学习带来的流畅感是一种错觉。它让人觉得自己学会了，却没有让知识在第二天还能被调用。', m: [{ id: 'e1', s: '流畅感是一种错觉', k: 'hl', c: 0, note: '≈ 熟悉感 ≠ 掌握。' }] },
+      { t: '把同样的时间拆开，中间留出足够让人略微遗忘的空白，回想时的那一点吃力，会让记忆的痕迹更牢固。', m: [{ id: 'e2', s: '回想时的那一点吃力', k: 'ul', c: 2, ls: 'wavy' }] },
+      { t: '间隔多长并没有统一答案。一个实用的经验是：想在多久之后还记得，就把间隔设成那段时间的十分之一到五分之一。', m: [{ id: 'e3', s: '十分之一到五分之一', k: 'hl', c: 1 }], ink: { kind: 'bracket', c: 3 } },
+      { t: FILLER[3] },
+    ] },
+    2: { paras: [
+      { t: '把笔记改写成问题，是最便宜的提取练习。问题逼你回答，而陈述只会让你点头。', m: [{ id: 'f1', s: '问题逼你回答，而陈述只会让你点头', k: 'hl', c: 3, note: '把摘录改名成问题，它就成了复习卡片的题面。' }] },
+      { t: '提问还有一个副作用：它会暴露你真正不懂的地方。答不上来的问题，就是下一次阅读的目标。', m: [{ id: 'f2', s: '答不上来的问题，就是下一次阅读的目标', k: 'ul', c: 4, ls: 'solid' }] },
+      { t: FILLER[5] },
+    ] },
+  },
+};
+const MD = {
+  id: 'md', title: '读书会提纲', ext: 'md', kind: 'md',
+  chapters: ['读书会提纲'], bookmarks: [],
+  lines: [
+    { h: 1, t: '第二章 读书会提纲' },
+    { h: 2, t: '一、遗忘有规律' },
+    { li: '遗忘曲线最陡的部分在学习后的头一个小时。', m: [{ id: 'g1', s: '头一个小时', k: 'hl', c: 0, note: '讨论：为什么下课后马上回顾最有效？' }] },
+    { li: '规律意味着可以预测，也就可以干预。' },
+    { h: 2, t: '二、取出的方式' },
+    { li: '重读带来熟悉感，复述才暴露漏洞。', m: [{ id: 'g2', s: '复述才暴露漏洞', k: 'ul', c: 2, ls: 'solid' }] },
+    { li: '合意困难：适度的困难迫使大脑重组线索。', m: [{ id: 'g3', s: '适度的困难', k: 'hl', c: 1 }] },
+  ],
+};
+const DOCS = { pdf: PDF, epub: EPUB, md: MD };
+const FORMATS = {
+  pdf: [['pdf', 'PDF', '原格式', 'file']],
+  epub: [['epub', 'EPUB', '原格式', 'book'], ['pdf', 'PDF', '', 'file']],
+  md: [['md', 'Markdown', '原格式', 'md'], ['pdf', 'PDF', '', 'file']],
+};
+
+/* ---------------- State ---------------- */
+const DEFAULT_OPTS = () => ({
+  hl: true, ul: true, note: true, ink: true, toc: true, colors: [true, true, true, true, true, true],
+  place: 'margin', placeR: 'foot', mode: 'edit', range: 'all', custom: '12-14, 47', crop: false, layout: 'reader',
+});
+const S = {
+  theme: 'light', device: 'mac', scene: 0, doc: 'pdf', fmt: 'pdf', o: DEFAULT_OPTS(),
+  sheet: false, menu: null, phase: 'idle', progress: 0, hud: false, failed: false,
+  empty: false, protected: false, review: false, page: 12, chap: 1,
+};
+
+/* ---------------- Plan: the single source for counts, preview and (in the app) the writers ---------------- */
+function docMarks(d) {
+  const out = [];
+  if (d.kind === 'md') d.lines.forEach(l => (l.m || []).forEach(m => out.push({ ...m, page: 1 })));
+  else for (const [p, c] of Object.entries(d.content)) c.paras.forEach(pa => (pa.m || []).forEach(m => out.push({ ...m, page: +p })));
+  return out;
+}
+function docInk(d) {
+  if (d.kind === 'md') return 0;
+  let n = 0; for (const c of Object.values(d.content)) c.paras.forEach(pa => { if (pa.ink) n++; }); return n;
+}
+const doc = () => DOCS[S.doc];
+const fixedOut = () => S.fmt === 'pdf';
+const inkSupported = () => S.fmt === 'pdf';
+function usable(m) { return !S.empty && !(S.review && m.review); }
+function keepMark(m) {
+  const o = S.o; if (!usable(m) || S.protected) return false;
+  if (m.k === 'hl') return o.hl && o.colors[m.c];
+  return o.ul;
+}
+function keepNote(m) { return !!m.note && usable(m) && !S.protected && S.o.note; }
+function keepInk() { return !S.empty && !S.protected && S.o.ink && inkSupported(); }
+function counts() {
+  const all = docMarks(doc()).filter(usable);
+  const hl = all.filter(m => m.k === 'hl'), ul = all.filter(m => m.k === 'ul'), notes = all.filter(m => m.note);
+  const perColor = COLORS.map((_, i) => hl.filter(m => m.c === i).length);
+  return { hl: hl.length, ul: ul.length, note: notes.length, ink: S.empty ? 0 : docInk(doc()), perColor,
+    excluded: S.review ? docMarks(doc()).filter(m => m.review).length : 0,
+    toc: doc().chapters.length + doc().bookmarks.length };
+}
+function parseRange(text, max) {
+  const set = new Set();
+  for (const part of text.split(/[,，、]/).map(s => s.trim()).filter(Boolean)) {
+    const m = part.match(/^(\d+)\s*(?:[-–~至]\s*(\d+))?$/);
+    if (!m) return { error: `无法识别“${part}”` };
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    if (a < 1 || b > max || a > b) return { error: `页码超出 1–${max}` };
+    for (let i = a; i <= b; i++) set.add(i);
+  }
+  if (!set.size) return { error: '请输入页码' };
+  return { pages: [...set].sort((x, y) => x - y) };
+}
+function markedPages() { return Object.keys(PDF.content).map(Number).filter(p => PDF.content[p].paras.some(pa => (pa.m || []).some(m => keepMark(m) || keepNote(m)) || (pa.ink && keepInk()))); }
+// Output pages of a fixed-layout export (PDF → PDF or reflow → PDF).
+function outPages() {
+  const d = doc();
+  let pages;
+  if (d.id === 'pdf') {
+    const o = S.o;
+    if (o.range === 'marked') pages = markedPages();
+    else if (o.range === 'custom') pages = parseRange(o.custom, PDF.pages).pages || [];
+    else pages = Array.from({ length: PDF.pages }, (_, i) => i + 1);
+  } else {
+    const total = S.o.layout === 'reader' ? (d.id === 'md' ? 2 : 186) : (d.id === 'md' ? 1 : 132);
+    pages = Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const list = pages.map(p => ({ p }));
+  if (S.o.note && S.o.place === 'end' && anyNotes()) list.push({ end: true });
+  return list;
+}
+function anyNotes() { return docMarks(doc()).some(keepNote); }
+function keptStats() {
+  const ms = docMarks(doc());
+  const marks = ms.filter(keepMark).length, notes = ms.filter(keepNote).length;
+  const ink = keepInk() ? docInk(doc()) : 0;
+  return { marks, notes, ink };
+}
+function fileName() {
+  const d = doc(); const ext = { pdf: 'pdf', epub: 'epub', md: 'md' }[S.fmt];
+  const plain = S.protected || S.empty || (keptStats().marks + keptStats().notes + keptStats().ink === 0);
+  return `${d.title}${plain ? '（副本）' : '（标注版）'}.${ext}`;
+}
+
+/* ---------------- Page rendering ---------------- */
+function chapterOf(p) { let t = ''; for (const [s, n] of PDF.chapters) if (p >= s) t = n; return t; }
+function markHTML(text, marks, notes, opts) {
+  // Wrap each kept mark (or a note anchor) once; marks never overlap in the demo data.
+  let html = esc(text);
+  for (const m of marks) {
+    const km = opts.all || keepMark(m), kn = !opts.all && keepNote(m);
+    if (!km && !kn) continue;
+    let style = '', tip = '';
+    if (km && m.k === 'hl') { style = `background:${rgba(COLORS[m.c], .38)}`; tip = '高亮 · 可编辑'; }
+    if (km && m.k === 'ul') { style = `text-decoration:underline ${m.ls === 'wavy' ? 'wavy' : m.ls === 'dashed' ? 'dashed' : 'solid'} ${COLORS[m.c]};text-decoration-thickness:1.4px;text-underline-offset:3px`; tip = m.ls === 'wavy' ? '波浪线 · 可编辑' : '下划线 · 可编辑'; }
+    if (kn) tip = tip ? tip.replace(' · ', '与批注 · ') : '批注 · 可编辑';
+    let sup = '';
+    if (kn) {
+      const n = notes.findIndex(x => x.id === m.id) + 1;
+      if (opts.place === 'end' || opts.place === 'chapter') sup = `<sup class="fn">${n}</sup>`;
+      if (opts.place === 'foot') sup = `<sup class="fn${opts.showPop && n === 1 ? ' show' : ''}">${n}<span class="pop">${esc(m.note)}</span></sup>`;
+    }
+    const cls = km ? `mk ${m.k}` : 'mk anc';
+    html = html.replace(esc(m.s), `<span class="${cls}" data-id="${m.id}" data-tip="${tip}" style="${style}">${esc(m.s)}</span>${sup}`);
+  }
+  return html;
+}
+function inkSVG(ink) {
+  const c = COLORS[ink.c];
+  if (ink.kind === 'bracket') return `<svg class="ink" style="left:-15px;top:2px;width:10px;height:calc(100% - 4px)" viewBox="0 0 10 100" preserveAspectRatio="none"><path d="M9 1 C3 1 3 3 3 9 L3.5 50 L1 52 L3.5 54 L3 91 C3 97 3 99 9 99" fill="none" stroke="${c}" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>`;
+  return `<svg class="ink" style="right:-30px;top:-6px;width:28px;height:28px" viewBox="0 0 28 28"><path d="M5 15 C3 7 11 2 18 4 C26 7 26 19 17 23 C9 26 3 21 6 13 M20 21 L25 26" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+}
+function notesInOrder(d) { return docMarks(d).filter(keepNote); }
+// One output page. W×H is the natural size; the caller scales it.
+function pageHTML(entry, opts) {
+  const d = doc();
+  const ext = opts.all ? 0 : (S.o.note && S.o.place === 'margin' && fixedOut() && anyNotes() ? Math.round(opts.W * .4) : 0);
+  const crop = !opts.all && S.o.crop && d.id === 'pdf';
+  const W = opts.W + ext, H = opts.H;
+  const notes = opts.all ? [] : notesInOrder(d);
+  const place = opts.all ? null : (S.o.place === 'end' ? 'end' : 'margin');
+  let inner;
+  if (entry.end) {
+    inner = `<div class="body endp" style="width:${opts.W}px"><div class="run"><span>批注</span><span>${opts.label}</span></div><h3>批注</h3>${notes.map((m, i) => `<div class="en"><b>${i + 1}</b><div><q style="border-color:${COLORS[m.c]}">${esc(m.s)}</q>${esc(m.note)}<br><small>第 ${m.page} 页 ↩</small></div></div>`).join('')}</div>`;
+  } else {
+    const p = entry.p;
+    const content = d.id === 'pdf' ? PDF.content[p] : reflowPage(p);
+    // Pad every page with running text so the preview reads as a full page (overflow is clipped).
+    const paras = (content ? content.paras : []).concat([0, 1, 2, 3, 4, 5].map(i => ({ t: FILLER[(p + i) % FILLER.length] })));
+    const head = d.id === 'pdf' ? chapterOf(p) : (content && content.title) || d.title;
+    inner = `<div class="body" style="width:${opts.W}px"><div class="run"><span>${esc(d.title)} · ${esc(head)}</span><span>${opts.label}</span></div>${content && content.h ? `<h3>${esc(content.h)}</h3>` : ''}${paras.map(pa => `<p>${markHTML(pa.t, pa.m || [], notes, { all: opts.all, place })}${pa.ink && (opts.all || keepInk()) ? inkSVG(pa.ink) : ''}</p>`).join('')}</div>`;
+  }
+  const extHTML = ext ? `<div class="ext" style="width:${ext}px"></div><svg class="lead"></svg>` : '';
+  const cls = `pg ${crop ? 'crop' : ''} ${!opts.all && S.o.mode === 'edit' && fixedOut() ? 'editable' : ''}`;
+  return { W, H, html: s => `<div class="${cls}" data-ext="${ext}" data-w="${opts.W}" style="width:${W}px;height:${H}px;transform:scale(${s})">${extHTML}${inner}</div>` };
+}
+// Reflow → PDF: the demo maps output pages onto the marked chapters.
+function reflowPage(p) {
+  const d = doc();
+  if (d.id === 'md') return p === 1 ? { paras: d.lines.map(l => ({ t: l.t || l.li, m: l.m })), h: '' } : null;
+  const at = { 5: 1, 14: 2 }[p];
+  if (!at) return null;
+  return { title: d.chapters[at], h: d.chapters[at], paras: d.content[at].paras };
+}
+function scaled(entry, availW, availH, opts) {
+  const pg = pageHTML(entry, opts);
+  const s = Math.min(availW / pg.W, availH / pg.H);
+  return `<div class="pgwrap" data-s="${s}" style="width:${pg.W * s}px;height:${pg.H * s}px">${pg.html(s)}</div>`;
+}
+// After render: lay out margin notes beside their anchors (MarginGeometry in the app) and draw leaders.
+function layoutMargins(root) {
+  root.querySelectorAll('.pgwrap').forEach(wrap => {
+    const pg = wrap.querySelector('.pg'); const ext = +pg.dataset.ext; if (!ext) return;
+    const s = +wrap.dataset.s, W = +pg.dataset.w, pr = pg.getBoundingClientRect();
+    const svg = pg.querySelector('svg.lead'); const notes = notesInOrder(doc());
+    let y0 = 30, lines = '';
+    pg.querySelectorAll('.mk').forEach(span => {
+      const m = notes.find(n => n.id === span.dataset.id); if (!m) return;
+      const rs = span.getClientRects(); if (!rs.length) return;
+      const first = rs[0], last = rs[rs.length - 1];
+      const ay = (first.top - pr.top) / s, ex = (last.right - pr.left) / s, ey = (last.bottom - pr.top) / s;
+      const el = document.createElement('div');
+      el.className = 'mnote'; el.style.cssText = `left:${W + 10}px;width:${ext - 20}px;border-left-color:${COLORS[m.c]}`;
+      el.textContent = m.note; pg.appendChild(el);
+      const top = Math.max(ay - 4, y0); el.style.top = top + 'px'; y0 = top + el.offsetHeight + 6;
+      const col = rgba(COLORS[m.c], .9);
+      lines += `<path d="M${ex} ${ey - 1} L${W - 6} ${ey - 1} L${W + 10} ${top + 8}" fill="none" stroke="${col}" stroke-width=".8" stroke-dasharray="2 2"/><circle cx="${ex}" cy="${ey - 1}" r="1.4" fill="${col}"/>`;
+    });
+    svg.innerHTML = lines;
+  });
+}
+
+/* ---------------- Sheet: options column ---------------- */
+const sw = (on, act, dis) => `<button class="sw ${on ? 'on' : ''}" data-act="${act}" ${dis ? 'disabled' : ''}></button>`;
+const seg = (items, val, act, dis) => `<div class="segw"><div class="segc">${items.map(([v, l]) => `<button class="${v === val ? 'on' : ''}" data-act="${act}" data-v="${v}" ${dis ? 'disabled' : ''}>${l}</button>`).join('')}</div></div>`;
+function optionsHTML(touch) {
+  const d = doc(), o = S.o, c = counts(), fmts = FORMATS[d.id];
+  const lock = S.protected;
+  let h = '';
+  if (S.protected) h += `<div class="banner">${ic('lock')}<div>这份 PDF 的作者不允许修改，只能导出不带标注的副本。</div></div>`;
+  if (fmts.length > 1) {
+    h += `<div class="gt">格式</div><div class="${touch === 'phone' ? 'hfmts' : 'fmts'}">${fmts.map(([k, n, sub, icon]) => `<button class="fmt ${S.fmt === k ? 'on' : ''}" data-act="fmt" data-v="${k}">${ic(icon)}${n}<small>${sub}</small></button>`).join('')}</div>`;
+  }
+  const allOn = o.hl && o.ul && o.note && (o.ink || !inkSupported()) && o.toc;
+  h += `<div class="gt">保留内容${lock ? '' : `<button data-act="all">${allOn ? '全不保留' : '全部保留'}</button>`}</div><div class="list">`;
+  const row = (icon, name, count, key, extra = '', why = '') => {
+    const dis = lock || count === 0 || !!why;
+    return `<div class="row ${dis ? 'dis' : ''}">${ic(icon)}<span class="n">${name}</span>${why ? `<button class="why" data-act="fmt" data-v="pdf">${why}</button>` : `<span class="c">${count}</span>`}${sw(o[key] && !dis, key, dis)}</div>${extra}`;
+  };
+  const usedColors = c.perColor.map((n, i) => [n, i]).filter(([n]) => n > 0);
+  const dots = o.hl && !lock && usedColors.length > 1 ? `<div class="sub"><div class="dots">${usedColors.map(([n, i]) => `<button class="dot ${o.colors[i] ? '' : 'off'}" data-act="color" data-v="${i}" title="${CNAME[i]}色高亮" style="--c:${COLORS[i]}"><i style="background:${COLORS[i]}">${ic('check')}</i>${n}</button>`).join('')}</div></div>` : '';
+  h += row('hl', '高亮', c.hl, 'hl', dots);
+  h += row('ul', '下划线', c.ul, 'ul');
+  let place = '';
+  if (o.note && !lock && c.note > 0 && S.fmt !== 'md') {
+    place = fixedOut()
+      ? `<div class="sub">${seg([['margin', '页边'], ['end', '文末']], o.place, 'place')}</div>`
+      : `<div class="sub">${seg([['foot', '脚注'], ['chapter', '章末']], o.placeR, 'placeR')}</div>`;
+  }
+  h += row('note', '页边批注', c.note, 'note', place);
+  h += row('pen', '画笔', c.ink, 'ink', '', !inkSupported() && c.ink > 0 ? '导出为 PDF 可保留' : '');
+  h += `<div class="row">${ic('toc')}<span class="n">${S.fmt === 'md' ? '目录' : '目录与书签'}</span><span class="c">${c.toc}</span>${sw(o.toc, 'toc')}</div>`;
+  h += `</div>`;
+  if (c.excluded) h += `<div class="notice">${ic('warn')}${c.excluded} 处标注位置待确认，不会导出<button data-act="noop">查看</button></div>`;
+  if (fixedOut()) {
+    h += `<div class="gt">页面</div>`;
+    if (d.id === 'pdf') {
+      h += seg([['all', '全部'], ['marked', '有标注的页'], ['custom', '自定义']], o.range, 'range');
+      if (o.range === 'custom') {
+        const r = parseRange(o.custom, PDF.pages);
+        h += `<div class="fld ${r.error ? 'bad' : ''}"><input id="customRange" value="${esc(o.custom)}" placeholder="例如 1–12, 20" spellcheck="false"></div>${r.error ? `<div class="err">${r.error}</div>` : ''}`;
+      }
+      if (d.crop) h += `<div class="list" style="margin-top:8px"><div class="row">${ic('crop')}<span class="n">应用裁边</span>${sw(o.crop, 'crop')}</div></div>`;
+    } else {
+      h += seg([['reader', '与阅读器一致'], ['a4', 'A4']], o.layout, 'layout');
+    }
+    const st = keptStats();
+    if (!lock && st.marks + st.notes + st.ink > 0) {
+      h += `<div class="gt">标注形式</div>${seg([['edit', '可编辑'], ['flat', '合并到页面']], o.mode, 'mode')}
+        <div class="cap">${o.mode === 'edit' ? '其他阅读器里可以查看、修改或删除这些标注。' : '标注成为页面的一部分，各阅读器显示一致。'}</div>`;
+    }
+  }
+  return h;
+}
+
+/* ---------------- Sheet: preview ---------------- */
+function previewHTML(w, h) {
+  const d = doc(), o = S.o;
+  const railOn = o.toc && S.fmt !== 'md' && w > 420;
+  const rail = railOn ? `<div class="rail"><b>${S.fmt === 'epub' ? '目录' : '书签'}</b>${d.chapters.slice(0, 11).map((c, i) => {
+    const t = Array.isArray(c) ? c[1] : c;
+    const on = S.fmt === 'epub' ? i === S.chap : (Array.isArray(c) && chapterOf(curPage().p || 0) === t);
+    return `<div class="${on ? 'on' : ''}">${esc(t)}</div>`;
+  }).join('')}${d.bookmarks.length ? `<b style="margin-top:8px">我的书签</b>${d.bookmarks.map(([t]) => `<div class="bm">${ic('bm')}${esc(t)}</div>`).join('')}` : ''}</div>` : '';
+  let head, body;
+  const fn = `<span class="fn">${ic(S.fmt === 'epub' ? 'book' : S.fmt === 'md' ? 'md' : 'file')}${esc(fileName())}</span>`;
+  if (S.fmt === 'md') {
+    head = fn;
+    body = `<div class="scrollpv"><pre class="md">${mdHTML()}</pre></div>`;
+  } else if (S.fmt === 'epub') {
+    const n = d.chapters.length;
+    head = `${fn}<button class="tb" data-act="chap" data-v="-1" ${S.chap <= 0 ? 'disabled' : ''}>${ic('left')}</button><span class="pn">${S.chap + 1} / ${n} 章</span><button class="tb" data-act="chap" data-v="1" ${S.chap >= n - 1 ? 'disabled' : ''}>${ic('right')}</button>`;
+    body = `${rail}<div class="scrollpv" id="pvscroll">${epubChapterHTML()}</div>`;
+  } else {
+    const pages = outPages();
+    const idx = Math.min(curIndex(), pages.length - 1);
+    const label = (e, i) => e.end ? `${i + 1}` : d.id === 'pdf' ? `${e.p}` : `${e.p}`;
+    const entry = pages[idx];
+    head = `${fn}${w > 420 && S.o.mode === 'edit' && keptStats().marks + keptStats().notes + keptStats().ink > 0 ? '<span class="badge2">可编辑注释</span>' : ''}<button class="tb" data-act="page" data-v="-1" ${idx <= 0 ? 'disabled' : ''} title="上一页">${ic('left')}</button><span class="pn">${pages.length ? idx + 1 : 0} / ${pages.length}</span><button class="tb" data-act="page" data-v="1" ${idx >= pages.length - 1 ? 'disabled' : ''} title="下一页">${ic('right')}</button><button class="tb" data-act="nextmark" title="下一处标注" ${nextMarkIndex() < 0 ? 'disabled' : ''}>${ic('next')}</button>`;
+    const [W, H] = d.id === 'pdf' ? [420, 594] : o.layout === 'reader' ? [360, 560] : [420, 594];
+    const aw = w - (railOn ? 120 : 0) - 40, ah = h - 36 - 40;
+    body = `${rail}<div class="center">${entry ? scaled(entry, aw, ah, { W, H, label: entry.end ? `${idx + 1}` : label(entry, idx) }) : '<span style="color:var(--label2)">没有可导出的页面</span>'}</div>`;
+  }
+  return `<div class="pv"><div class="pv-h">${head}</div><div class="pv-s">${body}</div></div>`;
+}
+function curIndex() {
+  const pages = outPages();
+  const i = pages.findIndex(e => !e.end && e.p === S.page);
+  if (S.page === 'end') return pages.length - 1;
+  if (i >= 0) return i;
+  const after = pages.findIndex(e => !e.end && e.p > S.page);
+  return after >= 0 ? after : Math.max(0, pages.length - 1);
+}
+function curPage() { const p = outPages(); return p[Math.min(curIndex(), p.length - 1)] || {}; }
+function pageHasMarks(e) {
+  if (e.end) return true;
+  const c = doc().id === 'pdf' ? PDF.content[e.p] : reflowPage(e.p);
+  return !!c && c.paras.some(pa => (pa.m || []).some(m => keepMark(m) || keepNote(m)) || (pa.ink && keepInk()));
+}
+function nextMarkIndex() {
+  const pages = outPages(), i = curIndex();
+  for (let k = 1; k <= pages.length; k++) { const j = (i + k) % pages.length; if (j !== i && pageHasMarks(pages[j])) return j; }
+  return -1;
+}
+function setIndex(j) { const e = outPages()[j]; if (!e) return; S.page = e.end ? 'end' : e.p; }
+function epubChapterHTML(all = false) {
+  const d = EPUB, c = d.content[S.chap], notes = all ? [] : notesInOrder(d);
+  const place = !all && S.o.note ? (S.o.placeR === 'foot' ? 'foot' : 'chapter') : null;
+  const paras = c ? c.paras : [0, 1, 2, 3].map(i => ({ t: FILLER[(S.chap + i) % FILLER.length] }));
+  const local = c ? notes.filter(m => c.paras.some(pa => (pa.m || []).some(x => x.id === m.id))) : [];
+  return `<div class="rf"><h3>${esc(d.chapters[S.chap])}</h3>${paras.map(pa => `<p>${markHTML(pa.t, pa.m || [], notes, { all, place, showPop: S.scene === 8 && !all })}</p>`).join('')}
+    ${place === 'chapter' && local.length ? `<div class="chend">${local.map(m => `<div><b>${notes.indexOf(m) + 1}</b>${esc(m.note)}</div>`).join('')}</div>` : ''}</div>`;
+}
+function mdText() {
+  const notes = notesInOrder(MD); const out = [];
+  for (const l of MD.lines) {
+    let t = l.t || l.li;
+    for (const m of l.m || []) {
+      const km = keepMark(m), kn = keepNote(m);
+      let r = m.s;
+      if (km) r = m.k === 'hl' ? `<mark>${r}</mark>` : `<u>${r}</u>`;
+      if (kn) r += `[^${notes.findIndex(x => x.id === m.id) + 1}]`;
+      t = t.replace(m.s, r);
+    }
+    if (l.h && out.length && out[out.length - 1] !== '') out.push('');
+    out.push(l.h ? `${'#'.repeat(l.h)} ${t}` : `- ${t}`);
+    if (l.h) out.push('');
+  }
+  if (notes.length) { out.push(''); notes.forEach((m, i) => out.push(`[^${i + 1}]: ${m.note}`)); }
+  if (S.o.toc) out.splice(2, 0, '- [一、遗忘有规律](#一遗忘有规律)', '- [二、取出的方式](#二取出的方式)', '');
+  return out.join('\n');
+}
+function mdHTML() {
+  return esc(mdText()).split('\n').map(l => {
+    if (/^#/.test(l)) return `<span class="h">${l}</span>`;
+    if (/^\[\^/.test(l)) return `<span class="f">${l}</span>`;
+    return l.replace(/(&lt;\/?(?:mark|u)&gt;)/g, '<span class="t">$1</span>').replace(/(\[\^\d+\])/g, '<span class="f">$1</span>');
+  }).join('\n');
+}
+
+/* ---------------- Sheet frame ---------------- */
+function statsText() {
+  const st = keptStats(); const parts = [];
+  if (st.marks) parts.push(`${st.marks} 处标注`);
+  if (st.notes) parts.push(`${st.notes} 条批注`);
+  if (st.ink) parts.push(`${st.ink} 处画笔`);
+  if (!parts.length) parts.push('不含标注');
+  if (fixedOut()) parts.push(`${outPages().length} 页`);
+  else if (S.fmt === 'epub') parts.push(`${EPUB.chapters.length} 章`);
+  return parts.join(' · ');
+}
+function canExport() {
+  if (fixedOut() && doc().id === 'pdf' && S.o.range === 'custom' && parseRange(S.o.custom, PDF.pages).error) return false;
+  return outPages().length > 0 || !fixedOut();
+}
+function footerHTML(primary) {
+  if (S.phase === 'busy') {
+    const total = fixedOut() ? outPages().length : 100;
+    return `<div class="st"></div><div class="prog"><i style="width:${S.progress * 100}%"></i></div><span class="st" style="flex:none">正在生成 ${Math.round(S.progress * total)} / ${total}${fixedOut() ? ' 页' : ''}</span><button class="btn" data-act="cancelExport">取消</button>`;
+  }
+  return `<div class="st">${S.failed ? `<span class="failrow">${ic('warn')}导出失败<button class="btn" data-act="export" style="margin-left:6px">重试</button></span>` : statsText()}</div><button class="btn" data-act="close">取消</button><button class="btn pri" data-act="export" ${canExport() ? '' : 'disabled'}>${primary}</button>`;
+}
+function sheetHTML(touch) {
+  const d = doc();
+  return `<div class="scrim" data-act="close"></div><div class="sheet ${touch ? 'touch' : ''}">
+    <div class="sh-t"><b>${touch ? '分享副本' : '导出副本'}</b><span>${ic(d.ext === 'epub' ? 'book' : d.ext === 'md' ? 'md' : 'file')}${esc(d.title)}.${d.ext}</span></div>
+    <div class="sh-b ${S.phase === 'busy' ? 'busy' : ''}"><div class="opts">${optionsHTML(touch)}</div>${previewHTML(900 - 44 - 280 - 16, 520)}</div>
+    <div class="sh-f">${footerHTML(touch ? '分享…' : '导出…')}</div></div>`;
+}
+function phoneSheetHTML() {
+  return `<div class="scrim"></div><div class="bsheet touch"><div class="grab"></div>
+    <div class="bt"><button data-act="close">取消</button><b>分享副本</b><span style="width:60px"></span></div>
+    <div class="bb"><div style="height:300px;display:flex">${previewHTML(361, 300)}</div>${optionsHTML('phone')}<div class="cap" style="margin-top:12px">${statsText()}</div></div>
+    <div class="bf">${S.phase === 'busy' ? `<div style="display:flex;align-items:center;gap:10px"><div class="prog" style="flex:1"><i style="width:${S.progress * 100}%"></i></div><button class="btn" data-act="cancelExport">取消</button></div>` : `<button class="btn pri" data-act="export" ${canExport() ? '' : 'disabled'}>${ic('share')}分享…</button>`}</div></div>`;
+}
+
+/* ---------------- Workspace ---------------- */
+function sidebarHTML(ctxDoc) {
+  const docs = [PDF, EPUB, MD];
+  return `<div class="side"><div class="shd"><div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div></div>
+    <div class="setrow"><span class="badge">${ic('book')}</span><b>学习科学</b></div>
+    <h6>文档</h6>${docs.map(x => `<div class="srow ${x.id === S.doc ? 'on' : ''} ${ctxDoc === x.id ? 'ctx' : ''}">${ic(x.ext === 'epub' ? 'book' : x.ext === 'md' ? 'md' : 'file')}<span class="t">${x.title}</span></div>`).join('')}
+    <h6>脑图</h6><div class="srow">${ic('map')}<span class="t">主脑图</span></div>
+    <h6>学习</h6><div class="srow">${ic('checkc')}<span class="t">复习</span></div></div>`;
+}
+function readerHTML(moreOpen) {
+  const d = doc();
+  let page;
+  if (d.id === 'pdf') page = scaled({ p: 12 }, 520, 660, { W: 420, H: 594, label: '12', all: true });
+  else if (d.id === 'epub') page = `<div style="transform:scale(1.1);transform-origin:top center">${epubChapterHTML(true)}</div>`;
+  else page = `<div class="rf" style="margin-top:0">${MD.lines.map(l => l.h ? `<h3>${esc(l.t)}</h3>` : `<p style="text-indent:0">• ${markHTML(l.li, l.m || [], [], { all: true })}</p>`).join('')}</div>`;
+  return `<div class="pane reader"><div class="phead">
+      <button class="tb">${ic('panel')}</button>
+      ${d.id === 'pdf' ? `<span class="grp"><button class="tb">${ic('left')}</button><span class="pnum">12 / 248</span><button class="tb">${ic('right')}</button></span>` : ''}
+      <span class="grp"><button class="tb on">${ic('pointer')}</button><button class="tb">${ic('hl')}</button><button class="tb">${ic('ul')}</button><button class="tb">${ic('pen')}</button><button class="tb">${ic('scan')}</button></span>
+      <span style="flex:1"></span>
+      <button class="tb ${moreOpen ? 'open' : ''}" data-act="more" id="moreBtn">${ic('more')}</button>
+    </div><div class="readbody">${page}</div></div>`;
+}
+function mapHTML() {
+  const ex = [['每一次回想都会改变它的河道', 0, 60], ['曲线最陡的部分出现在学习后的头一个小时', 2, 160], ['恰好在那之前把它重新取出来', 0, 280], ['熟悉感又很容易被误认为掌握', 0, 380]];
+  return `<div class="pane"><div class="phead"><div class="segc"><button class="on">脑图</button><button>大纲</button></div><span style="flex:1"></span><button class="tb lbl">${ic('sparkles')}助手</button></div>
+    <div class="mapbody"><svg style="position:absolute;inset:0;width:100%;height:100%">${ex.map(([, , y]) => `<path d="M128 252 C160 252 160 ${y + 24} 196 ${y + 24}" fill="none" stroke="var(--line)" stroke-width="1.5"/>`).join('')}</svg>
+    <div class="node root" style="left:24px;top:234px">记忆的形状</div>
+    ${ex.map(([t, c, y]) => `<div class="node ex" style="left:196px;top:${y}px"><i style="background:${COLORS[c]}"></i>${t}</div>`).join('')}</div></div>`;
+}
+function moreMenuHTML() {
+  return `<div class="menu" id="moreMenu" style="left:0;top:0">
+    <div class="mi">${ic('note')}页边批注</div><div class="mi">${ic('gear')}阅读设置</div><div class="mi">${ic('book')}生词提示</div>
+    <div class="msep"></div><div class="mi"><span class="chk"></span>实际大小</div><div class="mi"><span class="chk"></span>适合宽度</div><div class="mi"><span class="chk">✓</span>适合页面</div><div class="mi">${ic('crop')}裁边…</div>
+    <div class="msep"></div><div class="mi"><span class="chk">✓</span>白色</div><div class="mi"><span class="chk"></span>黑暗</div><div class="mi"><span class="chk"></span>纸质</div><div class="mi"><span class="chk"></span>淡绿</div>
+    <div class="msep"></div><div class="mi hot" data-act="open">${ic('download')}导出副本…<span class="k">⇧⌘S</span></div></div>`;
+}
+function fileMenuHTML() {
+  return `<div class="menu" style="left:96px;top:24px;min-width:250px">
+    <div class="mi">新建学习集<span class="k">⌘N</span></div><div class="mi">导入文档…<span class="k">⌘O</span></div><div class="mi">添加网页…</div>
+    <div class="msep"></div><div class="mi">整理学习笔记…<span class="k">⌥⌘P</span></div>
+    <div class="msep"></div><div class="mi hot" data-act="open">导出副本…<span class="k">⇧⌘S</span></div><div class="mi dis">导出笔记…</div><div class="mi">导出脑图…</div>
+    <div class="msep"></div><div class="mi">关闭<span class="k">⌘W</span></div></div>`;
+}
+function ctxMenuHTML() {
+  return `<div class="menu" id="ctxMenu" style="left:0;top:0;min-width:180px"><div class="mi">重命名…</div><div class="mi hot" data-act="open">导出副本…</div><div class="msep"></div><div class="mi red">移除文档…</div></div>`;
+}
+function hudHTML() {
+  return `<div class="hud">${ic('checkc')}已导出<button data-act="hud">在 Finder 中显示</button></div>`;
+}
+function savePanelHTML() {
+  return `<div class="scrim" style="background:transparent;z-index:124"></div><div class="savep"><div class="f"><label>存储为：</label><div class="sel">${esc(fileName())}</div></div>
+    <div class="f"><label>标签：</label><div></div></div><div class="f"><label>位置：</label><div>${ic('folder')}&nbsp;下载</div></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px"><button class="btn" data-act="saveCancel">取消</button><button class="btn pri" data-act="save">存储</button></div></div>`;
+}
+
+/* ---------------- Render ---------------- */
+function render() {
+  document.body.className = S.theme;
+  const sc = document.getElementById('scaler');
+  const keepScroll = document.getElementById('pvscroll')?.scrollTop || 0;
+  let html;
+  if (S.device === 'mac') {
+    const ctx = S.menu === 'ctx' ? 'pdf' : null;
+    html = `<div class="device desktop ${S.theme}"><div class="screen" style="width:1280px;height:824px">
+      <div class="menubar"><span></span><b>MarginMind</b><span class="${S.menu === 'file' ? 'on' : ''}">文件</span><span>编辑</span><span>显示</span><span>窗口</span><span>帮助</span><span class="r">10月31日 周六 14:20</span></div>
+      <div class="app" style="top:24px">${sidebarHTML(ctx)}<div class="main">${readerHTML(S.menu === 'more')}<div class="divider"></div>${mapHTML()}</div>
+      ${S.menu === 'more' ? moreMenuHTML() : ''}${S.menu === 'ctx' ? ctxMenuHTML() : ''}
+      ${S.sheet ? sheetHTML(false) : ''}${S.phase === 'save' ? savePanelHTML() : ''}${S.hud ? hudHTML() : ''}</div>
+      ${S.menu === 'file' ? fileMenuHTML() : ''}</div></div>`;
+  } else if (S.device === 'ipad') {
+    html = `<div class="device tablet ${S.theme}"><div class="screen" style="width:1180px;height:820px"><div class="sbar"><span>14:20</span><span>100%</span></div>
+      <div class="app touch" style="top:24px">${sidebarHTML()}<div class="main">${readerHTML(false)}<div class="divider"></div>${mapHTML()}</div>
+      ${S.sheet ? sheetHTML(true) : ''}</div></div></div>`;
+  } else {
+    html = `<div class="device phone ${S.theme}"><div class="screen" style="width:393px;height:852px"><div class="island"></div><div class="sbar"><span>14:20</span><span>100%</span></div>
+      <div class="app" style="top:54px"><div class="main" style="left:0">${readerHTML(false)}</div>${S.sheet ? phoneSheetHTML() : ''}</div><div class="homeind"></div></div></div>`;
+  }
+  sc.innerHTML = html;
+  layoutMargins(sc);
+  const pv = document.getElementById('pvscroll'); if (pv) pv.scrollTop = keepScroll;
+  const inp = document.getElementById('customRange');
+  if (inp) {
+    inp.oninput = () => { S.o.custom = inp.value; const pos = inp.selectionStart; render(); const n = document.getElementById('customRange'); n.focus(); n.setSelectionRange(pos, pos); };
+  }
+  fit();
+  placeMenus(sc);
+  document.querySelectorAll('#theme button').forEach(b => b.classList.toggle('on', b.dataset.t === S.theme));
+  document.querySelectorAll('#scenes button').forEach(b => b.classList.toggle('on', +b.dataset.i === S.scene));
+}
+// Anchor popup menus to their buttons in unscaled window coordinates.
+function placeMenus(sc) {
+  const app = sc.querySelector('.app'); if (!app) return;
+  const s = scale(), a = app.getBoundingClientRect();
+  const more = document.getElementById('moreMenu'), btn = document.getElementById('moreBtn');
+  if (more && btn) { const b = btn.getBoundingClientRect(); more.style.left = `${(b.right - a.left) / s - more.offsetWidth}px`; more.style.top = `${(b.bottom - a.top) / s + 4}px`; }
+  const ctx = document.getElementById('ctxMenu'), row = sc.querySelector('.srow.ctx');
+  if (ctx && row) { const r = row.getBoundingClientRect(); ctx.style.left = `${(r.left - a.left) / s + 120}px`; ctx.style.top = `${(r.top - a.top) / s + 14}px`; }
+}
+function scale() { const m = /scale\(([^)]+)\)/.exec(document.getElementById('scaler').style.transform); return m ? +m[1] : 1; }
+function fit() {
+  const st = document.getElementById('stage'), sc = document.getElementById('scaler'), dev = sc.firstElementChild;
+  if (!dev) return;
+  const s = Math.min((st.clientWidth - 40) / dev.offsetWidth, (st.clientHeight - 40) / dev.offsetHeight, 1);
+  sc.style.transform = `scale(${s})`;
+}
+window.addEventListener('resize', fit);
+
+/* ---------------- Interaction ---------------- */
+let timer = null;
+function startExport() {
+  S.failed = false;
+  if (S.device === 'mac') { S.phase = 'save'; render(); return; }
+  runProgress();
+}
+function runProgress() {
+  S.phase = 'busy'; S.progress = 0; render();
+  clearInterval(timer);
+  timer = setInterval(() => {
+    S.progress = Math.min(1, S.progress + 0.04);
+    if (S.progress >= 1) {
+      clearInterval(timer); S.phase = 'idle';
+      if (S.scene === 16) { S.failed = true; render(); return; }
+      S.sheet = false; S.hud = S.device === 'mac'; render();
+      if (S.hud) setTimeout(() => { S.hud = false; render(); }, 3200);
+      return;
+    }
+    render();
+  }, 90);
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t) { if (S.menu && !e.target.closest('.menu')) { S.menu = null; render(); } return; }
+  if (t.disabled) return;
+  const act = t.dataset.act, v = t.dataset.v, o = S.o;
+  switch (act) {
+    case 'more': S.menu = S.menu === 'more' ? null : 'more'; break;
+    case 'open': S.menu = null; S.sheet = true; break;
+    case 'close': if (S.phase === 'busy') return; S.sheet = false; S.failed = false; break;
+    case 'fmt': S.fmt = v; if (v === 'pdf' && doc().id !== 'pdf') S.page = 5; break;
+    case 'hl': case 'ul': case 'note': case 'ink': case 'toc': case 'crop': o[act] = !o[act]; if (act === 'hl' && o.hl && !o.colors.some(Boolean)) o.colors = o.colors.map(() => true); break;
+    case 'all': { const on = !(o.hl && o.ul && o.note && (o.ink || !inkSupported()) && o.toc); o.hl = o.ul = o.note = o.ink = o.toc = on; if (on) o.colors = o.colors.map(() => true); break; }
+    case 'color': { o.colors[+v] = !o.colors[+v]; const used = counts().perColor.map((n, i) => n > 0 && o.colors[i]); if (!used.some(Boolean)) { o.hl = false; o.colors = o.colors.map(() => true); } break; }
+    case 'place': o.place = v; break;
+    case 'placeR': o.placeR = v; break;
+    case 'mode': o.mode = v; break;
+    case 'range': o.range = v; break;
+    case 'layout': o.layout = v; break;
+    case 'page': setIndex(curIndex() + +v); break;
+    case 'nextmark': { const j = nextMarkIndex(); if (j >= 0) setIndex(j); break; }
+    case 'chap': S.chap = Math.max(0, Math.min(EPUB.chapters.length - 1, S.chap + +v)); break;
+    case 'export': startExport(); return;
+    case 'save': runProgress(); return;
+    case 'saveCancel': S.phase = 'idle'; break;
+    case 'cancelExport': clearInterval(timer); S.phase = 'idle'; S.progress = 0; break;
+    case 'hud': S.hud = false; break;
+    default: return;
+  }
+  render();
+});
+
+/* ---------------- Scenes ---------------- */
+const base = (patch = {}) => { clearInterval(timer); Object.assign(S, { device: 'mac', doc: 'pdf', fmt: 'pdf', o: DEFAULT_OPTS(), sheet: true, menu: null, phase: 'idle', progress: 0, hud: false, failed: false, empty: false, protected: false, review: false, page: 12, chap: 1 }, patch); };
+const SCENES = [
+  { g: '入口', n: '阅读器「⋯」菜单', d: '最后一组：导出副本… ⇧⌘S', set() { base({ sheet: false, menu: 'more' }); } },
+  { g: '入口', n: '文件菜单', d: '与导出笔记、导出脑图同组', set() { base({ sheet: false, menu: 'file' }); } },
+  { g: '入口', n: '侧栏文档右键', d: '导出未打开的文档', set() { base({ sheet: false, menu: 'ctx' }); } },
+  { g: 'PDF', n: '默认：全部保留', d: '可编辑注释，批注在页边；悬停标注看效果', set() { base(); } },
+  { g: 'PDF', n: '只留黄色重点', d: '点掉其他颜色、关掉批注', set() { base(); S.o.colors = [true, false, false, false, true, true]; S.o.note = false; S.o.ul = false; } },
+  { g: 'PDF', n: '打印 / 审阅', d: '合并到页面，批注放文末', set() { base({ page: 'end' }); S.o.mode = 'flat'; S.o.place = 'end'; } },
+  { g: 'PDF', n: '只要有标注的页 + 裁边', d: '放进墨水屏', set() { base({ page: 13 }); S.o.range = 'marked'; S.o.crop = true; S.o.toc = false; } },
+  { g: 'PDF', n: '自定义页码（出错）', d: '越界时禁用导出', set() { base(); S.o.range = 'custom'; S.o.custom = '12-14, 300'; } },
+  { g: '电子书与 Markdown', n: 'EPUB 原格式', d: '批注成为弹出脚注；画笔置灰', set() { base({ doc: 'epub', fmt: 'epub', chap: 1 }); } },
+  { g: '电子书与 Markdown', n: 'EPUB → PDF', d: '固定版式，画笔可保留', set() { base({ doc: 'epub', fmt: 'pdf', page: 5 }); } },
+  { g: '电子书与 Markdown', n: 'Markdown 原格式', d: '<mark> + 脚注', set() { base({ doc: 'md', fmt: 'md' }); } },
+  { g: '状态', n: '没有标注', d: '干净副本：只带目录与书签', set() { base({ empty: true }); } },
+  { g: '状态', n: '受保护的 PDF', d: '作者禁止修改', set() { base({ protected: true }); } },
+  { g: '状态', n: '有位置待确认的标注', d: '不导出并提示数量', set() { base({ review: true }); } },
+  { g: '状态', n: '导出中', d: '进度 + 取消；面板不关闭', set() { base(); S.phase = 'busy'; S.progress = .48; } },
+  { g: '状态', n: '导出完成', d: 'HUD“已导出”+ 在 Finder 中显示', set() { base({ sheet: false, hud: true }); } },
+  { g: '状态', n: '导出失败', d: '点“导出…”→ 存储 → 失败 + 重试', set() { base({ failed: true }); } },
+  { g: '设备', n: 'iPad', d: '同一面板，触控尺寸；分享…', set() { base({ device: 'ipad' }); } },
+  { g: '设备', n: 'iPhone', d: '全高底部面板：预览在上，分享…', set() { base({ device: 'phone' }); } },
+];
+function buildConsole() {
+  let h = '', g = '';
+  SCENES.forEach((s, i) => { if (s.g !== g) { g = s.g; h += `<h4>${g}</h4>`; } h += `<button data-i="${i}"><i>${String(i + 1).padStart(2, '0')}</i>${s.n}<small>${esc(s.d)}</small></button>`; });
+  const el = document.getElementById('scenes'); el.innerHTML = h;
+  el.onclick = e => { const b = e.target.closest('button'); if (!b) return; go(+b.dataset.i); e.stopPropagation(); };
+  document.getElementById('theme').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.theme = b.dataset.t; render(); e.stopPropagation(); };
+}
+function go(i) { S.scene = i; SCENES[i].set(); render(); history.replaceState(null, '', `?scene=${i + 1}&theme=${S.theme}`); }
+// Scene 17 (index 16) demonstrates a failing write: every export attempt there fails.
+buildConsole();
+const q = new URLSearchParams(location.search);
+S.theme = q.get('theme') === 'dark' ? 'dark' : 'light';
+go(Math.max(0, Math.min(SCENES.length - 1, (+q.get('scene') || 4) - 1)));
+</script>
+</body>
+</html>
