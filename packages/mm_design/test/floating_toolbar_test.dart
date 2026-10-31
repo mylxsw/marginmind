@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mm_design/mm_design.dart';
@@ -167,6 +170,57 @@ void main() {
   );
 
   for (final brightness in Brightness.values) {
+    testWidgets('flat floating toolbar covers contrasting content in ${brightness.name}', (tester) async {
+      final boundaryKey = GlobalKey();
+      await tester.pumpWidget(
+        harness(
+          MMFlatSurface(
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: SizedBox(
+                width: 400,
+                height: 100,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Row(
+                      children: const [
+                        Expanded(child: ColoredBox(color: Colors.black)),
+                        Expanded(child: ColoredBox(color: Colors.white)),
+                      ],
+                    ),
+                    Center(child: toolbar()),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          brightness: brightness,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(boundaryKey));
+      final rect = tester.getRect(find.byType(MMFloatingToolbar));
+      final point = boundary.globalToLocal(Offset(rect.center.dx, rect.top + 2));
+      final image = (await tester.runAsync(() => boundary.toImage()))!;
+      final bytes = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+      final colors = brightness == Brightness.light ? MMColors.light : MMColors.dark;
+      // Both halves must paint the same surface, regardless of the document
+      // underneath. Sample above the buttons, away from the rounded edges.
+      for (final dx in [-10, 10]) {
+        final i = (point.dy.floor() * image.width + (point.dx + dx).floor()) * 4;
+        final pixel = Color.fromARGB(
+          bytes.getUint8(i + 3),
+          bytes.getUint8(i),
+          bytes.getUint8(i + 1),
+          bytes.getUint8(i + 2),
+        );
+        expect(pixel, sameColor(colors.surface));
+      }
+      image.dispose();
+      expect(find.byType(BackdropFilter), findsNothing);
+    });
+
     testWidgets('renders on glass in ${brightness.name} appearance', (tester) async {
       await tester.pumpWidget(harness(toolbar(selected: MMAnnotationColor.blue), brightness: brightness));
       await tester.pumpAndSettle();

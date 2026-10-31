@@ -10,6 +10,7 @@ import '../tokens/metrics.dart';
 import '../tokens/motion.dart';
 import 'toolbar.dart';
 import 'control_frame.dart';
+import 'glass.dart';
 
 /// Horizontal glass bar that floats over content next to a selection. Fill it
 /// with [MMToolbarButton]s, [MMFloatingToolbarColor]s and [MMToolbarDivider]s;
@@ -30,7 +31,15 @@ class MMFloatingToolbar extends StatelessWidget {
       child: Semantics(
         container: true,
         explicitChildNodes: true,
-        child: FocusTraversalGroup(child: MMToolbarGroup(children: children)),
+        // A floating surface must cover the content beneath it. Toolbar
+        // groups use a translucent control fill in flat workspaces.
+        child: FocusTraversalGroup(
+          child: MMGlass(
+            toolbar: true,
+            padding: EdgeInsets.all(context.mmTablet ? 2 : 3),
+            child: Row(mainAxisSize: MainAxisSize.min, children: children),
+          ),
+        ),
       ),
     );
   }
