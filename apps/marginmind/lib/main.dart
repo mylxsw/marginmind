@@ -12,16 +12,23 @@ import 'app/app.dart';
 import 'app/storage.dart';
 import 'app/providers.dart';
 import 'features/assistant/assistant_network.dart';
+import 'settings/app_icon.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await DesktopWindow.initialize(title: 'MarginMind', minimumSize: MMSizes.windowMinSize);
+  await DesktopWindow.initialize(title: 'Foliarc', minimumSize: MMSizes.windowMinSize);
   // Android draws the app under clear status and navigation bars (see systemBarsStyle).
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
   await MMPdfEngine.initialize();
   final prefs = await SharedPreferences.getInstance();
+  try {
+    await const AppIconService().initialize(prefs);
+  } catch (error) {
+    // A failed Dock restore must not prevent access to the user's library.
+    debugPrint('Could not restore the app icon: $error');
+  }
   final storage = await openStorage();
   final store = storage.store;
   runApp(

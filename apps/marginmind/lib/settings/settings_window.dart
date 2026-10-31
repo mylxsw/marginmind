@@ -13,6 +13,7 @@ import '../features/vocabulary/hint_controls.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
 import 'app_settings.dart';
+import 'app_icon_picker.dart';
 
 enum SettingsTab { general, reading, models, webSearch, voice }
 
@@ -290,6 +291,7 @@ class _GeneralPage extends ConsumerWidget {
             ),
           ],
         ),
+        const AppIconPicker(),
         if (MMPlatformCapabilities.current.webBrowser) ...[
           const SizedBox(height: MMSpacing.m),
           MMSettingsHeader(l.settingsBrowserGroup),

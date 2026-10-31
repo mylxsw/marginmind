@@ -90,11 +90,13 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "io.github.mylxsw" "\0"
-            VALUE "FileDescription", "MarginMind" "\0"
+            VALUE "FileDescription", "Foliarc" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "marginmind" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 io.github.mylxsw. All rights reserved." "\0"
             VALUE "OriginalFilename", "marginmind.exe" "\0"
+            // path_provider and shared_preferences use ProductName as the
+            // existing data-directory key. FileDescription is the display name.
             VALUE "ProductName", "MarginMind" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

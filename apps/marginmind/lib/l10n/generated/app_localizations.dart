@@ -95,7 +95,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'MarginMind'**
+  /// **'Foliarc'**
   String get appName;
 
   /// No description provided for @libraryTitleAll.
@@ -8015,7 +8015,7 @@ abstract class AppLocalizations {
   /// No description provided for @noteShareFooter.
   ///
   /// In en, this message translates to:
-  /// **'From my MarginMind notes'**
+  /// **'From my Foliarc notes'**
   String get noteShareFooter;
 
   /// No description provided for @noteSharedCount.
@@ -8089,6 +8089,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading preferences'**
   String get settingsReadingPreferences;
+
+  /// No description provided for @appIconTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App icon'**
+  String get appIconTitle;
+
+  /// No description provided for @appIconPaperArc.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper Arc (default)'**
+  String get appIconPaperArc;
+
+  /// No description provided for @appIconLeafFolio.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaf & Folio'**
+  String get appIconLeafFolio;
+
+  /// No description provided for @appIconFoldedF.
+  ///
+  /// In en, this message translates to:
+  /// **'Folded F'**
+  String get appIconFoldedF;
+
+  /// No description provided for @appIconDockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes the Dock icon. Finder keeps the default icon.'**
+  String get appIconDockHint;
+
+  /// No description provided for @appIconHomeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes the Home Screen icon. iOS may show a confirmation.'**
+  String get appIconHomeHint;
+
+  /// No description provided for @appIconChanging.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing icon…'**
+  String get appIconChanging;
+
+  /// No description provided for @appIconChangeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the icon. Please try again.'**
+  String get appIconChangeFailed;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

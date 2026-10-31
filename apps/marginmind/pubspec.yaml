@@ -1,5 +1,5 @@
 name: marginmind
-description: "MarginMind — read, excerpt and map what you learn."
+description: "Foliarc — read, excerpt and map what you learn."
 publish_to: none
 version: 0.8.0+12
 resolution: workspace
@@ -64,6 +64,9 @@ flutter:
   generate: true
   assets:
     - assets/sample/
+    - assets/icon/paper_arc.png
+    - assets/icon/leaf_folio.png
+    - assets/icon/folded_f.png
 
 flutter_launcher_icons:
   image_path: assets/icon/app_icon.png

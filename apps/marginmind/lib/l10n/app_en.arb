@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "MarginMind",
+  "appName": "Foliarc",
   "libraryTitleAll": "All Study Sets",
   "libraryRecent": "Recent",
   "libraryStarred": "Starred",
@@ -2288,7 +2288,7 @@
   "noteSharePlain": "Plain",
   "noteShareNight": "Night",
   "noteShareAi": "AI Summary",
-  "noteShareFooter": "From my MarginMind notes",
+  "noteShareFooter": "From my Foliarc notes",
   "noteSharedCount": "{count} highlights",
   "noteNoQuotes": "No quotes",
   "noteCopyImage": "Copy Image",
@@ -2307,5 +2307,13 @@
   "studyNoteSavedImage": "Saved",
   "vocabularyHintsPreview": "Preview",
   "vocabularyHintsPreviewMeaning": "inquisitive",
-  "settingsReadingPreferences": "Reading preferences"
+  "settingsReadingPreferences": "Reading preferences",
+  "appIconTitle": "App icon",
+  "appIconPaperArc": "Paper Arc (default)",
+  "appIconLeafFolio": "Leaf & Folio",
+  "appIconFoldedF": "Folded F",
+  "appIconDockHint": "Changes the Dock icon. Finder keeps the default icon.",
+  "appIconHomeHint": "Changes the Home Screen icon. iOS may show a confirmation.",
+  "appIconChanging": "Changing icon…",
+  "appIconChangeFailed": "Could not change the icon. Please try again."
 }

@@ -1,22 +1,22 @@
 <p align="center">
-  <img src="apps/marginmind/assets/icon/app_icon_macos.png" width="128" alt="MarginMind icon">
+  <img src="apps/marginmind/assets/icon/app_icon_macos.png" width="128" alt="Foliarc icon">
 </p>
 
-<h1 align="center">MarginMind</h1>
+<h1 align="center">Foliarc</h1>
 
 <p align="center">读 → 摘 → 图：在原文、卡片和脑图之间来回穿梭的学习工具。<br>
 <em>Read, excerpt and map what you learn — an open-source study tool for macOS, built with Flutter.</em></p>
 
 ---
 
-MarginMind 把 PDF 阅读、标注摘录和思维导图放进同一个工作区：在原文里划线，摘录就变成脑图上的卡片；点卡片，一步回到原文的出处。一个“学习集”可以包含多份文档，共同构建一张（或多张）脑图。
+Foliarc 把 PDF 阅读、标注摘录和思维导图放进同一个工作区：在原文里划线，摘录就变成脑图上的卡片；点卡片，一步回到原文的出处。一个“学习集”可以包含多份文档，共同构建一张（或多张）脑图。
 
 > **状态：v0.7。** 读 → 摘 → 图 → 复习的完整闭环已经可用：导入 PDF、选中文字后摘录、像 XMind 一样用键盘整理脑图、从卡片回到原文、FSRS 间隔重复复习与统计、导出脑图，数据保存在本机。仍处于早期阶段，欢迎试用和反馈。
 
 ## 安装
 
-1. 在 [Releases](https://github.com/mylxsw/marginmind/releases) 下载最新的 `MarginMind-x.y.z.dmg`，把 MarginMind 拖进“应用程序”。
-2. 目前还没有 Apple 开发者签名，第一次打开时 macOS 会拦截：在 Finder 里**右键 MarginMind → 打开**；如果仍被拦截，到“系统设置 › 隐私与安全性”里点“仍要打开”。也可以在终端执行 `xattr -dr com.apple.quarantine /Applications/MarginMind.app`。
+1. 在 [Releases](https://github.com/mylxsw/marginmind/releases) 下载最新的 `Foliarc-x.y.z.dmg`，把 Foliarc 拖进“应用程序”。
+2. 目前还没有 Apple 开发者签名，第一次打开时 macOS 会拦截：在 Finder 里**右键 Foliarc → 打开**；如果仍被拦截，到“系统设置 › 隐私与安全性”里点“仍要打开”。也可以在终端执行 `xattr -dr com.apple.quarantine /Applications/Foliarc.app`。
 
 需要 macOS 12 或更高版本（Apple 芯片和 Intel 均可）。数据存放在 `~/Library/Containers/io.github.mylxsw.marginmind/Data/Library/Application Support/Library/`，每个学习集是一个独立的 `.mmset` 文件夹。
 
@@ -84,7 +84,7 @@ marginmind/
 
 - **设计系统 `mm_design`**：语义色（浅色/深色，含对比度测试）、6 色标注色板、macOS 文本样式、同心圆角、动效时长，以及窗口骨架、悬浮侧栏、工具栏与玻璃胶囊、分段控件、搜索框、表单、可拖动分栏、表单面板（sheet）、HUD 提示、空状态等组件。应用内“帮助 › 组件库（⌥⌘G）”可实时查看。
 - **基础能力**：中文/英文多语言（ARB + gen-l10n），外观（跟随系统/浅色/深色）与语言设置并持久化，读取 macOS 强调色、“降低透明度”和“减少动态效果”。
-- **应用图标**：脚本生成的图标母版和 macOS / Windows 全套尺寸。
+- **应用图标**：默认使用 Foliarc「翻页」图标；macOS / iOS / iPadOS 可在设置 → 通用 → 应用图标中切换「书叶」和「折纸 F」，选择会保留。
 - **应用框架**：资料库（筛选、搜索、排序、图标/列表视图、新建学习集、继续学习、首次启动）；学习集工作区（可收起侧栏、侧栏搜索、文档标签页、原文/分栏/脑图三种布局、可拖动分隔线、标注工具栏与浮动控件）；菜单栏与快捷键。
 
 ## 开发

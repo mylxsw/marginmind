@@ -9,6 +9,35 @@ import Security
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "MarginMindMobile")!
     let messenger = registrar.messenger()
+    FlutterMethodChannel(name: "marginmind/app_icon", binaryMessenger: messenger)
+      .setMethodCallHandler { call, result in
+        let app = UIApplication.shared
+        if call.method == "get" {
+          switch app.alternateIconName {
+          case "AppIconLeaf": result("leafFolio")
+          case "AppIconF": result("foldedF")
+          default: result("paperArc")
+          }
+          return
+        }
+        guard call.method == "set" else { result(FlutterMethodNotImplemented); return }
+        guard let args = call.arguments as? [String: String], let icon = args["icon"],
+              ["paperArc", "leafFolio", "foldedF"].contains(icon) else {
+          result(FlutterError(code: "invalid_icon", message: nil, details: nil)); return
+        }
+        guard app.supportsAlternateIcons else {
+          result(FlutterError(code: "unsupported", message: nil, details: nil)); return
+        }
+        let name: String? = icon == "leafFolio" ? "AppIconLeaf" : icon == "foldedF" ? "AppIconF" : nil
+        if app.alternateIconName == name { result(nil); return }
+        app.setAlternateIconName(name) { error in
+          DispatchQueue.main.async {
+            if let error = error {
+              result(FlutterError(code: "icon_change_failed", message: error.localizedDescription, details: nil))
+            } else { result(nil) }
+          }
+        }
+      }
     let browser = BrowserFactory(messenger: messenger)
     browserFactory = browser
     registrar.register(browser, withId: "marginmind/browser")

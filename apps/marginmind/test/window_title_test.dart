@@ -5,9 +5,9 @@ import 'package:marginmind/app/window_title.dart';
 
 void main() {
   test('titles omit empty and duplicate parts', () {
-    expect(workspaceWindowTitle(' Doc ', 'Set', 'MarginMind'), 'Doc — Set — MarginMind');
-    expect(workspaceWindowTitle('Set', 'Set', 'MarginMind'), 'Set — MarginMind');
-    expect(workspaceWindowTitle('', '', 'MarginMind'), 'MarginMind');
+    expect(workspaceWindowTitle(' Doc ', 'Set', 'Foliarc'), 'Doc — Set — Foliarc');
+    expect(workspaceWindowTitle('Set', 'Set', 'Foliarc'), 'Set — Foliarc');
+    expect(workspaceWindowTitle('', '', 'Foliarc'), 'Foliarc');
   });
   test('serializes title writes, coalesces changes and stops on dispose', () async {
     final writes = <String>[];

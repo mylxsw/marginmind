@@ -29,9 +29,9 @@
 
 | 编号 | 操作 | 预期 |
 | --- | --- | --- |
-| P-1 | `codesign -d --entitlements - MarginMind.app` | 含 `com.apple.security.app-sandbox` 和 `files.user-selected.read-write` |
+| P-1 | `codesign -d --entitlements - Foliarc.app` | 含 `com.apple.security.app-sandbox` 和 `files.user-selected.read-write` |
 | P-2 | 用新的 bundle ID 第一次启动 | 资料库为空（说明沙盒生效，数据在独立容器里） |
-| P-3 | “关于 MarginMind”或 `Info.plist` | 版本号与 `pubspec.yaml` 一致 |
+| P-3 | “关于 Foliarc”或 `Info.plist` | 版本号与 `pubspec.yaml` 一致 |
 | P-4 | 做一些编辑后退出（⌘Q）再打开 | 学习集、高亮、脑图、复习数量、阅读页码都在 |
 
 ### 数据迁移（Q-03）

@@ -73,7 +73,7 @@ void main() {
     testWidgets('title is the document on one line without a page subtitle or single-document tab bar', (tester) async {
       final container = await openSet(tester);
       expect(container.read(provider).openDocumentIds, hasLength(1));
-      expect(windowTitle(tester), '学习的底层逻辑 — 认知科学入门 — MarginMind');
+      expect(windowTitle(tester), '学习的底层逻辑 — 认知科学入门 — Foliarc');
       for (final bar in tester.widgetList<MMToolbar>(find.byType(MMToolbar))) {
         expect(bar.title, isEmpty);
         expect(bar.subtitle, isNull);
@@ -113,7 +113,7 @@ void main() {
         await tester.tap(other);
         await tester.pumpAndSettle();
         expect(container.read(provider).activeDocumentId, 'c2');
-        expect(windowTitle(tester), '论文：检索练习效应 — 认知科学入门 — MarginMind');
+        expect(windowTitle(tester), '论文：检索练习效应 — 认知科学入门 — Foliarc');
         expect(container.read(provider).openDocumentIds, ['c1', 'c2']);
 
         await tester.tap(switcher);

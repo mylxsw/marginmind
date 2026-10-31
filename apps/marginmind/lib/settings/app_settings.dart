@@ -6,6 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_core/mm_core.dart' show AnnotationLineStyle, DocumentFormat;
 
 import '../app/providers.dart';
+import 'app_icon.dart';
 
 enum AppearancePreference { system, light, dark }
 
@@ -62,6 +63,7 @@ class AppSettings {
     this.articleReading = const ReadingSettings(font: ReaderFont.serif, paged: false),
     this.appearance = AppearancePreference.system,
     this.language = LanguagePreference.system,
+    this.appIcon = AppIconPreference.paperArc,
     this.annotationTool = AnnotationTool.select,
     this.readerStyle = MMReaderStyle.white,
     this.underlineColor = MMAnnotationColor.blue,
@@ -74,6 +76,7 @@ class AppSettings {
   ReadingSettings reading(DocumentFormat format) => ReadingSettings.isArticle(format) ? articleReading : bookReading;
   final AppearancePreference appearance;
   final LanguagePreference language;
+  final AppIconPreference appIcon;
   final AnnotationTool annotationTool;
   final MMAnnotationColor underlineColor;
   final AnnotationLineStyle underlineStyle;
@@ -99,6 +102,7 @@ class AppSettings {
     ReadingSettings? articleReading,
     AppearancePreference? appearance,
     LanguagePreference? language,
+    AppIconPreference? appIcon,
     AnnotationTool? annotationTool,
     MMAnnotationColor? underlineColor,
     AnnotationLineStyle? underlineStyle,
@@ -110,6 +114,7 @@ class AppSettings {
     articleReading: articleReading ?? this.articleReading,
     appearance: appearance ?? this.appearance,
     language: language ?? this.language,
+    appIcon: appIcon ?? this.appIcon,
     annotationTool: annotationTool ?? this.annotationTool,
     underlineColor: underlineColor ?? this.underlineColor,
     underlineStyle: underlineStyle ?? this.underlineStyle,
@@ -170,6 +175,7 @@ class SettingsController extends Notifier<AppSettings> {
       ),
       appearance: _parse(AppearancePreference.values, prefs.getString(_appearanceKey), AppearancePreference.system),
       language: _parse(LanguagePreference.values, prefs.getString(_languageKey), LanguagePreference.system),
+      appIcon: AppIconPreference.parse(prefs.getString(appIconPreferenceKey)),
     );
   }
 
@@ -224,6 +230,35 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setLanguage(LanguagePreference value) async {
     state = state.copyWith(language: value);
     await ref.read(sharedPreferencesProvider).setString(_languageKey, value.name);
+  }
+
+  bool _changingAppIcon = false;
+
+  Future<void> setAppIcon(AppIconPreference value) async {
+    if (_changingAppIcon || value == state.appIcon) return;
+    _changingAppIcon = true;
+    final previous = state.appIcon;
+    final service = ref.read(appIconServiceProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
+    try {
+      await service.apply(value);
+      try {
+        final saved = await prefs.setString(appIconPreferenceKey, value.name);
+        if (!saved) throw StateError('Could not save the icon preference');
+      } catch (_) {
+        try {
+          await service.apply(previous);
+        } finally {
+          // SharedPreferences updates its in-memory cache before its disk write.
+          // Restore that cache too, even if the failed write never reached disk.
+          await prefs.setString(appIconPreferenceKey, previous.name);
+        }
+        rethrow;
+      }
+      if (ref.mounted) state = state.copyWith(appIcon: value);
+    } finally {
+      _changingAppIcon = false;
+    }
   }
 
   Future<void> setAnnotationTool(AnnotationTool value) async {
