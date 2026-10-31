@@ -274,7 +274,7 @@ void main() {
 
     testWidgets('${phone.name}: long press opens an action sheet that back and Cancel close', (tester) async {
       await pumpPhone(tester, phone);
-      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .5);
       await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
@@ -286,7 +286,7 @@ void main() {
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsNothing);
       expect(find.byType(LibraryScreen), findsOneWidget);
 
-      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .5);
       await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
@@ -295,7 +295,7 @@ void main() {
       expect(find.byKey(const ValueKey('mm-action-sheet')), findsNothing);
 
       // Choosing an item runs it: Rename opens its sheet from the bottom.
-      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .2);
+      await Scrollable.ensureVisible(tester.element(find.text('注意力与专注').last), alignment: .5);
       await tester.pumpAndSettle();
       await tester.longPress(find.text('注意力与专注').last);
       await tester.pumpAndSettle();
@@ -356,7 +356,7 @@ void main() {
     }, variant: variant);
 
     testWidgets('${phone.name}: settings fill a bottom sheet with the sections on top', (tester) async {
-      await openStudySet(tester, phone);
+      await pumpPhone(tester, phone);
       await tester.tap(find.byTooltip('Show Sidebar'));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(MMIcons.settings));

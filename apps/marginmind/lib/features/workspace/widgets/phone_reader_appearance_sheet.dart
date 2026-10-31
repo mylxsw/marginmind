@@ -28,16 +28,23 @@ class PhoneReaderAppearanceSheet extends ConsumerWidget {
           // Header with back and close buttons
           Row(
             children: [
-              SizedBox.square(
-                dimension: 36,
-                child: Material(
-                  color: c.card,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    key: const ValueKey('phone-appearance-back'),
-                    onTap: onBack,
-                    child: Icon(MMIcons.chevronLeft, size: 18, color: c.secondaryLabel),
+              Tooltip(
+                message: l.phoneMoreBack,
+                child: Semantics(
+                  button: true,
+                  label: l.phoneMoreBack,
+                  child: SizedBox.square(
+                    dimension: 30,
+                    child: Material(
+                      color: c.fill,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: const ValueKey('phone-appearance-back'),
+                        onTap: onBack,
+                        child: Center(child: Icon(MMIcons.chevronLeft, size: 18, color: c.secondaryLabel)),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -48,16 +55,23 @@ class PhoneReaderAppearanceSheet extends ConsumerWidget {
                   style: context.mmText.title3.copyWith(fontWeight: FontWeight.w600, fontSize: 16),
                 ),
               ),
-              SizedBox.square(
-                dimension: 36,
-                child: Material(
-                  color: c.card,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    key: const ValueKey('phone-appearance-close'),
-                    onTap: onClose,
-                    child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel),
+              Tooltip(
+                message: l.phoneMoreClose,
+                child: Semantics(
+                  button: true,
+                  label: l.phoneMoreClose,
+                  child: SizedBox.square(
+                    dimension: 30,
+                    child: Material(
+                      color: c.fill,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: const ValueKey('phone-appearance-close'),
+                        onTap: onClose,
+                        child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -185,7 +199,7 @@ class _PhoneLookCard extends StatelessWidget {
                 color: selected ? accent : Colors.transparent,
                 border: Border.all(color: selected ? accent : c.secondaryLabel.withValues(alpha: 0.5), width: 1.5),
               ),
-              child: selected ? const Icon(MMIcons.check, size: 12, color: Colors.white) : const SizedBox.shrink(),
+              child: selected ? Icon(MMIcons.check, size: 12, color: c.onAccent) : const SizedBox.shrink(),
             ),
           ],
         ),

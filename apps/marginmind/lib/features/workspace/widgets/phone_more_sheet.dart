@@ -11,7 +11,6 @@ import '../../../shared/l10n.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../vocabulary/hint_controls.dart';
 import '../../vocabulary/vocabulary_hints.dart';
-import '../phone_reader_controls_controller.dart';
 import '../reader_margin.dart';
 import '../workspace_controller.dart';
 import '../workspace_pane_chrome_controller.dart';
@@ -26,14 +25,16 @@ class PhoneMoreSheet extends ConsumerStatefulWidget {
     super.key,
     required this.studySetId,
     this.paneChrome,
-    this.phoneControls,
+    this.workspaceContext,
+    this.onOrganizeNotes,
     this.initialPage = PhoneMoreSheetPage.more,
     this.onClose,
   });
 
   final String studySetId;
   final WorkspacePaneChromeController? paneChrome;
-  final PhoneReaderControlsController? phoneControls;
+  final BuildContext? workspaceContext;
+  final VoidCallback? onOrganizeNotes;
   final PhoneMoreSheetPage initialPage;
   final VoidCallback? onClose;
 
@@ -152,8 +153,12 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
 
     final currentStyle = ref.watch(settingsProvider.select((s) => s.readerStyle));
 
+    final marginCmd = widget.paneChrome?.reader?.commands['reader-margin'];
+    final isMarginEnabled = marginCmd != null ? marginCmd.enabled : (doc?.capabilities().marginNotes == true);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
-    final isMarginOn = docId != null && marginState.openDocuments.contains(docId);
+    final isMarginOn = marginCmd != null
+        ? marginCmd.selected
+        : (docId != null && marginState.openDocuments.contains(docId));
 
     final vocabHints = ref.watch(vocabularyHintProvider);
     final isVocabOn = docId != null && vocabHints.modeFor(docId) != VocabularyHintMode.off;
@@ -162,6 +167,23 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
     final docNumberText = '${docIndex >= 0 ? docIndex + 1 : 1} / ${math.max(1, docs.length)}';
     final dueCount = studySet?.dueCount ?? 0;
 
+    final navCmd = widget.paneChrome?.reader?.commands['reader-navigation'];
+    final canNavigate =
+        navCmd?.enabled ??
+        (doc?.capabilities().outline == true ||
+            doc?.capabilities().bookmarks == true ||
+            doc?.capabilities().thumbnails == true ||
+            doc?.capabilities().annotate == true);
+
+    final settingsCmd = widget.paneChrome?.reader?.commands['reader-settings'];
+    final supportsReadingSettings =
+        (settingsCmd != null && settingsCmd.enabled) || doc?.capabilities().readingSettings == true;
+
+    final cropCmd = widget.paneChrome?.reader?.commands['reader-crop'];
+    final canCrop = cropCmd != null ? cropCmd.enabled : (doc?.capabilities().crop == true);
+
+    final canUndo = workspaceState.canUndo;
+
     return Padding(
       key: const ValueKey('phone-sheet-more'),
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 26),
@@ -169,32 +191,10 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header: Document icon + Title + Close button
+          // Header: Document icon + Title + Undo button + Close button
           Row(
             children: [
-              Container(
-                width: 32,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(5),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 4, offset: const Offset(0, 1)),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(height: 2, color: const Color(0xFFD1D1D6)),
-                    Container(height: 2, color: const Color(0xFFD1D1D6)),
-                    Container(height: 2, width: 14, color: const Color(0xFFD1D1D6)),
-                    Container(height: 2, color: const Color(0xFFD1D1D6)),
-                    Container(height: 2, width: 10, color: const Color(0xFFD1D1D6)),
-                  ],
-                ),
-              ),
+              const _DocumentIcon(),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -205,16 +205,56 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                 ),
               ),
               const SizedBox(width: 8),
-              SizedBox.square(
-                dimension: 36,
-                child: Material(
-                  color: c.card,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    key: const ValueKey('phone-more-close'),
-                    onTap: _close,
-                    child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel),
+              Tooltip(
+                message: l.undo,
+                child: Semantics(
+                  button: true,
+                  label: l.undo,
+                  enabled: canUndo,
+                  child: SizedBox.square(
+                    dimension: 30,
+                    child: Material(
+                      color: c.fill,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: const ValueKey('phone-more-undo'),
+                        onTap: canUndo
+                            ? () {
+                                _close();
+                                ref.read(workspaceProvider(widget.studySetId).notifier).undo();
+                              }
+                            : null,
+                        child: Center(
+                          child: Icon(
+                            MMIcons.undo,
+                            size: 16,
+                            color: canUndo ? c.label : c.secondaryLabel.withValues(alpha: 0.4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: l.phoneMoreClose,
+                child: Semantics(
+                  button: true,
+                  label: l.phoneMoreClose,
+                  child: SizedBox.square(
+                    dimension: 30,
+                    child: Material(
+                      color: c.fill,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        key: const ValueKey('phone-more-close'),
+                        onTap: _close,
+                        child: Center(child: Icon(MMIcons.close, size: 16, color: c.secondaryLabel)),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -258,13 +298,24 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                 child: _PhoneTile(
                   key: const ValueKey('phone-tile-margin'),
                   selected: isMarginOn,
+                  enabled: isMarginEnabled,
                   label: l.marginNotes,
-                  onTap: () {
-                    if (docId != null) {
-                      ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(docId);
-                    }
-                  },
-                  child: Icon(MMIcons.captionsBubble, size: 22, color: isMarginOn ? Colors.white : c.label),
+                  onTap: isMarginEnabled
+                      ? () {
+                          if (marginCmd != null) {
+                            marginCmd.invoke?.call();
+                          } else if (docId != null) {
+                            ref.read(readerMarginProvider(widget.studySetId).notifier).toggle(docId);
+                          }
+                        }
+                      : null,
+                  child: Icon(
+                    MMIcons.captionsBubble,
+                    size: 22,
+                    color: isMarginOn
+                        ? c.onAccent
+                        : (isMarginEnabled ? c.label : c.secondaryLabel.withValues(alpha: 0.4)),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -279,13 +330,13 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                       toggleVocabularyHints(context, ref, docId);
                     }
                   },
-                  child: Icon(MMIcons.vocabulary, size: 22, color: isVocabOn ? Colors.white : c.label),
+                  child: Icon(MMIcons.vocabulary, size: 22, color: isVocabOn ? c.onAccent : c.label),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          // Group 1: Outline & Bookmarks, Switch Document, Crop Margins
+          // Group 1: Outline & Bookmarks, Switch Document, Reading Settings (if supported), Crop Margins
           Container(
             decoration: BoxDecoration(color: c.card, borderRadius: BorderRadius.circular(14)),
             clipBehavior: Clip.antiAlias,
@@ -296,11 +347,26 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                   key: const ValueKey('phone-row-outline'),
                   icon: MMIcons.readerNavigation,
                   title: l.phoneMoreOutlineAndBookmarks,
-                  hasChevron: true,
-                  onTap: () {
-                    _close();
-                    ref.read(workspaceProvider(widget.studySetId).notifier).showReaderPanel(ReaderPanelMode.outline);
-                  },
+                  enabled: canNavigate,
+                  hasChevron: canNavigate,
+                  onTap: canNavigate
+                      ? () {
+                          _close();
+                          if (navCmd != null && navCmd.enabled) {
+                            navCmd.invoke?.call();
+                          } else {
+                            final caps = doc?.capabilities();
+                            final mode = (caps?.outline == true)
+                                ? ReaderPanelMode.outline
+                                : (caps?.bookmarks == true)
+                                ? ReaderPanelMode.bookmarks
+                                : (caps?.thumbnails == true)
+                                ? ReaderPanelMode.thumbnails
+                                : ReaderPanelMode.annotations;
+                            ref.read(workspaceProvider(widget.studySetId).notifier).showReaderPanel(mode);
+                          }
+                        }
+                      : null,
                 ),
                 Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
                 _PhoneSheetRow(
@@ -311,24 +377,35 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                   hasChevron: true,
                   onTap: () {
                     _close();
-                    if (docs.length > 1 && docId != null) {
-                      final nextIndex = (docs.indexWhere((d) => d.id == docId) + 1) % docs.length;
-                      ref.read(workspaceProvider(widget.studySetId).notifier).openDocument(docs[nextIndex].id);
-                    } else {
-                      widget.paneChrome?.reader?.execute('reader-switch-document');
-                    }
+                    widget.paneChrome?.reader?.execute('reader-switch-document');
                   },
                 ),
+                if (supportsReadingSettings) ...[
+                  Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
+                  _PhoneSheetRow(
+                    key: const ValueKey('phone-row-reading-settings'),
+                    icon: MMIcons.readingSettings,
+                    title: l.readingSettings,
+                    hasChevron: false,
+                    onTap: () {
+                      _close();
+                      widget.paneChrome?.reader?.execute('reader-settings');
+                    },
+                  ),
+                ],
                 Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
                 _PhoneSheetRow(
                   key: const ValueKey('phone-row-crop'),
                   icon: MMIcons.crop,
                   title: l.cropMargins,
+                  enabled: canCrop,
                   hasChevron: false,
-                  onTap: () {
-                    _close();
-                    widget.paneChrome?.reader?.execute('reader-crop');
-                  },
+                  onTap: canCrop
+                      ? () {
+                          _close();
+                          widget.paneChrome?.reader?.execute('reader-crop');
+                        }
+                      : null,
                 ),
               ],
             ),
@@ -348,7 +425,11 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
                   hasChevron: true,
                   onTap: () {
                     _close();
-                    showNoteSetupSheet(context, ref, widget.studySetId);
+                    if (widget.onOrganizeNotes != null) {
+                      widget.onOrganizeNotes!();
+                    } else {
+                      showNoteSetupSheet(widget.workspaceContext ?? context, ref, widget.studySetId);
+                    }
                   },
                 ),
                 Container(margin: const EdgeInsets.only(left: 48), height: 0.5, color: c.separator),
@@ -383,13 +464,53 @@ class _PhoneMoreSheetState extends ConsumerState<PhoneMoreSheet> {
   }
 }
 
+class _DocumentIcon extends StatelessWidget {
+  const _DocumentIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+
+    return Container(
+      width: 36,
+      height: 46,
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: c.separator, width: 0.5),
+        boxShadow: c.cardShadow,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(height: 2, color: c.separator),
+          Container(height: 2, color: c.separator),
+          Container(height: 2, width: 14, color: c.separator),
+          Container(height: 2, color: c.separator),
+          Container(height: 2, width: 10, color: c.separator),
+        ],
+      ),
+    );
+  }
+}
+
 class _PhoneTile extends StatelessWidget {
-  const _PhoneTile({super.key, required this.selected, required this.label, required this.child, required this.onTap});
+  const _PhoneTile({
+    super.key,
+    required this.selected,
+    this.enabled = true,
+    required this.label,
+    required this.child,
+    required this.onTap,
+  });
 
   final bool selected;
+  final bool enabled;
   final String label;
   final Widget child;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -397,11 +518,12 @@ class _PhoneTile extends StatelessWidget {
 
     return Semantics(
       button: true,
+      enabled: enabled,
       selected: selected,
       label: label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
@@ -418,7 +540,7 @@ class _PhoneTile extends StatelessWidget {
                 style: context.mmText.footnote.copyWith(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : c.label,
+                  color: selected ? c.onAccent : (enabled ? c.label : c.secondaryLabel.withValues(alpha: 0.4)),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -437,6 +559,7 @@ class _PhoneSheetRow extends StatelessWidget {
     required this.icon,
     required this.title,
     this.value,
+    this.enabled = true,
     this.hasChevron = false,
     required this.onTap,
   });
@@ -444,18 +567,21 @@ class _PhoneSheetRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? value;
+  final bool enabled;
   final bool hasChevron;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.mmColors;
+    final disabledColor = c.secondaryLabel.withValues(alpha: 0.4);
 
     return Semantics(
       button: true,
+      enabled: enabled,
       label: value != null ? '$title $value' : title,
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         child: Container(
           constraints: const BoxConstraints(minHeight: 46),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -463,22 +589,29 @@ class _PhoneSheetRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 22,
-                child: Center(child: Icon(icon, size: 18, color: c.accent)),
+                child: Center(child: Icon(icon, size: 18, color: enabled ? c.accent : disabledColor)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: context.mmText.body.copyWith(fontSize: 15.5, fontWeight: FontWeight.w500, color: c.label),
+                  style: context.mmText.body.copyWith(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w500,
+                    color: enabled ? c.label : disabledColor,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (value != null) ...[
-                Text(value!, style: context.mmText.body.copyWith(fontSize: 14, color: c.secondaryLabel)),
+                Text(
+                  value!,
+                  style: context.mmText.body.copyWith(fontSize: 14, color: enabled ? c.secondaryLabel : disabledColor),
+                ),
                 if (hasChevron) const SizedBox(width: 4),
               ],
-              if (hasChevron) Icon(MMIcons.chevronRight, size: 14, color: c.secondaryLabel),
+              if (hasChevron) Icon(MMIcons.chevronRight, size: 14, color: enabled ? c.secondaryLabel : disabledColor),
             ],
           ),
         ),
@@ -492,7 +625,8 @@ Future<void> showPhoneMoreSheet(
   BuildContext context, {
   required String studySetId,
   WorkspacePaneChromeController? paneChrome,
-  PhoneReaderControlsController? phoneControls,
+  BuildContext? workspaceContext,
+  VoidCallback? onOrganizeNotes,
   PhoneMoreSheetPage initialPage = PhoneMoreSheetPage.more,
   VoidCallback? onOpened,
   VoidCallback? onClosed,
@@ -502,31 +636,32 @@ Future<void> showPhoneMoreSheet(
     await showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierColor: const Color(0x14000000), // 8% alpha black - "遮罩要很淡，让页面效果可见"
+      barrierColor: MMThemeContext(context).mmColors.lightScrim,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       transitionDuration: const Duration(milliseconds: 320),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
         return SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
           child: child,
         );
       },
-      pageBuilder: (context, _, _) => Align(
+      pageBuilder: (dialogContext, _, _) => Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             MMSizes.phoneSheetPadding,
             0,
             MMSizes.phoneSheetPadding,
-            math.max(MMSizes.phoneSheetPadding, MediaQuery.paddingOf(context).bottom),
+            math.max(MMSizes.phoneSheetPadding, MediaQuery.paddingOf(dialogContext).bottom),
           ),
           child: PhoneMoreSheet(
             studySetId: studySetId,
             paneChrome: paneChrome,
-            phoneControls: phoneControls,
+            workspaceContext: workspaceContext ?? context,
+            onOrganizeNotes: onOrganizeNotes,
             initialPage: initialPage,
-            onClose: () => Navigator.of(context).pop(),
+            onClose: () => Navigator.of(dialogContext).pop(),
           ),
         ),
       ),

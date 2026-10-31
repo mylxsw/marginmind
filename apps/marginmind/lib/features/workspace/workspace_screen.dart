@@ -705,11 +705,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                       tooltip: l.moreTools,
                                       icon: MMIcons.more,
                                       onPressed: () {
+                                        _phoneControls.collapseTools();
+                                        _phoneControls.closeScrub();
                                         showPhoneMoreSheet(
                                           context,
                                           studySetId: widget.studySetId,
                                           paneChrome: _paneChrome,
-                                          phoneControls: _phoneControls,
                                           onOpened: () => _chrome.hold('phone-more-sheet'),
                                           onClosed: () => _chrome.release('phone-more-sheet'),
                                         );

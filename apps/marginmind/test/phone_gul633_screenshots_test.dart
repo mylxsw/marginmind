@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
@@ -82,6 +84,6 @@ void main() {
       } finally {
         debugDisableShadows = true;
       }
-    });
+    }, skip: Platform.environment['MM_SCREENSHOTS'] == null);
   }
 }

@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/library/library_screen.dart';
 import 'package:marginmind/features/vocabulary/vocabulary_hints.dart';
-import 'package:marginmind/features/workspace/phone_reader_controls_controller.dart';
 import 'package:marginmind/features/workspace/reader_margin.dart';
 import 'package:marginmind/features/workspace/widgets/phone_more_sheet.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/features/workspace/workspace_pane_chrome_controller.dart';
 import 'package:marginmind/shared/l10n.dart';
 import 'package:mm_core/testing.dart';
+import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 
@@ -27,7 +28,6 @@ void main() {
     );
 
     final paneChrome = WorkspacePaneChromeController();
-    final phoneControls = PhoneReaderControlsController();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -42,12 +42,7 @@ void main() {
                 body: Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      showPhoneMoreSheet(
-                        context,
-                        studySetId: 'demo-1',
-                        paneChrome: paneChrome,
-                        phoneControls: phoneControls,
-                      );
+                      showPhoneMoreSheet(context, studySetId: 'demo-1', paneChrome: paneChrome);
                     },
                     child: const Text('Open Sheet'),
                   ),
@@ -73,9 +68,12 @@ void main() {
 
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsOneWidget);
 
-    // 1. Header: Document title "学习的底层逻辑" and close button
+    // 1. Header: Document title "学习的底层逻辑", undo button, and close button with accessibility
     expect(find.text('学习的底层逻辑'), findsOneWidget);
+    expect(find.byKey(const ValueKey('phone-more-undo')), findsOneWidget);
     expect(find.byKey(const ValueKey('phone-more-close')), findsOneWidget);
+    expect(find.byTooltip('关闭'), findsOneWidget);
+    expect(find.byTooltip('撤销'), findsOneWidget);
 
     // 2. "资料库" entry must NOT exist in the sheet
     expect(find.text('资料库'), findsNothing);
@@ -120,6 +118,7 @@ void main() {
     expect(find.byKey(const ValueKey('phone-sheet-appearance')), findsOneWidget);
     expect(find.text('阅读外观'), findsOneWidget);
     expect(find.byKey(const ValueKey('phone-reader-style-paper')), findsOneWidget);
+    expect(find.byTooltip('返回'), findsOneWidget);
 
     // Back button returns to More sheet
     await tester.tap(find.byKey(const ValueKey('phone-appearance-back')));
@@ -134,7 +133,9 @@ void main() {
     expect(find.byKey(const ValueKey('phone-sheet-more')), findsNothing);
   });
 
-  testWidgets('PhoneMoreSheet group actions trigger corresponding commands', (tester) async {
+  testWidgets('PhoneMoreSheet capabilities, switch document picker, reading settings and organize notes', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -146,7 +147,22 @@ void main() {
     );
 
     final paneChrome = WorkspacePaneChromeController();
-    final phoneControls = PhoneReaderControlsController();
+    var switchDocumentCalled = false;
+    var readingSettingsCalled = false;
+    var navigationCalled = false;
+    var cropCalled = false;
+    var organizeNotesCalled = false;
+
+    paneChrome.bindReader(
+      'test-owner',
+      WorkspacePaneCommands('c1', {
+        'reader-switch-document': WorkspacePaneCommand(() => switchDocumentCalled = true),
+        'reader-settings': WorkspacePaneCommand(() => readingSettingsCalled = true),
+        'reader-navigation': WorkspacePaneCommand(() => navigationCalled = true),
+        'reader-crop': WorkspacePaneCommand(() => cropCalled = true),
+        'reader-margin': WorkspacePaneCommand(() {}, selected: true),
+      }),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -156,7 +172,11 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('zh'),
           home: Scaffold(
-            body: PhoneMoreSheet(studySetId: 'demo-1', paneChrome: paneChrome, phoneControls: phoneControls),
+            body: PhoneMoreSheet(
+              studySetId: 'demo-1',
+              paneChrome: paneChrome,
+              onOrganizeNotes: () => organizeNotesCalled = true,
+            ),
           ),
         ),
       ),
@@ -174,19 +194,97 @@ void main() {
     expect(find.text('切换文档'), findsOneWidget);
     expect(find.text('裁掉白边'), findsOneWidget);
 
+    // Reading settings appears because reader-settings is enabled
+    expect(find.text('阅读设置'), findsOneWidget);
+
     // Verify Group 2 items
     expect(find.text('整理笔记'), findsOneWidget);
     expect(find.text('复习'), findsOneWidget);
     expect(find.text('生词本'), findsOneWidget);
 
-    // Tap "切换文档": document switches from c1 to c2
+    // Tap "切换文档": MUST execute reader-switch-document picker command, NOT auto-jump
     await tester.tap(find.text('切换文档'));
     await tester.pumpAndSettle();
-    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, 'c2');
+    expect(switchDocumentCalled, isTrue);
+    // Active document remains c1 (does not blindly cycle to next)
+    expect(container.read(workspaceProvider('demo-1')).activeDocumentId, 'c1');
+
+    // Tap "阅读设置": executes reader-settings command
+    await tester.tap(find.text('阅读设置'));
+    await tester.pumpAndSettle();
+    expect(readingSettingsCalled, isTrue);
+
+    // Tap "目录与书签": executes reader-navigation command
+    await tester.tap(find.text('目录与书签'));
+    await tester.pumpAndSettle();
+    expect(navigationCalled, isTrue);
+
+    // Tap "裁掉白边": executes reader-crop command
+    await tester.tap(find.text('裁掉白边'));
+    await tester.pumpAndSettle();
+    expect(cropCalled, isTrue);
+
+    // Tap "整理笔记": calls onOrganizeNotes callback
+    await tester.tap(find.text('整理笔记'));
+    await tester.pumpAndSettle();
+    expect(organizeNotesCalled, isTrue);
 
     // Tap "复习": navigates to review route
     await tester.tap(find.text('复习'));
     await tester.pumpAndSettle();
     expect(container.read(navigationProvider), isA<ReviewRoute>());
+  });
+
+  testWidgets('iPad and macOS isolation: original toolbar and dropdown menus remain intact', (tester) async {
+    // 1. iPad tablet size (834 x 1194)
+    final content = demoContent();
+    final overrides = await testOverrides(
+      prefs: {'settings.appearance': 'light', 'settings.readerStyle': 'white', 'settings.language': 'zh'},
+      content: InMemoryStudySetContentRepository({'demo-1': content}),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides,
+          touchPlatformProvider.overrideWithValue(true),
+          phoneProvider.overrideWithValue(false),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('zh'),
+          home: LibraryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // iPad uses the standard MMToolbar with search field inside the toolbar or compact bottom, NOT phone glass buttons
+    expect(find.byType(MMToolbar), findsOneWidget);
+    expect(find.byKey(const ValueKey('phone-workspace-more')), findsNothing);
+
+    // 2. macOS desktop size (1200 x 800)
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides,
+          touchPlatformProvider.overrideWithValue(false),
+          phoneProvider.overrideWithValue(false),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale('zh'),
+          home: LibraryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MMToolbar), findsOneWidget);
+    // Standard view mode buttons present in toolbar on desktop
+    expect(find.descendant(of: find.byType(MMToolbar), matching: find.byIcon(MMIcons.grid)), findsOneWidget);
+    expect(find.descendant(of: find.byType(MMToolbar), matching: find.byIcon(MMIcons.list)), findsOneWidget);
   });
 }

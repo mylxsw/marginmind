@@ -131,17 +131,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          l.librarySection,
-                          style: context.mmText.title2.copyWith(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                            height: 1.1,
+                      SizedBox.square(
+                        dimension: MMSizes.phoneTopControl,
+                        child: MMFlatSurface(
+                          enabled: false,
+                          child: MMLiquidGlass(
+                            phoneStyle: MMPhoneGlass.regular,
+                            borderRadius: BorderRadius.circular(MMSizes.phoneTopControl / 2),
+                            child: MMIconButton(
+                              icon: MMIcons.sidebar,
+                              tooltip: l.showSidebar,
+                              onPressed: () => _setDrawer(true),
+                            ),
                           ),
                         ),
                       ),
+                      const Spacer(),
                       SizedBox.square(
                         dimension: MMSizes.phoneTopControl,
                         child: MMFlatSurface(
@@ -222,7 +227,29 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
         // A compact window has no room for search in the toolbar: it sits
         // below, on the same glass.
-        toolbarBottom: sizeClass == MMSizeClass.compact
+        toolbarBottom: isPhoneCompact
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(88),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, MMSpacing.s),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_filterTitle(view.query.filter, folders), style: context.mmText.phoneLargeTitle),
+                      const SizedBox(height: 8),
+                      MMToolbarSearchField(
+                        placeholder: l.search,
+                        controller: _search,
+                        focusNode: _searchFocus,
+                        onChanged: controller.setSearch,
+                        width: double.infinity,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : sizeClass == MMSizeClass.compact
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(compactSearchHeight),
                 child: Padding(

@@ -12,6 +12,12 @@ abstract final class MMTypography {
   );
 
   static final largeTitle = _base.copyWith(fontSize: 26, height: 32 / 26, fontWeight: FontWeight.w400);
+  static final phoneLargeTitle = _base.copyWith(
+    fontSize: 34,
+    height: 1.1,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.2,
+  );
   static final title2 = _base.copyWith(fontSize: 20, height: 26 / 20, fontWeight: FontWeight.w700);
   static final title3 = _base.copyWith(fontSize: 15, height: 20 / 15, fontWeight: FontWeight.w600);
   static final headline = _base.copyWith(fontSize: 13, height: 16 / 13, fontWeight: FontWeight.w600);

@@ -86,6 +86,7 @@ class MMTextStyles {
   }
 
   TextStyle get largeTitle => _ui(MMTypography.largeTitle).copyWith(color: colors.label);
+  TextStyle get phoneLargeTitle => _ui(MMTypography.phoneLargeTitle).copyWith(color: colors.label);
   TextStyle get title2 => _ui(MMTypography.title2).copyWith(color: colors.label);
   TextStyle get title3 => _ui(MMTypography.title3).copyWith(color: colors.label);
   TextStyle get headline => _ui(MMTypography.headline).copyWith(color: colors.label);

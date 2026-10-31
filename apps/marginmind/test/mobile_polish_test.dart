@@ -22,7 +22,10 @@ void main() {
       tester.view.display.size = device.size;
       addTearDown(tester.view.display.resetSize);
       final container = await pumpDevice(tester, device);
-      final title = find.descendant(of: find.byType(MMToolbar), matching: find.text('All Study Sets'));
+      final title = find.descendant(
+        of: find.byWidgetPredicate((w) => w is MMToolbar || w is PreferredSize),
+        matching: find.text('All Study Sets'),
+      );
       expect(title, findsOneWidget);
       expect(tester.renderObject<RenderParagraph>(title).didExceedMaxLines, isFalse);
       expect(tester.takeException(), isNull);
