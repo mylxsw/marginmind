@@ -61,7 +61,10 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
   _captureLocale.value = const Locale('en');
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
-  await expectLater(find.byKey(key), matchesGoldenFile('goldens/full_translation/$name.png'));
+  // The pinned Ahem font still rasterizes differently on Linux and macOS.
+  // Keep exact comparisons for each renderer, as in note_rich_export_test.
+  final directory = Platform.isLinux ? 'goldens/linux/full_translation' : 'goldens/full_translation';
+  await expectLater(find.byKey(key), matchesGoldenFile('$directory/$name.png'));
   _captureLocale.value = null;
   await tester.pump();
 }
@@ -207,7 +210,9 @@ void main() {
     )..addFont(rootBundle.load('packages/cupertino_icons/assets/CupertinoIcons.ttf'))).load();
     if (Platform.environment['TRANSLATION_EVIDENCE_DIR'] != null) {
       final bytes = ByteData.sublistView(
-        File('/System/Library/Fonts/Supplemental/Arial Unicode.ttf').readAsBytesSync(),
+        File(
+          Platform.environment['TRANSLATION_EVIDENCE_FONT'] ?? '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+        ).readAsBytesSync(),
       );
       for (final family in [
         'Roboto',
@@ -216,6 +221,7 @@ void main() {
         'CupertinoSystemDisplay',
         'PingFang SC',
         'Songti SC',
+        'SF Mono',
         'Ahem',
       ]) {
         await (FontLoader(family)..addFont(Future.value(bytes))).load();

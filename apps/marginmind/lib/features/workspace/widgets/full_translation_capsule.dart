@@ -157,17 +157,21 @@ class FullTranslationCapsule extends ConsumerWidget {
               children: [
                 leading,
                 const SizedBox(width: 5),
-                Text(
-                  text,
-                  style: context.mmText.footnote.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: job.state == TranslationJobState.offline || job.state == TranslationJobState.budget
-                        ? c.caution
-                        : job.state == TranslationJobState.error
-                        ? c.critical
-                        : (job.state == TranslationJobState.done && fail == 0)
-                        ? c.positive
-                        : c.label,
+                Flexible(
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.mmText.footnote.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: job.state == TranslationJobState.offline || job.state == TranslationJobState.budget
+                          ? c.caution
+                          : job.state == TranslationJobState.error
+                          ? c.critical
+                          : (job.state == TranslationJobState.done && fail == 0)
+                          ? c.positive
+                          : c.label,
+                    ),
                   ),
                 ),
               ],

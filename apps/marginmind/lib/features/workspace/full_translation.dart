@@ -407,7 +407,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     await _loading;
     if (!ref.mounted) throw StateError('Workspace closed');
     final scheduler = _scheduler;
-    if (scheduler == null) throw StateError('Translation unavailable: ${state.loadError}');
+    if (scheduler == null || state.loadError != null) throw StateError('Translation unavailable: ${state.loadError}');
     final isOnline = ref.read(translationOnlineProvider(studySetId));
     final job = TranslationJob(
       id: newId(),

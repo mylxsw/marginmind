@@ -406,6 +406,14 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     final canAdjustCrop = capabilities.crop && !crop.editing && !crop.busy && _pdf.isReady;
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
+    final canFullTranslate =
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        document?.format == DocumentFormat.pdf;
+    final fullState = canFullTranslate
+        ? ref.watch(translationTaskSummaryProvider((widget.studySetId, document!.id))).value
+        : null;
+    final hasActiveFullJob = fullState?.isActive == true;
 
     final commands = <String, WorkspacePaneCommand>{};
     VoidCallback? command(String id, VoidCallback? invoke, {bool selected = false}) {
@@ -613,6 +621,22 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         icon: MMIcons.readingSettings,
         id: 'reader-settings',
       ),
+      if (canFullTranslate)
+        entry(
+          hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
+          () => unawaited(
+            hasActiveFullJob
+                ? showFullTranslationPanel(
+                    context,
+                    studySetId: widget.studySetId,
+                    documentId: document!.id,
+                    targetLang: fullState!.targetLang,
+                  )
+                : showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document!.id),
+          ),
+          icon: MMIcons.layers,
+          id: 'full-translation',
+        ),
       const PopupMenuDivider(),
       MMDropdownHeader<VoidCallback>(l.readerMenuPage),
       PopupMenuItem<VoidCallback>(

@@ -84,6 +84,21 @@ Future<void> flush() async {
   }
 }
 
+class DelayedJobStore extends InMemoryTranslationStore {
+  final reading = Completer<void>();
+  final release = Completer<void>();
+
+  @override
+  Future<TranslationJob?> loadJob(String documentId, String language) async {
+    final snapshot = await super.loadJob(documentId, language);
+    if (language == 'zh' && !reading.isCompleted) {
+      reading.complete();
+      await release.future;
+    }
+    return snapshot;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   for (final ollama in [false, true]) {
@@ -249,6 +264,43 @@ void main() {
     readerSub.close();
     taskSub.close();
     container.dispose();
+  });
+
+  test('removal during a pending summary read cannot restore the deleted task', () async {
+    final storage = DelayedJobStore();
+    await storage.saveJob(job(state: TranslationJobState.stopped));
+    final container = await containerFor(store: storage);
+    final provider = translationTaskSummaryProvider(('demo-1', 'c1'));
+    final subscription = container.listen(provider, (_, _) {});
+    await storage.reading.future;
+    final registry = container.read(translationSchedulersProvider('demo-1'));
+    await registry.removeTranslations('c1', 'zh');
+    await flush();
+    expect(container.read(provider).value, isNull);
+    storage.release.complete();
+    await flush();
+    expect(container.read(provider).value, isNull);
+    await registry.close();
+    subscription.close();
+    container.dispose();
+  });
+
+  test('removal can finish draining paid calls after the workspace is disposed', () async {
+    final storage = InMemoryTranslationStore();
+    final translator = TestTranslator()..delayMs = 150;
+    final container = await containerFor(store: storage, translator: translator);
+    final subscription = container.listen(translationSchedulersProvider('demo-1'), (_, _) {});
+    final registry = container.read(translationSchedulersProvider('demo-1'));
+    final scheduler = await registry.get('c1', 'zh', paragraphs, content: compareFixture());
+    unawaited(scheduler.start(job()));
+    await flush();
+    expect(translator.calls, isNotEmpty);
+    final removal = registry.removeTranslations('c1', 'zh');
+    subscription.close();
+    container.dispose();
+    await removal;
+    expect(await storage.loadJob('c1', 'zh'), isNull);
+    expect((await storage.load('c1', 'zh')).segments, isEmpty);
   });
 
   test('recovered page is the first incomplete page in the selected range', () {

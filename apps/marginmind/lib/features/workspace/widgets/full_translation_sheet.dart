@@ -59,6 +59,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
   late final TextEditingController _fromController;
   late final TextEditingController _toController;
   late final TextEditingController _noteController;
+  final _noteFocus = FocusNode();
   late TranslationMode _mode;
   int _batchSize = 10;
   Timer? _estimateDebounce;
@@ -76,6 +77,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     _fromController = TextEditingController(text: '1');
     _toController = TextEditingController(text: '1');
     _noteController = TextEditingController();
+    _noteFocus.addListener(_onInputChanged);
     _fromController.addListener(_onInputChanged);
     _toController.addListener(_onInputChanged);
   }
@@ -86,6 +88,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     _fromController.dispose();
     _toController.dispose();
     _noteController.dispose();
+    _noteFocus.dispose();
     super.dispose();
   }
 
@@ -97,9 +100,10 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
   int get _to => int.tryParse(_toController.text.trim()) ?? _pageCount;
 
   bool get _isValidRange {
-    final f = _rangeAll ? 1 : _from;
-    final t = _rangeAll ? _pageCount : _to;
-    return f >= 1 && t <= _pageCount && f <= t;
+    if (_rangeAll) return _pageCount >= 1;
+    final f = int.tryParse(_fromController.text.trim());
+    final t = int.tryParse(_toController.text.trim());
+    return f != null && t != null && f >= 1 && t <= _pageCount && f <= t;
   }
 
   Future<void> _start(Document doc, FullTranslationEstimation estimation, String modelName) async {
@@ -112,25 +116,29 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         ? l.fullTranslationHudStartBatch(f, firstTo)
         : l.fullTranslationHudStartAll;
     final readerWidth = ReaderCompareWidth.of(context);
+    final language = _targetLang;
+    final sourceLanguage = _sourceLang;
+    final mode = _mode;
+    final batchSize = _batchSize;
 
     if (_starting) return;
     setState(() => _starting = true);
     final prefs = ref.read(sharedPreferencesProvider);
     final compareController = ref.read(readerCompareProvider(widget.studySetId).notifier);
-    final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)).notifier);
+    final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, language)).notifier);
     final note = _noteController.text;
     try {
-      await prefs.setString('translation.full.mode', _mode.name);
+      await prefs.setString('translation.full.mode', mode.name);
       if (!mounted) return;
-      await compareController.openAi(_targetLang, documentId: widget.documentId, readerWidth: readerWidth);
+      await compareController.openAi(language, documentId: widget.documentId, readerWidth: readerWidth);
       if (!mounted) return;
       await controller.startJob(
         from: f,
         to: t,
-        mode: _mode,
-        batchSize: _batchSize,
+        mode: mode,
+        batchSize: batchSize,
         note: note,
-        sourceLang: _sourceLang,
+        sourceLang: sourceLanguage,
         modelName: modelName,
         estimatedTokens: estimation.tokens,
       );
@@ -260,11 +268,12 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     return FocusScope(
       child: CallbackShortcuts(
         bindings: {
-          const SingleActivator(LogicalKeyboardKey.enter): () {
-            if (!disabled && estimation != null) {
-              _start(doc, estimation, modelName);
-            }
-          },
+          if (!_noteFocus.hasFocus)
+            const SingleActivator(LogicalKeyboardKey.enter): () {
+              if (!_noteFocus.hasFocus && !disabled && estimation != null) {
+                _start(doc, estimation, modelName);
+              }
+            },
         },
         child: Focus(
           autofocus: true,
@@ -317,6 +326,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                       MMDropdownButton<String>(
                         width: 140,
                         onSelected: (val) {
+                          if (_starting) return;
                           setState(() => _targetLang = val);
                           ref.read(sharedPreferencesProvider).setString('settings.translationLanguage', val);
                         },
@@ -479,6 +489,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   child: TextField(
                     controller: _noteController,
+                    focusNode: _noteFocus,
                     maxLines: 2,
                     maxLength: 1000,
                     buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,

@@ -24,6 +24,7 @@ final translationTaskSummaryProvider = StreamProvider.autoDispose.family<Transla
   final registry = ref.watch(translationSchedulersProvider(key.$1));
   final events = StreamController<TranslationTaskSummary?>();
   final stored = <String, TranslationTaskSummary>{};
+  final changedLanguages = <String>{};
   var disposed = false;
   void emit() {
     if (disposed) return;
@@ -59,6 +60,7 @@ final translationTaskSummaryProvider = StreamProvider.autoDispose.family<Transla
 
   final sub = registry.changes.listen((changed) {
     if (changed.$1 != key.$2) return;
+    changedLanguages.add(changed.$2);
     stored.remove(changed.$2);
     emit();
   });
@@ -68,7 +70,7 @@ final translationTaskSummaryProvider = StreamProvider.autoDispose.family<Transla
       for (final lang in ['zh', 'en']) {
         final job = await store.loadJob(key.$2, lang);
         if (disposed) return;
-        if (job == null) continue;
+        if (job == null || changedLanguages.contains(lang)) continue;
         // Before opening the reader, only completed batches are known.
         // The live scheduler supplies exact paragraph progress on opening.
         final percent = job.state == TranslationJobState.done

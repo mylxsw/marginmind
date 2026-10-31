@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
+import 'package:mm_platform/mm_platform.dart';
 
 import '../../../settings/app_settings.dart';
 import '../../../shared/l10n.dart';
@@ -192,6 +193,10 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     final language = right.targetLang;
     final documentId = pair.leftDocumentId;
     final doc = ref.watch(workspaceContentProvider(widget.studySetId))?.document(documentId);
+    final canFullTranslate =
+        MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact &&
+        doc?.format == DocumentFormat.pdf;
     final animate = !state.failed && !state.complete && !MediaQuery.disableAnimationsOf(context);
     if (animate && !_shimmer.isAnimating) _shimmer.repeat(reverse: true);
     if (!animate && _shimmer.isAnimating) _shimmer.stop();
@@ -220,8 +225,9 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
           action: (
             l.fullTranslationHudContinue,
             () {
-              if (mounted)
+              if (mounted) {
                 ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume();
+              }
             },
           ),
         );
@@ -240,8 +246,9 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
           action: (
             l.fullTranslationHudContinue,
             () {
-              if (mounted)
+              if (mounted) {
                 ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume();
+              }
             },
           ),
         );
@@ -312,9 +319,17 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
             children: [
               ReaderCompareMenu(studySetId: widget.studySetId, document: doc, translationLanguage: language),
               const SizedBox(width: 6),
-              if (fullState.job != null) ...[
-                FullTranslationCapsule(studySetId: widget.studySetId, documentId: documentId, targetLang: language),
-                const Spacer(),
+              if (canFullTranslate && fullState.job != null) ...[
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FullTranslationCapsule(
+                      studySetId: widget.studySetId,
+                      documentId: documentId,
+                      targetLang: language,
+                    ),
+                  ),
+                ),
               ] else ...[
                 Expanded(
                   child: Row(
@@ -349,6 +364,10 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                     ],
                   ),
                 ),
+              ],
+              if (canFullTranslate && fullState.job == null) ...[
+                const SizedBox(width: 6),
+                FullTranslationCapsule(studySetId: widget.studySetId, documentId: documentId, targetLang: language),
               ],
               MMIconButton(
                 key: const ValueKey('compare-exit'),

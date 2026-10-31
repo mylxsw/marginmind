@@ -25,6 +25,7 @@ class StartingController extends MockFullTranslationController {
   StartingController(super.studySetId, super.documentId, super.targetLang, super.presetState);
   final gate = Completer<void>();
   bool started = false;
+  bool requested = false;
   @override
   Future<void> startJob({
     required int from,
@@ -36,6 +37,7 @@ class StartingController extends MockFullTranslationController {
     required String modelName,
     required int estimatedTokens,
   }) async {
+    requested = true;
     await gate.future;
     started = true;
   }
@@ -125,6 +127,75 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.started, true);
     expect(find.byType(FullTranslationSheet), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sheet rejects empty, nonnumeric, reversed and out-of-bounds page ranges', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final overrides = await testOverrides(content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}));
+    final controller = StartingController(
+      'demo-1',
+      'c1',
+      'zh',
+      FullTranslationState(
+        studySetId: 'demo-1',
+        documentId: 'c1',
+        targetLang: 'zh',
+        loading: false,
+        paragraphs: paragraphs,
+      ),
+    );
+    await tester.pumpWidget(
+      testHost(
+        const SizedBox(
+          width: 560,
+          child: FullTranslationSheet(studySetId: 'demo-1', documentId: 'c1', initialTargetLang: 'zh'),
+        ),
+        overrides: [
+          ...overrides,
+          fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => controller),
+          translationParagraphsProvider(('demo-1', 'c1')).overrideWith((ref) async => paragraphs),
+          compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith((ref) async => (language: 'en', hasText: true)),
+          assistantDefaultModelProvider.overrideWithValue(
+            const AssistantModel(
+              provider: AssistantProvider.ollama,
+              model: 'fixture',
+              endpoint: 'http://localhost:11434',
+              localEnabled: true,
+            ),
+          ),
+          assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('页码'));
+    await tester.pumpAndSettle();
+    final from = find.byType(TextField).at(0), to = find.byType(TextField).at(1);
+    MMButton start() =>
+        tester.widget<MMButton>(find.byWidgetPredicate((w) => w is MMButton && w.label.startsWith('开始')));
+    for (final (f, t) in [('', '4'), ('abc', '4'), ('0', '4'), ('3', '2'), ('1', '5'), ('1', '')]) {
+      await tester.enterText(from, f);
+      await tester.enterText(to, t);
+      await tester.pump();
+      expect(start().onPressed, isNull, reason: '$f–$t must be invalid');
+      expect(find.text('1–4'), findsOneWidget);
+    }
+    await tester.enterText(from, '2');
+    await tester.enterText(to, '3');
+    await tester.pump();
+    expect(start().onPressed, isNotNull);
+    await tester.tap(find.text('一次完成'));
+    await tester.pump();
+    expect(find.text('开始翻译'), findsOneWidget);
+    final note = find.byType(TextField).last;
+    await tester.enterText(note, 'Keep names unchanged');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(controller.requested, false, reason: 'Enter in the glossary must not start paid work');
+    await tester.pumpWidget(const SizedBox.shrink());
     expect(tester.takeException(), isNull);
   });
 

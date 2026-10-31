@@ -169,6 +169,7 @@ class TranslationSchedulers {
   }
 
   Future<void> removeTranslations(String id, String language) async {
+    final storeFuture = ref.read(translationStoreProvider(setId).future);
     final key = (id, language);
     final existing = _owners.remove(key);
     await _subscriptions.remove(key)?.cancel();
@@ -180,7 +181,7 @@ class TranslationSchedulers {
         await scheduler.close();
       } catch (_) {}
     }
-    final store = await ref.read(translationStoreProvider(setId).future);
+    final store = await storeFuture;
     await store.remove(id, language);
     _notify(key);
   }
