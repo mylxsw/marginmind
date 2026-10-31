@@ -119,7 +119,7 @@ class WorkspaceToolbar extends StatelessWidget {
                             if (!portraitTablet) {'compare', 'documents'},
                           ],
                           {'layout-reader', 'layout-split', 'layout-map'},
-                          if (portraitTablet) {'compare', 'documents', 'assistant'} else {'assistant'},
+                          if (portraitTablet) {'compare', 'documents'},
                         ],
                   menuEntries: [
                     ...menuEntries,

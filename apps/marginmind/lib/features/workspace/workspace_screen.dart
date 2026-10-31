@@ -513,19 +513,15 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
               ),
             ],
           ),
-        MMToolbarGroup(
-          children: [
-            if (MMPlatformCapabilities.current.assistant)
-              MMToolbarButton(
-                key: const ValueKey('toolbar-assistant'),
-                icon: MMIcons.ai,
-                tint: context.mmColors.research,
-                tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
-                selected: state.panel == RightPanel.assistant,
-                onPressed: () => toggleAssistant(ref, widget.studySetId),
-              ),
-          ],
-        ),
+        if (MMPlatformCapabilities.current.assistant)
+          MMToolbarButton(
+            key: const ValueKey('toolbar-assistant'),
+            icon: MMIcons.ai,
+            tint: context.mmColors.research,
+            tooltip: AppShortcuts.tip(l.assistant, AppShortcuts.assistantPanel),
+            selected: state.panel == RightPanel.assistant,
+            onPressed: () => toggleAssistant(ref, widget.studySetId),
+          ),
         MMDropdownButton<VoidCallback>(
           key: const ValueKey('workspace-more'),
           tooltip: l.moreTools,
