@@ -63,7 +63,8 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
     return result;
   }
 
-  Size cardSize(Card card) {
+  final attachments = MapNoteAttachments(content);
+  Size baseCardSize(Card card) {
     switch (card.kind) {
       case CardKind.topic:
         final s = measure(card.title, MMTypography.headline, 192).size;
@@ -82,8 +83,14 @@ TreeLayoutResult legacyLayout(StudySetContent content, {String title = 'Root'}) 
     }
   }
 
+  Size cardSize(Card card) {
+    final size = baseCardSize(card);
+    return attachments.notes.containsKey(card.id) ? Size(math.max(240, size.width), size.height + 32.5) : size;
+  }
+
   LayoutNode build(String id, Size size) {
-    var children = content.childrenOf(id == rootNodeId ? null : id);
+    var children = attachments.nodes.where((n) => n.parentId == (id == rootNodeId ? null : id)).toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
     if (id != rootNodeId && (content.node(id)?.collapsed ?? false)) children = [];
     return LayoutNode(
       id: id,
@@ -136,10 +143,10 @@ void main() {
     expect(editing.summaries['s']!.label.width, greaterThan(0));
     expect(update(cache, empty).summaries['s']!.label.width, 0);
   });
-  test('500 mixed nodes preserve every original rectangle and edge', () {
+  test('mixed nodes preserve every projected rectangle and edge', () {
     final content = fixture();
     final cached = update(MindMapRenderCache(), content);
-    expect(cached.rects, hasLength(500));
+    expect(cached.rects, hasLength(MapNoteAttachments(content).nodes.length + 1));
     expectSameGeometry(cached, legacyLayout(content));
   });
   test('unchanged content, read position and annotation color reuse layout and measurements', () {
@@ -397,7 +404,11 @@ void main() {
   });
 
   test('500 nodes: single text edit + measurement + reflow p95 below 16 ms', () {
-    final content = fixture();
+    final original = fixture();
+    // Keep 500 visible nodes: ordinary child notes now belong to their owner.
+    final content = original.copyWith(
+      cards: [for (final c in original.cards) c.kind == CardKind.note ? c.copyWith(kind: CardKind.research) : c],
+    );
     final cache = MindMapRenderCache();
     update(cache, content);
     final times = <int>[];

@@ -163,6 +163,30 @@ void main() {
     expect(texts.any((t) => (t as String).contains('**')), isFalse);
   });
 
+  test('attached notes export inside their owner without a note branch', () {
+    final now = DateTime.utc(2026);
+    final content = StudySetContent(
+      cards: [
+        Card(id: 'parent', kind: CardKind.topic, title: 'Topic', createdAt: now),
+        Card(
+          id: 'note',
+          kind: CardKind.note,
+          title: '**Attached** note',
+          textFormat: TextFormat.markdown,
+          createdAt: now,
+        ),
+      ],
+      nodes: const [
+        MapNode(cardId: 'parent', order: 0),
+        MapNode(cardId: 'note', parentId: 'parent', order: 0),
+      ],
+    );
+    final result = scene(content);
+    expect(result.layout.rects.keys, contains('parent'));
+    expect(result.layout.rects.keys, isNot(contains('note')));
+    expect(result.commands.where((c) => c['type'] == 'text').map((c) => c['text']), contains('Attached note'));
+  });
+
   test('full text and research bodies do not use ellipses', () {
     final now = DateTime.utc(2026);
     final note = ResearchNote(

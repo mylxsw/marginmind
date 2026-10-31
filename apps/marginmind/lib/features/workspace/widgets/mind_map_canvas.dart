@@ -307,8 +307,13 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   bool _touchDragMoved = false;
   bool _touchDragCancelled = false;
 
-  String? get _selectedNodeId =>
-      widget.selectedMarkId == null ? (widget.rootSelected ? rootNodeId : widget.selectedCardId) : null;
+  String? get _selectedNodeId => widget.selectedMarkId == null
+      ? (widget.rootSelected
+            ? rootNodeId
+            : widget.selectedCardId == null
+            ? null
+            : _visibleNode(widget.selectedCardId!))
+      : null;
 
   bool get _additive =>
       HardwareKeyboard.instance.isShiftPressed ||
@@ -337,6 +342,12 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
 
   TreeLayoutResult? _layout;
   final _cache = MindMapRenderCache();
+  final _expandedNotes = <String>{};
+
+  String _visibleNode(String id) => _cache._noteOwners[id] ?? id;
+  bool _flashes(String id) =>
+      (widget.flashCardId != null && _visibleNode(widget.flashCardId!) == id) ||
+      widget.flashCardIds.any((cardId) => _visibleNode(cardId) == id);
 
   /// Moves nodes from where they were drawn to a new layout, so neighbors
   /// make way smoothly while a title grows.
@@ -509,7 +520,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// (the text must fit as it is typed) while it moves with the others.
   Rect _shown(String id, LayoutRect target) {
     final drawn = _drawn(id, target);
-    if (id != field?.id) return drawn;
+    if (id != (field == null ? null : _visibleNode(field!.id))) return drawn;
     return Rect.fromLTWH(drawn.left, drawn.center.dy - target.height / 2, target.width, target.height);
   }
 
@@ -537,6 +548,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         onReveal: null,
         revealLabel: '',
         editor: fieldEditor(f, style: style, kind: kind, label: spec.label, maxLines: maxLines),
+        notes: _notesFooter(id, spec),
       ),
     );
   }
@@ -609,6 +621,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         _mergeAnchor = (id: selected!, position: _shown(selected, previousRect).topLeft);
       }
     }
+    if (widget.mapId != oldWidget.mapId) _expandedNotes.clear();
     syncField();
     _syncMarkField();
     if (_resizeStart == null && !identical(widget.content, oldWidget.content)) _resize = null;
@@ -693,6 +706,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// readable scale.
   void _locate(String id, int tick) {
     if (tick <= _handledLocateTick) return;
+    id = _visibleNode(id);
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final scale = math.max(mapLocateScale, mapScale(widget.transformation.value));
@@ -713,6 +727,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// where it is drawn now, or once the layout animation has [settled] (a
   /// node left of the root grows leftward as it moves).
   void _ensureVisible(String id, {bool settled = false}) {
+    id = _visibleNode(id);
     final rect = _layout?.rects[id];
     if (!mounted || rect == null || _viewport.isEmpty) return;
     final m = widget.transformation.value;
@@ -1005,7 +1020,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
   /// its first branch on the left.
   void _navigate(AxisDirection direction) {
     final layout = _layout;
-    final selected = widget.selectedCardId ?? rootNodeId;
+    final selected = _selectedNodeId ?? rootNodeId;
     if (layout != null && direction == AxisDirection.left && selected == rootNodeId) {
       final first = layout.edges.where((e) => e.parentId == rootNodeId && layout.leftSide.contains(e.childId));
       if (first.isNotEmpty) widget.onSelect(first.first.childId);
@@ -1694,11 +1709,16 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       spec.meta,
       spec.color,
       spec.size,
+      spec.attachedNotes,
+      spec.notesExpanded,
+      field,
+      field?.controller.text,
+      field?.format,
       spec.image,
       spec.imageHeight,
       spec.suspended,
       widget.expansion == null && (widget.selectedCardIds.contains(id) || id == _selectedNodeId),
-      id == widget.flashCardId || widget.flashCardIds.contains(id),
+      _flashes(id),
       _dragging?.contains(id) ?? false,
       widget.selectedCardIds.contains(id) ? widget.selectedCardIds.length : 1,
       widget.transformation,
@@ -1734,6 +1754,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
               look,
               _NodeView(
                 spec: spec,
+                notes: _notesFooter(id, spec),
                 flashAnnotationId: widget.flashAnnotationId,
                 onRevealSegment: (index) {
                   widget.focusNode.requestFocus();
@@ -1749,7 +1770,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                 look: look,
                 transformation: widget.transformation,
                 selected: widget.expansion == null && (widget.selectedCardIds.contains(id) || id == _selectedNodeId),
-                flashing: id == widget.flashCardId || widget.flashCardIds.contains(id),
+                flashing: _flashes(id),
                 longPressEnabled: id == rootNodeId,
                 onPressStart: (kind) =>
                     _tapModifiers[id] = _additive || (kind == PointerDeviceKind.touch && _touchSelection),
@@ -1811,6 +1832,119 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     return child;
   }
 
+  Widget? _notesFooter(String id, _NodeSpec spec) {
+    if (spec.attachedNotes.isEmpty) return null;
+    final l = context.l10n;
+    final c = context.mmColors;
+    final t = context.mmContentText;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: _cache.noteHeaderHeight,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: c.separator, width: MMSizes.hairline),
+              ),
+            ),
+            child: Semantics(
+              expanded: spec.notesExpanded,
+              child: MMInteractive(
+                key: ValueKey('map-notes-toggle-$id'),
+                semanticLabel: l.mapNodeNoteCount(spec.attachedNotes.length),
+                immediateTap: true,
+                onTap: () {
+                  if (field != null) endField(field, commit: true, refocus: true);
+                  widget.focusNode.requestFocus();
+                  widget.onSelect(id);
+                  setState(() {
+                    if (spec.notesExpanded) {
+                      _expandedNotes.remove(id);
+                    } else {
+                      _expandedNotes.add(id);
+                    }
+                  });
+                },
+                builder: (context, state) => ColoredBox(
+                  color: state.hovered ? c.hover : Colors.transparent,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m),
+                    child: Row(
+                      children: [
+                        Icon(MMIcons.pen, size: MMTypography.body.fontSize, color: c.secondaryLabel),
+                        const SizedBox(width: MMSpacing.s),
+                        Expanded(child: Text(l.mapNodeNoteCount(spec.attachedNotes.length), style: t.footnote)),
+                        Icon(
+                          spec.notesExpanded ? MMIcons.chevronUp : MMIcons.chevronDown,
+                          size: MMTypography.footnote.fontSize,
+                          color: c.secondaryLabel,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (spec.notesExpanded)
+          for (final note in spec.attachedNotes)
+            Padding(
+              key: ValueKey('map-attached-note-${note.id}'),
+              padding: const EdgeInsets.symmetric(horizontal: MMSpacing.m, vertical: MMSpacing.s),
+              child: MMContextMenuRegion(
+                onSecondaryTapUp: widget.onContextMenu == null
+                    ? null
+                    : (details) {
+                        widget.focusNode.requestFocus();
+                        widget.onSelect(note.id);
+                        widget.onContextMenu!(note.id, details.globalPosition);
+                      },
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: _cache.noteRowMinHeight),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: field?.id == note.id
+                            ? fieldEditor(
+                                field!,
+                                style: t.body.copyWith(height: 19 / 13),
+                                kind: CardKind.note,
+                              )
+                            : GestureDetector(
+                                onDoubleTap: () => widget.onRename(note.id),
+                                child: Opacity(
+                                  opacity: note.suspended ? _suspendedOpacity : 1,
+                                  child: Text.rich(
+                                    noteSpan(note.title, note.textFormat, t.body.copyWith(height: 19 / 13)),
+                                  ),
+                                ),
+                              ),
+                      ),
+                      if (field?.id != note.id)
+                        SizedBox(
+                          width: _cache.noteEditWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: MMSpacing.s),
+                            child: MMButton(
+                              key: ValueKey('map-note-edit-${note.id}'),
+                              label: l.menuEdit,
+                              variant: MMButtonVariant.plain,
+                              onPressed: () => widget.onRename(note.id),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+
   /// The palette as drawn: a previewed one, or the map's own.
   MMMapColors _mapColors(MMColors c) =>
       mapPaletteOf(widget.previewStyle?.$2 ?? widget.content.map(widget.mapId)?.palette ?? MapPalette.system)
@@ -1859,6 +1993,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       locale: Localizations.localeOf(context),
       textDirection: Directionality.of(context),
       expanded: widget.expandedCardIds,
+      expandedNotes: _expandedNotes,
+      focusedNoteId: widget.content.card(widget.selectedCardId ?? '')?.kind == CardKind.note
+          ? widget.selectedCardId
+          : widget.flashCardId,
+      touchControls: context.mmTablet || MMInput.touchInputOf(context),
       structure: widget.previewStyle?.$1,
     );
     if (_previewSession != widget.expansion?.proposalId) {
@@ -1890,7 +2029,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
     _tapModifiers.removeWhere((id, _) => !specs.containsKey(id));
     final collapsed = _cache._collapsed;
     final expandable = _cache._expandable;
-    if (field != null) trackField(shown: specs.containsKey(field.id));
+    if (field != null) trackField(shown: specs.containsKey(_visibleNode(field.id)));
     final hadLayout = _layout != null;
     final layoutChanged = !identical(result, _layout);
     final merging = _mergeAnchor != null;
@@ -2194,6 +2333,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         palette: palette,
                                         branches: _branches,
                                         colors: c,
+                                        contentHeights: {
+                                          for (final e in specs.entries)
+                                            if (e.value.notesHeight > 0) e.key: e.value.contentHeight,
+                                        },
                                         drafts: {
                                           for (final d in _drafts) d.id: d.kept,
                                           for (final id in widget.expansion?.moves.keys ?? <String>[]) id: true,
@@ -2239,7 +2382,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                       rect: _drawn(e.key, e.value),
                                       child: nodes[e.key]!,
                                     ),
-                                for (final id in widget.previewCardIds)
+                                for (final id in widget.previewCardIds.map(_visibleNode).toSet())
                                   if (result.rects[id] case final rect?)
                                     Positioned.fromRect(
                                       rect: _drawn(id, rect).inflate(3),
@@ -2358,7 +2501,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                           // another fold removes or inserts nearby controls.
                                           key: ValueKey('map-fold-$id'),
                                           left: shown.left - 3,
-                                          top: shown.center.dy - 9,
+                                          top: shown.top + specs[id]!.contentHeight / 2 - 9,
                                           child: FractionalTranslation(
                                             translation: const Offset(-1, 0),
                                             child: foldButtons[id]!,
@@ -2368,7 +2511,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                                         Positioned(
                                           key: ValueKey('map-fold-$id'),
                                           left: shown.right + 3,
-                                          top: shown.center.dy - 9,
+                                          top: shown.top + specs[id]!.contentHeight / 2 - 9,
                                           child: foldButtons[id]!,
                                         ),
                                 if (widget.expansion == null) ?_resizeHandle(result, l),
@@ -2456,7 +2599,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                           ?widget.selectedCardId,
                           if (widget.rootSelected) rootNodeId,
                         })
-                          if (result.rects[id] case final rect?)
+                          if (result.rects[_visibleNode(id)] case final rect?)
                             MatrixUtils.transformRect(widget.transformation.value, _shown(id, rect)),
                       ];
                       if (selected.isEmpty) return const SizedBox.shrink();
@@ -2498,14 +2641,15 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                     },
                   ),
                 ),
-              if (field?.note case final note? when specs[field!.id]?.kind == _Kind.note)
+              if (field?.note case final note?
+                  when specs[field!.id]?.kind == _Kind.note || _cache._noteOwners.containsKey(field.id))
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: Listenable.merge([widget.transformation, _motion]),
                     builder: (context, _) {
-                      final rect = result.rects[field.id];
+                      final rect = result.rects[_visibleNode(field.id)];
                       if (rect == null) return const SizedBox.shrink();
-                      final shown = _shown(field.id, rect);
+                      final shown = _shown(_visibleNode(field.id), rect);
                       final m = widget.transformation.value;
                       final top = MatrixUtils.transformPoint(m, shown.topLeft);
                       final bottom = MatrixUtils.transformPoint(m, shown.bottomLeft);
@@ -2573,6 +2717,7 @@ class _NodeView extends StatelessWidget {
     required this.onReveal,
     required this.revealLabel,
     this.editor,
+    this.notes,
     this.onPressStart,
     this.onToggleExpanded,
     this.expandLabel = '',
@@ -2601,6 +2746,7 @@ class _NodeView extends StatelessWidget {
   /// Replaces the title (a note's text) while it is edited in place; the
   /// node then takes no gestures of its own.
   final Widget? editor;
+  final Widget? notes;
   final ValueChanged<Offset>? onSecondaryTapUp;
   final _NodeSpec spec;
   final TransformationController transformation;
@@ -2904,9 +3050,26 @@ class _NodeView extends StatelessWidget {
                   child: ColoredBox(color: c.research),
                 ),
               ),
-            Positioned.fill(
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: spec.contentHeight,
               child: Padding(padding: padding, child: body),
             ),
+            if (notes != null)
+              // Measure at the target width while the surrounding node animates;
+              // otherwise undo/redo can squeeze the note into a narrow topic.
+              Positioned(
+                left: 0,
+                width: spec.size.width,
+                top: spec.contentHeight,
+                height: spec.notesHeight,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(flatRadius)),
+                  child: notes!,
+                ),
+              ),
             if (onReveal != null)
               Positioned(
                 top: padding.top - 3,
@@ -2948,8 +3111,10 @@ class _EdgesPainter extends CustomPainter {
     this.branches = const {},
     this.colors,
     this.drafts = const {},
+    this.contentHeights = const {},
   });
 
+  final Map<String, double> contentHeights;
   final TreeLayoutResult layout;
 
   /// The neutral line color; branches take the [palette]'s.
@@ -2986,7 +3151,11 @@ class _EdgesPainter extends CustomPainter {
     }
   }
 
-  Rect _at(String id) => _lerpRect(from[id], _rect(layout.rects[id]!), MMMotion.layoutCurve.transform(t));
+  Rect _at(String id) {
+    final rect = _lerpRect(from[id], _rect(layout.rects[id]!), MMMotion.layoutCurve.transform(t));
+    final height = contentHeights[id];
+    return height == null ? rect : Rect.fromLTWH(rect.left, rect.top, rect.width, math.min(height, rect.height));
+  }
 
   @override
   bool shouldRepaint(_EdgesPainter old) =>
@@ -2997,7 +3166,8 @@ class _EdgesPainter extends CustomPainter {
       old.palette != palette ||
       !identical(old.branches, branches) ||
       old.colors != colors ||
-      !mapEquals(old.drafts, drafts);
+      !mapEquals(old.drafts, drafts) ||
+      !mapEquals(old.contentHeights, contentHeights);
 }
 
 /// "Show full text ⌄" / "Show less ⌃" at the foot of a cut card.

@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 
 import 'helpers.dart';
 import 'workspace_test.dart' show openFirstSet;
@@ -48,7 +49,7 @@ void main() {
 
   testWidgets('touch selection mode remains reachable in the map menu', (tester) async {
     await openFirstSet(tester);
-    await tester.tap(find.byTooltip('More'));
+    await tester.tap(find.descendant(of: find.byType(MapPane), matching: find.byTooltip('More')));
     await tester.pumpAndSettle();
     final select = find.text('Multiple Selection');
     expect(select, findsOneWidget);

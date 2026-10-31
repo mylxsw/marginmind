@@ -275,6 +275,8 @@
   "highlightDeletedHud": "Highlight deleted",
   "rename": "Rename…",
   "renameTitle": "Rename",
+  "mapNodeNoteCount": "Notes · {count}",
+  "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
   "editNote": "Edit Note",
   "save": "Save",
   "newTopicName": "New Topic",

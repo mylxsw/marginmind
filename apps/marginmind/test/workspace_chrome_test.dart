@@ -193,7 +193,8 @@ void main() {
           .toList();
       final before = visibleItems();
       expect(before, isNotEmpty);
-      expect(before, contains(map ? 'toolbar-item:fit' : 'toolbar-item:sync'));
+      // Sync is in the reader menu; navigation remains a visible dock item.
+      expect(before, contains(map ? 'toolbar-item:fit' : 'toolbar-item:navigation'));
       final menu = find.byKey(ValueKey(map ? 'map-more' : 'reader-more'));
       expect(tester.getSize(menu), MMSizes.thumbDockButton);
       final chrome = WorkspaceChromeScope.maybeOf(tester.element(dock))!;

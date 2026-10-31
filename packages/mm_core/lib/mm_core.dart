@@ -8,6 +8,7 @@ library;
 export 'src/content/editor.dart';
 export 'src/content/excerpt_lines.dart';
 export 'src/content/map_export.dart';
+export 'src/content/map_notes.dart';
 export 'src/content/map_clipboard.dart';
 export 'src/content/models.dart';
 export 'src/content/note_format.dart';

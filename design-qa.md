@@ -1,3 +1,11 @@
+# 节点附属笔记：第2版方案接入（2026-10-31）
+
+final result: passed
+
+普通笔记附在当前节点底部，默认收起；复用现有输入框、格式栏、按钮与样式。macOS原生窗口5项测试、mm_core 298项测试、静态检查和Debug构建通过。实际截图、同画布对比与完整验收记录见 [节点笔记验收](docs/evidence/node-attached-notes/design-qa.md)。全量应用回归另有3项分享卡片截图差异，已在未包含本轮改动的独立工作树fa768b4复现；实体iPad未验证。
+
+---
+
 # iPad 分隔拖动提示：单短线（2026-10-31）
 
 final result: passed

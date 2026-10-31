@@ -2699,7 +2699,13 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// The field stays open until the edit is saved, so the new title
   /// replaces it without showing the old one in between.
   void _closeEditor() {
-    if (_editing == null && ref.mounted) state = state.copyWith(clearEditing: true);
+    if (_editing == null && ref.mounted) {
+      final owner = MapNoteAttachments(content, mapId: state.activeMapId).owners[state.editingCardId];
+      state = state.copyWith(
+        clearEditing: true,
+        selectedCardId: owner != null && state.selectedCardId == state.editingCardId ? owner : null,
+      );
+    }
   }
 
   Future<void> _dropCreated(_EditSession session) async {
@@ -2755,9 +2761,17 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   /// previous / next sibling (up / down). The root is "null".
   void selectNeighbor(AxisDirection direction) {
     final c = content;
-    final id = state.selectedCardId;
-    final node = id == null ? null : c.node(id, mapId: state.activeMapId);
+    final attachments = state.mapView == MapViewMode.map ? MapNoteAttachments(c, mapId: state.activeMapId) : null;
+    final id = attachments?.owners[state.selectedCardId] ?? state.selectedCardId;
+    final node = id == null
+        ? null
+        : attachments == null
+        ? c.node(id, mapId: state.activeMapId)
+        : attachments.nodes.where((n) => n.cardId == id).firstOrNull;
     if (id != null && node == null) return;
+    List<MapNode> childrenOf(String? parent) => attachments == null
+        ? c.childrenOf(parent, mapId: state.activeMapId)
+        : (attachments.nodes.where((n) => n.parentId == parent).toList()..sort((a, b) => a.order.compareTo(b.order)));
     String? target;
     var found = false;
     switch (direction) {
@@ -2766,14 +2780,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         target = node!.parentId;
         found = true;
       case AxisDirection.right:
-        final children = c.childrenOf(id, mapId: state.activeMapId);
+        final children = childrenOf(id);
         if (children.isEmpty) return;
         if (node?.collapsed ?? false) toggleCollapsed(id!);
         target = children.first.cardId;
         found = true;
       case AxisDirection.up || AxisDirection.down:
         if (node == null) return;
-        final siblings = c.childrenOf(node.parentId, mapId: state.activeMapId);
+        final siblings = childrenOf(node.parentId);
         final i = siblings.indexWhere((n) => n.cardId == id) + (direction == AxisDirection.up ? -1 : 1);
         if (i < 0 || i >= siblings.length) return;
         target = siblings[i].cardId;

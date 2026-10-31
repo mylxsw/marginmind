@@ -523,6 +523,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get renameTitle => '重命名';
 
   @override
+  String mapNodeNoteCount(int count) {
+    return '笔记 · $count';
+  }
+
+  @override
   String get editNote => '编辑笔记';
 
   @override

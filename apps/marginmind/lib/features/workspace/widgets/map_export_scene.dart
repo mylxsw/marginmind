@@ -59,8 +59,9 @@ class MapExportScene extends CustomPainter {
     final nodes = <String, _ExportNode>{
       root: _ExportNode(title, '', MMTypography.title3, palette.root, palette.onRoot),
     };
+    final attachments = MapNoteAttachments(content, mapId: mapId);
     final children = <String?, List<MapNode>>{};
-    for (final n in content.nodes.where((n) => n.mapId == mapId)) {
+    for (final n in attachments.nodes) {
       children.putIfAbsent(n.parentId, () => []).add(n);
       final card = content.card(n.cardId);
       if (card == null) continue;
@@ -93,6 +94,8 @@ class MapExportScene extends CustomPainter {
                     : source(document, annotation.page),
         } else if (doc != null)
           a!.isText ? '${doc.title} · ${a.textAnchors.first.chapterId}' : source(doc, a.page),
+        for (final attached in attachments.notes[card.id] ?? <Card>[])
+          notePlainText(attached.title, attached.textFormat),
       ].where((s) => s.isNotEmpty).join('\n');
       nodes[n.cardId] = _ExportNode(
         note != null

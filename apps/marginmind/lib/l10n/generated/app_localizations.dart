@@ -1040,6 +1040,12 @@ abstract class AppLocalizations {
   /// **'Rename'**
   String get renameTitle;
 
+  /// No description provided for @mapNodeNoteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes · {count}'**
+  String mapNodeNoteCount(int count);
+
   /// No description provided for @editNote.
   ///
   /// In en, this message translates to:

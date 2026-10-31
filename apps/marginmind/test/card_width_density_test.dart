@@ -92,7 +92,7 @@ void main() {
       expect(added, greaterThan(0));
       expect(added, lessThanOrEqualTo(4));
       // Other cards keep their sizes, and the layout makes room.
-      for (final id in ['i', 'r', 'n']) {
+      for (final id in ['i', 'r', 't']) {
         expect(_size(dragged, id), _size(first, id));
       }
       expect(dragged.rects['i']!.top, isNot(first.rects['i']!.top));
@@ -108,13 +108,34 @@ void main() {
       expect(_size(compact, 'e').height, lessThan(_size(full, 'e').height));
       expect(_size(compact, 'i').height, lessThan(_size(full, 'i').height));
       expect(_size(compact, 'r').height, lessThan(_size(full, 'r').height));
-      // Notes and topics do not change.
-      expect(_size(compact, 'n'), _size(full, 'n'));
+      // Attached notes stay within the topic in both densities.
+      expect(compact.rects.containsKey('n'), isFalse);
+      expect(full.rects.containsKey('n'), isFalse);
       expect(_size(compact, 't'), _size(full, 't'));
       // Switching back reuses every earlier measurement.
       final count = cache.measurementCount;
       _update(cache, _content());
       expect(cache.measurementCount, count);
+    });
+
+    test('an attached note respects the resized excerpt width when folded and expanded', () {
+      final original = _content(width: MapNode.minWidth);
+      final content = original.copyWith(
+        nodes: [for (final n in original.nodes) n.cardId == 'n' ? n.copyWith(parentId: 'e') : n],
+      );
+      final cache = MindMapRenderCache();
+      final folded = _update(cache, content);
+      expect(_size(folded, 'e').width, MapNode.minWidth);
+      final expanded = cache.update(
+        content: content,
+        rootTitle: 'Root',
+        localizations: _english,
+        theme: _theme,
+        expandedNotes: {'e'},
+      );
+      expect(_size(expanded, 'e').width, MapNode.minWidth);
+      expect(_size(expanded, 'e').height, greaterThan(_size(folded, 'e').height));
+      expect(expanded.rects.containsKey('n'), isFalse);
     });
 
     test('a research note with a width keeps it', () {

@@ -541,6 +541,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renameTitle => 'Rename';
 
   @override
+  String mapNodeNoteCount(int count) {
+    return 'Notes · $count';
+  }
+
+  @override
   String get editNote => 'Edit Note';
 
   @override

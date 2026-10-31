@@ -38,6 +38,10 @@ class MindMapRenderCache {
   (String, double)? _widthDraft;
   (String, String)? _markDraft;
   Set<String> _expanded = const {};
+  Set<String> _expandedNotes = const {};
+  String? _focusedNoteId;
+  bool _touchControls = false;
+  Map<String, String> _noteOwners = const {};
   MapStructure? _structure;
   TreeLayoutResult? _layout;
   List<(String, String?, double, double)> _geometry = [];
@@ -95,6 +99,9 @@ class MindMapRenderCache {
     /// Cards shown with their whole text: part of the key, since it changes
     /// what is measured and so every size and the layout.
     Set<String> expanded = const {},
+    Set<String> expandedNotes = const {},
+    String? focusedNoteId,
+    bool touchControls = false,
 
     /// The structure to lay out in place of the map's own (a preview).
     MapStructure? structure,
@@ -117,6 +124,9 @@ class MindMapRenderCache {
         _widthDraft == widthDraft &&
         _markDraft == markDraft &&
         setEquals(_expanded, expanded) &&
+        setEquals(_expandedNotes, expandedNotes) &&
+        _focusedNoteId == focusedNoteId &&
+        _touchControls == touchControls &&
         _structure == structure &&
         identical(_localizations, localizations)) {
       return _layout!;
@@ -140,6 +150,9 @@ class MindMapRenderCache {
     _widthDraft = widthDraft;
     _markDraft = markDraft;
     _expanded = Set.of(expanded);
+    _expandedNotes = Set.of(expandedNotes);
+    _focusedNoteId = focusedNoteId;
+    _touchControls = touchControls;
     _localizations = localizations;
     final structureChanged = _structure != structure;
     _structure = structure;
@@ -153,8 +166,10 @@ class MindMapRenderCache {
     final evidence = {for (final e in content.evidence) e.id: e};
     int sourceCount(ResearchNote note) =>
         {for (final ref in note.citations) ?evidence[ref.evidenceId]?.sourceId}.length;
+    final attachments = MapNoteAttachments(content, mapId: mapId);
+    _noteOwners = attachments.owners;
     final children = <String?, List<MapNode>>{};
-    for (final node in content.nodes) {
+    for (final node in attachments.nodes) {
       if (node.mapId != mapId) continue;
       children.putIfAbsent(expansionMoves[node.cardId]?.substring(4) ?? node.parentId, () => []).add(node);
     }
@@ -193,6 +208,39 @@ class MindMapRenderCache {
     }
 
     LayoutNode build(String id, String? parentId, _NodeSpec spec, {bool collapsed = false}) {
+      final attached = attachments.notes[id];
+      if (attached != null && attached.isNotEmpty) {
+        spec.attachedNotes = [
+          for (final note in attached)
+            draft?.$1 == note.id ? note.copyWith(title: draft!.$2, textFormat: draftFormat) : note,
+        ];
+        spec.notesExpanded =
+            expandedNotes.contains(id) ||
+            attachments.owners[draft?.$1] == id ||
+            attachments.owners[focusedNoteId] == id;
+        // Topics and standalone notes need room for the footer; resizable
+        // excerpt/image/research cards keep the user's chosen width.
+        final width = spec.kind == _Kind.topic || spec.kind == _Kind.note
+            ? math.max(_NodeSpec.excerptWidth, spec.size.width)
+            : spec.size.width;
+        var height = noteHeaderHeight;
+        if (spec.notesExpanded) {
+          for (final note in spec.attachedNotes) {
+            final editing = draft?.$1 == note.id;
+            final body = _measure(
+              note.title,
+              _NodeSpec.noteStyle,
+              width - MMSpacing.m * 2 - (editing ? 0 : noteEditWidth),
+              note: note.textFormat,
+              source: editing,
+            ).size.height;
+            // Match the existing card slack for fractional CJK font metrics.
+            height += math.max(body, noteRowMinHeight) + MMSpacing.s * 2 + MMSpacing.xxs;
+          }
+        }
+        spec.notesHeight = height;
+        spec.size = Size(width, spec.size.height + height);
+      }
       _specs[id] = spec;
       geometry.add((id, parentId, spec.size.width, spec.size.height));
       var descendants = children[id == rootNodeId ? null : id] ?? const <MapNode>[];
@@ -290,6 +338,18 @@ class MindMapRenderCache {
     }
     return _layout!;
   }
+
+  double get noteHeaderHeight =>
+      math.max(
+        _touchControls ? MMSizes.touchTarget : MMSpacing.xxxl,
+        _textScaler.scale(MMTypography.footnote.fontSize! * MMTypography.footnote.height!) + MMSpacing.l,
+      ) +
+      MMSizes.hairline;
+  double get noteRowMinHeight => _touchControls ? MMSizes.touchTarget : MMSpacing.xxxl;
+  double get noteEditWidth =>
+      _measure(_localizations!.menuEdit, MMTypography.headline, double.infinity).size.width +
+      MMSpacing.xxxl +
+      MMSpacing.s;
 
   /// A summary label's box; an empty one takes no room unless it is being
   /// typed into. Like a topic, the box leaves a little room past the measured
@@ -444,7 +504,11 @@ class _NodeSpec {
   final String? quote;
   final String? meta;
   final MMAnnotationColor? color;
-  final Size size;
+  Size size;
+  List<Card> attachedNotes = const [];
+  bool notesExpanded = false;
+  double notesHeight = 0;
+  double get contentHeight => size.height - notesHeight;
 
   /// Image cards: package file name and the picture's height, from the
   /// area's aspect ratio (layout needs it before the file is decoded). No
