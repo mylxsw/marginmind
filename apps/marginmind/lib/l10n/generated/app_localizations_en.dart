@@ -5579,4 +5579,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapFailureLineSize => 'Response line is too long';
+
+  @override
+  String get mapGenerateSource => 'Source';
+
+  @override
+  String get mapGenerateChangeSources => 'Change / Add';
+
+  @override
+  String get mapGenerateMoreSettings => 'More Settings';
+
+  @override
+  String get mapGenerateSelectSources => 'Select Documents';
+
+  @override
+  String mapGenerateSourceCount(int count) {
+    return '$count documents';
+  }
+
+  @override
+  String get mapGenerateStructurePreview => 'Structure Illustration';
+
+  @override
+  String get mapGeneratePreviewDisclaimer => 'Illustrates organization; actual content is generated later.';
+
+  @override
+  String get mapGeneratePreviewRoot => 'Document Topic';
+
+  @override
+  String mapGeneratePreviewChapter(int count) {
+    return 'Chapter $count';
+  }
+
+  @override
+  String get mapGeneratePreviewConcepts => 'Key Concepts';
+
+  @override
+  String get mapGeneratePreviewLinks => 'Connections';
+
+  @override
+  String get mapGeneratePreviewMethods => 'Applications';
+
+  @override
+  String get mapGeneratePreviewWhat => 'What is it?';
+
+  @override
+  String get mapGeneratePreviewWhy => 'Why?';
+
+  @override
+  String get mapGeneratePreviewHow => 'How?';
+
+  @override
+  String mapGeneratePreviewPoint(int count) {
+    return 'Key Point $count';
+  }
+
+  @override
+  String get mapGenerateInstructionsHint => 'Additional instructions (optional)';
+
+  @override
+  String get mapGenerateDestinationNew => 'A new map will be created';
+
+  @override
+  String get mapGenerateDestinationBranch => 'Will be added to the current map';
+
+  @override
+  String get mapGenerateMapTitle => 'Map Name';
+
+  @override
+  String get mapGenerateNoSources => 'No documents available';
+
+  @override
+  String get mapGenerateSourceRange => 'Document Range';
+
+  @override
+  String get mapGenerateResetRange => 'Use Full Text';
+
+  @override
+  String mapGenerateMarksSummary(int count) {
+    return 'Includes $count annotations';
+  }
+
+  @override
+  String mapGenerateStructureDepth(int count) {
+    return '$count levels';
+  }
 }

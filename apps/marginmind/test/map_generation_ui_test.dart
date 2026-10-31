@@ -210,45 +210,36 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
       await tester.pumpAndSettle();
 
-      // Verify title & document list inside the sheet
       final sheet = find.byType(GenerateMapSheet);
       expect(sheet, findsOneWidget);
-      expect(find.descendant(of: sheet, matching: find.text('论文：检索练习效应')), findsOneWidget);
-
-      // Verify 2 checkboxes in sheet
-      final checkboxes = find.descendant(of: sheet, matching: find.byType(MMCheckbox));
-      expect(checkboxes, findsNWidgets(2));
-
-      // Organization control has Topic selected from prefs
+      expect(find.descendant(of: sheet, matching: find.text('论文：检索练习效应')), findsNothing);
+      expect(find.descendant(of: sheet, matching: find.byType(MMCheckbox)), findsNothing);
+      expect(find.descendant(of: sheet, matching: find.byType(MMSwitch)), findsNothing);
       expect(find.text('按主题重组'), findsOneWidget);
-
-      // Detail level has 4 ("详细") selected from prefs
-      expect(find.text('详细'), findsOneWidget);
-
-      // Quote extraction is now available alongside the whole-document switch.
+      await tester.tap(find.byKey(const ValueKey('map-generate-change-sources')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: sheet, matching: find.byType(MMCheckbox)), findsNWidgets(2));
+      await tester.tap(find.byKey(const ValueKey('map-document-check-c1')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-apply-sources'))).onPressed, isNull);
+      await tester.tap(find.byKey(const ValueKey('map-document-check-c2')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('map-generate-apply-sources')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: sheet, matching: find.text('论文：检索练习效应')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('map-generate-organization-question')));
+      await tester.tap(find.byKey(const ValueKey('map-generate-more-settings')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<MMSegmentedControl<int>>(find.byKey(const ValueKey('map-generate-detail'))).value, 4);
       final switches = tester
           .widgetList<MMSwitch>(find.descendant(of: sheet, matching: find.byType(MMSwitch)))
           .toList();
-      expect(switches.length, 2);
+      expect(switches.first.value, isFalse);
       expect(switches.last.onChanged, isNotNull);
-
-      // Toggle document 2 on
-      await tester.tap(checkboxes.at(1));
-      await tester.pumpAndSettle();
-
-      // Toggle document 1 off
-      await tester.tap(checkboxes.at(0));
-      await tester.pumpAndSettle();
-
-      // Now only doc 2 is on; trying to turn off doc 2 should be disabled
-      final doc2Checkbox = tester.widget<MMCheckbox>(checkboxes.at(1));
-      expect(doc2Checkbox.onChanged, isNull);
-
-      // Change organization to question
-      await tester.tap(find.text('按问题组织'));
-      await tester.pumpAndSettle();
-
-      // Change destination to branch
+      expect(
+        tester.widget<MMTextField>(find.byKey(const ValueKey('map-generate-target-title'))).controller!.text,
+        '论文：检索练习效应',
+      );
       await tester.tap(find.byKey(const ValueKey('map-generate-target-dropdown')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('当前脑图的新分支').last);

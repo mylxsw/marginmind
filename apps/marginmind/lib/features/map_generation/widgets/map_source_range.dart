@@ -112,15 +112,16 @@ class _MapSourceRangeState extends State<MapSourceRange> {
       );
     }
     final selected = mapSelectedChapters(widget.entries, widget.selection);
+    final rowHeight = context.mmTouchPlatform ? MMSizes.touchTarget : MMSizes.mapGenerateChapterRow;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: MMSizes.mapGenerateChapterRow * 4),
+      constraints: BoxConstraints(maxHeight: rowHeight * 4),
       child: ListView(
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         children: [
           for (final entry in widget.entries)
             Container(
-              height: MMSizes.mapGenerateChapterRow,
+              height: rowHeight,
               color: context.mmColors.quaternaryFill,
               padding: const EdgeInsets.only(left: MMSizes.mapGenerateRangeInset, right: MMSpacing.s),
               child: Row(

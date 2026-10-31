@@ -171,7 +171,6 @@ void main() {
       await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(2));
       await tester.pumpAndSettle();
       await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(3));
-      await tester.tap(find.byType(MMSwitch).last);
       await tester.pumpAndSettle();
       await _save(tester, 'scene_2_chapters_$mode');
     });

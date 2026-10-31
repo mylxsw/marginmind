@@ -2894,5 +2894,65 @@
   "mapFailureAnnotation": "Annotation reference is invalid",
   "mapFailureSource": "Source fields are invalid",
   "mapFailureProtected": "Attempted to modify protected content",
-  "mapFailureLineSize": "Response line is too long"
+  "mapFailureLineSize": "Response line is too long",
+  "mapGenerateSource": "Source",
+  "mapGenerateChangeSources": "Change / Add",
+  "mapGenerateMoreSettings": "More Settings",
+  "mapGenerateSelectSources": "Select Documents",
+  "mapGenerateSourceCount": "{count} documents",
+  "@mapGenerateSourceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateStructurePreview": "Structure Illustration",
+  "mapGeneratePreviewDisclaimer": "Illustrates organization; actual content is generated later.",
+  "mapGeneratePreviewRoot": "Document Topic",
+  "mapGeneratePreviewChapter": "Chapter {count}",
+  "@mapGeneratePreviewChapter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGeneratePreviewConcepts": "Key Concepts",
+  "mapGeneratePreviewLinks": "Connections",
+  "mapGeneratePreviewMethods": "Applications",
+  "mapGeneratePreviewWhat": "What is it?",
+  "mapGeneratePreviewWhy": "Why?",
+  "mapGeneratePreviewHow": "How?",
+  "mapGeneratePreviewPoint": "Key Point {count}",
+  "@mapGeneratePreviewPoint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateInstructionsHint": "Additional instructions (optional)",
+  "mapGenerateDestinationNew": "A new map will be created",
+  "mapGenerateDestinationBranch": "Will be added to the current map",
+  "mapGenerateMapTitle": "Map Name",
+  "mapGenerateNoSources": "No documents available",
+  "mapGenerateSourceRange": "Document Range",
+  "mapGenerateResetRange": "Use Full Text",
+  "mapGenerateMarksSummary": "Includes {count} annotations",
+  "@mapGenerateMarksSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateStructureDepth": "{count} levels",
+  "@mapGenerateStructureDepth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

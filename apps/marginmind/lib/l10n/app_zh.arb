@@ -2196,5 +2196,65 @@
   "mapFailureAnnotation": "引用的批注无效",
   "mapFailureSource": "来源字段格式错误",
   "mapFailureProtected": "尝试修改受保护的内容",
-  "mapFailureLineSize": "单行内容过长"
+  "mapFailureLineSize": "单行内容过长",
+  "mapGenerateSource": "来源",
+  "mapGenerateChangeSources": "更换 / 添加",
+  "mapGenerateMoreSettings": "更多设置",
+  "mapGenerateSelectSources": "选择文档",
+  "mapGenerateSourceCount": "共 {count} 份文档",
+  "@mapGenerateSourceCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateStructurePreview": "结构示意",
+  "mapGeneratePreviewDisclaimer": "仅示意组织方式，具体内容以生成结果为准",
+  "mapGeneratePreviewRoot": "文档主题",
+  "mapGeneratePreviewChapter": "第 {count} 章",
+  "@mapGeneratePreviewChapter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGeneratePreviewConcepts": "核心概念",
+  "mapGeneratePreviewLinks": "关联关系",
+  "mapGeneratePreviewMethods": "应用方法",
+  "mapGeneratePreviewWhat": "是什么",
+  "mapGeneratePreviewWhy": "为什么",
+  "mapGeneratePreviewHow": "怎么做",
+  "mapGeneratePreviewPoint": "要点 {count}",
+  "@mapGeneratePreviewPoint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateInstructionsHint": "补充要求（选填）",
+  "mapGenerateDestinationNew": "将创建新脑图",
+  "mapGenerateDestinationBranch": "将添加到当前脑图",
+  "mapGenerateMapTitle": "脑图名称",
+  "mapGenerateNoSources": "暂无可用文档",
+  "mapGenerateSourceRange": "文档范围",
+  "mapGenerateResetRange": "恢复全文",
+  "mapGenerateMarksSummary": "含 {count} 条批注",
+  "@mapGenerateMarksSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapGenerateStructureDepth": "{count} 层结构",
+  "@mapGenerateStructureDepth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

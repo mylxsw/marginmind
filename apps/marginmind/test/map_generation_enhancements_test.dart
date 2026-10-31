@@ -264,12 +264,13 @@ void main() {
         await tester.enterText(fields.first, '3');
       }
       await tester.pump();
-      final check = tester.widget<MMCheckbox>(find.byKey(ValueKey('map-document-check-${doc.id}')));
-      expect(check.mixed, isTrue);
+      expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNotNull);
       expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '2 页');
-      await tester.tap(find.byKey(ValueKey('map-range-toggle-${doc.id}')));
+      await tester.tap(find.byKey(const ValueKey('map-generate-range-done')));
       await tester.pump();
       expect(find.byType(MapSourceRange), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('map-generate-more-settings')));
+      await tester.pumpAndSettle();
       final sheet = find.byType(GenerateMapSheet);
       await tester.tap(find.descendant(of: sheet, matching: find.byType(MMSwitch)).last);
       await tester.tap(find.byKey(const ValueKey('map-generate-sheet-start-button')));
@@ -284,7 +285,7 @@ void main() {
     });
   }
 
-  testWidgets('range toggle belongs to the single document row and multi-selection hides it', (tester) async {
+  testWidgets('source selection is separate from the range and advanced settings', (tester) async {
     await harness.openWorkspace(tester);
     await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
     await tester.pumpAndSettle();
@@ -300,11 +301,17 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('map-range-toggle-c1')));
     await tester.pump();
     expect(find.byType(MapSourceRange), findsOneWidget);
-    expect(find.descendant(of: sheet, matching: find.byType(MMSwitch)), findsNWidgets(2));
+    expect(find.descendant(of: sheet, matching: find.byType(MMSwitch)), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('map-generate-range-done')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('map-generate-change-sources')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('map-document-check-c2')));
+    await tester.tap(find.byKey(const ValueKey('map-generate-apply-sources')));
     await tester.pumpAndSettle();
     expect(find.byType(MapSourceRange), findsNothing);
-    expect(find.byKey(const ValueKey('map-range-toggle-c1')), findsNothing);
+    expect(find.byKey(const ValueKey('map-generate-source-summary')), findsOneWidget);
+    expect(find.byKey(const ValueKey('map-range-toggle-c1')), findsOneWidget);
     expect(find.byKey(const ValueKey('map-range-toggle-c2')), findsNothing);
     expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '42 页');
   });
@@ -332,8 +339,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
     await tester.pumpAndSettle();
     final sheet = find.byType(GenerateMapSheet);
-    expect(find.descendant(of: sheet, matching: find.byIcon(MMReaderIcons.area)), findsNWidgets(2));
-    expect(find.descendant(of: sheet, matching: find.text('需先识别文字')), findsNWidgets(2));
+    expect(find.descendant(of: sheet, matching: find.byIcon(MMReaderIcons.area)), findsOneWidget);
+    expect(find.descendant(of: sheet, matching: find.text('需先识别文字')), findsOneWidget);
     expect(tester.widget<MMButton>(find.byKey(const ValueKey('map-generate-sheet-start-button'))).onPressed, isNull);
     expect(find.descendant(of: sheet, matching: find.byTooltip('先识别文字才能生成')), findsOneWidget);
     expect(tester.widget<Text>(find.byKey(const ValueKey('map-range-page-count'))).data, '0 页');

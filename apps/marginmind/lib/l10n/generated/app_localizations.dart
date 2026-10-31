@@ -9823,6 +9823,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Response line is too long'**
   String get mapFailureLineSize;
+
+  /// No description provided for @mapGenerateSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get mapGenerateSource;
+
+  /// No description provided for @mapGenerateChangeSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Change / Add'**
+  String get mapGenerateChangeSources;
+
+  /// No description provided for @mapGenerateMoreSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'More Settings'**
+  String get mapGenerateMoreSettings;
+
+  /// No description provided for @mapGenerateSelectSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Documents'**
+  String get mapGenerateSelectSources;
+
+  /// No description provided for @mapGenerateSourceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} documents'**
+  String mapGenerateSourceCount(int count);
+
+  /// No description provided for @mapGenerateStructurePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure Illustration'**
+  String get mapGenerateStructurePreview;
+
+  /// No description provided for @mapGeneratePreviewDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Illustrates organization; actual content is generated later.'**
+  String get mapGeneratePreviewDisclaimer;
+
+  /// No description provided for @mapGeneratePreviewRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Topic'**
+  String get mapGeneratePreviewRoot;
+
+  /// No description provided for @mapGeneratePreviewChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter {count}'**
+  String mapGeneratePreviewChapter(int count);
+
+  /// No description provided for @mapGeneratePreviewConcepts.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Concepts'**
+  String get mapGeneratePreviewConcepts;
+
+  /// No description provided for @mapGeneratePreviewLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get mapGeneratePreviewLinks;
+
+  /// No description provided for @mapGeneratePreviewMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get mapGeneratePreviewMethods;
+
+  /// No description provided for @mapGeneratePreviewWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get mapGeneratePreviewWhat;
+
+  /// No description provided for @mapGeneratePreviewWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why?'**
+  String get mapGeneratePreviewWhy;
+
+  /// No description provided for @mapGeneratePreviewHow.
+  ///
+  /// In en, this message translates to:
+  /// **'How?'**
+  String get mapGeneratePreviewHow;
+
+  /// No description provided for @mapGeneratePreviewPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Point {count}'**
+  String mapGeneratePreviewPoint(int count);
+
+  /// No description provided for @mapGenerateInstructionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional instructions (optional)'**
+  String get mapGenerateInstructionsHint;
+
+  /// No description provided for @mapGenerateDestinationNew.
+  ///
+  /// In en, this message translates to:
+  /// **'A new map will be created'**
+  String get mapGenerateDestinationNew;
+
+  /// No description provided for @mapGenerateDestinationBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Will be added to the current map'**
+  String get mapGenerateDestinationBranch;
+
+  /// No description provided for @mapGenerateMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map Name'**
+  String get mapGenerateMapTitle;
+
+  /// No description provided for @mapGenerateNoSources.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents available'**
+  String get mapGenerateNoSources;
+
+  /// No description provided for @mapGenerateSourceRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Range'**
+  String get mapGenerateSourceRange;
+
+  /// No description provided for @mapGenerateResetRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Full Text'**
+  String get mapGenerateResetRange;
+
+  /// No description provided for @mapGenerateMarksSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes {count} annotations'**
+  String mapGenerateMarksSummary(int count);
+
+  /// No description provided for @mapGenerateStructureDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} levels'**
+  String mapGenerateStructureDepth(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -5356,4 +5356,89 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mapFailureLineSize => '单行内容过长';
+
+  @override
+  String get mapGenerateSource => '来源';
+
+  @override
+  String get mapGenerateChangeSources => '更换 / 添加';
+
+  @override
+  String get mapGenerateMoreSettings => '更多设置';
+
+  @override
+  String get mapGenerateSelectSources => '选择文档';
+
+  @override
+  String mapGenerateSourceCount(int count) {
+    return '共 $count 份文档';
+  }
+
+  @override
+  String get mapGenerateStructurePreview => '结构示意';
+
+  @override
+  String get mapGeneratePreviewDisclaimer => '仅示意组织方式，具体内容以生成结果为准';
+
+  @override
+  String get mapGeneratePreviewRoot => '文档主题';
+
+  @override
+  String mapGeneratePreviewChapter(int count) {
+    return '第 $count 章';
+  }
+
+  @override
+  String get mapGeneratePreviewConcepts => '核心概念';
+
+  @override
+  String get mapGeneratePreviewLinks => '关联关系';
+
+  @override
+  String get mapGeneratePreviewMethods => '应用方法';
+
+  @override
+  String get mapGeneratePreviewWhat => '是什么';
+
+  @override
+  String get mapGeneratePreviewWhy => '为什么';
+
+  @override
+  String get mapGeneratePreviewHow => '怎么做';
+
+  @override
+  String mapGeneratePreviewPoint(int count) {
+    return '要点 $count';
+  }
+
+  @override
+  String get mapGenerateInstructionsHint => '补充要求（选填）';
+
+  @override
+  String get mapGenerateDestinationNew => '将创建新脑图';
+
+  @override
+  String get mapGenerateDestinationBranch => '将添加到当前脑图';
+
+  @override
+  String get mapGenerateMapTitle => '脑图名称';
+
+  @override
+  String get mapGenerateNoSources => '暂无可用文档';
+
+  @override
+  String get mapGenerateSourceRange => '文档范围';
+
+  @override
+  String get mapGenerateResetRange => '恢复全文';
+
+  @override
+  String mapGenerateMarksSummary(int count) {
+    return '含 $count 条批注';
+  }
+
+  @override
+  String mapGenerateStructureDepth(int count) {
+    return '$count 层结构';
+  }
 }
