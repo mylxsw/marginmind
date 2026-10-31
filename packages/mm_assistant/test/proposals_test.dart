@@ -56,6 +56,39 @@ void main() {
       throwsFormatException,
     );
   });
+  test('document-only edits stay out of conversation schema and hook', () {
+    final tools = AssistantTools(
+      reader: Reader(),
+      scope: ReadScope(studySetId: 'set', documents: {'doc'}, selections: {}, maps: {'map'}),
+      cancel: CancellationToken(),
+      citations: CitationRegistry(primaryDocumentId: 'doc', online: false),
+      budget: RunBudget(),
+    ).build();
+    final schema = tools.singleWhere((t) => t.name == 'propose_map_edits').parameters;
+    final kinds = schema['properties']['ops']['items']['properties']['kind']['enum'];
+    expect(kinds, ['addTopic', 'addNote', 'addReviewCard', 'move', 'rename']);
+    final run = makeRun(ScriptClient([]), skill: 'organize');
+    for (final raw in [
+      '{"ops":[{"id":"e","kind":"addExcerpt","parentId":"root","annotationId":"mark"}]}',
+      '{"ops":[{"id":"d","kind":"remove","nodeId":"child","reason":"obsolete"}]}',
+    ]) {
+      final request = call('propose_map_edits', raw);
+      expect(
+        run.proposals
+            .beforeToolCall(
+              ToolCallHookContext(
+                run.agent,
+                call: request.functionCalls.single,
+                modelMessage: request,
+                availableTools: [],
+              ),
+            )
+            .action,
+        ToolCallHookAction.deny,
+      );
+    }
+    expect(run.agent.state.metadata['assistant.proposals'], isNull);
+  });
   test('proposal hook duplicate call is stable and malformed proposal denied', () {
     final run = makeRun(ScriptClient([]), skill: 'organize');
     final good = call(

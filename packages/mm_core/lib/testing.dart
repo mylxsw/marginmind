@@ -7,3 +7,5 @@ export 'src/testing/in_memory_content_repository.dart';
 export 'src/testing/in_memory_study_set_repository.dart';
 
 export 'src/testing/in_memory_vocabulary_repository.dart';
+
+export 'src/testing/map_generator.dart';
