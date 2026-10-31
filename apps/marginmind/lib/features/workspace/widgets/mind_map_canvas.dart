@@ -2946,7 +2946,8 @@ class _NodeView extends StatelessWidget {
     final bg = look?.fill ?? own;
 
     final Widget content = switch (spec.kind) {
-      _Kind.root => Center(
+      _Kind.root => Align(
+        alignment: Alignment.centerLeft,
         child: Text(
           spec.title,
           maxLines: 1,
@@ -2956,7 +2957,8 @@ class _NodeView extends StatelessWidget {
       ),
       _Kind.topic =>
         editor == null
-            ? Center(
+            ? Align(
+                alignment: Alignment.centerLeft,
                 child: spec.source == null
                     ? Text(spec.title, style: t.headline.copyWith(color: look?.text))
                     : Row(
@@ -2976,7 +2978,7 @@ class _NodeView extends StatelessWidget {
                         ],
                       ),
               )
-            : Center(child: editor),
+            : Align(alignment: Alignment.centerLeft, child: editor),
       _Kind.note => Row(
         children: [
           Opacity(opacity: 0.6, child: Icon(MMIcons.pen, size: 13, color: c.label)),
