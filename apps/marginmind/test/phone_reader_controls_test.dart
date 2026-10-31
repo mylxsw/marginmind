@@ -116,7 +116,7 @@ void main() {
       await drain(tester);
       expect(pdf.currentPage, 6);
       slider.onChangeEnd!(6);
-      await tester.tap(key('scrub-close'));
+      await tester.tapAt(tester.getCenter(find.byType(MMPdfView)));
       await tester.pumpAndSettle();
       expect(slots.slot, PhoneReaderSlot.page);
       await tester.tap(find.byKey(const ValueKey('phone-workspace-more')));
@@ -227,6 +227,8 @@ void main() {
       await drain(tester);
       expect(find.byType(PhoneReaderTopControls), findsNothing);
       expect(find.byType(PhoneReaderControls), findsNothing);
+      expect(tester.element(find.byType(ReaderPane)).mmColors.flat, isTrue);
+      expect(find.ancestor(of: find.byType(ReaderPane), matching: find.byType(MMFlatSurface)), findsOneWidget);
       expect(find.byKey(const ValueKey('reader-more')).hitTestable(), findsOneWidget);
       expect(find.byKey(const ValueKey('reader-page-navigation')), findsOneWidget);
       expect(tester.takeException(), isNull);

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -160,7 +161,7 @@ Widget _glass(Widget child, {double radius = MMSizes.phoneTopControl / 2}) =>
 IconData phoneReaderToolIcon(AnnotationTool tool) => switch (tool) {
   AnnotationTool.select => MMReaderIcons.select,
   AnnotationTool.highlight => MMIcons.highlight,
-  AnnotationTool.underline => MMIcons.underline,
+  AnnotationTool.underline => MMReaderIcons.underline,
   AnnotationTool.ink => MMReaderIcons.pen,
   AnnotationTool.area => MMReaderIcons.area,
 };
@@ -297,40 +298,53 @@ class _PhoneReaderControlsState extends ConsumerState<PhoneReaderControls> {
         );
       case PhoneReaderSlot.scrub:
         content = _glass(
-          Padding(
-            key: const ValueKey('phone-reader-scrub'),
-            padding: const EdgeInsets.symmetric(horizontal: MMRadii.capsule, vertical: MMSpacing.xs),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.chapter,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.mmText.callout,
+          Semantics(
+            onDismiss: slots.closeScrub,
+            child: CallbackShortcuts(
+              bindings: {const SingleActivator(LogicalKeyboardKey.escape): slots.closeScrub},
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: MMPhoneReaderLayout.scrubHeight),
+                child: Padding(
+                  key: const ValueKey('phone-reader-scrub'),
+                  padding: const EdgeInsets.symmetric(horizontal: MMRadii.capsule, vertical: MMSpacing.xs),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.chapter,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.mmText.callout,
+                            ),
+                          ),
+                          Text(l.pageOf(page, count), style: context.mmText.footnote),
+                        ],
                       ),
-                    ),
-                    Text(l.pageOf(page, count), style: context.mmText.footnote),
-                    button('scrub-close', MMIcons.chevronDown, l.phoneReaderCollapse, slots.closeScrub),
-                  ],
+                      SizedBox(
+                        height: MMSizes.touchTarget,
+                        child: Slider(
+                          key: const ValueKey('phone-reader-slider'),
+                          min: widget.onProgress == null ? 1 : 0,
+                          max: widget.onProgress == null ? math.max(2, count).toDouble() : 1,
+                          value: widget.onProgress == null ? page.toDouble() : (widget.progress ?? 0).clamp(0, 1),
+                          semanticFormatterCallback: (v) =>
+                              widget.onProgress == null ? l.pageOf(v.round(), count) : '${(v * 100).round()}%',
+                          padding: EdgeInsets.zero,
+                          onChangeStart: count > 1 || widget.onProgress != null
+                              ? (_) => slots.setScrubbing(true)
+                              : null,
+                          onChanged: widget.onProgress ?? (count > 1 ? (v) => widget.onJump(v.round()) : null),
+                          onChangeEnd: count > 1 || widget.onProgress != null ? (_) => slots.setScrubbing(false) : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Slider(
-                  key: const ValueKey('phone-reader-slider'),
-                  min: widget.onProgress == null ? 1 : 0,
-                  max: widget.onProgress == null ? math.max(2, count).toDouble() : 1,
-                  value: widget.onProgress == null ? page.toDouble() : (widget.progress ?? 0).clamp(0, 1),
-                  semanticFormatterCallback: (v) =>
-                      widget.onProgress == null ? l.pageOf(v.round(), count) : '${(v * 100).round()}%',
-
-                  padding: const EdgeInsets.symmetric(vertical: MMSpacing.m),
-                  onChangeStart: count > 1 || widget.onProgress != null ? (_) => slots.setScrubbing(true) : null,
-                  onChanged: widget.onProgress ?? (count > 1 ? (v) => widget.onJump(v.round()) : null),
-                  onChangeEnd: count > 1 || widget.onProgress != null ? (_) => slots.setScrubbing(false) : null,
-                ),
-              ],
+              ),
             ),
           ),
           radius: MMSpacing.xxl,

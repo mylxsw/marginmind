@@ -1,0 +1,243 @@
+{
+  "base": "62c179ec",
+  "method": "changed executable lines from git diff --unified=0 intersected with LCOV; constants/abstract declarations without executable records excluded",
+  "reports": [
+    "16 affected app suites",
+    "final phone controls and screenshot suites"
+  ],
+  "canonical_final_sources": [
+    "apps/marginmind/lib/features/workspace/phone_reader_controls_controller.dart",
+    "apps/marginmind/lib/features/workspace/widgets/phone_reader_controls.dart",
+    "apps/marginmind/lib/features/workspace/widgets/reader_toolbar.dart"
+  ],
+  "covered": 724,
+  "executable": 844,
+  "percent": 85.78,
+  "files": [
+    {
+      "source": "apps/marginmind/lib/features/workspace/phone_reader_controls_controller.dart",
+      "covered": 70,
+      "executable": 72,
+      "percent": 97.22,
+      "missed_lines": [
+        36,
+        97
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/phone_reader_controls.dart",
+      "covered": 273,
+      "executable": 274,
+      "percent": 99.64,
+      "missed_lines": [
+        241
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/reader_pane.dart",
+      "covered": 192,
+      "executable": 261,
+      "percent": 73.56,
+      "missed_lines": [
+        218,
+        219,
+        221,
+        1211,
+        1238,
+        1239,
+        1240,
+        1242,
+        1243,
+        1244,
+        1245,
+        1247,
+        1248,
+        1249,
+        1250,
+        1270,
+        1271,
+        1274,
+        1314,
+        1315,
+        1333,
+        1334,
+        1335,
+        1336,
+        1340,
+        1341,
+        1344,
+        1345,
+        1346,
+        1347,
+        1348,
+        1349,
+        1351,
+        1352,
+        1353,
+        1366,
+        1377,
+        1378,
+        1384,
+        1387,
+        1388,
+        1389,
+        1392,
+        1393,
+        1395,
+        1396,
+        1398,
+        1399,
+        1453,
+        1454,
+        1457,
+        1458,
+        1459,
+        1460,
+        1508,
+        1509,
+        1526,
+        1528,
+        1530,
+        1532,
+        1566,
+        1567,
+        1568,
+        1570,
+        1571,
+        1572,
+        1574,
+        1575,
+        1576
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/reader_toolbar.dart",
+      "covered": 64,
+      "executable": 83,
+      "percent": 77.11,
+      "missed_lines": [
+        68,
+        80,
+        81,
+        87,
+        88,
+        89,
+        106,
+        107,
+        108,
+        109,
+        111,
+        112,
+        113,
+        114,
+        116,
+        129,
+        141,
+        149,
+        151
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/widgets/reflow_reader.dart",
+      "covered": 13,
+      "executable": 17,
+      "percent": 76.47,
+      "missed_lines": [
+        539,
+        540,
+        541,
+        543
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/workspace_chrome_controller.dart",
+      "covered": 3,
+      "executable": 3,
+      "percent": 100.0,
+      "missed_lines": []
+    },
+    {
+      "source": "apps/marginmind/lib/features/workspace/workspace_screen.dart",
+      "covered": 102,
+      "executable": 126,
+      "percent": 80.95,
+      "missed_lines": [
+        681,
+        702,
+        718,
+        779,
+        784,
+        785,
+        786,
+        787,
+        788,
+        790,
+        791,
+        793,
+        794,
+        795,
+        796,
+        797,
+        799,
+        800,
+        801,
+        802,
+        803,
+        805,
+        806,
+        807
+      ]
+    },
+    {
+      "source": "apps/marginmind/lib/l10n/app_en.arb",
+      "covered": 0,
+      "executable": 0,
+      "percent": null,
+      "missed_lines": []
+    },
+    {
+      "source": "apps/marginmind/lib/l10n/app_zh.arb",
+      "covered": 0,
+      "executable": 0,
+      "percent": null,
+      "missed_lines": []
+    },
+    {
+      "source": "apps/marginmind/lib/l10n/generated/app_localizations.dart",
+      "covered": 0,
+      "executable": 0,
+      "percent": null,
+      "missed_lines": []
+    },
+    {
+      "source": "apps/marginmind/lib/l10n/generated/app_localizations_en.dart",
+      "covered": 4,
+      "executable": 4,
+      "percent": 100.0,
+      "missed_lines": []
+    },
+    {
+      "source": "apps/marginmind/lib/l10n/generated/app_localizations_zh.dart",
+      "covered": 3,
+      "executable": 4,
+      "percent": 75.0,
+      "missed_lines": [
+        4719
+      ]
+    },
+    {
+      "source": "packages/mm_design/lib/src/icons/mm_icons.dart",
+      "covered": 0,
+      "executable": 0,
+      "percent": null,
+      "missed_lines": []
+    },
+    {
+      "source": "packages/mm_design/lib/src/tokens/metrics.dart",
+      "covered": 0,
+      "executable": 0,
+      "percent": null,
+      "missed_lines": []
+    }
+  ]
+}
