@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/features/library/library_controller.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/phone_reader_controls_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'adaptive_layout_test.dart' show Device, iphone, iphoneLandscape, openWorkspace, pumpDevice;
@@ -37,21 +38,28 @@ void main() {
       addTearDown(tester.view.display.resetSize);
       await openWorkspace(tester, device);
       final viewport = tester.getRect(find.byKey(const ValueKey('pdf-placeholder-c1')));
-      final navigation = tester.getRect(find.byKey(const ValueKey('reader-page-navigation')));
+      final compactPhone = usePhoneReaderControls(tester.element(find.byType(ReaderPane)));
+      final navigation = tester.getRect(
+        find.byKey(ValueKey(compactPhone ? 'phone-reader-page' : 'reader-page-navigation')),
+      );
       // The PDF's first line must have clear space even before it has loaded.
       expect(navigation.overlaps(Rect.fromLTWH(viewport.left, viewport.top, viewport.width, 24)), isFalse);
-      if (device.size.height < 500) {
+      if (!compactPhone && device.size.height < 500) {
         // Docked controls cannot cover any PDF text, at any scroll position.
         expect(navigation.overlaps(viewport), isFalse);
       }
-      expect(find.byKey(const ValueKey('reader-page-badge')).hitTestable(), findsOneWidget);
-      expect(find.byKey(const ValueKey('reader-page-progress')).hitTestable(), findsOneWidget);
+      if (compactPhone) {
+        expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
+      } else {
+        expect(find.byKey(const ValueKey('reader-page-badge')).hitTestable(), findsOneWidget);
+        expect(find.byKey(const ValueKey('reader-page-progress')).hitTestable(), findsOneWidget);
+      }
       expect(tester.takeException(), isNull);
       // Resizing the same reader restores the existing floating layout.
       tester.view.physicalSize = const Size(402, 874);
       await tester.pumpAndSettle();
       final portraitViewport = tester.getRect(find.byKey(const ValueKey('pdf-placeholder-c1')));
-      expect(tester.getRect(find.byKey(const ValueKey('reader-page-navigation'))).overlaps(portraitViewport), isTrue);
+      expect(tester.getRect(find.byKey(const ValueKey('phone-reader-page'))).overlaps(portraitViewport), isTrue);
       expect(find.byType(ReaderPane), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

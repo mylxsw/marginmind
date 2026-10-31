@@ -4,6 +4,8 @@ import 'package:mm_design/mm_design.dart';
 
 /// Transient state owned by one workspace, never persisted with the document.
 class WorkspaceChromeController extends ChangeNotifier {
+  /// Called only for reading gestures, before checking transient holds.
+  VoidCallback? onReadingScroll;
   bool _visible = true;
   bool get visible => _visible;
   final Set<Object> _holds = {};
@@ -36,9 +38,9 @@ class WorkspaceChromeController extends ChangeNotifier {
     _changed();
   }
 
-  void hold(Object reason) {
+  void hold(Object reason, {bool reveal = true}) {
     _holds.add(reason);
-    reveal();
+    if (reveal) this.reveal();
   }
 
   void release(Object reason) {
@@ -57,7 +59,9 @@ class WorkspaceChromeController extends ChangeNotifier {
       _geometry = geometryKey;
       _distance = 0;
     }
-    if (!delta.isFinite || _holds.isNotEmpty) return;
+    if (!delta.isFinite) return;
+    if (delta != 0) onReadingScroll?.call();
+    if (_holds.isNotEmpty) return;
     if (atStart) return reveal();
     if (delta == 0) return;
     if (delta.sign != _distance.sign) _distance = 0;

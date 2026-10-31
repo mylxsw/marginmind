@@ -132,13 +132,16 @@ class DocumentMapBanner extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < MMSizes.mapDocumentBannerCompactWidth;
+        final phoneActions = compact && MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
         final actions = [
-          generate,
-          if (hasNodes) ...[const SizedBox(width: 10), merge],
+          phoneActions ? Flexible(child: generate) : generate,
+          if (hasNodes) ...[const SizedBox(width: 10), phoneActions ? Flexible(child: merge) : merge],
         ];
         return Container(
           key: const ValueKey('document-map-banner'),
-          height: compact ? MMSizes.mapDocumentBanner * 2 : MMSizes.mapDocumentBanner,
+          height: compact
+              ? MMSizes.mapDocumentBanner * 2 + (phoneActions ? MMSizes.hairline * 2 : 0)
+              : MMSizes.mapDocumentBanner,
           padding: const EdgeInsets.only(left: 12, right: 6),
           decoration: BoxDecoration(
             color: c.surface,

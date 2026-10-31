@@ -4712,4 +4712,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneNavigationNotes => '学习笔记';
+
+  @override
+  String get phoneReaderReading => '阅读';
+
+  @override
+  String get phoneReaderTools => '标注工具';
+
+  @override
+  String get phoneReaderCollapse => '收起';
+
+  @override
+  String get phoneReaderExitTools => '结束标注';
+
+  @override
+  String phoneReaderPercent(int percent) {
+    return '$percent%';
+  }
 }

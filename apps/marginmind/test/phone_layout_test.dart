@@ -98,11 +98,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(PhoneTabBar), findsNothing);
       expect(find.byType(ReaderPane), findsOneWidget);
-      // The tabs replace the Source | Map switch.
+      // The workspace keeps its Reading | Map switch.
       expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
-      // The pages run on beneath the bar; the page navigation stays above it.
+      // The reader capsule occupies the safe bottom slot.
       expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
-      expect(tester.getRect(find.byKey(const ValueKey('reader-page-navigation'))).bottom, lessThanOrEqualTo(bar.top));
+      expect(
+        tester.getRect(find.byKey(const ValueKey('phone-reader-page'))).bottom,
+        phone.size.height - phone.safe.bottom,
+      );
 
       await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
@@ -111,7 +114,7 @@ void main() {
       expect(find.byType(MapPane), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'map');
 
-      await tester.tap(find.text('Source').first);
+      await tester.tap(find.text('Reading').first);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.primary);
 
