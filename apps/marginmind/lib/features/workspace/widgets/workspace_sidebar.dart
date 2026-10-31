@@ -18,6 +18,7 @@ import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
 import '../workspace_controller.dart';
 import '../../map_generation/map_generation_controller.dart';
+import '../../map_generation/map_updates.dart';
 import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
@@ -54,14 +55,18 @@ class WorkspaceSidebar extends ConsumerWidget {
     bool matches(String text) => query.isEmpty || text.toLowerCase().contains(query);
 
     final phone = MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact;
-    Widget phoneRow(Widget widget, {bool learning = false, bool? mapDestination, bool document = false}) {
+    Widget phoneRow(Widget widget, {bool cautionCount = false, bool? mapDestination, bool document = false}) {
       if (widget is DecoratedBox) {
-        return phoneRow(widget.child!, learning: learning, mapDestination: mapDestination, document: true);
+        return DecoratedBox(
+          key: widget.key,
+          decoration: widget.decoration,
+          child: phoneRow(widget.child!, mapDestination: mapDestination, document: true),
+        );
       }
       if (widget is! MMSidebarItem) return widget;
       return MMPhoneNavigationRow(
         key: widget.key,
-        learningCount: learning,
+        cautionCount: cautionCount,
         item: MMSidebarItem(
           icon: widget.icon,
           label: widget.label,
@@ -103,17 +108,7 @@ class WorkspaceSidebar extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
                 );
               }
-              final hasUpdates =
-                  map.generation != null &&
-                  mapSourcesChanged(map.generation!, [
-                    for (final s in map.generation!.sources)
-                      MapSource(
-                        documentId: s.documentId,
-                        chapters: s.chapters,
-                        fingerprint: content?.document(s.documentId) == null ? '' : s.fingerprint,
-                        readThrough: s.readThrough,
-                      ),
-                  ]);
+              final hasUpdates = ref.watch(mapHasUpdatesProvider((studySetId, map.id)));
               if (hasUpdates) {
                 return Semantics(
                   label: l.mapHasUpdates,
@@ -331,7 +326,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final tagFilter = state.tagFilter;
     final tags = [
       for (final tag in tagCounts.keys)
-        if (matches(tag) || tag.toLowerCase() == tagFilter?.toLowerCase())
+        if (matches(tag) || (!phone && tag.toLowerCase() == tagFilter?.toLowerCase()))
           MMSidebarItem(
             key: ValueKey('sidebar-tag-$tag'),
             icon: MMIcons.tag,
@@ -380,33 +375,36 @@ class WorkspaceSidebar extends ConsumerWidget {
 
     if (phone) {
       return PhoneWorkspaceSidebar(
+        key: ValueKey(studySetId),
         title: studyTitle ?? '',
+        mapId: state.activeMapId,
         searchFocus: searchFocus,
         onSearch: controller.setSidebarQuery,
         onDismiss: onDismiss ?? controller.toggleSidebar,
         documents: [for (final row in docs) phoneRow(row, mapDestination: false)],
         maps: [for (final row in maps) phoneRow(row, mapDestination: true)],
         notes: [for (final row in notes) phoneRow(row)],
+        showNotes: matches(l.phoneNavigationNotes) || notes.isNotEmpty,
         learning: [
-          MMPhoneNavigationRow(
-            learningCount: true,
-            item: MMSidebarItem(
-              icon: MMIcons.review,
-              label: l.sectionCards,
-              trailing: MMBadge(
-                '${content?.cards.where((card) => content.isPlaced(card.id, mapId: state.activeMapId)).length ?? 0}',
+          if (matches(l.sectionCards))
+            MMPhoneNavigationRow(
+              item: MMSidebarItem(
+                icon: MMIcons.review,
+                label: l.sectionCards,
+                trailing: MMBadge(
+                  '${content?.cards.where((card) => content.isPlaced(card.id, mapId: state.activeMapId)).length ?? 0}',
+                ),
+                onTap: () {
+                  controller.filterTag(null);
+                  controller.setLayout(MMSplitMode.secondary);
+                  onDismiss?.call();
+                },
               ),
-              onTap: () {
-                controller.filterTag(null);
-                controller.setLayout(MMSplitMode.secondary);
-                onDismiss?.call();
-              },
             ),
-          ),
           for (final row in learn)
-            if (row.icon != MMIcons.vocabulary) phoneRow(row, learning: true),
+            if (row.icon != MMIcons.vocabulary) phoneRow(row, cautionCount: row.icon == MMIcons.review),
         ],
-        tags: [for (final row in tags) phoneRow(row)],
+        tags: [for (final row in tags) phoneRow(row) as MMPhoneNavigationRow],
         results: query.isEmpty ? const [] : [for (final row in cards) phoneRow(row)],
         searching: query.isNotEmpty,
         onAddDocument: () => pickAndImportDocuments(context, ref, studySetId),
@@ -414,9 +412,6 @@ class WorkspaceSidebar extends ConsumerWidget {
         onAddMap: () => showNewMapSheet(context, ref, studySetId),
         onGenerateMap: () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: state.activeDocumentId),
         onAddNote: () => showNoteSetupSheet(context, ref, studySetId),
-        onAddTag: state.selectedCardId == null
-            ? null
-            : () => showCardTagsSheet(context, ref, studySetId, state.selectedCardId!),
       );
     }
 

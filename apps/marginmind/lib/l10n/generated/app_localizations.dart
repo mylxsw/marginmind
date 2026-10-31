@@ -8731,12 +8731,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Study notes'**
   String get phoneNavigationNotes;
-
-  /// No description provided for @phoneNavigationSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings'**
-  String get phoneNavigationSettings;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

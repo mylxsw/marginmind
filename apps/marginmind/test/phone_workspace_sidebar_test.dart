@@ -16,7 +16,7 @@ void main() {
     addTearDown(focus.dispose);
     final calls = <String>[];
     final overrides = await testOverrides();
-    Widget row(String label) => MMPhoneNavigationRow(
+    MMPhoneNavigationRow row(String label) => MMPhoneNavigationRow(
       item: MMSidebarItem(icon: MMIcons.studyNote, label: label, onTap: () => calls.add(label)),
     );
     await tester.pumpWidget(
@@ -34,12 +34,14 @@ void main() {
                 width: 328,
                 child: PhoneWorkspaceSidebar(
                   title: 'Study set',
+                  mapId: 'map',
                   searchFocus: focus,
                   onSearch: (_) {},
                   onDismiss: () => calls.add('done'),
                   documents: [row('Document')],
                   maps: [row('Map')],
                   notes: [row('Note')],
+                  showNotes: true,
                   learning: [row('Review')],
                   tags: [row('Tag')],
                   results: const [],
@@ -49,7 +51,6 @@ void main() {
                   onAddMap: () => calls.add('map'),
                   onGenerateMap: () => calls.add('generate'),
                   onAddNote: () => calls.add('new-note'),
-                  onAddTag: () => calls.add('tag'),
                 ),
               ),
             ),
@@ -79,7 +80,7 @@ void main() {
     expect(find.text('Note').hitTestable(), findsOneWidget);
     await tester.tap(find.text('Note').hitTestable());
     expect(calls, contains('Note'));
-    await tester.tap(find.byTooltip('Organize Study Notes…').hitTestable());
+    await tester.tap(find.text('Organize Study Notes…').hitTestable());
     await tester.pumpAndSettle();
     expect(calls, contains('new-note'));
     tester.view.viewInsets = const FakeViewPadding(bottom: 300);

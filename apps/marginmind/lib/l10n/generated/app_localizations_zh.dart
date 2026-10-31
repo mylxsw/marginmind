@@ -4712,7 +4712,4 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneNavigationNotes => '学习笔记';
-
-  @override
-  String get phoneNavigationSettings => '设置';
 }

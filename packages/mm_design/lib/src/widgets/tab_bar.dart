@@ -51,7 +51,10 @@ class MMTabBar extends StatelessWidget {
     final style = context.mmText.footnote;
     final labelHeight = MediaQuery.textScalerOf(context).scale(style.fontSize!) * style.height!;
     // Keep all actions reachable at accessibility text sizes.
-    return math.max(MMSizes.phoneTabBarHeight, 20 + 2 + _inset * 2 + labelHeight);
+    return math.max(
+      MMSizes.phoneTabBarHeight,
+      MMPhoneNavigation.tabIconSize + MMPhoneNavigation.tabLabelGap + _inset * 2 + labelHeight,
+    );
   }
 
   static double _bottomGap(BuildContext context) => math.max(
@@ -203,8 +206,8 @@ class _TabButton extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(tab.icon, size: android ? 22 : 20, color: fg),
-                SizedBox(height: android ? 4 : 2),
+                Icon(tab.icon, size: android ? 22 : MMPhoneNavigation.tabIconSize, color: fg),
+                SizedBox(height: android ? 4 : MMPhoneNavigation.tabLabelGap),
                 Text(
                   tab.label,
                   maxLines: 1,

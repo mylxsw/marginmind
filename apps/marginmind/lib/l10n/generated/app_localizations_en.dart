@@ -4934,7 +4934,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneNavigationNotes => 'Study notes';
-
-  @override
-  String get phoneNavigationSettings => 'Settings';
 }

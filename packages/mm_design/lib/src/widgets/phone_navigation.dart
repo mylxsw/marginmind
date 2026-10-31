@@ -209,7 +209,10 @@ class MMPhoneNavigationGroup extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Semantics(header: true, child: Text(title, style: context.mmText.headline)),
+              child: Semantics(
+                header: true,
+                child: Text(title, style: context.mmText.headline.copyWith(color: context.mmColors.secondaryLabel)),
+              ),
             ),
             ?trailing,
           ],
@@ -243,10 +246,10 @@ class MMPhoneNavigationGroup extends StatelessWidget {
 }
 
 class MMPhoneNavigationRow extends StatelessWidget {
-  const MMPhoneNavigationRow({super.key, required this.item, this.learningCount = false});
+  const MMPhoneNavigationRow({super.key, required this.item, this.cautionCount = false});
 
   final MMSidebarItem item;
-  final bool learningCount;
+  final bool cautionCount;
 
   @override
   Widget build(BuildContext context) {
@@ -286,7 +289,7 @@ class MMPhoneNavigationRow extends StatelessWidget {
             if (trailing is MMBadge)
               Text(
                 trailing.value,
-                style: context.mmText.headline.copyWith(color: learningCount ? c.caution : c.secondaryLabel),
+                style: context.mmText.headline.copyWith(color: cautionCount ? c.caution : c.secondaryLabel),
               )
             else
               ?trailing,
@@ -302,15 +305,24 @@ class MMPhoneNavigationRow extends StatelessWidget {
 
 /// Compact review progress: segments carry the position, with one spoken value.
 class MMPhoneReviewProgress extends StatelessWidget {
-  const MMPhoneReviewProgress({super.key, required this.total, required this.completed, required this.label});
+  const MMPhoneReviewProgress({
+    super.key,
+    required this.total,
+    required this.completed,
+    required this.label,
+    required this.value,
+  });
   final int total;
   final int completed;
   final String label;
 
+  /// Localized progress percentage supplied by the app.
+  final String value;
+
   @override
   Widget build(BuildContext context) => Semantics(
     label: label,
-    value: '${total == 0 ? 0 : (completed / total * 100).round()}%',
+    value: value,
     child: LayoutBuilder(
       builder: (context, constraints) {
         final segments = math.min(total, math.max(1, (constraints.maxWidth / MMSpacing.s).floor()));

@@ -197,12 +197,21 @@ void main() {
               ),
             ],
           ),
-          const MMPhoneReviewProgress(total: 1000, completed: 500, label: 'Progress'),
-          const MMPhoneReviewProgress(total: 0, completed: 0, label: 'Empty'),
+          const MMPhoneReviewProgress(total: 1000, completed: 500, label: 'Progress', value: '50 %'),
+          const MMPhoneReviewProgress(total: 0, completed: 0, label: 'Empty', value: '0 %'),
         ],
       ),
     );
     expect(tester.getSize(find.byType(MMPhoneNavigationRow).first).height, 46);
+    expect(
+      tester
+          .widget<Semantics>(
+            find.descendant(of: find.byType(MMPhoneReviewProgress).first, matching: find.byType(Semantics)).first,
+          )
+          .properties
+          .value,
+      '50 %',
+    );
     await tester.tap(find.text('Review'));
     expect(taps, 1);
     expect(tester.takeException(), isNull);

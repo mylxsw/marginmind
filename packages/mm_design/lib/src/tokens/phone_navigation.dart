@@ -13,6 +13,8 @@ abstract final class MMPhoneNavigation {
   static const swipeVelocity = 400.0;
   static const ratingHeight = 58.0;
   static const progressHeight = 4.0;
+  static const tabIconSize = 20.0;
+  static const tabLabelGap = 2.0;
   static const tabDuration = Duration(milliseconds: 420);
   static const drawerDuration = Duration(milliseconds: 380);
   static const tabCurve = Cubic(.3, 1.35, .45, 1);

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_pdf/mm_pdf.dart';
@@ -120,7 +121,12 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 4, 28, 0),
             child: phone
-                ? MMPhoneReviewProgress(total: session.queue.length, completed: session.index, label: l.reviewProgress)
+                ? MMPhoneReviewProgress(
+                    total: session.queue.length,
+                    completed: session.index,
+                    label: l.reviewProgress,
+                    value: NumberFormat.percentPattern(l.localeName).format(done),
+                  )
                 : MMProgressBar(value: done, semanticLabel: l.reviewProgress),
           ),
           Expanded(

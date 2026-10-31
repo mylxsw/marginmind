@@ -196,6 +196,6 @@ regular 使用 10pt 模糊、1.9 饱和度、1.03 亮度；thick 使用 28pt、1
 
 ### 手机导航（GUL-632）
 
-仅 `MMInput.phone && compact` 使用 `MMPhoneNavigation`：标签栏 64pt、左右 22pt、底部 `max(26pt, safeArea.bottom)`，regular Liquid Glass 材质；透镜以 420ms 回弹曲线滑动。选中透镜局部使用不透明底色，强调色按背景亮度调整至至少 4.5:1，彩色封面仍从其余玻璃区域透出。降低透明度与减少动态效果沿用 `MMAppearance`。
+仅 `MMInput.phone && compact` 使用 `MMPhoneNavigation`：标签栏 64pt、左右 22pt、底部 `max(26pt, safeArea.bottom)`，图标尺寸与图标/文字间距分别由 `tabIconSize`（20pt）、`tabLabelGap`（2pt）定义，regular Liquid Glass 材质；透镜以 420ms 回弹曲线滑动。选中透镜局部使用不透明底色，强调色按背景亮度调整至至少 4.5:1，彩色封面仍从其余玻璃区域透出。降低透明度与减少动态效果沿用 `MMAppearance`。
 
-`MMPhoneDrawer` 全高、最大宽 328pt，窄屏至少留下 32pt 正文/遮罩；左边缘右滑打开、向左拖动或点击遮罩关闭。`MMPhoneNavigationGroup/Row` 使用 14pt 分组圆角、46pt 最小行高（动态字号可增长）、15.5pt 正文，学习数量使用 `caution`。抽屉背景浅色 #F2F2F7 / 深色 #0E0E10。`MMPhoneReviewProgress` 以分段条表达复习位置，大队列按可用宽度合并段，保留整体进度语义；手机评分按钮高 58pt。iPad（含 compact 分屏）、桌面和非 compact 手机保留旧路径。
+`MMPhoneDrawer` 全高、最大宽 328pt，窄屏至少留下 32pt 正文/遮罩；左边缘右滑打开、向左拖动或点击遮罩关闭。`MMPhoneNavigationGroup/Row` 使用 14pt 分组圆角、46pt 最小行高（动态字号可增长）、15.5pt 正文，分组标题用次色。仅复习数量使用 `caution`，卡片数量用次色；学习笔记显示箭头、无计数。学习与标签组不显示 +；笔记展开后保留新增入口。标签默认预览十项，支持展开/收起并保留当前选中项。搜索隐藏无匹配分组，全部为空时显示既有空状态。抽屉背景浅色 #F2F2F7 / 深色 #0E0E10。`MMPhoneReviewProgress` 以分段条表达复习位置，大队列按可用宽度合并段，进度语义使用应用传入的本地化百分比；手机评分按钮高 58pt。iPad（含 compact 分屏）、桌面和非 compact 手机保留旧路径。

@@ -320,13 +320,18 @@ class MapBuildInput {
     required List<MapLine> points,
     Map<String, String> existingTitles = const {},
     Map<String, String> existingParents = const {},
-  }) : points = List.unmodifiable(points),
+    this.onlyNewContent = true,
+    List<String> titleConstraints = const [],
+  }) : titleConstraints = List.unmodifiable(titleConstraints),
+       points = List.unmodifiable(points),
        existingTitles = Map.unmodifiable(existingTitles),
        existingParents = Map.unmodifiable(existingParents);
   final String title;
   final MapGeneration generation;
   final MapLineContext context;
   final List<MapLine> points;
+  final bool onlyNewContent;
+  final List<String> titleConstraints;
 
   /// Node aliases only, ROOT denotes the virtual root.
   final Map<String, String> existingTitles, existingParents;
