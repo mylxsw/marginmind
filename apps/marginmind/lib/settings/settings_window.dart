@@ -1,32 +1,30 @@
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
-import '../app/navigation.dart';
 import '../features/assistant/settings/model_settings.dart';
 import '../features/assistant/settings/web_search_settings.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/voice/voice_settings_page.dart';
 import '../shared/l10n.dart';
 import 'app_settings.dart';
+import 'app_icon_picker.dart';
 
 enum SettingsTab { general, reading, models, webSearch, voice }
 
 /// The app's settings (⌘,): a centered dialog in the main window's own
 /// language — a floating glass sidebar of sections beside a titled,
 /// scrolling page. Service forms use explicit Save actions.
-Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general, bool? showsGallery}) =>
-    showMMDialog<void>(
-      context: context,
-      builder: (_) => SettingsWindow(initialTab: tab, showsGallery: showsGallery ?? kDebugMode),
-    );
+Future<void> showSettings(BuildContext context, {SettingsTab tab = SettingsTab.general}) => showMMDialog<void>(
+  context: context,
+  builder: (_) => SettingsWindow(initialTab: tab),
+);
 
 class SettingsWindow extends StatefulWidget {
-  const SettingsWindow({super.key, this.initialTab = SettingsTab.general, this.showsGallery = kDebugMode});
+  const SettingsWindow({super.key, this.initialTab = SettingsTab.general});
 
   static const size = Size(780, 560), minSize = Size(640, 440);
 
@@ -36,9 +34,6 @@ class SettingsWindow extends StatefulWidget {
   static const sidebarWidth = 176.0;
 
   final SettingsTab initialTab;
-
-  /// The component gallery is a development tool, like its menu item.
-  final bool showsGallery;
 
   @override
   State<SettingsWindow> createState() => _SettingsWindowState();
@@ -72,7 +67,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
     ];
     final title = tabs.firstWhere((t) => t.$1 == _tab).$3;
     final page = switch (_tab) {
-      SettingsTab.general => _GeneralPage(showsGallery: widget.showsGallery),
+      SettingsTab.general => const _GeneralPage(),
       SettingsTab.reading => const _ReadingPage(),
       SettingsTab.models => const ModelSettingsPage(),
       SettingsTab.webSearch => const WebSearchSettingsPage(),
@@ -247,9 +242,7 @@ class SettingsPage extends StatelessWidget {
 }
 
 class _GeneralPage extends ConsumerWidget {
-  const _GeneralPage({required this.showsGallery});
-
-  final bool showsGallery;
+  const _GeneralPage();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -290,6 +283,7 @@ class _GeneralPage extends ConsumerWidget {
             ),
           ],
         ),
+        const AppIconPicker(),
         if (MMPlatformCapabilities.current.webBrowser) ...[
           const SizedBox(height: MMSpacing.m),
           MMSettingsHeader(l.settingsBrowserGroup),
@@ -329,20 +323,6 @@ class _GeneralPage extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-        ],
-        if (showsGallery) ...[
-          const SizedBox(height: MMSpacing.m),
-          Align(
-            alignment: Alignment.centerRight,
-            child: MMButton(
-              label: l.componentGallery,
-              variant: MMButtonVariant.plain,
-              onPressed: () {
-                Navigator.of(context).pop();
-                ref.read(navigationProvider.notifier).showGallery();
-              },
-            ),
           ),
         ],
       ],

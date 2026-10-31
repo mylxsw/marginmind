@@ -230,7 +230,7 @@ class MindMapRenderCache {
             final body = _measure(
               note.title,
               _NodeSpec.noteStyle,
-              width - MMSpacing.m * 2 - (editing ? 0 : noteEditWidth),
+              width - MMSpacing.m * 2 - (editing ? 0 : noteActionsWidth),
               note: note.textFormat,
               source: editing,
             ).size.height;
@@ -345,11 +345,9 @@ class MindMapRenderCache {
         _textScaler.scale(MMTypography.footnote.fontSize! * MMTypography.footnote.height!) + MMSpacing.l,
       ) +
       MMSizes.hairline;
-  double get noteRowMinHeight => _touchControls ? MMSizes.touchTarget : MMSpacing.xxxl;
-  double get noteEditWidth =>
-      _measure(_localizations!.menuEdit, MMTypography.headline, double.infinity).size.width +
-      MMSpacing.xxxl +
-      MMSpacing.s;
+  double get noteRowMinHeight => noteActionSize;
+  double get noteActionSize => _touchControls ? MMSizes.touchTarget : MMSpacing.xl + MMSpacing.xs;
+  double get noteActionsWidth => MMSpacing.s + noteActionSize * 2 + MMSpacing.xxs;
 
   /// A summary label's box; an empty one takes no room unless it is being
   /// typed into. Like a topic, the box leaves a little room past the measured

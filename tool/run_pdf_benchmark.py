@@ -15,7 +15,7 @@ import time
 root = pathlib.Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('name', choices=['before', 'after'])
-parser.add_argument('--source', type=pathlib.Path, default=root / 'apps/marginmind/build/macos/Build/Products/Release/MarginMind.app')
+parser.add_argument('--source', type=pathlib.Path, default=root / 'apps/marginmind/build/macos/Build/Products/Release/Foliarc.app')
 args = parser.parse_args()
 name = args.name
 out = root / 'performance-artifacts'
@@ -28,7 +28,7 @@ if bundle.exists():
     shutil.rmtree(bundle)
 shutil.copytree(args.source, bundle, symlinks=True)
 # Preserve the sandbox identifier and entitlements. Distinct executable names
-# prevent activation from targeting another running MarginMind instance.
+# prevent activation from targeting another running Foliarc instance.
 plist = bundle / 'Contents/Info.plist'
 info = plistlib.loads(plist.read_bytes())
 executable = 'GUL495PDFBenchmark'

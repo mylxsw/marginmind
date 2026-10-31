@@ -1,5 +1,42 @@
 import XCTest
 @MainActor final class iPadAcceptance: XCTestCase {
+ func testAppIcons() throws {
+  continueAfterFailure = false
+  let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+  func dismissIconAlert() {
+   for owner in [app, springboard] {
+    let alert = owner.alerts.firstMatch
+    if alert.waitForExistence(timeout: 2) {
+     let ok = alert.buttons.matching(NSPredicate(format: "label == 'OK' OR label == '好' OR label == '确定'")).firstMatch
+     if ok.exists { ok.tap() }
+    }
+   }
+  }
+  func icon(_ english: String, _ chinese: String) -> XCUIElement {
+   app.buttons.matching(NSPredicate(format: "label == %@ OR label == %@", english, chinese)).firstMatch
+  }
+  func openIconSettings() {
+   app.launch()
+   dismissIconAlert()
+   if !button("Settings").isHittable { button("Show Sidebar").tap() }
+   XCTAssertTrue(button("Settings").waitForExistence(timeout: 20))
+   button("Settings").tap()
+   button("General").tap()
+   XCTAssertTrue(icon("Paper Arc (default)", "翻页（默认）").waitForExistence(timeout: 8))
+  }
+  openIconSettings()
+  for (english, chinese) in [("Leaf & Folio", "书叶"), ("Folded F", "折纸 F"), ("Paper Arc (default)", "翻页（默认）")] {
+   let choice = icon(english, chinese)
+   choice.tap()
+   dismissIconAlert()
+   let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: choice)
+   XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 12), .completed)
+   shot("foliarc-icon-" + english)
+   app.terminate()
+   openIconSettings()
+   XCTAssertTrue(icon(english, chinese).isSelected, "The OS selection must survive relaunch")
+  }
+ }
  let app = XCUIApplication(bundleIdentifier: "io.github.mylxsw.marginmind")
  let labels: [String: String] = ["Show Sidebar":"显示侧栏", "Hide Sidebar":"隐藏侧栏", "Source Only":"只看原文", "Split":"分栏", "Map Only":"只看脑图", "Assistant":"助手", "Close":"关闭", "Main Map":"主脑图", "Select":"选择", "Area Select":"框选", "Pen":"画笔", "More":"更多", "Copy":"拷贝", "Style":"样式", "Actual Size":"实际大小", "Settings":"设置", "General":"通用", "Models":"模型", "Default Model":"默认模型", "Appearance":"外观", "Language":"语言", "System":"跟随系统", "Light":"浅色", "Dark":"深色", "Icons":"图标", "List":"列表", "Add Child Topic":"添加子主题", "Margin Notes":"页边批注"]
  func button(_ prefix: String) -> XCUIElement { app.buttons.matching(NSPredicate(format: "label BEGINSWITH[c] %@ OR label BEGINSWITH[c] %@", prefix, labels[prefix] ?? prefix)).firstMatch }

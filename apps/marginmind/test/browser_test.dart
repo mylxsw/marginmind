@@ -134,7 +134,7 @@ void main() {
       },
     );
     await pumpApp(tester);
-    unawaited(showSettings(tester.element(find.byType(MMWindowScaffold)), showsGallery: false));
+    unawaited(showSettings(tester.element(find.byType(MMWindowScaffold))));
     await tester.pumpAndSettle();
     expect(find.text('In-App Browser'), findsOneWidget);
     expect(find.text('Website Data'), findsOneWidget);

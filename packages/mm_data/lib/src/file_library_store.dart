@@ -8,6 +8,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:path/path.dart' as p;
 
 import 'format_migration.dart';
+import 'file_translation_store.dart';
 
 /// Stores the library on disk:
 ///
@@ -47,6 +48,21 @@ class FileLibraryStore
   /// Failures from the last library scan, keyed by package path. Failed
   /// packages are skipped; callers may surface these diagnostics separately.
   Map<String, Object> get packageLoadErrors => Map.unmodifiable(_packageLoadErrors);
+  final _translationCleanupErrors = <String, Object>{};
+
+  /// Cleanup failures are retried on reopen and never hide a committed edit or
+  /// prevent an otherwise valid study set from loading.
+  Map<String, Object> get translationCleanupErrors => Map.unmodifiable(_translationCleanupErrors);
+
+  Future<void> _cleanTranslations(String path, Future<void> Function() clean) async {
+    try {
+      await clean();
+      _translationCleanupErrors.remove(path);
+    } on FileSystemException catch (error) {
+      _translationCleanupErrors[path] = error;
+    }
+  }
+
   final _researchSessionSyncErrors = <String, Object>{};
 
   /// A session is a projection of canonical note ids. Its failure must not
@@ -97,6 +113,10 @@ class FileLibraryStore
           }
           await _atomicWrite(file, utf8.encode(const JsonEncoder.withIndent('  ').convert(migrated)));
         }
+        await _cleanTranslations(
+          entry.path,
+          () => FileTranslationStore(entry).cleanOrphans(record.content.documents.map((d) => d.id).toSet()),
+        );
         sets[record.id] = record;
       } on FormatException catch (error) {
         _packageLoadErrors[entry.path] = error;
@@ -181,6 +201,16 @@ class FileLibraryStore
     _libraryChanges.add(null);
   }
 
+  /// Translation storage is separate from content snapshots and undo/redo.
+  Future<FileTranslationStore> translationStore(String studySetId) async {
+    await _ensureLoaded();
+    _require(studySetId);
+    return FileTranslationStore(
+      Directory(_packagePath(studySetId)),
+      documentExists: (id) => _sets[studySetId]?.content.document(id) != null,
+    );
+  }
+
   // ---- StudySetContentRepository -----------------------------------------
 
   @override
@@ -213,6 +243,15 @@ class FileLibraryStore
       _sets[studySetId] = _require(studySetId).copyWith(content: next);
       _contentChanges.add(studySetId);
       _libraryChanges.add(null);
+      final remainingDocuments = next.documents.map((d) => d.id).toSet();
+      for (final document in record.content.documents) {
+        if (!remainingDocuments.contains(document.id)) {
+          await _cleanTranslations(
+            p.join(dir.path, document.id),
+            () => FileTranslationStore(dir).removeDocument(document.id),
+          );
+        }
+      }
       if (!identical(record.content.researchNotes, next.researchNotes)) {
         await _syncResearchSessions(studySetId, next);
       }

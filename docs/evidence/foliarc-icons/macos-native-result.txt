@@ -1,0 +1,2 @@
+** TEST SUCCEEDED **
+Test case 'RunnerTests.testFoliarcIconAssetsAndBrandIdentity()' passed on 'My Mac - Foliarc (66421)' (0.390 seconds)

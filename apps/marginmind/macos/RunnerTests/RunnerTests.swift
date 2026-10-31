@@ -12,6 +12,21 @@ import PDFKit
 
 @MainActor
 class RunnerTests: XCTestCase {
+  func testFoliarcIconAssetsAndBrandIdentity() throws {
+    XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String, "Foliarc")
+    XCTAssertEqual(Bundle.main.bundleIdentifier, "io.github.mylxsw.marginmind")
+    let previous = NSApp.applicationIconImage
+    defer { NSApp.applicationIconImage = previous }
+    for icon in ["paperArc", "leafFolio", "foldedF"] {
+      let name = try XCTUnwrap(AppIconChannel.imageName(for: icon))
+      let image = try XCTUnwrap(NSImage(named: name))
+      NSApp.applicationIconImage = image
+      XCTAssertNotNil(NSApp.applicationIconImage)
+      XCTAssertFalse(image.representations.isEmpty)
+    }
+    XCTAssertNil(AppIconChannel.imageName(for: "../AppIcon"))
+  }
+
   func testSpeechChannelValidatesInputAndStopsBeforeSpeaking() {
     var events = [String]()
     var reply: Any?

@@ -181,7 +181,7 @@ Future<void> _shootSettings(
   bool providers = false,
 }) async {
   await openAssistantApp(tester, size: const Size(1440, 900), prefs: {if (dark) 'settings.appearance': 'dark'});
-  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: tab, showsGallery: false);
+  showSettings(tester.element(find.byType(MMWindowScaffold)), tab: tab);
   await pumpFor(tester, 20);
   if (providers) {
     await tester.tap(find.byKey(const ValueKey('settings-add-service')));

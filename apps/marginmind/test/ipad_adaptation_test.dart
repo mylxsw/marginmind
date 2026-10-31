@@ -243,7 +243,7 @@ void main() {
 
   testWidgets('tablet settings controls remain reachable above landscape keyboard', (t) async {
     await tablet(t, const Size(1194, 834));
-    showSettings(t.element(find.byType(AppShell)), showsGallery: false);
+    showSettings(t.element(find.byType(AppShell)));
     await t.pumpAndSettle();
     final close = find.byKey(const ValueKey('settings-close'));
     expect(t.getSize(close).shortestSide, greaterThanOrEqualTo(44));
@@ -264,7 +264,7 @@ void main() {
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.assistant);
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
-      showSettings(t.element(find.byType(AppShell)), showsGallery: false);
+      showSettings(t.element(find.byType(AppShell)));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       await t.tap(find.byKey(const ValueKey('settings-close')));

@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'MarginMind';
+  String get appName => 'Foliarc';
 
   @override
   String get libraryTitleAll => 'All Study Sets';
@@ -544,6 +544,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String mapNodeNoteCount(int count) {
     return 'Notes · $count';
   }
+
+  @override
+  String get deleteMapNote => 'Delete Note';
 
   @override
   String get editNote => 'Edit Note';
@@ -4490,7 +4493,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteShareAi => 'AI Summary';
 
   @override
-  String get noteShareFooter => 'From my MarginMind notes';
+  String get noteShareFooter => 'From my Foliarc notes';
 
   @override
   String noteSharedCount(int count) {
@@ -4529,4 +4532,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsReadingPreferences => 'Reading preferences';
+
+  @override
+  String get appIconTitle => 'App icon';
+
+  @override
+  String get appIconPaperArc => 'Paper Arc (default)';
+
+  @override
+  String get appIconLeafFolio => 'Leaf & Folio';
+
+  @override
+  String get appIconFoldedF => 'Folded F';
+
+  @override
+  String get appIconDockHint => 'Changes the Dock icon. Finder keeps the default icon.';
+
+  @override
+  String get appIconHomeHint => 'Changes the Home Screen icon. iOS may show a confirmation.';
+
+  @override
+  String get appIconChanging => 'Changing icon…';
+
+  @override
+  String get appIconChangeFailed => 'Could not change the icon. Please try again.';
 }

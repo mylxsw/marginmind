@@ -99,6 +99,7 @@ class MindMapCanvas extends StatefulWidget {
     required this.onAddChild,
     required this.onShift,
     this.onCommand,
+    this.onDeleteNote,
     this.selectedCardIds = const {},
     this.rootSelected = false,
     this.onSelectRoot,
@@ -224,6 +225,9 @@ class MindMapCanvas extends StatefulWidget {
   /// answers by setting [editingCardId].
   final ValueChanged<String> onRename;
   final VoidCallback onDelete;
+
+  /// Delete only this attached note, leaving its owner and any topics intact.
+  final ValueChanged<String>? onDeleteNote;
   final FocusNode focusNode;
 
   /// Drag and drop: move a card under a parent (null = root) at an index
@@ -1724,6 +1728,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       widget.transformation,
       mapScale(widget.transformation.value),
       widget.onContextMenu != null,
+      widget.onDeleteNote != null,
       l.revealSource,
       l.cardSuspended,
       spec.truncated,
@@ -1925,14 +1930,35 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                       ),
                       if (field?.id != note.id)
                         SizedBox(
-                          width: _cache.noteEditWidth,
+                          width: _cache.noteActionsWidth,
                           child: Padding(
                             padding: const EdgeInsets.only(left: MMSpacing.s),
-                            child: MMButton(
-                              key: ValueKey('map-note-edit-${note.id}'),
-                              label: l.menuEdit,
-                              variant: MMButtonVariant.plain,
-                              onPressed: () => widget.onRename(note.id),
+                            child: Row(
+                              children: [
+                                SizedBox.square(
+                                  dimension: _cache.noteActionSize,
+                                  child: MMIconButton(
+                                    key: ValueKey('map-note-edit-${note.id}'),
+                                    icon: MMIcons.editNote,
+                                    tooltip: l.editNote,
+                                    size: _cache.noteActionSize,
+                                    iconSize: MMTypography.body.fontSize!,
+                                    onPressed: () => widget.onRename(note.id),
+                                  ),
+                                ),
+                                const SizedBox(width: MMSpacing.xxs),
+                                SizedBox.square(
+                                  dimension: _cache.noteActionSize,
+                                  child: MMIconButton(
+                                    key: ValueKey('map-note-delete-${note.id}'),
+                                    icon: MMIcons.trash,
+                                    tooltip: l.deleteMapNote,
+                                    size: _cache.noteActionSize,
+                                    iconSize: MMTypography.body.fontSize!,
+                                    onPressed: widget.onDeleteNote == null ? null : () => widget.onDeleteNote!(note.id),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -1997,7 +2023,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       focusedNoteId: widget.content.card(widget.selectedCardId ?? '')?.kind == CardKind.note
           ? widget.selectedCardId
           : widget.flashCardId,
-      touchControls: context.mmTablet || MMInput.touchInputOf(context),
+      touchControls: MMInput.of(context).touchPlatform || MMInput.touchInputOf(context),
       structure: widget.previewStyle?.$1,
     );
     if (_previewSession != widget.expansion?.proposalId) {

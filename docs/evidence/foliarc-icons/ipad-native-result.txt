@@ -1,0 +1,8 @@
+IPAD_SHOT:foliarc-icon-Leaf & Folio
+IPAD_SHOT:foliarc-icon-Folded F
+IPAD_SHOT:foliarc-icon-Paper Arc (default)
+Test Case '-[iPadAcceptance.iPadAcceptance testAppIcons]' passed (83.524 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 83.524 (83.533) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 83.524 (83.535) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 83.524 (83.539) seconds
+** TEST SUCCEEDED **

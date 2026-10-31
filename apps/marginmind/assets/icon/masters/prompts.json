@@ -1,0 +1,19 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "source": "design/branding/foliarc/concepts.png",
+  "transparent_background": false,
+  "assets": [
+    {
+      "output": "paper_arc.png",
+      "prompt": "Edit target: the provided Foliarc comparison board. Extract and faithfully reproduce ONLY the MIDDLE app icon (warm parchment background and the two burnt-orange curled paper leaves) as ONE production icon master. Preserve the exact emblem geometry, proportions, colors, paper folds, fine material texture and lighting from this selected icon. Output a square image, 1024 by 1024 or larger. The tile background MUST extend to all four corners and all edges of the entire image: perfectly square opaque full-bleed background, NO rounded outer corners, NO exterior margin, NO surrounding white presentation board, NO cast shadow outside the icon. The selected emblem centered at exactly the same relative size as in its tile in the reference, about 72 percent of full width, with comfortable internal margin. This full-square master will be masked by the operating system, so do not bake in a squircle. Remove all text, labels, other icons and presentation layout. Do not redesign or simplify the emblem. No letters except the actual F symbol when extracting the RIGHT icon."
+    },
+    {
+      "output": "leaf_folio.png",
+      "prompt": "Edit target: the provided Foliarc comparison board. Extract and faithfully reproduce ONLY the LEFT app icon (forest-green background and ivory folded leaf/book emblem) as ONE production icon master. Preserve the exact emblem geometry, proportions, colors, paper folds, fine material texture and lighting from this selected icon. Output a square image, 1024 by 1024 or larger. The tile background MUST extend to all four corners and all edges of the entire image: perfectly square opaque full-bleed background, NO rounded outer corners, NO exterior margin, NO surrounding white presentation board, NO cast shadow outside the icon. The selected emblem centered at exactly the same relative size as in its tile in the reference, about 72 percent of full width, with comfortable internal margin. This full-square master will be masked by the operating system, so do not bake in a squircle. Remove all text, labels, other icons and presentation layout. Do not redesign or simplify the emblem. No letters except the actual F symbol when extracting the RIGHT icon."
+    },
+    {
+      "output": "folded_f.png",
+      "prompt": "Edit target: the provided Foliarc comparison board. Extract and faithfully reproduce ONLY the RIGHT app icon (midnight-indigo background and ivory folded-paper F with pale periwinkle reverse) as ONE production icon master. Preserve the exact emblem geometry, proportions, colors, paper folds, fine material texture and lighting from this selected icon. Output a square image, 1024 by 1024 or larger. The tile background MUST extend to all four corners and all edges of the entire image: perfectly square opaque full-bleed background, NO rounded outer corners, NO exterior margin, NO surrounding white presentation board, NO cast shadow outside the icon. The selected emblem centered at exactly the same relative size as in its tile in the reference, about 72 percent of full width, with comfortable internal margin. This full-square master will be masked by the operating system, so do not bake in a squircle. Remove all text, labels, other icons and presentation layout. Do not redesign or simplify the emblem. No letters except the actual F symbol when extracting the RIGHT icon."
+    }
+  ]
+}

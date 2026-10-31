@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/providers.dart';
-import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/settings/app_settings.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/settings/settings_window.dart';
@@ -45,29 +44,21 @@ void main() {
   });
 
   group('settings window', () {
-    Future<ProviderContainer> openSettings(WidgetTester tester, {bool? showsGallery}) async {
+    Future<ProviderContainer> openSettings(WidgetTester tester) async {
       final container = await pumpApp(tester, overrides: [assistantSecretsProvider.overrideWithValue(FakeSecrets())]);
       final context = tester.element(find.byType(MMWindowScaffold));
-      showSettings(context, showsGallery: showsGallery);
+      showSettings(context);
       await tester.pumpAndSettle();
       return container;
     }
 
-    testWidgets('hides the gallery in release builds; Esc closes', (tester) async {
-      await openSettings(tester, showsGallery: false);
+    testWidgets('settings have no gallery entry; Esc closes', (tester) async {
+      await openSettings(tester);
       expect(find.text('General'), findsNWidgets(2), reason: 'the sidebar row and the page title');
       expect(find.text('Component Gallery'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byType(SettingsWindow), findsNothing);
-    });
-
-    testWidgets('opens the gallery in debug builds', (tester) async {
-      final container = await openSettings(tester); // tests run in debug mode
-      await tester.tap(find.text('Component Gallery'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SettingsWindow), findsNothing);
-      expect(container.read(navigationProvider), isA<GalleryRoute>());
     });
 
     testWidgets('tabs: general, reading, models and web search', (tester) async {
@@ -127,7 +118,7 @@ void main() {
           context: context,
           builder: (context) => MediaQuery(
             data: MediaQuery.of(context).copyWith(size: window),
-            child: const SettingsWindow(showsGallery: false),
+            child: const SettingsWindow(),
           ),
         );
         await tester.pumpAndSettle();
@@ -149,7 +140,7 @@ void main() {
           context: tester.element(find.byType(MMWindowScaffold)),
           builder: (context) => MediaQuery(
             data: MediaQuery.of(context).copyWith(size: screen),
-            child: const SettingsWindow(initialTab: SettingsTab.reading, showsGallery: false),
+            child: const SettingsWindow(initialTab: SettingsTab.reading),
           ),
         );
         await tester.pumpAndSettle();
@@ -169,7 +160,7 @@ void main() {
       final context = tester.element(find.byType(MMWindowScaffold));
       showMMDialog<void>(
         context: context,
-        builder: (_) => const MMAppearance(reduceTransparency: true, child: SettingsWindow(showsGallery: false)),
+        builder: (_) => const MMAppearance(reduceTransparency: true, child: SettingsWindow()),
       );
       await tester.pumpAndSettle();
       expect(

@@ -10,7 +10,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appName => 'MarginMind';
+  String get appName => 'Foliarc';
 
   @override
   String get libraryTitleAll => '全部学习集';
@@ -526,6 +526,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String mapNodeNoteCount(int count) {
     return '笔记 · $count';
   }
+
+  @override
+  String get deleteMapNote => '删除笔记';
 
   @override
   String get editNote => '编辑笔记';
@@ -4296,7 +4299,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noteShareAi => 'AI 小结';
 
   @override
-  String get noteShareFooter => '摘自我的 MarginMind 笔记';
+  String get noteShareFooter => '摘自我的 Foliarc 笔记';
 
   @override
   String noteSharedCount(int count) {
@@ -4335,4 +4338,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsReadingPreferences => '阅读偏好';
+
+  @override
+  String get appIconTitle => '应用图标';
+
+  @override
+  String get appIconPaperArc => '翻页（默认）';
+
+  @override
+  String get appIconLeafFolio => '书叶';
+
+  @override
+  String get appIconFoldedF => '折纸 F';
+
+  @override
+  String get appIconDockHint => '更换 Dock 图标，访达中保留默认图标。';
+
+  @override
+  String get appIconHomeHint => '更换主屏幕图标，系统可能显示确认提示。';
+
+  @override
+  String get appIconChanging => '正在更换图标…';
+
+  @override
+  String get appIconChangeFailed => '图标更换失败，请重试。';
 }

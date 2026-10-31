@@ -1,6 +1,6 @@
 {
   "@@locale": "zh",
-  "appName": "MarginMind",
+  "appName": "Foliarc",
   "libraryTitleAll": "全部学习集",
   "libraryRecent": "最近打开",
   "libraryStarred": "已收藏",
@@ -160,6 +160,7 @@
   "renameTitle": "重命名",
   "mapNodeNoteCount": "笔记 · {count}",
   "@mapNodeNoteCount": {"placeholders": {"count": {"type": "int"}}},
+  "deleteMapNote": "删除笔记",
   "editNote": "编辑笔记",
   "save": "保存",
   "newTopicName": "新主题",
@@ -1640,7 +1641,7 @@
   "noteSharePlain": "简洁",
   "noteShareNight": "夜读",
   "noteShareAi": "AI 小结",
-  "noteShareFooter": "摘自我的 MarginMind 笔记",
+  "noteShareFooter": "摘自我的 Foliarc 笔记",
   "noteSharedCount": "{count} 条划线",
   "noteNoQuotes": "没有摘录",
   "noteCopyImage": "拷贝图片",
@@ -1659,5 +1660,13 @@
   "studyNoteSavedImage": "已存储",
   "vocabularyHintsPreview": "效果预览",
   "vocabularyHintsPreviewMeaning": "好奇的",
-  "settingsReadingPreferences": "阅读偏好"
+  "settingsReadingPreferences": "阅读偏好",
+  "appIconTitle": "应用图标",
+  "appIconPaperArc": "翻页（默认）",
+  "appIconLeafFolio": "书叶",
+  "appIconFoldedF": "折纸 F",
+  "appIconDockHint": "更换 Dock 图标，访达中保留默认图标。",
+  "appIconHomeHint": "更换主屏幕图标，系统可能显示确认提示。",
+  "appIconChanging": "正在更换图标…",
+  "appIconChangeFailed": "图标更换失败，请重试。"
 }

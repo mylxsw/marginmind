@@ -13,6 +13,7 @@ class MainFlutterWindow: NSWindow {
   private var systemAppearance: SystemAppearanceChannel?
   private var browserFactory: BrowserFactory?
   private var externalLink: ExternalLinkChannel?
+  private var appIcon: AppIconChannel?
   private var toolbarVisibilityBeforeFullScreen: Bool?
   private var chromeDelegate: WindowChromeDelegate?
 
@@ -119,6 +120,7 @@ class MainFlutterWindow: NSWindow {
     secretStore = SecretStoreChannel(messenger: flutterViewController.engine.binaryMessenger)
     systemAppearance = SystemAppearanceChannel(messenger: flutterViewController.engine.binaryMessenger)
     externalLink = ExternalLinkChannel(messenger: flutterViewController.engine.binaryMessenger)
+    appIcon = AppIconChannel(messenger: flutterViewController.engine.binaryMessenger)
 
     speech = SpeechChannel(messenger: flutterViewController.engine.binaryMessenger)
     let clipboard = FlutterMethodChannel(name: "marginmind/map_clipboard",
@@ -167,6 +169,40 @@ class MainFlutterWindow: NSWindow {
     }
 
     super.awakeFromNib()
+  }
+}
+
+/// AppKit changes only the running app's Dock icon. The signed bundle stays intact.
+final class AppIconChannel {
+  private let channel: FlutterMethodChannel
+  private var currentIcon = "paperArc"
+
+  init(messenger: FlutterBinaryMessenger) {
+    channel = FlutterMethodChannel(name: "marginmind/app_icon", binaryMessenger: messenger)
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else { return }
+      if call.method == "get" { result(self.currentIcon); return }
+      guard call.method == "set" else { result(FlutterMethodNotImplemented); return }
+      guard let args = call.arguments as? [String: String], let icon = args["icon"],
+            let name = Self.imageName(for: icon) else {
+        result(FlutterError(code: "invalid_icon", message: nil, details: nil)); return
+      }
+      guard let image = NSImage(named: name) else {
+        result(FlutterError(code: "icon_unavailable", message: nil, details: nil)); return
+      }
+      NSApp.applicationIconImage = image
+      self.currentIcon = icon
+      result(nil)
+    }
+  }
+
+  static func imageName(for icon: String) -> String? {
+    switch icon {
+    case "paperArc": return "FoliarcPaperArc"
+    case "leafFolio": return "FoliarcLeafFolio"
+    case "foldedF": return "FoliarcFoldedF"
+    default: return nil
+    }
   }
 }
 

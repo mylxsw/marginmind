@@ -28,7 +28,7 @@ jobs:
         working-directory: apps/marginmind
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed -E 's/version: ([^+]+).*/\1/')
-          APP=build/macos/Build/Products/Release/MarginMind.app
+          APP=build/macos/Build/Products/Release/Foliarc.app
           # No Developer ID yet: sign ad hoc so the bundle is consistent.
           # Sign nested code first, then the app with its entitlements —
           # re-signing without them would drop the sandbox (and the app
@@ -41,15 +41,15 @@ jobs:
           mkdir -p dist/dmg
           cp -R "$APP" dist/dmg/
           ln -s /Applications dist/dmg/Applications
-          hdiutil create -volname "MarginMind $VERSION" -srcfolder dist/dmg -ov -format UDZO "dist/MarginMind-$VERSION.dmg"
-          echo "DMG=apps/marginmind/dist/MarginMind-$VERSION.dmg" >> "$GITHUB_ENV"
+          hdiutil create -volname "Foliarc $VERSION" -srcfolder dist/dmg -ov -format UDZO "dist/Foliarc-$VERSION.dmg"
+          echo "DMG=apps/marginmind/dist/Foliarc-$VERSION.dmg" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
         with:
-          name: MarginMind-macOS
+          name: Foliarc-macOS
           path: ${{ env.DMG }}
       - name: Draft GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" "$DMG" --draft --title "MarginMind $GITHUB_REF_NAME" --generate-notes
+          gh release create "$GITHUB_REF_NAME" "$DMG" --draft --title "Foliarc $GITHUB_REF_NAME" --generate-notes

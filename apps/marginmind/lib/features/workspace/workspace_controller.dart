@@ -2717,6 +2717,14 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         : state.copyWith(selectRoot: true, rootSelected: session.previousRootSelected);
   }
 
+  /// An attached note is one undo step; its owner's topics stay in the map.
+  Future<void> removeAttachedNote(String cardId) async {
+    final owner = MapNoteAttachments(content, mapId: state.activeMapId).owners[cardId];
+    if (owner == null) return;
+    await _update((c) => _editor.removeAttachedNote(c, cardId));
+    if (ref.mounted) selectCard(owner);
+  }
+
   Future<void> removeCards(Iterable<String> cardIds) {
     final ids = cardIds.toList();
     return _update((c) => _editor.removeMany(c, ids));
