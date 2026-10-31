@@ -524,7 +524,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
         ),
       ),
     ];
-    // Preserve rich controls (zoom slider, comparison and OCR) inside Aa.
+    // Preserve rich controls (zoom slider, comparison and OCR) inside More.
     final menuEntries = <PopupMenuEntry<VoidCallback>>[
       entry(
         state.readerPanelVisible ? l.hideReaderSidebar : l.showReaderSidebar,
@@ -596,7 +596,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     return ReaderAnnotationTools(
       state: state,
       controller: controller,
-      child: ReaderToolbar(items: items, appearanceEntries: menuEntries, label: l.readerAppearance),
+      child: ReaderToolbar(items: items, menuEntries: menuEntries, label: l.moreTools),
     );
   }
 

@@ -84,11 +84,10 @@ class WorkspaceToolbar extends StatelessWidget {
                   spacing: phone ? MMSpacing.xs : MMSpacing.s,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
-                  menuBeforeId: menuIcon == null ? null : 'documents',
                   trailingIds: {
                     if (menuIcon != null) 'documents',
                     if (ownsActions && scope != null) ...scope.actions.map((item) => item.id),
-                    if (menuIcon == null) ':menu',
+                    ':menu',
                   },
                   groups: phone
                       ? const []
