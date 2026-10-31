@@ -63,3 +63,8 @@ export 'src/content/note_export.dart';
 
 export 'src/assistant/expansion.dart';
 export 'src/content/note_rich_export.dart';
+
+export 'src/content/translation_content.dart';
+export 'src/content/translation_job.dart';
+export 'src/content/translation_state.dart';
+export 'src/content/translation_store.dart';
