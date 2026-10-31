@@ -2518,6 +2518,14 @@
     }
   },
   "fullTranslationSourceLangDetect": "Detect",
+  "fullTranslationSourceDetected": "{language} (detected)",
+  "@fullTranslationSourceDetected": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
   "fullTranslationRange": "Range",
   "fullTranslationRangeAll": "All",
   "fullTranslationRangePages": "Pages",
@@ -2541,6 +2549,12 @@
   },
   "fullTranslationNote": "Glossary & Requirements",
   "fullTranslationNotePlaceholder": "Optional. E.g. keep proper names untranslated",
+  "fullTranslationCkptFailed": "{count} untranslated",
+  "@fullTranslationCkptFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "fullTranslationNoteHint": "Applies only to subsequent batches; translated paragraphs won't be retranslated.",
   "fullTranslationNoteConfigured": " · Configured",
   "fullTranslationFooterNote": "Translations are saved in the study set without modifying the PDF",
@@ -2607,9 +2621,12 @@
       "count": { "type": "int" }
     }
   },
-  "fullTranslationEstSkipSame": "already target language {count}",
+  "fullTranslationEstSkipSame": "already {language} {count}",
   "@fullTranslationEstSkipSame": {
     "placeholders": {
+      "language": {
+        "type": "String"
+      },
       "count": { "type": "int" }
     }
   },
@@ -2671,7 +2688,14 @@
     }
   },
   "fullTranslationDetailDedup": "Deduplicated Paragraphs",
-  "fullTranslationDetailSkipped": "Not Sent (headers, page numbers, target language)",
+  "fullTranslationDetailSkipped": "Not Sent (headers, page numbers, already {language})",
+  "@fullTranslationDetailSkipped": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
   "fullTranslationDetailItems": "{count} items",
   "@fullTranslationDetailItems": {
     "placeholders": {

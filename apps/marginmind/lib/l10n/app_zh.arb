@@ -1842,6 +1842,7 @@
     }
   },
   "fullTranslationSourceLangDetect": "检测",
+  "fullTranslationSourceDetected": "{language}（检测）",
   "fullTranslationRange": "范围",
   "fullTranslationRangeAll": "全部",
   "fullTranslationRangePages": "页码",
@@ -1865,6 +1866,7 @@
   },
   "fullTranslationNote": "术语与要求",
   "fullTranslationNotePlaceholder": "可选。例如：attention 统一译为“注意”；人名保留原文",
+  "fullTranslationCkptFailed": "{count} 段未译",
   "fullTranslationNoteHint": "只用于之后的批次；已译段落不会自动重译。",
   "fullTranslationNoteConfigured": " · 已设置",
   "fullTranslationFooterNote": "译文保存在学习集内，不修改 PDF",
@@ -1931,7 +1933,7 @@
       "count": { "type": "int" }
     }
   },
-  "fullTranslationEstSkipSame": "已是中文 {count} 段",
+  "fullTranslationEstSkipSame": "已是{language} {count} 段",
   "@fullTranslationEstSkipSame": {
     "placeholders": {
       "count": { "type": "int" }
@@ -1995,7 +1997,7 @@
     }
   },
   "fullTranslationDetailDedup": "重复段落只译一次",
-  "fullTranslationDetailSkipped": "不发送（页眉、页码、已是中文）",
+  "fullTranslationDetailSkipped": "不发送（页眉、页码、已是{language}）",
   "fullTranslationDetailItems": "{count} 处",
   "@fullTranslationDetailItems": {
     "placeholders": {

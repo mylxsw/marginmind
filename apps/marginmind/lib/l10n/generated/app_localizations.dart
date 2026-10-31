@@ -8834,6 +8834,12 @@ abstract class AppLocalizations {
   /// **'Detect'**
   String get fullTranslationSourceLangDetect;
 
+  /// No description provided for @fullTranslationSourceDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'{language} (detected)'**
+  String fullTranslationSourceDetected(String language);
+
   /// No description provided for @fullTranslationRange.
   ///
   /// In en, this message translates to:
@@ -8911,6 +8917,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Optional. E.g. keep proper names untranslated'**
   String get fullTranslationNotePlaceholder;
+
+  /// No description provided for @fullTranslationCkptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} untranslated'**
+  String fullTranslationCkptFailed(int count);
 
   /// No description provided for @fullTranslationNoteHint.
   ///
@@ -9047,8 +9059,8 @@ abstract class AppLocalizations {
   /// No description provided for @fullTranslationEstSkipSame.
   ///
   /// In en, this message translates to:
-  /// **'already target language {count}'**
-  String fullTranslationEstSkipSame(int count);
+  /// **'already {language} {count}'**
+  String fullTranslationEstSkipSame(String language, int count);
 
   /// No description provided for @fullTranslationEstSkipDupe.
   ///
@@ -9203,8 +9215,8 @@ abstract class AppLocalizations {
   /// No description provided for @fullTranslationDetailSkipped.
   ///
   /// In en, this message translates to:
-  /// **'Not Sent (headers, page numbers, target language)'**
-  String get fullTranslationDetailSkipped;
+  /// **'Not Sent (headers, page numbers, already {language})'**
+  String fullTranslationDetailSkipped(String language);
 
   /// No description provided for @fullTranslationDetailItems.
   ///

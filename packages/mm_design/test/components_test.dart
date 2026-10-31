@@ -159,6 +159,56 @@ void main() {
     expect(find.text('New Study Set'), findsNothing);
   });
 
+  testWidgets('sheet shows an icon tile, subtitle and footer beside the actions', (tester) async {
+    await tester.pumpWidget(
+      harness(
+        SizedBox(
+          width: 560,
+          child: MMSheet(
+            title: 'Translate',
+            icon: MMIcons.layers,
+            subtitle: 'Paper · 12 pages',
+            footer: const Text('Saved in the study set'),
+            actions: [MMButton(label: 'Start', onPressed: () {})],
+            child: const SizedBox(height: 20),
+          ),
+        ),
+      ),
+    );
+    expect(find.byIcon(MMIcons.layers), findsOneWidget);
+    expect(find.text('Paper · 12 pages'), findsOneWidget);
+    final footer = tester.getRect(find.text('Saved in the study set'));
+    final start = tester.getRect(find.text('Start'));
+    expect(footer.right, lessThan(start.left));
+    expect((footer.center.dy - start.center.dy).abs(), lessThan(4));
+    expect(
+      tester.getRect(find.text('Paper · 12 pages')).top,
+      greaterThan(tester.getRect(find.text('Translate')).bottom - 1),
+    );
+  });
+
+  testWidgets('destructive secondary button uses critical text', (tester) async {
+    late MMColors colors;
+    await tester.pumpWidget(
+      harness(
+        Builder(
+          builder: (context) {
+            colors = context.mmColors;
+            return Row(
+              children: [
+                MMButton(label: 'Stop', destructive: true, onPressed: () {}),
+                MMButton(label: 'Pause', onPressed: () {}),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+    Color colorOf(String text) => tester.widget<Text>(find.text(text)).style!.color!;
+    expect(colorOf('Stop'), colors.critical);
+    expect(colorOf('Pause'), colors.label);
+  });
+
   testWidgets('dialog opens centered over a scrim, ignores scrim taps and closes on Esc', (tester) async {
     for (final reduceMotion in [false, true]) {
       await tester.pumpWidget(

@@ -411,3 +411,15 @@ Release 真机截图与记录见 [验证记录](evidence/gul-516/README.md)：�
 - ⌥⌘M 收起后点黄色标记编辑；缩窄到页面加页边缩放低于 78% 时自动收起，加宽后恢复。裁边可放下时点“裁掉白边，展开页边”。调整裁边时保持标记。
 - 有文字锚点加入脑图得到带出处摘录卡，行批注得到笔记卡；操作保持布局。两侧修改文本互相同步；删除批注保留脑图卡片，删除节点保留批注。
 - 原生自检：`flutter run -d macos -t example/margin_acceptance.dart --dart-define=MARGIN_SELF_CHECK=true`，应打印 `NATIVE_MARGIN_OK` 后退出。
+
+## GUL-621：全文翻译 UI 验收（2026-10-31）
+
+对照 `design/prototype/full-translation.html` 16 个场景与 `docs/full-translation.md` 第 11 节。截图与逐条结论见 [验证记录](evidence/gul-621/README.md)。本轮在 Linux 上以 widget 实际渲染（真实中文字体）对照原型并修正偏差；两台 Mac worker 当日拒绝访问任何工作目录（`path_denied`），以下真机项尚未执行：
+
+- [ ] 16 个场景实机截图：浅色 / 深色、减弱动态效果、窄窗口（compact 不出现入口）。
+- [ ] 300 页 PDF、分批 10 页完整跑通；记录每批请求数、检查点期间请求数为 0。
+- [ ] 中途断网：胶囊“等待网络”，联网自动继续（手动暂停过的不继续）。
+- [ ] 强退（`kill -9`）后重开：任务为 paused，HUD“全文翻译已暂停在第 n 页 [继续]”，继续后只请求缺失段落。
+- [ ] 换无效 Key：横条“API Key 无效，已暂停”，改回有效 Key 后「重试」从断点继续。
+- [ ] 系统通知：窗口不在前台时完成，收到“全文翻译完成”。
+

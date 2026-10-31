@@ -93,11 +93,29 @@ const mmDialogScrim = Color(0x38000000);
 
 /// Content frame for [showMMSheet]: title, body, right-aligned actions.
 class MMSheet extends StatelessWidget {
-  const MMSheet({super.key, required this.title, required this.child, this.actions = const [], this.titleTrailing});
+  const MMSheet({
+    super.key,
+    required this.title,
+    required this.child,
+    this.actions = const [],
+    this.titleTrailing,
+    this.icon,
+    this.subtitle,
+    this.footer,
+  });
 
   final String title;
   final Widget child;
   final Widget? titleTrailing;
+
+  /// Shown in a 30pt accent tile before the title.
+  final IconData? icon;
+
+  /// One line under the title, such as the document a sheet acts on.
+  final String? subtitle;
+
+  /// Left of the actions, for a short fact about the result.
+  final Widget? footer;
 
   /// Usually a secondary "Cancel" followed by the primary default action.
   final List<Widget> actions;
@@ -112,10 +130,32 @@ class MMSheet extends StatelessWidget {
       children: [
         Row(
           children: [
+            if (icon != null) ...[
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(color: c.accentTint, borderRadius: BorderRadius.circular(MMRadii.row)),
+                child: Icon(icon, size: 16, color: c.accent),
+              ),
+              const SizedBox(width: 10),
+            ],
             Expanded(
-              child: Semantics(
-                header: true,
-                child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(title, style: context.mmText.title3.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                    ),
+                ],
               ),
             ),
             ?titleTrailing,
@@ -129,6 +169,7 @@ class MMSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (footer != null) ...[Expanded(child: footer!), const SizedBox(width: 10)],
               for (var i = 0; i < actions.length; i++) ...[if (i > 0) const SizedBox(width: 10), actions[i]],
             ],
           ),

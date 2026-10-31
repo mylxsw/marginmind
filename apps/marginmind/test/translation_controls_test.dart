@@ -26,6 +26,7 @@ class StartingController extends MockFullTranslationController {
   final gate = Completer<void>();
   bool started = false;
   bool requested = false;
+  String? sourceLang;
   @override
   Future<void> startJob({
     required int from,
@@ -38,6 +39,7 @@ class StartingController extends MockFullTranslationController {
     required int estimatedTokens,
   }) async {
     requested = true;
+    this.sourceLang = sourceLang;
     await gate.future;
     started = true;
   }
@@ -127,6 +129,136 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.started, true);
     expect(find.byType(FullTranslationSheet), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sheet header, language pop-ups, estimate and footer follow the prototype', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final overrides = await testOverrides(content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}));
+    final controller = StartingController(
+      'demo-1',
+      'c1',
+      'zh',
+      FullTranslationState(
+        studySetId: 'demo-1',
+        documentId: 'c1',
+        targetLang: 'zh',
+        loading: false,
+        paragraphs: paragraphs,
+      ),
+    );
+    controller.gate.complete();
+    await tester.pumpWidget(
+      testHost(
+        const SizedBox(
+          width: 560,
+          child: FullTranslationSheet(studySetId: 'demo-1', documentId: 'c1', initialTargetLang: 'zh'),
+        ),
+        overrides: [
+          ...overrides,
+          readerCompareProvider('demo-1').overrideWith(RecordingCompare.new),
+          fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => controller),
+          translationParagraphsProvider(('demo-1', 'c1')).overrideWith((ref) async => paragraphs),
+          compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith((ref) async => (language: 'en', hasText: true)),
+          assistantDefaultModelProvider.overrideWithValue(
+            const AssistantModel(
+              provider: AssistantProvider.ollama,
+              model: 'fixture',
+              endpoint: 'http://localhost:11434',
+              localEnabled: true,
+            ),
+          ),
+          assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byIcon(MMIcons.layers), findsOneWidget);
+    expect(find.textContaining(' · 4 页'), findsOneWidget);
+    expect(find.text('英文（检测）'), findsOneWidget);
+    expect(find.text('中文'), findsOneWidget);
+    expect(find.text('不发送：页眉页码 0 处'), findsOneWidget);
+    expect(find.text('译文保存在学习集内，不修改 PDF'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('full-translation-source-language')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('日语').last);
+    await tester.pumpAndSettle();
+    expect(find.text('日语'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('full-translation-target-language')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('英文').last);
+    await tester.pumpAndSettle();
+    expect(find.text('英文'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('sheet sends the chosen source language and detected language by default', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final overrides = await testOverrides(content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}));
+    for (final explicit in [false, true]) {
+      final controller = StartingController(
+        'demo-1',
+        'c1',
+        'zh',
+        FullTranslationState(
+          studySetId: 'demo-1',
+          documentId: 'c1',
+          targetLang: 'zh',
+          loading: false,
+          paragraphs: paragraphs,
+        ),
+      );
+      controller.gate.complete();
+      await tester.pumpWidget(
+        testHost(
+          key: UniqueKey(),
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showMMSheet<void>(
+                context: context,
+                width: MMSizes.fullTranslationSheetWidth,
+                builder: (_) =>
+                    const FullTranslationSheet(studySetId: 'demo-1', documentId: 'c1', initialTargetLang: 'zh'),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+          overrides: [
+            ...overrides,
+            readerCompareProvider('demo-1').overrideWith(RecordingCompare.new),
+            fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => controller),
+            translationParagraphsProvider(('demo-1', 'c1')).overrideWith((ref) async => paragraphs),
+            compareDocumentInfoProvider(('demo-1', 'c1')).overrideWith((ref) async => (language: 'en', hasText: true)),
+            assistantDefaultModelProvider.overrideWithValue(
+              const AssistantModel(
+                provider: AssistantProvider.ollama,
+                model: 'fixture',
+                endpoint: 'http://localhost:11434',
+                localEnabled: true,
+              ),
+            ),
+            assistantCredentialStateProvider.overrideWith((ref) async => AssistantCredentialState.ready),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      if (explicit) {
+        await tester.tap(find.byKey(const ValueKey('full-translation-source-language')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('法语').last);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.textContaining('开始 · 第'));
+      await tester.pumpAndSettle();
+      expect(controller.started, true);
+      expect(controller.sourceLang, explicit ? 'fr' : 'en');
+    }
     expect(tester.takeException(), isNull);
   });
 
@@ -376,6 +508,68 @@ void main() {
     await tester.tap(find.text('结束'));
     await tester.pump();
     expect(controller.stopped, true);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('checkpoint reports failed paragraphs with an in-line retry; panel names languages', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final overrides = await testOverrides(content: InMemoryStudySetContentRepository({'demo-1': compareFixture()}));
+    final review = TranslationJob(
+      id: 'job',
+      documentId: 'c1',
+      sourceLang: 'en',
+      targetLang: 'zh',
+      range: TranslationRange(1, 4),
+      mode: TranslationMode.batch,
+      batchSize: 5,
+      model: 'fixture',
+      state: TranslationJobState.review,
+      batch: TranslationBatch(index: 1, range: TranslationRange(1, 4)),
+      estimateTokens: 1000,
+      createdAt: testNow,
+      updatedAt: testNow,
+    );
+    final state = FullTranslationState(
+      studySetId: 'demo-1',
+      documentId: 'c1',
+      targetLang: 'zh',
+      loading: false,
+      job: review,
+      paragraphs: paragraphs,
+      segmentStates: {
+        for (final p in paragraphs) p.fingerprint: TranslationSegmentState.done,
+        'fp-1': TranslationSegmentState.failed,
+      },
+    );
+    final controller = MockFullTranslationController('demo-1', 'c1', 'zh', state);
+    await tester.pumpWidget(
+      testHost(
+        const SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FullTranslationCheckpoint(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+              SizedBox(
+                width: 372,
+                child: FullTranslationPanel(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+              ),
+            ],
+          ),
+        ),
+        overrides: [...overrides, fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => controller)],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('1 段未译'), findsOneWidget);
+    expect(find.text('8 段'), findsOneWidget);
+    expect(find.text('英文 → 中文'), findsOneWidget);
+    expect(find.text('不发送（页眉、页码、已是中文）'), findsOneWidget);
+    await tester.tap(find.text('重试'));
+    await tester.pump();
+    expect(controller.retryCalled, true);
     expect(tester.takeException(), isNull);
   });
 }

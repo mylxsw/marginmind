@@ -29,11 +29,16 @@ class MMButton extends StatelessWidget {
     this.autofocus = false,
     this.color,
     this.foregroundColor,
+    this.destructive = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final MMButtonVariant variant;
+
+  /// A secondary button whose text is critical, such as "Stop" next to a
+  /// primary action.
+  final bool destructive;
   final IconData? icon;
   final bool autofocus;
 
@@ -56,7 +61,7 @@ class MMButton extends StatelessWidget {
       builder: (context, s) {
         final (Color bg, Color fg) = switch (variant) {
           MMButtonVariant.primary => (color ?? c.accentFill, foregroundColor ?? c.onAccent),
-          MMButtonVariant.secondary => (c.fill, c.label),
+          MMButtonVariant.secondary => (c.fill, destructive ? c.critical : c.label),
           MMButtonVariant.plain => (s.hovered ? c.hover : Colors.transparent, color ?? c.label),
         };
         final pressedOverlay = s.pressed ? Colors.black.withValues(alpha: 0.12) : Colors.transparent;
