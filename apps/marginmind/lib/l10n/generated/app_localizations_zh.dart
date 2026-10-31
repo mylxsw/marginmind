@@ -4724,4 +4724,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get phoneReaderExitTools => '结束标注';
+
+  @override
+  String phoneReaderPercent(int percent) {
+    return '$percent%';
+  }
 }

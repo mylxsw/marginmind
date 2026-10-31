@@ -38,9 +38,9 @@ class WorkspaceChromeController extends ChangeNotifier {
     _changed();
   }
 
-  void hold(Object reason) {
+  void hold(Object reason, {bool reveal = true}) {
     _holds.add(reason);
-    reveal();
+    if (reveal) this.reveal();
   }
 
   void release(Object reason) {

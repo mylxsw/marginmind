@@ -9,6 +9,7 @@ import 'package:marginmind/features/library/widgets/study_set_card.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
 import 'package:marginmind/features/workspace/widgets/phone_reader_controls.dart';
+import 'package:marginmind/features/workspace/widgets/right_panel.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/system_appearance.dart';
 import 'package:mm_design/mm_design.dart';
@@ -95,6 +96,14 @@ void main() {
       final container = await openStudySet(tester, phone);
       expect(find.byType(MMThumbDockScope), findsNothing);
       expect(find.byType(PhoneReaderTopControls), findsOneWidget);
+      expect(MMFlatSurface.of(tester.element(find.byType(ReaderPane))), isTrue);
+      expect(tester.element(find.byType(ReaderPane)).mmColors.flat, isTrue);
+      final glass = find.descendant(of: find.byType(PhoneReaderTopControls), matching: find.byType(MMLiquidGlass));
+      expect(glass, findsNWidgets(3));
+      for (final element in glass.evaluate()) {
+        expect(MMFlatSurface.of(element), isFalse);
+        expect(element.mmColors.flat, isTrue);
+      }
       expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
       expect(find.byType(PhoneTabBar), findsNothing);
       expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
@@ -105,6 +114,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
       expect(tester.getRect(find.byType(MapPane)).bottom, phone.size.height - phone.safe.bottom);
+      expect(find.descendant(of: find.byType(MapPane), matching: find.byType(BackdropFilter)), findsNothing);
       final mapDock = tester.getRect(find.byType(MMThumbDockScope));
       expect(tester.getRect(find.byTooltip('Zoom In').last).bottom, lessThanOrEqualTo(mapDock.bottom));
       expect(mapDock.contains(tester.getCenter(find.byKey(const ValueKey('map-style-button')))), isTrue);
@@ -113,7 +123,14 @@ void main() {
       expect(tester.takeException(), isNull);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.details);
       await tester.pumpAndSettle();
-      expect(find.byType(PhoneReaderTopControls), findsOneWidget);
+      expect(find.byType(RightPanelView), findsOneWidget);
+      expect(MMFlatSurface.of(tester.element(find.byType(RightPanelView))), isTrue);
+      expect(tester.element(find.byType(RightPanelView)).mmColors.flat, isTrue);
+      expect(
+        find.descendant(of: find.byType(RightPanelView), matching: find.byType(BackdropFilter)),
+        findsNothing,
+        reason: 'The details panel stays flat',
+      );
       expect(tester.takeException(), isNull);
     }, variant: variant);
 

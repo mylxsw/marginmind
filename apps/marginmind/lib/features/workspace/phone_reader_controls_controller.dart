@@ -7,10 +7,11 @@ enum PhoneReaderSlot { page, orb, tools, scrub }
 
 /// One bottom slot per workspace. Tool/color state stays in WorkspaceState.
 class PhoneReaderControlsController extends ChangeNotifier {
-  PhoneReaderControlsController({bool initiallyDockedRight = true, this.onDockChanged})
-    : _dockRight = initiallyDockedRight;
+  PhoneReaderControlsController({bool initiallyDockedRight = true, bool initiallyArmed = false, this.onDockChanged})
+    : _dockRight = initiallyDockedRight,
+      _slot = initiallyArmed ? PhoneReaderSlot.orb : PhoneReaderSlot.page;
   final ValueChanged<bool>? onDockChanged;
-  PhoneReaderSlot _slot = PhoneReaderSlot.page;
+  PhoneReaderSlot _slot;
   PhoneReaderSlot _returnSlot = PhoneReaderSlot.page;
   PhoneReaderSlot get slot => _slot;
   bool _dockRight;
@@ -27,12 +28,13 @@ class PhoneReaderControlsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void reset(Object? document) {
+  void reset(Object? document, {bool armed = false}) {
     if (_document == document) return;
-    final releaseDrawing = _drawing && _slot == PhoneReaderSlot.page;
+    final next = armed ? PhoneReaderSlot.orb : PhoneReaderSlot.page;
+    final releaseDrawing = _drawing && _slot == next;
     _document = document;
     _drawing = _scrubbing = false;
-    _set(PhoneReaderSlot.page);
+    _set(next);
     if (releaseDrawing) notifyListeners();
   }
 
@@ -129,6 +131,11 @@ class PhoneReaderControlsScope extends InheritedNotifier<PhoneReaderControlsCont
 
   static PhoneReaderControlsController? maybeOf(BuildContext context) => usePhoneReaderControls(context)
       ? context.dependOnInheritedWidgetOfExactType<PhoneReaderControlsScope>()?.notifier
+      : null;
+
+  /// Event handlers need the controller, without rebuilding the document for slots.
+  static PhoneReaderControlsController? read(BuildContext context) => usePhoneReaderControls(context)
+      ? context.getInheritedWidgetOfExactType<PhoneReaderControlsScope>()?.notifier
       : null;
   @override
   bool updateShouldNotify(PhoneReaderControlsScope oldWidget) =>

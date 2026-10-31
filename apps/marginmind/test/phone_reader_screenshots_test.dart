@@ -115,6 +115,12 @@ ${List.filled(8, '<p>把回忆安排在不同的时间，给自己留一点思�
         workspace.setLayout(MMSplitMode.secondary);
         await drain(tester);
         await capture('09-map');
+        workspace.setLayout(MMSplitMode.primary);
+        workspace.openDocument('c1');
+        await drain(tester);
+        await workspace.setTool(AnnotationTool.ink);
+        slots.openTools();
+        await capture('03-pen');
         await tester.pumpWidget(const SizedBox());
         await drain(tester);
       } finally {

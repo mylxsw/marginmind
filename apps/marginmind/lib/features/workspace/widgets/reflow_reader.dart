@@ -537,7 +537,7 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       return;
     }
     if (usePhoneReaderControls(context)) {
-      PhoneReaderControlsScope.maybeOf(context)?.onBodyTap();
+      PhoneReaderControlsScope.read(context)?.onBodyTap();
       WorkspaceChromeScope.maybeOf(context)?.reveal();
     } else if (page == null) {
       WorkspaceChromeScope.maybeOf(context)?.reveal();
@@ -819,15 +819,15 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                                     : MMSpacing.l + MMChromeInsets.of(context).bottom,
                                 left: 0,
                                 right: 0,
-                                child: Center(
-                                  child: MouseRegion(
-                                    onEnter: (_) => setState(() => _hoverNavigation = true),
-                                    onExit: (_) => setState(() => _hoverNavigation = false),
-                                    child: usePhoneReaderControls(context)
-                                        ? _navigation(s, paged)
-                                        : WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
-                                  ),
-                                ),
+                                child: usePhoneReaderControls(context)
+                                    ? _navigation(s, paged)
+                                    : Center(
+                                        child: MouseRegion(
+                                          onEnter: (_) => setState(() => _hoverNavigation = true),
+                                          onExit: (_) => setState(() => _hoverNavigation = false),
+                                          child: WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
+                                        ),
+                                      ),
                               ),
                             if (state.pending case final PendingAction pending when _pendingForDocument(pending))
                               Positioned.fill(

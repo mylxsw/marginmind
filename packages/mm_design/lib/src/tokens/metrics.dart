@@ -27,6 +27,7 @@ abstract final class MMPhoneReaderLayout {
   static const double dot = 8;
   static const double orbDot = 10;
   static const double toolInset = 6;
+  static const double scrubInset = 18;
 }
 
 /// Shared iPad toolbar rhythm. Touch cells remain at least 44 pt wide;
@@ -39,6 +40,7 @@ abstract final class MMToolbarSpacing {
 
 /// Concentric radii: inner radius = outer radius − inset.
 abstract final class MMRadii {
+  static const double phoneReaderToolbar = 28;
   static const double phoneTabBar = 32;
   static const double phoneSheet = 38;
   static const double vocabularyCard = 10;

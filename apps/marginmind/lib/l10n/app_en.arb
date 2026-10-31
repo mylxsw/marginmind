@@ -2446,5 +2446,7 @@
   "phoneReaderReading": "Reading",
   "phoneReaderTools": "Annotation tools",
   "phoneReaderCollapse": "Collapse",
-  "phoneReaderExitTools": "Finish annotating"
+  "phoneReaderExitTools": "Finish annotating",
+  "phoneReaderPercent": "{percent}%",
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
 }
