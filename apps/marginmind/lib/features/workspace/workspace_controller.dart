@@ -2082,7 +2082,7 @@ class WorkspaceController extends Notifier<WorkspaceState> {
         return true;
       case CardTarget(:final cardId):
         final mapId = anchor.mapId ?? state.activeMapId;
-        if (content.node(cardId, mapId: mapId) == null) return false;
+        if (!content.isPlaced(cardId, mapId: mapId)) return false;
         if (mapId != state.activeMapId) await selectMap(mapId);
         if (!ref.mounted) return false;
         await _update((c) => _expandAncestors(c, cardId), undoable: false);
@@ -2123,13 +2123,18 @@ class WorkspaceController extends Notifier<WorkspaceState> {
   }
 
   StudySetContent _expandAncestors(StudySetContent c, String cardId) {
-    var parent = c.node(cardId, mapId: state.activeMapId)?.parentId;
+    String? parentOf(String id) =>
+        c.node(id, mapId: state.activeMapId)?.parentId ??
+        c.summaries
+            .where((s) => s.mapId == state.activeMapId && s.cardId == id && c.summaryRange(s) != null)
+            .firstOrNull
+            ?.parentId;
+    var parent = parentOf(cardId);
     final seen = <String>{};
     while (parent != null && seen.add(parent)) {
       final node = c.node(parent, mapId: state.activeMapId);
-      if (node == null) break;
-      if (node.collapsed) c = _editor.setCollapsed(c, parent, collapsed: false);
-      parent = node.parentId;
+      if (node?.collapsed == true) c = _editor.setCollapsed(c, parent, collapsed: false);
+      parent = parentOf(parent);
     }
     return c;
   }

@@ -261,6 +261,7 @@ class WorkspaceSidebar extends ConsumerWidget {
     final cards = [
       for (final card in hits)
         MMSidebarItem(
+          key: ValueKey('sidebar-card-${card.id}'),
           icon: switch (card.kind) {
             CardKind.topic => MMIcons.addTopic,
             CardKind.excerpt || CardKind.image => MMIcons.highlight,
@@ -270,9 +271,10 @@ class WorkspaceSidebar extends ConsumerWidget {
               ? notePlainText(card.title, card.textFormat)
               : (content!.annotation(card.annotationId ?? '')?.quote ?? ''),
           selected: card.id == state.selectedCardId,
-          onTap: () => content!.annotation(card.annotationId ?? '') != null
-              ? controller.revealCard(card.id)
-              : controller.selectCard(card.id),
+          onTap: () async {
+            await controller.revealAnchor(SourceAnchor(target: CardTarget(cardId: card.id)));
+            if (content!.annotation(card.annotationId ?? '') != null) controller.revealCard(card.id);
+          },
         ),
     ];
     final empty = maps.isEmpty && docs.isEmpty && notes.isEmpty && learn.isEmpty && cards.isEmpty && tags.isEmpty;

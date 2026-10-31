@@ -51,4 +51,25 @@ void main() {
     final restored = StudySetEditor.restore(content, pasted);
     expect(restored.card('2')!.tags, isEmpty);
   });
+
+  test('tags and search include summary topics and nested descendants in map order', () {
+    final made = editor.createSummary(content, ['2'], label: 'Summary');
+    final summary = made.value!;
+    final (withChild, child) = editor.addTopic(made.content, title: 'Explanation', parentId: summary.cardId);
+    final nested = editor.createSummary(withChild, [child.id], label: 'Nested summary');
+    final (withNote, note) = editor.addNote(nested.content, text: 'Tagged passage', parentId: nested.value!.cardId);
+    var tagged = editor.setTags(withNote, summary.cardId!, ['Science']);
+    tagged = editor.setTags(tagged, note.id, ['science']);
+    tagged = editor.setCollapsed(tagged, '1', collapsed: true);
+    expect(tagged.tags(), ['Science']);
+    expect(tagged.search('', tag: 'SCIENCE').map((c) => c.id), [summary.cardId, note.id]);
+    expect(tagged.search('passage', tag: 'science').single.id, note.id);
+    expect(tagged.search('summary').map((c) => c.id), [summary.cardId, nested.value!.cardId]);
+    expect(tagged.tags(mapId: 'other'), isEmpty);
+    expect(tagged.search('', tag: 'Science', mapId: 'other'), isEmpty);
+
+    final broken = tagged.copyWith(nodes: tagged.nodes.where((n) => n.cardId != '2').toList());
+    expect(broken.tags(), isEmpty, reason: 'a removed summary range must not expose detached descendants');
+    expect(broken.search('', tag: 'Science'), isEmpty);
+  });
 }

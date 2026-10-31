@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_core/mm_core.dart';
+import 'package:mm_core/testing.dart';
 import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
@@ -12,8 +14,8 @@ Finder tag(String name) => find.byKey(ValueKey('sidebar-tag-$name'));
 const allTagsKey = ValueKey('sidebar-all-tags');
 const expandKey = ValueKey('sidebar-tags-expand');
 
-Future<ProviderContainer> openSidebar(WidgetTester tester) async {
-  final container = await pumpApp(tester, size: const Size(1280, 1400));
+Future<ProviderContainer> openSidebar(WidgetTester tester, {InMemoryStudySetContentRepository? content}) async {
+  final container = await pumpApp(tester, size: const Size(1280, 1400), content: content);
   container.read(navigationProvider.notifier).openStudySet('demo-1');
   await tester.pumpAndSettle();
   return container;
@@ -25,6 +27,47 @@ List<String> sectionTitles(WidgetTester tester) => tester
     .toList();
 
 void main() {
+  testWidgets('a tag finds summary descendants and result clicks reveal collapsed map branches', (tester) async {
+    var nextId = 0;
+    final editor = StudySetEditor(newId: () => 'tag-fixture-${nextId++}', now: () => testNow);
+    final original = demoContent();
+    final excerpt = original.cardForAnnotation(original.annotations.single.id)!;
+    final made = editor.createSummary(original, [excerpt.id], label: 'Summary result');
+    final summaryId = made.value!.cardId!;
+    final (withChild, child) = editor.addTopic(made.content, title: 'Folded parent', parentId: summaryId);
+    final (withResult, result) = editor.addTopic(withChild, title: 'Tagged result', parentId: child.id);
+    var content = editor.setTags(withResult, result.id, ['test']);
+    content = editor.setTags(content, summaryId, ['summary-tag']);
+    content = editor.setCollapsed(content, 'c3', collapsed: true);
+    content = editor.setCollapsed(content, child.id, collapsed: true);
+    final container = await openSidebar(tester, content: InMemoryStudySetContentRepository({'demo-1': content}));
+    final provider = workspaceProvider('demo-1');
+    final controller = container.read(provider.notifier);
+    await tester.tap(tag('test'));
+    await tester.pumpAndSettle();
+    final row = find.byKey(ValueKey('sidebar-card-${result.id}'));
+    expect(row, findsOneWidget);
+    expect(inSidebar(find.text('Cards')), findsOneWidget);
+    final tick = container.read(provider).locateCardTick;
+    controller.setLayout(MMSplitMode.primary);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await settleHud(tester);
+    expect(container.read(provider).selectedCardId, result.id);
+    expect(container.read(provider).locateCardTick, greaterThan(tick));
+    expect(container.read(provider).layout, isNot(MMSplitMode.primary));
+    expect(controller.content.node('c3')!.collapsed, isFalse);
+    expect(controller.content.node(child.id)!.collapsed, isFalse);
+
+    await tester.tap(tag('summary-tag'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ValueKey('sidebar-card-$summaryId')));
+    await settleHud(tester);
+    expect(container.read(provider).selectedCardId, summaryId);
+    expect(container.read(provider).locateCardTick, greaterThan(tick + 1));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('optional sections hide when empty and follow documents, maps, notes and learn', (tester) async {
     final container = await openSidebar(tester);
     final controller = container.read(workspaceProvider('demo-1').notifier);

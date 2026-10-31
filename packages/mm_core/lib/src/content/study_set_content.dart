@@ -314,8 +314,7 @@ class StudySetContent {
 
   List<String> tags({String mapId = MindMap.defaultId}) {
     final names = <String, String>{};
-    for (final c in cards) {
-      if (node(c.id, mapId: mapId) == null) continue;
+    for (final c in _cardsInMapOrder(mapId)) {
       for (final tag in c.tags) {
         names.putIfAbsent(tag.toLowerCase(), () => tag);
       }
@@ -330,26 +329,40 @@ class StudySetContent {
     final q = query.trim().toLowerCase();
     if (q.isEmpty && tag == null) return const [];
     bool hit(String? s) => s != null && s.toLowerCase().contains(q);
-    final result = <Card>[];
-    void walk(String? parentId) {
-      for (final n in childrenOf(parentId, mapId: mapId)) {
-        final c = card(n.cardId);
-        if (c == null) continue;
-        final tagged = tag == null || c.tags.any((t) => t.toLowerCase() == tag.toLowerCase());
-        if (tagged &&
+    return [
+      for (final c in _cardsInMapOrder(mapId))
+        if ((tag == null || c.tags.any((t) => t.toLowerCase() == tag.toLowerCase())) &&
             (q.isEmpty ||
                 hit(c.title) ||
                 hit(c.body) ||
                 segmentsOf(c).any((segment) => hit(segment.text)) ||
-                c.tags.any(hit))) {
-          result.add(c);
-        }
-        walk(c.id);
+                c.tags.any(hit)))
+          c,
+    ];
+  }
+
+  /// Summaries are placed outside [nodes], but their topics and descendants
+  /// belong to the same searchable map as ordinary branches.
+  Iterable<Card> _cardsInMapOrder(String mapId) sync* {
+    final summariesAfter = <String, List<String>>{};
+    for (final (summary, range) in summariesOf(mapId)) {
+      if (summary.cardId case final id?) summariesAfter.putIfAbsent(range.last, () => []).add(id);
+    }
+    final seen = <String>{};
+    Iterable<Card> walk(String? parentId) sync* {
+      final ids = [
+        for (final node in childrenOf(parentId, mapId: mapId)) ...[node.cardId, ...?summariesAfter[node.cardId]],
+      ];
+      for (final id in ids) {
+        if (!seen.add(id)) continue;
+        final c = card(id);
+        if (c == null) continue;
+        yield c;
+        yield* walk(id);
       }
     }
 
-    walk(null);
-    return result;
+    yield* walk(null);
   }
 
   StudySetContent copyWith({
