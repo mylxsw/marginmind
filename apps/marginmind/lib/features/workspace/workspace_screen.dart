@@ -270,7 +270,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     }
     final stacked = tablet ? tabletLayout.splitAxis == Axis.vertical : sizeClass == MMSizeClass.medium;
     final phone = MMInput.of(context).phone;
-    final mergedToolbar = !compact || phone;
+    final mergedToolbar = !compact || touchPlatform;
     final leading = sidebarVisible && !touchPlatform
         ? null
         : MMIconButton(
@@ -399,7 +399,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ),
     );
     final floating = sizeClass != MMSizeClass.regular;
-    final paneSwitch = compact && !phone;
+    final paneSwitch = compact && !mergedToolbar;
     final panel = state.panel == null ? null : RightPanelView(studySetId: widget.studySetId);
     Widget compactSwitcher(double top) => Padding(
       padding: EdgeInsets.fromLTRB(MMSpacing.m, top, MMSpacing.m, MMSpacing.s),

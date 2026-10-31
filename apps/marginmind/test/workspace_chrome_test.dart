@@ -106,13 +106,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  for (final phone in [true, false]) {
-    testWidgets('PDF scroll hides both ends and tap restores; phone=$phone', (tester) async {
+  for (final (phone, size) in [
+    (true, const Size(402, 874)),
+    (false, const Size(1194, 834)),
+    (false, const Size(500, 1000)),
+  ]) {
+    testWidgets('PDF scroll hides both ends and tap restores; phone=$phone size=$size', (tester) async {
       installTestPdfBackend(pageCount: 12);
       final container = await pumpApp(
         tester,
         renderPdf: true,
-        size: phone ? const Size(402, 874) : const Size(1194, 834),
+        size: size,
         overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(phone)],
       );
       container.read(navigationProvider.notifier).openStudySet('demo-1');
@@ -120,7 +124,7 @@ void main() {
       final reader = find.byType(ReaderPane);
       final chrome = WorkspaceChromeScope.maybeOf(tester.element(reader))!;
       final pdf = tester.widget<MMPdfView>(find.byType(MMPdfView)).controller;
-      final size = tester.getSize(find.byType(MMPdfView));
+      final viewportSize = tester.getSize(find.byType(MMPdfView));
       // Programmatic page changes never hide the chrome.
       unawaited(pdf.jumpToPage(2));
       await drain(tester);
@@ -132,7 +136,7 @@ void main() {
       );
       await drain(tester);
       expect(chrome.visible, isFalse);
-      expect(tester.getSize(find.byType(MMPdfView)), size);
+      expect(tester.getSize(find.byType(MMPdfView)), viewportSize);
       expect(find.byKey(const ValueKey('reader-more')).hitTestable(), findsNothing);
       await tester.tapAt(tester.getCenter(find.byType(MMPdfView)));
       await tester.pumpAndSettle();

@@ -12,6 +12,7 @@ import 'package:marginmind/features/workspace/widgets/map_export_sheet.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/notices.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/workspace_toolbar.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:mm_design/mm_design.dart';
 
@@ -397,7 +398,7 @@ void main() {
     }, variant: variant);
   }
 
-  testWidgets('an iPad in Split View keeps the Source | Map switch and no tabs', (tester) async {
+  testWidgets('a compact iPad keeps tablet headers without phone controls', (tester) async {
     final container = await pumpPhone(tester, (
       name: 'iPad ⅓',
       size: const Size(375, 1032),
@@ -409,7 +410,9 @@ void main() {
     await tester.pumpAndSettle();
     container.read(workspaceProvider('demo-1').notifier).openDocument('c1');
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('workspace-pane-switch')), findsOneWidget);
+    expect(find.byKey(const ValueKey('workspace-pane-switch')), findsNothing);
+    expect(find.byType(WorkspaceToolbar), findsWidgets);
+    expect(find.byType(MMThumbDockScope), findsNothing);
     expect(find.byType(MMTabBar), findsNothing);
     // Compact tablet companion remains separate from its source.
     container.read(workspaceProvider('demo-1').notifier).showDetails('c3');
