@@ -12,6 +12,8 @@ import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 import 'assistant_support.dart';
+import 'assistant_quick_actions_test.dart' show screenshot;
+import 'vocabulary_screenshots.dart' show loadVocabularyScreenshotFonts;
 
 Future<ProviderContainer> tablet(WidgetTester t, Size size) async {
   final container = await pumpApp(
@@ -27,6 +29,58 @@ Future<ProviderContainer> tablet(WidgetTester t, Size size) async {
 }
 
 void main() {
+  setUpAll(loadVocabularyScreenshotFonts);
+
+  for (final dark in [false, true]) {
+    testWidgets('tablet split grip and compact tools ${dark ? 'dark' : 'light'}', (t) async {
+      final container = await pumpApp(
+        t,
+        size: const Size(834, 1194),
+        prefs: {'settings.appearance': dark ? 'dark' : 'light', 'settings.language': 'zh'},
+        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(false)],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await t.pumpAndSettle();
+      final controller = container.read(workspaceProvider('demo-1').notifier);
+      controller.openDocument('c1');
+      controller.setLayout(MMSplitMode.split);
+      await t.pumpAndSettle();
+      final tools = t.widget<MMAdaptiveToolbar>(find.byType(MMAdaptiveToolbar).first).items;
+      final toolIds = ['select', 'highlight', 'underline', 'ink', 'area', 'sync'];
+      final cells = [for (final id in toolIds) find.byWidget(tools.firstWhere((item) => item.id == id).child)];
+      for (var i = 0; i < cells.length; i++) {
+        final cell = t.getRect(cells[i]);
+        expect(cell.width, 44);
+        expect(cell.height, 44);
+        if (i > 0) expect(cell.left, t.getRect(cells[i - 1]).right, reason: 'no extra gap within the tool group');
+      }
+      final grip = find.byKey(const ValueKey('split-divider-grip'));
+      expect(grip, findsOneWidget);
+      final divider = find.byWidgetPredicate((w) => w is MouseRegion && w.cursor == SystemMouseCursors.resizeRow);
+      expect(t.getSize(divider).height, 44);
+      final readerBefore = t.getRect(find.byType(ReaderPane));
+      expect(t.getCenter(grip).dy, closeTo(readerBefore.bottom + .5, .01));
+      final appearance = dark ? 'dark' : 'light';
+      await screenshot(t, 'split-$appearance', target: find.byType(AppShell));
+      // Grab away from the tiny visual grip: the whole seam is a touch target.
+      await t.dragFrom(t.getCenter(grip) + const Offset(100, 0), const Offset(0, 90));
+      await t.pumpAndSettle();
+      expect(t.getRect(find.byType(ReaderPane)).height, greaterThan(readerBefore.height + 60));
+      final gesture = await t.startGesture(t.getCenter(grip));
+      await t.pump();
+      final box = t.widget<Container>(grip).decoration! as BoxDecoration;
+      expect(box.color, t.element(grip).mmColors.accentTint);
+      await screenshot(t, 'split-grabbed-$appearance', target: find.byType(AppShell));
+      await gesture.up();
+      await t.pumpAndSettle();
+      controller.setLayout(MMSplitMode.primary);
+      await t.pumpAndSettle();
+      expect(grip, findsNothing);
+      expect(t.takeException(), isNull);
+      await settleHud(t);
+    });
+  }
+
   for (final size in [const Size(834, 1194), const Size(1194, 834), const Size(500, 900)]) {
     testWidgets('tablet $size: configured composer sends above the software keyboard', (t) async {
       final app = await openAssistantApp(

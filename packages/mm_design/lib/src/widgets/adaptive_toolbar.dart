@@ -38,6 +38,7 @@ class MMAdaptiveToolbar extends StatefulWidget {
     this.groups = const [],
     this.menuEntries = const [],
     this.spacing = MMSpacing.s,
+    this.groupItemSpacing,
   });
   final List<MMToolbarItem> items;
   final String menuLabel;
@@ -49,6 +50,9 @@ class MMAdaptiveToolbar extends StatefulWidget {
   final List<Set<String>> groups;
   final List<PopupMenuEntry<VoidCallback>> menuEntries;
   final double spacing;
+
+  /// Optional spacing within a painted group; group boundaries keep [spacing].
+  final double? groupItemSpacing;
 
   @override
   State<MMAdaptiveToolbar> createState() => _MMAdaptiveToolbarState();
@@ -127,6 +131,7 @@ class _MMAdaptiveToolbarState extends State<MMAdaptiveToolbar> {
           hidden: _hidden,
           compacted: _compacted,
           spacing: widget.spacing,
+          groupItemSpacing: widget.groupItemSpacing,
           menuBeforeId: widget.menuBeforeId,
           trailingIds: widget.trailingIds,
           groups: widget.groups,
@@ -205,6 +210,7 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
     required this.hidden,
     required this.compacted,
     required this.spacing,
+    required this.groupItemSpacing,
     required this.menuBeforeId,
     required this.trailingIds,
     required this.groups,
@@ -216,20 +222,33 @@ class _ToolbarLayout extends MultiChildRenderObjectWidget {
   final List<int> priorities;
   final Set<String> hidden, compacted;
   final double spacing;
+  final double? groupItemSpacing;
   final String? menuBeforeId;
   final Set<String> trailingIds;
   final List<Set<String>> groups;
   final Color groupColor;
   final VoidCallback onLayout;
   @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _ToolbarBox(ids, priorities, hidden, compacted, spacing, menuBeforeId, trailingIds, groups, groupColor, onLayout);
+  RenderObject createRenderObject(BuildContext context) => _ToolbarBox(
+    ids,
+    priorities,
+    hidden,
+    compacted,
+    spacing,
+    groupItemSpacing,
+    menuBeforeId,
+    trailingIds,
+    groups,
+    groupColor,
+    onLayout,
+  );
   @override
   void updateRenderObject(BuildContext context, _ToolbarBox renderObject) {
     renderObject
       ..ids = ids
       ..priorities = priorities
       ..spacing = spacing
+      ..groupItemSpacing = groupItemSpacing
       ..menuBeforeId = menuBeforeId
       ..trailingIds = trailingIds
       ..groups = groups
@@ -251,6 +270,7 @@ class _ToolbarBox extends RenderBox
     this.hidden,
     this.compacted,
     this.spacing,
+    this.groupItemSpacing,
     this.menuBeforeId,
     this.trailingIds,
     this.groups,
@@ -266,6 +286,7 @@ class _ToolbarBox extends RenderBox
   List<int> priorities;
   final Set<String> hidden, compacted;
   double spacing;
+  double? groupItemSpacing;
 
   @override
   void setupParentData(RenderBox child) {
@@ -288,10 +309,38 @@ class _ToolbarBox extends RenderBox
     }
     hidden.clear();
     final visible = List.filled(ids.length, true);
-    var width = menu.size.width;
-    for (var i = 0; i < ids.length; i++) {
-      width += controls[i].size.width + spacing;
+    final before = ids.indexOf(menuBeforeId ?? '');
+    final indices = [
+      for (var i = 0; i < ids.length; i++)
+        if (i != before) i,
+    ];
+    if (before < 0) {
+      indices.add(ids.length);
+    } else {
+      indices.insert(before, ids.length);
+      indices.insert(before + 1, before);
     }
+    double gap(int a, int b) =>
+        groupItemSpacing != null &&
+            a < ids.length &&
+            b < ids.length &&
+            groups.any((group) => group.contains(ids[a]) && group.contains(ids[b]))
+        ? groupItemSpacing!
+        : spacing;
+    List<int> visibleIndices() => [
+      for (final i in indices)
+        if (i == ids.length || visible[i]) i,
+    ];
+    double measuredWidth(List<int> shown) {
+      var result = 0.0;
+      for (var position = 0; position < shown.length; position++) {
+        if (position > 0) result += gap(shown[position - 1], shown[position]);
+        result += controls[shown[position]].size.width;
+      }
+      return result;
+    }
+
+    var width = measuredWidth(visibleIndices());
     final order = List.generate(ids.length, (i) => i)..sort((a, b) => priorities[a].compareTo(priorities[b]));
     // Remove labels before moving any command out of the toolbar.
     for (final i in order) {
@@ -307,41 +356,29 @@ class _ToolbarBox extends RenderBox
       if (width <= constraints.maxWidth) break;
       visible[i] = false;
       hidden.add(ids[i]);
-      width -= controls[i].size.width + spacing;
+      width = measuredWidth(visibleIndices());
     }
     size = constraints.constrain(
       Size(width, controls.fold<double>(0, (h, c) => h > c.size.height ? h : c.size.height)),
     );
     var x = 0.0;
-    final before = ids.indexOf(menuBeforeId ?? '');
-    final indices = [
-      for (var i = 0; i < ids.length; i++)
-        if (i != before) i,
-    ];
-    if (before < 0) {
-      indices.add(ids.length);
-    } else {
-      indices.insert(before, ids.length);
-      indices.insert(before + 1, before);
-    }
+    final shown = visibleIndices();
     var alignedTrailing = false;
-    for (var position = 0; position < indices.length; position++) {
-      final i = indices[position];
+    for (var position = 0; position < shown.length; position++) {
+      final i = shown[position];
+      if (position > 0) x += gap(shown[position - 1], i);
       if (!alignedTrailing &&
-          ((i < ids.length && visible[i] && trailingIds.contains(ids[i])) ||
-              (i == ids.length && trailingIds.contains(':menu')))) {
-        var remaining = 0.0;
-        for (final index in indices.skip(position)) {
-          if (index == ids.length || visible[index]) remaining += controls[index].size.width + spacing;
-        }
-        x = (size.width - remaining + spacing).clamp(x, size.width);
+          ((i < ids.length && trailingIds.contains(ids[i])) || (i == ids.length && trailingIds.contains(':menu')))) {
+        x = (size.width - measuredWidth(shown.sublist(position))).clamp(x, size.width);
         alignedTrailing = true;
       }
       final child = controls[i];
       final data = child.parentData! as _ToolbarData;
-      data.visible = i == ids.length || visible[i];
       data.offset = Offset(x, (size.height - child.size.height) / 2);
-      if (data.visible) x += child.size.width + spacing;
+      x += child.size.width;
+    }
+    for (var i = 0; i < controls.length; i++) {
+      (controls[i].parentData! as _ToolbarData).visible = i == ids.length || visible[i];
     }
     markNeedsSemanticsUpdate();
     onLayout();

@@ -85,6 +85,7 @@ class WorkspaceToolbar extends StatelessWidget {
                   menuLabel: label,
                   overflowLabel: overflowLabel,
                   spacing: phone ? MMSpacing.xs : MMSpacing.s,
+                  groupItemSpacing: context.mmTablet ? 0 : null,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   trailingIds: {

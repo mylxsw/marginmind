@@ -11,7 +11,7 @@ import 'window_scaffold.dart';
 enum MMSplitMode { primary, split, secondary }
 
 /// Two panes side by side, or [primary] above [secondary] with
-/// [Axis.vertical], and a draggable divider (1px visual, 8px hit area, 44
+/// [Axis.vertical], and a draggable divider (1px line, a visible grip on tablets, 8px hit area, 44
 /// under touch; double-click resets to 50 : 50). Hidden panes stay mounted, so
 /// switching layouts keeps scroll positions and other state.
 ///
@@ -176,15 +176,11 @@ class MMSplitView extends StatelessWidget {
           ),
         ];
         final chrome = MMChromeInsets.of(context);
-        final divider = MouseRegion(
-          cursor: vertical ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragUpdate: vertical ? null : (d) => _drag(w, pw, d.delta.dx, minPrimary, minSecondary),
-            onVerticalDragUpdate: vertical ? (d) => _drag(w, pw, d.delta.dy, minPrimary, minSecondary) : null,
-            onDoubleTap: () => onFractionChanged!(0.5),
-            child: Semantics(label: 'Divider', slider: true, child: const SizedBox.expand()),
-          ),
+        final divider = _SplitDivider(
+          vertical: vertical,
+          showGrip: context.mmTablet,
+          onDelta: (delta) => _drag(w, pw, delta, minPrimary, minSecondary),
+          onReset: () => onFractionChanged!(0.5),
         );
         final button = context.mmToolbarButton;
 
@@ -268,4 +264,79 @@ class MMSplitGeometry {
   final MMSplitMode effectiveMode;
   final Axis axis;
   final double primaryExtent, secondaryExtent, dividerExtent, minPrimary, minSecondary;
+}
+
+/// The grip sits on the seam; its full touch strip remains easy to grab.
+class _SplitDivider extends StatefulWidget {
+  const _SplitDivider({required this.vertical, required this.showGrip, required this.onDelta, required this.onReset});
+  final bool vertical, showGrip;
+  final ValueChanged<double> onDelta;
+  final VoidCallback onReset;
+
+  @override
+  State<_SplitDivider> createState() => _SplitDividerState();
+}
+
+class _SplitDividerState extends State<_SplitDivider> {
+  bool _pressed = false, _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.mmColors;
+    final active = _pressed || _hovered;
+    return MouseRegion(
+      cursor: widget.vertical ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Listener(
+        onPointerDown: (_) => setState(() => _pressed = true),
+        onPointerUp: (_) => setState(() => _pressed = false),
+        onPointerCancel: (_) => setState(() => _pressed = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragUpdate: widget.vertical ? null : (d) => widget.onDelta(d.delta.dx),
+          onVerticalDragUpdate: widget.vertical ? (d) => widget.onDelta(d.delta.dy) : null,
+          onDoubleTap: widget.onReset,
+          child: Semantics(
+            label: 'Divider',
+            slider: true,
+            child: SizedBox.expand(
+              child: widget.showGrip
+                  ? Center(
+                      child: RotatedBox(
+                        quarterTurns: widget.vertical ? 0 : 1,
+                        child: Container(
+                          key: const ValueKey('split-divider-grip'),
+                          width: 72,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: active ? c.accentTint : c.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: active ? c.accent : c.border),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < 2; i++)
+                                Container(
+                                  width: 28,
+                                  height: 2,
+                                  margin: EdgeInsets.symmetric(vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: active ? c.accent : c.secondaryLabel,
+                                    borderRadius: BorderRadius.circular(1),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
