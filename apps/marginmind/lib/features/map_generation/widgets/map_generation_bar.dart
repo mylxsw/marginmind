@@ -10,11 +10,7 @@ import '../../workspace/workspace_controller.dart';
 import '../map_generation_controller.dart';
 
 class MapGenerationBar extends ConsumerStatefulWidget {
-  const MapGenerationBar({
-    super.key,
-    required this.studySetId,
-    this.onKeep,
-  });
+  const MapGenerationBar({super.key, required this.studySetId, this.onKeep});
 
   final String studySetId;
   final VoidCallback? onKeep;
@@ -65,20 +61,14 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
         ],
       );
     } else if (isReading) {
-      final docTitle = preview.request.sources.firstOrNull?.documentId != null
-          ? preview.request.title
-          : '';
+      final docTitle = preview.request.sources.firstOrNull?.documentId != null ? preview.request.title : '';
       final currentSkeleton = preview.skeletons.where((s) => s.isCurrent).firstOrNull;
       final currentTitle = currentSkeleton?.title ?? (preview.skeletons.firstOrNull?.title ?? '');
 
       titleArea = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
-          ),
+          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.research)),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 200),
@@ -90,10 +80,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
             ),
           ),
           const SizedBox(width: 8),
-          _ReadingSteps(
-            skeletons: preview.skeletons,
-            progress: preview.chapterProgress,
-          ),
+          _ReadingSteps(skeletons: preview.skeletons, progress: preview.chapterProgress),
           if (currentTitle.isNotEmpty) ...[
             const SizedBox(width: 8),
             ConstrainedBox(
@@ -113,19 +100,12 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
       titleArea = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
-          ),
+          SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.research)),
           const SizedBox(width: 8),
           Text(l.mapGenerateBuilding, style: t.callout.copyWith(color: c.label)),
           if (count > 0) ...[
             const SizedBox(width: 6),
-            Text(
-              l.mapGenerateTopicCount(count),
-              style: t.callout.copyWith(color: c.secondaryLabel),
-            ),
+            Text(l.mapGenerateTopicCount(count), style: t.callout.copyWith(color: c.secondaryLabel)),
           ],
         ],
       );
@@ -142,10 +122,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           if (hasChapterFailure && failedChapter != null) ...[
             Icon(MMIcons.warning, size: 14, color: c.critical),
             const SizedBox(width: 4),
-            Text(
-              l.mapGenerateChapterFailed(failedChapter),
-              style: t.callout.copyWith(color: c.critical),
-            ),
+            Text(l.mapGenerateChapterFailed(failedChapter), style: t.callout.copyWith(color: c.critical)),
             const SizedBox(width: 6),
             MMButton(
               key: const ValueKey('map-generation-retry-chapter-button'),
@@ -172,10 +149,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            l.mapIdeaKeptCount(keptCount, totalCount),
-            style: t.callout.copyWith(color: c.secondaryLabel),
-          ),
+          Text(l.mapIdeaKeptCount(keptCount, totalCount), style: t.callout.copyWith(color: c.secondaryLabel)),
         ],
       );
     }
@@ -340,23 +314,12 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: c.border, width: 0.5),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4)),
           ],
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              titleArea,
-              const SizedBox(width: 12),
-              ...actions,
-            ],
-          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [titleArea, const SizedBox(width: 12), ...actions]),
         ),
       ),
     );
@@ -420,20 +383,13 @@ class _StepBox extends StatelessWidget {
     return Container(
       width: MMSizes.mapReadingStep.width,
       height: MMSizes.mapReadingStep.height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(2),
-      ),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
     );
   }
 }
 
 class MapAdjustMenu extends StatefulWidget {
-  const MapAdjustMenu({
-    super.key,
-    required this.request,
-    required this.onRegenerate,
-  });
+  const MapAdjustMenu({super.key, required this.request, required this.onRegenerate});
 
   final MapGenerationRequest request;
   final ValueChanged<MapGenerationRequest> onRegenerate;
@@ -464,11 +420,7 @@ class _MapAdjustMenuState extends State<MapAdjustMenu> {
   void _submit() {
     final text = _instructionsController.text.trim();
     widget.onRegenerate(
-      widget.request.copyWith(
-        organization: _organization,
-        depth: _depth,
-        instructions: text.isEmpty ? null : text,
-      ),
+      widget.request.copyWith(organization: _organization, depth: _depth, instructions: text.isEmpty ? null : text),
     );
   }
 
@@ -485,13 +437,7 @@ class _MapAdjustMenuState extends State<MapAdjustMenu> {
         color: c.surface,
         borderRadius: BorderRadius.circular(MMRadii.dropdown),
         border: Border.all(color: c.border, width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

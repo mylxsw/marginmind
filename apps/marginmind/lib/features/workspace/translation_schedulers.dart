@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -14,10 +16,50 @@ final translationStoreProvider = FutureProvider.family<TranslationStore, String>
   return (repository as TranslationStoreRepository).translationStore(setId);
 });
 
+/// OS network changes; no remote probe or document work is performed.
+final translationConnectivityProvider = StreamProvider<bool>((ref) async* {
+  final connectivity = Connectivity();
+  try {
+    yield !(await connectivity.checkConnectivity()).contains(ConnectivityResult.none);
+    yield* connectivity.onConnectivityChanged.map((results) => !results.contains(ConnectivityResult.none)).distinct();
+  } on MissingPluginException {
+    // Hosts without the plugin retain the assistant's existing default.
+    yield true;
+  } on PlatformException {
+    yield true;
+  }
+});
+
+/// System/assistant online state for the given study set.
+/// Can be overridden in tests or changed when network/toggle changes.
+class TranslationOnlineNotifier extends Notifier<bool> {
+  TranslationOnlineNotifier(this.studySetId);
+  final String studySetId;
+
+  @override
+  bool build() {
+    return ref.watch(translationConnectivityProvider).value ?? assistantOnlineDefault(ref, studySetId);
+  }
+
+  void setOnline(bool online) {
+    state = online;
+  }
+}
+
+final translationOnlineProvider = NotifierProvider.autoDispose.family<TranslationOnlineNotifier, bool, String>(
+  (key) => TranslationOnlineNotifier(key),
+);
+
 /// The workspace retains this registry while open, including outside compare
 /// mode. Later full-document controls use the same document/language owners.
 final translationSchedulersProvider = Provider.autoDispose.family<TranslationSchedulers, String>((ref, setId) {
   final registry = TranslationSchedulers(ref, setId);
+  ref.listen<bool>(translationOnlineProvider(setId), (_, online) {
+    unawaited(registry.setOnline(online));
+  });
+  ref.listen(assistantDefaultModelProvider, (_, model) {
+    unawaited(registry.updateModel(model));
+  });
   ref.onDispose(() => unawaited(registry.close()));
   return registry;
 });
@@ -29,6 +71,14 @@ class TranslationSchedulers {
   final _owners = <(String, String), Future<TranslationScheduler>>{};
   final _revisions = <(String, String), String?>{};
   bool _closed = false;
+  final _changes = StreamController<(String, String)>.broadcast(sync: true);
+  final _ready = <(String, String), TranslationScheduler>{};
+  final _subscriptions = <(String, String), StreamSubscription<TranslationSchedulerState>>{};
+  Stream<(String, String)> get changes => _changes.stream;
+  TranslationScheduler? peek(String id, String language) => _ready[(id, language)];
+  void _notify((String, String) key) {
+    if (!_changes.isClosed) _changes.add(key);
+  }
 
   Future<TranslationScheduler> get(
     String id,
@@ -46,7 +96,11 @@ class TranslationSchedulers {
     final factory = ref.read(paragraphTranslatorProvider);
     final model = ref.read(assistantDefaultModelProvider);
     final modelId = model == null ? '' : '${model.serviceId ?? model.provider.name}/${model.model}';
+    final isOllama = model?.provider == AssistantProvider.ollama;
+    final isOnline = isOllama || ref.read(translationOnlineProvider(setId));
     final opening = () async {
+      await _subscriptions.remove(key)?.cancel();
+      _ready.remove(key);
       if (previous != null) await (await previous).close();
       final store = await storeFuture;
       final snapshot = await store.importLegacy(
@@ -62,6 +116,7 @@ class TranslationSchedulers {
         store: store,
         model: modelId,
         budget: const ResearchBudget(outputTokens: 16384, duration: Duration(minutes: 3)),
+        online: isOnline,
         createTranslator: () {
           if (_closed || !ref.mounted) throw StateError('Workspace closed');
           final selected = ref.read(assistantDefaultModelProvider);
@@ -70,7 +125,17 @@ class TranslationSchedulers {
         },
       );
       await scheduler.initialize(snapshot: snapshot);
-      if (_closed) await scheduler.close();
+      if (_closed) {
+        await scheduler.close();
+      } else {
+        _ready[key] = scheduler;
+        _subscriptions[key] = scheduler.states.listen((_) => _notify(key));
+        await scheduler.setOnline(
+          ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama ||
+              ref.read(translationOnlineProvider(setId)),
+        );
+        _notify(key);
+      }
       return scheduler;
     }();
     _owners[key] = opening;
@@ -82,8 +147,53 @@ class TranslationSchedulers {
     }
   }
 
+  Future<void> setOnline(bool online) async {
+    await Future.wait(
+      _owners.values.toList().map((future) async {
+        try {
+          final scheduler = await future;
+          if (_closed || !ref.mounted) return;
+          final isOllama = ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama;
+          await scheduler.setOnline(isOllama || online);
+        } catch (_) {
+          /* Failed owners have no running task. */
+        }
+      }),
+    );
+  }
+
+  Future<void> updateModel(AssistantModel? model) async {
+    final isOllama = model?.provider == AssistantProvider.ollama;
+    final isOnline = ref.read(translationOnlineProvider(setId));
+    await setOnline(isOllama || isOnline);
+  }
+
+  Future<void> removeTranslations(String id, String language) async {
+    final storeFuture = ref.read(translationStoreProvider(setId).future);
+    final key = (id, language);
+    final existing = _owners.remove(key);
+    await _subscriptions.remove(key)?.cancel();
+    _ready.remove(key);
+    _revisions.remove(key);
+    if (existing != null) {
+      try {
+        final scheduler = await existing;
+        await scheduler.close();
+      } catch (_) {}
+    }
+    final store = await storeFuture;
+    await store.remove(id, language);
+    _notify(key);
+  }
+
   Future<void> close() async {
     _closed = true;
+    for (final sub in _subscriptions.values.toList()) {
+      await sub.cancel();
+    }
+    _subscriptions.clear();
+    _ready.clear();
+    await _changes.close();
     await Future.wait(
       _owners.values.map((s) async {
         try {

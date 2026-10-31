@@ -218,6 +218,21 @@ void main() {
     expect(MMIcons.generateMap, isNot(MMIcons.ai));
     expect(MMIcons.generateMap, isNot(MMIcons.organizeNote));
     expect(MMIcons.generateMap, isNot(MMIcons.organize));
+
+    expect(MMSizes.fullTranslationSheetWidth, 560);
+    expect(MMSizes.fullTranslationPanelWidth, 372);
+    for (final icon in [
+      MMIcons.layers,
+      MMIcons.pause,
+      MMIcons.play,
+      MMIcons.retry,
+      MMIcons.wifiOff,
+      MMIcons.key,
+      MMIcons.recycle,
+      MMIcons.skip,
+    ]) {
+      expect(icon.fontFamily, isNotEmpty);
+    }
   });
 
   test('source document dots are distinct per appearance and cycle', () {

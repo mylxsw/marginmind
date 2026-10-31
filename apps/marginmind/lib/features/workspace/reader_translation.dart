@@ -152,7 +152,19 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
     return const ReaderTranslationState();
   }
 
-  Future<void> _load() async {
+  /// Rebinds the compare pane to the fresh owner after removing translations.
+  /// Clearing data does not itself authorize another model request.
+  Future<void> reloadAfterRemoval(String documentId, String language) async {
+    final pair = ref.read(readerCompareProvider(studySetId));
+    if (pair?.leftDocumentId != documentId ||
+        pair?.right is! AiCompareTarget ||
+        (pair!.right as AiCompareTarget).targetLang != language) {
+      return;
+    }
+    await _load(translateCurrentPage: false);
+  }
+
+  Future<void> _load({bool translateCurrentPage = true}) async {
     final generation = ++_generation;
     _cancelPage();
     state = const ReaderTranslationState();
@@ -197,7 +209,7 @@ class ReaderTranslationController extends Notifier<ReaderTranslationState> {
         position: position,
         textPosition: textPosition,
       );
-      if (paragraphs.isNotEmpty) await _translatePage(page);
+      if (translateCurrentPage && paragraphs.isNotEmpty) await _translatePage(page);
     } catch (_) {
       if (current()) state = state.copyWith(loading: false, failed: true);
     }

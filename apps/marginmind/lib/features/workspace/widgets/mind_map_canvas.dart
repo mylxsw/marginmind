@@ -778,8 +778,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
       : _workingTargetRef;
   List<ExpansionDraft> get _drafts => [
     ...?widget.expansion?.drafts,
-    if (widget.expansion?.phase == ExpansionPhase.generating &&
-        (widget.skeletons == null || widget.skeletons!.isEmpty))
+    if (widget.expansion?.phase == ExpansionPhase.generating && (widget.skeletons == null || widget.skeletons!.isEmpty))
       ExpansionDraft(id: '__expansion_placeholder__', parentRef: _workingTargetRef, title: '…'),
   ];
   int _draftDepth(String id) {
@@ -1835,7 +1834,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
                         }
                         widget.onContextMenu!(selected, position);
                       },
-                onReveal: spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
+                onReveal:
+                    spec.kind == _Kind.excerpt || (spec.kind == _Kind.image && spec.meta != null) || spec.source != null
                     ? () => widget.onReveal(id)
                     : null,
                 revealLabel: l.revealSource,
@@ -2840,17 +2840,10 @@ class _NodeView extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Flexible(
-                            child: Text(
-                              spec.title,
-                              style: t.headline.copyWith(color: look?.text),
-                            ),
+                            child: Text(spec.title, style: t.headline.copyWith(color: look?.text)),
                           ),
                           const SizedBox(width: 6),
-                          _SourceChipHolder(
-                            page: spec.source!.page,
-                            selected: selected,
-                            onTap: onReveal,
-                          ),
+                          _SourceChipHolder(page: spec.source!.page, selected: selected, onTap: onReveal),
                         ],
                       ),
               )
@@ -3785,10 +3778,7 @@ class _SourceChipHolderState extends State<_SourceChipHolder> {
       child: AnimatedOpacity(
         duration: MMMotion.quick,
         opacity: visible ? 1.0 : 0.0,
-        child: MapSourceChip(
-          page: widget.page,
-          onTap: visible ? widget.onTap : null,
-        ),
+        child: MapSourceChip(page: widget.page, onTap: visible ? widget.onTap : null),
       ),
     );
   }

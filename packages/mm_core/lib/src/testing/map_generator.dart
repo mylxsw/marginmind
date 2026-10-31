@@ -44,30 +44,31 @@ class FakeMapGenerator implements MapGenerator {
 
   @override
   Stream<MapLine> readChapter(MapChapterInput input, CancellationToken cancel) {
-    final lines = chapters[input.chapterId] ??
+    final lines =
+        chapters[input.chapterId] ??
         chapters.entries
-            .where((e) =>
-                e.key == '*' ||
-                e.key == 'default' ||
-                (e.key.endsWith('-all') && input.chapterId.startsWith(e.key.substring(0, e.key.length - 4))))
+            .where(
+              (e) =>
+                  e.key == '*' ||
+                  e.key == 'default' ||
+                  (e.key.endsWith('-all') && input.chapterId.startsWith(e.key.substring(0, e.key.length - 4))),
+            )
             .map((e) => e.value)
             .firstOrNull ??
         const [];
-    final failure = chapterFailures[input.chapterId] ??
+    final failure =
+        chapterFailures[input.chapterId] ??
         chapterFailures.entries
-            .where((e) =>
-                e.key == '*' ||
-                (e.key.endsWith('-all') && input.chapterId.startsWith(e.key.substring(0, e.key.length - 4))))
+            .where(
+              (e) =>
+                  e.key == '*' ||
+                  (e.key.endsWith('-all') && input.chapterId.startsWith(e.key.substring(0, e.key.length - 4))),
+            )
             .map((e) => e.value)
             .firstOrNull;
-    return _stream(
-      'chapter:${input.chapterId}',
-      lines,
-      input.context,
-      cancel,
-      failure,
-    );
+    return _stream('chapter:${input.chapterId}', lines, input.context, cancel, failure);
   }
+
   @override
   Stream<MapLine> generate(MapBuildInput input, CancellationToken cancel) =>
       _stream('generate', generation, input.context, cancel, generationFailure);
