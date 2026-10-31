@@ -138,7 +138,12 @@ class ReflowScrollReaderState extends State<ReflowScrollReader> {
       controller: widget.controller,
       center: _center,
       slivers: [
-        SliverList(delegate: SliverChildBuilderDelegate((_, i) => chapter(_index - i - 1), childCount: _index)),
+        SliverPadding(
+          padding: EdgeInsets.only(top: _index > 0 ? MMChromeInsets.of(context).top : 0),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((_, i) => chapter(_index - i - 1), childCount: _index),
+          ),
+        ),
         SliverPadding(
           key: _center,
           padding: EdgeInsets.only(

@@ -24,6 +24,53 @@ import 'helpers.dart';
 import 'reflow_fixtures.dart';
 
 void main() {
+  testWidgets('a resumed later chapter still scrolls the book start clear of touch headers', (tester) async {
+    final repo = InMemoryStudySetContentRepository();
+    final book = Book(
+      'Two chapters',
+      [
+        for (final id in ['first', 'second'])
+          const EpubParser().parseHtml(
+            id,
+            '<h1>$id</h1>${List.generate(20, (i) => '<p>Paragraph $i keeps the first reading line visible below the toolbar.</p>').join()}',
+          ),
+      ],
+      {},
+      [],
+    );
+    final doc = await storeBook(repo, book: book);
+    await repo.update(
+      'demo-1',
+      (c) => c.copyWith(
+        documents: [
+          doc.copyWith(
+            readingPosition: TextReadingPosition(revision: book.revision, chapterId: book.chapters.last.id, offset: 0),
+          ),
+        ],
+      ),
+    );
+    final container = await pumpApp(
+      tester,
+      content: repo,
+      size: const Size(500, 1000),
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(false)],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    final owner = container.read(workspaceProvider('demo-1').notifier);
+    owner.openDocument(doc.id);
+    owner.setLayout(MMSplitMode.primary);
+    await tester.pumpAndSettle();
+    final reader = tester.widget<ReflowScrollReader>(find.byType(ReflowScrollReader));
+    expect(reader.position.chapterId, book.chapters.last.id);
+    reader.controller.jumpTo(reader.controller.position.minScrollExtent);
+    await tester.pumpAndSettle();
+    final top = tester.getTopLeft(find.byType(ReflowScrollReader)).dy;
+    final firstSurface = tester.getTopLeft(find.byKey(const ValueKey('reflow-surface')).first).dy;
+    expect(firstSurface, greaterThanOrEqualTo(top + MMSizes.paneHeaderHeight));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('read, select, excerpt, resize, navigate and undo use source anchors', (tester) async {
     final repo = InMemoryStudySetContentRepository();
     final doc = await storeBook(repo);
