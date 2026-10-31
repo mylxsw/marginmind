@@ -4031,7 +4031,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mapIdeaBlocked => 'Keep (↩) or discard (Esc) the AI drafts first';
+  String get mapIdeaBlocked => 'Keep or discard the suggested topics before continuing';
 
   @override
   String get mapIdeaNothing => 'No new ideas here. Try another direction.';
@@ -4204,7 +4204,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mapGenerateBlocked => 'Keep (↩) or discard (Esc) the generated map first';
+  String get mapGenerateBlocked => 'Keep or discard the generated map before continuing';
+
+  @override
+  String get mapGenerateBlockedRunning => 'Content is being generated. Wait for it to finish or click Stop.';
 
   @override
   String mapGenerateCreated(String title, int count) {
@@ -4374,7 +4377,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mapUpdateBlocked => 'Apply (↩) or discard (Esc) the update first';
+  String get mapUpdateBlocked => 'Apply or discard the map update before continuing';
 
   @override
   String mapDiffAddSemantics(String title) {

@@ -700,7 +700,7 @@ class ExpansionBar extends ConsumerWidget {
                     FilledButton(
                       onPressed: s.isApplying || s.selectedCount == 0 ? null : onKeep,
                       style: FilledButton.styleFrom(backgroundColor: c.research, foregroundColor: c.onResearch),
-                      child: Text('${l.mapIdeaKeep(s.selectedCount)}  ↩'),
+                      child: Text(l.mapIdeaKeep(s.selectedCount)),
                     ),
                 ],
               ],

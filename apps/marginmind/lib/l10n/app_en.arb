@@ -2049,7 +2049,7 @@
       "count": { "type": "int" }
     }
   },
-  "mapIdeaBlocked": "Keep (↩) or discard (Esc) the AI drafts first",
+  "mapIdeaBlocked": "Keep or discard the suggested topics before continuing",
   "mapIdeaNothing": "No new ideas here. Try another direction.",
   "mapIdeaStoppedEmpty": "Stopped before any ideas",
   "mapIdeaBusy": "The model is busy. Try again later.",
@@ -2109,7 +2109,8 @@
   "mapGenerateQueued": "Waiting",
   "mapGenerateChapterFailed": "“{chapter}” failed",
   "@mapGenerateChapterFailed": { "placeholders": { "chapter": { "type": "String" } } },
-  "mapGenerateBlocked": "Keep (↩) or discard (Esc) the generated map first",
+  "mapGenerateBlocked": "Keep or discard the generated map before continuing",
+  "mapGenerateBlockedRunning": "Content is being generated. Wait for it to finish or click Stop.",
   "mapGenerateCreated": "{count, plural, =1{Created “{title}” · 1 topic} other{Created “{title}” · {count} topics}}",
   "@mapGenerateCreated": { "placeholders": { "title": { "type": "String" }, "count": { "type": "int" } } },
   "mapGenerateNothing": "No usable structure. Try another organization.",
@@ -2162,7 +2163,7 @@
   "@mapUpdateApply": { "placeholders": { "count": { "type": "int" } } },
   "mapUpdateApplied": "{count, plural, =1{Updated 1 item} other{Updated {count} items}}",
   "@mapUpdateApplied": { "placeholders": { "count": { "type": "int" } } },
-  "mapUpdateBlocked": "Apply (↩) or discard (Esc) the update first",
+  "mapUpdateBlocked": "Apply or discard the map update before continuing",
   "mapDiffAddSemantics": "Suggested addition, {title}",
   "@mapDiffAddSemantics": { "placeholders": { "title": { "type": "String" } } },
   "mapDiffRenameSemantics": "Suggested rename, {old} to {title}",

@@ -75,7 +75,22 @@ class _MapPaneState extends ConsumerState<MapPane> {
   bool _mergeHover = false;
   WorkspaceController? _expansionWorkspace;
   void _showExpansionBlocked() {
-    if (mounted) MMHud.show(context, context.l10n.mapIdeaBlocked);
+    if (!mounted) return;
+    final l = context.l10n;
+    final expansion = ref.read(expansionControllerProvider(widget.studySetId));
+    final generation = ref.read(mapGenerationControllerProvider(widget.studySetId));
+    final running =
+        expansion?.phase == ExpansionPhase.generating ||
+        generation?.phase == MapGenerationPhase.reading ||
+        generation?.phase == MapGenerationPhase.streaming;
+    final message = running
+        ? l.mapGenerateBlockedRunning
+        : generation == null
+        ? l.mapIdeaBlocked
+        : generation.request.destination == MapGenerationDestination.update
+        ? l.mapUpdateBlocked
+        : l.mapGenerateBlocked;
+    MMHud.show(context, message, icon: MMIcons.info);
   }
 
   final _headerGeometry = MapHeaderGeometry();
@@ -910,7 +925,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
               value: state.mapView,
               onChanged: (value) {
                 if (expansion != null) {
-                  MMHud.show(context, l.mapIdeaBlocked);
+                  _showExpansionBlocked();
                 } else {
                   controller.setMapView(value);
                 }
@@ -1048,6 +1063,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         }
                                       },
                                       onExpansionKeep: mapGen != null ? _keepMapGeneration : _keepExpansion,
+                                      onExpansionBlocked: _showExpansionBlocked,
                                       onExpansionStop: () {
                                         if (mapGen != null) {
                                           ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).stop();

@@ -7223,7 +7223,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapIdeaBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Keep (↩) or discard (Esc) the AI drafts first'**
+  /// **'Keep or discard the suggested topics before continuing'**
   String get mapIdeaBlocked;
 
   /// No description provided for @mapIdeaNothing.
@@ -7523,8 +7523,14 @@ abstract class AppLocalizations {
   /// No description provided for @mapGenerateBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Keep (↩) or discard (Esc) the generated map first'**
+  /// **'Keep or discard the generated map before continuing'**
   String get mapGenerateBlocked;
+
+  /// No description provided for @mapGenerateBlockedRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Content is being generated. Wait for it to finish or click Stop.'**
+  String get mapGenerateBlockedRunning;
 
   /// No description provided for @mapGenerateCreated.
   ///
@@ -7757,7 +7763,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapUpdateBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Apply (↩) or discard (Esc) the update first'**
+  /// **'Apply or discard the map update before continuing'**
   String get mapUpdateBlocked;
 
   /// No description provided for @mapDiffAddSemantics.

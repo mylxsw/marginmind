@@ -3859,7 +3859,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get mapIdeaBlocked => '先保留（↩）或放弃（Esc）这次 AI 扩展';
+  String get mapIdeaBlocked => '请先保留或放弃扩展内容，再继续操作';
 
   @override
   String get mapIdeaNothing => '这里暂时没有值得补充的方向，换个方向试试';
@@ -4029,7 +4029,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get mapGenerateBlocked => '先保留（↩）或放弃（Esc）这次生成';
+  String get mapGenerateBlocked => '请先保留或放弃生成的脑图，再继续操作';
+
+  @override
+  String get mapGenerateBlockedRunning => '正在生成内容，请等待完成，或点击“停止”';
 
   @override
   String mapGenerateCreated(String title, int count) {
@@ -4174,7 +4177,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get mapUpdateBlocked => '先应用（↩）或放弃（Esc）这次更新';
+  String get mapUpdateBlocked => '请先应用或放弃脑图更新，再继续操作';
 
   @override
   String mapDiffAddSemantics(String title) {

@@ -153,6 +153,7 @@ class MindMapCanvas extends StatefulWidget {
     this.onDraftToggle,
     this.onDraftEdit,
     this.onDraftMore,
+    this.onExpansionBlocked,
     this.onExpansionKeep,
     this.onExpansionStop,
     this.onExpansionDiscard,
@@ -166,7 +167,7 @@ class MindMapCanvas extends StatefulWidget {
   final ValueChanged<CardSource>? onRevealDraftSource;
   final ValueChanged<String>? onDraftToggle, onDraftMore;
   final void Function(String, String)? onDraftEdit;
-  final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard;
+  final VoidCallback? onExpansionKeep, onExpansionStop, onExpansionDiscard, onExpansionBlocked;
 
   /// A structure and palette shown in place of the map's own while they are
   /// previewed; nothing is saved.
@@ -848,7 +849,20 @@ class _MindMapCanvasState extends State<MindMapCanvas> with TickerProviderStateM
         targets.any((target) => ancestorOf(id, target) || ancestorOf(target, id));
   }
 
-  void _blocked() => MMHud.show(context, context.l10n.mapIdeaBlocked);
+  void _blocked() {
+    if (widget.onExpansionBlocked case final onBlocked?) {
+      onBlocked();
+      return;
+    }
+    MMHud.show(
+      context,
+      widget.expansion?.phase == ExpansionPhase.generating
+          ? context.l10n.mapGenerateBlockedRunning
+          : context.l10n.mapIdeaBlocked,
+      icon: MMIcons.info,
+    );
+  }
+
   KeyEventResult _expansionKey(KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.handled;
     final key = event.logicalKey, preview = widget.expansion!;

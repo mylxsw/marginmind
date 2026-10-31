@@ -197,6 +197,8 @@ void main() {
     final provider = expansionControllerProvider('demo-1');
     await key(tester, LogicalKeyboardKey.tab, alt: true);
     expect(app.container.read(provider)!.phase, ExpansionPhase.generating);
+    await key(tester, LogicalKeyboardKey.tab);
+    expect(find.text('正在生成内容，请等待完成，或点击“停止”'), findsOneWidget);
     await capture(tester, 'expansion-generating');
     model.output.add(
       const ExpansionDraft(id: 'd1', parentRef: 'c3', title: '主动回忆', tag: ExpansionDirection.action, page: 24),
@@ -215,6 +217,7 @@ void main() {
     await capture(tester, 'expansion-review');
     final before = app.workspace.content;
     await key(tester, LogicalKeyboardKey.tab);
+    expect(find.text('请先保留或放弃扩展内容，再继续操作'), findsOneWidget);
     expect(app.workspace.content.nodes.length, before.nodes.length);
     await key(tester, LogicalKeyboardKey.space);
     expect(app.container.read(provider)!.selectedCount, 0);
