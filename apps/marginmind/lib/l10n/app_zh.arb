@@ -2149,6 +2149,7 @@
   "phoneReaderExitTools": "结束标注",
   "phoneReaderPercent": "{percent}%",
   "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "mapCacheClearFailed": "清除缓存失败",
   "translationRetranslate": "重新翻译",
   "translationEdit": "修改译文",
   "translationRetranslated": "已重新翻译",

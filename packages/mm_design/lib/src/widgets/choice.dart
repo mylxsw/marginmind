@@ -17,9 +17,11 @@ class MMCheckbox extends StatelessWidget {
     this.label,
     this.color,
     this.semanticLabel,
+    this.mixed = false,
   });
 
   final bool value;
+  final bool mixed;
   final ValueChanged<bool>? onChanged;
   final String? label;
   final Color? color;
@@ -33,9 +35,10 @@ class MMCheckbox extends StatelessWidget {
     final tint = color ?? c.accent;
     return MergeSemantics(
       child: Semantics(
-        checked: value,
+        checked: mixed ? null : value,
+        mixed: mixed,
         child: MMInteractive(
-          onTap: onChanged == null ? null : () => onChanged!(!value),
+          onTap: onChanged == null ? null : () => onChanged!(mixed || !value),
           semanticLabel: label ?? semanticLabel,
           builder: (context, s) => _tabletTouchTarget(
             context,
@@ -47,12 +50,12 @@ class MMCheckbox extends StatelessWidget {
                   width: 15,
                   height: 15,
                   decoration: BoxDecoration(
-                    color: value ? tint : c.card,
+                    color: value || mixed ? tint : c.card,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: c.flat && s.focused
                           ? c.accent
-                          : value
+                          : value || mixed
                           ? tint
                           : c.line,
                       width: c.flat && s.focused ? 2 : 1,
@@ -63,7 +66,11 @@ class MMCheckbox extends StatelessWidget {
                         ? [BoxShadow(color: tint.withValues(alpha: 0.4), spreadRadius: 2)]
                         : null,
                   ),
-                  child: value ? const Icon(MMIcons.check, size: 11, color: Colors.white) : null,
+                  child: mixed
+                      ? const Icon(MMIcons.zoomOut, size: 11, color: Colors.white)
+                      : value
+                      ? const Icon(MMIcons.check, size: 11, color: Colors.white)
+                      : null,
                 ),
                 if (label != null) ...[
                   const SizedBox(width: MMSpacing.s),

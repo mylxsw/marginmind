@@ -41,6 +41,7 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
     final l = context.l10n;
     final controller = ref.read(mapGenerationControllerProvider(widget.studySetId).notifier);
 
+    if (preview.needsTextDocumentId != null) return const SizedBox.shrink();
     final phase = preview.phase;
     final isReview = phase == MapGenerationPhase.review || phase == MapGenerationPhase.stopped;
     final isFailed = phase == MapGenerationPhase.failed && preview.lines.isEmpty;

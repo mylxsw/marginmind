@@ -5209,6 +5209,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get mapCacheClearFailed => '清除缓存失败';
+
+  @override
   String get translationRetranslate => '重新翻译';
 
   @override

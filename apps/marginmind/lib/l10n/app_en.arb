@@ -2825,6 +2825,7 @@
   "phoneReaderExitTools": "Finish annotating",
   "phoneReaderPercent": "{percent}%",
   "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "mapCacheClearFailed": "Could not clear cache",
   "translationRetranslate": "Retranslate",
   "translationEdit": "Edit Translation",
   "translationRetranslated": "Retranslated",

@@ -6,6 +6,7 @@ import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
 import '../features/assistant/settings/model_settings.dart';
+import '../features/assistant/map_generation_cache.dart';
 import '../features/assistant/settings/web_search_settings.dart';
 import '../features/vocabulary/hint_controls.dart';
 import '../features/voice/voice_settings_page.dart';
@@ -443,6 +444,63 @@ class _ReadingPage extends ConsumerWidget {
   }
 }
 
+class MapCacheSettings extends ConsumerStatefulWidget {
+  const MapCacheSettings({super.key});
+  @override
+  ConsumerState<MapCacheSettings> createState() => _MapCacheSettingsState();
+}
+
+class _MapCacheSettingsState extends ConsumerState<MapCacheSettings> {
+  bool _clearing = false;
+  Future<void> _clear() async {
+    setState(() => _clearing = true);
+    try {
+      final caches = await ref.read(mapDigestCachesProvider.future);
+      await Future.wait(caches.map((c) => c.clear()));
+      if (mounted) ref.invalidate(mapDigestCacheSizeProvider);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.l10n.mapCacheClearFailed)));
+      }
+    } finally {
+      if (mounted) setState(() => _clearing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = ref.watch(mapDigestCacheSizeProvider);
+    final usage = Text(
+      size.when(
+        data: (bytes) => bytes < 1024
+            ? '$bytes B'
+            : bytes < 1048576
+            ? '${(bytes / 1024).toStringAsFixed(1)} KB'
+            : '${(bytes / 1048576).toStringAsFixed(1)} MB',
+        loading: () => '…',
+        error: (_, _) => '—',
+      ),
+      style: context.mmText.callout,
+    );
+    return MMSettingsRow(
+      leading: Text(context.l10n.settingsMapClearCache, style: context.mmText.body),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          usage,
+          const SizedBox(width: MMSpacing.s),
+          MMIconButton(
+            key: const ValueKey('map-cache-clear'),
+            icon: MMIcons.trash,
+            tooltip: context.l10n.settingsMapClearCache,
+            onPressed: _clearing || !size.hasValue ? null : _clear,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MapsPage extends ConsumerWidget {
   const _MapsPage();
   @override
@@ -450,6 +508,7 @@ class _MapsPage extends ConsumerWidget {
     children: [
       MMSettingsGroup(
         children: [
+          const MapCacheSettings(),
           MMSettingsRow(
             leading: Padding(
               padding: const EdgeInsets.only(right: MMSpacing.m),

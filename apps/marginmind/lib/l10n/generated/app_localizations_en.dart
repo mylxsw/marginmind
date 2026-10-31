@@ -5432,6 +5432,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get mapCacheClearFailed => 'Could not clear cache';
+
+  @override
   String get translationRetranslate => 'Retranslate';
 
   @override

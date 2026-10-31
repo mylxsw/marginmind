@@ -9542,6 +9542,12 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String phoneReaderPercent(int percent);
 
+  /// No description provided for @mapCacheClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear cache'**
+  String get mapCacheClearFailed;
+
   /// No description provided for @translationRetranslate.
   ///
   /// In en, this message translates to:

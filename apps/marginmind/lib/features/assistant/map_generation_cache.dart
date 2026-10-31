@@ -155,6 +155,17 @@ class MapDigestCache {
     ];
   }
 
+  Future<int> sizeBytes() => _queue(() async {
+    final parent = directory?.parent;
+    if (parent == null) return _memory.values.fold<int>(0, (sum, text) => sum + utf8.encode(text).length);
+    if (!await parent.exists()) return 0;
+    var size = 0;
+    await for (final entry in parent.list(recursive: true, followLinks: false)) {
+      if (entry is File) size += await entry.length();
+    }
+    return size;
+  });
+
   Future<void> clear() {
     _epoch++;
     return _queue(() async {
@@ -188,7 +199,8 @@ List<String> mapPointCacheLines(List<MapLine> points, MapLineContext context) {
           'id': ref,
           'parent': parent,
           'title': point.title,
-          if (point.source case final source?) ...{
+          if (point.quote != null) 'quote': point.quote,
+          if (point.source ?? point.quoteSource case final source?) ...{
             'doc': alias(context.documents, source.documentId),
             'page': source.page,
           },
@@ -197,3 +209,14 @@ List<String> mapPointCacheLines(List<MapLine> points, MapLineContext context) {
       })(),
   ];
 }
+
+/// Settings covers every study set, while each cache retains its own queue.
+final mapDigestCachesProvider = FutureProvider<List<MapDigestCache>>((ref) async {
+  final sets = await ref.watch(studySetsProvider.future);
+  return [for (final set in sets) ref.watch(mapDigestCacheProvider(set.id))];
+});
+final mapDigestCacheSizeProvider = FutureProvider.autoDispose<int>((ref) async {
+  final caches = await ref.watch(mapDigestCachesProvider.future);
+  final sizes = await Future.wait(caches.map((c) => c.sizeBytes()));
+  return sizes.fold<int>(0, (sum, size) => sum + size);
+});
