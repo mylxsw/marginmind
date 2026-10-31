@@ -1379,7 +1379,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   mapGen == null &&
                   content.nodes.every((n) => n.mapId != state.activeMapId) &&
                   state.mapView == MapViewMode.map)
-                Positioned.fill(
+                Positioned(
+                  top: _headerGeometry.toolbarTopInset,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
                   child: MapEmptyState(
                     studySetId: widget.studySetId,
                     mapId: state.activeMapId,

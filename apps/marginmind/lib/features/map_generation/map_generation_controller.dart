@@ -1,13 +1,18 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 
+import '../../app/providers.dart';
 import '../assistant/assistant_controller.dart';
+import '../assistant/assistant_reader.dart';
+import '../assistant/assistant_scope.dart';
 import '../assistant/assistant_settings.dart';
 import '../assistant/assistant_writes.dart';
 import '../assistant/expansion_controller.dart';
+import '../assistant/map_generation_cache.dart';
+import '../assistant/map_generation_context.dart';
 import '../workspace/workspace_controller.dart';
 
 enum MapGenerationDestination { newMap, branch, update }
@@ -240,6 +245,21 @@ class MapGenerationPreview {
   );
 }
 
+final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, String>((ref, studySetId) {
+  final workspace = ref.read(workspaceProvider(studySetId).notifier);
+  final repo = ref.read(contentRepositoryProvider);
+  final reader = WorkspaceReader(
+    content: () => workspace.content,
+    contexts: const [],
+    filePath: workspace.filePath,
+    pageText: ref.read(assistantPageTextProvider),
+  );
+  return DocumentDigestBuilder(
+    reader,
+    repository: repo is DocumentRepository ? repo as DocumentRepository : null,
+  );
+});
+
 final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>((ref) => () async {
   final model = ref.read(assistantDefaultModelProvider);
   if (model == null) throw const ResearchFailure(ResearchFailureKind.unavailable);
@@ -247,7 +267,7 @@ final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>((ref) => 
   if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
     throw const ResearchFailure(ResearchFailureKind.authentication);
   }
-  throw const ResearchFailure(ResearchFailureKind.unavailable);
+  return ModelMapGenerator(connectAssistant(model, key ?? ''), model.model);
 });
 
 final mapGenerationControllerProvider =
@@ -261,11 +281,15 @@ class _ChapterTask {
     required this.title,
     required this.pages,
     required this.input,
+    required this.fingerprint,
+    required this.source,
   });
   final String id;
   final String title;
   final Set<int> pages;
   final MapChapterInput input;
+  final String fingerprint;
+  final MapSource source;
 }
 
 class MapGenerationController extends Notifier<MapGenerationPreview?> {
@@ -279,6 +303,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   bool _ownsBusy = false;
   final List<MapLine> _collectedPoints = [];
   final Map<String, _ChapterTask> _tasks = {};
+  Map<String, MapChapterInput> get chapterInputs => {for (final e in _tasks.entries) e.key: e.value.input};
 
   @override
   MapGenerationPreview? build() {
@@ -318,85 +343,105 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     final snapshot = workspace.content;
     final proposalId = 'map-gen-${DateTime.now().microsecondsSinceEpoch}';
 
-    // Prepare sources and chapters
-    final sources = <MapSource>[];
+    final builder = ref.read(documentDigestBuilderProvider(arg));
+    final cancel = _cancel = CancellationToken();
+
     final skeletons = <MapSkeletonItem>[];
     final chapterProgress = <String, MapChapterStatus>{};
+    final sources = <MapSource>[];
 
-    for (final sel in request.sources) {
-      final doc = snapshot.document(sel.documentId);
-      if (doc == null) continue;
-      final outline = snapshot.outlineOn(doc.id);
-      final entries = outline?.items ?? [];
+    try {
+      for (final (docIndex, sel) in request.sources.indexed) {
+        cancel.check();
+        final doc = snapshot.document(sel.documentId);
+        if (doc == null) continue;
+        final docAlias = 'D${docIndex + 1}';
+        final draftPrefix = '$proposalId-$docAlias-';
 
-      if (entries.isNotEmpty) {
-        for (var i = 0; i < entries.length; i++) {
-          final entry = entries[i];
-          final chId = '${doc.id}-${entry.id}';
-          final startPage = entry.page;
-          final endPage = i + 1 < entries.length ? entries[i + 1].page - 1 : doc.pageCount;
-          final pages = {for (var p = math.max(1, startPage); p <= math.max(startPage, endPage); p++) p};
-          skeletons.add(MapSkeletonItem(id: chId, title: entry.title));
+        final digest = await builder.build(
+          snapshot,
+          studySetId: request.studySetId,
+          documentId: sel.documentId,
+          mapId: request.mapId,
+          draftPrefix: draftPrefix,
+          documentAlias: docAlias,
+          chapters: sel.chapters,
+          includeAnnotations: request.includeAnnotations,
+          organization: request.organization,
+          instructions: request.instructions,
+          cancellation: cancel,
+        );
+
+        sources.add(digest.source);
+
+        final outline = snapshot.outlineOn(doc.id);
+        final outlineEntries = outline != null ? OutlineTree.flatten(outline.items) : <PdfOutlineEntry>[];
+
+        for (final ch in digest.chapters) {
+          final input = ch.input;
+          final chId = input.chapterId;
+          final parts = chId.split(':');
+          final rangeId = parts.length > 1 ? parts[1] : '';
+          final partIndex = parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0;
+
+          String title;
+          if (rangeId == 'preface') {
+            title = '前言';
+          } else if (rangeId.startsWith('page-')) {
+            title = digest.chapters.length == 1 ? doc.title : '第 ${rangeId.substring(5)} 页';
+          } else {
+            final entry = outlineEntries.where((e) => e.id == rangeId).firstOrNull;
+            title = entry?.title ?? (digest.chapters.length == 1 ? doc.title : rangeId);
+          }
+          if (partIndex > 0) {
+            title = '$title ($partIndex)';
+          }
+
+          skeletons.add(MapSkeletonItem(id: chId, title: title));
           chapterProgress[chId] = MapChapterStatus.pending;
           _tasks[chId] = _ChapterTask(
             id: chId,
-            title: entry.title,
-            pages: pages,
-            input: MapChapterInput(
-              chapterId: chId,
-              documentAlias: 'D1',
-              context: MapLineContext(
-                phase: MapLinePhase.chapter,
-                mapId: request.mapId,
-                draftPrefix: '$proposalId-$chId-',
-                documents: {'D1': doc.id},
-                pages: {'D1': pages},
-              ),
-              textByPage: {for (final p in pages) p: ''},
-              organization: request.organization,
-              instructions: request.instructions,
-            ),
+            title: title,
+            pages: input.textByPage.keys.toSet(),
+            input: input,
+            fingerprint: ch.fingerprint,
+            source: digest.source,
           );
         }
-      } else {
-        final pages = {for (var p = 1; p <= math.max(1, doc.pageCount); p++) p};
-        final chId = '${doc.id}-all';
-        final title = doc.title;
-        skeletons.add(MapSkeletonItem(id: chId, title: title));
-        chapterProgress[chId] = MapChapterStatus.pending;
-        _tasks[chId] = _ChapterTask(
-          id: chId,
-          title: title,
-          pages: pages,
-          input: MapChapterInput(
-            chapterId: chId,
-            documentAlias: 'D1',
-            context: MapLineContext(
-              phase: MapLinePhase.chapter,
-              mapId: request.mapId,
-              draftPrefix: '$proposalId-$chId-',
-              documents: {'D1': doc.id},
-              pages: {'D1': pages},
-            ),
-            textByPage: {for (final p in pages) p: ''},
-            organization: request.organization,
-            instructions: request.instructions,
-          ),
-        );
       }
-
-      sources.add(
-        MapSource(
-          documentId: doc.id,
-          chapters: sel.chapters,
-          fingerprint: mapSourceFingerprint(
-            pageCount: doc.pageCount,
-            textHash: mapContentHash([[1, '']]),
-            annotations: {},
-          ),
-          readThrough: 1,
+    } on MapDigestNeedsText {
+      state = MapGenerationPreview(
+        request: request,
+        baseRevision: assistantMapRevision(snapshot, request.mapId),
+        proposalId: proposalId,
+        generation: MapGeneration(
+          sources: const [],
+          organization: request.organization,
+          depth: request.depth,
+          instructions: request.instructions,
+          generatedAt: DateTime.now().toUtc(),
         ),
+        phase: MapGenerationPhase.failed,
+        failure: const ResearchFailure(ResearchFailureKind.protocol, '需先识别文字'),
       );
+      return;
+    } catch (e) {
+      final failure = e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable);
+      state = MapGenerationPreview(
+        request: request,
+        baseRevision: assistantMapRevision(snapshot, request.mapId),
+        proposalId: proposalId,
+        generation: MapGeneration(
+          sources: const [],
+          organization: request.organization,
+          depth: request.depth,
+          instructions: request.instructions,
+          generatedAt: DateTime.now().toUtc(),
+        ),
+        phase: MapGenerationPhase.failed,
+        failure: failure,
+      );
+      return;
     }
 
     final generation = MapGeneration(
@@ -431,6 +476,10 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       _generator = generator;
       cancel.check();
 
+      final cache = ref.read(mapDigestCacheProvider(request.studySetId));
+      final modelConfig = ref.read(assistantDefaultModelProvider);
+      final modelKey = '${modelConfig?.serviceId ?? 'default'}:${modelConfig?.model ?? 'default'}';
+
       // Phase 1: Read chapters concurrently (up to 3)
       final taskQueue = _tasks.values.toList();
       var queueIndex = 0;
@@ -442,11 +491,39 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           _updateChapter(task.id, MapChapterStatus.reading);
 
           try {
-            await for (final line in generator.readChapter(task.input, cancel)) {
+            final cacheKey = mapDigestCacheKey(
+              source: task.source,
+              chapterId: task.input.chapterId,
+              chapterFingerprint: task.fingerprint,
+              model: modelKey,
+              organization: task.input.organization,
+              instructions: task.input.instructions,
+            );
+
+            final cached = await cache.read(cacheKey, context: task.input.context);
+            if (cached != null) {
               if (_disposed || epoch != _generation) return;
-              _collectedPoints.add(line);
+              for (final raw in cached) {
+                final line = parseMapLine(raw, task.input.context);
+                if (line != null) {
+                  _collectedPoints.add(line);
+                }
+              }
+              _updateChapter(task.id, MapChapterStatus.done);
+            } else {
+              final readLines = <MapLine>[];
+              await for (final line in generator.readChapter(task.input, cancel)) {
+                if (_disposed || epoch != _generation) return;
+                readLines.add(line);
+                _collectedPoints.add(line);
+              }
+              cancel.check();
+              if (readLines.isNotEmpty) {
+                final rawLines = mapPointCacheLines(readLines, task.input.context);
+                await cache.write(cacheKey, rawLines, context: task.input.context);
+              }
+              _updateChapter(task.id, MapChapterStatus.done);
             }
-            _updateChapter(task.id, MapChapterStatus.done);
           } catch (e) {
             final failure = e is ResearchFailure ? e : const ResearchFailure(ResearchFailureKind.unavailable);
             failures[task.id] = failure;
@@ -496,14 +573,26 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   Future<void> _streamBuild(MapGenerationRequest request, CancellationToken cancel, int epoch) async {
     final generator = _generator!;
-    final allPages = _tasks.values.fold<Set<int>>({}, (prev, t) => prev..addAll(t.pages));
+    final allPages = <int>{};
+    final allAnnotations = <String, String>{};
+    final allDocs = <String, String>{};
+
+    for (final task in _tasks.values) {
+      allPages.addAll(task.pages);
+      allAnnotations.addAll(task.input.context.annotations);
+      allDocs.addAll(task.input.context.documents);
+    }
 
     final buildContext = MapLineContext(
       phase: MapLinePhase.generation,
       mapId: request.mapId,
       draftPrefix: '${state!.proposalId}-gen-',
-      documents: {'D1': request.sources.first.documentId},
-      pages: {'D1': allPages},
+      documents: allDocs.isNotEmpty ? allDocs : {'D1': request.sources.first.documentId},
+      pages: {
+        for (final docAlias in (allDocs.isNotEmpty ? allDocs.keys : const ['D1']))
+          docAlias: allPages,
+      },
+      annotations: allAnnotations,
       maxDepth: request.depth,
       rootParentId: request.parentId,
       existingTitles: state!.editedTitles.values,
@@ -568,13 +657,44 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     _ownsBusy = true;
     ref.read(expansionBusyProvider.notifier).set(true);
 
+    final cache = ref.read(mapDigestCacheProvider(state!.request.studySetId));
+    final modelConfig = ref.read(assistantDefaultModelProvider);
+    final modelKey = '${modelConfig?.serviceId ?? 'default'}:${modelConfig?.model ?? 'default'}';
+
     try {
       _updateChapter(chapterId, MapChapterStatus.reading);
-      await for (final line in _generator!.readChapter(task.input, cancel)) {
+      final cacheKey = mapDigestCacheKey(
+        source: task.source,
+        chapterId: task.input.chapterId,
+        chapterFingerprint: task.fingerprint,
+        model: modelKey,
+        organization: task.input.organization,
+        instructions: task.input.instructions,
+      );
+
+      final cached = await cache.read(cacheKey, context: task.input.context);
+      if (cached != null) {
         if (_disposed || epoch != _generation) return;
-        _collectedPoints.add(line);
+        for (final raw in cached) {
+          final line = parseMapLine(raw, task.input.context);
+          if (line != null) {
+            _collectedPoints.add(line);
+          }
+        }
+        _updateChapter(chapterId, MapChapterStatus.done);
+      } else {
+        final readLines = <MapLine>[];
+        await for (final line in _generator!.readChapter(task.input, cancel)) {
+          if (_disposed || epoch != _generation) return;
+          readLines.add(line);
+          _collectedPoints.add(line);
+        }
+        if (readLines.isNotEmpty) {
+          final rawLines = mapPointCacheLines(readLines, task.input.context);
+          await cache.write(cacheKey, rawLines, context: task.input.context);
+        }
+        _updateChapter(chapterId, MapChapterStatus.done);
       }
-      _updateChapter(chapterId, MapChapterStatus.done);
 
       state = state!.copyWith(phase: MapGenerationPhase.streaming, failure: null);
       await _streamBuild(state!.request, cancel, epoch);

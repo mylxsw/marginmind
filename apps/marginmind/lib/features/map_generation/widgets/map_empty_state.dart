@@ -161,17 +161,19 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
       bindings: {
         primaryShortcut(LogicalKeyboardKey.enter): _startGeneration,
       },
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.xl),
-          child: Transform.translate(
-            offset: const Offset(0, -MMSizes.ideaBarBottomInset / 2),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptyStateWidth),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+      child: ColoredBox(
+        color: c.canvas,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: MMSpacing.l, vertical: MMSpacing.xl),
+            child: Transform.translate(
+              offset: const Offset(0, -MMSizes.ideaBarBottomInset / 2),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: MMSizes.mapEmptyStateWidth),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                   // Icon glyph
                   Container(
                     width: MMSizes.mapEmptyGlyph,
@@ -309,8 +311,9 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SuggestionChip extends StatelessWidget {
@@ -348,10 +351,12 @@ class _SuggestionChip extends StatelessWidget {
               color: bg,
               borderRadius: BorderRadius.circular(12),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              text,
-              style: t.callout.copyWith(color: fg, height: 1),
+            child: Center(
+              widthFactor: 1.0,
+              child: Text(
+                text,
+                style: t.callout.copyWith(color: fg, height: 1),
+              ),
             ),
           );
         },

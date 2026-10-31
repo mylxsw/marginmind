@@ -144,7 +144,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     final targetMapId = isNewMap ? 'map-${DateTime.now().microsecondsSinceEpoch}' : wsState.activeMapId;
     final title = _titleController.text.trim().isNotEmpty
         ? _titleController.text.trim()
-        : (snapshot.document(_selectedDocs.first)?.title ?? '脑图');
+        : (snapshot.document(_selectedDocs.first)?.title ?? AppLocalizations.of(context).mapView);
 
     final text = _instructionsController.text.trim();
     widget.onInstructionsChanged?.call(text);

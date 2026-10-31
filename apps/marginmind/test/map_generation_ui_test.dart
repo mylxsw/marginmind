@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Card;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/assistant/widgets/assistant_panel.dart';
 import 'package:marginmind/features/map_generation/map_generation_controller.dart';
@@ -19,6 +21,26 @@ import 'package:mm_design/mm_design.dart';
 
 import 'helpers.dart';
 
+Future<void> key(
+  WidgetTester tester,
+  LogicalKeyboardKey key, {
+  bool primary = false,
+  bool shift = false,
+  bool alt = false,
+}) async {
+  final modifier = defaultTargetPlatform == TargetPlatform.macOS
+      ? LogicalKeyboardKey.metaLeft
+      : LogicalKeyboardKey.controlLeft;
+  if (primary) await tester.sendKeyDownEvent(modifier);
+  if (shift) await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+  if (alt) await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+  await tester.sendKeyEvent(key);
+  if (alt) await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+  if (shift) await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+  if (primary) await tester.sendKeyUpEvent(modifier);
+  await tester.pumpAndSettle();
+}
+
 Future<ProviderContainer> openWorkspace(
   WidgetTester tester, {
   List<Override> overrides = const [],
@@ -26,15 +48,38 @@ Future<ProviderContainer> openWorkspace(
   Map<String, Object> prefs = const {},
   AssistantCredentialState credentialState = AssistantCredentialState.ready,
 }) async {
+  final defaultContent = () {
+    final base = demoContent();
+    final d1 = base.documents.first;
+    final newD1 = Document(
+      id: d1.id,
+      title: d1.title,
+      fileName: d1.fileName,
+      pageCount: 30,
+      importedAt: d1.importedAt,
+    );
+    final outline = DocumentOutline(
+      documentId: d1.id,
+      items: const [
+        PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1),
+      ],
+    );
+    return base.copyWith(
+      documents: [newD1, ...base.documents.skip(1)],
+      documentOutlines: [outline],
+    );
+  }();
+
   final container = await pumpApp(
     tester,
     size: const Size(1280, 820),
-    content: content,
+    content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
     prefs: {
       'settings.language': 'zh',
       ...prefs,
     },
     overrides: [
+      assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
       ...overrides,
     ],
@@ -151,11 +196,7 @@ void main() {
       await tester.pump();
 
       // Press primary shortcut (Ctrl/Cmd + Enter)
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pumpAndSettle();
+      await key(tester, LogicalKeyboardKey.enter, primary: true);
 
       final preview = container.read(mapGenerationControllerProvider('demo-1'));
       expect(preview, isNotNull);
@@ -557,6 +598,97 @@ void main() {
 
       expect(container.read(mapGenerationControllerProvider('demo-1'))?.phase, MapGenerationPhase.review);
       expect(find.text('Outline Topic'), findsOneWidget);
+    });
+
+    testWidgets('Integration with DocumentDigestBuilder, cache hit, and fingerprint matching', (tester) async {
+      final fake = FakeMapGenerator(
+        chapters: {
+          '*': [
+            '{"k":"point","id":"p1","title":"核心要点：遗忘曲线","page":24,"marks":["A1"]}',
+          ],
+        },
+        generation: [
+          '{"ref":"t1","parent":"ROOT","title":"遗忘曲线","page":24}',
+          '{"mark":"A1","parent":"t1"}',
+        ],
+      );
+
+      final container = await openWorkspace(
+        tester,
+        overrides: [
+          mapGeneratorProvider.overrideWithValue(() async => fake),
+        ],
+      );
+
+      final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
+      final digestBuilder = container.read(documentDigestBuilderProvider('demo-1'));
+      final wsController = container.read(workspaceProvider('demo-1').notifier);
+
+      // 1. Run generation for new map with annotations enabled
+      await runGeneration(
+        tester,
+        () => controller.start(
+          const MapGenerationRequest(
+            studySetId: 'demo-1',
+            mapId: 'digest-map-1',
+            title: '学习的底层逻辑',
+            sources: [MapDocumentSelection(documentId: 'c1')],
+            includeAnnotations: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final preview = container.read(mapGenerationControllerProvider('demo-1'));
+      expect(preview, isNotNull);
+      expect(preview!.phase, MapGenerationPhase.review);
+
+      // Assert 1: chapter input text is non-empty and contains annotation alias
+      final input = controller.chapterInputs.values.first;
+      expect(input.textByPage.values.every((t) => t.isNotEmpty), isTrue);
+      expect(input.context.annotations, isNotEmpty);
+      expect(input.context.annotations.containsKey('A1'), isTrue);
+
+      // Assert 2: after keep(), MindMap.generation fingerprint equals digest fingerprint
+      final expectedDigest = await digestBuilder.build(
+        wsController.content,
+        studySetId: 'demo-1',
+        documentId: 'c1',
+        mapId: 'digest-map-1',
+        draftPrefix: 'test-prefix-',
+        documentAlias: 'D1',
+        includeAnnotations: true,
+      );
+
+      final keepCount = await controller.keep();
+      await tester.pumpAndSettle();
+      expect(keepCount, greaterThan(0));
+
+      final createdMap = wsController.content.map('digest-map-1');
+      expect(createdMap, isNotNull);
+      expect(createdMap!.generation, isNotNull);
+      expect(createdMap.generation!.sources.first.fingerprint, expectedDigest.source.fingerprint);
+
+      // Assert 3: second generation hits cache, readChapter is not called again
+      final initialReadCalls = fake.calls.where((c) => c.startsWith('chapter:')).length;
+      expect(initialReadCalls, greaterThan(0));
+
+      await runGeneration(
+        tester,
+        () => controller.start(
+          const MapGenerationRequest(
+            studySetId: 'demo-1',
+            mapId: 'digest-map-2',
+            title: '学习的底层逻辑 2',
+            sources: [MapDocumentSelection(documentId: 'c1')],
+            includeAnnotations: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final secondReadCalls = fake.calls.where((c) => c.startsWith('chapter:')).length;
+      expect(secondReadCalls, initialReadCalls);
     });
   });
 

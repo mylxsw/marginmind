@@ -8,18 +8,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/navigation.dart';
+import 'package:marginmind/features/assistant/assistant_scope.dart';
 import 'package:marginmind/features/assistant/assistant_settings.dart';
 import 'package:marginmind/features/map_generation/map_generation_controller.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
+import 'package:mm_core/mm_core.dart' hide Card;
 import 'package:mm_core/testing.dart';
 
 import 'helpers.dart';
 
 final _out = Platform.environment['MM_SCREENSHOTS'] ?? 'docs/evidence/gul-625';
-final _font = Platform.environment['MM_FONT'] ?? '/System/Library/Fonts/Supplemental/Arial Unicode.ttf';
+final _font = Platform.environment['MM_FONT'] ?? '/Library/Fonts/Arial Unicode.ttf';
 
 Future<void> _loadFonts() async {
-  final fontFile = File(_font);
+  final fontFile = File(_font).existsSync()
+      ? File(_font)
+      : File('/System/Library/Fonts/Supplemental/Arial Unicode.ttf');
   if (fontFile.existsSync()) {
     final bytes = ByteData.sublistView(await fontFile.readAsBytes());
     for (final family in [
@@ -47,6 +51,22 @@ Future<void> _loadFonts() async {
           .load();
     }
   }
+  final lucideDir = Directory('$pub/hosted/pub.dev')
+      .listSync()
+      .whereType<Directory>()
+      .lastWhere((d) => d.path.contains('lucide_icons_flutter-'), orElse: () => Directory(''));
+  if (lucideDir.path.isNotEmpty) {
+    final lucideFile = File('${lucideDir.path}/assets/lucide.ttf');
+    if (lucideFile.existsSync()) {
+      final lucideBytes = ByteData.sublistView(lucideFile.readAsBytesSync());
+      await (FontLoader('packages/lucide_icons_flutter/Lucide')
+            ..addFont(Future.value(lucideBytes)))
+          .load();
+      await (FontLoader('Lucide')
+            ..addFont(Future.value(lucideBytes)))
+          .load();
+    }
+  }
 }
 
 Future<ProviderContainer> openWorkspace(
@@ -56,15 +76,38 @@ Future<ProviderContainer> openWorkspace(
   List<Override> overrides = const [],
   AssistantCredentialState credentialState = AssistantCredentialState.ready,
 }) async {
+  final defaultContent = () {
+    final base = demoContent();
+    final d1 = base.documents.first;
+    final newD1 = Document(
+      id: d1.id,
+      title: d1.title,
+      fileName: d1.fileName,
+      pageCount: 40,
+      importedAt: d1.importedAt,
+    );
+    final outline = DocumentOutline(
+      documentId: d1.id,
+      items: const [
+        PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1),
+      ],
+    );
+    return base.copyWith(
+      documents: [newD1, ...base.documents.skip(1)],
+      documentOutlines: [outline],
+    );
+  }();
+
   final container = await pumpApp(
     tester,
     size: const Size(1280, 820),
-    content: content,
+    content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
     prefs: {
       'settings.language': 'zh',
       ...prefs,
     },
     overrides: [
+      assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
       ...overrides,
     ],
@@ -129,7 +172,7 @@ void main() {
       final genController = container.read(mapGenerationControllerProvider('demo-1').notifier);
 
       // --- Scene 1: Empty state on mind map ---
-      await wsController.addMap('从文档生成脑图');
+      await wsController.addMap('学习的底层逻辑');
       await tester.pumpAndSettle();
 
       expect(find.text('从「学习的底层逻辑」生成脑图'), findsOneWidget);
@@ -154,7 +197,7 @@ void main() {
         MapGenerationRequest(
           studySetId: 'demo-1',
           mapId: activeMapId,
-          title: '从文档生成脑图',
+          title: '学习的底层逻辑',
           sources: const [MapDocumentSelection(documentId: 'c1')],
           destination: MapGenerationDestination.branch,
         ),
