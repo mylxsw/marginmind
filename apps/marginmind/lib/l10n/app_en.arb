@@ -2436,5 +2436,358 @@
   "appIconDockHint": "Changes the Dock icon. Finder keeps the default icon.",
   "appIconHomeHint": "Changes the Home Screen icon. iOS may show a confirmation.",
   "appIconChanging": "Changing icon…",
-  "appIconChangeFailed": "Could not change the icon. Please try again."
+  "appIconChangeFailed": "Could not change the icon. Please try again.",
+  "fullTranslationMenu": "Translate Entire Document…",
+  "fullTranslationTaskMenu": "Full Translation… {percent}%",
+  "@fullTranslationTaskMenu": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsule": "Translate All",
+  "fullTranslationCapsuleRunning": "{percent}% Batch {batch} · {done}/{total} pages",
+  "@fullTranslationCapsuleRunning": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "batch": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleRunningAll": "{percent}% {done}/{total} pages",
+  "@fullTranslationCapsuleRunningAll": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleReview": "Batch {batch} Pending",
+  "@fullTranslationCapsuleReview": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsulePaused": "Paused {done}/{total} pages",
+  "@fullTranslationCapsulePaused": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleOffline": "Waiting for Network",
+  "fullTranslationCapsuleBudget": "Paused · Exceeded Estimate",
+  "fullTranslationCapsuleError": "Paused",
+  "fullTranslationCapsuleDone": "Fully Translated",
+  "fullTranslationCapsuleDoneFailed": "Completed · {count} untranslated",
+  "@fullTranslationCapsuleDoneFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationCapsuleStopped": "Stopped {done}/{total} pages",
+  "@fullTranslationCapsuleStopped": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderBatch": "Will translate in batch {batch}",
+  "@fullTranslationPlaceholderBatch": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderPageSub": "Page {page}",
+  "@fullTranslationPlaceholderPageSub": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationPlaceholderOutOfRange": "Not in translation range",
+  "fullTranslationPlaceholderUntranslated": "Untranslated",
+  "fullTranslationTranslatePage": "Translate This Page",
+  "fullTranslationTitle": "Translate Entire Document",
+  "fullTranslationDocSubtitle": "{doc} · {pages} pages",
+  "@fullTranslationDocSubtitle": {
+    "placeholders": {
+      "doc": { "type": "String" },
+      "pages": { "type": "int" }
+    }
+  },
+  "fullTranslationSourceLangDetect": "Detect",
+  "fullTranslationRange": "Range",
+  "fullTranslationRangeAll": "All",
+  "fullTranslationRangePages": "Pages",
+  "fullTranslationMode": "Mode",
+  "fullTranslationModeBatch": "Batch Review",
+  "fullTranslationModeBatchDesc": "Pause after each batch to review before continuing",
+  "fullTranslationModeAll": "Translate All",
+  "fullTranslationModeAllDesc": "Translate continuously to the end, pause anytime",
+  "fullTranslationBatchSize": "Per Batch",
+  "fullTranslationBatchPages": "{count} pages",
+  "@fullTranslationBatchPages": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationBatchCount": "{count} batches total",
+  "@fullTranslationBatchCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationNote": "Glossary & Requirements",
+  "fullTranslationNotePlaceholder": "Optional. E.g. keep proper names untranslated",
+  "fullTranslationNoteHint": "Applies only to subsequent batches; translated paragraphs won't be retranslated.",
+  "fullTranslationNoteConfigured": " · Configured",
+  "fullTranslationFooterNote": "Translations are saved in the study set without modifying the PDF",
+  "fullTranslationStartBatch": "Start · Pages {from}–{to}",
+  "@fullTranslationStartBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationStartAll": "Start Translation",
+  "fullTranslationNothingToTranslate": "No paragraphs to translate",
+  "fullTranslationBlockedScannedTitle": "This document has no selectable text",
+  "fullTranslationBlockedScannedDesc": "Recognize text on device first, then translate.",
+  "fullTranslationActionOcr": "Recognize Text",
+  "fullTranslationBlockedNoModelTitle": "No AI model configured",
+  "fullTranslationBlockedBadKeyTitle": "API Key Invalid",
+  "fullTranslationBlockedModelDesc": "Full translation uses the assistant's default model.",
+  "fullTranslationActionSettings": "Open Assistant Settings",
+  "fullTranslationBlockedOfflineTitle": "Network Unavailable",
+  "fullTranslationBlockedOfflineDesc": "You can start now; translation resumes automatically when online.",
+  "fullTranslationEstChanged": "Source text re-recognized · {reused} / {total} existing translations reusable",
+  "@fullTranslationEstChanged": {
+    "placeholders": {
+      "reused": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "fullTranslationEstNeeds": "Needs translation: {paras} paragraphs · ~{chars} chars",
+  "@fullTranslationEstNeeds": {
+    "placeholders": {
+      "paras": { "type": "String" },
+      "chars": { "type": "String" }
+    }
+  },
+  "fullTranslationEstMinutes": "~{minutes} min",
+  "@fullTranslationEstMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "fullTranslationEstReused": "Already have {paras} translations ({pages} pages), reused directly",
+  "@fullTranslationEstReused": {
+    "placeholders": {
+      "paras": { "type": "int" },
+      "pages": { "type": "int" }
+    }
+  },
+  "fullTranslationEstReusedNoPages": "Already have {paras} translations, reused directly",
+  "@fullTranslationEstReusedNoPages": {
+    "placeholders": {
+      "paras": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkip": "Not sent: {details}",
+  "@fullTranslationEstSkip": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "fullTranslationEstSkipMargin": "headers/footers {count}",
+  "@fullTranslationEstSkipMargin": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkipSame": "already target language {count}",
+  "@fullTranslationEstSkipSame": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstSkipDupe": "duplicate paragraphs {count}",
+  "@fullTranslationEstSkipDupe": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationEstModel": "{model} · Est. {tokens} tokens",
+  "@fullTranslationEstModel": {
+    "placeholders": {
+      "model": { "type": "String" },
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationEstBudgetWarning": "; pauses for confirmation if 50% over estimate",
+  "fullTranslationPanelTitle": "Full Translation",
+  "fullTranslationStateRunningBatch": "Translating · Batch {batch} (pages {from}–{to})",
+  "@fullTranslationStateRunningBatch": {
+    "placeholders": {
+      "batch": { "type": "int" },
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationStateRunningAll": "Translating · All at once",
+  "fullTranslationStateReview": "Batch {batch} Pending",
+  "@fullTranslationStateReview": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationStatePaused": "Paused",
+  "fullTranslationStateOffline": "Waiting for Network",
+  "fullTranslationStateBudget": "Paused · Exceeded Estimate",
+  "fullTranslationStateError": "Paused · Needs Attention",
+  "fullTranslationStateDone": "Completed",
+  "fullTranslationStateStopped": "Stopped",
+  "fullTranslationLegendDone": "Translated",
+  "fullTranslationLegendReused": "Reused",
+  "fullTranslationLegendRunning": "Translating",
+  "fullTranslationLegendQueued": "Queued",
+  "fullTranslationLegendFailed": "Untranslated",
+  "fullTranslationLegendSkipped": "No Translation Needed",
+  "fullTranslationStatParas": "Paragraphs",
+  "fullTranslationStatEstToken": "Est. {tokens}",
+  "@fullTranslationStatEstToken": {
+    "placeholders": {
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationStatFailed": "Untranslated",
+  "fullTranslationDetailReused": "Reused Translations",
+  "fullTranslationDetailParas": "{count} paras",
+  "@fullTranslationDetailParas": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailDedup": "Deduplicated Paragraphs",
+  "fullTranslationDetailSkipped": "Not Sent (headers, page numbers, target language)",
+  "fullTranslationDetailItems": "{count} items",
+  "@fullTranslationDetailItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailModelCalls": "Model · Requests",
+  "fullTranslationDetailCalls": "{model} · {calls} calls",
+  "@fullTranslationDetailCalls": {
+    "placeholders": {
+      "model": { "type": "String" },
+      "calls": { "type": "int" }
+    }
+  },
+  "fullTranslationDetailElapsed": "Elapsed",
+  "fullTranslationDetailTime": "{minutes} m {seconds} s",
+  "@fullTranslationDetailTime": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "fullTranslationActionStop": "Stop",
+  "fullTranslationActionEnd": "End",
+  "fullTranslationActionPause": "Pause",
+  "fullTranslationActionResume": "Resume",
+  "fullTranslationActionNextBatch": "Next Batch",
+  "fullTranslationActionRetryFailed": "Retry {count} Untranslated",
+  "@fullTranslationActionRetryFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationActionContinueTranslation": "Continue Translation…",
+  "fullTranslationActionClear": "Remove Translations…",
+  "fullTranslationClearTitle": "Remove all AI translations for this document?",
+  "fullTranslationClearMessage": "Manually edited translations will also be removed.",
+  "fullTranslationCkptBatchDone": "Batch {batch} Completed",
+  "@fullTranslationCkptBatchDone": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptPages": "Pages {from}–{to}",
+  "@fullTranslationCkptPages": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptCollapseTip": "Collapse to read",
+  "fullTranslationCkptExpandTip": "Expand",
+  "fullTranslationCkptMin": "Batch {batch} Pending",
+  "@fullTranslationCkptMin": {
+    "placeholders": {
+      "batch": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptNextBatch": "Continue Pages {from}–{to}",
+  "@fullTranslationCkptNextBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptFromPage": "Review starting from page {page}",
+  "@fullTranslationCkptFromPage": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationCkptRemain": "Remaining {pages} pages · ~{tokens} tokens",
+  "@fullTranslationCkptRemain": {
+    "placeholders": {
+      "pages": { "type": "int" },
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationCkptTranslateRest": "Translate Rest All",
+  "fullTranslationHudStartBatch": "Starting translation for pages {from}–{to}",
+  "@fullTranslationHudStartBatch": {
+    "placeholders": {
+      "from": { "type": "int" },
+      "to": { "type": "int" }
+    }
+  },
+  "fullTranslationHudStartAll": "Starting full document translation",
+  "fullTranslationHudDone": "Full translation completed",
+  "fullTranslationHudDoneFailed": "Full translation completed · {count} untranslated",
+  "@fullTranslationHudDoneFailed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fullTranslationHudView": "View",
+  "fullTranslationHudStopped": "Stopped · Translated content saved",
+  "fullTranslationHudPausedAt": "Full translation paused at page {page}",
+  "@fullTranslationHudPausedAt": {
+    "placeholders": {
+      "page": { "type": "int" }
+    }
+  },
+  "fullTranslationHudContinue": "Resume",
+  "fullTranslationHudRestAll": "Remaining pages will be translated all at once",
+  "fullTranslationGridCell": "Page {page} · {state}",
+  "@fullTranslationGridCell": {
+    "placeholders": {
+      "page": { "type": "int" },
+      "state": { "type": "String" }
+    }
+  },
+  "fullTranslationCapsuleA11y": "Full translation, {percent}%, batch {batch}, {done} / {total} pages",
+  "@fullTranslationCapsuleA11y": {
+    "placeholders": {
+      "percent": { "type": "int" },
+      "batch": { "type": "int" },
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  }
 }

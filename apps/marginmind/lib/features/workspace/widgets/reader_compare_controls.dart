@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../../shared/document_icon.dart';
 
 import 'package:flutter/material.dart';
@@ -17,6 +19,9 @@ import '../../assistant/assistant_settings.dart';
 import '../reader_compare.dart';
 import 'reader_translation_view.dart';
 import 'reading_settings.dart';
+import '../full_translation.dart';
+import 'full_translation_sheet.dart';
+import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
 import 'notices.dart';
 
@@ -60,6 +65,10 @@ class ReaderCompareMenu extends ConsumerWidget {
         ? null
         : ref.watch(compareDocumentInfoProvider((studySetId, current))).value?.hasText;
     final targetLang = language == 'zh' ? 'en' : 'zh';
+    final fullState = current != null && current.isNotEmpty
+        ? ref.watch(fullTranslationProvider((studySetId, current, targetLang)))
+        : null;
+    final hasActiveFullJob = fullState?.isActive == true;
     final cached = content.translationCaches.any(
       (t) => t.documentId == current && t.targetLang == targetLang && t.paragraphs.isNotEmpty,
     );
@@ -112,6 +121,24 @@ class ReaderCompareMenu extends ConsumerWidget {
               }
             } catch (_) {
               if (context.mounted) MMHud.show(context, l.somethingWentWrong);
+            }
+          } else if (value == 'full-translation') {
+            if (current != null && current.isNotEmpty) {
+              unawaited(showFullTranslationSheet(
+                context,
+                studySetId: studySetId,
+                documentId: current,
+                targetLang: targetLang,
+              ));
+            }
+          } else if (value == 'full-translation-task') {
+            if (current != null && current.isNotEmpty) {
+              unawaited(showFullTranslationPanel(
+                context,
+                studySetId: studySetId,
+                documentId: current,
+                targetLang: targetLang,
+              ));
             }
           } else if (value == 'import') {
             final files = await ref.read(pdfPickerProvider)(l.documentFiles);
@@ -170,7 +197,20 @@ class ReaderCompareMenu extends ConsumerWidget {
               reason: reason,
               cached: cached,
               tooNarrow: tooNarrow,
+              disabled: hasActiveFullJob,
             ),
+            if (MMSizeClass.of(context) != MMSizeClass.compact && current != null && current.isNotEmpty)
+              MMDropdownItem<String>(
+                value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
+                enabled: !tooNarrow,
+                child: _menuRow(
+                  context,
+                  MMIcons.layers,
+                  hasActiveFullJob
+                      ? l.fullTranslationTaskMenu(fullState!.counts().pct)
+                      : l.fullTranslationMenu,
+                ),
+              ),
           ],
           if (pair != null) ...[
             const PopupMenuDivider(),
@@ -251,7 +291,14 @@ class ReaderCompareMenu extends ConsumerWidget {
     children: [
       Icon(icon, size: 14),
       const SizedBox(width: 8),
-      Text(label, style: context.mmText.callout),
+      Expanded(
+        child: Text(
+          label,
+          style: context.mmText.callout,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
     ],
   );
 }
@@ -259,10 +306,16 @@ class ReaderCompareMenu extends ConsumerWidget {
 /// Mount only inside the open popup. Opening a study set must never read
 /// Keychain credentials merely to draw its toolbar.
 class _AiTranslationEntry extends PopupMenuEntry<String> {
-  const _AiTranslationEntry({required this.label, required this.reason, required this.cached, required this.tooNarrow});
+  const _AiTranslationEntry({
+    required this.label,
+    required this.reason,
+    required this.cached,
+    required this.tooNarrow,
+    this.disabled = false,
+  });
   final String label;
   final String? reason;
-  final bool cached, tooNarrow;
+  final bool cached, tooNarrow, disabled;
   @override
   double get height => reason == null || cached ? 30 : 50;
   @override
@@ -281,12 +334,13 @@ class _AiTranslationEntryState extends State<_AiTranslationEntry> {
       final reason = widget.cached
           ? null
           : widget.reason ?? (credential == AssistantCredentialState.ready ? null : context.l10n.assistantConnectFirst);
+      final canClick = !widget.tooNarrow && !widget.disabled && reason == null;
       return MMDropdownItem<String>(
         value: 'ai',
-        enabled: !widget.tooNarrow && reason == null,
+        enabled: canClick,
         height: reason == null ? 30 : 50,
         child: Opacity(
-          opacity: reason == null ? 1 : .5,
+          opacity: canClick ? 1 : .5,
           child: Row(
             children: [
               const Icon(MMIcons.translate, size: 14),

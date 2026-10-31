@@ -16,6 +16,10 @@ import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
+import '../full_translation.dart';
+import '../reader_compare.dart';
+import 'full_translation_sheet.dart';
+import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
 import '../../study_notes/note_setup_sheet.dart';
 import '../../study_notes/note_updates.dart';
@@ -129,11 +133,7 @@ class WorkspaceSidebar extends ConsumerWidget {
             child: MMSidebarItem(
               icon: documentIcon(d),
               label: d.title,
-              trailing: d.capabilities().readingSettings
-                  ? null
-                  : ref.watch(readerOcrProvider(controller.filePath(d))).document?.hasCopy == true
-                  ? Text(l.ocrRecognized, style: context.mmText.footnote)
-                  : null,
+              trailing: _DocumentTranslationTrailing(studySetId: studySetId, document: d),
               selected: !browser.visible && d.id == state.activeDocumentId,
               selectionStyle: context.mmTouchPlatform ? MMSidebarSelectionStyle.marker : MMSidebarSelectionStyle.filled,
               onTap: () {
@@ -396,11 +396,39 @@ class WorkspaceSidebar extends ConsumerWidget {
   void _documentMenu(BuildContext context, WidgetRef ref, Document doc, Offset position) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(studySetId).notifier);
+    final targetLang = compareLanguage(doc.title) == 'zh' ? 'en' : 'zh';
+    final fullState = ref.read(fullTranslationProvider((studySetId, doc.id, targetLang)));
+    final hasActiveFullJob = fullState.isActive;
+    final canFullTranslate = MMPlatformCapabilities.current.assistant &&
+        MMSizeClass.of(context) != MMSizeClass.compact;
+
     showMMMenu(
       context,
       position: position,
       entries: [
         MMMenuItem(l.open, () => controller.openDocument(doc.id)),
+        if (canFullTranslate) ...[
+          if (hasActiveFullJob)
+            MMMenuItem(
+              l.fullTranslationTaskMenu(fullState.counts().pct),
+              () => showFullTranslationPanel(
+                context,
+                studySetId: studySetId,
+                documentId: doc.id,
+                targetLang: targetLang,
+              ),
+            )
+          else
+            MMMenuItem(
+              l.fullTranslationMenu,
+              () => showFullTranslationSheet(
+                context,
+                studySetId: studySetId,
+                documentId: doc.id,
+                targetLang: targetLang,
+              ),
+            ),
+        ],
         MMMenuItem(l.renameEllipsis, () async {
           final title = await showRenameSheet(context, title: l.renameDocument, initial: doc.title);
           if (title != null) await controller.renameDocument(doc.id, title);
@@ -420,6 +448,52 @@ class WorkspaceSidebar extends ConsumerWidget {
         }, destructive: true),
       ],
     );
+  }
+}
+
+class _DocumentTranslationTrailing extends ConsumerWidget {
+  const _DocumentTranslationTrailing({
+    required this.studySetId,
+    required this.document,
+  });
+
+  final String studySetId;
+  final Document document;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final targetLang = compareLanguage(document.title) == 'zh' ? 'en' : 'zh';
+    final fullState = ref.watch(fullTranslationProvider((studySetId, document.id, targetLang)));
+    final job = fullState.job;
+    final c = context.mmColors;
+
+    if (job != null && job.isActive) {
+      if (job.state == TranslationJobState.review) {
+        return Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
+        );
+      }
+      final counts = fullState.counts();
+      final pct = counts.pct;
+      return SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(
+          value: pct > 0 ? (pct / 100.0) : null,
+          strokeWidth: 1.5,
+          color: c.accent,
+          backgroundColor: c.quaternaryFill,
+        ),
+      );
+    }
+
+    if (!document.capabilities().readingSettings &&
+        ref.watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document))).document?.hasCopy == true) {
+      return Text(context.l10n.ocrRecognized, style: context.mmText.footnote);
+    }
+    return const SizedBox.shrink();
   }
 }
 

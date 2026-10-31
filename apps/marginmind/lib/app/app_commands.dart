@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../features/assistant/expansion_controller.dart';
 import '../features/study_notes/note_session.dart';
 import '../features/study_notes/note_updates.dart';
@@ -26,6 +28,9 @@ import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/reader_crop.dart';
 import '../features/workspace/reader_margin.dart';
 import '../features/workspace/reader_compare.dart';
+import '../features/workspace/full_translation.dart';
+import '../features/workspace/widgets/full_translation_sheet.dart';
+import '../features/workspace/widgets/full_translation_panel.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
 import '../features/workspace/workspace_controller.dart';
 import '../features/workspace/workspace_browser.dart';
@@ -56,6 +61,25 @@ class AppCommand {
 
   /// Null disables the command in the current context.
   final VoidCallback? onInvoke;
+}
+
+/// Namespace for application-level commands.
+abstract final class AppCommands {
+  /// Full-document translation command without default keyboard shortcut.
+  static AppCommand translateDocument(
+    AppLocalizations l, {
+    required bool enabled,
+    required bool hasActiveJob,
+    int? progressPercent,
+    required VoidCallback onInvoke,
+  }) {
+    final label = hasActiveJob
+        ? (progressPercent != null
+            ? l.fullTranslationTaskMenu(progressPercent)
+            : '全文翻译任务…')
+        : l.fullTranslationMenu;
+    return AppCommand(label, enabled ? onInvoke : null);
+  }
 }
 
 enum BrowserCommand { back, forward, reload, stop, convert, close }
@@ -1135,6 +1159,39 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (comparing && ref.read(readerCompareProvider(workspaceId).notifier).canAlignSource)
         AppCommand(l.compareAlign, () => ref.read(readerCompareProvider(workspaceId).notifier).align()),
       if (comparing) AppCommand(l.compareExit, () => ref.read(readerCompareProvider(workspaceId).notifier).exit()),
+      if (inWorkspace && hasDocument && MMPlatformCapabilities.current.assistant) ...[
+        () {
+          final doc = workspace.content.document(workspaceState.activeDocumentId!);
+          if (doc == null) return null;
+          final targetLang = (doc.title.contains('英文') || !RegExp(r'[\u4e00-\u9fa5]').hasMatch(doc.title)) ? 'zh' : 'en';
+          final fullState = ref.watch(fullTranslationProvider((workspaceId, doc.id, targetLang)));
+          final hasActive = fullState.isActive;
+          final pct = fullState.counts().pct;
+          return AppCommands.translateDocument(
+            l,
+            enabled: canRead,
+            hasActiveJob: hasActive,
+            progressPercent: hasActive ? pct : null,
+            onInvoke: () {
+              if (hasActive) {
+                unawaited(showFullTranslationPanel(
+                  context,
+                  studySetId: workspaceId,
+                  documentId: doc.id,
+                  targetLang: targetLang,
+                ));
+              } else {
+                unawaited(showFullTranslationSheet(
+                  context,
+                  studySetId: workspaceId,
+                  documentId: doc.id,
+                  targetLang: targetLang,
+                ));
+              }
+            },
+          );
+        }(),
+      ].whereType<AppCommand>(),
       if (hasDocument)
         ...readerStyleCommands(
           l,

@@ -4916,4 +4916,443 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appIconChangeFailed => 'Could not change the icon. Please try again.';
+
+  @override
+  String get fullTranslationMenu => 'Translate Entire Document…';
+
+  @override
+  String fullTranslationTaskMenu(int percent) {
+    return 'Full Translation… $percent%';
+  }
+
+  @override
+  String get fullTranslationCapsule => 'Translate All';
+
+  @override
+  String fullTranslationCapsuleRunning(int percent, int batch, int done, int total) {
+    return '$percent% Batch $batch · $done/$total pages';
+  }
+
+  @override
+  String fullTranslationCapsuleRunningAll(int percent, int done, int total) {
+    return '$percent% $done/$total pages';
+  }
+
+  @override
+  String fullTranslationCapsuleReview(int batch) {
+    return 'Batch $batch Pending';
+  }
+
+  @override
+  String fullTranslationCapsulePaused(int done, int total) {
+    return 'Paused $done/$total pages';
+  }
+
+  @override
+  String get fullTranslationCapsuleOffline => 'Waiting for Network';
+
+  @override
+  String get fullTranslationCapsuleBudget => 'Paused · Exceeded Estimate';
+
+  @override
+  String get fullTranslationCapsuleError => 'Paused';
+
+  @override
+  String get fullTranslationCapsuleDone => 'Fully Translated';
+
+  @override
+  String fullTranslationCapsuleDoneFailed(int count) {
+    return 'Completed · $count untranslated';
+  }
+
+  @override
+  String fullTranslationCapsuleStopped(int done, int total) {
+    return 'Stopped $done/$total pages';
+  }
+
+  @override
+  String fullTranslationPlaceholderBatch(int batch) {
+    return 'Will translate in batch $batch';
+  }
+
+  @override
+  String fullTranslationPlaceholderPageSub(int page) {
+    return 'Page $page';
+  }
+
+  @override
+  String get fullTranslationPlaceholderOutOfRange => 'Not in translation range';
+
+  @override
+  String get fullTranslationPlaceholderUntranslated => 'Untranslated';
+
+  @override
+  String get fullTranslationTranslatePage => 'Translate This Page';
+
+  @override
+  String get fullTranslationTitle => 'Translate Entire Document';
+
+  @override
+  String fullTranslationDocSubtitle(String doc, int pages) {
+    return '$doc · $pages pages';
+  }
+
+  @override
+  String get fullTranslationSourceLangDetect => 'Detect';
+
+  @override
+  String get fullTranslationRange => 'Range';
+
+  @override
+  String get fullTranslationRangeAll => 'All';
+
+  @override
+  String get fullTranslationRangePages => 'Pages';
+
+  @override
+  String get fullTranslationMode => 'Mode';
+
+  @override
+  String get fullTranslationModeBatch => 'Batch Review';
+
+  @override
+  String get fullTranslationModeBatchDesc => 'Pause after each batch to review before continuing';
+
+  @override
+  String get fullTranslationModeAll => 'Translate All';
+
+  @override
+  String get fullTranslationModeAllDesc => 'Translate continuously to the end, pause anytime';
+
+  @override
+  String get fullTranslationBatchSize => 'Per Batch';
+
+  @override
+  String fullTranslationBatchPages(int count) {
+    return '$count pages';
+  }
+
+  @override
+  String fullTranslationBatchCount(int count) {
+    return '$count batches total';
+  }
+
+  @override
+  String get fullTranslationNote => 'Glossary & Requirements';
+
+  @override
+  String get fullTranslationNotePlaceholder => 'Optional. E.g. keep proper names untranslated';
+
+  @override
+  String get fullTranslationNoteHint =>
+      'Applies only to subsequent batches; translated paragraphs won\'t be retranslated.';
+
+  @override
+  String get fullTranslationNoteConfigured => ' · Configured';
+
+  @override
+  String get fullTranslationFooterNote => 'Translations are saved in the study set without modifying the PDF';
+
+  @override
+  String fullTranslationStartBatch(int from, int to) {
+    return 'Start · Pages $from–$to';
+  }
+
+  @override
+  String get fullTranslationStartAll => 'Start Translation';
+
+  @override
+  String get fullTranslationNothingToTranslate => 'No paragraphs to translate';
+
+  @override
+  String get fullTranslationBlockedScannedTitle => 'This document has no selectable text';
+
+  @override
+  String get fullTranslationBlockedScannedDesc => 'Recognize text on device first, then translate.';
+
+  @override
+  String get fullTranslationActionOcr => 'Recognize Text';
+
+  @override
+  String get fullTranslationBlockedNoModelTitle => 'No AI model configured';
+
+  @override
+  String get fullTranslationBlockedBadKeyTitle => 'API Key Invalid';
+
+  @override
+  String get fullTranslationBlockedModelDesc => 'Full translation uses the assistant\'s default model.';
+
+  @override
+  String get fullTranslationActionSettings => 'Open Assistant Settings';
+
+  @override
+  String get fullTranslationBlockedOfflineTitle => 'Network Unavailable';
+
+  @override
+  String get fullTranslationBlockedOfflineDesc => 'You can start now; translation resumes automatically when online.';
+
+  @override
+  String fullTranslationEstChanged(int reused, int total) {
+    return 'Source text re-recognized · $reused / $total existing translations reusable';
+  }
+
+  @override
+  String fullTranslationEstNeeds(String paras, String chars) {
+    return 'Needs translation: $paras paragraphs · ~$chars chars';
+  }
+
+  @override
+  String fullTranslationEstMinutes(int minutes) {
+    return '~$minutes min';
+  }
+
+  @override
+  String fullTranslationEstReused(int paras, int pages) {
+    return 'Already have $paras translations ($pages pages), reused directly';
+  }
+
+  @override
+  String fullTranslationEstReusedNoPages(int paras) {
+    return 'Already have $paras translations, reused directly';
+  }
+
+  @override
+  String fullTranslationEstSkip(String details) {
+    return 'Not sent: $details';
+  }
+
+  @override
+  String fullTranslationEstSkipMargin(int count) {
+    return 'headers/footers $count';
+  }
+
+  @override
+  String fullTranslationEstSkipSame(int count) {
+    return 'already target language $count';
+  }
+
+  @override
+  String fullTranslationEstSkipDupe(int count) {
+    return 'duplicate paragraphs $count';
+  }
+
+  @override
+  String fullTranslationEstModel(String model, String tokens) {
+    return '$model · Est. $tokens tokens';
+  }
+
+  @override
+  String get fullTranslationEstBudgetWarning => '; pauses for confirmation if 50% over estimate';
+
+  @override
+  String get fullTranslationPanelTitle => 'Full Translation';
+
+  @override
+  String fullTranslationStateRunningBatch(int batch, int from, int to) {
+    return 'Translating · Batch $batch (pages $from–$to)';
+  }
+
+  @override
+  String get fullTranslationStateRunningAll => 'Translating · All at once';
+
+  @override
+  String fullTranslationStateReview(int batch) {
+    return 'Batch $batch Pending';
+  }
+
+  @override
+  String get fullTranslationStatePaused => 'Paused';
+
+  @override
+  String get fullTranslationStateOffline => 'Waiting for Network';
+
+  @override
+  String get fullTranslationStateBudget => 'Paused · Exceeded Estimate';
+
+  @override
+  String get fullTranslationStateError => 'Paused · Needs Attention';
+
+  @override
+  String get fullTranslationStateDone => 'Completed';
+
+  @override
+  String get fullTranslationStateStopped => 'Stopped';
+
+  @override
+  String get fullTranslationLegendDone => 'Translated';
+
+  @override
+  String get fullTranslationLegendReused => 'Reused';
+
+  @override
+  String get fullTranslationLegendRunning => 'Translating';
+
+  @override
+  String get fullTranslationLegendQueued => 'Queued';
+
+  @override
+  String get fullTranslationLegendFailed => 'Untranslated';
+
+  @override
+  String get fullTranslationLegendSkipped => 'No Translation Needed';
+
+  @override
+  String get fullTranslationStatParas => 'Paragraphs';
+
+  @override
+  String fullTranslationStatEstToken(String tokens) {
+    return 'Est. $tokens';
+  }
+
+  @override
+  String get fullTranslationStatFailed => 'Untranslated';
+
+  @override
+  String get fullTranslationDetailReused => 'Reused Translations';
+
+  @override
+  String fullTranslationDetailParas(int count) {
+    return '$count paras';
+  }
+
+  @override
+  String get fullTranslationDetailDedup => 'Deduplicated Paragraphs';
+
+  @override
+  String get fullTranslationDetailSkipped => 'Not Sent (headers, page numbers, target language)';
+
+  @override
+  String fullTranslationDetailItems(int count) {
+    return '$count items';
+  }
+
+  @override
+  String get fullTranslationDetailModelCalls => 'Model · Requests';
+
+  @override
+  String fullTranslationDetailCalls(String model, int calls) {
+    return '$model · $calls calls';
+  }
+
+  @override
+  String get fullTranslationDetailElapsed => 'Elapsed';
+
+  @override
+  String fullTranslationDetailTime(int minutes, int seconds) {
+    return '$minutes m $seconds s';
+  }
+
+  @override
+  String get fullTranslationActionStop => 'Stop';
+
+  @override
+  String get fullTranslationActionEnd => 'End';
+
+  @override
+  String get fullTranslationActionPause => 'Pause';
+
+  @override
+  String get fullTranslationActionResume => 'Resume';
+
+  @override
+  String get fullTranslationActionNextBatch => 'Next Batch';
+
+  @override
+  String fullTranslationActionRetryFailed(int count) {
+    return 'Retry $count Untranslated';
+  }
+
+  @override
+  String get fullTranslationActionContinueTranslation => 'Continue Translation…';
+
+  @override
+  String get fullTranslationActionClear => 'Remove Translations…';
+
+  @override
+  String get fullTranslationClearTitle => 'Remove all AI translations for this document?';
+
+  @override
+  String get fullTranslationClearMessage => 'Manually edited translations will also be removed.';
+
+  @override
+  String fullTranslationCkptBatchDone(int batch) {
+    return 'Batch $batch Completed';
+  }
+
+  @override
+  String fullTranslationCkptPages(int from, int to) {
+    return 'Pages $from–$to';
+  }
+
+  @override
+  String get fullTranslationCkptCollapseTip => 'Collapse to read';
+
+  @override
+  String get fullTranslationCkptExpandTip => 'Expand';
+
+  @override
+  String fullTranslationCkptMin(int batch) {
+    return 'Batch $batch Pending';
+  }
+
+  @override
+  String fullTranslationCkptNextBatch(int from, int to) {
+    return 'Continue Pages $from–$to';
+  }
+
+  @override
+  String fullTranslationCkptFromPage(int page) {
+    return 'Review starting from page $page';
+  }
+
+  @override
+  String fullTranslationCkptRemain(int pages, String tokens) {
+    return 'Remaining $pages pages · ~$tokens tokens';
+  }
+
+  @override
+  String get fullTranslationCkptTranslateRest => 'Translate Rest All';
+
+  @override
+  String fullTranslationHudStartBatch(int from, int to) {
+    return 'Starting translation for pages $from–$to';
+  }
+
+  @override
+  String get fullTranslationHudStartAll => 'Starting full document translation';
+
+  @override
+  String get fullTranslationHudDone => 'Full translation completed';
+
+  @override
+  String fullTranslationHudDoneFailed(int count) {
+    return 'Full translation completed · $count untranslated';
+  }
+
+  @override
+  String get fullTranslationHudView => 'View';
+
+  @override
+  String get fullTranslationHudStopped => 'Stopped · Translated content saved';
+
+  @override
+  String fullTranslationHudPausedAt(int page) {
+    return 'Full translation paused at page $page';
+  }
+
+  @override
+  String get fullTranslationHudContinue => 'Resume';
+
+  @override
+  String get fullTranslationHudRestAll => 'Remaining pages will be translated all at once';
+
+  @override
+  String fullTranslationGridCell(int page, String state) {
+    return 'Page $page · $state';
+  }
+
+  @override
+  String fullTranslationCapsuleA11y(int percent, int batch, int done, int total) {
+    return 'Full translation, $percent%, batch $batch, $done / $total pages';
+  }
 }
