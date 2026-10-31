@@ -133,12 +133,12 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
             Row(
               children: [
                 Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(color: c.positive, shape: BoxShape.circle),
-                  child: Center(child: Icon(MMIcons.check, size: 10, color: c.onAccent)),
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(color: c.accentTint, shape: BoxShape.circle),
+                  child: Center(child: Icon(MMIcons.check, size: 12, color: c.accent)),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   l.fullTranslationCkptBatchDone(job.batch.index),
                   style: context.mmText.callout.copyWith(fontWeight: FontWeight.w700),
@@ -159,61 +159,31 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
             ),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
+              spacing: 10,
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text.rich(
-                  TextSpan(
-                    style: DefaultTextStyle.of(context).style.merge(context.mmText.footnote.copyWith(color: c.label)),
+                _counted(context, l.fullTranslationDetailParas(batchCounts.total), batchCounts.total, c.secondaryLabel),
+                if (batchCounts.reused > 0)
+                  _counted(
+                    context,
+                    '${l.fullTranslationLegendReused} ${batchCounts.reused}',
+                    batchCounts.reused,
+                    c.secondaryLabel,
+                  ),
+                if (batchCounts.fail > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextSpan(
-                        text: '${batchCounts.total}',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      _counted(context, l.fullTranslationCkptFailed(batchCounts.fail), batchCounts.fail, c.critical),
+                      MMButton(
+                        label: l.fullTranslationStripRetry,
+                        variant: MMButtonVariant.plain,
+                        color: c.critical,
+                        onPressed: () => controller.retry(),
                       ),
-                      TextSpan(text: ' ${l.fullTranslationStatParas}'),
                     ],
                   ),
-                ),
-                if (batchCounts.reused > 0)
-                  Text.rich(
-                    TextSpan(
-                      style: DefaultTextStyle.of(context).style.merge(context.mmText.footnote.copyWith(color: c.label)),
-                      children: [
-                        TextSpan(text: '${l.fullTranslationLegendReused} '),
-                        TextSpan(
-                          text: '${batchCounts.reused}',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (batchCounts.fail > 0) ...[
-                  Text.rich(
-                    TextSpan(
-                      style: DefaultTextStyle.of(context).style
-                          .merge(context.mmText.footnote.copyWith(color: c.critical)),
-                      children: [
-                        TextSpan(
-                          text: '${batchCounts.fail}',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        TextSpan(text: ' ${l.fullTranslationStatFailed} '),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => controller.retry(),
-                    child: Text(
-                      l.fullTranslationActionRetryFailed(batchCounts.fail),
-                      style: context.mmText.footnote.copyWith(
-                        color: c.critical,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ],
                 Text.rich(
                   TextSpan(
                     style: DefaultTextStyle.of(context).style
@@ -245,10 +215,7 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                   children: [
                     Icon(MMIcons.chevronRight, size: 12, color: c.accent),
                     const SizedBox(width: 4),
-                    Text(
-                      l.fullTranslationCkptFromPage(bFrom),
-                      style: context.mmText.callout.copyWith(color: c.accent, fontSize: 13),
-                    ),
+                    Text(l.fullTranslationCkptFromPage(bFrom), style: context.mmText.callout.copyWith(color: c.accent)),
                   ],
                 ),
               ),
@@ -262,7 +229,7 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                   const SizedBox(width: 4),
                   Text(
                     '${l.fullTranslationNote}${_noteController.text.isNotEmpty ? l.fullTranslationNoteConfigured : ""}',
-                    style: context.mmText.callout.copyWith(fontSize: 13, color: c.label),
+                    style: context.mmText.callout.copyWith(color: c.label),
                   ),
                 ],
               ),
@@ -302,7 +269,7 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    Text(l.fullTranslationBatchSize, style: context.mmText.callout.copyWith(fontSize: 13)),
+                    Text(l.fullTranslationBatchSize, style: context.mmText.callout),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
@@ -356,6 +323,30 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Secondary text with its count in the label color, as in "30 段".
+  Widget _counted(BuildContext context, String text, int count, Color color) {
+    final c = context.mmColors;
+    final number = '$count';
+    final at = text.indexOf(number);
+    final base = DefaultTextStyle.of(context).style.merge(context.mmText.footnote.copyWith(color: color));
+    final strong = TextStyle(
+      fontWeight: FontWeight.w600,
+      color: color == c.critical ? c.critical : c.label,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    if (at < 0) return Text(text, style: base);
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: text.substring(0, at)),
+          TextSpan(text: number, style: strong),
+          TextSpan(text: text.substring(at + number.length)),
+        ],
       ),
     );
   }

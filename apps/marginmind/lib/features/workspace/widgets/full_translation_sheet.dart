@@ -55,6 +55,7 @@ class FullTranslationSheet extends ConsumerStatefulWidget {
 class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
   late String _targetLang;
   String? _sourceLang;
+  String? _sourceChoice;
   bool _rangeAll = true;
   late final TextEditingController _fromController;
   late final TextEditingController _toController;
@@ -117,7 +118,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         : l.fullTranslationHudStartAll;
     final readerWidth = ReaderCompareWidth.of(context);
     final language = _targetLang;
-    final sourceLanguage = _sourceLang;
+    final sourceLanguage = _sourceChoice ?? _sourceLang;
     final mode = _mode;
     final batchSize = _batchSize;
 
@@ -279,8 +280,12 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
           autofocus: true,
           child: MMSheet(
             title: l.fullTranslationTitle,
-            titleTrailing: Text(
-              l.fullTranslationDocSubtitle(doc.title, _pageCount),
+            icon: MMIcons.layers,
+            subtitle: l.fullTranslationDocSubtitle(doc.title, _pageCount),
+            footer: Text(
+              l.fullTranslationFooterNote,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
             ),
             actions: [
@@ -299,57 +304,40 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                   label: l.language,
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: c.quaternaryFill,
-                          borderRadius: BorderRadius.circular(MMRadii.row),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _sourceLang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                              style: context.mmText.callout,
-                            ),
-                            Text(
-                              '（${l.fullTranslationSourceLangDetect}）',
-                              style: context.mmText.callout.copyWith(color: c.secondaryLabel),
-                            ),
+                      Flexible(
+                        child: MMPopUpButton<String>(
+                          key: const ValueKey('full-translation-source-language'),
+                          value: _sourceChoice ?? 'auto',
+                          items: [
+                            ('auto', _detectedLabel(l)),
+                            for (final lang in TranslationLanguage.values) (lang.code, l.translationLanguageName(lang)),
                           ],
+                          onChanged: _starting
+                              ? null
+                              : (val) => setState(() => _sourceChoice = val == 'auto' ? null : val),
+                          semanticLabel: l.translationSourceLanguage,
+                          maxWidth: 180,
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text('→', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
                       ),
-                      MMDropdownButton<String>(
-                        width: 140,
-                        onSelected: (val) {
-                          if (_starting) return;
-                          setState(() => _targetLang = val);
-                          ref.read(sharedPreferencesProvider).setString('settings.translationLanguage', val);
-                        },
-                        itemBuilder: (_) => [
-                          for (final lang in TranslationLanguage.values)
-                            MMDropdownItem(
-                              value: lang.code,
-                              child: Text(
-                                lang.code == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                                style: context.mmText.callout,
-                              ),
-                            ),
-                        ],
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _targetLang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                              style: context.mmText.callout,
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(MMIcons.chevronDown, size: 12),
+                      Flexible(
+                        child: MMPopUpButton<String>(
+                          key: const ValueKey('full-translation-target-language'),
+                          value: _targetLang,
+                          items: [
+                            for (final lang in TranslationLanguage.values) (lang.code, l.translationLanguageName(lang)),
                           ],
+                          onChanged: _starting
+                              ? null
+                              : (val) {
+                                  setState(() => _targetLang = val);
+                                  ref.read(sharedPreferencesProvider).setString('settings.translationLanguage', val);
+                                },
+                          semanticLabel: l.translationTargetLanguage,
+                          maxWidth: 160,
                         ),
                       ),
                     ],
@@ -377,50 +365,12 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                         ],
                       ),
                       const SizedBox(width: 12),
-                      SizedBox(
-                        width: 56,
-                        height: 28,
-                        child: TextField(
-                          controller: _fromController,
-                          enabled: !_rangeAll,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: context.mmText.callout,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.zero,
-                            filled: true,
-                            fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
+                      _numberField(_fromController),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Text('–', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
                       ),
-                      SizedBox(
-                        width: 56,
-                        height: 28,
-                        child: TextField(
-                          controller: _toController,
-                          enabled: !_rangeAll,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: context.mmText.callout,
-                          decoration: InputDecoration(
-                            contentPadding: EdgeInsets.zero,
-                            filled: true,
-                            fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ),
+                      _numberField(_toController),
                       if (!valid) ...[
                         const SizedBox(width: 8),
                         Text('1–$_pageCount', style: context.mmText.footnote.copyWith(color: c.critical)),
@@ -531,19 +481,21 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                             contentColor: c.positive,
                           ),
                         ],
-                        if (estimation.skipped > 0 || estimation.same > 0 || estimation.dupe > 0) ...[
-                          const SizedBox(height: 6),
-                          _buildEstimateRow(
-                            icon: MMIcons.skip,
-                            content: l.fullTranslationEstSkip(
-                              [
-                                if (estimation.skipped > 0) l.fullTranslationEstSkipMargin(estimation.skipped),
-                                if (estimation.same > 0) l.fullTranslationEstSkipSame(estimation.same),
-                                if (estimation.dupe > 0) l.fullTranslationEstSkipDupe(estimation.dupe),
-                              ].join(' · '),
-                            ),
+                        const SizedBox(height: 6),
+                        _buildEstimateRow(
+                          icon: MMIcons.skip,
+                          content: l.fullTranslationEstSkip(
+                            [
+                              l.fullTranslationEstSkipMargin(estimation.skipped),
+                              if (estimation.same > 0)
+                                l.fullTranslationEstSkipSame(
+                                  l.translationLanguageCodeName(_targetLang),
+                                  estimation.same,
+                                ),
+                              if (estimation.dupe > 0) l.fullTranslationEstSkipDupe(estimation.dupe),
+                            ].join(' · '),
                           ),
-                        ],
+                        ),
                         const SizedBox(height: 6),
                         _buildEstimateRow(
                           icon: MMIcons.ai,
@@ -556,14 +508,50 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 14),
-                Text(l.fullTranslationFooterNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _numberField(TextEditingController controller) {
+    final c = context.mmColors;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(6),
+      borderSide: BorderSide(color: c.hairline, width: 0.5),
+    );
+    return Opacity(
+      opacity: _rangeAll ? 0.45 : 1,
+      child: SizedBox(
+        width: 52,
+        height: 24,
+        child: TextField(
+          controller: controller,
+          enabled: !_rangeAll,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: context.mmText.footnote.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          decoration: InputDecoration(
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: c.card,
+            border: border,
+            enabledBorder: border,
+            disabledBorder: border,
+            focusedBorder: border.copyWith(borderSide: BorderSide(color: c.accent, width: 2)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _detectedLabel(AppLocalizations l) {
+    final detected = TranslationLanguage.fromCode(_sourceLang);
+    return detected == null
+        ? l.fullTranslationSourceLangDetect
+        : l.fullTranslationSourceDetected(l.translationLanguageName(detected));
   }
 
   Widget _buildBanner({required IconData icon, required String title, required String desc, Widget? action}) {

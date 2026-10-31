@@ -1477,7 +1477,10 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 top: _headerGeometry.toolbarTopInset + MMSpacing.s,
                 left: MMSpacing.m,
                 right: MMSpacing.m,
-                child: MapOcrBanner(studySetId: widget.studySetId, fallback: DocumentMapBanner(studySetId: widget.studySetId)),
+                child: MapOcrBanner(
+                  studySetId: widget.studySetId,
+                  fallback: DocumentMapBanner(studySetId: widget.studySetId),
+                ),
               ),
               if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(

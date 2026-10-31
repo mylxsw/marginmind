@@ -593,7 +593,7 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
         width: 14,
         height: 14,
         child: CircularProgressIndicator(
-          value: pct > 0 ? (pct / 100.0) : null,
+          value: (pct / 100.0).clamp(0.0, 1.0),
           strokeWidth: 1.5,
           color: c.accent,
           backgroundColor: c.quaternaryFill,

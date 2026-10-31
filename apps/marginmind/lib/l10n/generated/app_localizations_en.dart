@@ -5007,6 +5007,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationSourceLangDetect => 'Detect';
 
   @override
+  String fullTranslationSourceDetected(String language) {
+    return '$language (detected)';
+  }
+
+  @override
   String get fullTranslationRange => 'Range';
 
   @override
@@ -5048,6 +5053,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fullTranslationNotePlaceholder => 'Optional. E.g. keep proper names untranslated';
+
+  @override
+  String fullTranslationCkptFailed(int count) {
+    return '$count untranslated';
+  }
 
   @override
   String get fullTranslationNoteHint =>
@@ -5133,8 +5143,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String fullTranslationEstSkipSame(int count) {
-    return 'already target language $count';
+  String fullTranslationEstSkipSame(String language, int count) {
+    return 'already $language $count';
   }
 
   @override
@@ -5225,7 +5235,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationDetailDedup => 'Deduplicated Paragraphs';
 
   @override
-  String get fullTranslationDetailSkipped => 'Not Sent (headers, page numbers, target language)';
+  String fullTranslationDetailSkipped(String language) {
+    return 'Not Sent (headers, page numbers, already $language)';
+  }
 
   @override
   String fullTranslationDetailItems(int count) {

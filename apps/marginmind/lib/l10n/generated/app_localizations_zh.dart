@@ -4785,6 +4785,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationSourceLangDetect => '检测';
 
   @override
+  String fullTranslationSourceDetected(String language) {
+    return '$language（检测）';
+  }
+
+  @override
   String get fullTranslationRange => '范围';
 
   @override
@@ -4826,6 +4831,11 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fullTranslationNotePlaceholder => '可选。例如：attention 统一译为“注意”；人名保留原文';
+
+  @override
+  String fullTranslationCkptFailed(int count) {
+    return '$count 段未译';
+  }
 
   @override
   String get fullTranslationNoteHint => '只用于之后的批次；已译段落不会自动重译。';
@@ -4910,8 +4920,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String fullTranslationEstSkipSame(int count) {
-    return '已是中文 $count 段';
+  String fullTranslationEstSkipSame(String language, int count) {
+    return '已是$language $count 段';
   }
 
   @override
@@ -5002,7 +5012,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationDetailDedup => '重复段落只译一次';
 
   @override
-  String get fullTranslationDetailSkipped => '不发送（页眉、页码、已是中文）';
+  String fullTranslationDetailSkipped(String language) {
+    return '不发送（页眉、页码、已是$language）';
+  }
 
   @override
   String fullTranslationDetailItems(int count) {

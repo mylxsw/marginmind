@@ -26,6 +26,12 @@ extension AppLocalizationsX on AppLocalizations {
     TranslationLanguage.arabic => translationArabic,
   };
 
+  /// Display name for a stored language code; unknown codes are shown as is.
+  String translationLanguageCodeName(String code) {
+    final language = TranslationLanguage.fromCode(code);
+    return language == null ? code : translationLanguageName(language);
+  }
+
   String colorName(MMAnnotationColor color) => switch (color) {
     MMAnnotationColor.yellow => colorYellow,
     MMAnnotationColor.green => colorGreen,
