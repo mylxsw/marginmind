@@ -364,12 +364,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
         if (state.mapView == MapViewMode.outline) {
           controller.setMapView(MapViewMode.map);
         }
-        showGenerateMapSheet(
-          context,
-          ref,
-          widget.studySetId,
-          preselectedDocId: state.activeDocumentId,
-        );
+        showGenerateMapSheet(context, ref, widget.studySetId, preselectedDocId: state.activeDocumentId);
       case MindMapCommand.expandIdeas:
         _expandIdeas();
       case MindMapCommand.copy || MindMapCommand.cut || MindMapCommand.paste:
@@ -818,7 +813,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
     final map = content.map(state.activeMapId);
     final single = state.selectedCardIds.length <= 1 && state.selectedCardId != null;
     final ready =
-        expansion == null && mapGen == null && loadedContent != null && state.selectedMarkId == null && state.connectingFromId == null;
+        expansion == null &&
+        mapGen == null &&
+        loadedContent != null &&
+        state.selectedMarkId == null &&
+        state.connectingFromId == null;
     final target = ready && (single || state.rootSelected);
     final insert = ready && state.selectedCardIds.length <= 1;
     final commandBar = MapCommandBar(
@@ -909,8 +908,6 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   ),
                 ),
               ),
-              const SizedBox(width: MMSpacing.s),
-              GenerateMapButton(studySetId: widget.studySetId),
               if (MMInput.touchInputOf(context)) ...[
                 SizedBox(width: context.mmTablet ? MMToolbarSpacing.item : MMSpacing.s),
                 MMToolbarButton(
@@ -959,8 +956,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final toolbarTopInset = _headerGeometry.toolbarTopInset;
-                          final isGenNewMap = mapGen != null &&
-                              mapGen.request.destination == MapGenerationDestination.newMap;
+                          final isGenNewMap =
+                              mapGen != null && mapGen.request.destination == MapGenerationDestination.newMap;
                           final canvasMapId = isGenNewMap ? mapGen.request.mapId : state.activeMapId;
                           final canvasRootTitle = isGenNewMap ? mapGen.request.title : rootTitle;
                           return SizedBox.expand(
@@ -975,7 +972,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                         if (mapGen != null) {
                                           final d = mapGen.drafts.where((d) => d.id == id).firstOrNull;
                                           if (d != null) {
-                                            ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).toggle(id, !d.kept);
+                                            ref
+                                                .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                                .toggle(id, !d.kept);
                                           }
                                         } else if (expansion != null) {
                                           final d = expansion.drafts.firstWhere((d) => d.id == id);
@@ -986,7 +985,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       },
                                       onDraftEdit: (id, text) {
                                         if (mapGen != null) {
-                                          ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).edit(id, text);
+                                          ref
+                                              .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                              .edit(id, text);
                                         } else if (expansion != null) {
                                           ref
                                               .read(expansionControllerProvider(widget.studySetId).notifier)
@@ -1010,7 +1011,9 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       },
                                       onExpansionDiscard: () {
                                         if (mapGen != null) {
-                                          ref.read(mapGenerationControllerProvider(widget.studySetId).notifier).discard();
+                                          ref
+                                              .read(mapGenerationControllerProvider(widget.studySetId).notifier)
+                                              .discard();
                                         } else if (expansion != null) {
                                           ref.read(expansionControllerProvider(widget.studySetId).notifier).discard();
                                         }
@@ -1218,9 +1221,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                       id: 'map-generate',
                                       priority: 55,
                                       child: GenerateMapButton(studySetId: widget.studySetId),
+                                      compactChild: GenerateMapButton(studySetId: widget.studySetId, compact: true),
                                       menuEntry: MMDropdownItem<VoidCallback>(
                                         value: () {
-                                          final docId = state.activeDocumentId ?? content.documents.firstOrNull?.id ?? '';
+                                          final docId =
+                                              state.activeDocumentId ?? content.documents.firstOrNull?.id ?? '';
                                           showGenerateMapSheet(
                                             context,
                                             ref,
@@ -1228,7 +1233,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                                             preselectedDocId: docId,
                                           );
                                         },
-                                        enabled: map != null &&
+                                        enabled:
+                                            map != null &&
                                             (mapGen == null ||
                                                 (mapGen.phase != MapGenerationPhase.reading &&
                                                     mapGen.phase != MapGenerationPhase.streaming)),
@@ -1369,10 +1375,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   right: MMSpacing.m,
                   bottom: MMSizes.ideaBarBottomInset + chrome.bottom,
                   child: Center(
-                    child: MapGenerationBar(
-                      studySetId: widget.studySetId,
-                      onKeep: _keepMapGeneration,
-                    ),
+                    child: MapGenerationBar(studySetId: widget.studySetId, onKeep: _keepMapGeneration),
                   ),
                 ),
               if (expansion == null &&
@@ -1384,10 +1387,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: MapEmptyState(
-                    studySetId: widget.studySetId,
-                    mapId: state.activeMapId,
-                  ),
+                  child: MapEmptyState(studySetId: widget.studySetId, mapId: state.activeMapId),
                 ),
               if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(

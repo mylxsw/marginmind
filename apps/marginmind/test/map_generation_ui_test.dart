@@ -51,33 +51,19 @@ Future<ProviderContainer> openWorkspace(
   final defaultContent = () {
     final base = demoContent();
     final d1 = base.documents.first;
-    final newD1 = Document(
-      id: d1.id,
-      title: d1.title,
-      fileName: d1.fileName,
-      pageCount: 30,
-      importedAt: d1.importedAt,
-    );
+    final newD1 = Document(id: d1.id, title: d1.title, fileName: d1.fileName, pageCount: 30, importedAt: d1.importedAt);
     final outline = DocumentOutline(
       documentId: d1.id,
-      items: const [
-        PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1),
-      ],
+      items: const [PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1)],
     );
-    return base.copyWith(
-      documents: [newD1, ...base.documents.skip(1)],
-      documentOutlines: [outline],
-    );
+    return base.copyWith(documents: [newD1, ...base.documents.skip(1)], documentOutlines: [outline]);
   }();
 
   final container = await pumpApp(
     tester,
     size: const Size(1280, 820),
     content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
-    prefs: {
-      'settings.language': 'zh',
-      ...prefs,
-    },
+    prefs: {'settings.language': 'zh', ...prefs},
     overrides: [
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
@@ -160,13 +146,15 @@ void main() {
       expect(find.byType(MapEmptyState), findsNothing);
     });
 
-    testWidgets('renders ModelSetupCard when AI is not configured', (tester) async {
-      final container = await openWorkspace(
-        tester,
-        credentialState: AssistantCredentialState.missingKey,
-      );
+    testWidgets('renders ModelSetupCard once a start finds AI not configured', (tester) async {
+      final container = await openWorkspace(tester, credentialState: AssistantCredentialState.missingKey);
       final wsController = container.read(workspaceProvider('demo-1').notifier);
       await wsController.addMap('空脑图');
+      await tester.pumpAndSettle();
+
+      // Showing the empty map never reads credentials; starting does.
+      expect(find.byType(ModelSetupCard), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('map-empty-state-start-button')));
       await tester.pumpAndSettle();
 
       expect(find.byType(ModelSetupCard), findsOneWidget);
@@ -180,7 +168,9 @@ void main() {
         overrides: [
           mapGeneratorProvider.overrideWithValue(() async {
             fakeGen = FakeMapGenerator(
-              chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point 1"}']},
+              chapters: {
+                'c1-all': ['{"k":"point","id":"p1","title":"Point 1"}'],
+              },
               generation: ['{"ref":"t1","parent":"ROOT","title":"Chapter 1","page":1}'],
             );
             return fakeGen!;
@@ -235,7 +225,9 @@ void main() {
       expect(find.text('详细'), findsOneWidget);
 
       // Switch: quotes switch is disabled (onChanged == null)
-      final switches = tester.widgetList<MMSwitch>(find.descendant(of: sheet, matching: find.byType(MMSwitch))).toList();
+      final switches = tester
+          .widgetList<MMSwitch>(find.descendant(of: sheet, matching: find.byType(MMSwitch)))
+          .toList();
       expect(switches.length, 2);
       expect(switches[1].onChanged, isNull);
 
@@ -273,13 +265,12 @@ void main() {
   });
 
   group('Generation & Review Flow', () {
-    testWidgets('Reading skeletons -> Streaming ghost nodes -> Review -> Keep creates map with source chip', (tester) async {
+    testWidgets('Reading skeletons -> Streaming ghost nodes -> Review -> Keep creates map with source chip', (
+      tester,
+    ) async {
       final fake = FakeMapGenerator(
         chapters: {
-          'c1-all': [
-            '{"k":"point","id":"p1","title":"遗忘曲线与间隔重复"}',
-            '{"k":"point","id":"p2","title":"提取练习效应"}',
-          ],
+          'c1-all': ['{"k":"point","id":"p1","title":"遗忘曲线与间隔重复"}', '{"k":"point","id":"p2","title":"提取练习效应"}'],
         },
         generation: [
           '{"ref":"t1","parent":"ROOT","title":"核心概念：间隔重复","page":24}',
@@ -289,9 +280,7 @@ void main() {
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -331,10 +320,7 @@ void main() {
 
       // Inline edit: update t1's title
       controller.edit(preview.lines[0].id, '核心规律：间隔重复');
-      expect(
-        container.read(mapGenerationControllerProvider('demo-1'))!.lines[0].title,
-        '核心规律：间隔重复',
-      );
+      expect(container.read(mapGenerationControllerProvider('demo-1'))!.lines[0].title, '核心规律：间隔重复');
 
       // Keep generation
       final keepButton = find.byKey(const ValueKey('map-generation-keep-button'));
@@ -368,16 +354,16 @@ void main() {
 
     testWidgets('Stop generation during reading phase discards, or stops during streaming', (tester) async {
       final fake = FakeMapGenerator(
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
         generation: ['{"ref":"t1","parent":"ROOT","title":"Topic 1"}'],
         delay: const Duration(seconds: 5),
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -406,15 +392,15 @@ void main() {
 
     testWidgets('Discard during review resets generation state', (tester) async {
       final fake = FakeMapGenerator(
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
         generation: ['{"ref":"t1","parent":"ROOT","title":"Topic 1"}'],
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -440,18 +426,15 @@ void main() {
 
     testWidgets('Adjust popover opens, updates settings, and triggers regeneration', (tester) async {
       final fake = FakeMapGenerator(
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
-        generation: [
-          '{"ref":"t1","parent":"ROOT","title":"Topic 1"}',
-          '{"ref":"t2","parent":"t1","title":"Topic 2"}',
-        ],
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
+        generation: ['{"ref":"t1","parent":"ROOT","title":"Topic 1"}', '{"ref":"t2","parent":"t1","title":"Topic 2"}'],
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -496,18 +479,15 @@ void main() {
 
     testWidgets('Review editing and toggle update selection and titles', (tester) async {
       final fake = FakeMapGenerator(
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
-        generation: [
-          '{"ref":"t1","parent":"ROOT","title":"Topic 1"}',
-          '{"ref":"t2","parent":"t1","title":"Topic 2"}',
-        ],
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
+        generation: ['{"ref":"t1","parent":"ROOT","title":"Topic 1"}', '{"ref":"t2","parent":"t1","title":"Topic 2"}'],
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -558,10 +538,7 @@ void main() {
         ],
       );
       final repo = InMemoryStudySetContentRepository({
-        'demo-1': content.copyWith(
-          documents: [docWithOutline],
-          documentOutlines: [outline],
-        ),
+        'demo-1': content.copyWith(documents: [docWithOutline], documentOutlines: [outline]),
       });
 
       final fake = FakeMapGenerator(
@@ -569,17 +546,13 @@ void main() {
           '${docWithOutline.id}-ch1': ['{"k":"point","id":"p1","title":"P1"}'],
           '${docWithOutline.id}-ch2': ['{"k":"point","id":"p2","title":"P2"}'],
         },
-        generation: [
-          '{"ref":"t1","parent":"ROOT","title":"Outline Topic"}',
-        ],
+        generation: ['{"ref":"t1","parent":"ROOT","title":"Outline Topic"}'],
       );
 
       final container = await openWorkspace(
         tester,
         content: repo,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -603,21 +576,14 @@ void main() {
     testWidgets('Integration with DocumentDigestBuilder, cache hit, and fingerprint matching', (tester) async {
       final fake = FakeMapGenerator(
         chapters: {
-          '*': [
-            '{"k":"point","id":"p1","title":"核心要点：遗忘曲线","page":24,"marks":["A1"]}',
-          ],
+          '*': ['{"k":"point","id":"p1","title":"核心要点：遗忘曲线","page":24,"marks":["A1"]}'],
         },
-        generation: [
-          '{"ref":"t1","parent":"ROOT","title":"遗忘曲线","page":24}',
-          '{"mark":"A1","parent":"t1"}',
-        ],
+        generation: ['{"ref":"t1","parent":"ROOT","title":"遗忘曲线","page":24}', '{"mark":"A1","parent":"t1"}'],
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -695,15 +661,15 @@ void main() {
   group('Error Handling', () {
     testWidgets('Network failure shows error banner and retry recovers', (tester) async {
       final fake = FakeMapGenerator(
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
         generationFailure: const ResearchFailure(ResearchFailureKind.network),
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -742,15 +708,15 @@ void main() {
     testWidgets('Single chapter failure shows warning banner and retry chapter recovers', (tester) async {
       final fake = FakeMapGenerator(
         chapterFailures: {'c1-all': const ResearchFailure(ResearchFailureKind.timeout)},
-        chapters: {'c1-all': ['{"k":"point","id":"p1","title":"Point"}']},
+        chapters: {
+          'c1-all': ['{"k":"point","id":"p1","title":"Point"}'],
+        },
         generation: ['{"ref":"t1","parent":"ROOT","title":"Topic 1"}'],
       );
 
       final container = await openWorkspace(
         tester,
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final controller = container.read(mapGenerationControllerProvider('demo-1').notifier);
@@ -816,9 +782,7 @@ void main() {
       final content = demoContent();
       final mapWithGen = content.maps.first.copyWith(
         generation: MapGeneration(
-          sources: [
-            MapSource(documentId: 'c1', chapters: const [], fingerprint: 'fp1', readThrough: 10),
-          ],
+          sources: [MapSource(documentId: 'c1', chapters: const [], fingerprint: 'fp1', readThrough: 10)],
           organization: MapOrganization.chapter,
           depth: 3,
           generatedAt: DateTime.now(),

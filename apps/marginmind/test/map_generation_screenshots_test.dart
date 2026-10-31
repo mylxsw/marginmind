@@ -17,13 +17,14 @@ import 'package:mm_core/testing.dart';
 
 import 'helpers.dart';
 
-final _out = Platform.environment['MM_SCREENSHOTS'] ?? 'docs/evidence/gul-625';
-final _font = Platform.environment['MM_FONT'] ?? '/Library/Fonts/Arial Unicode.ttf';
+// Opt-in like map_style_screenshots_test: MM_SCREENSHOTS=docs/evidence/gul-625
+// MM_FONT=/Library/Fonts/Arial\ Unicode.ttf flutter test test/map_generation_screenshots_test.dart
+final _out = Platform.environment['MM_SCREENSHOTS'];
+final _font = Platform.environment['MM_FONT'];
+final _skip = _out == null || _font == null;
 
 Future<void> _loadFonts() async {
-  final fontFile = File(_font).existsSync()
-      ? File(_font)
-      : File('/System/Library/Fonts/Supplemental/Arial Unicode.ttf');
+  final fontFile = File(_font!);
   if (fontFile.existsSync()) {
     final bytes = ByteData.sublistView(await fontFile.readAsBytes());
     for (final family in [
@@ -46,9 +47,9 @@ Future<void> _loadFonts() async {
   if (iconsDir.path.isNotEmpty) {
     final iconFile = File('${iconsDir.path}/assets/CupertinoIcons.ttf');
     if (iconFile.existsSync()) {
-      await (FontLoader('packages/cupertino_icons/CupertinoIcons')
-            ..addFont(Future.value(ByteData.sublistView(iconFile.readAsBytesSync()))))
-          .load();
+      await (FontLoader(
+        'packages/cupertino_icons/CupertinoIcons',
+      )..addFont(Future.value(ByteData.sublistView(iconFile.readAsBytesSync())))).load();
     }
   }
   final lucideDir = Directory('$pub/hosted/pub.dev')
@@ -59,12 +60,8 @@ Future<void> _loadFonts() async {
     final lucideFile = File('${lucideDir.path}/assets/lucide.ttf');
     if (lucideFile.existsSync()) {
       final lucideBytes = ByteData.sublistView(lucideFile.readAsBytesSync());
-      await (FontLoader('packages/lucide_icons_flutter/Lucide')
-            ..addFont(Future.value(lucideBytes)))
-          .load();
-      await (FontLoader('Lucide')
-            ..addFont(Future.value(lucideBytes)))
-          .load();
+      await (FontLoader('packages/lucide_icons_flutter/Lucide')..addFont(Future.value(lucideBytes))).load();
+      await (FontLoader('Lucide')..addFont(Future.value(lucideBytes))).load();
     }
   }
 }
@@ -79,33 +76,19 @@ Future<ProviderContainer> openWorkspace(
   final defaultContent = () {
     final base = demoContent();
     final d1 = base.documents.first;
-    final newD1 = Document(
-      id: d1.id,
-      title: d1.title,
-      fileName: d1.fileName,
-      pageCount: 40,
-      importedAt: d1.importedAt,
-    );
+    final newD1 = Document(id: d1.id, title: d1.title, fileName: d1.fileName, pageCount: 40, importedAt: d1.importedAt);
     final outline = DocumentOutline(
       documentId: d1.id,
-      items: const [
-        PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1),
-      ],
+      items: const [PdfOutlineEntry(id: 'c1', title: '学习的底层逻辑', page: 1)],
     );
-    return base.copyWith(
-      documents: [newD1, ...base.documents.skip(1)],
-      documentOutlines: [outline],
-    );
+    return base.copyWith(documents: [newD1, ...base.documents.skip(1)], documentOutlines: [outline]);
   }();
 
   final container = await pumpApp(
     tester,
     size: const Size(1280, 820),
     content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
-    prefs: {
-      'settings.language': 'zh',
-      ...prefs,
-    },
+    prefs: {'settings.language': 'zh', ...prefs},
     overrides: [
       assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
@@ -118,7 +101,7 @@ Future<ProviderContainer> openWorkspace(
 }
 
 Future<void> _save(WidgetTester tester, String name) async {
-  Directory(_out).createSync(recursive: true);
+  Directory(_out!).createSync(recursive: true);
   final image = (await tester.runAsync(() {
     final view = tester.binding.renderViews.first;
     return (view.debugLayer! as OffsetLayer).toImage(Offset.zero & view.size, pixelRatio: 1);
@@ -131,23 +114,20 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await _loadFonts();
+    if (!_skip) await _loadFonts();
   });
 
   for (final dark in [false, true]) {
     final mode = dark ? 'dark' : 'light';
 
-    testWidgets('Capture Scenes 1, 2, 3, 5, 7 ($mode mode)', (tester) async {
+    testWidgets('Capture Scenes 1, 2, 3, 5, 7 ($mode mode)', skip: _skip, (tester) async {
       tester.view.physicalSize = const Size(1280, 820);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       final fake = FakeMapGenerator(
         chapters: {
-          'c1-all': [
-            '{"k":"point","id":"p1","title":"记忆的本质与遗忘机制"}',
-            '{"k":"point","id":"p2","title":"间隔重复与提取效应"}',
-          ],
+          'c1-all': ['{"k":"point","id":"p1","title":"记忆的本质与遗忘机制"}', '{"k":"point","id":"p2","title":"间隔重复与提取效应"}'],
         },
         generation: [
           '{"ref":"t1","parent":"ROOT","title":"核心规律：间隔重复","page":24}',
@@ -160,12 +140,8 @@ void main() {
 
       final container = await openWorkspace(
         tester,
-        prefs: {
-          if (dark) 'settings.appearance': 'dark',
-        },
-        overrides: [
-          mapGeneratorProvider.overrideWithValue(() async => fake),
-        ],
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+        overrides: [mapGeneratorProvider.overrideWithValue(() async => fake)],
       );
 
       final wsController = container.read(workspaceProvider('demo-1').notifier);
@@ -227,9 +203,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the committed card and select it so MapSourceChip is shown
-      final committedCard = container.read(workspaceProvider('demo-1').notifier).content.cards.firstWhere(
-        (c) => c.title == '核心规律：间隔重复',
-      );
+      final committedCard = container
+          .read(workspaceProvider('demo-1').notifier)
+          .content
+          .cards
+          .firstWhere((c) => c.title == '核心规律：间隔重复');
       wsController.selectCard(committedCard.id);
       await tester.pumpAndSettle();
 

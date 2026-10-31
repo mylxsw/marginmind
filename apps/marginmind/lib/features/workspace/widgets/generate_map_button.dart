@@ -9,12 +9,12 @@ import '../../map_generation/widgets/generate_map_sheet.dart';
 import '../workspace_controller.dart';
 
 class GenerateMapButton extends ConsumerWidget {
-  const GenerateMapButton({
-    super.key,
-    required this.studySetId,
-  });
+  const GenerateMapButton({super.key, required this.studySetId, this.compact = false});
 
   final String studySetId;
+
+  /// Icon only, for a narrow header; the label stays in the tooltip.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +28,8 @@ class GenerateMapButton extends ConsumerWidget {
     final l = context.l10n;
     final c = context.mmColors;
 
-    final isGenerating = preview != null &&
+    final isGenerating =
+        preview != null &&
         (preview.phase == MapGenerationPhase.reading || preview.phase == MapGenerationPhase.streaming);
     final isReviewing = preview != null && preview.phase == MapGenerationPhase.review;
     final hasGeneration = map.generation != null;
@@ -41,11 +42,7 @@ class GenerateMapButton extends ConsumerWidget {
 
     if (isGenerating) {
       label = l.mapGenerateRunning;
-      iconWidget = SizedBox(
-        width: 14,
-        height: 14,
-        child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
-      );
+      iconWidget = SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: c.research));
       icon = null;
       selected = true;
       onPressed = null;
@@ -61,12 +58,7 @@ class GenerateMapButton extends ConsumerWidget {
       icon = MMIcons.generateMap;
       selected = false;
       onPressed = () {
-        showGenerateMapSheet(
-          context,
-          ref,
-          studySetId,
-          preselectedDocId: workspace.activeDocumentId,
-        );
+        showGenerateMapSheet(context, ref, studySetId, preselectedDocId: workspace.activeDocumentId);
       };
     } else {
       label = l.mapGenerate;
@@ -74,16 +66,12 @@ class GenerateMapButton extends ConsumerWidget {
       icon = MMIcons.generateMap;
       selected = false;
       onPressed = () {
-        showGenerateMapSheet(
-          context,
-          ref,
-          studySetId,
-          preselectedDocId: workspace.activeDocumentId,
-        );
+        showGenerateMapSheet(context, ref, studySetId, preselectedDocId: workspace.activeDocumentId);
       };
     }
 
-    final hasUpdates = hasGeneration &&
+    final hasUpdates =
+        hasGeneration &&
         mapSourcesChanged(map.generation!, [
           for (final s in map.generation!.sources)
             MapSource(
@@ -95,8 +83,8 @@ class GenerateMapButton extends ConsumerWidget {
         ]);
 
     Widget button = MMToolbarButton(
-      key: const ValueKey('map-generate-header-button'),
-      label: label,
+      key: ValueKey(compact ? 'map-generate-header-button-compact' : 'map-generate-header-button'),
+      label: compact ? null : label,
       tooltip: isGenerating || isReviewing ? l.mapGenerateBlocked : label,
       icon: icon,
       iconWidget: iconWidget,
@@ -121,10 +109,7 @@ class GenerateMapButton extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: c.research,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: c.windowBackground,
-                    width: MMSizes.mapUpdateBadgeRing,
-                  ),
+                  border: Border.all(color: c.windowBackground, width: MMSizes.mapUpdateBadgeRing),
                 ),
               ),
             ),
