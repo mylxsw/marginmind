@@ -2849,6 +2849,7 @@
   "phoneReaderExitTools": "Finish annotating",
   "phoneReaderPercent": "{percent}%",
   "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "mapCacheClearFailed": "Could not clear cache",
   "translationRetranslate": "Retranslate",
   "translationEdit": "Edit Translation",
   "translationRetranslated": "Retranslated",
@@ -2857,5 +2858,8 @@
   "@translationParagraphFailed": {"placeholders": {"reason": {"type": "String"}}},
   "translationEditSaved": "Changes Saved",
   "translationCopied": "Translation Copied",
-  "translationRemoved": "Translations Removed"
+  "translationRemoved": "Translations Removed",
+  "phoneMoreOutlineAndBookmarks": "Outline & Bookmarks",
+  "phoneMoreClose": "Close",
+  "phoneMoreBack": "Back"
 }

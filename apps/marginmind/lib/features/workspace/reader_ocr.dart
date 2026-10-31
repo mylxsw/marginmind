@@ -5,6 +5,10 @@ import 'package:mm_platform/mm_platform.dart';
 
 final pdfOcrServiceProvider = Provider<PdfOcrService>((ref) => VisionPdfOcr());
 
+final readerOcrInspectionProvider = FutureProvider.family<void, String>(
+  (ref, source) => ref.read(readerOcrProvider(source).notifier).inspect(),
+);
+
 class ReaderOcrState {
   const ReaderOcrState({
     this.document,

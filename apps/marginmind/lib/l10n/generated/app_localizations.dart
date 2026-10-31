@@ -9554,6 +9554,12 @@ abstract class AppLocalizations {
   /// **'{percent}%'**
   String phoneReaderPercent(int percent);
 
+  /// No description provided for @mapCacheClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear cache'**
+  String get mapCacheClearFailed;
+
   /// No description provided for @translationRetranslate.
   ///
   /// In en, this message translates to:
@@ -9601,6 +9607,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Translations Removed'**
   String get translationRemoved;
+
+  /// No description provided for @phoneMoreOutlineAndBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Outline & Bookmarks'**
+  String get phoneMoreOutlineAndBookmarks;
+
+  /// No description provided for @phoneMoreClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get phoneMoreClose;
+
+  /// No description provided for @phoneMoreBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get phoneMoreBack;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

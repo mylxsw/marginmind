@@ -9,8 +9,8 @@ import '../../app/app_commands.dart';
 import '../../app/navigation.dart';
 import 'workspace_chrome_controller.dart';
 import 'phone_reader_controls_controller.dart';
+import 'widgets/phone_more_sheet.dart';
 import 'widgets/phone_reader_controls.dart';
-import 'widgets/reader_toolbar.dart';
 import 'reader_crop.dart';
 import '../../app/providers.dart';
 import '../../shared/card_image.dart';
@@ -700,43 +700,21 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
                                     ),
                                   SizedBox.square(
                                     dimension: MMSizes.phoneTopControl,
-                                    child: MMDropdownButton<VoidCallback>(
+                                    child: MMToolbarButton(
                                       key: const ValueKey('phone-workspace-more'),
                                       tooltip: l.moreTools,
-                                      icon: const Icon(MMIcons.more),
-                                      onOpened: () => _chrome.hold('phone-menu'),
-                                      onClosed: () => _chrome.release('phone-menu'),
-                                      onSelected: (action) => action(),
-                                      itemBuilder: (_) => phoneReaderMenuEntries(
-                                        context,
-                                        ref,
-                                        widget.studySetId,
-                                        _paneChrome,
-                                        _phoneControls,
-                                        workspaceEntries: [
-                                          MMDropdownItem(
-                                            key: const ValueKey('workspace-command-organize-note'),
-                                            value: () => showNoteSetupSheet(context, ref, widget.studySetId),
-                                            child: Text(l.organizeNotes),
-                                          ),
-                                          MMDropdownItem(
-                                            enabled: ref.read(studySetProvider(widget.studySetId)) != null,
-                                            value: () =>
-                                                ref.read(navigationProvider.notifier).startReview(widget.studySetId),
-                                            child: Text(l.review),
-                                          ),
-                                          MMDropdownItem(
-                                            value: () => ref
-                                                .read(navigationProvider.notifier)
-                                                .showVocabulary(studySetId: widget.studySetId),
-                                            child: Text(l.vocabularyTitle),
-                                          ),
-                                          MMDropdownItem(
-                                            value: () => ref.read(navigationProvider.notifier).showLibrary(),
-                                            child: Text(l.librarySection),
-                                          ),
-                                        ],
-                                      ),
+                                      icon: MMIcons.more,
+                                      onPressed: () {
+                                        _phoneControls.collapseTools();
+                                        _phoneControls.closeScrub();
+                                        showPhoneMoreSheet(
+                                          context,
+                                          studySetId: widget.studySetId,
+                                          paneChrome: _paneChrome,
+                                          onOpened: () => _chrome.hold('phone-more-sheet'),
+                                          onClosed: () => _chrome.release('phone-more-sheet'),
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],

@@ -252,6 +252,8 @@ abstract final class MMSizes {
   static const double mapGenerateLabelWidth = 96;
   static const double mapGenerateDocumentRow = 40;
   static const double mapGenerateChapterRow = 30;
+  static const double mapGenerateRangeInset = 38;
+  static const double mapGeneratePageFieldWidth = 64;
   static const double mapEmptyStateWidth = 440;
   static const double mapEmptyGlyph = 56;
   static const double mapDocumentBanner = 44;

@@ -107,7 +107,8 @@ class MapEditProposal {
     required this.mapId,
     required this.baseRevision,
     required List<MapEditOperation> operations,
-  }) : generation = null,
+  }) : excerptAnnotations = const [],
+       generation = null,
        createMap = null,
        isExpansion = false,
        operations = List.unmodifiable(operations);
@@ -119,7 +120,8 @@ class MapEditProposal {
     required this.mapId,
     required this.baseRevision,
     required List<MapEditOperation> operations,
-  }) : generation = null,
+  }) : excerptAnnotations = const [],
+       generation = null,
        createMap = null,
        isExpansion = true,
        operations = List.unmodifiable(operations);
@@ -133,8 +135,11 @@ class MapEditProposal {
     required List<MapEditOperation> operations,
     required MapGeneration this.generation,
     this.createMap,
-  }) : isExpansion = false,
+    List<Annotation> excerptAnnotations = const [],
+  }) : excerptAnnotations = List.unmodifiable(excerptAnnotations),
+       isExpansion = false,
        operations = List.unmodifiable(operations);
+  final List<Annotation> excerptAnnotations;
   final MapGeneration? generation;
   final MindMap? createMap;
   bool get isDocumentGeneration => generation != null;

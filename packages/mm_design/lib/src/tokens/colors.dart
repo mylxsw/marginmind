@@ -47,6 +47,7 @@ class MMColors extends ThemeExtension<MMColors> {
     required this.rootNode,
     required this.onRootNode,
     required this.scrim,
+    required this.lightScrim,
     required this.glassShadow,
     required this.cardShadow,
     required this.sidebarShadow,
@@ -149,6 +150,7 @@ class MMColors extends ThemeExtension<MMColors> {
   final Color rootNode;
   final Color onRootNode;
   final Color scrim;
+  final Color lightScrim;
 
   final List<BoxShadow> glassShadow;
   final List<BoxShadow> cardShadow;
@@ -199,6 +201,7 @@ class MMColors extends ThemeExtension<MMColors> {
     rootNode: Color(0xFF1D1D1F),
     onRootNode: Color(0xFFFFFFFF),
     scrim: Color(0x1F000000),
+    lightScrim: Color(0x14000000),
     glassShadow: [], // Floating chrome uses a hairline instead of blurred shadows.
     cardShadow: [
       BoxShadow(color: Color(0x0F000000), blurRadius: 2, offset: Offset(0, 1)),
@@ -248,6 +251,7 @@ class MMColors extends ThemeExtension<MMColors> {
     rootNode: Color(0xFFF5F5F7),
     onRootNode: Color(0xFF1D1D1F),
     scrim: Color(0x40000000),
+    lightScrim: Color(0x29000000),
     glassShadow: [], // Floating chrome uses a hairline instead of blurred shadows.
     cardShadow: [BoxShadow(color: Color(0x59000000), blurRadius: 10, offset: Offset(0, 2))],
     sidebarShadow: [BoxShadow(color: Color(0x40000000), blurRadius: 24, offset: Offset(0, 6))],
@@ -305,6 +309,7 @@ class MMColors extends ThemeExtension<MMColors> {
       rootNode: rootNode,
       onRootNode: onRootNode,
       scrim: scrim,
+      lightScrim: lightScrim,
       glassShadow: (flat ?? this.flat) ? const [] : glassShadow,
       cardShadow: (flat ?? this.flat) ? const [] : cardShadow,
       sidebarShadow: (flat ?? this.flat) ? const [] : sidebarShadow,
@@ -358,6 +363,7 @@ class MMColors extends ThemeExtension<MMColors> {
       rootNode: c(rootNode, other.rootNode),
       onRootNode: c(onRootNode, other.onRootNode),
       scrim: c(scrim, other.scrim),
+      lightScrim: c(lightScrim, other.lightScrim),
       glassShadow: s(glassShadow, other.glassShadow),
       cardShadow: s(cardShadow, other.cardShadow),
       sidebarShadow: s(sidebarShadow, other.sidebarShadow),

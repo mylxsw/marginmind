@@ -97,6 +97,39 @@ abstract final class MMPdfEngine {
   /// cannot be read.
   static Future<String?> pageText(String path, int page) async => (await pageContent(path, page))?.text;
 
+  static Future<DocumentOutline> outline(String path, String documentId) async {
+    final doc = await openDocument(path);
+    try {
+      List<PdfOutlineEntry> convert(List<PdfOutlineNode> nodes, String prefix) => [
+        for (final (i, n) in nodes.indexed)
+          PdfOutlineEntry(
+            id: 'pdf-$prefix$i',
+            title: n.title.trim(),
+            page: n.dest?.pageNumber ?? 0,
+            children: convert(n.children, '$prefix$i/'),
+          ),
+      ];
+      return DocumentOutline(documentId: documentId, items: convert(await doc.loadOutline(), ''));
+    } finally {
+      await doc.dispose();
+    }
+  }
+
+  /// Character geometry from the supplied original or recognized PDF.
+  static Future<TranslationPage?> quotePage(String path, int page) async {
+    final doc = await openDocument(path);
+    try {
+      if (page < 1 || page > doc.pages.length) return null;
+      final text = await doc.pages[page - 1].loadText();
+      if (text == null) return null;
+      return TranslationPage(page, text.fullText, [
+        for (final r in text.charRects) PageRect(r.left, r.top, r.right, r.bottom),
+      ]);
+    } finally {
+      await doc.dispose();
+    }
+  }
+
   /// Like [pageText], with the page height in points.
   static Future<({String text, double height})?> pageContent(String path, int page) async {
     PdfDocument? doc;

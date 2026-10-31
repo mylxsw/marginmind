@@ -5221,6 +5221,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get mapCacheClearFailed => '清除缓存失败';
+
+  @override
   String get translationRetranslate => '重新翻译';
 
   @override
@@ -5245,4 +5248,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get translationRemoved => '已移除译文';
+
+  @override
+  String get phoneMoreOutlineAndBookmarks => '目录与书签';
+
+  @override
+  String get phoneMoreClose => '关闭';
+
+  @override
+  String get phoneMoreBack => '返回';
 }

@@ -146,6 +146,19 @@ class AssistantWrites {
           }
           aiChanged.add(created);
         case MapEditKind.addExcerpt:
+          final staged = proposal.excerptAnnotations.where((a) => a.id == op.annotationId).firstOrNull;
+          if (staged != null && next.annotation(staged.id) == null) {
+            final doc = next.document(staged.documentId);
+            if (doc == null ||
+                staged.kind != AnnotationKind.underline ||
+                staged.lineStyle != AnnotationLineStyle.dashed ||
+                staged.quote.trim().isEmpty ||
+                (!staged.isText && staged.pages.any((p) => p.page < 1 || p.page > doc.pageCount || p.rects.isEmpty)) ||
+                !proposal.generation!.sources.any((s) => s.documentId == staged.documentId)) {
+              throw ArgumentError('Invalid staged excerpt');
+            }
+            next = next.copyWith(annotations: [...next.annotations, staged]);
+          }
           final annotation = next.annotation(op.annotationId!);
           if (annotation == null || !proposal.generation!.sources.any((s) => s.documentId == annotation.documentId)) {
             skipped[op.id] = 'Annotation no longer exists or is outside sources';

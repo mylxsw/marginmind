@@ -1,4 +1,5 @@
 import '../../map_generation/widgets/document_map_banner.dart';
+import '../../map_generation/widgets/map_ocr_banner.dart';
 
 import 'dart:async';
 
@@ -1416,7 +1417,7 @@ class _MapPaneState extends ConsumerState<MapPane> {
                     child: ExpansionBar(studySetId: widget.studySetId, onKeep: _keepExpansion),
                   ),
                 ),
-              if (mapGen != null && !diffReview)
+              if (mapGen != null && !diffReview && mapGen.needsTextDocumentId == null)
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,
@@ -1472,10 +1473,11 @@ class _MapPaneState extends ConsumerState<MapPane> {
                   child: MapEmptyState(studySetId: widget.studySetId, mapId: state.activeMapId),
                 ),
               Positioned(
+                key: const ValueKey('map-document-notice'),
                 top: _headerGeometry.toolbarTopInset + MMSpacing.s,
                 left: MMSpacing.m,
                 right: MMSpacing.m,
-                child: DocumentMapBanner(studySetId: widget.studySetId),
+                child: MapOcrBanner(studySetId: widget.studySetId, fallback: DocumentMapBanner(studySetId: widget.studySetId)),
               ),
               if (_styleOpen && (merged || !outline) && map != null)
                 Positioned(

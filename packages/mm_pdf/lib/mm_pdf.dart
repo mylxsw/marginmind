@@ -19,3 +19,5 @@ export 'src/annotation_hit.dart';
 export 'src/stylus_region.dart';
 
 export 'src/phone_scroll_physics.dart';
+
+export 'src/excerpt_text.dart' show excerptLineRects;

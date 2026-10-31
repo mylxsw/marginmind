@@ -482,4 +482,43 @@ void main() {
     expect(find.byKey(const ValueKey('reflow-surface')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('phone double-tap toggles between fit-width and 1.5x zoom on zoom-capable books', (tester) async {
+    final repo = InMemoryStudySetContentRepository();
+    final parsed = const EpubParser().parseHtml('page1', '<h1>Fixed</h1><p>Image</p>');
+    final chapter = BookChapter('page1', parsed.blocks, viewportWidth: 600, viewportHeight: 800);
+    final doc = await storeBook(
+      repo,
+      format: DocumentFormat.epub,
+      book: Book('Fixed', [chapter], {}, [], fixedLayout: true),
+    );
+    final container = await pumpApp(
+      tester,
+      size: const Size(393, 852),
+      content: repo,
+      overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+    );
+    container.read(navigationProvider.notifier).openStudySet('demo-1');
+    await tester.pumpAndSettle();
+    container.read(workspaceProvider('demo-1').notifier).openDocument(doc.id);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReflowReader), findsOneWidget);
+    final session = container.read(reflowSessionProvider(('demo-1', doc.id)));
+
+    // Double-tap zooms in to 1.5 * widthZoom
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pumpAndSettle();
+    expect(session.zoom, closeTo(1.5 * session.widthZoom, 0.05));
+
+    // Second double-tap zooms back out to fitWidth
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pumpAndSettle();
+    expect(session.zoom, closeTo(session.widthZoom, 0.05));
+    expect(tester.takeException(), isNull);
+  });
 }

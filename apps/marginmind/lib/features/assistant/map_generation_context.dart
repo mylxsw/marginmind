@@ -44,6 +44,7 @@ class DocumentDigestBuilder {
     String documentAlias = 'D1',
     List<String> chapters = const [],
     bool includeAnnotations = true,
+    bool extractQuotes = false,
     MapOrganization organization = MapOrganization.chapter,
     String? instructions,
     int inputCharacters = 24000,
@@ -99,12 +100,28 @@ class DocumentDigestBuilder {
         final unit = units.where((u) => u.chapter == chapterId).firstOrNull;
         return unit == null ? null : unit.start + offset.clamp(0, unit.text.length);
       }
-      return units.where((u) => u.page == e.page).firstOrNull?.start;
+      final direct = units.where((u) => u.page == e.page).firstOrNull?.start;
+      if (direct != null) return direct;
+      // PDF outline containers may have no destination of their own.
+      for (final child in e.children) {
+        final start = offset(child);
+        if (start != null) return start;
+      }
+      return null;
     }
 
-    final entries = OutlineTree.flatten(outline?.items ?? []).where((e) => offset(e) != null).toList()
-      ..sort((a, b) => offset(a)!.compareTo(offset(b)!));
-    if (chapters.any((id) => !entries.any((e) => e.id == id))) {
+    final flattened = OutlineTree.flatten(outline?.items ?? []).toList();
+    final ranks = {for (final (i, entry) in flattened.indexed) entry.id: i};
+    final entries = flattened.where((e) => offset(e) != null).toList()
+      ..sort((a, b) {
+        final order = offset(a)!.compareTo(offset(b)!);
+        return order == 0 ? ranks[a.id]!.compareTo(ranks[b.id]!) : order;
+      });
+    final pageSelection = chapters.isNotEmpty && chapters.every((id) => RegExp(r'^page-[1-9][0-9]*$').hasMatch(id));
+    if (pageSelection && chapters.any((id) => int.parse(id.substring(5)) > units.length)) {
+      throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'invalidPageRange');
+    }
+    if (!pageSelection && chapters.any((id) => !entries.any((e) => e.id == id))) {
       throw const ResearchFailure(ResearchFailureKind.invalidRequest, 'unknownChapter');
     }
     final selected = <String>{};
@@ -112,8 +129,9 @@ class DocumentDigestBuilder {
       selected.addAll(OutlineTree.flatten([e]).map((e) => e.id));
     }
     final ranges = <({String id, int start, int end})>[];
-    if (entries.isEmpty) {
+    if (entries.isEmpty || pageSelection) {
       for (final u in units) {
+        if (pageSelection && !chapters.contains(u.chapter)) continue;
         ranges.add((id: u.chapter, start: u.start, end: u.start + u.text.length));
       }
     } else {
@@ -252,6 +270,7 @@ class DocumentDigestBuilder {
           // Reflow units are canonical spine sections, not physical pages.
           pages: {documentAlias: reflow ? <int>{} : pages.keys.toSet()},
           annotations: aliases,
+          quoteTextByPage: extractQuotes ? {documentAlias: pages} : const {},
         );
         final input = MapChapterInput(
           chapterId: chapterId,
@@ -260,6 +279,7 @@ class DocumentDigestBuilder {
           textByPage: pages,
           annotations: texts,
           organization: organization,
+          extractQuotes: extractQuotes,
           instructions: instructions,
         );
         if (mapChapterSystemPrompt.length + jsonEncode(mapChapterPayload(input)).length > inputCharacters) {
@@ -269,6 +289,7 @@ class DocumentDigestBuilder {
           MapDigestChapter(
             input: input,
             fingerprint: mapContentHash({
+              'extractQuotes': extractQuotes,
               'pages': {for (final e in pages.entries) '${e.key}': e.value},
               'annotations': texts,
               'anchors': {for (final id in aliases.values) id: annotationData[id]},
@@ -288,6 +309,10 @@ class DocumentDigestBuilder {
       }
     }
     cancel.check();
+    if (result.isEmpty) {
+      if (document.format == DocumentFormat.pdf) throw MapDigestNeedsText(documentId);
+      throw const ResearchFailure(ResearchFailureKind.protocol, 'noDocumentText');
+    }
     return DocumentDigest(source: source, chapters: result);
   }
 }

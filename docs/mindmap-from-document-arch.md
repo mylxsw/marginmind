@@ -22,7 +22,7 @@ GUL-622；依据已确认的 `mindmap-from-document.md`。本文固定后续模�
 
 `MindMap.generation: MapGeneration?`、`Card.source: CardSource?` 缺失时为 null，null 不输出 JSON；copyWith 保留原值，显式传 null 清除。旧文件无需迁移。出处页码从 1 开始。
 
-MapGeneration 字段：sources（非空、documentId 唯一）、organization（chapter/topic/question）、depth（2..4）、instructions（≤500 Unicode 字符，可空）、generatedAt（UTC ISO-8601）、generated（cardId → 版本化哈希）。MapSource 包含 documentId、chapters（目录条目 ID；空为全文）、fingerprint、readThrough（≥1）。CardSource 仅有 documentId 和 page。
+MapGeneration 字段：sources（非空、documentId 唯一）、organization（chapter/topic/question）、depth（2..4）、instructions（≤500 Unicode 字符，可空）、generatedAt（UTC ISO-8601）、generated（cardId → 版本化哈希）。MapSource 包含 documentId、chapters（目录条目 ID；无目录时为 `page-N` 页码集合；空为全文）、fingerprint、readThrough（≥1）。CardSource 仅有 documentId 和 page。
 
 **generated 不仅哈希标题。** `generatedNodeHash(card, node)` 为 `v1:` + SHA-256(canonical JSON `[title, parentId, order]`)；parentId=null 表示根，order 是现有双精度同级顺序。必须同时保存位置才能检测换父和同级拖动；折叠、宽度不算用户结构修改。`isMapNodeProtected(content, mapId, cardId)` 在卡片/放置缺失、非 topic、没有基线或哈希不同时返回 true。手动新增天然没有基线。未知版本的旧基线保守视为不匹配。判断以当前快照对比生成基线；撤销恢复原快照后恢复原保护状态，不维护独立编辑历史。
 
@@ -117,7 +117,7 @@ final mapGenerationControllerProvider =
 
 family key=studySetId。应用负责创建 provider；模型任务只实现 ModelMapGenerator，不新增 Riverpod 依赖。mapGeneratorProvider 返回工厂：读取既有模型设置/密钥，每次生成会话创建独立连接；测试 override 为返回 FakeMapGenerator。不要用同名 provider 同时提供实例与工厂。MapDigestCache 在 `map_generation_cache.dart` 由 `mapDigestCacheProvider = Provider.family<MapDigestCache,String>` 提供；关闭学习集释放控制器与请求，保留磁盘成功缓存。
 
-应用定义 `MapGenerationRequest`（位于 controller 文件）：studySetId、mapId、title（均 String）；sources 为 `List<MapDocumentSelection>`（documentId、chapters: List<String>，空表示全文）；organization: MapOrganization；depth: int；instructions: String?；includeAnnotations: bool=true；extractQuotes: bool=false；destination: newMap/branch/update；parentId: String?（branch 必填，本图内真实卡片 ID）；onlyNewContent: bool=true。新图的 mapId 由宿主提前分配。控制器在启动时读取 snapshot，构建带指纹的 MapGeneration，不能让 UI 自行构造哈希。extractQuotes 的后续能力未实现时禁用该设置，不能静默忽略。
+应用定义 `MapGenerationRequest`（位于 controller 文件）：studySetId、mapId、title（均 String）；sources 为 `List<MapDocumentSelection>`（documentId、chapters: List<String>，空表示全文）；organization: MapOrganization；depth: int；instructions: String?；includeAnnotations: bool=true；extractQuotes: bool=false；destination: newMap/branch/update；parentId: String?（branch 必填，本图内真实卡片 ID）；onlyNewContent: bool=true。新图的 mapId 由宿主提前分配。控制器在启动时读取 snapshot，构建带指纹的 MapGeneration，不能让 UI 自行构造哈希。extractQuotes 开启时，章节 point 可附 quote；本地逐字匹配本次输入的页面文字，不匹配只丢弃 quote。PDF 再用文字层字符坐标定位；重排文档用 canonical chapter 的 TextAnchor 定位。quoteSource 只记录本地定位单元，不作为重排文档的 PDF 页码出处。
 
 MapGenerationPreview 字段约定：request（宿主设置/目标）、phase、generation（来源冻结快照）、lines、chapterProgress（chapterId→pending/reading/done/failed）、chapterFailures、baseRevision、proposalId、round、isApplying、failure。phase 枚举 reading/streaming/review/kept/discarded/failed/stopped/update/diff/applied；null 表示没有会话。选择用 MapLine.kept，remove 初始 false；edited 草稿约束由控制器另存 title overrides，换批时携带。
 
@@ -143,7 +143,7 @@ MapGenerationPreview 字段约定：request（宿主设置/目标）、phase、g
 
 ## 6. 学习集缓存
 
-目录固定为 `<study-set-package>/ai-cache/map-digests/v1/<cacheKey>.json`，不得保存到全局目录。MapDigestCache 接口：`read(key) → Future<List<String>?>`、`write(key, rawPointLines) → Future<void>`、`clear() → Future<void>`。返回规范化 point NDJSON 字符串列表；写入只接受完成并校验成功的章节，原子临时文件替换；缓存损坏/版本不符视为 miss。读回以新 context 重新解析并映射标注，不复用旧 draft ID。
+目录固定为 `<study-set-package>/ai-cache/map-digests/v1/<cacheKey>.json`，不得保存到全局目录。MapDigestCache 接口：`read(key) → Future<List<String>?>`、`write(key, rawPointLines) → Future<void>`、`clear() → Future<void>`、`sizeBytes() → Future<int>`。返回规范化 point NDJSON 字符串列表；写入只接受完成并校验成功的章节，原子临时文件替换；缓存损坏/版本不符视为 miss。读回以新 context 重新解析并映射标注，不复用旧 draft ID。
 
 `mapDigestCacheKey(source, chapterId, chapterFingerprint, model, organization, instructions, schemaVersion=1)` 返回 64 字符 SHA-256：source 只取 documentId；chapterFingerprint 是本章实际输入的页码/文字/标注/批注（含影响读取范围的进度）canonical hash；model 必须包含服务配置 ID、模型名及可获得的模型版本，不含密钥。另含章节/分段标识、组织方式、要求和提示/缓存 schema 版本。章节输入不同即 miss；其他章节变化不使本章失效。depth 不影响第一段，改详细程度仅重做第二段。预算切段范围/文本裁剪变化也必须改变 chapterFingerprint。
 
@@ -153,4 +153,4 @@ MapGenerationPreview 字段约定：request（宿主设置/目标）、phase、g
 
 核心测试覆盖 JSON/旧文件、不可变集合、规范哈希、更新判定、三类 NDJSON 与异常行、越界页码/多文档、保护/依赖/权限、80 个节点一次提交、同卡跨图、删除不误伤、元数据撤销/重做、单章失败重试、取消和关闭。回归包含 mm_core 全套、mm_assistant proposals/expansion、应用 expansion/multiple_maps、mm_data assistant_transaction。
 
-本任务不实现模型提示词/传输、章节切分/OCR 自动继续、磁盘缓存、Riverpod 控制器和 UI。可选“摘录原文关键句”需要后续任务先校验逐字匹配并产生独立可审阅的标注创建事务；本版本 addExcerpt **仅引用已经存在的标注**，模型不能通过该操作创建任意原文或标注。
+本任务不实现模型提示词/传输、章节切分/OCR 自动继续、磁盘缓存、Riverpod 控制器和 UI。GUL-628 扩展：章节 point 的可选 quote 必须在宿主传入的 quoteTextByPage 中逐字存在。宿主重新定位后，将虚线下划线标注暂存在内存，通过 A… 别名供第二阶段引用；审阅中的摘录与主题使用同一选择链路。MapEditProposal.document 的 excerptAnnotations 是不可从 JSON 恢复的宿主能力；仅在被选中的 addExcerpt 执行时创建对应标注，与脑图和 generation 同事务提交、一起撤销。放弃或取消不写标注。模型仍不能直接创建任意原文或标注。扫描版使用 ReaderOcr/PdfOcrService；控制器监听成功完成后重新读取识别副本并继续，失败/取消不自动重试。设置汇总各学习集缓存的实际字节数，清理只删除 map-digests 子树。
