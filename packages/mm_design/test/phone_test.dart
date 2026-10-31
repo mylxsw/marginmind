@@ -72,12 +72,20 @@ void main() {
         final taps = <int>[];
         await _phone(tester, bar(taps.add));
         final rect = tester.getRect(find.byType(MMTabBar));
-        final height = platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar;
+        final height = MMSizes.phoneTabBarHeight;
         expect(rect.height, height + 30);
         expect(MMTabBar.heightOf(tester.element(find.byType(MMTabBar))), height + 30);
         // A capsule floating above the home indicator, inset from the sides.
         final capsule = tester.getRect(find.byKey(const ValueKey('mm-tab-bar-glass')));
-        expect(capsule, Rect.fromLTRB(MMSizes.tabBarMargin, 800 - 30 - height, 400 - MMSizes.tabBarMargin, 800 - 30));
+        expect(
+          capsule,
+          Rect.fromLTRB(
+            MMSizes.phoneTabBarHorizontalInset,
+            800 - 30 - height,
+            400 - MMSizes.phoneTabBarHorizontalInset,
+            800 - 30,
+          ),
+        );
         expect(tester.getSize(find.byKey(const ValueKey('mm-tab-0'))).width, closeTo((capsule.width - 8) / 3, 0.01));
         // Android's hit areas stay at least 48 dp.
         expect(tester.getSize(find.byKey(const ValueKey('mm-tab-0'))).height, greaterThanOrEqualTo(48));

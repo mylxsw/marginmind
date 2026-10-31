@@ -1223,6 +1223,9 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                         pageSpacing: MMInput.of(context).phone ? 0 : 16,
                         filePath: ocr?.document?.path ?? controller.filePath(doc),
                         controller: pdf,
+                        scrollProfile: MMInput.of(context).phone && MMSizeClass.of(context) == MMSizeClass.compact
+                            ? MMPdfScrollProfile.phone
+                            : null,
                         useTouchSelectionHandles: context.mmTouchPlatform,
                         selectionHandleTapGroup: context.mmTouchPlatform ? annotationTapGroup(widget.studySetId) : null,
                         paragraphs: translation?.paragraphs ?? const [],

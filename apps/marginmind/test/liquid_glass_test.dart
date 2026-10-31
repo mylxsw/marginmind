@@ -45,10 +45,14 @@ void main() {
     testWidgets('${phone.name}: the tab bar floats as a glass capsule clear of the safe area', (tester) async {
       await pumpPhone(tester, phone);
       final capsule = _capsule(tester);
-      expect(capsule.left, MMSizes.tabBarMargin + phone.safe.left);
-      expect(capsule.right, phone.size.width - MMSizes.tabBarMargin - phone.safe.right);
-      expect(capsule.bottom, phone.size.height - phone.safe.bottom, reason: 'clear of the home indicator');
-      expect(capsule.height, phone.platform == TargetPlatform.android ? MMSizes.tabBarAndroid : MMSizes.tabBar);
+      expect(capsule.left, MMSizes.phoneTabBarHorizontalInset + phone.safe.left);
+      expect(capsule.right, phone.size.width - MMSizes.phoneTabBarHorizontalInset - phone.safe.right);
+      expect(
+        capsule.bottom,
+        phone.size.height - (phone.safe.bottom < 26 ? 26 : phone.safe.bottom),
+        reason: 'clear of the home indicator',
+      );
+      expect(capsule.height, MMSizes.phoneTabBarHeight);
       // Every tab keeps a finger-sized hit area.
       for (final t in PhoneTab.values) {
         final size = tester.getSize(tab(t));
@@ -136,7 +140,7 @@ void main() {
           .map((d) => d.decoration)
           .whereType<BoxDecoration>()
           .map((d) => d.color);
-      expect(fills, contains(c.glassOpaque));
+      expect(fills, contains(MMPhoneGlass.opaque(c.brightness == Brightness.dark)));
     }, variant: variant);
   }
 
