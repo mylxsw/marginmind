@@ -13,6 +13,8 @@ import 'package:mm_reflow/mm_reflow.dart';
 
 import '../../../app/app_commands.dart';
 import '../workspace_chrome_controller.dart';
+import '../phone_reader_controls_controller.dart';
+import 'phone_reader_controls.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../settings/app_settings.dart';
@@ -534,7 +536,12 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
       _dismiss();
       return;
     }
-    if (page == null) WorkspaceChromeScope.maybeOf(context)?.reveal();
+    if (usePhoneReaderControls(context)) {
+      PhoneReaderControlsScope.maybeOf(context)?.onBodyTap();
+      WorkspaceChromeScope.maybeOf(context)?.reveal();
+    } else if (page == null) {
+      WorkspaceChromeScope.maybeOf(context)?.reveal();
+    }
     if (page != null) {
       if (point.dx < layout.spec.width * MMReaderLayout.turnZone) {
         await _turn(-1, true);
@@ -807,14 +814,18 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
                               ),
                             if (s.book != null)
                               Positioned(
-                                bottom: MMSpacing.l + MMChromeInsets.of(context).bottom,
+                                bottom: usePhoneReaderControls(context)
+                                    ? 0
+                                    : MMSpacing.l + MMChromeInsets.of(context).bottom,
                                 left: 0,
                                 right: 0,
                                 child: Center(
                                   child: MouseRegion(
                                     onEnter: (_) => setState(() => _hoverNavigation = true),
                                     onExit: (_) => setState(() => _hoverNavigation = false),
-                                    child: WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
+                                    child: usePhoneReaderControls(context)
+                                        ? _navigation(s, paged)
+                                        : WorkspaceChromeBar(bottom: true, child: _navigation(s, paged)),
                                   ),
                                 ),
                               ),
@@ -1209,6 +1220,19 @@ class _ReflowReaderState extends ConsumerState<ReflowReader> {
         ? (book.chapters.length > 1 ? (sourcePage - 1) / (book.chapters.length - 1) : 0.0)
         : book.progress(position);
     void jumpPage(int page) => _jump(book.position(book.chapters[(page - 1).clamp(0, book.chapters.length - 1)].id, 0));
+    if (usePhoneReaderControls(context)) {
+      return PhoneReaderControls(
+        studySetId: widget.studySetId,
+        page: fixed ? sourcePage : s.page + 1,
+        pageCount: fixed ? book.chapters.length : (s.layout?.pages.length ?? 1),
+        chapter: book.title(position, fallback: widget.document.title),
+        progress: progress,
+        onProgress: (value) {
+          fixed ? jumpPage((value * (book.chapters.length - 1)).round() + 1) : _jump(book.atProgress(value));
+        },
+        onJump: jumpPage,
+      );
+    }
     final visible = _hoverNavigation || MMInput.touchInputOf(context);
     Widget fade(Widget child) => IgnorePointer(
       ignoring: !visible,

@@ -8,6 +8,7 @@ import 'package:marginmind/app/phone_tabs.dart';
 import 'package:marginmind/features/library/widgets/study_set_card.dart';
 import 'package:marginmind/features/workspace/widgets/map_pane.dart';
 import 'package:marginmind/features/workspace/widgets/reader_pane.dart';
+import 'package:marginmind/features/workspace/widgets/phone_reader_controls.dart';
 import 'package:marginmind/features/workspace/workspace_controller.dart';
 import 'package:marginmind/settings/system_appearance.dart';
 import 'package:mm_design/mm_design.dart';
@@ -90,16 +91,16 @@ void main() {
       expect(tester.takeException(), isNull);
     }, variant: variant);
 
-    testWidgets('${phone.name}: workspace panes extend behind a flat thumb dock', (tester) async {
+    testWidgets('${phone.name}: workspace panes extend beneath phone reader glass', (tester) async {
       final container = await openStudySet(tester, phone);
-      final dock = tester.getRect(find.byType(MMThumbDockScope));
-      expect(dock.height, MMSizes.thumbDock);
-      expect(dock.bottom, phone.size.height - phone.safe.bottom - 30);
+      expect(find.byType(MMThumbDockScope), findsNothing);
+      expect(find.byType(PhoneReaderTopControls), findsOneWidget);
+      expect(find.byKey(const ValueKey('phone-reader-page')).hitTestable(), findsOneWidget);
       expect(find.byType(PhoneTabBar), findsNothing);
       expect(tester.getRect(find.byType(ReaderPane)).bottom, phone.size.height - phone.safe.bottom);
       expect(tester.getRect(find.byKey(const ValueKey('pdf-placeholder-c1'))).top, phone.safe.top);
-      expect(tester.getRect(find.byKey(const ValueKey('reader-page-navigation'))).bottom, lessThanOrEqualTo(dock.top));
-      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byKey(const ValueKey('reader-page-navigation')), findsNothing);
+      expect(find.byType(BackdropFilter), findsWidgets);
       await tester.tap(find.text('Map').first);
       await tester.pumpAndSettle();
       expect(container.read(workspaceProvider('demo-1')).layout, MMSplitMode.secondary);
@@ -112,7 +113,7 @@ void main() {
       expect(tester.takeException(), isNull);
       container.read(workspaceProvider('demo-1').notifier).openPanel(RightPanel.details);
       await tester.pumpAndSettle();
-      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byType(PhoneReaderTopControls), findsOneWidget);
       expect(tester.takeException(), isNull);
     }, variant: variant);
 

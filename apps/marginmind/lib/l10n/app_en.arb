@@ -2442,5 +2442,9 @@
   "phoneGlassThick": "Thick",
   "phoneGlassOpaque": "Opaque",
   "phoneNavigationCloseDrawer": "Close study set",
-  "phoneNavigationNotes": "Study notes"
+  "phoneNavigationNotes": "Study notes",
+  "phoneReaderReading": "Reading",
+  "phoneReaderTools": "Annotation tools",
+  "phoneReaderCollapse": "Collapse",
+  "phoneReaderExitTools": "Finish annotating"
 }
