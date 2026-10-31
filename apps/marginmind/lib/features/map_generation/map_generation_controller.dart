@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
+import 'package:mm_pdf/mm_pdf.dart';
+
+import 'map_quote.dart';
 
 import '../../app/providers.dart';
 import '../assistant/assistant_controller.dart';
@@ -14,6 +17,8 @@ import '../assistant/expansion_controller.dart';
 import '../assistant/map_generation_cache.dart';
 import '../assistant/map_generation_context.dart';
 import '../workspace/workspace_controller.dart';
+import '../workspace/reflow_document.dart';
+import '../workspace/reader_ocr.dart';
 
 enum MapGenerationDestination { newMap, branch, update }
 
@@ -117,8 +122,10 @@ class MapGenerationPreview {
     this.isApplying = false,
     this.failure,
     this.editedTitles = const {},
+    this.needsTextDocumentId,
   });
 
+  final String? needsTextDocumentId;
   final MapGenerationRequest request;
   final int baseRevision;
   final String proposalId;
@@ -173,13 +180,13 @@ class MapGenerationPreview {
         phase: phase == MapGenerationPhase.streaming ? ExpansionPhase.generating : ExpansionPhase.review,
         drafts: [
           ...drafts,
-          if (request.destination == MapGenerationDestination.update && content != null)
+          if (content != null)
             for (final line in lines.where((l) => l.kind == MapLineKind.excerpt))
               ExpansionDraft(
                 id: line.id,
                 parentRef: line.parentId!,
                 kept: line.kept,
-                title: expansionTitle(content.annotation(line.annotationId!)?.quote ?? ''),
+                title: expansionTitle(line.title ?? content.annotation(line.annotationId!)?.quote ?? ''),
                 page: line.source?.page,
               ),
         ],
@@ -225,8 +232,42 @@ class MapGenerationPreview {
     isApplying: isApplying ?? this.isApplying,
     failure: failure ?? this.failure,
     editedTitles: editedTitles ?? this.editedTitles,
+    needsTextDocumentId: needsTextDocumentId,
   );
 }
+
+final mapDocumentOutlineProvider = FutureProvider.family<List<PdfOutlineEntry>, (String, String)>((ref, key) async {
+  final (studySetId, documentId) = key;
+  final content =
+      ref.watch(workspaceContentProvider(studySetId)) ?? ref.read(workspaceProvider(studySetId).notifier).content;
+  final saved = content.outlineOn(documentId);
+  if (saved != null) return OutlineTree.flatten(saved.items).toList();
+  final doc = content.document(documentId);
+  if (doc == null) return [];
+  try {
+    if (doc.contentManifest != null) {
+      final repo = ref.read(contentRepositoryProvider);
+      if (repo is! DocumentRepository) return [];
+      final book = await ReflowDocument.load(repo as DocumentRepository, studySetId, doc);
+      PdfOutlineEntry convert(String id) {
+        final entry = book.outline.firstWhere((e) => e.id == id);
+        return PdfOutlineEntry(
+          id: entry.id,
+          title: entry.title,
+          position: book.position(entry.chapterId, entry.offset),
+          children: [for (final child in entry.children) convert(child.id)],
+        );
+      }
+
+      return OutlineTree.flatten([for (final entry in book.toc) convert(entry.id)]).toList();
+    }
+    if (!ref.read(pdfRenderingEnabledProvider)) return [];
+    final workspace = ref.read(workspaceProvider(studySetId).notifier);
+    return OutlineTree.flatten((await MMPdfEngine.outline(workspace.filePath(doc), doc.id)).items).toList();
+  } catch (_) {
+    return [];
+  }
+});
 
 final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, String>((ref, studySetId) {
   final workspace = ref.read(workspaceProvider(studySetId).notifier);
@@ -235,10 +276,29 @@ final documentDigestBuilderProvider = Provider.family<DocumentDigestBuilder, Str
     content: () => workspace.content,
     contexts: const [],
     filePath: workspace.filePath,
-    pageText: ref.read(assistantPageTextProvider),
+    pageText: (path, page) async {
+      if (ref.read(pdfOcrServiceProvider).supported) await ref.read(readerOcrProvider(path).notifier).inspect();
+      final recognized = ref.read(readerOcrProvider(path)).document?.path ?? path;
+      return ref.read(assistantPageTextProvider)(recognized, page);
+    },
   );
-  return DocumentDigestBuilder(reader, repository: repo is DocumentRepository ? repo as DocumentRepository : null);
+  return DocumentDigestBuilder(
+    reader,
+    repository: repo is DocumentRepository ? repo as DocumentRepository : null,
+    loadOutline: (doc, cancel) async {
+      if (!ref.read(pdfRenderingEnabledProvider)) return null;
+      try {
+        return await cancel.bind(MMPdfEngine.outline(workspace.filePath(doc), doc.id));
+      } on ResearchFailure {
+        rethrow;
+      } catch (_) {
+        return null;
+      }
+    },
+  );
 });
+
+final mapQuotePageProvider = Provider<Future<TranslationPage?> Function(String, int)>((ref) => MMPdfEngine.quotePage);
 
 final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
   (ref) => () async {
@@ -276,11 +336,13 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   MapGenerationController(this.arg);
   final String arg;
 
+  ProviderSubscription<ReaderOcrState>? _ocrSubscription;
   CancellationToken? _cancel;
   MapGenerator? _generator;
   int _generation = 0;
   bool _disposed = false;
   bool _ownsBusy = false;
+  final List<Annotation> _excerptAnnotations = [];
   final List<MapLine> _collectedPoints = [];
   final Map<String, _ChapterTask> _tasks = {};
   Map<String, MapChapterInput> get chapterInputs => {for (final e in _tasks.entries) e.key: e.value.input};
@@ -294,6 +356,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
     ref.onDispose(() {
       _disposed = true;
+      _ocrSubscription?.close();
       workspace.expansionPreviewActive = false;
       if (_ownsBusy) {
         Future.microtask(() {
@@ -314,8 +377,11 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       throw StateError('Assistant is busy');
     }
     state = null;
+    _ocrSubscription?.close();
+    _ocrSubscription = null;
     _cancel?.cancel();
     _generator?.close();
+    _excerptAnnotations.clear();
     _collectedPoints.clear();
     _tasks.clear();
 
@@ -373,6 +439,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           documentAlias: docAlias,
           chapters: sel.chapters,
           includeAnnotations: request.includeAnnotations,
+          extractQuotes: request.extractQuotes,
           organization: request.organization,
           instructions: request.instructions,
           cancellation: cancel,
@@ -416,10 +483,8 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           );
         }
       }
-    } on MapDigestNeedsText {
+    } on MapDigestNeedsText catch (e) {
       if (_disposed || preparationEpoch != _generation) return;
-      _ownsBusy = false;
-      ref.read(expansionBusyProvider.notifier).set(false);
       state = MapGenerationPreview(
         request: request,
         baseRevision: assistantMapRevision(snapshot, request.mapId),
@@ -432,8 +497,21 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
           generatedAt: DateTime.now().toUtc(),
         ),
         phase: MapGenerationPhase.failed,
+        needsTextDocumentId: e.documentId,
         failure: const ResearchFailure(ResearchFailureKind.protocol, '需先识别文字'),
       );
+      final doc = snapshot.document(e.documentId)!;
+      _ocrSubscription = ref.listen(readerOcrProvider(workspace.filePath(doc)), (before, after) {
+        if (before?.running == true &&
+            !after.running &&
+            !after.failed &&
+            !after.cancelled &&
+            after.revision > (before?.revision ?? 0)) {
+          Future.microtask(() {
+            if (!_disposed && preparationEpoch == _generation && state?.needsTextDocumentId == e.documentId) retry();
+          });
+        }
+      });
       return;
     } catch (e) {
       if (_disposed || preparationEpoch != _generation) return;
@@ -606,6 +684,57 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
         if (!annotations.containsValue(id)) annotations['A${annotations.length + 1}'] = id;
       }
     }
+    _excerptAnnotations.clear();
+    if (request.extractQuotes) {
+      final workspace = ref.read(workspaceProvider(arg).notifier);
+      final loaded = <String, TranslationPage?>{};
+      final seen = <String>{};
+      final books = <String, ReflowDocument>{};
+      for (final point in _collectedPoints) {
+        final source = point.quoteSource ?? point.source;
+        if (source == null || point.quote == null) continue;
+        final doc = snapshot.document(source.documentId);
+        if (doc == null) continue;
+        final key = '${source.documentId}:${source.page}';
+        if (!seen.add('$key:${point.quote}')) continue;
+        final id = '${state!.proposalId}-quote-${_excerptAnnotations.length}';
+        final now = DateTime.now().toUtc();
+        if (doc.contentManifest != null) {
+          final repo = ref.read(contentRepositoryProvider);
+          if (repo is! DocumentRepository) continue;
+          books[doc.id] ??= await cancel.bind(ReflowDocument.load(repo as DocumentRepository, request.studySetId, doc));
+          if (_disposed || epoch != _generation) return;
+          final mark = mapTextQuoteAnnotation(books[doc.id]!, point, id, now);
+          if (mark != null) {
+            _excerptAnnotations.add(mark);
+            annotations['A${annotations.length + 1}'] = mark.id;
+          }
+          continue;
+        }
+        if (!loaded.containsKey(key)) {
+          try {
+            loaded[key] = await cancel.bind(
+              ref.read(mapQuotePageProvider)(
+                ref.read(readerOcrProvider(workspace.filePath(doc))).document?.path ?? workspace.filePath(doc),
+                source.page,
+              ),
+            );
+          } on ResearchFailure {
+            rethrow;
+          } catch (_) {
+            loaded[key] = null;
+          }
+        }
+        cancel.check();
+        if (_disposed || epoch != _generation) return;
+        final page = loaded[key];
+        if (page == null) continue;
+        final mark = mapQuoteAnnotation(page, point, id, now);
+        if (mark == null) continue;
+        _excerptAnnotations.add(mark);
+        annotations['A${annotations.length + 1}'] = mark.id;
+      }
+    }
     final buildContext = MapLineContext(
       phase: updating ? MapLinePhase.diff : MapLinePhase.generation,
       nodes: updating ? aliases : const {},
@@ -629,7 +758,21 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
       titleConstraints: state!.editedTitles.values.toList(),
       generation: state!.generation,
       context: buildContext,
-      points: List.unmodifiable(_collectedPoints),
+      points: [
+        for (final p in _collectedPoints)
+          MapLine(
+            id: p.id,
+            kind: p.kind,
+            parentId: p.parentId,
+            title: p.title,
+            source: p.source,
+            marks: [
+              ...p.marks,
+              for (final a in _excerptAnnotations)
+                if (a.documentId == (p.quoteSource ?? p.source)?.documentId && a.quote == p.quote) a.id,
+            ],
+          ),
+      ],
       existingTitles: updating ? titles : state!.editedTitles,
       existingParents: updating ? {for (final n in nodes) reverse[n.cardId]!: reverse[n.parentId] ?? 'ROOT'} : const {},
     );
@@ -638,7 +781,19 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
     await for (final line
         in (updating ? generator.update(buildInput, cancel) : generator.generate(buildInput, cancel))) {
       if (_disposed || epoch != _generation) return;
-      lines.add(line);
+      final mark = _excerptAnnotations.where((a) => a.id == line.annotationId).firstOrNull;
+      lines.add(
+        mark == null
+            ? line
+            : MapLine(
+                id: line.id,
+                kind: line.kind,
+                parentId: line.parentId,
+                annotationId: line.annotationId,
+                title: mark.quote,
+                source: mark.isText ? null : CardSource(documentId: mark.documentId, page: mark.page),
+              ),
+      );
       state = state!.copyWith(lines: List.unmodifiable(lines));
     }
 
@@ -744,6 +899,10 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
   Future<void> retry() async {
     if (state == null || state!.phase != MapGenerationPhase.failed) return;
     final req = state!.request;
+    if (state!.needsTextDocumentId != null && _ownsBusy) {
+      _ownsBusy = false;
+      ref.read(expansionBusyProvider.notifier).set(false);
+    }
     if (_collectedPoints.isNotEmpty && state!.chapterFailures.isEmpty) {
       state = state!.copyWith(phase: MapGenerationPhase.streaming, failure: null);
       final epoch = ++_generation;
@@ -773,6 +932,8 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
 
   void stop() {
     if (state == null || state!.isApplying) return;
+    _ocrSubscription?.close();
+    _ocrSubscription = null;
     _cancel?.cancel();
     _generator?.close();
     ++_generation;
@@ -867,6 +1028,7 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
               baseRevision: old.baseRevision,
               generation: old.generation,
               lines: old.lines,
+              excerptAnnotations: _excerptAnnotations,
             )
           : generationToProposal(
               proposalId: old.proposalId,
@@ -875,12 +1037,19 @@ class MapGenerationController extends Notifier<MapGenerationPreview?> {
               baseRevision: old.baseRevision,
               generation: old.generation,
               lines: old.lines,
+              excerptAnnotations: _excerptAnnotations,
               createMap: isNewMap ? MindMap(id: old.request.mapId, title: old.request.title) : null,
             );
 
       final executor = ref.read(assistantMapEditExecutorProvider(arg));
       final receipt = await executor.apply(proposal, proposal.operations.map((o) => o.id).toSet());
 
+      try {
+        await _generator?.close();
+      } catch (_) {
+        /* The write already committed. */
+      }
+      _generator = null;
       if (!_disposed) {
         state = null;
         if (isNewMap) {

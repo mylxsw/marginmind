@@ -11,6 +11,7 @@ import '../../assistant/assistant_settings.dart';
 import '../../assistant/widgets/assistant_panel.dart' show ModelSetupCard;
 import '../../workspace/workspace_controller.dart';
 import '../map_generation_controller.dart';
+import 'map_source_range.dart';
 
 Future<void> showGenerateMapSheet(
   BuildContext context,
@@ -66,6 +67,8 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
   bool _userTouchedOrganization = false;
   int _depth = 3;
   bool _includeAnnotations = true;
+  bool _extractQuotes = false;
+  final _ranges = <String, List<String>?>{};
   String _destination = 'new'; // 'new' or 'branch'
   late final TextEditingController _titleController;
   late final TextEditingController _instructionsController;
@@ -159,11 +162,15 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     final previous = widget.mergeCurrentMap
         ? content.map(mapId)?.generation?.sources.where((s) => s.documentId == id).firstOrNull
         : null;
-    return MapDocumentSelection(documentId: id, chapters: previous?.chapters ?? []);
+    return MapDocumentSelection(documentId: id, chapters: _ranges[id] ?? previous?.chapters ?? []);
   }
 
   Future<void> _start() async {
-    if (_selectedDocs.isEmpty || _starting) return;
+    if (_selectedDocs.isEmpty ||
+        _starting ||
+        _selectedDocs.any((id) => _ranges.containsKey(id) && _ranges[id] == null)) {
+      return;
+    }
     _starting = true;
     final credential = await ref.read(assistantCredentialStateProvider.future);
     if (!mounted) return;
@@ -201,6 +208,7 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
             depth: _depth,
             instructions: text.isEmpty ? null : text,
             includeAnnotations: _includeAnnotations,
+            extractQuotes: _extractQuotes,
             destination: isNewMap
                 ? MapGenerationDestination.newMap
                 : (merge ? MapGenerationDestination.update : MapGenerationDestination.branch),
@@ -248,355 +256,390 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
     return CallbackShortcuts(
       bindings: {primaryShortcut(LogicalKeyboardKey.enter): _start},
       child: Material(
-        type: MaterialType.transparency,
+        color: c.surface,
+        borderRadius: BorderRadius.circular(MMRadii.sheet),
+        clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Icon(MMIcons.generateMap, size: 16, color: c.research),
-                  const SizedBox(width: 8),
-                  Text(l.mapGenerate, style: t.title3.copyWith(color: c.label)),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              if (isUnconfigured) ...[
-                const Center(child: SizedBox(width: 360, child: ModelSetupCard(inline: true))),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: MMButton(
-                    label: l.cancel,
-                    variant: MMButtonVariant.secondary,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ] else ...[
-                // Form Rows
-                Table(
-                  columnWidths: const {0: FixedColumnWidth(MMSizes.mapGenerateLabelWidth), 1: FlexColumnWidth()},
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: [
-                    // Documents row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, top: 6, bottom: 14),
-                          child: Align(
-                            alignment: Alignment.topRight,
-                            child: Text(l.mapGenerateDocuments, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Container(
-                            constraints: BoxConstraints(maxHeight: 5 * MMSizes.mapGenerateDocumentRow),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: c.separator, width: 1),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(9),
-                              child: ListView.separated(
-                                shrinkWrap: true,
-                                padding: EdgeInsets.zero,
-                                itemCount: documents.length,
-                                separatorBuilder: (_, _) => Divider(height: 1, color: c.separator),
-                                itemBuilder: (context, index) {
-                                  final doc = documents[index];
-                                  final isSelected = _selectedDocs.contains(doc.id);
-                                  final isLast = isSelected && _selectedDocs.length == 1;
-                                  final hasMap = snapshot.maps.any(
-                                    (m) => m.generation?.sources.any((s) => s.documentId == doc.id) == true,
-                                  );
-
-                                  return SizedBox(
-                                    height: MMSizes.mapGenerateDocumentRow,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                                      child: Row(
-                                        children: [
-                                          MMCheckbox(
-                                            value: isSelected,
-                                            color: c.research,
-                                            semanticLabel: doc.title,
-                                            onChanged: isLast ? null : (val) => _onToggleDoc(doc.id, val),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Icon(
-                                            doc.format == DocumentFormat.pdf ? MMIcons.document : MMIcons.ebook,
-                                            size: 14,
-                                            color: c.icon,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              doc.title,
-                                              style: t.body,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          if (hasMap) ...[
-                                            Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
-                                            const SizedBox(width: 6),
-                                          ],
-                                          Text(
-                                            l.mapGeneratePages(doc.pageCount),
-                                            style: t.callout.copyWith(color: c.secondaryLabel),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Organization row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, bottom: 14),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(l.mapGenerateOrganization, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: MMSegmentedControl<MapOrganization>(
-                            key: const ValueKey('map-generate-organization'),
-                            value: _organization,
-                            expand: true,
-                            onChanged: (org) {
-                              setState(() {
-                                _organization = org;
-                                _userTouchedOrganization = true;
-                              });
-                            },
-                            segments: [
-                              MMSegment(value: MapOrganization.chapter, label: l.mapGenerateByChapter),
-                              MMSegment(
-                                value: MapOrganization.topic,
-                                label: _selectedDocs.length > 1 ? l.mapGenerateMergeByTopic : l.mapGenerateByTopic,
-                              ),
-                              MMSegment(value: MapOrganization.question, label: l.mapGenerateByQuestion),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Detail row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, bottom: 14),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(l.mapGenerateDetail, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: MMSegmentedControl<int>(
-                                  key: const ValueKey('map-generate-detail'),
-                                  value: _depth,
-                                  expand: true,
-                                  onChanged: (d) => setState(() => _depth = d),
-                                  segments: [
-                                    MMSegment(value: 2, label: l.mapGenerateDetailBrief),
-                                    MMSegment(value: 3, label: l.mapGenerateDetailMedium),
-                                    MMSegment(value: 4, label: l.mapGenerateDetailFull),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                l.mapGenerateEstimate(_depth, _estimateCount(_depth)),
-                                style: t.callout.copyWith(color: c.secondaryLabel),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Content row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, bottom: 14),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(l.mapGenerateContent, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(
-                                height: 26,
-                                child: Row(
-                                  children: [
-                                    Text(l.mapGenerateMyMarks, style: t.body),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      l.mapGenerateMarkCount(markCount),
-                                      style: t.footnote.copyWith(color: c.secondaryLabel),
-                                    ),
-                                    const Spacer(),
-                                    MMSwitch(
-                                      value: _includeAnnotations,
-                                      semanticLabel: l.mapGenerateMyMarks,
-                                      color: c.research,
-                                      onChanged: (val) => setState(() => _includeAnnotations = val),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              SizedBox(
-                                height: 26,
-                                child: Row(
-                                  children: [
-                                    Text(l.mapGenerateQuotes, style: t.body),
-                                    const Spacer(),
-                                    MMSwitch(value: false, semanticLabel: l.mapGenerateQuotes, onChanged: null),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Target row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, bottom: 14),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(l.mapGenerateTarget, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Row(
-                            children: [
-                              MMDropdownButton<String>(
-                                key: const ValueKey('map-generate-target-dropdown'),
-                                child: Text(_destination == 'new' ? l.mapGenerateTargetNew : l.mapGenerateTargetBranch),
-                                onSelected: (val) => setState(() => _destination = val),
-                                itemBuilder: (_) => [
-                                  MMDropdownItem(value: 'new', child: Text(l.mapGenerateTargetNew)),
-                                  if (hasNodes) MMDropdownItem(value: 'branch', child: Text(l.mapGenerateTargetBranch)),
-                                ],
-                              ),
-                              if (_destination == 'new') ...[
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 220,
-                                  child: MMTextField(
-                                    key: const ValueKey('map-generate-target-title'),
-                                    controller: _titleController,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Instructions row
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 14, top: 6),
-                          child: Align(
-                            alignment: Alignment.topRight,
-                            child: Text(l.mapGenerateInstructions, style: t.body.copyWith(color: c.secondaryLabel)),
-                          ),
-                        ),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 60, maxHeight: 120),
-                          child: TextField(
-                            key: const ValueKey('map-generate-instructions'),
-                            controller: _instructionsController,
-                            minLines: 2,
-                            maxLines: 6,
-                            maxLength: 500,
-                            buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                            style: t.body,
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: c.separator),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: c.separator),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: c.research),
-                              ),
-                              contentPadding: const EdgeInsets.all(10),
-                            ),
-                            onChanged: (text) {
-                              widget.onInstructionsChanged?.call(text);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-
-                // Footer
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
                 Row(
                   children: [
-                    Icon(MMIcons.document, size: 14, color: c.secondaryLabel),
-                    const SizedBox(width: 4),
-                    Text(l.mapGeneratePages(totalPages), style: t.callout.copyWith(color: c.secondaryLabel)),
-                    const Spacer(),
-                    MMButton(
+                    Icon(MMIcons.generateMap, size: 16, color: c.research),
+                    const SizedBox(width: 8),
+                    Text(l.mapGenerate, style: t.title3.copyWith(color: c.label)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                if (isUnconfigured) ...[
+                  const Center(child: SizedBox(width: 360, child: ModelSetupCard(inline: true))),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: MMButton(
                       label: l.cancel,
                       variant: MMButtonVariant.secondary,
                       onPressed: () => Navigator.of(context).pop(),
                     ),
-                    const SizedBox(width: 8),
-                    MMButton(
-                      key: const ValueKey('map-generate-sheet-start-button'),
-                      label: l.mapGenerateStart,
-                      color: c.research,
-                      variant: MMButtonVariant.primary,
-                      onPressed: _start,
-                    ),
-                  ],
-                ),
+                  ),
+                ] else ...[
+                  // Form Rows
+                  Table(
+                    columnWidths: const {0: FixedColumnWidth(MMSizes.mapGenerateLabelWidth), 1: FlexColumnWidth()},
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    children: [
+                      // Documents row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, top: 6, bottom: 14),
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: Text(l.mapGenerateDocuments, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Container(
+                              constraints: BoxConstraints(maxHeight: 5 * MMSizes.mapGenerateDocumentRow),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: c.separator, width: 1),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: documents.length,
+                                  separatorBuilder: (_, _) => Divider(height: 1, color: c.separator),
+                                  itemBuilder: (context, index) {
+                                    final doc = documents[index];
+                                    final isSelected = _selectedDocs.contains(doc.id);
+                                    final isLast = isSelected && _selectedDocs.length == 1;
+                                    final hasMap = snapshot.maps.any(
+                                      (m) => m.generation?.sources.any((s) => s.documentId == doc.id) == true,
+                                    );
+
+                                    return SizedBox(
+                                      height: MMSizes.mapGenerateDocumentRow,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                                        child: Row(
+                                          children: [
+                                            MMCheckbox(
+                                              value: isSelected,
+                                              color: c.research,
+                                              semanticLabel: doc.title,
+                                              onChanged: isLast ? null : (val) => _onToggleDoc(doc.id, val),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Icon(
+                                              doc.format == DocumentFormat.pdf ? MMIcons.document : MMIcons.ebook,
+                                              size: 14,
+                                              color: c.icon,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                doc.title,
+                                                style: t.body,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (hasMap) ...[
+                                              Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+                                              const SizedBox(width: 6),
+                                            ],
+                                            Text(
+                                              l.mapGeneratePages(doc.pageCount),
+                                              style: t.callout.copyWith(color: c.secondaryLabel),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      TableRow(
+                        children: [
+                          const SizedBox.shrink(),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: MMSpacing.m),
+                            child: Column(
+                              children: [
+                                for (final doc in documents.where((d) => _selectedDocs.contains(d.id)))
+                                  MapSourceRange(
+                                    key: ValueKey('map-range-${doc.id}'),
+                                    document: doc,
+                                    initial: _selection(doc.id, snapshot, wsState.activeMapId).chapters,
+                                    entries:
+                                        ref.watch(mapDocumentOutlineProvider((widget.studySetId, doc.id))).value ?? [],
+                                    onChanged: (range) => setState(() => _ranges[doc.id] = range),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Organization row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, bottom: 14),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(l.mapGenerateOrganization, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: MMSegmentedControl<MapOrganization>(
+                              key: const ValueKey('map-generate-organization'),
+                              value: _organization,
+                              expand: true,
+                              onChanged: (org) {
+                                setState(() {
+                                  _organization = org;
+                                  _userTouchedOrganization = true;
+                                });
+                              },
+                              segments: [
+                                MMSegment(value: MapOrganization.chapter, label: l.mapGenerateByChapter),
+                                MMSegment(
+                                  value: MapOrganization.topic,
+                                  label: _selectedDocs.length > 1 ? l.mapGenerateMergeByTopic : l.mapGenerateByTopic,
+                                ),
+                                MMSegment(value: MapOrganization.question, label: l.mapGenerateByQuestion),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Detail row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, bottom: 14),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(l.mapGenerateDetail, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: MMSegmentedControl<int>(
+                                    key: const ValueKey('map-generate-detail'),
+                                    value: _depth,
+                                    expand: true,
+                                    onChanged: (d) => setState(() => _depth = d),
+                                    segments: [
+                                      MMSegment(value: 2, label: l.mapGenerateDetailBrief),
+                                      MMSegment(value: 3, label: l.mapGenerateDetailMedium),
+                                      MMSegment(value: 4, label: l.mapGenerateDetailFull),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  l.mapGenerateEstimate(_depth, _estimateCount(_depth)),
+                                  style: t.callout.copyWith(color: c.secondaryLabel),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Content row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, bottom: 14),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(l.mapGenerateContent, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SizedBox(
+                                  height: 26,
+                                  child: Row(
+                                    children: [
+                                      Text(l.mapGenerateMyMarks, style: t.body),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        l.mapGenerateMarkCount(markCount),
+                                        style: t.footnote.copyWith(color: c.secondaryLabel),
+                                      ),
+                                      const Spacer(),
+                                      MMSwitch(
+                                        value: _includeAnnotations,
+                                        semanticLabel: l.mapGenerateMyMarks,
+                                        color: c.research,
+                                        onChanged: (val) => setState(() => _includeAnnotations = val),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  height: 26,
+                                  child: Row(
+                                    children: [
+                                      Text(l.mapGenerateQuotes, style: t.body),
+                                      const Spacer(),
+                                      MMSwitch(
+                                        value: _extractQuotes,
+                                        color: c.research,
+                                        semanticLabel: l.mapGenerateQuotes,
+                                        onChanged: (value) => setState(() => _extractQuotes = value),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Target row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, bottom: 14),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(l.mapGenerateTarget, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Row(
+                              children: [
+                                MMDropdownButton<String>(
+                                  key: const ValueKey('map-generate-target-dropdown'),
+                                  child: Text(
+                                    _destination == 'new' ? l.mapGenerateTargetNew : l.mapGenerateTargetBranch,
+                                  ),
+                                  onSelected: (val) => setState(() => _destination = val),
+                                  itemBuilder: (_) => [
+                                    MMDropdownItem(value: 'new', child: Text(l.mapGenerateTargetNew)),
+                                    if (hasNodes)
+                                      MMDropdownItem(value: 'branch', child: Text(l.mapGenerateTargetBranch)),
+                                  ],
+                                ),
+                                if (_destination == 'new') ...[
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 220,
+                                    child: MMTextField(
+                                      key: const ValueKey('map-generate-target-title'),
+                                      controller: _titleController,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Instructions row
+                      TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 14, top: 6),
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: Text(l.mapGenerateInstructions, style: t.body.copyWith(color: c.secondaryLabel)),
+                            ),
+                          ),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 60, maxHeight: 120),
+                            child: TextField(
+                              key: const ValueKey('map-generate-instructions'),
+                              controller: _instructionsController,
+                              minLines: 2,
+                              maxLines: 6,
+                              maxLength: 500,
+                              buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                              style: t.body,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: c.separator),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: c.separator),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: c.research),
+                                ),
+                                contentPadding: const EdgeInsets.all(10),
+                              ),
+                              onChanged: (text) {
+                                widget.onInstructionsChanged?.call(text);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Footer
+                  Row(
+                    children: [
+                      Icon(MMIcons.document, size: 14, color: c.secondaryLabel),
+                      const SizedBox(width: 4),
+                      Text(l.mapGeneratePages(totalPages), style: t.callout.copyWith(color: c.secondaryLabel)),
+                      const Spacer(),
+                      MMButton(
+                        label: l.cancel,
+                        variant: MMButtonVariant.secondary,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(width: 8),
+                      MMButton(
+                        key: const ValueKey('map-generate-sheet-start-button'),
+                        label: l.mapGenerateStart,
+                        color: c.research,
+                        variant: MMButtonVariant.primary,
+                        onPressed: _selectedDocs.any((id) => _ranges.containsKey(id) && _ranges[id] == null)
+                            ? null
+                            : _start,
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

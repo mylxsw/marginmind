@@ -47,6 +47,7 @@ Future<ProviderContainer> openWorkspace(
   InMemoryStudySetContentRepository? content,
   Map<String, Object> prefs = const {},
   AssistantCredentialState credentialState = AssistantCredentialState.ready,
+  Future<String?> Function(String, int)? pageText,
 }) async {
   final defaultContent = () {
     final base = demoContent();
@@ -65,7 +66,7 @@ Future<ProviderContainer> openWorkspace(
     content: content ?? InMemoryStudySetContentRepository({'demo-1': defaultContent}),
     prefs: {'settings.language': 'zh', ...prefs},
     overrides: [
-      assistantPageTextProvider.overrideWithValue((path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
+      assistantPageTextProvider.overrideWithValue(pageText ?? (path, page) async => '第 $page 页测试正文：关于记忆机制与认知负荷的内容。'),
       assistantCredentialStateProvider.overrideWith((ref) async => credentialState),
       ...overrides,
     ],
@@ -224,12 +225,12 @@ void main() {
       // Detail level has 4 ("详细") selected from prefs
       expect(find.text('详细'), findsOneWidget);
 
-      // Switch: quotes switch is disabled (onChanged == null)
+      // Quote extraction is now available alongside the whole-document switch.
       final switches = tester
           .widgetList<MMSwitch>(find.descendant(of: sheet, matching: find.byType(MMSwitch)))
           .toList();
-      expect(switches.length, 2);
-      expect(switches[1].onChanged, isNull);
+      expect(switches.length, 3);
+      expect(switches.last.onChanged, isNotNull);
 
       // Toggle document 2 on
       await tester.tap(checkboxes.at(1));

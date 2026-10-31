@@ -19,6 +19,12 @@ import 'helpers.dart';
 import 'document_map_navigation_test.dart' show multiDocumentContent;
 import 'map_generation_ui_test.dart' as harness;
 
+import 'package:marginmind/features/workspace/reader_ocr.dart';
+import 'package:mm_design/mm_design.dart';
+import 'package:marginmind/features/map_generation/widgets/map_source_range.dart';
+
+import 'reader_ocr_test.dart' show FakeOcr;
+
 // Opt-in like map_style_screenshots_test: MM_SCREENSHOTS=docs/evidence/gul-625
 // MM_FONT=/Library/Fonts/Arial\ Unicode.ttf flutter test test/map_generation_screenshots_test.dart
 final _out = Platform.environment['MM_SCREENSHOTS'];
@@ -122,6 +128,71 @@ void main() {
   for (final dark in [false, true]) {
     final mode = dark ? 'dark' : 'light';
 
+    testWidgets('Capture enhancements scenes 2 and 14 ($mode)', skip: _skip, (tester) async {
+      final ocr = FakeOcr();
+      final base = demoContent();
+      final first = base.documents.first;
+      final document = Document(
+        id: first.id,
+        title: first.title,
+        fileName: first.fileName,
+        pageCount: 30,
+        importedAt: first.importedAt,
+      );
+      final content = InMemoryStudySetContentRepository({
+        'demo-1': base.copyWith(
+          documents: [document, ...base.documents.skip(1)],
+          documentOutlines: [
+            DocumentOutline(
+              documentId: document.id,
+              items: const [
+                PdfOutlineEntry(id: 'memory', title: '记忆的本质', page: 1),
+                PdfOutlineEntry(id: 'forgetting', title: '遗忘曲线', page: 8),
+                PdfOutlineEntry(id: 'spacing', title: '间隔重复', page: 16),
+                PdfOutlineEntry(id: 'retrieval', title: '主动提取', page: 24),
+              ],
+            ),
+          ],
+        ),
+      });
+      final container = await harness.openWorkspace(
+        tester,
+        content: content,
+        prefs: {if (dark) 'settings.appearance': 'dark'},
+        pageText: (_, _) async => '',
+        overrides: [pdfOcrServiceProvider.overrideWithValue(ocr)],
+      );
+      await tester.tap(find.byKey(const ValueKey('map-generate-header-button')));
+      await tester.pumpAndSettle();
+      final range = find.byType(MapSourceRange).first;
+      await tester.tap(find.descendant(of: range, matching: find.byType(MMSwitch)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: range, matching: find.byType(MMCheckbox)).at(1));
+      await tester.tap(find.byType(MMSwitch).last);
+      await tester.pumpAndSettle();
+      await _save(tester, 'scene_2_chapters_$mode');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await harness.runGeneration(
+        tester,
+        () => container
+            .read(mapGenerationControllerProvider('demo-1').notifier)
+            .start(
+              const MapGenerationRequest(
+                studySetId: 'demo-1',
+                mapId: 'scan-map',
+                title: '学习的底层逻辑',
+                sources: [MapDocumentSelection(documentId: 'c1')],
+              ),
+            ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('识别文字…'), findsWidgets);
+      await _save(tester, 'scene_14_scan_$mode');
+    });
+
     testWidgets('Capture Scenes 1, 2, 3, 5, 7 ($mode mode)', skip: _skip, (tester) async {
       tester.view.physicalSize = const Size(1280, 820);
       tester.view.devicePixelRatio = 1;
@@ -218,6 +289,7 @@ void main() {
   }
   for (final dark in [false, true]) {
     final mode = dark ? 'dark' : 'light';
+
     testWidgets('Capture Scenes 8, 9, 10 ($mode)', skip: _skip, (tester) async {
       final fake = FakeMapGenerator(
         chapters: {

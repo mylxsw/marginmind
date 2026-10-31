@@ -21,14 +21,16 @@ class MapLine {
     this.source,
     this.annotationId,
     this.reason,
+    this.quote,
+    this.quoteSource,
     List<String> marks = const [],
     bool? kept,
   }) : marks = List.unmodifiable(marks),
        kept = kept ?? kind != MapLineKind.remove;
   final String id;
   final MapLineKind kind;
-  final String? parentId, nodeId, title, annotationId, reason;
-  final CardSource? source;
+  final String? parentId, nodeId, title, annotationId, reason, quote;
+  final CardSource? source, quoteSource;
   final List<String> marks;
   final bool kept;
   MapLine copyWith({bool? kept, String? title}) => MapLine(
@@ -40,6 +42,8 @@ class MapLine {
     source: source,
     annotationId: annotationId,
     reason: reason,
+    quote: quote,
+    quoteSource: quoteSource,
     marks: marks,
     kept: kept ?? this.kept,
   );
@@ -63,7 +67,11 @@ class MapLineContext {
     Set<String> protectedNodeIds = const {},
     Iterable<String> existingTitles = const [],
     this.maxDepth = 4,
-  }) : documents = Map.unmodifiable(documents),
+    Map<String, Map<int, String>> quoteTextByPage = const {},
+  }) : quoteTextByPage = Map.unmodifiable({
+         for (final e in quoteTextByPage.entries) e.key: Map<int, String>.unmodifiable(e.value),
+       }),
+       documents = Map.unmodifiable(documents),
        pages = Map.unmodifiable({for (final e in pages.entries) e.key: Set<int>.unmodifiable(e.value)}),
        nodes = Map.unmodifiable(nodes),
        annotations = Map.unmodifiable(annotations),
@@ -79,6 +87,7 @@ class MapLineContext {
       throw ArgumentError('Invalid map line context');
     }
   }
+  final Map<String, Map<int, String>> quoteTextByPage;
   final MapLinePhase phase;
   final String mapId, draftPrefix;
   final String? rootParentId;
@@ -119,7 +128,7 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
   };
   if (kind == null) return null;
   final allowed = switch (kind) {
-    MapLineKind.point => {'k', 'id', 'parent', 'title', 'doc', 'page', 'marks'},
+    MapLineKind.point => {'k', 'id', 'parent', 'title', 'doc', 'page', 'marks', 'quote'},
     MapLineKind.add => {'ref', 'parent', 'title', 'doc', 'page', if (diff) 'op'},
     MapLineKind.excerpt => {'mark', 'parent', if (diff) 'op'},
     MapLineKind.rename => {'op', 'node', 'title'},
@@ -179,6 +188,18 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
   final source = documentId != null && page is int && page > 0 && (ctx.pages[docAlias]?.contains(page) ?? false)
       ? CardSource(documentId: documentId, page: page)
       : null;
+  final rawQuote = j['quote'];
+  final quote =
+      kind == MapLineKind.point &&
+          documentId != null &&
+          page is int &&
+          page > 0 &&
+          rawQuote is String &&
+          rawQuote.trim().isNotEmpty &&
+          rawQuote.length <= 12000 &&
+          (ctx.quoteTextByPage[docAlias]?[page]?.contains(rawQuote) ?? false)
+      ? rawQuote
+      : null;
   final id = '${ctx.draftPrefix}${++ctx._sequence}';
   if (adding) {
     ctx._refs[ref as String] = 'new:$id';
@@ -195,6 +216,8 @@ MapLine? parseMapLine(String line, MapLineContext ctx) {
     source: source,
     annotationId: annotation,
     reason: reason as String?,
+    quote: quote,
+    quoteSource: quote != null ? CardSource(documentId: documentId!, page: page as int) : null,
     marks: [for (final m in marks) ctx.annotations[m]!],
   );
 }
@@ -207,6 +230,7 @@ MapEditProposal generationToProposal({
   required MapGeneration generation,
   required List<MapLine> lines,
   MindMap? createMap,
+  List<Annotation> excerptAnnotations = const [],
 }) {
   if (lines.any((l) => l.kind != MapLineKind.add && l.kind != MapLineKind.excerpt)) {
     throw ArgumentError('Generation only accepts additions');
@@ -219,6 +243,7 @@ MapEditProposal generationToProposal({
     generation: generation,
     lines: lines,
     createMap: createMap,
+    excerptAnnotations: excerptAnnotations,
   );
 }
 
@@ -231,6 +256,7 @@ MapEditProposal diffToProposal({
   required MapGeneration generation,
   required List<MapLine> lines,
   MindMap? createMap,
+  List<Annotation> excerptAnnotations = const [],
 }) {
   final byId = {for (final l in lines) l.id: l};
   if (byId.length != lines.length || lines.any((l) => l.id.isEmpty || l.id.startsWith('new:'))) {
@@ -272,8 +298,8 @@ MapEditProposal diffToProposal({
       kind: kind,
       parentId: l.parentId,
       nodeId: l.nodeId,
-      title: l.title,
-      source: l.source,
+      title: kind == MapEditKind.addTopic || kind == MapEditKind.rename ? l.title : null,
+      source: kind == MapEditKind.addTopic ? l.source : null,
       annotationId: l.annotationId,
       reason: l.reason,
     );
@@ -288,6 +314,7 @@ MapEditProposal diffToProposal({
     operations: ops,
     generation: generation,
     createMap: createMap,
+    excerptAnnotations: excerptAnnotations,
   );
 }
 
@@ -298,6 +325,7 @@ class MapChapterInput {
     required this.context,
     required Map<int, String> textByPage,
     Map<String, String> annotations = const {},
+    this.extractQuotes = false,
     this.organization = MapOrganization.chapter,
     this.instructions,
   }) : textByPage = Map.unmodifiable(textByPage),
@@ -308,6 +336,7 @@ class MapChapterInput {
 
   /// Annotation alias → quote and user comment, already budgeted by host.
   final Map<String, String> annotations;
+  final bool extractQuotes;
   final MapOrganization organization;
   final String? instructions;
 }

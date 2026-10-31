@@ -8761,6 +8761,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percent}%'**
   String phoneReaderPercent(int percent);
+
+  /// No description provided for @mapCacheTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapter digest cache'**
+  String get mapCacheTitle;
+
+  /// No description provided for @mapCacheClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear cache'**
+  String get mapCacheClearFailed;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

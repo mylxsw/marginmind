@@ -2448,5 +2448,7 @@
   "phoneReaderCollapse": "Collapse",
   "phoneReaderExitTools": "Finish annotating",
   "phoneReaderPercent": "{percent}%",
-  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}}
+  "@phoneReaderPercent": {"placeholders": {"percent": {"type": "int"}}},
+  "mapCacheTitle": "Chapter digest cache",
+  "mapCacheClearFailed": "Could not clear cache"
 }

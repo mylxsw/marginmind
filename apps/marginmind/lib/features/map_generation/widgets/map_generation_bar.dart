@@ -7,6 +7,8 @@ import 'package:mm_platform/mm_platform.dart';
 
 import '../../../shared/l10n.dart';
 import '../../workspace/workspace_controller.dart';
+import '../../workspace/reader_ocr.dart';
+import '../../workspace/widgets/reader_ocr_controls.dart';
 import '../map_generation_controller.dart';
 
 class MapGenerationBar extends ConsumerStatefulWidget {
@@ -41,6 +43,31 @@ class _MapGenerationBarState extends ConsumerState<MapGenerationBar> {
     final l = context.l10n;
     final controller = ref.read(mapGenerationControllerProvider(widget.studySetId).notifier);
 
+    final needsTextId = preview.needsTextDocumentId;
+    final workspace = ref.read(workspaceProvider(widget.studySetId).notifier);
+    final needsTextDoc = needsTextId == null ? null : workspace.content.document(needsTextId);
+    if (needsTextDoc != null) {
+      final source = workspace.filePath(needsTextDoc);
+      final ocr = ref.watch(readerOcrProvider(source));
+      return Padding(
+        padding: const EdgeInsets.all(MMSpacing.s),
+        child: Row(
+          children: [
+            Expanded(child: Text(l.mapGenerateNeedsOcr, style: t.callout)),
+            if (ocr.running)
+              ReaderOcrProgress(source: source)
+            else
+              MMButton(
+                label: l.ocrRecognize,
+                onPressed: ref.read(pdfOcrServiceProvider).supported
+                    ? () => showReaderOcrOptions(context, ref, widget.studySetId, documentId: needsTextId)
+                    : null,
+              ),
+            MMButton(label: l.cancel, variant: MMButtonVariant.plain, onPressed: controller.discard),
+          ],
+        ),
+      );
+    }
     final phase = preview.phase;
     final isReview = phase == MapGenerationPhase.review || phase == MapGenerationPhase.stopped;
     final isFailed = phase == MapGenerationPhase.failed && preview.lines.isEmpty;

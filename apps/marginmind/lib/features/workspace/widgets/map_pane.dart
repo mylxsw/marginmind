@@ -1420,7 +1420,8 @@ class _MapPaneState extends ConsumerState<MapPane> {
                 Positioned(
                   left: MMSpacing.m,
                   right: MMSpacing.m,
-                  bottom: MMSizes.ideaBarBottomInset + chrome.bottom,
+                  top: mapGen.needsTextDocumentId != null ? _headerGeometry.toolbarTopInset + MMSpacing.s : null,
+                  bottom: mapGen.needsTextDocumentId == null ? MMSizes.ideaBarBottomInset + chrome.bottom : null,
                   child: Center(
                     child: MapGenerationBar(studySetId: widget.studySetId, onKeep: _keepMapGeneration),
                   ),

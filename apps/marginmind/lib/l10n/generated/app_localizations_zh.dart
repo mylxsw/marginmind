@@ -4729,4 +4729,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String phoneReaderPercent(int percent) {
     return '$percent%';
   }
+
+  @override
+  String get mapCacheTitle => '章节要点缓存';
+
+  @override
+  String get mapCacheClearFailed => '清除缓存失败';
 }
