@@ -65,7 +65,10 @@ class _MMDropdownButtonState<T> extends State<MMDropdownButton<T>> {
   Widget build(BuildContext context) {
     _activity = MMPopupActivity.maybeOf(context);
     final c = context.mmColors;
-    final button = (context.mmTouch || context.mmTablet) ? context.mmToolbarButton : MMSizes.readerToolbarButton;
+    // A dock keeps its geometry when input switches between pointer and touch.
+    final button = (MMThumbDockScope.of(context) || context.mmTouch || context.mmTablet)
+        ? context.mmToolbarButton
+        : MMSizes.readerToolbarButton;
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(

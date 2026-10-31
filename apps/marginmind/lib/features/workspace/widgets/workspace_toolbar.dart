@@ -81,6 +81,7 @@ class WorkspaceToolbar extends StatelessWidget {
                 child: MMAdaptiveToolbar(
                   items: [...items, if (ownsActions && scope != null) ...scope.actions],
                   menuLabel: label,
+                  spacing: phone ? MMSpacing.xs : MMSpacing.s,
                   menuIcon: menuIcon,
                   menuKey: ValueKey(menuIcon == null ? 'map-more' : 'reader-more'),
                   menuBeforeId: menuIcon == null ? null : 'documents',

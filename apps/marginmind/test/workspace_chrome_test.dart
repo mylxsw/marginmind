@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marginmind/app/app.dart';
 import 'package:marginmind/app/navigation.dart';
@@ -154,6 +155,66 @@ void main() {
       }
       await tester.pumpWidget(const SizedBox());
       await drain(tester);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (map, width) in [(false, 393.0), (false, 402.0), (true, 393.0), (true, 402.0)]) {
+    testWidgets('phone ${map ? 'map' : 'reader'} dock preserves items through hide and reveal at $width', (
+      tester,
+    ) async {
+      final container = await pumpApp(
+        tester,
+        size: Size(width, 874),
+        overrides: [touchPlatformProvider.overrideWithValue(true), phoneProvider.overrideWithValue(true)],
+      );
+      container.read(navigationProvider.notifier).openStudySet('demo-1');
+      await tester.pumpAndSettle();
+      if (map) {
+        await tester.tap(find.text('Map').first);
+        await tester.pumpAndSettle();
+      }
+      // Desktop browser emulation (or a paired pointer) can precede touch scrolling.
+      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await pointer.addPointer(location: const Offset(200, 300));
+      await pointer.moveTo(const Offset(200, 310));
+      await tester.pumpAndSettle();
+      final dock = find.byType(MMThumbDockScope);
+      List<String> visibleItems() => find
+          .descendant(
+            of: dock,
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Focus && widget.debugLabel?.startsWith('toolbar-item:') == true,
+            ),
+          )
+          .hitTestable()
+          .evaluate()
+          .map((element) => (element.widget as Focus).debugLabel!)
+          .toList();
+      final before = visibleItems();
+      expect(before, isNotEmpty);
+      expect(before, contains(map ? 'toolbar-item:fit' : 'toolbar-item:sync'));
+      final menu = find.byKey(ValueKey(map ? 'map-more' : 'reader-more'));
+      expect(tester.getSize(menu), MMSizes.thumbDockButton);
+      final chrome = WorkspaceChromeScope.maybeOf(tester.element(dock))!;
+      for (var cycle = 0; cycle < 3; cycle++) {
+        await pointer.moveTo(Offset(200, 310 + cycle.toDouble()));
+        await tester.pumpAndSettle();
+        expect(visibleItems(), before);
+        scroll(chrome, 24);
+        await tester.pumpAndSettle();
+        expect(chrome.visible, isFalse);
+        expect(visibleItems(), isEmpty);
+        final touch = await tester.startGesture(const Offset(200, 350));
+        await touch.cancel();
+        scroll(chrome, -8);
+        await tester.pumpAndSettle();
+        expect(chrome.visible, isTrue);
+        expect(visibleItems(), before);
+        expect(menu.hitTestable(), findsOneWidget);
+        expect(tester.getSize(menu), MMSizes.thumbDockButton);
+      }
+      await pointer.removePointer();
       expect(tester.takeException(), isNull);
     });
   }
