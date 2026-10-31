@@ -19,7 +19,7 @@ import '../../assistant/assistant_settings.dart';
 import '../reader_compare.dart';
 import 'reader_translation_view.dart';
 import 'reading_settings.dart';
-import '../full_translation.dart';
+import '../translation_task_summary.dart';
 import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
@@ -64,10 +64,8 @@ class ReaderCompareMenu extends ConsumerWidget {
     final hasText = current == null
         ? null
         : ref.watch(compareDocumentInfoProvider((studySetId, current))).value?.hasText;
-    final targetLang = language == 'zh' ? 'en' : 'zh';
-    final fullState = current != null && current.isNotEmpty
-        ? ref.watch(fullTranslationProvider((studySetId, current, targetLang)))
-        : null;
+    final fullState = current == null ? null : ref.watch(translationTaskSummaryProvider((studySetId, current))).value;
+    final targetLang = fullState?.isActive == true ? fullState!.targetLang : fullTranslationTargetLanguage(language);
     final hasActiveFullJob = fullState?.isActive == true;
     final cached = content.translationCaches.any(
       (t) => t.documentId == current && t.targetLang == targetLang && t.paragraphs.isNotEmpty,
@@ -124,21 +122,13 @@ class ReaderCompareMenu extends ConsumerWidget {
             }
           } else if (value == 'full-translation') {
             if (current != null && current.isNotEmpty) {
-              unawaited(showFullTranslationSheet(
-                context,
-                studySetId: studySetId,
-                documentId: current,
-                targetLang: targetLang,
-              ));
+              unawaited(showFullTranslationSheet(context, studySetId: studySetId, documentId: current));
             }
           } else if (value == 'full-translation-task') {
             if (current != null && current.isNotEmpty) {
-              unawaited(showFullTranslationPanel(
-                context,
-                studySetId: studySetId,
-                documentId: current,
-                targetLang: targetLang,
-              ));
+              unawaited(
+                showFullTranslationPanel(context, studySetId: studySetId, documentId: current, targetLang: targetLang),
+              );
             }
           } else if (value == 'import') {
             final files = await ref.read(pdfPickerProvider)(l.documentFiles);
@@ -199,16 +189,17 @@ class ReaderCompareMenu extends ConsumerWidget {
               tooNarrow: tooNarrow,
               disabled: hasActiveFullJob,
             ),
-            if (MMSizeClass.of(context) != MMSizeClass.compact && current != null && current.isNotEmpty)
+            if (MMSizeClass.of(context) != MMSizeClass.compact &&
+                source?.format == DocumentFormat.pdf &&
+                current != null &&
+                current.isNotEmpty)
               MMDropdownItem<String>(
                 value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
                 enabled: !tooNarrow,
                 child: _menuRow(
                   context,
                   MMIcons.layers,
-                  hasActiveFullJob
-                      ? l.fullTranslationTaskMenu(fullState!.counts().pct)
-                      : l.fullTranslationMenu,
+                  hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
                 ),
               ),
           ],
@@ -292,12 +283,7 @@ class ReaderCompareMenu extends ConsumerWidget {
       Icon(icon, size: 14),
       const SizedBox(width: 8),
       Expanded(
-        child: Text(
-          label,
-          style: context.mmText.callout,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        child: Text(label, style: context.mmText.callout, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
     ],
   );

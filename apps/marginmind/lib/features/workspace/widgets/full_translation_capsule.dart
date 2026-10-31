@@ -43,19 +43,13 @@ class FullTranslationCapsule extends ConsumerWidget {
             child: Container(
               height: 24,
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: c.quaternaryFill,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(12)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(MMIcons.layers, size: 12, color: c.secondaryLabel),
                   const SizedBox(width: 4),
-                  Text(
-                    l.fullTranslationCapsule,
-                    style: context.mmText.footnote.copyWith(fontWeight: FontWeight.w500),
-                  ),
+                  Text(l.fullTranslationCapsule, style: context.mmText.footnote.copyWith(fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -157,10 +151,7 @@ class FullTranslationCapsule extends ConsumerWidget {
           child: Container(
             height: 24,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -170,8 +161,7 @@ class FullTranslationCapsule extends ConsumerWidget {
                   text,
                   style: context.mmText.footnote.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: job.state == TranslationJobState.offline ||
-                            job.state == TranslationJobState.budget
+                    color: job.state == TranslationJobState.offline || job.state == TranslationJobState.budget
                         ? c.caution
                         : job.state == TranslationJobState.error
                         ? c.critical

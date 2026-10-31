@@ -33,6 +33,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
   final _keys = <String, GlobalKey>{};
   bool _moving = false, _fromRight = false, _rightInput = false;
   bool _recoveredHudShown = false;
+  String? _recoveredHudKey;
   int _epoch = 0;
   String? _document;
   ReaderTranslationController get _session => ref.read(readerTranslationProvider(widget.studySetId).notifier);
@@ -104,11 +105,15 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     final p = anchor.paragraph;
     final pair = ref.read(readerCompareProvider(widget.studySetId));
     if (pair?.right is AiCompareTarget) {
-      ref.read(fullTranslationProvider((
-        widget.studySetId,
-        pair!.leftDocumentId,
-        (pair.right as AiCompareTarget).targetLang,
-      )).notifier).setCurrentReadingPage(p.page);
+      ref
+          .read(
+            fullTranslationProvider((
+              widget.studySetId,
+              pair!.leftDocumentId,
+              (pair.right as AiCompareTarget).targetLang,
+            )).notifier,
+          )
+          .setCurrentReadingPage(p.page);
     }
     final visible = ref.read(readerTranslationProvider(widget.studySetId)).paragraphs.where((p) {
       final top = _top(p.fingerprint);
@@ -194,38 +199,50 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     final c = context.mmColors, l = context.l10n;
     final style = ref.watch(settingsProvider.select((s) => s.readerStyle));
 
-    ref.listen(
-      fullTranslationProvider((widget.studySetId, documentId, language)).select((s) => s.recoveredQuit),
-      (prev, isRecovered) {
-        if (isRecovered == true && !_recoveredHudShown) {
-          _recoveredHudShown = true;
-          final current = ref.read(fullTranslationProvider((widget.studySetId, documentId, language)));
-          final pausedPage = current.job?.batch.range.from ?? 1;
-          MMHud.show(
-            context,
-            l.fullTranslationHudPausedAt(pausedPage),
-            icon: MMIcons.pause,
-            action: (
-              l.fullTranslationHudContinue,
-              () => ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume(),
-            ),
-          );
-        }
-      },
-    );
+    final recoveredKey = '$documentId:$language:${fullState.job?.id}';
+    if (_recoveredHudKey != recoveredKey) {
+      _recoveredHudKey = recoveredKey;
+      _recoveredHudShown = false;
+    }
 
-    if (fullState.recoveredQuit && !_recoveredHudShown) {
-      _recoveredHudShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final pausedPage = fullState.job?.batch.range.from ?? 1;
+    ref.listen(fullTranslationProvider((widget.studySetId, documentId, language)).select((s) => s.recoveredQuit), (
+      prev,
+      isRecovered,
+    ) {
+      if (isRecovered == true && !_recoveredHudShown) {
+        _recoveredHudShown = true;
+        final current = ref.read(fullTranslationProvider((widget.studySetId, documentId, language)));
+        final pausedPage = current.firstUnfinishedPage;
         MMHud.show(
           context,
           l.fullTranslationHudPausedAt(pausedPage),
           icon: MMIcons.pause,
           action: (
             l.fullTranslationHudContinue,
-            () => ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume(),
+            () {
+              if (mounted)
+                ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume();
+            },
+          ),
+        );
+      }
+    });
+
+    if (fullState.recoveredQuit && !_recoveredHudShown) {
+      _recoveredHudShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final pausedPage = fullState.firstUnfinishedPage;
+        MMHud.show(
+          context,
+          l.fullTranslationHudPausedAt(pausedPage),
+          icon: MMIcons.pause,
+          action: (
+            l.fullTranslationHudContinue,
+            () {
+              if (mounted)
+                ref.read(fullTranslationProvider((widget.studySetId, documentId, language)).notifier).resume();
+            },
           ),
         );
       });
@@ -296,11 +313,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
               ReaderCompareMenu(studySetId: widget.studySetId, document: doc, translationLanguage: language),
               const SizedBox(width: 6),
               if (fullState.job != null) ...[
-                FullTranslationCapsule(
-                  studySetId: widget.studySetId,
-                  documentId: documentId,
-                  targetLang: language,
-                ),
+                FullTranslationCapsule(studySetId: widget.studySetId, documentId: documentId, targetLang: language),
                 const Spacer(),
               ] else ...[
                 Expanded(
@@ -318,7 +331,11 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                               ? (state.pageParagraphs.isEmpty
                                     ? l.compareTranslationPageEmpty
                                     : l.compareTranslationPageSaved(state.page))
-                              : l.compareTranslationPageProgress(state.page, state.pageDone, state.pageParagraphs.length),
+                              : l.compareTranslationPageProgress(
+                                  state.page,
+                                  state.pageDone,
+                                  state.pageParagraphs.length,
+                                ),
                           key: const ValueKey('translation-status'),
                           icon: state.complete ? MMIcons.check : null,
                           color: state.failed
@@ -419,9 +436,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
     final pageParagraphs = state.paragraphs.where((p) => p.page == page).toList();
     final ps = fullState.pageState(page);
     final job = fullState.job;
-    final live = job != null &&
-        job.state != TranslationJobState.done &&
-        job.state != TranslationJobState.stopped;
+    final live = job != null && job.state != TranslationJobState.done && job.state != TranslationJobState.stopped;
 
     Widget? placeholder;
     if (ps == TranslationPageState.none) {
@@ -437,18 +452,16 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
           icon: MMIcons.translate,
           title: l.fullTranslationPlaceholderOutOfRange,
           actionText: l.fullTranslationTranslatePage,
-          onAction: () => ref
-              .read(fullTranslationProvider((widget.studySetId, leftDocId, language)).notifier)
-              .translatePage(page),
+          onAction: () =>
+              ref.read(fullTranslationProvider((widget.studySetId, leftDocId, language)).notifier).translatePage(page),
         );
       } else if (!live && pageParagraphs.every((p) => !state.values.containsKey(p.fingerprint))) {
         placeholder = _PagePlaceholder(
           icon: MMIcons.translate,
           title: l.fullTranslationPlaceholderUntranslated,
           actionText: l.fullTranslationTranslatePage,
-          onAction: () => ref
-              .read(fullTranslationProvider((widget.studySetId, leftDocId, language)).notifier)
-              .translatePage(page),
+          onAction: () =>
+              ref.read(fullTranslationProvider((widget.studySetId, leftDocId, language)).notifier).translatePage(page),
         );
       }
     }
@@ -461,9 +474,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
       padding: EdgeInsets.fromLTRB(54 * scale, 48 * scale, 54 * scale, 60 * scale),
       decoration: BoxDecoration(
         color: style.paperColor,
-        boxShadow: c.flat
-            ? null
-            : const [BoxShadow(color: Color(0x22000000), blurRadius: 3, offset: Offset(0, 1))],
+        boxShadow: c.flat ? null : const [BoxShadow(color: Color(0x22000000), blurRadius: 3, offset: Offset(0, 1))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -480,9 +491,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                   key: ValueKey('translation-paragraph-${p.index}'),
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                   decoration: BoxDecoration(
-                    color: state.hovered == p.fingerprint
-                        ? c.accent.withValues(alpha: .09)
-                        : marked(p),
+                    color: state.hovered == p.fingerprint ? c.accent.withValues(alpha: .09) : marked(p),
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: state.values.containsKey(p.fingerprint)
@@ -494,21 +503,17 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
                             height: 1.7,
                             fontWeight: p.heading ? FontWeight.w600 : FontWeight.normal,
                           ),
-                          contextMenuBuilder: (context, editable) =>
-                              AdaptiveTextSelectionToolbar.buttonItems(
-                                anchors: editable.contextMenuAnchors,
-                                buttonItems: [
-                                  ...editable.contextMenuButtonItems,
-                                  ContextMenuButtonItem(
-                                    label: l.excerptAction,
-                                    onPressed: () => _mark(p, editable, false),
-                                  ),
-                                  ContextMenuButtonItem(
-                                    label: l.highlightAction,
-                                    onPressed: () => _mark(p, editable, true),
-                                  ),
-                                ],
+                          contextMenuBuilder: (context, editable) => AdaptiveTextSelectionToolbar.buttonItems(
+                            anchors: editable.contextMenuAnchors,
+                            buttonItems: [
+                              ...editable.contextMenuButtonItems,
+                              ContextMenuButtonItem(label: l.excerptAction, onPressed: () => _mark(p, editable, false)),
+                              ContextMenuButtonItem(
+                                label: l.highlightAction,
+                                onPressed: () => _mark(p, editable, true),
                               ),
+                            ],
+                          ),
                         )
                       : FadeTransition(
                           opacity: Tween<double>(begin: .3, end: .6).animate(_shimmer),
@@ -558,13 +563,7 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
 }
 
 class _PagePlaceholder extends StatelessWidget {
-  const _PagePlaceholder({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.actionText,
-    this.onAction,
-  });
+  const _PagePlaceholder({required this.icon, required this.title, this.subtitle, this.actionText, this.onAction});
 
   final IconData icon;
   final String title;
@@ -583,25 +582,14 @@ class _PagePlaceholder extends StatelessWidget {
         children: [
           Icon(icon, size: 24, color: c.secondaryLabel.withValues(alpha: .6)),
           const SizedBox(height: 8),
-          Text(
-            title,
-            style: context.mmText.body.copyWith(color: c.secondaryLabel, fontSize: 13),
-          ),
+          Text(title, style: context.mmText.body.copyWith(color: c.secondaryLabel, fontSize: 13)),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
-            Text(
-              subtitle!,
-              style: context.mmText.footnote.copyWith(color: c.secondaryLabel.withValues(alpha: .6)),
-            ),
+            Text(subtitle!, style: context.mmText.footnote.copyWith(color: c.secondaryLabel.withValues(alpha: .6))),
           ],
           if (actionText != null && onAction != null) ...[
             const SizedBox(height: 10),
-            MMButton(
-              label: actionText!,
-              variant: MMButtonVariant.plain,
-              color: c.accent,
-              onPressed: onAction,
-            ),
+            MMButton(label: actionText!, variant: MMButtonVariant.plain, color: c.accent, onPressed: onAction),
           ],
         ],
       ),

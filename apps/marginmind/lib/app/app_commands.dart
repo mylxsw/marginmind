@@ -14,7 +14,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mm_core/mm_core.dart' show CardKind, Document, DocumentRuntime, TextReadingPosition, QuoteBlock;
+import 'package:mm_core/mm_core.dart'
+    show CardKind, Document, DocumentFormat, DocumentRuntime, TextReadingPosition, QuoteBlock;
 import 'package:mm_design/mm_design.dart';
 import 'package:mm_platform/mm_platform.dart';
 
@@ -28,7 +29,7 @@ import '../features/workspace/reader_ocr.dart';
 import '../features/workspace/reader_crop.dart';
 import '../features/workspace/reader_margin.dart';
 import '../features/workspace/reader_compare.dart';
-import '../features/workspace/full_translation.dart';
+import '../features/workspace/translation_task_summary.dart';
 import '../features/workspace/widgets/full_translation_sheet.dart';
 import '../features/workspace/widgets/full_translation_panel.dart';
 import '../features/workspace/widgets/map_export_sheet.dart';
@@ -74,9 +75,7 @@ abstract final class AppCommands {
     required VoidCallback onInvoke,
   }) {
     final label = hasActiveJob
-        ? (progressPercent != null
-            ? l.fullTranslationTaskMenu(progressPercent)
-            : '全文翻译任务…')
+        ? (progressPercent != null ? l.fullTranslationTaskMenu(progressPercent) : l.fullTranslationTask)
         : l.fullTranslationMenu;
     return AppCommand(label, enabled ? onInvoke : null);
   }
@@ -1164,39 +1163,40 @@ class _AppMenusState extends ConsumerState<AppMenus> {
       if (comparing && ref.read(readerCompareProvider(workspaceId).notifier).canAlignSource)
         AppCommand(l.compareAlign, () => ref.read(readerCompareProvider(workspaceId).notifier).align()),
       if (comparing) AppCommand(l.compareExit, () => ref.read(readerCompareProvider(workspaceId).notifier).exit()),
-      if (inWorkspace && hasDocument && MMPlatformCapabilities.current.assistant) ...[
-        () {
-          final doc = workspace.content.document(workspaceState.activeDocumentId!);
-          if (doc == null) return null;
-          final targetLang = (doc.title.contains('英文') || !RegExp(r'[\u4e00-\u9fa5]').hasMatch(doc.title)) ? 'zh' : 'en';
-          final fullState = ref.watch(fullTranslationProvider((workspaceId, doc.id, targetLang)));
-          final hasActive = fullState.isActive;
-          final pct = fullState.counts().pct;
-          return AppCommands.translateDocument(
-            l,
-            enabled: canRead,
-            hasActiveJob: hasActive,
-            progressPercent: hasActive ? pct : null,
-            onInvoke: () {
-              if (hasActive) {
-                unawaited(showFullTranslationPanel(
-                  context,
-                  studySetId: workspaceId,
-                  documentId: doc.id,
-                  targetLang: targetLang,
-                ));
-              } else {
-                unawaited(showFullTranslationSheet(
-                  context,
-                  studySetId: workspaceId,
-                  documentId: doc.id,
-                  targetLang: targetLang,
-                ));
-              }
-            },
-          );
-        }(),
-      ].whereType<AppCommand>(),
+      if (inWorkspace &&
+          hasDocument &&
+          MMPlatformCapabilities.current.assistant &&
+          MMSizeClass.of(context) != MMSizeClass.compact)
+        ...[
+          () {
+            final doc = workspace.content.document(workspaceState.activeDocumentId!);
+            if (doc == null || doc.format != DocumentFormat.pdf) return null;
+            final fullState = ref.watch(translationTaskSummaryProvider((workspaceId, doc.id))).value;
+            final targetLang = fullState?.targetLang ?? 'zh';
+            final hasActive = fullState?.isActive == true;
+            final pct = fullState?.percent ?? 0;
+            return AppCommands.translateDocument(
+              l,
+              enabled: canRead,
+              hasActiveJob: hasActive,
+              progressPercent: hasActive ? pct : null,
+              onInvoke: () {
+                if (hasActive) {
+                  unawaited(
+                    showFullTranslationPanel(
+                      context,
+                      studySetId: workspaceId,
+                      documentId: doc.id,
+                      targetLang: targetLang,
+                    ),
+                  );
+                } else {
+                  unawaited(showFullTranslationSheet(context, studySetId: workspaceId, documentId: doc.id));
+                }
+              },
+            );
+          }(),
+        ].whereType<AppCommand>(),
       if (hasDocument)
         ...readerStyleCommands(
           l,

@@ -8702,6 +8702,18 @@ abstract class AppLocalizations {
   /// **'Translate Entire Document…'**
   String get fullTranslationMenu;
 
+  /// No description provided for @fullTranslationTokensUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used '**
+  String get fullTranslationTokensUsed;
+
+  /// No description provided for @fullTranslationTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Translation…'**
+  String get fullTranslationTask;
+
   /// No description provided for @fullTranslationTaskMenu.
   ///
   /// In en, this message translates to:

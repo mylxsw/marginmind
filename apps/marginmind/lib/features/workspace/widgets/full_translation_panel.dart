@@ -7,6 +7,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
 
 import '../../../shared/l10n.dart';
+import '../../../app/providers.dart';
 import '../full_translation.dart';
 import '../reader_compare.dart';
 import 'notices.dart';
@@ -23,10 +24,13 @@ Future<void> showFullTranslationPanel(
   final size = renderBox?.size;
 
   final media = MediaQuery.sizeOf(context);
-  final panelWidth = MMSizes.fullTranslationPanelWidth;
+  final panelWidth = math.min(MMSizes.fullTranslationPanelWidth, math.max(1.0, media.width - 32));
   double left = offset != null ? offset.dx - (panelWidth - (size?.width ?? 0)) / 2 : (media.width - panelWidth) / 2;
   left = left.clamp(16.0, media.width - panelWidth - 16.0);
-  final double top = offset != null ? offset.dy + (size?.height ?? 0) + 8.0 : 80.0;
+  final double top = (offset != null && (size?.height ?? 0) < 80 ? offset.dy + (size?.height ?? 0) + 8 : 80.0).clamp(
+    16.0,
+    math.max(16.0, media.height - 420),
+  );
 
   return showGeneralDialog<void>(
     context: context,
@@ -37,10 +41,7 @@ Future<void> showFullTranslationPanel(
     pageBuilder: (dialogContext, _, _) => Stack(
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () => Navigator.of(dialogContext).pop(),
-          ),
+          child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => Navigator.of(dialogContext).pop()),
         ),
         Positioned(
           left: left,
@@ -49,10 +50,11 @@ Future<void> showFullTranslationPanel(
             type: MaterialType.transparency,
             child: SizedBox(
               width: panelWidth,
-              child: FullTranslationPanel(
-                studySetId: studySetId,
-                documentId: documentId,
-                targetLang: targetLang,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: math.max(1, media.height - top - 16)),
+                child: SingleChildScrollView(
+                  child: FullTranslationPanel(studySetId: studySetId, documentId: documentId, targetLang: targetLang),
+                ),
               ),
             ),
           ),
@@ -63,12 +65,7 @@ Future<void> showFullTranslationPanel(
 }
 
 class FullTranslationPanel extends ConsumerStatefulWidget {
-  const FullTranslationPanel({
-    super.key,
-    required this.studySetId,
-    required this.documentId,
-    required this.targetLang,
-  });
+  const FullTranslationPanel({super.key, required this.studySetId, required this.documentId, required this.targetLang});
 
   final String studySetId;
   final String documentId;
@@ -84,10 +81,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
   @override
   void initState() {
     super.initState();
-    _breathe = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
+    _breathe = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
   }
 
   @override
@@ -101,7 +95,9 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     final c = context.mmColors;
     final l = context.l10n;
     final state = ref.watch(fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)));
-    final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)).notifier);
+    final controller = ref.read(
+      fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)).notifier,
+    );
     final job = state.job;
     if (job == null) return const SizedBox.shrink();
 
@@ -139,12 +135,13 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         break;
     }
 
-    final elapsedSeconds = math.max(0, DateTime.now().toUtc().difference(job.createdAt).inSeconds);
+    final elapsedSeconds = math.max(0, ref.read(clockProvider)().toUtc().difference(job.createdAt).inSeconds);
     final elapsedMinutes = elapsedSeconds ~/ 60;
     final elapsedRemainingSeconds = elapsedSeconds % 60;
 
     final isLive = job.state == TranslationJobState.running || job.state == TranslationJobState.offline;
-    final isPausedOrError = job.state == TranslationJobState.paused ||
+    final isPausedOrError =
+        job.state == TranslationJobState.paused ||
         job.state == TranslationJobState.budget ||
         job.state == TranslationJobState.error;
 
@@ -171,15 +168,13 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'English → ${widget.targetLang == "zh" ? l.languageCodeZh : l.languageCodeEn}',
-                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                    '${job.sourceLang == 'zh' || (job.sourceLang == null && widget.targetLang == 'en') ? l.languageCodeZh : l.languageCodeEn} → ${widget.targetLang == "zh" ? l.languageCodeZh : l.languageCodeEn}',
+                    style: DefaultTextStyle.of(context).style
+                        .merge(context.mmText.footnote.copyWith(color: c.secondaryLabel)),
                   ),
                 ],
               ),
-              Text(
-                stateLine,
-                style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-              ),
+              Text(stateLine, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
             ],
           ),
           const SizedBox(height: 12),
@@ -208,12 +203,14 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
   ) {
     final job = state.job!;
     final cells = <Widget>[];
+    final pages = state.pageStates;
 
     for (var p = 1; p <= pageCount; p++) {
       final pageNum = p;
-      final ps = state.pageState(pageNum);
+      final ps = pages[pageNum] ?? TranslationPageState.skipped;
       final inRange = state.inRange(pageNum);
-      final isBatchBoundary = job.mode == TranslationMode.batch &&
+      final isBatchBoundary =
+          job.mode == TranslationMode.batch &&
           inRange &&
           (pageNum - job.range.from) % job.batchSize == 0 &&
           pageNum != job.range.from;
@@ -310,10 +307,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         );
       case TranslationPageState.queued:
         return Container(
-          decoration: BoxDecoration(
-            color: c.accent.withValues(alpha: 0.22),
-            borderRadius: BorderRadius.circular(2.5),
-          ),
+          decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(2.5)),
         );
       case TranslationPageState.failed:
         return Container(
@@ -389,9 +383,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         Expanded(
           child: _statBox(
             context,
-            richValue: RichText(
-              text: TextSpan(
-                style: context.mmText.callout.copyWith(fontWeight: FontWeight.w700, color: c.label),
+            richValue: Text.rich(
+              TextSpan(
+                style: DefaultTextStyle.of(context).style
+                    .merge(context.mmText.callout.copyWith(fontWeight: FontWeight.w700, color: c.label)),
                 children: [
                   TextSpan(text: '${counts.done}'),
                   TextSpan(
@@ -409,9 +404,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
         Expanded(
           child: _statBox(
             context,
-            richValue: RichText(
-              text: TextSpan(
-                style: context.mmText.callout.copyWith(fontWeight: FontWeight.w700, color: c.label),
+            richValue: Text.rich(
+              TextSpan(
+                style: DefaultTextStyle.of(context).style
+                    .merge(context.mmText.callout.copyWith(fontWeight: FontWeight.w700, color: c.label)),
                 children: [
                   TextSpan(text: formatTokens(job.usage.totalTokens)),
                   TextSpan(
@@ -444,18 +440,10 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     );
   }
 
-  Widget _statBox(
-    BuildContext context, {
-    required Widget richValue,
-    required String label,
-    required MMColors c,
-  }) {
+  Widget _statBox(BuildContext context, {required Widget richValue, required String label, required MMColors c}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: c.quaternaryFill,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -495,12 +483,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
           context,
         ),
         const SizedBox(height: 4),
-        _detailRow(
-          l.fullTranslationDetailSkipped,
-          l.fullTranslationDetailItems(skippedCount),
-          c,
-          context,
-        ),
+        _detailRow(l.fullTranslationDetailSkipped, l.fullTranslationDetailItems(skippedCount), c, context),
         const SizedBox(height: 4),
         _detailRow(
           l.fullTranslationDetailModelCalls,
@@ -517,9 +500,17 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
   Widget _detailRow(String label, String value, MMColors c, BuildContext context) {
     return Row(
       children: [
-        Text(label, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-        const Spacer(),
-        Text(value, style: context.mmText.footnote.copyWith(fontWeight: FontWeight.w600)),
+        Expanded(
+          child: Text(label, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: context.mmText.footnote.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
       ],
     );
   }
@@ -537,17 +528,9 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     if (isLive) {
       return Row(
         children: [
-          MMButton(
-            label: l.fullTranslationActionStop,
-            color: c.critical,
-            onPressed: () => controller.stop(),
-          ),
+          MMButton(label: l.fullTranslationActionStop, color: c.critical, onPressed: () => controller.stop()),
           const Spacer(),
-          MMButton(
-            icon: MMIcons.pause,
-            label: l.fullTranslationActionPause,
-            onPressed: () => controller.pause(),
-          ),
+          MMButton(icon: MMIcons.pause, label: l.fullTranslationActionPause, onPressed: () => controller.pause()),
         ],
       );
     }
@@ -555,11 +538,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     if (isPausedOrError) {
       return Row(
         children: [
-          MMButton(
-            label: l.fullTranslationActionStop,
-            color: c.critical,
-            onPressed: () => controller.stop(),
-          ),
+          MMButton(label: l.fullTranslationActionStop, color: c.critical, onPressed: () => controller.stop()),
           const Spacer(),
           MMButton(
             icon: MMIcons.play,
@@ -574,11 +553,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     if (job.state == TranslationJobState.review) {
       return Row(
         children: [
-          MMButton(
-            label: l.fullTranslationActionEnd,
-            color: c.critical,
-            onPressed: () => controller.stop(),
-          ),
+          MMButton(label: l.fullTranslationActionEnd, color: c.critical, onPressed: () => controller.stop()),
           const Spacer(),
           MMButton(
             label: l.fullTranslationActionNextBatch,
@@ -603,7 +578,7 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
             if (ok && context.mounted) {
               final nav = Navigator.of(context);
               await controller.removeTranslations();
-              nav.pop();
+              if (nav.mounted) nav.pop();
             }
           },
         ),
@@ -619,9 +594,11 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
             label: l.fullTranslationActionContinueTranslation,
             variant: MMButtonVariant.primary,
             onPressed: () {
-              Navigator.of(context).pop();
+              final navigator = Navigator.of(context);
+              final ownerContext = navigator.context;
+              navigator.pop();
               showFullTranslationSheet(
-                context,
+                ownerContext,
                 studySetId: widget.studySetId,
                 documentId: widget.documentId,
                 targetLang: widget.targetLang,

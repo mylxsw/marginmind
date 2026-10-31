@@ -12,7 +12,6 @@ import '../../voice/voice_controller.dart';
 import '../../voice/voice_settings.dart';
 import '../../research/research_origin.dart' show researchCardTitle;
 import '../../workspace/workspace_controller.dart';
-import '../../workspace/translation_schedulers.dart';
 import '../assistant_controller.dart';
 import '../assistant_entry.dart';
 import '../assistant_scope.dart';
@@ -303,7 +302,6 @@ class _AssistantComposerState extends ConsumerState<AssistantComposer> {
   /// The toggle is remembered for the study set's next conversations.
   Future<void> _setOnline(bool online) async {
     await ref.read(sharedPreferencesProvider).setBool(assistantOnlineKey(widget.studySetId), online);
-    ref.read(translationOnlineProvider(widget.studySetId).notifier).setOnline(online);
     await ref.read(assistantControllerProvider.notifier).setOnline(online);
   }
 

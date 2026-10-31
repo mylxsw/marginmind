@@ -144,9 +144,11 @@ class FullTranslationState {
     this.job,
     this.paragraphs = const [],
     this.values = const {},
+    this.segmentStates = const {},
     this.runningKeys = const {},
     this.retries = const {},
     this.loading = true,
+    this.loadError,
     this.recoveredQuit = false,
     this.currentReadingPage,
     this.checkpointCollapsed = false,
@@ -158,9 +160,11 @@ class FullTranslationState {
   final TranslationJob? job;
   final List<TranslationParagraph> paragraphs;
   final Map<String, String> values;
+  final Map<String, TranslationSegmentState> segmentStates;
   final Set<String> runningKeys;
   final Map<String, int> retries;
   final bool loading;
+  final Object? loadError;
   final bool recoveredQuit;
   final int? currentReadingPage;
   final bool checkpointCollapsed;
@@ -182,27 +186,41 @@ class FullTranslationState {
   bool inRange(int page) => job != null && page >= from && page <= to;
   int batchOf(int page) => job == null || job!.mode == TranslationMode.all ? 1 : ((page - from) ~/ job!.batchSize) + 1;
 
-  TranslationSegmentState segmentState(TranslationParagraph p) => deriveTranslationSegmentState(
-    p,
-    targetLang,
-    segments: {
-      for (final e in values.entries)
-        e.key: TranslationSegment(
-          key: e.key,
-          fingerprint: 'fp',
-          page: 1,
-          index: 0,
-          text: e.value.isEmpty ? 'text' : e.value,
-          model: 'model',
-          profile: 'default',
-          origin: TranslationOrigin.ai,
-          at: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-        ),
-    },
-    job: job,
-    completedKeys: values.keys.toSet(),
-    runningKeys: runningKeys,
-  );
+  TranslationSegmentState segmentState(TranslationParagraph p) {
+    if (segmentStates[p.fingerprint] case final status?) return status;
+    final key = textKey(p.text, targetLang);
+    if (values.containsKey(p.fingerprint) || values.containsKey(key)) {
+      return TranslationSegmentState.done;
+    }
+    if (translationSkipReason(p, targetLang) != null) return TranslationSegmentState.skipped;
+    final current = job;
+    if (current == null || !current.range.contains(p.page)) return TranslationSegmentState.none;
+    if (current.failures.containsKey(p.fingerprint)) return TranslationSegmentState.failed;
+    if (!current.isActive) return TranslationSegmentState.none;
+    if (runningKeys.contains(key)) return TranslationSegmentState.running;
+    return current.batch.range.contains(p.page) ? TranslationSegmentState.queued : TranslationSegmentState.none;
+  }
+
+  Map<int, TranslationPageState> get pageStates {
+    final grouped = <int, List<TranslationSegmentState>>{};
+    for (final paragraph in paragraphs) {
+      (grouped[paragraph.page] ??= []).add(segmentState(paragraph));
+    }
+    return {for (final entry in grouped.entries) entry.key: deriveTranslationPageState(entry.value)};
+  }
+
+  int get firstUnfinishedPage {
+    final pages = pageStates;
+    for (var page = from; page <= to; page++) {
+      final status = pages[page] ?? TranslationPageState.skipped;
+      if (status != TranslationPageState.done &&
+          status != TranslationPageState.reused &&
+          status != TranslationPageState.skipped) {
+        return page;
+      }
+    }
+    return to;
+  }
 
   TranslationPageState pageState(int page) {
     final onPage = paragraphs.where((p) => p.page == page).toList();
@@ -214,11 +232,19 @@ class FullTranslationState {
     final f = fromPage ?? from;
     final t = toPage ?? to;
     var total = 0, done = 0, fail = 0, run = 0, reused = 0, pagesDone = 0, pagesTotal = 0;
+    final byPage = <int, List<TranslationParagraph>>{};
+    for (final p in paragraphs) {
+      (byPage[p.page] ??= []).add(p);
+    }
     for (var n = f; n <= t; n++) {
-      final onPage = paragraphs.where((p) => p.page == n).toList();
-      final sendable = onPage.where((p) => translationSkipReason(p, targetLang) == null).toList();
+      final onPage = byPage[n] ?? const <TranslationParagraph>[];
+      final sendable = onPage
+          .where(
+            (p) => translationSkipReason(p, targetLang) == null && segmentState(p) != TranslationSegmentState.skipped,
+          )
+          .toList();
       if (sendable.isNotEmpty) pagesTotal++;
-      final ps = pageState(n);
+      final ps = deriveTranslationPageState(onPage.map(segmentState));
       if (ps == TranslationPageState.done || ps == TranslationPageState.reused || ps == TranslationPageState.partial) {
         pagesDone++;
       }
@@ -251,9 +277,12 @@ class FullTranslationState {
     bool clearJob = false,
     List<TranslationParagraph>? paragraphs,
     Map<String, String>? values,
+    Map<String, TranslationSegmentState>? segmentStates,
     Set<String>? runningKeys,
     Map<String, int>? retries,
     bool? loading,
+    Object? loadError,
+    bool clearLoadError = false,
     bool? recoveredQuit,
     int? currentReadingPage,
     bool? checkpointCollapsed,
@@ -264,22 +293,21 @@ class FullTranslationState {
     job: clearJob ? null : job ?? this.job,
     paragraphs: paragraphs ?? this.paragraphs,
     values: values ?? this.values,
+    segmentStates: segmentStates ?? this.segmentStates,
     runningKeys: runningKeys ?? this.runningKeys,
     retries: retries ?? this.retries,
     loading: loading ?? this.loading,
+    loadError: clearLoadError ? null : loadError ?? this.loadError,
     recoveredQuit: recoveredQuit ?? this.recoveredQuit,
     currentReadingPage: currentReadingPage ?? this.currentReadingPage,
     checkpointCollapsed: checkpointCollapsed ?? this.checkpointCollapsed,
   );
 }
 
-final fullTranslationProvider = NotifierProvider.autoDispose.family<
-  FullTranslationController,
-  FullTranslationState,
-  (String, String, String)
->(
-  (key) => FullTranslationController(key.$1, key.$2, key.$3),
-);
+final fullTranslationProvider = NotifierProvider.autoDispose
+    .family<FullTranslationController, FullTranslationState, (String, String, String)>(
+      (key) => FullTranslationController(key.$1, key.$2, key.$3),
+    );
 
 class FullTranslationController extends Notifier<FullTranslationState> {
   FullTranslationController(this.studySetId, this.documentId, this.targetLang);
@@ -291,6 +319,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   TranslationScheduler? _scheduler;
   StreamSubscription<TranslationSchedulerState>? _subscription;
   int _loadGeneration = 0;
+  Future<void>? _loading;
 
   @override
   FullTranslationState build() {
@@ -299,19 +328,11 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       _loadGeneration++;
       unawaited(_subscription?.cancel());
     });
-    ref.listen(
-      workspaceProvider(studySetId).select((s) => s.content?.document(documentId)?.revision),
-      (before, next) {
-        if (before != next) unawaited(_reload());
-      },
-    );
-    Future.microtask(_reload);
-    return FullTranslationState(
-      studySetId: studySetId,
-      documentId: documentId,
-      targetLang: targetLang,
-      loading: true,
-    );
+    ref.listen(workspaceProvider(studySetId).select((s) => s.content?.document(documentId)?.revision), (before, next) {
+      if (before != next) _loading = _reload();
+    });
+    _loading = Future.microtask(_reload);
+    return FullTranslationState(studySetId: studySetId, documentId: documentId, targetLang: targetLang, loading: true);
   }
 
   Future<void> _reload() async {
@@ -325,23 +346,26 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       if (!ref.mounted || gen != _loadGeneration) return;
       _scheduler = scheduler;
       await _subscription?.cancel();
+      if (!ref.mounted || gen != _loadGeneration) return;
       _subscription = scheduler.states.listen(_onSchedulerState);
       final initialJob = scheduler.job;
-      final isRecoveredQuit = initialJob?.state == TranslationJobState.paused &&
-          initialJob?.pauseReason == TranslationPauseReason.quit;
+      final isRecoveredQuit =
+          initialJob?.state == TranslationJobState.paused && initialJob?.pauseReason == TranslationPauseReason.quit;
       state = state.copyWith(
         job: initialJob,
         clearJob: initialJob == null,
         paragraphs: paragraphs,
         values: scheduler.values,
+        segmentStates: {for (final p in paragraphs) p.fingerprint: scheduler.segmentState(p)},
         runningKeys: scheduler.state.runningKeys,
         retries: scheduler.state.retries,
         loading: false,
+        clearLoadError: true,
         recoveredQuit: isRecoveredQuit,
       );
-    } catch (_) {
+    } catch (error) {
       if (ref.mounted && gen == _loadGeneration) {
-        state = state.copyWith(loading: false);
+        state = state.copyWith(loading: false, loadError: error);
       }
     }
   }
@@ -352,6 +376,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
       job: s.job,
       clearJob: s.job == null,
       values: s.values,
+      segmentStates: {for (final p in state.paragraphs) p.fingerprint: _scheduler!.segmentState(p)},
       runningKeys: s.runningKeys,
       retries: s.retries,
     );
@@ -379,11 +404,10 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     required String modelName,
     required int estimatedTokens,
   }) async {
-    while (_scheduler == null && state.loading) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
+    await _loading;
+    if (!ref.mounted) throw StateError('Workspace closed');
     final scheduler = _scheduler;
-    if (scheduler == null) return;
+    if (scheduler == null) throw StateError('Translation unavailable: ${state.loadError}');
     final isOnline = ref.read(translationOnlineProvider(studySetId));
     final job = TranslationJob(
       id: newId(),
@@ -435,7 +459,7 @@ class FullTranslationController extends Notifier<FullTranslationState> {
     if (scheduler == null) return;
     final onPage = state.paragraphs.where((p) => p.page == page).toList();
     for (final p in onPage) {
-      if (!state.values.containsKey(p.fingerprint)) {
+      if (!state.values.containsKey(p.fingerprint) && !state.values.containsKey(textKey(p.text, targetLang))) {
         unawaited(scheduler.retry(p));
       }
     }
@@ -444,13 +468,18 @@ class FullTranslationController extends Notifier<FullTranslationState> {
   Future<void> removeTranslations() async {
     final schedulers = ref.read(translationSchedulersProvider(studySetId));
     await schedulers.removeTranslations(documentId, targetLang);
+    if (!ref.mounted) return;
     state = state.copyWith(
       clearJob: true,
       values: const {},
+      segmentStates: const {},
       runningKeys: const {},
       retries: const {},
       checkpointCollapsed: false,
     );
     await _reload();
+    if (ref.mounted) {
+      await ref.read(readerTranslationProvider(studySetId).notifier).reloadAfterRemoval(documentId, targetLang);
+    }
   }
 }

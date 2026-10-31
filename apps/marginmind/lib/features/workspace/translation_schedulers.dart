@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/services.dart';
 import 'package:mm_assistant/mm_assistant.dart';
 import 'package:mm_core/mm_core.dart';
 
@@ -14,6 +16,20 @@ final translationStoreProvider = FutureProvider.family<TranslationStore, String>
   return (repository as TranslationStoreRepository).translationStore(setId);
 });
 
+/// OS network changes; no remote probe or document work is performed.
+final translationConnectivityProvider = StreamProvider<bool>((ref) async* {
+  final connectivity = Connectivity();
+  try {
+    yield !(await connectivity.checkConnectivity()).contains(ConnectivityResult.none);
+    yield* connectivity.onConnectivityChanged.map((results) => !results.contains(ConnectivityResult.none)).distinct();
+  } on MissingPluginException {
+    // Hosts without the plugin retain the assistant's existing default.
+    yield true;
+  } on PlatformException {
+    yield true;
+  }
+});
+
 /// System/assistant online state for the given study set.
 /// Can be overridden in tests or changed when network/toggle changes.
 class TranslationOnlineNotifier extends Notifier<bool> {
@@ -22,7 +38,7 @@ class TranslationOnlineNotifier extends Notifier<bool> {
 
   @override
   bool build() {
-    return assistantOnlineDefault(ref, studySetId);
+    return ref.watch(translationConnectivityProvider).value ?? assistantOnlineDefault(ref, studySetId);
   }
 
   void setOnline(bool online) {
@@ -30,10 +46,9 @@ class TranslationOnlineNotifier extends Notifier<bool> {
   }
 }
 
-final translationOnlineProvider = NotifierProvider.autoDispose
-    .family<TranslationOnlineNotifier, bool, String>(
-      (key) => TranslationOnlineNotifier(key),
-    );
+final translationOnlineProvider = NotifierProvider.autoDispose.family<TranslationOnlineNotifier, bool, String>(
+  (key) => TranslationOnlineNotifier(key),
+);
 
 /// The workspace retains this registry while open, including outside compare
 /// mode. Later full-document controls use the same document/language owners.
@@ -56,6 +71,14 @@ class TranslationSchedulers {
   final _owners = <(String, String), Future<TranslationScheduler>>{};
   final _revisions = <(String, String), String?>{};
   bool _closed = false;
+  final _changes = StreamController<(String, String)>.broadcast(sync: true);
+  final _ready = <(String, String), TranslationScheduler>{};
+  final _subscriptions = <(String, String), StreamSubscription<TranslationSchedulerState>>{};
+  Stream<(String, String)> get changes => _changes.stream;
+  TranslationScheduler? peek(String id, String language) => _ready[(id, language)];
+  void _notify((String, String) key) {
+    if (!_changes.isClosed) _changes.add(key);
+  }
 
   Future<TranslationScheduler> get(
     String id,
@@ -76,6 +99,8 @@ class TranslationSchedulers {
     final isOllama = model?.provider == AssistantProvider.ollama;
     final isOnline = isOllama || ref.read(translationOnlineProvider(setId));
     final opening = () async {
+      await _subscriptions.remove(key)?.cancel();
+      _ready.remove(key);
       if (previous != null) await (await previous).close();
       final store = await storeFuture;
       final snapshot = await store.importLegacy(
@@ -100,7 +125,17 @@ class TranslationSchedulers {
         },
       );
       await scheduler.initialize(snapshot: snapshot);
-      if (_closed) await scheduler.close();
+      if (_closed) {
+        await scheduler.close();
+      } else {
+        _ready[key] = scheduler;
+        _subscriptions[key] = scheduler.states.listen((_) => _notify(key));
+        await scheduler.setOnline(
+          ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama ||
+              ref.read(translationOnlineProvider(setId)),
+        );
+        _notify(key);
+      }
       return scheduler;
     }();
     _owners[key] = opening;
@@ -113,14 +148,18 @@ class TranslationSchedulers {
   }
 
   Future<void> setOnline(bool online) async {
-    for (final future in _owners.values) {
-      try {
-        final scheduler = await future;
-        final model = ref.read(assistantDefaultModelProvider);
-        final isOllama = model?.provider == AssistantProvider.ollama;
-        await scheduler.setOnline(isOllama || online);
-      } catch (_) {}
-    }
+    await Future.wait(
+      _owners.values.toList().map((future) async {
+        try {
+          final scheduler = await future;
+          if (_closed || !ref.mounted) return;
+          final isOllama = ref.read(assistantDefaultModelProvider)?.provider == AssistantProvider.ollama;
+          await scheduler.setOnline(isOllama || online);
+        } catch (_) {
+          /* Failed owners have no running task. */
+        }
+      }),
+    );
   }
 
   Future<void> updateModel(AssistantModel? model) async {
@@ -132,6 +171,8 @@ class TranslationSchedulers {
   Future<void> removeTranslations(String id, String language) async {
     final key = (id, language);
     final existing = _owners.remove(key);
+    await _subscriptions.remove(key)?.cancel();
+    _ready.remove(key);
     _revisions.remove(key);
     if (existing != null) {
       try {
@@ -141,10 +182,17 @@ class TranslationSchedulers {
     }
     final store = await ref.read(translationStoreProvider(setId).future);
     await store.remove(id, language);
+    _notify(key);
   }
 
   Future<void> close() async {
     _closed = true;
+    for (final sub in _subscriptions.values.toList()) {
+      await sub.cancel();
+    }
+    _subscriptions.clear();
+    _ready.clear();
+    await _changes.close();
     await Future.wait(
       _owners.values.map((s) async {
         try {

@@ -4699,6 +4699,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get fullTranslationMenu => '翻译全文…';
 
   @override
+  String get fullTranslationTokensUsed => '已用 ';
+
+  @override
+  String get fullTranslationTask => '全文翻译任务…';
+
+  @override
   String fullTranslationTaskMenu(int percent) {
     return '全文翻译任务… $percent%';
   }

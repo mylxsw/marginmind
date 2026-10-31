@@ -50,7 +50,9 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
     final c = context.mmColors;
     final l = context.l10n;
     final state = ref.watch(fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)));
-    final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)).notifier);
+    final controller = ref.read(
+      fullTranslationProvider((widget.studySetId, widget.documentId, widget.targetLang)).notifier,
+    );
     final job = state.job;
 
     if (job == null || job.state != TranslationJobState.review) {
@@ -88,18 +90,12 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                l.fullTranslationCkptMin(job.batch.index),
-                style: context.mmText.callout.copyWith(fontSize: 12),
-              ),
+              Text(l.fullTranslationCkptMin(job.batch.index), style: context.mmText.callout.copyWith(fontSize: 12)),
               const SizedBox(width: 12),
               MMButton(
                 label: l.fullTranslationCkptNextBatch(nf, nt),
                 variant: MMButtonVariant.primary,
-                onPressed: () => controller.continueBatch(
-                  batchSize: _batchSize,
-                  note: _noteController.text,
-                ),
+                onPressed: () => controller.continueBatch(batchSize: _batchSize, note: _noteController.text),
               ),
               const SizedBox(width: 6),
               MMIconButton(
@@ -132,9 +128,7 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(color: c.positive, shape: BoxShape.circle),
-                  child: const Center(
-                    child: Icon(MMIcons.check, size: 10, color: Colors.white),
-                  ),
+                  child: Center(child: Icon(MMIcons.check, size: 10, color: c.onAccent)),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -144,7 +138,8 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                 const SizedBox(width: 6),
                 Text(
                   l.fullTranslationCkptPages(bFrom, bTo),
-                  style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                  style: DefaultTextStyle.of(context).style
+                      .merge(context.mmText.footnote.copyWith(color: c.secondaryLabel)),
                 ),
                 const Spacer(),
                 MMIconButton(
@@ -160,31 +155,41 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                RichText(
-                  text: TextSpan(
-                    style: context.mmText.footnote.copyWith(color: c.label),
+                Text.rich(
+                  TextSpan(
+                    style: DefaultTextStyle.of(context).style.merge(context.mmText.footnote.copyWith(color: c.label)),
                     children: [
-                      TextSpan(text: '${batchCounts.total}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      TextSpan(
+                        text: '${batchCounts.total}',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       TextSpan(text: ' ${l.fullTranslationStatParas}'),
                     ],
                   ),
                 ),
                 if (batchCounts.reused > 0)
-                  RichText(
-                    text: TextSpan(
-                      style: context.mmText.footnote.copyWith(color: c.label),
+                  Text.rich(
+                    TextSpan(
+                      style: DefaultTextStyle.of(context).style.merge(context.mmText.footnote.copyWith(color: c.label)),
                       children: [
                         TextSpan(text: '${l.fullTranslationLegendReused} '),
-                        TextSpan(text: '${batchCounts.reused}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        TextSpan(
+                          text: '${batchCounts.reused}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ],
                     ),
                   ),
                 if (batchCounts.fail > 0) ...[
-                  RichText(
-                    text: TextSpan(
-                      style: context.mmText.footnote.copyWith(color: c.critical),
+                  Text.rich(
+                    TextSpan(
+                      style: DefaultTextStyle.of(context).style
+                          .merge(context.mmText.footnote.copyWith(color: c.critical)),
                       children: [
-                        TextSpan(text: '${batchCounts.fail}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        TextSpan(
+                          text: '${batchCounts.fail}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         TextSpan(text: ' ${l.fullTranslationStatFailed} '),
                       ],
                     ),
@@ -201,11 +206,12 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                     ),
                   ),
                 ],
-                RichText(
-                  text: TextSpan(
-                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                Text.rich(
+                  TextSpan(
+                    style: DefaultTextStyle.of(context).style
+                        .merge(context.mmText.footnote.copyWith(color: c.secondaryLabel)),
                     children: [
-                      const TextSpan(text: '已用 '),
+                      TextSpan(text: l.fullTranslationTokensUsed),
                       TextSpan(
                         text: formatTokens(job.usage.totalTokens),
                         style: TextStyle(fontWeight: FontWeight.w700, color: c.label),
@@ -258,6 +264,8 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
               TextField(
                 controller: _noteController,
                 maxLines: 2,
+                maxLength: 1000,
+                buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                 style: context.mmText.callout.copyWith(fontSize: 12.5),
                 decoration: InputDecoration(
                   hintText: l.fullTranslationNotePlaceholder,
@@ -281,18 +289,22 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
               spacing: 8,
               runSpacing: 6,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
                     Text(l.fullTranslationBatchSize, style: context.mmText.callout.copyWith(fontSize: 13)),
-                    const SizedBox(width: 8),
-                    MMSegmentedControl<int>(
-                      value: _batchSize,
-                      onChanged: (val) => setState(() => _batchSize = val),
-                      segments: [
-                        for (final s in [5, 10, 20, 50])
-                          MMSegment(value: s, label: l.fullTranslationBatchPages(s)),
-                      ],
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: MMSegmentedControl<int>(
+                        value: _batchSize,
+                        onChanged: (val) => setState(() => _batchSize = val),
+                        segments: [
+                          for (final s in [5, 10, 20, 50]) MMSegment(value: s, label: l.fullTranslationBatchPages(s)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -313,7 +325,6 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                   label: l.fullTranslationActionEnd,
                   onPressed: () {
                     controller.stop();
-                    MMHud.show(context, l.fullTranslationHudStopped);
                   },
                 ),
                 Wrap(
@@ -323,21 +334,13 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
                     MMButton(
                       label: l.fullTranslationCkptTranslateRest,
                       onPressed: () {
-                        controller.continueBatch(
-                          all: true,
-                          note: _noteController.text,
-                          batchSize: _batchSize,
-                        );
-                        MMHud.show(context, l.fullTranslationHudRestAll);
+                        controller.continueBatch(all: true, note: _noteController.text, batchSize: _batchSize);
                       },
                     ),
                     MMButton(
                       label: l.fullTranslationCkptNextBatch(nf, nt),
                       variant: MMButtonVariant.primary,
-                      onPressed: () => controller.continueBatch(
-                        batchSize: _batchSize,
-                        note: _noteController.text,
-                      ),
+                      onPressed: () => controller.continueBatch(batchSize: _batchSize, note: _noteController.text),
                     ),
                   ],
                 ),

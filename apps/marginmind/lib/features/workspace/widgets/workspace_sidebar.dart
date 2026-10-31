@@ -16,8 +16,7 @@ import '../../../app/app_commands.dart';
 import '../../../app/navigation.dart';
 import '../../../app/providers.dart';
 import '../../../shared/l10n.dart';
-import '../full_translation.dart';
-import '../reader_compare.dart';
+import '../translation_task_summary.dart';
 import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../workspace_controller.dart';
@@ -65,7 +64,8 @@ class WorkspaceSidebar extends ConsumerWidget {
             icon: MMIcons.mindMap,
             label: map.title.isEmpty ? l.mainMap : map.title,
             trailing: () {
-              final isGenerating = mapGen != null &&
+              final isGenerating =
+                  mapGen != null &&
                   mapGen.request.mapId == map.id &&
                   (mapGen.phase == MapGenerationPhase.reading || mapGen.phase == MapGenerationPhase.streaming);
               if (isGenerating) {
@@ -75,7 +75,8 @@ class WorkspaceSidebar extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, color: c.research),
                 );
               }
-              final hasUpdates = map.generation != null &&
+              final hasUpdates =
+                  map.generation != null &&
                   mapSourcesChanged(map.generation!, [
                     for (final s in map.generation!.sources)
                       MapSource(
@@ -441,10 +442,12 @@ class WorkspaceSidebar extends ConsumerWidget {
   void _documentMenu(BuildContext context, WidgetRef ref, Document doc, Offset position) {
     final l = context.l10n;
     final controller = ref.read(workspaceProvider(studySetId).notifier);
-    final targetLang = compareLanguage(doc.title) == 'zh' ? 'en' : 'zh';
-    final fullState = ref.read(fullTranslationProvider((studySetId, doc.id, targetLang)));
-    final hasActiveFullJob = fullState.isActive;
-    final canFullTranslate = MMPlatformCapabilities.current.assistant &&
+    final fullState = ref.read(translationTaskSummaryProvider((studySetId, doc.id))).value;
+    final targetLang = fullState?.targetLang ?? 'zh';
+    final hasActiveFullJob = fullState?.isActive == true;
+    final canFullTranslate =
+        doc.format == DocumentFormat.pdf &&
+        MMPlatformCapabilities.current.assistant &&
         MMSizeClass.of(context) != MMSizeClass.compact;
 
     showMMMenu(
@@ -455,33 +458,19 @@ class WorkspaceSidebar extends ConsumerWidget {
         if (canFullTranslate) ...[
           if (hasActiveFullJob)
             MMMenuItem(
-              l.fullTranslationTaskMenu(fullState.counts().pct),
-              () => showFullTranslationPanel(
-                context,
-                studySetId: studySetId,
-                documentId: doc.id,
-                targetLang: targetLang,
-              ),
+              l.fullTranslationTaskMenu(fullState!.percent),
+              () =>
+                  showFullTranslationPanel(context, studySetId: studySetId, documentId: doc.id, targetLang: targetLang),
             )
           else
             MMMenuItem(
               l.fullTranslationMenu,
-              () => showFullTranslationSheet(
-                context,
-                studySetId: studySetId,
-                documentId: doc.id,
-                targetLang: targetLang,
-              ),
+              () => showFullTranslationSheet(context, studySetId: studySetId, documentId: doc.id),
             ),
         ],
         MMMenuItem(
           l.mapGenerateDocumentMenu,
-          () => showGenerateMapSheet(
-            context,
-            ref,
-            studySetId,
-            preselectedDocId: doc.id,
-          ),
+          () => showGenerateMapSheet(context, ref, studySetId, preselectedDocId: doc.id),
         ),
 
         MMMenuItem(l.renameEllipsis, () async {
@@ -507,19 +496,15 @@ class WorkspaceSidebar extends ConsumerWidget {
 }
 
 class _DocumentTranslationTrailing extends ConsumerWidget {
-  const _DocumentTranslationTrailing({
-    required this.studySetId,
-    required this.document,
-  });
+  const _DocumentTranslationTrailing({required this.studySetId, required this.document});
 
   final String studySetId;
   final Document document;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final targetLang = compareLanguage(document.title) == 'zh' ? 'en' : 'zh';
-    final fullState = ref.watch(fullTranslationProvider((studySetId, document.id, targetLang)));
-    final job = fullState.job;
+    final fullState = ref.watch(translationTaskSummaryProvider((studySetId, document.id))).value;
+    final job = fullState?.job;
     final c = context.mmColors;
 
     if (job != null && job.isActive) {
@@ -530,8 +515,7 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
           decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle),
         );
       }
-      final counts = fullState.counts();
-      final pct = counts.pct;
+      final pct = fullState!.percent;
       return SizedBox(
         width: 14,
         height: 14,
@@ -544,9 +528,29 @@ class _DocumentTranslationTrailing extends ConsumerWidget {
       );
     }
 
-    if (!document.capabilities().readingSettings &&
-        ref.watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document))).document?.hasCopy == true) {
-      return Text(context.l10n.ocrRecognized, style: context.mmText.footnote);
+    final content = ref.watch(workspaceContentProvider(studySetId));
+    final hasMap =
+        content?.maps.any((m) => m.generation?.sources.any((s) => s.documentId == document.id) == true) == true;
+    final hasOcr =
+        !document.capabilities().readingSettings &&
+        ref
+                .watch(readerOcrProvider(ref.read(workspaceProvider(studySetId).notifier).filePath(document)))
+                .document
+                ?.hasCopy ==
+            true;
+    if (hasMap || hasOcr) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasOcr) Text(context.l10n.ocrRecognized, style: context.mmText.footnote),
+          if (hasOcr && hasMap) const SizedBox(width: 6),
+          if (hasMap)
+            Semantics(
+              label: context.l10n.mapHasMap,
+              child: Icon(MMIcons.mindMap, size: 12, color: c.secondaryLabel),
+            ),
+        ],
+      );
     }
     return const SizedBox.shrink();
   }

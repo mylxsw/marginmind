@@ -4921,6 +4921,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullTranslationMenu => 'Translate Entire Document…';
 
   @override
+  String get fullTranslationTokensUsed => 'Used ';
+
+  @override
+  String get fullTranslationTask => 'Full Translation…';
+
+  @override
   String fullTranslationTaskMenu(int percent) {
     return 'Full Translation… $percent%';
   }

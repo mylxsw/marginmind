@@ -2438,6 +2438,8 @@
   "appIconChanging": "Changing icon…",
   "appIconChangeFailed": "Could not change the icon. Please try again.",
   "fullTranslationMenu": "Translate Entire Document…",
+  "fullTranslationTokensUsed": "Used ",
+  "fullTranslationTask": "Full Translation…",
   "fullTranslationTaskMenu": "Full Translation… {percent}%",
   "@fullTranslationTaskMenu": {
     "placeholders": {

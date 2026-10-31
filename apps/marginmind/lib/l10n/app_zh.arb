@@ -1762,6 +1762,8 @@
   "appIconChanging": "正在更换图标…",
   "appIconChangeFailed": "图标更换失败，请重试。",
   "fullTranslationMenu": "翻译全文…",
+  "fullTranslationTokensUsed": "已用 ",
+  "fullTranslationTask": "全文翻译任务…",
   "fullTranslationTaskMenu": "全文翻译任务… {percent}%",
   "@fullTranslationTaskMenu": {
     "placeholders": {

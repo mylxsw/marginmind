@@ -33,7 +33,7 @@ import '../reader_compare.dart';
 import '../reader_translation.dart';
 import 'reader_compare_controls.dart';
 import 'reader_zoom_control.dart';
-import '../full_translation.dart';
+import '../translation_task_summary.dart';
 import 'full_translation_sheet.dart';
 import 'full_translation_panel.dart';
 import '../reader_margin.dart';
@@ -735,14 +735,15 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
     ];
     void setStyle(MMReaderStyle value) => ref.read(settingsProvider.notifier).setReaderStyle(value);
     final marginState = ref.watch(readerMarginProvider(widget.studySetId));
-    final targetLang = (document != null && compareLanguage(document.title) == 'zh') ? 'en' : 'zh';
-    final fullState = document != null
-        ? ref.watch(fullTranslationProvider((widget.studySetId, document.id, targetLang)))
-        : null;
+    final fullState = document == null
+        ? null
+        : ref.watch(translationTaskSummaryProvider((widget.studySetId, document.id))).value;
+    final targetLang = fullState?.targetLang ?? 'zh';
     final hasActiveFullJob = fullState?.isActive == true;
-    final canFullTranslate = MMPlatformCapabilities.current.assistant &&
+    final canFullTranslate =
+        MMPlatformCapabilities.current.assistant &&
         MMSizeClass.of(context) != MMSizeClass.compact &&
-        document != null;
+        document?.format == DocumentFormat.pdf;
     final marginButton = MMToolbarButton(
       key: const ValueKey('reader-margin'),
       compact: compact,
@@ -803,20 +804,19 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                   }
                   if (value == 'vocabulary' && document != null) toggleVocabularyHints(context, ref, document.id);
                   if (value == 'full-translation' && document != null) {
-                    unawaited(showFullTranslationSheet(
-                      context,
-                      studySetId: widget.studySetId,
-                      documentId: document.id,
-                      targetLang: targetLang,
-                    ));
+                    unawaited(
+                      showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id),
+                    );
                   }
                   if (value == 'full-translation-task' && document != null) {
-                    unawaited(showFullTranslationPanel(
-                      context,
-                      studySetId: widget.studySetId,
-                      documentId: document.id,
-                      targetLang: targetLang,
-                    ));
+                    unawaited(
+                      showFullTranslationPanel(
+                        context,
+                        studySetId: widget.studySetId,
+                        documentId: document.id,
+                        targetLang: targetLang,
+                      ),
+                    );
                   }
                 },
                 itemBuilder: (_) => [
@@ -850,9 +850,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                       value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
                       child: _menuRow(
                         MMIcons.layers,
-                        hasActiveFullJob
-                            ? l.fullTranslationTaskMenu(fullState!.counts().pct)
-                            : l.fullTranslationMenu,
+                        hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
                       ),
                     ),
                   const PopupMenuDivider(),
@@ -899,20 +897,17 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                 pageCommand(value);
                 if (value is MMReaderStyle) setStyle(value);
                 if (value == 'full-translation' && document != null) {
-                  unawaited(showFullTranslationSheet(
-                    context,
-                    studySetId: widget.studySetId,
-                    documentId: document.id,
-                    targetLang: targetLang,
-                  ));
+                  unawaited(showFullTranslationSheet(context, studySetId: widget.studySetId, documentId: document.id));
                 }
                 if (value == 'full-translation-task' && document != null) {
-                  unawaited(showFullTranslationPanel(
-                    context,
-                    studySetId: widget.studySetId,
-                    documentId: document.id,
-                    targetLang: targetLang,
-                  ));
+                  unawaited(
+                    showFullTranslationPanel(
+                      context,
+                      studySetId: widget.studySetId,
+                      documentId: document.id,
+                      targetLang: targetLang,
+                    ),
+                  );
                 }
               },
               itemBuilder: (_) => [
@@ -921,9 +916,7 @@ class _ReaderPaneState extends ConsumerState<ReaderPane> {
                     value: hasActiveFullJob ? 'full-translation-task' : 'full-translation',
                     child: _menuRow(
                       MMIcons.layers,
-                      hasActiveFullJob
-                          ? l.fullTranslationTaskMenu(fullState!.counts().pct)
-                          : l.fullTranslationMenu,
+                      hasActiveFullJob ? l.fullTranslationTaskMenu(fullState!.percent) : l.fullTranslationMenu,
                     ),
                   ),
                   const PopupMenuDivider(),

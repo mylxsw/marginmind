@@ -26,25 +26,23 @@ Future<void> showFullTranslationSheet(
   required String studySetId,
   required String documentId,
   String? targetLang,
-}) {
+}) async {
+  final container = ProviderScope.containerOf(context);
+  final info = await container.read(compareDocumentInfoProvider((studySetId, documentId)).future);
+  if (!context.mounted) return;
+  final language = targetLang ?? fullTranslationTargetLanguage(info.language);
   return showMMSheet<void>(
     context: context,
     width: MMSizes.fullTranslationSheetWidth,
-    builder: (context) => FullTranslationSheet(
-      studySetId: studySetId,
-      documentId: documentId,
-      initialTargetLang: targetLang,
-    ),
+    builder: (context) =>
+        FullTranslationSheet(studySetId: studySetId, documentId: documentId, initialTargetLang: language),
   );
 }
 
+String fullTranslationTargetLanguage(String? sourceLanguage) => sourceLanguage == 'zh' ? 'en' : 'zh';
+
 class FullTranslationSheet extends ConsumerStatefulWidget {
-  const FullTranslationSheet({
-    super.key,
-    required this.studySetId,
-    required this.documentId,
-    this.initialTargetLang,
-  });
+  const FullTranslationSheet({super.key, required this.studySetId, required this.documentId, this.initialTargetLang});
 
   final String studySetId;
   final String documentId;
@@ -66,6 +64,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
   Timer? _estimateDebounce;
   int _pageCount = 1;
   bool _initialized = false;
+  bool _starting = false;
 
   @override
   void initState() {
@@ -114,40 +113,33 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         : l.fullTranslationHudStartAll;
     final readerWidth = ReaderCompareWidth.of(context);
 
-    Navigator.of(context).pop();
-
-    await ref.read(sharedPreferencesProvider).setString('translation.full.mode', _mode.name);
-
-    final compare = ref.read(readerCompareProvider(widget.studySetId));
-    if (compare?.right is! AiCompareTarget ||
-        (compare!.right as AiCompareTarget).targetLang != _targetLang ||
-        compare.leftDocumentId != widget.documentId) {
-      await ref.read(readerCompareProvider(widget.studySetId).notifier).openAi(
-        _targetLang,
-        readerWidth: readerWidth,
+    if (_starting) return;
+    setState(() => _starting = true);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final compareController = ref.read(readerCompareProvider(widget.studySetId).notifier);
+    final controller = ref.read(fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)).notifier);
+    final note = _noteController.text;
+    try {
+      await prefs.setString('translation.full.mode', _mode.name);
+      if (!mounted) return;
+      await compareController.openAi(_targetLang, documentId: widget.documentId, readerWidth: readerWidth);
+      if (!mounted) return;
+      await controller.startJob(
+        from: f,
+        to: t,
+        mode: _mode,
+        batchSize: _batchSize,
+        note: note,
+        sourceLang: _sourceLang,
+        modelName: modelName,
+        estimatedTokens: estimation.tokens,
       );
-    }
-
-    final controller = ref.read(
-      fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)).notifier,
-    );
-
-    await controller.startJob(
-      from: f,
-      to: t,
-      mode: _mode,
-      batchSize: _batchSize,
-      note: _noteController.text,
-      sourceLang: _sourceLang,
-      modelName: modelName,
-      estimatedTokens: estimation.tokens,
-    );
-
-    final pdf = ref.read(readerCompareProvider(widget.studySetId).notifier).pdf(widget.documentId);
-    pdf.jumpToPage(f);
-
-    if (mounted) {
+      if (!mounted) return;
+      compareController.pdf(widget.documentId).jumpToPage(f);
       MMHud.show(context, hudMessage);
+      Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) setState(() => _starting = false);
     }
   }
 
@@ -159,6 +151,8 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
     final doc = content?.document(widget.documentId);
     if (doc == null) return const SizedBox.shrink();
 
+    final info = ref.watch(compareDocumentInfoProvider((widget.studySetId, widget.documentId))).value;
+    _sourceLang = info?.language;
     final docPath = ref.read(workspaceProvider(widget.studySetId).notifier).filePath(doc);
     final ocr = ref.watch(readerOcrProvider(docPath));
     final paragraphsAsync = ref.watch(translationParagraphsProvider((widget.studySetId, widget.documentId)));
@@ -187,13 +181,12 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
 
     final isScanned = doc.capabilities().ocr && ocr.document?.hasCopy != true && paragraphs.isEmpty && !ocr.running;
     final noModel = model == null || credentialState == AssistantCredentialState.unconfigured;
-    final badKey = credentialState == AssistantCredentialState.missingKey ||
+    final badKey =
+        credentialState == AssistantCredentialState.missingKey ||
         credentialState == AssistantCredentialState.unavailable;
     final isOffline = !isOnline && !isOllama;
 
-    final fullState = ref.watch(
-      fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)),
-    );
+    final fullState = ref.watch(fullTranslationProvider((widget.studySetId, widget.documentId, _targetLang)));
 
     final f = _rangeAll ? 1 : _from;
     final t = _rangeAll ? _pageCount : _to;
@@ -209,7 +202,15 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         : null;
 
     final nothing = estimation != null && estimation.paras == 0;
-    final disabled = !valid || nothing || isScanned || noModel || badKey;
+    final disabled =
+        _starting ||
+        fullState.loading ||
+        fullState.loadError != null ||
+        !valid ||
+        nothing ||
+        isScanned ||
+        noModel ||
+        badKey;
     final firstTo = _mode == TranslationMode.batch ? math.min(t, f + _batchSize - 1) : t;
     final primaryLabel = nothing
         ? l.fullTranslationNothingToTranslate
@@ -218,7 +219,9 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         : l.fullTranslationStartAll;
 
     Widget? blockedBanner;
-    if (isScanned) {
+    if (fullState.loadError != null) {
+      blockedBanner = _buildBanner(icon: MMIcons.warning, title: l.fullTranslationCapsuleError, desc: '');
+    } else if (isScanned) {
       blockedBanner = _buildBanner(
         icon: MMIcons.text,
         title: l.fullTranslationBlockedScannedTitle,
@@ -263,307 +266,300 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
             }
           },
         },
-        child: MMSheet(
-          title: l.fullTranslationTitle,
-          titleTrailing: Text(
-            l.fullTranslationDocSubtitle(doc.title, _pageCount),
-            style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-          ),
-          actions: [
-            MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
-            MMButton(
-              label: primaryLabel,
-              variant: MMButtonVariant.primary,
-              onPressed: disabled || estimation == null ? null : () => _start(doc, estimation, modelName),
+        child: Focus(
+          autofocus: true,
+          child: MMSheet(
+            title: l.fullTranslationTitle,
+            titleTrailing: Text(
+              l.fullTranslationDocSubtitle(doc.title, _pageCount),
+              style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
             ),
-          ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (blockedBanner != null) ...[
-                blockedBanner,
-                const SizedBox(height: 16),
-              ],
-              _buildFormRow(
-                label: l.language,
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: c.quaternaryFill,
-                        borderRadius: BorderRadius.circular(MMRadii.row),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('English', style: context.mmText.callout),
-                          Text(
-                            '（${l.fullTranslationSourceLangDetect}）',
-                            style: context.mmText.callout.copyWith(color: c.secondaryLabel),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text('→', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
-                    ),
-                    MMDropdownButton<String>(
-                      width: 140,
-                      onSelected: (val) {
-                        setState(() => _targetLang = val);
-                        ref.read(sharedPreferencesProvider).setString('settings.translationLanguage', val);
-                      },
-                      itemBuilder: (_) => [
-                        for (final lang in TranslationLanguage.values)
-                          MMDropdownItem(
-                            value: lang.code,
-                            child: Text(
-                              lang.code == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                              style: context.mmText.callout,
-                            ),
-                          ),
-                      ],
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _targetLang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
-                            style: context.mmText.callout,
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(MMIcons.chevronDown, size: 12),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+            actions: [
+              MMButton(label: l.cancel, onPressed: () => Navigator.of(context).pop()),
+              MMButton(
+                label: primaryLabel,
+                variant: MMButtonVariant.primary,
+                onPressed: disabled || estimation == null ? null : () => _start(doc, estimation, modelName),
               ),
-              const SizedBox(height: 12),
-              _buildFormRow(
-                label: l.fullTranslationRange,
-                child: Row(
-                  children: [
-                    MMSegmentedControl<bool>(
-                      value: _rangeAll,
-                      onChanged: (val) {
-                        setState(() {
-                          _rangeAll = val;
-                          if (val) {
-                            _fromController.text = '1';
-                            _toController.text = '$_pageCount';
-                          }
-                        });
-                      },
-                      segments: [
-                        MMSegment(value: true, label: l.fullTranslationRangeAll),
-                        MMSegment(value: false, label: l.fullTranslationRangePages),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    SizedBox(
-                      width: 56,
-                      height: 28,
-                      child: TextField(
-                        controller: _fromController,
-                        enabled: !_rangeAll,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: context.mmText.callout,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.zero,
-                          filled: true,
-                          fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Text('–', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
-                    ),
-                    SizedBox(
-                      width: 56,
-                      height: 28,
-                      child: TextField(
-                        controller: _toController,
-                        enabled: !_rangeAll,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: context.mmText.callout,
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.zero,
-                          filled: true,
-                          fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (!valid) ...[
-                      const SizedBox(width: 8),
-                      Text('1–$_pageCount', style: context.mmText.footnote.copyWith(color: c.critical)),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              _buildFormRow(
-                label: l.fullTranslationMode,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _ModeCard(
-                        title: l.fullTranslationModeBatch,
-                        desc: l.fullTranslationModeBatchDesc,
-                        selected: _mode == TranslationMode.batch,
-                        onTap: () => setState(() => _mode = TranslationMode.batch),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _ModeCard(
-                        title: l.fullTranslationModeAll,
-                        desc: l.fullTranslationModeAllDesc,
-                        selected: _mode == TranslationMode.all,
-                        onTap: () => setState(() => _mode = TranslationMode.all),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_mode == TranslationMode.batch) ...[
-                const SizedBox(height: 12),
+            ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (blockedBanner != null) ...[blockedBanner, const SizedBox(height: 16)],
                 _buildFormRow(
-                  label: l.fullTranslationBatchSize,
+                  label: l.language,
                   child: Row(
                     children: [
-                      MMSegmentedControl<int>(
-                        value: _batchSize,
-                        onChanged: (val) => setState(() => _batchSize = val),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: c.quaternaryFill,
+                          borderRadius: BorderRadius.circular(MMRadii.row),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _sourceLang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
+                              style: context.mmText.callout,
+                            ),
+                            Text(
+                              '（${l.fullTranslationSourceLangDetect}）',
+                              style: context.mmText.callout.copyWith(color: c.secondaryLabel),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('→', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+                      ),
+                      MMDropdownButton<String>(
+                        width: 140,
+                        onSelected: (val) {
+                          setState(() => _targetLang = val);
+                          ref.read(sharedPreferencesProvider).setString('settings.translationLanguage', val);
+                        },
+                        itemBuilder: (_) => [
+                          for (final lang in TranslationLanguage.values)
+                            MMDropdownItem(
+                              value: lang.code,
+                              child: Text(
+                                lang.code == 'zh' ? l.languageCodeZh : l.languageCodeEn,
+                                style: context.mmText.callout,
+                              ),
+                            ),
+                        ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _targetLang == 'zh' ? l.languageCodeZh : l.languageCodeEn,
+                              style: context.mmText.callout,
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(MMIcons.chevronDown, size: 12),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildFormRow(
+                  label: l.fullTranslationRange,
+                  child: Row(
+                    children: [
+                      MMSegmentedControl<bool>(
+                        value: _rangeAll,
+                        onChanged: (val) {
+                          setState(() {
+                            _rangeAll = val;
+                            if (val) {
+                              _fromController.text = '1';
+                              _toController.text = '$_pageCount';
+                            }
+                          });
+                        },
                         segments: [
-                          for (final size in [5, 10, 20, 50])
-                            MMSegment(value: size, label: l.fullTranslationBatchPages(size)),
+                          MMSegment(value: true, label: l.fullTranslationRangeAll),
+                          MMSegment(value: false, label: l.fullTranslationRangePages),
                         ],
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        l.fullTranslationBatchCount(valid ? ((t - f + 1) / _batchSize).ceil() : 0),
-                        style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              _buildFormRow(
-                label: l.fullTranslationNote,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                child: TextField(
-                  controller: _noteController,
-                  maxLines: 2,
-                  maxLength: 1000,
-                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-                  style: context.mmText.callout,
-                  decoration: InputDecoration(
-                    hintText: l.fullTranslationNotePlaceholder,
-                    hintStyle: context.mmText.callout.copyWith(color: c.secondaryLabel),
-                    filled: true,
-                    fillColor: c.quaternaryFill,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.all(10),
-                  ),
-                ),
-              ),
-              if (estimation != null && !isScanned) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: c.quaternaryFill,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildEstimateRow(
-                        icon: MMIcons.translate,
-                        content: l.fullTranslationEstNeeds(
-                          '${estimation.paras - estimation.dupe}',
-                          '${estimation.uniqueChars}',
-                        ),
-                        trailing: l.fullTranslationEstMinutes(estimation.minutes),
-                      ),
-                      if (estimation.reused > 0) ...[
-                        const SizedBox(height: 6),
-                        _buildEstimateRow(
-                          icon: MMIcons.recycle,
-                          iconColor: c.positive,
-                          content: estimation.reusedPages > 0
-                              ? l.fullTranslationEstReused(estimation.reused, estimation.reusedPages)
-                              : l.fullTranslationEstReusedNoPages(estimation.reused),
-                          contentColor: c.positive,
-                        ),
-                      ],
-                      if (estimation.skipped > 0 || estimation.same > 0 || estimation.dupe > 0) ...[
-                        const SizedBox(height: 6),
-                        _buildEstimateRow(
-                          icon: MMIcons.skip,
-                          content: l.fullTranslationEstSkip(
-                            [
-                              if (estimation.skipped > 0) l.fullTranslationEstSkipMargin(estimation.skipped),
-                              if (estimation.same > 0) l.fullTranslationEstSkipSame(estimation.same),
-                              if (estimation.dupe > 0) l.fullTranslationEstSkipDupe(estimation.dupe),
-                            ].join(' · '),
+                      SizedBox(
+                        width: 56,
+                        height: 28,
+                        child: TextField(
+                          controller: _fromController,
+                          enabled: !_rangeAll,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: context.mmText.callout,
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.zero,
+                            filled: true,
+                            fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text('–', style: context.mmText.callout.copyWith(color: c.secondaryLabel)),
+                      ),
+                      SizedBox(
+                        width: 56,
+                        height: 28,
+                        child: TextField(
+                          controller: _toController,
+                          enabled: !_rangeAll,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: context.mmText.callout,
+                          decoration: InputDecoration(
+                            contentPadding: EdgeInsets.zero,
+                            filled: true,
+                            fillColor: _rangeAll ? c.quaternaryFill.withValues(alpha: 0.5) : c.quaternaryFill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (!valid) ...[
+                        const SizedBox(width: 8),
+                        Text('1–$_pageCount', style: context.mmText.footnote.copyWith(color: c.critical)),
                       ],
-                      const SizedBox(height: 6),
-                      _buildEstimateRow(
-                        icon: MMIcons.ai,
-                        iconColor: isBig ? c.caution : c.secondaryLabel,
-                        content: '${l.fullTranslationEstModel(modelName.isNotEmpty ? modelName : 'AI', formatTokens(estimation.tokens))}${isBig || _mode == TranslationMode.all ? l.fullTranslationEstBudgetWarning : ''}',
-                        contentColor: isBig ? c.caution : null,
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildFormRow(
+                  label: l.fullTranslationMode,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ModeCard(
+                          title: l.fullTranslationModeBatch,
+                          desc: l.fullTranslationModeBatchDesc,
+                          selected: _mode == TranslationMode.batch,
+                          onTap: () => setState(() => _mode = TranslationMode.batch),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ModeCard(
+                          title: l.fullTranslationModeAll,
+                          desc: l.fullTranslationModeAllDesc,
+                          selected: _mode == TranslationMode.all,
+                          onTap: () => setState(() => _mode = TranslationMode.all),
+                        ),
                       ),
                     ],
                   ),
                 ),
+                if (_mode == TranslationMode.batch) ...[
+                  const SizedBox(height: 12),
+                  _buildFormRow(
+                    label: l.fullTranslationBatchSize,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: MMSegmentedControl<int>(
+                            value: _batchSize,
+                            onChanged: (val) => setState(() => _batchSize = val),
+                            segments: [
+                              for (final size in [5, 10, 20, 50])
+                                MMSegment(value: size, label: l.fullTranslationBatchPages(size)),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          l.fullTranslationBatchCount(valid ? ((t - f + 1) / _batchSize).ceil() : 0),
+                          style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _buildFormRow(
+                  label: l.fullTranslationNote,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  child: TextField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    maxLength: 1000,
+                    buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                    style: context.mmText.callout,
+                    decoration: InputDecoration(
+                      hintText: l.fullTranslationNotePlaceholder,
+                      hintStyle: context.mmText.callout.copyWith(color: c.secondaryLabel),
+                      filled: true,
+                      fillColor: c.quaternaryFill,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.all(10),
+                    ),
+                  ),
+                ),
+                if (estimation != null && !isScanned) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(10)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildEstimateRow(
+                          icon: MMIcons.translate,
+                          content: l.fullTranslationEstNeeds(
+                            '${estimation.paras - estimation.dupe}',
+                            '${estimation.uniqueChars}',
+                          ),
+                          trailing: l.fullTranslationEstMinutes(estimation.minutes),
+                        ),
+                        if (estimation.reused > 0) ...[
+                          const SizedBox(height: 6),
+                          _buildEstimateRow(
+                            icon: MMIcons.recycle,
+                            iconColor: c.positive,
+                            content: estimation.reusedPages > 0
+                                ? l.fullTranslationEstReused(estimation.reused, estimation.reusedPages)
+                                : l.fullTranslationEstReusedNoPages(estimation.reused),
+                            contentColor: c.positive,
+                          ),
+                        ],
+                        if (estimation.skipped > 0 || estimation.same > 0 || estimation.dupe > 0) ...[
+                          const SizedBox(height: 6),
+                          _buildEstimateRow(
+                            icon: MMIcons.skip,
+                            content: l.fullTranslationEstSkip(
+                              [
+                                if (estimation.skipped > 0) l.fullTranslationEstSkipMargin(estimation.skipped),
+                                if (estimation.same > 0) l.fullTranslationEstSkipSame(estimation.same),
+                                if (estimation.dupe > 0) l.fullTranslationEstSkipDupe(estimation.dupe),
+                              ].join(' · '),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        _buildEstimateRow(
+                          icon: MMIcons.ai,
+                          iconColor: isBig ? c.caution : c.secondaryLabel,
+                          content:
+                              '${l.fullTranslationEstModel(modelName.isNotEmpty ? modelName : 'AI', formatTokens(estimation.tokens))}${isBig || _mode == TranslationMode.all ? l.fullTranslationEstBudgetWarning : ''}',
+                          contentColor: isBig ? c.caution : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Text(l.fullTranslationFooterNote, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
               ],
-              const SizedBox(height: 14),
-              Text(
-                l.fullTranslationFooterNote,
-                style: context.mmText.footnote.copyWith(color: c.secondaryLabel),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBanner({
-    required IconData icon,
-    required String title,
-    required String desc,
-    Widget? action,
-  }) {
+  Widget _buildBanner({required IconData icon, required String title, required String desc, Widget? action}) {
     final c = context.mmColors;
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: c.quaternaryFill,
-        borderRadius: BorderRadius.circular(10),
-      ),
+      decoration: BoxDecoration(color: c.quaternaryFill, borderRadius: BorderRadius.circular(10)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -576,10 +572,7 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
                 Text(title, style: context.mmText.callout.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(desc, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
-                if (action != null) ...[
-                  const SizedBox(height: 8),
-                  action,
-                ],
+                if (action != null) ...[const SizedBox(height: 8), action],
               ],
             ),
           ),
@@ -619,25 +612,16 @@ class _FullTranslationSheetState extends ConsumerState<FullTranslationSheet> {
         Icon(icon, size: 14, color: iconColor ?? c.secondaryLabel),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            content,
-            style: context.mmText.footnote.copyWith(color: contentColor ?? c.label),
-          ),
+          child: Text(content, style: context.mmText.footnote.copyWith(color: contentColor ?? c.label)),
         ),
-        if (trailing != null)
-          Text(trailing, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
+        if (trailing != null) Text(trailing, style: context.mmText.footnote.copyWith(color: c.secondaryLabel)),
       ],
     );
   }
 }
 
 class _ModeCard extends StatelessWidget {
-  const _ModeCard({
-    required this.title,
-    required this.desc,
-    required this.selected,
-    required this.onTap,
-  });
+  const _ModeCard({required this.title, required this.desc, required this.selected, required this.onTap});
 
   final String title;
   final String desc;
@@ -654,10 +638,7 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: c.quaternaryFill,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? c.accent : Colors.transparent,
-            width: 1.5,
-          ),
+          border: Border.all(color: selected ? c.accent : Colors.transparent, width: 1.5),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -686,10 +667,7 @@ class _ModeCard extends StatelessWidget {
                 children: [
                   Text(title, style: context.mmText.callout.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: context.mmText.footnote.copyWith(color: c.secondaryLabel, fontSize: 11),
-                  ),
+                  Text(desc, style: context.mmText.footnote.copyWith(color: c.secondaryLabel, fontSize: 11)),
                 ],
               ),
             ),
