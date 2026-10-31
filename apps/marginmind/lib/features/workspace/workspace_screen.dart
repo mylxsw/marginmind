@@ -154,6 +154,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
       ref,
       widget.studySetId,
       content?.documents.map((d) => d.id) ?? const [],
+      documentTitleOf: (id) => content?.document(id)?.title ?? id,
     );
     final doc = state.activeDocumentId == null ? null : content?.document(state.activeDocumentId!);
     final setTitle = ref.watch(studySetProvider(widget.studySetId).select((s) => s?.title)) ?? '';

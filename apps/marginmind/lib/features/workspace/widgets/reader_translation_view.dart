@@ -16,6 +16,7 @@ import '../reader_translation.dart';
 import '../workspace_controller.dart';
 import 'full_translation_capsule.dart';
 import 'full_translation_checkpoint.dart';
+import 'full_translation_strip.dart';
 import 'notices.dart';
 import 'reader_compare_controls.dart';
 import 'reflow_translation_view.dart';
@@ -380,6 +381,8 @@ class _ReaderTranslationViewState extends ConsumerState<ReaderTranslationView> w
             ],
           ),
         ),
+        if (canFullTranslate)
+          FullTranslationStrip(studySetId: widget.studySetId, documentId: documentId, targetLang: language),
         Expanded(
           child: Stack(
             children: [

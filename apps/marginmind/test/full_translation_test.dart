@@ -19,6 +19,7 @@ import 'package:marginmind/features/workspace/widgets/full_translation_capsule.d
 import 'package:marginmind/features/workspace/widgets/full_translation_checkpoint.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_panel.dart';
 import 'package:marginmind/features/workspace/widgets/full_translation_sheet.dart';
+import 'package:marginmind/features/workspace/widgets/full_translation_strip.dart';
 import 'package:marginmind/features/workspace/widgets/reader_translation_view.dart';
 import 'package:marginmind/l10n/generated/app_localizations.dart';
 import 'package:mm_assistant/mm_assistant.dart';
@@ -40,6 +41,12 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
         'panel-running-dark',
         'checkpoint-expanded-light',
         'checkpoint-expanded-dark',
+        'strip-key-light',
+        'strip-key-dark',
+        'strip-offline-light',
+        'strip-offline-dark',
+        'strip-budget-light',
+        'strip-budget-dark',
       }.contains(name) &&
       evidence == null) {
     return;
@@ -961,5 +968,356 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('FullTranslationStrip renders key, no-model, offline, budget strips, actions, and goldens', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final now = DateTime.utc(2026, 10, 31);
+      final baseOverrides = await testOverrides(
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 5, importedAt: testNow),
+            ],
+          ),
+        }),
+      );
+
+      FullTranslationState makeStripState(
+        TranslationJobState jState, {
+        String? errorKind,
+        TranslationUsage? usage,
+        int estimateTokens = 9000,
+      }) {
+        return FullTranslationState(
+          studySetId: 'demo-1',
+          documentId: 'c1',
+          targetLang: 'zh',
+          job: TranslationJob(
+            id: 'job-strip',
+            documentId: 'c1',
+            targetLang: 'zh',
+            range: TranslationRange(1, 10),
+            mode: TranslationMode.batch,
+            batchSize: 5,
+            model: 'Claude Sonnet 4',
+            state: jState,
+            errorKind: errorKind,
+            batch: TranslationBatch(index: 2, range: TranslationRange(6, 10)),
+            estimateTokens: estimateTokens,
+            usage: usage ?? TranslationUsage(inputTokens: 8000, outputTokens: 6000, requests: 18),
+            createdAt: now,
+            updatedAt: now,
+          ),
+          paragraphs: _sampleParagraphs('c1', 10),
+          loading: false,
+        );
+      }
+
+      var settingsOpened = 0;
+
+      Widget buildStrip(
+        GlobalKey boundaryKey,
+        MockFullTranslationController mock, {
+        bool dark = false,
+        AssistantModel? model = const AssistantModel(
+          provider: AssistantProvider.claude,
+          model: 'claude-sonnet-4',
+          endpoint: 'https://api.anthropic.com',
+        ),
+        VoidCallback? onOpenSettings,
+      }) {
+        return testHost(
+          dark: dark,
+          overrides: [
+            ...baseOverrides,
+            assistantDefaultModelProvider.overrideWithValue(model),
+            fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => mock),
+          ],
+          RepaintBoundary(
+            key: boundaryKey,
+            child: ColoredBox(
+              color: dark ? MMColors.dark.windowBackground : MMColors.light.windowBackground,
+              child: SizedBox(
+                width: 520,
+                child: FullTranslationStrip(
+                  studySetId: 'demo-1',
+                  documentId: 'c1',
+                  targetLang: 'zh',
+                  onOpenSettings: onOpenSettings,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // 1. Key invalid strip - Light & Dark
+      for (final dark in [false, true]) {
+        final key = GlobalKey();
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'authentication'),
+        );
+        await tester.pumpWidget(buildStrip(key, mock, dark: dark, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('API Key 无效，已暂停'), findsOneWidget);
+        expect(find.textContaining('已译内容已保存'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsOneWidget);
+
+        if (!dark) {
+          await tester.tap(find.byKey(const Key('full_translation_strip_open_settings')));
+          await tester.pump();
+          expect(settingsOpened, 1);
+
+          await tester.tap(find.byKey(const Key('full_translation_strip_retry')));
+          await tester.pump();
+          expect(mock.resumed, true);
+        }
+
+        await _capture(tester, key, 'strip-key-${dark ? 'dark' : 'light'}');
+      }
+
+      // 2. No model strip - Light & Dark
+      for (final dark in [false, true]) {
+        final key = GlobalKey();
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'model'),
+        );
+        await tester.pumpWidget(buildStrip(key, mock, dark: dark, model: null, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('没有可用的模型，已暂停'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsNothing);
+
+        if (!dark) {
+          await tester.tap(find.byKey(const Key('full_translation_strip_open_settings')));
+          await tester.pump();
+          expect(settingsOpened, 2);
+        }
+
+        await _capture(tester, key, 'strip-no-model-${dark ? 'dark' : 'light'}');
+      }
+
+      // 2b. Quota errorKind renders Key strip with Open Settings and Retry
+      {
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'quota'),
+        );
+        await tester.pumpWidget(buildStrip(GlobalKey(), mock, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('API Key 无效，已暂停'), findsOneWidget);
+        expect(find.textContaining('已译内容已保存'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsOneWidget);
+      }
+
+      // 2c. Storage errorKind renders storage strip with Retry only (no Open Settings or saved note)
+      {
+        final mock = MockFullTranslationController(
+          'demo-1',
+          'c1',
+          'zh',
+          makeStripState(TranslationJobState.error, errorKind: 'storage'),
+        );
+        await tester.pumpWidget(buildStrip(GlobalKey(), mock, onOpenSettings: () => settingsOpened++));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('无法保存译文，已暂停'), findsOneWidget);
+        expect(find.textContaining('API Key 无效，已暂停'), findsNothing);
+        expect(find.textContaining('已译内容已保存'), findsNothing);
+        expect(find.byKey(const Key('full_translation_strip_open_settings')), findsNothing);
+        expect(find.byKey(const Key('full_translation_strip_retry')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('full_translation_strip_retry')));
+        await tester.pump();
+        expect(mock.resumed, true);
+      }
+
+      // 3. Offline strip - Light & Dark
+      for (final dark in [false, true]) {
+        final key = GlobalKey();
+        final mock = MockFullTranslationController('demo-1', 'c1', 'zh', makeStripState(TranslationJobState.offline));
+        await tester.pumpWidget(buildStrip(key, mock, dark: dark));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.text('网络不可用，联网后自动继续'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_pause')), findsOneWidget);
+
+        if (!dark) {
+          await tester.tap(find.byKey(const Key('full_translation_strip_pause')));
+          await tester.pump();
+          expect(mock.paused, true);
+        }
+
+        await _capture(tester, key, 'strip-offline-${dark ? 'dark' : 'light'}');
+      }
+
+      // 4. Budget strip - Light & Dark
+      for (final dark in [false, true]) {
+        final key = GlobalKey();
+        final mock = MockFullTranslationController('demo-1', 'c1', 'zh', makeStripState(TranslationJobState.budget));
+        await tester.pumpWidget(buildStrip(key, mock, dark: dark));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.textContaining('已用 1.4 万 token，超出预估 50%'), findsOneWidget);
+        expect(find.textContaining('预估 9,000'), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_stop')), findsOneWidget);
+        expect(find.byKey(const Key('full_translation_strip_continue')), findsOneWidget);
+
+        if (!dark) {
+          await tester.tap(find.byKey(const Key('full_translation_strip_stop')));
+          await tester.pump();
+          expect(mock.stopped, true);
+
+          await tester.tap(find.byKey(const Key('full_translation_strip_continue')));
+          await tester.pump();
+          expect(mock.resumed, true);
+        }
+
+        await _capture(tester, key, 'strip-budget-${dark ? 'dark' : 'light'}');
+      }
+
+      // 5. Running state hides strip
+      final runningMock = MockFullTranslationController(
+        'demo-1',
+        'c1',
+        'zh',
+        makeStripState(TranslationJobState.running),
+      );
+      await tester.pumpWidget(buildStrip(GlobalKey(), runningMock));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('full-translation-strip')), findsNothing);
+    });
+
+    testWidgets('Accessibility labels, checkpoint dialog role without focus theft, and reduce motion', (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final semanticsHandle = tester.ensureSemantics();
+
+      final now = DateTime.utc(2026, 10, 31);
+      final baseOverrides = await testOverrides(
+        content: InMemoryStudySetContentRepository({
+          'demo-1': compareFixture().copyWith(
+            documents: [
+              Document(id: 'c1', title: 'Learning and memory', fileName: 'a.pdf', pageCount: 4, importedAt: testNow),
+            ],
+          ),
+        }),
+      );
+
+      final paras = _sampleParagraphs('c1', 4);
+      final values = {for (final p in paras.where((p) => p.page == 1)) textKey(p.text, 'zh'): '已译'};
+      final runningState = FullTranslationState(
+        studySetId: 'demo-1',
+        documentId: 'c1',
+        targetLang: 'zh',
+        job: TranslationJob(
+          id: 'job-a11y',
+          documentId: 'c1',
+          targetLang: 'zh',
+          range: TranslationRange(1, 4),
+          mode: TranslationMode.batch,
+          batchSize: 5,
+          model: 'Qwen 2.5 72B',
+          state: TranslationJobState.running,
+          batch: TranslationBatch(index: 2, range: TranslationRange(1, 2)),
+          estimateTokens: 4000,
+          createdAt: now,
+          updatedAt: now,
+        ),
+        paragraphs: paras,
+        values: values,
+        runningKeys: {textKey(paras[4].text, 'zh')},
+        loading: false,
+      );
+
+      final mockRunning = MockFullTranslationController('demo-1', 'c1', 'zh', runningState);
+
+      // 1. Capsule VoiceOver label & Grid cell labels with Reduce Motion enabled
+      await tester.pumpWidget(
+        testHost(
+          overrides: [
+            ...baseOverrides,
+            fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => mockRunning),
+          ],
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FullTranslationCapsule(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+                SizedBox(
+                  width: 372,
+                  child: FullTranslationPanel(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final capsuleSemantics = tester.getSemantics(find.byType(FullTranslationCapsule));
+      expect(capsuleSemantics.label, '全文翻译，25%，第 2 批，1 / 4 页');
+      expect(capsuleSemantics.flagsCollection.isButton, isTrue);
+
+      expect(find.bySemanticsLabel('第 1 页 · 已译'), findsOneWidget);
+      expect(find.bySemanticsLabel('第 2 页 · 翻译中'), findsOneWidget);
+      expect(find.bySemanticsLabel('第 3 页 · 未翻译'), findsOneWidget);
+
+      // 2. Checkpoint dialog role & non-focus-stealing behavior
+      final readerFocus = FocusNode(debugLabel: 'reader-focus');
+
+      final reviewState = runningState.copyWith(job: runningState.job!.copyWith(state: TranslationJobState.review));
+      final mockReview = MockFullTranslationController('demo-1', 'c1', 'zh', reviewState);
+
+      await tester.pumpWidget(
+        testHost(
+          overrides: [...baseOverrides, fullTranslationProvider(('demo-1', 'c1', 'zh')).overrideWith(() => mockReview)],
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Focus(focusNode: readerFocus, autofocus: true, child: const SizedBox(width: 40, height: 40)),
+              const SizedBox(
+                width: 420,
+                child: FullTranslationCheckpoint(studySetId: 'demo-1', documentId: 'c1', targetLang: 'zh'),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(readerFocus.hasFocus, isTrue, reason: 'Checkpoint must not steal focus from reader');
+      final ckptSemantics = tester.getSemantics(find.byType(FullTranslationCheckpoint));
+      expect(ckptSemantics.role, SemanticsRole.dialog);
+      expect(ckptSemantics.flagsCollection.namesRoute, isTrue);
+      expect(ckptSemantics.flagsCollection.scopesRoute, isTrue);
+      expect(ckptSemantics.flagsCollection.isLiveRegion, isTrue);
+      expect(ckptSemantics.label, contains('第 2 批已完成'));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      readerFocus.dispose();
+      semanticsHandle.dispose();
+    });
   });
 }

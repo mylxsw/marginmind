@@ -2792,6 +2792,27 @@
       "total": { "type": "int" }
     }
   },
+  "fullTranslationStripBadKey": "API key invalid, paused",
+  "fullTranslationStripSavedNote": "Translated content saved",
+  "fullTranslationStripNoModel": "No AI model available, paused",
+  "fullTranslationStripStorage": "Couldn't save translation, paused",
+  "fullTranslationStripOffline": "Network unavailable, resumes automatically when online",
+  "fullTranslationStripBudget": "Used {tokens} tokens, 50% over estimate",
+  "@fullTranslationStripBudget": {
+    "placeholders": {
+      "tokens": { "type": "String" }
+    }
+  },
+  "fullTranslationStripOpenSettings": "Open Settings",
+  "fullTranslationStripRetry": "Retry",
+  "fullTranslationHudNetworkRestored": "Network restored, resuming translation",
+  "fullTranslationNotificationBodyFailed": "{doc} · {count} untranslated",
+  "@fullTranslationNotificationBodyFailed": {
+    "placeholders": {
+      "doc": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
   "phoneGlassTitle": "Phone Liquid Glass",
   "phoneGlassRegular": "Regular",
   "phoneGlassThick": "Thick",

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsRole;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mm_core/mm_core.dart';
 import 'package:mm_design/mm_design.dart';
@@ -82,6 +83,11 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
     if (state.checkpointCollapsed) {
       return Semantics(
         container: true,
+        role: SemanticsRole.dialog,
+        namesRoute: true,
+        scopesRoute: true,
+        liveRegion: true,
+        explicitChildNodes: true,
         label: l.fullTranslationCkptMin(job.batch.index),
         child: MMGlass(
           borderRadius: BorderRadius.circular(20),
@@ -110,8 +116,10 @@ class _FullTranslationCheckpointState extends ConsumerState<FullTranslationCheck
     }
 
     return Semantics(
+      role: SemanticsRole.dialog,
       namesRoute: true,
       scopesRoute: true,
+      liveRegion: true,
       explicitChildNodes: true,
       label: l.fullTranslationCkptBatchDone(job.batch.index),
       child: MMGlass(

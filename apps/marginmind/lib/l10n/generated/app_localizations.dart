@@ -9416,6 +9416,66 @@ abstract class AppLocalizations {
   /// **'Full translation, {percent}%, batch {batch}, {done} / {total} pages'**
   String fullTranslationCapsuleA11y(int percent, int batch, int done, int total);
 
+  /// No description provided for @fullTranslationStripBadKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key invalid, paused'**
+  String get fullTranslationStripBadKey;
+
+  /// No description provided for @fullTranslationStripSavedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated content saved'**
+  String get fullTranslationStripSavedNote;
+
+  /// No description provided for @fullTranslationStripNoModel.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI model available, paused'**
+  String get fullTranslationStripNoModel;
+
+  /// No description provided for @fullTranslationStripStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save translation, paused'**
+  String get fullTranslationStripStorage;
+
+  /// No description provided for @fullTranslationStripOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Network unavailable, resumes automatically when online'**
+  String get fullTranslationStripOffline;
+
+  /// No description provided for @fullTranslationStripBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Used {tokens} tokens, 50% over estimate'**
+  String fullTranslationStripBudget(String tokens);
+
+  /// No description provided for @fullTranslationStripOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get fullTranslationStripOpenSettings;
+
+  /// No description provided for @fullTranslationStripRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get fullTranslationStripRetry;
+
+  /// No description provided for @fullTranslationHudNetworkRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Network restored, resuming translation'**
+  String get fullTranslationHudNetworkRestored;
+
+  /// No description provided for @fullTranslationNotificationBodyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{doc} · {count} untranslated'**
+  String fullTranslationNotificationBodyFailed(String doc, int count);
+
   /// No description provided for @phoneGlassTitle.
   ///
   /// In en, this message translates to:

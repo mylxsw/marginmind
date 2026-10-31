@@ -5140,6 +5140,40 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get fullTranslationStripBadKey => 'API Key 无效，已暂停';
+
+  @override
+  String get fullTranslationStripSavedNote => '已译内容已保存';
+
+  @override
+  String get fullTranslationStripNoModel => '没有可用的模型，已暂停';
+
+  @override
+  String get fullTranslationStripStorage => '无法保存译文，已暂停';
+
+  @override
+  String get fullTranslationStripOffline => '网络不可用，联网后自动继续';
+
+  @override
+  String fullTranslationStripBudget(String tokens) {
+    return '已用 $tokens token，超出预估 50%';
+  }
+
+  @override
+  String get fullTranslationStripOpenSettings => '打开设置';
+
+  @override
+  String get fullTranslationStripRetry => '重试';
+
+  @override
+  String get fullTranslationHudNetworkRestored => '网络已恢复，继续翻译';
+
+  @override
+  String fullTranslationNotificationBodyFailed(String doc, int count) {
+    return '$doc · $count 段未译';
+  }
+
+  @override
   String get phoneGlassTitle => '手机 Liquid Glass';
 
   @override

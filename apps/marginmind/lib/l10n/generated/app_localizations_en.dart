@@ -5363,6 +5363,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get fullTranslationStripBadKey => 'API key invalid, paused';
+
+  @override
+  String get fullTranslationStripSavedNote => 'Translated content saved';
+
+  @override
+  String get fullTranslationStripNoModel => 'No AI model available, paused';
+
+  @override
+  String get fullTranslationStripStorage => 'Couldn\'t save translation, paused';
+
+  @override
+  String get fullTranslationStripOffline => 'Network unavailable, resumes automatically when online';
+
+  @override
+  String fullTranslationStripBudget(String tokens) {
+    return 'Used $tokens tokens, 50% over estimate';
+  }
+
+  @override
+  String get fullTranslationStripOpenSettings => 'Open Settings';
+
+  @override
+  String get fullTranslationStripRetry => 'Retry';
+
+  @override
+  String get fullTranslationHudNetworkRestored => 'Network restored, resuming translation';
+
+  @override
+  String fullTranslationNotificationBodyFailed(String doc, int count) {
+    return '$doc · $count untranslated';
+  }
+
+  @override
   String get phoneGlassTitle => 'Phone Liquid Glass';
 
   @override
