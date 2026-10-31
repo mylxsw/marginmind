@@ -20,13 +20,12 @@ class MapGenerationFailure extends ResearchFailure {
     this.acceptedLines = 0,
     Map<String, int> rejections = const {},
     this.stopReason,
-    this.outputLimit = 0,
     this.reasoningCharacters = 0,
   }) : rejections = Map.unmodifiable(rejections),
        super(failure.kind, failure.code, failure.message, failure.statusCode);
   final MapLinePhase phase;
   final String model;
-  final int receivedLines, acceptedLines, outputLimit, reasoningCharacters;
+  final int receivedLines, acceptedLines, reasoningCharacters;
   final Map<String, int> rejections;
   final String? stopReason;
 }
@@ -149,7 +148,6 @@ MapLine? parseMapLine(String line, MapLineContext ctx, {void Function(String rea
     return null;
   }
 
-  if (line.length > 65536) return reject('lineSize');
   Object? decoded;
   try {
     decoded = jsonDecode(line);
@@ -180,7 +178,7 @@ MapLine? parseMapLine(String line, MapLineContext ctx, {void Function(String rea
     MapLineKind.remove => {'op', 'node', 'why'},
   };
   if (j.keys.any((k) => !allowed.contains(k))) return reject('unexpectedKeys');
-  bool nonempty(Object? s) => s is String && s.trim().isNotEmpty && s.length <= 12000;
+  bool nonempty(Object? s) => s is String && s.trim().isNotEmpty;
   final adding = kind == MapLineKind.add || kind == MapLineKind.point;
   final ref = j[chapter ? 'id' : 'ref'];
   if (adding &&
@@ -195,7 +193,7 @@ MapLine? parseMapLine(String line, MapLineContext ctx, {void Function(String rea
   String? title;
   if (adding || kind == MapLineKind.rename) {
     if (!nonempty(rawTitle)) return reject('invalidTitle');
-    title = expansionTitle(rawTitle as String);
+    title = (rawTitle as String).trim().replaceAll(RegExp(r'\s+'), ' ');
     if (normalizeExpansionTitle(title).isEmpty) return reject('invalidTitle');
     if (adding && ctx._titles.contains(normalizeExpansionTitle(title))) return reject('duplicateTitle');
   }
@@ -244,7 +242,6 @@ MapLine? parseMapLine(String line, MapLineContext ctx, {void Function(String rea
           page > 0 &&
           rawQuote is String &&
           rawQuote.trim().isNotEmpty &&
-          rawQuote.length <= 12000 &&
           (ctx.quoteTextByPage[docAlias]?[page]?.contains(rawQuote) ?? false)
       ? rawQuote
       : null;
@@ -382,7 +379,7 @@ class MapChapterInput {
   final MapLineContext context;
   final Map<int, String> textByPage;
 
-  /// Annotation alias → quote and user comment, already budgeted by host.
+  /// Annotation alias → quote and user comment, included in full by the host.
   final Map<String, String> annotations;
   final bool extractQuotes;
   final MapOrganization organization;

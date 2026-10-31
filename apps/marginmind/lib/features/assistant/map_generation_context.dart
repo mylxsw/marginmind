@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:mm_core/mm_core.dart';
-import 'package:mm_assistant/mm_assistant.dart' show mapChapterPayload, mapChapterSystemPrompt;
 
 import '../workspace/reflow_document.dart';
 
@@ -47,13 +46,12 @@ class DocumentDigestBuilder {
     bool extractQuotes = false,
     MapOrganization organization = MapOrganization.chapter,
     String? instructions,
-    int inputCharacters = 24000,
     CancellationToken? cancellation,
   }) async {
     final cancel = cancellation ?? CancellationToken();
     cancel.check();
     final document = snapshot.document(documentId);
-    if (document == null || inputCharacters < 1024) {
+    if (document == null) {
       throw const ResearchFailure(ResearchFailureKind.invalidRequest);
     }
     final units = <_DigestUnit>[];
@@ -222,91 +220,74 @@ class DocumentDigestBuilder {
     );
     final result = <MapDigestChapter>[];
     for (final range in ranges) {
-      // Count encoded characters rather than assuming a multiplier for CJK.
-      final bodyLimit = inputCharacters ~/ 2, annotationLimit = inputCharacters ~/ 5;
-      var part = 0;
-      for (var start = range.start; start < range.end;) {
-        final slice = _slicePages(units, start, range.end, bodyLimit);
-        final end = slice.end, pages = slice.pages, unitIds = slice.unitIds;
-        final aliases = <String, String>{}, texts = <String, String>{};
-        bool addText(String alias, String text) {
-          final available =
-              annotationLimit - jsonEncode(texts).length - (texts.isEmpty ? 0 : 1) - jsonEncode(alias).length - 1 - 2;
-          if (available <= 0) return false;
-          final end = _encodedEnd(text, 0, text.length, available);
-          if (end == 0) return false;
-          texts[alias] = text.substring(0, end);
-          return true;
+      cancel.check();
+      if (range.end <= range.start) continue;
+      final slice = _slicePages(units, range.start, range.end);
+      final pages = slice.pages, unitIds = slice.unitIds;
+      final aliases = <String, String>{}, texts = <String, String>{};
+      if (includeAnnotations) {
+        for (final a in annotations) {
+          final matches = a.isText
+              ? a.textAnchors.any((t) => unitIds.contains(t.chapterId))
+              : a.pages.any((p) => pages.containsKey(p.page));
+          if (!matches) continue;
+          final text = jsonEncode({
+            'quote': a.quote,
+            'kind': a.kind.name,
+            if (!a.isText) 'pages': a.pages.map((p) => p.page).toList(),
+          });
+          final alias = 'A${aliases.length + 1}';
+          texts[alias] = text;
+          aliases[alias] = a.id;
         }
-
-        if (includeAnnotations) {
-          for (final a in annotations) {
-            final matches = a.isText
-                ? a.textAnchors.any((t) => unitIds.contains(t.chapterId))
-                : a.pages.any((p) => pages.containsKey(p.page));
-            if (!matches) continue;
-            final text = jsonEncode({
-              'quote': a.quote,
-              'kind': a.kind.name,
-              if (!a.isText) 'pages': a.pages.map((p) => p.page).toList(),
-            });
-            final alias = 'A${aliases.length + 1}';
-            if (!addText(alias, text)) break;
-            aliases[alias] = a.id;
-          }
-          // Independent document notes also belong to the reading context, but
-          // never receive annotation aliases (they cannot be attached as excerpts).
-          for (final (index, note)
-              in comments.where((n) => n.pages.any(pages.containsKey) || n.chapters.any(unitIds.contains)).indexed) {
-            if (!addText('comment${index + 1}', note.text)) break;
-          }
+        // Independent document notes also belong to the reading context, but
+        // never receive annotation aliases (they cannot be attached as excerpts).
+        for (final (index, note)
+            in comments.where((n) => n.pages.any(pages.containsKey) || n.chapters.any(unitIds.contains)).indexed) {
+          texts['comment${index + 1}'] = note.text;
         }
-        final chapterId = '$documentId:${range.id}:${part++}';
-        final ctx = MapLineContext(
-          phase: MapLinePhase.chapter,
-          mapId: mapId,
-          draftPrefix: '$draftPrefix${result.length}-',
-          documents: {documentAlias: documentId},
-          // Reflow units are canonical spine sections, not physical pages.
-          pages: {documentAlias: reflow ? <int>{} : pages.keys.toSet()},
-          annotations: aliases,
-          quoteTextByPage: extractQuotes ? {documentAlias: pages} : const {},
-        );
-        final input = MapChapterInput(
-          chapterId: chapterId,
-          documentAlias: documentAlias,
-          context: ctx,
-          textByPage: pages,
-          annotations: texts,
-          organization: organization,
-          extractQuotes: extractQuotes,
-          instructions: instructions,
-        );
-        if (mapChapterSystemPrompt.length + jsonEncode(mapChapterPayload(input)).length > inputCharacters) {
-          throw const ResearchFailure(ResearchFailureKind.budget, 'chapterMetadataExceedsBudget');
-        }
-        result.add(
-          MapDigestChapter(
-            input: input,
-            fingerprint: mapContentHash({
-              'extractQuotes': extractQuotes,
-              'pages': {for (final e in pages.entries) '${e.key}': e.value},
-              'annotations': texts,
-              'anchors': {for (final id in aliases.values) id: annotationData[id]},
-              'aliases': aliases,
-              'progress': [
-                for (final p in pages.keys)
-                  if (p <= readThrough) p,
-              ],
-              'textProgress': switch (document.readingPosition) {
-                TextReadingPosition(:final chapterId, :final offset) when unitIds.contains(chapterId) => offset,
-                _ => null,
-              },
-            }),
-          ),
-        );
-        start = end;
       }
+      final chapterId = '$documentId:${range.id}:0';
+      final ctx = MapLineContext(
+        phase: MapLinePhase.chapter,
+        mapId: mapId,
+        draftPrefix: '$draftPrefix${result.length}-',
+        documents: {documentAlias: documentId},
+        // Reflow units are canonical spine sections, not physical pages.
+        pages: {documentAlias: reflow ? <int>{} : pages.keys.toSet()},
+        annotations: aliases,
+        quoteTextByPage: extractQuotes ? {documentAlias: pages} : const {},
+      );
+      final input = MapChapterInput(
+        chapterId: chapterId,
+        documentAlias: documentAlias,
+        context: ctx,
+        textByPage: pages,
+        annotations: texts,
+        organization: organization,
+        extractQuotes: extractQuotes,
+        instructions: instructions,
+      );
+      result.add(
+        MapDigestChapter(
+          input: input,
+          fingerprint: mapContentHash({
+            'extractQuotes': extractQuotes,
+            'pages': {for (final e in pages.entries) '${e.key}': e.value},
+            'annotations': texts,
+            'anchors': {for (final id in aliases.values) id: annotationData[id]},
+            'aliases': aliases,
+            'progress': [
+              for (final p in pages.keys)
+                if (p <= readThrough) p,
+            ],
+            'textProgress': switch (document.readingPosition) {
+              TextReadingPosition(:final chapterId, :final offset) when unitIds.contains(chapterId) => offset,
+              _ => null,
+            },
+          }),
+        ),
+      );
     }
     cancel.check();
     if (result.isEmpty) {
@@ -317,56 +298,17 @@ class DocumentDigestBuilder {
   }
 }
 
-// Largest rune-aligned prefix whose JSON string contents fit the allowance.
-// JSON encodes CJK verbatim; only controls, quotes and backslashes expand.
-int _encodedEnd(String text, int start, int end, int allowance) {
-  var i = start, used = 0;
-  while (i < end) {
-    final c = text.codeUnitAt(i);
-    final width =
-        c >= 0xd800 &&
-            c <= 0xdbff &&
-            i + 1 < end &&
-            text.codeUnitAt(i + 1) >= 0xdc00 &&
-            text.codeUnitAt(i + 1) <= 0xdfff
-        ? 2
-        : 1;
-    final cost = switch (c) {
-      34 || 92 || 8 || 9 || 10 || 12 || 13 => 2,
-      < 32 => 6,
-      >= 0xd800 && <= 0xdfff when width == 1 => 6,
-      _ => width,
-    };
-    if (used + cost > allowance) break;
-    used += cost;
-    i += width;
-  }
-  return i;
-}
-
-({int end, Map<int, String> pages, Set<String> unitIds}) _slicePages(
-  List<_DigestUnit> units,
-  int start,
-  int end,
-  int allowance,
-) {
+// Read complete outline sections (or complete pages when there is no outline).
+// Model capacity belongs to the provider; never clip text, marks or comments.
+({Map<int, String> pages, Set<String> unitIds}) _slicePages(List<_DigestUnit> units, int start, int end) {
   final pages = <int, String>{}, unitIds = <String>{};
-  var used = 2, through = start; // JSON object braces.
   for (final u in units) {
     final a = math.max(start, u.start), b = math.min(end, u.start + u.text.length);
     if (b <= a) continue;
-    final overhead = jsonEncode('${u.page}').length + 1 + 2 + (pages.isEmpty ? 0 : 1);
-    final stop = _encodedEnd(u.text, a - u.start, b - u.start, allowance - used - overhead);
-    if (stop == a - u.start) break;
-    final text = u.text.substring(a - u.start, stop);
-    pages[u.page] = text;
+    pages[u.page] = u.text.substring(a - u.start, b - u.start);
     unitIds.add(u.chapter);
-    used += overhead + jsonEncode(text).length - 2;
-    through = u.start + stop;
-    if (through < b) break;
   }
-  if (through == start) throw const ResearchFailure(ResearchFailureKind.budget, 'chapterTextExceedsBudget');
-  return (end: through, pages: pages, unitIds: unitIds);
+  return (pages: pages, unitIds: unitIds);
 }
 
 PdfOutlineEntry _bookOutline(ReflowDocument book, String id) {

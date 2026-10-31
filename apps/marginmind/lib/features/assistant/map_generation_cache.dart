@@ -52,7 +52,7 @@ class MapDigestCache {
         String? text;
         if (directory case final dir?) {
           final file = File(p.join(dir.path, '$key.json'));
-          if (!await file.exists() || await file.length() > 2097152) return null;
+          if (!await file.exists()) return null;
           text = await file.readAsString();
         } else {
           text = _memory[key];
@@ -117,7 +117,6 @@ class MapDigestCache {
       'annotationAliases': annotations,
       'lines': lines,
     });
-    if (utf8.encode(text).length > 2097152) throw ArgumentError('Digest exceeds cache budget');
     return _queue(() async {
       if (epoch != _epoch) return;
       if (directory case final dir?) {

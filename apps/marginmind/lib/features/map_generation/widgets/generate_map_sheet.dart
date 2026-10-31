@@ -658,7 +658,6 @@ class _GenerateMapSheetState extends ConsumerState<GenerateMapSheet> {
                               controller: _instructionsController,
                               minLines: 2,
                               maxLines: 6,
-                              maxLength: 500,
                               buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
                               style: t.body,
                               decoration: InputDecoration(

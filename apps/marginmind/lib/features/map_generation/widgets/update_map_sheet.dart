@@ -154,7 +154,7 @@ class _UpdateMapSheetState extends ConsumerState<UpdateMapSheet> {
                   ],
                 ),
                 const SizedBox(height: MMSpacing.m),
-                MMTextField(controller: _instructions, placeholder: l.mapIdeaHint, maxLines: 3, maxLength: 500),
+                MMTextField(controller: _instructions, placeholder: l.mapIdeaHint, maxLines: 3),
                 const SizedBox(height: MMSpacing.m),
                 Text(l.mapUpdateProtected(protected), style: context.mmText.footnote),
                 if (_needsSetup) const ModelSetupCard(inline: true),

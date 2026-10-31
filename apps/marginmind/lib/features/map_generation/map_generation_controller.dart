@@ -309,10 +309,10 @@ final mapGeneratorProvider = Provider<Future<MapGenerator> Function()>(
     if (model.provider != AssistantProvider.ollama && (key == null || key.isEmpty)) {
       throw const ResearchFailure(ResearchFailureKind.authentication, 'missingKey');
     }
-    // Each chapter/build owns its timeout and response budget. A shared
+    // Each request owns its timeout, with no input/output usage quota. A shared
     // connection deadline would expire midway through a multi-chapter document.
     return ModelMapGenerator(
-      connectAssistant(model, key ?? '', budget: null, requestTimeout: const Duration(minutes: 2)),
+      connectAssistant(model, key ?? '', budget: null, requestTimeout: mapGenerationRequestTimeout),
       model.model,
     );
   },

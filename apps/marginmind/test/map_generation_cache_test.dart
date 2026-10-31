@@ -96,6 +96,24 @@ void main() {
     expect(() => cache.write(key, [point]), throwsArgumentError);
     expect(() => cache.write('x', [point]), throwsArgumentError);
   });
+  test('large successful digests round trip in memory and on disk without a size quota', () async {
+    final dir = await Directory.systemTemp.createTemp('large-map-cache-test-');
+    addTearDown(() => dir.delete(recursive: true));
+    final quote = '引' * 70000;
+    final lines = [
+      for (var i = 0; i < 12; i++)
+        jsonEncode({'k': 'point', 'id': 'p$i', 'title': 'Point $i', 'doc': 'D1', 'page': 1, 'quote': quote}),
+    ];
+    expect(utf8.encode(jsonEncode(lines)).length, greaterThan(2097152));
+    for (final cache in [MapDigestCache(null), MapDigestCache(dir)]) {
+      final key = 'f' * 64;
+      await cache.write(key, lines, context: ctx());
+      final cached = await cache.read(key, context: ctx(doc: 'D2'));
+      expect(cached, hasLength(lines.length));
+      expect(cached!.map((raw) => jsonDecode(raw)['quote']), everyElement(quote));
+      expect(cached.map((raw) => jsonDecode(raw)['doc']), everyElement('D2'));
+    }
+  });
   test('provider selects memory and checks current source existence', () async {
     final repo = InMemoryStudySetContentRepository();
     final container = ProviderContainer(overrides: [contentRepositoryProvider.overrideWithValue(repo)]);

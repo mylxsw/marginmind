@@ -10,6 +10,7 @@ import 'package:mm_core/mm_core.dart';
 import 'package:test/test.dart';
 
 import 'support.dart';
+import 'providers_test.dart' show Adapter;
 import 'expansion_test.dart' show RecordedChunks;
 
 MapLineContext context(MapLinePhase phase, {String prefix = 'draft-'}) => MapLineContext(
@@ -51,19 +52,21 @@ MapBuildInput build(
   existingTitles: {'N1': 'Old', 'private-leak': 'omit'},
   existingParents: {'N1': 'ROOT', 'private-leak': 'private-id'},
 );
-ModelMapGenerator generator(LLMClient client, {ResearchBudget? budget, void Function(String)? invalid}) =>
-    ModelMapGenerator(
-      AssistantConnection(client, Dio()),
-      'fake',
-      chapterBudget: budget ?? const ResearchBudget(duration: Duration(seconds: 2)),
-      buildBudget: budget ?? const ResearchBudget(duration: Duration(seconds: 2)),
-      onInvalidLine: invalid,
-    );
+ModelMapGenerator generator(
+  LLMClient client, {
+  Duration requestTimeout = const Duration(seconds: 2),
+  void Function(String)? invalid,
+}) => ModelMapGenerator(
+  AssistantConnection(client, Dio()),
+  'fake',
+  requestTimeout: requestTimeout,
+  onInvalidLine: invalid,
+);
 const point = '{"k":"point","id":"p1","title":"First","doc":"D1","page":1,"marks":["A1"]}';
 const topic = '{"ref":"a","parent":"ROOT","title":"Topic","doc":"D1","page":1}';
 final cancelled = isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.cancelled);
 void main() {
-  test('truncation preserves stage, reasoning and limits without exposing response text', () async {
+  test('truncation preserves stage and reasoning without exposing response text', () async {
     final client = ScriptClient([
       ModelMessage(model: 'fake', thought: 'thinking', textOutput: 'private response', stopReason: 'length'),
     ]);
@@ -111,12 +114,88 @@ void main() {
     expect(retried.single.title, 'First');
     await model.close();
   });
-  test('default output budgets leave room for reasoning in both phases', () async {
-    final client = ScriptClient([answer(point), answer(topic)]);
-    final model = ModelMapGenerator(AssistantConnection(client, Dio()), 'reasoning-model');
+  test('normal stop accepts 27 valid lines despite large reasoning and reported token usage', () async {
+    final output = [
+      for (var i = 1; i <= 27; i++) jsonEncode({'k': 'point', 'id': 'p$i', 'title': '要点 $i', 'doc': 'D1', 'page': 1}),
+    ].join('\n');
+    final client = ScriptClient([
+      ModelMessage(
+        model: 'deepseek-flash',
+        thought: '思' * 21832,
+        textOutput: output,
+        stopReason: 'stop',
+        usage: ModelUsage(promptTokens: 100000, completionTokens: 20000, totalTokens: 120000),
+      ),
+      answer(topic),
+      answer('{"op":"rename","node":"N1","title":"Revised"}'),
+    ]);
+    final model = ModelMapGenerator(AssistantConnection(client, Dio()), 'deepseek-flash');
     final points = await model.readChapter(chapter(), CancellationToken()).toList();
+    expect(points, hasLength(27));
     await model.generate(build(MapLinePhase.generation, points), CancellationToken()).toList();
-    expect(client.modelConfigs.map((c) => c.maxTokens), [8192, 16384]);
+    await model.update(build(MapLinePhase.diff, points), CancellationToken()).toList();
+    expect(client.modelConfigs.map((c) => c.maxTokens), [null, null, null]);
+    await model.close();
+  });
+  test('compatible wire requests omit token caps and accept large responses with final usage', () async {
+    final chapterOutput = [
+      for (var i = 1; i <= 27; i++) jsonEncode({'k': 'point', 'id': 'p$i', 'title': 'Point $i'}),
+    ].join('\n');
+    final adapter = Adapter((options, n) {
+      final request = options.data is String ? jsonDecode(options.data) : options.data;
+      for (final field in ['max_tokens', 'max_completion_tokens', 'max_output_tokens']) {
+        expect(request.containsKey(field), isFalse);
+      }
+      final output = n == 1
+          ? '$chapterOutput${' ' * 3000000}'
+          : n == 2
+          ? topic
+          : '{"op":"rename","node":"N1","title":"Revised"}';
+      return ResponseBody.fromString(
+        [
+          'data: ${jsonEncode({
+            'model': 'reasoning',
+            'choices': [
+              {
+                'index': 0,
+                'delta': {'content': output, 'reasoning_content': '思' * 21832},
+                'finish_reason': 'stop',
+              },
+            ],
+          })}',
+          '',
+          'data: ${jsonEncode({
+            'model': 'reasoning',
+            'choices': [],
+            'usage': {'prompt_tokens': 100000, 'completion_tokens': 20000, 'total_tokens': 120000},
+          })}',
+          '',
+          'data: [DONE]',
+          '',
+        ].join('\n'),
+        200,
+        headers: {
+          Headers.contentTypeHeader: ['text/event-stream'],
+        },
+      );
+    });
+    final connection = connectAssistant(
+      const AssistantModel(
+        provider: AssistantProvider.compatible,
+        model: 'reasoning',
+        endpoint: 'https://example.com/v1',
+      ),
+      'fake-key',
+      budget: null,
+      requestTimeout: mapGenerationRequestTimeout,
+      adapter: adapter,
+    );
+    final model = ModelMapGenerator(connection, 'reasoning');
+    final points = await model.readChapter(chapter(), CancellationToken()).toList();
+    expect(points, hasLength(27));
+    expect(await model.generate(build(MapLinePhase.generation, points), CancellationToken()).length, 1);
+    expect(await model.update(build(MapLinePhase.diff, points), CancellationToken()).length, 1);
+    expect(adapter.calls, 3);
     await model.close();
   });
   test('HTTP request failures preserve status and correct classification', () async {
@@ -165,65 +244,13 @@ void main() {
 
   MapLine p(String id, [String? parent]) =>
       MapLine(id: id, kind: MapLineKind.point, title: id, parentId: parent == null ? 'private-map' : 'new:$parent');
-  test('budget fitting removes deepest then latest, preserving ancestor closure and input order', () {
-    final points = [p('r1'), p('c1', 'r1'), p('l1', 'c1'), p('r2'), p('c2', 'r2'), p('l2', 'c2')];
-    final expected = {
-      6: ['r1', 'c1', 'l1', 'r2', 'c2', 'l2'],
-      5: ['r1', 'c1', 'l1', 'r2', 'c2'],
-      4: ['r1', 'c1', 'r2', 'c2'],
-      3: ['r1', 'c1', 'r2'],
-      2: ['r1', 'r2'],
-      1: ['r1'],
-      0: <String>[],
-    };
-    for (final e in expected.entries) {
-      final kept = fitPointsToBudget(points, inputCharacters: e.key + 1, measure: (ps) => ps.length + 1);
-      expect(kept.map((p) => p.id), e.value);
-      final refs = kept.map((p) => 'new:${p.id}').toSet();
-      expect(kept.every((p) => !p.parentId!.startsWith('new:') || refs.contains(p.parentId)), isTrue);
-    }
-    expect(points, hasLength(6));
-    expect(
-      () => fitPointsToBudget(points, inputCharacters: 1, measure: (_) => 2),
-      throwsA(isA<ResearchFailure>().having((e) => e.code, 'code', 'mapStructureExceedsBudget')),
-    );
-    for (final invalid in [
-      [p('a'), p('a')],
-      [p('a', 'b'), p('b', 'a')],
-      [p('a', 'missing')],
-      [MapLine(id: 'a', kind: MapLineKind.add)],
-    ]) {
-      expect(
-        () => fitPointsToBudget(invalid, inputCharacters: 100, measure: (ps) => ps.length),
-        throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.invalidRequest)),
-      );
-    }
-    expect(() => fitPointsToBudget([], inputCharacters: 0, measure: (_) => 0), throwsA(isA<ResearchFailure>()));
-    expect(fitPointsToBudget([], inputCharacters: 10, measure: (_) => 1), isEmpty);
-  });
-  test('large point lists use logarithmically many size measurements', () {
-    final points = [for (var i = 0; i < 10000; i++) p('root$i')];
-    var measures = 0;
-    final kept = fitPointsToBudget(
-      points,
-      inputCharacters: 2000,
-      measure: (ps) {
-        measures++;
-        return ps.length;
-      },
-    );
-    expect(kept, hasLength(2000));
-    expect(kept.last.id, 'root1999');
-    expect(measures, lessThanOrEqualTo(17));
-  });
-  test('generate and update fit actual prompts, aliases and structure into configured budget', () async {
-    final points = [for (var i = 0; i < 1000; i++) p('point$i', i % 3 == 0 ? null : 'point${i - i % 3}')];
+  test('generate and update preserve every point and parent in large requests', () async {
+    final points = [for (var i = 0; i < 10000; i++) p('point$i', i % 3 == 0 ? null : 'point${i - i % 3}')];
     for (final phase in [MapLinePhase.generation, MapLinePhase.diff]) {
       final client = ScriptClient([
         answer(phase == MapLinePhase.generation ? topic : '{"op":"add","ref":"a","parent":"ROOT","title":"Topic"}'),
       ]);
-      const budget = ResearchBudget(inputCharacters: 2400);
-      final model = generator(client, budget: budget);
+      final model = generator(client);
       final input = build(phase, points);
       final result =
           await (phase == MapLinePhase.generation
@@ -231,37 +258,79 @@ void main() {
                   : model.update(input, CancellationToken()))
               .toList();
       expect(result, hasLength(1));
-      final request = client.requests.single;
-      final text = (request.last as UserMessage).contents.whereType<TextPart>().single.text;
-      expect((request.first as SystemMessage).content.length + text.length, lessThanOrEqualTo(budget.inputCharacters));
+      final text = (client.requests.single.last as UserMessage).contents.whereType<TextPart>().single.text;
+      expect(text.length, greaterThan(30000));
       final payload = jsonDecode(text) as Map;
-      final kept = payload['points'] as List;
-      expect(kept.length, inInclusiveRange(1, 999));
-      expect(kept.first['title'], 'point0');
-      final refs = kept.map((p) => p['id']).toSet();
-      expect(kept.every((p) => p['parent'] == 'ROOT' || refs.contains(p['parent'])), isTrue);
-      expect(input.points, hasLength(1000));
+      final sent = payload['points'] as List;
+      expect(sent, hasLength(points.length));
+      for (var i = 0; i < points.length; i++) {
+        expect(sent[i]['title'], points[i].title);
+        expect(sent[i]['parent'], i % 3 == 0 ? 'ROOT' : 'p${i - i % 3 + 1}');
+      }
       expect(text, isNot(contains('private-')));
       await model.close();
     }
   });
-  test('metadata-only overflows and a single oversized point fail without a model call', () async {
-    for (final allowance in [5, 1300]) {
-      final client = ScriptClient([]);
-      final limited = generator(client, budget: ResearchBudget(inputCharacters: allowance));
-      final stream = limited.generate(
-        build(MapLinePhase.generation, [
-          MapLine(id: 'huge', kind: MapLineKind.point, parentId: 'private-map', title: 'x' * 10000),
-        ]),
-        CancellationToken(),
-      );
+  test('duplicate, missing and cyclic point references still fail before sending', () async {
+    for (final points in [
+      [p('a'), p('a')],
+      [p('a', 'b'), p('b', 'a')],
+      [p('a', 'missing')],
+      [MapLine(id: 'a', kind: MapLineKind.add)],
+    ]) {
+      final client = ScriptClient([]), model = generator(client);
       await expectLater(
-        stream.toList(),
-        throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.budget)),
+        model.generate(build(MapLinePhase.generation, points), CancellationToken()).toList(),
+        throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.invalidRequest)),
       );
       expect(client.calls, 0);
-      await limited.close();
+      await model.close();
     }
+  });
+  test('chapter input and large responses have no character, line or byte quota', () async {
+    final source = '文' * 100000;
+    final quote = '引' * 70000;
+    final chapterInput = MapChapterInput(
+      chapterId: 'large',
+      documentAlias: 'D1',
+      textByPage: {1: source + quote},
+      annotations: {'A1': '注' * 50000},
+      instructions: '要求' * 2000,
+      context: MapLineContext(
+        phase: MapLinePhase.chapter,
+        mapId: 'private-map',
+        draftPrefix: 'large-',
+        documents: {'D1': 'private-document'},
+        pages: {
+          'D1': {1},
+        },
+        quoteTextByPage: {
+          'D1': {1: source + quote},
+        },
+      ),
+    );
+    final output = [
+      for (var i = 0; i < 40; i++)
+        jsonEncode({'k': 'point', 'id': 'p$i', 'title': 'Point $i', 'doc': 'D1', 'page': 1, 'quote': quote}),
+    ].join('\n');
+    expect(utf8.encode(output).length, greaterThan(2097152));
+    final client = ScriptClient([answer(output)]), model = generator(client);
+    final points = await model.readChapter(chapterInput, CancellationToken()).toList();
+    expect(points, hasLength(40));
+    expect(points.every((p) => p.quote == quote), isTrue);
+    final payload = jsonDecode((client.requests.single.last as UserMessage).contents.whereType<TextPart>().single.text);
+    expect(payload['pages']['1'], source + quote);
+    expect(payload['annotations']['A1'], chapterInput.annotations['A1']);
+    expect(payload['instructions'], chapterInput.instructions);
+    await model.close();
+  });
+  test('each chapter has its own timeout without a session deadline', () async {
+    final client = ScriptClient([answer(point), answer(point)]);
+    final model = generator(client, requestTimeout: const Duration(milliseconds: 50));
+    expect(await model.readChapter(chapter(), CancellationToken()).length, 1);
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    expect(await model.readChapter(chapter(), CancellationToken()).length, 1);
+    await model.close();
   });
   test('three prompt snapshots', () {
     for (final e in {
@@ -319,7 +388,7 @@ void main() {
     expect(client.calls, 3);
     await model.close();
   });
-  test('oversized lines discarded until LF, CRLF and final unterminated line accepted', () async {
+  test('invalid long lines, CRLF and final unterminated line are parsed without clipping', () async {
     final invalid = <String>[];
     final client = StreamClient(
       (_) => Stream.fromIterable([
@@ -329,7 +398,7 @@ void main() {
     );
     final model = generator(client, invalid: invalid.add);
     expect(await model.readChapter(chapter(), CancellationToken()).toList(), hasLength(1));
-    expect(invalid, ['lineSize', 'invalidMapLine']);
+    expect(invalid, ['invalidMapLine', 'invalidMapLine']);
     await model.close();
   });
   test('cancellation and close abort silent streams and do not yield late lines', () async {
@@ -371,20 +440,17 @@ void main() {
     expect(seen, hasLength(1));
     await model.close();
   });
-  test('timeouts, bytes, input, stop reasons, control and tool protocols', () async {
-    for (final (client, budget, kind) in <(LLMClient, ResearchBudget?, ResearchFailureKind)>[
-      (StreamClient((_) => const Stream.empty()), null, ResearchFailureKind.protocol),
-      (ScriptClient([answer(point, stop: 'length')]), null, ResearchFailureKind.budget),
-      (ScriptClient([answer(point, stop: 'refusal')]), null, ResearchFailureKind.refusal),
-      (ScriptClient([answer(point, stop: null)]), null, ResearchFailureKind.protocol),
-      (ScriptClient([call('tool', '{}')]), null, ResearchFailureKind.toolProtocol),
-      (ScriptClient([answer(point)]), const ResearchBudget(responseBytes: 5), ResearchFailureKind.budget),
-      (ScriptClient([]), const ResearchBudget(inputCharacters: 5), ResearchFailureKind.budget),
+  test('timeouts, stop reasons, control and tool protocols', () async {
+    for (final (client, kind) in <(LLMClient, ResearchFailureKind)>[
+      (StreamClient((_) => const Stream.empty()), ResearchFailureKind.protocol),
+      (ScriptClient([answer(point, stop: 'length')]), ResearchFailureKind.budget),
+      (ScriptClient([answer(point, stop: 'refusal')]), ResearchFailureKind.refusal),
+      (ScriptClient([answer(point, stop: null)]), ResearchFailureKind.protocol),
+      (ScriptClient([call('tool', '{}')]), ResearchFailureKind.toolProtocol),
       (
         StreamClient(
           (_) => Stream.error(DioException(requestOptions: RequestOptions(), type: DioExceptionType.connectionError)),
         ),
-        null,
         ResearchFailureKind.network,
       ),
       (
@@ -396,11 +462,10 @@ void main() {
             ),
           ),
         ),
-        null,
         ResearchFailureKind.unavailable,
       ),
     ]) {
-      final model = generator(client, budget: budget);
+      final model = generator(client);
       await expectLater(
         model.readChapter(chapter(), CancellationToken()).toList(),
         throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', kind)),
@@ -408,10 +473,7 @@ void main() {
       await model.close();
     }
     final silent = StreamController<StreamingMessage>();
-    final model = generator(
-      StreamClient((_) => silent.stream),
-      budget: const ResearchBudget(duration: Duration(milliseconds: 10)),
-    );
+    final model = generator(StreamClient((_) => silent.stream), requestTimeout: const Duration(milliseconds: 10));
     await expectLater(
       model.readChapter(chapter(), CancellationToken()).toList(),
       throwsA(isA<ResearchFailure>().having((e) => e.kind, 'kind', ResearchFailureKind.timeout)),

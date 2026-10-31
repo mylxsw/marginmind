@@ -233,6 +233,40 @@ void main() {
     expect(() => context(depth: 0), throwsArgumentError);
     expect(() => context(nodes: {'real-id': 'node'}), throwsArgumentError);
   });
+  test('long titles, exact quotations and instructions survive parsing and applying', () {
+    final title = '标题内容' * 4000;
+    final quote = '引用原文' * 20000;
+    final ctx = MapLineContext(
+      phase: MapLinePhase.chapter,
+      mapId: 'main',
+      draftPrefix: 'long-',
+      documents: {'D1': 'doc'},
+      pages: {
+        'D1': {1},
+      },
+      quoteTextByPage: {
+        'D1': {1: quote},
+      },
+    );
+    final point = parseMapLine(
+      jsonEncode({'k': 'point', 'id': 'p1', 'title': title, 'doc': 'D1', 'page': 1, 'quote': quote}),
+      ctx,
+    )!;
+    expect(point.title, title);
+    expect(point.quote, quote);
+    final line = parseMapLine(jsonEncode({'ref': 'a', 'parent': 'ROOT', 'title': title}), context())!;
+    final before = content();
+    final after = apply(writes, before, proposal(before, [line]));
+    expect(after.cards.single.title, title);
+    final generation = MapGeneration(
+      sources: [source()],
+      organization: MapOrganization.chapter,
+      depth: 3,
+      instructions: '要求' * 10000,
+      generatedAt: time,
+    );
+    expect(MapGeneration.fromJson(generation.toJson()).instructions, generation.instructions);
+  });
   test('proposal ordering, selection cascade, missing parents, cycle and duplicate rejection', () {
     final c = content();
     final p = proposal(c, [add('child', parent: 'new:parent'), add('parent')]);

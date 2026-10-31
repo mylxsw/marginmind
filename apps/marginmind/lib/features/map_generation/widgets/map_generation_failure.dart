@@ -61,7 +61,6 @@ String mapGenerationFailureReport(AppLocalizations l, MapGenerationPreview previ
         '${l.mapFailureModel}: ${failure.model}',
         '${l.mapFailureLines}: ${failure.receivedLines} / ${failure.acceptedLines}',
         if (failure.stopReason != null) '${l.mapFailureStop}: ${failure.stopReason}',
-        '${l.mapFailureOutputLimit}: ${failure.outputLimit}',
         '${l.mapFailureReasoning}: ${failure.reasoningCharacters}',
         for (final entry in failure.rejections.entries)
           '${l.mapFailureRejected}: ${_rejectionLabel(l, entry.key)} (${entry.key}) × ${entry.value}',

@@ -55,7 +55,9 @@ class MapEditOperation {
     String? value(String key) {
       final v = j[key];
       if (v == null) return null;
-      if (v is! String || v.trim().isEmpty || v.length > 12000) throw const FormatException('Invalid operation value');
+      if (v is! String || v.trim().isEmpty || (!documentGeneration && v.length > 12000)) {
+        throw const FormatException('Invalid operation value');
+      }
       return v;
     }
 

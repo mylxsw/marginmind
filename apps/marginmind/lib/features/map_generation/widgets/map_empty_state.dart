@@ -248,7 +248,6 @@ class _MapEmptyStateState extends ConsumerState<MapEmptyState> {
                                 focusNode: _focusNode,
                                 minLines: 2,
                                 maxLines: 6,
-                                maxLength: 500,
                                 buildCounter: (context, {required currentLength, required isFocused, maxLength}) =>
                                     null,
                                 style: t.body.copyWith(height: 20 / 14),

@@ -57,8 +57,7 @@ class MapGeneration {
     if (sources.isEmpty ||
         sources.map((s) => s.documentId).toSet().length != sources.length ||
         depth < 2 ||
-        depth > 4 ||
-        (instructions?.runes.length ?? 0) > 500) {
+        depth > 4) {
       throw ArgumentError('Invalid map generation');
     }
   }

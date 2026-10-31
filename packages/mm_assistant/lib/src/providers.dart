@@ -55,7 +55,7 @@ class AssistantConnection {
 /// Compatible/Ollama accept a base URL or a complete chat endpoint.
 /// The safe adapter pins the resolved endpoint; SDKs receive its base.
 /// Retries only received 429/5xx, never network exceptions or partial streams.
-/// A null budget disables session duration/byte quotas for multi-section notes;
+/// A null budget disables session duration/byte quotas for document generation and multi-section notes;
 /// requestTimeout still applies to each individual request. Long-lived translation
 /// schedulers use perRequestBudget and own retries to keep calls and usage aligned.
 AssistantConnection connectAssistant(
