@@ -1,0 +1,1405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarginMind · 全文翻译（分批确认 / 一次完成）· 高保真交互原型</title>
+<style>
+/* Tokens mirror packages/mm_design (MMColors / MMTypography / MMRadii). */
+:root{
+  --win:#FFFFFF; --sidebar:rgba(242,242,246,.86); --reader:#F2F2F5; --card:#FFFFFF; --page:#FFFFFF; --pageText:#1d1d1f;
+  --label:#1D1D1F; --label2:#636366; --label3:#8E8E93; --icon:#6E6E73; --sep:rgba(0,0,0,.09); --fill:rgba(120,120,128,.12); --fill4:rgba(120,120,128,.08);
+  --sel:rgba(0,0,0,.075); --hover:rgba(0,0,0,.045); --pressed:rgba(0,0,0,.09);
+  --accent:#007AFF; --accentTint:rgba(0,122,255,.12); --accentPair:rgba(0,122,255,.09); --onAccent:#fff;
+  --glass:rgba(255,255,255,.90); --glassOpaque:#F7F7F9; --hair:rgba(0,0,0,.08);
+  --positive:#248A3D; --positiveTint:rgba(36,138,61,.10); --caution:#C93400; --cautionTint:rgba(201,52,0,.09); --critical:#D70015; --criticalTint:rgba(215,0,21,.08);
+  /* Page-grid states (translation job). Grey family for "not sent", accent for "in flight", green for "saved". */
+  --gNone:rgba(120,120,128,.14); --gQueued:rgba(0,122,255,.22); --gRun:#007AFF; --gDone:#34C759; --gReused:#8FD9A4; --gSkip:transparent; --gFail:#FF3B30; --gPartial:#FFCC00;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --serif:"Songti SC","STSong","Noto Serif SC","Source Han Serif SC",Georgia,serif;
+}
+.dark{
+  --win:#1E1E1F; --sidebar:rgba(44,44,47,.86); --reader:#161617; --card:#2C2C2E; --page:#232325; --pageText:#E5E5EA;
+  --label:#F5F5F7; --label2:#AEAEB2; --label3:#8E8E93; --icon:#AEAEB2; --sep:rgba(255,255,255,.09); --fill:rgba(118,118,128,.24); --fill4:rgba(118,118,128,.14);
+  --sel:rgba(255,255,255,.10); --hover:rgba(255,255,255,.06); --pressed:rgba(255,255,255,.12);
+  --accent:#0A84FF; --accentTint:rgba(10,132,255,.20); --accentPair:rgba(10,132,255,.16);
+  --glass:rgba(50,50,53,.92); --glassOpaque:#2A2A2D; --hair:rgba(255,255,255,.10);
+  --positive:#30D158; --positiveTint:rgba(48,209,88,.14); --caution:#FF9F0A; --cautionTint:rgba(255,159,10,.14); --critical:#FF453A; --criticalTint:rgba(255,69,58,.14);
+  --gNone:rgba(118,118,128,.26); --gQueued:rgba(10,132,255,.35); --gRun:#0A84FF; --gDone:#30D158; --gReused:#1F8A43; --gFail:#FF453A; --gPartial:#FFD60A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:var(--sans);font-size:13px;color:var(--label);-webkit-font-smoothing:antialiased}
+body{background:linear-gradient(135deg,#c9d6e8 0%,#e6dcef 50%,#f1e2d6 100%);overflow:hidden}
+body.dark{background:linear-gradient(135deg,#1b2333 0%,#2a2333 50%,#33281f 100%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:default}
+input,textarea{font:inherit;color:inherit}
+svg{display:block}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.i.s{width:14px;height:14px}.i.xs{width:12px;height:12px}.i.l{width:18px;height:18px}
+.i.fill{fill:currentColor}
+.num{font-variant-numeric:tabular-nums}
+
+#desk{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px 318px 18px 18px;transition:padding 260ms}
+body.demo-min #desk{padding-right:58px}
+#win{position:relative;width:100%;max-width:1440px;height:100%;max-height:900px;background:var(--win);border-radius:24px;overflow:hidden;
+  box-shadow:0 0 0 .5px rgba(0,0,0,.25),0 30px 80px rgba(0,0,0,.28);display:flex}
+
+/* ---------- Sidebar ---------- */
+#side{position:relative;z-index:3;width:236px;flex:none;margin:8px 0 8px 8px;border-radius:16px;background:var(--sidebar);
+  backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair);display:flex;flex-direction:column;padding:10px 8px;gap:2px;overflow:hidden;transition:width 220ms,margin 220ms,opacity 220ms}
+body.side-off #side{width:0;margin-right:0;padding:0;opacity:0}
+.lights{display:flex;gap:8px;height:28px;align-items:center;padding:0 6px}
+.lights span{width:12px;height:12px;border-radius:6px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+.side-set{display:flex;align-items:center;gap:8px;height:34px;padding:0 8px;border-radius:8px;font-weight:600;white-space:nowrap}
+.side-set .ic{width:22px;height:22px;border-radius:6px;background:linear-gradient(180deg,#5E9BFF,#2D6FE0);color:#fff;display:flex;align-items:center;justify-content:center}
+.sec{font-size:11px;font-weight:600;color:var(--label2);padding:12px 8px 4px;white-space:nowrap}
+.row{display:flex;align-items:center;gap:8px;height:28px;padding:0 8px;border-radius:8px;white-space:nowrap;overflow:hidden}
+.row:hover{background:var(--hover)}.row.on{background:var(--sel)}
+.row .ri{color:var(--accent);flex:none}
+.row .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.count{font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums}
+/* Sidebar job indicator: 14pt ring, same colours as the toolbar capsule. */
+.ring{width:14px;height:14px;flex:none;border-radius:50%;background:conic-gradient(var(--rc,var(--accent)) calc(var(--p,0)*1%),var(--fill) 0)}
+.ring.paused{--rc:var(--label3)}.ring.err{--rc:var(--critical)}.ring.review{--rc:var(--accent)}
+.ring::after{content:"";display:block;margin:3px;width:8px;height:8px;border-radius:50%;background:var(--sidebar)}
+body:not(.dark) .ring::after{background:#F2F2F6}
+body.dark .ring::after{background:#2C2C2F}
+.dotq{width:7px;height:7px;border-radius:4px;background:var(--accent);flex:none}
+
+/* ---------- Main / toolbar ---------- */
+#main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.toolbar{height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;position:relative;z-index:6}
+.tb-title{min-width:0;margin-right:auto;display:flex;flex-direction:column;line-height:1.15}
+.tb-title b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-title span{font-size:11px;color:var(--label2)}
+.capsule{display:flex;align-items:center;height:36px;padding:3px;border-radius:18px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair)}
+.tbtn{position:relative;height:30px;min-width:30px;padding:0 7px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--icon)}
+.tbtn:hover{background:var(--hover)}.tbtn:active{background:var(--pressed)}
+.tbtn.on{background:var(--accentTint);color:var(--accent)}
+.tdiv{width:1px;height:16px;background:var(--sep);margin:0 3px;flex:none}
+.tip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:3px 7px;border-radius:5px;background:rgba(40,40,42,.92);color:#fff;font-size:11px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 120ms .35s;z-index:50;font-weight:400}
+[data-tip]:hover>.tip{opacity:1}
+.seg{display:flex;height:28px;padding:2px;border-radius:14px;background:var(--fill4)}
+.seg button{flex:1;height:24px;padding:0 10px;border-radius:12px;font-size:12px;color:var(--label2);display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.12),0 0 0 .5px var(--hair)}
+.seg.sm{height:24px}.seg.sm button{height:20px;padding:0 8px;font-size:11.5px}
+.seg button:disabled{opacity:.4}
+
+#content{flex:1;min-height:0;display:flex;position:relative;margin:0 8px 8px 8px}
+
+/* ---------- Compare reader ---------- */
+#reader{flex:1;min-width:0;position:relative;background:var(--reader);border-radius:14px;overflow:hidden;display:flex}
+.pane{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.ptitle{height:36px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 10px;border-bottom:.5px solid var(--sep);background:var(--win);position:relative;z-index:4}
+.dname{height:24px;padding:0 6px;border-radius:7px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;max-width:230px;color:var(--label)}
+.dname:hover{background:var(--hover)}
+.dname .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dname .i{color:var(--icon)}
+.lang{font-size:11px;color:var(--label2);background:var(--fill4);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.ptitle .sp{flex:1}
+.pgno{font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ibtn{position:relative;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--icon);flex:none}
+.ibtn:hover{background:var(--hover)}.ibtn:active{background:var(--pressed)}
+.ibtn.sm{width:24px;height:24px;border-radius:7px}
+.ibtn.on{background:var(--accentTint);color:var(--accent)}
+.gutter{width:34px;flex:none;background:var(--reader);border-left:.5px solid var(--sep);border-right:.5px solid var(--sep);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;z-index:3}
+.gutter .gb{width:28px;height:28px;border-radius:8px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair);display:flex;align-items:center;justify-content:center;color:var(--icon);position:relative}
+.gutter .gb.on{background:var(--accentTint);color:var(--accent)}
+.gutter .gb .tip{top:50%;left:calc(100% + 6px);transform:translateY(-50%)}
+.pscroll{flex:1;min-height:0;overflow:auto;padding:16px 0 80px;scroll-behavior:auto}
+.pg{position:relative;margin:0 auto 14px;width:calc(100% - 40px);max-width:520px;min-height:300px;background:var(--page);border-radius:3px;box-shadow:0 0 0 .5px var(--hair),0 1px 3px rgba(0,0,0,.06);padding:30px 38px 34px;color:var(--pageText)}
+.pg .hdr{font-family:var(--sans);font-size:9.5px;letter-spacing:.12em;color:var(--label3);text-transform:uppercase;margin-bottom:18px}
+.pg .ftr{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:10px;color:var(--label3);font-variant-numeric:tabular-nums}
+.pg h2{font-family:var(--serif);font-size:18px;font-weight:600;margin:4px 0 14px;line-height:1.35}
+.pg p,.pg .para{font-family:var(--serif);font-size:13px;line-height:1.78;margin:0 0 11px;text-align:justify;hyphens:auto;border-radius:3px;transition:background 120ms}
+.pg .fig{height:120px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--fill4) 0 8px,transparent 8px 16px);box-shadow:inset 0 0 0 .5px var(--sep);margin:6px 0 10px;display:flex;align-items:center;justify-content:center;color:var(--label3);font-size:11px}
+.pg .cap{font-family:var(--sans);font-size:11px;color:var(--label2);text-align:center}
+.pg .pair{background:var(--accentPair);box-shadow:0 0 0 3px var(--accentPair)}
+.pg.cur-batch{box-shadow:0 0 0 .5px var(--hair),0 1px 3px rgba(0,0,0,.06)}
+.pg .pgmark{position:absolute;top:10px;right:12px;font-size:10px;color:var(--label3);display:flex;align-items:center;gap:4px}
+/* Translation side */
+#paneR .para{position:relative;font-size:13.5px;line-height:1.85}
+#paneR .para.wait{color:transparent;user-select:none;min-height:46px;background:linear-gradient(90deg,var(--fill4) 0%,var(--fill) 40%,var(--fill4) 80%);background-size:300% 100%;animation:shim 1.2s linear infinite}
+#paneR .para.wait.short{min-height:24px}
+#paneR .para.queued{color:transparent;user-select:none;min-height:46px;background:var(--fill4);animation:none}
+#paneR .para.queued.short{min-height:24px}
+@keyframes shim{from{background-position:100% 0}to{background-position:-50% 0}}
+#paneR .para.arrive{animation:arrive 360ms}
+@keyframes arrive{from{opacity:0}}
+#paneR .para.keep{color:var(--label3)}
+#paneR .para.fail{padding:8px 10px 8px 12px;background:var(--criticalTint);border-radius:6px;box-shadow:inset 2px 0 0 var(--critical)}
+#paneR .para.fail .orig{color:var(--label2);font-size:12.5px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#paneR .para.fail .fl{display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:11.5px;color:var(--critical);margin-top:6px}
+#paneR .para.fail .fl .sp{flex:1}
+#paneR .para .rt{font-family:var(--sans);position:absolute;right:-2px;top:-20px;font-size:10px;color:var(--label3);background:var(--page);padding:0 4px;border-radius:4px}
+#paneR .para.editing{outline:1.5px solid var(--accent);outline-offset:3px;background:var(--page);cursor:text}
+#paneR .para .edm{display:inline-flex;vertical-align:1px;margin-left:4px;color:var(--label3)}
+.pacts{position:absolute;right:-4px;top:-30px;display:none;align-items:center;gap:1px;height:28px;padding:2px;border-radius:14px;background:var(--glass);box-shadow:0 0 0 .5px var(--hair),0 4px 14px rgba(0,0,0,.08);z-index:5}
+#paneR .para.done:hover .pacts,#paneR .para.done.pacts-on .pacts{display:flex}
+.pacts .ibtn{width:24px;height:24px;border-radius:12px}
+.pacts .ibtn .tip{top:auto;bottom:calc(100% + 6px)}
+.placeholder-page{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:300px;color:var(--label3);font-size:12px;text-align:center}
+.placeholder-page .sub{font-size:11.5px}
+.plain{height:24px;padding:0 9px;border-radius:7px;font-size:12px;color:var(--accent);font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.plain:hover{background:var(--accentTint)}
+.plain.crit{color:var(--critical)}.plain.crit:hover{background:var(--criticalTint)}
+.plain.grey{color:var(--label2)}.plain.grey:hover{background:var(--hover)}
+
+/* ---------- Job capsule (AI pane title bar) ---------- */
+.job{height:24px;padding:0 8px 0 6px;border-radius:12px;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;white-space:nowrap;background:var(--fill4);color:var(--label)}
+.job:hover{background:var(--fill)}
+.job .ring{width:12px;height:12px}
+.job .ring::after{margin:2.5px;width:7px;height:7px;background:var(--win) !important}
+.job.review{background:var(--accentTint);color:var(--accent)}
+.job.err{background:var(--criticalTint);color:var(--critical)}
+.job.warn{background:var(--cautionTint);color:var(--caution)}
+.job.ok{background:var(--positiveTint);color:var(--positive)}
+.job .sub{color:var(--label2);font-weight:400}
+.job.review .sub,.job.err .sub,.job.warn .sub,.job.ok .sub{color:inherit;opacity:.8}
+.spin{width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- Strip under AI title (job-level problems) ---------- */
+#strip:empty{display:none}
+.strip{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px 8px 6px 12px;font-size:12px;border-bottom:.5px solid var(--sep);background:var(--win);position:relative;z-index:3;animation:fin 160ms}
+.strip.err{background:linear-gradient(var(--criticalTint),var(--criticalTint)),var(--win);color:var(--label)}
+.strip.warn{background:linear-gradient(var(--cautionTint),var(--cautionTint)),var(--win)}
+.strip .si{flex:none}
+.strip.err .si{color:var(--critical)}.strip.warn .si{color:var(--caution)}
+.strip .tx{flex:1;min-width:0;line-height:1.4}
+.strip .tx small{color:var(--label2);font-size:11.5px;margin-left:4px}
+
+/* ---------- Floating: menus, popovers, checkpoint, sheet ---------- */
+#layer{position:absolute;inset:0;pointer-events:none;z-index:40}
+#layer>*{pointer-events:auto}
+@keyframes fin{from{opacity:0;transform:translateY(4px)}}
+.menu{position:absolute;min-width:250px;padding:5px;border-radius:12px;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 10px 30px rgba(0,0,0,.14);animation:fin 140ms;font-size:13px}
+.mi{display:flex;align-items:center;gap:8px;height:26px;padding:0 9px;border-radius:7px;white-space:nowrap}
+.mi:hover{background:var(--accent);color:#fff}.mi:hover .k,.mi:hover .i,.mi:hover .badge{color:#fff}
+.mi .i{color:var(--icon)}
+.mi .k{margin-left:auto;color:var(--label3);font-size:12px;padding-left:16px}
+.mi.dis{color:var(--label3)}.mi.dis:hover{background:none;color:var(--label3)}.mi.dis:hover .i{color:var(--label3)}
+.mi .badge{font-size:10px;color:var(--accent);font-weight:600;margin-left:2px}
+.mi.flash{animation:miflash 1.4s 2}
+@keyframes miflash{0%,100%{background:none}50%{background:var(--accentTint)}}
+.msep{height:.5px;background:var(--sep);margin:5px 8px}
+.mh{font-size:11px;color:var(--label3);padding:4px 9px 2px;font-weight:600}
+
+.pop{position:absolute;width:372px;border-radius:16px;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 12px 34px rgba(0,0,0,.14);padding:14px;animation:fin 150ms;display:flex;flex-direction:column;gap:12px}
+.pop-h{display:flex;align-items:center;gap:8px}
+.pop-h b{font-size:13px}
+.pop-h .sub{color:var(--label2);font-size:12px}
+.pop-h .sp{flex:1}
+.grid{display:grid;grid-template-columns:repeat(16,1fr);gap:3px}
+.cell{aspect-ratio:3/4;border-radius:2.5px;background:var(--gNone);position:relative}
+.cell:hover{outline:1.5px solid var(--label2);outline-offset:1px}
+.cell.queued{background:var(--gQueued)}
+.cell.run{background:var(--gRun);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+.cell.done{background:var(--gDone)}
+.cell.reused{background:var(--gReused)}
+.cell.skip{background:transparent;box-shadow:inset 0 0 0 1px var(--gNone)}
+.cell.fail{background:var(--gFail)}
+.cell.partial{background:linear-gradient(180deg,var(--gDone) 0 50%,var(--gFail) 50%)}
+.cell.out{opacity:.35}
+.cell.cur::after{content:"";position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:var(--label)}
+.cell.bstart{box-shadow:-2px 0 0 0 var(--label3)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--label2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:8px;height:10px;border-radius:2px;display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{border-radius:10px;background:var(--fill4);padding:8px 10px}
+.stat b{display:block;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--label2)}
+.stat.crit b{color:var(--critical)}
+.kv{display:flex;justify-content:space-between;font-size:11.5px;color:var(--label2)}
+.kv b{font-weight:500;color:var(--label);font-variant-numeric:tabular-nums}
+.pop-f{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.pop-f .sp{flex:1}
+.btn{height:28px;padding:0 13px;border-radius:8px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;background:var(--fill);color:var(--label)}
+.btn:hover{filter:brightness(.97)}
+.btn.pri{background:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.45;filter:none}
+.btn.danger{color:var(--critical)}
+.cell-tip{position:absolute;padding:4px 8px;border-radius:6px;background:rgba(40,40,42,.94);color:#fff;font-size:11px;white-space:nowrap;pointer-events:none;z-index:60;transform:translate(-50%,-100%);margin-top:-6px}
+
+/* Checkpoint: anchored to the bottom of the AI pane, never covering the left pane. */
+#checkpoint:empty{display:none}
+.ckpt{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:min(420px,calc(100% - 24px));border-radius:16px;background:var(--glass);backdrop-filter:blur(30px) saturate(1.6);box-shadow:0 0 0 .5px var(--hair),0 12px 34px rgba(0,0,0,.16);padding:14px;display:flex;flex-direction:column;gap:11px;z-index:6;animation:ckin 240ms cubic-bezier(.2,.8,.2,1)}
+@keyframes ckin{from{opacity:0;transform:translate(-50%,10px)}}
+.ckpt.min{width:auto;padding:6px 6px 6px 12px;flex-direction:row;align-items:center;gap:8px;border-radius:20px}
+.ck-h{display:flex;align-items:center;gap:8px}
+.ck-h .badge{width:22px;height:22px;border-radius:11px;background:var(--accentTint);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ck-h b{font-size:13px}
+.ck-h .sub{color:var(--label2);font-size:12px}
+.ck-h .sp{flex:1}
+.ck-line{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--label2);flex-wrap:wrap}
+.ck-line b{color:var(--label);font-weight:600;font-variant-numeric:tabular-nums}
+.ck-line .crit{color:var(--critical)}
+.ck-line .crit b{color:var(--critical)}
+.ck-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--label2)}
+.ck-row .sp{flex:1}
+.disc{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--label2);height:22px;border-radius:6px;padding:0 4px 0 2px}
+.disc:hover{color:var(--label)}
+.disc .i{transition:transform 160ms}
+.disc.open .i{transform:rotate(90deg)}
+textarea.req{width:100%;min-height:58px;resize:none;border-radius:8px;border:0;box-shadow:inset 0 0 0 .5px var(--sep);background:var(--fill4);padding:7px 9px;font-size:12px;line-height:1.5;outline:none}
+textarea.req:focus{box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--card)}
+.hint{font-size:11px;color:var(--label3);line-height:1.45}
+
+/* Sheet */
+#sheetHost:empty{display:none}
+.scrim{position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.14);animation:fade 160ms}
+@keyframes fade{from{opacity:0}}
+.sheet{position:absolute;z-index:71;top:56px;left:50%;transform:translateX(-50%);width:560px;max-height:calc(100% - 72px);overflow:auto;border-radius:16px;background:var(--glassOpaque);box-shadow:0 0 0 .5px var(--hair),0 20px 60px rgba(0,0,0,.28);animation:shin 240ms cubic-bezier(.2,.8,.2,1)}
+@keyframes shin{from{opacity:0;transform:translate(-50%,-10px)}}
+.sh-h{padding:18px 20px 4px;display:flex;align-items:center;gap:10px}
+.sh-h .tic{width:30px;height:30px;border-radius:8px;background:var(--accentTint);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.sh-h b{font-size:15px;font-weight:600}
+.sh-h .sub{font-size:12px;color:var(--label2)}
+.sh-b{padding:10px 20px 6px;display:flex;flex-direction:column;gap:12px}
+.form{display:grid;grid-template-columns:96px 1fr;gap:10px 12px;align-items:center}
+.form>label{font-size:12.5px;color:var(--label2);text-align:right}
+.form>label.top{align-self:start;padding-top:6px}
+.field{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.popup{height:24px;padding:0 6px 0 9px;border-radius:6px;background:var(--card);box-shadow:0 0 0 .5px var(--hair),0 1px 1px rgba(0,0,0,.05);display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.popup .i{color:var(--icon)}
+.arrow{color:var(--label3)}
+.numin{width:52px;height:24px;border-radius:6px;border:0;background:var(--card);box-shadow:0 0 0 .5px var(--hair);text-align:center;font-size:12.5px;font-variant-numeric:tabular-nums;outline:none}
+.numin:focus{box-shadow:0 0 0 2px var(--accent)}
+.numin:disabled{opacity:.45}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode{border-radius:10px;background:var(--card);box-shadow:0 0 0 .5px var(--hair);padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:3px;position:relative}
+.mode:hover{box-shadow:0 0 0 .5px var(--hair),0 0 0 3px var(--fill4)}
+.mode.on{box-shadow:0 0 0 1.5px var(--accent)}
+.mode b{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.mode span{font-size:11.5px;color:var(--label2);line-height:1.45}
+.mode .radio{position:absolute;right:10px;top:10px;width:14px;height:14px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--label3)}
+.mode.on .radio{box-shadow:inset 0 0 0 4px var(--accent)}
+.est{border-radius:10px;background:var(--fill4);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12px}
+.est .er{display:flex;align-items:center;gap:8px;color:var(--label2)}
+.est .er b{color:var(--label);font-weight:600;font-variant-numeric:tabular-nums}
+.est .er .i{color:var(--label3)}
+.est .er.pos .i,.est .er.pos{color:var(--positive)}
+.est .er.pos b{color:var(--positive)}
+.est .er.warn,.est .er.warn .i{color:var(--caution)}
+.est .er.crit,.est .er.crit .i{color:var(--critical)}
+.est .er .sp{flex:1}
+.sh-f{padding:12px 20px 16px;display:flex;align-items:center;gap:8px}
+.sh-f .sp{flex:1}
+.sh-f .meta{font-size:11.5px;color:var(--label3)}
+.blocked{border-radius:10px;padding:14px;display:flex;gap:10px;align-items:flex-start;background:var(--fill4);font-size:12.5px;line-height:1.5}
+.blocked .i{color:var(--caution);margin-top:2px}
+
+/* HUD */
+.hud{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:10px;height:36px;padding:0 8px 0 16px;border-radius:18px;background:rgba(30,30,32,.88);color:#fff;font-size:12.5px;backdrop-filter:blur(20px);animation:fin 200ms;white-space:nowrap}
+.hud.solo{padding-right:16px}
+.hud button{height:26px;padding:0 10px;border-radius:13px;color:#64D2FF;font-weight:500}
+.hud button:hover{background:rgba(255,255,255,.1)}
+
+/* Notification (app in background) */
+.notif{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:300;width:340px;border-radius:14px;background:rgba(246,246,248,.96);color:#1d1d1f;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:10px 12px;display:flex;gap:10px;animation:fin 220ms;font-size:12px}
+.notif .ap{width:30px;height:30px;border-radius:7px;background:linear-gradient(180deg,#5E9BFF,#2D6FE0);color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.notif b{display:block;font-size:12.5px}
+
+/* ---------- Spec drawer ---------- */
+#spec{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.3);display:none}
+#spec.on{display:block;animation:fade 160ms}
+#spec .doc{position:absolute;top:14px;bottom:14px;left:50%;transform:translateX(-50%);width:min(980px,calc(100% - 28px));overflow:auto;border-radius:16px;background:var(--win);box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 34px 40px;line-height:1.6}
+#spec h1{font-size:20px;margin:0 0 4px}
+#spec h2{font-size:15px;margin:26px 0 8px;padding-top:12px;border-top:.5px solid var(--sep)}
+#spec h3{font-size:13px;margin:16px 0 6px}
+#spec p,#spec li{color:var(--label);font-size:12.5px}
+#spec .lead{color:var(--label2);font-size:12.5px}
+#spec table{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0 10px}
+#spec th,#spec td{border-bottom:.5px solid var(--sep);padding:6px 8px;text-align:left;vertical-align:top}
+#spec th{font-weight:600;color:var(--label2);font-size:11.5px;background:var(--fill4)}
+#spec code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:var(--fill4);padding:1px 4px;border-radius:4px}
+#spec pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:var(--fill4);padding:10px 12px;border-radius:8px;overflow:auto;line-height:1.5}
+#spec .x{position:sticky;top:0;float:right;margin:-10px -18px 0 0}
+#spec .must{color:var(--critical);font-weight:600}
+
+/* ---------- Demo console ---------- */
+#demo{position:fixed;right:14px;top:14px;z-index:200;width:288px;max-height:calc(100% - 28px);overflow:auto;border-radius:14px;background:rgba(20,20,22,.94);color:#f2f2f7;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);font-size:12px;transition:transform 260ms}
+#demo.min{transform:translateX(250px)}
+#demo .dh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-weight:600;position:sticky;top:0;background:rgba(20,20,22,.98);z-index:1}
+#demo .dh button{color:#aeaeb2;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-left:auto}
+#demo .dsec{padding:6px 12px}
+#demo .dt{font-size:10.5px;color:#8e8e93;font-weight:600;margin:8px 0 6px}
+#demo .scn{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;padding:5px 8px;border-radius:8px;margin-bottom:1px;line-height:1.4}
+#demo .scn:hover{background:rgba(255,255,255,.08)}
+#demo .scn.on{background:rgba(10,132,255,.38)}
+#demo .scn .n{width:18px;height:18px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:10.5px;flex:none}
+#demo .scn small{display:block;color:#aeaeb2;font-size:11px}
+#demo .tg{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;gap:8px}
+#demo .seg{background:rgba(255,255,255,.08);height:24px}
+#demo .seg button{color:#aeaeb2;height:20px;padding:0 6px;font-size:11px}
+#demo .seg button.on{background:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+#demo .rule{color:#c7c7cc;line-height:1.55;font-size:11.5px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.06);margin-bottom:10px}
+#demo .rule b{color:#fff}
+#demo .specbtn{width:100%;height:30px;border-radius:8px;background:rgba(10,132,255,.9);color:#fff;font-weight:600;margin:4px 0 6px}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0s !important;transition-duration:0s !important}
+  #paneR .para.wait{background:var(--fill4)}
+}
+</style>
+</head>
+<body>
+<div id="desk">
+  <div id="win">
+    <aside id="side">
+      <div class="lights"><span style="background:#FF5F57"></span><span style="background:#FEBC2E"></span><span style="background:#28C840"></span></div>
+      <div class="side-set"><span class="ic" data-ico="book"></span>注意力研究</div>
+      <div class="sec">文档</div>
+      <div class="row on" id="docRow"><span class="ri" data-ico="doc"></span><span class="t">The Architecture of Attention</span><span id="docJob"></span></div>
+      <div class="row" data-hud="演示：切换文档"><span class="ri" data-ico="doc"></span><span class="t">Cognitive Science Primer</span></div>
+      <div class="sec">脑图</div>
+      <div class="row" data-hud="演示：脑图（翻译在后台继续）"><span class="ri" data-ico="map"></span><span class="t">注意力的结构</span></div>
+      <div class="sec">学习</div>
+      <div class="row" data-hud="演示：复习"><span class="ri" data-ico="cards"></span><span class="t">复习</span><span class="count">8</span></div>
+      <div class="row" data-hud="演示：统计"><span class="ri" data-ico="chart"></span><span class="t">统计</span></div>
+    </aside>
+    <main id="main">
+      <div class="toolbar">
+        <div class="tb-title"><b>The Architecture of Attention</b><span id="tbSub">第 1 / 48 页</span></div>
+        <div class="capsule">
+          <button class="tbtn" data-tip id="sideBtn"><span data-ico="sidebar"></span><span class="tip">页面侧栏</span></button>
+          <span class="tdiv"></span>
+          <button class="tbtn on" data-tip id="cmpBtn"><span data-ico="compare"></span><span class="tip">对照阅读</span></button>
+          <button class="tbtn" data-tip data-hud="演示：阅读设置"><span data-ico="aa"></span><span class="tip">阅读设置</span></button>
+          <button class="tbtn" data-tip id="moreBtn"><span data-ico="more"></span><span class="tip">更多</span></button>
+        </div>
+      </div>
+      <div id="content">
+        <section id="reader">
+          <div class="pane" id="paneL">
+            <div class="ptitle">
+              <button class="dname"><span data-ico="doc"></span><span class="nm">The Architecture of Attention</span><span data-ico="chevDown"></span></button>
+              <span class="lang">English</span><span class="sp"></span><span class="pgno" id="pgL"></span>
+            </div>
+            <div class="pscroll" id="scrollL"></div>
+          </div>
+          <div class="gutter">
+            <button class="gb on" data-tip><span data-ico="link"></span><span class="tip">同步滚动</span></button>
+          </div>
+          <div class="pane" id="paneR">
+            <div class="ptitle" id="titleR"></div>
+            <div id="strip"></div>
+            <div class="pscroll" id="scrollR"></div>
+            <div id="checkpoint"></div>
+          </div>
+        </section>
+      </div>
+      <div id="hudHost"></div>
+    </main>
+    <div id="layer"></div>
+    <div id="sheetHost"></div>
+  </div>
+</div>
+
+<div id="spec"><div class="doc" id="specDoc"></div></div>
+
+<div id="demo">
+  <div class="dh">演示控制台 · 全文翻译<button id="demoMin" title="收起">⟩</button></div>
+  <div class="dsec">
+    <button class="specbtn" id="openSpec">查看约束与规范</button>
+    <div class="rule" id="ruleBox">工具栏「对照阅读」菜单或侧栏文档右键 →「翻译全文…」开始；也可以点下面的场景。翻译中可以正常阅读、悬停段落对照、修改或重译。</div>
+    <div class="dt">场景</div>
+    <div id="scenes"></div>
+    <div class="dt">外观与环境</div>
+    <div class="tg">外观<div class="seg sm" id="dTheme"><button data-v="light" class="on">浅色</button><button data-v="dark">深色</button></div></div>
+    <div class="tg">网络<div class="seg sm" id="dNet"><button data-v="on" class="on">在线</button><button data-v="off">断网</button></div></div>
+    <div class="tg">AI 模型<div class="seg sm" id="dAi"><button data-v="ok" class="on">可用</button><button data-v="none">未设置</button><button data-v="bad">Key 失效</button></div></div>
+    <div class="tg">演示速度<div class="seg sm" id="dSpeed"><button data-v="1">1×</button><button data-v="3" class="on">3×</button><button data-v="8">8×</button></div></div>
+    <div class="tg"><span>重置演示数据</span><div class="seg sm"><button id="dReset">重置</button></div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => n.toLocaleString('en-US');
+
+/* ---------------- Icons (Lucide-like, 24 grid) ---------------- */
+const P = {
+  book: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/>',
+  map: '<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-3h14v3"/>',
+  cards: '<rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 2h12a2 2 0 0 1 2 2v12"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+  aa: '<path d="M4 18l5-13 5 13M5.7 14h6.6"/><path d="M15.5 18l3-8 3 8M16.4 15.5h4.2"/>',
+  trans: '<path d="M5 8l6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  close: '<path d="M18 6L6 18M6 6l12 12"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  chevDown: '<path d="M6 9l6 6 6-6"/>',
+  chevRight: '<path d="M9 6l6 6-6 6"/>',
+  sidebar: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+  compare: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  play: '<path d="M6 4l14 8-14 8z"/>',
+  stop: '<rect x="5" y="5" width="14" height="14" rx="2"/>',
+  retry: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  pencil: '<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  warn: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  wifiOff: '<path d="M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.7M10.7 5.1A15 15 0 0 1 22 8.8M5 12.9a10 10 0 0 1 5.2-2.8M16.9 11.1A10 10 0 0 1 19 12.9M12 20h.01"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  layers: '<path d="M12 2l10 5-10 5L2 7z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  recycle: '<path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L6 11.5M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.3-2.2M14 16l-3 3 3 3M8.3 13.6L6 11.5 3.3 12.4M9.3 5.5l1.1-1.8a1.8 1.8 0 0 1 3.1 0L17.6 11M14.5 11.4l3.1-.4.4-3.1"/>',
+  skip: '<path d="M5 4l10 8-10 8zM19 5v14"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  cpu: '<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
+  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M19 4l2 2"/>',
+};
+const ic = (n, cls = '', fill = false) => `<svg class="i ${cls}${fill ? ' fill' : ''}" viewBox="0 0 24 24">${P[n] || ''}</svg>`;
+function paintIcons(root = document) { $$('[data-ico]', root).forEach(e => { if (!e.firstChild) e.innerHTML = ic(e.dataset.ico, e.closest('.side-set,.dname') ? 's' : ''); }); }
+
+/* ---------------- Demo document (written for this prototype) ---------------- */
+const CHAPTERS = [
+  ['1  The Economy of Looking', '第一章　注视的经济学'],
+  ['2  Filters Before Thought', '第二章　思考之前的过滤'],
+  ['3  The Cost of Switching', '第三章　切换的代价'],
+  ['4  Reading as Attention', '第四章　作为注意的阅读'],
+  ['5  Memory Needs a Margin', '第五章　记忆需要页边'],
+  ['6  Designing for Focus', '第六章　为专注而设计'],
+];
+const POOL = [
+  ['Attention is not a spotlight that we point at the world; it is closer to a budget that we spend. Every glance draws on a limited account, and the interesting question is not what we see but what we decide not to see.',
+   '注意力不是我们对准世界的一束聚光灯，它更像一笔我们不断支出的预算。每一次注视都从有限的账户里扣款；真正有意思的问题不是我们看见了什么，而是我们决定不去看什么。'],
+  ['Early filter theories assumed that unattended information is discarded before it acquires meaning. Later experiments showed that a name, a warning or a familiar word can break through, which suggests that some meaning is computed before we notice it.',
+   '早期的过滤理论认为，未被注意的信息在获得意义之前就被丢弃了。后来的实验表明，一个名字、一声警告或一个熟悉的词仍能闯进来——这说明有些意义在我们察觉之前就已被计算出来。'],
+  ['When readers switch between two tasks, they pay twice: once to leave the first task and once to rebuild the context of the second. The second payment is usually larger, and it is almost always invisible to the person paying it.',
+   '读者在两项任务之间切换时要付两次代价：一次是离开第一项任务，一次是重建第二项任务的语境。第二次往往更大，而付出代价的人几乎总是察觉不到。'],
+  ['A margin note is a small act of commitment. By writing a sentence next to the text, the reader turns a passive glance into a claim that can later be checked, corrected or forgotten on purpose.',
+   '页边批注是一种小小的承诺。读者在原文旁写下一句话，就把被动的一瞥变成了一个主张——之后可以检验、修正，或者有意地忘掉。'],
+  ['Skilled readers do not read faster because their eyes move faster. They read faster because they predict more: each sentence narrows what the next one can plausibly say, and the eyes only confirm what the mind already expects.',
+   '熟练的读者读得快，并不是因为眼睛动得快，而是因为他们预测得更多：每一句话都缩小了下一句可能说的范围，眼睛只是在确认头脑已经预期到的内容。'],
+  ['The cost of an interruption is measured not in seconds but in lost structure. A reader interrupted in the middle of an argument returns to a sentence, but not always to the argument that gave the sentence its meaning.',
+   '打断的代价不是用秒来衡量的，而是用丢失的结构来衡量。一个在论证中途被打断的读者能回到那个句子，却不一定能回到赋予这个句子意义的论证。'],
+  ['Memory favours what it can connect. An isolated fact fades within days, while the same fact attached to a question, a picture or a disagreement may survive for years.',
+   '记忆偏爱它能联系起来的东西。孤立的事实几天内就会淡去，而同一个事实一旦挂在一个问题、一幅图景或一次争论上，可能会留存好几年。'],
+  ['Designers often treat focus as the absence of distraction. It is more useful to treat it as the presence of a clear next step: people stay with a task when they always know what to do after the current sentence.',
+   '设计者常把专注当作“没有干扰”。更有用的看法是把它当作“有一个清楚的下一步”：只要人们总是知道读完这一句之后该做什么，他们就会留在任务里。'],
+  ['Highlighting feels productive because it is visible. Yet a page covered in colour records only that the reader agreed with the author; it says little about what the reader understood.',
+   '划线让人觉得有成效，因为它看得见。可一页涂满颜色的纸只记录了读者同意作者，却几乎说明不了读者理解了什么。'],
+  ['Spacing works because forgetting is useful. Each time we almost lose a memory and then recover it, the recovery itself makes the memory easier to find the next time.',
+   '间隔之所以有效，是因为遗忘有用。每当我们几乎失去一段记忆又把它找回来，找回这个动作本身就让它下次更容易被找到。'],
+  ['A table of contents is a promise about attention. It tells the reader where effort will be required and where it can safely be withheld, long before the first page is turned.',
+   '目录是一种关于注意力的承诺。早在翻开第一页之前，它就告诉读者哪里需要用力、哪里可以放心地省力。'],
+  ['We rarely notice how much of reading is rereading. The eye returns, often without permission, to the clause that did not quite fit, and those small returns are where comprehension is actually built.',
+   '我们很少注意到阅读中有多少是重读。眼睛常常不经允许地回到那个不太对劲的分句上，而理解恰恰就是在这些小小的回返中建立起来的。'],
+];
+const RUNNING = 'The Architecture of Attention';
+const PAGES = 48;
+let DOC = [];
+function buildDoc() {
+  DOC = [];
+  let k = 0;
+  for (let n = 1; n <= PAGES; n++) {
+    const paras = [];
+    paras.push({ id: `p${n}-h`, kind: 'hdr', en: RUNNING, zh: RUNNING });
+    if ((n - 1) % 8 === 0) { const c = CHAPTERS[(n - 1) / 8]; paras.push({ id: `p${n}-t`, kind: 'head', en: c[0], zh: c[1] }); }
+    if (n === 24) {
+      paras.push({ id: `p${n}-f`, kind: 'fig', en: 'Figure 3.2  Switching cost grows with the depth of the abandoned context.', zh: '图 3.2　切换代价随被放下的语境深度而增长。' });
+      paras.push({ id: `p${n}-a`, kind: 'body', en: POOL[k % POOL.length][0], zh: POOL[k % POOL.length][1] }); k++;
+    } else if (n === 40) {
+      paras.push({ id: `p${n}-q`, kind: 'same', en: '“学而不思则罔，思而不学则殆。”——《论语·为政》', zh: '“学而不思则罔，思而不学则殆。”——《论语·为政》' });
+      for (let j = 0; j < 2; j++) { paras.push({ id: `p${n}-${j}`, kind: 'body', en: POOL[k % POOL.length][0], zh: POOL[k % POOL.length][1] }); k++; }
+    } else if (n === 48) {
+      paras.push({ id: `p${n}-0`, kind: 'body', en: POOL[k % POOL.length][0], zh: POOL[k % POOL.length][1] }); k++;
+    } else {
+      const count = (n - 1) % 8 === 0 ? 2 : 3;
+      for (let j = 0; j < count; j++) { paras.push({ id: `p${n}-${j}`, kind: 'body', en: POOL[k % POOL.length][0], zh: POOL[k % POOL.length][1] }); k++; }
+    }
+    paras.push({ id: `p${n}-n`, kind: 'num', en: String(n), zh: String(n) });
+    DOC.push({ n, paras });
+  }
+  // Every paragraph is unique except these designed repeats (a recap box reprinted at chapter ends).
+  for (const pg of DOC) for (const p of pg.paras) p.key = p.id;
+  const find = id => DOC.flatMap(pg => pg.paras).find(p => p.id === id);
+  for (const [dup, src] of Object.entries(DUP)) { const d = find(dup), o = find(src); Object.assign(d, { en: o.en, zh: o.zh, key: o.key }); }
+}
+// Duplicate paragraph -> source paragraph with identical normalized text (same textKey).
+const DUP = { 'p15-2': 'p3-1', 'p23-2': 'p3-1', 'p31-2': 'p3-1', 'p39-2': 'p3-1', 'p47-2': 'p3-1' };
+const BY_ID = new Map();
+const PAGE_OF = new Map();
+// Only these kinds go to the model; running headers, page numbers and text already in the target language are never sent.
+const SENDABLE = k => k === 'body' || k === 'head' || k === 'fig';
+const SKIP_REASON = { hdr: '页眉', num: '页码', same: '已是中文' };
+// Page 31's second paragraph keeps failing (model returns an incomplete answer) — a paragraph-level failure.
+const PERMA_FAIL = new Set(['p31-1']);
+// Page 14's first paragraph fails once with 429 and succeeds on automatic retry.
+const FLAKY = new Set(['p14-0']);
+const STATUS_CODE = { 'p31-1': '模型返回不完整' };
+
+/* ---------------- State ---------------- */
+const S = {
+  dark: false, net: true, ai: 'ok', speed: 3, scene: null,
+  st: new Map(),        // paragraph id -> { s: 'none'|'queued'|'run'|'done'|'fail'|'reused', zh, edited, tries, err, retryLabel }
+  job: null,            // see newJob()
+  menu: null, pop: false, sheet: null, editing: null,
+  sideOff: false, active: 0, gen: 0, pageFocus: 1,
+};
+function newJob(o) {
+  return Object.assign({
+    lang: 'zh', mode: 'batch', size: 10, from: 1, to: PAGES, note: '',
+    state: 'running', // running | review | paused | offline | error | budget | done | stopped
+    reason: '', batch: 1, bFrom: 1, bTo: 10, startedAt: Date.now(), tokens: 0, estimate: 0,
+    calls: 0, reusedParas: 0, dedup: 0, sentParas: 0, batchStats: null, userPaused: false,
+  }, o);
+}
+function resetData() {
+  buildDoc(); BY_ID.clear(); PAGE_OF.clear(); S.st.clear();
+  for (const pg of DOC) for (const p of pg.paras) { BY_ID.set(p.id, p); PAGE_OF.set(p.id, pg.n); S.st.set(p.id, { s: 'none', zh: '', edited: false, tries: 0 }); }
+  S.job = null; S.menu = null; S.pop = false; S.sheet = null; S.editing = null; S.active = 0; S.gen++;
+  FLAKY.clear(); FLAKY.add('p14-0'); PERMA_FAIL.clear(); PERMA_FAIL.add('p31-1');
+}
+const sendable = id => SENDABLE(BY_ID.get(id).kind);
+const parasOf = n => DOC[n - 1].paras;
+const sendParasOf = n => parasOf(n).filter(p => SENDABLE(p.kind));
+function preCache(from, to) { // translations that already exist (e.g. from page-by-page compare reading)
+  for (let n = from; n <= to; n++) for (const p of sendParasOf(n)) Object.assign(S.st.get(p.id), { s: 'reused', zh: p.zh });
+}
+
+/* ---------------- Estimates ---------------- */
+function estimate(from, to) {
+  let paras = 0, chars = 0, reused = 0, reusedPages = 0, skipped = 0, same = 0, dupe = 0;
+  for (let n = from; n <= to; n++) {
+    let pageAll = true, any = false;
+    for (const p of parasOf(n)) {
+      if (!SENDABLE(p.kind)) { if (p.kind === 'same') same++; else skipped++; continue; }
+      any = true;
+      const st = S.st.get(p.id);
+      if (st.s === 'done' || st.s === 'reused') { reused++; continue; }
+      pageAll = false; paras++; chars += p.en.length;
+    }
+    if (any && pageAll) reusedPages++;
+  }
+  // Repeated paragraphs (same normalized text) are sent once and fanned out.
+  const seen = new Set(), dupChars = [];
+  for (let n = from; n <= to; n++) for (const p of sendParasOf(n)) {
+    const st = S.st.get(p.id); if (st.s === 'done' || st.s === 'reused') continue;
+    if (seen.has(p.key) || keyDone(p.key)) { dupe++; dupChars.push(p.en.length); } else seen.add(p.key);
+  }
+  const uniqueChars = chars - dupChars.reduce((a, b) => a + b, 0);
+  const tokens = Math.round(uniqueChars / 4 * 1 + uniqueChars * .55 + Math.ceil((paras - dupe) / 4) * 180);
+  return { paras, chars, uniqueChars, reused, reusedPages, skipped, same, dupe, tokens, minutes: Math.max(1, Math.round((paras - dupe) * 2.4 / 2 / 60)) };
+}
+// Any saved translation for this textKey (from any page) satisfies the paragraph without a request.
+function keyDone(key) { for (const [id, st] of S.st) if (BY_ID.get(id).key === key && (st.s === 'done' || st.s === 'reused')) return st; return null; }
+function keyBusy(key, self) { for (const [id, st] of S.st) if (id !== self && BY_ID.get(id).key === key && st.s === 'run') return true; return false; }
+const tk = n => n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + ' 万' : fmt(n);
+
+/* ---------------- Page / job derived states ---------------- */
+function pageState(n) {
+  const ps = sendParasOf(n).map(p => S.st.get(p.id).s);
+  if (!ps.length) return 'skip';
+  if (ps.includes('run')) return 'run';
+  const fails = ps.filter(s => s === 'fail').length, fin = ps.filter(s => s === 'done' || s === 'reused').length;
+  if (fails && fails + fin === ps.length) return fin ? 'partial' : 'fail';
+  if (fin === ps.length) return ps.every(s => s === 'reused') ? 'reused' : 'done';
+  if (ps.includes('queued')) return 'queued';
+  return 'none';
+}
+function counts(from = S.job ? S.job.from : 1, to = S.job ? S.job.to : PAGES) {
+  let total = 0, done = 0, fail = 0, run = 0, reused = 0, pagesDone = 0, pagesTotal = 0;
+  for (let n = from; n <= to; n++) {
+    const ps = sendParasOf(n);
+    if (ps.length) pagesTotal++;
+    const s = pageState(n); if (s === 'done' || s === 'reused' || s === 'partial') pagesDone++;
+    for (const p of ps) { total++; const x = S.st.get(p.id).s; if (x === 'done') done++; if (x === 'reused') { done++; reused++; } if (x === 'fail') fail++; if (x === 'run') run++; }
+  }
+  return { total, done, fail, run, reused, pagesDone, pagesTotal, pct: total ? Math.round(done / total * 100) : 0 };
+}
+const inRange = n => S.job && n >= S.job.from && n <= S.job.to;
+const inBatch = n => S.job && n >= S.job.bFrom && n <= S.job.bTo;
+
+/* ---------------- Scheduler (simulated) ---------------- */
+// One scheduler per (document, target language). Two requests in flight at most; visible pages in the current batch first.
+function visiblePages() {
+  const sc = $('#scrollR'), top = sc.scrollTop, bot = top + sc.clientHeight, out = [];
+  $$('.pg', sc).forEach(el => { if (el.offsetTop + el.offsetHeight > top && el.offsetTop < bot) out.push(+el.dataset.p); });
+  return out;
+}
+function pickNext() {
+  const j = S.job; if (!j) return null;
+  const vis = new Set(visiblePages());
+  let best = null, bestScore = Infinity;
+  for (let n = j.bFrom; n <= j.bTo; n++) for (const p of sendParasOf(n)) {
+    const st = S.st.get(p.id); if (st.s !== 'queued') continue;
+    const twin = keyDone(p.key);
+    if (twin) { Object.assign(st, { s: 'done', zh: twin.zh, arrive: true }); j.dedupHits = (j.dedupHits || 0) + 1; updPara(p.id); updPage(n); continue; }
+    if (keyBusy(p.key, p.id)) continue; // identical text already in flight: wait, never send twice
+    const score = (vis.has(n) ? -1e5 : 0) + n * 10 + parasOf(n).indexOf(p);
+    if (score < bestScore) { bestScore = score; best = p.id; }
+  }
+  return best;
+}
+function tick() {
+  const j = S.job;
+  if (!j || j.state !== 'running') return;
+  if (!S.net) { j.state = 'offline'; j.reason = ''; renderAll(); return; }
+  if (S.ai === 'bad' || S.ai === 'none') { j.state = 'error'; j.reason = S.ai === 'bad' ? 'key' : 'model'; renderAll(); return; }
+  while (S.active < 2) {
+    const id = pickNext(); if (!id) break;
+    start(id);
+  }
+  if (S.active === 0 && !pickNext()) batchFinished();
+}
+function start(id) {
+  const st = S.st.get(id), gen = S.gen;
+  st.s = 'run'; st.tries++; S.active++; S.job.calls++; S.job.batchSent = (S.job.batchSent || 0) + 1;
+  updPara(id); updPage(PAGE_OF.get(id)); renderChrome();
+  const base = BY_ID.get(id).kind === 'head' ? 500 : 1100 + Math.random() * 900;
+  setTimeout(() => finish(id, gen), base / S.speed);
+}
+function finish(id, gen) {
+  if (gen !== S.gen) return;
+  S.active = Math.max(0, S.active - 1);
+  const st = S.st.get(id), p = BY_ID.get(id), j = S.job;
+  if (!j) return;
+  if (!S.net) { st.s = 'queued'; st.tries--; if (j.state === 'running') j.state = 'offline'; renderAll(); return; }
+  if (FLAKY.has(id)) {          // 429 → automatic retry with backoff; counted, never shown as a failure
+    FLAKY.delete(id); st.s = 'queued'; st.retryLabel = '重试 1/3';
+    updPara(id); renderChrome(); return;
+  }
+  if (PERMA_FAIL.has(id) && st.tries < 4) {
+    if (st.tries < 3) { st.s = 'queued'; st.retryLabel = `重试 ${st.tries}/3`; updPara(id); return; }
+    st.s = 'fail'; st.err = STATUS_CODE[id]; st.retryLabel = '';
+    j.tokens += Math.round(p.en.length * .3);
+    updPara(id); updPage(PAGE_OF.get(id)); renderChrome(); return;
+  }
+  st.s = 'done'; st.zh = p.zh; st.retryLabel = ''; st.arrive = true;
+  j.tokens += Math.round(p.en.length / 4 + p.en.length * .55 + 45);
+  j.sentParas++;
+  // Budget guard: pause once actual usage passes 150% of the estimate (demo forces this in scene 11).
+  if (j.estimate && j.tokens > j.estimate * 1.5 && j.state === 'running' && !j.budgetOk) { j.state = 'budget'; }
+  updPara(id); updPage(PAGE_OF.get(id)); renderChrome();
+}
+function batchFinished() {
+  const j = S.job;
+  const c = counts(j.bFrom, j.bTo);
+  j.batchStats = { from: j.bFrom, to: j.bTo, paras: c.total, fail: c.fail, reused: c.reused, secs: Math.round((Date.now() - j.batchStart) / 1000 * S.speed) };
+  if (j.bTo >= j.to) {
+    j.state = 'done';
+    const all = counts();
+    renderAll();
+    if (all.fail) hud(`全文翻译完成 · ${all.fail} 段未译`, '查看', () => openPop());
+    else hud('全文翻译完成');
+    return;
+  }
+  // A batch that needed no request (everything reused) is not worth a checkpoint.
+  if (j.mode === 'batch' && !j.batchSent) { nextBatch(true); return; }
+  if (j.mode === 'batch') { j.state = 'review'; renderAll(); }
+  else { nextBatch(true); }
+}
+function queueRange(from, to) {
+  for (let n = from; n <= to; n++) for (const p of sendParasOf(n)) {
+    const st = S.st.get(p.id);
+    if (st.s === 'none') st.s = 'queued';
+  }
+}
+function nextBatch(silent) {
+  const j = S.job;
+  j.batch++; j.bFrom = j.bTo + 1;
+  j.bTo = j.mode === 'all' ? j.to : Math.min(j.to, j.bFrom + j.size - 1);
+  j.batchStart = Date.now(); j.batchSent = 0;
+  queueRange(j.bFrom, j.bTo);
+  j.state = 'running';
+  if (!silent) { scrollToPage(j.bFrom); }
+  renderAll();
+}
+function startJob(opts) {
+  const e = estimate(opts.from, opts.to);
+  S.job = newJob(Object.assign({}, opts, { estimate: e.tokens, reusedParas: e.reused, dedup: e.dupe, batchStart: Date.now() }));
+  const j = S.job;
+  j.bFrom = j.from;
+  j.bTo = j.mode === 'all' ? j.to : Math.min(j.to, j.from + j.size - 1);
+  // A batch made only of reused pages completes instantly; skip ahead to the first batch that has work.
+  queueRange(j.bFrom, j.bTo);
+  S.sheet = null;
+  renderAll();
+  scrollToPage(j.bFrom);
+}
+function pauseJob(user = true) { const j = S.job; if (!j) return; j.state = 'paused'; j.userPaused = user; renderAll(); }
+function resumeJob() {
+  const j = S.job; if (!j) return;
+  if (!S.net) { j.state = 'offline'; renderAll(); return; }
+  if (S.ai !== 'ok') { j.state = 'error'; j.reason = S.ai === 'bad' ? 'key' : 'model'; renderAll(); return; }
+  j.state = 'running'; j.userPaused = false; j.batchStart = j.batchStart || Date.now(); renderAll();
+}
+function stopJob() {
+  const j = S.job; if (!j) return;
+  // Already-paid results are always kept. Only queued paragraphs return to "not translated".
+  for (const [, st] of S.st) if (st.s === 'queued') st.s = 'none';
+  j.state = 'stopped'; S.pop = false; renderAll();
+  hud('已停止 · 已译内容已保存');
+}
+function retryPara(id) {
+  const st = S.st.get(id); PERMA_FAIL.delete(id);
+  st.tries = 0; st.err = '';
+  // A user retry is one explicit request for this paragraph only: it runs now, outside the batch gate,
+  // and does not count against the two job workers.
+  st.s = 'run'; const gen = S.gen; updPara(id); updPage(PAGE_OF.get(id)); renderChrome();
+  setTimeout(() => {
+    if (gen !== S.gen) return;
+    const p = BY_ID.get(id);
+    if (!S.net) { st.s = 'fail'; st.err = '网络不可用'; } else Object.assign(st, { s: 'done', zh: p.zh, arrive: true });
+    updPara(id); updPage(PAGE_OF.get(id)); renderChrome();
+  }, 1200 / S.speed);
+}
+function retryAllFailed() { for (const [id, st] of S.st) if (st.s === 'fail') retryPara(id); }
+function retranslatePara(id) {
+  const st = S.st.get(id), p = BY_ID.get(id), old = st.zh;
+  st.s = 'run'; updPara(id); updPage(PAGE_OF.get(id));
+  const gen = S.gen;
+  setTimeout(() => {
+    if (gen !== S.gen) return;
+    st.s = 'done'; st.edited = false; st.arrive = true;
+    st.zh = p.zh.replace('。', '；').replace('，', '——');
+    updPara(id); renderChrome();
+    hud('已重新翻译', '撤销', () => { st.zh = old; updPara(id); });
+  }, 1400 / S.speed);
+}
+
+/* ---------------- Rendering: pages ---------------- */
+function renderLeft() {
+  $('#scrollL').innerHTML = DOC.map(pg => `<div class="pg" data-p="${pg.n}">${pg.paras.map(p => {
+    if (p.kind === 'hdr') return `<div class="hdr">${esc(p.en)}</div>`;
+    if (p.kind === 'num') return `<div class="ftr">${p.en}</div>`;
+    if (p.kind === 'head') return `<h2 data-id="${p.id}">${esc(p.en)}</h2>`;
+    if (p.kind === 'fig') return `<div class="fig">Figure 3.2</div><div class="cap para" data-id="${p.id}">${esc(p.en)}</div>`;
+    return `<p data-id="${p.id}">${esc(p.en)}</p>`;
+  }).join('')}</div>`).join('');
+}
+function renderRight() {
+  $('#scrollR').innerHTML = DOC.map(pg => `<div class="pg" data-p="${pg.n}"></div>`).join('');
+  for (const pg of DOC) updPage(pg.n, true);
+}
+function pagePlaceholder(n) {
+  const j = S.job;
+  const live = j && !['done', 'stopped'].includes(j.state);
+  if (live && inRange(n)) return `<div class="placeholder-page">${ic('clock', 'l')}<span>将在第 ${batchOf(n)} 批翻译</span><span class="sub">第 ${n} 页</span></div>`;
+  if (live) return `<div class="placeholder-page">${ic('trans', 'l')}<span>不在本次翻译范围</span><button class="plain" data-act="one-page" data-p="${n}">翻译此页</button></div>`;
+  return `<div class="placeholder-page">${ic('trans', 'l')}<span>未翻译</span><button class="plain" data-act="one-page" data-p="${n}">翻译此页</button></div>`;
+}
+function batchOf(n) { const j = S.job; return j.mode === 'all' ? 1 : Math.floor((n - j.from) / j.size) + 1; }
+function updPage(n, full) {
+  const el = $(`#scrollR .pg[data-p="${n}"]`); if (!el) return;
+  const ps = pageState(n);
+  const untouched = ps === 'none' && !sendParasOf(n).some(p => S.st.get(p.id).s !== 'none');
+  const ph = untouched ? pagePlaceholder(n) : null;
+  const was = el.dataset.mode;
+  const mode = ph ? 'ph' : 'content';
+  if (!full && was === mode && mode === 'content') return;
+  el.dataset.mode = mode;
+  if (ph) { el.innerHTML = ph; return; }
+  el.innerHTML = parasOf(n).map(p => {
+    if (p.kind === 'hdr') return `<div class="hdr">${esc(p.zh)}</div>`;
+    if (p.kind === 'num') return `<div class="ftr">${p.zh}</div>`;
+    if (p.kind === 'same') return `<div class="para keep" data-id="${p.id}">${esc(p.zh)}</div>`;
+    if (p.kind === 'fig') return `<div class="fig">图 3.2</div><div class="para short" data-id="${p.id}"></div>`;
+    return `<div class="para${p.kind === 'head' ? ' short' : ''}" data-id="${p.id}"></div>`;
+  }).join('');
+  for (const p of sendParasOf(n)) updPara(p.id);
+}
+function updPara(id) {
+  const el = $(`#scrollR [data-id="${id}"]`);
+  if (!el) { updPage(PAGE_OF.get(id), true); return; }
+  const st = S.st.get(id), p = BY_ID.get(id);
+  if (S.editing === id) return;
+  const head = p.kind === 'head', fig = p.kind === 'fig';
+  el.className = 'para' + (head || fig ? ' short' : '');
+  el.removeAttribute('contenteditable');
+  if (head) el.style.cssText = 'font-size:18px;font-weight:600;margin:4px 0 14px;line-height:1.35';
+  if (fig) el.style.cssText = 'font-family:var(--sans);font-size:11px;color:var(--label2);text-align:center';
+  if (st.s === 'none') { el.classList.add('queued'); el.innerHTML = ''; return; }
+  if (st.s === 'queued' || st.s === 'run') {
+    el.classList.add(st.s === 'run' ? 'wait' : 'queued');
+    el.innerHTML = st.retryLabel ? `<span class="rt">${st.retryLabel}</span>` : '';
+    return;
+  }
+  if (st.s === 'fail') {
+    el.classList.add('fail');
+    el.innerHTML = `<div class="orig">${esc(p.en)}</div><div class="fl">${ic('warn', 'xs')}<span>未译 · ${esc(st.err || '请求失败')}</span><span class="sp"></span><button class="plain crit" data-act="retry" data-id="${id}">${ic('retry', 'xs')}重试</button></div>`;
+    return;
+  }
+  el.classList.add('done');
+  if (st.arrive) { el.classList.add('arrive'); st.arrive = false; }
+  el.innerHTML = `${esc(st.zh)}${st.edited ? `<span class="edm" title="已手动修改">${ic('pencil', 'xs')}</span>` : ''}<span class="pacts">
+    <button class="ibtn" data-tip data-act="retrans" data-id="${id}">${ic('retry', 's')}<span class="tip">重新翻译</span></button>
+    <button class="ibtn" data-tip data-act="edit" data-id="${id}">${ic('pencil', 's')}<span class="tip">修改译文</span></button>
+    <button class="ibtn" data-tip data-act="copy" data-id="${id}">${ic('copy', 's')}<span class="tip">拷贝</span></button></span>`;
+}
+
+/* ---------------- Rendering: chrome (title bar, capsule, sidebar, strip, checkpoint, popover) ---------------- */
+function capsuleHtml() {
+  const j = S.job;
+  if (!j) return `<button class="job" id="jobBtn" data-tip>${ic('layers', 'xs')}<span>翻译全文</span><span class="tip">翻译全文…</span></button>`;
+  const c = counts();
+  const ring = cls => `<span class="ring ${cls}" style="--p:${c.pct}"></span>`;
+  switch (j.state) {
+    case 'running': return `<button class="job" id="jobBtn">${ring('')}<span class="num">${c.pct}%</span><span class="sub num">${j.mode === 'batch' ? `第 ${j.batch} 批 · ` : ''}${c.pagesDone}/${c.pagesTotal} 页</span></button>`;
+    case 'review': return `<button class="job review" id="jobBtn">${ic('check', 'xs')}<span>第 ${j.batch} 批待确认</span></button>`;
+    case 'paused': return `<button class="job" id="jobBtn">${ic('pause', 'xs')}<span>已暂停</span><span class="sub num">${c.pagesDone}/${c.pagesTotal} 页</span></button>`;
+    case 'offline': return `<button class="job warn" id="jobBtn">${ic('wifiOff', 'xs')}<span>等待网络</span></button>`;
+    case 'budget': return `<button class="job warn" id="jobBtn">${ic('warn', 'xs')}<span>已暂停 · 超出预估</span></button>`;
+    case 'error': return `<button class="job err" id="jobBtn">${ic('warn', 'xs')}<span>已暂停</span></button>`;
+    case 'done': return c.fail
+      ? `<button class="job warn" id="jobBtn">${ic('check', 'xs')}<span>已完成 · ${c.fail} 段未译</span></button>`
+      : `<button class="job ok" id="jobBtn">${ic('check', 'xs')}<span>全文已译</span></button>`;
+    case 'stopped': return `<button class="job" id="jobBtn">${ic('stop', 'xs')}<span>已停止</span><span class="sub num">${c.pagesDone}/${c.pagesTotal} 页</span></button>`;
+  }
+}
+function renderTitleR() {
+  $('#titleR').innerHTML = `
+    <button class="dname" id="aiName"><span data-ico="trans"></span><span class="nm">AI 译文</span><span data-ico="chevDown"></span></button>
+    <span class="lang">简体中文</span>
+    <span id="capHost">${capsuleHtml()}</span>
+    <span class="sp"></span><span class="pgno" id="pgR"></span>
+    <button class="ibtn sm" data-tip data-hud="已退出对照阅读（演示）">${ic('close', 's')}<span class="tip" style="left:auto;right:0;transform:none">退出对照阅读（Esc）</span></button>`;
+  paintIcons($('#titleR'));
+}
+let pressing = false, popAt = 0;
+document.addEventListener('mousedown', () => { pressing = true; }, true);
+document.addEventListener('mouseup', () => { setTimeout(() => { pressing = false; }, 0); }, true);
+function renderChrome(force) {
+  const host = $('#capHost'); if (host && (force || !pressing)) host.innerHTML = capsuleHtml();
+  // sidebar ring
+  const j = S.job, c = counts();
+  let side = '';
+  if (j) {
+    const live = { running: '', review: 'review', paused: 'paused', offline: 'paused', budget: 'paused', error: 'err' }[j.state];
+    if (live !== undefined) side = j.state === 'review' ? '<span class="dotq" title="第 ' + j.batch + ' 批待确认"></span>' : `<span class="ring ${live}" style="--p:${c.pct}" title="全文翻译 ${c.pct}%"></span>`;
+  }
+  $('#docJob').innerHTML = side;
+  if (S.pop && (force || (!pressing && Date.now() - popAt > 400))) renderPop();
+  renderStrip(force);
+  if ((force || !pressing) && (!document.activeElement || document.activeElement.id !== 'noteIn')) renderCheckpoint();
+}
+function renderAll() { renderTitleR(); renderChrome(true); for (const pg of DOC) updPage(pg.n, true); syncLabels(); }
+
+function renderStrip(force) {
+  const j = S.job, el = $('#strip');
+  if (!j) { el.innerHTML = ''; return; }
+  if (pressing && !force) return;
+  let h = '';
+  if (j.state === 'error' && j.reason === 'key') h = `<div class="strip err"><span class="si">${ic('key', 's')}</span><span class="tx">API Key 无效，已暂停<small>已译内容已保存</small></span><button class="plain grey" data-act="settings">打开设置</button><button class="plain" data-act="resume">重试</button></div>`;
+  else if (j.state === 'error') h = `<div class="strip err"><span class="si">${ic('warn', 's')}</span><span class="tx">没有可用的模型，已暂停</span><button class="plain" data-act="settings">打开设置</button></div>`;
+  else if (j.state === 'offline') h = `<div class="strip warn"><span class="si">${ic('wifiOff', 's')}</span><span class="tx">网络不可用，联网后自动继续</span><button class="plain grey" data-act="pause">暂停</button></div>`;
+  else if (j.state === 'budget') h = `<div class="strip warn"><span class="si">${ic('warn', 's')}</span><span class="tx">已用 ${tk(j.tokens)} token，超出预估 50%<small>预估 ${tk(j.estimate)}</small></span><button class="plain grey" data-act="stop">停止</button><button class="plain" data-act="budget-ok">继续</button></div>`;
+  el.innerHTML = h;
+}
+function renderCheckpoint() {
+  const j = S.job, el = $('#checkpoint');
+  if (!j || j.state !== 'review') { el.innerHTML = ''; return; }
+  const b = j.batchStats || { from: j.bFrom, to: j.bTo, paras: 0, fail: 0, reused: 0, secs: 0 };
+  const nf = j.bTo + 1, nt = Math.min(j.to, nf + j.size - 1);
+  if (j.ckMin) {
+    el.innerHTML = `<div class="ckpt min"><span style="font-size:12px">第 ${j.batch} 批待确认</span><button class="btn pri" data-act="next">继续第 ${nf}–${nt} 页</button><button class="ibtn sm" data-act="ck-expand" data-tip>${ic('chevDown', 's')}<span class="tip" style="top:auto;bottom:calc(100% + 6px)">展开</span></button></div>`;
+    return;
+  }
+  const remain = estimate(nf, j.to);
+  el.innerHTML = `<div class="ckpt" role="dialog" aria-label="第 ${j.batch} 批已完成">
+    <div class="ck-h"><span class="badge">${ic('check', 'xs')}</span><b>第 ${j.batch} 批已完成</b><span class="sub num">第 ${b.from}–${b.to} 页</span><span class="sp"></span>
+      <button class="ibtn sm" data-act="ck-min" data-tip>${ic('chevDown', 's')}<span class="tip" style="top:auto;bottom:calc(100% + 6px)">收起，先读一读</span></button></div>
+    <div class="ck-line"><span><b>${b.paras}</b> 段</span>${b.reused ? `<span>复用 <b>${b.reused}</b></span>` : ''}${b.fail ? `<span class="crit"><b>${b.fail}</b> 段未译 <button class="plain crit" data-act="retry-all">重试</button></span>` : ''}<span>已用 <b>${tk(j.tokens)}</b> token</span></div>
+    <div class="ck-row"><button class="plain" data-act="review-start" style="margin-left:-9px">${ic('chevRight', 'xs')}从第 ${b.from} 页开始检查</button></div>
+    <div>
+      <button class="disc ${j.noteOpen ? 'open' : ''}" data-act="note-toggle">${ic('chevRight', 'xs')}术语与要求${j.note ? ' · 已设置' : ''}</button>
+      ${j.noteOpen ? `<textarea class="req" id="noteIn" placeholder="例如：attention 统一译为“注意”；人名保留原文">${esc(j.note)}</textarea><div class="hint">只用于之后的批次；已译段落不会自动重译。</div>` : ''}
+    </div>
+    <div class="ck-row">每批<div class="seg sm" id="ckSize">${[5, 10, 20, 50].map(v => `<button data-v="${v}" class="${v === j.size ? 'on' : ''}">${v} 页</button>`).join('')}</div><span class="sp"></span><span class="num" style="color:var(--label3)">剩余 ${j.to - j.bTo} 页 · 约 ${tk(remain.tokens)} token</span></div>
+    <div class="pop-f"><button class="btn" data-act="stop">结束</button><span class="sp"></span><button class="btn" data-act="rest">翻译剩余全部</button><button class="btn pri" data-act="next">继续第 ${nf}–${nt} 页</button></div>
+  </div>`;
+}
+function skippedIn(a, b) { let k = 0; for (let n = a; n <= b; n++) k += parasOf(n).filter(p => !SENDABLE(p.kind)).length; return k; }
+function openPop() { S.pop = true; S.menu = null; $$('.menu', $('#layer')).forEach(e => e.remove()); renderPop(); }
+function renderPop() {
+  const layer = $('#layer');
+  $$('.pop', layer).forEach(e => e.remove());
+  if (!S.pop || !S.job) return;
+  popAt = Date.now();
+  const j = S.job, c = counts();
+  const cap = $('#jobBtn'); if (!cap) return;
+  const wr = $('#win').getBoundingClientRect(), r = cap.getBoundingClientRect();
+  const left = Math.min(r.left - wr.left, wr.width - 372 - 12);
+  const curP = S.pageFocus;
+  const cells = DOC.map(pg => {
+    const s = pageState(pg.n);
+    const out = !inRange(pg.n) ? ' out' : '';
+    const bs = j.mode === 'batch' && inRange(pg.n) && (pg.n - j.from) % j.size === 0 && pg.n !== j.from ? ' bstart' : '';
+    return `<div class="cell ${s}${out}${bs}${pg.n === curP ? ' cur' : ''}" data-p="${pg.n}"></div>`;
+  }).join('');
+  const stateLine = {
+    running: `翻译中 · ${j.mode === 'batch' ? `第 ${j.batch} 批（${j.bFrom}–${j.bTo} 页）` : '一次完成'}`,
+    review: `第 ${j.batch} 批待确认`, paused: '已暂停', offline: '等待网络', budget: '已暂停 · 超出预估', error: '已暂停 · 需要处理', done: '已完成', stopped: '已停止',
+  }[j.state];
+  const elapsed = Math.round((Date.now() - j.startedAt) / 1000 * S.speed);
+  const live = ['running', 'offline'].includes(j.state);
+  const actions = (() => {
+    if (live) return `<button class="btn danger" data-act="stop">停止</button><span class="sp"></span><button class="btn" data-act="pause">${ic('pause', 'xs')}暂停</button>`;
+    if (['paused', 'budget', 'error'].includes(j.state)) return `<button class="btn danger" data-act="stop">停止</button><span class="sp"></span><button class="btn pri" data-act="resume">${ic('play', 'xs', true)}继续</button>`;
+    if (j.state === 'review') return `<button class="btn danger" data-act="stop">结束</button><span class="sp"></span><button class="btn pri" data-act="next">继续下一批</button>`;
+    return `<button class="btn" data-act="clear">移除译文…</button><span class="sp"></span>${c.fail ? `<button class="btn" data-act="retry-all">${ic('retry', 'xs')}重试 ${c.fail} 段</button>` : ''}${j.state === 'stopped' ? `<button class="btn pri" data-act="new">继续翻译…</button>` : ''}`;
+  })();
+  const div = document.createElement('div');
+  div.className = 'pop';
+  div.style.cssText = `left:${left}px;top:${r.bottom - wr.top + 8}px`;
+  div.innerHTML = `
+    <div class="pop-h"><b>全文翻译</b><span class="sub">English → 简体中文</span><span class="sp"></span><span class="sub">${stateLine}</span></div>
+    <div class="grid" id="grid">${cells}</div>
+    <div class="legend"><span><i style="background:var(--gDone)"></i>已译</span><span><i style="background:var(--gReused)"></i>复用</span><span><i style="background:var(--gRun)"></i>翻译中</span><span><i style="background:var(--gQueued)"></i>本批排队</span><span><i style="background:var(--gFail)"></i>有未译段落</span><span><i style="box-shadow:inset 0 0 0 1px var(--gNone)"></i>无需翻译</span></div>
+    <div class="stats">
+      <div class="stat"><b>${c.done}<span style="font-size:11px;color:var(--label3);font-weight:400"> / ${c.total}</span></b><span>段落</span></div>
+      <div class="stat"><b>${tk(j.tokens)}<span style="font-size:11px;color:var(--label3);font-weight:400"> token</span></b><span>预估 ${tk(j.estimate)}</span></div>
+      <div class="stat ${c.fail ? 'crit' : ''}"><b>${c.fail}</b><span>未译</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="kv"><span>复用已有译文</span><b>${j.reusedParas} 段</b></div>
+      <div class="kv"><span>重复段落只译一次</span><b>${j.dedup} 段</b></div>
+      <div class="kv"><span>不发送（页眉、页码、已是中文）</span><b>${skippedIn(j.from, j.to)} 处</b></div>
+      <div class="kv"><span>模型 · 请求</span><b>Claude Sonnet 5.5 · ${j.calls} 次</b></div>
+      <div class="kv"><span>用时</span><b>${Math.floor(elapsed / 60)} 分 ${elapsed % 60} 秒</b></div>
+    </div>
+    <div class="pop-f">${actions}</div>`;
+  layer.appendChild(div);
+}
+
+/* ---------------- Menus ---------------- */
+function closeFloating() { S.menu = null; S.pop = false; $('#layer').innerHTML = ''; }
+function openMenu(kind, anchor, flash) {
+  closeFloating(); S.menu = kind;
+  const wr = $('#win').getBoundingClientRect(), r = anchor.getBoundingClientRect();
+  const m = document.createElement('div'); m.className = 'menu';
+  const j = S.job, live = j && !['done', 'stopped'].includes(j.state);
+  const ftItem = live
+    ? `<div class="mi" data-act="pop">${ic('layers')}全文翻译任务…<span class="badge">${counts().pct}%</span></div>`
+    : `<div class="mi${flash ? ' flash' : ''}" data-act="sheet">${ic('layers')}翻译全文…</div>`;
+  if (kind === 'compare') {
+    m.innerHTML = `<div class="mh">对照</div>
+      <div class="mi" data-hud="演示：与 Cognitive Science Primer 对照">${ic('doc')}Cognitive Science Primer</div>
+      <div class="mi" data-hud="演示：导入">${ic('doc')}导入文档…</div>
+      <div class="msep"></div>
+      <div class="mi${live ? ' dis' : ''}" data-hud="${live ? '' : '演示：AI 逐段翻译（读到哪译到哪）'}">${ic('trans')}AI 逐段翻译成中文</div>
+      ${ftItem}
+      <div class="msep"></div>
+      <div class="mi" data-hud="已退出对照阅读（演示）">${ic('close')}退出对照阅读<span class="k">Esc</span></div>`;
+  } else if (kind === 'doc') {
+    m.innerHTML = `<div class="mi" data-hud="演示：打开">打开</div><div class="mi" data-hud="演示：重命名">重命名…</div><div class="msep"></div>
+      ${ftItem.replace('class="mi', 'class="mi')}<div class="msep"></div><div class="mi" data-hud="演示：移除">从学习集移除…</div>`;
+  } else if (kind === 'more') {
+    m.innerHTML = `<div class="mi" data-hud="演示：裁掉白边">裁掉白边</div><div class="mi" data-hud="演示：识别文字">识别文字（OCR）</div><div class="msep"></div>${ftItem}`;
+  }
+  let left = r.left - wr.left, top = r.bottom - wr.top + 6;
+  if (kind === 'doc') { left = r.left - wr.left + 60; top = r.top - wr.top + 20; }
+  if (left + 260 > wr.width) left = wr.width - 270;
+  m.style.cssText = `left:${left}px;top:${top}px`;
+  $('#layer').appendChild(m);
+}
+
+/* ---------------- Setup sheet ---------------- */
+function openSheet(o = {}) {
+  closeFloating();
+  const prev = S.job && S.job.state === 'stopped' ? S.job : null;
+  S.sheet = Object.assign({ mode: 'batch', size: 10, range: 'all', from: prev ? 1 : 1, to: PAGES, note: prev ? prev.note : '', noteOpen: false, changed: false, scanned: false }, o);
+  renderSheet();
+}
+function renderSheet() {
+  const host = $('#sheetHost'), sh = S.sheet;
+  if (!sh) { host.innerHTML = ''; return; }
+  const from = sh.range === 'all' ? 1 : sh.from, to = sh.range === 'all' ? PAGES : sh.to;
+  const valid = from >= 1 && to <= PAGES && from <= to;
+  const e = valid ? estimate(from, to) : null;
+  let blocked = '';
+  if (sh.scanned) blocked = `<div class="blocked">${ic('scan')}<div><b>这份文档没有可选文字</b><br><span style="color:var(--label2)">先在本机识别文字，再翻译全文。</span><div style="margin-top:8px"><button class="btn" data-act="ocr">识别文字</button></div></div></div>`;
+  else if (S.ai !== 'ok') blocked = `<div class="blocked">${ic('cpu')}<div><b>${S.ai === 'bad' ? 'API Key 无效' : '还没有可用的模型'}</b><br><span style="color:var(--label2)">全文翻译使用助手的默认模型。</span><div style="margin-top:8px"><button class="btn" data-act="settings">打开助手设置</button></div></div></div>`;
+  else if (!S.net) blocked = `<div class="blocked">${ic('wifiOff')}<div><b>网络不可用</b><br><span style="color:var(--label2)">可以先开始，联网后自动翻译。</span></div></div>`;
+  const nothing = e && e.paras === 0;
+  const firstTo = sh.mode === 'batch' ? Math.min(to, from + sh.size - 1) : to;
+  const primary = nothing ? '没有需要翻译的段落' : sh.mode === 'batch' ? `开始 · 第 ${from}–${firstTo} 页` : '开始翻译';
+  const disabled = !valid || nothing || sh.scanned || S.ai !== 'ok';
+  const big = e && e.tokens > 50000 && sh.mode === 'all';
+  host.innerHTML = `<div class="scrim" data-act="sheet-cancel"></div>
+  <div class="sheet" role="dialog" aria-label="翻译全文">
+    <div class="sh-h"><span class="tic">${ic('layers')}</span><div><b>翻译全文</b><div class="sub">The Architecture of Attention · ${PAGES} 页</div></div></div>
+    <div class="sh-b">
+      ${blocked}
+      <div class="form">
+        <label>语言</label>
+        <div class="field"><span class="popup">English<span style="color:var(--label3)">（检测）</span>${ic('chevDown', 'xs')}</span><span class="arrow">→</span><span class="popup">简体中文${ic('chevDown', 'xs')}</span></div>
+        <label>范围</label>
+        <div class="field"><div class="seg sm" id="shRange"><button data-v="all" class="${sh.range === 'all' ? 'on' : ''}">全部</button><button data-v="pages" class="${sh.range === 'pages' ? 'on' : ''}">页码</button></div>
+          <input class="numin" id="shFrom" value="${from}" ${sh.range === 'all' ? 'disabled' : ''}><span style="color:var(--label3)">–</span><input class="numin" id="shTo" value="${to}" ${sh.range === 'all' ? 'disabled' : ''}>
+          ${!valid ? `<span style="color:var(--critical);font-size:11.5px">1–${PAGES}</span>` : ''}</div>
+        <label class="top">方式</label>
+        <div class="modes">
+          <button class="mode ${sh.mode === 'batch' ? 'on' : ''}" data-mode="batch"><span class="radio"></span><b>分批确认</b><span>每批完成后停下，检查后再继续</span></button>
+          <button class="mode ${sh.mode === 'all' ? 'on' : ''}" data-mode="all"><span class="radio"></span><b>一次完成</b><span>连续翻译到最后，可随时暂停</span></button>
+        </div>
+        ${sh.mode === 'batch' ? `<label>每批</label><div class="field"><div class="seg sm" id="shSize">${[5, 10, 20, 50].map(v => `<button data-v="${v}" class="${v === sh.size ? 'on' : ''}">${v} 页</button>`).join('')}</div><span style="font-size:11.5px;color:var(--label3)" class="num">共 ${valid ? Math.ceil((to - from + 1) / sh.size) : '–'} 批</span></div>` : ''}
+        <label class="top">术语与要求</label>
+        <div><textarea class="req" id="shNote" placeholder="可选。例如：attention 统一译为“注意”；人名保留原文">${esc(sh.note)}</textarea></div>
+      </div>
+      ${e && !sh.scanned ? `<div class="est">
+        ${sh.changed ? `<div class="er warn">${ic('scan', 's')}<span>原文已重新识别 · 已有译文 <b>38 / 40</b> 段仍可复用</span></div>` : ''}
+        <div class="er">${ic('trans', 's')}<span>需翻译 <b>${fmt(e.paras - e.dupe)}</b> 段 · 约 <b>${fmt(e.uniqueChars)}</b> 字符</span><span class="sp"></span><span class="num">约 ${e.minutes} 分钟</span></div>
+        ${e.reused ? `<div class="er pos">${ic('recycle', 's')}<span>已有 <b>${e.reused}</b> 段译文${e.reusedPages ? `（${e.reusedPages} 页）` : ''}，直接复用</span></div>` : ''}
+        <div class="er">${ic('skip', 's')}<span>不发送：页眉页码 ${e.skipped} 处${e.same ? ` · 已是中文 ${e.same} 段` : ''}${e.dupe ? ` · 重复段落 ${e.dupe} 段` : ''}</span></div>
+        <div class="er${big ? ' warn' : ''}">${ic('cpu', 's')}<span>Claude Sonnet 5.5 · 预计 <b>${tk(e.tokens)}</b> token${big || sh.mode === 'all' ? '；超出 50% 时暂停询问' : ''}</span></div>
+      </div>` : ''}
+    </div>
+    <div class="sh-f"><span class="meta">译文保存在学习集内，不修改 PDF</span><span class="sp"></span><button class="btn" data-act="sheet-cancel">取消</button><button class="btn pri" data-act="sheet-start" ${disabled ? 'disabled' : ''}>${primary}</button></div>
+  </div>`;
+}
+
+/* ---------------- Sync scroll + labels ---------------- */
+let syncing = false;
+function pageAt(sc) {
+  const top = sc.scrollTop + 40; let best = 1;
+  $$('.pg', sc).forEach(el => { if (el.offsetTop <= top) best = +el.dataset.p; });
+  return best;
+}
+function syncFrom(src, dst) {
+  if (syncing) return; syncing = true;
+  const n = pageAt(src), a = $(`.pg[data-p="${n}"]`, src), b = $(`.pg[data-p="${n}"]`, dst);
+  const frac = (src.scrollTop - a.offsetTop) / a.offsetHeight;
+  dst.scrollTop = b.offsetTop + frac * b.offsetHeight;
+  requestAnimationFrame(() => { syncing = false; });
+  S.pageFocus = n; syncLabels();
+}
+function syncLabels() {
+  const n = S.pageFocus;
+  $('#pgL').textContent = `${n} / ${PAGES}`;
+  const r = $('#pgR'); if (r) r.textContent = `${n} / ${PAGES}`;
+  $('#tbSub').textContent = `第 ${n} / ${PAGES} 页`;
+  $$('#grid .cell').forEach(c => c.classList.toggle('cur', +c.dataset.p === n));
+}
+function scrollToPage(n) {
+  const b = $(`#scrollR .pg[data-p="${n}"]`), a = $(`#scrollL .pg[data-p="${n}"]`);
+  if (!a || !b) return;
+  syncing = true; $('#scrollR').scrollTop = b.offsetTop - 16; $('#scrollL').scrollTop = a.offsetTop - 16;
+  requestAnimationFrame(() => { syncing = false; });
+  S.pageFocus = n; syncLabels();
+}
+
+/* ---------------- HUD ---------------- */
+let hudT;
+function hud(text, action, fn) {
+  const h = $('#hudHost'); clearTimeout(hudT);
+  h.innerHTML = `<div class="hud ${action ? '' : 'solo'}">${esc(text)}${action ? `<button id="hudAct">${esc(action)}</button>` : ''}</div>`;
+  if (action) $('#hudAct').onclick = () => { h.innerHTML = ''; fn && fn(); };
+  hudT = setTimeout(() => { h.innerHTML = ''; }, 3600);
+}
+function notify(title, body) {
+  const n = document.createElement('div'); n.className = 'notif';
+  n.innerHTML = `<span class="ap">${ic('book', 's')}</span><div><b>${esc(title)}</b>${esc(body)}</div>`;
+  document.body.appendChild(n); setTimeout(() => n.remove(), 4200);
+}
+
+/* ---------------- Events ---------------- */
+document.addEventListener('click', e => {
+  const t = e.target;
+  const actEl = t.closest('[data-act]');
+  const hudEl = t.closest('[data-hud]');
+  if (t.closest('#cmpBtn')) { S.menu === 'compare' ? closeFloating() : openMenu('compare', $('#cmpBtn')); return; }
+  if (t.closest('#moreBtn')) { S.menu === 'more' ? closeFloating() : openMenu('more', $('#moreBtn')); return; }
+  if (t.closest('#sideBtn')) { hud('演示：页面侧栏'); return; }
+  if (t.closest('#jobBtn')) { if (!S.job) openSheet(); else if (S.pop) closeFloating(); else openPop(); return; }
+  if (t.closest('#aiName')) { openMenu('compare', $('#aiName')); return; }
+  const cell = t.closest('.cell');
+  if (cell) { scrollToPage(+cell.dataset.p); return; }
+  if (t.closest('.mode')) { S.sheet.mode = t.closest('.mode').dataset.mode; renderSheet(); return; }
+  if (t.closest('#shRange button')) { readSheetInputs(); S.sheet.range = t.closest('button').dataset.v; renderSheet(); return; }
+  if (t.closest('#shSize button')) { readSheetInputs(); S.sheet.size = +t.closest('button').dataset.v; renderSheet(); return; }
+  if (t.closest('#ckSize button')) { S.job.size = +t.closest('button').dataset.v; renderCheckpoint(); return; }
+  if (actEl) { act(actEl.dataset.act, actEl, e); return; }
+  if (hudEl && hudEl.dataset.hud) { closeFloating(); hud(hudEl.dataset.hud); return; }
+  // Targets re-rendered during this click (e.g. scene list) are detached: never treat them as an outside click.
+  if (t.isConnected && !t.closest('#layer,#demo,.sheet,.ckpt')) { if (S.menu || S.pop) closeFloating(); }
+  if (S.editing && !t.closest('.editing')) commitEdit();
+});
+function readSheetInputs() {
+  const sh = S.sheet; if (!sh) return;
+  const f = $('#shFrom'), to = $('#shTo'), n = $('#shNote');
+  if (f && !f.disabled) sh.from = parseInt(f.value, 10) || 0;
+  if (to && !to.disabled) sh.to = parseInt(to.value, 10) || 0;
+  if (n) sh.note = n.value;
+}
+document.addEventListener('input', e => {
+  if (e.target.id === 'shFrom' || e.target.id === 'shTo') {
+    readSheetInputs(); const id = e.target.id, pos = e.target.selectionStart; renderSheet();
+    const el = $('#' + id); el.focus(); el.setSelectionRange(pos, pos);
+  }
+  if (e.target.id === 'shNote') S.sheet.note = e.target.value;
+  if (e.target.id === 'noteIn') S.job.note = e.target.value;
+});
+$('#docRow').addEventListener('contextmenu', e => { e.preventDefault(); openMenu('doc', $('#docRow')); });
+function act(a, el) {
+  const j = S.job;
+  switch (a) {
+    case 'sheet': openSheet(); break;
+    case 'new': openSheet(); break;
+    case 'pop': openPop(); break;
+    case 'sheet-cancel': S.sheet = null; renderSheet(); break;
+    case 'sheet-start': {
+      readSheetInputs(); const sh = S.sheet;
+      const from = sh.range === 'all' ? 1 : sh.from, to = sh.range === 'all' ? PAGES : sh.to;
+      // A stopped job is replaced by the new one; its saved paragraphs are reused automatically.
+      startJob({ mode: sh.mode, size: sh.size, from, to, note: sh.note }); renderSheet();
+      hud(sh.mode === 'batch' ? `开始翻译第 ${from}–${Math.min(to, from + sh.size - 1)} 页` : '开始翻译全文');
+      break;
+    }
+    case 'pause': pauseJob(true); break;
+    case 'resume': resumeJob(); break;
+    case 'stop': stopJob(); break;
+    case 'budget-ok': j.budgetOk = true; resumeJob(); break;
+    case 'next': j.ckMin = false; j.noteOpen = false; nextBatch(); break;
+    case 'rest': j.mode = 'all'; j.ckMin = false; nextBatch(); hud('剩余页面将一次翻译完成'); break;
+    case 'ck-min': j.ckMin = true; renderCheckpoint(); break;
+    case 'ck-expand': j.ckMin = false; renderCheckpoint(); break;
+    case 'note-toggle': j.noteOpen = !j.noteOpen; renderCheckpoint(); if (j.noteOpen) $('#noteIn').focus(); break;
+    case 'review-start': j.ckMin = true; renderCheckpoint(); scrollToPage(j.batchStats ? j.batchStats.from : j.bFrom); break;
+    case 'retry': retryPara(el.dataset.id); break;
+    case 'retry-all': retryAllFailed(); break;
+    case 'retrans': retranslatePara(el.dataset.id); break;
+    case 'edit': startEdit(el.dataset.id); break;
+    case 'copy': hud('已拷贝译文'); break;
+    case 'settings': hud('演示：打开 设置 › 助手'); break;
+    case 'ocr': hud('演示：开始识别文字'); S.sheet.scanned = false; renderSheet(); break;
+    case 'clear': closeFloating(); if (confirm('移除这份文档的全部 AI 译文？手动修改过的译文也会被移除。')) { resetData(); renderRight(); renderAll(); hud('已移除译文'); } break;
+    case 'one-page': {
+      const n = +el.dataset.p; for (const p of sendParasOf(n)) S.st.get(p.id).s = 'queued';
+      // Off-range pages go through the same scheduler; they don't extend the job range.
+      const gen = S.gen; updPage(n, true);
+      sendParasOf(n).forEach((p, i) => { const st = S.st.get(p.id); setTimeout(() => { if (gen !== S.gen) return; Object.assign(st, { s: 'done', zh: p.zh, arrive: true }); updPara(p.id); renderChrome(); }, (900 + i * 500) / S.speed); });
+      break;
+    }
+  }
+}
+function startEdit(id) {
+  if (S.editing) commitEdit();
+  const el = $(`#scrollR [data-id="${id}"]`), st = S.st.get(id);
+  S.editing = id; el.className = 'para done editing'; el.setAttribute('contenteditable', 'true'); el.textContent = st.zh; el.focus();
+  const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+function commitEdit(cancel) {
+  const id = S.editing; if (!id) return;
+  const el = $(`#scrollR [data-id="${id}"]`), st = S.st.get(id);
+  const v = el.textContent.trim();
+  S.editing = null;
+  if (!cancel && v && v !== st.zh) { st.zh = v; st.edited = true; hud('已保存修改'); }
+  updPara(id);
+}
+document.addEventListener('keydown', e => {
+  if (S.editing) {
+    if (e.key === 'Escape') { e.preventDefault(); commitEdit(true); }
+    if (e.key === 'Enter' && (e.metaKey || !e.shiftKey)) { e.preventDefault(); commitEdit(); }
+    return;
+  }
+  if (e.key === 'Escape') { if (S.sheet) { S.sheet = null; renderSheet(); } else closeFloating(); }
+  if (e.key === 'Enter' && S.sheet && !e.target.matches('textarea')) { const b = $('[data-act="sheet-start"]'); if (b && !b.disabled) b.click(); }
+});
+// Paired hover between the two panes.
+function pairHover(e) {
+  const p = e.target.closest('[data-id]');
+  $$('.pair').forEach(x => x.classList.remove('pair'));
+  if (!p || !p.closest('.pscroll')) return;
+  const id = p.dataset.id; $$(`[data-id="${id}"]`).forEach(x => { if (!x.classList.contains('editing')) x.classList.add('pair'); });
+}
+$('#scrollL').addEventListener('mouseover', pairHover); $('#scrollR').addEventListener('mouseover', pairHover);
+$('#reader').addEventListener('mouseleave', () => $$('.pair').forEach(x => x.classList.remove('pair')));
+$('#scrollL').addEventListener('scroll', () => syncFrom($('#scrollL'), $('#scrollR')));
+$('#scrollR').addEventListener('scroll', () => syncFrom($('#scrollR'), $('#scrollL')));
+// Grid tooltip
+document.addEventListener('mouseover', e => {
+  const c = e.target.closest('.cell'); $$('.cell-tip').forEach(x => x.remove());
+  if (!c) return;
+  const n = +c.dataset.p, s = pageState(n);
+  const label = { none: inRange(n) ? '未开始' : '不在范围', queued: '排队中', run: '翻译中', done: '已译', reused: '复用已有译文', skip: '无需翻译', fail: '未译', partial: '部分未译' }[s];
+  const wr = $('#win').getBoundingClientRect(), r = c.getBoundingClientRect();
+  const t = document.createElement('div'); t.className = 'cell-tip';
+  t.style.cssText = `left:${r.left - wr.left + r.width / 2}px;top:${r.top - wr.top}px`;
+  t.textContent = `第 ${n} 页 · ${label}`; $('#layer').appendChild(t);
+});
+
+/* ---------------- Demo console ---------------- */
+function seg(id, fn) {
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$(id + ' button').forEach(x => x.classList.toggle('on', x === b)); fn(b.dataset.v);
+  });
+}
+function setSeg(id, v) { $$(id + ' button').forEach(x => x.classList.toggle('on', x.dataset.v === String(v))); }
+seg('#dTheme', v => { S.dark = v === 'dark'; document.body.classList.toggle('dark', S.dark); });
+seg('#dNet', v => {
+  S.net = v === 'on';
+  const j = S.job;
+  if (S.net && j && j.state === 'offline') { j.state = 'running'; renderAll(); hud('网络已恢复，继续翻译'); }
+  else renderAll();
+  if (S.sheet) renderSheet();
+});
+seg('#dAi', v => { S.ai = v; if (S.sheet) renderSheet(); });
+seg('#dSpeed', v => { S.speed = +v; });
+$('#dReset').onclick = () => { boot(); S.scene = null; renderScenes(); };
+$('#demoMin').onclick = () => { $('#demo').classList.toggle('min'); document.body.classList.toggle('demo-min'); };
+
+function finishBatchInstantly(from, to) {
+  for (let n = from; n <= to; n++) for (const p of sendParasOf(n)) { const st = S.st.get(p.id); if (st.s !== 'reused') Object.assign(st, { s: 'done', zh: p.zh }); }
+}
+function env(net = true, ai = 'ok') { S.net = net; S.ai = ai; setSeg('#dNet', net ? 'on' : 'off'); setSeg('#dAi', ai); }
+const SCENES = [
+  { t: '入口：对照菜单', d: '对照阅读菜单里新增「翻译全文…」',
+    r: '入口只有两个：对照阅读菜单、侧栏文档右键（以及「更多」菜单）。<b>任务进行中</b>入口变为「全文翻译任务…」，AI 逐段翻译置灰——同一文档同一语言只有一个调度器。',
+    run() { openMenu('compare', $('#cmpBtn'), true); } },
+  { t: '设置：分批确认', d: '默认每批 10 页，预估与复用一目了然',
+    r: '默认<b>分批确认 · 每批 10 页</b>。预估区只写事实：要发送多少段、复用多少、哪些不发送、预计 token。主按钮写明第一批的页码范围。',
+    run() { openSheet(); } },
+  { t: '设置：一次完成', d: '连续翻译，超出预估 50% 自动暂停',
+    r: '一次完成没有检查点，但有两道闸：<b>实际用量超过预估 150% 暂停询问</b>；任务级错误立刻暂停，不会把剩下的段落一个个失败掉。',
+    run() { openSheet({ mode: 'all' }); } },
+  { t: '设置：复用已有译文', d: '逐段对照已译过的 6 页不再请求',
+    r: '缓存键 = 规范化原文 + 目标语言（与页码、模型、要求无关）。读过的页（逐段对照）、上次停止前已译的页，都直接复用，<b>预估里扣除</b>。',
+    run() { preCache(1, 6); renderAll(); openSheet(); } },
+  { t: '翻译中：任务面板', d: '页网格、用量、暂停 / 停止',
+    r: '翻译时可以照常阅读、标注。正在看的页（本批内）优先翻译。页网格一格一页，点格子跳页。<b>暂停</b>：在途请求完成后保存，不再发新请求。',
+    run() { startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); setTimeout(() => openPop(), 50); } },
+  { t: '批次检查点', d: '每批完成后停下，检查后继续',
+    r: '检查点停在 AI 栏底部，不遮挡原文。<b>停下来时不会有任何请求</b>：翻到下一批的页也只显示“将在第 n 批翻译”，不会触发逐段翻译。可以收起检查点先读一读。',
+    run() { startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, 10); S.active = 0; S.job.tokens = 5820; S.job.batchStats = { from: 1, to: 10, paras: counts(1, 10).total, fail: 0, reused: 0, secs: 72 }; S.job.state = 'review'; renderAll(); } },
+  { t: '检查点：调整要求', d: '术语与批大小只影响之后的批次',
+    r: '检查时发现术语不统一，就在这里写要求。<b>已译段落不会自动重译</b>（避免重复调用）；需要时逐段点「重新翻译」。',
+    run() { SCENES[5].run(); S.job.noteOpen = true; S.job.note = 'attention 统一译为“注意”，不要译成“注意力”；人名保留原文'; renderCheckpoint(); } },
+  { t: '段落失败与重试', d: '自动重试 3 次后标为未译，可单独重试',
+    r: '临时错误（超时、429、5xx）<b>自动退避重试 3 次</b>，不打扰用户；仍失败的段落原地显示原文 + 「重试」，其余段落照常继续。',
+    run() { startJob({ mode: 'all', size: 10, from: 25, to: 34 }); finishBatchInstantly(25, 34); PERMA_FAIL.add('p31-1'); Object.assign(S.st.get('p31-1'), { s: 'fail', zh: '', err: '模型返回不完整' }); S.job.state = 'done'; S.job.estimate = 9000; S.job.tokens = 6400; renderAll(); scrollToPage(31); } },
+  { t: '任务错误：Key 失效', d: '立即暂停整个任务，修好再继续',
+    r: '鉴权失败、额度用尽、模型不存在属于<b>任务级错误</b>：立即暂停，不重试，不逐段失败；已译内容已保存。修好后点「重试」从断点继续（在控制台把 AI 模型切回“可用”再试）。',
+    run() { env(true, 'bad'); startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, 4); S.job.state = 'error'; S.job.reason = 'key'; renderAll(); scrollToPage(4); } },
+  { t: '断网：等待网络', d: '联网后自动继续（用户暂停的不会）',
+    r: '断网时任务进入“等待网络”，<b>联网后自动继续</b>；若用户手动暂停过，联网后不自动继续。在控制台把网络切回“在线”试试。',
+    run() { env(false); startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, 6); S.job.state = 'offline'; renderAll(); scrollToPage(6); } },
+  { t: '超出预估', d: '实际用量超过 150% 时暂停询问',
+    r: '推理型模型或很长的段落可能远超预估。超过 <b>150%</b> 暂停一次，用户确认后本任务不再询问。',
+    run() { startJob({ mode: 'all', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, 18); S.job.tokens = Math.round(S.job.estimate * .4 * 1.6); S.job.estimate = Math.round(S.job.tokens / 1.52); S.job.state = 'budget'; renderAll(); scrollToPage(18); } },
+  { t: '重新打开：继续上次', d: '退出时自动暂停，回来时一键继续',
+    r: '关闭学习集或退出应用时任务<b>自动暂停并保存</b>；重新打开<b>不会自动继续</b>（费用由用户决定）。侧栏文档行显示进度环。',
+    run() { startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); nextBatchSilently(2); finishBatchInstantly(1, 16); S.job.tokens = 9300; S.job.state = 'paused'; renderAll(); scrollToPage(16); hud('全文翻译已暂停在第 16 页', '继续', () => resumeJob()); } },
+  { t: '修改与重译段落', d: '悬停段落：重新翻译 / 修改 / 拷贝',
+    r: '修改过的段落带 ✎ 标记，<b>永远不会被批量重译覆盖</b>。「重新翻译」只请求这一段，可撤销。',
+    run() { startJob({ mode: 'batch', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, 10); S.job.state = 'review'; S.job.ckMin = true; S.job.batchStats = { from: 1, to: 10, paras: counts(1, 10).total, fail: 0, reused: 0, secs: 70 }; renderAll(); scrollToPage(2); const el = $('#scrollR [data-id="p2-1"]'); if (el) el.classList.add('pacts-on'); } },
+  { t: '全部完成', d: '含 1 段未译；后台完成时发系统通知',
+    r: '完成后胶囊显示结果；有未译段落时显示数量，面板里一键重试。窗口不在前台时发一条系统通知。完成后，未在范围内的页恢复“读到哪译到哪”。',
+    run() { startJob({ mode: 'all', size: 10, from: 1, to: PAGES }); finishBatchInstantly(1, PAGES); PERMA_FAIL.add('p31-1'); Object.assign(S.st.get('p31-1'), { s: 'fail', zh: '', err: '模型返回不完整' }); S.job.calls = 52; S.job.tokens = Math.round(S.job.estimate * .97); S.job.state = 'done'; renderAll(); openPop(); notify('全文翻译完成', 'The Architecture of Attention · 1 段未译'); } },
+  { t: '原文变化', d: '重新识别文字后，按原文内容复用',
+    r: '页码或 OCR 变化会让旧的位置失效，但<b>文字相同的段落仍复用</b>，只发送真正变化的段落。',
+    run() { preCache(1, 14); renderAll(); openSheet({ changed: true }); } },
+  { t: '不可用：扫描版 / 未设置模型', d: '先说明原因，给出一步可做的事',
+    r: '扫描版先识别文字；没有模型时引导去设置。<b>主按钮置灰</b>，不在点击后才报错。',
+    run() { openSheet({ scanned: true }); } },
+];
+function nextBatchSilently(k) { const j = S.job; for (let i = 1; i < k; i++) { j.batch++; j.bFrom = j.bTo + 1; j.bTo = Math.min(j.to, j.bFrom + j.size - 1); } queueRange(j.bFrom, j.bTo); }
+function renderScenes() {
+  $('#scenes').innerHTML = SCENES.map((s, i) => `<button class="scn ${S.scene === i ? 'on' : ''}" data-scn="${i}"><span class="n">${i + 1}</span><span>${s.t}<small>${s.d}</small></span></button>`).join('');
+}
+$('#scenes').addEventListener('click', e => {
+  const b = e.target.closest('.scn'); if (!b) return;
+  const i = +b.dataset.scn; S.scene = i; renderScenes();
+  boot(true); env(true, 'ok'); clearTimeout(hudT); $('#hudHost').innerHTML = ''; $$('.notif').forEach(n => n.remove());
+  SCENES[i].run();
+  $('#ruleBox').innerHTML = SCENES[i].r;
+});
+
+/* ---------------- Spec drawer (summary of docs/full-translation.md) ---------------- */
+$('#openSpec').onclick = () => { $('#spec').classList.add('on'); };
+$('#spec').addEventListener('click', e => { if (e.target.id === 'spec' || e.target.closest('.x')) $('#spec').classList.remove('on'); });
+$('#specDoc').innerHTML = `
+<button class="ibtn x" title="关闭">${ic('close')}</button>
+<h1>全文翻译 · 约束与规范</h1>
+<p class="lead">完整说明见 <code>docs/full-translation.md</code>。这里列出实现时<b>必须遵守</b>的规则。原型中的文档与译文都是演示数据。</p>
+
+<h2>1. 原则</h2>
+<ol>
+<li><b>克制。</b>没有新的工具栏按钮；入口在对照阅读菜单、文档右键和「更多」。任务进度只在 AI 栏标题条的一枚胶囊里，侧栏文档行一个进度环。</li>
+<li><b>停就是停。</b>暂停、检查点、出错时，<span class="must">不发出任何新请求</span>；在途请求完成后照常保存。</li>
+<li><b>付过费的结果一定保存。</b>每段成功立即落盘；停止、退出、崩溃最多丢失在途请求。</li>
+<li><b>同一段不译两次。</b>按原文内容（textKey）缓存；重复段落只译一次；页眉页码、已是目标语言的段落不发送。重译只能由用户逐段发起。</li>
+<li><b>原文是锚点。</b>译文一一对应原文段落，悬停联动，摘录指向原文。</li>
+</ol>
+
+<h2>2. 状态</h2>
+<table><tr><th>任务状态</th><th>胶囊</th><th>会发请求？</th><th>离开方式</th></tr>
+<tr><td>running</td><td>进度环 + 百分比 + 第 n 批 · x/y 页</td><td>是（最多 2 个并发）</td><td>批完成 → review / done；暂停；错误</td></tr>
+<tr><td>review（仅分批）</td><td>✓ 第 n 批待确认（强调色）</td><td>否</td><td>继续下一批 / 翻译剩余全部 / 结束</td></tr>
+<tr><td>paused</td><td>⏸ 已暂停 · x/y 页</td><td>否</td><td>继续 / 停止</td></tr>
+<tr><td>offline</td><td>等待网络（警示色）</td><td>否</td><td>联网自动继续（用户暂停过的除外）</td></tr>
+<tr><td>budget</td><td>已暂停 · 超出预估</td><td>否</td><td>继续（本任务不再询问）/ 停止</td></tr>
+<tr><td>error</td><td>已暂停（错误色）+ 标题条下横条</td><td>否</td><td>修好后重试 / 停止</td></tr>
+<tr><td>done</td><td>全文已译 / 已完成 · n 段未译</td><td>否（单段重试除外）</td><td>—</td></tr>
+<tr><td>stopped</td><td>已停止 · x/y 页</td><td>否</td><td>继续翻译…（新任务，自动复用）</td></tr></table>
+<p>段落状态：未开始 → 排队 → 翻译中 → 已译 / 复用 / 未译（失败）；另有“无需翻译”（页眉、页码、已是目标语言）。</p>
+
+<h2>3. 失败与重试</h2>
+<table><tr><th>类别</th><th>例子</th><th>处理</th></tr>
+<tr><td>临时</td><td>超时、429、5xx、连接重置</td><td>自动退避重试：2s / 8s / 30s（±20% 抖动，尊重 Retry-After），最多 3 次；连续 429 时并发 2 → 1</td></tr>
+<tr><td>网络</td><td>系统报告离线</td><td>任务进入 offline；在途请求退回排队；联网自动继续</td></tr>
+<tr><td>段落级</td><td>输出为空、被截断、拒绝、打包解析不匹配</td><td>打包请求先拆成单段再试；仍失败 → 段落标“未译”，其余继续</td></tr>
+<tr><td>任务级</td><td>401/403、额度用尽、模型不存在</td><td>立即暂停整个任务，不重试，横条说明并给出“打开设置”</td></tr>
+<tr><td>预算</td><td>实际 token &gt; 预估 150%</td><td>暂停一次询问</td></tr>
+<tr><td>进程</td><td>退出、崩溃、睡眠</td><td>任务记为 paused；重开不自动继续；进度以译文存储为准重建</td></tr></table>
+<p>重试层级：段落（原地「重试」）→ 全部未译（面板 / 检查点「重试 n 段」）→ 任务（暂停后「继续」从断点）。“重试”永远不重发已成功的段落。</p>
+
+<h2>4. 避免重复调用</h2>
+<ol>
+<li><b>内容键</b> <code>textKey = sha256(splitVersion, 规范化原文, 目标语言)</code>，与页码、位置、文档摘要、模型、“术语与要求”都无关；模型与要求只作为出处记录在译文上（<code>model</code>、<code>profileDigest</code>）。所以换页码、重新识别文字、换模型、改要求都<b>不会</b>让已有译文失效。</li>
+<li>启动前先查缓存（含逐段对照留下的译文与旧版 <code>translationCaches</code>），只为缺失的段落排队；预估里扣除复用部分。</li>
+<li>相同 <code>textKey</code> 的段落只发一次请求，结果扇出到每一处；相同文字在途时，其他副本等待而不是再发。</li>
+<li>页眉页脚（≥ 30% 页面相同位置出现的相同文字）、页码、纯数字 / 符号、已是目标语言的段落不发送。</li>
+<li>每个（文档，目标语言）只有一个调度器；逐段对照的按需翻译与全文任务共用它，在途请求按 <code>textKey</code> 去重。任务存在时不触发按需翻译。</li>
+<li>修改“术语与要求”不使已有译文失效；只影响之后排队的段落。手动修改过的段落不会被任何批量操作覆盖。</li>
+</ol>
+
+<h2>5. 数据存储</h2>
+<pre>&lt;set&gt;.mmset/
+  studyset.json                       // 不放全文译文（避免每次编辑重写大文件、进入撤销快照）
+  translations/
+    &lt;documentId&gt;/&lt;targetLang&gt;/
+      job.json                        // 任务设置与状态，原子替换（tmp + rename）
+      segments.jsonl                  // 追加写：每段一行，成功即 fsync</pre>
+<p><code>segments.jsonl</code> 每行：<code>{v, key, fp, page, index, text, model, profile, origin: "ai"|"edited"|"legacy", at}</code>。同一 <code>key</code> 以最后一行为准；尾部不完整的行在加载时丢弃。被覆盖的行超过 30% 时在空闲时压缩重写。<code>job.json</code> 只记录设置与游标，<b>进度以 segments 为准</b>重新计算。</p>
+
+<h2>6. 尺寸与令牌</h2>
+<table><tr><th>元素</th><th>规格</th></tr>
+<tr><td>设置面板</td><td><code>MMSheet</code> 宽 560，表单标签列 96，圆角 16</td></tr>
+<tr><td>任务胶囊</td><td>高 24，圆角 12，<code>caption</code> 500；进度环 12pt / 线宽 2.5</td></tr>
+<tr><td>任务面板</td><td><code>MMGlass</code> 宽 372，圆角 16，页网格 16 列、格 3:4、间距 3</td></tr>
+<tr><td>检查点</td><td>AI 栏底部居中，宽 ≤ 420，距底 16；可收起为 40 高的胶囊</td></tr>
+<tr><td>错误横条</td><td>标题条下方，高 ≥ 36，底色为语义色 9–14%</td></tr>
+<tr><td>颜色</td><td>只用语义色：accent（进行中 / 待确认）、positive（已译）、caution（等待网络、超预估、部分未译）、critical（任务错误、未译）</td></tr>
+<tr><td>动效</td><td>译文到达淡入 360ms；占位微光 1.2s；减弱动态效果时全部去除</td></tr></table>
+`;
+
+/* ---------------- Boot ---------------- */
+let timer;
+function boot(keepEnv) {
+  S.gen++;
+  resetData();
+  if (!keepEnv) env(true, 'ok');
+  renderLeft(); renderRight(); renderAll(); renderSheet(); closeFloating(); $('#checkpoint').innerHTML = '';
+  scrollToPage(1);
+}
+paintIcons();
+renderScenes();
+boot();
+clearInterval(timer); timer = setInterval(tick, 120);
+</script>
+</body>
+</html>
