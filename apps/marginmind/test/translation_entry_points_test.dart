@@ -99,6 +99,14 @@ void main() {
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byKey(const ValueKey('reader-compare')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Full Translation… 25%'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.widget<FullTranslationPanel>(find.byType(FullTranslationPanel)).targetLang, 'en');
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
     events.add(TranslationTaskSummary(job(state: TranslationJobState.review, lang: 'en'), 50));
     await tester.pump();
     await tester.pump();

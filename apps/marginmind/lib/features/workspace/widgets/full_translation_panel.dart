@@ -10,6 +10,7 @@ import '../../../shared/l10n.dart';
 import '../../../app/providers.dart';
 import '../full_translation.dart';
 import '../reader_compare.dart';
+import '../workspace_controller.dart';
 import 'notices.dart';
 import 'full_translation_sheet.dart';
 
@@ -102,7 +103,9 @@ class _FullTranslationPanelState extends ConsumerState<FullTranslationPanel> wit
     if (job == null) return const SizedBox.shrink();
 
     final counts = state.counts();
-    final pageCount = state.pageCount;
+    final documentPages =
+        ref.watch(workspaceContentProvider(widget.studySetId))?.document(widget.documentId)?.pageCount ?? 0;
+    final pageCount = math.max(state.pageCount, documentPages);
     final currentReading = state.currentReadingPage ?? 1;
 
     String stateLine = '';

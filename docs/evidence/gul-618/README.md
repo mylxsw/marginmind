@@ -1,85 +1,58 @@
-# 全文翻译 · 任务界面与生命周期 (GUL-618) 验收与交付报告
+# 全文翻译任务界面与生命周期（GUL-618）
 
-本文档汇总 GUL-618 全文翻译任务界面与生命周期功能的实现、UI 截图证据、测试覆盖与质量验证结论。
+实现依据：`docs/full-translation.md` 与 `design/prototype/full-translation.html`。复用现有 PR #147；合并最新 main，保留原分支，不自行合并 PR。
 
----
+## Review 修复
 
-## 1. 改动范围与核心实现
+1. 格式化并修复分析告警。
+2. 侧栏和菜单只订阅轻量任务摘要，不创建完整控制器、不提取 PDF 段落；持久化加载与删除并发时不会恢复旧任务。
+3. 入口统一按内容语言选择初始目标语言，已有任务沿用持久化语言；标题与内容语言不同时也能找到同一个任务。
+4. 从侧栏启动非当前文档时，明确传递文档 ID。
+5. 设置面板等待启动就绪后再关闭，提前取得控制器；等待期间固定任务参数，避免路由销毁或语言切换打断启动。
+6. 用加载 Future 代替 5ms 轮询；加载失败显示不可用状态并拒绝启动。
+7. 完成、有失败的完成、停止和“翻译剩余全部”都有工作区级 HUD。
+8. 应用命令使用中英文本地化字符串，不绑定默认快捷键。
+9. 设置面板、任务面板、检查点各有浅色/深色 `matchesGoldenFile` 比对；Linux 和 macOS 各保留精确基线。普通测试不写入 `docs/`。
+10. 覆盖系统网络事件、云端离线/恢复、手动暂停保留、Ollama 离线运行。
+11. 全部改动文件的完整及新增可执行行覆盖率见 [coverage.md](coverage.md) 与 [changed-coverage.json](changed-coverage.json)。
 
-按照 `docs/full-translation.md` §3.1–3.5, 3.7, 4, 9, 10 以及设计原型 `design/prototype/full-translation.html`（场景 1–7, 12, 14, 15, 16）规范实现：
+三条建议也已处理：恢复 HUD 使用范围内首个未完成页；段落状态直接读取调度器、按页聚合统计；单页翻译同时检查 fingerprint 和 textKey 缓存。
 
-### 1.1 设计系统与图标 (`packages/mm_design`)
-- 新增全文翻译相关系统图标：`layers`, `pause`, `play`, `retry`, `wifiOff`, `key`, `recycle`, `skip`。
-- 新增布局规范常量：
-  - `fullTranslationSheetWidth = 560.0`
-  - `fullTranslationPanelWidth = 372.0`
+自审还补齐了自适应阅读工具栏入口和 AI 标题条的空闲胶囊，并修复空白/非数字页码、多行输入 Enter 误触启动、移除译文期间关闭学习集的异步生命周期问题，以及页网格遗漏 PDF 末尾空白页的问题。
 
-### 1.2 国际化多语言支持 (`apps/marginmind/lib/l10n`)
-- 更新中英文本地化资源文件 `app_zh.arb` 与 `app_en.arb`，覆盖全文翻译启动面板、悬浮胶囊、进度详情面板、分批确认卡片、占位状态、HUD 提示与快捷键全部文案。
-- 执行 `flutter gen-l10n` 生成最新类型化访问器。
+## 验证
 
-### 1.3 控制器与生命周期 (`apps/marginmind/lib/features/workspace/`)
-- `translation_schedulers.dart`:
-  - 实现 `TranslationOnlineNotifier` 与 `translationOnlineProvider`，统一管理工作区在线/离线翻译调度。
-  - `TranslationSchedulers` 监听在线状态与助手默认模型变更，支持 `removeTranslations` 批量清理。
-- `full_translation.dart`:
-  - `estimateFullTranslation`: 预估全文翻译段落数、字符数、Token 数（区分中英文倍率）与耗时。
-  - `FullTranslationCounts` & `formatTokens`: 格式化展示已完成、进行中、失败、复用段落与千/万级 Token 计数。
-  - `FullTranslationController` (`Notifier<FullTranslationState>`): 驱动全局任务状态、切页即时阅读追踪、断点折叠/展开、暂停/恢复/继续批次/重试/清理等完整生命周期。
+Flutter 3.47.2 / Dart 3.13.2，Linux。
 
-### 1.4 交互组件与视图 (`apps/marginmind/lib/features/workspace/widgets/`)
-- `full_translation_sheet.dart` (`FullTranslationSheet` & `showFullTranslationSheet`):
-  - 560pt 居中表单，支持源语言/目标语言选择、全部/指定页码范围输入校验、分批确认（5/10/20/50 批大小）与一次完成模式切换、术语与要求多行备注、预估消耗展示。
-  - 阻断状态：未提取文字（扫描件 OCR 引导）、未配置密钥、网络不可用（离线引导）。
-- `full_translation_capsule.dart` (`FullTranslationCapsule`):
-  - 嵌入双栏对照翻译头部的紧凑型胶囊，展示当前批次/进度百分比；进行中具备呼吸光点动画，分批确认等待展示醒目状态，点击唤起任务详情面板。
-- `full_translation_panel.dart` (`FullTranslationPanel` & `showFullTranslationPanel`):
-  - 372pt 悬浮毛玻璃（`MMGlass`）任务面板，包含 16 列等比页码网格图（完成/进行中呼吸态/等待/失败/复用/混合状态编码）、耗时与统计卡片、控制操作区（暂停/继续/中止/重试/清空）。
-- `full_translation_checkpoint.dart` (`FullTranslationCheckpoint`):
-  - 分批确认卡片浮动于对照翻译栏底部（宽 ≤ 420pt），展开状态展示已完成批次摘要、消耗、术语与要求折叠抽屉、下一批次大小微调、"从起始页检查"、"翻译剩余全部"、"继续下一批"；折叠状态收起为 40pt 药丸胶囊。
-- `reader_translation_view.dart`:
-  - 集成 `FullTranslationCapsule` 与 `FullTranslationCheckpoint`。
-  - 实现未翻译页码占位卡片（"将在第 n 批翻译"、"不在本次翻译范围 [翻译此页]"、"未翻译 [翻译此页]"）。
-  - 双栏双向联动滚动对齐，退出应用重开自动恢复 `recoveredQuit` 并弹出 HUD 提示 "全文翻译已暂停在第 n 页 [继续]"。
-- `reader_compare_controls.dart` & `reader_pane.dart` & `workspace_sidebar.dart`:
-  - 对照菜单、侧边栏文档右键菜单、阅读器更多菜单接入 "全文翻译…" 入口；任务激活时显示百分比并跳转面板，单页 AI 翻译置灰；侧边栏文档项展示 14pt 进度环与 7pt 待确认黄点。
+- `dart format --output=none --set-exit-if-changed apps packages`：800 个文件，0 个改动。
+- `flutter analyze --no-pub`：No issues found。
+- `python3 -m unittest discover -s tool/tests`：26 个测试通过。
+- `flutter test --no-pub --concurrency=2 --coverage test/full_translation_test.dart test/translation_controls_test.dart test/translation_lifecycle_test.dart test/translation_entry_points_test.dart test/translation_page_grid_test.dart`（`apps/marginmind`）：45 个测试通过，包含六张 Linux golden 的正常比对。
+- 新增/变更执行行覆盖率 **87.33%**；全仓合并覆盖率 **91.18%**。完整文件表与方法见 [coverage.md](coverage.md)。
+- 全量应用：1,246 通过、36 跳过、10 个 main 基线失败；另有设计包 golden 79px 基线差异，均已独立复现。详细结果和复现命令见覆盖率报告。
 
----
+## 截图
 
-## 2. 视觉证据清单 (`docs/evidence/gul-618/`)
+截图由 widget 测试的显式证据模式生成，使用虚构段落和模型数据，不访问模型服务。
 
-| 截图文件名 | 描述 |
-|---|---|
-| `sheet-light.png` | 启动面板浅色模式（语言选择、页码范围、模式卡片、批次大小、预估耗时与 Token） |
-| `sheet-dark.png` | 启动面板深色模式 |
-| `sheet-blocked.png` | 启动面板阻断状态（网络不可用引导） |
-| `capsule-states.png` | 头部状态胶囊（进行中呼吸态与待确认状态） |
-| `panel-running-light.png` | 任务详情面板浅色模式（16 列网格、段落/Token/失败统计、控制按钮） |
-| `panel-running-dark.png` | 任务详情面板深色模式 |
-| `panel-review.png` | 任务详情面板分批确认态 |
-| `checkpoint-expanded-light.png` | 分批确认卡片浅色展开态（术语抽屉、批次调整、检查与继续） |
-| `checkpoint-expanded-dark.png` | 分批确认卡片深色展开态 |
-| `checkpoint-collapsed.png` | 分批确认卡片收起态（40pt 悬浮药丸胶囊） |
-| `translation-placeholders.png` | 翻译区批次占位卡片与重开恢复 HUD 提示 |
+| 场景 | 浅色 | 深色 |
+| --- | --- | --- |
+| 设置面板 | [sheet-light.png](sheet-light.png) | [sheet-dark.png](sheet-dark.png) |
+| 翻译中与任务面板 | [running-reader-light.png](running-reader-light.png) | [running-reader-dark.png](running-reader-dark.png) |
+| 检查点 | [checkpoint-expanded-light.png](checkpoint-expanded-light.png) | [checkpoint-expanded-dark.png](checkpoint-expanded-dark.png) |
 
----
+另有胶囊状态、离线设置、检查点收起、页占位和单独任务面板截图。
 
-## 3. 验证结果
+在 `apps/marginmind` 下生成截图：
 
-1. **静态代码分析**:
-   - 命令: `dart analyze`
-   - 结果: `Analyzing marginmind... No issues found!` (0 warnings, 0 errors, 0 infos)
+```sh
+TRANSLATION_EVIDENCE_DIR=../../docs/evidence/gul-618 \
+TRANSLATION_EVIDENCE_FONT=/path/to/a/CJK/font.otf \
+flutter test --no-pub test/full_translation_test.dart --name 'FullTranslation Widgets'
+```
 
-2. **单元测试与组件测试**:
-   - 命令: `flutter test test/full_translation_test.dart`
-   - 结果: `10/10 passed (100% green)`
-   - 命令: `flutter test test/reader_translation_test.dart`
-   - 结果: `11/11 passed (100% green)`
-   - 命令: `packages/mm_design: flutter test`
-   - 结果: `201/201 passed (100% green)`
+不设置这些环境变量时运行 golden 比对，不改动截图。证据模式只用于截图，不能替代 golden 的正常验证。
 
-3. **测试覆盖率**:
-   - 全文翻译核心调度与计算逻辑 (`full_translation.dart`): 84.5%
-   - 调度器生命周期管理 (`translation_schedulers.dart`): 89.4%
-   - 翻译视图渲染与恢复 (`reader_translation_view.dart`): 89.8%
-   - 新增核心业务代码平均测试覆盖率 ≥ 80%。
+## 自审
+
+核查了入口到任务启动、暂停/恢复/检查点/停止/移除及重开恢复的完整链路，语言与文档作用域，空值和非法页码，慢加载/失败分支，订阅释放、窗口销毁与在途请求落盘，文案/设计令牌，以及凭证和错误信息的暴露边界。修复项均有回归验证；不新增范围外重构或真实模型请求。
